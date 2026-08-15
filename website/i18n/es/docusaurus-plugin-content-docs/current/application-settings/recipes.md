@@ -79,18 +79,25 @@ proceso compartidos (potencia, asistencia de aire, etc.) y una página
 - Dejar ambos en "Any" muestra solo los ajustes de movimiento base
   (velocidad de corte y velocidad de viaje) que comparten todos los pasos
 
+Cada fila de ajustes tiene un conmutador de aplicación (un botón de
+verificación junto a la fila):
+
+- **Activado**: la receta aplica este ajuste al paso cuando se aplica
+- **Desactivado**: la receta deja este ajuste en el paso sin cambios
+
 **Pestaña de Post-Procesamiento** - Almacena ajustes de post-procesamiento
 (entrada/salida, multipase, overscan y otros transformadores) en la
 receta para que se apliquen a los pasos que esta tiene como objetivo:
 
 ![Editor de Recetas - Pestaña Post-Procesamiento](/screenshots/recipe-editor-post-processing.png)
 
-Cada transformador se muestra con un botón de tres estados:
+Cada transformador tiene un conmutador de aplicación (un botón de
+verificación junto a la fila):
 
-- **Dejar sin cambios**: la receta no toca este transformador al aplicarse
-- **Habilitado**: la receta activa el transformador y aplica sus
-  parámetros al paso
-- **Deshabilitado**: la receta desactiva explícitamente el transformador
+- **Activado**: la receta aplica los parámetros del transformador al
+  paso (su propio interruptor de habilitación decide si se activa o
+  desactiva)
+- **Desactivado**: la receta no toca este transformador al aplicarse
 
 Cuando la receta tiene como objetivo varios tipos de paso, solo se
 muestran los transformadores comunes a todos ellos.

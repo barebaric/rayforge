@@ -185,7 +185,14 @@ class TestRecipeManager:
                 min_thickness_mm=2.9,
                 max_thickness_mm=3.1,
                 target_step_types=["ContourStep"],
-                settings={"power": 0.8, "selected_head_uid": "laser-1"},
+                setting_dicts=[
+                    {"name": "power", "value": 0.8, "recipe_apply": True},
+                    {
+                        "name": "selected_head_uid",
+                        "value": "laser-1",
+                        "recipe_apply": True,
+                    },
+                ],
             )
         )
 
@@ -199,7 +206,9 @@ class TestRecipeManager:
                 min_thickness_mm=2.9,
                 max_thickness_mm=3.1,
                 target_step_types=["ContourStep"],
-                settings={"power": 0.8},
+                setting_dicts=[
+                    {"name": "power", "value": 0.8, "recipe_apply": True}
+                ],
             )
         )
 
@@ -212,7 +221,9 @@ class TestRecipeManager:
                 min_thickness_mm=2.9,
                 max_thickness_mm=3.1,
                 target_step_types=["ContourStep"],
-                settings={"power": 0.9},
+                setting_dicts=[
+                    {"name": "power", "value": 0.9, "recipe_apply": True}
+                ],
             )
         )
 
@@ -223,7 +234,9 @@ class TestRecipeManager:
                 name="Cut Any Walnut",
                 material_uid="walnut",
                 target_step_types=["ContourStep"],
-                settings={"power": 0.85},
+                setting_dicts=[
+                    {"name": "power", "value": 0.85, "recipe_apply": True}
+                ],
             )
         )
 
@@ -233,7 +246,9 @@ class TestRecipeManager:
                 uid="generic-cut",
                 name="Generic Cut",
                 target_step_types=["ContourStep"],
-                settings={"power": 1.0},
+                setting_dicts=[
+                    {"name": "power", "value": 1.0, "recipe_apply": True}
+                ],
             )
         )
 
@@ -243,7 +258,9 @@ class TestRecipeManager:
                 uid="generic-engrave",
                 name="Generic Engrave",
                 target_step_types=["EngraveStep"],
-                settings={"power": 0.2},
+                setting_dicts=[
+                    {"name": "power", "value": 0.2, "recipe_apply": True}
+                ],
             )
         )
         return manager
@@ -387,7 +404,9 @@ class TestRecipeManager:
                 uid="multi",
                 name="Multi Step Type",
                 target_step_types=["ContourStep", "EngraveStep"],
-                settings={"power": 0.5},
+                setting_dicts=[
+                    {"name": "power", "value": 0.5, "recipe_apply": True}
+                ],
             )
         )
 
@@ -413,7 +432,9 @@ class TestRecipeManager:
                 uid="multi",
                 name="Multi Step Type",
                 target_step_types=["ContourStep", "EngraveStep"],
-                settings={"power": 0.5},
+                setting_dicts=[
+                    {"name": "power", "value": 0.5, "recipe_apply": True}
+                ],
             )
         )
 

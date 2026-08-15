@@ -11,6 +11,7 @@ from .cnc_assembler_step import CncAssemblerStep
 class ProfileOuterStep(CncAssemblerStep):
     ASSEMBLER_NAME = "profile_outer"
     TYPELABEL = _("Profile Outer")
+    ICON = "step-profile-symbolic"
     uses_global_state = True
 
     @classmethod
@@ -21,18 +22,21 @@ class ProfileOuterStep(CncAssemblerStep):
                 LengthVar(
                     key="step_over",
                     label=_("Step Over"),
+                    description=_("Lateral step-over between passes"),
                     default=2.0,
                     min_val=0.1,
                 ),
                 LengthVar(
                     key="step_length",
                     label=_("Step Length"),
+                    description=_("Forward step length"),
                     default=0.6,
                     min_val=0.1,
                 ),
                 LengthVar(
                     key="wall_margin",
                     label=_("Wall Margin"),
+                    description=_("Extra clearance from the pocket wall"),
                     default=0.0,
                     min_val=0.0,
                 ),

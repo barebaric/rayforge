@@ -15,7 +15,10 @@ from raygeo.ops.axis import Axis
 from rayforge.machine.models.laser import LaserHead
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.models.rotary_module import RotaryMode, RotaryModule
-from rayforge.simulator.scene3d import CompiledSceneArtifact
+from rayforge.simulator.scene3d import (
+    CompiledSceneArtifact,
+    compile_stock_scene,
+)
 from rayforge.ui_gtk.sim3d.scene_presenter import ScenePresenter
 from rayforge.ui_gtk.sim3d.viewport import ViewportConfig
 
@@ -393,3 +396,41 @@ def test_cancel_scene_preparation(ui_context_initializer):
 
     task.cancel.assert_called_once()
     assert presenter.scene_preparation_task is None
+
+
+@pytest.mark.ui
+def test_schedule_stock_only_compilation_without_job(
+    ui_context_initializer,
+):
+    """Stock is document content: it compiles even without a job."""
+    presenter, _, _ = _make_presenter()
+    assert presenter._current_job_handle is None
+    config = {"world_to_visual": [], "stock_specs": [{"name": "oak"}]}
+
+    with patch(
+        "rayforge.ui_gtk.sim3d.scene_presenter.task_mgr"
+    ) as mock_task_mgr:
+        presenter._schedule_scene_preparation(config)
+
+    mock_task_mgr.run_thread.assert_called_once()
+    assert mock_task_mgr.run_thread.call_args.args[0] is compile_stock_scene
+    assert mock_task_mgr.run_thread.call_args.args[1] is config
+
+
+@pytest.mark.ui
+def test_schedule_clears_artifact_without_job_or_stock(
+    ui_context_initializer,
+):
+    presenter, _, calls = _make_presenter()
+    presenter._current_job_handle = None
+    presenter._compiled_artifact = MagicMock()
+
+    with patch(
+        "rayforge.ui_gtk.sim3d.scene_presenter.task_mgr"
+    ) as mock_task_mgr:
+        presenter._schedule_scene_preparation({"stock_specs": []})
+
+    mock_task_mgr.run_thread.assert_not_called()
+    assert presenter._compiled_artifact is None
+    assert calls["artifact_dirty"] == [True]
+    assert calls["rendered"] == [True]

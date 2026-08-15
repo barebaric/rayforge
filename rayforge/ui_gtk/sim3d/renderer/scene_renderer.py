@@ -31,6 +31,7 @@ from ..shader import (
     BackgroundShader,
     Shader,
     SimpleShader,
+    StockShader,
     TextShader,
     TextureShader,
 )
@@ -43,6 +44,11 @@ from .laser_beam_renderer import LaserBeamRenderer
 from .model_renderer import ModelRenderer
 from .ops_renderer import OpsRenderer, OpsUploadPayload, prepare_vertex_layer
 from .ring_buffer_renderer import RingBufferRenderer
+from .stock_renderer import (
+    PreparedStockLayer,
+    StockRenderer,
+    prepare_stock_layer,
+)
 from .texture_renderer import (
     PreparedTextureLayer,
     TextureArtifactRenderer,
@@ -190,6 +196,35 @@ class TextureUploadItem:
         self.renderer.upload_prepared(prepared)
 
 
+@dataclass
+class StockUploadItem:
+    """Uploads the artifact's stock layers into the stock renderer."""
+
+    renderer: Optional["StockRenderer"]
+    artifact: CompiledSceneArtifact
+    _prepared_layers: list[PreparedStockLayer] | None = field(
+        default=None, init=False, repr=False
+    )
+
+    def prepare(self) -> None:
+        """Expands indices and decodes material textures off-thread."""
+        if self.renderer is None:
+            return
+        self._prepared_layers = [
+            prepare_stock_layer(sl) for sl in self.artifact.stock_layers
+        ]
+
+    def upload(self) -> None:
+        if self.renderer is None:
+            return
+        prepared = self._prepared_layers
+        if prepared is None:
+            self.prepare()
+            prepared = self._prepared_layers
+        assert prepared is not None
+        self.renderer.upload_prepared(prepared)
+
+
 class SceneRenderer(BaseRenderer):
     """Owns the GPU renderers, shaders and collections for the 3D scene."""
 
@@ -199,6 +234,7 @@ class SceneRenderer(BaseRenderer):
         self.text_shader: Shader | None = None
         self.texture_shader: Shader | None = None
         self.background_shader: Shader | None = None
+        self.stock_shader: Shader | None = None
         self.shader_set: ShaderSet | None = None
 
         self.axis_renderer: AxisRenderer3D | None = None
@@ -206,6 +242,7 @@ class SceneRenderer(BaseRenderer):
             BackgroundRenderer()
         )
         self.texture_renderer: TextureArtifactRenderer | None = None
+        self.stock_renderer: StockRenderer | None = StockRenderer()
         self.zone_renderer: ZoneRenderer | None = None
         self.laser_beam_renderer: LaserBeamRenderer | None = (
             LaserBeamRenderer()
@@ -244,7 +281,11 @@ class SceneRenderer(BaseRenderer):
         for renderer in self.cylinder_renderers.values():
             registry.append((renderer, ("main",)))
 
-        # Draw the ops and textures.
+        # Draw the ops and textures.  The solid stock draws before the
+        # engrave quads (with a polygon offset) so the quads sit
+        # cleanly on the top face.
+        if self.stock_renderer is not None:
+            registry.append((self.stock_renderer, ("stock",)))
         if self.texture_renderer is not None:
             registry.append((self.texture_renderer, ("texture",)))
         for renderer in self.ops_renderers:
@@ -277,11 +318,13 @@ class SceneRenderer(BaseRenderer):
         self.text_shader = TextShader()
         self.texture_shader = TextureShader()
         self.background_shader = BackgroundShader()
+        self.stock_shader = StockShader()
         self.shader_set = ShaderSet(
             main=self.main_shader,
             text=self.text_shader,
             texture=self.texture_shader,
             background=self.background_shader,
+            stock=self.stock_shader,
         )
 
         self.axis_renderer = AxisRenderer3D(
@@ -295,6 +338,8 @@ class SceneRenderer(BaseRenderer):
         self.axis_renderer.init_gl()
         self.texture_renderer = TextureArtifactRenderer()
         self.texture_renderer.init_gl()
+        if self.stock_renderer:
+            self.stock_renderer.init_gl()
         if self.laser_beam_renderer:
             self.laser_beam_renderer.init_gl()
         try:
@@ -314,6 +359,7 @@ class SceneRenderer(BaseRenderer):
             self.axis_renderer,
             self.background_renderer,
             self.texture_renderer,
+            self.stock_renderer,
             self.zone_renderer,
             self.laser_beam_renderer,
         ):
@@ -346,6 +392,8 @@ class SceneRenderer(BaseRenderer):
             self.texture_shader.cleanup()
         if self.background_shader:
             self.background_shader.cleanup()
+        if self.stock_shader:
+            self.stock_shader.cleanup()
 
     def apply_extent_frame(self, viewport: ViewportConfig):
         """Applies the extent frame to the axis renderer if present."""
@@ -546,6 +594,8 @@ class SceneRenderer(BaseRenderer):
 
         if self.texture_renderer:
             self.texture_renderer.update_from_artifact(artifact)
+        if self.stock_renderer:
+            self.stock_renderer.update_from_artifact(artifact)
         self._rebuild_registry()
 
     def prepare_chunked_upload(
@@ -581,6 +631,7 @@ class SceneRenderer(BaseRenderer):
                     break
 
         upload_items.append(TextureUploadItem(self.texture_renderer, artifact))
+        upload_items.append(StockUploadItem(self.stock_renderer, artifact))
         self._rebuild_registry()
         return upload_items
 
@@ -596,6 +647,8 @@ class SceneRenderer(BaseRenderer):
             renderer.clear()
         if self.texture_renderer:
             self.texture_renderer.clear()
+        if self.stock_renderer:
+            self.stock_renderer.clear()
 
     def extract_playback_offsets(self, artifact: CompiledSceneArtifact):
         """Stores each renderer's playback offsets from an artifact."""
@@ -625,7 +678,14 @@ class SceneRenderer(BaseRenderer):
         that frame-level cross-dependencies (e.g. the laser point light
         feeding the model renderers) resolve before any draw.
         """
+        # The laser beam publishes the point-light position that the
+        # model renderers consume, so it must be prepared first even
+        # though it draws last.
+        if self.laser_beam_renderer is not None:
+            self.laser_beam_renderer.prepare(ctx)
         for renderer, _ in self.render_registry:
+            if renderer is self.laser_beam_renderer:
+                continue
             renderer.prepare(ctx)
 
     def render(
@@ -647,6 +707,7 @@ class SceneRenderer(BaseRenderer):
             self.text_shader,
             self.texture_shader,
             self.background_shader,
+            self.stock_shader,
         ):
             if shader:
                 shader.reset_uniforms()

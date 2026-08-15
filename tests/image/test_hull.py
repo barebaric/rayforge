@@ -154,17 +154,27 @@ def test_concave_hull_creates_valid_indentation():
     # 2. Check for self-intersection using the new Geometry method.
     assert not concave_geo.has_self_intersections()
 
-    # TODO: Improve algo to meet the following expectations
-    """
     # 3. Check that shrinking the hull did not create new intersections
     convex_geo.grow(1)  # grow to avoid touching due to floating point errors
     assert not concave_geo.intersects_with(convex_geo), (
-       f"Intersects with convex hull: {concave_geo.to_dict()}"
+        f"Intersects with convex hull: {concave_geo.to_dict()}"
     )
 
     # 4. Check that the hull encloses all points of the original shape.
-    assert concave_geo.encloses(convex_geo), f"Not enclosed: {concave_geo}"
-    """
+    #    The shape consists of two convex rounded rectangles, so their
+    #    per-component hulls describe the shape itself. Shrink each by
+    #    a small margin so that the hull cannot merely touch them.
+    #    The hull geometries are clockwise (the y-axis is flipped in
+    #    the transform), so reverse the contour for the winding-based
+    #    containment check.
+    shape_geometries = get_hulls_from_image(boolean_image, 1.0, 1.0, height, 0)
+    assert len(shape_geometries) == 2
+    concave_geo.reverse_contour()
+    for shape in shape_geometries:
+        shape.grow(-2)
+        assert concave_geo.encloses(shape), (
+            f"Concave hull does not enclose the shape: {concave_geo}"
+        )
 
 
 def test_get_concave_hull_zero_gravity():

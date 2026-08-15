@@ -44,6 +44,9 @@ class Var(Generic[T]):
         default: T | None = None,
         value: T | None = None,
         validator: Callable[[T | None], None] | None = None,
+        *,
+        visible_when: "Callable[[dict[str, Any]], bool] | None" = None,
+        sensitive_when: "Callable[[dict[str, Any]], bool] | None" = None,
     ):
         """
         Initializes a new Var instance.
@@ -57,6 +60,14 @@ class Var(Generic[T]):
             value: The initial value. If provided, it overrides the default.
             validator: An optional callable that raises an exception if a new
                        value is invalid.
+            visible_when: Optional callable that receives a dict of all
+                          current var values in the widget and returns True
+                          when this var's row should be visible.
+                          ``None`` means always visible.
+            sensitive_when: Optional callable that receives a dict of all
+                            current var values in the widget and returns
+                            True when this var's row should be interactive.
+                            ``None`` means always sensitive.
         """
         self._key = key
         self._label = label
@@ -66,6 +77,8 @@ class Var(Generic[T]):
         self.validator = validator
         self._value: T | None = None
         self._varset: VarSet | None = None
+        self._visible_when = visible_when
+        self._sensitive_when = sensitive_when
 
         # Signal sent when the Var's value or default value changes.
         self.value_changed = Signal()
@@ -86,6 +99,28 @@ class Var(Generic[T]):
         if self._key != new_key:
             self._key = new_key
             self.definition_changed.send(self, property="key")
+
+    @property
+    def visible_when(
+        self,
+    ) -> "Callable[[dict[str, Any]], bool] | None":
+        """Callable that decides row visibility from current var values.
+
+        ``None`` means always visible. The varset row manager evaluates
+        this after populate and after each data_changed emission.
+        """
+        return self._visible_when
+
+    @property
+    def sensitive_when(
+        self,
+    ) -> "Callable[[dict[str, Any]], bool] | None":
+        """Callable that decides row interactivity from current var values.
+
+        ``None`` means always sensitive. The varset row manager evaluates
+        this after populate and after each data_changed emission.
+        """
+        return self._sensitive_when
 
     @property
     def label(self) -> str:

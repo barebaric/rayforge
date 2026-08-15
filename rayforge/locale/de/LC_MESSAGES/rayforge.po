@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-12 17:33+0200\n"
+"POT-Creation-Date: 2026-08-14 21:42+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -64,6 +64,10 @@ msgstr "Drehtisch"
 msgid "Layer {}"
 msgstr "Ebene {}"
 
+#: rayforge/core/doc.py rayforge/doceditor/layer_cmd.py
+msgid "Layer"
+msgstr "Ebene"
+
 #: rayforge/core/stock.py
 #, python-brace-format
 msgid "{name} (copy)"
@@ -114,14 +118,20 @@ msgid "Model '{model}' not found. Available: {available}"
 msgstr "Modell '{model}' nicht gefunden. Verfügbar: {available}"
 
 #: rayforge/core/step.py
-#: rayforge/ui_gtk/doceditor/step_settings/rows/cut_speed_row.py
 msgid "Cut Speed"
 msgstr "Schnittgeschwindigkeit"
 
 #: rayforge/core/step.py
-#: rayforge/ui_gtk/doceditor/step_settings/rows/travel_speed_row.py
+msgid "Speed of the cutting operation"
+msgstr "Geschwindigkeit des Schneidvorgangs"
+
+#: rayforge/core/step.py
 msgid "Travel Speed"
 msgstr "Verfahrgeschwindigkeit"
+
+#: rayforge/core/step.py
+msgid "Speed of rapid positioning moves"
+msgstr "Geschwindigkeit der schnellen Positionierbewegungen"
 
 #: rayforge/core/step.py rayforge/machine/models/dialect/base.py
 #: rayforge/ui_gtk/settings/settings_dialog.py rayforge/ui_gtk/main_menu.py
@@ -179,6 +189,10 @@ msgstr "Der Wert muss mindestens {min_val} betragen."
 msgid "Value must be at most {max_val}."
 msgstr "Der Wert darf höchstens {max_val} betragen."
 
+#: rayforge/core/varset/intvar.py
+msgid "Slider (Integer)"
+msgstr "Schieberegler (Ganzzahl)"
+
 #: rayforge/core/varset/portvar.py
 msgid "Port cannot be empty."
 msgstr "Port darf nicht leer sein."
@@ -202,6 +216,10 @@ msgstr "Text (Mehrzeilig)"
 #: rayforge/core/varset/labeledchoicevar.py
 msgid "Choice (Labeled)"
 msgstr "Auswahl (Beschriftet)"
+
+#: rayforge/core/varset/tuplevar.py
+msgid "Tuple"
+msgstr "Tupel"
 
 #: rayforge/core/varset/boolvar.py
 msgid "Boolean (Switch)"
@@ -1617,7 +1635,6 @@ msgstr "{label} (für {machine_name})"
 #: rayforge/ui_gtk/machine/laser_control_widget.py
 #: rayforge/ui_gtk/machine/wizard_pages/head_page.py
 #: rayforge/ui_gtk/machine/capabilities_page.py
-#: rayforge/ui_gtk/doceditor/step_settings/rows/head_row.py
 msgid "Laser Head"
 msgstr "Laserkopf"
 
@@ -3048,7 +3065,6 @@ msgid "Display name for this camera"
 msgstr "Anzeigename für diese Kamera"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
-#: rayforge/ui_gtk/doceditor/post_processor/groups/transformer_group.py
 msgid "Enabled"
 msgstr "Aktiviert"
 
@@ -3641,7 +3657,6 @@ msgstr "Grad um die Z-Achse"
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
-#: rayforge/ui_gtk/doceditor/step_settings/rows/head_row.py
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "None"
 msgstr "Keine"
@@ -7187,21 +7202,16 @@ msgstr ""
 msgid "Show only compatible recipes"
 msgstr "Nur kompatible Rezepte anzeigen"
 
+#: rayforge/ui_gtk/doceditor/recipes/varset_widget.py
+#: rayforge/ui_gtk/doceditor/post_processor/groups/transformer_group.py
+msgid "Apply this setting to the step"
+msgstr "Diese Einstellung auf den Schritt anwenden"
+
 #: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
 msgid "Step name and recipe settings."
 msgstr "Schrittname und Rezepteinstellungen."
 
 #: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
-#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
-msgid "Cooling"
-msgstr "Kühlung"
-
-#: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
-msgid "Coolant used while this operation runs."
-msgstr "Kühlmittel, das während dieses Vorgangs verwendet wird."
-
-#: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
-#: rayforge/ui_gtk/doceditor/step_settings/rows/step_row.py
 #, python-brace-format
 msgid "Change {key}"
 msgstr "{key} ändern"
@@ -7211,36 +7221,6 @@ msgid "Transformers applied to this step's generated toolpath."
 msgstr ""
 "Transformer, die auf den generierten Werkzeugpfad dieses Schritts angewendet "
 "werden."
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/travel_speed_row.py
-msgid "Speed of rapid positioning moves"
-msgstr "Geschwindigkeit der schnellen Positionierbewegungen"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
-msgid "Off"
-msgstr "Aus"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
-#: rayforge/doceditor/file_cmd.py
-msgid "Flood"
-msgstr "Flut"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
-#: rayforge/doceditor/file_cmd.py
-msgid "Mist"
-msgstr "Nebel"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
-msgid "Coolant delivered to the workpiece while cutting"
-msgstr "Kühlmittel, das beim Schneiden auf das Werkstück aufgebracht wird"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
-msgid "This cooling method is not supported by the current machine"
-msgstr "Diese Kühlmethode wird von der aktuellen Maschine nicht unterstützt"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/cut_speed_row.py
-msgid "Speed of the cutting operation"
-msgstr "Geschwindigkeit des Schneidvorgangs"
 
 #: rayforge/ui_gtk/doceditor/step_settings/dialog.py
 #, python-brace-format
@@ -7621,6 +7601,10 @@ msgstr "Diese Ebene löschen"
 msgid "Toggle layer visibility"
 msgstr "Sichtbarkeit der Ebene umschalten"
 
+#: rayforge/ui_gtk/doceditor/layer_column.py
+msgid "Rename"
+msgstr "Umbenennen"
+
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 #, python-brace-format
 msgid "Relative to {wcs} origin"
@@ -7758,14 +7742,6 @@ msgstr "{} aktivieren"
 #: rayforge/ui_gtk/doceditor/post_processor/groups/transformer_group.py
 msgid "Toggle {}"
 msgstr "{} umschalten"
-
-#: rayforge/ui_gtk/doceditor/post_processor/groups/transformer_group.py
-msgid "Leave Unchanged"
-msgstr "Unverändert lassen"
-
-#: rayforge/ui_gtk/doceditor/post_processor/groups/transformer_group.py
-msgid "Disabled"
-msgstr "Deaktiviert"
 
 #: rayforge/ui_gtk/doceditor/post_processor/groups/placeholder_group.py
 msgid "This feature is not available."
@@ -8501,6 +8477,18 @@ msgid "Toggle Asset Visibility"
 msgstr "Elementsichtbarkeit umschalten"
 
 #: rayforge/doceditor/file_cmd.py
+msgid "Flood"
+msgstr "Flut"
+
+#: rayforge/doceditor/file_cmd.py
+msgid "Mist"
+msgstr "Nebel"
+
+#: rayforge/doceditor/file_cmd.py rayforge/doceditor/layer_cmd.py
+msgid "Rename layer"
+msgstr "Ebene umbenennen"
+
+#: rayforge/doceditor/file_cmd.py
 #, python-brace-format
 msgid "Import {filename}"
 msgstr "{filename} importieren"
@@ -8660,14 +8648,6 @@ msgid "Move to another layer"
 msgstr "Auf eine andere Ebene verschieben"
 
 #: rayforge/doceditor/layer_cmd.py
-msgid "Layer"
-msgstr "Ebene"
-
-#: rayforge/doceditor/layer_cmd.py
-msgid "Rename layer"
-msgstr "Ebene umbenennen"
-
-#: rayforge/doceditor/layer_cmd.py
 msgid "Set active layer"
 msgstr "Aktive Ebene festlegen"
 
@@ -8740,6 +8720,10 @@ msgstr "Element hinzufügen"
 #: rayforge/doceditor/edit_cmd.py
 msgid "Remove item"
 msgstr "Element entfernen"
+
+#: rayforge/doceditor/edit_cmd.py
+msgid "Rename item"
+msgstr "Element umbenennen"
 
 #: rayforge/doceditor/edit_cmd.py
 msgid "Remove all workpieces"

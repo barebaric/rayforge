@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-12 17:33+0200\n"
+"POT-Creation-Date: 2026-08-14 21:42+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -64,6 +64,10 @@ msgstr ""
 msgid "Layer {}"
 msgstr ""
 
+#: rayforge/core/doc.py rayforge/doceditor/layer_cmd.py
+msgid "Layer"
+msgstr ""
+
 #: rayforge/core/stock.py
 #, python-brace-format
 msgid "{name} (copy)"
@@ -112,13 +116,19 @@ msgid "Model '{model}' not found. Available: {available}"
 msgstr ""
 
 #: rayforge/core/step.py
-#: rayforge/ui_gtk/doceditor/step_settings/rows/cut_speed_row.py
 msgid "Cut Speed"
 msgstr ""
 
 #: rayforge/core/step.py
-#: rayforge/ui_gtk/doceditor/step_settings/rows/travel_speed_row.py
+msgid "Speed of the cutting operation"
+msgstr ""
+
+#: rayforge/core/step.py
 msgid "Travel Speed"
+msgstr ""
+
+#: rayforge/core/step.py
+msgid "Speed of rapid positioning moves"
 msgstr ""
 
 #: rayforge/core/step.py rayforge/machine/models/dialect/base.py
@@ -177,6 +187,10 @@ msgstr ""
 msgid "Value must be at most {max_val}."
 msgstr ""
 
+#: rayforge/core/varset/intvar.py
+msgid "Slider (Integer)"
+msgstr ""
+
 #: rayforge/core/varset/portvar.py
 msgid "Port cannot be empty."
 msgstr ""
@@ -199,6 +213,10 @@ msgstr ""
 
 #: rayforge/core/varset/labeledchoicevar.py
 msgid "Choice (Labeled)"
+msgstr ""
+
+#: rayforge/core/varset/tuplevar.py
+msgid "Tuple"
 msgstr ""
 
 #: rayforge/core/varset/boolvar.py
@@ -1463,7 +1481,6 @@ msgstr ""
 #: rayforge/ui_gtk/machine/laser_control_widget.py
 #: rayforge/ui_gtk/machine/wizard_pages/head_page.py
 #: rayforge/ui_gtk/machine/capabilities_page.py
-#: rayforge/ui_gtk/doceditor/step_settings/rows/head_row.py
 msgid "Laser Head"
 msgstr ""
 
@@ -2826,7 +2843,6 @@ msgid "Display name for this camera"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/properties_widget.py
-#: rayforge/ui_gtk/doceditor/post_processor/groups/transformer_group.py
 msgid "Enabled"
 msgstr ""
 
@@ -3390,7 +3406,6 @@ msgstr ""
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
-#: rayforge/ui_gtk/doceditor/step_settings/rows/head_row.py
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "None"
 msgstr ""
@@ -6755,57 +6770,22 @@ msgstr ""
 msgid "Show only compatible recipes"
 msgstr ""
 
+#: rayforge/ui_gtk/doceditor/recipes/varset_widget.py
+#: rayforge/ui_gtk/doceditor/post_processor/groups/transformer_group.py
+msgid "Apply this setting to the step"
+msgstr ""
+
 #: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
 msgid "Step name and recipe settings."
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
-#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
-msgid "Cooling"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
-msgid "Coolant used while this operation runs."
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
-#: rayforge/ui_gtk/doceditor/step_settings/rows/step_row.py
 #, python-brace-format
 msgid "Change {key}"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/step_settings/pages/post_processing.py
 msgid "Transformers applied to this step's generated toolpath."
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/travel_speed_row.py
-msgid "Speed of rapid positioning moves"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
-msgid "Off"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
-#: rayforge/doceditor/file_cmd.py
-msgid "Flood"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
-#: rayforge/doceditor/file_cmd.py
-msgid "Mist"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
-msgid "Coolant delivered to the workpiece while cutting"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
-msgid "This cooling method is not supported by the current machine"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/cut_speed_row.py
-msgid "Speed of the cutting operation"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/step_settings/dialog.py
@@ -7178,6 +7158,10 @@ msgstr ""
 msgid "Toggle layer visibility"
 msgstr ""
 
+#: rayforge/ui_gtk/doceditor/layer_column.py
+msgid "Rename"
+msgstr ""
+
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 #, python-brace-format
 msgid "Relative to {wcs} origin"
@@ -7314,14 +7298,6 @@ msgstr ""
 
 #: rayforge/ui_gtk/doceditor/post_processor/groups/transformer_group.py
 msgid "Toggle {}"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/post_processor/groups/transformer_group.py
-msgid "Leave Unchanged"
-msgstr ""
-
-#: rayforge/ui_gtk/doceditor/post_processor/groups/transformer_group.py
-msgid "Disabled"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/post_processor/groups/placeholder_group.py
@@ -8025,6 +8001,18 @@ msgid "Toggle Asset Visibility"
 msgstr ""
 
 #: rayforge/doceditor/file_cmd.py
+msgid "Flood"
+msgstr ""
+
+#: rayforge/doceditor/file_cmd.py
+msgid "Mist"
+msgstr ""
+
+#: rayforge/doceditor/file_cmd.py rayforge/doceditor/layer_cmd.py
+msgid "Rename layer"
+msgstr ""
+
+#: rayforge/doceditor/file_cmd.py
 #, python-brace-format
 msgid "Import {filename}"
 msgstr ""
@@ -8178,14 +8166,6 @@ msgid "Move to another layer"
 msgstr ""
 
 #: rayforge/doceditor/layer_cmd.py
-msgid "Layer"
-msgstr ""
-
-#: rayforge/doceditor/layer_cmd.py
-msgid "Rename layer"
-msgstr ""
-
-#: rayforge/doceditor/layer_cmd.py
 msgid "Set active layer"
 msgstr ""
 
@@ -8257,6 +8237,10 @@ msgstr ""
 
 #: rayforge/doceditor/edit_cmd.py
 msgid "Remove item"
+msgstr ""
+
+#: rayforge/doceditor/edit_cmd.py
+msgid "Rename item"
 msgstr ""
 
 #: rayforge/doceditor/edit_cmd.py

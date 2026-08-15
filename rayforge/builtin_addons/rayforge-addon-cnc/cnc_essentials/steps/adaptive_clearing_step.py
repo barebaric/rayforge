@@ -7,7 +7,7 @@ from raygeo.cnc.execution.specs import ComputePayload
 from raygeo.ops.assembly.adaptive import AdaptiveClearingSpec
 from raygeo.ops.part import Part
 
-from rayforge.core.varset import FloatVar, LengthVar, VarSet
+from rayforge.core.varset import AngleVar, FloatVar, LengthVar, VarSet
 
 from .cnc_assembler_step import CncAssemblerStep
 
@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 class AdaptiveClearStep(CncAssemblerStep):
     ASSEMBLER_NAME = "adaptive_clearing"  # matches PlanStep.kind
     TYPELABEL = _("Adaptive Clear")
+    ICON = "step-adaptive-symbolic"
     uses_global_state = True  # consumes predecessor cleared-area
 
     @classmethod
@@ -29,18 +30,23 @@ class AdaptiveClearStep(CncAssemblerStep):
                 LengthVar(
                     key="step_over",
                     label=_("Step Over"),
+                    description=_("Lateral step-over between passes"),
                     default=2.0,
                     min_val=0.1,
                 ),
                 LengthVar(
                     key="step_length",
                     label=_("Step Length"),
+                    description=_("Forward step length"),
                     default=0.6,
                     min_val=0.1,
                 ),
-                FloatVar(
+                AngleVar(
                     key="max_deflection_deg",
                     label=_("Max Deflection"),
+                    description=_(
+                        "Max steering deflection per step (degrees)"
+                    ),
                     default=30.0,
                     min_val=0.0,
                     max_val=90.0,
@@ -48,12 +54,14 @@ class AdaptiveClearStep(CncAssemblerStep):
                 LengthVar(
                     key="wall_margin",
                     label=_("Wall Margin"),
+                    description=_("Extra clearance from the pocket wall"),
                     default=0.0,
                     min_val=0.0,
                 ),
                 FloatVar(
                     key="area_tolerance",
                     label=_("Area Tolerance"),
+                    description=_("Stopping tolerance in mm²"),
                     default=1.0,
                     min_val=0.0,
                 ),

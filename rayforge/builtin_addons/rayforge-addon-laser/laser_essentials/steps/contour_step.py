@@ -13,6 +13,7 @@ from rayforge.core.cut_side import CutOrder, CutSide
 from rayforge.core.step import legacy_producer_params
 from rayforge.core.varset import (
     BoolVar,
+    FloatVar,
     LabeledChoiceVar,
     LengthVar,
     VarSet,
@@ -52,17 +53,7 @@ class ContourStep(LaserStep):
                     label=_("Cut Side"),
                     choices=[(cs.label(), cs.name) for cs in CutSide],
                     default="CENTERLINE",
-                ),
-                LabeledChoiceVar(
-                    key="cut_order",
-                    label=_("Cut Order"),
-                    choices=[(co.label(), co.name) for co in CutOrder],
-                    default="INSIDE_OUTSIDE",
-                ),
-                BoolVar(
-                    key="remove_inner_paths",
-                    label=_("Remove Inner Paths"),
-                    default=False,
+                    allow_none=False,
                 ),
                 LengthVar(
                     key="offset_mm",
@@ -73,12 +64,54 @@ class ContourStep(LaserStep):
                         "compensation for the head"
                     ),
                     default=0.0,
+                    sensitive_when=lambda v: v.get("cut_side") != "CENTERLINE",
+                ),
+                LabeledChoiceVar(
+                    key="cut_order",
+                    label=_("Cut Order"),
+                    description=_("Processing order for nested paths"),
+                    choices=[(co.label(), co.name) for co in CutOrder],
+                    default="INSIDE_OUTSIDE",
+                    allow_none=False,
+                ),
+                BoolVar(
+                    key="remove_inner_paths",
+                    label=_("Remove Inner Paths"),
+                    description=_(
+                        "If enabled, only trace the outer outline of shapes"
+                    ),
+                    default=False,
                 ),
                 LengthVar(
                     key="overcut",
                     label=_("Overcut"),
+                    description=_(
+                        "Extend closed contours past their start point "
+                        "so the cut overlaps itself"
+                    ),
                     default=0.0,
                     min_val=0.0,
+                    max_val=100.0,
+                ),
+                FloatVar(
+                    key="threshold",
+                    label=_("Threshold"),
+                    description=_(
+                        "Brightness level (0.0-1.0) to define edges"
+                    ),
+                    default=0.5,
+                    min_val=0.0,
+                    max_val=1.0,
+                    visible_when=lambda v: v.get("override_threshold", False),
+                ),
+                BoolVar(
+                    key="override_threshold",
+                    label=_("Rescan Content"),
+                    description=_(
+                        "Ignore source geometry and re-trace within "
+                        "the workpiece"
+                    ),
+                    default=False,
                 ),
             ]
         )

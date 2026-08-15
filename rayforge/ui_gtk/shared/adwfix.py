@@ -1,24 +1,38 @@
 from gi.repository import Gdk, Gtk
 
-_SPINROW_MIN_WIDTH_CSS = "row spinbutton { min-width: 130px; }"
+# Workaround CSS for Adwaita row layout issues:
+#
+# 1. Spin buttons inside rows ignore ``set_width_chars()`` and size
+#    themselves from their initial value, producing inconsistent entry
+#    widths.  A global ``min-width`` on every ``Gtk.SpinButton`` inside
+#    a row fixes this.
+#
+# 2. ``Adw.ComboRow`` renders the selected value in an inline
+#    ``Gtk.ListView`` whose natural/min width is ~4 px.  When the row
+#    has a subtitle (description), the title box expands (``hexpand``)
+#    and squeezes the dropdown to near-zero width, showing only the
+#    first letter of the selected value.  A ``min-width`` on the
+#    inline list view prevents this collapse.
+_ROW_MIN_WIDTH_CSS = (
+    "row spinbutton { min-width: 100px; }"
+    " row.combo listview.inline { min-width: 100px; }"
+)
 
 _css_loaded = False
 
 
-def ensure_spinrow_min_width(row: Gtk.Widget) -> None:
-    """Ensure a consistent minimum width on spin buttons inside rows.
+def ensure_row_min_width(row: Gtk.Widget) -> None:
+    """Load global CSS that enforces minimum widths on row children.
 
-    ``Adw.SpinRow.set_width_chars()`` delegates through the
-    ``Gtk.Editable`` interface but the internal layout does not honour
-    it, so rows with different adjustment ranges end up with
-    differently-sized entry fields — and multi-digit values get
-    clipped.  Loading a global CSS rule that sets ``min-width`` on
-    every ``Gtk.SpinButton`` inside a row works reliably.
+    Called once (idempotent) by :class:`SpinRow` and
+    :class:`~rayforge.ui_gtk.varset.adapter.combo.ComboAdapter` to
+    prevent Adwaita layout from collapsing spin buttons and combo
+    dropdowns.
     """
     global _css_loaded
     if not _css_loaded:
         provider = Gtk.CssProvider()
-        provider.load_from_string(_SPINROW_MIN_WIDTH_CSS)
+        provider.load_from_string(_ROW_MIN_WIDTH_CSS)
         display = Gdk.Display.get_default()
         if display is not None:
             Gtk.StyleContext.add_provider_for_display(

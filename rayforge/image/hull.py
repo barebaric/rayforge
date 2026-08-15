@@ -87,16 +87,24 @@ def get_concave_hull(
     height_px: int,
     border_size: int,
     gravity: float = 0.1,
+    allow_self_intersections: bool = False,
 ) -> Geometry | None:
     """
     Calculates a smooth, constrained concave hull that "shrink-wraps" the
-    content geometrically, mimicking a physical rubber band using Bézier
-    curves.
+    content geometrically. The band behaves like a membrane under
+    vacuum: each point is pulled along the inward normal of the convex
+    hull toward the content, tension keeps the band smooth, and pinch
+    points stop it where it would fold through itself or the content.
 
     Delegates to the raygeo Rust backend for the full algorithm, then
     transforms pixel coordinates to millimeter space.
+
+    Set ``allow_self_intersections`` to True when a self-intersecting
+    outline is desired.
     """
-    geo = _hull.get_concave_hull(boolean_image, gravity)
+    geo = _hull.get_concave_hull(
+        boolean_image, gravity, allow_self_intersections
+    )
     if geo is None:
         return None
     return _transform_geometry(geo, scale_x, scale_y, height_px, border_size)

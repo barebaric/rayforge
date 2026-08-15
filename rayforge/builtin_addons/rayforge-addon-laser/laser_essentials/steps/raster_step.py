@@ -18,10 +18,13 @@ from raygeo.ops.part.image_source import WholeImageSource
 from rayforge.core.capability import MachineCapability
 from rayforge.core.step import legacy_producer_params
 from rayforge.core.varset import (
+    AngleVar,
     BoolVar,
-    FloatVar,
+    IntVar,
     LabeledChoiceVar,
+    LengthVar,
     SliderFloatVar,
+    SliderIntVar,
     VarSet,
 )
 from rayforge.image.dither import DitherAlgorithm
@@ -33,6 +36,8 @@ from rayforge.pipeline.stage.assembler_helpers import (
 )
 from rayforge.pipeline.transformer.registry import transformer_registry
 
+from ..levels_range_var import LevelsRangeVar
+from ..scan_angle_var import ScanAngleVar
 from .laser_step import LaserStep
 
 if TYPE_CHECKING:
@@ -53,49 +58,225 @@ class EngraveStep(LaserStep):
     REQUIRED_MACHINE_CAPS = frozenset({MachineCapability.LASER})
     ASSEMBLER_NAME = "raster"
 
+    line_interval_mm: float | None
+    sample_interval_mm: float | None
+    dot_width_correction_mm: float | None
+
     @classmethod
     def recipe_varset(cls) -> VarSet:
+        def is_power(v):
+            return v.get("depth_mode") == "POWER_MODULATION"
+
+        def is_constant(v):
+            return v.get("depth_mode") == "CONSTANT_POWER"
+
+        def is_dither(v):
+            return v.get("depth_mode") == "DITHER"
+
+        def is_multi_pass(v):
+            return v.get("depth_mode") == "MULTI_PASS"
+
+        def uses_grayscale(v):
+            return is_power(v) or is_multi_pass(v)
+
         return VarSet(
             vars=[
                 *LaserStep.recipe_varset().vars,
-                FloatVar(
-                    key="scan_angle",
-                    label=_("Scan Angle"),
-                    default=0.0,
-                    min_val=0.0,
-                    max_val=360.0,
-                ),
                 LabeledChoiceVar(
                     key="depth_mode",
-                    label=_("Depth Mode"),
+                    label=_("Mode"),
                     choices=[(m.display_name, m.name) for m in DepthMode],
                     default="POWER_MODULATION",
+                    allow_none=False,
+                ),
+                SliderIntVar(
+                    key="threshold",
+                    label=_("Threshold"),
+                    description=_("Brightness cutoff for black/white (0-255)"),
+                    default=128,
+                    min_val=0,
+                    max_val=255,
+                    visible_when=is_constant,
+                ),
+                LabeledChoiceVar(
+                    key="dither_algorithm",
+                    label=_("Engraving Method"),
+                    description=_(
+                        "Algorithm for converting grayscale to binary"
+                    ),
+                    choices=[
+                        (m.display_name, m.name) for m in DitherAlgorithm
+                    ],
+                    default="FLOYD_STEINBERG",
+                    visible_when=is_dither,
+                    allow_none=False,
+                ),
+                ScanAngleVar(),
+                BoolVar(
+                    key="cross_hatch",
+                    label=_("Cross-Hatch"),
+                    description=_("Add a second pass at 90 degrees"),
+                    default=False,
+                ),
+                LabeledChoiceVar(
+                    key="scan_mode",
+                    label=_("Scan Mode"),
+                    choices=[
+                        (_("Segmented"), "SEGMENTED"),
+                        (_("Full Sweep"), "FULL_SWEEP"),
+                    ],
+                    default="SEGMENTED",
+                    description=_(
+                        "Segmented: moves between content regions. "
+                        "Full Sweep: scans full width with laser "
+                        "toggling"
+                    ),
+                    allow_none=False,
+                ),
+                LengthVar(
+                    key="line_interval_mm",
+                    label=_("Line Spacing"),
+                    description=_("Distance between scan lines"),
+                    default=0.0,
+                    min_val=0.0,
+                    digits=3,
+                ),
+                LengthVar(
+                    key="sample_interval_mm",
+                    label=_("Sample Interval"),
+                    description=_(
+                        "Distance between power samples along scan "
+                        "line. Lower values improve accuracy, but "
+                        "increase output size"
+                    ),
+                    default=0.0,
+                    min_val=0.0,
+                    visible_when=is_power,
+                    digits=3,
+                ),
+                LengthVar(
+                    key="dot_width_correction_mm",
+                    label=_("Dot Width Correction"),
+                    description=_(
+                        "Reduces engrave length at both ends to "
+                        "compensate for physical dot width"
+                    ),
+                    default=0.0,
+                    min_val=0.0,
+                    digits=3,
+                ),
+                LengthVar(
+                    key="bidir_x_offset_mm",
+                    label=_("Bidirectional Scan Offset"),
+                    description=_(
+                        "Corrects X misalignment between left-to-"
+                        "right and right-to-left raster passes"
+                    ),
+                    default=0.0,
+                    min_val=-5.0,
+                    max_val=5.0,
+                    digits=3,
                 ),
                 BoolVar(
                     key="invert",
                     label=_("Invert"),
+                    description=_(
+                        "Engrave white areas instead of black areas"
+                    ),
                     default=False,
+                ),
+                IntVar(
+                    key="num_depth_levels",
+                    label=_("Number of Depth Levels"),
+                    default=5,
+                    min_val=1,
+                    max_val=255,
+                    visible_when=is_multi_pass,
+                ),
+                LengthVar(
+                    key="z_step_down",
+                    label=_("Z Step-Down per Level"),
+                    default=0.0,
+                    min_val=0.0,
+                    max_val=50.0,
+                    visible_when=is_multi_pass,
+                ),
+                AngleVar(
+                    key="angle_increment",
+                    label=_("Rotate Angle Per Pass"),
+                    description=_("Degrees to rotate each successive pass"),
+                    default=0.0,
+                    min_val=0.0,
+                    max_val=180.0,
+                    visible_when=is_multi_pass,
+                ),
+                BoolVar(
+                    key="auto_levels",
+                    label=_("Auto Levels"),
+                    description=_("Automatically adjust black/white points"),
+                    default=True,
+                    visible_when=uses_grayscale,
+                ),
+                LevelsRangeVar(
+                    visible_when=uses_grayscale,
+                ),
+                IntVar(
+                    key="white_point",
+                    label=_("White Point"),
+                    default=255,
+                    min_val=0,
+                    max_val=255,
+                    visible_when=uses_grayscale,
                 ),
                 SliderFloatVar(
                     key="min_power_level",
-                    label=_("Min Power Level"),
+                    label=_("Min Power"),
+                    description=_(
+                        "Power for lightest areas, as a percentage of "
+                        "the step's main power"
+                    ),
                     default=0.0,
                     min_val=0.0,
                     max_val=1.0,
                     show_value=True,
                     format_suffix="%",
+                    visible_when=is_power,
                 ),
                 SliderFloatVar(
                     key="max_power_level",
-                    label=_("Max Power Level"),
+                    label=_("Max Power"),
+                    description=_(
+                        "Power for darkest areas, as a percentage of "
+                        "the step's main power"
+                    ),
                     default=1.0,
                     min_val=0.0,
                     max_val=1.0,
                     show_value=True,
                     format_suffix="%",
+                    visible_when=is_power,
+                ),
+                IntVar(
+                    key="num_power_levels",
+                    label=_("Power Levels"),
+                    description=_(
+                        "Number of discrete power steps (lower = fewer moves)"
+                    ),
+                    default=25,
+                    min_val=2,
+                    max_val=256,
+                    visible_when=is_power,
                 ),
             ]
         )
+
+    @classmethod
+    def recipe_value(cls, key: str, value: Any) -> Any:
+        """Serialize enum-backed attributes for recipe storage."""
+        result = super().recipe_value(key, value)
+        if key == "dither_algorithm" and isinstance(value, DitherAlgorithm):
+            return value.name
+        return result
 
     def __init__(self, name: str | None = None, typelabel: str | None = None):
         super().__init__(typelabel=typelabel or self.TYPELABEL, name=name)
@@ -122,6 +303,15 @@ class EngraveStep(LaserStep):
         self.angle_increment = 0.0
         self.dither_algorithm = None
         self.bidir_x_offset_mm = 0.0
+
+    def set_dither_algorithm(self, algorithm: DitherAlgorithm | str | None):
+        """Sets the dither algorithm, accepting the enum or its name
+        (as stored in varsets and recipes). ``None`` means auto."""
+        if isinstance(algorithm, str):
+            algorithm = DitherAlgorithm[algorithm] if algorithm else None
+        if self.dither_algorithm != algorithm:
+            self.dither_algorithm = algorithm
+            self.updated.send(self)
 
     def get_operation_mode_short(self):
         if not self.depth_mode:

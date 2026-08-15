@@ -8,6 +8,7 @@ from ...context import get_context
 from ...core.stock import StockItem
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.pref_rows.length_spin_row import LengthSpinRow
+from ..shared.texture_loader import create_material_swatch
 from .material_selector import MaterialSelectorDialog
 
 if TYPE_CHECKING:
@@ -88,6 +89,8 @@ class StockPropertiesDialog(PatchedDialogWindow):
         # Material display row
         self.material_row = Adw.ActionRow()
         self.material_row.set_title(_("Material"))
+        self._material_swatch_box = Gtk.Box()
+        self.material_row.add_prefix(self._material_swatch_box)
 
         # Add a button to open the material selector
         self.material_button = Gtk.Button(label=_("Select"))
@@ -188,12 +191,16 @@ class StockPropertiesDialog(PatchedDialogWindow):
 
     def _update_material_display(self):
         """Update the material display label."""
+        while child := self._material_swatch_box.get_first_child():
+            self._material_swatch_box.remove(child)
+
         if not self.stock_item.material_uid:
             self.material_row.set_subtitle(_("None"))
             return
 
         material = self.stock_item.material
         if material:
+            self._material_swatch_box.append(create_material_swatch(material))
             library_name = self._get_material_library_name(material)
             if library_name:
                 self.material_row.set_subtitle(

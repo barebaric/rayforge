@@ -27,6 +27,10 @@ class FakeStep(Step):
         self.count = 3
         self.weight = 1.0
 
+    @classmethod
+    def recipe_keys(cls) -> tuple[str, ...]:
+        return (*super().recipe_keys(), "power", "count")
+
     def set_power(self, value):
         if self.power != value:
             self.power = value

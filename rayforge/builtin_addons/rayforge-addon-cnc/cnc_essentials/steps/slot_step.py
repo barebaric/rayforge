@@ -11,6 +11,7 @@ from .cnc_assembler_step import CncAssemblerStep
 class SlotStep(CncAssemblerStep):
     ASSEMBLER_NAME = "slot"
     TYPELABEL = _("Slot")
+    ICON = "step-slot-symbolic"
 
     def build_spec(self, workpiece) -> SlotSpec:
         part = workpiece.to_part()

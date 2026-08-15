@@ -37,7 +37,7 @@ rust = "==1.97.1"
 patchelf = "==0.18.0|==0.17.2"
 
 [feature.app.pypi-dependencies]
-raygeo = "==1.38.3"
+raygeo = "==1.40.0"
 rayforge = { editable = true, path = "." }
 aiohttp = "==3.14.3"
 asyncudp = "==0.11.0"
@@ -113,6 +113,7 @@ update-supporters = "python3 scripts/media/update_supporters.py"
 fetch-stats = "python3 scripts/fetch_download_stats.py"
 normalize-icons = "python3 scripts/normalize_icons.py"
 gen-affiliate = "python3 scripts/generate_affiliate_link.py"
+optimize-textures = "python3 scripts/optimize_material_textures.py"
 
 [tasks.clean]
 cmd = "bash scripts/clean.sh"

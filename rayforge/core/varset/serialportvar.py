@@ -1,4 +1,6 @@
+from collections.abc import Callable
 from gettext import gettext as _
+from typing import Any
 
 from .var import ValidationError, Var
 
@@ -21,6 +23,8 @@ class SerialPortVar(Var[str]):
         description: str | None = None,
         default: str | None = None,
         value: str | None = None,
+        *,
+        visible_when: "Callable[[dict[str, Any]], bool] | None" = None,
     ):
         super().__init__(
             key=key,
@@ -30,4 +34,5 @@ class SerialPortVar(Var[str]):
             default=default,
             value=value,
             validator=serial_port_validator,
+            visible_when=visible_when,
         )

@@ -7,19 +7,21 @@ from ....core.varset import Var
 
 # Trigger @register_adapter decorators. Every adapter module must be
 # imported here so that its class registers itself in _ADAPTER_REGISTRY.
+from .angle import AngleRowAdapter
 from .appkey import AppKeyAdapter
 from .base import _ADAPTER_REGISTRY, RowAdapter, escape_title
 from .combo import BaudRateAdapter, ComboAdapter, SerialPortAdapter
 from .entry import EntryAdapter, HostnameAdapter
 from .length import LengthRowAdapter
 from .oauth import OAuthFlowAdapter
-from .slider import SliderAdapter
+from .slider import SliderFloatAdapter, SliderIntAdapter
 from .speed import SpeedRowAdapter
 from .spin_row import SpinRowAdapter
 from .switch import SwitchAdapter
 from .textarea import TextAreaAdapter
 
 _ALL_ADAPTERS = (
+    AngleRowAdapter,
     AppKeyAdapter,
     BaudRateAdapter,
     ComboAdapter,
@@ -27,7 +29,8 @@ _ALL_ADAPTERS = (
     HostnameAdapter,
     LengthRowAdapter,
     OAuthFlowAdapter,
-    SliderAdapter,
+    SliderFloatAdapter,
+    SliderIntAdapter,
     SpeedRowAdapter,
     TextAreaAdapter,
 )

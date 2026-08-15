@@ -11,6 +11,7 @@ from .cnc_assembler_step import CncAssemblerStep
 class RampEntryStep(CncAssemblerStep):
     ASSEMBLER_NAME = "ramp"
     TYPELABEL = _("Ramp Entry")
+    ICON = "step-ramp-symbolic"
 
     def build_spec(self, workpiece) -> RampSpec:
         part = workpiece.to_part()

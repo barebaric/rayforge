@@ -21,6 +21,7 @@ from .compiled_scene import (
 )
 from .cylinder_compiler import generate_cylinder_vertices
 from .render_config import RenderConfig3D
+from .stock_compiler import compile_stock_layers
 
 logger = logging.getLogger(__name__)
 
@@ -200,6 +201,9 @@ def _wrap_compiled_scene(
 
     layer_infos = raw.layer_infos
     texture_layers = _generate_texture_layers(ops, layer_infos, config)
+    stock_layers = compile_stock_layers(
+        config.stock_specs or [], config.world_to_visual
+    )
 
     return CompiledSceneArtifact(
         generation_id=generation_id,
@@ -207,6 +211,7 @@ def _wrap_compiled_scene(
         texture_layers=texture_layers,
         overlay_layers=overlay_layers,
         laser_uid_order=raw.laser_uid_order,
+        stock_layers=stock_layers,
     )
 
 

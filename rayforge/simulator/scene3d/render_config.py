@@ -52,6 +52,7 @@ class RenderConfig3D:
     world_to_cyl_local: np.ndarray
     layer_configs: dict[str, LayerRenderConfig] | None = None
     laser_dot_widths_mm: dict[str, float] | None = None
+    stock_specs: list[dict] | None = None
 
     def to_dict(self) -> dict:
         d: dict[str, object] = {
@@ -68,6 +69,8 @@ class RenderConfig3D:
             }
         if self.laser_dot_widths_mm:
             d["laser_dot_widths_mm"] = dict(self.laser_dot_widths_mm)
+        if self.stock_specs:
+            d["stock_specs"] = list(self.stock_specs)
         return d
 
     @classmethod
@@ -93,4 +96,5 @@ class RenderConfig3D:
             world_to_cyl_local=w2c,
             layer_configs=layer_configs,
             laser_dot_widths_mm=data.get("laser_dot_widths_mm"),
+            stock_specs=data.get("stock_specs"),
         )

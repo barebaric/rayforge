@@ -1,18 +1,21 @@
 """Material list UI components for Rayforge."""
 
 import logging
+import shutil
 import uuid
 from gettext import gettext as _
+from pathlib import Path
 from typing import cast
 
 from blinker import Signal
-from gi.repository import Adw, Gdk, Gtk
+from gi.repository import Adw, Gtk
 
 from ...context import get_context
 from ...core.material import Material, MaterialAppearance
 from ...core.material_library import MaterialLibrary
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
+from ..shared.texture_loader import create_material_swatch
 from .add_material_dialog import AddMaterialDialog
 
 logger = logging.getLogger(__name__)
@@ -42,23 +45,7 @@ class MaterialRow(Gtk.Box):
         self.set_margin_start(12)
         self.set_margin_end(6)
 
-        color_box = Gtk.Box()
-        color_box.set_size_request(24, 24)
-        color_box.set_valign(Gtk.Align.CENTER)
-        color_class = f"material-color-{self.material.uid}"
-        color_box.add_css_class(color_class)
-        color_provider = Gtk.CssProvider()
-        display_color = self.material.get_display_color()
-        color_data = f".{color_class} {{ background-color: {display_color}; }}"
-        color_provider.load_from_string(color_data)
-        display = Gdk.Display.get_default()
-        if display:
-            Gtk.StyleContext.add_provider_for_display(
-                display,
-                color_provider,
-                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-            )
-        self.prepend(color_box)
+        self.prepend(create_material_swatch(self.material))
 
         labels_box = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL, spacing=0, hexpand=True
@@ -244,6 +231,17 @@ class MaterialListWidget(PreferencesGroupWithButton):
         material.name = data["name"]
         material.category = data["category"]
         material.appearance.color = data["color"]
+        material.appearance.roughness = float(data.get("roughness", 0.8))
+        material.appearance.metallic = float(data.get("metallic", 0.0))
+        material.appearance.texture_size_mm = float(
+            data.get("texture_size_mm", 300.0)
+        )
+
+        texture_source = data.get("texture")
+        if texture_source is not None:
+            self._install_material_texture(material, texture_source)
+        else:
+            material.appearance.texture = None
 
         # Save the updated material
         if material.file_path:
@@ -298,10 +296,18 @@ class MaterialListWidget(PreferencesGroupWithButton):
             name=data["name"],
             description="",
             category=data["category"],
-            appearance=MaterialAppearance(color=data["color"]),
+            appearance=MaterialAppearance(
+                color=data["color"],
+                roughness=float(data.get("roughness", 0.8)),
+                metallic=float(data.get("metallic", 0.0)),
+                texture_size_mm=float(data.get("texture_size_mm", 300.0)),
+            ),
         )
 
         if library.add_material(material):
+            texture_source = data.get("texture")
+            if texture_source is not None:
+                self._install_material_texture(material, texture_source)
             self._populate_materials()
             logger.info(
                 f"Added material '{data['name']}' to library "
@@ -317,3 +323,38 @@ class MaterialListWidget(PreferencesGroupWithButton):
             )
             err_dialog.add_response("ok", _("OK"))
             err_dialog.present()
+
+    def _install_material_texture(
+        self, material: Material, texture_source: Path
+    ):
+        """
+        Copy a chosen texture file into the material's library.
+
+        The texture is stored next to the material YAML as
+        "<uid>.webp" and referenced by that relative name, so the
+        material stays valid if the library is moved.
+        """
+        if material.file_path is None:
+            logger.error(
+                f"Cannot install texture for '{material.uid}': "
+                "material has no file path"
+            )
+            return
+        if texture_source.suffix.lower() != ".webp":
+            logger.error(
+                f"Ignoring texture '{texture_source}' for "
+                f"'{material.uid}': only WebP is supported"
+            )
+            return
+
+        dest = material.file_path.parent / f"{material.uid}.webp"
+        try:
+            shutil.copy2(texture_source, dest)
+        except OSError as e:
+            logger.error(f"Failed to copy texture '{texture_source}': {e}")
+            return
+        material.appearance.texture = dest.name
+        try:
+            material.save_to_file(material.file_path)
+        except OSError as e:
+            logger.error(f"Failed to save material after texture copy: {e}")

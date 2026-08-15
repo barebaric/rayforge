@@ -54,11 +54,23 @@ def _get_linux_scan_targets() -> list[str]:
     return [str(i) for i in range(10)]
 
 
+def _to_videocapture_arg(target: str) -> int | str:
+    """Convert a scan target for cv2.VideoCapture.
+
+    OpenCV 5.0 treats string arguments as filenames, so numeric
+    device IDs like "0" must be passed as integers. Device paths
+    (e.g. /dev/v4l/by-id/...) are passed as strings.
+    """
+    if target.isdigit():
+        return int(target)
+    return target
+
+
 def _probe_camera_device(args):
     """Probe a single camera device. Runs in subprocess."""
     device_id, backend = args
     try:
-        cap = cv2.VideoCapture(device_id, backend)
+        cap = cv2.VideoCapture(_to_videocapture_arg(device_id), backend)
         if cap.isOpened():
             cap.release()
             return device_id
@@ -119,7 +131,7 @@ def _scan_cameras_fallback() -> list[str]:
     for target in targets:
         for backend, name in backends:
             try:
-                cap = cv2.VideoCapture(target, backend)
+                cap = cv2.VideoCapture(_to_videocapture_arg(target), backend)
                 if cap.isOpened():
                     devices.append(str(target))
                     cap.release()
@@ -304,7 +316,9 @@ class CameraController:
         for target in targets:
             for backend, name in backends:
                 try:
-                    cap = cv2.VideoCapture(target, backend)
+                    cap = cv2.VideoCapture(
+                        _to_videocapture_arg(target), backend
+                    )
                     if cap.isOpened():
                         devices.append(str(target))
                         cap.release()

@@ -11,6 +11,7 @@ from .cnc_assembler_step import CncAssemblerStep
 class HelixPlungeStep(CncAssemblerStep):
     ASSEMBLER_NAME = "helix"
     TYPELABEL = _("Helix Plunge")
+    ICON = "step-helix-symbolic"
 
     def build_spec(self, workpiece) -> HelixSpec:
         part = workpiece.to_part()

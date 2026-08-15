@@ -13,6 +13,7 @@ from .cnc_assembler_step import CncAssemblerStep
 class ToroidalClearStep(CncAssemblerStep):
     ASSEMBLER_NAME = "toroidal_clear"
     TYPELABEL = _("Toroidal Clear")
+    ICON = "step-toroidal-symbolic"
     uses_global_state = True
 
     @classmethod

@@ -56,10 +56,20 @@ class RowAdapter(ABC):
 
     Convention: adapters store their row as self._row so that
     update_from_var can operate on it.
+
+    Composite (multi-key) adapters declare ``related_keys`` for the
+    additional step attributes their row edits alongside the primary
+    var key. The manager maps all those keys to the same adapter, skips
+    creating separate rows for them, and emits ``data_changed`` for
+    every key when the adapter fires.
     """
 
     changed: Signal
     has_natural_commit = False
+
+    #: Additional keys (besides the primary var key) that this
+    #: adapter's row reads or writes. Empty for single-key adapters.
+    related_keys: tuple[str, ...] = ()
 
     def __init__(self):
         self.changed = Signal()
@@ -70,6 +80,16 @@ class RowAdapter(ABC):
     ) -> tuple[Adw.PreferencesRow, "RowAdapter"]:
         raise NotImplementedError
 
+    def extra_rows(self) -> list[Adw.PreferencesRow]:
+        """Additional rows appended after the primary row.
+
+        Composite adapters that render more than one row (e.g. a
+        min/max range as two rows) return the extra rows here. The
+        manager adds them to the group and cleans them up with the
+        primary row. The default returns nothing.
+        """
+        return []
+
     @abstractmethod
     def get_value(self) -> Any | None:
         raise NotImplementedError
@@ -78,9 +98,37 @@ class RowAdapter(ABC):
     def set_value(self, value: Any) -> None:
         raise NotImplementedError
 
+    def get_value_for_key(self, key: str) -> Any | None:
+        """The value for a specific key this adapter manages.
+
+        Single-key adapters only manage the primary key and delegate
+        to :meth:`get_value`. Composite adapters override this to
+        dispatch per key.
+        """
+        return self.get_value()
+
+    def set_value_for_key(self, key: str, value: Any) -> None:
+        """Set the value for a specific key this adapter manages.
+
+        Single-key adapters only manage the primary key and delegate
+        to :meth:`set_value`. Composite adapters override this to
+        dispatch per key.
+        """
+        self.set_value(value)
+
     def needs_rebuild(self, old_var: Var, new_var: Var) -> bool:
         """Return True if the row must be recreated for the new var."""
         return type(old_var) is not type(new_var)
 
     def update_from_var(self, var: Var):
         pass
+
+    def update_from_values(self, values: dict[str, Any]) -> None:
+        """Refresh the row from the widget's current sibling values.
+
+        Called by the row manager after every ``data_changed``
+        emission (and after populate) with a dict of all current
+        values keyed by var key. Adapters whose row depends on other
+        vars (e.g. a preview driven by a sibling switch) override
+        this. The default does nothing.
+        """
