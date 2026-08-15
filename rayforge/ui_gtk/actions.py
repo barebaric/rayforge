@@ -24,6 +24,7 @@ from .doceditor.stock_properties_dialog import StockPropertiesDialog
 from .shared.keyboard import PRIMARY_ACCEL
 
 if TYPE_CHECKING:
+    from ..core.doc import Doc
     from .mainwindow import MainWindow
 
 logger = logging.getLogger(__name__)
@@ -223,10 +224,34 @@ class ActionManager:
         self.doc = self.editor.doc
 
         # Connect to doc signals to update action states
-        self.doc.descendant_added.connect(self.update_action_states)
-        self.doc.descendant_removed.connect(self.update_action_states)
+        self._doc_signal_doc: Doc | None = None
+        self._connect_doc_signals(self.doc)
         self.win.surface.selection_changed.connect(self.update_action_states)
         self.win.surface.context_changed.connect(self.update_action_states)
+
+        # Keep the action states in sync when a new document is loaded.
+        self.editor.document_changed.connect(self._on_document_changed)
+
+    def _connect_doc_signals(self, doc: "Doc"):
+        """Connects doc signal handlers that refresh action states."""
+        self._doc_signal_doc = doc
+        doc.descendant_added.connect(self.update_action_states)
+        doc.descendant_removed.connect(self.update_action_states)
+
+    def _disconnect_doc_signals(self):
+        """Disconnects the doc signal handlers of the previous document."""
+        doc = self._doc_signal_doc
+        if doc is not None:
+            doc.descendant_added.disconnect(self.update_action_states)
+            doc.descendant_removed.disconnect(self.update_action_states)
+            self._doc_signal_doc = None
+
+    def _on_document_changed(self, sender):
+        """Re-targets the current doc when a new document is loaded."""
+        self._disconnect_doc_signals()
+        self.doc = self.editor.doc
+        self._connect_doc_signals(self.doc)
+        self.update_action_states()
 
     def register_actions(self):
         """Creates all Gio.SimpleActions and adds them to the window."""
