@@ -32,6 +32,7 @@ from ...simulator.scene3d import (
     LayerRenderConfig,
     RenderConfig3D,
     compile_scene_from_job,
+    compile_stock_scene,
 )
 from .camera import ViewDirection
 
@@ -206,7 +207,7 @@ class ScenePresenter:
                     == self._compiled_job_generation
                 ):
                     logger.debug(
-                        "[CANVAS3D] Scene already compiled for this "
+                        "Scene already compiled for this "
                         "generation; skipping duplicate update."
                     )
                 else:
@@ -217,7 +218,7 @@ class ScenePresenter:
         task_status = kwargs.get("task_status")
         handle = kwargs.get("handle")
         logger.debug(
-            f"[CANVAS3D] _on_job_generation_finished: "
+            f"_on_job_generation_finished: "
             f"status={task_status}, handle={'yes' if handle else 'none'}"
         )
         if task_status == "completed":
@@ -226,9 +227,7 @@ class ScenePresenter:
                 self.update_scene_from_doc()
                 self._request_render()
             else:
-                logger.debug(
-                    "[CANVAS3D] Job completed with no output. Clearing scene."
-                )
+                logger.debug("Job completed with no output. Clearing scene.")
                 self._current_job_handle = None
                 self._compiled_job_generation = None
                 self._compiled_artifact = None
@@ -348,14 +347,12 @@ class ScenePresenter:
         """
         if task.get_status() != "completed":
             if task.is_cancelled():
-                logger.debug(
-                    "[CANVAS3D] Scene preparation task cancelled (superseded)."
-                )
+                logger.debug("Scene preparation task cancelled (superseded).")
             else:
                 self._compiled_artifact = None
                 self._op_player = None
                 self._playback_assembly = None
-                logger.error("[CANVAS3D] Scene preparation task failed.")
+                logger.error("Scene preparation task failed.")
                 self._mark_artifact_dirty()
                 self._request_render()
             return
@@ -365,7 +362,7 @@ class ScenePresenter:
         artifact = task.result()
         if artifact is None:
             logger.warning(
-                "[CANVAS3D] Scene task completed but produced no "
+                "Scene task completed but produced no "
                 "artifact (possibly empty scene)."
             )
             self._compiled_artifact = None
@@ -375,7 +372,7 @@ class ScenePresenter:
 
         if not isinstance(artifact, CompiledSceneArtifact):
             logger.error(
-                f"[CANVAS3D] Expected CompiledSceneArtifact, got "
+                f"Expected CompiledSceneArtifact, got "
                 f"{type(artifact).__name__}"
             )
             self._compiled_artifact = None
@@ -383,7 +380,7 @@ class ScenePresenter:
             self._request_render()
             return
 
-        logger.debug("[CANVAS3D] Scene compilation finished.")
+        logger.debug("Scene compilation finished.")
         self._compiled_artifact = artifact
         self._mark_artifact_dirty()
         self._request_render()
@@ -412,7 +409,7 @@ class ScenePresenter:
         self._theme_resolver.update_renderer_color_luts()
 
         logger.debug(
-            "[CANVAS3D] Scanline overlay uploaded. Groups: {}".format(
+            "Scanline overlay uploaded. Groups: {}".format(
                 ", ".join(
                     "{}:{}".format(
                         "rot" if r.is_rotary else "flat",
@@ -448,6 +445,68 @@ class ScenePresenter:
             if isinstance(artifact, JobArtifact):
                 return artifact.ops
         return None
+
+    def _build_stock_specs(self) -> list[dict]:
+        """Collect visible stock items into plain-data compiler specs.
+
+        The heavy triangulation runs on the background compile thread;
+        here we only resolve each item's world-space geometry rings and
+        its material parameters (texture path, PBR values, fallback
+        color) so the spec dict stays serializable.
+        """
+        specs: list[dict] = []
+        for item in self.doc.stock_items:
+            if not item.visible:
+                continue
+            asset = item.stock_asset
+            if asset is None or asset.geometry.is_empty():
+                continue
+            thickness = asset.thickness
+            if thickness is not None and thickness <= 0:
+                continue
+            world_geo = item.get_world_geometry()
+            if world_geo.is_empty():
+                continue
+            outers, holes = world_geo.split_inner_and_outer_polygons()
+            if not outers:
+                continue
+
+            material = item.material
+            if material is not None:
+                appearance = material.appearance
+                texture_path = material.get_texture_path()
+            else:
+                appearance = None
+                texture_path = None
+
+            specs.append(
+                {
+                    "name": item.name,
+                    "thickness": (
+                        float(thickness) if thickness is not None else None
+                    ),
+                    "outers": outers,
+                    "holes": holes,
+                    "texture_path": (
+                        str(texture_path) if texture_path is not None else None
+                    ),
+                    "texture_size_mm": float(
+                        appearance.texture_size_mm
+                        if appearance is not None
+                        else 300.0
+                    ),
+                    "roughness": float(
+                        appearance.roughness if appearance is not None else 0.8
+                    ),
+                    "metallic": float(
+                        appearance.metallic if appearance is not None else 0.0
+                    ),
+                    "color": appearance.color
+                    if appearance is not None
+                    else None,
+                }
+            )
+        return specs
 
     def update_scene_from_doc(self):
         """
@@ -544,6 +603,7 @@ class ScenePresenter:
             world_to_cyl_local=world_to_cyl_local,
             layer_configs=layer_configs,
             laser_dot_widths_mm=laser_dot_widths_mm,
+            stock_specs=self._build_stock_specs(),
         )
 
         self._schedule_scene_preparation(render_config.to_dict())
@@ -558,8 +618,6 @@ class ScenePresenter:
         self,
         render_config_dict: dict,
     ):
-        task_key = (id(self), "prepare-3d-scene-vertices")
-
         if (
             not self._get_gl_initialized()
             or self._theme_resolver.color_set is None
@@ -567,26 +625,48 @@ class ScenePresenter:
             return
 
         job_handle = self._current_job_handle
-        if job_handle is None:
-            logger.debug("[CANVAS3D] No job artifact, skipping compilation.")
+        if job_handle is None and not render_config_dict.get("stock_specs"):
+            # Nothing to compile at all; drop any previously compiled
+            # content so a deleted stock does not linger.
+            logger.debug("No job artifact and no stock, skipping compilation.")
+            if self._compiled_artifact is not None:
+                self._compiled_artifact = None
+                self._mark_artifact_dirty()
+                self._request_render()
             return
 
         if self._scene_preparation_task:
             self._scene_preparation_task.cancel()
             self._scene_preparation_task = None
             logger.debug(
-                "[CANVAS3D] Cancelled in-progress compilation, "
-                "scheduling new one."
+                "Cancelled in-progress compilation, scheduling new one."
             )
 
-        logger.debug("[CANVAS3D] Scheduling scene compilation task.")
+        if job_handle is None:
+            # Stock is document content and must render even without
+            # an assembled job; compile a stock-only scene.
+            logger.debug("Scheduling stock-only compilation.")
+            self._run_scene_preparation_task(
+                compile_stock_scene,
+                render_config_dict,
+            )
+            return
+
+        logger.debug("Scheduling scene compilation task.")
         self._compiled_job_generation = job_handle.generation_id
-        assert render_config_dict is not None
-        self._scene_preparation_task = task_mgr.run_thread(
+        self._run_scene_preparation_task(
             compile_scene_from_job,
             self._context.artifact_store,
             job_handle.to_dict(),
             render_config_dict,
+        )
+
+    def _run_scene_preparation_task(self, fn, *args):
+        """Runs a scene compilation function in the worker thread."""
+        task_key = (id(self), "prepare-3d-scene-vertices")
+        self._scene_preparation_task = task_mgr.run_thread(
+            fn,
+            *args,
             key=task_key,
             when_done=self._on_scene_prepared,
         )

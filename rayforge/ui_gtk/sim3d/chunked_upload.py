@@ -158,7 +158,7 @@ class ChunkedUploadController:
             self._make_current()
             self._scene.upload_chunk(item)
         except Exception:
-            logger.exception("[CANVAS3D] Error during chunked upload")
+            logger.exception("Error during chunked upload")
             self._upload_state = None
             return
 
