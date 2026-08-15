@@ -297,6 +297,16 @@ class MaterialLibrary:
                 logger.error(f"Failed to remove material file: {e}")
                 return False
 
+        # Remove the material's texture file if it exists
+        texture_path = material.get_texture_path()
+        if texture_path and texture_path.exists():
+            try:
+                texture_path.unlink()
+                logger.info(f"Removed material texture: {texture_path}")
+            except OSError as e:
+                logger.error(f"Failed to remove material texture: {e}")
+                return False
+
         # Remove from memory
         del self._materials[uid]
         logger.info(f"Removed material {uid} from {self._directory.name}")
