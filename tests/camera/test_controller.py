@@ -116,3 +116,53 @@ def test_get_work_surface_image_no_image_data():
         output_size, physical_area
     )
     assert aligned_image is None
+
+
+def test_to_videocapture_arg():
+    from rayforge.camera.controller import _to_videocapture_arg
+
+    assert _to_videocapture_arg("0") == 0
+    assert _to_videocapture_arg("12") == 12
+    assert (
+        _to_videocapture_arg("/dev/v4l/by-id/usb-Foo_Webcam-video-index0")
+        == "/dev/v4l/by-id/usb-Foo_Webcam-video-index0"
+    )
+
+
+def test_list_available_devices_uses_int_for_numeric_ids():
+    """Numeric device IDs must be passed as ints to VideoCapture.
+
+    OpenCV 5.0 treats string arguments as filenames, so probing with
+    numeric strings would never find a camera (regression test for
+    the "no device found" issue).
+    """
+    calls = []
+
+    class MockVideoCapture:
+        def __init__(self, device, backend=None):
+            calls.append(device)
+
+        def isOpened(self):
+            return True
+
+        def release(self):
+            pass
+
+    targets = ["0", "1", "/dev/v4l/by-id/usb-Foo_Webcam-video-index0"]
+
+    with (
+        patch("rayforge.camera.controller.sys.platform", "linux"),
+        patch("rayforge.camera.controller.cv2.VideoCapture", MockVideoCapture),
+        patch(
+            "rayforge.camera.controller.get_backends_for_platform",
+            return_value=[(cv2.CAP_V4L2, "V4L2")],
+        ),
+        patch(
+            "rayforge.camera.controller._get_linux_scan_targets",
+            return_value=targets,
+        ),
+    ):
+        devices = CameraController.list_available_devices()
+
+    assert devices == targets
+    assert calls == [0, 1, "/dev/v4l/by-id/usb-Foo_Webcam-video-index0"]

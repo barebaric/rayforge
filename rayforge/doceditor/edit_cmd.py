@@ -262,6 +262,19 @@ class EditCmd:
                 )
                 t.execute(command)
 
+    def rename_item(self, item: DocItem, new_name: str):
+        """Renames a document item with an undoable command."""
+        new_name = new_name.strip()
+        if not new_name or new_name == item.name:
+            return
+        command = ChangePropertyCommand(
+            target=item,
+            property_name="name",
+            new_value=new_name,
+            name=_("Rename item"),
+        )
+        self._editor.history_manager.execute(command)
+
     def clear_all_items(self):
         """
         Removes all workpieces and groups from all layers in the document in a

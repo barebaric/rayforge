@@ -1,4 +1,6 @@
+from collections.abc import Callable
 from gettext import gettext as _
+from typing import Any
 from urllib.parse import urlparse
 
 from .var import ValidationError, Var
@@ -49,6 +51,8 @@ class UrlVar(Var[str]):
         default: str | None = None,
         value: str | None = None,
         allowed_schemes: tuple[str, ...] | None = None,
+        *,
+        visible_when: "Callable[[dict[str, Any]], bool] | None" = None,
     ):
         self.allowed_schemes = allowed_schemes
 
@@ -63,6 +67,7 @@ class UrlVar(Var[str]):
             default=default,
             value=value,
             validator=validator,
+            visible_when=visible_when,
         )
 
 
@@ -76,6 +81,8 @@ class WebsocketUrlVar(Var[str]):
         description: str | None = None,
         default: str | None = None,
         value: str | None = None,
+        *,
+        visible_when: "Callable[[dict[str, Any]], bool] | None" = None,
     ):
         def validator(url: str | None):
             url_validator(url, allowed_schemes=("ws", "wss"))
@@ -88,4 +95,5 @@ class WebsocketUrlVar(Var[str]):
             default=default,
             value=value,
             validator=validator,
+            visible_when=visible_when,
         )

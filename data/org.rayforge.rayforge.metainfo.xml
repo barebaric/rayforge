@@ -68,6 +68,36 @@
   </screenshots>
 
   <releases>
+    <release version="1.9.3" date="2026-08-14">
+      <description>
+        <p>New Features:</p>
+        <ul>
+          <li>The recipe editor now shows all step settings (laser,
+          raster, contour, frame, shrinkwrap, wavefront, material test,
+          and CNC), matching the step settings dialog</li>
+          <li>Layer items can now be renamed inline by double-clicking,
+          using the context menu, or pressing F2</li>
+          <li>When importing with "Map to Existing" layers, layers
+          that still carry auto-generated names (e.g. "Layer 1") are
+          renamed to the imported layer's name; manually renamed layers
+          are left untouched</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>Recipe post-processing settings now use an apply toggle
+          instead of the tri-state menu</li>
+          <li>Upgrade raygeo to 1.39.1</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Shrinkwrap no longer runs once per face when the
+          workpiece has multiple faces</li>
+          <li>In the 3D preview, the toolpath and scanline trail are
+          now depth-tested against the models, so they no longer draw
+          on top of the laser head</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.9.2" date="2026-08-12">
       <description>
         <p>Bug Fixes:</p>

@@ -38,6 +38,8 @@ class LengthRowAdapter(RowAdapter):
         )
         if var.description:
             row.set_subtitle(var.description)
+        if var.digits is not None:
+            row.set_min_digits(var.digits)
         return row, cls(row)
 
     def get_value(self) -> Any | None:

@@ -22,16 +22,16 @@ class RecipePostProcessingPage(TrackedPreferencesPage):
 
     Unlike the step-mode page this one has no editor or step: it owns
     the transformer dicts and mutates them directly when the widgets
-    announce changes. Each group is built in tri-state mode and wrapped
-    in an :class:`Adw.ExpanderRow` whose suffix carries the group's
-    tri-state button:
+    announce changes. Each group is wrapped in an
+    :class:`Adw.ExpanderRow` whose header carries the group's apply
+    toggle as a prefix and its enable switch as a suffix, matching the
+    step-mode page:
 
-    - **Leave Unchanged** (``recipe_apply=False``): the recipe will not
+    - **Toggle off** (``recipe_apply=False``): the recipe will not
       touch this transformer when applied.
-    - **Enabled** (``recipe_apply=True``, ``enabled=True``): the recipe
-      sets the transformer on and stamps its params.
-    - **Disabled** (``recipe_apply=True``, ``enabled=False``): the recipe
-      turns the transformer off.
+    - **Toggle on** (``recipe_apply=True``): the recipe stamps the
+      transformer's params, including its native enable switch, which
+      lives in the header like in the step settings dialog.
     """
 
     use_expanders = True
@@ -51,6 +51,9 @@ class RecipePostProcessingPage(TrackedPreferencesPage):
         )
         self.add(self._main_group)
         self._group_dicts: dict[TransformerSettingsGroup, dict] = {}
+        self._group_expanders: dict[
+            TransformerSettingsGroup, Adw.ExpanderRow
+        ] = {}
         self._has_expanders = False
         self.populate(transformer_dicts or [])
 
@@ -81,16 +84,16 @@ class RecipePostProcessingPage(TrackedPreferencesPage):
                     transformer.label,
                     transformer,
                     self,
-                    tri_state=True,
-                    initial_state=self._initial_state(t_dict),
+                    apply_toggle=True,
+                    initial_apply=bool(t_dict.get("recipe_apply", False)),
                 )
             elif isinstance(transformer, PlaceholderTransformer):
                 group = PlaceholderSettingsGroup(
                     transformer.label,
                     transformer,
                     self,
-                    tri_state=True,
-                    initial_state=self._initial_state(t_dict),
+                    apply_toggle=True,
+                    initial_apply=bool(t_dict.get("recipe_apply", False)),
                 )
             else:
                 continue
@@ -99,17 +102,6 @@ class RecipePostProcessingPage(TrackedPreferencesPage):
 
         if not self._has_expanders:
             self._show_empty_state()
-
-    @staticmethod
-    def _initial_state(t_dict: dict[str, Any]) -> int:
-        """Map a recipe dict's apply state to a tri-state constant."""
-        if t_dict.get("recipe_apply", False):
-            return (
-                TransformerSettingsGroup.STATE_ENABLED
-                if t_dict.get("enabled", True)
-                else TransformerSettingsGroup.STATE_DISABLED
-            )
-        return TransformerSettingsGroup.STATE_UNCHANGED
 
     def _add_group(
         self,
@@ -127,16 +119,37 @@ class RecipePostProcessingPage(TrackedPreferencesPage):
         for row in group._rows:
             expander.add_row(row)
 
-        button = group.tri_state_button
-        if button is not None:
-            button.set_valign(Gtk.Align.CENTER)
-            expander.add_suffix(button)
+        switch = group.enable_switch
+        if switch is not None:
+            expander.add_suffix(switch)
+
+        toggle = group.apply_toggle
+        if toggle is not None:
+            toggle.set_valign(Gtk.Align.CENTER)
+            expander.add_prefix(toggle)
 
         group.param_changed.connect(self._on_param_changed)
-        group.tri_state_changed.connect(self._on_tri_state_changed)
+        group.apply_changed.connect(self._on_apply_changed)
 
         self._main_group.add(expander)
+        self._group_expanders[group] = expander
         self._has_expanders = True
+        self._update_expander_visual(group)
+
+    def _update_expander_visual(
+        self,
+        group: TransformerSettingsGroup,
+    ) -> None:
+        """Dim the expander while the group's apply toggle is off.
+
+        The group itself is not in the widget tree (its rows are
+        reparented into the expander), so the opacity must be applied
+        to the expander row.
+        """
+        expander = self._group_expanders.get(group)
+        if expander is None:
+            return
+        expander.set_opacity(1.0 if group.get_apply_state() else 0.5)
 
     def _show_empty_state(self) -> None:
         """Render the empty-state message when no groups were added."""
@@ -166,18 +179,13 @@ class RecipePostProcessingPage(TrackedPreferencesPage):
             return
         t_dict[key] = value
 
-    def _on_tri_state_changed(
-        self, group: TransformerSettingsGroup, *, state: int
+    def _on_apply_changed(
+        self, group: TransformerSettingsGroup, *, state: bool
     ) -> None:
-        """Persist a tri-state selection onto the backing dict."""
+        """Persist the apply toggle onto the backing dict and dim the
+        expander accordingly."""
         t_dict = self._group_dicts.get(group)
         if t_dict is None:
             return
-        if state == TransformerSettingsGroup.STATE_ENABLED:
-            t_dict["recipe_apply"] = True
-            t_dict["enabled"] = True
-        elif state == TransformerSettingsGroup.STATE_DISABLED:
-            t_dict["recipe_apply"] = True
-            t_dict["enabled"] = False
-        else:
-            t_dict["recipe_apply"] = False
+        t_dict["recipe_apply"] = bool(state)
+        self._update_expander_visual(group)

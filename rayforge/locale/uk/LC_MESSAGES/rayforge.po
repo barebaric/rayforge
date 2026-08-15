@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-12 17:33+0200\n"
+"POT-Creation-Date: 2026-08-14 21:42+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -65,6 +65,10 @@ msgstr "Поворотний"
 msgid "Layer {}"
 msgstr "Шар {}"
 
+#: rayforge/core/doc.py rayforge/doceditor/layer_cmd.py
+msgid "Layer"
+msgstr "Шар"
+
 #: rayforge/core/stock.py
 #, python-brace-format
 msgid "{name} (copy)"
@@ -113,14 +117,20 @@ msgid "Model '{model}' not found. Available: {available}"
 msgstr "Модель '{model}' не знайдено. Доступні: {available}"
 
 #: rayforge/core/step.py
-#: rayforge/ui_gtk/doceditor/step_settings/rows/cut_speed_row.py
 msgid "Cut Speed"
 msgstr "Швидкість різання"
 
 #: rayforge/core/step.py
-#: rayforge/ui_gtk/doceditor/step_settings/rows/travel_speed_row.py
+msgid "Speed of the cutting operation"
+msgstr "Швидкість операції різання"
+
+#: rayforge/core/step.py
 msgid "Travel Speed"
 msgstr "Швидкість переміщення"
+
+#: rayforge/core/step.py
+msgid "Speed of rapid positioning moves"
+msgstr "Швидкість швидких позиціонувальних рухів"
 
 #: rayforge/core/step.py rayforge/machine/models/dialect/base.py
 #: rayforge/ui_gtk/settings/settings_dialog.py rayforge/ui_gtk/main_menu.py
@@ -178,6 +188,10 @@ msgstr "Значення має бути не менше {min_val}."
 msgid "Value must be at most {max_val}."
 msgstr "Значення має бути не більше {max_val}."
 
+#: rayforge/core/varset/intvar.py
+msgid "Slider (Integer)"
+msgstr "Повзунок (ціле число)"
+
 #: rayforge/core/varset/portvar.py
 msgid "Port cannot be empty."
 msgstr "Порт не може бути порожнім."
@@ -201,6 +215,10 @@ msgstr "Текст (багато рядків)"
 #: rayforge/core/varset/labeledchoicevar.py
 msgid "Choice (Labeled)"
 msgstr "Вибір (з мітками)"
+
+#: rayforge/core/varset/tuplevar.py
+msgid "Tuple"
+msgstr "Кортеж"
 
 #: rayforge/core/varset/boolvar.py
 msgid "Boolean (Switch)"
@@ -1591,7 +1609,6 @@ msgstr "{label} (для {machine_name})"
 #: rayforge/ui_gtk/machine/laser_control_widget.py
 #: rayforge/ui_gtk/machine/wizard_pages/head_page.py
 #: rayforge/ui_gtk/machine/capabilities_page.py
-#: rayforge/ui_gtk/doceditor/step_settings/rows/head_row.py
 msgid "Laser Head"
 msgstr "Лазерна головка"
 
@@ -3006,7 +3023,6 @@ msgid "Display name for this camera"
 msgstr "Відображуване ім'я цієї камери"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
-#: rayforge/ui_gtk/doceditor/post_processor/groups/transformer_group.py
 msgid "Enabled"
 msgstr "Увімкнено"
 
@@ -3598,7 +3614,6 @@ msgstr "Градуси навколо осі Z"
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
-#: rayforge/ui_gtk/doceditor/step_settings/rows/head_row.py
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "None"
 msgstr "Немає"
@@ -7107,21 +7122,16 @@ msgstr "Виберіть рецепт для застосування до по�
 msgid "Show only compatible recipes"
 msgstr "Показати лише сумісні рецепти"
 
+#: rayforge/ui_gtk/doceditor/recipes/varset_widget.py
+#: rayforge/ui_gtk/doceditor/post_processor/groups/transformer_group.py
+msgid "Apply this setting to the step"
+msgstr "Застосувати цей параметр до кроку"
+
 #: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
 msgid "Step name and recipe settings."
 msgstr "Назва кроку та налаштування рецепта."
 
 #: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
-#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
-msgid "Cooling"
-msgstr "Охолодження"
-
-#: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
-msgid "Coolant used while this operation runs."
-msgstr "Охолоджувач, який використовується під час виконання цієї операції."
-
-#: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
-#: rayforge/ui_gtk/doceditor/step_settings/rows/step_row.py
 #, python-brace-format
 msgid "Change {key}"
 msgstr "Змінити {key}"
@@ -7130,36 +7140,6 @@ msgstr "Змінити {key}"
 msgid "Transformers applied to this step's generated toolpath."
 msgstr ""
 "Трансформатори, застосовані до згенерованого шляху інструмента цього кроку."
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/travel_speed_row.py
-msgid "Speed of rapid positioning moves"
-msgstr "Швидкість швидких позиціонувальних рухів"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
-msgid "Off"
-msgstr "Вимкнено"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
-#: rayforge/doceditor/file_cmd.py
-msgid "Flood"
-msgstr "Заливний"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
-#: rayforge/doceditor/file_cmd.py
-msgid "Mist"
-msgstr "Туманний"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
-msgid "Coolant delivered to the workpiece while cutting"
-msgstr "Охолоджувач, що подається на заготовку під час різання"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
-msgid "This cooling method is not supported by the current machine"
-msgstr "Цей метод охолодження не підтримується поточною машиною"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/cut_speed_row.py
-msgid "Speed of the cutting operation"
-msgstr "Швидкість операції різання"
 
 #: rayforge/ui_gtk/doceditor/step_settings/dialog.py
 #, python-brace-format
@@ -7536,6 +7516,10 @@ msgstr "Видалити цей шар"
 msgid "Toggle layer visibility"
 msgstr "Перемкнути видимість шару"
 
+#: rayforge/ui_gtk/doceditor/layer_column.py
+msgid "Rename"
+msgstr "Перейменувати"
+
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 #, python-brace-format
 msgid "Relative to {wcs} origin"
@@ -7673,14 +7657,6 @@ msgstr "Увімкнути {}"
 #: rayforge/ui_gtk/doceditor/post_processor/groups/transformer_group.py
 msgid "Toggle {}"
 msgstr "Перемкнути {}"
-
-#: rayforge/ui_gtk/doceditor/post_processor/groups/transformer_group.py
-msgid "Leave Unchanged"
-msgstr "Залишити без змін"
-
-#: rayforge/ui_gtk/doceditor/post_processor/groups/transformer_group.py
-msgid "Disabled"
-msgstr "Вимкнено"
 
 #: rayforge/ui_gtk/doceditor/post_processor/groups/placeholder_group.py
 msgid "This feature is not available."
@@ -8112,7 +8088,7 @@ msgstr "Встановлення оновлень додатків..."
 #, python-brace-format
 msgid "Addon successfully updated."
 msgid_plural "{num} addons successfully updated."
-msgstr[0] "Додаток успішно оновлено."
+msgstr[0] "{num} додаток успішно оновлено."
 msgstr[1] "{num} додатків успішно оновлено."
 msgstr[2] "{num} додатків успішно оновлено."
 
@@ -8125,7 +8101,7 @@ msgstr "{num_s} додатків оновлено, {num_f} не вдалося."
 #, python-brace-format
 msgid "Failed to update addon."
 msgid_plural "Failed to update {num} addons."
-msgstr[0] "Не вдалося оновити додаток."
+msgstr[0] "Не вдалося оновити {num} додаток."
 msgstr[1] "Не вдалося оновити {num} додатків."
 msgstr[2] "Не вдалося оновити {num} додатків."
 
@@ -8412,6 +8388,18 @@ msgid "Toggle Asset Visibility"
 msgstr "Перемкнути видимість ресурсу"
 
 #: rayforge/doceditor/file_cmd.py
+msgid "Flood"
+msgstr "Заливний"
+
+#: rayforge/doceditor/file_cmd.py
+msgid "Mist"
+msgstr "Туманний"
+
+#: rayforge/doceditor/file_cmd.py rayforge/doceditor/layer_cmd.py
+msgid "Rename layer"
+msgstr "Перейменувати шар"
+
+#: rayforge/doceditor/file_cmd.py
 #, python-brace-format
 msgid "Import {filename}"
 msgstr "Імпортувати {filename}"
@@ -8571,14 +8559,6 @@ msgid "Move to another layer"
 msgstr "Перемістити на інший шар"
 
 #: rayforge/doceditor/layer_cmd.py
-msgid "Layer"
-msgstr "Шар"
-
-#: rayforge/doceditor/layer_cmd.py
-msgid "Rename layer"
-msgstr "Перейменувати шар"
-
-#: rayforge/doceditor/layer_cmd.py
 msgid "Set active layer"
 msgstr "Встановити активний шар"
 
@@ -8651,6 +8631,10 @@ msgstr "Додати елемент"
 #: rayforge/doceditor/edit_cmd.py
 msgid "Remove item"
 msgstr "Видалити елемент"
+
+#: rayforge/doceditor/edit_cmd.py
+msgid "Rename item"
+msgstr "Перейменувати елемент"
 
 #: rayforge/doceditor/edit_cmd.py
 msgid "Remove all workpieces"

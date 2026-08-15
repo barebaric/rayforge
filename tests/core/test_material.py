@@ -150,6 +150,38 @@ class TestMaterial:
             assert data["appearance"]["color"] == "#FF0000"
             assert data["appearance"]["pattern"] == "solid"
 
+    def test_material_save_after_plain_string_assignment(self):
+        """
+        Saving works after a plain string was assigned to a localized
+        field (e.g. by an edit dialog).
+        """
+        material = Material(
+            uid="test_material",
+            name="Test Material",
+            description="A test material",
+            category="test",
+        )
+        material.name = "Renamed"
+        material.category = "wood"
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file_path = Path(temp_dir) / "test_material.yaml"
+            material.save_to_file(file_path)
+
+            with open(file_path, "r") as f:
+                data = yaml.safe_load(f)
+
+            assert data["name"] == "Renamed"
+            assert data["category"] == "wood"
+
+    def test_material_matches_search_after_plain_string_assignment(self):
+        """Search still works after a plain string was assigned."""
+        material = Material(uid="test_material", name="Test Material")
+        material.name = "Oak"
+
+        assert material.matches_search("oak")
+        assert not material.matches_search("birch")
+
     def test_material_save_to_existing_file(self):
         """Test saving a Material to an existing file."""
         appearance = MaterialAppearance(color="#FF0000", pattern="solid")
@@ -247,6 +279,36 @@ class TestMaterialAppearance:
 
         assert appearance.color == "#f0f0f0"
         assert appearance.pattern == "solid"
+        assert appearance.texture is None
+        assert appearance.texture_size_mm == 300.0
+        assert appearance.roughness == 0.8
+        assert appearance.metallic == 0.0
+
+    def test_appearance_round_trip(self):
+        """Test that new appearance fields survive from_dict/to_dict."""
+        data = {
+            "color": "#A0522D",
+            "pattern": "wood_grain",
+            "texture": "oak.webp",
+            "texture_size_mm": 300,
+            "roughness": 0.55,
+            "metallic": 0.0,
+        }
+        appearance = MaterialAppearance.from_dict(data)
+
+        assert appearance.texture == "oak.webp"
+        assert appearance.texture_size_mm == 300
+        assert appearance.roughness == 0.55
+        assert appearance.metallic == 0.0
+        assert appearance.to_dict() == data
+
+    def test_appearance_to_dict_omits_none_texture(self):
+        """Test that a missing texture is not serialized."""
+        appearance = MaterialAppearance()
+
+        data = appearance.to_dict()
+
+        assert "texture" not in data
 
     def test_appearance_from_dict(self):
         """Test creating a MaterialAppearance from a dictionary."""
@@ -334,3 +396,76 @@ class TestMaterialAppearance:
 
         rgba = material.get_display_rgba()
         assert rgba == (1.0, 0.0, 1.0, 1.0)
+
+
+class TestMaterialTexture:
+    """Test cases for material texture resolution."""
+
+    def _material_in_dir(
+        self, tmp_path, uid="test_mat", appearance=None
+    ) -> Material:
+        yaml_path = tmp_path / f"{uid}.yaml"
+        material = Material(
+            uid=uid,
+            appearance=appearance or MaterialAppearance(),
+            file_path=yaml_path,
+        )
+        return material
+
+    def test_texture_path_from_appearance(self, tmp_path):
+        """Test resolving the explicit texture field."""
+        (tmp_path / "wood.webp").write_bytes(b"fake")
+        material = self._material_in_dir(
+            tmp_path, appearance=MaterialAppearance(texture="wood.webp")
+        )
+
+        assert material.get_texture_path() == tmp_path / "wood.webp"
+
+    def test_texture_path_fallback_by_uid(self, tmp_path):
+        """Test falling back to <uid>.webp when no texture is set."""
+        (tmp_path / "test_mat.webp").write_bytes(b"fake")
+        material = self._material_in_dir(tmp_path)
+
+        assert material.get_texture_path() == tmp_path / "test_mat.webp"
+
+    def test_texture_path_fallback_missing(self, tmp_path):
+        """Test returning None when the fallback file does not exist."""
+        material = self._material_in_dir(tmp_path)
+
+        assert material.get_texture_path() is None
+
+    def test_texture_path_no_file_path(self):
+        """Test returning None when the material has no file path."""
+        material = Material(
+            uid="test_mat",
+            appearance=MaterialAppearance(texture="wood.webp"),
+        )
+
+        assert material.get_texture_path() is None
+
+    def test_texture_path_rejects_non_webp(self, tmp_path):
+        """Test rejecting explicit textures that are not WebP."""
+        (tmp_path / "wood.png").write_bytes(b"fake")
+        material = self._material_in_dir(
+            tmp_path, appearance=MaterialAppearance(texture="wood.png")
+        )
+
+        assert material.get_texture_path() is None
+
+    def test_texture_path_rejects_traversal(self, tmp_path):
+        """Test rejecting texture paths that escape the library dir."""
+        material = self._material_in_dir(
+            tmp_path, appearance=MaterialAppearance(texture="../evil.webp")
+        )
+
+        assert material.get_texture_path() is None
+
+    def test_texture_path_rejects_absolute(self, tmp_path):
+        """Test rejecting absolute texture paths."""
+        for texture in ("/etc/evil.webp", "C:\\evil.webp", "\\evil.webp"):
+            material = self._material_in_dir(
+                tmp_path,
+                appearance=MaterialAppearance(texture=texture),
+            )
+
+            assert material.get_texture_path() is None

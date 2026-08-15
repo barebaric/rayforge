@@ -280,6 +280,23 @@ class Doc(DocItem):
         """Returns a list of all child items that are Layers."""
         return [child for child in self.children if isinstance(child, Layer)]
 
+    @staticmethod
+    def is_default_layer_name(name: str) -> bool:
+        """
+        Returns True for names produced by this document's auto-naming
+        scheme, such as "Layer 1".
+
+        Layers created by :meth:`Doc.__init__` are named this way. They
+        were never manually renamed, so their names may be overwritten
+        with imported layer names.
+        """
+        base = _("Layer")
+        if name == base:
+            return True
+        if not name.startswith(base):
+            return False
+        return name[len(base) :].strip().isdigit()
+
     @property
     def has_rotary_layer(self) -> bool:
         """Whether any layer has rotary mode enabled.

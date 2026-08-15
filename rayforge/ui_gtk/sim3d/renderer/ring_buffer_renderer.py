@@ -14,7 +14,7 @@ from OpenGL import GL
 
 from ....simulator.scene3d import ScanlineOverlayLayer
 from ...shared.color_lut_provider import ColorLutProvider
-from ..gl_utils import ShaderSet, set_line_width
+from ..gl_utils import ShaderSet, line_depth_bias, set_line_width
 from ..render_context import RenderContext
 from .base import BaseRenderer
 
@@ -258,12 +258,15 @@ class RingBufferRenderer(BaseRenderer):
         GL.glBindTexture(GL.GL_TEXTURE_2D, self._color_lut_texture)
         shader.set_int("uColorLUT", 1)
 
-        # The scanline trail must always draw on top of the toolpath and
-        # the raster texture; never cull it by surface depth (which would
-        # let travel lines or the texture's depth split the trail on a
-        # cylinder).  Depth writes stay off so later geometry is unaffected.
-        GL.glDepthFunc(GL.GL_ALWAYS)
+        # The scanline trail must draw on top of the toolpath and the
+        # raster texture; bias its depth a hair toward the camera so it
+        # always wins against the coplanar surface (which would let
+        # travel lines or the texture's depth split the trail on a
+        # cylinder) while the laser head model still occludes it.
+        # Depth writes stay off so later geometry is unaffected.
+        GL.glDepthFunc(GL.GL_LEQUAL)
         GL.glDepthMask(GL.GL_FALSE)
+        shader.set_float("uDepthBias", line_depth_bias(ctx.camera.proj_matrix))
         set_line_width(line_width)
         GL.glBindVertexArray(self.vao)
         GL.glDrawArrays(GL.GL_LINES, 0, draw_count)

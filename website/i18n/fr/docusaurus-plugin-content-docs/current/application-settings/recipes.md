@@ -61,19 +61,27 @@ Tous les critères sont optionnels - laissez n'importe quel champ à sa valeur "
 - Sélectionner uniquement un **type de tâche** (avec "Tout Type" comme type d'étape) affiche une seule page "Paramètres" avec les paramètres de processus pour cette tâche
 - Laisser les deux à "Tout" affiche uniquement les paramètres de mouvement de base (vitesse de coupe et vitesse de déplacement) partagés par toutes les étapes
 
+Chaque ligne de paramètre est accompagnée d'un bouton d'application
+(une case à cocher à côté de la ligne) :
+
+- **Activé** : la recette applique ce paramètre à l'étape lors de son
+  application
+- **Désactivé** : la recette laisse ce paramètre de l'étape inchangé
+
 **Onglet Post-Traitement** - Stockez les paramètres de post-traitement
 (entrée/sortie, passes multiples, overscan et autres transformateurs) sur
 la recette afin qu'ils soient appliqués aux étapes ciblées :
 
 ![Éditeur de Recettes - Onglet Post-Traitement](/screenshots/recipe-editor-post-processing.png)
 
-Chaque transformateur est affiché avec un bouton à trois états :
+Chaque transformateur est accompagné d'un bouton d'application (une case
+à cocher à côté de la ligne) :
 
-- **Laisser inchangé** : la recette ne touche pas à ce transformateur
+- **Activé** : la recette applique les paramètres du transformateur à
+  l'étape (son propre interrupteur d'activation décide s'il est activé
+  ou désactivé)
+- **Désactivé** : la recette ne touche pas à ce transformateur
   lorsqu'elle est appliquée
-- **Activé** : la recette active le transformateur et applique ses
-  paramètres à l'étape
-- **Désactivé** : la recette désactive explicitement le transformateur
 
 Lorsque la recette cible plusieurs types d'étape, seuls les transformateurs
 communs à tous sont affichés.

@@ -26,3 +26,7 @@ category:
 appearance:
   color: "#FFE4C4"
   pattern: wood_grain
+  texture: birch.webp
+  texture_size_mm: 300
+  roughness: 0.6
+  metallic: 0.0

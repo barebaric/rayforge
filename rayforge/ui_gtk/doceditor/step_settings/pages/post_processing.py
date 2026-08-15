@@ -3,7 +3,7 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
-from gi.repository import Adw, GObject, Gtk
+from gi.repository import Adw, Gtk
 
 from .....context import get_context
 from .....core.step import Step
@@ -130,40 +130,16 @@ class PostProcessingPage(TrackedPreferencesPage):
         ) -> None:
             ico.set_visible(grp.is_unsupported())
 
-        enable_switch_row: Adw.SwitchRow | None = None
+        enable_switch = group.enable_switch
         for row in rows:
-            if isinstance(row, Adw.SwitchRow) and enable_switch_row is None:
-                enable_switch_row = row
-                switch = Gtk.Switch()
-                switch.set_active(row.get_active())
-                switch.set_valign(Gtk.Align.CENTER)
-                expander.add_suffix(switch)
-
-                def _on_header_toggled(
-                    sw: Gtk.Switch,
-                    _pspec: GObject.ParamSpec,
-                    orig: Adw.SwitchRow = row,
-                ) -> None:
-                    if orig.get_active() != sw.get_active():
-                        orig.set_active(sw.get_active())
-
-                switch.connect("notify::active", _on_header_toggled)
-
-                def _on_orig_toggled(
-                    r: Adw.SwitchRow,
-                    _pspec: GObject.ParamSpec,
-                    sw: Gtk.Switch = switch,
-                ) -> None:
-                    if sw.get_active() != r.get_active():
-                        sw.set_active(r.get_active())
-
-                row.connect("notify::active", _on_orig_toggled)
-                row.connect(
-                    "notify::active",
-                    lambda *_: _update_warning_icon(),
-                )
-            else:
-                expander.add_row(row)
+            expander.add_row(row)
+        if enable_switch is not None:
+            switch = enable_switch
+            expander.add_suffix(switch)
+            switch.connect(
+                "notify::active",
+                lambda *_: _update_warning_icon(),
+            )
 
         machine = get_context().machine
         if machine:

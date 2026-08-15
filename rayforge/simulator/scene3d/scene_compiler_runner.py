@@ -10,6 +10,7 @@ from ...pipeline.artifact.store import ArtifactStore
 from .compiled_scene import CompiledSceneArtifact
 from .render_config import RenderConfig3D
 from .scene_compiler import compile_scene
+from .stock_compiler import compile_stock_layers
 
 logger = logging.getLogger(__name__)
 
@@ -48,3 +49,29 @@ def compile_scene_from_job(
     elapsed = (time.perf_counter() - t_start) * 1000
     logger.debug(f"Compilation took {elapsed:.1f}ms (commands={len(ops)})")
     return compiled
+
+
+def compile_stock_scene(
+    render_config_dict: dict,
+) -> CompiledSceneArtifact | None:
+    """Compile a stock-only 3D scene without a job artifact.
+
+    Used when the document has no assembled job (e.g. no visible
+    steps with workpieces) so the configured stock still renders.
+    Runs synchronously on the calling thread; the caller owns
+    threading.
+    """
+    config = RenderConfig3D.from_dict(render_config_dict)
+    stock_layers = compile_stock_layers(
+        config.stock_specs or [], config.world_to_visual
+    )
+    if not stock_layers:
+        return None
+    return CompiledSceneArtifact(
+        generation_id=0,
+        vertex_layers=[],
+        texture_layers=[],
+        overlay_layers=[],
+        laser_uid_order=[],
+        stock_layers=stock_layers,
+    )

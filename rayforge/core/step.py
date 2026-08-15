@@ -134,6 +134,7 @@ class Step(DocItem, ABC):
                 SpeedVar(
                     key="cut_speed",
                     label=_("Cut Speed"),
+                    description=_("Speed of the cutting operation"),
                     default=500,
                     min_val=1,
                     role="cut",
@@ -141,6 +142,7 @@ class Step(DocItem, ABC):
                 SpeedVar(
                     key="travel_speed",
                     label=_("Travel Speed"),
+                    description=_("Speed of rapid positioning moves"),
                     default=5000,
                     min_val=1,
                     role="travel",
@@ -158,6 +160,53 @@ class Step(DocItem, ABC):
         the same ``super()`` composition as :meth:`recipe_varset`.
         """
         return tuple(var.key for var in cls.recipe_varset())
+
+    @classmethod
+    def recipe_value(cls, key: str, value: Any) -> Any:
+        """Serialize a step attribute value for recipe storage and
+        comparison.
+
+        The base serializes enum-backed attributes (e.g.
+        ``coolant_method``) to their string names so recipes stay
+        YAML-safe. Other values pass through unchanged. Domain bases
+        extend this via ``super()`` composition.
+        """
+        if key == "coolant_method" and isinstance(value, CoolantMode):
+            return value.name
+        return value
+
+    def get_recipe_setter_name(self, key: str) -> str | None:
+        """The ``set_{key}`` setter name for a recipe key, if any.
+
+        Only keys the step type owns via :meth:`recipe_keys` are
+        considered; any other key yields ``None``. Callers use this to
+        apply a recipe setting through the step's own setter (which
+        keeps invariants and emits update signals) instead of raw
+        attribute assignment.
+        """
+        if key not in self.recipe_keys():
+            return None
+        name = f"set_{key}"
+        return name if hasattr(type(self), name) else None
+
+    def set_recipe_value(self, key: str, value: Any) -> None:
+        """Apply a recipe value to this step.
+
+        Only keys the step type owns via :meth:`recipe_keys` are
+        applied; anything else is ignored. Recipe files are
+        user-provided, so this must never reach arbitrary step
+        attributes. Prefers the ``set_{key}`` setter when this step
+        type provides one, falling back to plain attribute assignment.
+        Domain bases override this to deserialize stored values (e.g.
+        enum names) before applying them.
+        """
+        if key not in self.recipe_keys():
+            return
+        setter_name = self.get_recipe_setter_name(key)
+        if setter_name is not None:
+            getattr(self, setter_name)(value)
+        else:
+            setattr(self, key, value)
 
     @classmethod
     def recipe_varset_groups(cls) -> list[tuple[str, VarSet]]:
@@ -178,10 +227,13 @@ class Step(DocItem, ABC):
 
         Used by the recipe editor when a recipe targets more than one
         step type: only settings shared by every selected type are
-        offered. The group structure (titles) of the first given type is
-        reused, with each group filtered down to the keys present in
-        every type's :meth:`recipe_varset`. Falls back to the base
-        :meth:`recipe_varset_groups` when nothing is shared.
+        offered. The group structure (titles) of the lowest common
+        ancestor of the selected types is reused, with each group
+        filtered down to the keys present in every type's
+        :meth:`recipe_varset`. Mixing laser and CNC steps therefore
+        yields the base "Settings" group rather than a domain tab.
+        Falls back to the base :meth:`recipe_varset_groups` when
+        nothing is shared.
         """
         if not step_classes:
             return cls.recipe_varset_groups()
@@ -196,13 +248,36 @@ class Step(DocItem, ABC):
         if not common_keys:
             return cls.recipe_varset_groups()
 
-        reference = step_classes[0]
+        reference = cls._common_base(step_classes)
         groups: list[tuple[str, VarSet]] = []
         for title, varset in reference.recipe_varset_groups():
             filtered = [v for v in varset if v.key in common_keys]
             if filtered:
-                groups.append((title, VarSet(vars=filtered)))
+                groups.append(
+                    (
+                        title,
+                        VarSet(vars=filtered, description=varset.description),
+                    )
+                )
         return groups or cls.recipe_varset_groups()
+
+    @staticmethod
+    def _common_base(
+        step_classes: list[type["Step"]],
+    ) -> type["Step"]:
+        """The most-derived step class that all given classes inherit.
+
+        Walks the first class's MRO and returns the first candidate
+        that every given class is a subclass of. This is the class
+        whose :meth:`recipe_varset_groups` structure applies to the
+        whole selection (e.g. ``Step`` for a laser + CNC mix, so the
+        editor shows the neutral "Settings" group instead of a domain
+        tab).
+        """
+        for candidate in step_classes[0].__mro__:
+            if all(issubclass(cls, candidate) for cls in step_classes):
+                return candidate
+        return Step
 
     @classmethod
     def common_transformer_dicts(
@@ -670,8 +745,14 @@ class Step(DocItem, ABC):
             self.travel_speed = int(speed)
             self.updated.send(self)
 
-    def set_coolant_method(self, mode: CoolantMode):
-        """Sets the coolant method used while this step runs."""
+    def set_coolant_method(self, mode: CoolantMode | str):
+        """Sets the coolant method used while this step runs.
+
+        Accepts the enum or its ``name`` string (as stored in varsets
+        and recipes).
+        """
+        if isinstance(mode, str):
+            mode = _COOLANT_MODE_BY_NAME.get(mode, CoolantMode.OFF)
         if self.coolant_method is not mode:
             self.coolant_method = mode
             self.updated.send(self)

@@ -9,6 +9,7 @@ from ....core.varset import (
     Var,
 )
 from ....machine.transport.serial import SerialTransport
+from ...shared.adwfix import ensure_row_min_width
 from .base import (
     NULL_CHOICE_LABEL,
     RowAdapter,
@@ -42,6 +43,7 @@ class ComboAdapter(RowAdapter):
         row = Adw.ComboRow(model=store, title=escape_title(var.label))
         if var.description:
             row.set_subtitle(var.description)
+        ensure_row_min_width(row)
         initial_val = getattr(var, target_property)
         if initial_val:
             display_str = var.get_display_for_value(str(initial_val))

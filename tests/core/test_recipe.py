@@ -11,6 +11,19 @@ from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
 
 
+def setting_dicts(**kwargs) -> list[dict]:
+    """Build recipe setting_dicts entries from keyword arguments."""
+    return [
+        {"name": k, "value": v, "recipe_apply": True}
+        for k, v in kwargs.items()
+    ]
+
+
+def set_attr(step, key, value) -> None:
+    """Assign an attribute with a deliberately mismatched type."""
+    setattr(step, key, value)
+
+
 @pytest.fixture
 def mock_machine_a() -> Mock:
     """Provides a mock machine with ID 'machine-a'."""
@@ -69,11 +82,11 @@ class TestRecipe:
             material_uid="plywood-6mm",
             min_thickness_mm=5.5,
             max_thickness_mm=6.5,
-            settings={
-                "power": 0.9,
-                "cut_speed": 500,
-                "selected_head_uid": "laser-1",
-            },
+            setting_dicts=setting_dicts(
+                power=0.9,
+                cut_speed=500,
+                selected_head_uid="laser-1",
+            ),
         )
 
     @pytest.fixture
@@ -82,7 +95,7 @@ class TestRecipe:
         return Recipe(
             uid="recipe-generic",
             name="Generic Cut",
-            settings={"power": 1.0, "cut_speed": 200},
+            setting_dicts=setting_dicts(power=1.0, cut_speed=200),
         )
 
     def test_recipe_creation(self, sample_recipe: Recipe):
@@ -92,8 +105,11 @@ class TestRecipe:
         assert sample_recipe.material_uid == "plywood-6mm"
         assert sample_recipe.target_step_types == ["ContourStep"]
         assert sample_recipe.target_machine_id == "machine-a"
-        assert sample_recipe.settings["power"] == 0.9
-        assert sample_recipe.settings["selected_head_uid"] == "laser-1"
+        assert sample_recipe.get_applied_settings()["power"] == 0.9
+        assert (
+            sample_recipe.get_applied_settings()["selected_head_uid"]
+            == "laser-1"
+        )
 
     def test_recipe_to_dict(self, sample_recipe: Recipe):
         """Test serializing a Recipe to a dictionary."""
@@ -106,8 +122,11 @@ class TestRecipe:
         assert data["target_machine_id"] == "machine-a"
         assert data["min_thickness_mm"] == 5.5
         assert data["max_thickness_mm"] == 6.5
-        assert len(data["settings"]) == 3
-        assert data["settings"]["power"] == 0.9
+        assert len(data["setting_dicts"]) == 3
+        assert any(
+            d["name"] == "power" and d["value"] == 0.9
+            for d in data["setting_dicts"]
+        )
 
     def test_recipe_from_dict(self, sample_recipe: Recipe):
         """Test deserializing a Recipe from a dictionary."""
@@ -119,7 +138,7 @@ class TestRecipe:
         assert new_recipe.material_uid == sample_recipe.material_uid
         assert new_recipe.target_step_types == ["ContourStep"]
         assert new_recipe.target_machine_id == "machine-a"
-        assert new_recipe.settings["power"] == 0.9
+        assert new_recipe.get_applied_settings()["power"] == 0.9
 
     def test_recipe_from_dict_minimal(self):
         """Test deserializing from a minimal dictionary."""
@@ -131,7 +150,7 @@ class TestRecipe:
         assert recipe.material_uid is None
         assert recipe.target_machine_id is None
         assert recipe.target_step_types == []
-        assert recipe.settings == {}
+        assert recipe.setting_dicts == []
 
     def test_recipe_from_dict_migrates_legacy_head_key(self):
         """Old recipe files keyed head selection as "selected_laser_uid"."""
@@ -142,8 +161,22 @@ class TestRecipe:
 
         recipe = Recipe.from_dict(data)
 
-        assert recipe.settings["selected_head_uid"] == "laser-1"
-        assert "selected_laser_uid" not in recipe.settings
+        assert recipe.get_applied_settings()["selected_head_uid"] == "laser-1"
+        assert "selected_laser_uid" not in recipe.get_applied_settings()
+
+    def test_recipe_from_dict_migrates_legacy_settings(self):
+        """Legacy flat settings dicts become applied setting_dicts."""
+        data = {
+            "name": "Legacy Settings",
+            "settings": {"power": 0.9, "cut_speed": 500},
+        }
+
+        recipe = Recipe.from_dict(data)
+
+        assert recipe.setting_dicts == [
+            {"name": "power", "value": 0.9, "recipe_apply": True},
+            {"name": "cut_speed", "value": 500, "recipe_apply": True},
+        ]
 
     def test_recipe_from_dict_migrates_legacy_step_type(self):
         """Legacy target_step_type (single) migrates to a one-element list."""
@@ -191,7 +224,9 @@ class TestRecipe:
         assert machine_only.get_specificity_score()[:4] == (0, 1, 1, 1)
 
         # Specific head only
-        head_only = Recipe(settings={"selected_head_uid": "laser-x"})
+        head_only = Recipe(
+            setting_dicts=setting_dicts(selected_head_uid="laser-x")
+        )
         assert head_only.get_specificity_score()[:4] == (1, 0, 1, 1)
 
     def test_fewer_step_types_more_specific(self):
@@ -242,7 +277,9 @@ class TestRecipe:
         self, sample_recipe: Recipe, mock_machine_a: Mock, stock_item_factory
     ):
         """Test match failure due to head not on machine."""
-        sample_recipe.settings["selected_head_uid"] = "non-existent-laser"
+        for d in sample_recipe.setting_dicts:
+            if d.get("name") == "selected_head_uid":
+                d["value"] = "non-existent-laser"
         stock = stock_item_factory("plywood-6mm", 6.0)
         assert (
             sample_recipe.matches(
@@ -287,7 +324,7 @@ class TestRecipe:
         stock = stock_item_factory("plywood-6mm", 6.0)
         recipe = Recipe(
             target_step_types=["ContourStep", "FrameStep"],
-            settings={"power": 0.9},
+            setting_dicts=setting_dicts(power=0.9),
         )
         assert (
             recipe.matches([stock], mock_machine_a, step_type="ContourStep")
@@ -307,7 +344,7 @@ class TestRecipe:
     ):
         """A generic recipe (no step types) ignores the step_type arg."""
         stock = stock_item_factory("plywood-6mm", 6.0)
-        recipe = Recipe(settings={"power": 0.9})
+        recipe = Recipe(setting_dicts=setting_dicts(power=0.9))
         assert (
             recipe.matches([stock], mock_machine_a, step_type="ContourStep")
             is True
@@ -394,57 +431,97 @@ class TestRecipe:
         assert recipe.matches([stock_no_thickness]) is False
 
     def test_matches_step_settings(self):
-        """Tests the comparison between a recipe's settings and a Step."""
+        """Compares the recipe's applied settings against a Step."""
         recipe = Recipe(
-            settings={
-                "power": 0.8,
-                "cut_speed": 1000,
-                "offset_mm": 0.15,
-                "air_assist": True,
-            }
+            setting_dicts=setting_dicts(
+                cut_speed=1000.0,
+                travel_speed=5000,
+            )
         )
+        step = Step(typelabel="Test", name="Test")
+        step.cut_speed = 1000
+        step.travel_speed = 5000
 
         # 1. Perfect match (and step has extra properties which are ignored)
-        mock_step = Mock()
-        mock_step.power = 0.8
-        mock_step.cut_speed = 1000
-        mock_step.offset_mm = 0.15
-        mock_step.air_assist = True
-        mock_step.extra_property = "should_be_ignored"
-        assert recipe.matches_step_settings(mock_step) is True
+        set_attr(step, "extra_property", "should_be_ignored")
+        assert recipe.matches_step_settings(step) is True
 
         # 2. Float match within tolerance
-        mock_step.power = 0.80000001
-        assert recipe.matches_step_settings(mock_step) is True
+        set_attr(step, "cut_speed", 1000.0000001)
+        assert recipe.matches_step_settings(step) is True
 
         # 3. Mismatch (integer value)
-        mock_step.power = 0.8  # reset
-        mock_step.cut_speed = 1001
-        assert recipe.matches_step_settings(mock_step) is False
+        step.cut_speed = 1000  # reset
+        step.travel_speed = 5001
+        assert recipe.matches_step_settings(step) is False
 
         # 4. Mismatch (float value outside tolerance)
-        mock_step.cut_speed = 1000  # reset
-        mock_step.power = 0.81
-        assert recipe.matches_step_settings(mock_step) is False
+        step.travel_speed = 5000  # reset
+        set_attr(step, "cut_speed", 1000.1)
+        assert recipe.matches_step_settings(step) is False
 
-        # 5. Mismatch (boolean value)
-        mock_step.power = 0.8  # reset
-        mock_step.air_assist = False
-        assert recipe.matches_step_settings(mock_step) is False
+        # 5. Mismatch (step is missing an attribute the recipe defines)
+        class _PhantomKeyStep(Step):
+            @classmethod
+            def recipe_keys(cls) -> tuple[str, ...]:
+                return ("cut_speed", "phantom_key")
 
-        # 6. Mismatch (step is missing an attribute)
-        mock_step_missing = Mock(spec=["power", "offset_mm", "air_assist"])
-        mock_step_missing.power = 0.8
-        # cut_speed is missing
-        assert recipe.matches_step_settings(mock_step_missing) is False
+        phantom_recipe = Recipe(
+            setting_dicts=setting_dicts(cut_speed=1000, phantom_key=5)
+        )
+        phantom_step = _PhantomKeyStep(typelabel="Test", name="Test")
+        phantom_step.cut_speed = 1000
+        assert phantom_recipe.matches_step_settings(phantom_step) is False
 
-        # 7. Mismatch (type difference)
-        mock_step_bad_type = Mock()
-        mock_step_bad_type.power = 0.8
-        mock_step_bad_type.cut_speed = "1000"  # string vs int
-        mock_step_bad_type.offset_mm = 0.15
-        mock_step_bad_type.air_assist = True
-        assert recipe.matches_step_settings(mock_step_bad_type) is False
+        # 6. Mismatch (type difference)
+        step.cut_speed = 1000  # reset
+        set_attr(step, "travel_speed", "5000")  # string vs int
+        assert recipe.matches_step_settings(step) is False
+
+    def test_settings_not_owned_by_step_type_are_ignored(self):
+        """Recipe entries outside the step type's recipe_keys are dropped."""
+        recipe = Recipe(
+            setting_dicts=[
+                {"name": "power", "value": 0.9, "recipe_apply": True},
+                {"name": "cut_speed", "value": 700, "recipe_apply": True},
+            ]
+        )
+        step = Step(typelabel="Test", name="Test")
+        step.cut_speed = 700
+
+        # "power" is not owned by the base Step type.
+        assert recipe.get_settings_for_step(step) == {"cut_speed": 700}
+        assert recipe.matches_step_settings(step) is True
+
+        step.cut_speed = 701
+        assert recipe.matches_step_settings(step) is False
+
+    def test_settings_dunder_and_private_names_are_ignored(self):
+        """Dunder/private recipe names never reach step attributes."""
+        recipe = Recipe(
+            setting_dicts=[
+                {"name": "__class__", "value": "X", "recipe_apply": True},
+                {"name": "_hidden", "value": 1, "recipe_apply": True},
+                {"name": "cut_speed", "value": 700, "recipe_apply": True},
+            ]
+        )
+        step = Step(typelabel="Test", name="Test")
+        step.cut_speed = 700
+
+        assert recipe.get_settings_for_step(step) == {"cut_speed": 700}
+        assert step.__class__ is Step
+        assert not hasattr(step, "_hidden")
+        assert recipe.matches_step_settings(step) is True
+
+    def test_applied_settings_skips_leave_unchanged(self):
+        """get_applied_settings drops recipe_apply=False entries."""
+        recipe = Recipe(
+            setting_dicts=[
+                {"name": "cut_speed", "value": 700, "recipe_apply": True},
+                {"name": "travel_speed", "value": 9000, "recipe_apply": False},
+            ]
+        )
+        assert recipe.get_applied_settings() == {"cut_speed": 700}
 
     # --- TRANSFORMER SETTINGS TESTS ---
 
@@ -623,7 +700,7 @@ class TestRecipe:
         recipe = Recipe(
             name="Contour-only",
             target_step_types=["ContourStep"],
-            settings={"power": 0.8},
+            setting_dicts=setting_dicts(power=0.8),
         )
         data = recipe.to_dict()
         assert data["target_step_types"] == ["ContourStep"]
@@ -638,9 +715,9 @@ class TestRecipe:
         stock = stock_item_factory("plywood-6mm", 6.0)
         scoped = Recipe(
             target_step_types=["ContourStep"],
-            settings={"power": 0.9},
+            setting_dicts=setting_dicts(power=0.9),
         )
-        generic = Recipe(settings={"power": 0.9})
+        generic = Recipe(setting_dicts=setting_dicts(power=0.9))
         ctx = ([stock], mock_machine_a, "ContourStep")
         assert scoped.matches(*ctx) is True
         assert generic.matches(*ctx) is True
@@ -690,7 +767,7 @@ class TestRecipe:
         assert recipe.material_uid is None
         assert recipe.min_thickness_mm is None
         assert recipe.max_thickness_mm is None
-        assert recipe.settings == {}
+        assert recipe.setting_dicts == []
         assert recipe.extra == {}
 
     # --- MULTIPLE STOCK ITEMS TESTS ---

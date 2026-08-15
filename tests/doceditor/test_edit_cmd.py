@@ -320,3 +320,36 @@ def test_reset_paste_counter(edit_cmd: EditCmd):
     # paste_items then increments the counter for the *next* paste.
     edit_cmd.paste_items()
     assert edit_cmd._paste_counter == 1
+
+
+def test_rename_item(edit_cmd: EditCmd, doc_editor: DocEditor):
+    """Test renaming a workpiece with an undoable command."""
+    layer = doc_editor.doc.active_layer
+    wp = WorkPiece(name="logo.svg")
+    layer.add_child(wp)
+
+    edit_cmd.rename_item(wp, "  front panel  ")
+
+    assert wp.name == "front panel"
+    assert len(doc_editor.history_manager.undo_stack) == 1
+
+    doc_editor.history_manager.undo()
+    assert wp.name == "logo.svg"
+
+
+def test_rename_item_ignores_empty_and_unchanged(
+    edit_cmd: EditCmd, doc_editor: DocEditor
+):
+    """Test that empty or identical names are ignored."""
+    layer = doc_editor.doc.active_layer
+    wp = WorkPiece(name="logo.svg")
+    layer.add_child(wp)
+
+    edit_cmd.rename_item(wp, "logo.svg")
+    edit_cmd.rename_item(wp, "   ")
+    assert wp.name == "logo.svg"
+    assert len(doc_editor.history_manager.undo_stack) == 0
+
+    edit_cmd.rename_item(wp, "front panel")
+    assert wp.name == "front panel"
+    assert len(doc_editor.history_manager.undo_stack) == 1

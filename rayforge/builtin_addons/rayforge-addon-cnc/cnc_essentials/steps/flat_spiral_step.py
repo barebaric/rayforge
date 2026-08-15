@@ -11,6 +11,7 @@ from .cnc_assembler_step import CncAssemblerStep
 class FlatSpiralStep(CncAssemblerStep):
     ASSEMBLER_NAME = "spiral"
     TYPELABEL = _("Flat Spiral")
+    ICON = "step-spiral-symbolic"
 
     def build_spec(self, workpiece) -> SpiralSpec:
         part = workpiece.to_part()

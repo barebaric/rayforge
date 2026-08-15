@@ -223,6 +223,32 @@ class TestMaterialLibrary:
 
             assert result is False
 
+    def test_library_remove_material_removes_texture(self):
+        """Test that removing a material also removes its texture."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            library_dir = Path(temp_dir)
+            library = MaterialLibrary(library_dir, read_only=False)
+            library.load_materials()
+
+            # Create a material with a texture
+            material = Material(
+                uid="material1",
+                name="Material 1",
+                category="test",
+            )
+            library.add_material(material)
+            texture_path = library_dir / "material1.webp"
+            texture_path.write_bytes(b"fake webp")
+            material.appearance.texture = "material1.webp"
+            material.save_to_file(library_dir / "material1.yaml")
+
+            # Remove the material
+            result = library.remove_material("material1")
+
+            assert result is True
+            assert not (library_dir / "material1.yaml").exists()
+            assert not texture_path.exists()
+
     def test_library_remove_read_only(self):
         """Test removing a material from a read-only library."""
         with tempfile.TemporaryDirectory() as temp_dir:

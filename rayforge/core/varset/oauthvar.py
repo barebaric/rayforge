@@ -1,4 +1,5 @@
 import json
+from collections.abc import Callable
 from datetime import datetime, timezone
 from typing import Any
 
@@ -33,6 +34,8 @@ class OAuthFlowVar(Var[str]):
         description: str | None = None,
         default: str | None = None,
         value: str | None = None,
+        *,
+        visible_when: "Callable[[dict[str, Any]], bool] | None" = None,
     ):
         self.authorize_url = authorize_url
         self.token_url = token_url
@@ -47,6 +50,7 @@ class OAuthFlowVar(Var[str]):
             description=description,
             default=default or "",
             value=value,
+            visible_when=visible_when,
         )
 
     def get_tokens(self) -> dict[str, Any] | None:

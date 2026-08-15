@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-12 17:33+0200\n"
+"POT-Creation-Date: 2026-08-14 21:42+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -64,6 +64,10 @@ msgstr "旋转轴"
 msgid "Layer {}"
 msgstr "图层 {}"
 
+#: rayforge/core/doc.py rayforge/doceditor/layer_cmd.py
+msgid "Layer"
+msgstr "图层"
+
 #: rayforge/core/stock.py
 #, python-brace-format
 msgid "{name} (copy)"
@@ -112,14 +116,20 @@ msgid "Model '{model}' not found. Available: {available}"
 msgstr "未找到模型'{model}'。可用模型：{available}"
 
 #: rayforge/core/step.py
-#: rayforge/ui_gtk/doceditor/step_settings/rows/cut_speed_row.py
 msgid "Cut Speed"
 msgstr "切割速度"
 
 #: rayforge/core/step.py
-#: rayforge/ui_gtk/doceditor/step_settings/rows/travel_speed_row.py
+msgid "Speed of the cutting operation"
+msgstr "切割操作的速度"
+
+#: rayforge/core/step.py
 msgid "Travel Speed"
 msgstr "移动速度"
+
+#: rayforge/core/step.py
+msgid "Speed of rapid positioning moves"
+msgstr "快速定位移动的速度"
 
 #: rayforge/core/step.py rayforge/machine/models/dialect/base.py
 #: rayforge/ui_gtk/settings/settings_dialog.py rayforge/ui_gtk/main_menu.py
@@ -177,6 +187,10 @@ msgstr "值必须至少为 {min_val}。"
 msgid "Value must be at most {max_val}."
 msgstr "值最多为 {max_val}。"
 
+#: rayforge/core/varset/intvar.py
+msgid "Slider (Integer)"
+msgstr "滑块 (整数)"
+
 #: rayforge/core/varset/portvar.py
 msgid "Port cannot be empty."
 msgstr "端口不能为空。"
@@ -200,6 +214,10 @@ msgstr "文本 (多行)"
 #: rayforge/core/varset/labeledchoicevar.py
 msgid "Choice (Labeled)"
 msgstr "选择（带标签）"
+
+#: rayforge/core/varset/tuplevar.py
+msgid "Tuple"
+msgstr "元组"
 
 #: rayforge/core/varset/boolvar.py
 msgid "Boolean (Switch)"
@@ -1472,7 +1490,6 @@ msgstr "{label}（用于{machine_name}）"
 #: rayforge/ui_gtk/machine/laser_control_widget.py
 #: rayforge/ui_gtk/machine/wizard_pages/head_page.py
 #: rayforge/ui_gtk/machine/capabilities_page.py
-#: rayforge/ui_gtk/doceditor/step_settings/rows/head_row.py
 msgid "Laser Head"
 msgstr "激光头"
 
@@ -2854,7 +2871,6 @@ msgid "Display name for this camera"
 msgstr "此摄像头的显示名称"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
-#: rayforge/ui_gtk/doceditor/post_processor/groups/transformer_group.py
 msgid "Enabled"
 msgstr "已启用"
 
@@ -3428,7 +3444,6 @@ msgstr "绕 Z 轴的度数"
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
-#: rayforge/ui_gtk/doceditor/step_settings/rows/head_row.py
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "None"
 msgstr "无"
@@ -6832,21 +6847,16 @@ msgstr "选择要应用于当前步骤的配方。"
 msgid "Show only compatible recipes"
 msgstr "仅显示兼容的配方"
 
+#: rayforge/ui_gtk/doceditor/recipes/varset_widget.py
+#: rayforge/ui_gtk/doceditor/post_processor/groups/transformer_group.py
+msgid "Apply this setting to the step"
+msgstr "将此设置应用于该步骤"
+
 #: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
 msgid "Step name and recipe settings."
 msgstr "步骤名称和配方设置。"
 
 #: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
-#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
-msgid "Cooling"
-msgstr "冷却"
-
-#: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
-msgid "Coolant used while this operation runs."
-msgstr "此操作运行期间使用的冷却液。"
-
-#: rayforge/ui_gtk/doceditor/step_settings/pages/base.py
-#: rayforge/ui_gtk/doceditor/step_settings/rows/step_row.py
 #, python-brace-format
 msgid "Change {key}"
 msgstr "更改{key}"
@@ -6854,36 +6864,6 @@ msgstr "更改{key}"
 #: rayforge/ui_gtk/doceditor/step_settings/pages/post_processing.py
 msgid "Transformers applied to this step's generated toolpath."
 msgstr "应用于此步骤生成的刀具路径的转换器。"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/travel_speed_row.py
-msgid "Speed of rapid positioning moves"
-msgstr "快速定位移动的速度"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
-msgid "Off"
-msgstr "关闭"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
-#: rayforge/doceditor/file_cmd.py
-msgid "Flood"
-msgstr "喷淋"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
-#: rayforge/doceditor/file_cmd.py
-msgid "Mist"
-msgstr "雾化"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
-msgid "Coolant delivered to the workpiece while cutting"
-msgstr "切割时输送到工件的冷却液"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/coolant_row.py
-msgid "This cooling method is not supported by the current machine"
-msgstr "当前机器不支持此冷却方法"
-
-#: rayforge/ui_gtk/doceditor/step_settings/rows/cut_speed_row.py
-msgid "Speed of the cutting operation"
-msgstr "切割操作的速度"
 
 #: rayforge/ui_gtk/doceditor/step_settings/dialog.py
 #, python-brace-format
@@ -7255,6 +7235,10 @@ msgstr "删除此图层"
 msgid "Toggle layer visibility"
 msgstr "切换图层可见性"
 
+#: rayforge/ui_gtk/doceditor/layer_column.py
+msgid "Rename"
+msgstr "重命名"
+
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
 #, python-brace-format
 msgid "Relative to {wcs} origin"
@@ -7392,14 +7376,6 @@ msgstr "启用 {}"
 #: rayforge/ui_gtk/doceditor/post_processor/groups/transformer_group.py
 msgid "Toggle {}"
 msgstr "切换 {}"
-
-#: rayforge/ui_gtk/doceditor/post_processor/groups/transformer_group.py
-msgid "Leave Unchanged"
-msgstr "保持不变"
-
-#: rayforge/ui_gtk/doceditor/post_processor/groups/transformer_group.py
-msgid "Disabled"
-msgstr "已禁用"
 
 #: rayforge/ui_gtk/doceditor/post_processor/groups/placeholder_group.py
 msgid "This feature is not available."
@@ -7820,7 +7796,7 @@ msgstr "正在安装插件更新..."
 #, python-brace-format
 msgid "Addon successfully updated."
 msgid_plural "{num} addons successfully updated."
-msgstr[0] "插件已成功更新。"
+msgstr[0] "已成功更新 {num} 个插件。"
 
 #: rayforge/addon_mgr/update_cmd.py
 #, python-brace-format
@@ -7831,7 +7807,7 @@ msgstr "{num_s} 个插件已更新，{num_f} 个失败。"
 #, python-brace-format
 msgid "Failed to update addon."
 msgid_plural "Failed to update {num} addons."
-msgstr[0] "更新插件失败。"
+msgstr[0] "更新 {num} 个插件失败。"
 
 #: rayforge/addon_mgr/update_cmd.py
 #, python-brace-format
@@ -8105,6 +8081,18 @@ msgid "Toggle Asset Visibility"
 msgstr "切换资源可见性"
 
 #: rayforge/doceditor/file_cmd.py
+msgid "Flood"
+msgstr "喷淋"
+
+#: rayforge/doceditor/file_cmd.py
+msgid "Mist"
+msgstr "雾化"
+
+#: rayforge/doceditor/file_cmd.py rayforge/doceditor/layer_cmd.py
+msgid "Rename layer"
+msgstr "重命名图层"
+
+#: rayforge/doceditor/file_cmd.py
 #, python-brace-format
 msgid "Import {filename}"
 msgstr "导入 {filename}"
@@ -8258,14 +8246,6 @@ msgid "Move to another layer"
 msgstr "移动到另一图层"
 
 #: rayforge/doceditor/layer_cmd.py
-msgid "Layer"
-msgstr "图层"
-
-#: rayforge/doceditor/layer_cmd.py
-msgid "Rename layer"
-msgstr "重命名图层"
-
-#: rayforge/doceditor/layer_cmd.py
 msgid "Set active layer"
 msgstr "设置活动图层"
 
@@ -8338,6 +8318,10 @@ msgstr "添加项目"
 #: rayforge/doceditor/edit_cmd.py
 msgid "Remove item"
 msgstr "移除项目"
+
+#: rayforge/doceditor/edit_cmd.py
+msgid "Rename item"
+msgstr "重命名项目"
 
 #: rayforge/doceditor/edit_cmd.py
 msgid "Remove all workpieces"

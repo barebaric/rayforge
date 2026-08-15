@@ -14,6 +14,7 @@ from raygeo.ops.state import AirAssistMode
 from rayforge.core.step import Step
 from rayforge.core.varset import (
     BoolVar,
+    IntVar,
     SliderFloatVar,
     VarSet,
 )
@@ -43,34 +44,61 @@ class LaserStep(Step):
         return VarSet(
             vars=[
                 LaserHeadVar(
-                    description=_("Optionally force a specific laser head")
+                    description=_(
+                        "Laser head used for this step; the machine's "
+                        "first head is used when unset"
+                    )
                 ),
                 SliderFloatVar(
                     key="power",
                     label=_("Power"),
+                    description=_("Laser power as a percentage"),
                     default=0.8,
                     min_val=0.0,
                     max_val=1.0,
                     show_value=True,
                     format_suffix="%",
+                    digits=0,
                 ),
                 *Step.recipe_varset().vars,
+                BoolVar(
+                    key="air_assist",
+                    label=_("Air Assist"),
+                    description=_("Blow air over the cut to clear debris"),
+                    default=False,
+                ),
                 SliderFloatVar(
                     key="tab_power",
                     label=_("Tab Power"),
                     description=_(
-                        "Laser power at tab positions (% of cut power)"
+                        "Laser power at tab positions as a percentage"
                     ),
                     default=0.0,
                     min_val=0.0,
                     max_val=1.0,
                     show_value=True,
                     format_suffix="%",
+                    digits=0,
                 ),
-                BoolVar(
-                    key="air_assist",
-                    label=_("Air Assist"),
-                    default=False,
+                IntVar(
+                    key="frequency",
+                    label=_("Frequency"),
+                    description=_(
+                        "Laser pulse frequency in Hz (0 = head default)"
+                    ),
+                    default=0,
+                    min_val=0,
+                    max_val=100000,
+                ),
+                IntVar(
+                    key="pulse_width",
+                    label=_("Pulse Width"),
+                    description=_(
+                        "Laser pulse width in ns (0 = head default)"
+                    ),
+                    default=0,
+                    min_val=0,
+                    max_val=100000,
                 ),
             ]
         )
@@ -83,12 +111,14 @@ class LaserStep(Step):
         base_keys = {v.key for v in LaserStep.recipe_varset()}
         laser_vars = [v for v in full if v.key in base_keys]
         step_vars = [v for v in full if v.key not in base_keys]
-        groups: list[tuple[str, VarSet]] = []
-        if laser_vars:
-            groups.append((_("Laser"), VarSet(vars=laser_vars)))
+        laser_description = _(
+            "Laser power, speed, and head selection for this operation."
+        )
+        laser_vs = VarSet(vars=laser_vars, description=laser_description)
+        groups: list[tuple[str, VarSet]] = [(_("Laser"), laser_vs)]
         if step_vars:
             groups.append((_("Step Settings"), VarSet(vars=step_vars)))
-        return groups or [(_("Laser"), VarSet(vars=laser_vars))]
+        return groups
 
     def create_initial_ops(self) -> Ops:
         """Build the initial Ops object with step-wide machine settings."""

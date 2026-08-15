@@ -1,0 +1,372 @@
+"""
+Renders compiled solid stock layers with the PBR stock shader.
+
+Texture decoding (pyvips) and index expansion run in the upload
+worker thread (:func:`prepare_stock_layer`); GL resource creation
+runs on the GL thread.  Albedo textures are cached by
+``(path, mtime, size)`` so scene rebuilds re-use the existing GL
+texture objects instead of re-uploading multi-megabyte WebPs.
+"""
+
+import logging
+from dataclasses import dataclass
+from functools import lru_cache
+from pathlib import Path
+
+import numpy as np
+import pyvips
+from OpenGL import GL
+from raygeo.image.pbr import generate_brdf_lut
+
+from ....simulator.scene3d import CompiledSceneArtifact, StockLayer
+from ..gl_utils import ShaderSet
+from ..render_context import RenderContext
+from .base import BaseRenderer
+
+logger = logging.getLogger(__name__)
+
+# Size of the split-sum BRDF integration LUT (32x32 per the plan).
+BRDF_LUT_SIZE = 32
+
+# Decoded material textures to keep in the CPU-side cache.
+MAX_CACHED_DECODES = 8
+
+# Offset applied to the stock fill so coplanar engrave quads win the
+# depth test without visible z-fighting.
+_STOCK_POLYGON_OFFSET = (1.0, 1.0)
+
+
+@dataclass
+class PreparedStockLayer:
+    """Stock layer data ready for GL upload, built off the main thread."""
+
+    positions: np.ndarray
+    normals: np.ndarray
+    uvs: np.ndarray
+    transform: np.ndarray
+    roughness: float
+    metallic: float
+    fallback_rgba: tuple[float, float, float, float]
+    texture_key: tuple[str, int, int] | None = None
+    texture_pixels: np.ndarray | None = None
+
+
+@lru_cache(maxsize=MAX_CACHED_DECODES)
+def _decode_texture_cached(
+    path_str: str, mtime_ns: int, size: int
+) -> tuple[int, int, np.ndarray] | None:
+    """Decode a material texture into GL-ready RGBA pixels.
+
+    The pixels are vertically flipped so texture row 0 is the bottom
+    row, matching the v-up UV mapping of the stock mesh.  The file
+    identity (path, mtime, size) is part of the cache key so replaced
+    files are picked up automatically.
+    """
+    try:
+        image = pyvips.Image.new_from_file(path_str).colourspace("srgb")
+        if not image.hasalpha():
+            image = image.addalpha()
+        image = image.cast("uchar")
+        height, width = image.height, image.width
+        pixels = np.frombuffer(
+            image.write_to_memory(), dtype=np.uint8
+        ).reshape(height, width, 4)
+        return width, height, np.ascontiguousarray(pixels[::-1])
+    except (pyvips.error.Error, OSError):
+        logger.warning("Failed to decode material texture: %s", path_str)
+        return None
+
+
+def _texture_key(
+    texture_path: str | None,
+) -> tuple[str, int, int] | None:
+    """Cache key for a texture path, or None when unkeyable/missing."""
+    if not texture_path:
+        return None
+    path = Path(texture_path)
+    try:
+        stat = path.stat()
+    except OSError:
+        return None
+    return (str(path), stat.st_mtime_ns, stat.st_size)
+
+
+def prepare_stock_layer(layer: StockLayer) -> PreparedStockLayer:
+    """Expands indices and decodes the texture without touching GL.
+
+    Runs in a worker thread; the result is uploaded with GL calls on
+    the main thread.
+    """
+    indices = layer.indices.astype(np.int64)
+    positions = layer.positions.reshape(-1, 3)[indices]
+    normals = layer.normals.reshape(-1, 3)[indices]
+    uvs = layer.uvs.reshape(-1, 2)[indices]
+
+    key = _texture_key(layer.texture_path)
+    pixels: np.ndarray | None = None
+    if key is not None:
+        decoded = _decode_texture_cached(*key)
+        if decoded is not None:
+            _width, _height, pixels = decoded
+
+    return PreparedStockLayer(
+        positions=np.ascontiguousarray(positions, dtype=np.float32),
+        normals=np.ascontiguousarray(normals, dtype=np.float32),
+        uvs=np.ascontiguousarray(uvs, dtype=np.float32),
+        transform=layer.transform,
+        roughness=layer.roughness,
+        metallic=layer.metallic,
+        fallback_rgba=layer.fallback_rgba,
+        texture_key=key if pixels is not None else None,
+        texture_pixels=pixels,
+    )
+
+
+class StockRenderer(BaseRenderer):
+    """Renders solid stock prism meshes with PBR shading.
+
+    Meshes arrive as :class:`StockLayer` objects on the compiled
+    scene artifact; each layer becomes one draw instance with its own
+    VAO/VBOs.  Albedo textures live in a ``(path, mtime, size)``
+    keyed cache that survives scene rebuilds, so only new or changed
+    materials trigger a decode and GL upload.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.is_initialized = False
+        self.instances: list[dict] = []
+        self._texture_cache: dict[tuple[str, int, int], int] = {}
+        self._brdf_lut_texture: int = 0
+        self._mvp_ui: np.ndarray | None = None
+        self._camera_pos: np.ndarray | None = None
+        self._point_light_pos: np.ndarray | None = None
+
+    def prepare(self, ctx: RenderContext) -> None:
+        """Caches the per-frame matrices and light positions."""
+        self._mvp_ui = ctx.camera.mvp_ui
+        self._camera_pos = ctx.camera.camera_position
+        self._point_light_pos = ctx.kinematics.laser_light_pos
+
+    def init_gl(self) -> None:
+        """Creates the BRDF LUT texture used by the IBL split-sum."""
+        if self.is_initialized:
+            return
+        lut = generate_brdf_lut(BRDF_LUT_SIZE).astype(np.float16)
+        self._brdf_lut_texture = self._create_texture()
+        GL.glBindTexture(GL.GL_TEXTURE_2D, self._brdf_lut_texture)
+        GL.glTexParameteri(
+            GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR
+        )
+        GL.glTexParameteri(
+            GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR
+        )
+        GL.glTexParameteri(
+            GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_EDGE
+        )
+        GL.glTexParameteri(
+            GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE
+        )
+        GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 2)
+        GL.glTexImage2D(
+            GL.GL_TEXTURE_2D,
+            0,
+            GL.GL_RG16F,
+            lut.shape[1],
+            lut.shape[0],
+            0,
+            GL.GL_RG,
+            GL.GL_HALF_FLOAT,
+            lut,
+        )
+        GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 4)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
+        self.is_initialized = True
+        logger.debug("StockRenderer initialized")
+
+    def _create_gl_texture(self, pixels: np.ndarray) -> int:
+        """Uploads RGBA pixels as an sRGB texture with mipmaps."""
+        texture_id = GL.glGenTextures(1)
+        height, width = pixels.shape[:2]
+        GL.glBindTexture(GL.GL_TEXTURE_2D, texture_id)
+        GL.glTexParameteri(
+            GL.GL_TEXTURE_2D,
+            GL.GL_TEXTURE_MIN_FILTER,
+            GL.GL_LINEAR_MIPMAP_LINEAR,
+        )
+        GL.glTexParameteri(
+            GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR
+        )
+        GL.glTexParameteri(
+            GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_REPEAT
+        )
+        GL.glTexParameteri(
+            GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_REPEAT
+        )
+        GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 1)
+        GL.glTexImage2D(
+            GL.GL_TEXTURE_2D,
+            0,
+            GL.GL_SRGB8_ALPHA8,
+            width,
+            height,
+            0,
+            GL.GL_RGBA,
+            GL.GL_UNSIGNED_BYTE,
+            pixels,
+        )
+        GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 4)
+        GL.glGenerateMipmap(GL.GL_TEXTURE_2D)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
+        return texture_id
+
+    def _create_instance_buffers(
+        self, prepared: PreparedStockLayer
+    ) -> tuple[int, list[int]]:
+        """Creates the VAO/VBOs for one prepared stock layer."""
+        vao = GL.glGenVertexArrays(1)
+        vbo_pos = GL.glGenBuffers(1)
+        vbo_norm = GL.glGenBuffers(1)
+        vbo_uv = GL.glGenBuffers(1)
+        vbos = [vbo_pos, vbo_norm, vbo_uv]
+
+        GL.glBindVertexArray(vao)
+        for attr, vbo, data in (
+            (0, vbo_pos, prepared.positions),
+            (1, vbo_norm, prepared.normals),
+            (2, vbo_uv, prepared.uvs),
+        ):
+            GL.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo)
+            GL.glBufferData(
+                GL.GL_ARRAY_BUFFER, data.nbytes, data, GL.GL_STATIC_DRAW
+            )
+            size = data.shape[1]
+            GL.glVertexAttribPointer(
+                attr, size, GL.GL_FLOAT, GL.GL_FALSE, 0, None
+            )
+            GL.glEnableVertexAttribArray(attr)
+        GL.glBindVertexArray(0)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+        return vao, vbos
+
+    def _delete_instance(self, instance: dict) -> None:
+        """Deletes one instance's VAO/VBOs."""
+        try:
+            GL.glDeleteVertexArrays(1, [instance["vao"]])
+            GL.glDeleteBuffers(len(instance["vbos"]), instance["vbos"])
+        except GL.GLError:
+            logger.exception("Error deleting stock instance buffers")
+
+    def clear(self) -> None:
+        """Drops all instances and their GL resources (full teardown)."""
+        if not self.is_initialized:
+            return
+        for instance in self.instances:
+            self._delete_instance(instance)
+        self.instances.clear()
+        if self._texture_cache:
+            GL.glDeleteTextures(list(self._texture_cache.values()))
+            self._texture_cache.clear()
+
+    def upload_prepared(self, prepared_layers: list[PreparedStockLayer]):
+        """Rebuilds all instances from prepared layers.
+
+        GL textures for materials that are no longer referenced are
+        deleted; unchanged ``(path, mtime, size)`` keys keep theirs.
+        """
+        if not self.is_initialized:
+            return
+        for instance in self.instances:
+            self._delete_instance(instance)
+        self.instances.clear()
+
+        needed_keys = {p.texture_key for p in prepared_layers if p.texture_key}
+        for key in list(self._texture_cache):
+            if key not in needed_keys:
+                GL.glDeleteTextures([self._texture_cache.pop(key)])
+
+        for prepared in prepared_layers:
+            texture_id = 0
+            if prepared.texture_key is not None:
+                texture_id = self._texture_cache.get(prepared.texture_key)
+                if texture_id is None and prepared.texture_pixels is not None:
+                    texture_id = self._create_gl_texture(
+                        prepared.texture_pixels
+                    )
+                    self._texture_cache[prepared.texture_key] = texture_id
+            vao, vbos = self._create_instance_buffers(prepared)
+            self.instances.append(
+                {
+                    "vao": vao,
+                    "vbos": vbos,
+                    "vertex_count": len(prepared.positions),
+                    "transform": prepared.transform,
+                    "roughness": prepared.roughness,
+                    "metallic": prepared.metallic,
+                    "fallback_rgba": prepared.fallback_rgba,
+                    "texture_id": texture_id,
+                }
+            )
+
+    def update_from_artifact(self, artifact: CompiledSceneArtifact):
+        """Prepares and uploads the artifact's stock layers synchronously."""
+        prepared = [
+            prepare_stock_layer(layer) for layer in artifact.stock_layers
+        ]
+        self.upload_prepared(prepared)
+
+    def render(self, ctx: RenderContext, shaders: ShaderSet, **kwargs):
+        """Draws every stock instance through the PBR stock shader."""
+        if not self.is_initialized or not self.instances:
+            return
+        shader = shaders.stock
+        if shader is None or self._mvp_ui is None:
+            return
+
+        shader.use()
+        shader.set_vec3("uLightDir", (0.5, 0.8, 1.0))
+        shader.set_vec3("uLightDir2", (-0.6, -0.4, 0.3))
+        if self._camera_pos is not None:
+            shader.set_vec3("uCameraPos", self._camera_pos)
+        if self._point_light_pos is not None:
+            shader.set_vec3("uPointLightPos", self._point_light_pos)
+            shader.set_float("uPointLightOn", 1.0)
+        else:
+            shader.set_float("uPointLightOn", 0.0)
+
+        GL.glActiveTexture(GL.GL_TEXTURE0)
+        shader.set_int("uTexture", 0)
+        GL.glActiveTexture(GL.GL_TEXTURE1)
+        shader.set_int("uBrdfLut", 1)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, self._brdf_lut_texture)
+
+        GL.glDisable(GL.GL_BLEND)
+        GL.glDepthMask(GL.GL_TRUE)
+        GL.glDepthFunc(GL.GL_LEQUAL)
+        # Push the stock fill slightly away from the camera so the
+        # engrave quads on the coplanar top face win the depth test.
+        GL.glEnable(GL.GL_POLYGON_OFFSET_FILL)
+        GL.glPolygonOffset(*_STOCK_POLYGON_OFFSET)
+
+        try:
+            for instance in self.instances:
+                self._draw_instance(shader, instance)
+        finally:
+            GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
+
+    def _draw_instance(self, shader, instance: dict) -> None:
+        shader.set_mat4("uMVP", self._mvp_ui @ instance["transform"])
+        shader.set_mat4("uModel", instance["transform"])
+        shader.set_vec4("uAlbedo", instance["fallback_rgba"])
+        shader.set_float("uRoughness", instance["roughness"])
+        shader.set_float("uMetallic", instance["metallic"])
+        shader.set_float("uAlpha", 1.0)
+
+        texture_id = instance["texture_id"]
+        shader.set_float("uUseTexture", 1.0 if texture_id else 0.0)
+        GL.glActiveTexture(GL.GL_TEXTURE0)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, texture_id if texture_id else 0)
+
+        GL.glBindVertexArray(instance["vao"])
+        GL.glDrawArrays(GL.GL_TRIANGLES, 0, instance["vertex_count"])
+        GL.glBindVertexArray(0)

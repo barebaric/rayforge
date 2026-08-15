@@ -422,8 +422,8 @@ class ImportDialog(PatchedDialogWindow):
         self, rgb: tuple[float, float, float] | None
     ) -> Gtk.DrawingArea:
         area = Gtk.DrawingArea()
-        area.set_content_width(18)
-        area.set_content_height(18)
+        area.set_size_request(24, 24)
+        area.set_valign(Gtk.Align.CENTER)
         area.set_draw_func(self._draw_color_swatch, rgb)
         return area
 

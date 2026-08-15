@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   height="24px"
+   viewBox="0 0 24 24"
+   width="24px"
+   fill="#000000"
+   version="1.1"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg">
+  <path
+     d="M 5 21 q -0.825 0 -1.4125 -0.5875 T 3 19 v -14 q 0 -0.825 0.5875 -1.4125 T 5 3 h 14 q 0.825 0 1.4125 0.5875 T 21 5 v 14 q 0 0.825 -0.5875 1.4125 T 19 21 H 5 Z m 0 -2 h 14 v -14 H 5 v 14 Z m 0 0 v -14 14 Z"
+     id="path1" />
+</svg>

@@ -5,8 +5,11 @@ import sys
 import threading
 import time
 from pathlib import Path
+from typing import Any
 
 import pytest
+
+from rayforge.core.workpiece import WorkPiece
 
 # Platform-Specific Setup
 if sys.platform.startswith("linux"):
@@ -121,3 +124,32 @@ def app_and_window(ui_context_initializer, request):
         win.close()
         app.quit()
     process_events_for_duration(0.2)
+
+
+@pytest.mark.ui
+def test_rename_shortcut_reveals_layer_tab(app_and_window, assets_path):
+    """F2 rename works for any selection and shows the layer tab."""
+    _app, win = app_and_window
+    project = assets_path / "doceditor" / "assets" / "workpieces_project.ryp"
+    assert win.doc_editor.file.load_project_from_path(project)
+    process_events_for_duration(0.5)
+
+    wp = next(iter(win.doc_editor.doc.get_descendants(of_type=WorkPiece)))
+
+    def row_widget() -> Any:
+        for col in win.bottom_panel.layers_tab._columns:
+            for row, item in col._row_items.items():
+                if item is wp:
+                    return row.get_child()
+        return None
+
+    # A canvas-style selection: rename works and reveals the layer tab.
+    win.bottom_panel.set_visible(False)
+    win.surface.select_items([wp])
+    win.on_menu_rename(None, None)
+    area = win.bottom_panel.dock_layout.find_item_area("layers")
+    assert win.bottom_panel.get_visible()
+    assert area.get_active_item() == "layers"
+    widget = row_widget()
+    assert widget is not None
+    assert widget._rename_entry is not None

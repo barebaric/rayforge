@@ -80,19 +80,26 @@ tipo de etapa (ex. lado de corte, ordem de corte):
   movimento (velocidade de corte e velocidade de deslocamento) que são
   compartilhadas por todas as etapas
 
+Cada linha de configuração possui um botão de aplicação (um botão de
+marcação ao lado da linha):
+
+- **Ativado**: a receita aplica esta configuração à etapa quando é
+  aplicada
+- **Desativado**: a receita deixa esta configuração da etapa inalterada
+
 **Aba Pós-Processamento** - Armazene configurações de pós-processamento
 (entrada/saída, multipasse, overscan e outros transformadores) na receita
 para que sejam aplicadas às etapas que ela tem como alvo:
 
 ![Editor de Receitas - Aba Pós-Processamento](/screenshots/recipe-editor-post-processing.png)
 
-Cada transformador é mostrado com um botão de três estados:
+Cada transformador possui um botão de aplicação (um botão de marcação ao
+lado da linha):
 
-- **Deixar inalterado**: a receita não toca neste transformador ao ser
-  aplicada
-- **Habilitado**: a receita ativa o transformador e aplica seus parâmetros
-  à etapa
-- **Desabilitado**: a receita desativa explicitamente o transformador
+- **Ativado**: a receita aplica os parâmetros do transformador à etapa
+  (o próprio interruptor de habilitação decide se ele é ativado ou
+  desativado)
+- **Desativado**: a receita não toca neste transformador ao ser aplicada
 
 Quando a receita tem como alvo vários tipos de etapa, apenas os
 transformadores comuns a todos são mostrados.

@@ -9,6 +9,7 @@ from rayforge.ui_gtk.sim3d.renderer.laser_beam_renderer import (
     LaserBeamRenderer,
 )
 from rayforge.ui_gtk.sim3d.renderer.scene_renderer import SceneRenderer
+from rayforge.ui_gtk.sim3d.renderer.stock_renderer import StockRenderer
 
 
 def test_scene_renderer_constructs_children():
@@ -16,6 +17,7 @@ def test_scene_renderer_constructs_children():
 
     assert isinstance(scene.laser_beam_renderer, LaserBeamRenderer)
     assert isinstance(scene.background_renderer, BackgroundRenderer)
+    assert isinstance(scene.stock_renderer, StockRenderer)
     assert scene.ops_renderers == []
     assert scene.ring_renderers == []
     assert scene.cylinder_renderers == {}
@@ -28,6 +30,7 @@ def test_scene_renderer_constructs_children():
     assert scene.text_shader is None
     assert scene.texture_shader is None
     assert scene.background_shader is None
+    assert scene.stock_shader is None
     assert scene.shader_set is None
     assert scene.render_registry == []
 
@@ -53,6 +56,9 @@ def test_scene_renderer_init_gl_creates_children():
             "rayforge.ui_gtk.sim3d.renderer.scene_renderer.BackgroundShader"
         ) as mock_background,
         patch(
+            "rayforge.ui_gtk.sim3d.renderer.scene_renderer.StockShader"
+        ) as mock_stock,
+        patch(
             "rayforge.ui_gtk.sim3d.renderer.scene_renderer.AxisRenderer3D"
         ) as mock_axis,
         patch(
@@ -64,6 +70,7 @@ def test_scene_renderer_init_gl_creates_children():
         ) as mock_zone,
         patch.object(LaserBeamRenderer, "init_gl"),
         patch.object(BackgroundRenderer, "init_gl"),
+        patch.object(StockRenderer, "init_gl"),
     ):
         scene.set_viewport(viewport)
         scene.set_font_family("sans-serif")
@@ -73,11 +80,13 @@ def test_scene_renderer_init_gl_creates_children():
     assert scene.texture_renderer is mock_tex.return_value
     assert scene.zone_renderer is mock_zone.return_value
     assert scene.background_shader is mock_background.return_value
+    assert scene.stock_shader is mock_stock.return_value
     assert scene.shader_set is not None
     assert scene.shader_set.main is mock_simple.return_value
     assert scene.shader_set.text is mock_text.return_value
     assert scene.shader_set.texture is mock_texture.return_value
     assert scene.shader_set.background is mock_background.return_value
+    assert scene.shader_set.stock is mock_stock.return_value
     mock_axis.return_value.init_gl.assert_called_once()
     mock_tex.return_value.init_gl.assert_called_once()
     mock_zone.return_value.init_gl.assert_called_once()
@@ -85,12 +94,14 @@ def test_scene_renderer_init_gl_creates_children():
     mock_text.assert_called_once()
     mock_texture.assert_called_once()
     mock_background.assert_called_once()
+    mock_stock.assert_called_once()
 
     renderers = [r for r, _ in scene.render_registry]
     assert renderers == [
         scene.background_renderer,
         scene.axis_renderer,
         scene.zone_renderer,
+        scene.stock_renderer,
         scene.texture_renderer,
         scene.laser_beam_renderer,
     ]
@@ -171,3 +182,24 @@ def test_render_registry_orders_rings_after_texture():
     # The toolpath draws above the raster texture but below the trail.
     assert ops_index > texture_index
     assert ops_index < ring_index
+
+
+def test_prepare_runs_laser_beam_before_models():
+    """The laser beam publishes the point-light position that the model
+    renderers consume, so its prepare phase must run first even though
+    it draws last."""
+    scene = SceneRenderer()
+    laser = MagicMock()
+    scene.laser_beam_renderer = laser
+    model = MagicMock()
+    scene.model_renderers = [model]
+    scene.ring_renderers = [MagicMock()]
+    scene._rebuild_registry()
+
+    prepare_order = []
+    laser.prepare.side_effect = lambda *a, **k: prepare_order.append("laser")
+    model.prepare.side_effect = lambda *a, **k: prepare_order.append("model")
+
+    scene.prepare(MagicMock())
+
+    assert prepare_order == ["laser", "model"]

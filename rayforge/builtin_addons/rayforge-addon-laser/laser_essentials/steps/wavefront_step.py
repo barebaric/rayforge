@@ -40,16 +40,19 @@ class WavefrontStep(LaserStep):
                     key="step_over_mm",
                     label=_("Step Over"),
                     description=_(
-                        "Distance between wavefront passes; defaults to "
-                        "the laser spot width when unset"
+                        "Lateral step-over between wavefront passes"
                     ),
                     default=None,
                     min_val=0.0,
+                    max_val=50.0,
                 ),
                 LengthVar(
                     key="offset_mm",
                     label=_("Offset"),
+                    description=_("Extra offset from walls"),
                     default=0.0,
+                    min_val=0.0,
+                    max_val=20.0,
                 ),
             ]
         )

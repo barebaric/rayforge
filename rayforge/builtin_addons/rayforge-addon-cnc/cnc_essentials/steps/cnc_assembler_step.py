@@ -6,11 +6,20 @@ from typing import TYPE_CHECKING, Any, ClassVar, cast
 from raygeo.cnc.execution.specs import ComputePayload
 from raygeo.ops.assembly import Assembler
 from raygeo.ops.part import Part
+from raygeo.ops.state import CoolantMode
 
 from rayforge.core.capability import MachineCapability
 from rayforge.core.step import Step
-from rayforge.core.varset import IntVar, LengthVar, SpeedVar, VarSet
+from rayforge.core.varset import (
+    IntVar,
+    LabeledChoiceVar,
+    LengthVar,
+    SpeedVar,
+    VarSet,
+)
 from rayforge.machine.models.spindle import SpindleHead
+
+from ..spindle_head_var import SpindleHeadVar
 
 if TYPE_CHECKING:
     from rayforge.context import RayforgeContext
@@ -136,12 +145,25 @@ class CncAssemblerStep(Step):
     def recipe_varset(cls) -> VarSet:
         return VarSet(
             vars=[
-                LengthVar(
-                    key="tool_diameter",
-                    label=_("Tool Diameter"),
-                    default=6.0,
-                    min_val=0.1,
-                    max_val=50.0,
+                SpindleHeadVar(
+                    description=_(
+                        "Spindle head used for this step; the machine's "
+                        "first spindle is used when unset"
+                    )
+                ),
+                LabeledChoiceVar(
+                    key="coolant_method",
+                    label=_("Cooling"),
+                    choices=[
+                        (_("Off"), CoolantMode.OFF.name),
+                        (_("Flood"), CoolantMode.FLOOD.name),
+                        (_("Mist"), CoolantMode.MIST.name),
+                    ],
+                    default=CoolantMode.OFF.name,
+                    description=_(
+                        "Coolant delivered to the workpiece while cutting"
+                    ),
+                    allow_none=False,
                 ),
                 IntVar(
                     key="spindle_rpm",
@@ -150,17 +172,20 @@ class CncAssemblerStep(Step):
                     min_val=100,
                     max_val=60000,
                 ),
-                *Step.recipe_varset().vars,
-                SpeedVar(
-                    key="plunge_speed",
-                    label=_("Plunge Rate"),
-                    default=200,
-                    min_val=1,
-                    role="cut",
+                LengthVar(
+                    key="tool_diameter",
+                    label=_("Tool Diameter"),
+                    description=_("Diameter of the cutting tool"),
+                    default=6.0,
+                    min_val=0.1,
+                    max_val=50.0,
                 ),
                 LengthVar(
                     key="target_depth",
                     label=_("Target Depth"),
+                    description=_(
+                        "Final depth of the cut (negative is downward)"
+                    ),
                     default=-5.0,
                     min_val=-50.0,
                     max_val=0.0,
@@ -168,6 +193,7 @@ class CncAssemblerStep(Step):
                 LengthVar(
                     key="depth_per_pass",
                     label=_("Depth per Pass"),
+                    description=_("Depth removed by each pass"),
                     default=1.0,
                     min_val=0.1,
                     max_val=10.0,
@@ -175,9 +201,19 @@ class CncAssemblerStep(Step):
                 LengthVar(
                     key="safe_z",
                     label=_("Safe Z Height"),
+                    description=_("Height to retract between moves"),
                     default=2.0,
                     min_val=0.0,
                     max_val=50.0,
+                ),
+                *Step.recipe_varset().vars,
+                SpeedVar(
+                    key="plunge_speed",
+                    label=_("Plunge Rate"),
+                    description=_("Vertical feed rate"),
+                    default=200,
+                    min_val=1,
+                    role="cut",
                 ),
             ]
         )
@@ -188,12 +224,15 @@ class CncAssemblerStep(Step):
         base_keys = {v.key for v in CncAssemblerStep.recipe_varset()}
         cnc_vars = [v for v in full if v.key in base_keys]
         step_vars = [v for v in full if v.key not in base_keys]
-        groups: list[tuple[str, VarSet]] = []
-        if cnc_vars:
-            groups.append((_("CNC"), VarSet(vars=cnc_vars)))
+        cnc_description = _(
+            "Spindle head, spindle speed, tool geometry, depth, and "
+            "feed rates for this operation."
+        )
+        cnc_vs = VarSet(vars=cnc_vars, description=cnc_description)
+        groups: list[tuple[str, VarSet]] = [(_("CNC"), cnc_vs)]
         if step_vars:
             groups.append((_("Step Settings"), VarSet(vars=step_vars)))
-        return groups or [(_("CNC"), VarSet(vars=cnc_vars))]
+        return groups
 
     def build_spec(self, workpiece: WorkPiece) -> object:
         """Return the raygeo assembler spec for this step.
