@@ -236,6 +236,24 @@ class MachinePanel:
         result = self.world_to_panel @ np.array([x, y, 0.0, 1.0])
         return float(result[0]), float(result[1])
 
+    def world_bbox_to_panel(self, bbox: Rect) -> Rect:
+        """Project an axis-aligned WORLD rectangle into PANEL coordinates.
+
+        The result is the axis-aligned bounding box of the projected
+        corners; the 90-degree presentation rotation keeps it
+        axis-aligned.
+        """
+        min_x, min_y, max_x, max_y = bbox
+        corners = (
+            self._world_point_to_panel(min_x, min_y),
+            self._world_point_to_panel(max_x, min_y),
+            self._world_point_to_panel(min_x, max_y),
+            self._world_point_to_panel(max_x, max_y),
+        )
+        xs = [point[0] for point in corners]
+        ys = [point[1] for point in corners]
+        return (min(xs), min(ys), max(xs), max(ys))
+
     def _world_item_to_panel(
         self,
         pos: Point,
