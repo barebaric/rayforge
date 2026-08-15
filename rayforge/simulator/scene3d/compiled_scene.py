@@ -48,6 +48,34 @@ class ScanlineOverlayLayer:
     is_rotary: bool = False
 
 
+@dataclass
+class StockLayer:
+    """Compiled solid-stock prism for a visible stock item.
+
+    Positions are in world (machine mm) coordinates with the top face
+    on the z=0 engrave plane and the body extruded toward negative z;
+    ``transform`` maps them into visual space at draw time.  UVs are
+    ``world_xy / texture_size_mm`` so the texture tiles at a physical
+    density and repeats via ``GL_REPEAT``.
+    """
+
+    positions: np.ndarray
+    normals: np.ndarray
+    uvs: np.ndarray
+    indices: np.ndarray
+    transform: np.ndarray
+    texture_path: str | None = None
+    texture_size_mm: float = 300.0
+    roughness: float = 0.8
+    metallic: float = 0.0
+    fallback_rgba: tuple[float, float, float, float] = (
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+    )
+
+
 class CompiledSceneArtifactHandle(BaseArtifactHandle):
     def __init__(
         self,
@@ -75,12 +103,14 @@ class CompiledSceneArtifact(BaseArtifact):
         texture_layers: list[TextureLayer],
         overlay_layers: list[ScanlineOverlayLayer],
         laser_uid_order: list[str] | None = None,
+        stock_layers: list[StockLayer] | None = None,
     ):
         self.generation_id = generation_id
         self.vertex_layers = vertex_layers
         self.texture_layers = texture_layers
         self.overlay_layers = overlay_layers
         self.laser_uid_order = laser_uid_order or []
+        self.stock_layers = stock_layers or []
 
     def build_handle(self, key: str) -> CompiledSceneArtifactHandle:
         return CompiledSceneArtifactHandle(

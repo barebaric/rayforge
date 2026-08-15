@@ -83,12 +83,13 @@ class ShaderSet:
     Bag of shaders passed to ``render``.
 
     Each renderer picks the program it needs (``main`` / ``text`` /
-    ``texture``) instead of receiving a bespoke positional ``shader``
-    argument.  Fields default to ``None`` so partial populations are
-    valid during migration.
+    ``texture`` / ``stock``) instead of receiving a bespoke positional
+    ``shader`` argument.  Fields default to ``None`` so partial
+    populations are valid during migration.
     """
 
     main: Shader | None = None
     text: Shader | None = None
     texture: Shader | None = None
     background: Shader | None = None
+    stock: Shader | None = None
