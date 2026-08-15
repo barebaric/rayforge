@@ -552,6 +552,8 @@ def main():
     gi.require_version("Pango", "1.0")
     gi.require_version("PangoCairo", "1.0")
     gi.require_version("Gtk", "4.0")
+    gi.require_version("Gdk", "4.0")
+    gi.require_version("Graphene", "1.0")
     gi.require_version("GdkPixbuf", "2.0")
 
     # Initialize the 3D canvas module to check for OpenGL availability.
