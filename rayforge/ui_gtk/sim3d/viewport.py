@@ -67,29 +67,32 @@ class ViewportConfig:
             scale_mat[0, 0] = -1.0
         model_matrix = translate_mat @ scale_mat
 
-        if machine.wcs_origin_is_workarea_origin:
-            wcs_offset_mm: Point3D = (0.0, 0.0, 0.0)
-        else:
-            wcs_x, wcs_y, wcs_z = wcs_offset
-            ml, mt, mr, mb = panel.margins
-            machine_x = -mr if panel.x_axis_right else -ml
-            machine_y = -mt if panel.y_axis_down else -mb
-            local_x = (
-                machine_x - wcs_x
-                if panel.x_axis_negative
-                else machine_x + wcs_x
-            )
-            local_y = (
-                machine_y - wcs_y
-                if panel.y_axis_negative
-                else machine_y + wcs_y
-            )
-            wcs_offset_mm = (local_x, local_y, wcs_z)
-
         margin_shift = np.identity(4, dtype=np.float32)
         ml, _, _, mb = panel.margins
         margin_shift[0, 3] = -ml
         margin_shift[1, 3] = -mb
+
+        if machine.wcs_origin_is_workarea_origin:
+            wcs_offset_mm: Point3D = (0.0, 0.0, 0.0)
+        else:
+            wcs_x, wcs_y, wcs_z = wcs_offset
+            # The WCS origin is a machine point. Express it in the
+            # grid-local frame the same way content is presented: rotate
+            # it into PANEL space, shift it into the workarea, then apply
+            # the origin-corner flip of the grid's model matrix. Without
+            # the panel rotation the marker and axis labels land off by a
+            # 90-degree rotation under a rotated panel.
+            panel_x, panel_y = panel.machine_point_to_panel(wcs_x, wcs_y)
+            grid_local = (
+                model_matrix
+                @ margin_shift
+                @ np.array([panel_x, panel_y, 0.0, 1.0], dtype=np.float32)
+            )
+            wcs_offset_mm = (
+                float(grid_local[0]),
+                float(grid_local[1]),
+                wcs_z,
+            )
 
         extent_frame: Rect | None = None
         if panel.has_custom_work_area:
