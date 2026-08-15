@@ -876,6 +876,36 @@ class TestMachinePanelWorldToPanel:
         assert panel.get_world_to_panel_2d().is_identity()
 
     @pytest.mark.parametrize(
+        "orientation, expected",
+        [
+            (PanelOrientation.NATIVE, (10.0, 20.0, 20.0, 40.0)),
+            (PanelOrientation.ROTATED_RIGHT, (20.0, 80.0, 40.0, 90.0)),
+            (PanelOrientation.ROTATED_LEFT, (160.0, 10.0, 180.0, 20.0)),
+        ],
+    )
+    def test_world_bbox_to_panel(self, orientation, expected):
+        """A WORLD rectangle projects into the panel presentation."""
+        panel = self._panel(orientation)
+        bbox = panel.world_bbox_to_panel((10.0, 20.0, 20.0, 40.0))
+        assert bbox == pytest.approx(expected)
+
+    @pytest.mark.parametrize("orientation", list(PanelOrientation))
+    def test_world_bbox_matches_2d_projection(self, orientation):
+        """world_bbox_to_panel agrees with projecting the corners through
+        the canvas's 2D matrix."""
+        panel = self._panel(orientation)
+        matrix = panel.get_world_to_panel_2d()
+        bbox = (10.0, 20.0, 20.0, 40.0)
+        projected = panel.world_bbox_to_panel(bbox)
+        corners = [
+            matrix.transform_point(point)
+            for point in ((10, 20), (20, 20), (20, 40), (10, 40))
+        ]
+        xs = [point[0] for point in corners]
+        ys = [point[1] for point in corners]
+        assert projected == pytest.approx((min(xs), min(ys), max(xs), max(ys)))
+
+    @pytest.mark.parametrize(
         "orientation, delta, expected",
         [
             (PanelOrientation.NATIVE, (10.0, -5.0), (10.0, -5.0)),
