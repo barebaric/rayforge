@@ -32,7 +32,7 @@ from ..transport import TransportStatus
 from .coordspace import MachineSpace
 from .dialect import GcodeDialect
 from .head import Head, head_from_dict
-from .laser import Laser, LaserHead
+from .laser import Laser, LaserHead, effective_focal_distance
 from .machine_hours import MachineHours
 from .machine_panel import MachinePanel, PanelOrientation
 from .macro import Macro, MacroTrigger
@@ -406,14 +406,14 @@ class Machine:
 
         Does not build or mutate anything.  Each spec is a ``(model,
         transform)`` pair with the focal distance folded into the
-        transform's Z translation.
+        transform's Z translation.  The same effective focal distance
+        drives the beam renderer, so the head model always sits with
+        its nozzle exactly on top of the laser beam.
         """
         head_specs: list[HeadSpec] = []
         for h in self.heads:
             t = h.transform.copy()
-            focal_distance = getattr(h, "focal_distance", 0.0)
-            if focal_distance > 0:
-                t[2, 3] += focal_distance
+            t[2, 3] += effective_focal_distance(h)
             model = (
                 Model.from_path(Path(h.model_path)) if h.model_path else None
             )
