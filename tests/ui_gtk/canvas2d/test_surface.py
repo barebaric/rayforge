@@ -5,6 +5,7 @@ from blinker import Signal
 
 from rayforge.machine.models.coordspace import MachineSpace
 from rayforge.machine.models.machine import Machine, Origin
+from rayforge.machine.models.machine_panel import PanelOrientation
 
 
 @pytest.fixture
@@ -41,6 +42,74 @@ def surface(mock_work_origin):
     s.editor.doc.active_layer = active_layer
 
     return s
+
+
+@pytest.mark.parametrize(
+    "orientation, delta, expected",
+    [
+        (PanelOrientation.NATIVE, (1.0, 0.0), (1.0, 0.0)),
+        (PanelOrientation.NATIVE, (0.0, 1.0), (0.0, 1.0)),
+        (PanelOrientation.ROTATED_RIGHT, (1.0, 0.0), (0.0, 1.0)),
+        (PanelOrientation.ROTATED_RIGHT, (0.0, 1.0), (-1.0, 0.0)),
+        (PanelOrientation.ROTATED_LEFT, (1.0, 0.0), (0.0, -1.0)),
+        (PanelOrientation.ROTATED_LEFT, (0.0, 1.0), (1.0, 0.0)),
+    ],
+)
+@pytest.mark.ui
+def test_arrow_key_nudge_unrotates_panel_delta(
+    surface, orientation, delta, expected
+):
+    """
+    Arrow-key nudging must rotate the presented (PANEL) movement vector
+    into WORLD space before applying it, so items move in the on-screen
+    direction under a rotated panel.
+    """
+    from gi.repository import Gdk
+
+    from rayforge.core.item import DocItem
+    from rayforge.machine.models.coordspace import (
+        AxisDirection,
+        MachineSpace,
+        OriginCorner,
+    )
+    from rayforge.machine.models.machine import Machine
+    from rayforge.machine.models.machine_panel import MachinePanel
+
+    surface._space_pressed = False
+    surface.transform_initiated = Signal()
+
+    item = MagicMock(spec=DocItem)
+    elem = MagicMock()
+    elem.data = item
+    surface.get_selected_elements = MagicMock(return_value=[elem])
+
+    space = MachineSpace(
+        origin=OriginCorner.BOTTOM_LEFT,
+        x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+        y_positive_direction=AxisDirection.POSITIVE_UP,
+        extents=(400.0, 300.0),
+        reverse_x=False,
+        reverse_y=False,
+    )
+    machine = MagicMock(spec=Machine)
+    machine.changed = Signal()
+    machine.axis_extents = (400.0, 300.0)
+    machine.get_coordinate_space.return_value = space
+    panel = MachinePanel(machine)
+    panel._orientation = orientation
+    machine.panel = panel
+    surface.machine = machine
+
+    keyval = {1.0: Gdk.KEY_Right, -1.0: Gdk.KEY_Left}.get(delta[0])
+    if keyval is None:
+        keyval = {1.0: Gdk.KEY_Up, -1.0: Gdk.KEY_Down}[delta[1]]
+
+    handled = surface.on_key_pressed(None, keyval, 0, 0)
+
+    assert handled is True
+    surface.editor.transform.nudge_items.assert_called_once_with(
+        [item], *expected
+    )
 
 
 @pytest.mark.parametrize(

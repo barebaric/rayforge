@@ -1519,6 +1519,14 @@ class WorkSurface(WorldSurface):
             if not selected_items:
                 return True  # Consume event but do nothing
 
+            # Arrow keys express the visual (PANEL) direction. Nudge
+            # applies the delta to the item's canonical WORLD matrix, so
+            # un-rotate the presented vector when the panel is rotated.
+            if self.machine:
+                move_x, move_y = self.machine.panel.panel_delta_to_world(
+                    move_x, move_y
+                )
+
             self.transform_initiated.send(self)
             self.editor.transform.nudge_items(selected_items, move_x, move_y)
             return True
