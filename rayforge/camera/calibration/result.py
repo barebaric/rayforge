@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 
 import cv2
 import numpy as np
@@ -16,7 +16,9 @@ class CalibrationResult:
     image_size: tuple[int, int]
     num_frames_used: int
     reprojection_errors: list[float] = field(default_factory=list)
-    calibration_date: datetime = field(default_factory=datetime.now)
+    calibration_date: datetime = field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
 
     def __post_init__(self):
         self.camera_matrix = np.array(self.camera_matrix, dtype=np.float64)
@@ -96,6 +98,9 @@ class CalibrationResult:
 
     @classmethod
     def from_dict(cls, data: dict) -> "CalibrationResult":
+        calibration_date = datetime.fromisoformat(data["calibration_date"])
+        if calibration_date.tzinfo is None:
+            calibration_date = calibration_date.replace(tzinfo=timezone.utc)
         return cls(
             camera_matrix=np.array(data["camera_matrix"], dtype=np.float64),
             distortion_coeffs=np.array(
@@ -105,7 +110,7 @@ class CalibrationResult:
             image_size=tuple(data["image_size"]),
             num_frames_used=data["num_frames_used"],
             reprojection_errors=data.get("reprojection_errors", []),
-            calibration_date=datetime.fromisoformat(data["calibration_date"]),
+            calibration_date=calibration_date,
         )
 
     def get_undistort_maps(
