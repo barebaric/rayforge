@@ -228,3 +228,29 @@ def test_wcs_visual_marker_location(surface, scenario):
     surface._work_origin_element.set_pos.assert_called_with(
         *scenario["expected"]
     )
+
+
+@pytest.mark.ui
+def test_set_stock_visible(surface):
+    """The view toggle propagates to every stock element."""
+    surface._stock_visible = True
+    stock_elem = MagicMock()
+    surface.find_by_type = MagicMock(return_value=[stock_elem])
+
+    surface.set_stock_visible(False)
+    stock_elem.set_view_visible.assert_called_once_with(False)
+    assert surface._stock_visible is False
+
+    surface.set_stock_visible(True)
+    stock_elem.set_view_visible.assert_called_with(True)
+    assert surface._stock_visible is True
+
+
+@pytest.mark.ui
+def test_set_stock_visible_noop_when_unchanged(surface):
+    """Calling the toggle with the current state is a no-op."""
+    surface._stock_visible = False
+    surface.find_by_type = MagicMock()
+
+    surface.set_stock_visible(False)
+    surface.find_by_type.assert_not_called()

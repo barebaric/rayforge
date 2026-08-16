@@ -319,6 +319,8 @@ class StockRenderer(BaseRenderer):
         """Draws every stock instance through the PBR stock shader."""
         if not self.is_initialized or not self.instances:
             return
+        if not ctx.camera.show_stock:
+            return
         shader = shaders.stock
         if shader is None or self._mvp_ui is None:
             return

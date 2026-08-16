@@ -40,6 +40,7 @@ class CanvasViewState:
     show_models: bool = True
     show_tabs: bool = True
     show_ops_underlay: bool = True
+    show_stock: bool = True
     perspective_mode: bool = False
 
     def to_dict(self) -> dict[str, bool]:

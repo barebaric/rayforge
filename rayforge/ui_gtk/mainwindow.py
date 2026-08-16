@@ -346,6 +346,7 @@ class MainWindow(Adw.ApplicationWindow):
                 and any(c.enabled for c in config.machine.cameras)
             ),
             show_tabs=True,
+            show_stock=True,
             shortcuts=SHORTCUTS,
         )
         self._surface_vis_overlay.set_margin_end(454)
@@ -914,6 +915,18 @@ class MainWindow(Adw.ApplicationWindow):
         config.canvas_view.show_ops_underlay = is_visible
         config.changed.send(config)
 
+    def on_show_stock_state_change(
+        self, action: Gio.SimpleAction, value: GLib.Variant
+    ):
+        is_visible = value.get_boolean()
+        self.surface.set_stock_visible(is_visible)
+        if self.canvas3d is not None:
+            self.canvas3d.set_show_stock(is_visible)
+        action.set_state(value)
+        config = get_context().config
+        config.canvas_view.show_stock = is_visible
+        config.changed.send(config)
+
     def on_view_top(self, action, param):
         """Action handler to set the 3D view to top-down."""
         self.view_cmd.set_view(ViewDirection.TOP, self.canvas3d)
@@ -1014,6 +1027,14 @@ class MainWindow(Adw.ApplicationWindow):
         self.on_show_ops_underlay_state_change(
             am.get_action("show_ops_underlay"),
             GLib.Variant.new_boolean(cv.show_ops_underlay),
+        )
+
+        am.get_action("show_stock").set_state(
+            GLib.Variant.new_boolean(not cv.show_stock)
+        )
+        self.on_show_stock_state_change(
+            am.get_action("show_stock"),
+            GLib.Variant.new_boolean(cv.show_stock),
         )
 
         am.get_action("show_tabs").set_state(
@@ -1403,6 +1424,7 @@ class MainWindow(Adw.ApplicationWindow):
             show_models=True,
             show_grid=True,
             show_ops_underlay=True,
+            show_stock=True,
             shortcuts=SHORTCUTS,
         )
         self._canvas3d_vis_overlay.set_margin_end(454)

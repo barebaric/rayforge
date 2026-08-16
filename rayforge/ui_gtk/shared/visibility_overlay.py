@@ -33,6 +33,7 @@ class VisibilityOverlay(Gtk.Box):
         show_grid=False,
         show_tabs=False,
         show_ops_underlay=False,
+        show_stock=False,
         shortcuts=None,
         **kwargs,
     ):
@@ -66,6 +67,18 @@ class VisibilityOverlay(Gtk.Box):
                 "toggled", self._on_workpiece_toggled
             )
             self.append(self.workpiece_button)
+
+        if show_stock:
+            self.stock_button = Gtk.ToggleButton()
+            self.stock_button.set_child(get_icon("stock-symbolic"))
+            self.stock_button.set_active(True)
+            self.stock_button.set_tooltip_text(
+                self._format_tooltip(
+                    _("Toggle stock visibility"), "win.show_stock"
+                )
+            )
+            self.stock_button.set_action_name("win.show_stock")
+            self.append(self.stock_button)
 
         if show_tabs:
             self.tabs_button = Gtk.ToggleButton()

@@ -45,6 +45,7 @@ class FrameInputs:
     show_nogo_zones: bool = True
     show_models: bool = True
     show_ops_underlay: bool = True
+    show_stock: bool = True
 
 
 class RenderContext:

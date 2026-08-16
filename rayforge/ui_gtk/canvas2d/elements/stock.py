@@ -30,8 +30,9 @@ class StockElement(CanvasElement):
         )
         self.data.updated.connect(self._on_model_content_changed)
         self.data.transform_changed.connect(self._on_transform_changed)
+        self._view_visible = True
         self._on_transform_changed(self.data)
-        self._on_visibility_changed()
+        self._update_visible()
 
     def remove(self):
         """Disconnects signals before removal."""
@@ -45,6 +46,18 @@ class StockElement(CanvasElement):
             self.selected = False
         return super().set_visible(visible)
 
+    def set_view_visible(self, visible: bool):
+        """Sets the canvas-level view toggle for stock visibility.
+
+        Stock items remain selectable only while the view toggle and the
+        item's own visibility flag are both enabled.
+        """
+        self._view_visible = visible
+        self._update_visible()
+
+    def _update_visible(self):
+        self.set_visible(self._view_visible and self.data.visible)
+
     def _on_model_content_changed(self, stock_item: StockItem):
         """Handler for when the stock item's geometry changes."""
         logger.debug(
@@ -57,7 +70,7 @@ class StockElement(CanvasElement):
 
     def _on_visibility_changed(self):
         """Handler for when the stock item's visibility changes."""
-        self.set_visible(self.data.visible)
+        self._update_visible()
 
     def _on_transform_changed(
         self, stock_item: StockItem, *, old_matrix: Matrix | None = None

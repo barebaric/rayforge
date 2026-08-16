@@ -64,6 +64,7 @@ class WorkSurface(WorldSurface):
         self.machine = None  # will be assigned by set_machine() below
         self._show_travel_moves = False
         self._workpieces_visible = True
+        self._stock_visible = True
         self._tracked_axis_extents: tuple[float, float] = (0.0, 0.0)
         x_axis_right = False
         y_axis_down = False
@@ -980,7 +981,7 @@ class WorkSurface(WorldSurface):
         """Creates a new StockElement and adds it to the canvas root."""
         logger.debug(f"Adding new StockElement for '{stock_item.name}'")
         stock_elem = StockElement(stock_item=stock_item, canvas=self)
-        stock_elem.selectable = stock_elem.visible
+        stock_elem.set_view_visible(self._stock_visible)
         self.root.add(stock_elem)
         child_count = len(self.root.children)
         logger.debug(f"StockElement added, total children: {child_count}")
@@ -1107,6 +1108,18 @@ class WorkSurface(WorldSurface):
         # Find the WorkPieceElements and toggle their base image
         for wp_elem in self.find_by_type(WorkPieceElement):
             cast(WorkPieceElement, wp_elem).set_base_image_visible(visible)
+        self.queue_draw()
+
+    def set_stock_visible(self, visible: bool = True):
+        """
+        Sets the view visibility of all stock elements. Hidden stock is
+        also removed from click and selection-frame hit testing.
+        """
+        if self._stock_visible == visible:
+            return
+        self._stock_visible = visible
+        for elem in self.find_by_type(StockElement):
+            cast(StockElement, elem).set_view_visible(visible)
         self.queue_draw()
 
     def set_show_nogo_zones(self, visible: bool):
