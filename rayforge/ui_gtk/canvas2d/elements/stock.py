@@ -167,9 +167,11 @@ class StockElement(CanvasElement):
         the element's 1x1 local box, which the element transform scales
         to the stock's world size in millimeters).
         """
-        world_rect = self.data.get_world_geometry().rect()
-        world_w = max(world_rect[2] - world_rect[0], 1e-9)
-        world_h = max(world_rect[3] - world_rect[1], 1e-9)
+        world_rect = self.data.get_world_transform().transform_rectangle(
+            (0.0, 0.0, 1.0, 1.0)
+        )
+        world_w = max(world_rect[2], 1e-9)
+        world_h = max(world_rect[3], 1e-9)
         geo_w = max(float(geo_width), 1e-9)
         geo_h = max(float(geo_height), 1e-9)
         tile_mm = max(float(tile_mm), 1e-9)
