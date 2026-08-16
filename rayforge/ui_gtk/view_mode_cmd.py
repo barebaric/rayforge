@@ -99,11 +99,10 @@ class ViewModeCmd:
         value: "GLib.Variant",
     ):
         """Toggles the 3D camera between perspective and orthographic."""
+        is_perspective = value.get_boolean()
         if canvas3d:
-            is_perspective = value.get_boolean()
-            if not canvas3d.set_perspective(is_perspective):
-                return
-            action.set_state(value)
-            config = get_context().config
-            config.canvas_view.perspective_mode = is_perspective
-            config.changed.send(config)
+            canvas3d.set_perspective(is_perspective)
+        action.set_state(value)
+        config = get_context().config
+        config.canvas_view.perspective_mode = is_perspective
+        config.changed.send(config)
