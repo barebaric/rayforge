@@ -182,6 +182,11 @@ class Canvas3D(Gtk.GLArea):
         logger.info("GLArea realized.")
 
         self._cam_ctrl.create_camera(self.get_width(), self.get_height())
+        camera = self._cam_ctrl.camera
+        if camera is not None:
+            camera.is_perspective = (
+                self._context.config.canvas_view.perspective_mode
+            )
 
         self._init_gl_resources()
         self._theme_resolver.mark_dirty()
