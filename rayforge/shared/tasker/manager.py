@@ -7,6 +7,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import threading
+import time
 from collections.abc import Callable, Coroutine, Iterator
 from multiprocessing import get_context
 from multiprocessing.managers import DictProxy
@@ -947,12 +948,18 @@ class TaskManager:
 
         # Wait for the event to be set by the callback, polling periodically
         # to handle cases where the signal dispatch might be blocked.
+        # The timeout is measured against wall-clock time because
+        # Event.wait(timeout) can oversleep on some platforms (especially
+        # Windows under load), which would otherwise stretch the wait far
+        # beyond the requested timeout.
         poll_interval = 0.01
-        total_waited = 0.0
+        deadline = time.monotonic() + timeout_seconds
         event_was_set = False
 
-        while total_waited < timeout_seconds:
-            remaining = timeout_seconds - total_waited
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
             wait_time = min(poll_interval, remaining)
 
             if settled_event.wait(timeout=wait_time):
@@ -961,8 +968,6 @@ class TaskManager:
 
             if not self.has_tasks():
                 break
-
-            total_waited += wait_time
 
         # Always try to disconnect in case of a timeout to prevent leaks.
         self.tasks_updated.disconnect(on_update)
