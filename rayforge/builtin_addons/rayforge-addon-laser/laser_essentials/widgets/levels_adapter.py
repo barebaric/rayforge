@@ -61,10 +61,12 @@ class LevelsAdapter(RowAdapter):
         self._last_invert: bool | None = None
         self._histogram_ready = False
         preview.black_point_changed.connect(
-            lambda s, **kw: self.changed.send(self)
+            lambda s, **kw: self.changed.send(self),
+            weak=False,
         )
         preview.white_point_changed.connect(
-            lambda s, **kw: self.changed.send(self)
+            lambda s, **kw: self.changed.send(self),
+            weak=False,
         )
 
     @classmethod

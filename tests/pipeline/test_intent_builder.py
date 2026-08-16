@@ -1277,6 +1277,50 @@ def test_raster_step_is_position_sensitive(engrave_step_class):
     assert step.is_position_sensitive() is True
 
 
+@pytest.mark.parametrize(
+    "attr,value",
+    [
+        ("invert", True),
+        ("auto_levels", False),
+        ("black_point", 80),
+        ("white_point", 200),
+        ("threshold", 200),
+        ("dither_algorithm", "BAYER4"),
+    ],
+)
+def test_raster_compute_token_changes_on_image_preprocess_params(
+    engrave_step_class,
+    test_machine_and_config,
+    attr,
+    value,
+):
+    """Changing any raster image-preprocessing setting must invalidate
+    the workpiece compute cache.
+
+    The levels (black/white points), inversion, threshold and dither
+    are baked into the preprocessed image the assembler consumes, so a
+    token that omits them would replay the exact same ops regardless of
+    the brightness settings.
+    """
+    machine, context = test_machine_and_config
+    step = engrave_step_class.create(context, name="engrave")
+    wp = WorkPiece(name="wp")
+    wp.set_size(20.0, 20.0)
+    doc = _make_doc(step, wp)
+
+    before = IntentBuilder(machine=machine).build(doc)
+    wpk = workpiece_key(wp.uid, step.uid)
+    before_t = next(n.version_token for n in before if n.key == wpk)
+
+    if attr == "dither_algorithm":
+        step.set_dither_algorithm(value)
+    else:
+        setattr(step, attr, value)
+    after = IntentBuilder(machine=machine).build(doc)
+    after_t = next(n.version_token for n in after if n.key == wpk)
+    assert before_t != after_t
+
+
 # ----------------------------------------------------------------------
 # Stock resolution
 # ----------------------------------------------------------------------

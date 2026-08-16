@@ -445,6 +445,32 @@ class EngraveStep(LaserStep):
     ) -> dict | None:
         return self.get_assembler_kwargs(machine, workpiece)
 
+    def get_cache_params(self) -> dict:
+        """Cache params must cover the raster image preprocessing.
+
+        The preprocessed image (levels, inversion, threshold, dither)
+        is baked into the :class:`Part` the assembler consumes, so any
+        of these settings changing must invalidate the workpiece
+        compute cache even though the assembler spec itself is
+        unchanged.
+        """
+        params = super().get_cache_params()
+        params.update(
+            {
+                "invert": self.invert,
+                "auto_levels": self.auto_levels,
+                "black_point": self.black_point,
+                "white_point": self.white_point,
+                "threshold": self.threshold,
+                "dither_algorithm": (
+                    self.dither_algorithm.name
+                    if self.dither_algorithm is not None
+                    else None
+                ),
+            }
+        )
+        return params
+
     def to_dict(self) -> dict:
         result = super().to_dict()
         result["scan_angle"] = self.scan_angle

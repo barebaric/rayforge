@@ -57,7 +57,7 @@ class CameraAlignmentDialog(PatchedDialogWindow):
         header_bar.pack_start(zoom_box)
 
         self._widget = CameraAlignment(controller)
-        self._widget.applied.connect(lambda *_: self.close())
+        self._widget.applied.connect(lambda *_: self.close(), weak=False)
         self._widget.set_margin_start(12)
         self._widget.set_margin_end(12)
         self._widget.set_margin_top(12)
