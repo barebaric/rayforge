@@ -34,6 +34,7 @@ class CameraContext:
         show_nogo_zones: bool = True,
         show_models: bool = True,
         show_ops_underlay: bool = True,
+        show_stock: bool = True,
     ):
         identity = np.eye(4, dtype=np.float32)
         self.proj_matrix = identity if proj_matrix is None else proj_matrix
@@ -50,6 +51,7 @@ class CameraContext:
         self.show_nogo_zones = show_nogo_zones
         self.show_models = show_models
         self.show_ops_underlay = show_ops_underlay
+        self.show_stock = show_stock
 
     def update(self, frame: "FrameInputs") -> None:
         """Recomputes the camera section from the current frame inputs."""
@@ -71,6 +73,7 @@ class CameraContext:
         self.show_nogo_zones = frame.show_nogo_zones
         self.show_models = frame.show_models
         self.show_ops_underlay = frame.show_ops_underlay
+        self.show_stock = frame.show_stock
 
     @staticmethod
     def _world_size_to_pixels(

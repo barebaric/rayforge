@@ -143,3 +143,51 @@ def test_tile_scale_respects_geometry_span(ui_context_initializer):
     # img_w * world_w / (tile_mm * geo_w) = 1000 * 300 / (300 * 100)
     assert matrix.xx == pytest.approx(10.0)
     assert matrix.yy == pytest.approx(10.0)
+
+
+def test_stock_element_view_visibility(ui_context_initializer):
+    """Hiding stock via the view toggle also removes it from selection."""
+    item = _stock_item(None)
+    item.matrix = _stock_matrix(300, 150)
+    element = StockElement(item)
+
+    assert element.visible is True
+    assert element.selectable is True
+
+    element.set_view_visible(False)
+    assert element.visible is False
+    assert element.selectable is False
+    assert element.selected is False
+
+    element.set_view_visible(True)
+    assert element.visible is True
+    assert element.selectable is True
+
+
+def test_stock_element_view_visibility_combines_with_model(
+    ui_context_initializer,
+):
+    """
+    The view toggle and the item's own visibility flag are AND-ed: the
+    element only shows when both are enabled.
+    """
+    item = _stock_item(None)
+    item.matrix = _stock_matrix(300, 150)
+    element = StockElement(item)
+
+    element.set_view_visible(False)
+    item.set_visible(True)
+    assert element.visible is False
+    assert element.selectable is False
+
+    element.set_view_visible(True)
+    assert element.visible is True
+    assert element.selectable is True
+
+    item.set_visible(False)
+    assert element.visible is False
+    assert element.selectable is False
+
+    item.set_visible(True)
+    assert element.visible is True
+    assert element.selectable is True

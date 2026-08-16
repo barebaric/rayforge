@@ -41,6 +41,8 @@ def _update(
     show_grid=True,
     show_nogo_zones=True,
     show_models=True,
+    show_ops_underlay=True,
+    show_stock=True,
 ):
     frame = FrameInputs(
         camera=camera or _make_camera(),
@@ -61,6 +63,8 @@ def _update(
         show_grid=show_grid,
         show_nogo_zones=show_nogo_zones,
         show_models=show_models,
+        show_ops_underlay=show_ops_underlay,
+        show_stock=show_stock,
     )
     ctx = RenderContext()
     ctx.update(frame)
@@ -228,11 +232,15 @@ def test_update_propagates_show_toggles():
         show_grid=False,
         show_nogo_zones=False,
         show_models=False,
+        show_ops_underlay=False,
+        show_stock=False,
     )
     assert ctx.camera.show_travel_moves is True
     assert ctx.camera.show_grid is False
     assert ctx.camera.show_nogo_zones is False
     assert ctx.camera.show_models is False
+    assert ctx.camera.show_ops_underlay is False
+    assert ctx.camera.show_stock is False
 
 
 @pytest.mark.ui
