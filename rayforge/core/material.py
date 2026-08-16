@@ -63,8 +63,11 @@ class MaterialAppearance:
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
+        # A missing color means "not tinted" (None), matching to_dict()
+        # which omits the key when color is None. Falling back to the
+        # class default here would resurrect #f0f0f0 after a save/reload.
         return cls(
-            color=data.get("color", cls.color),
+            color=data.get("color"),
             pattern=data.get("pattern", cls.pattern),
             texture=data.get("texture", cls.texture),
             texture_size_mm=data.get("texture_size_mm", cls.texture_size_mm),

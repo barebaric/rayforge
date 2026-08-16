@@ -389,8 +389,22 @@ class TestMaterialAppearance:
         data = {}
         appearance = MaterialAppearance.from_dict(data)
 
-        assert appearance.color == "#f0f0f0"
+        assert appearance.color is None
         assert appearance.pattern == "solid"
+
+    def test_appearance_unset_color_round_trip(self):
+        """An unset color survives to_dict/from_dict as None."""
+        appearance = MaterialAppearance(
+            color=None, tintable=True, texture="abs.png"
+        )
+
+        data = appearance.to_dict()
+        assert "color" not in data
+
+        reloaded = MaterialAppearance.from_dict(data)
+        assert reloaded.color is None
+        assert reloaded.tintable is True
+        assert reloaded.texture == "abs.png"
 
     def test_appearance_from_dict_partial(self):
         """Test creating a MaterialAppearance from a dict with partial data."""
