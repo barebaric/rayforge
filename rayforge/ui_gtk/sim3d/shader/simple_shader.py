@@ -61,7 +61,7 @@ void main() {
             int laserIdx = int(vColor.g + 0.5);
             float lutY = (float(laserIdx) + 0.5)
                          / float(max(uNumLaserLUTs, 1));
-            float lutX = 0.5 + 0.5 * power;
+            float lutX = power;
             baseColor = texture(uColorLUT, vec2(lutX, lutY));
         }
     } else if (uUseVertexColor > 0.5) {

@@ -5,6 +5,7 @@ Tests for the shared ColorLutProvider used by the renderers.
 from unittest.mock import MagicMock
 
 import numpy as np
+import pytest
 
 from rayforge.core.color import ColorSet
 from rayforge.machine.models.laser import LaserHead
@@ -58,8 +59,23 @@ def test_color_set_and_laser_color_sets_properties():
 def test_no_laser_ring_lut_is_white_ramp():
     provider = ColorLutProvider(_theme_color_set(), {})
     ring = provider.ring_lut_2d()
-    assert np.allclose(ring[0], (0.0, 0.0, 0.0, 0.0))
-    assert np.allclose(ring[-1], (1.0, 1.0, 1.0, 1.0), atol=0.05)
+    # Constant white RGB; power is encoded in the alpha ramp.
+    assert np.allclose(ring[:, :3], 1.0)
+    assert ring[0, 3] == pytest.approx(0.0)
+    assert ring[-1, 3] == pytest.approx(1.0)
+
+
+def test_ring_lut_encodes_power_as_alpha():
+    laser_sets = {
+        "a": _laser_color_set((1.0, 0.0, 0.0)),
+    }
+    provider = ColorLutProvider(_theme_color_set(), laser_sets)
+    ring = provider.ring_lut_2d()
+    # RGB stays at the raster colour across the whole ramp...
+    assert np.allclose(ring[0, :, :3], (1.0, 0.0, 0.0))
+    # ...and alpha spans the full 0..1 range.
+    assert ring[0, 0, 3] == pytest.approx(0.0)
+    assert ring[0, -1, 3] == pytest.approx(1.0)
 
 
 def test_multi_laser_2d_shapes():

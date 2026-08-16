@@ -67,7 +67,7 @@ void main() {
 
     float lutY = (float(uLaserIndex) + 0.5)
                  / float(max(uNumLaserLUTs, 1));
-    float lutX = 0.5 + 0.5 * power;
+    float lutX = power;
     vec4 color = texture(uColorLUT, vec2(lutX, lutY));
 
     FragColor = vec4(color.rgb, color.a * uAlpha);

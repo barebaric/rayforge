@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from rayforge.image.util.srgb import (
+    create_alpha_lut_from_color,
     create_lut_from_color,
     linear_to_srgb,
     resize_linear_nd,
@@ -186,3 +187,31 @@ class TestCreateLutFromColor:
         for c in range(4):
             diffs = np.diff(lut[:, c])
             assert np.all(diffs >= 0)
+
+
+class TestCreateAlphaLutFromColor:
+    def test_shape_and_dtype(self):
+        lut = create_alpha_lut_from_color((1.0, 0.0, 0.0, 1.0))
+        assert lut.shape == (256, 4)
+        assert lut.dtype == np.float32
+
+    def test_rgb_is_constant(self):
+        lut = create_alpha_lut_from_color((0.2, 0.4, 0.6, 1.0))
+        np.testing.assert_allclose(lut[:, 0], 0.2, atol=1e-6)
+        np.testing.assert_allclose(lut[:, 1], 0.4, atol=1e-6)
+        np.testing.assert_allclose(lut[:, 2], 0.6, atol=1e-6)
+
+    def test_alpha_ramp_spans_full_range(self):
+        lut = create_alpha_lut_from_color((1.0, 0.0, 0.0, 1.0))
+        assert lut[0, 3] == pytest.approx(0.0)
+        assert lut[255, 3] == pytest.approx(1.0)
+        assert lut[128, 3] == pytest.approx(128 / 255, abs=1e-5)
+
+    def test_alpha_ramp_scales_with_color_alpha(self):
+        lut = create_alpha_lut_from_color((1.0, 0.0, 0.0, 0.8))
+        assert lut[255, 3] == pytest.approx(0.8, abs=1e-5)
+
+    def test_works_for_black(self):
+        lut = create_alpha_lut_from_color((0.0, 0.0, 0.0, 1.0))
+        np.testing.assert_array_equal(lut[:, :3], 0.0)
+        assert lut[255, 3] == pytest.approx(1.0)
