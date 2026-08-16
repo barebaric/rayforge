@@ -35,7 +35,6 @@ def _make_presenter(**overrides):
         ),
         "get_viewport": lambda: MagicMock(),
         "get_gl_initialized": lambda: True,
-        "get_show_travel_moves": lambda: False,
         "get_camera_available": lambda: True,
         "make_current": MagicMock(),
         "mark_scene_dirty": lambda: calls["scene_dirty"].append(True),
@@ -53,7 +52,6 @@ def _make_presenter(**overrides):
         theme_resolver=defaults["theme_resolver"],
         get_viewport=defaults["get_viewport"],
         get_gl_initialized=defaults["get_gl_initialized"],
-        get_show_travel_moves=defaults["get_show_travel_moves"],
         get_camera_available=defaults["get_camera_available"],
         make_current=defaults["make_current"],
         mark_scene_dirty=defaults["mark_scene_dirty"],
@@ -73,6 +71,29 @@ def test_initial_state(ui_context_initializer):
     assert presenter.job_handle is None
     assert presenter.playback_overlay is None
     assert presenter.scene_preparation_task is None
+    assert presenter.visibility.show_grid is True
+    assert presenter.visibility.show_travel_moves is False
+
+
+@pytest.mark.ui
+def test_set_show_grid_rerenders(ui_context_initializer):
+    presenter, _, calls = _make_presenter()
+    presenter.set_show_grid(False)
+    assert presenter.visibility.show_grid is False
+    assert calls["rendered"] == [True]
+    # Setting the same value again is a no-op.
+    presenter.set_show_grid(False)
+    assert calls["rendered"] == [True]
+
+
+@pytest.mark.ui
+def test_set_show_travel_moves_rebuilds_renderers(ui_context_initializer):
+    presenter, defaults, calls = _make_presenter()
+    presenter._compiled_artifact = MagicMock()
+    presenter.set_show_travel_moves(True)
+    assert presenter.visibility.show_travel_moves is True
+    assert calls["rendered"] == [True]
+    defaults["scene"].update_from_artifact.assert_called_once()
 
 
 @pytest.mark.ui

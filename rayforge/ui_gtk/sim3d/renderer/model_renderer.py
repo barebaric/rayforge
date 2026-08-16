@@ -136,6 +136,8 @@ def get_model_extent(path: Path) -> float | None:
 class ModelRenderer(BaseRenderer):
     """Loads and renders a .glb model as GL_TRIANGLES."""
 
+    visibility_key = "show_models"
+
     def __init__(self, resolved_path: Path, link_name: str = ""):
         super().__init__()
         self._path = resolved_path
@@ -241,8 +243,6 @@ class ModelRenderer(BaseRenderer):
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
 
     def render(self, ctx: RenderContext, shaders: ShaderSet, **kwargs) -> None:
-        if not ctx.camera.show_models:
-            return
         if not self._vao or self._mvp_matrix is None:
             return
 

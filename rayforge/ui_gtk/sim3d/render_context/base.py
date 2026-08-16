@@ -9,6 +9,7 @@ from .camera import CameraContext
 from .kinematics import KinematicsContext
 from .playback import PlaybackContext
 from .viewport import ViewportContext
+from .visibility import SceneVisibility
 
 if TYPE_CHECKING:
     from ....core.color import ColorSet
@@ -33,6 +34,7 @@ class FrameInputs:
     camera: "Camera"
     viewport: "ViewportConfig"
     color_set: "ColorSet"
+    visibility: "SceneVisibility"
     op_player: Optional["OpPlayer"] = None
     machine: Optional["Machine"] = None
     playback_assembly: Optional["Assembly"] = None
@@ -40,13 +42,6 @@ class FrameInputs:
     doc: Optional["Doc"] = None
     cylinder_transform: np.ndarray | None = None
     had_rotary_layers: bool = False
-    show_travel_moves: bool = False
-    show_grid: bool = True
-    show_nogo_zones: bool = True
-    show_models: bool = True
-    show_ops_underlay: bool = True
-    show_stock: bool = True
-    show_workpiece_image: bool = True
 
 
 class RenderContext:
@@ -57,13 +52,15 @@ class RenderContext:
     renderers pass row-major matrices directly.
 
     Sections:
-      - ``camera``: view/projection matrices, colours, line width and
-        display toggles shared by all renderers.
+      - ``camera``: view/projection matrices, colours and line width
+        shared by all renderers.
       - ``viewport``: grid/world transforms derived from the viewport.
       - ``kinematics``: pre-computed machine head positions, model
         transforms and rotary matrices.
       - ``playback``: the op player, compiled artifact and per-frame
         execution counters.
+      - ``visibility``: the scene visibility toggles used by the
+        SceneRenderer to filter its per-frame draw list.
 
     Each section refreshes itself in place from a :class:`FrameInputs`
     bundle via :meth:`update`, so a single context can be reused across
@@ -76,6 +73,7 @@ class RenderContext:
         viewport: ViewportContext | None = None,
         kinematics: KinematicsContext | None = None,
         playback: PlaybackContext | None = None,
+        visibility: SceneVisibility | None = None,
     ):
         self.camera = camera if camera is not None else CameraContext()
         self.viewport = viewport if viewport is not None else ViewportContext()
@@ -83,6 +81,9 @@ class RenderContext:
             kinematics if kinematics is not None else KinematicsContext()
         )
         self.playback = playback if playback is not None else PlaybackContext()
+        self.visibility = (
+            visibility if visibility is not None else SceneVisibility()
+        )
 
     def update(self, frame: FrameInputs) -> None:
         """Refreshes every section from the given frame inputs.
@@ -96,3 +97,4 @@ class RenderContext:
             frame, camera=self.camera, viewport=self.viewport
         )
         self.playback.update(frame)
+        self.visibility = frame.visibility

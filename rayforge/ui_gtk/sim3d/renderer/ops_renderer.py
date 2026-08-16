@@ -323,7 +323,7 @@ class OpsRenderer(BaseRenderer):
             return
 
         colors = ctx.camera.color_set
-        show_travel_moves = ctx.camera.show_travel_moves
+        show_travel_moves = ctx.visibility.show_travel_moves
         line_width = ctx.camera.line_width
         executed_vertex_count = ctx.playback.executed_vertex_count
         executed_travel_vertex_count = (

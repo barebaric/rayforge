@@ -132,6 +132,8 @@ class StockRenderer(BaseRenderer):
     materials trigger a decode and GL upload.
     """
 
+    visibility_key = "show_stock"
+
     def __init__(self):
         super().__init__()
         self.is_initialized = False
@@ -318,8 +320,6 @@ class StockRenderer(BaseRenderer):
     def render(self, ctx: RenderContext, shaders: ShaderSet, **kwargs):
         """Draws every stock instance through the PBR stock shader."""
         if not self.is_initialized or not self.instances:
-            return
-        if not ctx.camera.show_stock:
             return
         shader = shaders.stock
         if shader is None or self._mvp_ui is None:

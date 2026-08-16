@@ -277,6 +277,8 @@ _EDGE_FUNCS = {
 
 
 class ZoneRenderer(BaseRenderer):
+    visibility_key = "show_nogo_zones"
+
     def __init__(self):
         super().__init__()
         self._fill_vao = 0
@@ -343,8 +345,6 @@ class ZoneRenderer(BaseRenderer):
         """No per-frame state to prepare."""
 
     def render(self, ctx: RenderContext, shaders: ShaderSet, **kwargs) -> None:
-        if not ctx.camera.show_nogo_zones:
-            return
         if not self._fill_vao and not self._edge_vao:
             return
 

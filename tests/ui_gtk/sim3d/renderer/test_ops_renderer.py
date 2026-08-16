@@ -14,6 +14,7 @@ from rayforge.ui_gtk.sim3d.render_context import (
     KinematicsContext,
     PlaybackContext,
     RenderContext,
+    SceneVisibility,
 )
 from rayforge.ui_gtk.sim3d.renderer.ops_renderer import OpsRenderer
 
@@ -45,12 +46,10 @@ def colors():
 
 def _make_ctx(colors, show_travel_moves=False, op_player=None):
     return RenderContext(
-        camera=CameraContext(
-            color_set=colors,
-            show_travel_moves=show_travel_moves,
-        ),
+        camera=CameraContext(color_set=colors),
         kinematics=KinematicsContext(mvp_ui=np.eye(4, dtype=np.float32)),
         playback=PlaybackContext(op_player=op_player),
+        visibility=SceneVisibility(show_travel_moves=show_travel_moves),
     )
 
 

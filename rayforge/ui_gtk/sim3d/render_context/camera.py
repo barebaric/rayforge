@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 class CameraContext:
-    """Frame-level camera matrices, colors, line width and display toggles.
+    """Frame-level camera matrices, colors and line width.
 
     The plain constructor leaves the section empty; call :meth:`update`
     each frame to populate it from the camera, machine and viewport.
@@ -29,13 +29,6 @@ class CameraContext:
         camera_position: np.ndarray | None = None,
         color_set: Optional["ColorSet"] = None,
         line_width: float = 2.0,
-        show_travel_moves: bool = False,
-        show_grid: bool = True,
-        show_nogo_zones: bool = True,
-        show_models: bool = True,
-        show_ops_underlay: bool = True,
-        show_stock: bool = True,
-        show_workpiece_image: bool = True,
     ):
         identity = np.eye(4, dtype=np.float32)
         self.proj_matrix = identity if proj_matrix is None else proj_matrix
@@ -47,13 +40,6 @@ class CameraContext:
         )
         self.color_set = color_set if color_set is not None else ColorSet()
         self.line_width = line_width
-        self.show_travel_moves = show_travel_moves
-        self.show_grid = show_grid
-        self.show_nogo_zones = show_nogo_zones
-        self.show_models = show_models
-        self.show_ops_underlay = show_ops_underlay
-        self.show_stock = show_stock
-        self.show_workpiece_image = show_workpiece_image
 
     def update(self, frame: "FrameInputs") -> None:
         """Recomputes the camera section from the current frame inputs."""
@@ -70,13 +56,6 @@ class CameraContext:
         self.line_width = self._compute_spot_line_width(
             frame.machine, camera, mvp_ui
         )
-        self.show_travel_moves = frame.show_travel_moves
-        self.show_grid = frame.show_grid
-        self.show_nogo_zones = frame.show_nogo_zones
-        self.show_models = frame.show_models
-        self.show_ops_underlay = frame.show_ops_underlay
-        self.show_stock = frame.show_stock
-        self.show_workpiece_image = frame.show_workpiece_image
 
     @staticmethod
     def _world_size_to_pixels(

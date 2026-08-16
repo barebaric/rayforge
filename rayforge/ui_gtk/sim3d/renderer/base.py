@@ -21,6 +21,12 @@ class BaseRenderer(ABC):
     """A base class for an OpenGL renderer that manages its own
     resources."""
 
+    #: Name of the ``SceneVisibility`` toggle that gates this renderer,
+    #: or None when the renderer always participates in a frame.  The
+    #: SceneRenderer applies the toggle when it builds the draw list, so
+    #: renderers themselves never read visibility flags.
+    visibility_key: str | None = None
+
     @abstractmethod
     def prepare(self, ctx: "RenderContext") -> None:
         """Per-frame state setup before the draw."""

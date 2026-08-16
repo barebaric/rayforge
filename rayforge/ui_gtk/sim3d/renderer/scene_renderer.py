@@ -305,6 +305,22 @@ class SceneRenderer(BaseRenderer):
             registry.append((self.laser_beam_renderer, ("main",)))
         self.render_registry = registry
 
+    def _active_registry(self, ctx: RenderContext):
+        """Filters the draw list by the frame's scene visibility.
+
+        Visibility is a scene-assembly decision applied here, once, so
+        renderers never read visibility flags themselves: a renderer
+        either declares a ``visibility_key`` naming a ``SceneVisibility``
+        toggle or always participates.
+        """
+        vis = ctx.visibility
+        active = []
+        for renderer, shader_keys in self.render_registry:
+            key = renderer.visibility_key
+            if key is None or getattr(vis, key):
+                active.append((renderer, shader_keys))
+        return active
+
     def set_cylinder_transform(self, transform: np.ndarray):
         """Stores the assembly's cylinder base transform."""
         self.cylinder_transform = transform
@@ -690,18 +706,19 @@ class SceneRenderer(BaseRenderer):
 
     def prepare(self, ctx: RenderContext) -> None:
         """
-        Prepares every registry renderer for the current frame.
+        Prepares every visible registry renderer for the current frame.
 
-        Runs the ``prepare`` phase of each renderer in the registry so
-        that frame-level cross-dependencies (e.g. the laser point light
-        feeding the model renderers) resolve before any draw.
+        Runs the ``prepare`` phase of each renderer in the active
+        (visibility-filtered) draw list so that frame-level
+        cross-dependencies (e.g. the laser point light feeding the model
+        renderers) resolve before any draw.
         """
         # The laser beam publishes the point-light position that the
         # model renderers consume, so it must be prepared first even
         # though it draws last.
         if self.laser_beam_renderer is not None:
             self.laser_beam_renderer.prepare(ctx)
-        for renderer, _ in self.render_registry:
+        for renderer, _ in self._active_registry(ctx):
             if renderer is self.laser_beam_renderer:
                 continue
             renderer.prepare(ctx)
@@ -735,7 +752,7 @@ class SceneRenderer(BaseRenderer):
         if shaders is None:
             return
 
-        for renderer, shader_keys in self.render_registry:
+        for renderer, shader_keys in self._active_registry(ctx):
             pass_shaders = tuple(getattr(shaders, key) for key in shader_keys)
             with render_pass(*pass_shaders):
                 renderer.render(ctx, shaders)
