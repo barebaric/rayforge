@@ -127,7 +127,9 @@ class TestCompileRotary:
         assert pv.shape[0] == 2
 
         assert abs(pv[0, 1]) < 1e-5
-        assert abs(pv[0, 2] - diameter / 2) < 1e-3
+        # Toolpath lines wrap at radius + MAX_SAGITTA (0.05mm) so the
+        # chords stay on/above the faceted cylinder surface.
+        assert abs(pv[0, 2] - (diameter / 2 + 0.05)) < 1e-3
 
 
 class TestCompileCancel:
@@ -246,7 +248,10 @@ class TestCompileMultiLayer:
 
         rot_vl = next(vl for vl in artifact.vertex_layers if vl.is_rotary)
         pv_rot = rot_vl.powered_verts.to_numpy().reshape(-1, 3)
-        assert abs(pv_rot[0, 2] - 25.0) < 1e-3
+        # Rotary toolpath lines are wrapped at radius + MAX_SAGITTA
+        # (0.05mm) so their chords stay on/above the faceted cylinder
+        # surface in orthographic views.
+        assert abs(pv_rot[0, 2] - 25.05) < 1e-3
 
 
 class TestPoweredOffsets:
