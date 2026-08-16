@@ -615,11 +615,14 @@ class Driver(ABC):
 
     @abstractmethod
     async def set_wcs_offset(
-        self, wcs_slot: str, x: float, y: float, z: float
+        self, wcs_slot: str, x: float, y: float, z: float | None
     ) -> None:
         """
         Sends a command to the controller to define the offset for a
         specific WCS slot (e.g. "G54").
+
+        When *z* is ``None`` (a no-Z machine), the Z component is
+        omitted from the emitted command.
         """
 
     @abstractmethod

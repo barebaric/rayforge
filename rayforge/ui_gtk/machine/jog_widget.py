@@ -317,7 +317,12 @@ class JogWidget(Gtk.Widget):
         home_visible = single_axis_homing
         self.home_x_btn.set_visible(home_visible)
         self.home_y_btn.set_visible(home_visible)
-        self.home_z_btn.set_visible(home_visible)
+        self.home_z_btn.set_visible(home_visible and machine.has_z_axis)
+
+        # Hide Z jog buttons when the machine has no Z axis
+        has_z = machine.has_z_axis
+        self.z_plus_btn.set_visible(has_z)
+        self.z_minus_btn.set_visible(has_z)
 
         self._update_limit_status()
 
@@ -446,7 +451,7 @@ class JogWidget(Gtk.Widget):
     def _on_home_all_clicked(self, button):
         """Handle Home All button click."""
         if self.machine and self.machine_cmd:
-            self.machine_cmd.home(self.machine)
+            self.machine_cmd.home(self.machine, self.machine.available_axes)
 
     def _on_home_x_clicked(self, button):
         """Handle Home X button click."""
@@ -492,10 +497,12 @@ class JogWidget(Gtk.Widget):
             self._on_x_plus_clicked(None)  # Right
             return True
         elif keyval == Gdk.KEY_Page_Up:
-            self._on_z_plus_clicked(None)  # Up
+            if self.machine.has_z_axis:
+                self._on_z_plus_clicked(None)  # Up
             return True
         elif keyval == Gdk.KEY_Page_Down:
-            self._on_z_minus_clicked(None)  # Down
+            if self.machine.has_z_axis:
+                self._on_z_minus_clicked(None)  # Down
             return True
 
         return False

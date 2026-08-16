@@ -705,7 +705,7 @@ class IntentBuilder:
             start = Marker.WorkpieceStart(uid=wp.uid, _tag=True)
             end = Marker.WorkpieceEnd(uid=wp.uid, _tag=True)
             link_mode = LinkMode.none()
-            if step.uses_global_state:
+            if step.uses_global_state and self._machine.has_z_axis:
                 link_mode = LinkMode.sequential(
                     safe_z=getattr(step, "safe_z", 2.0)
                 )

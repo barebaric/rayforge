@@ -467,13 +467,14 @@ class MachineController:
             )
             return
 
+        emit_z = z if self.machine.has_z_axis else None
         if not self.machine.is_connected():
             self.machine.update_wcs_offset(slot, (x, y, z))
             self._scheduler(self.wcs_updated.send, self.machine)
             self._scheduler(self.machine.changed.send, self.machine)
             return
 
-        await self.driver.set_wcs_offset(slot, x, y, z)
+        await self.driver.set_wcs_offset(slot, x, y, emit_z)
         await self.driver.read_wcs_offsets()
 
     async def select_wcs(self, wcs: str) -> None:
@@ -521,6 +522,9 @@ class MachineController:
 
         new_x, new_y, new_z = current_offsets
 
+        # Mask out axes the machine does not have (e.g. Z on a 2-axis
+        # laser) so we never set a Z origin for a no-Z machine.
+        axes &= self.machine.available_axes
         if axes & Axis.X and m_pos[0] is not None:
             new_x = m_pos[0]
         if axes & Axis.Y and m_pos[1] is not None:

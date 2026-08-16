@@ -158,6 +158,9 @@ class Machine:
                 ),
             ]
         )
+        # Stashed Z config kept when the user disables the Z axis so
+        # re-enabling restores the previous extents/direction.
+        self._stashed_z_config: AxisConfig | None = None
         self._work_margins: Rect = (
             0.0,
             0.0,
@@ -674,6 +677,28 @@ class Machine:
         cfg = self.axes.get(Axis.Z)
         return cfg.direction == AxisDirection.REVERSED if cfg else False
 
+    @property
+    def has_z_axis(self) -> bool:
+        """Whether this machine has a configured Z axis.
+
+        Modelled by the presence of ``Axis.Z`` in :attr:`axes`; a
+        2-axis laser simply omits it.  Drives G-code Z emission, the
+        jog/home/zero UI, and 3D Z-layering.
+        """
+        return self.axes.get(Axis.Z) is not None
+
+    @property
+    def available_axes(self) -> Axis:
+        """Bitmask of configured axes (X | Y, plus Z when present).
+
+        Used by jog / home / zero callers so a no-Z machine never
+        targets Z.
+        """
+        axes = Axis.X | Axis.Y
+        if self.has_z_axis:
+            axes |= Axis.Z
+        return axes
+
     def _clamp_soft_limits(self):
         """Clamp soft limits to axis extents. Returns True if clamped."""
         if self._soft_limits is None:
@@ -819,8 +844,35 @@ class Machine:
             )
         self.changed.send(self)
 
+    def set_has_z_axis(self, enabled: bool) -> None:
+        """Enable or disable the Z axis on this machine.
+
+        Disabling stashes the current Z :class:`AxisConfig` and removes
+        it from :attr:`axes`; re-enabling restores the stashed config, or
+        adds a default linear ``(-50, 50)`` Z when none was stashed.
+        Emits :attr:`changed` so the assembly and UI rebuild.
+        """
+        if enabled == self.has_z_axis:
+            return
+        if enabled:
+            cfg = self._stashed_z_config or AxisConfig(
+                letter=Axis.Z,
+                axis_type=AxisType.LINEAR,
+                extents=(-50, 50),
+            )
+            self.axes.add_config(cfg)
+            self._stashed_z_config = None
+        else:
+            cfg = self.axes.get(Axis.Z)
+            if cfg is not None:
+                self._stashed_z_config = cfg
+                self.axes.remove_config(Axis.Z)
+        self.changed.send(self)
+
     def set_reverse_z_axis(self, is_reversed: bool):
         """Sets if the Z-axis direction is reversed."""
+        if not self.has_z_axis:
+            return
         if self.reverse_z_axis == is_reversed:
             return
         cfg = self.axes.get(Axis.Z)

@@ -405,9 +405,7 @@ class BottomPanel(Gtk.Box):
         )
         self.zero_here_btn.add_css_class("flat")
         self.zero_here_btn.set_size_request(40, -1)
-        self.zero_here_btn.connect(
-            "clicked", self._on_zero_axis_clicked, Axis.X | Axis.Y | Axis.Z
-        )
+        self.zero_here_btn.connect("clicked", self._on_zero_here_clicked)
         zero_button_box.append(self.zero_here_btn)
 
         self._click_to_zero_icon = get_icon("crosshairs-symbolic")
@@ -510,6 +508,14 @@ class BottomPanel(Gtk.Box):
             return
         machine = self.machine
         task_mgr.add_coroutine(lambda ctx: machine.set_work_origin_here(axis))
+
+    def _on_zero_here_clicked(self, button):
+        if not self.machine:
+            return
+        machine = self.machine
+        task_mgr.add_coroutine(
+            lambda ctx: machine.set_work_origin_here(machine.available_axes)
+        )
 
     def set_click_to_zero_mode(self, active: bool):
         if self._click_to_zero_mode != active:
@@ -681,9 +687,10 @@ class BottomPanel(Gtk.Box):
         self.wcs_row.set_title(title)
 
         off_x, off_y, off_z = self.machine.get_active_wcs_offset()
-        self.wcs_row.set_subtitle(
-            f"X: {off_x:.2f}   Y: {off_y:.2f}   Z: {off_z:.2f}"
-        )
+        offset_parts = [f"X: {off_x:.2f}", f"Y: {off_y:.2f}"]
+        if self.machine.has_z_axis:
+            offset_parts.append(f"Z: {off_z:.2f}")
+        self.wcs_row.set_subtitle("   ".join(offset_parts))
 
         n = self._wcs_model.get_n_items()
         for i in range(n):
@@ -721,7 +728,7 @@ class BottomPanel(Gtk.Box):
             pos_str += f"X: {pos_x:.2f}   "
         if pos_y is not None:
             pos_str += f"Y: {pos_y:.2f}   "
-        if pos_z is not None:
+        if pos_z is not None and self.machine.has_z_axis:
             pos_str += f"Z: {pos_z:.2f}"
 
         if not is_active:
@@ -736,6 +743,7 @@ class BottomPanel(Gtk.Box):
         self.zero_x_btn.set_sensitive(can_zero)
         self.zero_y_btn.set_sensitive(can_zero)
         self.zero_z_btn.set_sensitive(can_zero)
+        self.zero_z_btn.set_visible(self.machine.has_z_axis)
         self.zero_here_btn.set_sensitive(can_zero)
         self.edit_offsets_btn.set_sensitive(can_manual)
 

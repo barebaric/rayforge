@@ -48,13 +48,15 @@ class WcsDialog(Adw.MessageDialog):
         )
         group.add(self._row_y)
 
-        self._row_z = LengthSpinRow(
-            _("Z Offset"),
-            lower=-10000,
-            upper=10000,
-            value_in_base=off_z,
-        )
-        group.add(self._row_z)
+        self._row_z: LengthSpinRow | None = None
+        if machine.has_z_axis:
+            self._row_z = LengthSpinRow(
+                _("Z Offset"),
+                lower=-10000,
+                upper=10000,
+                value_in_base=off_z,
+            )
+            group.add(self._row_z)
 
         self.set_extra_child(group)
 
@@ -65,8 +67,15 @@ class WcsDialog(Adw.MessageDialog):
             label = self._label_row.get_text()
             nx = self._row_x.get_value_in_base_units()
             ny = self._row_y.get_value_in_base_units()
-            nz = self._row_z.get_value_in_base_units()
             self.machine.set_wcs_label(self.machine.active_wcs, label)
-            task_mgr.add_coroutine(
-                lambda ctx: self.machine.set_work_origin(nx, ny, nz)
-            )
+            if self._row_z is not None:
+                nz = self._row_z.get_value_in_base_units()
+                task_mgr.add_coroutine(
+                    lambda ctx: self.machine.set_work_origin(nx, ny, nz)
+                )
+            else:
+                task_mgr.add_coroutine(
+                    lambda ctx: self.machine.set_work_origin(
+                        nx, ny, self.machine.get_active_wcs_offset()[2]
+                    )
+                )

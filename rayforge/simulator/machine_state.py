@@ -64,7 +64,8 @@ class MachineState:
             end = ops.endpoint(idx)
             self.axes[Axis.X] = end[0]
             self.axes[Axis.Y] = end[1]
-            self.axes[Axis.Z] = end[2]
+            if Axis.Z in self.axes:
+                self.axes[Axis.Z] = end[2]
             ea = ops.extra_axes(idx)
             if ea:
                 for axis, value in ea.items():
