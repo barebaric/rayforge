@@ -927,6 +927,17 @@ class MainWindow(Adw.ApplicationWindow):
         config.canvas_view.show_stock = is_visible
         config.changed.send(config)
 
+    def on_show_workpiece_image_state_change(
+        self, action: Gio.SimpleAction, value: GLib.Variant
+    ):
+        is_visible = value.get_boolean()
+        if self.canvas3d is not None:
+            self.canvas3d.set_show_workpiece_image(is_visible)
+        action.set_state(value)
+        config = get_context().config
+        config.canvas_view.show_workpiece_image = is_visible
+        config.changed.send(config)
+
     def on_view_top(self, action, param):
         """Action handler to set the 3D view to top-down."""
         self.view_cmd.set_view(ViewDirection.TOP, self.canvas3d)
@@ -1035,6 +1046,14 @@ class MainWindow(Adw.ApplicationWindow):
         self.on_show_stock_state_change(
             am.get_action("show_stock"),
             GLib.Variant.new_boolean(cv.show_stock),
+        )
+
+        am.get_action("show_workpiece_image").set_state(
+            GLib.Variant.new_boolean(not cv.show_workpiece_image)
+        )
+        self.on_show_workpiece_image_state_change(
+            am.get_action("show_workpiece_image"),
+            GLib.Variant.new_boolean(cv.show_workpiece_image),
         )
 
         am.get_action("show_tabs").set_state(
@@ -1425,6 +1444,7 @@ class MainWindow(Adw.ApplicationWindow):
             show_grid=True,
             show_ops_underlay=True,
             show_stock=True,
+            show_workpiece_image=True,
             shortcuts=SHORTCUTS,
         )
         self._canvas3d_vis_overlay.set_margin_end(454)

@@ -46,6 +46,7 @@ class FrameInputs:
     show_models: bool = True
     show_ops_underlay: bool = True
     show_stock: bool = True
+    show_workpiece_image: bool = True
 
 
 class RenderContext:

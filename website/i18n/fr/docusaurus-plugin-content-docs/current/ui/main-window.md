@@ -37,9 +37,14 @@ La liste déroulante WCS te permet de basculer rapidement entre les systèmes de
 Voir [Systèmes de coordonnées de travail](../general-info/coordinate-systems.md) pour
 plus d'informations.
 
-Les bascules de visibilité pour les pièces, les onglets, le flux caméra, les déplacements
-rapides et d'autres éléments ont été déplacées vers des boutons superposés sur le canevas
-lui-même, pour qu'ils soient toujours à portée de main pendant que tu travailles.
+Les bascules de visibilité ont été déplacées vers des boutons superposés
+sur le canevas lui-même, pour qu'ils soient toujours à portée de main
+pendant que tu travailles. Sur le canevas 2D, elles basculent les images de
+base des pièces, les onglets, le flux caméra (lorsqu'une caméra est
+activée), les blocs de brut, les déplacements rapides et les zones
+interdites. La [vue 3D](3d-preview) possède ses propres bascules pour
+l'image de la pièce, le modèle de la machine, la grille, la sous-couche
+d'opérations, le brut, les déplacements rapides et les zones interdites.
 
 ### 3. Canevas
 

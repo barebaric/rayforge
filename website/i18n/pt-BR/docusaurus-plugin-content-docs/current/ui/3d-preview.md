@@ -67,11 +67,21 @@ de ferramenta em si se moveram.
 ## Opções de Exibição
 
 Botões de alternância de visibilidade estão localizados como botões de
-sobreposição no canto superior direito da tela 3D:
+sobreposição no canto superior direito da tela 3D. Cada botão lembra seu
+estado entre as sessões:
 
+- **Imagem da peça de trabalho**: Alternar a imagem base da peça de trabalho
+  na superfície do material — a mesma imagem mostrada na tela 2D
+- **Material**: Alternar visibilidade dos blocos de material
 - **Modelo**: Alternar visibilidade do modelo 3D da máquina
+- **Grade**: Alternar visibilidade da grade de coordenadas
+- **Subcamada de operações**: Alternar a pré-visualização semitransparente da
+  gravação rasterizada na superfície da peça de trabalho
 - **Movimentos de deslocamento**: Alternar visibilidade dos movimentos rápidos
 - **Zonas de restrição**: Alternar visibilidade das zonas de restrição
+
+A projeção em perspectiva e ortográfica é alternada com <kbd>P</kbd> ou
+**Exibir → Alternar perspectiva**.
 
 ### Visualização do Caminho da Ferramenta
 

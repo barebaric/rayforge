@@ -70,11 +70,20 @@ point (the grid) has changed, not because the toolpaths themselves moved.
 ## Display Options
 
 Visibility toggles are located as overlay buttons at the top-right of the
-3D canvas:
+3D canvas. Each button remembers its state between sessions:
 
+- **Workpiece image**: Toggle the workpiece's base image on the stock
+  surface — the same image shown on the 2D canvas
+- **Stock**: Toggle the stock material blocks
 - **Model**: Toggle the 3D machine model visibility
+- **Grid**: Toggle the coordinate grid visibility
+- **Ops underlay**: Toggle the semi-transparent raster engraving preview
+  on the workpiece surface
 - **Travel moves**: Toggle rapid travel move visibility
 - **No-go zones**: Toggle no-go zone visibility
+
+Perspective and orthographic projection are toggled with <kbd>P</kbd> or
+**View → Toggle Perspective**.
 
 ### Toolpath Visualization
 

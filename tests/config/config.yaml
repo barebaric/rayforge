@@ -21,6 +21,7 @@ canvas_view:
   show_nogo_zones: true
   show_tabs: true
   show_travel_lines: true
+  show_workpiece_image: true
   show_workpieces: true
 check_for_app_updates: true
 import_dpi: 96.0

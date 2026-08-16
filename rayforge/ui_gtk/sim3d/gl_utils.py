@@ -93,3 +93,4 @@ class ShaderSet:
     texture: Shader | None = None
     background: Shader | None = None
     stock: Shader | None = None
+    image: Shader | None = None

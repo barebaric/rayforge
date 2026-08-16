@@ -434,3 +434,130 @@ def test_schedule_clears_artifact_without_job_or_stock(
     assert presenter._compiled_artifact is None
     assert calls["artifact_dirty"] == [True]
     assert calls["rendered"] == [True]
+
+
+@pytest.mark.ui
+def test_update_workpiece_images_skips_when_not_initialized(
+    ui_context_initializer,
+):
+    presenter, _, calls = _make_presenter(get_gl_initialized=lambda: False)
+    presenter.update_workpiece_images_from_doc()
+    assert calls["rendered"] == []
+
+
+@pytest.mark.ui
+def test_update_workpiece_images_clears_without_workpieces(
+    ui_context_initializer,
+):
+    doc_editor = MagicMock()
+    doc_editor.doc.get_descendants.return_value = []
+    scene = MagicMock()
+    scene.workpiece_image_renderer = MagicMock()
+    scene.workpiece_image_renderer.instances = [MagicMock()]
+    presenter, _, calls = _make_presenter(doc_editor=doc_editor, scene=scene)
+
+    with patch(
+        "rayforge.ui_gtk.sim3d.scene_presenter.task_mgr"
+    ) as mock_task_mgr:
+        presenter.update_workpiece_images_from_doc()
+
+    mock_task_mgr.run_thread.assert_not_called()
+    scene.workpiece_image_renderer.clear.assert_called_once()
+    assert calls["rendered"] == [True]
+
+
+@pytest.mark.ui
+def test_update_workpiece_images_schedules_rendering(
+    ui_context_initializer,
+):
+    from rayforge.core.workpiece import WorkPiece
+
+    wp = WorkPiece(name="photo")
+    wp._source_segment = MagicMock()
+    wp.set_size(100, 50)
+
+    doc_editor = MagicMock()
+    doc_editor.doc.get_descendants.return_value = [wp]
+    doc_editor.doc.get_asset_by_uid.return_value = None
+    scene = MagicMock()
+    scene.workpiece_image_renderer = MagicMock()
+    scene.workpiece_image_renderer.instances = []
+    presenter, _, _ = _make_presenter(
+        doc_editor=doc_editor,
+        scene=scene,
+        context=MagicMock(machine=None),
+    )
+
+    with patch(
+        "rayforge.ui_gtk.sim3d.scene_presenter.task_mgr"
+    ) as mock_task_mgr:
+        presenter.update_workpiece_images_from_doc()
+
+    mock_task_mgr.run_thread.assert_called_once()
+    _, workpieces, matrices = mock_task_mgr.run_thread.call_args.args
+    assert workpieces == [wp]
+    assert len(matrices) == 1
+    assert matrices[0].shape == (4, 4)
+
+
+@pytest.mark.ui
+def test_update_workpiece_images_skips_hidden_provider(
+    ui_context_initializer,
+):
+    from rayforge.core.workpiece import WorkPiece
+
+    wp = WorkPiece(name="hidden")
+    wp._source_segment = MagicMock()
+    wp.geometry_provider_uid = "provider-1"
+
+    doc_editor = MagicMock()
+    doc_editor.doc.get_descendants.return_value = [wp]
+    hidden_provider = MagicMock()
+    hidden_provider.hidden = True
+    doc_editor.doc.get_asset_by_uid.return_value = hidden_provider
+    scene = MagicMock()
+    scene.workpiece_image_renderer = MagicMock()
+    scene.workpiece_image_renderer.instances = []
+    presenter, _, _ = _make_presenter(doc_editor=doc_editor, scene=scene)
+
+    with patch(
+        "rayforge.ui_gtk.sim3d.scene_presenter.task_mgr"
+    ) as mock_task_mgr:
+        presenter.update_workpiece_images_from_doc()
+
+    mock_task_mgr.run_thread.assert_not_called()
+
+
+@pytest.mark.ui
+def test_on_workpiece_images_ready_uploads(ui_context_initializer):
+    scene = MagicMock()
+    scene.workpiece_image_renderer = MagicMock()
+    presenter, defaults, calls = _make_presenter(scene=scene)
+    presenter._workpiece_image_generation = 3
+    task = MagicMock()
+    task.get_status.return_value = "completed"
+    images = [{"pixels": MagicMock(), "model_matrix": MagicMock()}]
+    task.result.return_value = images
+
+    presenter._on_workpiece_images_ready(3, task)
+
+    scene.workpiece_image_renderer.set_images.assert_called_once_with(images)
+    defaults["make_current"].assert_called_once()
+    assert calls["rendered"] == [True]
+
+
+@pytest.mark.ui
+def test_on_workpiece_images_ready_ignores_stale_generation(
+    ui_context_initializer,
+):
+    scene = MagicMock()
+    scene.workpiece_image_renderer = MagicMock()
+    presenter, _, calls = _make_presenter(scene=scene)
+    presenter._workpiece_image_generation = 4
+    task = MagicMock()
+    task.get_status.return_value = "completed"
+
+    presenter._on_workpiece_images_ready(3, task)
+
+    scene.workpiece_image_renderer.set_images.assert_not_called()
+    assert calls["rendered"] == []

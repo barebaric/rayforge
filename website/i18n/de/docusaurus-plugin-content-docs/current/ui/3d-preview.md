@@ -69,11 +69,21 @@ selbst bewegt haben.
 ## Anzeigeoptionen
 
 Sichtbarkeits-Umschaltungen befinden sich als Overlay-Schaltflächen oben rechts
-auf der 3D-Canvas:
+auf der 3D-Canvas. Jede Schaltfläche merkt sich ihren Zustand zwischen den
+Sitzungen:
 
+- **Werkstückbild**: Sichtbarkeit des Werkstück-Grundbilds auf der
+  Werkstückoberfläche umschalten — dasselbe Bild wie auf der 2D-Canvas
+- **Material**: Sichtbarkeit der Material-Blöcke umschalten
 - **Modell**: 3D-Maschinenmodell-Sichtbarkeit umschalten
+- **Raster**: Sichtbarkeit des Koordinatenrasters umschalten
+- **Ops-Unterlage**: Sichtbarkeit der halbtransparenten Raster-Gravurvorschau
+  auf der Werkstückoberfläche umschalten
 - **Eilgänge**: Eilgang-Sichtbarkeit umschalten
 - **No-Go-Zonen**: No-Go-Zonen-Sichtbarkeit umschalten
+
+Die perspektivische und orthografische Projektion wird mit <kbd>P</kbd> oder
+**Ansicht → Perspektive umschalten** umgeschaltet.
 
 ### Werkzeugweg-Visualisierung
 

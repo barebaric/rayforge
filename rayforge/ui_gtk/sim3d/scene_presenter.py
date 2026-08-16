@@ -17,6 +17,7 @@ from blinker import Signal
 from raygeo.ops import Ops
 
 from ...context import RayforgeContext
+from ...core.workpiece import WorkPiece
 from ...machine.kinematic_mapping import (
     KinematicMapping,
     build_layer_assembly,
@@ -45,6 +46,66 @@ if TYPE_CHECKING:
     from .viewport import ViewportConfig
 
 logger = logging.getLogger(__name__)
+
+# Target pixel density for rendered workpiece base images, capped so
+# preview textures stay cheap to upload and render.
+WORKPIECE_IMAGE_PX_PER_MM = 8.0
+MAX_WORKPIECE_IMAGE_DIM = 2048
+
+
+def _workpiece_image_pixels(wp: WorkPiece) -> np.ndarray | None:
+    """Renders a workpiece's base image to RGBA uint8 pixels.
+
+    Runs in a worker thread.  Row 0 is the bottom of the image so the
+    texture maps v-up onto the quad, matching the other renderers.
+    """
+    size = wp.size
+    if size[0] <= 1e-9 or size[1] <= 1e-9:
+        return None
+    width_px = max(1, round(size[0] * WORKPIECE_IMAGE_PX_PER_MM))
+    height_px = max(1, round(size[1] * WORKPIECE_IMAGE_PX_PER_MM))
+    scale = min(
+        1.0,
+        MAX_WORKPIECE_IMAGE_DIM / width_px,
+        MAX_WORKPIECE_IMAGE_DIM / height_px,
+    )
+    width_px = max(1, round(width_px * scale))
+    height_px = max(1, round(height_px * scale))
+    try:
+        vips_image = wp.get_vips_image(width_px, height_px)
+        if vips_image is None:
+            return None
+        from ...image.util.vips import normalize_to_rgba
+
+        rgba = normalize_to_rgba(vips_image)
+        if rgba is None:
+            return None
+        memory = rgba.write_to_memory()
+        pixels = np.frombuffer(memory, dtype=np.uint8).reshape(
+            rgba.height, rgba.width, 4
+        )
+        return np.ascontiguousarray(pixels)
+    except Exception:
+        logger.exception("Failed to render workpiece base image %s", wp.name)
+        return None
+
+
+def _render_workpiece_images(
+    workpieces: list[WorkPiece], matrices: list[np.ndarray]
+) -> list[dict]:
+    """Renders workpiece base images and pairs them with their matrices."""
+    images: list[dict] = []
+    for wp, matrix in zip(workpieces, matrices):
+        pixels = _workpiece_image_pixels(wp)
+        if pixels is None:
+            continue
+        images.append(
+            {
+                "pixels": pixels,
+                "model_matrix": np.asarray(matrix, dtype=np.float32),
+            }
+        )
+    return images
 
 
 class ScenePresenter:
@@ -97,6 +158,8 @@ class ScenePresenter:
         self._op_player: OpPlayer | None = None
         self._playback_assembly: Assembly | None = None
         self._playback_overlay = None
+        self._workpiece_image_task: Task | None = None
+        self._workpiece_image_generation = 0
 
     def connect(self):
         """Subscribe to the pipeline and upload events that drive the scene.
@@ -175,6 +238,9 @@ class ScenePresenter:
         if self._scene_preparation_task:
             self._scene_preparation_task.cancel()
             self._scene_preparation_task = None
+        if self._workpiece_image_task:
+            self._workpiece_image_task.cancel()
+            self._workpiece_image_task = None
 
     def has_stale_job(self) -> bool:
         """True if the cached job handle is from an older generation."""
@@ -546,11 +612,7 @@ class ScenePresenter:
 
         machine = self._context.machine
         if machine:
-            ms = viewport.margin_shift
-            wcs = viewport.wcs_offset_mm
-            physical_to_visual = ms @ viewport.world_to_panel
-            world_to_visual[:3, :] = physical_to_visual[:3, :]
-            world_to_visual[2, 3] = wcs[2]
+            world_to_visual = self._compute_world_to_visual(viewport, machine)
 
             asm = machine.assembly
             if asm.has_rotary:
@@ -607,6 +669,7 @@ class ScenePresenter:
         )
 
         self._schedule_scene_preparation(render_config.to_dict())
+        self.update_workpiece_images_from_doc(world_to_visual)
 
         t_update_elapsed = (time.perf_counter() - t_update_start) * 1000
         if t_update_elapsed > 5:
@@ -670,3 +733,96 @@ class ScenePresenter:
             key=task_key,
             when_done=self._on_scene_prepared,
         )
+
+    @staticmethod
+    def _compute_world_to_visual(
+        viewport: "ViewportConfig", machine
+    ) -> np.ndarray:
+        """Builds the world->visual matrix from the viewport and machine."""
+        world_to_visual = np.identity(4, dtype=np.float32)
+        ms = viewport.margin_shift
+        wcs = viewport.wcs_offset_mm
+        world_to_visual[0, 3] = ms[0, 3]
+        world_to_visual[1, 3] = ms[1, 3]
+        world_to_visual[2, 3] = wcs[2]
+        return world_to_visual
+
+    def update_workpiece_images_from_doc(
+        self, world_to_visual: np.ndarray | None = None
+    ) -> None:
+        """Renders workpiece base images and uploads them to the scene.
+
+        Collects every visible workpiece with a source image, renders
+        its base image off the main thread, and feeds the resulting
+        textures to the workpiece image renderer.
+        """
+        if not self._get_gl_initialized():
+            return
+        renderer = self._scene.workpiece_image_renderer
+        if renderer is None:
+            return
+
+        if world_to_visual is None:
+            machine = self._context.machine
+            viewport = self._get_viewport()
+            world_to_visual = self._compute_world_to_visual(viewport, machine)
+
+        workpieces: list[WorkPiece] = []
+        matrices: list[np.ndarray] = []
+        for wp in self.doc.get_descendants(WorkPiece):
+            if wp.source_segment is None:
+                continue
+            if wp.geometry_provider_uid:
+                provider = self.doc.get_asset_by_uid(wp.geometry_provider_uid)
+                if provider and getattr(provider, "hidden", False):
+                    continue
+            try:
+                world_matrix = wp.get_world_transform().to_4x4_numpy()
+            except (ValueError, TypeError, np.linalg.LinAlgError):
+                logger.warning(
+                    "Skipping workpiece %s: non-invertible transform.",
+                    wp.name,
+                )
+                continue
+            workpieces.append(wp)
+            matrices.append(world_to_visual @ world_matrix)
+
+        if not workpieces:
+            if renderer.instances:
+                self._make_current()
+                renderer.clear()
+                self._request_render()
+            return
+
+        if self._workpiece_image_task:
+            self._workpiece_image_task.cancel()
+            self._workpiece_image_task = None
+
+        self._workpiece_image_generation += 1
+        generation = self._workpiece_image_generation
+        self._workpiece_image_task = task_mgr.run_thread(
+            _render_workpiece_images,
+            workpieces,
+            matrices,
+            key=(id(self), "workpiece-images"),
+            when_done=lambda task, g=generation: (
+                self._on_workpiece_images_ready(g, task)
+            ),
+        )
+
+    def _on_workpiece_images_ready(self, generation: int, task: Task) -> None:
+        """Uploads freshly rendered workpiece images to the renderer."""
+        self._workpiece_image_task = None
+        if generation != self._workpiece_image_generation:
+            return
+        if task.get_status() != "completed":
+            return
+        renderer = self._scene.workpiece_image_renderer
+        if renderer is None or not self._get_gl_initialized():
+            return
+        try:
+            self._make_current()
+            renderer.set_images(task.result())
+        except Exception:
+            logger.exception("Failed to upload workpiece images")
+        self._request_render()

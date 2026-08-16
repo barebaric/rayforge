@@ -39,10 +39,14 @@ O menu suspenso WCS permite alternar rapidamente entre sistemas de coordenadas.
 Veja [Sistemas de Coordenadas de Trabalho](../general-info/coordinate-systems.md)
 para mais informação.
 
-Botões de alternância de visibilidade para peças de trabalho, abas, feed de
-câmera, movimentos de deslocamento e outros elementos foram movidos para botões
-de sobreposição na própria tela, então estão sempre à mão enquanto você
-trabalha.
+Botões de alternância de visibilidade foram movidos para botões de
+sobreposição na própria tela, então estão sempre à mão enquanto você
+trabalha. Na tela 2D eles alternam as imagens base das peças de trabalho,
+abas, feed de câmera (quando uma câmera está habilitada), blocos de
+material, movimentos de deslocamento e zonas de restrição. A [visualização
+3D](3d-preview) tem seus próprios botões para a imagem da peça de trabalho,
+modelo da máquina, grade, subcamada de operações, material, movimentos de
+deslocamento e zonas de restrição.
 
 ### 3. Tela
 
