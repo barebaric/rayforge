@@ -35,7 +35,7 @@ PANELS = ["show_3d_view", "toggle_bottom_panel"]
 
 
 def main():
-    target = get_target("main:3d-rotary")
+    target = get_target("dbg-rotary-persp")
     set_window_size(win, 2400, 1650)
 
     load_project(win, "rotary.ryp")

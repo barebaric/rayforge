@@ -9,6 +9,7 @@ from ..icons import get_icon
 from ..machine.wcs_dialog import WcsDialog
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.pref_rows.length_spin_row import LengthSpinRow
+from .material_selector import MaterialRow
 
 if TYPE_CHECKING:
     from ...doceditor.editor import DocEditor
@@ -64,6 +65,8 @@ class LayerSettingsDialog(PatchedDialogWindow):
         color_dialog = Gtk.ColorDialog()
         color_dialog.set_with_alpha(False)
         self.color_button = Gtk.ColorDialogButton(dialog=color_dialog)
+        self.color_button.set_size_request(45, 45)
+        self.color_button.set_valign(Gtk.Align.CENTER)
         rgba = Gdk.RGBA()
         rgba.parse(layer.color)
         self.color_button.set_rgba(rgba)
@@ -142,6 +145,15 @@ class LayerSettingsDialog(PatchedDialogWindow):
         )
         self.rotary_diameter_row.set_sensitive(layer.rotary_enabled)
         rotary_group.add(self.rotary_diameter_row)
+
+        self.stock_material_row = MaterialRow(
+            _("Stock Material"),
+            _("Material rendered on the rotary object"),
+            on_select=self._on_stock_material_selected,
+        )
+        self.stock_material_row.set_sensitive(layer.rotary_enabled)
+        rotary_group.add(self.stock_material_row)
+        self.stock_material_row.set_material(layer.stock_material)
 
         self._is_initializing = False
 
@@ -227,6 +239,7 @@ class LayerSettingsDialog(PatchedDialogWindow):
         enabled = row.get_active()
         self.module_row.set_sensitive(enabled)
         self.rotary_diameter_row.set_sensitive(enabled)
+        self.stock_material_row.set_sensitive(enabled)
         self.layer.set_rotary_enabled(enabled)
         if enabled and self.layer.rotary_module_uid is None:
             machine = get_context().machine
@@ -260,6 +273,17 @@ class LayerSettingsDialog(PatchedDialogWindow):
             return
         diameter = self.rotary_diameter_row.get_value_in_base_units()
         self.layer.set_rotary_diameter(diameter)
+
+    def _on_stock_material_selected(self, material_uid: str | None):
+        """Callback for the rotary stock material selector."""
+        if material_uid is None:
+            return
+        if self.editor is not None:
+            self.editor.layer.set_layer_stock_material(
+                self.layer, material_uid
+            )
+        else:
+            self.layer.set_stock_material_uid(material_uid)
 
     def _on_color_changed(self, button, _param):
         if self._is_initializing:

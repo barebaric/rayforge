@@ -1,26 +1,32 @@
 """
 Stock mesh compilation (CPU, background thread).
 
-Turns the document's ``StockItem`` definitions into solid prism meshes
-suitable for the PBR renderer.  Triangulation and extrusion run in
-Rust (:func:`raygeo.mesh.build.build_prism_mesh`); this module only
-extracts plain-data specs, validates them and packs the GPU buffers
-into :class:`StockLayer` objects.
+Turns the document's stock definitions into solid meshes suitable for
+the PBR renderer.  Flat stocks are prism meshes built in Rust
+(:func:`raygeo.mesh.build.build_prism_mesh`); rotary stocks are
+cylinder shells built in numpy.  This module only extracts plain-data
+specs, validates them and packs the GPU buffers into
+:class:`StockLayer` objects.
 
 Mesh layout (all coordinates in world / machine mm):
 
-- Bottom face on the bed (z=0), top face at ``z=+thickness``.
-- Top-face normal ``+z``, bottom cap flipped winding, normal ``-z``.
-- Side walls for every boundary ring (outer contours and inner
+- Flat: bottom face on the bed (z=0), top face at ``z=+thickness``.
+  Top-face normal ``+z``, bottom cap flipped winding, normal ``-z``.
+  Side walls for every boundary ring (outer contours and inner
   islands), with outward-facing normals.
-- UVs are ``world_xy / texture_size_mm`` so one texture repeat always
-  spans ``texture_size_mm`` world millimeters (physical density,
-  ``GL_REPEAT`` at render time).
+- Rotary: single-layer cylindrical shell (no caps) along the local X
+  axis (the chuck axis), spanning ``0..length`` axially, positioned by
+  the per-frame cylinder kinematics at render time.
+- UVs are ``world_xy / texture_size_mm`` (flat) or
+  ``axial/circumference distance / texture_size_mm`` (rotary) so one
+  texture repeat always spans ``texture_size_mm`` world millimeters
+  (physical density, ``GL_REPEAT`` at render time).
 """
 
 from __future__ import annotations
 
 import logging
+import math
 
 import numpy as np
 from raygeo.mesh.build import build_prism_mesh
@@ -37,6 +43,10 @@ DEFAULT_TEXTURE_SIZE_MM = 300.0
 
 # Fallback albedo (linear-ish RGBA) for materials without a color.
 DEFAULT_RGBA = (1.0, 1.0, 1.0, 1.0)
+
+# Cylinder shell tessellation: angular segments and axial segments.
+CYLINDER_RINGS = 48
+CYLINDER_LENGTH_SEGMENTS = 16
 
 
 def _parse_rgba(color: object) -> tuple[float, float, float, float]:
@@ -90,10 +100,138 @@ def _positive_float(value: object, default: float) -> float:
     return result if result > 0 else default
 
 
+def _build_cylinder_shell(
+    diameter: float,
+    length: float,
+    texture_size_mm: float,
+    rings: int = CYLINDER_RINGS,
+    length_segments: int = CYLINDER_LENGTH_SEGMENTS,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Build a solid cylinder mesh in chuck-local space.
+
+    The axis runs along local X (the chuck axis), spanning ``0..length``
+    axially with the cross-section centered on the Y/Z origin — the
+    same frame the wireframe cylinder and the rotary texture meshes
+    use, so the per-frame cylinder kinematics place it.  The lateral
+    surface is a shell whose angular seam is duplicated with continued
+    UVs so the texture wraps physically via ``GL_REPEAT``; both ends
+    are closed with flat cap fans so the stock reads as a solid rod
+    instead of a pipe.
+
+    UV mapping: U follows the circumference and V follows the axis, so
+    the source textures' vertical grain (their V direction) runs along
+    the cylinder instead of around it.  The caps sample the texture
+    at their axial stripe (the cross-section at each end).
+
+    Returns ``(positions, normals, uvs, indices)`` as flat float32 /
+    uint32 arrays.
+    """
+    radius = diameter / 2.0
+    circumference = math.pi * diameter
+
+    i_vals = np.linspace(0.0, 1.0, length_segments + 1, dtype=np.float64)
+    j_vals = np.linspace(0.0, 1.0, rings + 1, dtype=np.float64)
+    ii, jj = np.meshgrid(i_vals, j_vals, indexing="ij")
+
+    theta = 2.0 * math.pi * jj
+    x = ii * length
+    y = radius * np.sin(theta)
+    z = radius * np.cos(theta)
+
+    positions = np.stack([x.ravel(), y.ravel(), z.ravel()], axis=-1).astype(
+        np.float32
+    )
+    normals = np.stack(
+        [
+            np.zeros(theta.size),
+            np.sin(theta).ravel(),
+            np.cos(theta).ravel(),
+        ],
+        axis=-1,
+    ).astype(np.float32)
+    uvs = np.stack(
+        [
+            (jj * circumference / texture_size_mm).ravel(),
+            (x / texture_size_mm).ravel(),
+        ],
+        axis=-1,
+    ).astype(np.float32)
+
+    v = (
+        np.arange(length_segments + 1, dtype=np.int64)[:, None] * (rings + 1)
+        + np.arange(rings + 1, dtype=np.int64)[None, :]
+    )
+    tri1 = np.stack([v[:-1, :-1], v[1:, :-1], v[1:, 1:]], axis=-1).reshape(-1)
+    tri2 = np.stack([v[:-1, :-1], v[1:, 1:], v[:-1, 1:]], axis=-1).reshape(-1)
+    side_indices = np.concatenate([tri1, tri2])
+
+    # Cap fans: one center vertex per end, reusing the ring vertices
+    # of the first/last axial segment.  Normals point along ±X so the
+    # flat ends light correctly.
+    near_center = positions.shape[0]
+    far_center = near_center + 1
+    centers = np.array([[0.0, 0.0, 0.0], [length, 0.0, 0.0]], dtype=np.float32)
+    center_normals = np.array(
+        [[-1.0, 0.0, 0.0], [1.0, 0.0, 0.0]], dtype=np.float32
+    )
+    center_uvs = np.array(
+        [[0.0, 0.0], [0.0, length / texture_size_mm]], dtype=np.float32
+    )
+
+    ring_near = v[0, :rings]
+    ring_near_wrap = np.roll(ring_near, -1)
+    ring_far = v[length_segments, :rings]
+    ring_far_wrap = np.roll(ring_far, -1)
+
+    near_fan = np.stack(
+        [
+            np.full(rings, near_center),
+            ring_near,
+            ring_near_wrap,
+        ],
+        axis=-1,
+    ).reshape(-1)
+    far_fan = np.stack(
+        [
+            np.full(rings, far_center),
+            ring_far_wrap,
+            ring_far,
+        ],
+        axis=-1,
+    ).reshape(-1)
+
+    positions = np.concatenate([positions, centers])
+    normals = np.concatenate([normals, center_normals])
+    uvs = np.concatenate([uvs, center_uvs])
+    indices = np.concatenate([side_indices, near_fan, far_fan]).astype(
+        np.uint32
+    )
+    return positions, normals, uvs, indices
+
+
 def _compile_stock_spec(
     spec: dict, stock_w2v: np.ndarray
 ) -> StockLayer | None:
     """Compile a single stock spec dict into a mesh layer."""
+    texture_size_mm = _positive_float(
+        spec.get("texture_size_mm"), DEFAULT_TEXTURE_SIZE_MM
+    )
+    roughness = float(spec.get("roughness") or 0.8)
+    metallic = float(spec.get("metallic") or 0.0)
+    fallback_rgba = _parse_rgba(spec.get("color"))
+    tint_rgba = _parse_rgba_optional(spec.get("tint"))
+
+    if spec.get("kind") == "rotary":
+        return _compile_rotary_stock_spec(
+            spec,
+            texture_size_mm=texture_size_mm,
+            roughness=roughness,
+            metallic=metallic,
+            fallback_rgba=fallback_rgba,
+            tint_rgba=tint_rgba,
+            stock_w2v=stock_w2v,
+        )
+
     outers = [
         ring
         for ring in (
@@ -113,9 +251,6 @@ def _compile_stock_spec(
         return None
 
     thickness = _positive_float(spec.get("thickness"), DEFAULT_THICKNESS_MM)
-    texture_size_mm = _positive_float(
-        spec.get("texture_size_mm"), DEFAULT_TEXTURE_SIZE_MM
-    )
 
     pos_parts: list[np.ndarray] = []
     norm_parts: list[np.ndarray] = []
@@ -156,10 +291,45 @@ def _compile_stock_spec(
         transform=np.asarray(stock_w2v, dtype=np.float32),
         texture_path=spec.get("texture_path"),
         texture_size_mm=texture_size_mm,
-        roughness=float(spec.get("roughness") or 0.8),
-        metallic=float(spec.get("metallic") or 0.0),
-        fallback_rgba=_parse_rgba(spec.get("color")),
-        tint_rgba=_parse_rgba_optional(spec.get("tint")),
+        roughness=roughness,
+        metallic=metallic,
+        fallback_rgba=fallback_rgba,
+        tint_rgba=tint_rgba,
+    )
+
+
+def _compile_rotary_stock_spec(
+    spec: dict,
+    *,
+    texture_size_mm: float,
+    roughness: float,
+    metallic: float,
+    fallback_rgba: tuple[float, float, float, float],
+    tint_rgba: tuple[float, float, float, float] | None,
+    stock_w2v: np.ndarray,
+) -> StockLayer | None:
+    """Compile a rotary stock spec into a cylinder shell layer."""
+    diameter = _positive_float(spec.get("diameter"), 0.0)
+    length = _positive_float(spec.get("length"), 0.0)
+    if diameter <= 0 or length <= 0:
+        return None
+
+    positions, normals, uvs, indices = _build_cylinder_shell(
+        diameter, length, texture_size_mm
+    )
+    return StockLayer(
+        positions=positions,
+        normals=normals,
+        uvs=uvs,
+        indices=indices,
+        transform=np.asarray(stock_w2v, dtype=np.float32),
+        texture_path=spec.get("texture_path"),
+        texture_size_mm=texture_size_mm,
+        roughness=roughness,
+        metallic=metallic,
+        fallback_rgba=fallback_rgba,
+        tint_rgba=tint_rgba,
+        is_rotary=True,
     )
 
 

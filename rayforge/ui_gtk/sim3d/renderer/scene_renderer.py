@@ -30,6 +30,7 @@ from ..render_context import RenderContext
 from ..shader import (
     BackgroundShader,
     ImageShader,
+    LineDepthBiasShader,
     Shader,
     SimpleShader,
     StockShader,
@@ -340,6 +341,7 @@ class SceneRenderer(BaseRenderer):
             viewport = ViewportConfig.default()
         font_family = self._font_family or "sans-serif"
         self.main_shader = SimpleShader()
+        self.line_shader = LineDepthBiasShader()
         self.text_shader = TextShader()
         self.texture_shader = TextureShader()
         self.background_shader = BackgroundShader()
@@ -347,6 +349,7 @@ class SceneRenderer(BaseRenderer):
         self.image_shader = ImageShader()
         self.shader_set = ShaderSet(
             main=self.main_shader,
+            main_lines=self.line_shader,
             text=self.text_shader,
             texture=self.texture_shader,
             background=self.background_shader,
@@ -469,11 +472,17 @@ class SceneRenderer(BaseRenderer):
         return True
 
     def update_cylinders_from_doc(self, doc, viewport, machine):
-        """Reads chuck diameters from the assembly and rebuilds cylinders."""
+        """Reads chuck diameters from the assembly and rebuilds cylinders.
+
+        Layers whose diameter is covered by a rotary stock material
+        skip the wireframe — the solid stock shell replaces it.
+        """
         desired_diameters: dict[float, bool] = {}
         if machine and self.had_rotary_layers:
             for layer in doc.layers:
                 if layer.rotary_enabled and layer.rotary_diameter > 0:
+                    if layer.stock_material is not None:
+                        continue
                     desired_diameters[layer.rotary_diameter] = True
 
         max_length = viewport.width_mm

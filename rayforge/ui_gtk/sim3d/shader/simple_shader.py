@@ -11,7 +11,6 @@ layout (location = 2) in vec3 aNormal;
 uniform mat4 uMVP;
 uniform vec3 uPartialEnd;
 uniform int uPartialVertexID;
-uniform float uDepthBias;
 out vec4 vColor;
 out vec3 vNormal;
 out vec3 vPos;
@@ -22,7 +21,6 @@ void main() {
         pos = uPartialEnd;
     }
     gl_Position = uMVP * vec4(pos, 1.0);
-    gl_Position.z += uDepthBias;
     vColor = aColor;
     vNormal = aNormal;
     vPos = pos;
@@ -30,7 +28,7 @@ void main() {
 }
 """
 
-SIMPLE_FRAGMENT_SHADER = """
+SIMPLE_FRAGMENT_DECLARATIONS = """
 out vec4 FragColor;
 in vec4 vColor;
 in vec3 vNormal;
@@ -51,6 +49,9 @@ uniform float uUsePowerLUT;
 uniform sampler2D uColorLUT;
 uniform int uNumLaserLUTs;
 uniform vec4 uZeroPowerColor;
+"""
+
+SIMPLE_FRAGMENT_MAIN = """
 void main() {
     vec4 baseColor;
     if (uUsePowerLUT > 0.5) {
@@ -108,8 +109,19 @@ void main() {
             FragColor.a *= uAlphaPending;
         }
     }
-}
 """
+
+SIMPLE_FRAGMENT_SHADER = (
+    SIMPLE_FRAGMENT_DECLARATIONS + SIMPLE_FRAGMENT_MAIN + "}\n"
+)
+
+LINE_DEPTH_BIAS_FRAGMENT_SHADER = (
+    SIMPLE_FRAGMENT_DECLARATIONS
+    + "uniform float uFragDepthBias;\n"
+    + SIMPLE_FRAGMENT_MAIN
+    + "    gl_FragDepth = gl_FragCoord.z - uFragDepthBias;\n"
+    + "}\n"
+)
 
 
 class SimpleShader(Shader):
@@ -133,4 +145,31 @@ class SimpleShader(Shader):
         self.set_vec4("uZeroPowerColor", (0.0, 0.0, 0.0, 1.0))
         self.set_float("uPointLightOn", 0.0)
         self.set_vec3("uPointLightPos", (0.0, 0.0, 0.0))
-        self.set_float("uDepthBias", 0.0)
+
+
+class LineDepthBiasShader(SimpleShader):
+    """The simple shader variant used by the line renderers.
+
+    Identical to ``SimpleShader`` except that the fragment shader
+    writes ``gl_FragDepth`` with a small negative window-space bias.
+    The bias changes depth ordering only — lines keep their exact
+    projected position in perspective and ortho alike — letting
+    coplanar surface geometry (raster texture, cylinder facets) lose
+    depth ties against the lines while real occluders (the laser head
+    model) still hide them.
+
+    The static ``gl_FragDepth`` write disables early fragment tests
+    for this program, which is why it is a separate variant rather
+    than part of the shared ``SimpleShader``.
+    """
+
+    def __init__(self):
+        Shader.__init__(
+            self,
+            SIMPLE_VERTEX_SHADER,
+            LINE_DEPTH_BIAS_FRAGMENT_SHADER,
+        )
+
+    def reset_uniforms(self) -> None:
+        super().reset_uniforms()
+        self.set_float("uFragDepthBias", 0.0)

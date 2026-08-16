@@ -59,22 +59,19 @@ def set_line_width(requested: float) -> None:
 
 # Toolpath and scanline-trail lines lie exactly on the workpiece
 # surface, so a plain depth test would z-fight with the raster texture
-# (and the faceted cylinder mesh).  We bias the lines' depth a couple
-# of millimetres toward the camera instead: large enough to always win
-# against the coplanar surface, small enough that the laser head model
-# (which sits well above the surface) still occludes them.
-LINE_DEPTH_BIAS_MM = 2.0
-
-
-def line_depth_bias(proj_matrix: np.ndarray) -> float:
-    """Returns the clip-space z bias for surface-coplanar lines.
-
-    The projection's [2][2] entry maps view-space z to clip-space z
-    linearly, so multiplying it by the desired view-space bias gives
-    the exact clip-space offset for both perspective and orthographic
-    projections.
-    """
-    return float(proj_matrix[2, 2]) * LINE_DEPTH_BIAS_MM
+# (and the faceted cylinder mesh).  The line renderers use the
+# LineDepthBiasShader, whose fragment shader subtracts this constant
+# from gl_FragCoord.z: a window-space offset of a few depth-buffer
+# LSBs that wins ties against coplanar geometry (and the stock fill,
+# which glPolygonOffset pushes away by one unit) while staying far
+# below the depth separation of the laser head model, so the head
+# still occludes the lines.  Unlike a clip-space bias it changes
+# depth ordering only — the lines keep their exact projected
+# position in perspective and ortho alike, and the offset does not
+# degrade with viewing distance.
+#
+# 2.4e-7 is ~4 LSB of a 24-bit fixed-point depth buffer.
+LINE_DEPTH_WINDOW_BIAS = 2.4e-7
 
 
 @dataclass
@@ -89,6 +86,7 @@ class ShaderSet:
     """
 
     main: Shader | None = None
+    main_lines: Shader | None = None
     text: Shader | None = None
     texture: Shader | None = None
     background: Shader | None = None

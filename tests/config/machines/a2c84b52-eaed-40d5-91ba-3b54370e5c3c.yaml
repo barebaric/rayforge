@@ -125,6 +125,7 @@ machine:
   name: Sculpfun iCube
   nogo_zones: []
   origin: bottom_left
+  panel_orientation: native
   reverse_x_axis: false
   reverse_y_axis: false
   reverse_z_axis: false

@@ -31,9 +31,18 @@ BRDF_LUT_SIZE = 32
 # Decoded material textures to keep in the CPU-side cache.
 MAX_CACHED_DECODES = 8
 
-# Offset applied to the stock fill so coplanar engrave quads win the
-# depth test without visible z-fighting.
+# Offset applied to the flat stock fill so coplanar engrave quads win
+# the depth test without visible z-fighting.
 _STOCK_POLYGON_OFFSET = (1.0, 1.0)
+
+# Rotary stock: units-only offset.  The slope-scaled term grows with
+# the surface's per-pixel depth slope, which is unbounded on the
+# edge-on end caps and near the lateral silhouette — pushing those
+# fragments so deep that geometry behind the rod wins the depth test
+# and shows through the solid.  The units term alone is a sub-mm
+# nudge, just enough to keep the coincident engrave cylinder from
+# z-fighting.
+_STOCK_ROTARY_POLYGON_OFFSET = (0.0, 1.0)
 
 
 @dataclass
@@ -50,6 +59,7 @@ class PreparedStockLayer:
     tint_rgba: tuple[float, float, float, float] | None = None
     texture_key: tuple[str, int, int] | None = None
     texture_pixels: np.ndarray | None = None
+    is_rotary: bool = False
 
 
 @lru_cache(maxsize=MAX_CACHED_DECODES)
@@ -123,17 +133,21 @@ def prepare_stock_layer(layer: StockLayer) -> PreparedStockLayer:
         tint_rgba=layer.tint_rgba,
         texture_key=key if pixels is not None else None,
         texture_pixels=pixels,
+        is_rotary=layer.is_rotary,
     )
 
 
 class StockRenderer(BaseRenderer):
-    """Renders solid stock prism meshes with PBR shading.
+    """Renders solid stock meshes (flat prisms, rotary cylinder shells).
 
     Meshes arrive as :class:`StockLayer` objects on the compiled
     scene artifact; each layer becomes one draw instance with its own
-    VAO/VBOs.  Albedo textures live in a ``(path, mtime, size)``
-    keyed cache that survives scene rebuilds, so only new or changed
-    materials trigger a decode and GL upload.
+    VAO/VBOs.  Flat instances draw with the bed-anchored world->visual
+    transform; rotary instances draw with the per-frame cylinder
+    kinematics (spinning with the chuck during playback).  Albedo
+    textures live in a ``(path, mtime, size)`` keyed cache that
+    survives scene rebuilds, so only new or changed materials trigger
+    a decode and GL upload.
     """
 
     visibility_key = "show_stock"
@@ -147,12 +161,16 @@ class StockRenderer(BaseRenderer):
         self._mvp_ui: np.ndarray | None = None
         self._camera_pos: np.ndarray | None = None
         self._point_light_pos: np.ndarray | None = None
+        self._cyl_mvp: np.ndarray | None = None
+        self._cyl_model: np.ndarray | None = None
 
     def prepare(self, ctx: RenderContext) -> None:
         """Caches the per-frame matrices and light positions."""
         self._mvp_ui = ctx.camera.mvp_ui
         self._camera_pos = ctx.camera.camera_position
         self._point_light_pos = ctx.kinematics.laser_light_pos
+        self._cyl_mvp = ctx.kinematics.cylinder_mesh_mvp()
+        self._cyl_model = ctx.kinematics.cylinder_model_matrix()
 
     def init_gl(self) -> None:
         """Creates the BRDF LUT texture used by the IBL split-sum."""
@@ -312,6 +330,7 @@ class StockRenderer(BaseRenderer):
                     "fallback_rgba": prepared.fallback_rgba,
                     "tint_rgba": prepared.tint_rgba,
                     "texture_id": texture_id,
+                    "is_rotary": prepared.is_rotary,
                 }
             )
 
@@ -350,20 +369,35 @@ class StockRenderer(BaseRenderer):
         GL.glDisable(GL.GL_BLEND)
         GL.glDepthMask(GL.GL_TRUE)
         GL.glDepthFunc(GL.GL_LEQUAL)
+        GL.glEnable(GL.GL_DEPTH_TEST)
         # Push the stock fill slightly away from the camera so the
         # engrave quads on the coplanar top face win the depth test.
         GL.glEnable(GL.GL_POLYGON_OFFSET_FILL)
-        GL.glPolygonOffset(*_STOCK_POLYGON_OFFSET)
 
         try:
             for instance in self.instances:
+                GL.glPolygonOffset(
+                    *(
+                        _STOCK_ROTARY_POLYGON_OFFSET
+                        if instance.get("is_rotary")
+                        else _STOCK_POLYGON_OFFSET
+                    )
+                )
                 self._draw_instance(shader, instance)
         finally:
             GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
 
     def _draw_instance(self, shader, instance: dict) -> None:
-        shader.set_mat4("uMVP", self._mvp_ui @ instance["transform"])
-        shader.set_mat4("uModel", instance["transform"])
+        if instance.get("is_rotary"):
+            if self._cyl_mvp is None or self._cyl_model is None:
+                return
+            mvp = self._cyl_mvp
+            model = self._cyl_model
+        else:
+            mvp = self._mvp_ui @ instance["transform"]
+            model = instance["transform"]
+        shader.set_mat4("uMVP", mvp)
+        shader.set_mat4("uModel", model)
         shader.set_vec4("uAlbedo", instance["fallback_rgba"])
         shader.set_float("uRoughness", instance["roughness"])
         shader.set_float("uMetallic", instance["metallic"])

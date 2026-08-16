@@ -74,6 +74,7 @@ class KinematicsContext:
         self._mvp_ui = identity if mvp_ui is None else mvp_ui
         self._mvp_rot = mvp_rot
         self._cyl_mesh_mvp = cyl_mesh_mvp
+        self._cyl_model_matrix: np.ndarray | None = None
         self.model_world_transforms = model_world_transforms or {}
         self.head_positions = head_positions or {}
         self.head_configs = head_configs or {}
@@ -100,6 +101,10 @@ class KinematicsContext:
     def cylinder_mesh_mvp(self) -> np.ndarray | None:
         """MVP for the rotary cylinder mesh, or None when not rotary."""
         return self._cyl_mesh_mvp
+
+    def cylinder_model_matrix(self) -> np.ndarray | None:
+        """Model matrix for the rotary cylinder mesh, or None."""
+        return self._cyl_model_matrix
 
     def update(
         self,
@@ -196,13 +201,15 @@ class KinematicsContext:
         )
         rot_4x4 = rotation_4x4(_VIS_ROT_AXIS, cyl_angle)
         mvp_rot = (cyl_base_mvp @ rot_4x4).astype(np.float32)
-        cyl_mesh_mvp = (
-            mvp_ui @ physical_to_visual @ cylinder_transform @ rot_4x4
-        ).astype(np.float32)
+        cyl_model = (physical_to_visual @ cylinder_transform @ rot_4x4).astype(
+            np.float32
+        )
+        cyl_mesh_mvp = (mvp_ui @ cyl_model).astype(np.float32)
 
         self._mvp_ui = mvp_ui
         self._mvp_rot = mvp_rot
         self._cyl_mesh_mvp = cyl_mesh_mvp
+        self._cyl_model_matrix = cyl_model
         self.model_world_transforms = model_world_transforms
         self.head_positions = head_positions
         self.head_configs = head_configs
@@ -223,6 +230,7 @@ class KinematicsContext:
         self._mvp_ui = mvp_ui
         self._mvp_rot = None
         self._cyl_mesh_mvp = None
+        self._cyl_model_matrix = None
         self.model_world_transforms = model_world_transforms
         self.head_positions = head_positions
         self.head_configs = head_configs

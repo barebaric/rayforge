@@ -8,7 +8,10 @@ import numpy as np
 import pytest
 
 from rayforge.core.color import ColorSet
-from rayforge.ui_gtk.sim3d.gl_utils import ShaderSet
+from rayforge.ui_gtk.sim3d.gl_utils import (
+    LINE_DEPTH_WINDOW_BIAS,
+    ShaderSet,
+)
 from rayforge.ui_gtk.sim3d.render_context import (
     CameraContext,
     KinematicsContext,
@@ -221,11 +224,11 @@ def test_render_draws_powered_and_travel(renderer, colors):
     shader.use.assert_called_once()
     shader.set_mat4.assert_called_once_with("uMVP", mvp)
     # The toolpath must depth-test against the laser head model instead
-    # of always drawing on top; a small bias keeps it above the
-    # coplanar raster texture.  0x0203 is GL.GL_LEQUAL (no GL import
-    # in tests).
+    # of always drawing on top; a small window-space bias keeps it
+    # above the coplanar raster texture.  0x0203 is GL.GL_LEQUAL (no GL
+    # import in tests).
     assert mock_depth_func.call_args[0][0] == 0x0203
-    shader.set_float.assert_any_call("uDepthBias", 2.0)
+    shader.set_float.assert_any_call("uFragDepthBias", LINE_DEPTH_WINDOW_BIAS)
 
 
 @pytest.mark.ui
