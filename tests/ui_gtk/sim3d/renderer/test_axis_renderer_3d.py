@@ -223,3 +223,22 @@ def test_axis_labels_in_preferred_unit():
 
     # A 120mm bed is ~4.7 inches; labels are whole inches 0..4.
     assert rendered_labels == {0, 1, 2, 3, 4}
+
+
+def test_grid_renders_over_stock_plane():
+    """
+    Depth layering: the grid must sit above the engrave plane (z=0,
+    where stock top faces live) so the plan stays visible over stock,
+    while the background plane stays below and overlays stack above.
+    """
+    from rayforge.ui_gtk.sim3d.renderer.axis_renderer_3d import (
+        BACKGROUND_Z,
+        EXTENT_FRAME_Z,
+        GRID_Z,
+        WCS_MARKER_Z,
+    )
+
+    assert GRID_Z > 0.0  # above stock top faces (z=0)
+    assert BACKGROUND_Z < 0.0  # bed plane below the engrave plane
+    assert WCS_MARKER_Z > GRID_Z  # marker above grid
+    assert EXTENT_FRAME_Z > WCS_MARKER_Z  # extent frame on top

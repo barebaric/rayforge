@@ -22,6 +22,16 @@ from .text_renderer import TextRenderer
 
 logger = logging.getLogger(__name__)
 
+# Depth layering along Z (stock top faces sit at z=0):
+#   background/bed plane  -0.002  (below the engrave plane)
+#   grid lines            +0.001  (render over stock top faces)
+#   WCS marker            +0.002  (above the grid)
+#   extent frame          +0.003  (on top)
+BACKGROUND_Z = -0.002
+GRID_Z = 0.001
+WCS_MARKER_Z = 0.002
+EXTENT_FRAME_Z = 0.003
+
 
 class AxisRenderer3D(BaseRenderer):
     """Renders a 3D grid with axes, background, and labels on the XY plane."""
@@ -75,7 +85,7 @@ class AxisRenderer3D(BaseRenderer):
             width=self.width_mm,
             height=self.height_mm,
             color=self.background_color,
-            z_offset=-0.002,
+            z_offset=BACKGROUND_Z,
         )
         self._add_child_renderer(self.background_renderer)
 
@@ -172,8 +182,15 @@ class AxisRenderer3D(BaseRenderer):
         """No per-frame state to prepare."""
 
     def _init_grid_and_axes(self):
-        """Creates VAOs/VBOs for the grid and axis lines."""
-        grid_z_pos = -0.001
+        """Creates VAOs/VBOs for the grid and axis lines.
+
+        Depth layering along Z (stock top faces sit at z=0):
+        grid lines at +0.001 render *over* stock top faces, the WCS
+        marker at +0.002 sits above the grid, and the extent frame at
+        +0.003 sits on top. The background/bed plane stays below at
+        -0.002.
+        """
+        grid_z_pos = GRID_Z
         w, h = self.width_mm, self.height_mm
 
         # Grid vertices
@@ -188,7 +205,7 @@ class AxisRenderer3D(BaseRenderer):
 
         # WCS Marker vertices (a cross)
         marker_size = self.grid_size_mm * 0.5
-        marker_z_pos = 0.001  # Slightly above the axes
+        marker_z_pos = WCS_MARKER_Z  # Above the grid lines
         wcs_marker_verts = [
             -marker_size,
             0.0,
@@ -256,7 +273,7 @@ class AxisRenderer3D(BaseRenderer):
 
     def _update_extent_frame_buffer(self):
         """Creates or updates the VAO/VBO for the extent frame."""
-        extent_z_pos = 0.002
+        extent_z_pos = EXTENT_FRAME_Z
         x, y = self.extent_x_mm, self.extent_y_mm
         w, h = self.extent_width_mm, self.extent_height_mm
 
@@ -361,9 +378,17 @@ class AxisRenderer3D(BaseRenderer):
         line_shader.set_int("uExecutedVertexCount", -1)
         line_shader.set_float("uAlphaPending", 0.2)
 
-        # Draw background plane
+        # Draw background plane (translucent bed tint; writes no depth so
+        # the stock can sit over it).
         GL.glDepthMask(GL.GL_FALSE)
         self.background_renderer.render(ctx, shaders)
+
+        # The plan lines (grid, axes, markers, extent frame) WRITE depth so
+        # they stay visible over coplanar stock top faces: the stock is
+        # drawn afterwards with a polygon offset pushing it away from the
+        # camera, and the plan at z=+GRID_Z wins the depth test. Without
+        # the depth write the stock simply overwrites them.
+        GL.glDepthMask(GL.GL_TRUE)
 
         # Draw grid
         line_shader.set_mat4("uMVP", grid_mvp)
