@@ -57,6 +57,7 @@ class Canvas3D(Gtk.GLArea):
         self._show_nogo_zones = True
         self._show_models = True
         self._show_grid = True
+        self._show_ops_underlay = True
         self._gl_initialized = False
         self._scene_gl_dirty = False
 
@@ -321,6 +322,7 @@ class Canvas3D(Gtk.GLArea):
                 show_grid=self._show_grid,
                 show_nogo_zones=self._show_nogo_zones,
                 show_models=self._show_models,
+                show_ops_underlay=self._show_ops_underlay,
             )
             self._ctx.update(frame)
             self._scene.prepare(self._ctx)
@@ -358,6 +360,12 @@ class Canvas3D(Gtk.GLArea):
         if self._show_grid == visible:
             return
         self._show_grid = visible
+        self.queue_render()
+
+    def set_show_ops_underlay(self, visible: bool):
+        if self._show_ops_underlay == visible:
+            return
+        self._show_ops_underlay = visible
         self.queue_render()
 
     def update_scene_from_doc(self):

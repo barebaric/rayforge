@@ -463,6 +463,9 @@ class TextureArtifactRenderer(BaseRenderer):
         if not self.is_initialized or not self.instances:
             return
 
+        if not ctx.camera.show_ops_underlay:
+            return
+
         shader = shaders.texture
         if shader is None:
             return
