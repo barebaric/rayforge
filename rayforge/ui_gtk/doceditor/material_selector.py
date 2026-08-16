@@ -3,7 +3,7 @@
 import logging
 from gettext import gettext as _
 
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, GLib, Gtk
 
 from ...context import get_context
 from ...core.material import Material
@@ -89,7 +89,12 @@ class MaterialSelectorDialog(Adw.MessageDialog):
         self.add_response("cancel", _("Cancel"))
         self.set_default_response("cancel")
 
+        self.connect("map", self._on_dialog_mapped)
         self._populate_libraries()
+
+    def _on_dialog_mapped(self, _dialog):
+        """Focuses the search entry when the dialog is shown."""
+        GLib.idle_add(self.search_entry.grab_focus)
 
     def _populate_libraries(self):
         """Populates the library dropdown."""
