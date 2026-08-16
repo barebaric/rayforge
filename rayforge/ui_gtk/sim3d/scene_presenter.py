@@ -37,6 +37,7 @@ from ...simulator.scene3d import (
     compile_stock_scene,
 )
 from ...simulator.scene3d.cylinder_compiler import generate_cylinder_vertices
+from ...simulator.scene3d.stock_compiler import DEFAULT_THICKNESS_MM
 from .camera import ViewDirection
 from .render_context import SceneVisibility
 
@@ -188,6 +189,9 @@ class ScenePresenter:
         self._upload_complete = upload_complete
 
         self.visibility = SceneVisibility()
+
+        self.stock_top_z: float = 0.0
+        self.has_z_axis: bool = True
 
         self._scene_preparation_task: Task | None = None
         self._compiled_artifact: CompiledSceneArtifact | None = None
@@ -707,8 +711,26 @@ class ScenePresenter:
         world_to_cyl_local = np.identity(4, dtype=np.float32)
 
         machine = self._context.machine
+        has_z_axis = True
         if machine:
-            world_to_visual = self._compute_world_to_visual(viewport, machine)
+            has_z_axis = machine.has_z_axis
+
+        stock_specs = self._build_stock_specs()
+        stock_top_z = self._compute_stock_top_z(stock_specs)
+        self.stock_top_z = stock_top_z
+        self.has_z_axis = has_z_axis
+
+        if machine:
+            if has_z_axis:
+                world_to_visual = self._compute_world_to_visual(
+                    viewport, machine
+                )
+            else:
+                wcs = viewport.wcs_offset_mm
+                content_z = wcs[2] + stock_top_z
+                world_to_visual = self._compute_world_to_visual(
+                    viewport, machine, z_offset=content_z
+                )
 
             asm = machine.assembly
             if asm.has_rotary:
@@ -717,6 +739,13 @@ class ScenePresenter:
                 )
             else:
                 self._scene.set_cylinder_transform(np.eye(4, dtype=np.float64))
+        else:
+            world_to_visual = self._compute_world_to_visual(viewport, None)
+
+        # Stock is always bed-anchored (Z=0).
+        stock_world_to_visual = self._compute_world_to_visual(
+            viewport, machine, z_offset=0.0
+        )
 
         laser_dot_widths_mm: dict[str, float] = {}
         if machine:
@@ -759,9 +788,12 @@ class ScenePresenter:
         render_config = RenderConfig3D(
             world_to_visual=world_to_visual,
             world_to_cyl_local=world_to_cyl_local,
+            stock_world_to_visual=stock_world_to_visual,
+            stock_top_z=stock_top_z,
+            has_z_axis=has_z_axis,
             layer_configs=layer_configs,
             laser_dot_widths_mm=laser_dot_widths_mm,
-            stock_specs=self._build_stock_specs(),
+            stock_specs=stock_specs,
         )
 
         self._schedule_scene_preparation(render_config.to_dict())
@@ -832,16 +864,52 @@ class ScenePresenter:
 
     @staticmethod
     def _compute_world_to_visual(
-        viewport: "ViewportConfig", machine
+        viewport: "ViewportConfig", machine, z_offset: float | None = None
     ) -> np.ndarray:
-        """Builds the world->visual matrix from the viewport and machine."""
+        """Builds the world->visual matrix from the viewport and machine.
+
+        ``z_offset`` overrides the WCS Z translation.  When *None* the
+        WCS Z from the viewport is used (the original behaviour).
+        """
         world_to_visual = np.identity(4, dtype=np.float32)
         ms = viewport.margin_shift
-        wcs = viewport.wcs_offset_mm
+        if z_offset is None:
+            wcs = viewport.wcs_offset_mm
+            z = wcs[2]
+        else:
+            z = z_offset
         world_to_visual[0, 3] = ms[0, 3]
         world_to_visual[1, 3] = ms[1, 3]
-        world_to_visual[2, 3] = wcs[2]
+        world_to_visual[2, 3] = z
         return world_to_visual
+
+    @staticmethod
+    def _compute_stock_top_z(
+        stock_specs: list[dict],
+    ) -> float:
+        """Max visible flat-stock thickness (0 if none).
+
+        Rotary stocks are excluded — rotary uses cylinder kinematics,
+        not the flat lift.  Uses the same default-thickness fallback as
+        :func:`compile_stock_layers` so the lift matches the rendered
+        mesh even when the asset has no explicit thickness.
+        """
+        max_z = 0.0
+        for spec in stock_specs:
+            if spec.get("kind") == "rotary":
+                continue
+            thickness = spec.get("thickness")
+            if thickness is None:
+                t = DEFAULT_THICKNESS_MM
+            else:
+                try:
+                    t = float(thickness)
+                except (TypeError, ValueError):
+                    t = DEFAULT_THICKNESS_MM
+            if t <= 0:
+                continue
+            max_z = max(max_z, t)
+        return max_z
 
     def update_workpiece_images_from_doc(
         self, world_to_visual: np.ndarray | None = None

@@ -9,8 +9,8 @@ into :class:`StockLayer` objects.
 
 Mesh layout (all coordinates in world / machine mm):
 
-- Top face on the z=0 engrave plane, CCW-outward normal ``+z``.
-- Bottom cap at ``z=-thickness``, flipped winding, normal ``-z``.
+- Bottom face on the bed (z=0), top face at ``z=+thickness``.
+- Top-face normal ``+z``, bottom cap flipped winding, normal ``-z``.
 - Side walls for every boundary ring (outer contours and inner
   islands), with outward-facing normals.
 - UVs are ``world_xy / texture_size_mm`` so one texture repeat always
@@ -28,9 +28,6 @@ from raygeo.mesh.build import build_prism_mesh
 from .compiled_scene import StockLayer
 
 logger = logging.getLogger(__name__)
-
-# Top face of the stock sits on the engrave plane (z=0 in world space).
-Z_TOP = 0.0
 
 # Fallback thickness when the asset has none configured.
 DEFAULT_THICKNESS_MM = 18.0
@@ -93,7 +90,9 @@ def _positive_float(value: object, default: float) -> float:
     return result if result > 0 else default
 
 
-def _compile_stock_spec(spec: dict, w2v: np.ndarray) -> StockLayer | None:
+def _compile_stock_spec(
+    spec: dict, stock_w2v: np.ndarray
+) -> StockLayer | None:
     """Compile a single stock spec dict into a mesh layer."""
     outers = [
         ring
@@ -130,7 +129,7 @@ def _compile_stock_spec(spec: dict, w2v: np.ndarray) -> StockLayer | None:
                 holes,
                 thickness=thickness,
                 uv_scale=texture_size_mm,
-                z_top=Z_TOP,
+                z_top=thickness,
             )
         except ValueError as e:
             logger.warning(
@@ -154,7 +153,7 @@ def _compile_stock_spec(spec: dict, w2v: np.ndarray) -> StockLayer | None:
         normals=np.concatenate(norm_parts),
         uvs=np.concatenate(uv_parts),
         indices=np.concatenate(idx_parts),
-        transform=np.asarray(w2v, dtype=np.float32),
+        transform=np.asarray(stock_w2v, dtype=np.float32),
         texture_path=spec.get("texture_path"),
         texture_size_mm=texture_size_mm,
         roughness=float(spec.get("roughness") or 0.8),
@@ -169,21 +168,25 @@ def _compile_stock_spec(spec: dict, w2v: np.ndarray) -> StockLayer | None:
 
 def compile_stock_layers(
     stock_specs: list[dict],
-    world_to_visual: np.ndarray,
+    stock_world_to_visual: np.ndarray,
 ) -> list[StockLayer]:
     """Compile stock specs into a list of prism mesh layers.
 
     ``stock_specs`` are plain-data dicts produced by the scene presenter
     (geometry rings in world mm, thickness, material parameters) so the
     CPU-heavy triangulation runs on the background compile thread.
+
+    ``stock_world_to_visual`` is the bed-anchored world->visual matrix
+    (Z=0); stock meshes always sit on the bed regardless of WCS Z
+    offsets or no-Z lifts.
     """
     if not stock_specs:
         return []
-    w2v = np.asarray(world_to_visual, dtype=np.float32)
+    stock_w2v = np.asarray(stock_world_to_visual, dtype=np.float32)
     layers: list[StockLayer] = []
     for spec in stock_specs:
         try:
-            layer = _compile_stock_spec(spec, w2v)
+            layer = _compile_stock_spec(spec, stock_w2v)
         except (ValueError, TypeError) as e:
             logger.warning(
                 "Failed to compile stock %r: %s", spec.get("name"), e

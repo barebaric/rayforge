@@ -227,9 +227,9 @@ def test_axis_labels_in_preferred_unit():
 
 def test_grid_renders_over_stock_plane():
     """
-    Depth layering: the grid must sit above the engrave plane (z=0,
-    where stock top faces live) so the plan stays visible over stock,
-    while the background plane stays below and overlays stack above.
+    Depth layering: the grid sits on the bed (z=0), above the
+    background plane and below the WCS marker and extent frame.
+    Stock top faces are at z=+thickness, physically above the grid.
     """
     from rayforge.ui_gtk.sim3d.renderer.axis_renderer_3d import (
         BACKGROUND_Z,
@@ -238,7 +238,7 @@ def test_grid_renders_over_stock_plane():
         WCS_MARKER_Z,
     )
 
-    assert GRID_Z > 0.0  # above stock top faces (z=0)
-    assert BACKGROUND_Z < 0.0  # bed plane below the engrave plane
+    assert GRID_Z > 0.0  # above the bed background
+    assert BACKGROUND_Z < 0.0  # bed plane below the grid
     assert WCS_MARKER_Z > GRID_Z  # marker above grid
     assert EXTENT_FRAME_Z > WCS_MARKER_Z  # extent frame on top

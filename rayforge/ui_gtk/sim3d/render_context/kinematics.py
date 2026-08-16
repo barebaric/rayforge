@@ -68,6 +68,7 @@ class KinematicsContext:
         focused_rotary_head_positions: dict[str, np.ndarray] | None = None,
         has_rotary: bool = False,
         rotary_axis: Optional["Axis"] = None,
+        z_lift: float = 0.0,
     ):
         identity = np.eye(4, dtype=np.float32)
         self._mvp_ui = identity if mvp_ui is None else mvp_ui
@@ -83,6 +84,7 @@ class KinematicsContext:
         self.has_rotary = has_rotary
         self.rotary_axis = rotary_axis
         self.laser_light_pos: np.ndarray | None = None
+        self.z_lift = z_lift
 
     @property
     def is_rotary(self) -> bool:
@@ -108,6 +110,10 @@ class KinematicsContext:
     ) -> None:
         """Recomputes the kinematics section from the current frame."""
         self.laser_light_pos = None
+        z_lift = 0.0
+        if not frame.has_z_axis:
+            z_lift = frame.stock_top_z
+        self.z_lift = z_lift
         mvp_ui = camera.mvp_ui
         machine = frame.machine
         asm = frame.playback_assembly
@@ -137,6 +143,17 @@ class KinematicsContext:
             head_positions = asm.head_positions(state, wcs_offset=wcs)
         except ValueError:
             head_positions = {}
+        if z_lift != 0.0:
+            head_positions = {
+                name: (hx, hy, hz + z_lift)
+                for name, (hx, hy, hz) in head_positions.items()
+            }
+            model_world_transforms = {
+                name: (
+                    _with_z_lift(t, z_lift) if name in head_positions else t
+                )
+                for name, t in model_world_transforms.items()
+            }
         head_configs = {
             name: _head_config(machine, name) for name in head_positions
         }
@@ -213,6 +230,13 @@ class KinematicsContext:
         self.focused_rotary_head_positions = {}
         self.has_rotary = has_rotary
         self.rotary_axis = None
+
+
+def _with_z_lift(t: np.ndarray, z_lift: float) -> np.ndarray:
+    """Copy of a world transform with its Z translation lifted."""
+    lifted = t.copy()
+    lifted[2, 3] += z_lift
+    return lifted
 
 
 def _current_rotary_diameter(

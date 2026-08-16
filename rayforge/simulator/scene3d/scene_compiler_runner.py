@@ -62,9 +62,12 @@ def compile_stock_scene(
     threading.
     """
     config = RenderConfig3D.from_dict(render_config_dict)
-    stock_layers = compile_stock_layers(
-        config.stock_specs or [], config.world_to_visual
+    stock_w2v = (
+        config.stock_world_to_visual
+        if config.stock_world_to_visual is not None
+        else config.world_to_visual
     )
+    stock_layers = compile_stock_layers(config.stock_specs or [], stock_w2v)
     if not stock_layers:
         return None
     return CompiledSceneArtifact(
