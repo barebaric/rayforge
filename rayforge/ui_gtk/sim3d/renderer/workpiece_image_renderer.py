@@ -7,6 +7,12 @@ onto the workpiece's world-space footprint.  The image is drawn
 unmodified (no laser colour LUT) so it matches the base image shown on
 the 2D canvas.
 
+Rotary workpieces additionally carry ``cylinder_vertices``: a
+pre-baked triangle mesh wrapping the quad around the rotary cylinder
+surface (see ``simulator.scene3d.cylinder_compiler``).  Those
+instances are drawn with the cylinder mesh MVP so the base image
+wraps around the cylinder like the engrave texture.
+
 Texture uploads run on the GL thread via :meth:`set_images`; the
 actual pixel rendering happens off-thread in the scene presenter.
 """
@@ -37,11 +43,15 @@ class WorkpieceImageRenderer(BaseRenderer):
         self.instances: list[dict[str, Any]] = []
         self._vao: int = 0
         self._vbo: int = 0
+        self._cylinder_vao: int = 0
+        self._cylinder_vbo: int = 0
         self._mvp: np.ndarray | None = None
+        self._cyl_mvp: np.ndarray | None = None
 
     def prepare(self, ctx: "RenderContext") -> None:
-        """Caches the per-frame camera MVP matrix."""
+        """Caches the per-frame camera MVP matrices."""
         self._mvp = ctx.camera.mvp_ui
+        self._cyl_mvp = ctx.kinematics.cylinder_mesh_mvp()
 
     def init_gl(self) -> None:
         """Creates the quad VAO/VBO used by every instance."""
@@ -83,6 +93,13 @@ class WorkpieceImageRenderer(BaseRenderer):
         GL.glEnableVertexAttribArray(1)
         GL.glBindVertexArray(0)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+
+        # Buffers for cylinder-wrapped (rotary) instances.  The vertex
+        # data is re-uploaded per instance, so the attribute layout is
+        # re-declared in :meth:`_draw_cylinder_instances` where the
+        # cylinder VBO is bound.
+        self._cylinder_vbo = self._create_vbo()
+        self._cylinder_vao = self._create_vao()
 
         self.is_initialized = True
         logger.debug("WorkpieceImageRenderer initialized")
@@ -150,12 +167,18 @@ class WorkpieceImageRenderer(BaseRenderer):
                 continue
             model_matrix = np.asarray(image["model_matrix"], dtype=np.float32)
             texture_id = self._create_gl_texture(pixels)
-            self.instances.append(
-                {
-                    "texture_id": texture_id,
-                    "model_matrix": model_matrix,
-                }
-            )
+            instance = {
+                "texture_id": texture_id,
+                "model_matrix": model_matrix,
+            }
+            if image.get("cylinder_vertices") is not None:
+                instance["cylinder_vertices"] = np.asarray(
+                    image["cylinder_vertices"], dtype=np.float32
+                )
+                instance["rotary_diameter"] = float(
+                    image.get("rotary_diameter", 0.0)
+                )
+            self.instances.append(instance)
 
     def clear(self) -> None:
         """Deletes all instance textures."""
@@ -184,9 +207,49 @@ class WorkpieceImageRenderer(BaseRenderer):
         shader.set_int("uTexture", 0)
         shader.set_float("uAlpha", 1.0)
 
+        # Flat (non-rotary) quads first, then cylinder-wrapped ones.
         GL.glBindVertexArray(self._vao)
         for instance in self.instances:
+            if instance.get("cylinder_vertices") is not None:
+                continue
             shader.set_mat4("uMVP", self._mvp @ instance["model_matrix"])
             GL.glBindTexture(GL.GL_TEXTURE_2D, instance["texture_id"])
             GL.glDrawArrays(GL.GL_TRIANGLE_FAN, 0, 4)
         GL.glBindVertexArray(0)
+
+        if self._cyl_mvp is not None:
+            self._draw_cylinder_instances(shader)
+
+    def _draw_cylinder_instances(self, shader) -> None:
+        """Draws instances wrapped onto the rotary cylinder surface."""
+        for instance in self.instances:
+            vertices = instance.get("cylinder_vertices")
+            if vertices is None:
+                continue
+            vertex_count = len(vertices) // 5
+            if vertex_count == 0:
+                continue
+
+            GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self._cylinder_vbo)
+            GL.glBufferData(
+                GL.GL_ARRAY_BUFFER,
+                vertices.nbytes,
+                vertices,
+                GL.GL_DYNAMIC_DRAW,
+            )
+
+            GL.glBindVertexArray(self._cylinder_vao)
+            GL.glVertexAttribPointer(
+                0, 3, GL.GL_FLOAT, GL.GL_FALSE, 5 * 4, GL.GLvoidp(0)
+            )
+            GL.glEnableVertexAttribArray(0)
+            GL.glVertexAttribPointer(
+                1, 2, GL.GL_FLOAT, GL.GL_FALSE, 5 * 4, GL.GLvoidp(3 * 4)
+            )
+            GL.glEnableVertexAttribArray(1)
+
+            shader.set_mat4("uMVP", self._cyl_mvp)
+            GL.glBindTexture(GL.GL_TEXTURE_2D, instance["texture_id"])
+            GL.glDrawArrays(GL.GL_TRIANGLES, 0, vertex_count)
+            GL.glBindVertexArray(0)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
