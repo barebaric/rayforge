@@ -47,6 +47,7 @@ class PreparedStockLayer:
     roughness: float
     metallic: float
     fallback_rgba: tuple[float, float, float, float]
+    tint_rgba: tuple[float, float, float, float] | None = None
     texture_key: tuple[str, int, int] | None = None
     texture_pixels: np.ndarray | None = None
 
@@ -108,6 +109,8 @@ def prepare_stock_layer(layer: StockLayer) -> PreparedStockLayer:
         decoded = _decode_texture_cached(*key)
         if decoded is not None:
             _width, _height, pixels = decoded
+        # Tinting happens on the GPU (per-instance shader uniform); the
+        # decoded texture is shared and cached unchanged.
 
     return PreparedStockLayer(
         positions=np.ascontiguousarray(positions, dtype=np.float32),
@@ -117,6 +120,7 @@ def prepare_stock_layer(layer: StockLayer) -> PreparedStockLayer:
         roughness=layer.roughness,
         metallic=layer.metallic,
         fallback_rgba=layer.fallback_rgba,
+        tint_rgba=layer.tint_rgba,
         texture_key=key if pixels is not None else None,
         texture_pixels=pixels,
     )
@@ -306,6 +310,7 @@ class StockRenderer(BaseRenderer):
                     "roughness": prepared.roughness,
                     "metallic": prepared.metallic,
                     "fallback_rgba": prepared.fallback_rgba,
+                    "tint_rgba": prepared.tint_rgba,
                     "texture_id": texture_id,
                 }
             )
@@ -366,6 +371,13 @@ class StockRenderer(BaseRenderer):
 
         texture_id = instance["texture_id"]
         shader.set_float("uUseTexture", 1.0 if texture_id else 0.0)
+        tint = instance.get("tint_rgba")
+        if tint is not None:
+            shader.set_vec3("uTint", (tint[0], tint[1], tint[2]))
+            shader.set_float("uUseTint", 1.0)
+        else:
+            shader.set_vec3("uTint", (1.0, 1.0, 1.0))
+            shader.set_float("uUseTint", 0.0)
         GL.glActiveTexture(GL.GL_TEXTURE0)
         GL.glBindTexture(GL.GL_TEXTURE_2D, texture_id if texture_id else 0)
 

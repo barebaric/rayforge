@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#A0A0A0"
   pattern: metallic
+  texture: zinc.webp
+  texture_size_mm: 300

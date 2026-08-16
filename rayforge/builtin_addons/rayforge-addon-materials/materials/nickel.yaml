@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#E0E0E0"
   pattern: metallic
+  texture: nickel.webp
+  texture_size_mm: 300

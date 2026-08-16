@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#DEB887"
   pattern: solid
+  texture: cork.webp
+  texture_size_mm: 300

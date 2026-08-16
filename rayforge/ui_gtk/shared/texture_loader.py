@@ -9,6 +9,7 @@ import numpy as np
 import pyvips
 from gi.repository import Gdk, GdkPixbuf, GLib, Gtk
 
+from ...core.color import colorize_rgb
 from ...core.material import Material
 
 logger = logging.getLogger(__name__)
@@ -65,18 +66,40 @@ def _apply_rounded_corners(
     return result.tobytes()
 
 
-def load_texture_thumbnail(path: Path, size: int = 48) -> Gdk.Texture | None:
+def _apply_tint(
+    data: bytes,
+    width: int,
+    height: int,
+    tint: tuple[float, float, float, float],
+) -> bytes:
+    """Recolor RGBA bytes to the tint color, preserving per-pixel shading."""
+    if tint is None:
+        return data
+    arr = np.frombuffer(data, dtype=np.uint8).reshape(height, width, 4)
+    result = arr.astype(np.float32)
+    result[:, :, :3] = colorize_rgb(result[:, :, :3], tint)
+    result[:, :, 3] *= tint[3]
+    return np.clip(result, 0, 255).astype(np.uint8).tobytes()
+
+
+def load_texture_thumbnail(
+    path: Path,
+    size: int = 48,
+    tint: tuple[float, float, float, float] | None = None,
+) -> Gdk.Texture | None:
     """
     Load an image file as a square Gdk.Texture thumbnail.
 
     GDK only decodes PNG/JPEG/TIFF natively, so WebP (and anything
     else pyvips supports) is decoded with pyvips and converted to
     RGBA bytes first. The thumbnail gets rounded corners matching
-    the swatch style.
+    the swatch style. When *tint* is given, the pixels are multiplied
+    by the tint color first.
 
     Args:
         path: Image file to load
         size: Maximum thumbnail dimension in pixels
+        tint: Optional RGBA tint to multiply into the pixels
 
     Returns:
         A Gdk.Texture scaled to fit within size x size, or None if
@@ -94,6 +117,8 @@ def load_texture_thumbnail(path: Path, size: int = 48) -> Gdk.Texture | None:
     image = image.cast("uchar")
 
     data = image.write_to_memory()
+    if tint is not None:
+        data = _apply_tint(data, image.width, image.height, tint)
     radius = min(SWATCH_CORNER_RADIUS, size // 3)
     data = _apply_rounded_corners(data, image.width, image.height, radius)
     return _rgba_bytes_to_texture(data, image.width, image.height)
@@ -190,6 +215,78 @@ def load_texture_cairo_surface(
     )
 
 
+@lru_cache(maxsize=MAX_CACHED_TEXTURES)
+def _tint_surface_cached(
+    path_str: str,
+    mtime_ns: int,
+    size: int,
+    tint: tuple[float, float, float, float],
+) -> tuple[cairo.ImageSurface, bytearray] | None:
+    """Decode a texture and colorize it with a tint, cached per path+tint.
+
+    The cache key includes the file identity and the tint, so each
+    (texture, tint) combination is computed once and reused across
+    redraws instead of re-tinting a full-size copy on every draw.
+    """
+    loaded = _load_texture_surface_cached(path_str, mtime_ns, size)
+    if loaded is None:
+        return None
+    surface, _buffer = loaded
+    return tint_cairo_surface(surface, tint)
+
+
+def tinted_texture_cairo_surface(
+    path: Path, tint: tuple[float, float, float, float]
+) -> tuple[cairo.ImageSurface, bytearray] | None:
+    """Load a texture and return a tinted Cairo surface (cached)."""
+    try:
+        stat = path.stat()
+    except OSError:
+        return None
+    return _tint_surface_cached(
+        str(path), stat.st_mtime_ns, stat.st_size, tint
+    )
+
+
+def tint_cairo_surface(
+    surface: cairo.ImageSurface, tint: tuple[float, float, float, float]
+) -> tuple[cairo.ImageSurface, bytearray] | None:
+    """
+    Return a copy of a Cairo ARGB32 surface recolored to the tint color.
+
+    The source surface (usually from the texture cache) is never
+    modified; a new surface plus its backing buffer is returned so the
+    tiled 2D-canvas rendering can show tintable materials tinted. The
+    returned bytearray must be kept alive while the surface is used.
+
+    Colorization shifts every pixel to the tint hue while preserving the
+    texture's per-pixel shading (``luma * tint``), in premultiplied space.
+    """
+    if surface.get_format() != cairo.FORMAT_ARGB32:
+        return None
+    width = surface.get_width()
+    height = surface.get_height()
+    src = np.frombuffer(surface.get_data(), dtype=np.uint8).reshape(
+        height, width, 4
+    )  # BGRA byte order, premultiplied alpha
+    out = src.astype(np.float32).copy()
+
+    # Rec.709 luma over the premultiplied BGRA channels (R=idx2, G=idx1,
+    # B=idx0). Alpha is already premultiplied into RGB, so this stays
+    # consistent; textures are treated as fully opaque for tinting.
+    luma = out[..., 2] * 0.2126 + out[..., 1] * 0.7152 + out[..., 0] * 0.0722
+    out[..., 2] = luma * tint[0]  # red
+    out[..., 1] = luma * tint[1]  # green
+    out[..., 0] = luma * tint[2]  # blue
+
+    out = np.clip(out, 0, 255).astype(np.uint8)
+    buffer = bytearray(out.tobytes())
+    tinted = cairo.ImageSurface.create_for_data(
+        buffer, cairo.FORMAT_ARGB32, width, height, width * 4
+    )
+    return tinted, buffer
+
+
 def create_material_swatch(material: Material, size: int = 32) -> Gtk.Image:
     """
     Create a swatch widget for a material.
@@ -209,8 +306,9 @@ def create_material_swatch(material: Material, size: int = 32) -> Gtk.Image:
         A Gtk.Image suitable as an ActionRow prefix
     """
     texture_path = material.get_texture_path()
+    tint = material.appearance.get_tint_rgba()
     texture = (
-        load_texture_thumbnail(texture_path, size=size)
+        load_texture_thumbnail(texture_path, size=size, tint=tint)
         if texture_path is not None
         else None
     )

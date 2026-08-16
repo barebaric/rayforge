@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#DAA520"
   pattern: wood_grain
+  texture: hickory.webp
+  texture_size_mm: 300

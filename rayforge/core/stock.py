@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, cast
 from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Rect
 
+from .color import ColorRGBA, hex_to_rgba, normalize_color
 from .item import DocItem
 
 if TYPE_CHECKING:
@@ -25,10 +26,18 @@ class StockItem(DocItem):
     a StockAsset for its defining properties like geometry and material.
     """
 
+    # Per-instance color override:
+    #   COLOR_INHERIT (None) -> use the material's color (default)
+    #   COLOR_NONE ("")      -> no color, even if the material defines one
+    #   "#rrggbb"            -> explicit per-instance color
+    COLOR_INHERIT: str | None = None
+    COLOR_NONE = ""
+
     def __init__(self, stock_asset_uid: str, name: str = "Stock"):
         super().__init__(name=name)
         self.stock_asset_uid: str = stock_asset_uid
         self.visible: bool = True
+        self.color: str | None = self.COLOR_INHERIT
         self.extra: dict[str, Any] = {}
 
     def depends_on_asset(self, asset: IAsset) -> bool:
@@ -75,6 +84,9 @@ class StockItem(DocItem):
             "stock_asset_uid": self.stock_asset_uid,
             "visible": self.visible,
         }
+        # Only persist a non-inheriting color override.
+        if self.color is not None:
+            result["color"] = self.color
         result.update(self.extra)
         return result
 
@@ -92,6 +104,7 @@ class StockItem(DocItem):
             "matrix",
             "stock_asset_uid",
             "visible",
+            "color",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
@@ -102,6 +115,7 @@ class StockItem(DocItem):
         new_item.uid = data["uid"]
         new_item.matrix = Matrix.from_list(data["matrix"])
         new_item.visible = data.get("visible", True)
+        new_item.color = data.get("color", cls.COLOR_INHERIT)
         new_item.extra = extra
 
         return new_item
@@ -260,6 +274,53 @@ class StockItem(DocItem):
             return
         self.visible = visible
         self.updated.send(self)
+
+    def set_color(self, color: str | None):
+        """
+        Sets the per-instance color override (None = inherit material).
+
+        Colors are canonicalized with :func:`normalize_color`, the app's
+        standard color normalizer, so any accepted CSS form becomes a
+        ``#rrggbb`` hex value.
+        """
+        normalized = color
+        if isinstance(color, str) and color != self.COLOR_NONE:
+            normalized = normalize_color(color)
+            if normalized is None:
+                logger.warning("Ignoring invalid stock color %r", color)
+                return
+        if self.color != normalized:
+            self.color = normalized
+            self.updated.send(self)
+
+    def get_effective_color(self) -> str | None:
+        """
+        Resolve the effective color for this stock item.
+
+        Returns a normalized ``#rrggbb`` string when the item has a color,
+        or None when it does not. Resolution order:
+          1. explicit "no color" override
+          2. explicit per-instance color
+          3. the material's default color (None = material has none)
+        """
+        material = self.material
+        if material is None:
+            return None
+        if self.color == self.COLOR_NONE:
+            return None
+        if self.color:
+            return self.color
+        return normalize_color(material.appearance.color)
+
+    def get_effective_rgba(self) -> ColorRGBA | None:
+        """The effective color as a render-ready RGBA tuple, or None."""
+        color = self.get_effective_color()
+        if not color:
+            return None
+        try:
+            return hex_to_rgba(color)
+        except ValueError:
+            return None
 
     def get_natural_aspect_ratio(self) -> float | None:
         """

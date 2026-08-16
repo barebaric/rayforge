@@ -1,0 +1,31 @@
+uid: acrylic_clear
+name:
+  default: Clear Acrylic
+  de: Klares Acryl
+  es: Acrílico transparente
+  fr: Acrylique transparent
+  pt: Acrílico transparente
+  uk: Прозорий акрил
+  zh_CN: 透明亚克力
+description:
+  default: Transparent thermoplastic, often known by brand names like Plexiglas or Lucite
+  de: Transparenter Kunststoff, oft bekannt unter Markennamen wie Plexiglas oder Lucite
+  es: Termoplástico transparente, a menudo conocido por nombres comerciales como Plexiglás o Lucite
+  fr: Thermoplastique transparent, souvent connu sous les noms commerciaux comme Plexiglas ou Lucite
+  pt: Termoplástico transparente, frequentemente conhecido por nomes comerciais como Plexiglas ou Lucite
+  uk: Прозорий термопластик, часто відомий під торговими марками, такими як Plexiglas або Lucite
+  zh_CN: 透明热塑性塑料，通常以 Plexiglas 或 Lucite 等品牌名称闻名
+category:
+  default: Plastic
+  de: Kunststoff
+  es: Plástico
+  fr: Plastique
+  pt: Plástico
+  uk: Пластик
+  zh_CN: 塑料
+appearance:
+  color:
+  pattern: transparent
+  tintable: true
+  texture: acrylic_clear.webp
+  texture_size_mm: 300

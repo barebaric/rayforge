@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#4169E1"
   pattern: solid
+  texture: fabric_denim.webp
+  texture_size_mm: 300

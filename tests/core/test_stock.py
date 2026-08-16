@@ -4,6 +4,7 @@ import pytest
 from raygeo.geo import Geometry, Matrix
 
 from rayforge.core.doc import Doc
+from rayforge.core.material import Material, MaterialAppearance
 from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
 
@@ -140,6 +141,102 @@ def test_stock_item_backward_compatibility_with_missing_optional_fields():
     assert item.name == "Stock"
     assert item.visible is True
     assert item.extra == {}
+    assert item.color is None  # inherit material default
+
+
+def test_stock_item_color_serialization():
+    """Per-instance colors are serialized; inherited (None) is omitted."""
+    item = StockItem(stock_asset_uid="asset-123")
+    assert "color" not in item.to_dict()
+
+    item.set_color("#A0522D")
+    data = item.to_dict()
+    assert data["color"] == "#a0522d"
+
+    item.set_color(StockItem.COLOR_NONE)
+    assert item.to_dict()["color"] == ""
+
+    restored = StockItem.from_dict(item.to_dict())
+    assert restored.color == ""
+
+
+def test_stock_item_set_color_normalizes():
+    """set_color canonicalizes through the app's normalize_color helper."""
+    item = StockItem(stock_asset_uid="asset-123")
+    item.set_color("red")  # CSS name
+    assert item.color == "#ff0000"
+    item.set_color("#00FF00FF")  # 8-digit hex, alpha dropped
+    assert item.color == "#00ff00"
+    item.set_color("rgb(0, 0, 255)")
+    assert item.color == "#0000ff"
+    item.set_color("not-a-color")  # invalid -> ignored
+    assert item.color == "#0000ff"
+
+
+def test_stock_item_get_effective_color(mock_asset):
+    """Effective color resolution: override, no-color, then default."""
+    material = Material(
+        uid="acrylic",
+        appearance=MaterialAppearance(color="#1A1A1A", tintable=True),
+    )
+    mock_asset.material = material
+    item = StockItem(stock_asset_uid="asset-123")
+    mock_doc = MagicMock()
+    mock_doc.doc = mock_doc
+    mock_doc.get_asset_by_uid.return_value = mock_asset
+    item.parent = mock_doc
+
+    # inherit -> material default
+    assert item.get_effective_color() == "#1a1a1a"
+
+    # explicit no color
+    item.set_color(StockItem.COLOR_NONE)
+    assert item.get_effective_color() is None
+
+    # explicit override
+    item.set_color("#00FF00")
+    assert item.get_effective_color() == "#00ff00"
+
+
+def test_stock_item_get_effective_color_non_tintable(mock_asset):
+    """
+    Stock-level color resolution is tinting-agnostic: it resolves the
+    material's color even for non-tintable materials. The tintable gate
+    lives in the render layer, not in the stock model.
+    """
+    material = Material(
+        uid="oak",
+        appearance=MaterialAppearance(color="#A0522D", tintable=False),
+    )
+    mock_asset.material = material
+    item = StockItem(stock_asset_uid="asset-123")
+    mock_doc = MagicMock()
+    mock_doc.doc = mock_doc
+    mock_doc.get_asset_by_uid.return_value = mock_asset
+    item.parent = mock_doc
+
+    assert item.get_effective_color() == "#a0522d"
+    item.set_color("#00FF00")
+    assert item.get_effective_color() == "#00ff00"
+
+
+def test_stock_item_get_effective_rgba(mock_asset):
+    """Effective color parses to a render-ready RGBA tuple."""
+    material = Material(
+        uid="acrylic",
+        appearance=MaterialAppearance(color="#FF0000", tintable=True),
+    )
+    mock_asset.material = material
+    item = StockItem(stock_asset_uid="asset-123")
+    mock_doc = MagicMock()
+    mock_doc.doc = mock_doc
+    mock_doc.get_asset_by_uid.return_value = mock_asset
+    item.parent = mock_doc
+
+    assert item.get_effective_rgba() == (1.0, 0.0, 0.0, 1.0)
+
+    item.set_color(StockItem.COLOR_NONE)
+    assert item.get_effective_rgba() is None
 
 
 def test_stock_item_get_local_bbox(mock_doc, mock_asset):

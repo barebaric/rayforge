@@ -26,3 +26,6 @@ category:
 appearance:
   color: "#F5F5F5"
   pattern: solid
+  tintable: true
+  texture: hdpe.webp
+  texture_size_mm: 300

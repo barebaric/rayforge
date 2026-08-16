@@ -26,3 +26,6 @@ category:
 appearance:
   color: "#FFFACD"
   pattern: solid
+  tintable: true
+  texture: nylon.webp
+  texture_size_mm: 300

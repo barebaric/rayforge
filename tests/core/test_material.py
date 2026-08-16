@@ -283,6 +283,72 @@ class TestMaterialAppearance:
         assert appearance.texture_size_mm == 300.0
         assert appearance.roughness == 0.8
         assert appearance.metallic == 0.0
+        assert appearance.tintable is False
+
+    def test_appearance_tintable_round_trip(self):
+        """Tintable survives from_dict/to_dict, color may be unset."""
+        data = {
+            "color": "#1A1A1A",
+            "pattern": "solid",
+            "tintable": True,
+            "texture": "abs.png",
+            "texture_size_mm": 300,
+            "roughness": 0.8,
+            "metallic": 0.0,
+        }
+        appearance = MaterialAppearance.from_dict(data)
+
+        assert appearance.tintable is True
+        assert appearance.to_dict() == data
+
+    def test_appearance_tintable_false_not_serialized(self):
+        """Tintable=False is the default and is not written to yaml."""
+        appearance = MaterialAppearance(tintable=False)
+
+        data = appearance.to_dict()
+
+        assert "tintable" not in data
+
+    def test_appearance_unset_color_not_serialized(self):
+        """A None color ('not tinted') is omitted from the yaml output."""
+        appearance = MaterialAppearance(
+            color=None, tintable=True, texture="abs.png"
+        )
+
+        data = appearance.to_dict()
+
+        assert "color" not in data
+        assert data["texture"] == "abs.png"
+
+    def test_appearance_from_dict_null_color(self):
+        """A yaml entry with `color:` (null) parses to an unset color."""
+        appearance = MaterialAppearance.from_dict(
+            {"color": None, "pattern": "solid", "tintable": True}
+        )
+
+        assert appearance.color is None
+
+    def test_get_tint_rgba(self):
+        """Tint RGBA is returned only for tintable materials with a color."""
+        assert MaterialAppearance(
+            color="#FF0000", tintable=True
+        ).get_tint_rgba() == (
+            1.0,
+            0.0,
+            0.0,
+            1.0,
+        )
+        assert MaterialAppearance(color="#FF0000").get_tint_rgba() is None
+        assert (
+            MaterialAppearance(color=None, tintable=True).get_tint_rgba()
+            is None
+        )
+        assert (
+            MaterialAppearance(
+                color="not-a-color", tintable=True
+            ).get_tint_rgba()
+            is None
+        )
 
     def test_appearance_round_trip(self):
         """Test that new appearance fields survive from_dict/to_dict."""
@@ -443,14 +509,31 @@ class TestMaterialTexture:
 
         assert material.get_texture_path() is None
 
-    def test_texture_path_rejects_non_webp(self, tmp_path):
-        """Test rejecting explicit textures that are not WebP."""
-        (tmp_path / "wood.png").write_bytes(b"fake")
+    def test_texture_path_accepts_png_and_webp(self, tmp_path):
+        """WebP and PNG explicit textures are both accepted."""
+        for name in ("wood.webp", "wood.png"):
+            (tmp_path / name).write_bytes(b"fake")
+            material = self._material_in_dir(
+                tmp_path, appearance=MaterialAppearance(texture=name)
+            )
+
+            assert material.get_texture_path() == tmp_path / name
+
+    def test_texture_path_rejects_unsupported_extension(self, tmp_path):
+        """Test rejecting explicit textures that are neither WebP nor PNG."""
+        (tmp_path / "wood.jpg").write_bytes(b"fake")
         material = self._material_in_dir(
-            tmp_path, appearance=MaterialAppearance(texture="wood.png")
+            tmp_path, appearance=MaterialAppearance(texture="wood.jpg")
         )
 
         assert material.get_texture_path() is None
+
+    def test_texture_path_png_fallback(self, tmp_path):
+        """The fallback also looks for "<uid>.png" next to the YAML."""
+        (tmp_path / "test_mat.png").write_bytes(b"fake")
+        material = self._material_in_dir(tmp_path)
+
+        assert material.get_texture_path() == tmp_path / "test_mat.png"
 
     def test_texture_path_rejects_traversal(self, tmp_path):
         """Test rejecting texture paths that escape the library dir."""

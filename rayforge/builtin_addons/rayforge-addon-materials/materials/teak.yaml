@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#D2691E"
   pattern: wood_grain
+  texture: teak.webp
+  texture_size_mm: 300

@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#708090"
   pattern: metallic
+  texture: steel.webp
+  texture_size_mm: 300

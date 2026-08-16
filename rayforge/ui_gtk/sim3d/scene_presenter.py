@@ -661,6 +661,11 @@ class ScenePresenter:
                     "color": appearance.color
                     if appearance is not None
                     else None,
+                    # Tinting is a material-level feature: the stock's color
+                    # only applies when the material is tintable.
+                    "tint": item.get_effective_color()
+                    if (appearance is not None and appearance.tintable)
+                    else None,
                 }
             )
         return specs

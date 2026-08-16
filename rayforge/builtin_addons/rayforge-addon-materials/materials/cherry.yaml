@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#CD5C5C"
   pattern: wood_grain
+  texture: cherry.webp
+  texture_size_mm: 300

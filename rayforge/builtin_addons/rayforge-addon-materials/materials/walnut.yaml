@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#5D4037"
   pattern: wood_grain
+  texture: walnut.webp
+  texture_size_mm: 300

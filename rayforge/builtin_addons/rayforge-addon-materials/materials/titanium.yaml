@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#71797E"
   pattern: metallic
+  texture: titanium.webp
+  texture_size_mm: 300

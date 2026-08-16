@@ -2,10 +2,11 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
-from gi.repository import Adw, GLib, Gtk
+from gi.repository import Adw, Gdk, GLib, Gtk
 
 from ...context import get_context
 from ...core.stock import StockItem
+from ..icons import get_icon
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.pref_rows.length_spin_row import LengthSpinRow
 from ..shared.texture_loader import create_material_swatch
@@ -100,8 +101,31 @@ class StockPropertiesDialog(PatchedDialogWindow):
 
         properties_group.add(self.material_row)
 
+        # Per-instance color row (only usable for tintable materials; for
+        # other materials the color comes from the material definition).
+        self.color_row = Adw.ActionRow(title=_("Color"))
+        color_dialog = Gtk.ColorDialog()
+        color_dialog.set_with_alpha(False)
+        self.color_button = Gtk.ColorDialogButton(dialog=color_dialog)
+        self.color_button.set_size_request(32, 32)
+        self.color_button.connect("notify::rgba", self._on_color_set)
+        # Clear button reverts to the material's default color (inherit).
+        self._clear_color_button = Gtk.Button(child=get_icon("clear-symbolic"))
+        self._clear_color_button.add_css_class("flat")
+        self._clear_color_button.set_valign(Gtk.Align.CENTER)
+        self._clear_color_button.set_tooltip_text(
+            _("Use the material's default color")
+        )
+        self._clear_color_button.connect("clicked", self._on_clear_color)
+        self._clear_color_button.set_visible(False)
+        self.color_row.add_suffix(self.color_button)
+        self.color_row.add_suffix(self._clear_color_button)
+        properties_group.add(self.color_row)
+        self._updating_color = False
+
         # Initialize material display
         self._update_material_display()
+        self._update_color_display()
 
         content_box.append(properties_group)
 
@@ -181,6 +205,7 @@ class StockPropertiesDialog(PatchedDialogWindow):
 
         # Update the material display if it has changed
         self._update_material_display()
+        self._update_color_display()
 
     def _apply_thickness_change(self, new_thickness):
         """Apply the thickness change."""
@@ -222,3 +247,54 @@ class StockPropertiesDialog(PatchedDialogWindow):
                 return library.display_name
 
         return None
+
+    def _on_color_set(self, button: Gtk.ColorDialogButton, pspec=None):
+        """Apply a per-instance color chosen in the color picker."""
+        if self._updating_color:
+            return
+        rgba = button.get_rgba()
+        color = (
+            f"#{int(rgba.red * 255):02x}"
+            f"{int(rgba.green * 255):02x}"
+            f"{int(rgba.blue * 255):02x}"
+        )
+        self.editor.stock.set_stock_color(self.stock_item, color)
+
+    def _on_clear_color(self, button: Gtk.Button):
+        """Clear the per-instance color (revert to the material default)."""
+        self.editor.stock.set_stock_color(self.stock_item, None)
+
+    def _update_color_display(self):
+        """Refresh the per-instance color row to match the stock item."""
+        material = self.stock_item.material
+        tintable = material is not None and material.appearance.tintable
+        self.color_row.set_sensitive(tintable)
+
+        # Only show the clear button while a per-instance override exists.
+        self._clear_color_button.set_visible(
+            tintable and self.stock_item.color is not None
+        )
+
+        effective = self.stock_item.get_effective_color()
+        if not tintable:
+            self.color_row.set_subtitle(_("Set by the material definition"))
+        elif self.stock_item.color == StockItem.COLOR_NONE:
+            self.color_row.set_subtitle(_("No color"))
+        elif self.stock_item.color:
+            self.color_row.set_subtitle(
+                _("{color} (custom)").format(color=self.stock_item.color)
+            )
+        elif effective:
+            self.color_row.set_subtitle(
+                _("{color} (material default)").format(color=effective)
+            )
+        else:
+            self.color_row.set_subtitle(_("Material default (no color)"))
+
+        # Show the effective color in the picker without triggering apply.
+        self._updating_color = True
+        if effective:
+            rgba = Gdk.RGBA()
+            if rgba.parse(effective):
+                self.color_button.set_rgba(rgba)
+        self._updating_color = False

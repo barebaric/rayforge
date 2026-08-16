@@ -26,3 +26,6 @@ category:
 appearance:
   color: "#FFFFFF"
   pattern: solid
+  tintable: true
+  texture: ptfe.webp
+  texture_size_mm: 300

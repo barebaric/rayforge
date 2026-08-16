@@ -26,3 +26,6 @@ category:
 appearance:
   color: "#F0F0F0"
   pattern: solid
+  tintable: true
+  texture: polypropylene.webp
+  texture_size_mm: 300

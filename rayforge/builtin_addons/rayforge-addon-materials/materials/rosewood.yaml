@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#800000"
   pattern: wood_grain
+  texture: rosewood.webp
+  texture_size_mm: 300

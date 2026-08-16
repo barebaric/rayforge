@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#9370DB"
   pattern: solid
+  texture: fabric_felt.webp
+  texture_size_mm: 300

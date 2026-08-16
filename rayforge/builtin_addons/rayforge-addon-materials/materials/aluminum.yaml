@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#C0C0C0"
   pattern: metallic
+  texture: aluminum.webp
+  texture_size_mm: 300

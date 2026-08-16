@@ -26,3 +26,6 @@ category:
 appearance:
   color: "#F5F5DC"
   pattern: solid
+  tintable: true
+  texture: abs.webp
+  texture_size_mm: 300

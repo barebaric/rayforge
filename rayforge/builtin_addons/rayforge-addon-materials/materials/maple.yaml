@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#F5DEB3"
   pattern: wood_grain
+  texture: maple.webp
+  texture_size_mm: 300

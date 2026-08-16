@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#2F4F4F"
   pattern: wood_grain
+  texture: ebony.webp
+  texture_size_mm: 300

@@ -74,6 +74,9 @@ class StockLayer:
         1.0,
         1.0,
     )
+    # Resolved per-instance tint color (RGBA), or None for no tint.
+    # Applied on the GPU as colorization (luma * tint) in the stock shader.
+    tint_rgba: tuple[float, float, float, float] | None = None
 
 
 class CompiledSceneArtifactHandle(BaseArtifactHandle):
