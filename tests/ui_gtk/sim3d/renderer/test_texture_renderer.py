@@ -58,7 +58,10 @@ def test_build_mipmaps_max_reduces():
     so scanline rows survive minification instead of aliasing away."""
     data = np.arange(25, dtype=np.uint8).reshape(5, 5) % 7
     mips = TextureArtifactRenderer._build_mipmaps(data)
-    assert [m.shape for m in mips] == [(5, 5), (3, 3), (2, 2), (1, 1)]
+    # Level sizes follow the GL floor-halving rule (max(1, size // 2)),
+    # not ceil: an inconsistent chain would leave the texture incomplete
+    # and every lookup black.
+    assert [m.shape for m in mips] == [(5, 5), (2, 2), (1, 1)]
     for level in range(1, len(mips)):
         prev = mips[level - 1]
         cur = mips[level]

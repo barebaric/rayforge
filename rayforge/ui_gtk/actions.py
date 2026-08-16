@@ -316,6 +316,11 @@ class ActionManager:
             self.win.on_show_models_state_change,
             GLib.Variant.new_boolean(cv.show_models),
         )
+        self._add_stateful_action(
+            "show_ops_underlay",
+            self.win.on_show_ops_underlay_state_change,
+            GLib.Variant.new_boolean(cv.show_ops_underlay),
+        )
         config = get_context().config
         self._add_stateful_action(
             "toggle_bottom_panel",

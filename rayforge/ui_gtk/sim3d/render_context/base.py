@@ -44,6 +44,7 @@ class FrameInputs:
     show_grid: bool = True
     show_nogo_zones: bool = True
     show_models: bool = True
+    show_ops_underlay: bool = True
 
 
 class RenderContext:

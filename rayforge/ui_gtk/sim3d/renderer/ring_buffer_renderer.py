@@ -202,8 +202,8 @@ class RingBufferRenderer(BaseRenderer):
         exec_f = base + frac * span
         zero = np.zeros(3, dtype=np.float32)
         if total == 0:
-            # No position data uploaded: fall back to the raw count.
-            return int(exec_f), -1, zero
+            # No position data uploaded: there is nothing to reveal.
+            return 0, -1, zero
         if exec_f >= total:
             return total, -1, zero
         if exec_f <= 0:

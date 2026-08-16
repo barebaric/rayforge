@@ -32,6 +32,7 @@ class VisibilityOverlay(Gtk.Box):
         show_models=False,
         show_grid=False,
         show_tabs=False,
+        show_ops_underlay=False,
         shortcuts=None,
         **kwargs,
     ):
@@ -117,6 +118,22 @@ class VisibilityOverlay(Gtk.Box):
             )
             self.grid_button.set_action_name("win.show_grid")
             self.append(self.grid_button)
+
+        self.underlay_button = None
+        if show_ops_underlay:
+            self.underlay_button = Gtk.ToggleButton()
+            self.underlay_button.set_child(
+                get_icon("image-x-generic-symbolic")
+            )
+            self.underlay_button.set_active(True)
+            self.underlay_button.set_tooltip_text(
+                self._format_tooltip(
+                    _("Toggle ops underlay visibility"),
+                    "win.show_ops_underlay",
+                )
+            )
+            self.underlay_button.set_action_name("win.show_ops_underlay")
+            self.append(self.underlay_button)
 
         self.travel_button = Gtk.ToggleButton()
         self.travel_button.set_child(get_icon("travel-path-symbolic"))
