@@ -450,6 +450,21 @@ class TestJobMarkers:
         assert result.driver_data["binary"] == b"\xd8\x10"
         assert "; Job Start - Ref Point: MACHINE" in result.text
 
+    def test_job_start_falls_back_for_named_wcs(
+        self, encoder, mock_machine, doc
+    ):
+        """
+        A named/absolute WCS (the default ``G54``) is not a Ruida ref
+        point; job start must fall back to MACHINE instead of failing.
+        """
+        mock_machine.active_wcs = "G54"
+        ops = Ops()
+        ops.job_start()
+        result = encoder.encode(ops, mock_machine, doc)
+
+        assert result.driver_data["binary"] == b"\xd8\x10"
+        assert "; Job Start - Ref Point: MACHINE" in result.text
+
     def test_job_end(self, encoder, mock_machine, doc):
         """Job end should emit EOF marker."""
         ops = Ops()
