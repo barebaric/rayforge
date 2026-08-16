@@ -220,10 +220,10 @@ class NoDeviceDriver(Driver):
         pass
 
     async def set_wcs_offset(
-        self, wcs_slot: str, x: float, y: float, z: float
+        self, wcs_slot: str, x: float, y: float, z: float | None
     ) -> None:
         """Dummy implementation, updates internal state."""
-        self._offsets[wcs_slot] = (x, y, z)
+        self._offsets[wcs_slot] = (x, y, z if z is not None else 0.0)
         # Notify machine that the driver updated offsets
         self.wcs_updated.send(self, offsets=self._offsets)
 

@@ -7,7 +7,6 @@ from gettext import gettext as _
 from pathlib import Path
 
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
-from raygeo.ops.axis import Axis
 
 from .. import __version__, const
 from ..addon_mgr.update_cmd import UpdateCommand
@@ -1091,8 +1090,7 @@ class MainWindow(Adw.ApplicationWindow):
         if not config.machine:
             return
 
-        # 'param' is likely "all" string from the action setup
-        axes_to_zero = Axis.X | Axis.Y | Axis.Z
+        axes_to_zero = config.machine.available_axes
 
         async def zero_func(ctx):
             # Explicitly check again to satisfy type checker

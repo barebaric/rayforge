@@ -525,7 +525,7 @@ class RuidaDriver(Driver):
                 await self._client.rapid_move_axis(0x01, delta_um)
 
     async def set_wcs_offset(
-        self, wcs_slot: str, x: float, y: float, z: float
+        self, wcs_slot: str, x: float, y: float, z: float | None
     ) -> None:
         """
         Set a reference point offset on the controller.

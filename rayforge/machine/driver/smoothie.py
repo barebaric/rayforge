@@ -454,19 +454,18 @@ class SmoothieDriver(Driver):
         )
 
     async def set_wcs_offset(
-        self, wcs_slot: str, x: float, y: float, z: float
+        self, wcs_slot: str, x: float, y: float, z: float | None
     ) -> None:
         """Sets a WCS offset using Smoothie's G10 L20 command."""
         if wcs_slot not in _wcs_to_p_map:
             raise ValueError(f"Invalid WCS slot: {wcs_slot}")
 
         p_num = _wcs_to_p_map[wcs_slot]
-        dialect = self.dialect
-        cmd = dialect.set_wcs_offset.format(
-            p_num=p_num,
-            x=self._to_machine_length(x),
-            y=self._to_machine_length(y),
-            z=self._to_machine_length(z),
+        cmd = self.dialect.format_wcs_offset(
+            p_num,
+            self._to_machine_length(x),
+            self._to_machine_length(y),
+            self._to_machine_length(z) if z is not None else None,
         )
         await self._send_and_wait(cmd.encode("utf-8"))
 

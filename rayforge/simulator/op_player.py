@@ -199,6 +199,8 @@ class OpPlayer:
             (Axis.Y, end[1]),
             (Axis.Z, end[2]),
         ):
+            if axis not in axes:
+                continue
             axes[axis] = start_axes.get(axis, 0.0) + frac * (
                 value - start_axes.get(axis, 0.0)
             )

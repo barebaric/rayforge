@@ -199,6 +199,48 @@ class TestMachine:
         set_wcs_spy.assert_called_once_with("G54", 100.0, 200.0, 0.0)
         read_wcs_spy.assert_called_once()
 
+    def test_has_z_axis_default_true(self, machine: Machine):
+        """A default machine has a Z axis configured."""
+        assert machine.has_z_axis is True
+        assert Axis.Z in machine.available_axes
+
+    def test_has_z_axis_false_when_z_removed(self, machine: Machine):
+        """Removing the Z axis config makes has_z_axis False."""
+        machine.axes.remove_config(Axis.Z)
+        assert machine.has_z_axis is False
+        assert Axis.Z not in machine.available_axes
+        assert machine.available_axes == (Axis.X | Axis.Y)
+
+    @pytest.mark.asyncio
+    async def test_set_work_origin_no_z_omits_z(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
+        """A no-Z machine passes z=None to the driver so Z is omitted."""
+        await wait_for_tasks_to_finish(task_mgr)
+        await machine.connect()
+        await wait_for_tasks_to_finish(task_mgr)
+        machine.active_wcs = "G54"
+        machine.update_wcs_offset("G54", (10.0, 20.0, 0.0))
+        machine.device_state.machine_pos = (100.0, 200.0, 0.0)
+        machine.axes.remove_config(Axis.Z)
+
+        set_wcs_spy = mocker.patch.object(
+            machine.driver,
+            "set_wcs_offset",
+            new_callable=mocker.AsyncMock,
+        )
+        mocker.patch.object(
+            machine.driver,
+            "read_wcs_offsets",
+            new_callable=mocker.AsyncMock,
+        )
+
+        await machine.set_work_origin_here(Axis.X | Axis.Y | Axis.Z)
+
+        # Z is masked out by available_axes, and set_work_origin passes
+        # None so the driver omits the Z word.
+        set_wcs_spy.assert_called_once_with("G54", 100.0, 200.0, None)
+
     @pytest.mark.asyncio
     async def test_set_work_origin_blocks_immutable(
         self, machine: Machine, mocker, task_mgr: TaskManager

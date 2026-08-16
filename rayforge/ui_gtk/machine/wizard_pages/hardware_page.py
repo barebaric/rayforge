@@ -110,6 +110,15 @@ class HardwarePage(WizardPage):
             subtitle=_("Makes coordinate values negative"),
         )
         axes_group.add(self.reverse_y_row)
+        self.has_z_row = Adw.SwitchRow(
+            title=_("Has Z-Axis"),
+            subtitle=_(
+                "Enable if this machine has a Z axis (focus motor, "
+                "movable bed)"
+            ),
+        )
+        self.has_z_row.connect("notify::active", self._on_has_z_toggled)
+        axes_group.add(self.has_z_row)
         self.reverse_z_row = Adw.SwitchRow(
             title=_("Reverse Z-Axis Direction"),
             subtitle=_("Enable if +Z moves head down"),
@@ -283,6 +292,11 @@ class HardwarePage(WizardPage):
         self.soft_x_max_row.set_sensitive(enabled)
         self.soft_y_max_row.set_sensitive(enabled)
 
+    def _on_has_z_toggled(self, row, _param) -> None:
+        has_z = row.get_active()
+        self.reverse_z_row.set_visible(has_z)
+        self.reverse_z_row.set_active(False)
+
     # ----- profile binding -----------------------------------------------
 
     def enter(self, profile: DeviceProfile) -> None:
@@ -309,6 +323,10 @@ class HardwarePage(WizardPage):
         reverse = self.wizard.aux_state.setdefault("reverse", {})
         self.reverse_x_row.set_active(reverse.get("x", False))
         self.reverse_y_row.set_active(reverse.get("y", False))
+
+        has_z = mc.has_z if mc.has_z is not None else True
+        self.has_z_row.set_active(has_z)
+        self.reverse_z_row.set_visible(has_z)
         self.reverse_z_row.set_active(reverse.get("z", False))
 
         margins = mc.work_margins or (0.0, 0.0, 0.0, 0.0)
@@ -377,6 +395,8 @@ class HardwarePage(WizardPage):
         reverse["x"] = self.reverse_x_row.get_active()
         reverse["y"] = self.reverse_y_row.get_active()
         reverse["z"] = self.reverse_z_row.get_active()
+
+        mc.has_z = self.has_z_row.get_active() or None
 
         margins = (
             self.margin_left_row.get_value_in_base_units(),

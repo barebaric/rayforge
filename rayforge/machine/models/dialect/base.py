@@ -222,6 +222,25 @@ class GcodeDialect:
             label=new_label,
         )
 
+    def format_wcs_offset(
+        self,
+        p_num: int | str,
+        x: float | str,
+        y: float | str,
+        z: float | str | None = None,
+    ) -> str:
+        """Format the ``set_wcs_offset`` template for emission.
+
+        When *z* is ``None`` (a no-Z machine), the Z component is
+        dropped from the command so the controller never receives a
+        ``Z{...}`` word.  The caller is responsible for converting
+        coordinates to the machine's unit system before calling this.
+        """
+        if z is None:
+            template = self.set_wcs_offset.replace(" Z{z}", "")
+            return template.format(p_num=p_num, x=x, y=y)
+        return self.set_wcs_offset.format(p_num=p_num, x=x, y=y, z=z)
+
     def to_dict(self) -> dict[str, Any]:
         """Serializes the dialect to a dictionary."""
         result = asdict(self)

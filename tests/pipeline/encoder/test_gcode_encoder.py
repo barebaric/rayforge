@@ -30,6 +30,7 @@ def _make_machine_mock(dialect=GRBL_DIALECT):
     machine.get_head_by_uid.return_value = MagicMock(
         uid="head0", max_power=100.0, tool_number=1
     )
+    machine.has_z_axis = True
     return machine
 
 
@@ -102,6 +103,7 @@ def _make_context(**overrides) -> dict:
         "path_vars": {},
         "layer_path_vars": {},
         "workpiece_path_vars": {},
+        "has_z_axis": True,
     }
     defaults.update(overrides)
     return defaults
@@ -128,6 +130,46 @@ def test_rust_encode_basic_move_and_line():
     assert "G1 F1000" in text
     assert "M5" in text
     assert "M30" in text
+
+
+def test_rust_encode_no_z_machine_omits_z_from_moves():
+    """A no-Z machine (has_z_axis=False) never emits Z words."""
+    ops = Ops()
+    ops.job_start()
+    ops.set_power(1.0)
+    ops.set_feed_rate(1000)
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 20.0, 0.0)
+    # A Z change that would normally emit Z — must be suppressed.
+    ops.move_to(10.0, 20.0, 5.0)
+    ops.job_end()
+
+    dialect = GcodeDialectSpec()
+    context = _make_context(has_z_axis=False)
+    result = ops.to_gcode(dialect, context)
+    text = result["text"]
+
+    assert " Z" not in text, f"Z word found in no-Z output: {text!r}"
+    assert "G1 X10 Y20" in text
+
+
+def test_rust_encode_has_z_axis_defaults_true():
+    """Omitting has_z_axis from the context defaults to True (3D)."""
+    ops = Ops()
+    ops.job_start()
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.move_to(0.0, 0.0, 5.0)
+    ops.job_end()
+
+    dialect = GcodeDialectSpec()
+    # No has_z_axis key — defaults to True via serde default.
+    context = _make_context()
+    context.pop("has_z_axis", None)
+    result = ops.to_gcode(dialect, context)
+    text = result["text"]
+
+    # Z change should be emitted when the flag defaults to True.
+    assert " Z5" in text
 
 
 def test_rust_encode_imperial_scales_coords_and_feed():

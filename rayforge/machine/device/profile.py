@@ -232,6 +232,7 @@ class MachineConfig:
     home_on_start: bool | None = None
     acceleration: int | None = None
     single_axis_homing_enabled: bool | None = None
+    has_z: bool | None = None
     rotary_enabled_default: bool | None = None
     unit_system: UnitSystem | None = None
     heads: list[dict[str, Any]] | None = None
@@ -469,6 +470,8 @@ class DeviceProfile:
             m.acceleration = cfg.acceleration
         if cfg.single_axis_homing_enabled is not None:
             m.single_axis_homing_enabled = cfg.single_axis_homing_enabled
+        if cfg.has_z is not None:
+            m.set_has_z_axis(cfg.has_z)
         if cfg.rotary_enabled_default is not None:
             m.rotary_enabled_default = cfg.rotary_enabled_default
         if cfg.unit_system is not None:

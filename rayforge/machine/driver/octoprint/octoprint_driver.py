@@ -791,7 +791,7 @@ class OctoPrintDriver(Driver):
         await self.set_power(head, percent)
 
     async def set_wcs_offset(
-        self, wcs_slot: str, x: float, y: float, z: float
+        self, wcs_slot: str, x: float, y: float, z: float | None
     ) -> None:
         p_map = {
             "G54": 1,
@@ -807,9 +807,10 @@ class OctoPrintDriver(Driver):
         cmd = (
             f"G10 L2 P{p_num} "
             f"X{self._to_machine_length(x):.3f} "
-            f"Y{self._to_machine_length(y):.3f} "
-            f"Z{self._to_machine_length(z):.3f}"
+            f"Y{self._to_machine_length(y):.3f}"
         )
+        if z is not None:
+            cmd += f" Z{self._to_machine_length(z):.3f}"
         await self._api_request(
             "POST",
             "/api/printer/command",

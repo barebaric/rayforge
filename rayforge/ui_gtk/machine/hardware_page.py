@@ -1,7 +1,6 @@
 from gettext import gettext as _
 
 from gi.repository import Adw, Gtk
-from raygeo.ops.axis import Axis
 
 from ...machine.models.machine import Machine, Origin
 from ...machine.models.machine_panel import PanelOrientation
@@ -111,6 +110,17 @@ class HardwarePage(TrackedPreferencesPage):
             "notify::active", self.on_reverse_y_changed
         )
         axes_group.add(self.reverse_y_axis_row)
+
+        self.has_z_axis_row = Adw.SwitchRow()
+        self.has_z_axis_row.set_title(_("Has Z-Axis"))
+        self.has_z_axis_row.set_subtitle(
+            _("Enable if this machine has a Z axis (focus motor, movable bed)")
+        )
+        self.has_z_axis_row.set_active(machine.has_z_axis)
+        self.has_z_axis_row.connect(
+            "notify::active", self.on_has_z_axis_changed
+        )
+        axes_group.add(self.has_z_axis_row)
 
         self.reverse_z_axis_row = Adw.SwitchRow()
         self.reverse_z_axis_row.set_title(_("Reverse Z-Axis Direction"))
@@ -311,6 +321,9 @@ class HardwarePage(TrackedPreferencesPage):
     def on_reverse_z_changed(self, row, _):
         self.machine.set_reverse_z_axis(row.get_active())
 
+    def on_has_z_axis_changed(self, row, _):
+        self.machine.set_has_z_axis(row.get_active())
+
     def on_x_extent_changed(self, row):
         x = self.x_extent_row.get_value_in_base_units()
         y = self.machine.axis_extents[1]
@@ -367,5 +380,7 @@ class HardwarePage(TrackedPreferencesPage):
         if self._is_initializing:
             return
 
-        has_z = self.machine.can_jog(Axis.Z)
+        has_z = self.machine.has_z_axis
+        if self.has_z_axis_row.get_active() != has_z:
+            self.has_z_axis_row.set_active(has_z)
         self.reverse_z_axis_row.set_visible(has_z)
