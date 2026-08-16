@@ -29,6 +29,7 @@ from ..gl_utils import ShaderSet
 from ..render_context import RenderContext
 from ..shader import (
     BackgroundShader,
+    ImageShader,
     Shader,
     SimpleShader,
     StockShader,
@@ -54,6 +55,7 @@ from .texture_renderer import (
     TextureArtifactRenderer,
     prepare_texture_layer,
 )
+from .workpiece_image_renderer import WorkpieceImageRenderer
 from .zone_renderer import ZoneRenderer
 
 logger = logging.getLogger(__name__)
@@ -235,6 +237,7 @@ class SceneRenderer(BaseRenderer):
         self.texture_shader: Shader | None = None
         self.background_shader: Shader | None = None
         self.stock_shader: Shader | None = None
+        self.image_shader: Shader | None = None
         self.shader_set: ShaderSet | None = None
 
         self.axis_renderer: AxisRenderer3D | None = None
@@ -243,6 +246,9 @@ class SceneRenderer(BaseRenderer):
         )
         self.texture_renderer: TextureArtifactRenderer | None = None
         self.stock_renderer: StockRenderer | None = StockRenderer()
+        self.workpiece_image_renderer: WorkpieceImageRenderer | None = (
+            WorkpieceImageRenderer()
+        )
         self.zone_renderer: ZoneRenderer | None = None
         self.laser_beam_renderer: LaserBeamRenderer | None = (
             LaserBeamRenderer()
@@ -283,9 +289,12 @@ class SceneRenderer(BaseRenderer):
 
         # Draw the ops and textures.  The solid stock draws before the
         # engrave quads (with a polygon offset) so the quads sit
-        # cleanly on the top face.
+        # cleanly on the top face.  Workpiece base images draw on the
+        # stock face but below the engrave texture and toolpaths.
         if self.stock_renderer is not None:
             registry.append((self.stock_renderer, ("stock",)))
+        if self.workpiece_image_renderer is not None:
+            registry.append((self.workpiece_image_renderer, ("image",)))
         if self.texture_renderer is not None:
             registry.append((self.texture_renderer, ("texture",)))
         for renderer in self.ops_renderers:
@@ -319,12 +328,14 @@ class SceneRenderer(BaseRenderer):
         self.texture_shader = TextureShader()
         self.background_shader = BackgroundShader()
         self.stock_shader = StockShader()
+        self.image_shader = ImageShader()
         self.shader_set = ShaderSet(
             main=self.main_shader,
             text=self.text_shader,
             texture=self.texture_shader,
             background=self.background_shader,
             stock=self.stock_shader,
+            image=self.image_shader,
         )
 
         self.axis_renderer = AxisRenderer3D(
@@ -340,6 +351,8 @@ class SceneRenderer(BaseRenderer):
         self.texture_renderer.init_gl()
         if self.stock_renderer:
             self.stock_renderer.init_gl()
+        if self.workpiece_image_renderer:
+            self.workpiece_image_renderer.init_gl()
         if self.laser_beam_renderer:
             self.laser_beam_renderer.init_gl()
         try:
@@ -360,6 +373,7 @@ class SceneRenderer(BaseRenderer):
             self.background_renderer,
             self.texture_renderer,
             self.stock_renderer,
+            self.workpiece_image_renderer,
             self.zone_renderer,
             self.laser_beam_renderer,
         ):
@@ -394,6 +408,8 @@ class SceneRenderer(BaseRenderer):
             self.background_shader.cleanup()
         if self.stock_shader:
             self.stock_shader.cleanup()
+        if self.image_shader:
+            self.image_shader.cleanup()
 
     def apply_extent_frame(self, viewport: ViewportConfig):
         """Applies the extent frame to the axis renderer if present."""
@@ -649,6 +665,8 @@ class SceneRenderer(BaseRenderer):
             self.texture_renderer.clear()
         if self.stock_renderer:
             self.stock_renderer.clear()
+        if self.workpiece_image_renderer:
+            self.workpiece_image_renderer.clear()
 
     def extract_playback_offsets(self, artifact: CompiledSceneArtifact):
         """Stores each renderer's playback offsets from an artifact."""
@@ -708,6 +726,7 @@ class SceneRenderer(BaseRenderer):
             self.texture_shader,
             self.background_shader,
             self.stock_shader,
+            self.image_shader,
         ):
             if shader:
                 shader.reset_uniforms()

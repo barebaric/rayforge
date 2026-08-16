@@ -66,11 +66,21 @@ cambias WCS, verás las trayectorias parecer moverse porque el punto de referenc
 ## Opciones de Pantalla
 
 Los controles de visibilidad están ubicados como botones superpuestos en la esquina
-superior derecha del lienzo 3D:
+superior derecha del lienzo 3D. Cada botón recuerda su estado entre sesiones:
 
+- **Imagen de la pieza de trabajo**: Alternar la imagen base de la pieza de
+  trabajo sobre la superficie del material — la misma imagen que se muestra
+  en el lienzo 2D
+- **Material de base**: Alternar la visibilidad de los bloques de material
 - **Modelo**: Alternar la visibilidad del modelo 3D de la máquina
+- **Cuadrícula**: Alternar la visibilidad de la cuadrícula de coordenadas
+- **Subcapa de operaciones**: Alternar la vista previa semitransparente de
+  grabado rasterizado sobre la superficie de la pieza de trabajo
 - **Movimientos de desplazamiento**: Alternar la visibilidad de los movimientos rápidos
 - **Zonas prohibidas**: Alternar la visibilidad de las zonas prohibidas
+
+La proyección en perspectiva y ortográfica se alterna con <kbd>P</kbd> o con
+**Ver → Alternar perspectiva**.
 
 ### Visualización de Trayectoria
 

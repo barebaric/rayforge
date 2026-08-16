@@ -66,11 +66,20 @@ changes de WCS, tu verras les trajets d'outil sembler bouger parce que le point 
 ## Options d'affichage
 
 Les bascules de visibilité se trouvent sous forme de boutons superposés en haut à droite
-du canevas 3D :
+du canevas 3D. Chaque bouton mémorise son état entre les sessions :
 
+- **Image de la pièce** : Basculer l'image de base de la pièce sur la surface
+  du brut — la même image que celle affichée sur le canevas 2D
+- **Brut** : Basculer la visibilité des blocs de brut
 - **Modèle** : Basculer la visibilité du modèle 3D de la machine
+- **Grille** : Basculer la visibilité de la grille de coordonnées
+- **Sous-couche d'opérations** : Basculer l'aperçu semi-transparent de la
+  gravure raster sur la surface de la pièce
 - **Déplacements rapides** : Basculer la visibilité des déplacements rapides
 - **Zones interdites** : Basculer la visibilité des zones interdites
+
+La projection en perspective et orthographique se bascule avec <kbd>P</kbd> ou
+**Affichage → Basculer la perspective**.
 
 ### Visualisation du trajet d'outil
 

@@ -1,15 +1,47 @@
 """Smoketests for the SceneRenderer composite."""
 
+from dataclasses import fields
 from unittest.mock import MagicMock, patch
 
+from rayforge.ui_gtk.sim3d.render_context import SceneVisibility
 from rayforge.ui_gtk.sim3d.renderer.background_renderer import (
     BackgroundRenderer,
 )
+from rayforge.ui_gtk.sim3d.renderer.base import BaseRenderer
 from rayforge.ui_gtk.sim3d.renderer.laser_beam_renderer import (
     LaserBeamRenderer,
 )
 from rayforge.ui_gtk.sim3d.renderer.scene_renderer import SceneRenderer
 from rayforge.ui_gtk.sim3d.renderer.stock_renderer import StockRenderer
+from rayforge.ui_gtk.sim3d.renderer.workpiece_image_renderer import (
+    WorkpieceImageRenderer,
+)
+
+
+def _all_renderer_classes():
+    """Yields every concrete BaseRenderer subclass."""
+    classes: set[type] = set()
+
+    def walk(cls):
+        for sub in cls.__subclasses__():
+            if sub not in classes:
+                classes.add(sub)
+                walk(sub)
+
+    walk(BaseRenderer)
+    return classes
+
+
+def test_visibility_keys_reference_scene_visibility_fields():
+    """Each renderer's visibility_key must name a real toggle, so typos
+    cannot silently make a category always draw."""
+    valid = {field.name for field in fields(SceneVisibility)}
+    for cls in _all_renderer_classes():
+        key = cls.visibility_key
+        assert key is None or key in valid, (
+            f"{cls.__name__}.visibility_key {key!r} is not a "
+            f"SceneVisibility field"
+        )
 
 
 def test_scene_renderer_constructs_children():
@@ -59,6 +91,9 @@ def test_scene_renderer_init_gl_creates_children():
             "rayforge.ui_gtk.sim3d.renderer.scene_renderer.StockShader"
         ) as mock_stock,
         patch(
+            "rayforge.ui_gtk.sim3d.renderer.scene_renderer.ImageShader"
+        ) as mock_image,
+        patch(
             "rayforge.ui_gtk.sim3d.renderer.scene_renderer.AxisRenderer3D"
         ) as mock_axis,
         patch(
@@ -71,6 +106,7 @@ def test_scene_renderer_init_gl_creates_children():
         patch.object(LaserBeamRenderer, "init_gl"),
         patch.object(BackgroundRenderer, "init_gl"),
         patch.object(StockRenderer, "init_gl"),
+        patch.object(WorkpieceImageRenderer, "init_gl"),
     ):
         scene.set_viewport(viewport)
         scene.set_font_family("sans-serif")
@@ -87,6 +123,7 @@ def test_scene_renderer_init_gl_creates_children():
     assert scene.shader_set.texture is mock_texture.return_value
     assert scene.shader_set.background is mock_background.return_value
     assert scene.shader_set.stock is mock_stock.return_value
+    assert scene.shader_set.image is mock_image.return_value
     mock_axis.return_value.init_gl.assert_called_once()
     mock_tex.return_value.init_gl.assert_called_once()
     mock_zone.return_value.init_gl.assert_called_once()
@@ -95,6 +132,7 @@ def test_scene_renderer_init_gl_creates_children():
     mock_texture.assert_called_once()
     mock_background.assert_called_once()
     mock_stock.assert_called_once()
+    mock_image.assert_called_once()
 
     renderers = [r for r, _ in scene.render_registry]
     assert renderers == [
@@ -102,6 +140,7 @@ def test_scene_renderer_init_gl_creates_children():
         scene.axis_renderer,
         scene.zone_renderer,
         scene.stock_renderer,
+        scene.workpiece_image_renderer,
         scene.texture_renderer,
         scene.laser_beam_renderer,
     ]
@@ -184,22 +223,51 @@ def test_render_registry_orders_rings_after_texture():
     assert ops_index < ring_index
 
 
+def test_active_registry_filters_by_scene_visibility():
+    """Renderers gated by a visibility toggle are skipped when hidden."""
+    scene = SceneRenderer()
+    bg = MagicMock()
+    bg.visibility_key = None
+    axis = MagicMock()
+    axis.visibility_key = "show_grid"
+    stock = MagicMock()
+    stock.visibility_key = "show_stock"
+    scene.background_renderer = bg
+    scene.axis_renderer = axis
+    scene.stock_renderer = stock
+    scene._rebuild_registry()
+
+    ctx = MagicMock()
+    ctx.visibility = MagicMock(show_grid=False, show_stock=True)
+
+    active = [r for r, _ in scene._active_registry(ctx)]
+    assert bg in active
+    assert axis not in active
+    assert stock in active
+
+
 def test_prepare_runs_laser_beam_before_models():
     """The laser beam publishes the point-light position that the model
     renderers consume, so its prepare phase must run first even though
     it draws last."""
     scene = SceneRenderer()
     laser = MagicMock()
+    laser.visibility_key = None
     scene.laser_beam_renderer = laser
     model = MagicMock()
+    model.visibility_key = "show_models"
     scene.model_renderers = [model]
-    scene.ring_renderers = [MagicMock()]
+    ring = MagicMock()
+    ring.visibility_key = None
+    scene.ring_renderers = [ring]
     scene._rebuild_registry()
 
     prepare_order = []
     laser.prepare.side_effect = lambda *a, **k: prepare_order.append("laser")
     model.prepare.side_effect = lambda *a, **k: prepare_order.append("model")
 
-    scene.prepare(MagicMock())
+    ctx = MagicMock()
+    ctx.visibility = MagicMock(show_models=True)
+    scene.prepare(ctx)
 
     assert prepare_order == ["laser", "model"]

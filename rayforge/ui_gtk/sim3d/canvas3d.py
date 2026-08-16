@@ -59,6 +59,7 @@ class Canvas3D(Gtk.GLArea):
         self._show_grid = True
         self._show_ops_underlay = True
         self._show_stock = True
+        self._show_workpiece_image = True
         self._gl_initialized = False
         self._scene_gl_dirty = False
 
@@ -325,6 +326,7 @@ class Canvas3D(Gtk.GLArea):
                 show_models=self._show_models,
                 show_ops_underlay=self._show_ops_underlay,
                 show_stock=self._show_stock,
+                show_workpiece_image=self._show_workpiece_image,
             )
             self._ctx.update(frame)
             self._scene.prepare(self._ctx)
@@ -374,6 +376,12 @@ class Canvas3D(Gtk.GLArea):
         if self._show_stock == visible:
             return
         self._show_stock = visible
+        self.queue_render()
+
+    def set_show_workpiece_image(self, visible: bool):
+        if self._show_workpiece_image == visible:
+            return
+        self._show_workpiece_image = visible
         self.queue_render()
 
     def update_scene_from_doc(self):

@@ -34,6 +34,7 @@ class VisibilityOverlay(Gtk.Box):
         show_tabs=False,
         show_ops_underlay=False,
         show_stock=False,
+        show_workpiece_image=False,
         shortcuts=None,
         **kwargs,
     ):
@@ -50,9 +51,10 @@ class VisibilityOverlay(Gtk.Box):
         self.set_margin_end(6)
         self._shortcuts = shortcuts or {}
 
+        self._vis_on_icon = get_icon("visibility-on-symbolic")
+        self._vis_off_icon = get_icon("visibility-off-symbolic")
+
         if show_workpiece:
-            self._vis_on_icon = get_icon("visibility-on-symbolic")
-            self._vis_off_icon = get_icon("visibility-off-symbolic")
             self.workpiece_button = Gtk.ToggleButton()
             self.workpiece_button.set_active(True)
             self.workpiece_button.set_child(self._vis_on_icon)
@@ -67,6 +69,25 @@ class VisibilityOverlay(Gtk.Box):
                 "toggled", self._on_workpiece_toggled
             )
             self.append(self.workpiece_button)
+
+        self.workpiece_image_button = None
+        if show_workpiece_image:
+            self.workpiece_image_button = Gtk.ToggleButton()
+            self.workpiece_image_button.set_active(True)
+            self.workpiece_image_button.set_child(self._vis_on_icon)
+            self.workpiece_image_button.set_tooltip_text(
+                self._format_tooltip(
+                    _("Toggle workpiece image visibility"),
+                    "win.show_workpiece_image",
+                )
+            )
+            self.workpiece_image_button.set_action_name(
+                "win.show_workpiece_image"
+            )
+            self.workpiece_image_button.connect(
+                "toggled", self._on_workpiece_toggled
+            )
+            self.append(self.workpiece_image_button)
 
         if show_stock:
             self.stock_button = Gtk.ToggleButton()
@@ -135,9 +156,7 @@ class VisibilityOverlay(Gtk.Box):
         self.underlay_button = None
         if show_ops_underlay:
             self.underlay_button = Gtk.ToggleButton()
-            self.underlay_button.set_child(
-                get_icon("image-x-generic-symbolic")
-            )
+            self.underlay_button.set_child(get_icon("ops-underlay-symbolic"))
             self.underlay_button.set_active(True)
             self.underlay_button.set_tooltip_text(
                 self._format_tooltip(

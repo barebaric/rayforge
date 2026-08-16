@@ -41,9 +41,12 @@ The WCS dropdown allows you to quickly switch between coordinate systems.
 See [Work Coordinate Systems](../general-info/coordinate-systems.md) for
 more information.
 
-Visibility toggles for workpieces, tabs, camera feed, travel moves, and
-other elements have moved to overlay buttons on the canvas itself, so they
-are always close at hand while you work.
+Visibility toggles have moved to overlay buttons on the canvas itself, so
+they are always close at hand while you work. On the 2D canvas these
+toggle the workpiece base images, holding tabs, the camera feed (when a
+camera is enabled), stock blocks, travel moves, and no-go zones. The
+[3D View](3d-preview) has its own set of toggles for the workpiece image,
+machine model, grid, ops underlay, stock, travel moves, and no-go zones.
 
 ### 3. Canvas
 

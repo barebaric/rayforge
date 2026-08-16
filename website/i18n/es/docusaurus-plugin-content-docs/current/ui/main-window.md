@@ -37,9 +37,15 @@ El menú desplegable WCS te permite cambiar rápidamente entre sistemas de coord
 Ver [Sistemas de Coordenadas de Trabajo](../general-info/coordinate-systems.md) para
 más información.
 
-Los controles de visibilidad para piezas de trabajo, pestañas, transmisión de cámara,
-movimientos de desplazamiento y otros elementos se han movido a botones superpuestos
-en el lienzo mismo, para que siempre estén a mano mientras trabajas.
+Los controles de visibilidad se han movido a botones superpuestos en el
+lienzo mismo, para que siempre estén a mano mientras trabajas. En el lienzo
+2D estos alternan las imágenes base de las piezas de trabajo, las pestañas,
+la transmisión de cámara (cuando una cámara está activada), los bloques de
+material, los movimientos de desplazamiento y las zonas prohibidas. La
+[vista 3D](3d-preview) tiene sus propios controles para la imagen de la
+pieza de trabajo, el modelo de máquina, la cuadrícula, la subcapa de
+operaciones, el material, los movimientos de desplazamiento y las zonas
+prohibidas.
 
 ### 3. Lienzo
 

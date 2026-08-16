@@ -38,9 +38,13 @@ Das WCS-Dropdown ermöglicht dir, schnell zwischen Koordinatensystemen zu
 wechseln. Siehe [Werkstückkoordinatensysteme](../general-info/coordinate-systems.md)
 für weitere Informationen.
 
-Sichtbarkeits-Umschaltungen für Werkstücke, Halterungen, Kamera-Feed,
-Eilgänge und andere Elemente sind als Overlay-Schaltflächen direkt auf der
+Sichtbarkeits-Umschaltungen sind als Overlay-Schaltflächen direkt auf der
 Canvas verfügbar, sodass sie immer griffbereit sind, während du arbeitest.
+Auf der 2D-Canvas schalten diese Werkstück-Grundbilder, Halterungen, den
+Kamera-Feed (sofern eine Kamera aktiviert ist), Material-Blöcke, Eilgänge
+und No-Go-Zonen um. Die [3D-Ansicht](3d-preview) hat ihre eigenen
+Umschaltungen für das Werkstückbild, das Maschinenmodell, das Raster, die
+Ops-Unterlage, das Material, Eilgänge und No-Go-Zonen.
 
 ### 3. Canvas
 

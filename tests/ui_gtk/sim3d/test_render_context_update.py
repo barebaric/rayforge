@@ -43,6 +43,7 @@ def _update(
     show_models=True,
     show_ops_underlay=True,
     show_stock=True,
+    show_workpiece_image=True,
 ):
     frame = FrameInputs(
         camera=camera or _make_camera(),
@@ -65,6 +66,7 @@ def _update(
         show_models=show_models,
         show_ops_underlay=show_ops_underlay,
         show_stock=show_stock,
+        show_workpiece_image=show_workpiece_image,
     )
     ctx = RenderContext()
     ctx.update(frame)
@@ -234,6 +236,7 @@ def test_update_propagates_show_toggles():
         show_models=False,
         show_ops_underlay=False,
         show_stock=False,
+        show_workpiece_image=False,
     )
     assert ctx.camera.show_travel_moves is True
     assert ctx.camera.show_grid is False
@@ -241,6 +244,7 @@ def test_update_propagates_show_toggles():
     assert ctx.camera.show_models is False
     assert ctx.camera.show_ops_underlay is False
     assert ctx.camera.show_stock is False
+    assert ctx.camera.show_workpiece_image is False
 
 
 @pytest.mark.ui
