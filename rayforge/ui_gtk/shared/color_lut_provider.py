@@ -11,7 +11,10 @@ from typing import TYPE_CHECKING, Optional
 import numpy as np
 
 from ...core.color import ColorSet
-from ...image.util.srgb import create_lut_from_color
+from ...image.util.srgb import (
+    create_alpha_lut_from_color,
+    create_lut_from_color,
+)
 from ...machine.models.colors import OpsColorSet
 from ...machine.models.laser import LaserHead
 
@@ -101,8 +104,9 @@ class ColorLutProvider:
         """
         LUT for the scanline overlay ring buffer.
 
-        The overlay dims by power too, so each laser gets a brightness
-        ramp rather than a flat colour.
+        Power is encoded as opacity: each laser keeps its engrave colour
+        at full intensity while the alpha ramps with power, so faint
+        burn reads as a faint tint instead of near-black.
         """
         if self._ring_lut is None:
             self._ring_lut = self._build_ring_lut()
@@ -130,6 +134,6 @@ class ColorLutProvider:
             for row_idx, uid in enumerate(self._laser_color_sets):
                 cs = self._laser_color_sets[uid]
                 engrave_rgba = tuple(cs.get_lut("engrave")[255])
-                lut[row_idx] = create_lut_from_color(engrave_rgba)
+                lut[row_idx] = create_alpha_lut_from_color(engrave_rgba)
             return lut
-        return create_lut_from_color((1.0, 1.0, 1.0, 1.0))
+        return create_alpha_lut_from_color((1.0, 1.0, 1.0, 1.0))

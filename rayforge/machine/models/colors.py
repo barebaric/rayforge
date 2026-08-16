@@ -8,7 +8,10 @@ from ...core.color import (
     ColorSet,
     hex_to_rgba,
 )
-from ...image.util.srgb import create_lut_from_color
+from ...image.util.srgb import (
+    create_alpha_lut_from_color,
+    create_lut_from_color,
+)
 
 if TYPE_CHECKING:
     from .laser import Laser
@@ -49,7 +52,7 @@ class OpsColorSet:
         raster_rgba = hex_to_rgba(laser.raster_color)
 
         cut_lut = create_lut_from_color(cut_rgba)
-        engrave_lut = create_lut_from_color(raster_rgba)
+        engrave_lut = create_alpha_lut_from_color(raster_rgba)
 
         travel_rgba = theme_colors.get_rgba("travel")
         zero_power_rgba = theme_colors.get_rgba("zero_power")
