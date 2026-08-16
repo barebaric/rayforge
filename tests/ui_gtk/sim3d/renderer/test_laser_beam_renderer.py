@@ -49,6 +49,7 @@ def _init_renderer(renderer):
         patch.object(renderer, "_create_vao", return_value=1),
         patch("OpenGL.GL.glBindVertexArray"),
         patch("OpenGL.GL.glBindBuffer"),
+        patch("OpenGL.GL.glBufferData"),
         patch("OpenGL.GL.glVertexAttribPointer"),
         patch("OpenGL.GL.glEnableVertexAttribArray"),
     ):
