@@ -8,10 +8,13 @@ gi.require_version("Adw", "1")
 
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 from blinker import Signal
 from raygeo.ops.axis import Axis
 
+from rayforge.core.layer import Layer
+from rayforge.core.workpiece import WorkPiece
 from rayforge.machine.models.laser import LaserHead
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.models.rotary_module import RotaryMode, RotaryModule
@@ -19,7 +22,10 @@ from rayforge.simulator.scene3d import (
     CompiledSceneArtifact,
     compile_stock_scene,
 )
-from rayforge.ui_gtk.sim3d.scene_presenter import ScenePresenter
+from rayforge.ui_gtk.sim3d.scene_presenter import (
+    ScenePresenter,
+    _render_workpiece_images,
+)
 from rayforge.ui_gtk.sim3d.viewport import ViewportConfig
 
 
@@ -491,8 +497,6 @@ def test_update_workpiece_images_clears_without_workpieces(
 def test_update_workpiece_images_schedules_rendering(
     ui_context_initializer,
 ):
-    from rayforge.core.workpiece import WorkPiece
-
     wp = WorkPiece(name="photo")
     wp._source_segment = MagicMock()
     wp.set_size(100, 50)
@@ -515,18 +519,68 @@ def test_update_workpiece_images_schedules_rendering(
         presenter.update_workpiece_images_from_doc()
 
     mock_task_mgr.run_thread.assert_called_once()
-    _, workpieces, matrices = mock_task_mgr.run_thread.call_args.args
+    _, workpieces, matrices, rotary_specs = (
+        mock_task_mgr.run_thread.call_args.args
+    )
     assert workpieces == [wp]
     assert len(matrices) == 1
     assert matrices[0].shape == (4, 4)
+    assert rotary_specs == [None]
+
+
+@pytest.mark.ui
+def test_update_workpiece_images_rotary_layer_gets_cylinder_spec(
+    ui_context_initializer,
+):
+    wp = WorkPiece(name="label")
+    wp._source_segment = MagicMock()
+    wp.set_size(60, 40)
+
+    layer = Layer(name="rot")
+    layer.set_rotary_enabled(True)
+    layer.set_rotary_diameter(50.0)
+    wp.parent = layer
+
+    machine = MagicMock()
+    rm = RotaryModule()
+    rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
+    rm.set_axis(Axis.A)
+    machine.get_rotary_module_for_layer.return_value = rm
+
+    doc_editor = MagicMock()
+    doc_editor.doc.get_descendants.return_value = [wp]
+    doc_editor.doc.get_asset_by_uid.return_value = None
+    scene = MagicMock()
+    scene.workpiece_image_renderer = MagicMock()
+    scene.workpiece_image_renderer.instances = []
+    presenter, _, _ = _make_presenter(
+        doc_editor=doc_editor,
+        scene=scene,
+        context=MagicMock(machine=machine),
+    )
+
+    with patch(
+        "rayforge.ui_gtk.sim3d.scene_presenter.task_mgr"
+    ) as mock_task_mgr:
+        presenter.update_workpiece_images_from_doc()
+
+    mock_task_mgr.run_thread.assert_called_once()
+    _, workpieces, _matrices, rotary_specs = (
+        mock_task_mgr.run_thread.call_args.args
+    )
+    assert workpieces == [wp]
+    assert rotary_specs is not None
+    assert len(rotary_specs) == 1
+    world_matrix, diameter, reverse = rotary_specs[0]
+    assert diameter == 50.0
+    assert reverse is False
+    assert world_matrix.shape == (4, 4)
 
 
 @pytest.mark.ui
 def test_update_workpiece_images_skips_hidden_provider(
     ui_context_initializer,
 ):
-    from rayforge.core.workpiece import WorkPiece
-
     wp = WorkPiece(name="hidden")
     wp._source_segment = MagicMock()
     wp.geometry_provider_uid = "provider-1"
@@ -547,6 +601,68 @@ def test_update_workpiece_images_skips_hidden_provider(
         presenter.update_workpiece_images_from_doc()
 
     mock_task_mgr.run_thread.assert_not_called()
+
+
+@pytest.mark.ui
+def test_render_workpiece_images_wraps_rotary_onto_cylinder(
+    ui_context_initializer,
+):
+    """Rotary workpiece images get cylinder vertices on the surface."""
+    wp = WorkPiece(name="label")
+    wp._source_segment = MagicMock()
+    wp.set_size(100, 50)
+
+    world_matrix = np.eye(4)
+    world_matrix[0, 0] = 100.0  # 100 mm along the cylinder axis
+    world_matrix[1, 1] = 50.0  # 50 mm of surface -> 114.6 degrees
+    world_matrix[0, 3] = 0.0
+    world_matrix[1, 3] = -25.0
+
+    with patch(
+        "rayforge.ui_gtk.sim3d.scene_presenter._workpiece_image_pixels"
+    ) as mock_pixels:
+        mock_pixels.return_value = np.zeros((16, 32, 4), dtype=np.uint8)
+        images = _render_workpiece_images(
+            [wp],
+            [np.eye(4, dtype=np.float32)],
+            [(world_matrix, 50.0, False)],
+        )
+
+    assert len(images) == 1
+    image = images[0]
+    assert "cylinder_vertices" in image
+    verts = image["cylinder_vertices"].reshape(-1, 5)
+    assert verts.shape[0] > 0
+    # Vertices must sit on the cylinder surface at radius = d/2.
+    radii = np.sqrt(verts[:, 1] ** 2 + verts[:, 2] ** 2)
+    np.testing.assert_allclose(radii, 25.0, atol=1e-3)
+    # The X extent stays the image's world X footprint.
+    np.testing.assert_allclose(verts[:, 0].min(), 0.0, atol=1e-3)
+    np.testing.assert_allclose(verts[:, 0].max(), 100.0, atol=1e-3)
+    assert image["rotary_diameter"] == 50.0
+
+
+@pytest.mark.ui
+def test_render_workpiece_images_flat_without_rotary_spec(
+    ui_context_initializer,
+):
+    wp = WorkPiece(name="photo")
+    wp._source_segment = MagicMock()
+    wp.set_size(100, 50)
+
+    with patch(
+        "rayforge.ui_gtk.sim3d.scene_presenter._workpiece_image_pixels"
+    ) as mock_pixels:
+        mock_pixels.return_value = np.zeros((16, 32, 4), dtype=np.uint8)
+        images = _render_workpiece_images(
+            [wp],
+            [np.eye(4, dtype=np.float32)],
+            [None],
+        )
+
+    assert len(images) == 1
+    assert "cylinder_vertices" not in images[0]
+    assert "model_matrix" in images[0]
 
 
 @pytest.mark.ui

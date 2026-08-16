@@ -8,6 +8,7 @@ keeps the GL lifecycle and per-frame rendering.
 """
 
 import logging
+import math
 import time
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Optional
@@ -35,6 +36,7 @@ from ...simulator.scene3d import (
     compile_scene_from_job,
     compile_stock_scene,
 )
+from ...simulator.scene3d.cylinder_compiler import generate_cylinder_vertices
 from .camera import ViewDirection
 from .render_context import SceneVisibility
 
@@ -91,21 +93,56 @@ def _workpiece_image_pixels(wp: WorkPiece) -> np.ndarray | None:
         return None
 
 
+def _workpiece_cylinder_grid(
+    world_matrix: np.ndarray,
+    diameter: float,
+    reverse: bool,
+) -> np.ndarray:
+    """Grid matrix mapping the image quad onto cylinder-space degrees.
+
+    The image's planar Y (surface millimetres) becomes the rotation
+    angle around the cylinder: ``360 / (pi * diameter)`` degrees per
+    surface millimetre, matching the rotary Y->degree bake in raygeo.
+    The X axis stays along the cylinder.
+    """
+    sign = -1.0 if reverse else 1.0
+    deg_per_mm = sign * 360.0 / (math.pi * diameter)
+    deg_scale = np.diag([1.0, deg_per_mm, 1.0, 1.0]).astype(np.float32)
+    return deg_scale @ np.asarray(world_matrix, dtype=np.float32)
+
+
 def _render_workpiece_images(
-    workpieces: list[WorkPiece], matrices: list[np.ndarray]
+    workpieces: list[WorkPiece],
+    matrices: list[np.ndarray],
+    rotary_specs: list[tuple[np.ndarray, float, bool] | None],
 ) -> list[dict]:
-    """Renders workpiece base images and pairs them with their matrices."""
+    """Renders workpiece base images and pairs them with their matrices.
+
+    Rotary workpieces (``rotary_specs`` entry is not ``None``) get
+    their quad meshed onto the cylinder surface, so the base image
+    wraps around the cylinder exactly like the engrave texture.
+    """
     images: list[dict] = []
-    for wp, matrix in zip(workpieces, matrices):
+    for wp, matrix, rspec in zip(workpieces, matrices, rotary_specs):
         pixels = _workpiece_image_pixels(wp)
         if pixels is None:
             continue
-        images.append(
-            {
-                "pixels": pixels,
-                "model_matrix": np.asarray(matrix, dtype=np.float32),
-            }
-        )
+        image = {
+            "pixels": pixels,
+            "model_matrix": np.asarray(matrix, dtype=np.float32),
+        }
+        if rspec is not None:
+            world_matrix, diameter, reverse = rspec
+            grid_matrix = _workpiece_cylinder_grid(
+                world_matrix, diameter, reverse
+            )
+            cylinder_vertices = generate_cylinder_vertices(
+                grid_matrix, diameter
+            )
+            if cylinder_vertices is not None:
+                image["cylinder_vertices"] = cylinder_vertices
+                image["rotary_diameter"] = diameter
+        images.append(image)
     return images
 
 
@@ -823,6 +860,8 @@ class ScenePresenter:
 
         workpieces: list[WorkPiece] = []
         matrices: list[np.ndarray] = []
+        rotary_specs: list[tuple[np.ndarray, float, bool] | None] = []
+        machine = self._context.machine
         for wp in self.doc.get_descendants(WorkPiece):
             if wp.source_segment is None:
                 continue
@@ -840,6 +879,9 @@ class ScenePresenter:
                 continue
             workpieces.append(wp)
             matrices.append(world_to_visual @ world_matrix)
+            rotary_specs.append(
+                self._resolve_workpiece_rotary(wp, machine, world_matrix)
+            )
 
         if not workpieces:
             if renderer.instances:
@@ -858,10 +900,46 @@ class ScenePresenter:
             _render_workpiece_images,
             workpieces,
             matrices,
+            rotary_specs,
             key=(id(self), "workpiece-images"),
             when_done=lambda task, g=generation: (
                 self._on_workpiece_images_ready(g, task)
             ),
+        )
+
+    def _resolve_workpiece_rotary(
+        self,
+        wp: WorkPiece,
+        machine,
+        world_matrix: np.ndarray,
+    ) -> tuple[np.ndarray, float, bool] | None:
+        """Rotary wrap spec for a workpiece image, or ``None`` when flat.
+
+        Returns the world matrix plus the resolved diameter and axis
+        direction (``reverse``) of the workpiece's own layer, mirroring
+        the per-layer rotary configuration used by the scene compiler.
+        """
+        if machine is None:
+            return None
+        layer = wp.layer
+        if layer is None or not layer.rotary_enabled:
+            return None
+        if layer.rotary_diameter is None or layer.rotary_diameter <= 0:
+            return None
+        reverse = False
+        cfg = resolve_layer_rotary(layer, machine)
+        if cfg.module is not None:
+            mapping = KinematicMapping.from_rotary_module(
+                cfg.module,
+                layer.rotary_diameter,
+                apply_gear_ratio=False,
+            )
+            if mapping is not None:
+                reverse = mapping.reverse
+        return (
+            np.asarray(world_matrix, dtype=np.float32),
+            float(layer.rotary_diameter),
+            reverse,
         )
 
     def _on_workpiece_images_ready(self, generation: int, task: Task) -> None:
