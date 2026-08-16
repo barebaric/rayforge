@@ -381,15 +381,20 @@ class RuidaEncoder(OpsEncoder):
         """
         Handle JobStartCommand - select reference point and mark job start.
 
-        Raises:
-            ValueError: If active_wcs is not a valid Ruida reference point
+        The active WCS is usually one of the Ruida reference points
+        (MACHINE/REF0/REF1), but it may also be a named/absolute WCS such
+        as the default ``G54``, which is not a Ruida ref point and has a
+        zero offset (i.e. machine space). Such WCSes fall back to the
+        machine reference point instead of failing the whole job.
         """
         active_wcs = machine.active_wcs
         if active_wcs not in REF_POINT_COMMANDS:
-            raise ValueError(
-                f"Unknown WCS slot '{active_wcs}'. "
-                f"Valid options: {', '.join(REF_POINT_COMMANDS.keys())}"
+            logger.warning(
+                "Active WCS '%s' is not a Ruida reference point; "
+                "using MACHINE for job start.",
+                active_wcs,
             )
+            active_wcs = "MACHINE"
         binary.append(REF_POINT_COMMANDS[active_wcs])
         text.append(f"; Job Start - Ref Point: {active_wcs}")
 
