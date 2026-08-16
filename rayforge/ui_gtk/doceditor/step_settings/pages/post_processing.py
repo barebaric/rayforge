@@ -143,7 +143,10 @@ class PostProcessingPage(TrackedPreferencesPage):
 
         machine = get_context().machine
         if machine:
-            machine.changed.connect(lambda *_: _update_warning_icon())
+            machine.changed.connect(
+                lambda *_: _update_warning_icon(),
+                weak=False,
+            )
 
         _update_warning_icon()
         self._main_group.add(expander)

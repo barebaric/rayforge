@@ -19,6 +19,7 @@ class HistogramPreview(Gtk.DrawingArea):
         self._auto_mode: bool = True
         self._dragging: str | None = None
         self._hovering: str | None = None
+        self._drag_changed: bool = False
 
         self.black_point_changed = Signal()
         self.white_point_changed = Signal()
@@ -119,11 +120,26 @@ class HistogramPreview(Gtk.DrawingArea):
         handle = self._get_handle_at(x, y, width, self.get_height())
         if handle:
             self._dragging = handle
+            self._drag_changed = False
             self._update_cursor()
             gesture.set_state(Gtk.EventSequenceState.CLAIMED)
 
     def _on_released(self, gesture, n_press, x, y):
+        handle = self._dragging
         self._dragging = None
+        if handle and self._drag_changed:
+            # Commit only once, on release, so the settings row and
+            # the pipeline react after the drag finishes instead of
+            # on every motion event in between.
+            if handle == "black":
+                self.black_point_changed.send(
+                    self, black_point=self._black_point
+                )
+            else:
+                self.white_point_changed.send(
+                    self, white_point=self._white_point
+                )
+        self._drag_changed = False
         self._update_cursor()
 
     def _update_cursor(self):
@@ -148,18 +164,14 @@ class HistogramPreview(Gtk.DrawingArea):
                 new_black = min(value, self._white_point - 1)
                 if new_black != self._black_point:
                     self._black_point = new_black
+                    self._drag_changed = True
                     self.queue_draw()
-                    self.black_point_changed.send(
-                        self, black_point=self._black_point
-                    )
             else:
                 new_white = max(value, self._black_point + 1)
                 if new_white != self._white_point:
                     self._white_point = new_white
+                    self._drag_changed = True
                     self.queue_draw()
-                    self.white_point_changed.send(
-                        self, white_point=self._white_point
-                    )
         else:
             handle = self._get_handle_at(x, y, width, height)
             if handle != self._hovering:
