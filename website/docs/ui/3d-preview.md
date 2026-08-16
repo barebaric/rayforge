@@ -80,7 +80,8 @@ Visibility toggles are located as overlay buttons at the top-right of the
 - **Ops underlay**: Toggle the semi-transparent raster engraving preview
   on the workpiece surface
 - **Travel moves**: Toggle rapid travel move visibility
-- **No-go zones**: Toggle no-go zone visibility
+- **No-go zones**: Toggle no-go zone visibility. This button only appears
+  when your machine has at least one no-go zone configured.
 
 Perspective and orthographic projection are toggled with <kbd>P</kbd> or
 **View → Toggle Perspective**.

@@ -23,8 +23,9 @@ Chaque zone a les paramètres suivants :
 
 Les zones interdites sont affichées sur le canevas 2D et 3D comme des superpositions
 semi-transparentes. Utilise le bouton de bascule des zones interdites dans la superposition
-du canevas pour les afficher ou les masquer. Le paramètre de visibilité est mémorisé entre
-les sessions.
+du canevas pour les afficher ou les masquer. La bascule n'est affichée que
+lorsqu'au moins une zone interdite est configurée. Le paramètre de
+visibilité est mémorisé entre les sessions.
 
 ---
 

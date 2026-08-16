@@ -76,7 +76,9 @@ du canevas 3D. Chaque bouton mémorise son état entre les sessions :
 - **Sous-couche d'opérations** : Basculer l'aperçu semi-transparent de la
   gravure raster sur la surface de la pièce
 - **Déplacements rapides** : Basculer la visibilité des déplacements rapides
-- **Zones interdites** : Basculer la visibilité des zones interdites
+- **Zones interdites** : Basculer la visibilité des zones interdites. Ce
+  bouton n'apparaît que lorsque ta machine a au moins une zone interdite
+  configurée.
 
 La projection en perspective et orthographique se bascule avec <kbd>P</kbd> ou
 **Affichage → Basculer la perspective**.

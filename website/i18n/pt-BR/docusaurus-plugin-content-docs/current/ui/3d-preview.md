@@ -78,7 +78,9 @@ estado entre as sessões:
 - **Subcamada de operações**: Alternar a pré-visualização semitransparente da
   gravação rasterizada na superfície da peça de trabalho
 - **Movimentos de deslocamento**: Alternar visibilidade dos movimentos rápidos
-- **Zonas de restrição**: Alternar visibilidade das zonas de restrição
+- **Zonas de restrição**: Alternar visibilidade das zonas de restrição.
+  Este botão só aparece quando sua máquina tem pelo menos uma zona de
+  restrição configurada.
 
 A projeção em perspectiva e ortográfica é alternada com <kbd>P</kbd> ou
 **Exibir → Alternar perspectiva**.

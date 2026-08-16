@@ -45,6 +45,8 @@ Kamera-Feed (sofern eine Kamera aktiviert ist), Material-Blöcke, Eilgänge
 und No-Go-Zonen um. Die [3D-Ansicht](3d-preview) hat ihre eigenen
 Umschaltungen für das Werkstückbild, das Maschinenmodell, das Raster, die
 Ops-Unterlage, das Material, Eilgänge und No-Go-Zonen.
+Die No-Go-Zonen-Umschaltung erscheint nur, wenn für deine Maschine
+mindestens eine No-Go-Zone konfiguriert ist.
 
 ### 3. Canvas
 

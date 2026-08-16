@@ -25,8 +25,9 @@ Cada zona tem as seguintes configurações:
 
 Zonas de restrição são exibidas tanto na tela 2D quanto na 3D como
 sobreposições semi-transparentes. Use o botão de alternância de zonas de
-restrição na sobreposição da tela para mostrá-las ou ocultá-las. A configuração
-de visibilidade é lembrada entre sessões.
+restrição na sobreposição da tela para mostrá-las ou ocultá-las. O botão só
+é exibido quando há pelo menos uma zona de restrição configurada. A
+configuração de visibilidade é lembrada entre sessões.
 
 ---
 

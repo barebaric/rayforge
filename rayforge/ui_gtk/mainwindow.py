@@ -347,6 +347,7 @@ class MainWindow(Adw.ApplicationWindow):
             ),
             show_tabs=True,
             show_stock=True,
+            show_nogo_zones=bool(config.machine and config.machine.nogo_zones),
             shortcuts=SHORTCUTS,
         )
         self._surface_vis_overlay.set_margin_end(454)
@@ -1438,6 +1439,7 @@ class MainWindow(Adw.ApplicationWindow):
         )
         self._canvas3d_overlay = Gtk.Overlay()
         self._canvas3d_overlay.set_child(self.canvas3d)
+        machine = get_context().config.machine
         self._canvas3d_vis_overlay = VisibilityOverlay(
             show_workpiece=False,
             show_models=True,
@@ -1445,6 +1447,7 @@ class MainWindow(Adw.ApplicationWindow):
             show_ops_underlay=True,
             show_stock=True,
             show_workpiece_image=True,
+            show_nogo_zones=bool(machine and machine.nogo_zones),
             shortcuts=SHORTCUTS,
         )
         self._canvas3d_vis_overlay.set_margin_end(454)
@@ -1523,6 +1526,12 @@ class MainWindow(Adw.ApplicationWindow):
             config.machine and any(c.enabled for c in config.machine.cameras)
         )
         self._surface_vis_overlay.set_camera_visible(has_cameras)
+
+        # Show/hide no-go zone toggle based on whether the machine has any
+        has_nogo_zones = bool(config.machine and config.machine.nogo_zones)
+        self._surface_vis_overlay.set_nogo_visible(has_nogo_zones)
+        if self.canvas3d is not None:
+            self._canvas3d_vis_overlay.set_nogo_visible(has_nogo_zones)
 
         self.surface.update_from_doc()
         self._update_macros_menu()
