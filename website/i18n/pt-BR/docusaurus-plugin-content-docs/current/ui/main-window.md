@@ -47,6 +47,8 @@ material, movimentos de deslocamento e zonas de restrição. A [visualização
 3D](3d-preview) tem seus próprios botões para a imagem da peça de trabalho,
 modelo da máquina, grade, subcamada de operações, material, movimentos de
 deslocamento e zonas de restrição.
+O botão de zonas de restrição só aparece quando sua máquina tem pelo menos
+uma zona de restrição configurada.
 
 ### 3. Tela
 

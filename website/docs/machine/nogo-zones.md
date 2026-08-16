@@ -27,7 +27,8 @@ Each zone has the following settings:
 
 No-go zones are displayed on both the 2D and 3D canvas as semi-transparent
 overlays. Use the no-go zone toggle button in the canvas overlay to show or
-hide them. The visibility setting is remembered between sessions.
+hide them. The toggle is only shown when at least one no-go zone is
+configured. The visibility setting is remembered between sessions.
 
 ---
 

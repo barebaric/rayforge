@@ -25,8 +25,9 @@ Jede Zone hat die folgenden Einstellungen:
 
 No-Go-Zonen werden sowohl auf der 2D- als auch der 3D-Canvas als
 halbdurchsichtige Overlays angezeigt. Verwende die No-Go-Zonen-Umschalttaste
-im Canvas-Overlay, um sie ein- oder auszublenden. Die Sichtbarkeitseinstellung
-wird zwischen Sitzungen gespeichert.
+im Canvas-Overlay, um sie ein- oder auszublenden. Die Umschaltung wird nur
+angezeigt, wenn mindestens eine No-Go-Zone konfiguriert ist. Die
+Sichtbarkeitseinstellung wird zwischen Sitzungen gespeichert.
 
 ---
 

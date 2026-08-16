@@ -45,6 +45,8 @@ activée), les blocs de brut, les déplacements rapides et les zones
 interdites. La [vue 3D](3d-preview) possède ses propres bascules pour
 l'image de la pièce, le modèle de la machine, la grille, la sous-couche
 d'opérations, le brut, les déplacements rapides et les zones interdites.
+La bascule des zones interdites n'apparaît que lorsque ta machine a au
+moins une zone interdite configurée.
 
 ### 3. Canevas
 

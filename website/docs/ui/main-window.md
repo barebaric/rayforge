@@ -47,6 +47,8 @@ toggle the workpiece base images, holding tabs, the camera feed (when a
 camera is enabled), stock blocks, travel moves, and no-go zones. The
 [3D View](3d-preview) has its own set of toggles for the workpiece image,
 machine model, grid, ops underlay, stock, travel moves, and no-go zones.
+The no-go zone toggle only appears when your machine has at least one
+no-go zone configured.
 
 ### 3. Canvas
 

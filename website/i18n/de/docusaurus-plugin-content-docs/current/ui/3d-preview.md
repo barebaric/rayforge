@@ -80,7 +80,9 @@ Sitzungen:
 - **Ops-Unterlage**: Sichtbarkeit der halbtransparenten Raster-Gravurvorschau
   auf der Werkstückoberfläche umschalten
 - **Eilgänge**: Eilgang-Sichtbarkeit umschalten
-- **No-Go-Zonen**: No-Go-Zonen-Sichtbarkeit umschalten
+- **No-Go-Zonen**: No-Go-Zonen-Sichtbarkeit umschalten. Diese Schaltfläche
+  erscheint nur, wenn für deine Maschine mindestens eine No-Go-Zone
+  konfiguriert ist.
 
 Die perspektivische und orthografische Projektion wird mit <kbd>P</kbd> oder
 **Ansicht → Perspektive umschalten** umgeschaltet.

@@ -50,3 +50,19 @@ def test_3d_overlay_buttons(ui_context_initializer):
     )
     assert overlay.travel_button.get_action_name() == "win.toggle_travel_view"
     assert overlay.nogo_button.get_action_name() == "win.show_nogo_zones"
+
+
+@pytest.mark.ui
+def test_nogo_button_hidden_by_default_when_disabled(ui_context_initializer):
+    overlay = VisibilityOverlay(show_nogo_zones=False)
+    assert overlay.nogo_button.get_action_name() == "win.show_nogo_zones"
+    assert not overlay.nogo_button.get_visible()
+
+
+@pytest.mark.ui
+def test_set_nogo_visible(ui_context_initializer):
+    overlay = VisibilityOverlay()
+    overlay.set_nogo_visible(False)
+    assert not overlay.nogo_button.get_visible()
+    overlay.set_nogo_visible(True)
+    assert overlay.nogo_button.get_visible()

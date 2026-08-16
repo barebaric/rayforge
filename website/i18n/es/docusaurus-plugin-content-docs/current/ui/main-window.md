@@ -46,6 +46,8 @@ material, los movimientos de desplazamiento y las zonas prohibidas. La
 pieza de trabajo, el modelo de máquina, la cuadrícula, la subcapa de
 operaciones, el material, los movimientos de desplazamiento y las zonas
 prohibidas.
+El botón de zonas prohibidas solo aparece cuando tu máquina tiene al menos
+una zona prohibida configurada.
 
 ### 3. Lienzo
 

@@ -77,7 +77,9 @@ superior derecha del lienzo 3D. Cada botón recuerda su estado entre sesiones:
 - **Subcapa de operaciones**: Alternar la vista previa semitransparente de
   grabado rasterizado sobre la superficie de la pieza de trabajo
 - **Movimientos de desplazamiento**: Alternar la visibilidad de los movimientos rápidos
-- **Zonas prohibidas**: Alternar la visibilidad de las zonas prohibidas
+- **Zonas prohibidas**: Alternar la visibilidad de las zonas prohibidas.
+  Este botón solo aparece cuando tu máquina tiene al menos una zona
+  prohibida configurada.
 
 La proyección en perspectiva y ortográfica se alterna con <kbd>P</kbd> o con
 **Ver → Alternar perspectiva**.

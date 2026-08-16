@@ -35,6 +35,7 @@ class VisibilityOverlay(Gtk.Box):
         show_ops_underlay=False,
         show_stock=False,
         show_workpiece_image=False,
+        show_nogo_zones=True,
         shortcuts=None,
         **kwargs,
     ):
@@ -188,10 +189,14 @@ class VisibilityOverlay(Gtk.Box):
             )
         )
         self.nogo_button.set_action_name("win.show_nogo_zones")
+        self.nogo_button.set_visible(show_nogo_zones)
         self.append(self.nogo_button)
 
     def set_camera_visible(self, visible: bool):
         self.camera_button.set_visible(visible)
+
+    def set_nogo_visible(self, visible: bool):
+        self.nogo_button.set_visible(visible)
 
     def _format_tooltip(self, text, action_name):
         if action_name in self._shortcuts:
