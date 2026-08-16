@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#FFF5E1"
   pattern: wood_grain
+  texture: spruce.webp
+  texture_size_mm: 300

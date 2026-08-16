@@ -63,6 +63,8 @@ uniform sampler2D uTexture;
 uniform sampler2D uBrdfLut;
 uniform vec3 uAmbientSky;
 uniform vec3 uAmbientGround;
+uniform vec3 uTint;
+uniform float uUseTint;
 
 const float PI = 3.14159265359;
 
@@ -132,6 +134,14 @@ void main() {
     vec3 v = normalize(uCameraPos - vWorldPos);
 
     vec4 albedo_tex = texture(uTexture, vUV);
+    // Colorize: shift the texture to the tint hue, preserving its
+    // per-pixel brightness (luma * tint). Applied in linear space.
+    if (uUseTint > 0.5) {
+        float luma = dot(
+            albedo_tex.rgb, vec3(0.2126, 0.7152, 0.0722)
+        );
+        albedo_tex.rgb = luma * uTint;
+    }
     vec3 albedo = mix(
         srgb_to_linear(uAlbedo.rgb), albedo_tex.rgb, uUseTexture
     );
@@ -213,6 +223,8 @@ class StockShader(Shader):
         self.set_float("uAlpha", 1.0)
         self.set_int("uTexture", 0)
         self.set_int("uBrdfLut", 1)
+        self.set_vec3("uTint", (1.0, 1.0, 1.0))
+        self.set_float("uUseTint", 0.0)
         self.set_vec3("uAmbientSky", (0.34, 0.39, 0.47))
         self.set_vec3("uAmbientGround", (0.20, 0.18, 0.16))
         self.set_mat4("uModel", np.eye(4, dtype=np.float32))

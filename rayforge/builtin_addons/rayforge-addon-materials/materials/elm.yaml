@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#CD853F"
   pattern: wood_grain
+  texture: elm.webp
+  texture_size_mm: 300

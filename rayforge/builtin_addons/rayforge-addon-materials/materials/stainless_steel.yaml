@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#A9A9A9"
   pattern: metallic
+  texture: stainless_steel.webp
+  texture_size_mm: 300

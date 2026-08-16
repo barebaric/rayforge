@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#696969"
   pattern: solid
+  texture: slate.webp
+  texture_size_mm: 300

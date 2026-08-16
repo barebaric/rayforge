@@ -61,6 +61,27 @@ def _parse_rgba(color: object) -> tuple[float, float, float, float]:
     )
 
 
+def _parse_rgba_optional(
+    color: object,
+) -> tuple[float, float, float, float] | None:
+    """Parse a hex color, returning None for absent/invalid values."""
+    if not isinstance(color, str) or not color:
+        return None
+    from ...core.color import hex_to_rgba
+
+    try:
+        rgba = hex_to_rgba(color)
+    except ValueError:
+        logger.warning("Invalid tint color %r, ignoring.", color)
+        return None
+    return (
+        float(rgba[0]),
+        float(rgba[1]),
+        float(rgba[2]),
+        float(rgba[3]),
+    )
+
+
 def _positive_float(value: object, default: float) -> float:
     """Coerce *value* to a positive float, falling back to *default*."""
     if not isinstance(value, (int, float, str)):
@@ -139,6 +160,7 @@ def _compile_stock_spec(spec: dict, w2v: np.ndarray) -> StockLayer | None:
         roughness=float(spec.get("roughness") or 0.8),
         metallic=float(spec.get("metallic") or 0.0),
         fallback_rgba=_parse_rgba(spec.get("color")),
+        tint_rgba=_parse_rgba_optional(spec.get("tint")),
     )
 
 

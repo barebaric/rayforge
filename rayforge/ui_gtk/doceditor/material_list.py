@@ -11,7 +11,11 @@ from blinker import Signal
 from gi.repository import Adw, Gtk
 
 from ...context import get_context
-from ...core.material import Material, MaterialAppearance
+from ...core.material import (
+    SUPPORTED_TEXTURE_SUFFIXES,
+    Material,
+    MaterialAppearance,
+)
 from ...core.material_library import MaterialLibrary
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
@@ -231,6 +235,7 @@ class MaterialListWidget(PreferencesGroupWithButton):
         material.name = data["name"]
         material.category = data["category"]
         material.appearance.color = data["color"]
+        material.appearance.tintable = bool(data.get("tintable", False))
         material.appearance.roughness = float(data.get("roughness", 0.8))
         material.appearance.metallic = float(data.get("metallic", 0.0))
         material.appearance.texture_size_mm = float(
@@ -298,6 +303,7 @@ class MaterialListWidget(PreferencesGroupWithButton):
             category=data["category"],
             appearance=MaterialAppearance(
                 color=data["color"],
+                tintable=bool(data.get("tintable", False)),
                 roughness=float(data.get("roughness", 0.8)),
                 metallic=float(data.get("metallic", 0.0)),
                 texture_size_mm=float(data.get("texture_size_mm", 300.0)),
@@ -331,8 +337,8 @@ class MaterialListWidget(PreferencesGroupWithButton):
         Copy a chosen texture file into the material's library.
 
         The texture is stored next to the material YAML as
-        "<uid>.webp" and referenced by that relative name, so the
-        material stays valid if the library is moved.
+        "<uid>.<suffix>" (WebP or PNG) and referenced by that relative
+        name, so the material stays valid if the library is moved.
         """
         if material.file_path is None:
             logger.error(
@@ -340,14 +346,17 @@ class MaterialListWidget(PreferencesGroupWithButton):
                 "material has no file path"
             )
             return
-        if texture_source.suffix.lower() != ".webp":
+        if texture_source.suffix.lower() not in SUPPORTED_TEXTURE_SUFFIXES:
             logger.error(
                 f"Ignoring texture '{texture_source}' for "
-                f"'{material.uid}': only WebP is supported"
+                f"'{material.uid}': only WebP and PNG are supported"
             )
             return
 
-        dest = material.file_path.parent / f"{material.uid}.webp"
+        dest = (
+            material.file_path.parent
+            / f"{material.uid}{texture_source.suffix.lower()}"
+        )
         try:
             shutil.copy2(texture_source, dest)
         except OSError as e:

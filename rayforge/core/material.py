@@ -13,7 +13,9 @@ from ..shared.util.localized import LocalizedField
 # Accept both plain strings and LocalizedField as input
 LocalizedInput = str | LocalizedField
 
-# Only WebP textures are supported
+# Supported texture extensions (WebP and lossless PNG; the
+# optimize_material_textures.py script converts PNGs to WebP later).
+SUPPORTED_TEXTURE_SUFFIXES = {".webp", ".png"}
 TEXTURE_EXTENSION = ".webp"
 
 logger = logging.getLogger(__name__)
@@ -35,12 +37,16 @@ def _coerce_localized(value: LocalizedInput) -> LocalizedField:
 class MaterialAppearance:
     """Defines the visual properties of a material."""
 
-    color: str = "#f0f0f0"
+    color: str | None = "#f0f0f0"
     pattern: str = "solid"
     texture: str | None = None
     texture_size_mm: float = 300.0
     roughness: float = 0.8
     metallic: float = 0.0
+    # When True the texture can be tinted with ``color``: the renderer
+    # multiplies the texture by the tint color. ``color`` may be None,
+    # meaning "not tinted" (only meaningful when a texture is set).
+    tintable: bool = False
     extra: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
@@ -53,6 +59,7 @@ class MaterialAppearance:
             "texture_size_mm",
             "roughness",
             "metallic",
+            "tintable",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
@@ -63,12 +70,17 @@ class MaterialAppearance:
             texture_size_mm=data.get("texture_size_mm", cls.texture_size_mm),
             roughness=data.get("roughness", cls.roughness),
             metallic=data.get("metallic", cls.metallic),
+            tintable=bool(data.get("tintable", cls.tintable)),
             extra=extra,
         )
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the appearance to a dictionary."""
-        result: dict[str, Any] = {"color": self.color, "pattern": self.pattern}
+        result: dict[str, Any] = {"pattern": self.pattern}
+        if self.color is not None:
+            result["color"] = self.color
+        if self.tintable:
+            result["tintable"] = True
         if self.texture is not None:
             result["texture"] = self.texture
         result.update(
@@ -80,6 +92,20 @@ class MaterialAppearance:
         )
         result.update(self.extra)
         return result
+
+    def get_tint_rgba(self) -> tuple[float, float, float, float] | None:
+        """
+        The tint color as RGBA, or None when the material is not tintable
+        or has no color set ("not tinted").
+        """
+        if not self.tintable or not self.color:
+            return None
+        from .color import hex_to_rgba
+
+        try:
+            return hex_to_rgba(self.color)
+        except ValueError:
+            return None
 
 
 @dataclass
@@ -233,7 +259,7 @@ class Material:
         Returns:
             Hex color string or default if not specified
         """
-        return self.appearance.color
+        return self.appearance.color or "#f0f0f0"
 
     def get_display_rgba(
         self, alpha: float = 1.0
@@ -248,6 +274,9 @@ class Material:
             Tuple of (r, g, b, a) values in 0.0-1.0 range
         """
         color_hex = self.appearance.color
+        if not color_hex:
+            # No color set (e.g. tintable material without a tint).
+            return (0.5, 0.5, 0.5, alpha)
         color_pattern = r"^#?([a-fA-F0-9]{2})([a-fA-F0-9]{2})([a-fA-F0-9]{2})$"
         match = re.match(color_pattern, color_hex)
         if match:
@@ -268,12 +297,12 @@ class Material:
 
     def get_texture_path(self) -> Path | None:
         """
-        Get the path to the material's WebP texture.
+        Get the path to the material's texture.
 
         Uses the appearance texture field when set, otherwise falls
-        back to "<uid>.webp" next to the material's YAML file. Only
-        WebP files are supported; the fallback is only returned when
-        the file actually exists.
+        back to "<uid>.webp" then "<uid>.png" next to the material's
+        YAML file. WebP and PNG files are supported; the fallback is
+        only returned when the file actually exists.
 
         Returns:
             Path to the texture file, or None if the material has no
@@ -288,25 +317,28 @@ class Material:
             if not self._is_safe_texture_name(texture):
                 logger.warning(
                     "Ignoring unsupported texture '%s' for material "
-                    "'%s' (only relative WebP paths are supported)",
+                    "'%s' (only relative WebP/PNG paths are supported)",
                     texture,
                     self.uid,
                 )
                 return None
             return directory / texture
 
-        candidate = directory / f"{self.uid}{TEXTURE_EXTENSION}"
-        return candidate if candidate.is_file() else None
+        for suffix in (TEXTURE_EXTENSION, ".png"):
+            candidate = directory / f"{self.uid}{suffix}"
+            if candidate.is_file():
+                return candidate
+        return None
 
     @staticmethod
     def _is_safe_texture_name(name: str) -> bool:
-        """Check that a texture name is a relative WebP path."""
+        """Check that a texture name is a relative WebP/PNG path."""
         path = Path(name)
         return (
             not path.is_absolute()
             and not PurePosixPath(name).is_absolute()
             and not PureWindowsPath(name).root
-            and path.suffix.lower() == TEXTURE_EXTENSION
+            and path.suffix.lower() in SUPPORTED_TEXTURE_SUFFIXES
             and ".." not in path.parts
         )
 

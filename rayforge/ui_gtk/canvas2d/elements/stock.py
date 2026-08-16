@@ -6,7 +6,10 @@ from raygeo.geo import Matrix
 from ....core.stock import StockItem
 from ....image.geo_renderer import geometry_to_cairo
 from ...canvas import CanvasElement
-from ...shared.texture_loader import load_texture_cairo_surface
+from ...shared.texture_loader import (
+    load_texture_cairo_surface,
+    tinted_texture_cairo_surface,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +110,22 @@ class StockElement(CanvasElement):
         if material:
             texture_path = material.get_texture_path()
             if texture_path is not None:
-                texture_source = load_texture_cairo_surface(texture_path)
+                # Tinting is a material-level feature: the stock's color only
+                # applies when the material is tintable.
+                tint = (
+                    self.data.get_effective_rgba()
+                    if material.appearance.tintable
+                    else None
+                )
+                if tint is not None:
+                    # Tintable material with a color: use the cached
+                    # tinted copy of the texture surface (computed once
+                    # per texture+tint, reused across redraws).
+                    texture_source = tinted_texture_cairo_surface(
+                        texture_path, tint
+                    )
+                else:
+                    texture_source = load_texture_cairo_surface(texture_path)
                 texture_size_mm = material.appearance.texture_size_mm
 
         if texture_source is not None and texture_size_mm is not None:

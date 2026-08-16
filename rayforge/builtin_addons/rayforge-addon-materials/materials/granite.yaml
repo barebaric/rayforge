@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#DCDCDC"
   pattern: solid
+  texture: granite.webp
+  texture_size_mm: 300

@@ -146,3 +146,60 @@ class TestAddMaterialDialog:
         assert data["texture_size_mm"] == 250
         assert data["texture"] == tmp_path / "wood.webp"
         assert dialog.texture_scale_row.get_sensitive() is True
+
+    def test_color_row_disabled_with_texture_when_not_tintable(self):
+        """Color is disabled with a texture unless the material is tintable."""
+        dialog = AddMaterialDialog()
+        dialog._texture_path = Path("/tmp/wood.webp")
+        dialog.tintable_row.set_active(False)
+        dialog._update_sensitivity()
+
+        assert dialog.color_row.get_sensitive() is False
+        assert dialog.texture_scale_row.get_sensitive() is True
+
+    def test_color_row_active_with_texture_when_tintable(self):
+        """Tintable materials keep the color row usable with a texture."""
+        dialog = AddMaterialDialog()
+        dialog._texture_path = Path("/tmp/wood.webp")
+        dialog.tintable_row.set_active(True)
+        dialog._update_sensitivity()
+
+        assert dialog.color_row.get_sensitive() is True
+
+    def test_unset_color_reports_none(self):
+        """Unsetting the color marks the material as not tinted."""
+        dialog = AddMaterialDialog()
+        dialog._color = "#FF0000"
+        dialog._on_clear_color(Gtk.Button())
+
+        assert dialog.get_color_hex() is None
+        assert dialog.get_material_data()["color"] is None
+
+    def test_tintable_switch_round_trips(self):
+        """The tintable switch value is reported in the material data."""
+        dialog = AddMaterialDialog()
+        dialog.tintable_row.set_active(True)
+
+        assert dialog.get_material_data()["tintable"] is True
+
+    def test_edit_mode_prefills_tintable_and_unset_color(self, tmp_path):
+        """Edit mode restores tintable and an unset ('not tinted') color."""
+        _write_webp(tmp_path / "wood.webp")
+        material = Material(
+            uid="tex_mat",
+            name="ABS",
+            appearance=MaterialAppearance(
+                color=None,
+                tintable=True,
+                texture="wood.webp",
+                texture_size_mm=300,
+            ),
+            file_path=tmp_path / "tex_mat.yaml",
+        )
+
+        dialog = AddMaterialDialog(material=material)
+
+        assert dialog.tintable_row.get_active() is True
+        assert dialog.get_material_data()["color"] is None
+        assert dialog.get_material_data()["tintable"] is True
+        assert dialog.color_row.get_sensitive() is True

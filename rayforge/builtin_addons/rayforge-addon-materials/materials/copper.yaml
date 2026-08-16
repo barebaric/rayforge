@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#B87333"
   pattern: metallic
+  texture: copper.webp
+  texture_size_mm: 300

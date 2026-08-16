@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#F0E68C"
   pattern: wood_grain
+  texture: ash.webp
+  texture_size_mm: 300

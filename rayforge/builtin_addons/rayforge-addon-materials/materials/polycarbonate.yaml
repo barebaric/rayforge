@@ -26,3 +26,6 @@ category:
 appearance:
   color: "#E0FFFF"
   pattern: transparent
+  tintable: true
+  texture: polycarbonate.webp
+  texture_size_mm: 300

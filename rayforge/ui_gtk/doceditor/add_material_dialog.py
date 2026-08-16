@@ -7,7 +7,7 @@ from typing import Any
 
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
-from ...core.material import Material
+from ...core.material import SUPPORTED_TEXTURE_SUFFIXES, Material
 from ..icons import get_icon
 from ..shared.pref_rows.length_spin_row import LengthSpinRow
 from ..shared.slider import create_slider_row
@@ -80,10 +80,27 @@ class AddMaterialDialog(Adw.MessageDialog):
         color_dialog.set_with_alpha(False)
         self.color_button = Gtk.ColorDialogButton(dialog=color_dialog)
         self.color_button.set_size_request(32, 32)
+        self.color_button.connect("notify::rgba", self._on_color_set)
+        self._color: str | None = "#f0f0f0"
+        self._clear_color_button = Gtk.Button(child=get_icon("clear-symbolic"))
+        self._clear_color_button.add_css_class("flat")
+        self._clear_color_button.set_valign(Gtk.Align.CENTER)
+        self._clear_color_button.set_tooltip_text(
+            _("Unset the tint color (texture is shown as-is)")
+        )
+        self._clear_color_button.connect("clicked", self._on_clear_color)
+        self._clear_color_button.set_visible(False)
         self.color_row = Adw.ActionRow(
             title=_("Color"), activatable_widget=self.color_button
         )
         self.color_row.add_suffix(self.color_button)
+        self.color_row.add_suffix(self._clear_color_button)
+
+        self.tintable_row = Adw.SwitchRow(
+            title=_("Tintable"),
+            subtitle=_("Allow tinting the texture with a color"),
+        )
+        self.tintable_row.connect("notify::active", self._on_tintable_changed)
 
         self.texture_scale_row = LengthSpinRow(
             _("Texture Scale"),
@@ -112,6 +129,7 @@ class AddMaterialDialog(Adw.MessageDialog):
         group.add(self.texture_row)
         group.add(self.texture_scale_row)
         group.add(self.color_row)
+        group.add(self.tintable_row)
         group.add(self.roughness_row)
         group.add(self.metallic_row)
 
@@ -151,21 +169,60 @@ class AddMaterialDialog(Adw.MessageDialog):
         """Get the text from the category entry."""
         return self.category_entry.get_text()
 
-    def get_color_hex(self) -> str:
-        """Get the color as a hex string."""
+    def _color_button_hex(self) -> str:
+        """Read the current color button value as a hex string."""
         rgba = self.color_button.get_rgba()
         r = int(rgba.red * 255)
         g = int(rgba.green * 255)
         b = int(rgba.blue * 255)
         return f"#{r:02x}{g:02x}{b:02x}"
 
+    def get_color_hex(self) -> str | None:
+        """Get the color as a hex string, or None when unset (not tinted)."""
+        return self._color
+
+    def _on_color_set(self, button: Gtk.ColorDialogButton, pspec=None):
+        """Track color changes from the color picker."""
+        self._color = self._color_button_hex()
+        self._update_color_row()
+
+    def _on_clear_color(self, button: Gtk.Button):
+        """Unset the color so the texture is shown without a tint."""
+        self._color = None
+        self._update_color_row()
+
+    def _update_color_row(self):
+        """Refresh the color row subtitle and clear button visibility."""
+        if self._color is None:
+            self.color_row.set_subtitle(_("Not tinted"))
+            self._clear_color_button.set_visible(False)
+        else:
+            self.color_row.set_subtitle(self._color)
+            self._clear_color_button.set_visible(True)
+
+    def _on_tintable_changed(self, row: Adw.SwitchRow, pspec):
+        """Keep row sensitivity in sync when the tintable switch flips."""
+        self._update_sensitivity()
+
+    def _update_sensitivity(self):
+        """
+        The color row stays active while a texture is selected only when
+        the material is tintable; the texture scale is active whenever a
+        texture is chosen.
+        """
+        has_texture = self._texture_path is not None
+        color_active = (not has_texture) or self.tintable_row.get_active()
+        self.color_row.set_sensitive(color_active)
+        self.texture_scale_row.set_sensitive(has_texture)
+
     def _on_choose_texture(self, button: Gtk.Button):
-        """Open a file chooser for a WebP texture image."""
+        """Open a file chooser for a texture image (WebP or PNG)."""
         dialog = Gtk.FileDialog()
         dialog.set_title(_("Choose Texture Image"))
         file_filter = Gtk.FileFilter()
-        file_filter.set_name(_("WebP images"))
+        file_filter.set_name(_("Texture images"))
         file_filter.add_suffix("webp")
+        file_filter.add_suffix("png")
         filters = Gio.ListStore.new(Gtk.FileFilter)
         filters.append(file_filter)
         dialog.set_filters(filters)
@@ -184,23 +241,23 @@ class AddMaterialDialog(Adw.MessageDialog):
         if raw_path is None:
             return
         path = Path(raw_path)
-        if path.suffix.lower() != ".webp":
-            self._show_error(_("Only WebP texture images are supported."))
+        if path.suffix.lower() not in SUPPORTED_TEXTURE_SUFFIXES:
+            self._show_error(
+                _("Only WebP and PNG texture images are supported.")
+            )
             return
 
         self._texture_path = path
         self.texture_row.set_subtitle(path.name)
         self._clear_texture_button.set_visible(True)
-        self.color_row.set_sensitive(False)
-        self.texture_scale_row.set_sensitive(True)
+        self._update_sensitivity()
 
     def _on_clear_texture(self, button: Gtk.Button):
         """Clear the chosen texture."""
         self._texture_path = None
         self.texture_row.set_subtitle(_("None"))
         self._clear_texture_button.set_visible(False)
-        self.color_row.set_sensitive(True)
-        self.texture_scale_row.set_sensitive(False)
+        self._update_sensitivity()
 
     def _show_error(self, message: str):
         """Show an error dialog."""
@@ -220,13 +277,16 @@ class AddMaterialDialog(Adw.MessageDialog):
         self.name_entry.set_text(self.material.name)
         self.category_entry.set_text(self.material.category)
 
-        # Set the color button to the material's color
-        color_hex = self.material.appearance.color
-        if color_hex.startswith("#"):
+        # Set the color (may be None when the material is tintable and
+        # the tint was unset).
+        self.tintable_row.set_active(bool(self.material.appearance.tintable))
+        self._color = self.material.appearance.color
+        if self._color is not None and self._color.startswith("#"):
             # Try using GTK's built-in color parsing
             rgba = Gdk.RGBA()
-            if rgba.parse(color_hex):
+            if rgba.parse(self._color):
                 self.color_button.set_rgba(rgba)
+        self._update_color_row()
 
         self.roughness_scale.set_value(self.material.appearance.roughness)
         self.metallic_scale.set_value(self.material.appearance.metallic)
@@ -236,12 +296,11 @@ class AddMaterialDialog(Adw.MessageDialog):
             self._texture_path = texture_path
             self.texture_row.set_subtitle(texture_path.name)
             self._clear_texture_button.set_visible(True)
-            self.color_row.set_sensitive(False)
-            self.texture_scale_row.set_sensitive(True)
 
         self.texture_scale_row.set_value_in_base_units(
             self.material.appearance.texture_size_mm
         )
+        self._update_sensitivity()
 
     def get_material_data(self) -> dict[str, Any]:
         """Returns a dictionary with the entered material data."""
@@ -249,6 +308,7 @@ class AddMaterialDialog(Adw.MessageDialog):
             "name": self.get_name().strip(),
             "category": self.get_category().strip() or _("Custom"),
             "color": self.get_color_hex(),
+            "tintable": self.tintable_row.get_active(),
             "roughness": self.roughness_scale.get_value(),
             "metallic": self.metallic_scale.get_value(),
             "texture_size_mm": (

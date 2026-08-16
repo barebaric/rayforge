@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#434B4D"
   pattern: metallic
+  texture: lead.webp
+  texture_size_mm: 300

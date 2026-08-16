@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#B0C4DE"
   pattern: metallic
+  texture: galvanized_steel.webp
+  texture_size_mm: 300

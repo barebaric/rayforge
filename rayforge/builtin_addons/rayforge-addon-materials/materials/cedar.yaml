@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#E6C288"
   pattern: wood_grain
+  texture: cedar.webp
+  texture_size_mm: 300

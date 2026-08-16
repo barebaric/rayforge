@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#D2691E"
   pattern: solid
+  texture: mdf.webp
+  texture_size_mm: 300

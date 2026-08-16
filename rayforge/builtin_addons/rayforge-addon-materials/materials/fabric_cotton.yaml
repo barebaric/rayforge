@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#F5F5DC"
   pattern: solid
+  texture: fabric_cotton.webp
+  texture_size_mm: 300

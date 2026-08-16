@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#D2B48C"
   pattern: wood_grain
+  texture: bamboo.webp
+  texture_size_mm: 300

@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#8B4513"
   pattern: solid
+  texture: leather.webp
+  texture_size_mm: 300

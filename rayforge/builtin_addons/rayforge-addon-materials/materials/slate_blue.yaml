@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#6A5ACD"
   pattern: solid
+  texture: slate_blue.webp
+  texture_size_mm: 300

@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#FAEBD7"
   pattern: wood_grain
+  texture: pine.webp
+  texture_size_mm: 300

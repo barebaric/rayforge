@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#D3D3D3"
   pattern: solid
+  texture: cardboard.webp
+  texture_size_mm: 300

@@ -247,6 +247,26 @@ class StockCmd:
         self._editor.doc.history_manager.execute(command)
         stock_item.updated.send(stock_item)
 
+    def set_stock_color(self, stock_item: StockItem, new_color: str | None):
+        """
+        Sets the per-instance color override of a stock item with an
+        undoable command.
+
+        ``None`` reverts to the material's default color (inherit);
+        ``""`` explicitly marks the item as having no color.
+        """
+        if new_color == stock_item.color:
+            return
+
+        command = ChangePropertyCommand(
+            target=stock_item,
+            property_name="color",
+            new_value=new_color,
+            setter_method_name="set_color",
+            name=_("Change stock color"),
+        )
+        self._editor.doc.history_manager.execute(command)
+
     def convert_to_stock(self, workpiece: WorkPiece) -> StockItem:
         """
         Converts a WorkPiece to a StockItem with its own StockAsset.

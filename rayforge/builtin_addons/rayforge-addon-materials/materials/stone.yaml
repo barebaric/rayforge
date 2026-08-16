@@ -26,3 +26,5 @@ category:
 appearance:
   color: "#808080"
   pattern: solid
+  texture: stone.webp
+  texture_size_mm: 300

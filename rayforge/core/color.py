@@ -199,6 +199,29 @@ _RGB_RE = re.compile(
     r"^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*[\d.]+)?\s*\)$"
 )
 
+# Rec.709 luma coefficients, applied to gamma-encoded 8-bit channels.
+_LUMA = np.array([0.2126, 0.7152, 0.0722], dtype=np.float32)
+
+
+def colorize_rgb(rgb: np.ndarray, tint: ColorRGBA) -> np.ndarray:
+    """
+    Recolor pixels toward the tint color, preserving per-pixel brightness.
+
+    The output is ``luma(rgb) * tint.rgb``: every pixel keeps the texture's
+    shading but shifts to the selected tint hue/value, so a tinted material
+    reads as the chosen color instead of a blend of texture and color.
+
+    Args:
+        rgb: Array of RGB values in 0..255 (any shape, last dim = 3).
+        tint: Target color as an RGBA tuple (alpha ignored for the RGB mix).
+
+    Returns:
+        Float32 array with the same shape, channel values in 0..255.
+    """
+    rgb = np.asarray(rgb, dtype=np.float32)
+    luma = rgb @ _LUMA
+    return luma[..., None] * np.asarray(tint[:3], dtype=np.float32)
+
 
 def normalize_color(color: str | None) -> str | None:
     """

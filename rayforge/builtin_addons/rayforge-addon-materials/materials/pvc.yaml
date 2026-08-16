@@ -26,3 +26,6 @@ category:
 appearance:
   color: "#E0FFFF"
   pattern: solid
+  tintable: true
+  texture: pvc.webp
+  texture_size_mm: 300
