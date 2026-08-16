@@ -246,7 +246,7 @@ class RingBufferRenderer(BaseRenderer):
             "uZeroPowerColor", ctx.camera.color_set.get_rgba("zero_power")
         )
         shader.set_int("uExecutedVertexCount", executed_vertex_count)
-        shader.set_float("uAlphaPending", ctx.playback.alpha_pending)
+        shader.set_float("uAlphaPending", 0.0)
         if self._partial_ring_id >= 0:
             shader.set_int("uPartialVertexID", self._partial_ring_id)
             shader.set_vec3("uPartialEnd", self._partial_ring_end)

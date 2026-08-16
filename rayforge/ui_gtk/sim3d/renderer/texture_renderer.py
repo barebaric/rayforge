@@ -235,14 +235,27 @@ class TextureArtifactRenderer(BaseRenderer):
 
     @staticmethod
     def _max_reduce(data: np.ndarray) -> np.ndarray:
-        """Halves a power map taking the 2x2 block maximum."""
+        """Halves a power map taking the 2x2 block maximum.
+
+        Level sizes must follow the GL floor-halving rule
+        (``max(1, size // 2)``) exactly: any level whose dimensions
+        deviate (e.g. from padding odd edges before halving) makes the
+        whole mip chain inconsistent, and the driver then treats the
+        texture as incomplete - every lookup including ``textureSize``
+        returns zero and the texture renders fully transparent.  Odd
+        trailing rows/columns are therefore dropped, not merged.
+        """
         h, w = data.shape
-        nh, nw = (h + 1) // 2, (w + 1) // 2
-        if h % 2 == 1:
-            data = np.pad(data, ((0, 1), (0, 0)), mode="edge")
-        if w % 2 == 1:
-            data = np.pad(data, ((0, 0), (0, 1)), mode="edge")
-        return data.reshape(nh, 2, nw, 2).max(axis=(1, 3))
+        out = data
+        if h > 1:
+            out = out[: 2 * (h // 2)].reshape(h // 2, 2, w).max(axis=1)
+        if w > 1:
+            out = (
+                out[:, : 2 * (w // 2)]
+                .reshape(out.shape[0], w // 2, 2)
+                .max(axis=2)
+            )
+        return out
 
     @classmethod
     def _build_mipmaps(cls, data: np.ndarray) -> list[np.ndarray]:
@@ -255,7 +268,12 @@ class TextureArtifactRenderer(BaseRenderer):
         """
         mips = [data]
         level = data
-        while min(level.shape) > 1:
+        # Reduce until BOTH dimensions reach 1: stopping when only the
+        # smaller one hits 1 (e.g. at shape (1, 2)) leaves the mip
+        # chain without its final 1x1 level, which makes the texture
+        # incomplete and every lookup - texelFetch included - return
+        # black.
+        while max(level.shape) > 1:
             level = cls._max_reduce(level)
             mips.append(level)
         return mips
