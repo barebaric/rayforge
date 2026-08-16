@@ -79,6 +79,9 @@ def test_scene_renderer_init_gl_creates_children():
             "rayforge.ui_gtk.sim3d.renderer.scene_renderer.SimpleShader"
         ) as mock_simple,
         patch(
+            "rayforge.ui_gtk.sim3d.renderer.scene_renderer.LineDepthBiasShader"
+        ) as mock_line,
+        patch(
             "rayforge.ui_gtk.sim3d.renderer.scene_renderer.TextShader"
         ) as mock_text,
         patch(
@@ -119,6 +122,7 @@ def test_scene_renderer_init_gl_creates_children():
     assert scene.stock_shader is mock_stock.return_value
     assert scene.shader_set is not None
     assert scene.shader_set.main is mock_simple.return_value
+    assert scene.shader_set.main_lines is mock_line.return_value
     assert scene.shader_set.text is mock_text.return_value
     assert scene.shader_set.texture is mock_texture.return_value
     assert scene.shader_set.background is mock_background.return_value

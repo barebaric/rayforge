@@ -1,16 +1,18 @@
 auto_pipeline: true
 bottom_panel:
   areas:
-  - active: gcode
+  - active: layers
     items:
     - assets
     - gcode
     - console
     - layers
+    size: 2368
   - active: controls
     items:
     - controls
     - laser
+    size: 698
   visible: true
 cache_budget_bytes: 2147483648
 canvas_view:
@@ -19,9 +21,11 @@ canvas_view:
   show_grid: true
   show_models: true
   show_nogo_zones: true
+  show_ops_underlay: false
+  show_stock: true
   show_tabs: true
-  show_travel_lines: true
-  show_workpiece_image: true
+  show_travel_lines: false
+  show_workpiece_image: false
   show_workpieces: true
 check_for_app_updates: true
 import_dpi: 96.0

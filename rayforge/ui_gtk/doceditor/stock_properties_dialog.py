@@ -4,16 +4,13 @@ from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gdk, GLib, Gtk
 
-from ...context import get_context
 from ...core.stock import StockItem
 from ..icons import get_icon
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.pref_rows.length_spin_row import LengthSpinRow
-from ..shared.texture_loader import create_material_swatch
-from .material_selector import MaterialSelectorDialog
+from .material_selector import MaterialRow
 
 if TYPE_CHECKING:
-    from ...core.material import Material
     from ...doceditor.editor import DocEditor
 
 logger = logging.getLogger(__name__)
@@ -88,17 +85,10 @@ class StockPropertiesDialog(PatchedDialogWindow):
         properties_group.add(self.thickness_row)
 
         # Material display row
-        self.material_row = Adw.ActionRow()
-        self.material_row.set_title(_("Material"))
-        self._material_swatch_box = Gtk.Box()
-        self.material_row.add_prefix(self._material_swatch_box)
-
-        # Add a button to open the material selector
-        self.material_button = Gtk.Button(label=_("Select"))
-        self.material_button.set_valign(Gtk.Align.CENTER)
-        self.material_button.connect("clicked", self.on_select_material)
-        self.material_row.add_suffix(self.material_button)
-
+        self.material_row = MaterialRow(
+            _("Material"),
+            on_select=self._on_material_selected,
+        )
         properties_group.add(self.material_row)
 
         # Per-instance color row (only usable for tintable materials; for
@@ -107,7 +97,8 @@ class StockPropertiesDialog(PatchedDialogWindow):
         color_dialog = Gtk.ColorDialog()
         color_dialog.set_with_alpha(False)
         self.color_button = Gtk.ColorDialogButton(dialog=color_dialog)
-        self.color_button.set_size_request(32, 32)
+        self.color_button.set_size_request(45, 45)
+        self.color_button.set_valign(Gtk.Align.CENTER)
         self.color_button.connect("notify::rgba", self._on_color_set)
         # Clear button reverts to the material's default color (inherit).
         self._clear_color_button = Gtk.Button(child=get_icon("clear-symbolic"))
@@ -124,7 +115,7 @@ class StockPropertiesDialog(PatchedDialogWindow):
         self._updating_color = False
 
         # Initialize material display
-        self._update_material_display()
+        self.material_row.set_material(self.stock_item.material)
         self._update_color_display()
 
         content_box.append(properties_group)
@@ -173,13 +164,6 @@ class StockPropertiesDialog(PatchedDialogWindow):
         if new_thickness != self.stock_item.thickness:
             self._debounce(self._apply_thickness_change, new_thickness)
 
-    def on_select_material(self, button: Gtk.Button):
-        """Shows the material selector dialog."""
-        dialog = MaterialSelectorDialog(
-            parent=self, on_select_callback=self._on_material_selected
-        )
-        dialog.present()
-
     def _on_material_selected(self, material_uid: str | None):
         """Callback for when a material is selected from the dialog."""
         if material_uid is not None:
@@ -204,7 +188,7 @@ class StockPropertiesDialog(PatchedDialogWindow):
             )
 
         # Update the material display if it has changed
-        self._update_material_display()
+        self.material_row.set_material(self.stock_item.material)
         self._update_color_display()
 
     def _apply_thickness_change(self, new_thickness):
@@ -213,40 +197,6 @@ class StockPropertiesDialog(PatchedDialogWindow):
             self.editor.stock.set_stock_thickness(
                 self.stock_item, new_thickness
             )
-
-    def _update_material_display(self):
-        """Update the material display label."""
-        while child := self._material_swatch_box.get_first_child():
-            self._material_swatch_box.remove(child)
-
-        if not self.stock_item.material_uid:
-            self.material_row.set_subtitle(_("None"))
-            return
-
-        material = self.stock_item.material
-        if material:
-            self._material_swatch_box.append(create_material_swatch(material))
-            library_name = self._get_material_library_name(material)
-            if library_name:
-                self.material_row.set_subtitle(
-                    f"{library_name}: {material.name}"
-                )
-            else:
-                self.material_row.set_subtitle(material.name)
-        else:
-            self.material_row.set_subtitle(
-                f"❓ {self.stock_item.material_uid}"
-            )
-
-    def _get_material_library_name(self, material: "Material") -> str | None:
-        """Get the display name of the library that contains this material."""
-        material_mgr = get_context().material_mgr
-        # Search through all libraries to find which one contains this material
-        for library in material_mgr.get_libraries():
-            if library.get_material(material.uid):
-                return library.display_name
-
-        return None
 
     def _on_color_set(self, button: Gtk.ColorDialogButton, pspec=None):
         """Apply a per-instance color chosen in the color picker."""

@@ -287,6 +287,32 @@ def tint_cairo_surface(
     return tinted, buffer
 
 
+def create_material_swatch_texture(
+    material: Material, size: int = 32
+) -> Gdk.Texture:
+    """
+    Create the swatch texture for a material.
+
+    Shows the material's texture thumbnail when one is available,
+    otherwise a solid swatch in the material's display color. The
+    swatch has rounded corners baked into the texture's alpha
+    channel.
+    """
+    texture_path = material.get_texture_path()
+    tint = material.appearance.get_tint_rgba()
+    texture = (
+        load_texture_thumbnail(texture_path, size=size, tint=tint)
+        if texture_path is not None
+        else None
+    )
+    if texture is None:
+        r, g, b, _ = material.get_display_rgba()
+        texture = _solid_color_texture(
+            (int(r * 255), int(g * 255), int(b * 255), 255), size
+        )
+    return texture
+
+
 def create_material_swatch(material: Material, size: int = 32) -> Gtk.Image:
     """
     Create a swatch widget for a material.
@@ -305,16 +331,6 @@ def create_material_swatch(material: Material, size: int = 32) -> Gtk.Image:
     Returns:
         A Gtk.Image suitable as an ActionRow prefix
     """
-    texture_path = material.get_texture_path()
-    tint = material.appearance.get_tint_rgba()
-    texture = (
-        load_texture_thumbnail(texture_path, size=size, tint=tint)
-        if texture_path is not None
-        else None
+    return _make_swatch_image(
+        create_material_swatch_texture(material, size), size
     )
-    if texture is None:
-        r, g, b, _ = material.get_display_rgba()
-        texture = _solid_color_texture(
-            (int(r * 255), int(g * 255), int(b * 255), 255), size
-        )
-    return _make_swatch_image(texture, size)

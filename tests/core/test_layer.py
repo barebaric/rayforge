@@ -366,3 +366,36 @@ class TestLayerRotary:
         restored = Layer.from_dict(data)
         assert restored.rotary_enabled is True
         assert restored.rotary_diameter == 50.0
+
+    def test_stock_material_defaults_to_none(self, layer):
+        assert layer.stock_material_uid is None
+
+    def test_set_stock_material_uid(self, layer):
+        handler = MagicMock()
+        layer.updated.connect(handler)
+        layer.set_stock_material_uid("mat-1")
+        assert layer.stock_material_uid == "mat-1"
+        handler.assert_called_once_with(layer)
+
+    def test_set_stock_material_uid_no_change(self, layer):
+        handler = MagicMock()
+        layer.updated.connect(handler)
+        layer.set_stock_material_uid(None)
+        handler.assert_not_called()
+
+    def test_stock_material_serialization_roundtrip(self):
+        layer = Layer("Rotary Layer")
+        layer.set_stock_material_uid("mat-1")
+        data = layer.to_dict()
+        assert data["stock_material_uid"] == "mat-1"
+        restored = Layer.from_dict(data)
+        assert restored.stock_material_uid == "mat-1"
+
+    def test_stock_material_property_without_uid(self, lite_context):
+        layer = Layer("Rotary Layer")
+        assert layer.stock_material is None
+
+    def test_stock_material_unknown_uid_is_none(self, lite_context):
+        layer = Layer("Rotary Layer")
+        layer.set_stock_material_uid("does-not-exist")
+        assert layer.stock_material is None

@@ -10,7 +10,11 @@ from OpenGL import GL
 
 from ....simulator.scene3d import VertexLayer
 from ...shared.color_lut_provider import ColorLutProvider
-from ..gl_utils import ShaderSet, line_depth_bias, set_line_width
+from ..gl_utils import (
+    LINE_DEPTH_WINDOW_BIAS,
+    ShaderSet,
+    set_line_width,
+)
 from ..render_context import RenderContext
 from .base import BaseRenderer
 
@@ -314,7 +318,7 @@ class OpsRenderer(BaseRenderer):
         ctx.playback.executed_vertex_count = self._exec_powered
         ctx.playback.executed_travel_vertex_count = self._exec_travel
 
-        shader = shaders.main
+        shader = shaders.main_lines or shaders.main
         if shader is None:
             return
 
@@ -340,15 +344,15 @@ class OpsRenderer(BaseRenderer):
         shader.use()
         GL.glEnable(GL.GL_BLEND)
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
-        # The toolpath draws on top of the raster texture; bias its
-        # depth a hair toward the camera so it always wins against the
-        # coplanar surface (which would split lines on a cylinder's
-        # curved face) while the laser head model still occludes it.
-        # Depth writes stay off so the trail/ring drawn afterwards is
-        # unaffected.
         GL.glDepthMask(GL.GL_FALSE)
         GL.glDepthFunc(GL.GL_LEQUAL)
-        shader.set_float("uDepthBias", line_depth_bias(ctx.camera.proj_matrix))
+        # The toolpath draws on top of the raster texture; bias its
+        # window-space depth a few LSBs toward the camera so it always
+        # wins against the coplanar surface (which would split lines on
+        # a cylinder's curved face) while the laser head model still
+        # occludes it.  Depth writes stay off so the trail/ring drawn
+        # afterwards is unaffected.
+        shader.set_float("uFragDepthBias", LINE_DEPTH_WINDOW_BIAS)
         shader.set_mat4("uMVP", mvp)
         shader.set_float("uHasNormals", 0.0)
 

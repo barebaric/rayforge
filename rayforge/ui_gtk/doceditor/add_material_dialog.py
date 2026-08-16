@@ -79,7 +79,8 @@ class AddMaterialDialog(Adw.MessageDialog):
         color_dialog = Gtk.ColorDialog()
         color_dialog.set_with_alpha(False)
         self.color_button = Gtk.ColorDialogButton(dialog=color_dialog)
-        self.color_button.set_size_request(32, 32)
+        self.color_button.set_size_request(45, 45)
+        self.color_button.set_valign(Gtk.Align.CENTER)
         self.color_button.connect("notify::rgba", self._on_color_set)
         self._color: str | None = "#f0f0f0"
         self._clear_color_button = Gtk.Button(child=get_icon("clear-symbolic"))

@@ -11,6 +11,7 @@ import logging
 import math
 import time
 from collections.abc import Callable
+from gettext import gettext as _
 from typing import TYPE_CHECKING, Optional
 
 import numpy as np
@@ -607,13 +608,17 @@ class ScenePresenter:
                 return artifact.ops
         return None
 
-    def _build_stock_specs(self) -> list[dict]:
-        """Collect visible stock items into plain-data compiler specs.
+    def _build_stock_specs(
+        self, viewport: "ViewportConfig", machine
+    ) -> list[dict]:
+        """Collect visible stock into plain-data compiler specs.
 
-        The heavy triangulation runs on the background compile thread;
-        here we only resolve each item's world-space geometry rings and
-        its material parameters (texture path, PBR values, fallback
-        color) so the spec dict stays serializable.
+        Flat specs come from the document's stock items (world-space
+        geometry rings, thickness, material parameters).  Rotary specs
+        come from rotary layers with a selected stock material and
+        carry the layer's object diameter plus the renderable axial
+        length.  The heavy meshing runs on the background compile
+        thread, so the spec dicts stay serializable.
         """
         specs: list[dict] = []
         for item in self.doc.stock_items:
@@ -672,6 +677,51 @@ class ScenePresenter:
                     else None,
                 }
             )
+
+        if machine is not None:
+            specs.extend(self._build_rotary_stock_specs(viewport, machine))
+        return specs
+
+    def _build_rotary_stock_specs(
+        self, viewport: "ViewportConfig", machine
+    ) -> list[dict]:
+        """Collect rotary layers with a stock material into specs.
+
+        The axial length matches the wireframe cylinder: the work area
+        width capped by the default rotary module's maximum workpiece
+        length.
+        """
+        specs: list[dict] = []
+        max_length = viewport.width_mm
+        default_rm = machine.get_default_rotary_module()
+        if default_rm:
+            max_length = min(max_length, default_rm.max_workpiece_length)
+
+        for layer in self.doc.layers:
+            if not layer.rotary_enabled:
+                continue
+            if layer.rotary_diameter <= 0:
+                continue
+            material = layer.stock_material
+            if material is None:
+                continue
+            appearance = material.appearance
+            texture_path = material.get_texture_path()
+            specs.append(
+                {
+                    "name": _("{layer} stock").format(layer=layer.name),
+                    "kind": "rotary",
+                    "diameter": float(layer.rotary_diameter),
+                    "length": float(max_length),
+                    "texture_path": (
+                        str(texture_path) if texture_path is not None else None
+                    ),
+                    "texture_size_mm": float(appearance.texture_size_mm),
+                    "roughness": float(appearance.roughness),
+                    "metallic": float(appearance.metallic),
+                    "color": appearance.color,
+                }
+            )
         return specs
 
     def update_scene_from_doc(self):
@@ -715,7 +765,7 @@ class ScenePresenter:
         if machine:
             has_z_axis = machine.has_z_axis
 
-        stock_specs = self._build_stock_specs()
+        stock_specs = self._build_stock_specs(viewport, machine)
         stock_top_z = self._compute_stock_top_z(stock_specs)
         self.stock_top_z = stock_top_z
         self.has_z_axis = has_z_axis

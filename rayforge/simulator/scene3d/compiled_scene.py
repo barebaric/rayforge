@@ -68,6 +68,7 @@ class StockLayer:
     texture_size_mm: float = 300.0
     roughness: float = 0.8
     metallic: float = 0.0
+    is_rotary: bool = False
     fallback_rgba: tuple[float, float, float, float] = (
         1.0,
         1.0,

@@ -14,7 +14,11 @@ from OpenGL import GL
 
 from ....simulator.scene3d import ScanlineOverlayLayer
 from ...shared.color_lut_provider import ColorLutProvider
-from ..gl_utils import ShaderSet, line_depth_bias, set_line_width
+from ..gl_utils import (
+    LINE_DEPTH_WINDOW_BIAS,
+    ShaderSet,
+    set_line_width,
+)
 from ..render_context import RenderContext
 from .base import BaseRenderer
 
@@ -225,7 +229,7 @@ class RingBufferRenderer(BaseRenderer):
 
         ctx.playback.executed_vertex_count = self._exec_ring
 
-        shader = shaders.main
+        shader = shaders.main_lines or shaders.main
         if shader is None:
             return
 
@@ -259,14 +263,15 @@ class RingBufferRenderer(BaseRenderer):
         shader.set_int("uColorLUT", 1)
 
         # The scanline trail must draw on top of the toolpath and the
-        # raster texture; bias its depth a hair toward the camera so it
-        # always wins against the coplanar surface (which would let
-        # travel lines or the texture's depth split the trail on a
-        # cylinder) while the laser head model still occludes it.
-        # Depth writes stay off so later geometry is unaffected.
+        # raster texture; bias its window-space depth a few LSBs toward
+        # the camera so it always wins against the coplanar surface
+        # (which would let travel lines or the texture's depth split
+        # the trail on a cylinder) while the laser head model still
+        # occludes it.  Depth writes stay off so later geometry is
+        # unaffected.
         GL.glDepthFunc(GL.GL_LEQUAL)
         GL.glDepthMask(GL.GL_FALSE)
-        shader.set_float("uDepthBias", line_depth_bias(ctx.camera.proj_matrix))
+        shader.set_float("uFragDepthBias", LINE_DEPTH_WINDOW_BIAS)
         set_line_width(line_width)
         GL.glBindVertexArray(self.vao)
         GL.glDrawArrays(GL.GL_LINES, 0, draw_count)

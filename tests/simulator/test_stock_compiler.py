@@ -6,6 +6,8 @@ against ``build_prism_mesh``; these tests cover the rayforge-side spec
 extraction, validation and GPU buffer packing.
 """
 
+import math
+
 import numpy as np
 import pytest
 
@@ -172,6 +174,107 @@ def test_compile_stock_layers_uses_stock_world_to_visual():
     layer = compile_stock_layers([spec], stock_w2v)[0]
     # Transform must be the bed-anchored one, not the lifted content one.
     assert layer.transform[2, 3] == 0.0
+
+
+# ── Rotary cylinder shells ───────────────────────────────────────
+
+
+def _rotary_spec(**overrides):
+    spec = {
+        "name": "oak cylinder",
+        "kind": "rotary",
+        "diameter": 50.0,
+        "length": 200.0,
+        "texture_path": "/tmp/oak.webp",
+        "texture_size_mm": 250.0,
+        "roughness": 0.6,
+        "metallic": 0.0,
+        "color": "#A0522D",
+    }
+    spec.update(overrides)
+    return spec
+
+
+def test_compile_rotary_stock_basic_spec():
+    layer = compile_stock_layers([_rotary_spec()], _identity())[0]
+    assert layer.is_rotary is True
+    assert layer.texture_path == "/tmp/oak.webp"
+    assert layer.texture_size_mm == 250.0
+
+    from rayforge.simulator.scene3d.stock_compiler import (
+        CYLINDER_LENGTH_SEGMENTS,
+        CYLINDER_RINGS,
+    )
+
+    pos = layer.positions.reshape(-1, 3)
+    norm = layer.normals.reshape(-1, 3)
+    shell_verts = (CYLINDER_LENGTH_SEGMENTS + 1) * (CYLINDER_RINGS + 1)
+    assert pos.shape == (shell_verts + 2, 3)
+    assert layer.indices.shape == (
+        CYLINDER_LENGTH_SEGMENTS * CYLINDER_RINGS * 6 + CYLINDER_RINGS * 6,
+    )
+
+    # Axis along local X, spanning 0..length; radius = diameter/2.
+    assert pos[:, 0].min() == pytest.approx(0.0)
+    assert pos[:, 0].max() == pytest.approx(200.0)
+    radius = np.hypot(pos[:, 1], pos[:, 2])
+    assert radius[:shell_verts] == pytest.approx(25.0)
+    # The two cap centers sit on the axis.
+    assert np.all(radius[shell_verts:] == 0.0)
+    assert pos[shell_verts, 0] == pytest.approx(0.0)
+    assert pos[shell_verts + 1, 0] == pytest.approx(200.0)
+
+    # Unit-length normals everywhere: radial on the shell, ±X caps.
+    assert np.allclose(np.linalg.norm(norm, axis=1), 1.0, atol=1e-6)
+    radial = (
+        np.stack(
+            [
+                np.zeros(shell_verts),
+                pos[:shell_verts, 1],
+                pos[:shell_verts, 2],
+            ],
+            axis=-1,
+        )
+        / radius[:shell_verts, None]
+    )
+    assert np.allclose(norm[:shell_verts], radial, atol=1e-5)
+    assert np.allclose(norm[shell_verts], (-1.0, 0.0, 0.0))
+    assert np.allclose(norm[shell_verts + 1], (1.0, 0.0, 0.0))
+
+
+def test_compile_rotary_stock_uv_physical_density():
+    layer = compile_stock_layers(
+        [_rotary_spec(texture_size_mm=100.0)], _identity()
+    )[0]
+    uvs = layer.uvs.reshape(-1, 2)
+    # U follows the circumference: circumference / texture_size_mm
+    # repeats, wrapping around the seam.
+    circumference = 50.0 * math.pi
+    assert uvs[:, 0].min() == pytest.approx(0.0)
+    assert uvs[:, 0].max() == pytest.approx(circumference / 100.0)
+    # V follows the axis: length / texture_size_mm repeats, so the
+    # source texture's vertical grain runs along the cylinder.
+    assert uvs[:, 1].min() == pytest.approx(0.0)
+    assert uvs[:, 1].max() == pytest.approx(200.0 / 100.0)
+
+
+def test_compile_rotary_stock_invalid_dimensions_skipped():
+    assert (
+        compile_stock_layers([_rotary_spec(diameter=0.0)], _identity()) == []
+    )
+    assert compile_stock_layers([_rotary_spec(length=-5.0)], _identity()) == []
+
+
+def test_compile_rotary_stock_is_flat_fallback_without_kind():
+    """Specs without 'kind' keep building flat prisms (legacy path)."""
+    spec = {
+        "name": "flat",
+        "thickness": 4.0,
+        "outers": [[(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0)]],
+        "holes": [],
+    }
+    layer = compile_stock_layers([spec], _identity())[0]
+    assert layer.is_rotary is False
 
 
 def test_compile_stock_layers_preserves_panel_transform(

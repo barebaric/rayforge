@@ -275,6 +275,19 @@ class LayerCmd:
         )
         self._editor.history_manager.execute(cmd)
 
+    def set_layer_stock_material(self, layer: Layer, material_uid: str | None):
+        """Sets a layer's rotary stock material with an undoable command."""
+        if material_uid == layer.stock_material_uid:
+            return
+        cmd = ChangePropertyCommand(
+            target=layer,
+            property_name="stock_material_uid",
+            new_value=material_uid,
+            setter_method_name="set_stock_material_uid",
+            name=_("Change layer stock material"),
+        )
+        self._editor.history_manager.execute(cmd)
+
     def set_active_layer(self, layer: Layer):
         """Sets the active layer."""
         if self._editor.doc.active_layer is layer:

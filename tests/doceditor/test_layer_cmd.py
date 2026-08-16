@@ -122,4 +122,24 @@ def test_layer_cmd_reorder_layers(layer_cmd):
     layer_cmd.reorder_layers(new_order)
 
     assert layer_cmd._editor.doc.layers == new_order
-    assert len(layer_cmd._editor.history_manager.undo_stack) == 1
+
+
+def test_layer_cmd_set_layer_stock_material(layer_cmd, sample_layer):
+    """Test setting a layer's stock material is undoable and dirties."""
+    hm = layer_cmd._editor.history_manager
+    layer_cmd.set_layer_stock_material(sample_layer, "mat-1")
+
+    assert sample_layer.stock_material_uid == "mat-1"
+    assert len(hm.undo_stack) == 1
+    assert not layer_cmd._editor.is_saved
+
+    hm.undo()
+    assert sample_layer.stock_material_uid is None
+
+
+def test_layer_cmd_set_layer_stock_material_no_change(layer_cmd, sample_layer):
+    """Test that setting the same material does nothing."""
+    hm = layer_cmd._editor.history_manager
+    layer_cmd.set_layer_stock_material(sample_layer, None)
+
+    assert len(hm.undo_stack) == 0

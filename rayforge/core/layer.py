@@ -10,6 +10,7 @@ import math
 from collections.abc import Iterable
 from gettext import gettext as _
 from typing import (
+    TYPE_CHECKING,
     Any,
     TypeVar,
 )
@@ -17,12 +18,16 @@ from typing import (
 from blinker import Signal
 from raygeo.geo import Matrix
 
+from ..context import get_context
 from .color import COLOR_PALETTE
 from .group import Group
 from .item import DocItem
 from .step import Step
 from .workflow import Workflow
 from .workpiece import WorkPiece
+
+if TYPE_CHECKING:
+    from .material import Material
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +57,7 @@ class Layer(DocItem):
         self.rotary_enabled: bool = False
         self.rotary_diameter: float = 25.0
         self.rotary_module_uid: str | None = None
+        self.stock_material_uid: str | None = None
         self.color: str = self.DEFAULT_COLOR
         self.wcs: str | None = None
 
@@ -77,6 +83,7 @@ class Layer(DocItem):
             "rotary_enabled": self.rotary_enabled,
             "rotary_diameter": self.rotary_diameter,
             "rotary_module_uid": self.rotary_module_uid,
+            "stock_material_uid": self.stock_material_uid,
             "color": self.color,
             "wcs": self.wcs,
             "children": [child.to_dict() for child in self.children],
@@ -96,6 +103,7 @@ class Layer(DocItem):
             "rotary_enabled",
             "rotary_diameter",
             "rotary_module_uid",
+            "stock_material_uid",
             "color",
             "wcs",
             "children",
@@ -109,6 +117,7 @@ class Layer(DocItem):
         layer.rotary_enabled = data.get("rotary_enabled", False)
         layer.rotary_diameter = data.get("rotary_diameter", 25.0)
         layer.rotary_module_uid = data.get("rotary_module_uid")
+        layer.stock_material_uid = data.get("stock_material_uid")
         layer.color = data.get("color", cls.DEFAULT_COLOR)
         layer.wcs = data.get("wcs")
         layer.extra = extra
@@ -269,6 +278,22 @@ class Layer(DocItem):
             return
         self.rotary_module_uid = uid
         self.updated.send(self)
+
+    def set_stock_material_uid(self, uid: str | None):
+        """Set the stock material rendered for this rotary layer."""
+        if self.stock_material_uid == uid:
+            return
+        self.stock_material_uid = uid
+        self.updated.send(self)
+
+    @property
+    def stock_material(self) -> Material | None:
+        """The Material selected as this layer's rotary stock, if any."""
+        if not self.stock_material_uid:
+            return None
+        return get_context().material_mgr.get_material_or_none(
+            self.stock_material_uid
+        )
 
     def set_color(self, color: str):
         if self.color == color:

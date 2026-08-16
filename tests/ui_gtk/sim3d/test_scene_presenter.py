@@ -142,6 +142,7 @@ def test_update_scene_from_doc_populates_laser_dot_widths(
     machine.heads = [head1, head2]
     machine.assembly = MagicMock()
     machine.assembly.has_rotary = False
+    machine.get_default_rotary_module.return_value = None
 
     doc_editor = MagicMock()
     doc_editor.doc.layers = []
