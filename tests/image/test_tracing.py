@@ -250,3 +250,52 @@ def test_trace_large_image_downscaled(monkeypatch):
     geometries = trace_color_image(bgr_image)
 
     assert len(geometries) >= 1
+
+
+def _geometry_bounds(geometries):
+    """Returns (min_x, max_x, min_y, max_y) over all geometries."""
+    xs, ys = [], []
+    for geo in geometries:
+        for poly in geo.to_polygons():
+            for pt in poly:
+                xs.append(pt[0])
+                ys.append(pt[1])
+    if not xs:
+        return None
+    return (min(xs), max(xs), min(ys), max(ys))
+
+
+def test_downscaled_trace_matches_full_resolution_bounds(monkeypatch):
+    """
+    Downscaling an oversized image must not shift or widen the traced
+    geometry.  The downscaled trace must stay within one downscaled
+    pixel of the full-resolution trace (regression: resizing the
+    bordered image blended the white border into the content, widening
+    the contour after upscaling).
+    """
+    # A black rectangle on a white background.
+    img = np.full((400, 300), 255, dtype=np.uint8)
+    img[50:200, 30:180] = 0
+    surface = _create_test_surface(img)
+
+    # Full-resolution reference trace.
+    monkeypatch.setattr("rayforge.image.tracing.VTRACER_PIXEL_LIMIT", 10**9)
+    full_geos = trace_surface(surface)
+    full_bounds = _geometry_bounds(full_geos)
+    assert full_bounds is not None
+    assert full_bounds[0] == 30
+    assert full_bounds[1] == 180
+    assert full_bounds[2] == 50
+    assert full_bounds[3] == 200
+
+    # Downscaled trace (bordered 404x304 px, so a 20k limit downscales
+    # to roughly half size).
+    monkeypatch.setattr("rayforge.image.tracing.VTRACER_PIXEL_LIMIT", 20000)
+    down_geos = trace_surface(surface)
+    down_bounds = _geometry_bounds(down_geos)
+    assert down_bounds is not None
+
+    # One downscaled pixel maps to ~2.5 source pixels here; allow a
+    # tolerance of one downscaled pixel per edge.
+    for got, want in zip(down_bounds, full_bounds):
+        assert abs(got - want) <= 2.5

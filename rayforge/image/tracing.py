@@ -347,31 +347,51 @@ def _handle_oversized_image(
     if h_bordered * w_bordered <= pixel_limit:
         return image, 1.0, 1.0, original_height
 
-    scale = (pixel_limit / (h_bordered * w_bordered)) ** 0.5
-    new_w = max(1, int(w_bordered * scale))
-    new_h = max(1, int(h_bordered * scale))
+    # Strip the preprocessing border and resize only the content.  If
+    # the whole bordered image were resized instead, the interpolation
+    # would blend the white border into the content, widening the
+    # traced contours after upscaling.  A fresh border is re-added so
+    # the traced geometry keeps the exact [0, content] extent.
+    content = image[
+        BORDER_SIZE : h_bordered - BORDER_SIZE,
+        BORDER_SIZE : w_bordered - BORDER_SIZE,
+    ]
+    content_h, content_w = content.shape
 
-    # Ensure dimensions are multiples of 4 for better memory alignment
-    new_w = (new_w // 4) * 4
-    new_h = (new_h // 4) * 4
-    new_w = max(4, new_w)
-    new_h = max(4, new_h)
+    scale = (pixel_limit / (h_bordered * w_bordered)) ** 0.5
+    new_content_w = max(1, int(content_w * scale))
+    new_content_h = max(1, int(content_h * scale))
+
+    # Ensure bordered dimensions are multiples of 4 for better memory
+    # alignment.
+    new_w = max(
+        2 * BORDER_SIZE + 4,
+        ((new_content_w + 2 * BORDER_SIZE) // 4) * 4,
+    )
+    new_h = max(
+        2 * BORDER_SIZE + 4,
+        ((new_content_h + 2 * BORDER_SIZE) // 4) * 4,
+    )
+    new_content_w = new_w - (2 * BORDER_SIZE)
+    new_content_h = new_h - (2 * BORDER_SIZE)
 
     logger.warning(
         f"Image is too large for vtracer ({w_bordered}x{h_bordered}px). "
         f"Downscaling to {new_w}x{new_h}px to prevent overflow."
     )
 
-    img_uint8 = image.astype(np.uint8) * 255
-    resized_img = resize_linear_nd(img_uint8, (new_w, new_h))
-    image_to_trace = resized_img > 127
+    content_uint8 = content.astype(np.uint8) * 255
+    resized_img = resize_linear_nd(
+        content_uint8, (new_content_w, new_content_h)
+    )
+    image_to_trace = np.pad(
+        resized_img > 127,
+        BORDER_SIZE,
+        constant_values=False,
+    )
 
-    upscale_x, upscale_y = 1.0, 1.0
-    new_content_w = new_w - (2 * BORDER_SIZE)
-    new_content_h = new_h - (2 * BORDER_SIZE)
-    if new_content_w > 0 and new_content_h > 0:
-        upscale_x = original_width / new_content_w
-        upscale_y = original_height / new_content_h
+    upscale_x = content_w / new_content_w
+    upscale_y = content_h / new_content_h
 
     return image_to_trace, upscale_x, upscale_y, new_content_h
 
