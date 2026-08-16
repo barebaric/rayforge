@@ -318,7 +318,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.doc_editor.notification_requested.connect(
             self._on_editor_notification
         )
-        self.doc_editor.document_settled.connect(self._on_document_settled)
         self.doc_editor.saved_state_changed.connect(
             self.project_cmd.on_saved_state_changed
         )
@@ -491,6 +490,8 @@ class MainWindow(Adw.ApplicationWindow):
         self.bottom_panel.set_get_bounds_callback(
             self.surface.get_selection_bounds
         )
+
+        self.doc_editor.document_settled.connect(self._on_document_settled)
 
         self.view_stack.connect(
             "notify::visible-child-name", self._on_view_stack_changed

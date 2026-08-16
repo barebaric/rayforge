@@ -80,9 +80,9 @@ def test_compile_stock_layers_rectangle_parity():
     assert pos.shape == (24, 3)
     assert layer.indices.shape == (36,)
 
-    # z spans the engrave plane down to -thickness.
-    assert pos[:, 2].max() == 0.0
-    assert pos[:, 2].min() == -18.0
+    # z spans the bed (0) up to +thickness.
+    assert pos[:, 2].max() == 18.0
+    assert pos[:, 2].min() == 0.0
 
     # Every normal is unit length and walls are horizontal.
     assert np.allclose(np.linalg.norm(norm, axis=1), 1.0, atol=1e-6)
@@ -116,7 +116,7 @@ def test_compile_stock_layers_default_thickness():
         "holes": [],
     }
     layer = compile_stock_layers([spec], _identity())[0]
-    assert layer.positions.reshape(-1, 3)[:, 2].min() == -18.0
+    assert layer.positions.reshape(-1, 3)[:, 2].max() == 18.0
 
 
 def test_compile_stock_layers_invalid_thickness_falls_back():
@@ -127,7 +127,7 @@ def test_compile_stock_layers_invalid_thickness_falls_back():
         "holes": [],
     }
     layer = compile_stock_layers([spec], _identity())[0]
-    assert layer.positions.reshape(-1, 3)[:, 2].min() == -18.0
+    assert layer.positions.reshape(-1, 3)[:, 2].max() == 18.0
 
 
 def test_compile_stock_layers_invalid_color_falls_back():
@@ -140,6 +140,38 @@ def test_compile_stock_layers_invalid_color_falls_back():
     }
     layer = compile_stock_layers([spec], _identity())[0]
     assert layer.fallback_rgba == (1.0, 1.0, 1.0, 1.0)
+
+
+def test_compile_stock_layers_bottom_on_bed():
+    """Stock prism bottom is at z=0 (bed), top at z=+thickness."""
+    spec = {
+        "name": "oak",
+        "thickness": 5.0,
+        "outers": [[(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0)]],
+        "holes": [],
+    }
+    layer = compile_stock_layers([spec], _identity())[0]
+    pos = layer.positions.reshape(-1, 3)
+    assert pos[:, 2].min() == pytest.approx(0.0)
+    assert pos[:, 2].max() == pytest.approx(5.0)
+
+
+def test_compile_stock_layers_uses_stock_world_to_visual():
+    """Stock transform comes from stock_world_to_visual, not content w2v."""
+    stock_w2v = np.eye(4, dtype=np.float32)
+    stock_w2v[2, 3] = 0.0  # bed-anchored
+    content_w2v = np.eye(4, dtype=np.float32)
+    content_w2v[2, 3] = 10.0  # lifted for no-Z content
+
+    spec = {
+        "name": "oak",
+        "thickness": 3.0,
+        "outers": [[(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0)]],
+        "holes": [],
+    }
+    layer = compile_stock_layers([spec], stock_w2v)[0]
+    # Transform must be the bed-anchored one, not the lifted content one.
+    assert layer.transform[2, 3] == 0.0
 
 
 def test_compile_stock_layers_preserves_panel_transform(

@@ -50,6 +50,9 @@ class LayerRenderConfig:
 class RenderConfig3D:
     world_to_visual: np.ndarray
     world_to_cyl_local: np.ndarray
+    stock_world_to_visual: np.ndarray | None = None
+    stock_top_z: float = 0.0
+    has_z_axis: bool = True
     layer_configs: dict[str, LayerRenderConfig] | None = None
     laser_dot_widths_mm: dict[str, float] | None = None
     stock_specs: list[dict] | None = None
@@ -63,6 +66,14 @@ class RenderConfig3D:
                 np.float32
             ).tobytes(),
         }
+        if self.stock_world_to_visual is not None:
+            d["stock_world_to_visual"] = self.stock_world_to_visual.astype(
+                np.float32
+            ).tobytes()
+        if self.stock_top_z != 0.0:
+            d["stock_top_z"] = self.stock_top_z
+        if not self.has_z_axis:
+            d["has_z_axis"] = False
         if self.layer_configs:
             d["layer_configs"] = {
                 k: v.to_dict() for k, v in self.layer_configs.items()
@@ -85,6 +96,13 @@ class RenderConfig3D:
             .reshape(4, 4)
             .copy()
         )
+        stock_w2v = None
+        if "stock_world_to_visual" in data:
+            stock_w2v = (
+                np.frombuffer(data["stock_world_to_visual"], dtype=np.float32)
+                .reshape(4, 4)
+                .copy()
+            )
         layer_configs = None
         if "layer_configs" in data:
             layer_configs = {
@@ -94,6 +112,9 @@ class RenderConfig3D:
         return cls(
             world_to_visual=w2v,
             world_to_cyl_local=w2c,
+            stock_world_to_visual=stock_w2v,
+            stock_top_z=data.get("stock_top_z", 0.0),
+            has_z_axis=data.get("has_z_axis", True),
             layer_configs=layer_configs,
             laser_dot_widths_mm=data.get("laser_dot_widths_mm"),
             stock_specs=data.get("stock_specs"),

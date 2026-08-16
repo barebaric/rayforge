@@ -201,9 +201,12 @@ def _wrap_compiled_scene(
 
     layer_infos = raw.layer_infos
     texture_layers = _generate_texture_layers(ops, layer_infos, config)
-    stock_layers = compile_stock_layers(
-        config.stock_specs or [], config.world_to_visual
+    stock_w2v = (
+        config.stock_world_to_visual
+        if config.stock_world_to_visual is not None
+        else config.world_to_visual
     )
+    stock_layers = compile_stock_layers(config.stock_specs or [], stock_w2v)
 
     return CompiledSceneArtifact(
         generation_id=generation_id,

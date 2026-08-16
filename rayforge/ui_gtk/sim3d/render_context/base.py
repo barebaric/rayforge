@@ -42,6 +42,8 @@ class FrameInputs:
     doc: Optional["Doc"] = None
     cylinder_transform: np.ndarray | None = None
     had_rotary_layers: bool = False
+    stock_top_z: float = 0.0
+    has_z_axis: bool = True
 
 
 class RenderContext:

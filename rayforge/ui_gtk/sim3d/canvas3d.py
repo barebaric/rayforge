@@ -315,6 +315,8 @@ class Canvas3D(Gtk.GLArea):
                 doc=self.doc,
                 cylinder_transform=self._scene.cylinder_transform,
                 had_rotary_layers=self._scene.had_rotary_layers,
+                stock_top_z=self._presenter.stock_top_z,
+                has_z_axis=self._presenter.has_z_axis,
             )
             self._ctx.update(frame)
             self._scene.prepare(self._ctx)

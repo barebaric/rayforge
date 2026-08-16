@@ -118,3 +118,29 @@ class TestRenderConfig3D:
     def test_missing_field_raises(self):
         with pytest.raises(KeyError):
             RenderConfig3D.from_dict({"world_to_visual": b"\x00" * 64})
+
+    def test_stock_world_to_visual_round_trip(self):
+        stock_w2v = np.eye(4, dtype=np.float32)
+        stock_w2v[2, 3] = 0.0
+        config = RenderConfig3D(
+            world_to_visual=np.eye(4, dtype=np.float32),
+            world_to_cyl_local=np.eye(4, dtype=np.float32),
+            stock_world_to_visual=stock_w2v,
+            stock_top_z=5.0,
+            has_z_axis=False,
+        )
+        restored = RenderConfig3D.from_dict(config.to_dict())
+        assert restored.stock_world_to_visual is not None
+        np.testing.assert_allclose(restored.stock_world_to_visual, stock_w2v)
+        assert restored.stock_top_z == 5.0
+        assert restored.has_z_axis is False
+
+    def test_defaults_has_z_axis_true(self):
+        config = RenderConfig3D(
+            world_to_visual=np.eye(4, dtype=np.float32),
+            world_to_cyl_local=np.eye(4, dtype=np.float32),
+        )
+        restored = RenderConfig3D.from_dict(config.to_dict())
+        assert restored.has_z_axis is True
+        assert restored.stock_top_z == 0.0
+        assert restored.stock_world_to_visual is None

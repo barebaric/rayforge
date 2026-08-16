@@ -22,10 +22,12 @@ from .text_renderer import TextRenderer
 
 logger = logging.getLogger(__name__)
 
-# Depth layering along Z (stock top faces sit at z=0):
-#   background/bed plane  -0.002  (below the engrave plane)
-#   grid lines            +0.001  (render over stock top faces)
-#   WCS marker            +0.002  (above the grid)
+# Depth layering along Z (grid = bed plane, z=0):
+#   background/bed plane  -0.002  (below the grid)
+#   grid lines            +0.001  (on the bed, above the background)
+#   WCS marker            +0.002  (above the grid; dynamically lifted by
+#                                 stock_top_z for no-Z machines so it
+#                                 sits on the work plane)
 #   extent frame          +0.003  (on top)
 BACKGROUND_Z = -0.002
 GRID_Z = 0.001
@@ -184,11 +186,12 @@ class AxisRenderer3D(BaseRenderer):
     def _init_grid_and_axes(self):
         """Creates VAOs/VBOs for the grid and axis lines.
 
-        Depth layering along Z (stock top faces sit at z=0):
-        grid lines at +0.001 render *over* stock top faces, the WCS
-        marker at +0.002 sits above the grid, and the extent frame at
-        +0.003 sits on top. The background/bed plane stays below at
-        -0.002.
+        Depth layering along Z (grid = bed plane, z=0):
+        grid lines at +0.001 sit on the bed, the WCS marker at
+        +0.002 is above the grid (and dynamically lifted by
+        ``stock_top_z`` for no-Z machines), and the extent frame
+        at +0.003 sits on top. The background/bed plane stays below
+        at -0.002.
         """
         grid_z_pos = GRID_Z
         w, h = self.width_mm, self.height_mm
@@ -405,8 +408,10 @@ class AxisRenderer3D(BaseRenderer):
         GL.glDrawArrays(GL.GL_LINES, 0, self.axes_vertex_count)
 
         # 3. Draw the WCS origin marker
+        z_lift = ctx.kinematics.z_lift
         wcs_translation_matrix = np.identity(4, dtype=np.float32)
         wcs_translation_matrix[:3, 3] = world_offset_vec[:3]
+        wcs_translation_matrix[2, 3] += z_lift
         wcs_marker_mvp = text_mvp @ wcs_translation_matrix
 
         line_shader.set_mat4("uMVP", wcs_marker_mvp)

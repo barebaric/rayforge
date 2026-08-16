@@ -45,6 +45,7 @@ class DocSignalHub:
         self._get_gl_initialized = get_gl_initialized
 
         self._active_layer_wcs_conn = None
+        self._cached_has_z_axis: bool | None = None
 
     @property
     def doc(self) -> "Doc":
@@ -111,6 +112,18 @@ class DocSignalHub:
         """Handler for when the machine's WCS state changes."""
         if machine:
             self._set_viewport(self._build_viewport(machine))
+
+            has_z = machine.has_z_axis
+            if (
+                self._cached_has_z_axis is not None
+                and self._cached_has_z_axis != has_z
+                and self._get_gl_initialized()
+            ):
+                self._cached_has_z_axis = has_z
+                self._refresh_scene()
+                return
+            self._cached_has_z_axis = has_z
+
         self._mark_scene_dirty()
         self._request_render()
 
