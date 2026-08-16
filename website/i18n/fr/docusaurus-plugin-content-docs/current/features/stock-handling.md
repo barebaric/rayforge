@@ -6,34 +6,44 @@ Le matériau dans Rayforge représente le matériel physique que vous allez coup
 
 Le matériau représente la pièce physique de matériel avec lequel vous allez travailler. Pour ajouter du matériau à votre document :
 
-1. Dans le panneau **Matériau** dans la barre latérale, cliquez sur le bouton **Ajouter Matériau**
-2. Un nouvel élément de matériau sera créé avec les dimensions par défaut (80% de l'espace de travail de votre machine)
-3. Le matériau apparaîtra comme un rectangle dans l'espace de travail, centré sur le lit de la machine
+1. Ouvrez l'onglet **Actifs** dans le panneau inférieur
+2. Cliquez sur **Ajouter Matériau** — ce bouton est affiché lorsque la liste des actifs est vide
+3. Un nouvel élément de matériau sera créé avec les dimensions par défaut (80% de l'espace de travail de votre machine), placé avec un coin à l'origine de la machine
+4. Le matériau apparaîtra comme un rectangle dans l'espace de travail
+
+Vous pouvez également ajouter du matériau en :
+
+- Utilisant le bouton **+** dans l'onglet Actifs et en choisissant **Ajouter Matériau**
+- Faisant un clic droit sur une zone vide de la liste des actifs et en sélectionnant **Nouveau Matériau**
+- Faisant un clic droit sur une zone vide du canevas et en sélectionnant **Nouveau Matériau**
+- Appuyant sur `Ctrl+Alt+S`
+
+Vous pouvez aussi glisser un actif de matériau depuis l'onglet Actifs vers le canevas pour placer un autre élément de matériau.
 
 ### Propriétés du Matériau
 
-Chaque élément de matériau a les propriétés suivantes :
+Double-cliquez sur un actif de matériau dans l'onglet Actifs pour ouvrir la boîte de dialogue **Propriétés du Matériau**. Chaque élément de matériau a les propriétés suivantes :
 
 - **Nom** : Un nom descriptif pour l'identification (numérotation automatique comme "Matériau 1", "Matériau 2", etc.)
-- **Dimensions** : Largeur et hauteur du matériau
 - **Épaisseur** : L'épaisseur du matériau (optionnel mais recommandé pour un aperçu 3D précis)
 - **Matériau** : Le type de matériau (assigné à l'étape suivante)
-- **Visibilité** : Basculer pour afficher/masquer le matériau dans l'espace de travail
+
+Les dimensions du matériau sont ajustées en sélectionnant le matériau dans l'espace de travail et en glissant ses poignées d'angle.
 
 ### Gérer les Éléments de Matériau
 
-- **Renommer** : Ouvrez la boîte de dialogue Propriétés du Matériau et éditez le champ nom
+- **Renommer** : Ouvrez la boîte de dialogue Propriétés du Matériau (double-clic sur l'actif) et éditez le champ nom
 - **Redimensionner** : Sélectionnez l'élément de matériau dans l'espace de travail et glissez les poignées d'angle pour redimensionner
 - **Déplacer** : Sélectionnez l'élément de matériau dans l'espace de travail et glissez pour le repositionner
-- **Supprimer** : Cliquez sur le bouton de suppression (icône poubelle) à côté de l'élément de matériau dans le panneau Matériau
-- **Éditer les propriétés** : Cliquez sur le bouton propriétés (icône document) pour ouvrir la boîte de dialogue Propriétés du Matériau
-- **Basculer la visibilité** : Cliquez sur le bouton visibilité (icône œil) pour afficher/masquer l'élément de matériau
+- **Éditer les propriétés** : Double-cliquez sur l'actif de matériau dans l'onglet Actifs
+- **Dupliquer** : Faites un clic droit sur l'actif de matériau dans l'onglet Actifs et sélectionnez **Dupliquer**
+- **Supprimer** : Faites un clic droit sur l'actif de matériau dans l'onglet Actifs et sélectionnez **Supprimer**, ou sélectionnez l'actif et appuyez sur `Suppr`
 
 ## Assigner un Matériau
 
 Une fois que vous avez défini le matériau, vous pouvez lui assigner un type de matériau :
 
-1. Dans le panneau **Matériau**, cliquez sur le bouton propriétés (icône document) sur l'élément de matériau
+1. Double-cliquez sur l'actif de matériau dans l'onglet **Actifs** pour ouvrir la boîte de dialogue Propriétés du Matériau
 2. Dans la boîte de dialogue Propriétés du Matériau, cliquez sur le bouton **Sélectionner** à côté du champ Matériau
 3. Parcourez vos bibliothèques de matériaux et sélectionnez le matériau approprié
 4. Le matériau se mettra à jour pour afficher l'apparence visuelle du matériau
@@ -54,7 +64,7 @@ Vous pouvez convertir n'importe quelle pièce en un élément de matériau. C'es
 
 Pour convertir une pièce en matériau :
 
-1. Faites un clic droit sur la pièce dans le canevas ou le panneau Document
+1. Faites un clic droit sur la pièce dans le canevas
 2. Sélectionnez **Convertir en Matériau** dans le menu contextuel
 3. La pièce sera remplacée par un nouvel élément de matériau avec la même forme et position
 
@@ -107,7 +117,7 @@ Si vous préférez plus de contrôle, Rayforge offre aussi des outils de disposi
 
 ### La disposition automatique ne fonctionne pas comme prévu
 
-- Assurez-vous qu'au moins un élément de matériau est visible
+- Assurez-vous qu'au moins un élément de matériau est défini (la disposition automatique utilise le premier élément de matériau visible comme limite)
 - Assurez-vous que les éléments ne sont pas groupés (dégroupez-les d'abord)
 - Essayez de réduire le nombre d'éléments sélectionnés à la fois
 - Vérifiez que les éléments tiennent dans les limites du matériau

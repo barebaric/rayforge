@@ -6,34 +6,44 @@ Material no Rayforge representa o material físico que você vai cortar ou grava
 
 O material representa a peça física de material com a qual você vai trabalhar. Para adicionar material ao seu documento:
 
-1. No painel **Material de Base** na barra lateral, clique no botão **Adicionar Material**
-2. Um novo item de material será criado com dimensões padrão (80% da área de trabalho da sua máquina)
-3. O material aparecerá como um retângulo no espaço de trabalho, centralizado na mesa da máquina
+1. Abra a aba de **Ativos** no painel inferior
+2. Clique em **Adicionar Material** — este botão é exibido quando a lista de ativos está vazia
+3. Um novo item de material será criado com dimensões padrão (80% da área de trabalho da sua máquina), colocado com um canto na origem da máquina
+4. O material aparecerá como um retângulo no espaço de trabalho
+
+Alternativamente, você pode adicionar material usando:
+
+- O botão **+** na aba de Ativos e escolhendo **Adicionar Material**
+- Clique com o botão direito em uma área vazia da lista de ativos e selecionando **Novo Material**
+- Clique com o botão direito em uma área vazia da tela e selecionando **Novo Material**
+- Pressionando `Ctrl+Alt+S`
+
+Você também pode arrastar um ativo de material da aba de Ativos para a tela para colocar outro item de material.
 
 ### Propriedades do Material
 
-Cada item de material tem as seguintes propriedades:
+Clique duas vezes em um ativo de material na aba de Ativos para abrir o diálogo **Propriedades do Material**. Cada item de material tem as seguintes propriedades:
 
 - **Nome**: Um nome descritivo para identificação (numerado automaticamente como "Material 1", "Material 2", etc.)
-- **Dimensões**: Largura e altura do material base
 - **Espessura**: A espessura do material (opcional mas recomendado para visualização 3D precisa)
 - **Material**: O tipo de material (atribuído no próximo passo)
-- **Visibilidade**: Alternar para mostrar/ocultar o material no espaço de trabalho
+
+As dimensões do material são ajustadas selecionando o material no espaço de trabalho e arrastando suas alças de canto.
 
 ### Gerenciando Itens de Material
 
-- **Renomear**: Abra o diálogo de Propriedades do Material e edite o campo de nome
+- **Renomear**: Abra o diálogo de Propriedades do Material (duplo clique no ativo) e edite o campo de nome
 - **Redimensionar**: Selecione o item de material no espaço de trabalho e arraste as alças de canto para redimensionar
 - **Mover**: Selecione o item de material no espaço de trabalho e arraste para reposicionar
-- **Excluir**: Clique no botão excluir (ícone de lixeira) ao lado do item de material no painel Material de Base
-- **Editar propriedades**: Clique no botão de propriedades (ícone de documento) para abrir o diálogo de Propriedades do Material
-- **Alternar visibilidade**: Clique no botão de visibilidade (ícone de olho) para mostrar/ocultar o item de material
+- **Editar propriedades**: Clique duas vezes no ativo de material na aba de Ativos
+- **Duplicar**: Clique com o botão direito no ativo de material na aba de Ativos e selecione **Duplicar**
+- **Excluir**: Clique com o botão direito no ativo de material na aba de Ativos e selecione **Excluir**, ou selecione o ativo e pressione `Del`
 
 ## Atribuindo Material
 
 Uma vez que você tem o material base definido, pode atribuir um material a ele:
 
-1. No painel **Material de Base**, clique no botão de propriedades (ícone de documento) no item de material
+1. Clique duas vezes no ativo de material na aba de **Ativos** para abrir o diálogo de Propriedades do Material
 2. No diálogo de Propriedades do Material, clique no botão **Selecionar** ao lado do campo Material
 3. Navegue pelas suas bibliotecas de materiais e selecione o material apropriado
 4. O material base será atualizado para mostrar a aparência visual do material
@@ -54,7 +64,7 @@ Você pode converter qualquer peça em um item de material. Isso é útil quando
 
 Para converter uma peça em material:
 
-1. Clique com o botão direito na peça na tela ou no painel Documento
+1. Clique com o botão direito na peça na tela
 2. Selecione **Converter para Material** no menu de contexto
 3. A peça será substituída por um novo item de material com o mesmo formato e posição
 
@@ -107,7 +117,7 @@ Se você prefere mais controle, o Rayforge também oferece ferramentas de layout
 
 ### Layout automático não funciona como esperado
 
-- Certifique-se de que pelo menos um item de material está visível
+- Certifique-se de que pelo menos um item de material está definido (o layout automático usa o primeiro item de material visível como limite)
 - Certifique-se de que os itens não estão agrupados (desagrupe-os primeiro)
 - Tente reduzir o número de itens selecionados de uma vez
 - Verifique se os itens cabem dentro dos limites do material

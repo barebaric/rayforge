@@ -6,34 +6,44 @@ El material base en Rayforge representa el material físico que cortarás o grab
 
 El material base representa la pieza física de material con la que trabajarás. Para añadir material base a tu documento:
 
-1. En el panel **Material Base** en la barra lateral, haz clic en el botón **Añadir Material Base**
-2. Se creará un nuevo elemento de material base con dimensiones por defecto (80% del área de trabajo de tu máquina)
-3. El material base aparecerá como un rectángulo en el área de trabajo, centrado en la cama de la máquina
+1. Abre la pestaña de **Activos** en el panel inferior
+2. Haz clic en **Añadir Material Base** — este botón se muestra cuando la lista de activos está vacía
+3. Se creará un nuevo elemento de material base con dimensiones por defecto (80% del área de trabajo de tu máquina), colocado con una esquina en el origen de la máquina
+4. El material base aparecerá como un rectángulo en el área de trabajo
+
+Alternativamente, puedes añadir material base mediante:
+
+- El botón **+** en la pestaña de Activos y eligiendo **Añadir Material Base**
+- Clic derecho en un área vacía de la lista de activos y seleccionando **Nuevo Material Base**
+- Clic derecho en un área vacía del lienzo y seleccionando **Nuevo Material Base**
+- Pulsando `Ctrl+Alt+S`
+
+También puedes arrastrar un activo de material base desde la pestaña de Activos al lienzo para colocar otro elemento de material base.
 
 ### Propiedades del Material Base
 
-Cada elemento de material base tiene las siguientes propiedades:
+Haz doble clic en un activo de material base en la pestaña de Activos para abrir el diálogo **Propiedades de Material Base**. Cada elemento de material base tiene las siguientes propiedades:
 
 - **Nombre:** Un nombre descriptivo para identificación (autonumerado como "Material Base 1", "Material Base 2", etc.)
-- **Dimensiones:** Ancho y alto del material base
 - **Espesor:** El espesor del material (opcional pero recomendado para previsualización 3D precisa)
 - **Material:** El tipo de material (asignado en el siguiente paso)
-- **Visibilidad:** Alternar para mostrar/ocultar el material base en el área de trabajo
+
+Las dimensiones del material base se ajustan seleccionando el material base en el área de trabajo y arrastrando sus manijas de las esquinas.
 
 ### Gestión de Elementos de Material Base
 
-- **Renombrar:** Abre el diálogo de Propiedades de Material Base y edita el campo de nombre
+- **Renombrar:** Abre el diálogo de Propiedades de Material Base (doble clic en el activo) y edita el campo de nombre
 - **Redimensionar:** Selecciona el elemento de material base en el área de trabajo y arrastra las manijas de las esquinas para redimensionar
 - **Mover:** Selecciona el elemento de material base en el área de trabajo y arrastra para reposicionar
-- **Eliminar:** Haz clic en el botón eliminar (icono de papelera) junto al elemento de material base en el panel de Material Base
-- **Editar propiedades:** Haz clic en el botón de propiedades (icono de documento) para abrir el diálogo de Propiedades de Material Base
-- **Alternar visibilidad:** Haz clic en el botón de visibilidad (icono de ojo) para mostrar/ocultar el elemento de material base
+- **Editar propiedades:** Haz doble clic en el activo de material base en la pestaña de Activos
+- **Duplicar:** Haz clic derecho en el activo de material base en la pestaña de Activos y selecciona **Duplicar**
+- **Eliminar:** Haz clic derecho en el activo de material base en la pestaña de Activos y selecciona **Eliminar**, o selecciona el activo y pulsa `Supr`
 
 ## Asignar Material
 
 Una vez que tienes material base definido, puedes asignarle un material:
 
-1. En el panel **Material Base**, haz clic en el botón de propiedades (icono de documento) en el elemento de material base
+1. Haz doble clic en el activo de material base en la pestaña de **Activos** para abrir el diálogo de Propiedades de Material Base
 2. En el diálogo de Propiedades de Material Base, haz clic en el botón **Seleccionar** junto al campo de Material
 3. Navega por tus bibliotecas de materiales y selecciona el material apropiado
 4. El material base se actualizará para mostrar la apariencia visual del material
@@ -54,7 +64,7 @@ Puedes convertir cualquier pieza en un elemento de material base. Esto es útil 
 
 Para convertir una pieza en material base:
 
-1. Haz clic derecho en la pieza en el lienzo o panel de Documento
+1. Haz clic derecho en la pieza en el lienzo
 2. Selecciona **Convertir en Material Base** del menú contextual
 3. La pieza será reemplazada por un nuevo elemento de material base con la misma forma y posición
 
@@ -107,7 +117,7 @@ Si prefieres más control, Rayforge también ofrece herramientas de layout manua
 
 ### El auto-layout no funciona como se espera
 
-- Asegúrate de que al menos un elemento de material base esté visible
+- Asegúrate de que al menos un elemento de material base esté definido (el auto-layout usa el primer elemento de material base visible como límite)
 - Asegúrate que los elementos no estén agrupados (desagrupa primero)
 - Intenta reducir el número de elementos seleccionados a la vez
 - Verifica que los elementos caben dentro de los límites del material base

@@ -6,34 +6,44 @@ Rohmaterial in Rayforge repräsentiert das physische Material, das du schneiden 
 
 Rohmaterial repräsentiert das physische Stück Material, mit dem du arbeiten wirst. Um Rohmaterial zu deinem Dokument hinzuzufügen:
 
-1. Im **Rohmaterial**-Panel in der Seitenleiste auf die Schaltfläche **Rohmaterial hinzufügen** klicken
-2. Ein neues Rohmaterial-Element wird mit Standardabmessungen erstellt (80% deines Maschinen-Arbeitsbereichs)
-3. Das Rohmaterial erscheint als Rechteck im Arbeitsbereich, zentriert auf dem Maschinenbett
+1. Den **Assets**-Tab im unteren Panel öffnen
+2. Auf **Rohmaterial hinzufügen** klicken — die Schaltfläche wird angezeigt, wenn die Asset-Liste leer ist
+3. Ein neues Rohmaterial-Element wird mit Standardabmessungen (80% deines Maschinen-Arbeitsbereichs) erstellt und mit einer Ecke am Maschinenursprung platziert
+4. Das Rohmaterial erscheint als Rechteck im Arbeitsbereich
+
+Alternativ kannst du Rohmaterial hinzufügen, indem du:
+
+- Die **+**-Schaltfläche im Assets-Tab verwendest und **Rohmaterial hinzufügen** wählst
+- Mit der rechten Maustaste auf einen leeren Bereich der Asset-Liste klickst und **Neues Rohmaterial** wählst
+- Mit der rechten Maustaste auf einen leeren Bereich der Zeichenfläche klickst und **Neues Rohmaterial** wählst
+- `Ctrl+Alt+S` drückst
+
+Du kannst auch ein Rohmaterial-Asset aus dem Assets-Tab auf die Zeichenfläche ziehen, um ein weiteres Rohmaterial-Element zu platzieren.
 
 ### Rohmaterial-Eigenschaften
 
-Jedes Rohmaterial-Element hat die folgenden Eigenschaften:
+Doppelklicke ein Rohmaterial-Asset im Assets-Tab, um den Dialog **Rohmaterial-Eigenschaften** zu öffnen. Jedes Rohmaterial-Element hat die folgenden Eigenschaften:
 
 - **Name**: Ein beschreibender Name zur Identifizierung (automatisch nummeriert als "Rohmaterial 1", "Rohmaterial 2", usw.)
-- **Abmessungen**: Breite und Höhe des Rohmaterials
 - **Dicke**: Die Materialstärke (optional, aber empfohlen für genaue 3D-Vorschau)
 - **Material**: Die Art des Materials (im nächsten Schritt zugewiesen)
-- **Sichtbarkeit**: Umschalten, um Rohmaterial im Arbeitsbereich anzuzeigen/verstecken
+
+Die Abmessungen des Rohmaterials werden angepasst, indem du das Rohmaterial im Arbeitsbereich auswählst und seine Eckgriffe ziehst.
 
 ### Rohmaterial-Elemente verwalten
 
-- **Umbenennen**: Den Rohmaterial-Eigenschaften-Dialog öffnen und das Namensfeld bearbeiten
+- **Umbenennen**: Den Rohmaterial-Eigenschaften-Dialog öffnen (Doppelklick auf das Asset) und das Namensfeld bearbeiten
 - **Größe ändern**: Rohmaterial-Element im Arbeitsbereich auswählen und die Eckgriffe zum Skalieren ziehen
 - **Bewegen**: Rohmaterial-Element im Arbeitsbereich auswählen und zum Neupositionieren ziehen
-- **Löschen**: Auf die Löschen-Taste (Papierkorb-Symbol) neben dem Rohmaterial-Element im Rohmaterial-Panel klicken
-- **Eigenschaften bearbeiten**: Auf die Eigenschaften-Taste (Dokument-Symbol) klicken, um den Rohmaterial-Eigenschaften-Dialog zu öffnen
-- **Sichtbarkeit umschalten**: Auf die Sichtbarkeit-Taste (Augen-Symbol) klicken, um das Rohmaterial-Element anzuzeigen/verstecken
+- **Eigenschaften bearbeiten**: Doppelklick auf das Rohmaterial-Asset im Assets-Tab
+- **Duplizieren**: Rechtsklick auf das Rohmaterial-Asset im Assets-Tab und **Duplizieren** wählen
+- **Löschen**: Rechtsklick auf das Rohmaterial-Asset im Assets-Tab und **Löschen** wählen, oder das Asset auswählen und `Entf` drücken
 
 ## Material zuweisen
 
 Nachdem du Rohmaterial definiert hast, kannst du ihm ein Material zuweisen:
 
-1. Im **Rohmaterial**-Panel auf die Eigenschaften-Taste (Dokument-Symbol) beim Rohmaterial-Element klicken
+1. Doppelklicke das Rohmaterial-Asset im **Assets**-Tab, um den Rohmaterial-Eigenschaften-Dialog zu öffnen
 2. Im Rohmaterial-Eigenschaften-Dialog auf die **Auswählen**-Taste neben dem Material-Feld klicken
 3. Durch deine Materialbibliotheken browsen und das entsprechende Material auswählen
 4. Das Rohmaterial wird aktualisiert, um das visuelle Erscheinungsbild des Materials anzuzeigen
@@ -54,7 +64,7 @@ Du kannst jedes Werkstück in ein Rohmaterial-Element umwandeln. Dies ist nützl
 
 So wandelst du ein Werkstück in Rohmaterial um:
 
-1. Rechtsklick auf das Werkstück in der Zeichenfläche oder im Dokument-Panel
+1. Rechtsklick auf das Werkstück in der Zeichenfläche
 2. Wähle **In Rohmaterial umwandeln** aus dem Kontextmenü
 3. Das Werkstück wird durch ein neues Rohmaterial-Element mit der gleichen Form und Position ersetzt
 
@@ -107,7 +117,7 @@ Wenn du mehr Kontrolle bevorzugst, bietet Rayforge auch manuelle Layout-Werkzeug
 
 ### Auto-Layout funktioniert nicht wie erwartet
 
-- Sicherstellen, dass mindestens ein Rohmaterial-Element sichtbar ist
+- Sicherstellen, dass mindestens ein Rohmaterial-Element definiert ist (das Auto-Layout verwendet das erste sichtbare Rohmaterial-Element als Begrenzung)
 - Sicherstellen, dass Elemente nicht gruppiert sind (zuerst Gruppierung aufheben)
 - Versuchen, die Anzahl der gleichzeitig ausgewählten Elemente zu reduzieren
 - Verifizieren, dass Elemente in die Rohmaterial-Grenzen passen
