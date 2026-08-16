@@ -36,6 +36,7 @@ from ...simulator.scene3d import (
     compile_stock_scene,
 )
 from .camera import ViewDirection
+from .render_context import SceneVisibility
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -127,7 +128,6 @@ class ScenePresenter:
         theme_resolver: "ThemeResolver",
         get_viewport: Callable[[], "ViewportConfig"],
         get_gl_initialized: Callable[[], bool],
-        get_show_travel_moves: Callable[[], bool],
         get_camera_available: Callable[[], bool],
         make_current: Callable[[], None],
         mark_scene_dirty: Callable[[], None],
@@ -142,7 +142,6 @@ class ScenePresenter:
         self._theme_resolver = theme_resolver
         self._get_viewport = get_viewport
         self._get_gl_initialized = get_gl_initialized
-        self._get_show_travel_moves = get_show_travel_moves
         self._get_camera_available = get_camera_available
         self._make_current = make_current
         self._mark_scene_dirty = mark_scene_dirty
@@ -150,6 +149,8 @@ class ScenePresenter:
         self._reset_view = reset_view
         self._request_render = request_render
         self._upload_complete = upload_complete
+
+        self.visibility = SceneVisibility()
 
         self._scene_preparation_task: Task | None = None
         self._compiled_artifact: CompiledSceneArtifact | None = None
@@ -232,6 +233,59 @@ class ScenePresenter:
     def set_playback_overlay(self, overlay):
         """Store the playback overlay so players can be bound to it."""
         self._playback_overlay = overlay
+
+    def set_show_travel_moves(self, visible: bool) -> None:
+        """Sets travel-move visibility.
+
+        Travel geometry is excluded at upload time, so toggling it needs
+        a renderer rebuild rather than a cheap re-render.
+        """
+        if self.visibility.show_travel_moves == visible:
+            return
+        self.visibility.show_travel_moves = visible
+        self.update_renderers_from_artifact()
+
+    def set_show_grid(self, visible: bool) -> None:
+        """Sets grid visibility and requests a re-render."""
+        if self.visibility.show_grid == visible:
+            return
+        self.visibility.show_grid = visible
+        self._request_render()
+
+    def set_show_nogo_zones(self, visible: bool) -> None:
+        """Sets no-go zone visibility and requests a re-render."""
+        if self.visibility.show_nogo_zones == visible:
+            return
+        self.visibility.show_nogo_zones = visible
+        self._request_render()
+
+    def set_show_models(self, visible: bool) -> None:
+        """Sets machine model visibility and requests a re-render."""
+        if self.visibility.show_models == visible:
+            return
+        self.visibility.show_models = visible
+        self._request_render()
+
+    def set_show_ops_underlay(self, visible: bool) -> None:
+        """Sets the ops-underlay visibility and requests a re-render."""
+        if self.visibility.show_ops_underlay == visible:
+            return
+        self.visibility.show_ops_underlay = visible
+        self._request_render()
+
+    def set_show_stock(self, visible: bool) -> None:
+        """Sets stock visibility and requests a re-render."""
+        if self.visibility.show_stock == visible:
+            return
+        self.visibility.show_stock = visible
+        self._request_render()
+
+    def set_show_workpiece_image(self, visible: bool) -> None:
+        """Sets workpiece image visibility and requests a re-render."""
+        if self.visibility.show_workpiece_image == visible:
+            return
+        self.visibility.show_workpiece_image = visible
+        self._request_render()
 
     def cancel_scene_preparation(self):
         """Cancel any in-flight scene compilation task."""
@@ -469,7 +523,7 @@ class ScenePresenter:
         self._make_current()
 
         self._scene.update_from_artifact(
-            self._compiled_artifact, self._get_show_travel_moves()
+            self._compiled_artifact, self.visibility.show_travel_moves
         )
 
         self._theme_resolver.update_renderer_color_luts()

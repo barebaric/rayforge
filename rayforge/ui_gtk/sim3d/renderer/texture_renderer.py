@@ -102,6 +102,8 @@ class TextureArtifactRenderer(BaseRenderer):
     otherwise require millions of individual lines.
     """
 
+    visibility_key = "show_ops_underlay"
+
     def __init__(self):
         """Initializes the TextureArtifactRenderer."""
         super().__init__()
@@ -461,9 +463,6 @@ class TextureArtifactRenderer(BaseRenderer):
             shaders: The shader set; the ``texture`` program is used.
         """
         if not self.is_initialized or not self.instances:
-            return
-
-        if not ctx.camera.show_ops_underlay:
             return
 
         shader = shaders.texture

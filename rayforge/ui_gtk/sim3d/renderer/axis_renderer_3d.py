@@ -26,6 +26,8 @@ logger = logging.getLogger(__name__)
 class AxisRenderer3D(BaseRenderer):
     """Renders a 3D grid with axes, background, and labels on the XY plane."""
 
+    visibility_key = "show_grid"
+
     def __init__(
         self,
         width_mm: float,
@@ -326,9 +328,6 @@ class AxisRenderer3D(BaseRenderer):
                 self.text_renderer,
             )
         ):
-            return
-
-        if not ctx.camera.show_grid:
             return
 
         line_shader = shaders.main

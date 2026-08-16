@@ -10,6 +10,7 @@ from .camera import CameraContext
 from .kinematics import HeadConfig, KinematicsContext
 from .playback import PlaybackContext
 from .viewport import ViewportContext
+from .visibility import SceneVisibility
 
 __all__ = [
     "CameraContext",
@@ -18,5 +19,6 @@ __all__ = [
     "KinematicsContext",
     "PlaybackContext",
     "RenderContext",
+    "SceneVisibility",
     "ViewportContext",
 ]

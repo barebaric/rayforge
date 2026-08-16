@@ -53,13 +53,6 @@ class Canvas3D(Gtk.GLArea):
 
         self._scene = SceneRenderer()
         self._ctx = RenderContext()
-        self._show_travel_moves = False
-        self._show_nogo_zones = True
-        self._show_models = True
-        self._show_grid = True
-        self._show_ops_underlay = True
-        self._show_stock = True
-        self._show_workpiece_image = True
         self._gl_initialized = False
         self._scene_gl_dirty = False
 
@@ -74,7 +67,9 @@ class Canvas3D(Gtk.GLArea):
         self._upload_ctrl = ChunkedUploadController(
             self._scene,
             get_artifact=lambda: self._presenter.compiled_artifact,
-            get_show_travel_moves=lambda: self._show_travel_moves,
+            get_show_travel_moves=(
+                lambda: self._presenter.visibility.show_travel_moves
+            ),
             get_gl_initialized=lambda: self._gl_initialized,
             make_current=self.make_current,
             request_render=self.queue_render,
@@ -88,7 +83,6 @@ class Canvas3D(Gtk.GLArea):
             theme_resolver=self._theme_resolver,
             get_viewport=self._get_viewport,
             get_gl_initialized=lambda: self._gl_initialized,
-            get_show_travel_moves=lambda: self._show_travel_moves,
             get_camera_available=lambda: self._cam_ctrl.camera is not None,
             make_current=self.make_current,
             mark_scene_dirty=self._mark_scene_dirty,
@@ -313,6 +307,7 @@ class Canvas3D(Gtk.GLArea):
                 camera=self._cam_ctrl.camera,
                 viewport=self._viewport,
                 color_set=self._theme_resolver.color_set,
+                visibility=self._presenter.visibility,
                 op_player=self._presenter.op_player,
                 machine=self._context.machine,
                 playback_assembly=self._presenter.playback_assembly,
@@ -320,13 +315,6 @@ class Canvas3D(Gtk.GLArea):
                 doc=self.doc,
                 cylinder_transform=self._scene.cylinder_transform,
                 had_rotary_layers=self._scene.had_rotary_layers,
-                show_travel_moves=self._show_travel_moves,
-                show_grid=self._show_grid,
-                show_nogo_zones=self._show_nogo_zones,
-                show_models=self._show_models,
-                show_ops_underlay=self._show_ops_underlay,
-                show_stock=self._show_stock,
-                show_workpiece_image=self._show_workpiece_image,
             )
             self._ctx.update(frame)
             self._scene.prepare(self._ctx)
@@ -343,46 +331,25 @@ class Canvas3D(Gtk.GLArea):
 
     def set_show_travel_moves(self, visible: bool):
         """Sets the visibility of travel moves in the 3D view."""
-        if self._show_travel_moves == visible:
-            return
-        self._show_travel_moves = visible
-        self._presenter.update_renderers_from_artifact()
+        self._presenter.set_show_travel_moves(visible)
 
     def set_show_nogo_zones(self, visible: bool):
-        if self._show_nogo_zones == visible:
-            return
-        self._show_nogo_zones = visible
-        self.queue_render()
+        self._presenter.set_show_nogo_zones(visible)
 
     def set_show_models(self, visible: bool):
-        if self._show_models == visible:
-            return
-        self._show_models = visible
-        self.queue_render()
+        self._presenter.set_show_models(visible)
 
     def set_show_grid(self, visible: bool):
-        if self._show_grid == visible:
-            return
-        self._show_grid = visible
-        self.queue_render()
+        self._presenter.set_show_grid(visible)
 
     def set_show_ops_underlay(self, visible: bool):
-        if self._show_ops_underlay == visible:
-            return
-        self._show_ops_underlay = visible
-        self.queue_render()
+        self._presenter.set_show_ops_underlay(visible)
 
     def set_show_stock(self, visible: bool):
-        if self._show_stock == visible:
-            return
-        self._show_stock = visible
-        self.queue_render()
+        self._presenter.set_show_stock(visible)
 
     def set_show_workpiece_image(self, visible: bool):
-        if self._show_workpiece_image == visible:
-            return
-        self._show_workpiece_image = visible
-        self.queue_render()
+        self._presenter.set_show_workpiece_image(visible)
 
     def update_scene_from_doc(self):
         """Refreshes the 3D scene content from the document."""

@@ -29,6 +29,8 @@ logger = logging.getLogger(__name__)
 class WorkpieceImageRenderer(BaseRenderer):
     """Draws workpiece base-image quads with the unlit image shader."""
 
+    visibility_key = "show_workpiece_image"
+
     def __init__(self):
         super().__init__()
         self.is_initialized = False
@@ -167,8 +169,6 @@ class WorkpieceImageRenderer(BaseRenderer):
     def render(self, ctx: "RenderContext", shaders: "ShaderSet", **kwargs):
         """Draws every workpiece base image quad."""
         if not self.is_initialized or not self.instances:
-            return
-        if not ctx.camera.show_workpiece_image:
             return
         shader = shaders.image
         if shader is None or self._mvp is None:
