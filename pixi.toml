@@ -176,6 +176,12 @@ depends-on = ["compile-translations"]
 [dependencies]
 libadwaita = "==1.9.3"
 
+# Keep the conda solve from backtracking pygobject below the
+# pygobject>=3.55.0 floor required by the pygobject-stubs pypi
+# dependency ("pixi upgrade" otherwise becomes unsatisfiable).
+[constraints]
+pygobject = ">=3.55.0"
+
 [target.linux-64.dependencies]
 libglvnd = "==1.7.0"
 
