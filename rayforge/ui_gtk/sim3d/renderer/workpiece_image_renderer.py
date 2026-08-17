@@ -18,11 +18,12 @@ actual pixel rendering happens off-thread in the scene presenter.
 """
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import numpy as np
 from OpenGL import GL
 
+from ....simulator.scene3d import WorkpieceImage
 from .base import BaseRenderer
 
 if TYPE_CHECKING:
@@ -40,7 +41,8 @@ class WorkpieceImageRenderer(BaseRenderer):
     def __init__(self):
         super().__init__()
         self.is_initialized = False
-        self.instances: list[dict[str, Any]] = []
+        self.images: list[WorkpieceImage] = []
+        self._instances: list[dict] = []
         self._vao: int = 0
         self._vbo: int = 0
         self._cylinder_vao: int = 0
@@ -147,51 +149,51 @@ class WorkpieceImageRenderer(BaseRenderer):
         GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
         return texture_id
 
-    def set_images(self, images: list[dict[str, Any]]) -> None:
+    def set_images(self, images: list[WorkpieceImage]) -> None:
         """Replaces all workpiece image instances.
 
-        Each entry must provide ``pixels`` (an RGBA uint8 array) and
-        ``model_matrix`` (a 4x4 float32 array mapping the unit quad to
-        world space).  Runs on the GL thread.
+        Uploads RGBA pixels as sRGB textures and caches the per-instance
+        geometry (model matrix / cylinder wrap) for rendering.  Runs on
+        the GL thread.
         """
         if not self.is_initialized:
             return
-        for instance in self.instances:
+        for instance in self._instances:
             GL.glDeleteTextures([instance["texture_id"]])
-        self.instances.clear()
+        self._instances.clear()
+        self.images = list(images)
 
-        for image in images:
-            pixels = np.ascontiguousarray(image["pixels"], dtype=np.uint8)
+        for image in self.images:
+            pixels = np.ascontiguousarray(image.pixels, dtype=np.uint8)
             if pixels.ndim != 3 or pixels.shape[2] != 4:
                 logger.warning("Skipping workpiece image with bad pixel data.")
                 continue
-            model_matrix = np.asarray(image["model_matrix"], dtype=np.float32)
+            model_matrix = np.asarray(image.model_matrix, dtype=np.float32)
             texture_id = self._create_gl_texture(pixels)
-            instance = {
+            instance: dict = {
                 "texture_id": texture_id,
                 "model_matrix": model_matrix,
             }
-            if image.get("cylinder_vertices") is not None:
+            if image.cylinder_vertices is not None:
                 instance["cylinder_vertices"] = np.asarray(
-                    image["cylinder_vertices"], dtype=np.float32
+                    image.cylinder_vertices, dtype=np.float32
                 )
-                instance["rotary_diameter"] = float(
-                    image.get("rotary_diameter", 0.0)
-                )
-            self.instances.append(instance)
+                instance["rotary_diameter"] = float(image.rotary_diameter)
+            self._instances.append(instance)
 
     def clear(self) -> None:
         """Deletes all instance textures."""
         if not self.is_initialized:
             return
-        textures = [instance["texture_id"] for instance in self.instances]
+        textures = [instance["texture_id"] for instance in self._instances]
         if textures:
             GL.glDeleteTextures(textures)
-        self.instances.clear()
+        self._instances.clear()
+        self.images.clear()
 
     def render(self, ctx: "RenderContext", shaders: "ShaderSet", **kwargs):
         """Draws every workpiece base image quad."""
-        if not self.is_initialized or not self.instances:
+        if not self.is_initialized or not self._instances:
             return
         shader = shaders.image
         if shader is None or self._mvp is None:
@@ -209,7 +211,7 @@ class WorkpieceImageRenderer(BaseRenderer):
 
         # Flat (non-rotary) quads first, then cylinder-wrapped ones.
         GL.glBindVertexArray(self._vao)
-        for instance in self.instances:
+        for instance in self._instances:
             if instance.get("cylinder_vertices") is not None:
                 continue
             shader.set_mat4("uMVP", self._mvp @ instance["model_matrix"])
@@ -222,7 +224,7 @@ class WorkpieceImageRenderer(BaseRenderer):
 
     def _draw_cylinder_instances(self, shader) -> None:
         """Draws instances wrapped onto the rotary cylinder surface."""
-        for instance in self.instances:
+        for instance in self._instances:
             vertices = instance.get("cylinder_vertices")
             if vertices is None:
                 continue

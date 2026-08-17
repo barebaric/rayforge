@@ -12,6 +12,7 @@ from OpenGL import GL
 from trimesh.visual.color import ColorVisuals
 from trimesh.visual.material import PBRMaterial
 
+from ....simulator.scene3d.picking import PickContext, PickMesh, SceneItem
 from ..gl_utils import ShaderSet
 from ..render_context import RenderContext
 from .base import BaseRenderer
@@ -133,15 +134,72 @@ def get_model_extent(path: Path) -> float | None:
     return float(np.max(bmax - bmin))
 
 
+def model_world_matrix(
+    link_name: str,
+    kinematics,
+    viewport,
+) -> np.ndarray | None:
+    """Per-frame model matrix mapping a model into visual space.
+
+    Uses the link's world transform from the kinematics, applying the
+    focused rotary head position when active, and maps it into the
+    visual frame through the viewport's panel transform.
+    """
+    if not kinematics.model_world_transforms:
+        return None
+    module_transform = kinematics.model_world_transforms.get(link_name)
+    if module_transform is None:
+        return None
+    module_transform = module_transform.astype(np.float32)
+    if kinematics.is_rotary:
+        focused = kinematics.focused_rotary_head_positions
+        if focused and link_name in focused:
+            module_transform[:3, 3] = focused[link_name].astype(np.float32)
+    physical_to_visual = viewport.margin_shift @ viewport.world_to_panel
+    return (physical_to_visual @ module_transform).astype(np.float32)
+
+
+def model_triangle_positions(path: Path) -> np.ndarray | None:
+    """Triangle-expanded vertex positions of a loaded model, or None."""
+    data = _load_mesh_data(path)
+    if data is None:
+        return None
+    return data.positions[data.faces.flatten()]
+
+
+@dataclass
+class MachineModel(SceneItem):
+    """A machine-assembly link's 3D model as a pickable scene item.
+
+    The geometry lives in the UI-side GLB cache; the current transform
+    is carried per-frame by :class:`PickContext` so the mesh is
+    translated to the object's current position at pick time, exactly
+    like every other scene item.
+    """
+
+    path: Path
+    link_name: str
+
+    def pick_mesh(self, ctx: PickContext) -> PickMesh | None:
+        positions = model_triangle_positions(self.path)
+        if positions is None or len(positions) == 0:
+            return None
+        matrix = ctx.model_matrices.get(self.link_name)
+        if matrix is None:
+            return None
+        return PickMesh(positions, matrix)
+
+
 class ModelRenderer(BaseRenderer):
     """Loads and renders a .glb model as GL_TRIANGLES."""
 
     visibility_key = "show_models"
 
-    def __init__(self, resolved_path: Path, link_name: str = ""):
+    def __init__(self, model: MachineModel):
         super().__init__()
-        self._path = resolved_path
-        self.link_name = link_name
+        self._model = model
+        self._path = model.path
+        self.link_name = model.link_name
         self._vao: int = 0
         self._vbo_pos: int = 0
         self._vbo_norm: int = 0
@@ -157,28 +215,17 @@ class ModelRenderer(BaseRenderer):
 
     def prepare(self, ctx: RenderContext) -> None:
         """Computes and caches the per-frame matrices for the model mesh."""
-        kinematics = ctx.kinematics
-        if not kinematics.model_world_transforms or ctx.viewport is None:
+        self._point_light_pos = ctx.kinematics.laser_light_pos
+        if ctx.viewport is None:
             return
-
-        t = kinematics.model_world_transforms.get(self.link_name)
-        if t is None:
-            return
-
-        module_transform = t.astype(np.float32)
-        if kinematics.is_rotary:
-            focused = kinematics.focused_rotary_head_positions
-            if focused and self.link_name in focused:
-                pos = focused[self.link_name]
-                module_transform[:3, 3] = pos.astype(np.float32)
-
-        physical_to_visual = (
-            ctx.viewport.margin_shift @ ctx.viewport.world_to_panel
+        model_matrix = model_world_matrix(
+            self.link_name, ctx.kinematics, ctx.viewport
         )
-        combined = ctx.camera.mvp_ui @ physical_to_visual @ module_transform
-        self._mvp_matrix = combined
-        self._model_matrix = physical_to_visual @ module_transform
-        self._point_light_pos = kinematics.laser_light_pos
+        self._model_matrix = model_matrix
+        if model_matrix is None:
+            self._mvp_matrix = None
+            return
+        self._mvp_matrix = ctx.camera.mvp_ui @ model_matrix
 
     def _load_mesh(self) -> bool:
         self._mesh_data = _load_mesh_data(self._path)

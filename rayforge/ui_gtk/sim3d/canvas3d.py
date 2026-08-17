@@ -3,6 +3,7 @@ import math
 import time
 from typing import TYPE_CHECKING
 
+import numpy as np
 from gi.repository import Gdk, Gtk, Pango
 from OpenGL import GL
 from OpenGL.error import GLError
@@ -13,11 +14,14 @@ from ...shared.units.formatter import (
     get_default_grid_step_mm,
     get_preferred_unit_factor,
 )
+from ...simulator.scene3d import PickContext, SceneItem, build_pick_scene
 from .camera import ViewDirection
 from .camera_controller import CameraController
 from .chunked_upload import ChunkedUploadController
 from .doc_signals import DocSignalHub
+from .picking import PickScene
 from .render_context import FrameInputs, RenderContext
+from .renderer.model_renderer import model_world_matrix
 from .renderer.scene_renderer import SceneRenderer
 from .scene_presenter import ScenePresenter
 from .theme_resolver import ThemeResolver
@@ -99,6 +103,7 @@ class Canvas3D(Gtk.GLArea):
             get_viewport=self._get_viewport,
             request_render=self.queue_render,
             on_key_pressed=self._on_key_pressed,
+            get_pick_scene=self._build_pick_scene,
         )
 
         self._doc_hub = DocSignalHub(
@@ -260,6 +265,46 @@ class Canvas3D(Gtk.GLArea):
     def _get_viewport(self) -> ViewportConfig:
         """Returns the current viewport configuration."""
         return self._viewport
+
+    def _build_pick_scene(self) -> PickScene | None:
+        """Assembles pickable geometry for cursor ray-casting.
+
+        Collects the visible scene items (stock, engrave texture,
+        workpiece base images, machine models) and hands them, with a
+        per-frame :class:`PickContext`, to the scene-item picker.  Only
+        items whose category is currently visible contribute, so
+        picking always matches what is drawn.
+        """
+        vis = self._presenter.visibility
+        items: list[SceneItem] = []
+        artifact = self._presenter.compiled_artifact
+        if artifact is not None:
+            if vis.show_stock:
+                items.extend(artifact.stock_layers)
+            if vis.show_ops_underlay:
+                items.extend(artifact.texture_layers)
+        if vis.show_workpiece_image:
+            items.extend(self._presenter.workpiece_images)
+        if vis.show_models:
+            items.extend(self._scene.machine_models)
+
+        kinematics = self._ctx.kinematics
+        ctx = PickContext(
+            cyl_model=kinematics.cylinder_model_matrix(),
+            model_matrices=self._model_matrices(kinematics),
+        )
+        return build_pick_scene(items, ctx)
+
+    def _model_matrices(self, kinematics) -> dict[str, np.ndarray]:
+        """Per-link current visual-space matrices for machine models."""
+        matrices: dict[str, np.ndarray] = {}
+        for item in self._scene.machine_models:
+            matrix = model_world_matrix(
+                item.link_name, kinematics, self._viewport
+            )
+            if matrix is not None:
+                matrices[item.link_name] = matrix
+        return matrices
 
     def _set_viewport(self, viewport: ViewportConfig):
         """Sets the viewport configuration (from the signal hub)."""

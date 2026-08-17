@@ -16,6 +16,7 @@ from raygeo.geo.types import Point
 
 from .camera import Camera, ViewDirection, rotation_matrix_from_axis_angle
 from .gl_utils import rotation_4x4
+from .picking import PickScene, camera_ray, pick_point
 
 if TYPE_CHECKING:
     from .viewport import ViewportConfig
@@ -37,11 +38,13 @@ class CameraController:
         get_viewport: Callable[[], "ViewportConfig"],
         request_render: Callable[[], None],
         on_key_pressed: Callable | None = None,
+        get_pick_scene: Callable[[], PickScene | None] | None = None,
     ):
         self.camera: Camera | None = None
         self._widget = widget
         self._get_viewport = get_viewport
         self._request_render = request_render
+        self._get_pick_scene = get_pick_scene
 
         # State for interactions
         self._is_orbiting = False
@@ -84,32 +87,10 @@ class CameraController:
         if camera is None:
             return None
 
-        ndc_x = (2.0 * x) / camera.width - 1.0
-        ndc_y = 1.0 - (2.0 * y) / camera.height
-
-        try:
-            inv_proj = np.linalg.inv(camera.get_projection_matrix())
-            inv_view = np.linalg.inv(camera.get_view_matrix())
-        except np.linalg.LinAlgError:
+        ray = camera_ray(camera, x, y)
+        if ray is None:
             return None
-
-        # Unproject two points on the near and far clip planes and use
-        # their difference as the ray direction. This yields converging
-        # rays for the perspective projection and parallel rays for the
-        # orthographic projection.
-        near_clip = np.array([ndc_x, ndc_y, -1.0, 1.0], dtype=np.float32)
-        far_clip = np.array([ndc_x, ndc_y, 1.0, 1.0], dtype=np.float32)
-        near_eye = inv_proj @ near_clip
-        far_eye = inv_proj @ far_clip
-        near_world = inv_view @ (near_eye / near_eye[3])
-        far_world = inv_view @ (far_eye / far_eye[3])
-
-        ray_dir = far_world[:3] - near_world[:3]
-        norm = np.linalg.norm(ray_dir)
-        if norm < 1e-6:
-            return None
-        ray_dir = ray_dir / norm
-        ray_origin = near_world[:3]
+        ray_origin, ray_dir = ray
 
         plane_normal = np.array([0, 0, 1], dtype=np.float64)
         denom = np.dot(plane_normal, ray_dir)
@@ -201,8 +182,9 @@ class CameraController:
         is_shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
 
         if not is_shift and self.camera:
-            # Orbit around the point on the floor plane under the cursor.
-            self._rotation_pivot = self.get_world_coords_on_plane(x, y)
+            # Orbit around the point on the object under the cursor,
+            # falling back to the point on the floor plane.
+            self._rotation_pivot = self._pick_pivot(x, y)
             if self._rotation_pivot is None:
                 self._rotation_pivot = self.camera.target.copy()
 
@@ -232,6 +214,20 @@ class CameraController:
         if delta is not None and self._rotation_pivot is not None:
             self._apply_orbit(camera, self._rotation_pivot, *delta)
             self._request_render()
+
+    def _pick_pivot(self, x: float, y: float) -> np.ndarray | None:
+        """Returns the point on scene geometry under the cursor.
+
+        Uses the scene's pickable geometry when available and falls
+        back to the floor plane point otherwise.
+        """
+        if self._get_pick_scene is not None and self.camera is not None:
+            scene = self._get_pick_scene()
+            if scene is not None:
+                point = pick_point(scene, self.camera, x, y)
+                if point is not None:
+                    return point
+        return self.get_world_coords_on_plane(x, y)
 
     def _update_pan(self, camera: Camera, offset_x: float, offset_y: float):
         """Pans so the floor-plane point under the cursor tracks the mouse.
@@ -304,9 +300,9 @@ class CameraController:
         delta_y: float,
         sensitivity: float,
     ):
-        """Perspective orbit (Turntable Style)."""
+        """Perspective orbit (Z-Up Turntable)."""
         if abs(delta_x) > 1e-6:
-            axis_yaw = np.array([0, 1, 0], dtype=np.float64)
+            axis_yaw = np.array([0, 0, 1], dtype=np.float64)
             camera.orbit(pivot, axis_yaw, -delta_x * sensitivity)
         if abs(delta_y) > 1e-6:
             forward = camera.target - camera.position

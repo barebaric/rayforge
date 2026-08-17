@@ -43,7 +43,7 @@ from .background_renderer import BackgroundRenderer
 from .base import BaseRenderer
 from .cylinder_renderer import CylinderRenderer
 from .laser_beam_renderer import LaserBeamRenderer
-from .model_renderer import ModelRenderer
+from .model_renderer import MachineModel, ModelRenderer
 from .ops_renderer import OpsRenderer, OpsUploadPayload, prepare_vertex_layer
 from .ring_buffer_renderer import RingBufferRenderer
 from .stock_renderer import (
@@ -259,6 +259,7 @@ class SceneRenderer(BaseRenderer):
         self.ring_renderers: list[RingBufferRenderer] = []
         self.cylinder_renderers: dict[float, CylinderRenderer] = {}
         self.model_renderers: list[ModelRenderer] = []
+        self.machine_models: list[MachineModel] = []
         self.had_rotary_layers = False
         self.cylinder_transform = np.eye(4, dtype=np.float64)
 
@@ -532,10 +533,16 @@ class SceneRenderer(BaseRenderer):
         for renderer in self.model_renderers:
             renderer.cleanup()
         self.model_renderers.clear()
+        self.machine_models.clear()
         self._rebuild_registry()
 
     def update_models_from_context(self, context, machine):
-        """Rebuilds renderers for all assembly links with 3D models."""
+        """Rebuilds renderers for all assembly links with 3D models.
+
+        Builds one :class:`MachineModel` scene item per resolved link
+        and retains them on the scene; both the model renderers and the
+        picker consume the same items.
+        """
         self.clear_models()
         if not machine:
             return
@@ -562,7 +569,8 @@ class SceneRenderer(BaseRenderer):
                 )
                 continue
 
-            renderer = ModelRenderer(resolved, link_name=link.name)
+            item = MachineModel(resolved, link.name)
+            renderer = ModelRenderer(item)
             renderer.init_gl()
             logger.debug(
                 "Model renderer created: vao=%d, vertex_count=%d, bounds=%s",
@@ -570,6 +578,7 @@ class SceneRenderer(BaseRenderer):
                 renderer._vertex_count,
                 renderer.bounds,
             )
+            self.machine_models.append(item)
             self.model_renderers.append(renderer)
         self._rebuild_registry()
 
