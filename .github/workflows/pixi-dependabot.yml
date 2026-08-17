@@ -31,7 +31,11 @@ jobs:
         run: |
           : > requirements.txt
           pixi clean cache -y
-          pixi upgrade --pinning-strategy exact-version
+          # PyGObject must stay pinned: the loosened conda solve can
+          # backtrack it below the pygobject>=3.55.0 floor required by
+          # the pygobject-stubs pypi dependency, making the two-stage
+          # solve unsatisfiable.
+          pixi upgrade --pinning-strategy exact-version --exclude PyGObject
           git restore requirements.txt
           python3 scripts/sync_requirements.py
           pixi clean cache -y
