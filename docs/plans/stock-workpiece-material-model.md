@@ -208,12 +208,16 @@ The fold runs *inside* the existing intent pipeline, not as a
 Python-side pass:
 
 - New stage spec `StageSpec.MaterialFold(material: MaterialFoldSpec)`
-  alongside `Compute`/`Aggregate`. A fold node is keyed
-  `stock:{stock_uid}` per visible stock item and depends on all
-  `workpiece:{wp}:{step}` compute nodes whose workpiece world AABB
-  intersects that stock. Stock world polygons come from the same
-  `_resolve_stock_geometries` pass that already feeds
-  `CropTransformer` (`pipeline/intent_builder.py`).
+  alongside `Compute`/`Aggregate` — Python-visible constructor. On
+  the Rust side this must respect raygeo's layering: `pipeline` is
+  domain-free, so the fold node is a `pipeline::Compute`
+  implementation living in the `cnc::execution` glue (exactly how
+  `AssemblerCompute` wraps assemblers), not a new `StageSpec` enum
+  variant. A fold node is keyed `stock:{stock_uid}` per visible
+  stock item and depends on all `workpiece:{wp}:{step}` compute
+  nodes whose workpiece world AABB intersects that stock. Stock world
+  polygons come from the same `_resolve_stock_geometries` pass that
+  already feeds `CropTransformer` (`pipeline/intent_builder.py`).
 - The fold spec carries, as plain data: the stock shape (prism:
   polygons + thickness; rotary: wrap parameters; future: closed
   mesh), the per-source placement matrices (the same world
@@ -359,8 +363,10 @@ property this revision buys.
   wire format never breaks), `MaterialState` with the profile tag,
   and a pure `fold_effects(spec) -> MaterialState` function (no
   pipeline integration yet): prismatic fold only — union/intersect,
-  max-reduce, through-cut classification, response mapping,
-  top-open invariant check with clean escalation signaling.
+  raster max-reduce, through-cut classification, the material
+  response type (its depth application lands in iteration 4, raster
+  void contouring in iteration 3), and the top-open invariant check
+  with clean escalation signaling.
 - `AssemblyOutput.material_effects` field (defaults `None`); CNC
   assemblers emit vector effects (polygon + Z interval); laser
   vector cut assemblers emit cut polygons with full-thickness Z
@@ -369,9 +375,17 @@ property this revision buys.
   detection, placement transform), snapshot immutability, top-open
   invariant detection.
 
+The detailed raygeo-side implementation and test plan for this
+iteration follows below ("Phase 0 detail — raygeo implementation
+and test plan"); it follows the raygeo `AGENTS.md` rules (layering,
+explicit export paths, Python-only tests, generated stubs).
+
 ### Iteration 1 — pipeline integration (no visual change)
 
-- raygeo: `StageSpec.MaterialFold` node type, dependency wiring,
+- raygeo: fold node as a `pipeline::Compute` implementation in the
+  `cnc::execution` glue (the `AssemblerCompute` pattern; `StageSpec`
+  itself stays domain-free), Python-visible as a
+  `StageSpec.MaterialFold` constructor; dependency wiring,
   version-token caching, `rayon::scope` execution.
 - rayforge: `intent_builder` emits `stock:{uid}` fold nodes with
   stock polygons, placements, and fabrication params; fold results
@@ -531,3 +545,282 @@ Iterations 2 and 4 are parallelizable after 1; 3 depends on 2; 5
 depends on 4; 6 integrates everything. Iteration 7 is future work
 and blocked only by 3D assembler capability, not by this plan's
 iterations.
+
+## Phase 0 detail — raygeo implementation and test plan
+
+Everything in this section happens in the raygeo repository and
+follows its `AGENTS.md`: layering (`geo → ops → cnc`, `pipeline`
+domain-free, never import upward), explicit export paths (no
+re-exports in parent `mod.rs`), stubs only via `make stubs`, docs
+only via `make docs`, and **no Rust tests** — all tests are Python
+under `tests/` exercising the code through PyO3 bindings.
+
+### Module layout and layering
+
+Material-effect folding classifies removal — an ops-layer concern
+("what is cut"), built on geo primitives. It must be reachable from
+`ops::assembly` (the `AssemblyOutput` field) without upward imports,
+so the core lives at `src/ops/material/`:
+
+```
+src/ops/material/
+├── mod.rs     MaterialEffect, SolidMesh, FoldProfile, Escalation
+├── spec.rs    MaterialFoldSpec, FoldEntry, StockShape, GridBudget,
+│              MaterialResponse
+├── state.rs   MaterialState
+├── fold.rs    fold_effects(&MaterialFoldSpec) -> MaterialState
+│              (pure Rust, no PyO3, rayon where profitable)
+└── grid.rs    raster resampling / max-reduce helpers
+```
+
+- `pub mod material;` in `src/ops/mod.rs` — nothing else; items are
+  imported by their leaf path (`crate::ops::material::...`).
+- `fold.rs` uses `crate::geo::shape::polygon::{get_polygons_union,
+  get_polygons_group_difference}` (Clipper2 wrappers, XY-plane) and
+  `crate::compressed_array::CompressedArray` for grids — both
+  downward/sideways-safe imports. `rayon` is already a dependency.
+- Bindings: one new leaf `src/python/ops/material.rs` following the
+  `material_test_grid` precedent: `pub(crate) fn register(m)`,
+  submodule added in `src/python/ops/mod.rs::register` plus
+  `sys_modules.set_item("raygeo.ops.material", &m)` so imports
+  resolve; `#[pyclass(module = "raygeo.ops.material")]`,
+  `#[gen_stub_pyclass]`/`#[gen_stub_pymethods]`/
+  `#[gen_stub_pyfunction(module = "raygeo.ops.material")]`, and the
+  `pyo3_stub_gen::module_doc!` macro. The `fold_effects` binding
+  releases the GIL via `py.detach(...)` while the kernel runs (same
+  pattern as `python/image/rasterize_scanlines.rs`).
+- `Volume { solids }` carries a plain-data `SolidMesh { positions:
+  Vec<Point3D>, triangles: Vec<[u32; 3]> }` defined locally in
+  `ops::material` — deliberately *not* the `mesh` module's types, so
+  the wire format does not couple ops to mesh internals.
+- After changing bindings: `make stubs` (regenerates
+  `python/raygeo/**/__init__.pyi`; never hand-edit), `make docs`
+  (markdown docs are generated). Both artifacts are committed.
+
+### Core types (Rust)
+
+```rust
+pub enum MaterialEffect {
+    Vector {
+        polygons: Vec<Polygon>,      // workpiece-local mm, XY
+        z_from: Option<f64>,         // None = open to stock top
+        z_to: Option<f64>,           // None = through stock bottom
+    },
+    Raster {
+        power: CompressedArray,      // R8, shape [rows, cols]
+        grid: GridSpec,              // origin_mm + px_per_mm
+        response: MaterialResponse,
+    },
+    Volume {
+        solids: Vec<SolidMesh>,      // world-space after placement
+    },
+}
+
+pub struct FoldEntry {
+    pub source_key: String,          // node key, for provenance
+    pub placement: Matrix,           // XY placement into world mm
+    pub effects: Vec<MaterialEffect>,
+}
+
+pub enum StockShape {
+    Prismatic { polygons: Vec<Polygon>, thickness: f64 },
+    // Rotary and Solid variants arrive with iterations 4 and 7;
+    // phase 0 rejects them with a clear error, not a panic.
+}
+
+pub struct MaterialFoldSpec {
+    pub stock: StockShape,
+    pub entries: Vec<FoldEntry>,
+    pub grid: GridBudget,            // px_per_mm (default 50), max_px
+}                                   // per side (default 8192)
+```
+
+`z_from`/`z_to` as `Option<f64>` is the seam that keeps the model
+volumetric: laser through-cuts are `Vector { z_from: None, z_to:
+None }`; adaptive/profile pockets are `{ z_from: None, z_to:
+Some(target_z) }`; a future groove starting below the surface sets
+`z_from: Some(z)` — and that is exactly the case the top-open check
+flags. Absolute world Z; placement matrices only move XY (matches
+the aggregate stage today).
+
+`MaterialState` (phase-0 fields; `depth_field` stays `None` until
+iteration 4):
+
+```rust
+pub struct MaterialState {
+    pub profile: FoldProfile,        // Prismatic in phase 0
+    pub void_polygons: Vec<Polygon>, // world mm, clipped to stock
+    pub depth_field: Option<CompressedArray>,  // f32 mm, iter. 4
+    pub surface_map: Option<CompressedArray>,  // R8 max power
+    pub grid: Option<GridSpec>,
+    pub provenance: Vec<String>,     // sorted source keys
+    pub escalation: Option<Escalation>, // e.g. TopOpenViolation
+}
+```
+
+### Fold kernel behavior
+
+`fold_effects` is deterministic and order-independent (union and
+max are commutative, associative; provenance is sorted by source
+key), so cache tokens and snapshot equality are stable. Steps:
+
+1. Transform each entry's effect polygons to world mm by
+   `placement` (raster grids: adjust `grid.origin_mm`; if the
+   placement scales, record it and resample in step 4).
+2. Validate: reject unknown `StockShape` variants; clamp grid
+   budget; `MaterialResponse` threshold in `0..=255`.
+3. Through-cut classification (vector effects only in phase 0):
+   `z_to` is `None` or `<= stock_bottom`, and `z_from` is `None` or
+   `>= stock_top` ⇒ void candidate. A `Some(z_from) < stock_top`
+   start below the surface sets `Escalation::TopOpenViolation`
+   (phase 0 reports; the solid profile that resolves it arrives in
+   iteration 7 — the signal, not a panic).
+4. `void_polygons` = `get_polygons_union(void candidates)`, then
+   clipped to the stock by `get_polygons_group_difference` (only
+   material that exists can be removed).
+5. `surface_map`: resample every raster effect's R8 grid onto the
+   stock AABB grid (`grid.rs`: nearest-pixel mapping with
+   max-reduce, `rayon::par_iter` over row tiles), compositing per
+   pixel the maximum power. Empty result ⇒ `surface_map: None`.
+6. Provenance: sorted unique `source_key`s.
+
+Grid resolution: stock AABB at `px_per_mm`, each side capped at
+`max_px` (rescale `px_per_mm` down to fit) — the same budget as
+today's power textures.
+
+### Emitters — `AssemblyOutput` integration
+
+- `AssemblyOutput` (src/ops/assembly/mod.rs) grows
+  `material_effects: Option<Vec<MaterialEffect>>`, default `None`.
+- Mechanism: `AssembleCtx` gains an `effects: Vec<MaterialEffect>`
+  out-box, drained by `AssemblerCompute` per face alongside the
+  tracelet — the exact pattern `Ops` emission already uses, so no
+  `Assembler` trait change and every assembler can emit.
+- Phase-0 emitters (each pushes once per face at the end of
+  `assemble`):
+  - adaptive clearing and profile inner/outer:
+    `Vector { polygons: ctx.face.cleared.fragments().to_vec(),
+    z_from: None, z_to: Some(spec.target_z) }`. Effects derived from
+    face state may re-describe upstream cuts after
+    `state_source_keys` threading — harmless, fold union is
+    idempotent; delta-only emission can be refined later.
+  - laser contour: `Vector { polygons: <the offset cut contour>,
+    z_from: None, z_to: None }` — the assembler already computes the
+    kerf-offset geometry (`grow_geometry` in `assemble_contour`).
+  - All other assemblers: no emission (`None`) — raster derives
+    in-fold from `Ops` starting in iteration 1.
+- Cache path updates (all in `src/cnc/execution/compute.rs`):
+  `prepare_cache_entry` size estimate adds effect polygon vertex
+  counts; the adaptive assembler's `store_cache` override rebuilds
+  `AssemblyOutput` field-by-field and **must forward the new field**
+  (easy to miss — its constructor enumerates every field); the
+  Python `PyAssemblyOutput` and the `any_to_py` converter expose
+  `material_effects` as a list of `raygeo.ops.material` objects.
+
+### Python API (test-facing surface)
+
+```python
+from raygeo.ops.material import (
+    FoldEntry, GridBudget, MaterialFoldSpec, MaterialResponse,
+    PrismaticStock, RasterEffect, VectorEffect, fold_effects,
+)
+
+spec = MaterialFoldSpec(
+    stock=PrismaticStock(polygons=[stock_ring], thickness=3.0),
+    entries=[FoldEntry(
+        source_key="workpiece:w1:step1",
+        placement=placement_matrix,
+        effects=[VectorEffect(polygons=[cut_ring],
+                              z_from=None, z_to=None)],
+    )],
+    grid=GridBudget(px_per_mm=50.0, max_px=8192),
+)
+state = fold_effects(spec)   # GIL released during fold
+state.profile, state.void_polygons, state.surface_map, state.grid
+state.provenance, state.escalation, state.depth_field
+```
+
+PyClasses convert to core types via an `into_core()` pattern (same
+as the profile spec binding); `MaterialEffect` itself stays a Rust
+enum, constructed from the three concrete effect classes.
+
+### Test plan (all Python, no Rust tests)
+
+New `tests/ops/material/` mirrors the source tree; emitter tests
+that drive the pipeline live in `tests/cnc/execution/` to reuse its
+`conftest.py` builders (`make_square_part`, `make_contour_compute`,
+`collect_completions`, autouse cache clearing).
+
+`tests/ops/material/test_fold_vector.py` — helpers `_rect`/`_circle`
+per file, matching existing assembler tests:
+
+- through-cut (`z_to=None`; `z_to <= stock_bottom`) ⇒ void polygon
+  present; partial depth (`z_to > stock_bottom`) ⇒ absent
+- void clipped to stock: effect polygon straddling the stock edge
+  comes back intersected; effect fully outside ⇒ no voids
+- overlapping voids from two entries ⇒ single unioned polygon (area
+  via `get_polygon_area`, `pytest.approx`)
+- placement: translated/rotated/scaled `FoldEntry.placement`
+  transforms effect polygons (assert on vertex positions)
+- escalation: `z_from` below the stock surface ⇒
+  `state.escalation == TopOpenViolation`, fold still completes
+- multi-entry provenance sorted, duplicates collapsed
+
+`tests/ops/material/test_fold_raster.py`:
+
+- max-reduce: two overlapping rasters ⇒ per-pixel maximum
+- resampling onto stock grid: different `origin_mm`/`px_per_mm`
+  land at the right world coordinates (line-shaped raster ⇒
+  expected row/col of nonzero pixels)
+- grid cap: `px_per_mm` rescaled when AABB would exceed `max_px`
+- no raster entries ⇒ `surface_map is None`
+- `MaterialResponse` validation (threshold bounds, curve piecewise
+  monotonic once added) rejects bad values with `ValueError`
+
+`tests/ops/material/test_fold_state.py`:
+
+- immutability: mutate the spec's effect polygons after folding ⇒
+  folded `state` unchanged; fold twice ⇒ equal voids/surface maps
+- `StockShape` variants not yet supported raise a clear `ValueError`
+- `Volume` effects present ⇒ `Escalation` set (phase-0 semantics),
+  no crash
+
+`tests/cnc/execution/test_material_effects_emission.py`:
+
+- adaptive clearing compute node ⇒ `AssemblyOutput.material_effects`
+  is a non-empty list of vector effects with `z_to == target_z` and
+  polygons matching `cleared_fragments` (same construction pattern
+  as `test_ops_assembly_adaptive.py`, driven through `execute_stages`
+  like the conftest tests)
+- contour (laser) compute node ⇒ one full-through vector effect
+  (`z_from`/`z_to` both `None`) per face
+- re-running the same node (cache hit) ⇒ effects restored intact
+  (guards the `store_cache`/`restore_cache` forwarding)
+- multi-face part ⇒ effects concatenated across faces
+
+Slow marker: one `@pytest.mark.slow` case folding a large synthetic
+raster (e.g. 4096²) to keep the max-reduce path honest without
+slowing every run.
+
+### Workflow and definition of done
+
+Per raygeo `AGENTS.md`, using make targets only:
+
+1. `make dev` — build and install into the venv (required before
+   testing).
+2. Targeted tests while iterating:
+   `pytest tests/ops/material -v` and
+   `pytest tests/cnc/execution/test_material_effects_emission.py -v`.
+3. `make format` — `cargo fmt` + ruff format/fix.
+4. `make lint` — `cargo fmt --check`, `cargo clippy -- -D warnings`,
+   ruff, and pyright over `python/raygeo tests tools` (CI runs the
+   same and validates wheel stubs).
+5. `make stubs`, `make docs` — regenerate and commit `.pyi` and docs
+   after binding changes.
+6. `make check` (lint + `cargo test` + `pytest -v`) green, with no
+   new Rust `#[cfg(test)]` blocks added.
+
+Deliverables: the `ops::material` module + bindings + regenerated
+stubs/docs, the `AssemblyOutput.material_effects` field with
+emitters for adaptive/profile/contour, and the test files above —
+no rayforge changes in phase 0.
