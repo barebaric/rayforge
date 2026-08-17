@@ -21,11 +21,16 @@ def _viewport(width_mm=100.0, depth_mm=100.0) -> ViewportConfig:
     return ViewportConfig.default(width_mm, depth_mm)
 
 
-def _make_ctrl(get_viewport=None, request_render=lambda: None):
+def _make_ctrl(
+    get_viewport=None,
+    request_render=lambda: None,
+    get_pick_scene=None,
+):
     return CameraController(
         Gtk.Box(),
         get_viewport=get_viewport or _viewport,
         request_render=request_render,
+        get_pick_scene=get_pick_scene,
     )
 
 
@@ -308,6 +313,97 @@ def test_drag_begin_orbits_around_plane_point_perspective(
     assert np.allclose(ctrl._rotation_pivot, expected, atol=1e-6)
 
 
+def _object_pick_scene(z: float = 10.0):
+    """A horizontal quad covering the bed, ``z`` mm above the plane."""
+    from rayforge.simulator.scene3d.picking import PickMesh, PickScene
+
+    corners = np.array(
+        [
+            [0.0, 0.0, z],
+            [100.0, 0.0, z],
+            [100.0, 100.0, z],
+            [0.0, 100.0, z],
+        ],
+        dtype=np.float32,
+    )
+    scene = PickScene()
+    scene.meshes.append(
+        PickMesh(
+            np.vstack(
+                [
+                    corners[0],
+                    corners[1],
+                    corners[2],
+                    corners[0],
+                    corners[2],
+                    corners[3],
+                ]
+            )
+        )
+    )
+    return scene
+
+
+@pytest.mark.ui
+def test_drag_begin_orbits_around_object_point(ui_context_initializer):
+    ctrl = _make_ctrl(get_pick_scene=lambda: _object_pick_scene(10.0))
+    ctrl.create_camera(640, 480)
+    cam = ctrl.camera
+    assert cam is not None
+    cam.set_view(ViewDirection.TOP, 100.0, 100.0)
+
+    cursor = (320.0, 240.0)
+    plane_point = ctrl.get_world_coords_on_plane(*cursor)
+    assert plane_point is not None
+    assert plane_point[2] == pytest.approx(0.0, abs=1e-6)
+
+    ctrl.on_drag_begin(_FakeGesture(shift=False), *cursor)
+    pivot = ctrl._rotation_pivot
+    assert pivot is not None
+    assert pivot[0] == pytest.approx(plane_point[0], abs=1e-5)
+    assert pivot[1] == pytest.approx(plane_point[1], abs=1e-5)
+    assert pivot[2] == pytest.approx(10.0, abs=1e-5)
+
+
+@pytest.mark.ui
+def test_drag_begin_orbits_around_object_point_perspective(
+    ui_context_initializer,
+):
+    ctrl = _make_ctrl(get_pick_scene=lambda: _object_pick_scene(10.0))
+    ctrl.create_camera(640, 480)
+    cam = ctrl.camera
+    assert cam is not None
+    cam.set_view(ViewDirection.TOP, 100.0, 100.0)
+    cam.is_perspective = True
+
+    cursor = (320.0, 240.0)
+    ctrl.on_drag_begin(_FakeGesture(shift=False), *cursor)
+    pivot = ctrl._rotation_pivot
+    assert pivot is not None
+    assert pivot[0] == pytest.approx(50.0, abs=1e-5)
+    assert pivot[1] == pytest.approx(50.0, abs=1e-5)
+    assert pivot[2] == pytest.approx(10.0, abs=1e-3)
+
+
+@pytest.mark.ui
+def test_drag_begin_falls_back_to_plane_without_pick_scene(
+    ui_context_initializer,
+):
+    ctrl = _make_ctrl(get_pick_scene=lambda: None)
+    ctrl.create_camera(640, 480)
+    cam = ctrl.camera
+    assert cam is not None
+    cam.set_view(ViewDirection.TOP, 100.0, 100.0)
+
+    cursor = (400.0, 200.0)
+    expected = ctrl.get_world_coords_on_plane(*cursor)
+    assert expected is not None
+
+    ctrl.on_drag_begin(_FakeGesture(shift=False), *cursor)
+    assert ctrl._rotation_pivot is not None
+    assert np.allclose(ctrl._rotation_pivot, expected, atol=1e-6)
+
+
 def _screen_pos(camera: Camera, world: np.ndarray) -> np.ndarray:
     """Projects a world point to NDC screen coordinates."""
     view = camera.get_view_matrix() @ np.append(world, 1.0)
@@ -344,6 +440,29 @@ def test_ortho_orbit_keeps_pivot_fixed_on_screen(ui_context_initializer):
     assert np.allclose(before, after_yaw, atol=1e-6)
     assert np.allclose(before, after_pitch, atol=1e-6)
     assert not np.allclose(cam.target, pivot, atol=1e-3)
+
+
+@pytest.mark.ui
+def test_perspective_yaw_orbits_around_world_z(ui_context_initializer):
+    ctrl = _make_ctrl()
+    ctrl.create_camera(640, 480)
+    cam = ctrl.camera
+    assert cam is not None
+    cam.set_view(ViewDirection.ISO, 100.0, 100.0)
+    cam.is_perspective = True
+
+    cursor = (400.0, 200.0)
+    ctrl.on_drag_begin(_FakeGesture(shift=False), *cursor)
+    z_before = cam.position[2]
+
+    # A pure horizontal drag must yaw around the world Z axis, keeping
+    # the camera's height above the pivot constant.
+    ctrl.on_drag_update(_FakeGesture(event=_FakeEvent(cursor)), 0.0, 0.0)
+    ctrl.on_drag_update(
+        _FakeGesture(event=_FakeEvent((420.0, 200.0))), 0.0, 0.0
+    )
+
+    assert cam.position[2] == pytest.approx(z_before, abs=1e-6)
 
 
 @pytest.mark.ui

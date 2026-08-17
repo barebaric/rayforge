@@ -7,13 +7,28 @@ import numpy as np
 
 from ...pipeline.artifact.base import BaseArtifact
 from ...pipeline.artifact.handle import BaseArtifactHandle
+from .picking import PickContext, PickMesh, SceneItem
 
 if TYPE_CHECKING:
     from raygeo.compressed_array import CompressedArray
 
+# Unit quad as two triangles on the z=0 engrave plane, matching the
+# quad renderers' GL_TRIANGLE_FAN winding.
+_QUAD_TRIANGLES = np.array(
+    [
+        [0.0, 0.0, 0.0],
+        [1.0, 0.0, 0.0],
+        [1.0, 1.0, 0.0],
+        [0.0, 0.0, 0.0],
+        [1.0, 1.0, 0.0],
+        [0.0, 1.0, 0.0],
+    ],
+    dtype=np.float32,
+)
+
 
 @dataclass
-class VertexLayer:
+class VertexLayer(SceneItem):
     powered_verts: CompressedArray
     powered_attrib: CompressedArray
     travel_verts: CompressedArray
@@ -28,7 +43,7 @@ class VertexLayer:
 
 
 @dataclass
-class TextureLayer:
+class TextureLayer(SceneItem):
     power_texture: CompressedArray
     width_px: int
     height_px: int
@@ -39,9 +54,19 @@ class TextureLayer:
     activation_cmd_idx: int = -1
     laser_uid: str = ""
 
+    def pick_mesh(self, ctx: PickContext) -> PickMesh | None:
+        if self.rotary_enabled:
+            if self.cylinder_vertices is None or ctx.cyl_model is None:
+                return None
+            verts = np.asarray(
+                self.cylinder_vertices, dtype=np.float32
+            ).reshape(-1, 5)
+            return PickMesh(verts[:, :3], ctx.cyl_model)
+        return PickMesh(_QUAD_TRIANGLES, self.model_matrix)
+
 
 @dataclass
-class ScanlineOverlayLayer:
+class ScanlineOverlayLayer(SceneItem):
     positions: CompressedArray
     overlay_attrib: CompressedArray
     cmd_offsets: np.ndarray
@@ -49,7 +74,34 @@ class ScanlineOverlayLayer:
 
 
 @dataclass
-class StockLayer:
+class WorkpieceImage(SceneItem):
+    """A workpiece base image drawn as a quad (or rotary cylinder wrap).
+
+    ``pixels`` is an RGBA uint8 array; ``model_matrix`` maps the unit
+    quad into world space.  Rotary workpieces carry
+    ``cylinder_vertices`` (a pre-baked triangle mesh wrapping the image
+    around the cylinder) and ``rotary_diameter``; those instances are
+    placed by the current cylinder model matrix at pick time.
+    """
+
+    pixels: np.ndarray
+    model_matrix: np.ndarray
+    cylinder_vertices: np.ndarray | None = None
+    rotary_diameter: float = 0.0
+
+    def pick_mesh(self, ctx: PickContext) -> PickMesh | None:
+        if self.cylinder_vertices is not None:
+            if ctx.cyl_model is None:
+                return None
+            verts = np.asarray(
+                self.cylinder_vertices, dtype=np.float32
+            ).reshape(-1, 5)
+            return PickMesh(verts[:, :3], ctx.cyl_model)
+        return PickMesh(_QUAD_TRIANGLES, self.model_matrix)
+
+
+@dataclass
+class StockLayer(SceneItem):
     """Compiled solid-stock prism for a visible stock item.
 
     Positions are in world (machine mm) coordinates with the top face
@@ -78,6 +130,16 @@ class StockLayer:
     # Resolved per-instance tint color (RGBA), or None for no tint.
     # Applied on the GPU as colorization (luma * tint) in the stock shader.
     tint_rgba: tuple[float, float, float, float] | None = None
+
+    def pick_mesh(self, ctx: PickContext) -> PickMesh | None:
+        matrix = ctx.cyl_model if self.is_rotary else self.transform
+        if matrix is None:
+            return None
+        positions = np.asarray(self.positions, dtype=np.float32)
+        indices = np.asarray(self.indices, dtype=np.int64)
+        if indices.size == 0:
+            return None
+        return PickMesh(positions.reshape(-1, 3)[indices], matrix)
 
 
 class CompiledSceneArtifactHandle(BaseArtifactHandle):

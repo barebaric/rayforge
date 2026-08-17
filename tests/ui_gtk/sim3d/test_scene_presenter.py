@@ -631,8 +631,8 @@ def test_render_workpiece_images_wraps_rotary_onto_cylinder(
 
     assert len(images) == 1
     image = images[0]
-    assert "cylinder_vertices" in image
-    verts = image["cylinder_vertices"].reshape(-1, 5)
+    assert image.cylinder_vertices is not None
+    verts = image.cylinder_vertices.reshape(-1, 5)
     assert verts.shape[0] > 0
     # Vertices must sit on the cylinder surface at radius = d/2.
     radii = np.sqrt(verts[:, 1] ** 2 + verts[:, 2] ** 2)
@@ -640,7 +640,7 @@ def test_render_workpiece_images_wraps_rotary_onto_cylinder(
     # The X extent stays the image's world X footprint.
     np.testing.assert_allclose(verts[:, 0].min(), 0.0, atol=1e-3)
     np.testing.assert_allclose(verts[:, 0].max(), 100.0, atol=1e-3)
-    assert image["rotary_diameter"] == 50.0
+    assert image.rotary_diameter == 50.0
 
 
 @pytest.mark.ui
@@ -662,8 +662,8 @@ def test_render_workpiece_images_flat_without_rotary_spec(
         )
 
     assert len(images) == 1
-    assert "cylinder_vertices" not in images[0]
-    assert "model_matrix" in images[0]
+    assert images[0].cylinder_vertices is None
+    assert images[0].model_matrix is not None
 
 
 @pytest.mark.ui

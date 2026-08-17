@@ -12,6 +12,7 @@ from rayforge.ui_gtk.sim3d.render_context import (
     ViewportContext,
 )
 from rayforge.ui_gtk.sim3d.renderer.model_renderer import (
+    MachineModel,
     ModelRenderer,
     _load_mesh_data,
     _model_cache,
@@ -81,14 +82,16 @@ class TestModelRenderer:
         _model_cache.clear()
 
     def test_init_defaults(self, tmp_path):
-        renderer = ModelRenderer(tmp_path / "test.glb")
+        renderer = ModelRenderer(MachineModel(tmp_path / "test.glb", ""))
         assert renderer._vao == 0
         assert renderer._vertex_count == 0
         assert renderer._bounds is None
         assert renderer._loaded is False
 
     def test_load_mesh_failure_returns_false(self, tmp_path):
-        renderer = ModelRenderer(tmp_path / "nonexistent.glb")
+        renderer = ModelRenderer(
+            MachineModel(tmp_path / "nonexistent.glb", "")
+        )
         assert renderer._load_mesh() is False
         assert renderer._loaded is False
 
@@ -99,7 +102,7 @@ class TestModelRenderer:
         mesh = _make_simple_mesh()
 
         with patch("trimesh.load", return_value=mesh):
-            renderer = ModelRenderer(glb_file)
+            renderer = ModelRenderer(MachineModel(glb_file, ""))
             result = renderer._load_mesh()
 
         assert result is True
@@ -108,7 +111,7 @@ class TestModelRenderer:
         assert renderer._bounds is not None
 
     def test_render_noop_without_vao(self, tmp_path):
-        renderer = ModelRenderer(tmp_path / "test.glb")
+        renderer = ModelRenderer(MachineModel(tmp_path / "test.glb", ""))
         mock_shader = MagicMock()
         mvp = np.eye(4, dtype=np.float32)
         ctx = RenderContext(
@@ -125,11 +128,11 @@ class TestModelRenderer:
         mock_shader.use.assert_not_called()
 
     def test_bounds_property(self, tmp_path):
-        renderer = ModelRenderer(tmp_path / "test.glb")
+        renderer = ModelRenderer(MachineModel(tmp_path / "test.glb", ""))
         assert renderer.bounds is None
 
     def test_prepare_reads_kinematics_from_context(self, tmp_path):
-        renderer = ModelRenderer(tmp_path / "test.glb", link_name="gantry")
+        renderer = ModelRenderer(MachineModel(tmp_path / "test.glb", "gantry"))
         mvp = np.eye(4, dtype=np.float32)
         kinematics = KinematicsContext(
             mvp_ui=mvp,
@@ -155,7 +158,7 @@ class TestModelRenderer:
         np.testing.assert_allclose(renderer._point_light_pos, [1.0, 2.0, 3.0])
 
     def test_prepare_projects_native_model_into_panel(self, tmp_path):
-        renderer = ModelRenderer(tmp_path / "test.glb", link_name="gantry")
+        renderer = ModelRenderer(MachineModel(tmp_path / "test.glb", "gantry"))
         module_transform = np.eye(4, dtype=np.float32)
         module_transform[0, 3] = 10.0
         world_to_panel = np.array(
@@ -194,7 +197,7 @@ class TestModelRenderer:
         np.testing.assert_allclose(renderer._mvp_matrix, expected)
 
     def test_prepare_noop_without_kinematics(self, tmp_path):
-        renderer = ModelRenderer(tmp_path / "test.glb", link_name="gantry")
+        renderer = ModelRenderer(MachineModel(tmp_path / "test.glb", "gantry"))
         mvp = np.eye(4, dtype=np.float32)
         ctx = RenderContext(
             camera=CameraContext(

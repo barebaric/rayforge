@@ -34,6 +34,7 @@ from ...simulator.scene3d import (
     CompiledSceneArtifact,
     LayerRenderConfig,
     RenderConfig3D,
+    WorkpieceImage,
     compile_scene_from_job,
     compile_stock_scene,
 )
@@ -117,22 +118,20 @@ def _render_workpiece_images(
     workpieces: list[WorkPiece],
     matrices: list[np.ndarray],
     rotary_specs: list[tuple[np.ndarray, float, bool] | None],
-) -> list[dict]:
+) -> list[WorkpieceImage]:
     """Renders workpiece base images and pairs them with their matrices.
 
     Rotary workpieces (``rotary_specs`` entry is not ``None``) get
     their quad meshed onto the cylinder surface, so the base image
     wraps around the cylinder exactly like the engrave texture.
     """
-    images: list[dict] = []
+    images: list[WorkpieceImage] = []
     for wp, matrix, rspec in zip(workpieces, matrices, rotary_specs):
         pixels = _workpiece_image_pixels(wp)
         if pixels is None:
             continue
-        image = {
-            "pixels": pixels,
-            "model_matrix": np.asarray(matrix, dtype=np.float32),
-        }
+        cylinder_vertices = None
+        rotary_diameter = 0.0
         if rspec is not None:
             world_matrix, diameter, reverse = rspec
             grid_matrix = _workpiece_cylinder_grid(
@@ -142,9 +141,17 @@ def _render_workpiece_images(
                 grid_matrix, diameter
             )
             if cylinder_vertices is not None:
-                image["cylinder_vertices"] = cylinder_vertices
-                image["rotary_diameter"] = diameter
-        images.append(image)
+                rotary_diameter = diameter
+            else:
+                cylinder_vertices = None
+        images.append(
+            WorkpieceImage(
+                pixels=pixels,
+                model_matrix=np.asarray(matrix, dtype=np.float32),
+                cylinder_vertices=cylinder_vertices,
+                rotary_diameter=rotary_diameter,
+            )
+        )
     return images
 
 
@@ -203,6 +210,7 @@ class ScenePresenter:
         self._playback_overlay = None
         self._workpiece_image_task: Task | None = None
         self._workpiece_image_generation = 0
+        self._workpiece_images: list[WorkpieceImage] = []
 
     def connect(self):
         """Subscribe to the pipeline and upload events that drive the scene.
@@ -271,6 +279,11 @@ class ScenePresenter:
     def playback_overlay(self):
         """The attached playback overlay widget, or None."""
         return self._playback_overlay
+
+    @property
+    def workpiece_images(self) -> list[WorkpieceImage]:
+        """The last workpiece base-image scene items, used for picking."""
+        return self._workpiece_images
 
     def set_playback_overlay(self, overlay):
         """Store the playback overlay so players can be bound to it."""
@@ -1007,7 +1020,8 @@ class ScenePresenter:
             )
 
         if not workpieces:
-            if renderer.instances:
+            self._workpiece_images = []
+            if renderer.images:
                 self._make_current()
                 renderer.clear()
                 self._request_render()
@@ -1077,7 +1091,9 @@ class ScenePresenter:
             return
         try:
             self._make_current()
-            renderer.set_images(task.result())
+            images = task.result()
+            self._workpiece_images = images
+            renderer.set_images(images)
         except Exception:
             logger.exception("Failed to upload workpiece images")
         self._request_render()
