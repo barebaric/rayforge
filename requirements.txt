@@ -6,14 +6,14 @@ ezdxf==1.4.4
 GitPython==3.1.59
 numpy==2.5.2
 opencv_python
-platformdirs==4.11.1
+platformdirs==4.11.3
 pluggy==1.6.0
-pycairo==1.29.0
+pycairo==1.29.1
 PyGObject==3.56.3
 PyMuPDF==1.28.2
 PyOpenGL==3.1.10
 PyOpenGL_accelerate==3.1.10
-pypdf==6.15.0
+pypdf==6.16.1
 pyserial==3.5
 pyvips==3.1.1
 PyYAML==6.0.3
