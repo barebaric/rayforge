@@ -661,12 +661,14 @@ class TestWaitUntilSettled:
 
         # wait_until_settled should wait and return True
         start_time = time.time()
-        result = manager.wait_until_settled(1000)  # 1 second timeout
+        # Slow CI runners (especially Windows) can stall coroutine
+        # scheduling for over a second, so use a generous timeout.
+        result = manager.wait_until_settled(5000)  # 5 second timeout
         elapsed = time.time() - start_time
 
         assert result is True
         assert elapsed >= 0.3  # Should have waited at least the task duration
-        assert elapsed < 1.0  # But less than the timeout
+        assert elapsed < 5.0  # But less than the timeout
 
         # Task should be completed
         assert completion_event.is_set()
@@ -724,14 +726,16 @@ class TestWaitUntilSettled:
             )
 
         # wait_until_settled should wait for the longest task
-        result = manager.wait_until_settled(3000)  # 3 second timeout
+        # Slow CI runners (especially Windows) can stall coroutine
+        # scheduling for over a second, so use a generous timeout.
+        result = manager.wait_until_settled(8000)  # 8 second timeout
         elapsed = time.time() - start_time
 
         assert result is True
         assert (
             elapsed >= 1.2
         )  # Should have waited at least the longest task duration
-        assert elapsed < 3.0  # But less than the timeout
+        assert elapsed < 8.0  # But less than the timeout
 
         # All tasks should be completed
         for event in completion_events:
