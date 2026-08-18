@@ -286,9 +286,11 @@ Result of the fold, tagged with its profile:
   `surface_map` as `CompressedArray` + grid spec, provenance, and
   (iteration 6) marker-indexed cumulative snapshots for simulation
   scrubbing.
-- `Solid`: the remaining-stock closed mesh, plus derived projections
+- `Solid`: the remaining-stock mesh as the f64 interchange solid
+  (`geo::shape::solid::SolidMesh`), plus derived projections
   (silhouette/voids, top heightmap) where valid, provenance, and the
-  same snapshot mechanism.
+  same snapshot mechanism. Render meshes are derived from it at the
+  `mesh::build` boundary, never stored in the state.
 
 Returned to Python as plain data. Rayforge wraps it in a
 `MaterialStateArtifact` (same store/generation-id infra as
@@ -304,9 +306,15 @@ renderer code never assumes which profile produced the state.
 from the stock rings, displaces top-face vertices by the heightmap,
 and recomputes normals — all inside Rust, building on the existing
 `build_prism_mesh` ear-clip triangulation; for a solid state it
-tessellates the remaining-stock mesh directly (the CSG result is
-already manifold). The numpy rotary shell builder
-(`stock_compiler._build_cylinder_shell`) moves to raygeo as
+converts the remaining-stock solid (the CSG result is already
+manifold). This is the boundary between the two mesh roles:
+`MaterialState` carries the *interchange* mesh (f64 `SolidMesh`
+from `geo::shape::solid`), and `mesh::build` produces the
+*presentation* mesh — a `PrismMesh` with float32 positions,
+computed normals, and UVs — which is what the public API returns
+and what `stock_compiler.py` packs into GPU buffers, exactly as it
+packs `build_prism_mesh` output today. The numpy rotary shell
+builder (`stock_compiler._build_cylinder_shell`) moves to raygeo as
 `build_cylinder_shell` with angular void gaps and radial
 displacement. `stock_compiler.py` keeps exactly its documented role —
 validate plain-data specs, pack GPU buffers — now passing material
@@ -448,10 +456,11 @@ Not scheduled with the iterations above; it lands when 3D
 assembler work starts. Nothing in iterations 0–6 needs rework:
 
 - raygeo: solid-CSG module (closed-manifold booleans — e.g. wrapping
-  a crate like `manifold`, or voxel/SDF booleans); solid fold path
-  (prismatic→solid conversion, sequential subtraction, projections);
-  `build_stock_mesh` solid tessellation; tests alongside new raygeo
-  mesh tests.
+  a crate like `manifold`, or voxel/SDF booleans; CSG-internal mesh
+  types convert to `geo::shape::solid::SolidMesh` at the fold
+  boundary); solid fold path (prismatic→solid conversion, sequential
+  subtraction, projections); `build_stock_mesh` solid→`PrismMesh`
+  conversion; tests alongside new raygeo mesh tests.
 - raygeo `Part`: optional solid stock shape; `ClearedVolume`
   engagement state for 3D assemblers; first 3D assembler emits
   `Volume` effects.
@@ -564,7 +573,8 @@ so the core lives at `src/ops/material/`:
 
 ```
 src/ops/material/
-├── mod.rs     MaterialEffect, SolidMesh, FoldProfile, Escalation
+├── mod.rs     MaterialEffect, FoldProfile, Escalation
+│              (SolidMesh itself lives in geo, see below)
 ├── spec.rs    MaterialFoldSpec, FoldEntry, StockShape, GridBudget,
 │              MaterialResponse
 ├── state.rs   MaterialState
@@ -590,9 +600,21 @@ src/ops/material/
   releases the GIL via `py.detach(...)` while the kernel runs (same
   pattern as `python/image/rasterize_scanlines.rs`).
 - `Volume { solids }` carries a plain-data `SolidMesh { positions:
-  Vec<Point3D>, triangles: Vec<[u32; 3]> }` defined locally in
-  `ops::material` — deliberately *not* the `mesh` module's types, so
-  the wire format does not couple ops to mesh internals.
+  Vec<Point3D>, triangles: Vec<[u32; 3]> }` (f64, closed manifold).
+  It is *not* internal wiring — it is the public interchange format:
+  it crosses the cache boundary inside `AssemblyOutput`, the PyO3
+  boundary as `raygeo.ops.material` objects, and (iteration 7) back
+  to consumers inside `MaterialState::Solid`. Declining the `mesh`
+  module's types is therefore not about hiding internals — it is
+  that both are presentation/domain formats of the wrong shape:
+  `PrismMesh` is float32 GPU buffers with normals and UVs baked in,
+  `TriangleMesh` is a planar 2D FEM mesh with adjacency and boundary
+  tags. Interchange wants f64 positions plus triangle indices and
+  nothing else; sharing render types would also make every
+  render-side format change invalidate the ops cache format. Since
+  both `ops::material` and `mesh` need it, it lives one layer down
+  as a pure geometric primitive: new leaf `geo/shape/solid.rs`
+  (both import downward; no `ops → mesh` edge is created).
 - After changing bindings: `make stubs` (regenerates
   `python/raygeo/**/__init__.pyi`; never hand-edit), `make docs`
   (markdown docs are generated). Both artifacts are committed.
