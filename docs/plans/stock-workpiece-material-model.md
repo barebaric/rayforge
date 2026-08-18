@@ -302,24 +302,37 @@ renderer code never assumes which profile produced the state.
 ### 5. Derived views — also Rust
 
 **Evolved stock mesh.** raygeo's `mesh` module grows
-`build_stock_mesh(state)`: for a prismatic state it subtracts voids
-from the stock rings, displaces top-face vertices by the heightmap,
-and recomputes normals — all inside Rust, building on the existing
-`build_prism_mesh` ear-clip triangulation; for a solid state it
-converts the remaining-stock solid (the CSG result is already
-manifold). This is the boundary between the two mesh roles:
-`MaterialState` carries the *interchange* mesh (f64 `SolidMesh`
-from `geo::shape::solid`), and `mesh::build` produces the
-*presentation* mesh — a `PrismMesh` with float32 positions,
-computed normals, and UVs — which is what the public API returns
-and what `stock_compiler.py` packs into GPU buffers, exactly as it
-packs `build_prism_mesh` output today. The numpy rotary shell
-builder (`stock_compiler._build_cylinder_shell`) moves to raygeo as
-`build_cylinder_shell` with angular void gaps and radial
-displacement. `stock_compiler.py` keeps exactly its documented role —
-validate plain-data specs, pack GPU buffers — now passing material
-grids/meshes through to Rust instead of building geometry itself.
-There is deliberately no numpy displacement fallback.
+`build_stock_mesh(outers, voids, thickness, heightmap)` and
+`build_stock_mesh_solid(solid)`: for a prismatic state it subtracts
+voids from the stock rings, displaces top-face vertices by the
+heightmap, and recomputes normals — all inside Rust, building on the
+existing `build_prism_mesh` ear-clip triangulation; for a solid
+state it converts the remaining-stock solid (the CSG result is
+already manifold). Signatures take plain data — exactly like
+`build_prism_mesh(outer, holes, thickness, ...)` today — because
+`mesh` sits *beside* `ops` in raygeo's layer graph, not under it:
+in current raygeo, `src/mesh` imports only `crate::geo`, and
+nothing in `src/ops` or `src/cnc` imports `crate::mesh`; the module
+is consumed via the Python bindings. A `build_stock_mesh(state)`
+signature would therefore be an upward import (`mesh → ops`), and
+`mesh` must not learn about `MaterialState`. The thin unpack from
+state to arguments — reading `state.void_polygons`,
+`state.depth_field`, `state.solid` — is field access, not geometry
+processing, and happens in rayforge's `stock_compiler`, which
+already unpacks spec dicts this way for `build_prism_mesh`. This is
+the boundary between the two mesh roles: `MaterialState` carries
+the *interchange* mesh (f64 `SolidMesh` from `geo::shape::solid`),
+and `mesh::build` produces the *presentation* mesh — a `PrismMesh`
+with float32 positions, computed normals, and UVs — which is what
+the public API returns and what `stock_compiler.py` packs into GPU
+buffers, exactly as it packs `build_prism_mesh` output today. The
+numpy rotary shell builder (`stock_compiler._build_cylinder_shell`)
+moves to raygeo as `build_cylinder_shell` with angular void gaps
+and radial displacement. `stock_compiler.py` keeps exactly its
+documented role — validate plain-data specs, pack GPU buffers — now
+passing material grids/meshes through to Rust instead of building
+geometry itself. There is deliberately no numpy displacement
+fallback.
 
 **Workpiece material image.** A raygeo call
 `render_material_view(effects, footprint, luts)` produces the RGBA
@@ -611,10 +624,17 @@ src/ops/material/
   `TriangleMesh` is a planar 2D FEM mesh with adjacency and boundary
   tags. Interchange wants f64 positions plus triangle indices and
   nothing else; sharing render types would also make every
-  render-side format change invalidate the ops cache format. Since
-  both `ops::material` and `mesh` need it, it lives one layer down
-  as a pure geometric primitive: new leaf `geo/shape/solid.rs`
-  (both import downward; no `ops → mesh` edge is created).
+  render-side format change invalidate the ops cache format.
+  Placement follows the actual dependency graph: `src/mesh` imports
+  only `crate::geo` today, and nothing in `src/ops`/`src/cnc`
+  imports `crate::mesh` — `mesh` is a sibling consumer of `geo`
+  serving the Python bindings, not a foundation under `ops`. So
+  `SolidMesh` cannot live in `mesh` without inventing a new
+  `ops → mesh` edge from the domain layer into the presentation
+  module (and into the ops cache format). It lives one layer down
+  as a pure geometric primitive: new leaf `geo/shape/solid.rs`,
+  beside `polygon.rs`/`polygon3d.rs` — both `ops::material` and
+  `mesh::build` import it downward.
 - After changing bindings: `make stubs` (regenerates
   `python/raygeo/**/__init__.pyi`; never hand-edit), `make docs`
   (markdown docs are generated). Both artifacts are committed.
