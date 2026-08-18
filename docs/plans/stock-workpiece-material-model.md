@@ -287,7 +287,7 @@ Result of the fold, tagged with its profile:
   (iteration 6) marker-indexed cumulative snapshots for simulation
   scrubbing.
 - `Solid`: the remaining-stock mesh as the f64 interchange solid
-  (`geo::shape::solid::SolidMesh`), plus derived projections
+  (`mesh::solid::SolidMesh`), plus derived projections
   (silhouette/voids, top heightmap) where valid, provenance, and the
   same snapshot mechanism. Render meshes are derived from it at the
   `mesh::build` boundary, never stored in the state.
@@ -310,18 +310,16 @@ existing `build_prism_mesh` ear-clip triangulation; for a solid
 state it converts the remaining-stock solid (the CSG result is
 already manifold). Signatures take plain data — exactly like
 `build_prism_mesh(outer, holes, thickness, ...)` today — because
-`mesh` sits *beside* `ops` in raygeo's layer graph, not under it:
-in current raygeo, `src/mesh` imports only `crate::geo`, and
-nothing in `src/ops` or `src/cnc` imports `crate::mesh`; the module
-is consumed via the Python bindings. A `build_stock_mesh(state)`
-signature would therefore be an upward import (`mesh → ops`), and
-`mesh` must not learn about `MaterialState`. The thin unpack from
+in the amended layer graph (`geo → mesh → ops → cnc`) the edge is
+one-directional: `ops` imports `mesh::solid`, never the reverse. A
+`build_stock_mesh(state)` signature would be an upward import
+(`mesh → ops`), and `mesh` must not learn about `MaterialState`. The thin unpack from
 state to arguments — reading `state.void_polygons`,
 `state.depth_field`, `state.solid` — is field access, not geometry
 processing, and happens in rayforge's `stock_compiler`, which
 already unpacks spec dicts this way for `build_prism_mesh`. This is
 the boundary between the two mesh roles: `MaterialState` carries
-the *interchange* mesh (f64 `SolidMesh` from `geo::shape::solid`),
+the *interchange* mesh (f64 `SolidMesh` from `mesh::solid`),
 and `mesh::build` produces the *presentation* mesh — a `PrismMesh`
 with float32 positions, computed normals, and UVs — which is what
 the public API returns and what `stock_compiler.py` packs into GPU
@@ -468,14 +466,14 @@ explicit export paths, Python-only tests, generated stubs).
 Not scheduled with the iterations above; it lands when 3D
 assembler work starts. Nothing in iterations 0–6 needs rework:
 
-- raygeo: solid booleans in `geo` beside `SolidMesh` (wrapping a
-  robust engine — e.g. the `manifold` crate — or voxel/SDF
-  booleans; engine-internal types convert to
-  `geo::shape::solid::SolidMesh` at the API boundary), symmetric
-  with the Clipper2 boolean wrap; `mesh` keeps only presentation
-  conversion (`solid → PrismMesh`); solid fold path
-  (prismatic→solid conversion, sequential subtraction, projections);
-  tests alongside new raygeo mesh tests.
+- raygeo: solid boolean engine in `mesh::solid` (wrapping a robust
+  engine — e.g. the `manifold` crate — or voxel/SDF booleans;
+  engine-internal types convert to `mesh::solid::SolidMesh` at the
+  API boundary) — mesh-domain algorithms over the mesh-domain type,
+  mirroring how geo hosts the Clipper2 wrappers over polygons;
+  solid fold path (prismatic→solid conversion, sequential
+  subtraction, projections); `build_stock_mesh` solid→`PrismMesh`
+  conversion; tests alongside new raygeo mesh tests.
 - raygeo `Part`: optional solid stock shape; `ClearedVolume`
   engagement state for 3D assemblers; first 3D assembler emits
   `Volume` effects.
@@ -574,10 +572,12 @@ iterations.
 
 Everything in this section happens in the raygeo repository and
 follows its `AGENTS.md`: layering (`geo → ops → cnc`, `pipeline`
-domain-free, never import upward), explicit export paths (no
-re-exports in parent `mod.rs`), stubs only via `make stubs`, docs
-only via `make docs`, and **no Rust tests** — all tests are Python
-under `tests/` exercising the code through PyO3 bindings.
+domain-free, never import upward; phase 0 amends the graph to
+`geo → mesh → ops → cnc` — see the layering bullet below), explicit
+export paths (no re-exports in parent `mod.rs`), stubs only via
+`make stubs`, docs only via `make docs`, and **no Rust tests** —
+all tests are Python under `tests/` exercising the code through
+PyO3 bindings.
 
 ### Module layout and layering
 
@@ -589,7 +589,7 @@ so the core lives at `src/ops/material/`:
 ```
 src/ops/material/
 ├── mod.rs     MaterialEffect, FoldProfile, Escalation
-│              (SolidMesh itself lives in geo, see below)
+│              (SolidMesh itself lives in mesh::solid, see below)
 ├── spec.rs    MaterialFoldSpec, FoldEntry, StockShape, GridBudget,
 │              MaterialResponse
 ├── state.rs   MaterialState
@@ -618,32 +618,28 @@ src/ops/material/
   Vec<Point3D>, triangles: Vec<[u32; 3]> }` (f64, closed manifold).
   It is *not* internal wiring — it is the public interchange format:
   it crosses the cache boundary inside `AssemblyOutput`, the PyO3
-  boundary as `raygeo.ops.material` objects, and (iteration 7) back
-  to consumers inside `MaterialState::Solid`. Declining the `mesh`
-  module's types is therefore not about hiding internals — it is
-  that both are presentation/domain formats of the wrong shape:
-  `PrismMesh` is float32 GPU buffers with normals and UVs baked in,
-  `TriangleMesh` is a planar 2D FEM mesh with adjacency and boundary
-  tags. Interchange wants f64 positions plus triangle indices and
-  nothing else; sharing render types would also make every
-  render-side format change invalidate the ops cache format.
-  Placement follows the dependency graph and the module charters.
-  `src/mesh` imports only `crate::geo` today, and nothing in
-  `src/ops`/`src/cnc` imports `crate::mesh` — `mesh` is a sibling
-  of `ops` over `geo`, serving the Python bindings. The split is
-  nouns vs verbs: `geo` is the shared-primitives layer every domain
-  layer may import (it already hosts `Point3D`, `Polygon3D`, and
-  the Clipper2 boolean wrappers), while `mesh` is construction/
-  refinement/PDE *over* geo primitives — its own types are built
-  from them (`TriangleMesh.vertices: Vec<geo::types::Point>`;
-  `build_prism_mesh` takes geo `Polygon`s in, returns a `PrismMesh`
-  out). `SolidMesh` is a noun that `ops` must hold inside
-  `AssemblyOutput`, and `ops` may import only downward — below
-  `ops` there is exactly one layer, `geo`. In `mesh` it would
-  invent the first `ops → mesh` edge, making the CAM core depend
-  on the rendering/FEM module. New leaf `geo/shape/solid.rs`, beside
-  `polygon.rs`/`polygon3d.rs`; `ops::material` and `mesh::build`
-  both import it downward.
+  boundary, and (iteration 7) back to consumers inside
+  `MaterialState::Solid`. It lives in the mesh domain: new leaf
+  `src/mesh/solid.rs`, exposed as `raygeo.mesh.solid`. A solid mesh
+  is an indexed-triangle aggregate — a mesh-domain structure, not a
+  geo primitive — so co-locating it with `TriangleMesh`/`PrismMesh`
+  keeps domain cohesion and lets `mesh` own the solid boolean
+  engine over its own type (iteration 7). The pipeline cache is
+  in-memory (`Box<dyn Any>`), so module placement is an import
+  path, not a serialization format.
+- This amends raygeo's layering spec *deliberately*: `mesh` joins
+  the graph below `ops` — `geo → mesh → ops → cnc`. The current
+  `AGENTS.md` layering table does not govern `mesh` at all (it
+  lists only geo/ops/pipeline/cnc), `src/mesh` imports only
+  `crate::geo`, and nothing in `src/ops`/`src/cnc` imports mesh
+  today — so the edge is cycle-free and unregulated, and recording
+  it in raygeo's `AGENTS.md` is a phase-0 deliverable, not an
+  incidental drift. The edge stays narrow: `ops`/`cnc` import only
+  `mesh::solid` types — type-only in phase 0, solid booleans in
+  iteration 7 — never the FEM/refinement machinery (`laplace`,
+  `pde`, `remesh`) or `PrismMesh`, which remain binding-side.
+  `geo` keeps its charter unchanged: 2D/planar primitives and the
+  Clipper2 boolean wrappers over polygons.
 - After changing bindings: `make stubs` (regenerates
   `python/raygeo/**/__init__.pyi`; never hand-edit), `make docs`
   (markdown docs are generated). Both artifacts are committed.
@@ -794,6 +790,8 @@ state.provenance, state.escalation, state.depth_field
 PyClasses convert to core types via an `into_core()` pattern (same
 as the profile spec binding); `MaterialEffect` itself stays a Rust
 enum, constructed from the three concrete effect classes.
+`VolumeEffect` wraps a `SolidMesh` imported from
+`raygeo.mesh.solid`.
 
 ### Test plan (all Python, no Rust tests)
 
@@ -871,7 +869,9 @@ Per raygeo `AGENTS.md`, using make targets only:
 6. `make check` (lint + `cargo test` + `pytest -v`) green, with no
    new Rust `#[cfg(test)]` blocks added.
 
-Deliverables: the `ops::material` module + bindings + regenerated
-stubs/docs, the `AssemblyOutput.material_effects` field with
-emitters for adaptive/profile/contour, and the test files above —
-no rayforge changes in phase 0.
+Deliverables: the `mesh::solid` leaf with `SolidMesh` + bindings,
+the raygeo `AGENTS.md` layering amendment recording the
+`geo → mesh → ops → cnc` graph, the `ops::material` module +
+bindings + regenerated stubs/docs, the `AssemblyOutput
+.material_effects` field with emitters for adaptive/profile/
+contour, and the test files above — no rayforge changes in phase 0.
