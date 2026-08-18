@@ -468,12 +468,14 @@ explicit export paths, Python-only tests, generated stubs).
 Not scheduled with the iterations above; it lands when 3D
 assembler work starts. Nothing in iterations 0–6 needs rework:
 
-- raygeo: solid-CSG module (closed-manifold booleans — e.g. wrapping
-  a crate like `manifold`, or voxel/SDF booleans; CSG-internal mesh
-  types convert to `geo::shape::solid::SolidMesh` at the fold
-  boundary); solid fold path (prismatic→solid conversion, sequential
-  subtraction, projections); `build_stock_mesh` solid→`PrismMesh`
-  conversion; tests alongside new raygeo mesh tests.
+- raygeo: solid booleans in `geo` beside `SolidMesh` (wrapping a
+  robust engine — e.g. the `manifold` crate — or voxel/SDF
+  booleans; engine-internal types convert to
+  `geo::shape::solid::SolidMesh` at the API boundary), symmetric
+  with the Clipper2 boolean wrap; `mesh` keeps only presentation
+  conversion (`solid → PrismMesh`); solid fold path
+  (prismatic→solid conversion, sequential subtraction, projections);
+  tests alongside new raygeo mesh tests.
 - raygeo `Part`: optional solid stock shape; `ClearedVolume`
   engagement state for 3D assemblers; first 3D assembler emits
   `Volume` effects.
@@ -625,16 +627,23 @@ src/ops/material/
   tags. Interchange wants f64 positions plus triangle indices and
   nothing else; sharing render types would also make every
   render-side format change invalidate the ops cache format.
-  Placement follows the actual dependency graph: `src/mesh` imports
-  only `crate::geo` today, and nothing in `src/ops`/`src/cnc`
-  imports `crate::mesh` — `mesh` is a sibling consumer of `geo`
-  serving the Python bindings, not a foundation under `ops`. So
-  `SolidMesh` cannot live in `mesh` without inventing a new
-  `ops → mesh` edge from the domain layer into the presentation
-  module (and into the ops cache format). It lives one layer down
-  as a pure geometric primitive: new leaf `geo/shape/solid.rs`,
-  beside `polygon.rs`/`polygon3d.rs` — both `ops::material` and
-  `mesh::build` import it downward.
+  Placement follows the dependency graph and the module charters.
+  `src/mesh` imports only `crate::geo` today, and nothing in
+  `src/ops`/`src/cnc` imports `crate::mesh` — `mesh` is a sibling
+  of `ops` over `geo`, serving the Python bindings. The split is
+  nouns vs verbs: `geo` is the shared-primitives layer every domain
+  layer may import (it already hosts `Point3D`, `Polygon3D`, and
+  the Clipper2 boolean wrappers), while `mesh` is construction/
+  refinement/PDE *over* geo primitives — its own types are built
+  from them (`TriangleMesh.vertices: Vec<geo::types::Point>`;
+  `build_prism_mesh` takes geo `Polygon`s in, returns a `PrismMesh`
+  out). `SolidMesh` is a noun that `ops` must hold inside
+  `AssemblyOutput`, and `ops` may import only downward — below
+  `ops` there is exactly one layer, `geo`. In `mesh` it would
+  invent the first `ops → mesh` edge, making the CAM core depend
+  on the rendering/FEM module. New leaf `geo/shape/solid.rs`, beside
+  `polygon.rs`/`polygon3d.rs`; `ops::material` and `mesh::build`
+  both import it downward.
 - After changing bindings: `make stubs` (regenerates
   `python/raygeo/**/__init__.pyi`; never hand-edit), `make docs`
   (markdown docs are generated). Both artifacts are committed.
