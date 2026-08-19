@@ -57,6 +57,12 @@ class StepBox(Gtk.Box):
         self.mode_tag.append(self.mode_tag_label)
         title_row.append(self.mode_tag)
 
+        self.speed_warning_icon = get_icon("warning-symbolic")
+        self.speed_warning_icon.add_css_class("warning")
+        self.speed_warning_icon.set_valign(Gtk.Align.CENTER)
+        self.speed_warning_icon.set_visible(False)
+        title_row.append(self.speed_warning_icon)
+
         self.subtitle_label = Gtk.Label(xalign=0)
         self.subtitle_label.add_css_class("caption")
         self.subtitle_label.add_css_class("dim-label")
@@ -113,6 +119,21 @@ class StepBox(Gtk.Box):
         self.visibility_switch.set_active(is_visible)
         self.badge.set_dimmed(not is_visible)
         self._update_badge_color()
+        self._update_speed_warning()
+
+    def _update_speed_warning(self):
+        """Warn when the step has configuration issues.
+
+        A step may be loaded from a project (or from a faster machine)
+        that configured a higher speed than the active machine allows.
+        The box shows a warning icon explaining the problems on hover.
+        """
+        warnings = self.step.check(get_context().machine)
+        active = bool(warnings)
+        self.speed_warning_icon.set_visible(active)
+        self.speed_warning_icon.set_tooltip_text(
+            "\n".join(warnings) if active else ""
+        )
 
     def _update_badge_color(self):
         if not self.step.visible:

@@ -264,6 +264,58 @@ def test_raster_page_builds(editor, laser_machine, ui_context):
 
 
 @pytest.mark.ui
+def test_speed_above_machine_max_shows_warning(
+    editor, laser_machine, ui_context
+):
+    """A loaded speed above the machine's max is shown, not clamped.
+
+    The step's real value is displayed (matching the step box) and the
+    row is flagged with a warning explaining it exceeds the machine.
+    """
+    laser_machine.max_cut_speed = 1000
+    ui_context.config.set_machine(laser_machine)
+
+    step_cls = step_registry.get("EngraveStep")
+    assert step_cls is not None
+    step = cast(EngraveStep, step_cls.create(ui_context))
+    step.cut_speed = 24000
+    data = step.to_dict()
+    data["max_cut_speed"] = 24000
+    loaded = step_cls.from_dict(data)
+
+    page = RasterSettingsPage(editor, loaded)
+    laser_page = page.laser_page()
+    row = cast(SpeedSpinRow, _row(laser_page, "cut_speed"))
+    # The loaded value is displayed above the machine's max ...
+    assert row.get_spin_button().get_text() == "24000"
+    # ... while a read-back clamps to the machine's ceiling (an edit
+    # would commit the clamped value, not the stale loaded one).
+    assert row.get_value_in_base_units() == pytest.approx(1000.0)
+
+    icon = laser_page._speed_warning_icons.get(row)
+    assert icon is not None
+    assert icon.get_visible() is True
+    assert icon.get_tooltip_text() != ""
+
+
+@pytest.mark.ui
+def test_speed_within_machine_max_has_no_warning(
+    editor, laser_machine, ui_context
+):
+    """A speed within the machine's max shows no warning icon."""
+    step_cls = step_registry.get("EngraveStep")
+    assert step_cls is not None
+    step = cast(EngraveStep, step_cls.create(ui_context))
+    step.cut_speed = 1000  # within laser_machine's default max of 5000
+    page = RasterSettingsPage(editor, step)
+    laser_page = page.laser_page()
+    row = cast(SpeedSpinRow, _row(laser_page, "cut_speed"))
+
+    icon = laser_page._speed_warning_icons.get(row)
+    assert icon is None or icon.get_visible() is False
+
+
+@pytest.mark.ui
 def test_raster_page_mode_visibility(editor, laser_machine, ui_context):
     """Raster rows react to the depth-mode visible_when predicates."""
     step_cls = step_registry.get("EngraveStep")

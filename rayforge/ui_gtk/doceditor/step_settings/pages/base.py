@@ -8,6 +8,7 @@ from gi.repository import Adw, GLib, Gtk
 from .....core.undo.property_cmd import ChangePropertyCommand
 from .....core.varset import VarSet
 from .....shared.util.glib import DebounceMixin
+from ....icons import get_icon
 from ....shared.pref_rows import SpeedSpinRow
 from ....shared.preferences_page import TrackedPreferencesPage
 from ....varset.adapter import escape_title
@@ -16,6 +17,7 @@ from ..recipe_control_widget import RecipeControlWidget
 
 if TYPE_CHECKING:
     from .....doceditor.editor import DocEditor
+    from .....machine.models.machine import Machine
 
 
 class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
@@ -49,6 +51,7 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
         self._sections: list[Adw.PreferencesGroup] = []
         self._rows: list[Any] = []
         self._varset_widgets: list[tuple[VarSetWidget, VarSet]] = []
+        self._speed_warning_icons: dict[SpeedSpinRow, Gtk.Image] = {}
         if self.show_identity:
             self._add_identity_section()
         # Keep varset rows in sync with the model (undo, recipe apply,
@@ -89,8 +92,8 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
             widget.set_values(values)
         self._update_machine_bounds()
 
-    def get_machine(self):
-        return getattr(self.editor.context, "machine", None)
+    def get_machine(self) -> "Machine | None":
+        return self.editor.context.machine
 
     def get_selected_head(self):
         machine = self.get_machine()
@@ -174,6 +177,7 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
         self.add(widget)
         self._sections.append(widget)
         self._varset_widgets.append((widget, var_set))
+        self._update_speed_warnings()
         return widget
 
     def _varset_for_keys(
@@ -252,24 +256,76 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
         self._update_machine_bounds()
 
     def _update_machine_bounds(self):
-        """Sync speed-row bounds with the step's machine limits.
+        """Sync speed-row bounds with the active machine's limits.
 
-        The base speed vars resolve their upper bound from the active
-        machine; the per-step ``max_cut_speed``/``max_travel_speed``
-        may differ (e.g. after a head change), so push them into the
-        rows on every model sync.
+        The upper bound is the machine's ceiling, so user edits clamp to
+        it (GTK clamps the entry to the adjustment's upper bound). A
+        speed loaded from a project may still be shown above it: the
+        spin row displays such a value via its text and flags it with a
+        warning (see :meth:`_update_speed_warnings`) instead of clamping
+        the loaded value. Called on model sync and machine change.
         """
+        machine = self.get_machine()
+        if machine is None:
+            return
         for widget, _var_set in self._varset_widgets:
-            for key, attr in (
-                ("cut_speed", "max_cut_speed"),
-                ("travel_speed", "max_travel_speed"),
-            ):
-                row = widget.row_for(key)
-                if row is None:
-                    continue
-                max_speed = getattr(self.step, attr, None)
-                if max_speed:
-                    cast(SpeedSpinRow, row).set_range(1.0, float(max_speed))
+            row = widget.row_for("cut_speed")
+            if row is not None:
+                cast(SpeedSpinRow, row).set_range(
+                    1.0, float(machine.max_cut_speed)
+                )
+            row = widget.row_for("travel_speed")
+            if row is not None:
+                cast(SpeedSpinRow, row).set_range(
+                    1.0, float(machine.max_travel_speed)
+                )
+        self._update_speed_warnings()
+
+    def _update_speed_warnings(self):
+        """Flag speed rows whose value exceeds the machine's ceiling.
+
+        A step loaded from a project (or edited on a slower machine) may
+        hold a speed above the active machine's maximum. Such rows show a
+        warning icon that explains the problem on hover. The warning text
+        is produced by the step via :meth:`~rayforge.core.step.Step.check`.
+        """
+        machine = self.get_machine()
+        if machine is None:
+            return
+        warnings = self.step.check(machine)
+        message = "\n".join(warnings) if warnings else ""
+        for widget, _var_set in self._varset_widgets:
+            row = widget.row_for("cut_speed")
+            if row is not None:
+                self._set_speed_row_warning(
+                    cast(SpeedSpinRow, row),
+                    self.step.cut_speed > machine.max_cut_speed,
+                    message,
+                )
+            row = widget.row_for("travel_speed")
+            if row is not None:
+                self._set_speed_row_warning(
+                    cast(SpeedSpinRow, row),
+                    self.step.travel_speed > machine.max_travel_speed,
+                    message,
+                )
+
+    def _set_speed_row_warning(
+        self, row: SpeedSpinRow, active: bool, message: str
+    ) -> None:
+        icon = self._speed_warning_icons.get(row)
+        if icon is None:
+            icon = get_icon("warning-symbolic")
+            icon.add_css_class("warning")
+            icon.set_valign(Gtk.Align.CENTER)
+            # Place the icon to the LEFT of the input box (the first
+            # child of the suffix box), so it is visually tied to the
+            # value it flags rather than sitting at the far right.
+            suffix_box = row.get_spin_button().get_parent()
+            cast(Gtk.Box, suffix_box).insert_child_after(icon, None)
+            self._speed_warning_icons[row] = icon
+        icon.set_visible(active)
+        icon.set_tooltip_text(message if active else "")
 
     def _cleanup(self):
         if self._debounce_timer > 0:
