@@ -21,6 +21,7 @@ from rayforge.core.varset import (
 )
 from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.transformer.registry import transformer_registry
+from rayforge.shared.units.formatter import get_display_unit_settings
 
 from .laser_step import LaserStep
 
@@ -299,6 +300,11 @@ class MaterialTestStep(LaserStep):
             if self.line_interval_mm is not None
             else spot_y
         )
+        # Engrave speed labels in the user's preferred speed unit.
+        unit_label, factor, precision = get_display_unit_settings("speed")
+        kwargs["speed_unit_label"] = unit_label
+        kwargs["speed_label_factor"] = factor
+        kwargs["speed_label_precision"] = precision
         return kwargs
 
     def build_compute_payload(
@@ -334,6 +340,9 @@ class MaterialTestStep(LaserStep):
             label_speed=kwargs["label_speed"],
             min_offset=kwargs["min_offset"],
             max_offset=kwargs["max_offset"],
+            speed_unit_label=kwargs["speed_unit_label"],
+            speed_label_factor=kwargs["speed_label_factor"],
+            speed_label_precision=kwargs["speed_label_precision"],
         )
         return part, ComputePayload(assembler=Assembler(spec))
 

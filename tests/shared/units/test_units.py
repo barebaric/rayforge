@@ -11,6 +11,7 @@ from rayforge.shared.units.definitions import (
 from rayforge.shared.units.engine import engine
 from rayforge.shared.units.formatter import (
     get_default_grid_step_mm,
+    get_display_unit_settings,
     get_preferred_unit_factor,
 )
 from rayforge.shared.units.system import UnitSystem, inches_to_mm
@@ -302,6 +303,45 @@ def test_get_default_grid_step_mm():
             assert step == pytest.approx(expected), (
                 f"Grid step for {unit_name} should be {expected}, got {step}"
             )
+
+
+def _mock_speed_preference(unit_name: str):
+    """Builds a mocked context whose config prefers the given speed unit."""
+    config = Config()
+    config.unit_preferences["speed"] = unit_name
+    ctx = MagicMock()
+    ctx.config = config
+    return ctx
+
+
+def test_get_display_unit_settings_speed_units():
+    """Each preferred speed unit yields the right name, factor, precision."""
+    cases = {
+        "mm/min": ("mm/min", 1.0, 0),
+        "mm/s": ("mm/s", 60.0, 1),
+        "in/min": ("in/min", 25.4, 1),
+        "in/s": ("in/s", 1524.0, 2),
+    }
+    for unit_name, (label, factor, precision) in cases.items():
+        with patch(
+            "rayforge.shared.units.formatter.get_context",
+            return_value=_mock_speed_preference(unit_name),
+        ):
+            result = get_display_unit_settings("speed")
+            assert result == (label, pytest.approx(factor), precision), (
+                f"Settings for {unit_name} should be "
+                f"{(label, factor, precision)}, got {result}"
+            )
+
+
+def test_get_display_unit_settings_falls_back_to_base_unit():
+    """An unknown preference falls back to the quantity's base unit."""
+    with patch(
+        "rayforge.shared.units.formatter.get_context",
+        return_value=_mock_speed_preference("furlongs/fortnight"),
+    ):
+        result = get_display_unit_settings("speed")
+    assert result == ("mm/min", 1.0, 0)
 
 
 if __name__ == "__main__":

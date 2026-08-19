@@ -16,6 +16,8 @@ from raygeo.ops.assembly.material_test_grid import (
     generate_material_test_grid_preview,
 )
 
+from rayforge.shared.units.formatter import get_display_unit_settings
+
 _MM_PER_INCH = 25.4
 
 
@@ -101,6 +103,7 @@ def draw_preview(
     dpi_x = width_px / size_mm[0] * _MM_PER_INCH
     dpi_y = height_px / size_mm[1] * _MM_PER_INCH
     dpi = max(dpi_x, dpi_y)
+    unit_label, factor, precision = get_display_unit_settings("speed")
     img = generate_material_test_grid_preview(
         size_mm=size_mm,
         dpi=dpi,
@@ -123,6 +126,9 @@ def draw_preview(
         include_labels=params.get("include_labels", True),
         label_power_percent=params.get("label_power_percent", 10.0),
         label_speed=params.get("label_speed", 1000.0),
+        speed_unit_label=unit_label,
+        speed_label_factor=factor,
+        speed_label_precision=precision,
     )
 
     h, w = img.shape[:2]

@@ -158,7 +158,7 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         self.cut_speed_row = SpeedSpinRow(
             _("Max Cut Speed"),
             _("Maximum cutting speed"),
-            upper=60000,  # Increased upper limit for mm/min
+            upper=60000,
             digits=0,
         )
         self.cut_speed_row.set_value_in_base_units(self.machine.max_cut_speed)
