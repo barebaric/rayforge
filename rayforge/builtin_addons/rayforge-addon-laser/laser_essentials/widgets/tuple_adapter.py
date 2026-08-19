@@ -5,12 +5,29 @@ from typing import Any, cast
 from gi.repository import Adw
 
 from rayforge.core.varset import TupleVar, Var
-from rayforge.ui_gtk.shared.pref_rows import SpinRow
+from rayforge.ui_gtk.shared.pref_rows import (
+    LengthSpinRow,
+    SpeedSpinRow,
+    SpinRow,
+    UnitSpinRow,
+)
 from rayforge.ui_gtk.varset.adapter import (
     RowAdapter,
     escape_title,
     register_adapter,
 )
+
+
+def _spin_row_cls_for(quantity: str | None) -> type[UnitSpinRow]:
+    """Return the unit-aware spin row class for a quantity.
+
+    ``None`` (a plain count, e.g. passes) yields the plain ``SpinRow``.
+    """
+    if quantity == "speed":
+        return SpeedSpinRow
+    if quantity == "length":
+        return LengthSpinRow
+    assert False, f"Unknown quantity {quantity!r} for unit-aware spin row"
 
 
 @register_adapter(TupleVar)
@@ -20,7 +37,9 @@ class TupleAdapter(RowAdapter):
     The primary row edits the first component (e.g. "Min Power"), the
     extra row the second (e.g. "Max Power"). The whole tuple is stored
     under the var's single key, so the recipe keeps one entry per
-    range.
+    range. When the var declares a ``quantity``, the component rows are
+    unit-aware (e.g. speed ranges convert to the user's preferred
+    unit).
     """
 
     def __init__(
@@ -28,11 +47,13 @@ class TupleAdapter(RowAdapter):
         row: Adw.PreferencesRow,
         extra: Adw.PreferencesRow,
         spins: list[SpinRow],
+        quantity: str | None = None,
     ) -> None:
         super().__init__()
         self._row = row
         self._extra = extra
         self._spins = spins
+        self._quantity = quantity
         for spin in spins:
             spin.value_changed.connect(
                 lambda s: self.changed.send(self), weak=False
@@ -47,10 +68,23 @@ class TupleAdapter(RowAdapter):
         max_val: float,
         digits: int,
         value,
+        quantity: str | None,
     ) -> SpinRow:
+        title = escape_title(label)
+        sub = escape_title(subtitle) if subtitle else None
+        if quantity:
+            # Unit-aware rows exchange values in base units.
+            return _spin_row_cls_for(quantity)(
+                title,
+                sub,
+                lower=min_val,
+                upper=max_val,
+                digits=digits,
+                value_in_base=float(value),
+            )
         return SpinRow(
-            escape_title(label),
-            escape_title(subtitle) if subtitle else None,
+            title,
+            sub,
             lower=min_val,
             upper=max_val,
             digits=digits,
@@ -69,6 +103,7 @@ class TupleAdapter(RowAdapter):
         if value is None:
             value = (min_val, max_val)
         subtitles = var.item_subtitles or (None, None)
+        quantity = var.quantity
 
         row = cls._build_spin(
             var.item_labels[0],
@@ -77,6 +112,7 @@ class TupleAdapter(RowAdapter):
             max_val,
             digits,
             value[0],
+            quantity,
         )
         extra = cls._build_spin(
             var.item_labels[1],
@@ -85,33 +121,54 @@ class TupleAdapter(RowAdapter):
             max_val,
             digits,
             value[1],
+            quantity,
         )
         if var.description:
             cast(Adw.ActionRow, row).set_subtitle(
                 escape_title(var.description)
             )
 
-        return row, cls(row, extra, [row, extra])
+        return row, cls(row, extra, [row, extra], quantity)
 
     def extra_rows(self) -> list[Adw.PreferencesRow]:
         """The second component's row, appended after the primary."""
         return [self._extra]
 
     def get_value(self) -> tuple[Any, ...] | None:
+        if self._quantity:
+            return tuple(
+                cast(UnitSpinRow, spin).get_value_in_base_units()
+                for spin in self._spins
+            )
         return tuple(spin.get_value() for spin in self._spins)
 
     def set_value(self, value: Any) -> None:
         for i, spin in enumerate(self._spins):
             if i < len(value):
-                spin.set_value(float(value[i]))
+                if self._quantity:
+                    cast(UnitSpinRow, spin).set_value_in_base_units(
+                        float(value[i])
+                    )
+                else:
+                    spin.set_value(float(value[i]))
 
     def update_from_var(self, var: Var):
         assert isinstance(var, TupleVar)
-        if var.label:
-            self._row.set_title(escape_title(var.label))
+        if var.item_labels:
+            self._row.set_title(escape_title(var.item_labels[0]))
+            self._extra.set_title(escape_title(var.item_labels[1]))
+        subtitles = var.item_subtitles or (None, None)
         if var.description:
             cast(Adw.ActionRow, self._row).set_subtitle(
                 escape_title(var.description)
+            )
+        elif subtitles[0]:
+            cast(Adw.ActionRow, self._row).set_subtitle(
+                escape_title(subtitles[0])
+            )
+        if subtitles[1]:
+            cast(Adw.ActionRow, self._extra).set_subtitle(
+                escape_title(subtitles[1])
             )
 
     def set_bounds(self, lower: float, upper: float) -> None:

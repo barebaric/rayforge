@@ -10,7 +10,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
 from gi.repository import Adw
-from laser_essentials.steps import EngraveStep
+from laser_essentials.steps import EngraveStep, MaterialTestStep
 from laser_essentials.widgets.contour_page import ContourStepSettingsPage
 from laser_essentials.widgets.material_test_grid_page import (
     MaterialTestGridSettingsPage,
@@ -149,8 +149,6 @@ def test_material_test_tuple_rows_round_trip(
     editor, laser_machine, ui_context
 ):
     """Tuple rows (ranges, grid dimensions) read and write tuples."""
-    from laser_essentials.steps.material_test import MaterialTestStep
-
     step = MaterialTestStep()
     page = MaterialTestGridSettingsPage(editor, step)
 
@@ -172,10 +170,69 @@ def test_material_test_tuple_rows_round_trip(
 
 
 @pytest.mark.ui
+def test_material_test_speed_rows_are_unit_aware(editor, ui_context):
+    """Material-test speed rows adapt to the user's unit preference."""
+    step = MaterialTestStep()
+    page = MaterialTestGridSettingsPage(editor, step)
+
+    label = cast(SpeedSpinRow, _row(page, "label_speed"))
+    fixed = cast(SpeedSpinRow, _row(page, "fixed_speed"))
+    speed = cast(SpeedSpinRow, _row(page, "speed_range"))
+    assert isinstance(label, SpeedSpinRow)
+    assert isinstance(fixed, SpeedSpinRow)
+    assert isinstance(speed, SpeedSpinRow)
+
+    # mm/min -> mm/s: divide by 60 (mm/s precision is one digit).
+    ui_context.config.set_unit_preference("speed", "mm/s")
+    assert label.get_spin_button().get_text() == "16.7"
+    assert fixed.get_spin_button().get_text() == "16.7"
+    assert speed.get_spin_button().get_text() == "1.7"
+
+
+@pytest.mark.ui
+def test_material_test_offset_rows_are_unit_aware(editor, ui_context):
+    """Material-test offset rows adapt to the user's unit preference."""
+    step = MaterialTestStep()
+    step.grid_mode = "Speed vs Offset"
+    page = MaterialTestGridSettingsPage(editor, step)
+
+    offset = cast(LengthSpinRow, _row(page, "offset_range"))
+    assert isinstance(offset, LengthSpinRow)
+
+    # -0.5 mm -> -0.0197 in, rounded to three digits.
+    ui_context.config.set_unit_preference("length", "in")
+    assert offset.get_spin_button().get_text() == "-0.020"
+
+
+@pytest.mark.ui
+def test_material_test_tuple_labels_survive_config_change(editor, ui_context):
+    """A unit-preference change must not clobber tuple row labels.
+
+    Rebuilding the varsets (as a config change does) must keep the
+    component titles, not replace the first row's title with the var's
+    own label.
+    """
+    step = MaterialTestStep()
+    page = MaterialTestGridSettingsPage(editor, step)
+
+    primary = _row(page, "power_range")
+    adapter = page.params_widget.adapter_for("power_range")
+    assert adapter is not None
+    extra = adapter.extra_rows()[0]
+    assert primary.get_title() == "Minimum Power (%)"
+    assert extra.get_title() == "Maximum Power (%)"
+
+    # Changing the unit preference fires config.changed -> _on_config_changed
+    # -> populate -> adapter.update_from_var.
+    ui_context.config.set_unit_preference("speed", "mm/s")
+
+    assert primary.get_title() == "Minimum Power (%)"
+    assert extra.get_title() == "Maximum Power (%)"
+
+
+@pytest.mark.ui
 def test_material_test_grid_mode_visibility(editor, laser_machine, ui_context):
     """Parameters rows follow the grid-mode visible_when predicates."""
-    from laser_essentials.steps.material_test import MaterialTestStep
-
     step = MaterialTestStep()
     page = MaterialTestGridSettingsPage(editor, step)
 
@@ -204,8 +261,6 @@ def test_material_test_grid_mode_visibility(editor, laser_machine, ui_context):
 @pytest.mark.ui
 def test_material_test_labels_sensitivity(editor, laser_machine, ui_context):
     """Label rows are insensitive while labels are disabled."""
-    from laser_essentials.steps.material_test import MaterialTestStep
-
     step = MaterialTestStep()
     page = MaterialTestGridSettingsPage(editor, step)
 
@@ -224,8 +279,6 @@ def test_material_test_preset_applies_values(
     editor, laser_machine, ui_context
 ):
     """Selecting a preset commits speed/power ranges and test type."""
-    from laser_essentials.steps.material_test import MaterialTestStep
-
     step = MaterialTestStep()
     page = MaterialTestGridSettingsPage(editor, step)
     page.preset_row.set_selected(2)  # Diode Cut
@@ -240,8 +293,6 @@ def test_material_test_speed_vs_offset_defaults(
     editor, laser_machine, ui_context
 ):
     """Switching to Speed vs Offset applies engrave defaults."""
-    from laser_essentials.steps.material_test import MaterialTestStep
-
     step = MaterialTestStep()
     page = MaterialTestGridSettingsPage(editor, step)
 

@@ -211,6 +211,17 @@ class MaterialTestGridSettingsPage(LaserStepSettingsPage):
         if isinstance(adapter, TupleAdapter):
             adapter.set_bounds(1.0, float(self.step.max_cut_speed))
 
+    def _on_machine_changed(self):
+        """Re-apply mode-dependent state after a config/machine change.
+
+        The base rebuilds every varset (``populate`` resets the tuple
+        row labels to the var defaults), so the mode-specific dimension
+        labels and the Parameters grid context must be restored here.
+        """
+        super()._on_machine_changed()
+        self._sync_grid_context()
+        self._update_dimension_labels()
+
     def _sync_widgets_to_model(self, *args):
         super()._sync_widgets_to_model(*args)
         self._sync_grid_context()
