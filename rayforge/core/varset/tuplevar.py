@@ -29,6 +29,7 @@ class TupleVar(Var[tuple]):
         min_val: float | None = None,
         max_val: float | None = None,
         digits: int | None = None,
+        quantity: str | None = None,
         *,
         visible_when: "Callable[[dict[str, Any]], bool] | None" = None,
         sensitive_when: "Callable[[dict[str, Any]], bool] | None" = None,
@@ -40,12 +41,16 @@ class TupleVar(Var[tuple]):
             item_subtitles: Optional subtitles for the component rows.
             min_val/max_val: Bounds applied to every component.
             digits: Number of decimal digits for the component rows.
+            quantity: Physical quantity of the components (e.g. "speed",
+                "length"). When set, the UI renders unit-aware rows that
+                convert to the user's preferred display units.
         """
         self.item_labels = item_labels
         self.item_subtitles = item_subtitles
         self.min_val = min_val
         self.max_val = max_val
         self.digits = digits
+        self.quantity = quantity
         super().__init__(
             key=key,
             label=label,
@@ -70,6 +75,7 @@ class TupleVar(Var[tuple]):
                 "min_val": self.min_val,
                 "max_val": self.max_val,
                 "digits": self.digits,
+                "quantity": self.quantity,
             }
         )
         return data

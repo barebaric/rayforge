@@ -13,10 +13,9 @@ from rayforge.core.step import legacy_producer_params
 from rayforge.core.varset import (
     BoolVar,
     ChoiceVar,
-    FloatVar,
-    IntVar,
     LengthVar,
     SliderFloatVar,
+    SpeedVar,
     TupleVar,
     VarSet,
 )
@@ -138,7 +137,7 @@ class MaterialTestStep(LaserStep):
                     description=_(
                         "Distance between scan lines in machine units "
                         "(for Engrave mode). Leave at 0 to use laser "
-                        "spot size."
+                        "spot size"
                     ),
                     default=0.0,
                     min_val=0.0,
@@ -159,21 +158,20 @@ class MaterialTestStep(LaserStep):
                     format_suffix="%",
                     sensitive_when=labels_active,
                 ),
-                IntVar(
+                SpeedVar(
                     key="label_speed",
                     label=_("Label Engrave Speed"),
-                    description=_("Speed for engraving labels (mm/min)"),
+                    description=_("Speed for engraving labels"),
                     default=1000,
                     min_val=1,
                     sensitive_when=labels_active,
                 ),
-                FloatVar(
+                SpeedVar(
                     key="fixed_speed",
                     label=_("Fixed Speed"),
-                    description=_("Constant speed for all cells (mm/min)"),
-                    default=1000.0,
-                    min_val=1.0,
-                    digits=0,
+                    description=_("Constant speed for all cells"),
+                    default=1000,
+                    min_val=1,
                     visible_when=uses_fixed_speed,
                 ),
                 SliderFloatVar(
@@ -209,12 +207,13 @@ class MaterialTestStep(LaserStep):
                     label=_("Speed Range"),
                     item_labels=(_("Minimum Speed"), _("Maximum Speed")),
                     item_subtitles=(
-                        _("Starting speed (mm/min)"),
-                        _("Ending speed (mm/min)"),
+                        _("Starting speed"),
+                        _("Ending speed"),
                     ),
                     default=(100.0, 500.0),
                     min_val=1.0,
                     digits=0,
+                    quantity="speed",
                     visible_when=uses_speed_range,
                 ),
                 TupleVar(
@@ -235,13 +234,14 @@ class MaterialTestStep(LaserStep):
                     label=_("Offset Range"),
                     item_labels=(_("Minimum Offset"), _("Maximum Offset")),
                     item_subtitles=(
-                        _("Bidir scan X-offset for first row (mm)"),
-                        _("Bidir scan X-offset for last row (mm)"),
+                        _("Bidir scan X-offset for first row"),
+                        _("Bidir scan X-offset for last row"),
                     ),
                     default=(-0.5, 0.5),
                     min_val=-10.0,
                     max_val=10.0,
                     digits=2,
+                    quantity="length",
                     visible_when=is_speed_vs_offset,
                 ),
             ]
