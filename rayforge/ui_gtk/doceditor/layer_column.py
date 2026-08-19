@@ -146,7 +146,7 @@ class LayerColumn(Gtk.Box):
 
         self._connect_signals()
         self._update_style()
-        self._update_subtitle()
+        self._update_ui()
 
     def do_measure(self, orientation, for_size):
         min_, nat, min_bl, nat_bl = super().do_measure(orientation, for_size)
@@ -405,6 +405,7 @@ class LayerColumn(Gtk.Box):
             self.visibility_button.set_child(self.visibility_on_icon)
         else:
             self.visibility_button.set_child(self.visibility_off_icon)
+        self.set_opacity(1.0 if self.layer.visible else 0.5)
 
     def _update_subtitle(self):
         machine = get_context().machine
