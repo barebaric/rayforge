@@ -1,11 +1,14 @@
 import asyncio
+import math
 from collections.abc import Generator
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 from raygeo.geo import Geometry, Matrix
+from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
+from raygeo.ops.types import CommandType
 
 import rayforge.machine.driver as driver_module
 from rayforge.context import get_context
@@ -654,6 +657,62 @@ class TestMachine:
         assert not last_line.startswith(("G1", "G2", "G3")), (
             f"Laser left on after framing. Last G-code line: '{last_line}'"
         )
+
+    def test_apply_frame_rotary_mapping_drives_a_axis(self, sync_machine, doc):
+        """Framing a TRUE_4TH_AXIS rotary layer maps Y movement onto the
+        A (rotary) axis instead of driving the physical Y axis (#356)."""
+        from rayforge.machine.cmd import _apply_frame_rotary_mapping
+        from rayforge.machine.models.rotary_module import (
+            RotaryMode,
+            RotaryModule,
+        )
+
+        rm = RotaryModule()
+        rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
+        rm.set_axis(Axis.A)
+        sync_machine.add_rotary_module(rm)
+
+        doc.active_layer.set_rotary_enabled(True)
+        doc.active_layer.set_rotary_module_uid(rm.uid)
+        doc.active_layer.set_rotary_diameter(25.0)
+
+        frame_ops = Ops()
+        frame_ops.set_power(1.0)
+        frame_ops.move_to(0.0, 0.0, 0.0)
+        frame_ops.line_to(100.0, 0.0, 0.0)
+        frame_ops.line_to(100.0, 50.0, 0.0)
+
+        module = _apply_frame_rotary_mapping(
+            frame_ops, sync_machine, doc.active_layer
+        )
+        assert module is rm
+
+        # The second line moves 50 mm in Y: it must become rotary
+        # degrees on the A axis, not a physical Y move.
+        line_idx = frame_ops.indices_of(CommandType.LINE_TO)[1]
+        ea = frame_ops.extra_axes(line_idx)
+        assert ea is not None
+        expected_deg = (50.0 / (25.0 * math.pi)) * 360.0
+        assert ea[Axis.A] == pytest.approx(expected_deg)
+        # Y is pinned to the cylinder axis position (origin here).
+        assert frame_ops.endpoint(line_idx)[1] == pytest.approx(0.0)
+
+    def test_apply_frame_rotary_mapping_flat_layer_returns_none(
+        self, sync_machine, doc
+    ):
+        """A flat (non-rotary) layer must leave frame ops unmapped."""
+        from rayforge.machine.cmd import _apply_frame_rotary_mapping
+
+        frame_ops = Ops()
+        frame_ops.move_to(0.0, 0.0, 0.0)
+        frame_ops.line_to(10.0, 10.0, 0.0)
+
+        module = _apply_frame_rotary_mapping(
+            frame_ops, sync_machine, doc.active_layer
+        )
+        assert module is None
+        line_idx = frame_ops.indices_of(CommandType.LINE_TO)[0]
+        assert frame_ops.extra_axes(line_idx) is None
 
     @pytest.mark.asyncio
     async def test_can_focus(self, machine: Machine, task_mgr: TaskManager):
