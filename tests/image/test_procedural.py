@@ -24,7 +24,13 @@ def mock_size_func(params: dict) -> tuple[float, float]:
     return params.get("width", 10.0), params.get("height", 10.0)
 
 
-def mock_draw_func(ctx: cairo.Context, width: int, height: int, params: dict):
+def mock_draw_func(
+    ctx: cairo.Context,
+    width: int,
+    height: int,
+    params: dict,
+    size_mm: tuple[float, float] | None = None,
+):
     """A mock function that draws a simple colored rectangle."""
     color = params.get("color", (1.0, 0.0, 0.0))  # Default to red
     ctx.set_source_rgb(*color)
