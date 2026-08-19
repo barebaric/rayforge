@@ -17,7 +17,12 @@ from ..core.capability import MachineCapability
 from ..core.doc import Doc
 from ..core.workpiece import WorkPiece
 from ..machine.kinematic_mapping import KinematicMapping
-from .artifact import BaseArtifactHandle, JobArtifact, WorkPieceArtifact
+from .artifact import (
+    BaseArtifactHandle,
+    JobArtifact,
+    MaterialStateArtifact,
+    WorkPieceArtifact,
+)
 from .artifact.store import ArtifactStore
 from .encoder.base import EncodedOutput, MachineCodeOpMap
 from .intent_builder import (
@@ -72,6 +77,7 @@ class Pipeline:
         self._last_known_busy = False
 
         self._wp_handles: dict[tuple[str, str], BaseArtifactHandle] = {}
+        self._material_state_handles: dict[str, BaseArtifactHandle] = {}
         self._last_aggregate_output: Any = None
         self._last_job_handle: BaseArtifactHandle | None = None
 
@@ -82,6 +88,7 @@ class Pipeline:
         self.step_assembly_starting = Signal()
         self.job_generation_finished = Signal()
         self.job_time_updated = Signal()
+        self.material_state_ready = Signal()
         self.visual_chunk_available = Signal()
         self.data_stale = Signal()
         self.pipeline_error = Signal()
@@ -139,6 +146,7 @@ class Pipeline:
         ctl.job_aggregate_ready.connect(self._on_job_aggregate)
         ctl.job_generation_finished.connect(self._on_job_encoded)
         ctl.job_time_updated.connect(self._job_time_relay)
+        ctl.material_state_ready.connect(self._on_material_state)
         ctl.rebuild_started.connect(self._on_rebuild_started)
         ctl.rebuild_finished.connect(self._on_rebuild_finished)
         ctl.data_stale.connect(self._on_data_stale)
@@ -159,6 +167,7 @@ class Pipeline:
             return
         self._doc = new_doc
         self._wp_handles.clear()
+        self._material_state_handles.clear()
         self._last_job_handle = None
         self._last_aggregate_output = None
         self._intent_ctl.set_doc(new_doc)
@@ -344,6 +353,36 @@ class Pipeline:
             self,
             step=step,
             workpiece=workpiece,
+            handle=handle,
+            generation_id=generation_id,
+        )
+
+    def _on_material_state(
+        self, sender, *, stock_item, output, generation_id
+    ) -> None:
+        """Wrap a ``MaterialState`` into a :class:`MaterialStateArtifact`,
+        store it, and emit :attr:`material_state_ready` with the handle.
+
+        ``output`` is a raygeo ``MaterialState`` returned by the fold
+        compute node. No renderer consumes it yet; the artifact is
+        stored so future iterations (voids, relief, burn-in) can pick
+        it up without changing the signal path.
+        """
+        if self._is_shutting_down or output is None:
+            return
+        artifact = MaterialStateArtifact(
+            material_state=output,
+            stock_uid=stock_item.uid,
+            generation_id=generation_id,
+        )
+        old = self._material_state_handles.pop(stock_item.uid, None)
+        if old is not None:
+            self._store.release(old)
+        handle = self._store.put(artifact, "material")
+        self._material_state_handles[stock_item.uid] = handle
+        self.material_state_ready.send(
+            self,
+            stock_item=stock_item,
             handle=handle,
             generation_id=generation_id,
         )

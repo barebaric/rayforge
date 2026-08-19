@@ -66,6 +66,11 @@ from raygeo.ops.convert import (
     GcodeSpec,
     PythonEncoder,
 )
+from raygeo.ops.material.spec import (
+    FoldEntry,
+    MaterialFoldSpec,
+    PrismaticStock,
+)
 from raygeo.pipeline.request import NodeRequest
 from raygeo.pipeline.stage import StageSpec
 
@@ -84,6 +89,7 @@ if TYPE_CHECKING:
     from ..core.doc import Doc
     from ..core.layer import Layer
     from ..core.step import Step
+    from ..core.stock import StockItem
     from ..core.workpiece import WorkPiece
     from ..machine.models.dialect import GcodeDialect
     from ..machine.models.machine import Machine
@@ -98,6 +104,7 @@ STEP_KEY_FMT = "step:{step_uid}"
 JOB_KEY = "job"
 JOB_ENCODE_KEY = "job:encode"
 JOB_MACHINEXFORM_KEY = "job:machinexform"
+STOCK_KEY_FMT = "stock:{stock_uid}"
 
 
 class UnsupportedRotaryPanelOrientationError(ValueError):
@@ -157,6 +164,24 @@ def job_machinexform_key() -> str:
     return JOB_MACHINEXFORM_KEY
 
 
+def stock_key(stock_uid: str) -> str:
+    return STOCK_KEY_FMT.format(stock_uid=stock_uid)
+
+
+def parse_stock_key(key: str) -> str | None:
+    """Parse a ``stock:{stock_uid}`` key.
+
+    Returns the stock uid, or ``None`` if *key* does not match the
+    expected format.
+    """
+    if not key.startswith("stock:"):
+        return None
+    rest = key[len("stock:") :]
+    if not rest or ":" in rest:
+        return None
+    return rest
+
+
 class IntentBuilder:
     """
     Builds a flat :class:`NodeRequest` list from a :class:`Doc`.
@@ -214,6 +239,15 @@ class IntentBuilder:
                     step, step_workpieces, nodes
                 )
                 step_compute_inputs[step.uid] = inputs
+
+        # Collect every workpiece compute key alongside its workpiece
+        # so each stock fold node can depend on the workpiece compute
+        # nodes whose world AABB intersects the stock.
+        wp_compute_keys: list[tuple[str, WorkPiece]] = []
+        for inputs in step_compute_inputs.values():
+            for wp_key, _token, wp in inputs:
+                wp_compute_keys.append((wp_key, wp))
+        self._build_stock_fold_nodes(doc, wp_compute_keys, nodes)
 
         for layer in doc.layers:
             if not layer.workflow:
@@ -387,6 +421,77 @@ class IntentBuilder:
         out.append(self._make_request(key, token, stage))
 
     # ------------------------------------------------------------------
+    # Stock fold compute nodes
+    # ------------------------------------------------------------------
+
+    def _build_stock_fold_nodes(
+        self,
+        doc: Doc,
+        wp_compute_keys: list[tuple[str, WorkPiece]],
+        out: list[NodeRequest],
+    ) -> None:
+        """Emit one ``MaterialFold`` compute node per visible stock item.
+
+        Each fold node depends on every workpiece compute node whose
+        world AABB intersects that stock's world AABB. Stock items with
+        no intersecting workpiece (nothing to fold) are skipped.
+        """
+        for stock_item in doc.stock_items:
+            if not stock_item.visible:
+                continue
+            self._build_stock_fold_node(stock_item, wp_compute_keys, out)
+
+    def _build_stock_fold_node(
+        self,
+        stock_item: StockItem,
+        wp_compute_keys: list[tuple[str, WorkPiece]],
+        out: list[NodeRequest],
+    ) -> None:
+        """Emit a ``stock:{uid}`` fold node for one stock item."""
+        stock_geo = stock_item.get_world_rect_geometry()
+        if stock_geo is None or stock_geo.is_empty():
+            return
+        stock_rect = stock_geo.rect()
+        thickness = stock_item.thickness
+        if thickness is None or thickness <= 0:
+            return
+        stock_polygons = stock_geo.to_polygons()
+
+        entries: list[FoldEntry] = []
+        source_keys: list[str] = []
+        for wp_key, wp in wp_compute_keys:
+            wp_geo = wp.get_world_geometry()
+            if wp_geo is None or wp_geo.is_empty():
+                continue
+            wp_rect = wp_geo.rect()
+            if not _aabb_intersects(stock_rect, wp_rect):
+                continue
+            placement = _workpiece_placement_matrix_obj(wp)
+            entries.append(
+                FoldEntry(
+                    source_key=wp_key,
+                    placement=placement,
+                    effects=[],  # filled at runtime by MaterialFoldCompute
+                )
+            )
+            source_keys.append(wp_key)
+
+        if not entries:
+            return
+
+        key = stock_key(stock_item.uid)
+        token = self._stock_fold_token(stock_item, source_keys)
+        spec = MaterialFoldSpec(
+            stock=PrismaticStock(
+                polygons=stock_polygons,
+                thickness=thickness,
+            ),
+            entries=entries,
+        )
+        # The MaterialFoldSpec is passed directly as the node's stage.
+        out.append(self._make_request(key, token, spec))
+
+    # ------------------------------------------------------------------
     # Token computation
     # ------------------------------------------------------------------
 
@@ -410,6 +515,28 @@ class IntentBuilder:
                 }
             )
         return _hash_int({"kind": "stock", "items": payload})
+
+    def _stock_fold_token(
+        self, stock_item: StockItem, source_keys: list[str]
+    ) -> int:
+        """Version token for a stock fold node.
+
+        Folds in stock identity, world transform, thickness, and the
+        set of upstream source keys. Does NOT fold in upstream compute
+        tokens — the pipeline's dependency-based invalidation handles
+        that: if an upstream compute token changes, the fold node's
+        deps change and it re-executes regardless of its own token.
+        """
+        thickness = stock_item.thickness
+        payload = {
+            "kind": "stock_fold",
+            "stock_uid": stock_item.uid,
+            "stock_asset_uid": stock_item.stock_asset_uid,
+            "stock_matrix": stock_item.matrix.to_list(),
+            "thickness": thickness if thickness is not None else 0.0,
+            "source_keys": sorted(source_keys),
+        }
+        return _hash_int(payload)
 
     def _compute_token(
         self, step: Step, wp: WorkPiece, pos_sensitive: bool
@@ -1077,12 +1204,29 @@ def _workpiece_placement_matrix(wp: WorkPiece) -> list[list[float]]:
     aggregate via ``target_dimensions`` for scalable artifacts, so the
     placement matrix only carries translation, rotation, flip, and skew.
     """
+    return _workpiece_placement_matrix_obj(wp).to_4x4_list()
+
+
+def _workpiece_placement_matrix_obj(wp: WorkPiece) -> Matrix:
+    """The workpiece world placement as a raygeo :class:`Matrix`.
+
+    Scale-normalised like :func:`_workpiece_placement_matrix` so the
+    fold placement only carries translation, rotation, flip, and skew;
+    the fold operates in world mm, where the workpiece's source
+    geometry already carries its true dimensions.
+    """
     world = wp.get_world_transform()
     tx, ty, angle, _sx, sy, skew = world.decompose()
-    placement = Matrix.compose(
-        tx, ty, angle, 1.0, math.copysign(1.0, sy), skew
-    )
-    return placement.to_4x4_list()
+    return Matrix.compose(tx, ty, angle, 1.0, math.copysign(1.0, sy), skew)
+
+
+def _aabb_intersects(
+    a: tuple[float, float, float, float],
+    b: tuple[float, float, float, float],
+) -> bool:
+    """Return ``True`` if two AABBs ``(min_x, min_y, max_x, max_y)``
+    overlap. Touching edges are not considered an intersection."""
+    return not (a[2] <= b[0] or b[2] <= a[0] or a[3] <= b[1] or b[3] <= a[1])
 
 
 def _canonical(obj: Any) -> Any:

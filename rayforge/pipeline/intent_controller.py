@@ -48,6 +48,7 @@ from raygeo.pipeline.request import NodeRequest
 from .intent_builder import (
     IntentBuilder,
     UnsupportedRotaryPanelOrientationError,
+    parse_stock_key,
     parse_workpiece_key,
 )
 from .status_messages import status_message_for_key
@@ -56,6 +57,7 @@ if TYPE_CHECKING:
     from ..core.doc import Doc
     from ..core.item import DocItem
     from ..core.step import Step
+    from ..core.stock import StockItem
     from ..core.workpiece import WorkPiece
     from ..machine.models.machine import Machine
 
@@ -151,6 +153,7 @@ class IntentController:
         self._key_to_item: dict[str, DocItem] = {}
         self._workpieces_by_uid: dict[str, WorkPiece] = {}
         self._steps_by_uid: dict[str, Step] = {}
+        self._stock_items_by_uid: dict[str, StockItem] = {}
 
         # Signals for notifying the UI of generation progress.
         self.workpiece_artifact_ready = Signal()
@@ -158,6 +161,7 @@ class IntentController:
         self.job_aggregate_ready = Signal()
         self.job_generation_finished = Signal()
         self.job_time_updated = Signal()
+        self.material_state_ready = Signal()
         self.progress_changed = Signal()
         self.rebuild_started = Signal()
         self.rebuild_finished = Signal()
@@ -611,6 +615,17 @@ class IntentController:
             self.job_generation_finished.send(
                 self, handle=output, task_status="completed"
             )
+        elif key.startswith("stock:"):
+            stock_uid = parse_stock_key(key)
+            if stock_uid is not None:
+                stock_item = self._find_stock_item(stock_uid)
+                if stock_item is not None:
+                    self.material_state_ready.send(
+                        self,
+                        stock_item=stock_item,
+                        output=output,
+                        generation_id=gen,
+                    )
 
     # ------------------------------------------------------------------
     # Helpers
@@ -641,6 +656,12 @@ class IntentController:
         self._workpieces_by_uid = workpieces
         self._steps_by_uid = steps
 
+        stock_items: dict[str, StockItem] = {}
+        if self._doc is not None:
+            for item in self._doc.stock_items:
+                stock_items[item.uid] = item
+        self._stock_items_by_uid = stock_items
+
         for n in nodes:
             key = n.key
             # ``workpiece:{wp_uid}:{step_uid}``
@@ -660,6 +681,13 @@ class IntentController:
                 step = steps.get(s_uid)
                 if step is not None:
                     self._key_to_item[key] = step
+            # ``stock:{stock_uid}``
+            elif key.startswith("stock:"):
+                stock_uid = parse_stock_key(key)
+                if stock_uid is not None:
+                    stock = stock_items.get(stock_uid)
+                    if stock is not None:
+                        self._key_to_item[key] = stock
             # ``job`` or ``job:encode``
             elif key == "job" or key == "job:encode":
                 self._key_to_item[key] = self._doc
@@ -669,6 +697,9 @@ class IntentController:
 
     def _find_step(self, uid: str) -> Step | None:
         return self._steps_by_uid.get(uid)
+
+    def _find_stock_item(self, uid: str) -> StockItem | None:
+        return self._stock_items_by_uid.get(uid)
 
     def shutdown(self) -> None:
         """Cancel any pending rebuild timer and disconnect signals."""
