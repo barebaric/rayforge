@@ -104,6 +104,12 @@ Configura el montaje físico de la máquina:
 - **Ejes** — extensiones del área de trabajo X/Y y la esquina de origen de
   coordenadas (0,0)
 - **Dirección del eje** — invierte un eje si las coordenadas salen negativas
+- **Eje Z** — si la máquina tiene un eje Z (motor de enfoque, cama móvil);
+  cuando está ausente, no se generan movimientos Z y el lienzo 3D coloca
+  el contenido en el plano de grabado
+- **Orientación del panel** — rota el espacio de trabajo plano tal como se
+  presenta en pantalla (Nativo, Girar a la izquierda, Girar a la
+  derecha); las capas rotativas requieren Nativo
 - **Área de trabajo** — márgenes alrededor del espacio inutilizable de la
   superficie de trabajo
 - **Límites suaves** — límites de seguridad opcionales para el desplazamiento

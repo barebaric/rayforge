@@ -43,6 +43,36 @@ Inverta a direção de qualquer eixo se necessário:
 - **Inverter Direção do Eixo Y**: Torna os valores de coordenada Y negativos
 - **Inverter Direção do Eixo Z**: Habilite se um comando Z positivo (ex: G0 Z10) move a cabeça para baixo
 
+### Eixo Z
+
+Nem todo laser tem um eixo Z — muitas máquinas de diodo simples de 2 eixos
+não têm. Use estas configurações para informar ao Rayforge se sua máquina
+pode se mover em Z:
+
+- **Tem eixo Z**: Habilite se esta máquina tiver um eixo Z (motor de foco,
+  mesa móvel ou pórtico que pode se mover verticalmente). Quando
+  desabilitado, o eixo Z é tratado como ausente: nenhum movimento Z é
+  gerado, e o canvas 3D distribui o conteúdo no plano de gravação em vez
+  de mostrar uma cabeça se movendo ao longo de Z.
+- **Inverter Direção do Eixo Z**: Só é mostrado quando **Tem eixo Z** está
+  habilitado. Habilite se um comando Z positivo (ex: G0 Z10) move a cabeça
+  para baixo.
+
+### Orientação do painel
+
+A orientação do painel gira a área de trabalho plana como apresentada na
+tela e reatribui a saída de volta à máquina. Isso é útil quando uma cama
+fisicamente orientada em retrato é mais fácil de editar em paisagem.
+
+- **Nativo**: A área de trabalho é mostrada exatamente como a máquina está
+  orientada
+- **Girar para a esquerda**: A área de trabalho é girada 90 graus no sentido
+  anti-horário
+- **Girar para a direita**: A área de trabalho é girada 90 graus no sentido
+  horário
+
+Camadas rotativas exigem a orientação **Nativo**.
+
 ## Área de Trabalho
 
 As margens definem o espaço inutilizável ao redor das bordas da extensão dos seus eixos. Isso é útil quando sua máquina tem áreas onde o laser não pode alcançar (ex: devido à montagem da cabeça do laser, correntes de cabos ou outras obstruções).

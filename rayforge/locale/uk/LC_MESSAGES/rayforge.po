@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-14 21:42+0200\n"
+"POT-Creation-Date: 2026-08-19 20:57+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -136,6 +136,16 @@ msgstr "Швидкість швидких позиціонувальних ру�
 #: rayforge/ui_gtk/settings/settings_dialog.py rayforge/ui_gtk/main_menu.py
 msgid "Settings"
 msgstr "Налаштування"
+
+#: rayforge/core/step.py
+#, python-brace-format
+msgid "Cut speed ({value}) exceeds the machine's maximum ({max})."
+msgstr "Швидкість різання ({value}) перевищує максимум машини ({max})."
+
+#: rayforge/core/step.py
+#, python-brace-format
+msgid "Travel speed ({value}) exceeds the machine's maximum ({max})."
+msgstr "Швидкість переміщення ({value}) перевищує максимум машини ({max})."
 
 #: rayforge/core/varset/choicevar.py
 msgid "Choice"
@@ -309,6 +319,7 @@ msgid "Core"
 msgstr "Ядро"
 
 #: rayforge/core/stock_asset.py
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
 msgid "Stock Material"
 msgstr "Матеріал заготовки"
 
@@ -1643,6 +1654,18 @@ msgstr "Драйвер '{driver}' не знайдено."
 msgid "An unexpected error occurred during validation: {error}"
 msgstr "Виникла неочікувана помилка під час перевірки: {error}"
 
+#: rayforge/machine/models/machine_panel.py
+msgid "Native"
+msgstr "Рідний"
+
+#: rayforge/machine/models/machine_panel.py
+msgid "Rotate Left"
+msgstr "Повернути ліворуч"
+
+#: rayforge/machine/models/machine_panel.py
+msgid "Rotate Right"
+msgstr "Повернути праворуч"
+
 #: rayforge/machine/models/dialect/grbl_raster.py
 msgid "GRBL Raster"
 msgstr "GRBL Raster"
@@ -1997,6 +2020,7 @@ msgstr "Підключено"
 #: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "Error"
 msgstr "Помилка"
@@ -2365,6 +2389,7 @@ msgstr "Додати"
 
 #: rayforge/ui_gtk/settings/color_presets_page.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "Color"
 msgstr "Колір"
 
@@ -3347,6 +3372,7 @@ msgstr "Готово"
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "OK"
 msgstr "Гаразд"
@@ -3614,7 +3640,8 @@ msgstr "Градуси навколо осі Z"
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
-#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+#: rayforge/ui_gtk/doceditor/material_selector.py
 msgid "None"
 msgstr "Немає"
 
@@ -4700,6 +4727,21 @@ msgid "The physical corner where coordinates are zero after homing"
 msgstr "Фізичний кут, де координати дорівнюють нулю після паркування"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Panel Orientation"
+msgstr "Орієнтація панелі"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid ""
+"Rotate the flat workspace and remap output to the machine; rotary layers "
+"require Native"
+msgstr ""
+"Поверніть плоский робочий простір і переназначте вивід на машину; роторні "
+"шари вимагають Рідний"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Reverse X-Axis Direction"
 msgstr "Інвертувати напрямок осі X"
@@ -4713,6 +4755,16 @@ msgstr "Робить значення координат від'ємними"
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Reverse Y-Axis Direction"
 msgstr "Інвертувати напрямок осі Y"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Has Z-Axis"
+msgstr "Має вісь Z"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Enable if this machine has a Z axis (focus motor, movable bed)"
+msgstr "Увімкніть, якщо ця машина має вісь Z (мотор фокусування, рухомий стіл)"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
@@ -6252,6 +6304,14 @@ msgid "Toggle workpiece visibility"
 msgstr "Перемкнути видимість робочої деталі"
 
 #: rayforge/ui_gtk/shared/visibility_overlay.py
+msgid "Toggle workpiece image visibility"
+msgstr "Перемкнути видимість зображення робочої деталі"
+
+#: rayforge/ui_gtk/shared/visibility_overlay.py rayforge/doceditor/stock_cmd.py
+msgid "Toggle stock visibility"
+msgstr "Перемкнути видимість заготовки"
+
+#: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle tab visibility"
 msgstr "Перемкнути видимість вкладок"
 
@@ -6266,6 +6326,10 @@ msgstr "Перемкнути видимість 3D-моделі"
 #: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle grid visibility"
 msgstr "Перемкнути видимість сітки"
+
+#: rayforge/ui_gtk/shared/visibility_overlay.py
+msgid "Toggle ops underlay visibility"
+msgstr "Перемкнути видимість підкладки операцій"
 
 #: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle travel move visibility"
@@ -6288,7 +6352,6 @@ msgid "Select Model"
 msgstr "Вибрати модель"
 
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
-#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "Select"
 msgstr "Вибрати"
 
@@ -7151,6 +7214,7 @@ msgid "Step Settings"
 msgstr "Налаштування кроку"
 
 #: rayforge/ui_gtk/doceditor/step_settings/recipe_control_widget.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Choose..."
 msgstr "Вибрати..."
 
@@ -7313,6 +7377,62 @@ msgid "Category"
 msgstr "Категорія"
 
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Texture"
+msgstr "Текстура"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Unset the tint color (texture is shown as-is)"
+msgstr "Скинути колір тонування (текстура відображається як є)"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Tintable"
+msgstr "Можна тонувати"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Allow tinting the texture with a color"
+msgstr "Дозволити тонування текстури кольором"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Texture Scale"
+msgstr "Масштаб текстури"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Size one texture tile covers on the material"
+msgstr "Розмір, який покриває одна плитка текстури на матеріалі"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Roughness"
+msgstr "Шорсткість"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "How rough or polished the surface appears"
+msgstr "Наскільки шорсткою чи полірованою виглядає поверхня"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Metallic"
+msgstr "Металічний"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Whether the surface reflects light like a metal"
+msgstr "Чи відбиває поверхня світло, як метал"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Not tinted"
+msgstr "Не тонований"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Choose Texture Image"
+msgstr "Вибрати зображення текстури"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Texture images"
+msgstr "Зображення текстур"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Only WebP and PNG texture images are supported."
+msgstr "Підтримуються лише зображення текстур у форматах WebP та PNG."
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Custom"
 msgstr "Власний"
 
@@ -7332,6 +7452,32 @@ msgstr "Товщина"
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "Material thickness"
 msgstr "Товщина матеріалу"
+
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+msgid "Use the material's default color"
+msgstr "Використовувати стандартний колір матеріалу"
+
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+msgid "Set by the material definition"
+msgstr "Встановлено визначенням матеріалу"
+
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+msgid "No color"
+msgstr "Без кольору"
+
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+#, python-brace-format
+msgid "{color} (custom)"
+msgstr "{color} (власний)"
+
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+#, python-brace-format
+msgid "{color} (material default)"
+msgstr "{color} (стандартний для матеріалу)"
+
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+msgid "Material default (no color)"
+msgstr "Стандарт матеріалу (без кольору)"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Assets"
@@ -7470,6 +7616,10 @@ msgstr "Документ все ще можна редагувати та збе
 #: rayforge/ui_gtk/doceditor/missing_features_dialog.py
 msgid "_OK"
 msgstr "_Гаразд"
+
+#: rayforge/ui_gtk/doceditor/material_selector.py
+msgid "Select material"
+msgstr "Вибрати матеріал"
 
 #: rayforge/ui_gtk/doceditor/material_selector.py
 msgid "Select Material"
@@ -7791,6 +7941,10 @@ msgstr "Діаметр об'єкта"
 msgid "Diameter of the cylindrical object"
 msgstr "Діаметр циліндричного об'єкта"
 
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Material rendered on the rotary object"
+msgstr "Матеріал, що відображається на роторному об'єкті"
+
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "No materials in selected library."
 msgstr "У вибраній бібліотеці немає матеріалів."
@@ -7880,6 +8034,11 @@ msgstr "Швидкість відтворення"
 #: rayforge/ui_gtk/sim3d/playback_overlay.py
 msgid "Pause simulation"
 msgstr "Призупинити симуляцію"
+
+#: rayforge/ui_gtk/sim3d/scene_presenter.py
+#, python-brace-format
+msgid "{layer} stock"
+msgstr "Заготовка {layer}"
 
 #: rayforge/ui_gtk/about.py
 msgid "Not found"
@@ -8523,10 +8682,6 @@ msgid "Stock {count}"
 msgstr "Заготовка {count}"
 
 #: rayforge/doceditor/stock_cmd.py
-msgid "Toggle stock visibility"
-msgstr "Перемкнути видимість заготовки"
-
-#: rayforge/doceditor/stock_cmd.py
 msgid "Rename Stock Asset"
 msgstr "Перейменувати ресурс заготовки"
 
@@ -8537,6 +8692,10 @@ msgstr "Змінити товщину заготовки"
 #: rayforge/doceditor/stock_cmd.py
 msgid "Change stock material"
 msgstr "Змінити матеріал заготовки"
+
+#: rayforge/doceditor/stock_cmd.py
+msgid "Change stock color"
+msgstr "Змінити колір заготовки"
 
 #: rayforge/doceditor/tab_cmd.py
 msgid "Add Tab"
@@ -8557,6 +8716,10 @@ msgstr "Змінити ширину табу"
 #: rayforge/doceditor/layer_cmd.py
 msgid "Move to another layer"
 msgstr "Перемістити на інший шар"
+
+#: rayforge/doceditor/layer_cmd.py
+msgid "Change layer stock material"
+msgstr "Змінити матеріал заготовки шару"
 
 #: rayforge/doceditor/layer_cmd.py
 msgid "Set active layer"

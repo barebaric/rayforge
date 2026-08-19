@@ -43,6 +43,37 @@ Inversez la direction de n'importe quel axe si nécessaire :
 - **Inverser la Direction de l'Axe Y** : Rend les valeurs de coordonnées Y négatives
 - **Inverser la Direction de l'Axe Z** : Activez si une commande Z positive (ex : G0 Z10) déplace la tête vers le bas
 
+### Axe Z
+
+Tous les lasers n'ont pas d'axe Z — de nombreuses machines à diode simples
+à 2 axes n'en ont pas. Utilisez ces réglages pour indiquer à Rayforge si
+votre machine peut se déplacer en Z :
+
+- **A un axe Z** : Activez si cette machine a un axe Z (moteur de mise au
+  point, lit mobile ou portique pouvant se déplacer verticalement). Lorsqu'il
+  est désactivé, l'axe Z est traité comme absent : aucun mouvement Z n'est
+  généré, et le canevas 3D dispose le contenu sur le plan de gravure au lieu
+  d'afficher une tête se déplaçant le long de Z.
+- **Inverser la Direction de l'Axe Z** : N'est affiché que lorsque **A un
+  axe Z** est activé. Activez si une commande Z positive (ex : G0 Z10)
+  déplace la tête vers le bas.
+
+### Orientation du panneau
+
+L'orientation du panneau fait pivoter l'espace de travail plat tel qu'il
+est présenté à l'écran et remappe la sortie vers la machine. C'est utile
+lorsqu'un plateau physiquement orienté en portrait est plus facile à
+éditer en paysage.
+
+- **Natif** : L'espace de travail est affiché exactement comme la machine
+  est orientée
+- **Pivoter à gauche** : L'espace de travail est pivoté de 90 degrés dans
+  le sens antihoraire
+- **Pivoter à droite** : L'espace de travail est pivoté de 90 degrés dans
+  le sens horaire
+
+Les couches rotatives nécessitent l'orientation **Natif**.
+
 ## Zone de Travail
 
 Les marges définissent l'espace inutilisable autour des bords de l'étendue de vos axes. C'est utile lorsque votre machine a des zones où le laser ne peut pas atteindre (ex : en raison de l'assemblage de la tête laser, des chaînes de câbles ou d'autres obstructions).

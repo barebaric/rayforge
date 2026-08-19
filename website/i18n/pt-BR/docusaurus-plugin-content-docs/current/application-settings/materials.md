@@ -8,9 +8,11 @@ explica a diferença entre bibliotecas do sistema e do usuário, e como criar
 suas próprias bibliotecas e adicionar materiais a elas.
 
 :::note
- Bibliotecas de materiais atualmente não têm uso funcional - atribuir um material
- afeta apenas a aparência estética. Em versões futuras, materiais
- serão usados para derivar parâmetros funcionais.
+ Atribuir um material a um item de material afeta tanto sua aparência
+ visual no canvas 2D e 3D quanto quais [receitas](recipes.md) se aplicam
+ a ele: receitas específicas de material correspondem ao material
+ atribuído. Em versões futuras, materiais serão usados para derivar mais
+ parâmetros funcionais.
  :::
 
 
@@ -35,7 +37,7 @@ Sua nova biblioteca será criada no diretório de dados do usuário e estará di
 3. Preencha as propriedades do material:
    - **Nome**: Nome legível para humanos
    - **Categoria**: Categoria de agrupamento (ex., "Madeira", "Acrílico")
-   - **Aparência**: Propriedades visuais (cor)
+   - **Aparência**: Propriedades visuais (veja abaixo)
 4. Clique em **Salvar** para adicionar o material à biblioteca
 
 ### Propriedades do Material Explicadas
@@ -49,10 +51,43 @@ Sua nova biblioteca será criada no diretório de dados do usuário e estará di
 - Categorias comuns incluem: Madeira, Acrílico, Metal, Papel, Couro
 - Você pode criar categorias personalizadas conforme necessário
 
+#### Textura
+
+Uma imagem de textura (WebP ou PNG) que é repetida em mosaico sobre a
+superfície do material. Quando definida, o material é renderizado com a
+textura em vez de uma cor sólida. As texturas podem ser otimizadas para
+WebP com o script `scripts/optimize_material_textures.py` para manter os
+arquivos de material pequenos.
+
+#### Escala da textura
+
+O tamanho (em mm) que uma peça de textura cobre sobre o material.
+Valores menores repetem a textura com mais frequência na mesma superfície.
+
 #### Cor
 
-A cor é usada apenas para aparência visual na superfície de trabalho - não
-afeta o caminho do laser de nenhuma forma.
+A cor base do material. Quando uma textura é definida e o material é
+tingível, a cor tinge a textura. A cor é usada apenas para aparência
+visual na superfície de trabalho - não afeta o caminho do laser de
+nenhuma forma.
+
+#### Tingível
+
+Quando habilitado, a textura do material pode ser tingida com a cor
+acima. Isso permite que um único material texturizado (ex., "Acrílico")
+cubra múltiplas variantes de cor: a cor é aplicada por item de material
+no diálogo [Propriedades do Material](../features/stock-handling.md).
+
+#### Rugosidade
+
+Um valor de 0-1 que descreve quão rugosa ou polida a superfície aparece
+na visualização 3D. Valores mais baixos parecem brilhantes, valores mais
+altos parecem foscos.
+
+#### Metálico
+
+Um valor de 0-1 que descreve se a superfície reflete luz como um metal na
+visualização 3D. Defina 1 para materiais metálicos, 0 para não metálicos.
 
 
 ## Gerenciando Materiais Existentes

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-14 21:42+0200\n"
+"POT-Creation-Date: 2026-08-19 20:57+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -136,6 +136,18 @@ msgstr "Vitesse des déplacements de positionnement rapide"
 #: rayforge/ui_gtk/settings/settings_dialog.py rayforge/ui_gtk/main_menu.py
 msgid "Settings"
 msgstr "Paramètres"
+
+#: rayforge/core/step.py
+#, python-brace-format
+msgid "Cut speed ({value}) exceeds the machine's maximum ({max})."
+msgstr ""
+"La vitesse de coupe ({value}) dépasse le maximum de la machine ({max})."
+
+#: rayforge/core/step.py
+#, python-brace-format
+msgid "Travel speed ({value}) exceeds the machine's maximum ({max})."
+msgstr ""
+"La vitesse de déplacement ({value}) dépasse le maximum de la machine ({max})."
 
 #: rayforge/core/varset/choicevar.py
 msgid "Choice"
@@ -309,6 +321,7 @@ msgid "Core"
 msgstr "Noyau"
 
 #: rayforge/core/stock_asset.py
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
 msgid "Stock Material"
 msgstr "Matériau brut"
 
@@ -1667,6 +1680,18 @@ msgstr "Pilote « {driver} » introuvable."
 msgid "An unexpected error occurred during validation: {error}"
 msgstr "Une erreur inattendue est survenue lors de la validation : {error}"
 
+#: rayforge/machine/models/machine_panel.py
+msgid "Native"
+msgstr "Natif"
+
+#: rayforge/machine/models/machine_panel.py
+msgid "Rotate Left"
+msgstr "Pivoter à gauche"
+
+#: rayforge/machine/models/machine_panel.py
+msgid "Rotate Right"
+msgstr "Pivoter à droite"
+
 #: rayforge/machine/models/dialect/grbl_raster.py
 msgid "GRBL Raster"
 msgstr "GRBL Raster"
@@ -2027,6 +2052,7 @@ msgstr "Connecté"
 #: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "Error"
 msgstr "Erreur"
@@ -2399,6 +2425,7 @@ msgstr "Ajouter"
 
 #: rayforge/ui_gtk/settings/color_presets_page.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "Color"
 msgstr "Couleur"
 
@@ -3393,6 +3420,7 @@ msgstr "Terminer"
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "OK"
 msgstr "OK"
@@ -3659,7 +3687,8 @@ msgstr "Degrés autour de l'axe Z"
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
-#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+#: rayforge/ui_gtk/doceditor/material_selector.py
 msgid "None"
 msgstr "Aucun"
 
@@ -4763,6 +4792,21 @@ msgstr ""
 "Le coin physique où les coordonnées sont à zéro après la prise d'origine."
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Panel Orientation"
+msgstr "Orientation du panneau"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid ""
+"Rotate the flat workspace and remap output to the machine; rotary layers "
+"require Native"
+msgstr ""
+"Faites pivoter l'espace de travail plat et remappez la sortie vers la "
+"machine ; les calques rotatifs nécessitent Natif"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Reverse X-Axis Direction"
 msgstr "Inverser la direction de l'axe X"
@@ -4776,6 +4820,17 @@ msgstr "Rend les valeurs des coordonnées négatives"
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Reverse Y-Axis Direction"
 msgstr "Inverser la direction de l'axe Y"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Has Z-Axis"
+msgstr "A un axe Z"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Enable if this machine has a Z axis (focus motor, movable bed)"
+msgstr ""
+"Activer si cette machine a un axe Z (moteur de mise au point, plateau mobile)"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
@@ -6340,6 +6395,14 @@ msgid "Toggle workpiece visibility"
 msgstr "Afficher/Masquer la visibilité de la pièce"
 
 #: rayforge/ui_gtk/shared/visibility_overlay.py
+msgid "Toggle workpiece image visibility"
+msgstr "Afficher/Masquer la visibilité de l'image de la pièce"
+
+#: rayforge/ui_gtk/shared/visibility_overlay.py rayforge/doceditor/stock_cmd.py
+msgid "Toggle stock visibility"
+msgstr "Afficher/Masquer la visibilité du brut"
+
+#: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle tab visibility"
 msgstr "Afficher/Masquer la visibilité des languettes"
 
@@ -6354,6 +6417,10 @@ msgstr "Basculer la visibilité du modèle 3D"
 #: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle grid visibility"
 msgstr "Basculer la visibilité de la grille"
+
+#: rayforge/ui_gtk/shared/visibility_overlay.py
+msgid "Toggle ops underlay visibility"
+msgstr "Afficher/Masquer la visibilité de la sous-couche des opérations"
 
 #: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle travel move visibility"
@@ -6376,7 +6443,6 @@ msgid "Select Model"
 msgstr "Sélectionner un modèle"
 
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
-#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "Select"
 msgstr "Sélectionner"
 
@@ -7246,6 +7312,7 @@ msgid "Step Settings"
 msgstr "Paramètres de l'étape"
 
 #: rayforge/ui_gtk/doceditor/step_settings/recipe_control_widget.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Choose..."
 msgstr "Choisir..."
 
@@ -7409,6 +7476,62 @@ msgid "Category"
 msgstr "Catégorie"
 
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Texture"
+msgstr "Texture"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Unset the tint color (texture is shown as-is)"
+msgstr "Désactiver la teinte (la texture est affichée telle quelle)"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Tintable"
+msgstr "Teintable"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Allow tinting the texture with a color"
+msgstr "Autoriser la teinte de la texture avec une couleur"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Texture Scale"
+msgstr "Échelle de la texture"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Size one texture tile covers on the material"
+msgstr "Taille qu'une tuile de texture couvre sur le matériau"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Roughness"
+msgstr "Rugosité"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "How rough or polished the surface appears"
+msgstr "À quel point la surface semble rugueuse ou polie"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Metallic"
+msgstr "Métallique"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Whether the surface reflects light like a metal"
+msgstr "Si la surface réfléchit la lumière comme un métal"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Not tinted"
+msgstr "Non teinté"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Choose Texture Image"
+msgstr "Choisir une image de texture"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Texture images"
+msgstr "Images de texture"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Only WebP and PNG texture images are supported."
+msgstr "Seules les images de texture WebP et PNG sont prises en charge."
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Custom"
 msgstr "Personnalisé"
 
@@ -7428,6 +7551,32 @@ msgstr "Épaisseur"
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "Material thickness"
 msgstr "Épaisseur du matériau"
+
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+msgid "Use the material's default color"
+msgstr "Utiliser la couleur par défaut du matériau"
+
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+msgid "Set by the material definition"
+msgstr "Défini par la définition du matériau"
+
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+msgid "No color"
+msgstr "Aucune couleur"
+
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+#, python-brace-format
+msgid "{color} (custom)"
+msgstr "{color} (personnalisé)"
+
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+#, python-brace-format
+msgid "{color} (material default)"
+msgstr "{color} (défaut du matériau)"
+
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+msgid "Material default (no color)"
+msgstr "Défaut du matériau (aucune couleur)"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Assets"
@@ -7574,6 +7723,10 @@ msgstr "Le document peut toujours être modifié et enregistré."
 #: rayforge/ui_gtk/doceditor/missing_features_dialog.py
 msgid "_OK"
 msgstr "_OK"
+
+#: rayforge/ui_gtk/doceditor/material_selector.py
+msgid "Select material"
+msgstr "Sélectionner un matériau"
 
 #: rayforge/ui_gtk/doceditor/material_selector.py
 msgid "Select Material"
@@ -7899,6 +8052,10 @@ msgstr "Diamètre de l'objet"
 msgid "Diameter of the cylindrical object"
 msgstr "Diamètre de l'objet cylindrique"
 
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Material rendered on the rotary object"
+msgstr "Matériau rendu sur l'objet rotatif"
+
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "No materials in selected library."
 msgstr "Aucun matériau dans la bibliothèque sélectionnée."
@@ -7988,6 +8145,11 @@ msgstr "Vitesse de lecture"
 #: rayforge/ui_gtk/sim3d/playback_overlay.py
 msgid "Pause simulation"
 msgstr "Pause simulation"
+
+#: rayforge/ui_gtk/sim3d/scene_presenter.py
+#, python-brace-format
+msgid "{layer} stock"
+msgstr "Brut de {layer}"
 
 #: rayforge/ui_gtk/about.py
 msgid "Not found"
@@ -8632,10 +8794,6 @@ msgid "Stock {count}"
 msgstr "Brut {count}"
 
 #: rayforge/doceditor/stock_cmd.py
-msgid "Toggle stock visibility"
-msgstr "Afficher/Masquer la visibilité du brut"
-
-#: rayforge/doceditor/stock_cmd.py
 msgid "Rename Stock Asset"
 msgstr "Renommer la ressource de brut"
 
@@ -8646,6 +8804,10 @@ msgstr "Modifier l’épaisseur du brut"
 #: rayforge/doceditor/stock_cmd.py
 msgid "Change stock material"
 msgstr "Modifier le matériau du brut"
+
+#: rayforge/doceditor/stock_cmd.py
+msgid "Change stock color"
+msgstr "Changer la couleur du brut"
 
 #: rayforge/doceditor/tab_cmd.py
 msgid "Add Tab"
@@ -8666,6 +8828,10 @@ msgstr "Modifier la largeur de la languette"
 #: rayforge/doceditor/layer_cmd.py
 msgid "Move to another layer"
 msgstr "Déplacer vers un autre calque"
+
+#: rayforge/doceditor/layer_cmd.py
+msgid "Change layer stock material"
+msgstr "Changer le matériau du brut du calque"
 
 #: rayforge/doceditor/layer_cmd.py
 msgid "Set active layer"

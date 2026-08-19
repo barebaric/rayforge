@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-14 21:42+0200\n"
+"POT-Creation-Date: 2026-08-19 20:57+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -135,6 +135,16 @@ msgstr "快速定位移动的速度"
 #: rayforge/ui_gtk/settings/settings_dialog.py rayforge/ui_gtk/main_menu.py
 msgid "Settings"
 msgstr "设置"
+
+#: rayforge/core/step.py
+#, python-brace-format
+msgid "Cut speed ({value}) exceeds the machine's maximum ({max})."
+msgstr "切割速度（{value}）超过机器的最大速度（{max}）。"
+
+#: rayforge/core/step.py
+#, python-brace-format
+msgid "Travel speed ({value}) exceeds the machine's maximum ({max})."
+msgstr "移动速度（{value}）超过机器的最大速度（{max}）。"
 
 #: rayforge/core/varset/choicevar.py
 msgid "Choice"
@@ -308,6 +318,7 @@ msgid "Core"
 msgstr "核心"
 
 #: rayforge/core/stock_asset.py
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
 msgid "Stock Material"
 msgstr "原材料"
 
@@ -1524,6 +1535,18 @@ msgstr "未找到驱动'{driver}'。"
 msgid "An unexpected error occurred during validation: {error}"
 msgstr "验证期间发生意外错误：{error}"
 
+#: rayforge/machine/models/machine_panel.py
+msgid "Native"
+msgstr "原生"
+
+#: rayforge/machine/models/machine_panel.py
+msgid "Rotate Left"
+msgstr "向左旋转"
+
+#: rayforge/machine/models/machine_panel.py
+msgid "Rotate Right"
+msgstr "向右旋转"
+
 #: rayforge/machine/models/dialect/grbl_raster.py
 msgid "GRBL Raster"
 msgstr "GRBL 栅格"
@@ -1867,6 +1890,7 @@ msgstr "已连接"
 #: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "Error"
 msgstr "错误"
@@ -2226,6 +2250,7 @@ msgstr "添加"
 
 #: rayforge/ui_gtk/settings/color_presets_page.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "Color"
 msgstr "颜色"
 
@@ -3186,6 +3211,7 @@ msgstr "完成"
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "OK"
 msgstr "确定"
@@ -3444,7 +3470,8 @@ msgstr "绕 Z 轴的度数"
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
-#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+#: rayforge/ui_gtk/doceditor/material_selector.py
 msgid "None"
 msgstr "无"
 
@@ -4495,6 +4522,19 @@ msgid "The physical corner where coordinates are zero after homing"
 msgstr "回原点后坐标为零的物理角落"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Panel Orientation"
+msgstr "面板方向"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid ""
+"Rotate the flat workspace and remap output to the machine; rotary layers "
+"require Native"
+msgstr "旋转平面工作区并将输出重新映射到机器；旋转图层需要原生"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Reverse X-Axis Direction"
 msgstr "反转X轴方向"
@@ -4508,6 +4548,16 @@ msgstr "使坐标值为负"
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Reverse Y-Axis Direction"
 msgstr "反转Y轴方向"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Has Z-Axis"
+msgstr "有 Z 轴"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Enable if this machine has a Z axis (focus motor, movable bed)"
+msgstr "如果此机器有 Z 轴（对焦电机、可移动平台），请启用"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
@@ -5995,6 +6045,14 @@ msgid "Toggle workpiece visibility"
 msgstr "切换工件可见性"
 
 #: rayforge/ui_gtk/shared/visibility_overlay.py
+msgid "Toggle workpiece image visibility"
+msgstr "切换工件图像可见性"
+
+#: rayforge/ui_gtk/shared/visibility_overlay.py rayforge/doceditor/stock_cmd.py
+msgid "Toggle stock visibility"
+msgstr "切换毛坯可见性"
+
+#: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle tab visibility"
 msgstr "切换标签可见性"
 
@@ -6009,6 +6067,10 @@ msgstr "切换 3D 模型可见性"
 #: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle grid visibility"
 msgstr "切换网格可见性"
+
+#: rayforge/ui_gtk/shared/visibility_overlay.py
+msgid "Toggle ops underlay visibility"
+msgstr "切换操作底图可见性"
 
 #: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle travel move visibility"
@@ -6031,7 +6093,6 @@ msgid "Select Model"
 msgstr "选择模型"
 
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
-#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "Select"
 msgstr "选择"
 
@@ -6875,6 +6936,7 @@ msgid "Step Settings"
 msgstr "步骤设置"
 
 #: rayforge/ui_gtk/doceditor/step_settings/recipe_control_widget.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Choose..."
 msgstr "选择..."
 
@@ -7032,6 +7094,62 @@ msgid "Category"
 msgstr "类别"
 
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Texture"
+msgstr "纹理"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Unset the tint color (texture is shown as-is)"
+msgstr "取消色调颜色（纹理按原样显示）"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Tintable"
+msgstr "可着色"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Allow tinting the texture with a color"
+msgstr "允许使用颜色为纹理着色"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Texture Scale"
+msgstr "纹理缩放"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Size one texture tile covers on the material"
+msgstr "一个纹理贴图在材料上覆盖的大小"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Roughness"
+msgstr "粗糙度"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "How rough or polished the surface appears"
+msgstr "表面显得粗糙或光滑的程度"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Metallic"
+msgstr "金属质感"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Whether the surface reflects light like a metal"
+msgstr "表面是否像金属一样反射光线"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Not tinted"
+msgstr "未着色"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Choose Texture Image"
+msgstr "选择纹理图像"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Texture images"
+msgstr "纹理图像"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Only WebP and PNG texture images are supported."
+msgstr "仅支持 WebP 和 PNG 纹理图像。"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Custom"
 msgstr "自定义"
 
@@ -7051,6 +7169,32 @@ msgstr "厚度"
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "Material thickness"
 msgstr "材料厚度"
+
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+msgid "Use the material's default color"
+msgstr "使用材料的默认颜色"
+
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+msgid "Set by the material definition"
+msgstr "由材料定义设置"
+
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+msgid "No color"
+msgstr "无颜色"
+
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+#, python-brace-format
+msgid "{color} (custom)"
+msgstr "{color}（自定义）"
+
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+#, python-brace-format
+msgid "{color} (material default)"
+msgstr "{color}（材料默认）"
+
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+msgid "Material default (no color)"
+msgstr "材料默认（无颜色）"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Assets"
@@ -7189,6 +7333,10 @@ msgstr "该文档仍可编辑和保存。"
 #: rayforge/ui_gtk/doceditor/missing_features_dialog.py
 msgid "_OK"
 msgstr "_确定"
+
+#: rayforge/ui_gtk/doceditor/material_selector.py
+msgid "Select material"
+msgstr "选择材料"
 
 #: rayforge/ui_gtk/doceditor/material_selector.py
 msgid "Select Material"
@@ -7506,6 +7654,10 @@ msgstr "物体直径"
 msgid "Diameter of the cylindrical object"
 msgstr "圆柱体对象的直径"
 
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Material rendered on the rotary object"
+msgstr "在旋转物体上渲染的材料"
+
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "No materials in selected library."
 msgstr "所选库中无材料。"
@@ -7590,6 +7742,11 @@ msgstr "播放速度"
 #: rayforge/ui_gtk/sim3d/playback_overlay.py
 msgid "Pause simulation"
 msgstr "暂停模拟"
+
+#: rayforge/ui_gtk/sim3d/scene_presenter.py
+#, python-brace-format
+msgid "{layer} stock"
+msgstr "{layer} 毛坯"
 
 #: rayforge/ui_gtk/about.py
 msgid "Not found"
@@ -8210,10 +8367,6 @@ msgid "Stock {count}"
 msgstr "毛坯 {count}"
 
 #: rayforge/doceditor/stock_cmd.py
-msgid "Toggle stock visibility"
-msgstr "切换毛坯可见性"
-
-#: rayforge/doceditor/stock_cmd.py
 msgid "Rename Stock Asset"
 msgstr "重命名毛坯资产"
 
@@ -8224,6 +8377,10 @@ msgstr "更改毛坯厚度"
 #: rayforge/doceditor/stock_cmd.py
 msgid "Change stock material"
 msgstr "更改毛坯材料"
+
+#: rayforge/doceditor/stock_cmd.py
+msgid "Change stock color"
+msgstr "更改毛坯颜色"
 
 #: rayforge/doceditor/tab_cmd.py
 msgid "Add Tab"
@@ -8244,6 +8401,10 @@ msgstr "更改标签宽度"
 #: rayforge/doceditor/layer_cmd.py
 msgid "Move to another layer"
 msgstr "移动到另一图层"
+
+#: rayforge/doceditor/layer_cmd.py
+msgid "Change layer stock material"
+msgstr "更改图层毛坯材料"
 
 #: rayforge/doceditor/layer_cmd.py
 msgid "Set active layer"

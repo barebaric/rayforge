@@ -42,11 +42,31 @@ Una vez que tienes material base definido, puedes asignarle un material:
 
 Los materiales definen las propiedades visuales de tu material base:
 
-- **Apariencia visual:** Color y patrón para visualización
+- **Apariencia visual:** Color, textura y sombreado para visualización
 - **Categoría:** Agrupación (ej., "Madera", "Acrílico", "Metal")
 - **Descripción:** Información adicional sobre el material
 
+Consulta [Materiales](../application-settings/materials.md) para la lista
+completa de propiedades de apariencia (textura, rugosidad, metálico y
+teñido).
+
 Nota: Las propiedades del material se definen en bibliotecas de materiales y no pueden editarse a través del diálogo de propiedades del material base. Las propiedades del material base solo te permiten asignar un material a un elemento de material base.
+
+### Color por Elemento de Material Base
+
+Para materiales definidos como **teñibles** (ej., acrílico de color),
+cada elemento de material base puede anular el color de tinte del
+material de forma independiente:
+
+1. Abre el diálogo de **Propiedades de Material Base** para el elemento
+2. Haz clic en el botón de color en la fila **Color**
+3. Elige un color del selector de color
+
+El color se aplica solo a ese elemento de material base — otros elementos
+que usan el mismo material conservan sus propios colores. Usa el botón de
+borrar junto a la fila de color para volver al color predeterminado del
+material. Para materiales que no son teñibles, la fila de color está
+desactivada y la apariencia proviene de la definición del material.
 
 ## Convertir Piezas en Material Base
 

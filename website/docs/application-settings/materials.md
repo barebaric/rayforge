@@ -12,9 +12,11 @@ explains the difference between core and user libraries, and how to create
 your own libraries and add materials to them.
 
 :::note
- Material libraries have currently no functional use - assigning a material
- merely affects the esthetic appearance. In future releases, materials
- will be used to derive functional parameters.
+ Assigning a material to a stock item affects both its visual appearance
+ in the 2D and 3D canvas and which [recipes](recipes.md) apply to it:
+ material-specific recipes match against the assigned material. In
+ future releases, materials will be used to derive more functional
+ parameters.
  :::
 
 
@@ -39,7 +41,7 @@ Your new library will be created in the user data directory and will be availabl
 3. Fill in the material properties:
    - **Name**: Human-readable name
    - **Category**: Grouping category (e.g., "Wood", "Acrylic")
-   - **Appearance**: Visual properties (color)
+   - **Appearance**: Visual properties (see below)
 4. Click **Save** to add the material to the library
 
 ### Material Properties Explained
@@ -53,10 +55,42 @@ Your new library will be created in the user data directory and will be availabl
 - Common categories include: Wood, Acrylic, Metal, Paper, Leather
 - You can create custom categories as needed
 
+#### Texture
+
+A texture image (WebP or PNG) that is tiled across the material surface.
+When set, the material renders with the texture instead of a flat color.
+Textures can be optimized to WebP with the
+`scripts/optimize_material_textures.py` script to keep material files
+small.
+
+#### Texture Scale
+
+The size (in mm) that one texture tile covers on the material. Smaller
+values repeat the texture more often across the same surface.
+
 #### Color
 
-The color is only used for visual appearance on the work surface - it does
-not affect the laser path in any way.
+The base color of the material. When a texture is set and the material is
+tintable, the color tints the texture instead. The color is only used for
+visual appearance on the work surface - it does not affect the laser path
+in any way.
+
+#### Tintable
+
+When enabled, the material's texture can be tinted with the color above.
+This lets a single textured material (e.g. "Acrylic") cover multiple color
+variants: the color is applied per stock item in the [Stock
+Properties](../features/stock-handling.md) dialog.
+
+#### Roughness
+
+A 0-1 value describing how rough or polished the surface appears in the
+3D view. Lower values look glossy, higher values look matte.
+
+#### Metallic
+
+A 0-1 value describing whether the surface reflects light like a metal in
+the 3D view. Set to 1 for metallic materials, 0 for non-metallic ones.
 
 
 ## Managing Existing Materials

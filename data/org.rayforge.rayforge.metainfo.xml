@@ -68,6 +68,78 @@
   </screenshots>
 
   <releases>
+    <release version="1.10.0" date="2026-08-19">
+      <description>
+        <p>Physically-shaded 3D stock, material textures, and more
+        3D canvas controls</p>
+        <p>New Features:</p>
+        <ul>
+          <li>Stock is now rendered as solid, physically-shaded solids
+          in the 3D canvas, with support for material textures; rotary
+          stock appears as a textured cylinder rod with material
+          selection</li>
+          <li>Materials can carry textures (with roughness and metallic
+          appearance fields) and per-instance stock colors, and
+          textures are optimized to WebP to keep material files small</li>
+          <li>New 3D canvas visibility toggles for stock, workpiece
+          images, and the raster underlay; the no-go zone toggle is
+          hidden when the machine has no no-go zones</li>
+          <li>New Z-axis presence toggle for 2-axis lasers, and the 3D
+          canvas now layers content correctly on machines without a Z
+          axis</li>
+          <li>Middle-click orbit now pivots on the object under the
+          cursor instead of the floor plane</li>
+          <li>Configurable panel orientation: device profiles and the
+          machine wizard can rotate the working plane, and the 2D/3D
+          canvases render the document in the rotated panel space</li>
+          <li>CNC step settings dialog now has a spindle section (head
+          selection, RPM, tool diameter, cooling) and icons for all CNC
+          steps</li>
+          <li>Material test grid labels are engraved in the user's
+          preferred speed unit instead of hardcoded mm/min</li>
+          <li>Hidden layers are dimmed in the layer list</li>
+          <li>Steps warn when their speed exceeds the active machine's
+          maximum</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>Upgrade raygeo to 1.43.0 (from 1.39.1)</li>
+          <li>Material test step rows are now unit-aware (speed,
+          offset)</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Framing now drives the rotary axis instead of the physical
+          Y axis on rotary layers (#356)</li>
+          <li>Arcs using more than a full circle no longer collapse when
+          overcut (#357)</li>
+          <li>Rotary toolpaths no longer sink below the cylinder in the
+          3D simulator</li>
+          <li>Steps with generated workpieces no longer apply to every
+          workpiece in the layer</li>
+          <li>Material test preview no longer misaligns with the
+          engraved ops after the workpiece is resized, and the grid no
+          longer engraves smaller than the workpiece</li>
+          <li>Raster histogram (levels) changes now commit on release
+          instead of mid-drag and invalidate the compute cache
+          properly</li>
+          <li>Travel speed setting hidden on machines without support,
+          and the speed field cursor no longer jumps when a value is
+          clamped</li>
+          <li>Workpiece selectability stays in sync with layer
+          visibility</li>
+          <li>3D canvas: the raster texture underlay now draws
+          correctly, and the laser beam no longer draws over the head
+          model</li>
+          <li>Ruida driver falls back to the machine reference point for
+          named WCS on job start</li>
+          <li>Camera alignment/calibration date comparison is now
+          timezone-safe</li>
+          <li>Traced contours no longer come out wider than the image
+          content</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.9.3" date="2026-08-14">
       <description>
         <p>New Features:</p>

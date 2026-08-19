@@ -5,9 +5,11 @@
 Les bibliothèques de matériaux dans Rayforge vous permettent d'organiser et gérer des collections de matériaux pour vos projets de découpe et gravure laser. Ce guide explique la différence entre les bibliothèques principales et utilisateur, et comment créer vos propres bibliothèques et y ajouter des matériaux.
 
 :::note
- Les bibliothèques de matériaux n'ont actuellement aucune utilité fonctionnelle - assigner un matériau
- affecte uniquement l'apparence esthétique. Dans les futures versions, les matériaux
- seront utilisés pour dériver des paramètres fonctionnels.
+ Assigner un matériau à un brut affecte à la fois son apparence visuelle
+ dans le canevas 2D et 3D et les [recettes](recipes.md) qui lui sont
+ appliquées : les recettes spécifiques à un matériau correspondent au
+ matériau assigné. Dans les futures versions, les matériaux seront
+ utilisés pour dériver davantage de paramètres fonctionnels.
  :::
 
 
@@ -32,7 +34,7 @@ Votre nouvelle bibliothèque sera créée dans le répertoire de données utilis
 3. Remplissez les propriétés du matériau :
    - **Nom** : Nom lisible par l'homme
    - **Catégorie** : Catégorie de groupement (ex : "Bois", "Acrylique")
-   - **Apparence** : Propriétés visuelles (couleur)
+   - **Apparence** : Propriétés visuelles (voir ci-dessous)
 4. Cliquez sur **Sauvegarder** pour ajouter le matériau à la bibliothèque
 
 ### Propriétés des Matériaux Expliquées
@@ -46,10 +48,47 @@ Votre nouvelle bibliothèque sera créée dans le répertoire de données utilis
 - Catégories courantes : Bois, Acrylique, Métal, Papier, Cuir
 - Vous pouvez créer des catégories personnalisées selon vos besoins
 
+#### Texture
+
+Une image de texture (WebP ou PNG) qui est répétée en mosaïque sur la
+surface du matériau. Lorsqu'elle est définie, le matériau est rendu avec
+la texture au lieu d'une couleur unie. Les textures peuvent être
+optimisées en WebP avec le script
+`scripts/optimize_material_textures.py` pour garder les fichiers de
+matériau légers.
+
+#### Échelle de la texture
+
+La taille (en mm) qu'une tuile de texture couvre sur le matériau. Des
+valeurs plus petites répètent la texture plus souvent sur la même
+surface.
+
 #### Couleur
 
-La couleur est uniquement utilisée pour l'apparence visuelle sur la surface de travail - elle n'affecte
-pas le parcours laser de quelque manière que ce soit.
+La couleur de base du matériau. Lorsqu'une texture est définie et que le
+matériau est teintable, la couleur teinte la texture. La couleur est
+uniquement utilisée pour l'apparence visuelle sur la surface de travail -
+elle n'affecte pas le parcours laser de quelque manière que ce soit.
+
+#### Teintable
+
+Lorsqu'elle est activée, la texture du matériau peut être teintée avec la
+couleur ci-dessus. Cela permet à un seul matériau texturé (ex :
+"Acrylique") de couvrir plusieurs variantes de couleur : la couleur est
+appliquée par brut dans la boîte de dialogue [Propriétés du
+brut](../features/stock-handling.md).
+
+#### Rugosité
+
+Une valeur de 0 à 1 décrivant à quel point la surface apparaît rugueuse
+ou polie dans la vue 3D. Les valeurs plus basses semblent brillantes, les
+valeurs plus hautes semblent mates.
+
+#### Métallique
+
+Une valeur de 0 à 1 décrivant si la surface réfléchit la lumière comme un
+métal dans la vue 3D. Réglez sur 1 pour les matériaux métalliques, 0 pour
+les matériaux non métalliques.
 
 
 ## Gérer les Matériaux Existants

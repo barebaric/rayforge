@@ -46,11 +46,29 @@ Once you have stock defined, you can assign a material to it:
 
 Materials define the visual properties of your stock:
 
-- **Visual appearance**: Color and pattern for visualization
+- **Visual appearance**: Color, texture, and shading for visualization
 - **Category**: Grouping (e.g., "Wood", "Acrylic", "Metal")
 - **Description**: Additional information about the material
 
+See [Materials](../application-settings/materials.md) for the full list of
+appearance properties (texture, roughness, metallic, and tinting).
+
 Note: Material properties are defined in material libraries and cannot be edited through the stock properties dialog. The stock properties only allow you to assign a material to a stock item.
+
+### Per-Instance Stock Color
+
+For materials that are defined as **tintable** (e.g. colored acrylic),
+each stock item can override the material's tint color independently:
+
+1. Open the **Stock Properties** dialog for the stock item
+2. Click the color button in the **Color** row
+3. Pick a color from the color picker
+
+The color is applied only to that stock item — other items using the same
+material keep their own colors. Use the clear button next to the color
+row to revert to the material's default color. For materials that are not
+tintable, the color row is disabled and the appearance comes from the
+material definition.
 
 ## Converting Workpieces to Stock
 

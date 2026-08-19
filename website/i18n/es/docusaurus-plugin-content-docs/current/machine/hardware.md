@@ -43,6 +43,37 @@ Invierte la dirección de cualquier eje si es necesario:
 - **Invertir Dirección del Eje Y**: Hace que los valores de coordenadas Y sean negativos
 - **Invertir Dirección del Eje Z**: Habilitar si un comando Z positivo (ej., G0 Z10) mueve la cabeza hacia abajo
 
+### Eje Z
+
+No todos los láseres tienen un eje Z — muchas máquinas de diodo simples de
+2 ejes no lo tienen. Usa estos ajustes para indicarle a Rayforge si tu
+máquina puede moverse en Z:
+
+- **Tiene eje Z**: Activa si esta máquina tiene un eje Z (motor de enfoque,
+  cama móvil o pórtico que puede moverse verticalmente). Cuando está
+  desactivado, el eje Z se trata como ausente: no se generan movimientos
+  Z, y el lienzo 3D coloca el contenido en el plano de grabado en lugar
+  de mostrar una cabeza que se mueve a lo largo de Z.
+- **Invertir Dirección del Eje Z**: Solo se muestra cuando **Tiene eje Z**
+  está activado. Activa si un comando Z positivo (ej., G0 Z10) mueve la
+  cabeza hacia abajo.
+
+### Orientación del panel
+
+La orientación del panel rota el espacio de trabajo plano tal como se
+presenta en pantalla y reasigna la salida de vuelta a la máquina. Esto es
+útil cuando una cama orientada físicamente en retrato es más fácil de
+editar en paisaje.
+
+- **Nativo**: El espacio de trabajo se muestra exactamente como está
+  orientada la máquina
+- **Girar a la izquierda**: El espacio de trabajo se rota 90 grados en
+  sentido antihorario
+- **Girar a la derecha**: El espacio de trabajo se rota 90 grados en
+  sentido horario
+
+Las capas rotativas requieren la orientación **Nativo**.
+
 ## Área de Trabajo
 
 Los márgenes definen el espacio inutilizable alrededor de los bordes de la extensión de tus ejes. Esto es útil cuando tu máquina tiene áreas donde el láser no puede alcanzar (ej., debido al ensamblaje de la cabeza del láser, cadenas de cables u otras obstrucciones).

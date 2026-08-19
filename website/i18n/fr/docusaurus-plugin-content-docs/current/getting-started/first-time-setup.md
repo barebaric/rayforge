@@ -108,6 +108,12 @@ Configurez la configuration physique de la machine :
   coordonnées (0,0)
 - **Direction des axes** — inversez un axe si les coordonnées deviennent
   négatives
+- **Axe Z** — si la machine a un axe Z (moteur de mise au point, lit
+  mobile) ; lorsqu'il est absent, aucun mouvement Z n'est généré et le
+  canevas 3D dispose le contenu sur le plan de gravure
+- **Orientation du panneau** — fait pivoter l'espace de travail plat tel
+  qu'il est présenté à l'écran (Natif, Pivoter à gauche, Pivoter à
+  droite) ; les couches rotatives nécessitent Natif
 - **Zone de Travail** — marges autour de l'espace inutilisable de la surface
   de travail
 - **Limites Logicielles** — limites de sécurité facultatives pour le

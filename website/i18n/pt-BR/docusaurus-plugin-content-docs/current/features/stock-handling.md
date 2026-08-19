@@ -42,11 +42,31 @@ Uma vez que você tem o material base definido, pode atribuir um material a ele:
 
 Materiais definem as propriedades visuais do seu material base:
 
-- **Aparência visual**: Cor e padrão para visualização
+- **Aparência visual**: Cor, textura e sombreamento para visualização
 - **Categoria**: Agrupamento (ex., "Madeira", "Acrílico", "Metal")
 - **Descrição**: Informações adicionais sobre o material
 
+Consulte [Materiais](../application-settings/materials.md) para a lista
+completa de propriedades de aparência (textura, rugosidade, metálico e
+tingimento).
+
 Nota: As propriedades do material são definidas em bibliotecas de materiais e não podem ser editadas através do diálogo de propriedades do material base. As propriedades do material base apenas permitem atribuir um material a um item de material.
+
+### Cor por Item de Material
+
+Para materiais definidos como **tingíveis** (ex., acrílico colorido),
+cada item de material pode substituir a cor de tingimento do material
+independentemente:
+
+1. Abra o diálogo de **Propriedades do Material** para o item
+2. Clique no botão de cor na linha **Cor**
+3. Escolha uma cor no seletor de cores
+
+A cor é aplicada apenas a esse item de material — outros itens que usam o
+mesmo material mantêm suas próprias cores. Use o botão de limpar ao lado
+da linha de cor para reverter à cor padrão do material. Para materiais que
+não são tingíveis, a linha de cor fica desativada e a aparência vem da
+definição do material.
 
 ## Convertendo Peças em Material
 

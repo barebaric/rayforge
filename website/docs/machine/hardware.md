@@ -47,6 +47,32 @@ Reverse the direction of any axis if needed:
 - **Reverse Y-Axis Direction**: Makes Y coordinate values negative  
 - **Reverse Z-Axis Direction**: Enable if a positive Z command (e.g., G0 Z10) moves the head down
 
+### Z-Axis
+
+Not every laser has a Z axis — many simple 2-axis diode machines do not.
+Use these settings to tell Rayforge whether your machine can move in Z:
+
+- **Has Z-Axis**: Enable if this machine has a Z axis (focus motor,
+  movable bed, or gantry that can move vertically). When disabled, the
+  Z axis is treated as absent: no Z moves are generated, and the 3D
+  canvas layers content at the engrave plane instead of showing a
+  moving head along Z.
+- **Reverse Z-Axis Direction**: Only shown when **Has Z-Axis** is
+  enabled. Enable if a positive Z command (e.g., G0 Z10) moves the head
+  down.
+
+### Panel Orientation
+
+The panel orientation rotates the flat workspace as it is presented on
+screen and remaps output back to the machine. This is useful when a
+physically portrait-oriented bed is easier to edit in landscape.
+
+- **Native**: The workspace is shown exactly as the machine is oriented
+- **Rotate Left**: The workspace is rotated 90 degrees counter-clockwise
+- **Rotate Right**: The workspace is rotated 90 degrees clockwise
+
+Rotary layers require the **Native** orientation.
+
 ## Work Area
 
 Margins define the unusable space around the edges of your axis extents. This is useful when your machine has areas where the laser cannot reach (e.g., due to the laser head assembly, cable chains, or other obstructions).
