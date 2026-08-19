@@ -94,7 +94,7 @@ def draw_preview(
     size_mm = get_material_test_proportional_size(params)
     dpi_x = width_px / size_mm[0] * _MM_PER_INCH
     dpi_y = height_px / size_mm[1] * _MM_PER_INCH
-    dpi = (dpi_x + dpi_y) / 2.0
+    dpi = max(dpi_x, dpi_y)
     img = generate_material_test_grid_preview(
         size_mm=size_mm,
         dpi=dpi,
@@ -131,6 +131,12 @@ def draw_preview(
         w,
         h,
     )
+    # Scale the grid to fill the whole target surface. The raster
+    # pipeline maps the rendered image back to millimeters using the
+    # per-axis pixels-per-mm, so stretching the square grid here (the
+    # surface aspect ratio is set by the laser spot geometry) yields
+    # correctly-proportioned cells that cover the full workpiece.
+    ctx.scale(width_px / w, height_px / h)
     ctx.set_source_surface(surface, 0, 0)
     ctx.paint()
     surface.finish()
