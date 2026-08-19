@@ -128,7 +128,14 @@ class UnitSpinRow(SpinRow):
             if not self._unit:
                 logger.warning("UnitSpinRow: skipping set, no unit")
                 return
-            self._spin_button.set_value(self._unit.from_base(base_value))
+            display_value = self._unit.from_base(base_value)
+            try:
+                current = float(self._spin_button.get_text())
+            except ValueError:
+                current = float(self._spin_button.get_value())
+            if abs(display_value - current) < 1e-9:
+                return
+            self._spin_button.set_value(display_value)
         finally:
             self._is_updating = False
 
