@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-14 21:42+0200\n"
+"POT-Creation-Date: 2026-08-19 20:57+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -135,6 +135,16 @@ msgstr ""
 #: rayforge/core/step.py rayforge/machine/models/dialect/base.py
 #: rayforge/ui_gtk/settings/settings_dialog.py rayforge/ui_gtk/main_menu.py
 msgid "Settings"
+msgstr ""
+
+#: rayforge/core/step.py
+#, python-brace-format
+msgid "Cut speed ({value}) exceeds the machine's maximum ({max})."
+msgstr ""
+
+#: rayforge/core/step.py
+#, python-brace-format
+msgid "Travel speed ({value}) exceeds the machine's maximum ({max})."
 msgstr ""
 
 #: rayforge/core/varset/choicevar.py
@@ -309,6 +319,7 @@ msgid "Core"
 msgstr ""
 
 #: rayforge/core/stock_asset.py
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
 msgid "Stock Material"
 msgstr ""
 
@@ -1516,6 +1527,18 @@ msgstr ""
 msgid "An unexpected error occurred during validation: {error}"
 msgstr ""
 
+#: rayforge/machine/models/machine_panel.py
+msgid "Native"
+msgstr ""
+
+#: rayforge/machine/models/machine_panel.py
+msgid "Rotate Left"
+msgstr ""
+
+#: rayforge/machine/models/machine_panel.py
+msgid "Rotate Right"
+msgstr ""
+
 #: rayforge/machine/models/dialect/grbl_raster.py
 msgid "GRBL Raster"
 msgstr ""
@@ -1844,6 +1867,7 @@ msgstr ""
 #: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "Error"
 msgstr ""
@@ -2203,6 +2227,7 @@ msgstr ""
 
 #: rayforge/ui_gtk/settings/color_presets_page.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "Color"
 msgstr ""
 
@@ -3153,6 +3178,7 @@ msgstr ""
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "OK"
 msgstr ""
@@ -3407,7 +3433,8 @@ msgstr ""
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 #: rayforge/ui_gtk/machine/rotary_module_page.py
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
-#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+#: rayforge/ui_gtk/doceditor/material_selector.py
 msgid "None"
 msgstr ""
 
@@ -4451,6 +4478,19 @@ msgid "The physical corner where coordinates are zero after homing"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Panel Orientation"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid ""
+"Rotate the flat workspace and remap output to the machine; rotary layers "
+"require Native"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Reverse X-Axis Direction"
 msgstr ""
@@ -4463,6 +4503,16 @@ msgstr ""
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Reverse Y-Axis Direction"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Has Z-Axis"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Enable if this machine has a Z axis (focus motor, movable bed)"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/hardware_page.py
@@ -5924,6 +5974,14 @@ msgid "Toggle workpiece visibility"
 msgstr ""
 
 #: rayforge/ui_gtk/shared/visibility_overlay.py
+msgid "Toggle workpiece image visibility"
+msgstr ""
+
+#: rayforge/ui_gtk/shared/visibility_overlay.py rayforge/doceditor/stock_cmd.py
+msgid "Toggle stock visibility"
+msgstr ""
+
+#: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle tab visibility"
 msgstr ""
 
@@ -5937,6 +5995,10 @@ msgstr ""
 
 #: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle grid visibility"
+msgstr ""
+
+#: rayforge/ui_gtk/shared/visibility_overlay.py
+msgid "Toggle ops underlay visibility"
 msgstr ""
 
 #: rayforge/ui_gtk/shared/visibility_overlay.py
@@ -5960,7 +6022,6 @@ msgid "Select Model"
 msgstr ""
 
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
-#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "Select"
 msgstr ""
 
@@ -6799,6 +6860,7 @@ msgid "Step Settings"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/step_settings/recipe_control_widget.py
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Choose..."
 msgstr ""
 
@@ -6956,6 +7018,62 @@ msgid "Category"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Texture"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Unset the tint color (texture is shown as-is)"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Tintable"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Allow tinting the texture with a color"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Texture Scale"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Size one texture tile covers on the material"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Roughness"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "How rough or polished the surface appears"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Metallic"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Whether the surface reflects light like a metal"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Not tinted"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Choose Texture Image"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Texture images"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+msgid "Only WebP and PNG texture images are supported."
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Custom"
 msgstr ""
 
@@ -6974,6 +7092,32 @@ msgstr ""
 
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "Material thickness"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+msgid "Use the material's default color"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+msgid "Set by the material definition"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+msgid "No color"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+#, python-brace-format
+msgid "{color} (custom)"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+#, python-brace-format
+msgid "{color} (material default)"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
+msgid "Material default (no color)"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
@@ -7112,6 +7256,10 @@ msgstr ""
 
 #: rayforge/ui_gtk/doceditor/missing_features_dialog.py
 msgid "_OK"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/material_selector.py
+msgid "Select material"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/material_selector.py
@@ -7429,6 +7577,10 @@ msgstr ""
 msgid "Diameter of the cylindrical object"
 msgstr ""
 
+#: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
+msgid "Material rendered on the rotary object"
+msgstr ""
+
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "No materials in selected library."
 msgstr ""
@@ -7508,6 +7660,11 @@ msgstr ""
 
 #: rayforge/ui_gtk/sim3d/playback_overlay.py
 msgid "Pause simulation"
+msgstr ""
+
+#: rayforge/ui_gtk/sim3d/scene_presenter.py
+#, python-brace-format
+msgid "{layer} stock"
 msgstr ""
 
 #: rayforge/ui_gtk/about.py
@@ -8131,10 +8288,6 @@ msgid "Stock {count}"
 msgstr ""
 
 #: rayforge/doceditor/stock_cmd.py
-msgid "Toggle stock visibility"
-msgstr ""
-
-#: rayforge/doceditor/stock_cmd.py
 msgid "Rename Stock Asset"
 msgstr ""
 
@@ -8144,6 +8297,10 @@ msgstr ""
 
 #: rayforge/doceditor/stock_cmd.py
 msgid "Change stock material"
+msgstr ""
+
+#: rayforge/doceditor/stock_cmd.py
+msgid "Change stock color"
 msgstr ""
 
 #: rayforge/doceditor/tab_cmd.py
@@ -8164,6 +8321,10 @@ msgstr ""
 
 #: rayforge/doceditor/layer_cmd.py
 msgid "Move to another layer"
+msgstr ""
+
+#: rayforge/doceditor/layer_cmd.py
+msgid "Change layer stock material"
 msgstr ""
 
 #: rayforge/doceditor/layer_cmd.py

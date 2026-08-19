@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-14 22:07+0200\n"
+"POT-Creation-Date: 2026-08-19 20:47+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -611,10 +611,10 @@ msgstr "Інтервал ліній"
 #: laser_essentials/steps/material_test.py
 msgid ""
 "Distance between scan lines in machine units (for Engrave mode). Leave at 0 "
-"to use laser spot size."
+"to use laser spot size"
 msgstr ""
-"Відстань між лініями сканування в одиницях верстата (для режиму "
-"гравіювання). Залиште 0, щоб використовувати розмір плями лазера."
+"Відстань між лініями сканування в одиницях машини (для режиму гравіювання). "
+"Залиште 0, щоб використовувати розмір лазерної плями"
 
 #: laser_essentials/steps/material_test.py
 msgid "Include Labels"
@@ -633,16 +633,16 @@ msgid "Label Engrave Speed"
 msgstr "Швидкість гравіювання міток"
 
 #: laser_essentials/steps/material_test.py
-msgid "Speed for engraving labels (mm/min)"
-msgstr "Швидкість гравіювання міток (мм/хв)"
+msgid "Speed for engraving labels"
+msgstr "Швидкість гравіювання міток"
 
 #: laser_essentials/steps/material_test.py
 msgid "Fixed Speed"
 msgstr "Фіксована швидкість"
 
 #: laser_essentials/steps/material_test.py
-msgid "Constant speed for all cells (mm/min)"
-msgstr "Постійна швидкість для всіх клітинок (мм/хв)"
+msgid "Constant speed for all cells"
+msgstr "Стала швидкість для всіх комірок"
 
 #: laser_essentials/steps/material_test.py
 msgid "Fixed Power (%)"
@@ -685,12 +685,12 @@ msgid "Maximum Speed"
 msgstr "Максимальна швидкість"
 
 #: laser_essentials/steps/material_test.py
-msgid "Starting speed (mm/min)"
-msgstr "Початкова швидкість (мм/хв)"
+msgid "Starting speed"
+msgstr "Початкова швидкість"
 
 #: laser_essentials/steps/material_test.py
-msgid "Ending speed (mm/min)"
-msgstr "Кінцева швидкість (мм/хв)"
+msgid "Ending speed"
+msgstr "Кінцева швидкість"
 
 #: laser_essentials/steps/material_test.py
 msgid "Passes Range"
@@ -725,12 +725,12 @@ msgid "Maximum Offset"
 msgstr "Максимальний зсув"
 
 #: laser_essentials/steps/material_test.py
-msgid "Bidir scan X-offset for first row (mm)"
-msgstr "Двоспрямований X-зсув сканування для першого рядка (мм)"
+msgid "Bidir scan X-offset for first row"
+msgstr "Двоспрямований зсув X сканування для першого рядка"
 
 #: laser_essentials/steps/material_test.py
-msgid "Bidir scan X-offset for last row (mm)"
-msgstr "Двоспрямований X-зсув сканування для останнього рядка (мм)"
+msgid "Bidir scan X-offset for last row"
+msgstr "Двоспрямований зсув X сканування для останнього рядка"
 
 #: laser_essentials/frontend.py
 msgid "Create Material Test Grid"

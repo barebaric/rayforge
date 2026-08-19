@@ -42,11 +42,33 @@ Nachdem du Rohmaterial definiert hast, kannst du ihm ein Material zuweisen:
 
 Materialien definieren die visuellen Eigenschaften deines Rohmaterials:
 
-- **Visuelles Erscheinungsbild**: Farbe und Muster zur Visualisierung
+- **Visuelles Erscheinungsbild**: Farbe, Textur und Schattierung zur
+  Visualisierung
 - **Kategorie**: Gruppierung (z.B. "Holz", "Acryl", "Metall")
 - **Beschreibung**: Zusätzliche Informationen über das Material
 
+Siehe [Materialien](../application-settings/materials.md) für die vollständige
+Liste der Erscheinungsbild-Eigenschaften (Textur, Rauheit, Metallisch und
+Einfärbbarkeit).
+
 Hinweis: Materialeigenschaften sind in Materialbibliotheken definiert und können nicht durch den Rohmaterial-Eigenschaften-Dialog bearbeitet werden. Die Rohmaterial-Eigenschaften ermöglichen es dir nur, einem Rohmaterial-Element ein Material zuzuweisen.
+
+### Farbe pro Rohmaterial-Element
+
+Für Materialien, die als **einfärbbar** definiert sind (z.B. farbiges
+Acryl), kann jedes Rohmaterial-Element die Tönfarbe des Materials
+unabhängig überschreiben:
+
+1. Öffne den **Rohmaterial-Eigenschaften**-Dialog für das Rohmaterial-Element
+2. Klicke auf die Farbtaste in der Zeile **Farbe**
+3. Wähle eine Farbe aus dem Farbwähler
+
+Die Farbe wird nur auf dieses Rohmaterial-Element angewendet — andere
+Elemente mit demselben Material behalten ihre eigenen Farben. Verwende die
+Löschen-Taste neben der Farbzeile, um zur Standardfarbe des Materials
+zurückzukehren. Für Materialien, die nicht einfärbbar sind, ist die
+Farbzeile deaktiviert und das Erscheinungsbild stammt aus der
+Materialdefinition.
 
 ## Werkstücke in Rohmaterial umwandeln
 

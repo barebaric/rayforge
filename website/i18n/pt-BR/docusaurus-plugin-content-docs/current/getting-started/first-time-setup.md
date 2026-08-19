@@ -99,6 +99,12 @@ Configure a configuração física da máquina:
 - **Eixos** — extensões X/Y da área de trabalho e o canto da origem das
   coordenadas (0,0)
 - **Direção do eixo** — inverta um eixo se as coordenadas saírem negativas
+- **Eixo Z** — se a máquina tem um eixo Z (motor de foco, mesa móvel);
+  quando ausente, nenhum movimento Z é gerado e o canvas 3D distribui o
+  conteúdo no plano de gravação
+- **Orientação do painel** — gira a área de trabalho plana como apresentada
+  na tela (Nativo, Girar para a esquerda, Girar para a direita); camadas
+  rotativas exigem Nativo
 - **Área de Trabalho** — margens ao redor do espaço inutilizável da
   superfície de trabalho
 - **Limites de Software** — limites de segurança opcionais para jog

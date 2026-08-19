@@ -98,6 +98,12 @@ Configure the machine's physical setup:
 
 - **Axes** — X/Y work-area extents and the coordinate origin (0,0) corner
 - **Axis direction** — reverse an axis if coordinates come out negative
+- **Z-Axis** — whether the machine has a Z axis (focus motor, movable
+  bed); when absent, no Z moves are generated and the 3D canvas layers
+  content at the engrave plane
+- **Panel orientation** — rotate the flat workspace as it is presented
+  on screen (Native, Rotate Left, Rotate Right); rotary layers require
+  Native
 - **Work Area** — margins around the unusable space of the work surface
 - **Soft Limits** — optional safety bounds for jogging
 - **Speeds** — max travel speed, max cut speed, and acceleration

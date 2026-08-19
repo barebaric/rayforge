@@ -43,6 +43,38 @@ Kehre die Richtung einer beliebigen Achse um, falls erforderlich:
 - **Y-Achsenrichtung umkehren**: Macht Y-Koordinatenwerte negativ
 - **Z-Achsenrichtung umkehren**: Aktivieren, wenn ein positiver Z-Befehl (z.B. G0 Z10) den Kopf nach unten bewegt
 
+### Z-Achse
+
+Nicht jeder Laser hat eine Z-Achse — viele einfache 2-Achsen-Diodenmaschinen
+haben keine. Verwende diese Einstellungen, um Rayforge mitzuteilen, ob sich
+deine Maschine in Z bewegen kann:
+
+- **Hat Z-Achse**: Aktiviere, wenn diese Maschine eine Z-Achse hat
+  (Fokusmotor, verfahrbarer Tisch oder vertikal beweglicher Gantry). Wenn
+  deaktiviert, wird die Z-Achse als nicht vorhanden behandelt: Es werden
+  keine Z-Bewegungen generiert, und die 3D-Ansicht schichtet den Inhalt
+  auf der Gravurebene, statt einen sich entlang Z bewegenden Kopf zu
+  zeigen.
+- **Z-Achsenrichtung umkehren**: Wird nur angezeigt, wenn **Hat Z-Achse**
+  aktiviert ist. Aktiviere, wenn ein positiver Z-Befehl (z.B. G0 Z10) den
+  Kopf nach unten bewegt.
+
+### Panel-Ausrichtung
+
+Die Panel-Ausrichtung dreht die flache Arbeitsfläche, wie sie auf dem
+Bildschirm dargestellt wird, und ordnet die Ausgabe zurück auf die Maschine
+zu. Dies ist nützlich, wenn eine physisch hochformatige Arbeitsfläche
+einfacher im Querformat zu bearbeiten ist.
+
+- **Native**: Die Arbeitsfläche wird genau so angezeigt, wie die Maschine
+  ausgerichtet ist
+- **Nach links drehen**: Die Arbeitsfläche wird um 90 Grad gegen den
+  Uhrzeigersinn gedreht
+- **Nach rechts drehen**: Die Arbeitsfläche wird um 90 Grad im
+  Uhrzeigersinn gedreht
+
+Rotationsschichten erfordern die Ausrichtung **Native**.
+
 ## Arbeitsbereich
 
 Ränder definieren den unbenutzbaren Raum um die Kanten deiner Achsenbereiche. Dies ist nützlich, wenn deine Maschine Bereiche hat, die der Laser nicht erreichen kann (z.B. aufgrund des Laserkopf-Aufbaus, Kabelketten oder anderer Hindernisse).

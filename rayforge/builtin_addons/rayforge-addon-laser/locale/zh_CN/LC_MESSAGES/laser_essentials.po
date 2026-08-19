@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-14 22:07+0200\n"
+"POT-Creation-Date: 2026-08-19 20:47+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -592,8 +592,9 @@ msgstr "线间隔"
 #: laser_essentials/steps/material_test.py
 msgid ""
 "Distance between scan lines in machine units (for Engrave mode). Leave at 0 "
-"to use laser spot size."
-msgstr "扫描线之间的距离（以机器单位，用于雕刻模式）。留0使用激光光斑大小。"
+"to use laser spot size"
+msgstr ""
+"扫描线之间的距离（以机器单位计，用于雕刻模式）。设为 0 则使用激光光斑尺寸"
 
 #: laser_essentials/steps/material_test.py
 msgid "Include Labels"
@@ -612,16 +613,16 @@ msgid "Label Engrave Speed"
 msgstr "标签雕刻速度"
 
 #: laser_essentials/steps/material_test.py
-msgid "Speed for engraving labels (mm/min)"
-msgstr "雕刻标签的速度 (mm/min)"
+msgid "Speed for engraving labels"
+msgstr "雕刻标签的速度"
 
 #: laser_essentials/steps/material_test.py
 msgid "Fixed Speed"
 msgstr "固定速度"
 
 #: laser_essentials/steps/material_test.py
-msgid "Constant speed for all cells (mm/min)"
-msgstr "所有单元格的恒定速度（毫米/分钟）"
+msgid "Constant speed for all cells"
+msgstr "所有单元格的恒定速度"
 
 #: laser_essentials/steps/material_test.py
 msgid "Fixed Power (%)"
@@ -664,12 +665,12 @@ msgid "Maximum Speed"
 msgstr "最大速度"
 
 #: laser_essentials/steps/material_test.py
-msgid "Starting speed (mm/min)"
-msgstr "起始速度 (毫米/分钟)"
+msgid "Starting speed"
+msgstr "起始速度"
 
 #: laser_essentials/steps/material_test.py
-msgid "Ending speed (mm/min)"
-msgstr "结束速度 (毫米/分钟)"
+msgid "Ending speed"
+msgstr "结束速度"
 
 #: laser_essentials/steps/material_test.py
 msgid "Passes Range"
@@ -704,12 +705,12 @@ msgid "Maximum Offset"
 msgstr "最大偏移"
 
 #: laser_essentials/steps/material_test.py
-msgid "Bidir scan X-offset for first row (mm)"
-msgstr "第一行的双向扫描X偏移（毫米）"
+msgid "Bidir scan X-offset for first row"
+msgstr "第一行的双向扫描 X 偏移"
 
 #: laser_essentials/steps/material_test.py
-msgid "Bidir scan X-offset for last row (mm)"
-msgstr "最后一行的双向扫描X偏移（毫米）"
+msgid "Bidir scan X-offset for last row"
+msgstr "最后一行的双向扫描 X 偏移"
 
 #: laser_essentials/frontend.py
 msgid "Create Material Test Grid"

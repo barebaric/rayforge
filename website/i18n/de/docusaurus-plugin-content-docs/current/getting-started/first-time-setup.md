@@ -105,6 +105,12 @@ Konfiguriere das physische Setup der Maschine:
 
 - **Achsen** — X/Y-Achsenbereiche und die Ecke des Koordinatenursprungs (0,0)
 - **Achsenrichtung** — kehre eine Achse um, wenn Koordinaten negativ ausfallen
+- **Z-Achse** — ob die Maschine eine Z-Achse hat (Fokusmotor,
+  verfahrbarer Tisch); wenn nicht vorhanden, werden keine Z-Bewegungen
+  generiert und die 3D-Ansicht schichtet den Inhalt auf der Gravurebene
+- **Panel-Ausrichtung** — drehe die flache Arbeitsfläche, wie sie auf dem
+  Bildschirm dargestellt wird (Native, Nach links drehen, Nach rechts
+  drehen); Rotationsschichten erfordern Native
 - **Arbeitsbereich** — Ränder um den unbenutzbaren Raum der Arbeitsfläche
 - **Software-Limits** — optionale Sicherheitsgrenzen für das Verfahren
 - **Geschwindigkeiten** — maximale Eilganggeschwindigkeit, maximale

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-14 22:07+0200\n"
+"POT-Creation-Date: 2026-08-19 20:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -593,7 +593,7 @@ msgstr ""
 #: laser_essentials/steps/material_test.py
 msgid ""
 "Distance between scan lines in machine units (for Engrave mode). Leave at 0 "
-"to use laser spot size."
+"to use laser spot size"
 msgstr ""
 
 #: laser_essentials/steps/material_test.py
@@ -613,7 +613,7 @@ msgid "Label Engrave Speed"
 msgstr ""
 
 #: laser_essentials/steps/material_test.py
-msgid "Speed for engraving labels (mm/min)"
+msgid "Speed for engraving labels"
 msgstr ""
 
 #: laser_essentials/steps/material_test.py
@@ -621,7 +621,7 @@ msgid "Fixed Speed"
 msgstr ""
 
 #: laser_essentials/steps/material_test.py
-msgid "Constant speed for all cells (mm/min)"
+msgid "Constant speed for all cells"
 msgstr ""
 
 #: laser_essentials/steps/material_test.py
@@ -665,11 +665,11 @@ msgid "Maximum Speed"
 msgstr ""
 
 #: laser_essentials/steps/material_test.py
-msgid "Starting speed (mm/min)"
+msgid "Starting speed"
 msgstr ""
 
 #: laser_essentials/steps/material_test.py
-msgid "Ending speed (mm/min)"
+msgid "Ending speed"
 msgstr ""
 
 #: laser_essentials/steps/material_test.py
@@ -705,11 +705,11 @@ msgid "Maximum Offset"
 msgstr ""
 
 #: laser_essentials/steps/material_test.py
-msgid "Bidir scan X-offset for first row (mm)"
+msgid "Bidir scan X-offset for first row"
 msgstr ""
 
 #: laser_essentials/steps/material_test.py
-msgid "Bidir scan X-offset for last row (mm)"
+msgid "Bidir scan X-offset for last row"
 msgstr ""
 
 #: laser_essentials/frontend.py

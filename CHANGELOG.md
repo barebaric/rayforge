@@ -5,6 +5,62 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.10.0
+
+### Added
+
+- Stock is now rendered as solid, physically-shaded solids in the 3D
+  canvas, with support for material textures; rotary stock appears as a
+  textured cylinder rod with material selection
+- Materials can carry textures (with roughness and metallic appearance
+  fields) and per-instance stock colors, and textures are optimized to
+  WebP to keep material files small
+- New 3D canvas visibility toggles for stock, workpiece images, and the
+  raster underlay; the no-go zone toggle is hidden when the machine has
+  no no-go zones
+- New Z-axis presence toggle for 2-axis lasers, and the 3D canvas now
+  layers content correctly on machines without a Z axis
+- Middle-click orbit now pivots on the object under the cursor instead
+  of the floor plane
+- Configurable panel orientation: device profiles and the machine
+  wizard can rotate the working plane, and the 2D/3D canvases render
+  the document in the rotated panel space
+- CNC step settings dialog now has a spindle section (head selection,
+  RPM, tool diameter, cooling) and icons for all CNC steps
+- Material test grid labels are engraved in the user's preferred speed
+  unit instead of hardcoded mm/min
+- Hidden layers are dimmed in the layer list
+- Steps warn when their speed exceeds the active machine's maximum
+
+### Changed
+
+- Upgrade raygeo to 1.43.0 (from 1.39.1)
+- Material test step rows are now unit-aware (speed, offset)
+
+### Fixed
+
+- Framing now drives the rotary axis instead of the physical Y axis on
+  rotary layers (#356)
+- Arcs using more than a full circle no longer collapse when overcut
+  (#357)
+- Rotary toolpaths no longer sink below the cylinder in the 3d simulator
+- Steps with generated workpieces no longer apply to every workpiece in
+  the layer
+- Material test preview no longer misaligns with the engraved ops after
+  the workpiece is resized, and the grid no longer engraves smaller
+  than the workpiece
+- Raster histogram (levels) changes now commit on release instead of
+  mid-drag and invalidate the compute cache properly
+- Travel speed setting hidden on machines without support, and the
+  speed field cursor no longer jumps when a value is clamped
+- Workpiece selectability stays in sync with layer visibility
+- 3D canvas: the raster texture underlay now draws correctly, and the
+  laser beam no longer draws over the head model
+- Ruida driver falls back to the machine reference point for named WCS
+  on job start
+- Camera alignment/calibration date comparison is now timezone-safe
+- Traced contours no longer come out wider than the image content
+
 ## 1.9.3
 
 ### Added

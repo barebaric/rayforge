@@ -42,11 +42,33 @@ Une fois que vous avez défini le matériau, vous pouvez lui assigner un type de
 
 Les matériaux définissent les propriétés visuelles de votre matériau :
 
-- **Apparence visuelle** : Couleur et motif pour la visualisation
+- **Apparence visuelle** : Couleur, texture et ombrage pour la
+  visualisation
 - **Catégorie** : Groupement (ex : "Bois", "Acrylique", "Métal")
 - **Description** : Informations supplémentaires sur le matériau
 
+Voir [Matériaux](../application-settings/materials.md) pour la liste
+complète des propriétés d'apparence (texture, rugosité, métallique et
+teinte).
+
 Note : Les propriétés de matériau sont définies dans les bibliothèques de matériaux et ne peuvent pas être éditées via la boîte de dialogue des propriétés du matériau. Les propriétés du matériau vous permettent seulement d'assigner un matériau à un élément de matériau.
+
+### Couleur par Élément de Matériau
+
+Pour les matériaux définis comme **teintables** (ex : acrylique coloré),
+chaque élément de matériau peut remplacer indépendamment la couleur de
+teinte du matériau :
+
+1. Ouvrez la boîte de dialogue **Propriétés du Matériau** pour l'élément
+2. Cliquez sur le bouton de couleur dans la rangée **Couleur**
+3. Choisissez une couleur dans le sélecteur de couleur
+
+La couleur n'est appliquée qu'à cet élément de matériau — les autres
+éléments utilisant le même matériau conservent leurs propres couleurs.
+Utilisez le bouton d'effacement à côté de la rangée de couleur pour revenir
+à la couleur par défaut du matériau. Pour les matériaux non teintables, la
+rangée de couleur est désactivée et l'apparence provient de la définition
+du matériau.
 
 ## Convertir des Pièces en Matériau
 

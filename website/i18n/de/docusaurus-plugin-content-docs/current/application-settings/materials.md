@@ -5,8 +5,13 @@
 Material-Bibliotheken in Rayforge ermöglichen es dir, Material-Sammlungen für deine Laserschneide- und Gravurprojekte zu organisieren und zu verwalten. Diese Anleitung erklärt den Unterschied zwischen Kern- und Benutzer-Bibliotheken und wie du deine eigenen Bibliotheken erstellen und Materialien hinzufügen kannst.
 
 :::note
-Material-Bibliotheken haben derzeit keine funktionale Verwendung - das Zuweisen eines Materials betrifft lediglich das optische Erscheinungsbild. In zukünftigen Versionen werden Materialien verwendet, um funktionale Parameter abzuleiten.
-:::
+ Das Zuweisen eines Materials zu einem Materialstück beeinflusst sowohl
+ sein optisches Erscheinungsbild in der 2D- und 3D-Ansicht als auch,
+ welche [Rezepte](recipes.md) darauf angewendet werden:
+ materialspezifische Rezepte werden anhand des zugewiesenen Materials
+ abgeglichen. In zukünftigen Versionen werden Materialien verwendet, um
+ weitere funktionale Parameter abzuleiten.
+ :::
 
 
 ## Eine neue Bibliothek erstellen
@@ -30,7 +35,7 @@ Deine neue Bibliothek wird im Benutzerdaten-Verzeichnis erstellt und ist sofort 
 3. Fülle die Materialeigenschaften aus:
    - **Name**: Lesbarer Name
    - **Kategorie**: Gruppierungskategorie (z.B. "Holz", "Acryl")
-   - **Aussehen**: Visuelle Eigenschaften (Farbe)
+   - **Aussehen**: Visuelle Eigenschaften (siehe unten)
 4. Klicke auf **Speichern**, um das Material zur Bibliothek hinzuzufügen
 
 ### Materialeigenschaften erklärt
@@ -44,9 +49,45 @@ Deine neue Bibliothek wird im Benutzerdaten-Verzeichnis erstellt und ist sofort 
 - Häufige Kategorien: Holz, Acryl, Metall, Papier, Leder
 - Du kannst benutzerdefinierte Kategorien nach Bedarf erstellen
 
+#### Textur
+
+Ein Texturbild (WebP oder PNG), das über die Materialoberfläche gekachelt
+wird. Wenn eine Textur festgelegt ist, wird das Material mit der Textur
+statt mit einer einfarbigen Fläche dargestellt. Texturen können mit dem
+Skript `scripts/optimize_material_textures.py` in WebP optimiert werden,
+um die Materialdateien klein zu halten.
+
+#### Texturskalierung
+
+Die Größe (in mm), die eine Texturkachel auf dem Material abdeckt.
+Kleinere Werte wiederholen die Textur häufiger auf derselben Fläche.
+
 #### Farbe
 
-Die Farbe wird nur für das visuelle Erscheinungsbild auf der Arbeitsfläche verwendet - sie beeinflusst den Laserpfad in keiner Weise.
+Die Grundfarbe des Materials. Wenn eine Textur festgelegt ist und das
+Material einfärbbar ist, färbt die Farbe die Textur. Die Farbe wird nur
+für das visuelle Erscheinungsbild auf der Arbeitsfläche verwendet - sie
+beeinflusst den Laserpfad in keiner Weise.
+
+#### Einfärbbar
+
+Wenn aktiviert, kann die Textur des Materials mit der obigen Farbe
+eingefärbt werden. Dadurch kann ein einzelnes texturiertes Material
+(z.B. "Acryl") mehrere Farbvarianten abdecken: Die Farbe wird pro
+Materialstück im Dialog [Materialeigenschaften](../features/stock-handling.md)
+angewendet.
+
+#### Rauheit
+
+Ein Wert von 0-1, der beschreibt, wie rau oder poliert die Oberfläche in
+der 3D-Ansicht erscheint. Niedrigere Werte wirken glänzend, höhere Werte
+matt.
+
+#### Metallisch
+
+Ein Wert von 0-1, der beschreibt, ob die Oberfläche in der 3D-Ansicht
+Licht wie ein Metall reflektiert. Setze 1 für metallische Materialien, 0
+für nicht-metallische.
 
 
 ## Bestehende Materialien verwalten

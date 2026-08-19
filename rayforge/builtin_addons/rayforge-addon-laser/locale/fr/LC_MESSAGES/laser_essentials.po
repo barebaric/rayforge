@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-14 22:07+0200\n"
+"POT-Creation-Date: 2026-08-19 20:47+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -615,10 +615,10 @@ msgstr "Intervalle de ligne"
 #: laser_essentials/steps/material_test.py
 msgid ""
 "Distance between scan lines in machine units (for Engrave mode). Leave at 0 "
-"to use laser spot size."
+"to use laser spot size"
 msgstr ""
 "Distance entre les lignes de balayage en unités machine (pour le mode "
-"Gravure). Laisser à 0 pour utiliser la taille du point laser."
+"Gravure). Laissez à 0 pour utiliser la taille du point laser"
 
 #: laser_essentials/steps/material_test.py
 msgid "Include Labels"
@@ -637,16 +637,16 @@ msgid "Label Engrave Speed"
 msgstr "Vitesse de gravure des étiquettes"
 
 #: laser_essentials/steps/material_test.py
-msgid "Speed for engraving labels (mm/min)"
-msgstr "Vitesse pour graver les étiquettes (mm/min)"
+msgid "Speed for engraving labels"
+msgstr "Vitesse de gravure des étiquettes"
 
 #: laser_essentials/steps/material_test.py
 msgid "Fixed Speed"
 msgstr "Vitesse fixe"
 
 #: laser_essentials/steps/material_test.py
-msgid "Constant speed for all cells (mm/min)"
-msgstr "Vitesse constante pour toutes les cellules (mm/min)"
+msgid "Constant speed for all cells"
+msgstr "Vitesse constante pour toutes les cellules"
 
 #: laser_essentials/steps/material_test.py
 msgid "Fixed Power (%)"
@@ -689,12 +689,12 @@ msgid "Maximum Speed"
 msgstr "Vitesse maximale"
 
 #: laser_essentials/steps/material_test.py
-msgid "Starting speed (mm/min)"
-msgstr "Vitesse de départ (mm/min)"
+msgid "Starting speed"
+msgstr "Vitesse de départ"
 
 #: laser_essentials/steps/material_test.py
-msgid "Ending speed (mm/min)"
-msgstr "Vitesse finale (mm/min)"
+msgid "Ending speed"
+msgstr "Vitesse de fin"
 
 #: laser_essentials/steps/material_test.py
 msgid "Passes Range"
@@ -729,12 +729,12 @@ msgid "Maximum Offset"
 msgstr "Décalage maximum"
 
 #: laser_essentials/steps/material_test.py
-msgid "Bidir scan X-offset for first row (mm)"
-msgstr "Décalage X de balayage bidirectionnel pour la première ligne (mm)"
+msgid "Bidir scan X-offset for first row"
+msgstr "Décalage X de balayage bidirectionnel pour la première rangée"
 
 #: laser_essentials/steps/material_test.py
-msgid "Bidir scan X-offset for last row (mm)"
-msgstr "Décalage X de balayage bidirectionnel pour la dernière ligne (mm)"
+msgid "Bidir scan X-offset for last row"
+msgstr "Décalage X de balayage bidirectionnel pour la dernière rangée"
 
 #: laser_essentials/frontend.py
 msgid "Create Material Test Grid"
