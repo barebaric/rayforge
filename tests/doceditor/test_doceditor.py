@@ -6,13 +6,14 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from raygeo.ops.axis import Axis
 
 from rayforge.context import get_context
 from rayforge.core.step_registry import step_registry
 from rayforge.core.vectorization_spec import TraceSpec
 from rayforge.image.svg import svg_fallback
 from rayforge.machine.models.machine import Origin
-from rayforge.machine.models.rotary_module import RotaryModule
+from rayforge.machine.models.rotary_module import RotaryMode, RotaryModule
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -419,3 +420,66 @@ def test_configure_machine_mounts_rotary_for_first_layer(doc_editor):
 
     editor.configure_machine()
     assert machine.assembly.has_rotary
+
+
+@pytest.mark.asyncio
+async def test_frame_job_rotary_svg_drives_a_axis(
+    context_initializer,
+    doc_editor,
+    assets_path,
+    contour_step_class,
+    mocker,
+):
+    """End-to-end: framing a rotary SVG job drives the A (rotary) axis
+    instead of the physical Y axis (issue #356)."""
+    from rayforge.machine.cmd import MachineCmd
+
+    machine = get_context().machine
+    assert machine is not None
+    machine.set_dialect_uid("grbl")
+    machine.set_origin(Origin.BOTTOM_LEFT)
+
+    # TRUE_4TH_AXIS rotary module on the A axis.
+    rm = RotaryModule()
+    rm.set_mode(RotaryMode.TRUE_4TH_AXIS)
+    rm.set_axis(Axis.A)
+    machine.add_rotary_module(rm)
+
+    layer = doc_editor.doc.active_layer
+    layer.set_rotary_enabled(True)
+    layer.set_rotary_module_uid(rm.uid)
+
+    step = contour_step_class.create(
+        context_initializer, name="Vectorize", optimize=False
+    )
+    step.set_power(0.5)
+    step.set_cut_speed(3000)
+    step.visible = True
+    workflow = layer.workflow
+    assert workflow is not None
+    workflow.add_step(step)
+
+    head = machine.get_default_laser_head()
+    assert head is not None
+    head.set_frame_power(1)
+    assert machine.can_frame() is True
+
+    # Import a real square so the frame rectangle has a Y extent.
+    svg_path = assets_path / "10x10_square.svg"
+    await doc_editor.import_file_from_path(
+        svg_path, mime_type="image/svg+xml", vectorization_spec=TraceSpec()
+    )
+    await doc_editor.wait_until_settled()
+
+    run_spy = mocker.spy(machine.driver, "run")
+    machine_cmd = MachineCmd(doc_editor)
+    await machine_cmd.frame_job(machine)
+    await doc_editor.wait_until_settled()
+
+    run_spy.assert_called_once()
+    encoded = run_spy.call_args.args[0]
+    machine_code = encoded.text
+    assert re.search(r"\bA-?\d", machine_code), (
+        f"Expected an A-axis (rotary) move in frame G-code, "
+        f"got:\n{machine_code}"
+    )

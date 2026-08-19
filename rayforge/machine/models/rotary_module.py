@@ -58,6 +58,15 @@ class RotaryModule:
         self.mode = mode
         self.changed.send(self)
 
+    def is_replacement(self) -> bool:
+        """Whether this module runs in AXIS_REPLACEMENT mode.
+
+        In replacement mode the rotary movement is written onto one of
+        the machine's XYZ axes (``axis``) instead of being a dedicated
+        true 4th axis.
+        """
+        return self.mode == RotaryMode.AXIS_REPLACEMENT
+
     def set_mm_per_rotation(self, value: float):
         if self.mm_per_rotation == value:
             return

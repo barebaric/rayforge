@@ -35,7 +35,7 @@ def _is_valid_replacement_module(module):
     positive ``mm_per_rotation`` *or* their target axis is one of the
     standard XYZ axes (which can accept degree values directly).
     """
-    if module.mode != RotaryMode.AXIS_REPLACEMENT:
+    if not module.is_replacement():
         return True
     if module.mm_per_rotation > 0:
         return True
