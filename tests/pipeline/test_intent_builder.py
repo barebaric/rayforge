@@ -28,6 +28,7 @@ from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.contour import ContourSpec
 from raygeo.ops.axis import Axis
 from raygeo.ops.convert import Encoder, GcodeSpec
+from raygeo.ops.material.spec import MaterialFoldSpec
 from raygeo.ops.part import Part
 from raygeo.pipeline.execute import execute_stages
 from raygeo.pipeline.request import NodeRequest
@@ -50,7 +51,9 @@ from rayforge.pipeline.intent_builder import (
     job_encode_key,
     job_key,
     job_machinexform_key,
+    parse_stock_key,
     step_key,
+    stock_key,
     workpiece_key,
 )
 
@@ -1646,3 +1649,216 @@ def test_panel_rotation_does_not_change_gcode(
 
     assert len(native_coords) >= 4
     assert rotated_coords == native_coords
+
+
+# ----------------------------------------------------------------------
+# Stock fold nodes
+# ----------------------------------------------------------------------
+
+
+def _wp_with_geometry(name: str = "wp") -> WorkPiece:
+    """A WorkPiece whose world geometry overlaps the stock's
+    ``(0,0)-(100,100)`` rect: a 50×50 mm piece at the origin."""
+    wp = WorkPiece(name=name)
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(1, 0)
+    geo.line_to(1, 1)
+    geo.line_to(0, 1)
+    geo.close_path()
+    # The boundaries are a 1x1 normalized box; scale it to 50×50 mm
+    # via the workpiece matrix so its world rect overlaps the stock.
+    wp._boundaries_cache = geo
+    wp.matrix = Matrix.scale(50.0, 50.0)
+    return wp
+
+
+def _make_doc_with_stock_and_wp(
+    step: _TestStep,
+    wp: WorkPiece,
+    stock_visible: bool = True,
+    thickness: float = 18.0,
+) -> tuple[Doc, StockItem]:
+    """Build a Doc with *step*, *wp*, and a 100×80 mm stock item that
+    overlaps the workpiece, returning ``(doc, stock_item)``."""
+    doc = _make_doc(step, wp)
+    asset = StockAsset(name="sheet", geometry=None)
+    asset.set_thickness(thickness)
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(100, 0)
+    geo.line_to(100, 80)
+    geo.line_to(0, 80)
+    geo.close_path()
+    asset.geometry = geo
+    doc.add_asset(asset)
+    item = StockItem(stock_asset_uid=asset.uid, name="sheet")
+    item.visible = stock_visible
+    doc.add_child(item)
+    return doc, item
+
+
+def test_stock_key_roundtrip():
+    """``stock_key``/``parse_stock_key`` are inverse."""
+    key = stock_key("abc-123")
+    assert key == "stock:abc-123"
+    assert parse_stock_key(key) == "abc-123"
+    assert parse_stock_key("workpiece:x:y") is None
+    assert parse_stock_key("stock:") is None
+    assert parse_stock_key("stock:a:b") is None
+
+
+def test_builds_one_fold_node_per_visible_stock(isolated_machine):
+    """Two visible stock items → two ``stock:{uid}`` fold nodes."""
+    step = _TestStep(name="s1")
+    wp = _wp_with_geometry()
+    doc, item = _make_doc_with_stock_and_wp(step, wp)
+    # Add a second stock item.
+    asset2 = StockAsset(name="sheet2")
+    asset2.set_thickness(5.0)
+    geo2 = Geometry()
+    geo2.move_to(0, 0)
+    geo2.line_to(50, 0)
+    geo2.line_to(50, 50)
+    geo2.line_to(0, 50)
+    geo2.close_path()
+    asset2.geometry = geo2
+    doc.add_asset(asset2)
+    item2 = StockItem(stock_asset_uid=asset2.uid, name="sheet2")
+    doc.add_child(item2)
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+    keys = [n.key for n in nodes]
+    assert stock_key(item.uid) in keys
+    assert stock_key(item2.uid) in keys
+
+
+def test_no_fold_node_for_invisible_stock(isolated_machine):
+    """An invisible stock item emits no fold node."""
+    step = _TestStep(name="s1")
+    wp = _wp_with_geometry()
+    doc, item = _make_doc_with_stock_and_wp(step, wp, stock_visible=False)
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+    keys = [n.key for n in nodes]
+    assert stock_key(item.uid) not in keys
+
+
+def test_fold_node_token_stability(isolated_machine):
+    """Building twice with unchanged inputs yields equal fold tokens."""
+    step = _TestStep(name="s1")
+    wp = _wp_with_geometry()
+    doc, item = _make_doc_with_stock_and_wp(step, wp)
+
+    before = IntentBuilder(machine=isolated_machine).build(doc)
+    after = IntentBuilder(machine=isolated_machine).build(doc)
+    sk = stock_key(item.uid)
+    before_t = next(n.version_token for n in before if n.key == sk)
+    after_t = next(n.version_token for n in after if n.key == sk)
+    assert before_t == after_t
+
+
+def test_fold_node_token_changes_on_stock_move(isolated_machine):
+    """Moving the stock changes its fold node token."""
+    step = _TestStep(name="s1")
+    wp = _wp_with_geometry()
+    doc, item = _make_doc_with_stock_and_wp(step, wp)
+    sk = stock_key(item.uid)
+
+    before = IntentBuilder(machine=isolated_machine).build(doc)
+    # Small move keeps the stock overlapping the workpiece so the fold
+    # node is still emitted, while changing the token.
+    item.matrix = Matrix.translation(10.0, 0.0)
+    after = IntentBuilder(machine=isolated_machine).build(doc)
+    before_t = next(n.version_token for n in before if n.key == sk)
+    after_t = next(n.version_token for n in after if n.key == sk)
+    assert before_t != after_t
+
+
+def test_fold_node_token_changes_on_thickness_change(isolated_machine):
+    """Changing the stock thickness changes its fold node token."""
+    step = _TestStep(name="s1")
+    wp = _wp_with_geometry()
+    doc, item = _make_doc_with_stock_and_wp(step, wp, thickness=18.0)
+    sk = stock_key(item.uid)
+
+    before = IntentBuilder(machine=isolated_machine).build(doc)
+    asset = item.stock_asset
+    assert asset is not None
+    asset.set_thickness(5.0)
+    after = IntentBuilder(machine=isolated_machine).build(doc)
+    before_t = next(n.version_token for n in before if n.key == sk)
+    after_t = next(n.version_token for n in after if n.key == sk)
+    assert before_t != after_t
+
+
+def test_fold_node_no_intersecting_workpieces_skipped(isolated_machine):
+    """A stock item with no intersecting workpiece emits no fold node."""
+    step = _TestStep(name="s1")
+    wp = _wp_with_geometry()
+    doc, item = _make_doc_with_stock_and_wp(step, wp)
+    # Move the stock far away from the workpiece.
+    item.matrix = Matrix.translation(10000.0, 10000.0)
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+    keys = [n.key for n in nodes]
+    assert stock_key(item.uid) not in keys
+
+
+def test_fold_node_is_material_fold_stage(isolated_machine):
+    """The fold node's stage is a ``MaterialFoldSpec`` (passed directly,
+    not wrapped in a ``StageSpec`` — pipeline is domain-free)."""
+    step = _TestStep(name="s1")
+    wp = _wp_with_geometry()
+    doc, item = _make_doc_with_stock_and_wp(step, wp)
+    sk = stock_key(item.uid)
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+    fold_node = next(n for n in nodes if n.key == sk)
+    assert isinstance(fold_node.stage, MaterialFoldSpec)
+
+
+def test_fold_node_entries_cover_intersecting_workpieces(isolated_machine):
+    """The fold spec's entries list every intersecting workpiece compute
+    node; non-intersecting workpieces are absent."""
+    step = _TestStep(name="s1")
+    wp_far = _wp_with_geometry("wp_far")
+    wp_far.matrix = Matrix.translation(10000.0, 10000.0)
+    wp_near = _wp_with_geometry("wp_near")
+    doc, item = _make_doc_with_stock_and_wp(step, wp_near)
+    doc.active_layer.add_child(wp_far)
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+    sk = stock_key(item.uid)
+    fold_node = next(n for n in nodes if n.key == sk)
+    spec = fold_node.stage
+    source_keys = {e.source_key for e in spec.entries}
+    near_key = workpiece_key(wp_near.uid, step.uid)
+    far_key = workpiece_key(wp_far.uid, step.uid)
+    assert near_key in source_keys
+    assert far_key not in source_keys
+
+
+def test_existing_node_count_unchanged_with_stock(isolated_machine):
+    """Adding a stock item does not change the count of workpiece/step/
+    job nodes — fold nodes are additive."""
+    step = _TestStep(name="s1")
+    wp1 = _wp_with_geometry("wp1")
+    wp2 = _wp_with_geometry("wp2")
+    doc_no_stock = _make_doc(step, wp1, wp2)
+
+    # Build a separate doc with its own workpieces + a stock item, so
+    # workpieces are not re-parented between docs.
+    step2 = _TestStep(name="s1")
+    wp1b = _wp_with_geometry("wp1")
+    wp2b = _wp_with_geometry("wp2")
+    doc_with_stock, _item = _make_doc_with_stock_and_wp(step2, wp1b)
+    doc_with_stock.active_layer.add_child(wp2b)
+
+    no_stock = IntentBuilder(machine=isolated_machine).build(doc_no_stock)
+    with_stock = IntentBuilder(machine=isolated_machine).build(doc_with_stock)
+
+    non_stock_keys = [
+        n.key for n in with_stock if not n.key.startswith("stock:")
+    ]
+    assert len(non_stock_keys) == len(no_stock)
