@@ -180,6 +180,48 @@ def test_self_commit_does_not_clobber_in_progress_edit(
 
 
 @pytest.mark.ui
+def test_speed_bounds_follow_machine_not_stale_step_value(
+    editor, cnc_machine, ui_context
+):
+    """Speed-row bounds come from the active machine, not the step.
+
+    A step's ``max_cut_speed`` is a snapshot serialized at save time and
+    can be stale after loading an old project or reconfiguring the
+    machine. Bounding the rows with that stale value would clamp an edit
+    to the wrong maximum, so an edit must not shrink the row's upper
+    bound below the machine's current limit.
+    """
+    cnc_machine.max_cut_speed = 24000  # 400 mm/s
+    ui_context.config.set_machine(cnc_machine)
+
+    step_cls = step_registry.get("ProfileOuterStep")
+    assert step_cls is not None
+    step = step_cls.create(ui_context)
+    step.cut_speed = 6000  # 100 mm/s
+    data = step.to_dict()
+    data["max_cut_speed"] = 1000  # stale value carried in an old project
+    loaded = cast(CncAssemblerStep, step_cls.from_dict(data))
+
+    page = ProfileOuterPage(editor, loaded)
+    cnc_page = page.cnc_page()
+    widget = next(
+        w for w, _ in cnc_page._varset_widgets if w.row_for("cut_speed")
+    )
+    row = cast(SpeedSpinRow, widget.row_for("cut_speed"))
+    adj = row.get_spin_button().get_adjustment()
+    assert adj.get_upper() == pytest.approx(24000.0)
+
+    # An edit must not clobber the bound with the stale step snapshot.
+    spin = row.get_spin_button()
+    spin.grab_focus()
+    spin.select_region(0, -1)
+    spin.delete_selection()
+    spin.set_text("7000")
+    widget._flush_debounce()
+    assert adj.get_upper() == pytest.approx(24000.0)
+
+
+@pytest.mark.ui
 def test_dialog_uses_profile_outer_page(editor, cnc_machine, ui_context):
     dialog = StepSettingsDialog(editor, _profile_step(ui_context))
     assert type(dialog.general_view).__name__ == "ProfileOuterPage"

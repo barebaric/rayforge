@@ -797,6 +797,39 @@ class Step(DocItem, ABC):
         """
         return self.typelabel
 
+    def check(self, machine) -> list[str]:
+        """Return a list of configuration warning strings for this step.
+
+        The UI (step box, settings pages) surfaces these to flag issues
+        such as a speed that exceeds the active machine's maximum.
+        Subclasses extend this with their own warnings. ``machine`` may
+        be None when no machine is configured.
+        """
+        warnings: list[str] = []
+        if machine is None:
+            return warnings
+        if self.cut_speed > machine.max_cut_speed:
+            warnings.append(
+                _(
+                    "Cut speed ({value} mm/min) exceeds the machine's "
+                    "maximum ({max} mm/min)."
+                ).format(
+                    value=self.cut_speed,
+                    max=machine.max_cut_speed,
+                )
+            )
+        if self.travel_speed > machine.max_travel_speed:
+            warnings.append(
+                _(
+                    "Travel speed ({value} mm/min) exceeds the machine's "
+                    "maximum ({max} mm/min)."
+                ).format(
+                    value=self.travel_speed,
+                    max=machine.max_travel_speed,
+                )
+            )
+        return warnings
+
     def dump(self, indent: int = 0):
         print("  " * indent, self.name)
 
