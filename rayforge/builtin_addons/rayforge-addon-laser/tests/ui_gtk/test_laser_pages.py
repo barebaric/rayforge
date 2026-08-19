@@ -145,6 +145,37 @@ def test_material_test_page_builds(editor, laser_machine, ui_context):
 
 
 @pytest.mark.ui
+def test_material_test_laser_page_hides_travel_speed_without_support(
+    editor, laser_machine, ui_context
+):
+    """GRBL can't emit travel speed, so the material-test laser page
+    hides the travel speed row."""
+    step = MaterialTestStep()
+    page = MaterialTestGridSettingsPage(editor, step)
+    laser_page = page.laser_page()
+
+    assert not laser_machine.supports_travel_speed()
+    row = _row(laser_page, "travel_speed")
+    assert row.get_visible() is False
+
+
+@pytest.mark.ui
+def test_material_test_laser_page_shows_travel_speed_with_support(
+    editor, laser_machine, ui_context
+):
+    """A machine that can emit travel speed shows the material-test
+    travel speed row."""
+    laser_machine.set_dialect_uid("smoothieware")
+    step = MaterialTestStep()
+    page = MaterialTestGridSettingsPage(editor, step)
+    laser_page = page.laser_page()
+
+    assert laser_machine.supports_travel_speed()
+    row = _row(laser_page, "travel_speed")
+    assert row.get_visible() is True
+
+
+@pytest.mark.ui
 def test_material_test_tuple_rows_round_trip(
     editor, laser_machine, ui_context
 ):

@@ -235,6 +235,14 @@ class Machine:
             head = self.heads[0]
         return bool(self.driver.supports_pwm(head))
 
+    def supports_travel_speed(self) -> bool:
+        """Whether the machine's dialect can emit travel moves at a speed.
+
+        Drives whether step settings show the travel speed row and
+        whether travel-speed warnings are produced.
+        """
+        return bool(self.dialect and self.dialect.can_g0_with_speed)
+
     def get_pwm_params(self, head: Head | None = None) -> PWMParams | None:
         """
         Returns the driver-reported PWM parameters for the given head, or

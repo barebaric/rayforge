@@ -268,6 +268,7 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
         machine = self.get_machine()
         if machine is None:
             return
+        supports_travel = machine.supports_travel_speed()
         for widget, _var_set in self._varset_widgets:
             row = widget.row_for("cut_speed")
             if row is not None:
@@ -279,6 +280,7 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
                 cast(SpeedSpinRow, row).set_range(
                     1.0, float(machine.max_travel_speed)
                 )
+                row.set_visible(supports_travel)
         self._update_speed_warnings()
 
     def _update_speed_warnings(self):
@@ -294,6 +296,7 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
             return
         warnings = self.step.check(machine)
         message = "\n".join(warnings) if warnings else ""
+        supports_travel = machine.supports_travel_speed()
         for widget, _var_set in self._varset_widgets:
             row = widget.row_for("cut_speed")
             if row is not None:
@@ -306,7 +309,8 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
             if row is not None:
                 self._set_speed_row_warning(
                     cast(SpeedSpinRow, row),
-                    self.step.travel_speed > machine.max_travel_speed,
+                    supports_travel
+                    and self.step.travel_speed > machine.max_travel_speed,
                     message,
                 )
 
