@@ -1,3 +1,4 @@
+import math
 from typing import TYPE_CHECKING, Optional
 
 from ...context import get_context
@@ -51,6 +52,27 @@ def get_preferred_unit_factor(quantity: str) -> float:
     if unit is None:
         return 1.0
     return unit.to_base(1.0)
+
+
+def get_display_unit_settings(quantity: str) -> tuple[str, float, int]:
+    """
+    Returns ``(unit_name, factor, precision)`` describing how to display
+    values of *quantity* in the user's preferred display unit.
+
+    ``factor`` converts a base-unit value to the display unit
+    (``display = base / factor``); it is the number of base units in one
+    display unit. ``precision`` is the number of decimal places the unit
+    suggests for display. Falls back to the quantity's base unit when no
+    preference is set or the preferred unit is unknown.
+    """
+    base_unit = get_base_unit_for_quantity(quantity)
+    unit = get_preferred_unit(quantity) or base_unit
+    if unit is None:
+        return "", 1.0, 0
+    factor = unit.to_base(1.0)
+    if not math.isfinite(factor) or factor <= 0.0:
+        factor = 1.0
+    return unit.name, factor, unit.precision
 
 
 def get_default_grid_step_mm() -> float:
