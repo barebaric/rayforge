@@ -21,6 +21,7 @@ from raygeo.ops.state import CoolantMode
 from ..machine.models.head import Head
 from ..machine.models.spindle import SpindleHead
 from ..pipeline.transformer.registry import transformer_registry
+from ..shared.units.formatter import format_value
 from .capability import MachineCapability
 from .item import DocItem
 from .step_registry import step_registry
@@ -811,21 +812,21 @@ class Step(DocItem, ABC):
         if self.cut_speed > machine.max_cut_speed:
             warnings.append(
                 _(
-                    "Cut speed ({value} mm/min) exceeds the machine's "
-                    "maximum ({max} mm/min)."
+                    "Cut speed ({value}) exceeds the machine's "
+                    "maximum ({max})."
                 ).format(
-                    value=self.cut_speed,
-                    max=machine.max_cut_speed,
+                    value=format_value(self.cut_speed, "speed"),
+                    max=format_value(machine.max_cut_speed, "speed"),
                 )
             )
         if self.travel_speed > machine.max_travel_speed:
             warnings.append(
                 _(
-                    "Travel speed ({value} mm/min) exceeds the machine's "
-                    "maximum ({max} mm/min)."
+                    "Travel speed ({value}) exceeds the machine's "
+                    "maximum ({max})."
                 ).format(
-                    value=self.travel_speed,
-                    max=machine.max_travel_speed,
+                    value=format_value(self.travel_speed, "speed"),
+                    max=format_value(machine.max_travel_speed, "speed"),
                 )
             )
         return warnings
