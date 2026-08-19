@@ -10,8 +10,12 @@ loop.
 from collections.abc import Callable
 from typing import Any, ClassVar, Optional
 
+from raygeo.geo import Geometry, Matrix
+
 from rayforge.core.doc import Doc
 from rayforge.core.step import Step
+from rayforge.core.stock import StockItem
+from rayforge.core.stock_asset import StockAsset
 from rayforge.core.workpiece import WorkPiece
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.models.machine_panel import PanelOrientation
@@ -20,6 +24,7 @@ from rayforge.pipeline.intent_builder import (
     job_encode_key,
     job_key,
     step_key,
+    stock_key,
     workpiece_key,
 )
 from rayforge.pipeline.intent_controller import (
@@ -832,3 +837,129 @@ def test_disconnect_prevents_further_rebuilds(isolated_machine):
 
     wp.updated.send(wp)
     assert tm.delayed == []
+
+
+# ----------------------------------------------------------------------
+# Stock fold reattachment
+# ----------------------------------------------------------------------
+
+
+def _make_doc_with_stock(
+    step: _TestStep, wp: WorkPiece
+) -> tuple[Doc, StockItem]:
+    """Build a Doc with a stock item overlapping *wp*; return
+    ``(doc, stock_item)``."""
+    # Give the workpiece a 50×50 mm world geometry at the origin so it
+    # overlaps the stock (AABB intersection drives fold-node emission).
+    geo_wp = Geometry()
+    geo_wp.move_to(0, 0)
+    geo_wp.line_to(1, 0)
+    geo_wp.line_to(1, 1)
+    geo_wp.line_to(0, 1)
+    geo_wp.close_path()
+    wp._boundaries_cache = geo_wp
+    wp.matrix = Matrix.scale(50.0, 50.0)
+
+    doc = _make_doc(step, wp)
+    asset = StockAsset(name="sheet")
+    asset.set_thickness(18.0)
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(100, 0)
+    geo.line_to(100, 80)
+    geo.line_to(0, 80)
+    geo.close_path()
+    asset.geometry = geo
+    doc.add_asset(asset)
+    item = StockItem(stock_asset_uid=asset.uid, name="sheet")
+    doc.add_child(item)
+    return doc, item
+
+
+def _make_controller_with_stock(monkeypatch, machine, step, wp, stock_item):
+    """Build a controller whose key map includes ``stock:{uid}``."""
+    doc = stock_item.parent
+    tm = ImmediateMainThreadTaskManager()
+    ctrl = IntentController(doc, tm, machine=machine)
+    ctrl.connect()
+    # Build once so the key map is populated; run_intent is stubbed
+    # so no real pipeline work happens.
+    monkeypatch.setattr(
+        "rayforge.pipeline.intent_controller.run_intent",
+        lambda *a, **kw: None,
+    )
+    wp.updated.send(wp)
+    tm.fire_latest()
+    # Clear any rebuild-finished main-thread calls queued above so the
+    # stock tests only see their own.
+    tm.main_thread_calls.clear()
+    return ctrl
+
+
+def test_stock_key_in_reattach_map(monkeypatch, isolated_machine):
+    """A ``stock:{uid}`` key is mapped to its StockItem in the
+    reattachment map."""
+    step = _TestStep(name="s1")
+    wp = WorkPiece(name="wp")
+    _doc, item = _make_doc_with_stock(step, wp)
+    ctrl = _make_controller_with_stock(
+        monkeypatch, isolated_machine, step, wp, item
+    )
+    sk = stock_key(item.uid)
+    assert sk in ctrl._key_to_item
+    assert ctrl._key_to_item[sk] is item
+    ctrl.shutdown()
+
+
+def test_material_state_ready_emitted_for_current_generation(
+    monkeypatch, isolated_machine
+):
+    """A current-generation ``stock:`` result emits
+    ``material_state_ready`` with the stock item and output."""
+    step = _TestStep(name="s1")
+    wp = WorkPiece(name="wp")
+    _doc, item = _make_doc_with_stock(step, wp)
+    ctrl = _make_controller_with_stock(
+        monkeypatch, isolated_machine, step, wp, item
+    )
+
+    received: list = []
+    ctrl.material_state_ready.connect(
+        lambda _sender, *, stock_item, output, generation_id: received.append(
+            (stock_item, output, generation_id)
+        ),
+        weak=False,
+    )
+
+    sk = stock_key(item.uid)
+    node = _StubNode(key=sk, generation_id=ctrl.generation_id, output="state")
+    ctrl._on_completed(node)
+    assert len(received) == 1
+    assert received[0][0] is item
+    assert received[0][1] == "state"
+    assert received[0][2] == ctrl.generation_id
+    ctrl.shutdown()
+
+
+def test_superseded_stock_generation_discarded(monkeypatch, isolated_machine):
+    """A stale ``stock:`` result (older generation) is discarded."""
+    step = _TestStep(name="s1")
+    wp = WorkPiece(name="wp")
+    _doc, item = _make_doc_with_stock(step, wp)
+    ctrl = _make_controller_with_stock(
+        monkeypatch, isolated_machine, step, wp, item
+    )
+
+    received: list = []
+    ctrl.material_state_ready.connect(
+        lambda _sender, *, stock_item, output, generation_id: received.append(
+            (stock_item, output, generation_id)
+        ),
+        weak=False,
+    )
+
+    sk = stock_key(item.uid)
+    stale = _StubNode(key=sk, generation_id=0, output="stale")
+    ctrl._on_completed(stale)
+    assert received == []
+    ctrl.shutdown()
