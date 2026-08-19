@@ -1118,6 +1118,18 @@ class TestMachine:
         assert not machine.dialect.can_g0_with_speed
 
     @pytest.mark.asyncio
+    async def test_supports_travel_speed(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
+        await wait_for_tasks_to_finish(task_mgr)
+        # GRBL (default) cannot emit travel speed.
+        assert not machine.supports_travel_speed()
+        machine.set_dialect_uid("smoothieware")
+        assert machine.supports_travel_speed()
+        machine.set_dialect_uid("grbl")
+        assert not machine.supports_travel_speed()
+
+    @pytest.mark.asyncio
     async def test_new_driver_methods_smoothie(
         self, machine: Machine, task_mgr: TaskManager
     ):

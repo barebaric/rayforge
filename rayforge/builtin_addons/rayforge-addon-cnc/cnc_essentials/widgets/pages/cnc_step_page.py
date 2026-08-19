@@ -57,6 +57,7 @@ class CncSettingsPage(StepSettingsPage):
         head_row = self.spindle_widget.row_for("selected_head_uid")
         if head_row is not None:
             head_row.set_visible(self.get_machine() is not None)
+        self._update_machine_bounds()
 
     def _cnc_group(self) -> VarSet | None:
         """The domain varset group holding the common CNC settings."""
@@ -65,6 +66,7 @@ class CncSettingsPage(StepSettingsPage):
 
     def _on_machine_changed(self):
         """Update head row visibility after a machine switch."""
+        super()._on_machine_changed()
         head_row = self.spindle_widget.row_for("selected_head_uid")
         if head_row is not None:
             head_row.set_visible(self.get_machine() is not None)

@@ -681,3 +681,29 @@ def test_create_initial_ops_omits_off_coolant(step):
     """OFF coolant produces no coolant op."""
     ops = step.create_initial_ops()
     assert len(ops) == 0
+
+
+def test_check_skips_travel_speed_without_support(sync_machine):
+    """No travel speed warning when the machine's dialect cannot emit it."""
+    sync_machine.max_cut_speed = 1000
+    sync_machine.max_travel_speed = 5000
+    step = Step(typelabel="Test")
+    step.cut_speed = 500
+    step.travel_speed = 99999
+
+    assert not sync_machine.supports_travel_speed()
+    assert step.check(sync_machine) == []
+
+
+def test_check_warns_on_travel_speed_with_support(sync_machine):
+    """Travel speed above the machine's max warns when supported."""
+    sync_machine.set_dialect_uid("smoothieware")
+    sync_machine.max_cut_speed = 1000
+    sync_machine.max_travel_speed = 5000
+    step = Step(typelabel="Test")
+    step.cut_speed = 500
+    step.travel_speed = 99999
+
+    assert sync_machine.supports_travel_speed()
+    warnings = step.check(sync_machine)
+    assert any("Travel speed" in w for w in warnings)

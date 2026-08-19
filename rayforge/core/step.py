@@ -819,7 +819,10 @@ class Step(DocItem, ABC):
                     max=format_value(machine.max_cut_speed, "speed"),
                 )
             )
-        if self.travel_speed > machine.max_travel_speed:
+        if (
+            machine.supports_travel_speed()
+            and self.travel_speed > machine.max_travel_speed
+        ):
             warnings.append(
                 _(
                     "Travel speed ({value}) exceeds the machine's "

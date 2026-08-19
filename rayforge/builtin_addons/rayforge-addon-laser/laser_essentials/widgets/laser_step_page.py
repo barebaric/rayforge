@@ -30,6 +30,7 @@ class LaserSettingsPage(StepSettingsPage):
         step: Any,
         include_tab_power: bool = False,
         include_process: bool = True,
+        include_travel_speed: bool = True,
         cut_speed_title: str = _("Cut Speed"),
     ):
         super().__init__(editor, step)
@@ -48,6 +49,8 @@ class LaserSettingsPage(StepSettingsPage):
             laser_keys.add("tab_power")
         if not include_process:
             laser_keys = {"selected_head_uid", "air_assist"}
+            if include_travel_speed:
+                laser_keys.add("travel_speed")
         laser_vs = VarSet(
             vars=[v for v in full if v.key in laser_keys],
             description=_(
@@ -74,6 +77,7 @@ class LaserSettingsPage(StepSettingsPage):
 
         self.step.updated.connect(self._update_machine_section_visibility)
         self._update_machine_section_visibility()
+        self._update_machine_bounds()
 
     def _update_machine_section_visibility(self, *args):
         machine = self.get_machine()
@@ -83,6 +87,7 @@ class LaserSettingsPage(StepSettingsPage):
 
     def _on_machine_changed(self):
         """Update head row and PWM section after a machine switch."""
+        super()._on_machine_changed()
         head_row = self.laser_widget.row_for("selected_head_uid")
         if head_row is not None:
             head_row.set_visible(self.get_machine() is not None)
@@ -143,6 +148,7 @@ class LaserStepSettingsPage(StepSettingsPage):
 
     include_tab_power = False
     include_process = True
+    include_travel_speed = True
     cut_speed_title = _("Cut Speed")
 
     extra_pages = (("laser_page", _("Laser"), "laser-on-symbolic"),)
@@ -161,5 +167,6 @@ class LaserStepSettingsPage(StepSettingsPage):
             self.step,
             include_tab_power=self.include_tab_power,
             include_process=self.include_process,
+            include_travel_speed=self.include_travel_speed,
             cut_speed_title=self.cut_speed_title,
         )
