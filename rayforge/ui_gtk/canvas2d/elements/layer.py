@@ -101,6 +101,13 @@ class LayerElement(CanvasElement):
             f" executing, called by {origin or sender}."
         )
         self.set_visible(self.data.visible)
+
+        # Keep child selectability in sync with the layer's visibility.
+        # Elements created while the layer was hidden must become selectable
+        # again once the layer is shown, and vice versa.
+        for child in self.children:
+            if isinstance(child, (WorkPieceElement, GroupElement)):
+                child.selectable = self.data.visible
         from ..surface import WorkSurface
 
         work_surface = cast(WorkSurface, self.canvas)
