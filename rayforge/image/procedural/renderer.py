@@ -7,13 +7,15 @@ from typing import TYPE_CHECKING
 
 import cairo
 
-from ..base_renderer import Renderer
+from ..base_renderer import Renderer, RenderSpecification
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
 if TYPE_CHECKING:
+    from ...core.source_asset_segment import SourceAssetSegment
+    from ...core.workpiece import RenderContext
     from ...image.structures import ImportResult
 
 logger = logging.getLogger(__name__)
@@ -77,6 +79,27 @@ class ProceduralRenderer(Renderer):
             height=target_height,
         )
 
+    def compute_render_spec(
+        self,
+        segment: "SourceAssetSegment | None",
+        target_size: tuple[int, int],
+        source_context: "RenderContext",
+    ) -> RenderSpecification:
+        """Pass the workpiece size on to the drawing function.
+
+        Procedural content is defined in millimetres (the recipe's
+        natural size). When a workpiece is resized, the drawing function
+        must render at the workpiece's current size so the preview keeps
+        the same proportions as the material-test ops (which scale to
+        fill ``workpiece.size``).
+        """
+        spec = super().compute_render_spec(
+            segment, target_size, source_context
+        )
+        if source_context.size_mm:
+            spec.kwargs["size_mm"] = tuple(source_context.size_mm)
+        return spec
+
     def render_base_image(
         self,
         data: bytes,
@@ -94,7 +117,13 @@ class ProceduralRenderer(Renderer):
         ctx = cairo.Context(surface)
 
         try:
-            draw_func(ctx, width, height, params)
+            draw_func(
+                ctx,
+                width,
+                height,
+                params,
+                size_mm=kwargs.get("size_mm"),
+            )
         except Exception:
             logger.exception("Error executing procedural drawing function")
             return None

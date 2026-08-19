@@ -56,6 +56,7 @@ class RenderContext(NamedTuple):
     metadata: dict[str, Any]
     boundaries: Geometry | None
     fills: list[FillRenderData] | None
+    size_mm: tuple[float, float] | None = None
 
 
 class WorkPiece(DocItem):
@@ -669,6 +670,7 @@ class WorkPiece(DocItem):
                 metadata={"is_vector": True},
                 boundaries=boundaries,
                 fills=fills,
+                size_mm=self.size,
             )
 
         # --- Fallback to standard SourceAsset logic ---
@@ -712,6 +714,7 @@ class WorkPiece(DocItem):
             metadata=metadata,
             boundaries=boundaries,
             fills=fills,
+            size_mm=self.size,
         )
 
     def _process_rendered_image_from_spec(

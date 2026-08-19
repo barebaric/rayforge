@@ -84,14 +84,20 @@ def draw_preview(
     width_px: float,
     height_px: float,
     params: dict[str, Any],
+    size_mm: tuple[float, float] | None = None,
 ):
     """
     Draws a visual-only preview of the material test grid.
 
     Renders the Ops via ``generate_material_test_grid_preview`` (raygeo),
     then blits the resulting RGBA buffer to the Cairo context.
+
+    ``size_mm`` is the current workpiece size; the grid is rendered at
+    that size (falling back to the recipe's natural size) so the preview
+    matches the material-test ops, which scale to fill ``workpiece.size``.
     """
-    size_mm = get_material_test_proportional_size(params)
+    if size_mm is None:
+        size_mm = get_material_test_proportional_size(params)
     dpi_x = width_px / size_mm[0] * _MM_PER_INCH
     dpi_y = height_px / size_mm[1] * _MM_PER_INCH
     dpi = max(dpi_x, dpi_y)
@@ -143,7 +149,11 @@ def draw_preview(
 
 
 def draw_material_test_preview(
-    ctx: cairo.Context, width: float, height: float, params: dict[str, Any]
+    ctx: cairo.Context,
+    width: float,
+    height: float,
+    params: dict[str, Any],
+    size_mm: tuple[float, float] | None = None,
 ):
     """Stable entry point for the generic procedural renderer."""
-    draw_preview(ctx, width, height, params)
+    draw_preview(ctx, width, height, params, size_mm=size_mm)
