@@ -115,11 +115,20 @@ class SpinRow(Adw.ActionRow):
         Set the value programmatically.
 
         This does not emit :attr:`value_changed`; only user edits do.
+        A no-op when the entry already shows ``value`` so redundant model
+        syncs (e.g. a backend update round-tripping an unchanged value)
+        do not rewrite the text and yank the cursor mid-edit.
         """
         if self._is_updating:
             return
         self._is_updating = True
         try:
+            try:
+                current = float(self._spin_button.get_text())
+            except ValueError:
+                current = float(self._spin_button.get_value())
+            if abs(value - current) < 1e-9:
+                return
             self._spin_button.set_value(value)
         finally:
             self._is_updating = False

@@ -39,6 +39,13 @@ class _VarSetRowManager:
         self._syncing = False
         self._debounce_timer_id: int | None = None
         self._pending_keys: set = set()
+        #: Keys this widget has just committed and is currently
+        #: delivering as ``data_changed``. The host's synchronous
+        #: model update (``step.updated`` → ``sync_from_model``) is a
+        #: round-trip of the widget's own edit; those keys must not be
+        #: re-pushed into their rows or the in-progress edit is
+        #: overwritten (e.g. clamping a typed value resets the cursor).
+        self._committed_keys: set = set()
         #: Extra values visible to visible_when/sensitive_when that
         #: have no row in this widget (e.g. a key whose row lives in a
         #: sibling widget). Host pages push them via set_context_values.
@@ -90,6 +97,7 @@ class _VarSetRowManager:
     def clear_dynamic_rows(self):
         """Removes only the rows dynamically created by populate()."""
         self._cancel_debounce()
+        self._committed_keys.clear()
         for row in self._created_rows:
             self._remove_row(row)
         self._created_rows.clear()
@@ -247,6 +255,7 @@ class _VarSetRowManager:
         :meth:`cancel_pending` first and then :meth:`set_values`.
         """
         pending = set(self._pending_keys)
+        pending |= set(self._committed_keys)
         filtered = {k: v for k, v in values.items() if k not in pending}
         self.set_values(filtered)
 
@@ -305,7 +314,21 @@ class _VarSetRowManager:
             self._pending_keys.add(key)
             self._schedule_debounce()
         else:
+            self._deliver_data_changed(key)
+
+    def _deliver_data_changed(self, key: str):
+        """Emit ``data_changed`` for ``key`` while marking it committed.
+
+        The host answers synchronously by pushing the new value into the
+        model, which round-trips back through :meth:`sync_from_model`.
+        Marking the key as committed during delivery keeps that
+        round-trip from rewriting the row the user is still editing.
+        """
+        self._committed_keys.add(key)
+        try:
             self.data_changed.send(self, key=key)
+        finally:
+            self._committed_keys.discard(key)
 
     def _update_visibility(self):
         """Re-evaluate ``visible_when``/``sensitive_when`` callbacks
@@ -369,7 +392,7 @@ class _VarSetRowManager:
         keys = set(self._pending_keys)
         self._pending_keys.clear()
         for key in keys:
-            self.data_changed.send(self, key=key)
+            self._deliver_data_changed(key)
         self._update_visibility()
 
     def _add_apply_button_if_needed(self, row, key):

@@ -172,6 +172,55 @@ def test_set_value_programmatically_does_not_fire(ui_context_initializer):
 
 
 @pytest.mark.ui
+def test_same_value_sync_preserves_cursor(ui_context_initializer):
+    """Re-setting an unchanged value must not rewrite the text.
+
+    A backend update (e.g. ``step.updated`` → model sync) round-trips
+    the very value the user just typed. Rewriting the entry would yank
+    the cursor to the start mid-edit, so a redundant set of the same
+    value must be a no-op that keeps the cursor position.
+    """
+    row = SpeedSpinRow("Cut", value_in_base=500.0)
+    spin = row.get_spin_button()
+    spin.grab_focus()
+    spin.select_region(0, -1)
+    spin.delete_selection()
+    spin.set_text("1000")
+    spin.set_position(2)
+    assert spin.get_position() == 2
+
+    # Model round-trip with the identical value.
+    row.set_value_in_base_units(1000.0)
+    assert spin.get_position() == 2
+    assert spin.get_text() == "1000"
+
+    # A genuinely different value still updates the text.
+    row.set_value_in_base_units(1200.0)
+    assert row.get_value_in_base_units() == pytest.approx(1200.0)
+
+
+@pytest.mark.ui
+def test_plain_same_value_sync_preserves_cursor(ui_context_initializer):
+    """The plain SpinRow setter is likewise idempotent for unchanged
+    values."""
+    row = SpinRow("Count", lower=0, upper=100, digits=0, value=5)
+    spin = row.get_spin_button()
+    spin.grab_focus()
+    spin.select_region(0, -1)
+    spin.delete_selection()
+    spin.set_text("42")
+    spin.set_position(1)
+    assert spin.get_position() == 1
+
+    row.set_value(42.0)
+    assert spin.get_position() == 1
+    assert spin.get_text() == "42"
+
+    row.set_value(50.0)
+    assert row.get_value() == pytest.approx(50.0)
+
+
+@pytest.mark.ui
 def test_debounce_coalesces_rapid_changes(ui_context_initializer):
     row = LengthSpinRow("Len", value_in_base=0.0, debounce_ms=10)
     received = []

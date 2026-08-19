@@ -145,6 +145,41 @@ def test_speed_rows_show_integer_digits(editor, cnc_machine, ui_context):
 
 
 @pytest.mark.ui
+def test_self_commit_does_not_clobber_in_progress_edit(
+    editor, cnc_machine, ui_context
+):
+    """A widget's own committed edit must not be re-synced back.
+
+    Editing the cut speed fires a debounced ``data_changed`` that the
+    page commits to the model; ``step.updated`` then round-trips back
+    into ``sync_from_model``. That round-trip must not rewrite the row
+    the user is still editing — otherwise clamping a value larger than
+    the machine's max resets the field (and its cursor).
+    """
+    page = ProfileOuterPage(editor, _profile_step(ui_context))
+    cnc_page = page.cnc_page()
+    widget = next(
+        w for w, _ in cnc_page._varset_widgets if w.row_for("cut_speed")
+    )
+    row = cast(SpeedSpinRow, widget.row_for("cut_speed"))
+    spin = row.get_spin_button()
+    spin.grab_focus()
+    spin.select_region(0, -1)
+    spin.delete_selection()
+    # 6000 exceeds the machine's max_cut_speed of 5000; the model clamps
+    # it but the field must keep showing what the user typed.
+    spin.set_text("6000")
+    spin.set_position(3)
+    assert spin.get_text() == "6000"
+
+    widget._flush_debounce()
+
+    assert cnc_page.step.cut_speed == 5000
+    assert spin.get_text() == "6000"
+    assert spin.get_position() == 3
+
+
+@pytest.mark.ui
 def test_dialog_uses_profile_outer_page(editor, cnc_machine, ui_context):
     dialog = StepSettingsDialog(editor, _profile_step(ui_context))
     assert type(dialog.general_view).__name__ == "ProfileOuterPage"
