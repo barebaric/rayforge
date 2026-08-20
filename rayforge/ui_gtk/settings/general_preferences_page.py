@@ -30,6 +30,7 @@ def _get_language_label(code: str) -> str:
         "pt": _("Portuguese"),
         "uk": _("Ukrainian"),
         "zh_CN": _("Chinese (Simplified)"),
+        "am": _("Amharic"),
     }
     return labels.get(code, code)
 
