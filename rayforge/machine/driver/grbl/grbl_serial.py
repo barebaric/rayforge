@@ -59,6 +59,7 @@ from .grbl_util import (
     parse_state,
     parse_version,
     prb_re,
+    split_realtime_commands,
     strip_gcode_comments,
     wcs_re,
 )
@@ -1052,15 +1053,27 @@ class GrblSerialDriver(Driver):
         """
         Executes a raw G-code string using the character-counting
         streaming protocol.
+
+        GRBL realtime commands (?, ~, !) are sent directly via the
+        control path instead: the firmware executes them on receipt,
+        never acknowledges them, and streaming them as gcode would
+        both queue them behind buffered commands and wedge the
+        protocol waiting for an 'ok' that does not come.
         """
         lines = [
             line.strip() for line in machine_code.splitlines() if line.strip()
         ]
-        if not lines:
+        gcode_lines, realtime_lines = split_realtime_commands(lines)
+
+        for line in realtime_lines:
+            logger.info(line, extra=self._log_extra("USER_COMMAND"))
+            await self._send_realtime(line, add_newline=False)
+
+        if not gcode_lines:
             return
         self._start_job()
         try:
-            await self._stream_gcode(lines)
+            await self._stream_gcode(gcode_lines)
         except DeviceConnectionError as e:
             logger.warning(
                 f"Raw G-code terminated due to device error: {e}. "

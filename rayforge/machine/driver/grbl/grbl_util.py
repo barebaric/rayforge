@@ -13,6 +13,31 @@ from ..driver import DeviceError, DeviceState, DeviceStatus, Pos
 # GRBL $13 setting key: "Report in inches" (boolean).
 GRBL_REPORT_INCHES_KEY = "13"
 
+# GRBL realtime command characters. The firmware executes these
+# immediately upon reception: they bypass the RX buffer, must never
+# be queued behind buffered gcode, and never produce an 'ok' ack.
+GRBL_REALTIME_COMMANDS = frozenset({"?", "~", "!"})
+
+
+def split_realtime_commands(
+    lines: list[str],
+) -> tuple[list[str], list[str]]:
+    """
+    Split command lines into realtime commands and regular gcode.
+
+    Returns ``(gcode_lines, realtime_lines)``, preserving the order
+    within each group.
+    """
+    gcode = []
+    realtime = []
+    for line in lines:
+        if line in GRBL_REALTIME_COMMANDS:
+            realtime.append(line)
+        else:
+            gcode.append(line)
+    return gcode, realtime
+
+
 _gcode_comment_re = re.compile(r"\([^)]*\)")
 
 

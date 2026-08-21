@@ -16,6 +16,7 @@ from rayforge.machine.driver.grbl.grbl_util import (
     parse_opt_info,
     parse_state,
     parse_version,
+    split_realtime_commands,
     strip_gcode_comments,
     version_supports_single_axis_homing,
 )
@@ -756,3 +757,22 @@ class TestParseStateInches:
             "<Idle|FS:1000,0>", default, report_in_inches=True
         )
         assert result.machine_pos == (None, None, None)
+
+
+class TestSplitRealtimeCommands:
+    """Tests for split_realtime_commands."""
+
+    def test_separates_realtime_from_gcode(self):
+        gcode, realtime = split_realtime_commands(
+            ["G0 X10", "~", "M3 S100", "!", "?"]
+        )
+        assert gcode == ["G0 X10", "M3 S100"]
+        assert realtime == ["~", "!", "?"]
+
+    def test_similar_gcode_is_not_realtime(self):
+        gcode, realtime = split_realtime_commands(["G0 X~10", "$$", "$X"])
+        assert gcode == ["G0 X~10", "$$", "$X"]
+        assert realtime == []
+
+    def test_empty_input(self):
+        assert split_realtime_commands([]) == ([], [])

@@ -59,3 +59,16 @@ async def test_cancel_interrupts_streaming_job_promptly(simple_driver):
     await asyncio.wait_for(stream_task, timeout=1.0)
 
     assert driver._job_running is False
+
+
+@pytest.mark.asyncio
+async def test_run_raw_sends_realtime_commands_directly(simple_driver):
+    """Realtime characters must bypass the ping-pong protocol: the
+    firmware never acknowledges them, and they must not start a job
+    that would then wedge the driver."""
+    driver = simple_driver
+
+    await driver.run_raw("~")
+
+    driver._transport.send.assert_called_once_with(b"~")
+    assert driver._job_running is False
