@@ -580,6 +580,16 @@ class GrblSerialDriver(Driver):
         if self.grbl_transport:
             self.grbl_transport.reset_flow_control()
 
+        # The driver owns the state while a job runs: status polling
+        # is disabled during jobs by default, so the firmware's Run
+        # status is never observed. Reflect the job start immediately
+        # so the UI does not keep showing Idle while the machine is
+        # working. An ALARM (which aborts the job right away) is not
+        # masked.
+        if self.state.status not in (DeviceStatus.RUN, DeviceStatus.ALARM):
+            self.state.status = DeviceStatus.RUN
+            self.state_changed.send(self, state=self.state)
+
     async def _recover_from_deadlock(
         self, transport, hold_lock: bool = True
     ) -> None:
