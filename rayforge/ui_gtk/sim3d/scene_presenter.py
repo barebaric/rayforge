@@ -493,7 +493,7 @@ class ScenePresenter:
         hosts.extend(
             (layer.uid, layer.name)
             for layer in self.doc.layers
-            if layer.rotary_enabled and layer.stock_material is not None
+            if layer.rotary_enabled
         )
         for uid, name in hosts:
             if uid not in handles:
@@ -758,12 +758,10 @@ class ScenePresenter:
                 continue
 
             material = item.material
-            if material is not None:
-                appearance = material.appearance
-                texture_path = material.get_texture_path()
-            else:
-                appearance = None
-                texture_path = None
+            if material is None:
+                material = self._context.material_mgr.get_default_material()
+            appearance = material.appearance
+            texture_path = material.get_texture_path()
 
             spec = {
                 "name": item.name,
@@ -775,23 +773,11 @@ class ScenePresenter:
                 "texture_path": (
                     str(texture_path) if texture_path is not None else None
                 ),
-                "texture_size_mm": float(
-                    appearance.texture_size_mm
-                    if appearance is not None
-                    else 300.0
-                ),
-                "roughness": float(
-                    appearance.roughness if appearance is not None else 0.8
-                ),
-                "metallic": float(
-                    appearance.metallic if appearance is not None else 0.0
-                ),
-                "color": appearance.color if appearance is not None else None,
-                # Tinting is a material-level feature: the stock's color
-                # only applies when the material is tintable.
-                "tint": item.get_effective_color()
-                if (appearance is not None and appearance.tintable)
-                else None,
+                "texture_size_mm": float(appearance.texture_size_mm),
+                "roughness": float(appearance.roughness),
+                "metallic": float(appearance.metallic),
+                "color": appearance.color,
+                "tint": item.get_effective_color(),
             }
             burn = self._material_states.get(item.uid)
             if burn is not None:
@@ -805,11 +791,10 @@ class ScenePresenter:
     def _build_rotary_stock_specs(
         self, viewport: "ViewportConfig", machine
     ) -> list[dict]:
-        """Collect rotary layers with a stock material into specs.
+        """Collect rotary layers into stock specs.
 
-        The axial length matches the wireframe cylinder: the work area
-        width capped by the default rotary module's maximum workpiece
-        length.
+        The axial length matches the work area width capped by the
+        default rotary module's maximum workpiece length.
         """
         specs: list[dict] = []
         max_length = viewport.width_mm
@@ -824,12 +809,7 @@ class ScenePresenter:
                 continue
             material = layer.stock_material
             if material is None:
-                logger.debug(
-                    "Rotary layer %r has no stock material; not "
-                    "rendering its stock",
-                    layer.name,
-                )
-                continue
+                material = self._context.material_mgr.get_default_material()
             appearance = material.appearance
             texture_path = material.get_texture_path()
             spec = {
