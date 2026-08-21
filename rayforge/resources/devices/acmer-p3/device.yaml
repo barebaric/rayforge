@@ -18,6 +18,7 @@ machine:
   home_on_start: false
   acceleration: 1000
   single_axis_homing_enabled: true
+  has_z: false
   heads:
   - name: Blue Diode Laser
     tool_number: 0

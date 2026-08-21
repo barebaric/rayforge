@@ -396,7 +396,7 @@ class HardwarePage(WizardPage):
         reverse["y"] = self.reverse_y_row.get_active()
         reverse["z"] = self.reverse_z_row.get_active()
 
-        mc.has_z = self.has_z_row.get_active() or None
+        mc.has_z = self.has_z_row.get_active()
 
         margins = (
             self.margin_left_row.get_value_in_base_units(),

@@ -18,6 +18,7 @@ device:
   max_travel_speed: 3000
   max_cut_speed: 2000
   home_on_start: true
+  has_z: false
   heads:
   - laser_type: diode
     max_power: 1000

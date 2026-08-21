@@ -19,6 +19,7 @@ machine:
   home_on_start: true
   acceleration: 500
   single_axis_homing_enabled: true
+  has_z: false
   rotary_enabled_default: false
   heads:
   - max_power: 1000

@@ -19,6 +19,7 @@ machine:
   supports_arcs: true
   supports_curves: false
   home_on_start: false
+  has_z: false
   heads:
   - max_power: 1000
     frame_power_percent: 2.0
