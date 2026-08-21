@@ -140,6 +140,36 @@
         </ul>
       </description>
     </release>
+    <release version="1.10.1" date="2026-08-21">
+      <description>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>GRBL: the driver now owns the hold/pause state, so the
+          hold/resume toggle stays in sync and Resume actually sends "~"
+          instead of re-sending "!" (pause)</li>
+          <li>GRBL: status polling is no longer starved while the send
+          loop waits on a full RX buffer, so driver state no longer goes
+          stale during pauses and buffer stalls</li>
+          <li>GRBL: a job is now aborted (with a connection error)
+          instead of retrying forever when the device stops responding
+          during a buffer stall</li>
+          <li>GRBL: realtime console commands (~, !, ?) are sent directly
+          via the control path instead of being streamed as buffered
+          gcode, so they no longer queue behind commands or start phantom
+          jobs</li>
+          <li>GRBL: the UI now reflects the RUN state at job start when
+          status polling is disabled</li>
+          <li>Refusing to start a job while another is running now shows
+          an actionable message telling the user to wait for it to finish
+          or press Stop</li>
+          <li>Machine job failure notifications are now localized per job
+          type (frame vs. send) with complete, translatable sentences</li>
+          <li>The camera calibration wizard now passes the generated
+          CharucoBoard to the capture page, so Capture Frame works
+          again</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.9.3" date="2026-08-14">
       <description>
         <p>New Features:</p>

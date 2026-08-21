@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-19 20:57+0200\n"
+"POT-Creation-Date: 2026-08-21 05:35+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -2006,9 +2006,21 @@ msgid "Unnamed Macro"
 msgstr "Macro sans nom"
 
 #: rayforge/machine/cmd.py
+msgid ""
+"A job is already running. Wait for it to finish or press Stop to cancel it."
+msgstr ""
+"Une tâche est déjà en cours. Attendez qu'elle se termine ou appuyez sur Stop "
+"pour l'annuler."
+
+#: rayforge/machine/cmd.py
 #, python-brace-format
-msgid "{job_name} failed: {error}"
-msgstr "{job_name} a échoué : {error}"
+msgid "Framing failed: {error}"
+msgstr "Le cadrage a échoué : {error}"
+
+#: rayforge/machine/cmd.py
+#, python-brace-format
+msgid "Sending failed: {error}"
+msgstr "L'envoi a échoué : {error}"
 
 #: rayforge/machine/transport/serial.py
 #, python-brace-format

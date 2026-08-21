@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-19 20:57+0200\n"
+"POT-Creation-Date: 2026-08-21 05:35+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -1846,9 +1846,19 @@ msgid "Unnamed Macro"
 msgstr "未命名宏"
 
 #: rayforge/machine/cmd.py
+msgid ""
+"A job is already running. Wait for it to finish or press Stop to cancel it."
+msgstr "已有任务正在运行。请等待其完成，或按“停止”以取消它。"
+
+#: rayforge/machine/cmd.py
 #, python-brace-format
-msgid "{job_name} failed: {error}"
-msgstr "{job_name}失败：{error}"
+msgid "Framing failed: {error}"
+msgstr "取景失败：{error}"
+
+#: rayforge/machine/cmd.py
+#, python-brace-format
+msgid "Sending failed: {error}"
+msgstr "发送失败：{error}"
 
 #: rayforge/machine/transport/serial.py
 #, python-brace-format

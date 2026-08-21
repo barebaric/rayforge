@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-19 20:57+0200\n"
+"POT-Creation-Date: 2026-08-21 05:35+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -1974,9 +1974,21 @@ msgid "Unnamed Macro"
 msgstr "Безіменний макрос"
 
 #: rayforge/machine/cmd.py
+msgid ""
+"A job is already running. Wait for it to finish or press Stop to cancel it."
+msgstr ""
+"Завдання вже виконується. Дочекайтеся його завершення або натисніть «Стоп», "
+"щоб скасувати його."
+
+#: rayforge/machine/cmd.py
 #, python-brace-format
-msgid "{job_name} failed: {error}"
-msgstr "{job_name} не вдався: {error}"
+msgid "Framing failed: {error}"
+msgstr "Не вдалося виконати обрамлення: {error}"
+
+#: rayforge/machine/cmd.py
+#, python-brace-format
+msgid "Sending failed: {error}"
+msgstr "Не вдалося надіслати: {error}"
 
 #: rayforge/machine/transport/serial.py
 #, python-brace-format
