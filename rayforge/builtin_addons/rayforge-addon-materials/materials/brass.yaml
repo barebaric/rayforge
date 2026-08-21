@@ -24,7 +24,6 @@ category:
   uk: Метал
   zh_CN: 金属
 appearance:
-  color: "#B5A642"
   pattern: metallic
   texture: brass.webp
   texture_size_mm: 300

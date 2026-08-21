@@ -54,8 +54,7 @@ Nota: Las propiedades del material se definen en bibliotecas de materiales y no 
 
 ### Color por Elemento de Material Base
 
-Para materiales definidos como **teñibles** (ej., acrílico de color),
-cada elemento de material base puede anular el color de tinte del
+Cada elemento de material base puede anular el color de tinte del
 material de forma independiente:
 
 1. Abre el diálogo de **Propiedades de Material Base** para el elemento
@@ -65,8 +64,8 @@ material de forma independiente:
 El color se aplica solo a ese elemento de material base — otros elementos
 que usan el mismo material conservan sus propios colores. Usa el botón de
 borrar junto a la fila de color para volver al color predeterminado del
-material. Para materiales que no son teñibles, la fila de color está
-desactivada y la apariencia proviene de la definición del material.
+material. Cuando ni el elemento ni el material definen un color, la
+textura se muestra sin teñir.
 
 ## Convertir Piezas en Material Base
 

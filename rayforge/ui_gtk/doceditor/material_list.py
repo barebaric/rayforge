@@ -235,7 +235,6 @@ class MaterialListWidget(PreferencesGroupWithButton):
         material.name = data["name"]
         material.category = data["category"]
         material.appearance.color = data["color"]
-        material.appearance.tintable = bool(data.get("tintable", False))
         material.appearance.roughness = float(data.get("roughness", 0.8))
         material.appearance.metallic = float(data.get("metallic", 0.0))
         material.appearance.texture_size_mm = float(
@@ -303,7 +302,6 @@ class MaterialListWidget(PreferencesGroupWithButton):
             category=data["category"],
             appearance=MaterialAppearance(
                 color=data["color"],
-                tintable=bool(data.get("tintable", False)),
                 roughness=float(data.get("roughness", 0.8)),
                 metallic=float(data.get("metallic", 0.0)),
                 texture_size_mm=float(data.get("texture_size_mm", 300.0)),

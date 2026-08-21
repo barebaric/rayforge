@@ -66,17 +66,13 @@ Valores menores repetem a textura com mais frequência na mesma superfície.
 
 #### Cor
 
-A cor base do material. Quando uma textura é definida e o material é
-tingível, a cor tinge a textura. A cor é usada apenas para aparência
-visual na superfície de trabalho - não afeta o caminho do laser de
-nenhuma forma.
-
-#### Tingível
-
-Quando habilitado, a textura do material pode ser tingida com a cor
-acima. Isso permite que um único material texturizado (ex., "Acrílico")
-cubra múltiplas variantes de cor: a cor é aplicada por item de material
-no diálogo [Propriedades do Material](../features/stock-handling.md).
+Uma cor de tonalidade opcional. Quando definida, a textura do material é
+tingida com essa cor; quando não, a textura é exibida como está. Isso
+permite que um único material texturizado (ex., "Acrílico") cubra
+múltiplas variantes de cor: a cor é aplicada por item de material no
+diálogo [Propriedades do Material](../features/stock-handling.md). A cor
+é usada apenas para aparência visual na superfície de trabalho - não
+afeta o caminho do laser de nenhuma forma.
 
 #### Rugosidade
 

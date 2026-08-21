@@ -256,8 +256,8 @@ def tint_cairo_surface(
 
     The source surface (usually from the texture cache) is never
     modified; a new surface plus its backing buffer is returned so the
-    tiled 2D-canvas rendering can show tintable materials tinted. The
-    returned bytearray must be kept alive while the surface is used.
+    tiled 2D-canvas rendering can show tinted materials. The returned
+    bytearray must be kept alive while the surface is used.
 
     Colorization shifts every pixel to the tint hue while preserving the
     texture's per-pixel shading (``luma * tint``), in premultiplied space.

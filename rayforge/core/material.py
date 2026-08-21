@@ -9,6 +9,7 @@ from typing import Any
 import yaml
 
 from ..shared.util.localized import LocalizedField
+from .color import hex_to_rgba
 
 # Accept both plain strings and LocalizedField as input
 LocalizedInput = str | LocalizedField
@@ -43,10 +44,6 @@ class MaterialAppearance:
     texture_size_mm: float = 300.0
     roughness: float = 0.8
     metallic: float = 0.0
-    # When True the texture can be tinted with ``color``: the renderer
-    # multiplies the texture by the tint color. ``color`` may be None,
-    # meaning "not tinted" (only meaningful when a texture is set).
-    tintable: bool = False
     extra: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
@@ -59,7 +56,6 @@ class MaterialAppearance:
             "texture_size_mm",
             "roughness",
             "metallic",
-            "tintable",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
@@ -73,7 +69,6 @@ class MaterialAppearance:
             texture_size_mm=data.get("texture_size_mm", cls.texture_size_mm),
             roughness=data.get("roughness", cls.roughness),
             metallic=data.get("metallic", cls.metallic),
-            tintable=bool(data.get("tintable", cls.tintable)),
             extra=extra,
         )
 
@@ -82,8 +77,6 @@ class MaterialAppearance:
         result: dict[str, Any] = {"pattern": self.pattern}
         if self.color is not None:
             result["color"] = self.color
-        if self.tintable:
-            result["tintable"] = True
         if self.texture is not None:
             result["texture"] = self.texture
         result.update(
@@ -98,12 +91,11 @@ class MaterialAppearance:
 
     def get_tint_rgba(self) -> tuple[float, float, float, float] | None:
         """
-        The tint color as RGBA, or None when the material is not tintable
-        or has no color set ("not tinted").
+        The tint color as RGBA, or None when no color is set ("not
+        tinted").
         """
-        if not self.tintable or not self.color:
+        if not self.color:
             return None
-        from .color import hex_to_rgba
 
         try:
             return hex_to_rgba(self.color)
@@ -278,7 +270,7 @@ class Material:
         """
         color_hex = self.appearance.color
         if not color_hex:
-            # No color set (e.g. tintable material without a tint).
+            # No color set (untinted material).
             return (0.5, 0.5, 0.5, alpha)
         color_pattern = r"^#?([a-fA-F0-9]{2})([a-fA-F0-9]{2})([a-fA-F0-9]{2})$"
         match = re.match(color_pattern, color_hex)

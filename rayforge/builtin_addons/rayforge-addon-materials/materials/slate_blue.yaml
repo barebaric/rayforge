@@ -24,7 +24,6 @@ category:
   uk: Камінь
   zh_CN: 石材
 appearance:
-  color: "#6A5ACD"
   pattern: solid
   texture: slate_blue.webp
   texture_size_mm: 300

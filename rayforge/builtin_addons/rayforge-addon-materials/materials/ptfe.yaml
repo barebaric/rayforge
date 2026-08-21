@@ -24,8 +24,6 @@ category:
   uk: Пластик
   zh_CN: 塑料
 appearance:
-  color: "#FFFFFF"
   pattern: solid
-  tintable: true
   texture: ptfe.webp
   texture_size_mm: 300

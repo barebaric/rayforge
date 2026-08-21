@@ -24,7 +24,6 @@ category:
   uk: Камінь
   zh_CN: 石材
 appearance:
-  color: "#808080"
   pattern: solid
   texture: stone.webp
   texture_size_mm: 300

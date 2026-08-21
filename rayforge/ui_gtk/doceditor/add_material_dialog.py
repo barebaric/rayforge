@@ -97,12 +97,6 @@ class AddMaterialDialog(Adw.MessageDialog):
         self.color_row.add_suffix(self.color_button)
         self.color_row.add_suffix(self._clear_color_button)
 
-        self.tintable_row = Adw.SwitchRow(
-            title=_("Tintable"),
-            subtitle=_("Allow tinting the texture with a color"),
-        )
-        self.tintable_row.connect("notify::active", self._on_tintable_changed)
-
         self.texture_scale_row = LengthSpinRow(
             _("Texture Scale"),
             _("Size one texture tile covers on the material"),
@@ -130,7 +124,6 @@ class AddMaterialDialog(Adw.MessageDialog):
         group.add(self.texture_row)
         group.add(self.texture_scale_row)
         group.add(self.color_row)
-        group.add(self.tintable_row)
         group.add(self.roughness_row)
         group.add(self.metallic_row)
 
@@ -201,19 +194,9 @@ class AddMaterialDialog(Adw.MessageDialog):
             self.color_row.set_subtitle(self._color)
             self._clear_color_button.set_visible(True)
 
-    def _on_tintable_changed(self, row: Adw.SwitchRow, pspec):
-        """Keep row sensitivity in sync when the tintable switch flips."""
-        self._update_sensitivity()
-
     def _update_sensitivity(self):
-        """
-        The color row stays active while a texture is selected only when
-        the material is tintable; the texture scale is active whenever a
-        texture is chosen.
-        """
+        """The texture scale is active whenever a texture is chosen."""
         has_texture = self._texture_path is not None
-        color_active = (not has_texture) or self.tintable_row.get_active()
-        self.color_row.set_sensitive(color_active)
         self.texture_scale_row.set_sensitive(has_texture)
 
     def _on_choose_texture(self, button: Gtk.Button):
@@ -278,9 +261,7 @@ class AddMaterialDialog(Adw.MessageDialog):
         self.name_entry.set_text(self.material.name)
         self.category_entry.set_text(self.material.category)
 
-        # Set the color (may be None when the material is tintable and
-        # the tint was unset).
-        self.tintable_row.set_active(bool(self.material.appearance.tintable))
+        # Set the color (may be None when the tint is unset).
         self._color = self.material.appearance.color
         if self._color is not None and self._color.startswith("#"):
             # Try using GTK's built-in color parsing
@@ -309,7 +290,6 @@ class AddMaterialDialog(Adw.MessageDialog):
             "name": self.get_name().strip(),
             "category": self.get_category().strip() or _("Custom"),
             "color": self.get_color_hex(),
-            "tintable": self.tintable_row.get_active(),
             "roughness": self.roughness_scale.get_value(),
             "metallic": self.metallic_scale.get_value(),
             "texture_size_mm": (

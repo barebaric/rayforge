@@ -283,37 +283,10 @@ class TestMaterialAppearance:
         assert appearance.texture_size_mm == 300.0
         assert appearance.roughness == 0.8
         assert appearance.metallic == 0.0
-        assert appearance.tintable is False
-
-    def test_appearance_tintable_round_trip(self):
-        """Tintable survives from_dict/to_dict, color may be unset."""
-        data = {
-            "color": "#1A1A1A",
-            "pattern": "solid",
-            "tintable": True,
-            "texture": "abs.png",
-            "texture_size_mm": 300,
-            "roughness": 0.8,
-            "metallic": 0.0,
-        }
-        appearance = MaterialAppearance.from_dict(data)
-
-        assert appearance.tintable is True
-        assert appearance.to_dict() == data
-
-    def test_appearance_tintable_false_not_serialized(self):
-        """Tintable=False is the default and is not written to yaml."""
-        appearance = MaterialAppearance(tintable=False)
-
-        data = appearance.to_dict()
-
-        assert "tintable" not in data
 
     def test_appearance_unset_color_not_serialized(self):
         """A None color ('not tinted') is omitted from the yaml output."""
-        appearance = MaterialAppearance(
-            color=None, tintable=True, texture="abs.png"
-        )
+        appearance = MaterialAppearance(color=None, texture="abs.png")
 
         data = appearance.to_dict()
 
@@ -323,32 +296,21 @@ class TestMaterialAppearance:
     def test_appearance_from_dict_null_color(self):
         """A yaml entry with `color:` (null) parses to an unset color."""
         appearance = MaterialAppearance.from_dict(
-            {"color": None, "pattern": "solid", "tintable": True}
+            {"color": None, "pattern": "solid"}
         )
 
         assert appearance.color is None
 
     def test_get_tint_rgba(self):
-        """Tint RGBA is returned only for tintable materials with a color."""
-        assert MaterialAppearance(
-            color="#FF0000", tintable=True
-        ).get_tint_rgba() == (
+        """Tint RGBA is returned only when a color is set."""
+        assert MaterialAppearance(color="#FF0000").get_tint_rgba() == (
             1.0,
             0.0,
             0.0,
             1.0,
         )
-        assert MaterialAppearance(color="#FF0000").get_tint_rgba() is None
-        assert (
-            MaterialAppearance(color=None, tintable=True).get_tint_rgba()
-            is None
-        )
-        assert (
-            MaterialAppearance(
-                color="not-a-color", tintable=True
-            ).get_tint_rgba()
-            is None
-        )
+        assert MaterialAppearance(color=None).get_tint_rgba() is None
+        assert MaterialAppearance(color="not-a-color").get_tint_rgba() is None
 
     def test_appearance_round_trip(self):
         """Test that new appearance fields survive from_dict/to_dict."""
@@ -394,16 +356,13 @@ class TestMaterialAppearance:
 
     def test_appearance_unset_color_round_trip(self):
         """An unset color survives to_dict/from_dict as None."""
-        appearance = MaterialAppearance(
-            color=None, tintable=True, texture="abs.png"
-        )
+        appearance = MaterialAppearance(color=None, texture="abs.png")
 
         data = appearance.to_dict()
         assert "color" not in data
 
         reloaded = MaterialAppearance.from_dict(data)
         assert reloaded.color is None
-        assert reloaded.tintable is True
         assert reloaded.texture == "abs.png"
 
     def test_appearance_from_dict_partial(self):

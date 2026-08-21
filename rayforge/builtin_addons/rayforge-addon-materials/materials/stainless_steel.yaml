@@ -24,7 +24,6 @@ category:
   uk: Метал
   zh_CN: 金属
 appearance:
-  color: "#A9A9A9"
   pattern: metallic
   texture: stainless_steel.webp
   texture_size_mm: 300

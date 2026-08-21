@@ -177,7 +177,7 @@ def test_stock_item_get_effective_color(mock_asset):
     """Effective color resolution: override, no-color, then default."""
     material = Material(
         uid="acrylic",
-        appearance=MaterialAppearance(color="#1A1A1A", tintable=True),
+        appearance=MaterialAppearance(color="#1A1A1A"),
     )
     mock_asset.material = material
     item = StockItem(stock_asset_uid="asset-123")
@@ -198,33 +198,11 @@ def test_stock_item_get_effective_color(mock_asset):
     assert item.get_effective_color() == "#00ff00"
 
 
-def test_stock_item_get_effective_color_non_tintable(mock_asset):
-    """
-    Stock-level color resolution is tinting-agnostic: it resolves the
-    material's color even for non-tintable materials. The tintable gate
-    lives in the render layer, not in the stock model.
-    """
-    material = Material(
-        uid="oak",
-        appearance=MaterialAppearance(color="#A0522D", tintable=False),
-    )
-    mock_asset.material = material
-    item = StockItem(stock_asset_uid="asset-123")
-    mock_doc = MagicMock()
-    mock_doc.doc = mock_doc
-    mock_doc.get_asset_by_uid.return_value = mock_asset
-    item.parent = mock_doc
-
-    assert item.get_effective_color() == "#a0522d"
-    item.set_color("#00FF00")
-    assert item.get_effective_color() == "#00ff00"
-
-
 def test_stock_item_get_effective_rgba(mock_asset):
     """Effective color parses to a render-ready RGBA tuple."""
     material = Material(
         uid="acrylic",
-        appearance=MaterialAppearance(color="#FF0000", tintable=True),
+        appearance=MaterialAppearance(color="#FF0000"),
     )
     mock_asset.material = material
     item = StockItem(stock_asset_uid="asset-123")
