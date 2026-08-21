@@ -29,6 +29,7 @@ layout (location = 3) in vec2 aPowerUV;
 uniform mat4 uMVP;
 uniform mat4 uModel;
 out vec3 vNormal;
+out vec3 vLocalNormal;
 out vec3 vWorldPos;
 out vec2 vUV;
 out vec2 vPowerUV;
@@ -38,6 +39,7 @@ void main() {
     // the upper-left 3x3 safely maps normals without a transpose of
     // the inverse.
     vNormal = normalize(mat3(uModel) * aNormal);
+    vLocalNormal = aNormal;
     vUV = aUV;
     vPowerUV = aPowerUV;
     gl_Position = uMVP * vec4(aPos, 1.0);
@@ -47,6 +49,7 @@ void main() {
 STOCK_FRAGMENT_SHADER = """
 out vec4 FragColor;
 in vec3 vNormal;
+in vec3 vLocalNormal;
 in vec3 vWorldPos;
 in vec2 vUV;
 in vec2 vPowerUV;
@@ -67,6 +70,7 @@ uniform sampler2D uTexture;
 uniform sampler2D uBrdfLut;
 uniform sampler2D uPowerTexture;
 uniform float uUsePowerTexture;
+uniform float uRotary;
 uniform vec3 uAmbientSky;
 uniform vec3 uAmbientGround;
 uniform vec3 uTint;
@@ -170,13 +174,17 @@ void main() {
     // result is attenuated beyond the albedo mix. Near-zero power
     // (image blacks, laser off) does not char.
     //
-    // The burn is confined to faces that face the engrave plane (the
-    // stock's top, normal +z): the prism also has a bottom cap and
-    // side walls whose XY maps to the same grid, but only the top
-    // surface is actually engraved.
+    // The burn is confined to the engraved faces, tested on the local
+    // normal so cylinder kinematics don't affect the test. Flat stock
+    // is engraved on its top face (local normal +z); rotary stock on
+    // its lateral surface (normals radial to the local x axis), not
+    // the end caps.
     float burn = 0.0;
     vec3 char_albedo = albedo;
-    if (uUsePowerTexture > 0.5 && vNormal.z > 0.5) {
+    bool burn_face = uRotary > 0.5
+        ? abs(vLocalNormal.x) < 0.5
+        : vLocalNormal.z > 0.5;
+    if (uUsePowerTexture > 0.5 && burn_face) {
         vec2 ts = 1.0 / vec2(textureSize(uPowerTexture, 0));
 
         burn = burn_transfer(vPowerUV);
@@ -302,6 +310,7 @@ class StockShader(Shader):
         self.set_int("uBrdfLut", 1)
         self.set_int("uPowerTexture", 2)
         self.set_float("uUsePowerTexture", 0.0)
+        self.set_float("uRotary", 0.0)
         self.set_vec3("uTint", (1.0, 1.0, 1.0))
         self.set_float("uUseTint", 0.0)
         self.set_vec3("uAmbientSky", (0.18, 0.20, 0.24))

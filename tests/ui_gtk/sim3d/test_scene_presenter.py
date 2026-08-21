@@ -11,6 +11,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 from blinker import Signal
+from raygeo.compressed_array import CompressedArray
 from raygeo.geo import Geometry, Matrix
 from raygeo.ops.axis import Axis
 from raygeo.ops.material import RasterEffect
@@ -23,6 +24,7 @@ from raygeo.ops.material.spec import (
 
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
+from rayforge.core.material import Material
 from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
 from rayforge.core.workpiece import WorkPiece
@@ -774,7 +776,7 @@ def test_on_material_state_ready_stores_burn(ui_context_initializer):
     stock_item.uid = "s1"
 
     presenter._on_material_state_ready(
-        None, stock_item=stock_item, handle=MagicMock(), generation_id=1
+        None, item=stock_item, handle=MagicMock(), generation_id=1
     )
 
     burn = presenter._material_states.get("s1")
@@ -804,7 +806,7 @@ def test_on_material_state_ready_drops_empty_state(ui_context_initializer):
     stock_item.uid = "s1"
 
     presenter._on_material_state_ready(
-        None, stock_item=stock_item, handle=MagicMock(), generation_id=1
+        None, item=stock_item, handle=MagicMock(), generation_id=1
     )
 
     assert "s1" not in presenter._material_states
@@ -823,7 +825,7 @@ def test_on_material_state_ready_ignores_other_artifacts(
     stock_item.uid = "s1"
 
     presenter._on_material_state_ready(
-        None, stock_item=stock_item, handle=MagicMock(), generation_id=1
+        None, item=stock_item, handle=MagicMock(), generation_id=1
     )
 
     assert presenter._material_states == {}
@@ -916,3 +918,86 @@ def test_content_not_lifted_without_stock(ui_context_initializer):
 
     config = presenter._schedule_scene_preparation.call_args.args[0]
     assert _content_z(config) == pytest.approx(0.0)
+
+
+# ── Rotary burn specs ────────────────────────────────────────────
+
+
+def _rotary_doc_editor(layer):
+    doc_editor = MagicMock()
+    doc = MagicMock()
+    doc.stock_items = []
+    doc.layers = [layer]
+    doc_editor.doc = doc
+    return doc_editor
+
+
+@pytest.mark.ui
+def test_build_rotary_stock_specs_attaches_burn(ui_context_initializer):
+    """A rotary layer whose uid has a stored material state gets a
+    burn entry in its spec."""
+    layer = Layer(name="rot")
+    layer.set_rotary_enabled(True)
+    layer.set_rotary_diameter(50.0)
+    material = Material(uid="m1", name="cherry")
+    doc_editor = _rotary_doc_editor(layer)
+    doc_editor.doc.get_asset_by_uid.return_value = None
+
+    machine = MagicMock()
+    rm = RotaryModule()
+    rm.max_workpiece_length = 300.0
+    machine.get_default_rotary_module.return_value = rm
+
+    with patch.object(Layer, "stock_material", material):
+        presenter, _, _ = _make_presenter(doc_editor=doc_editor)
+        viewport = MagicMock()
+        viewport.width_mm = 400.0
+        presenter._material_states[layer.uid] = {
+            "handle_key": "h1",
+            "surface_map": CompressedArray.from_uint8_2d(
+                np.zeros((4, 4), dtype=np.uint8)
+            ),
+            "origin_mm": (0.0, 0.0),
+            "px_per_mm": (10.0, 10.0),
+            "size_px": (4, 4),
+        }
+        specs = presenter._build_rotary_stock_specs(viewport, machine)
+
+    assert len(specs) == 1
+    assert specs[0]["kind"] == "rotary"
+    assert "burn" in specs[0]
+    assert specs[0]["burn"]["size_px"] == (4, 4)
+
+
+@pytest.mark.ui
+def test_refresh_material_states_includes_rotary_layers(
+    ui_context_initializer,
+):
+    """Handles keyed by a rotary layer's uid are picked up on
+    refresh, not just flat stock item handles."""
+    layer = Layer(name="rot")
+    layer.set_rotary_enabled(True)
+    layer.set_rotary_diameter(50.0)
+
+    state = _burned_state()
+    handle = MagicMock()
+    pipeline = MagicMock()
+    pipeline._material_state_handles = {layer.uid: handle}
+
+    doc_editor = _rotary_doc_editor(layer)
+    doc_editor.pipeline = pipeline
+
+    material = Material(uid="m1", name="cherry")
+    with patch.object(Layer, "stock_material", material):
+        presenter, defaults, _ = _make_presenter(doc_editor=doc_editor)
+        defaults[
+            "context"
+        ].artifact_store.get.return_value = MaterialStateArtifact(
+            material_state=state,
+            stock_uid=layer.uid,
+            generation_id=1,
+        )
+
+        changed = presenter._refresh_material_states()
+    assert changed is True
+    assert layer.uid in presenter._material_states

@@ -19,6 +19,7 @@ from rayforge.core.stock_asset import StockAsset
 from rayforge.core.workpiece import WorkPiece
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.models.machine_panel import PanelOrientation
+from rayforge.machine.models.rotary_module import RotaryModule
 from rayforge.pipeline.intent_builder import (
     IntentBuilder,
     job_encode_key,
@@ -925,8 +926,8 @@ def test_material_state_ready_emitted_for_current_generation(
 
     received: list = []
     ctrl.material_state_ready.connect(
-        lambda _sender, *, stock_item, output, generation_id: received.append(
-            (stock_item, output, generation_id)
+        lambda _sender, *, item, output, generation_id: received.append(
+            (item, output, generation_id)
         ),
         weak=False,
     )
@@ -952,8 +953,8 @@ def test_superseded_stock_generation_discarded(monkeypatch, isolated_machine):
 
     received: list = []
     ctrl.material_state_ready.connect(
-        lambda _sender, *, stock_item, output, generation_id: received.append(
-            (stock_item, output, generation_id)
+        lambda _sender, *, item, output, generation_id: received.append(
+            (item, output, generation_id)
         ),
         weak=False,
     )
@@ -962,4 +963,93 @@ def test_superseded_stock_generation_discarded(monkeypatch, isolated_machine):
     stale = _StubNode(key=sk, generation_id=0, output="stale")
     ctrl._on_completed(stale)
     assert received == []
+    ctrl.shutdown()
+
+
+# ----------------------------------------------------------------------
+# Rotary layer fold reattachment
+# ----------------------------------------------------------------------
+
+
+def _make_doc_with_rotary_layer(step: _TestStep, wp: WorkPiece):
+    """Build a Doc whose layer is rotary-enabled with a workpiece in
+    the unrolled domain; return ``(doc, layer)``."""
+    geo_wp = Geometry()
+    geo_wp.move_to(0, 0)
+    geo_wp.line_to(1, 0)
+    geo_wp.line_to(1, 1)
+    geo_wp.line_to(0, 1)
+    geo_wp.close_path()
+    wp._boundaries_cache = geo_wp
+    wp.matrix = Matrix.scale(50.0, 50.0)
+
+    doc = _make_doc(step, wp)
+    layer = doc.active_layer
+    layer.rotary_enabled = True
+    layer.rotary_diameter = 50.0
+    return doc, layer
+
+
+def _make_controller(monkeypatch, machine, doc):
+    tm = ImmediateMainThreadTaskManager()
+    ctrl = IntentController(doc, tm, machine=machine)
+    ctrl.connect()
+    monkeypatch.setattr(
+        "rayforge.pipeline.intent_controller.run_intent",
+        lambda *a, **kw: None,
+    )
+    return ctrl, tm
+
+
+def _with_default_rotary(machine):
+    module = RotaryModule()
+    module.max_workpiece_length = 300.0
+    machine.rotary_modules[module.uid] = module
+    machine.default_rotary_module_uid = module.uid
+    return module
+
+
+def test_rotary_layer_key_maps_to_layer(monkeypatch, isolated_machine):
+    """A ``stock:{layer_uid}`` key is mapped to its Layer."""
+    _with_default_rotary(isolated_machine)
+    step = _TestStep(name="s1")
+    wp = WorkPiece(name="wp")
+    doc, layer = _make_doc_with_rotary_layer(step, wp)
+    ctrl, tm = _make_controller(monkeypatch, isolated_machine, doc)
+    wp.updated.send(wp)
+    tm.fire_latest()
+
+    sk = stock_key(layer.uid)
+    assert sk in ctrl._key_to_item
+    assert ctrl._key_to_item[sk] is layer
+    ctrl.shutdown()
+
+
+def test_material_state_ready_emitted_for_rotary_layer(
+    monkeypatch, isolated_machine
+):
+    """A ``stock:{layer_uid}`` result emits ``material_state_ready``
+    with the layer as the item."""
+    _with_default_rotary(isolated_machine)
+    step = _TestStep(name="s1")
+    wp = WorkPiece(name="wp")
+    doc, layer = _make_doc_with_rotary_layer(step, wp)
+    ctrl, tm = _make_controller(monkeypatch, isolated_machine, doc)
+    wp.updated.send(wp)
+    tm.fire_latest()
+    tm.main_thread_calls.clear()
+
+    received: list = []
+    ctrl.material_state_ready.connect(
+        lambda _sender, *, item, output, generation_id: received.append(
+            (item, output, generation_id)
+        ),
+        weak=False,
+    )
+    sk = stock_key(layer.uid)
+    node = _StubNode(key=sk, generation_id=ctrl.generation_id, output="state")
+    ctrl._on_completed(node)
+    assert len(received) == 1
+    assert received[0][0] is layer
+    assert received[0][1] == "state"
     ctrl.shutdown()

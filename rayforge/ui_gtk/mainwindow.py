@@ -1287,8 +1287,12 @@ class MainWindow(Adw.ApplicationWindow):
         self._update_actions_and_ui()
 
         # The stock and ops-underlay toggles are mutually exclusive:
-        # show the stock toggle only when the document has stock.
-        has_stock = bool(doc.stock_items)
+        # show the stock toggle only when the document has stock —
+        # flat stock items or rotary layers with a diameter.
+        has_stock = bool(doc.stock_items) or any(
+            layer.rotary_enabled and layer.rotary_diameter > 0
+            for layer in doc.layers
+        )
         if self._surface_vis_overlay is not None:
             self._surface_vis_overlay.set_stock_present(has_stock)
         if self._canvas3d_vis_overlay is not None:

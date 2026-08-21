@@ -67,6 +67,7 @@ from raygeo.ops.convert import (
     PythonEncoder,
 )
 from raygeo.ops.material.spec import (
+    CylinderStock,
     FoldEntry,
     MaterialFoldSpec,
     PrismaticStock,
@@ -248,6 +249,7 @@ class IntentBuilder:
             for wp_key, _token, wp in inputs:
                 wp_compute_keys.append((wp_key, wp))
         self._build_stock_fold_nodes(doc, wp_compute_keys, nodes)
+        self._build_rotary_fold_nodes(doc, wp_compute_keys, nodes)
 
         for layer in doc.layers:
             if not layer.workflow:
@@ -491,6 +493,97 @@ class IntentBuilder:
         # The MaterialFoldSpec is passed directly as the node's stage.
         out.append(self._make_request(key, token, spec))
 
+    def _build_rotary_fold_nodes(
+        self,
+        doc: Doc,
+        wp_compute_keys: list[tuple[str, WorkPiece]],
+        out: list[NodeRequest],
+    ) -> None:
+        """Emit one ``MaterialFold`` compute node per rotary layer.
+
+        Rotary stock folds in unrolled space: world x is the axial
+        coordinate, world y the arc length around the circumference,
+        centered on the machine origin. The fold domain spans the
+        rotary module's maximum workpiece length; renderers map their
+        (possibly shorter) cylinder through the returned grid.
+        """
+        for layer in doc.layers:
+            if not layer.rotary_enabled or layer.rotary_diameter <= 0:
+                continue
+            module = self._machine.get_rotary_module_for_layer(layer)
+            if module is None:
+                logger.warning(
+                    "Rotary layer %r has no rotary module on the "
+                    "machine; skipping its burn fold",
+                    layer.name,
+                )
+                continue
+            self._build_rotary_fold_node(
+                layer,
+                float(module.max_workpiece_length),
+                {wp.uid: key for key, wp in wp_compute_keys},
+                out,
+            )
+
+    def _build_rotary_fold_node(
+        self,
+        layer: Layer,
+        max_length: float,
+        keys_by_wp_uid: dict[str, str],
+        out: list[NodeRequest],
+    ) -> None:
+        """Emit a ``stock:{layer.uid}`` fold node for one rotary layer.
+
+        Every workpiece of the layer with a compute node contributes
+        an entry — no AABB gate: image workpieces may not resolve
+        world geometry outside rendering, and the fold's raster
+        sampling is harmless for entries that miss the unrolled
+        domain.
+        """
+        diameter = float(layer.rotary_diameter)
+        circumference = math.pi * diameter
+
+        entries: list[FoldEntry] = []
+        source_keys: list[str] = []
+        for wp in layer.all_workpieces:
+            wp_key = keys_by_wp_uid.get(wp.uid)
+            if wp_key is None:
+                continue
+            placement = _workpiece_placement_matrix_obj(wp)
+            entries.append(
+                FoldEntry(
+                    source_key=wp_key,
+                    placement=placement,
+                    effects=[],  # filled at runtime by MaterialFoldCompute
+                )
+            )
+            source_keys.append(wp_key)
+
+        if not entries:
+            logger.debug(
+                "Rotary layer %r: no workpiece compute nodes; skipping fold",
+                layer.name,
+            )
+            return
+
+        key = stock_key(layer.uid)
+        token = self._rotary_fold_token(layer, max_length, source_keys)
+        spec = MaterialFoldSpec(
+            stock=CylinderStock(diameter=diameter, length=max_length),
+            entries=entries,
+        )
+        logger.info(
+            "Emitting burn fold for rotary layer %r (domain %.0fx%.0f mm,"
+            " %d entr%s)",
+            layer.name,
+            max_length,
+            circumference,
+            len(entries),
+            "y" if len(entries) == 1 else "ies",
+        )
+        # The MaterialFoldSpec is passed directly as the node's stage.
+        out.append(self._make_request(key, token, spec))
+
     # ------------------------------------------------------------------
     # Token computation
     # ------------------------------------------------------------------
@@ -534,6 +627,27 @@ class IntentBuilder:
             "stock_asset_uid": stock_item.stock_asset_uid,
             "stock_matrix": stock_item.matrix.to_list(),
             "thickness": thickness if thickness is not None else 0.0,
+            "source_keys": sorted(source_keys),
+        }
+        return _hash_int(payload)
+
+    def _rotary_fold_token(
+        self, layer: Layer, max_length: float, source_keys: list[str]
+    ) -> int:
+        """Version token for a rotary layer's fold node.
+
+        Folds in the layer identity, diameter, and fold-domain length
+        plus the set of upstream source keys. Does NOT fold in
+        upstream compute tokens — the pipeline's dependency-based
+        invalidation handles that: if an upstream compute token
+        changes, the fold node's deps change and it re-executes
+        regardless of its own token.
+        """
+        payload = {
+            "kind": "stock_fold_rotary",
+            "layer_uid": layer.uid,
+            "diameter": float(layer.rotary_diameter),
+            "length": max_length,
             "source_keys": sorted(source_keys),
         }
         return _hash_int(payload)
