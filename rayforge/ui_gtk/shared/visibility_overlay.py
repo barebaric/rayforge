@@ -90,6 +90,7 @@ class VisibilityOverlay(Gtk.Box):
             )
             self.append(self.workpiece_image_button)
 
+        self.stock_button: Gtk.ToggleButton | None = None
         if show_stock:
             self.stock_button = Gtk.ToggleButton()
             self.stock_button.set_child(get_icon("stock-symbolic"))
@@ -154,7 +155,7 @@ class VisibilityOverlay(Gtk.Box):
             self.grid_button.set_action_name("win.show_grid")
             self.append(self.grid_button)
 
-        self.underlay_button = None
+        self.underlay_button: Gtk.ToggleButton | None = None
         if show_ops_underlay:
             self.underlay_button = Gtk.ToggleButton()
             self.underlay_button.set_child(get_icon("ops-underlay-symbolic"))
@@ -197,6 +198,22 @@ class VisibilityOverlay(Gtk.Box):
 
     def set_nogo_visible(self, visible: bool):
         self.nogo_button.set_visible(visible)
+
+    def set_stock_present(self, present: bool) -> None:
+        """Shows the stock toggle only when a stock exists in the doc.
+
+        The stock and ops-underlay toggles are mutually exclusive: a
+        burned stock replaces the floating ops quads, so showing the
+        underlay toggle next to a stock is redundant.
+        """
+        if self.stock_button is not None:
+            self.stock_button.set_visible(present)
+        self.set_ops_underlay_visible(not present)
+
+    def set_ops_underlay_visible(self, visible: bool) -> None:
+        """Shows/hides the ops-underlay toggle button."""
+        if self.underlay_button is not None:
+            self.underlay_button.set_visible(visible)
 
     def _format_tooltip(self, text, action_name):
         if action_name in self._shortcuts:

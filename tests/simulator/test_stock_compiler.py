@@ -10,9 +10,13 @@ import math
 
 import numpy as np
 import pytest
+from raygeo.compressed_array import CompressedArray
 
 from rayforge.simulator.scene3d.compiled_scene import StockLayer
-from rayforge.simulator.scene3d.stock_compiler import compile_stock_layers
+from rayforge.simulator.scene3d.stock_compiler import (
+    compile_stock_layers,
+    stock_burn_aabbs,
+)
 
 RECT_OUTER = [(0.0, 0.0), (200.0, 0.0), (200.0, 100.0), (0.0, 100.0)]
 
@@ -311,3 +315,93 @@ def test_compile_stock_layers_preserves_panel_transform(
     corner = layer.transform @ np.array([100.0, 50.0, 0.0, 1.0])
     # ROTATED_RIGHT presents world (100, 50) at panel (50, 300).
     assert corner[:2] == pytest.approx([50.0, 300.0])
+
+
+# ── Burn surface map ────────────────────────────────────────────
+
+
+def _burn_entry(
+    origin_mm=(0.0, 0.0),
+    px_per_mm=(50.0, 50.0),
+    size_px=(100, 50),
+    fill=0,
+):
+    w, h = size_px
+    pixels = np.full((h, w), fill, dtype=np.uint8)
+    return {
+        "surface_map": CompressedArray.from_uint8_2d(pixels),
+        "origin_mm": origin_mm,
+        "px_per_mm": px_per_mm,
+        "size_px": size_px,
+    }
+
+
+def test_compile_stock_layers_burn_spec():
+    spec = {
+        "name": "oak stock",
+        "thickness": 18.0,
+        "outers": [RECT_OUTER],
+        "holes": [],
+        "burn": _burn_entry(),
+    }
+    layers = compile_stock_layers([spec], _identity())
+    assert len(layers) == 1
+    layer = layers[0]
+    assert layer.power_texture is not None
+    assert layer.power_size_px == (100, 50)
+    # Grid: 100 px at 50 px/mm = 2 mm wide, 50 px = 1 mm tall.
+    assert layer.power_aabb == pytest.approx((0.0, 0.0, 2.0, 1.0))
+    assert layer.power_uvs.shape == (layer.positions.shape[0], 2)
+    assert layer.power_uvs.dtype == np.float32
+    # UVs are normalized into the grid; the stock (200x100 mm) is far
+    # larger than the 2x1 mm grid, so most UVs exceed 1 (clamped by
+    # GL_CLAMP_TO_EDGE at draw time). The (0, 0) corner maps to 0.
+    assert layer.power_uvs.min() == pytest.approx(0.0)
+
+
+def test_compile_stock_layers_without_burn_has_no_power_data():
+    spec = {
+        "name": "oak stock",
+        "thickness": 18.0,
+        "outers": [RECT_OUTER],
+        "holes": [],
+    }
+    layers = compile_stock_layers([spec], _identity())
+    assert len(layers) == 1
+    layer = layers[0]
+    assert layer.power_texture is None
+    assert layer.power_size_px is None
+    assert layer.power_aabb is None
+    assert layer.power_uvs.shape == (0, 2)
+
+
+def test_compile_stock_layers_invalid_burn_ignored():
+    spec = {
+        "name": "oak stock",
+        "thickness": 18.0,
+        "outers": [RECT_OUTER],
+        "holes": [],
+        "burn": {"surface_map": None},
+    }
+    layers = compile_stock_layers([spec], _identity())
+    assert len(layers) == 1
+    assert layers[0].power_texture is None
+
+
+def test_stock_burn_aabbs():
+    plain = {"name": "no burn", "outers": [RECT_OUTER]}
+    burned = {
+        "name": "burned",
+        "outers": [RECT_OUTER],
+        "burn": _burn_entry(origin_mm=(10.0, 20.0)),
+    }
+    aabbs = stock_burn_aabbs([plain, burned])
+    # 100 px at 50 px/mm from (10, 20): 2 x 1 mm.
+    assert aabbs == [
+        (
+            pytest.approx(10.0),
+            pytest.approx(20.0),
+            pytest.approx(12.0),
+            pytest.approx(21.0),
+        )
+    ]

@@ -365,8 +365,8 @@ class Pipeline:
 
         ``output`` is a raygeo ``MaterialState`` returned by the fold
         compute node. No renderer consumes it yet; the artifact is
-        stored so future iterations (voids, relief, burn-in) can pick
-        it up without changing the signal path.
+        stored so renderers can pick it up without changing the signal
+        path.
         """
         if self._is_shutting_down or output is None:
             return

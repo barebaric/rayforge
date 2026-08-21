@@ -27,11 +27,16 @@ from __future__ import annotations
 
 import logging
 import math
+from typing import TYPE_CHECKING, NamedTuple
 
 import numpy as np
 from raygeo.mesh.build import build_prism_mesh
+from raygeo.ops.material.grid import compute_power_uvs
 
 from .compiled_scene import StockLayer
+
+if TYPE_CHECKING:
+    from raygeo.compressed_array import CompressedArray
 
 logger = logging.getLogger(__name__)
 
@@ -209,6 +214,72 @@ def _build_cylinder_shell(
     return positions, normals, uvs, indices
 
 
+class _BurnData(NamedTuple):
+    """A stock's folded burn surface map and its world placement."""
+
+    surface_map: CompressedArray
+    size_px: tuple[int, int]
+    aabb: tuple[float, float, float, float]
+    power_grid: tuple[
+        tuple[float, float], tuple[float, float], tuple[int, int]
+    ]
+
+
+def _parse_burn_spec(spec: dict) -> _BurnData | None:
+    """Parse a stock spec's optional ``burn`` entry.
+
+    The presenter attaches it when the material fold produced a burn
+    surface map for this stock:
+    ``{"surface_map": CompressedArray, "origin_mm": (x, y),
+    "px_per_mm": (x, y), "size_px": (w, h)}``.
+
+    Returns the parsed burn data (with the grid's world-mm AABB and
+    the ``power_grid`` argument for ``build_prism_mesh``), or ``None``
+    when the entry is absent or invalid.
+    """
+    burn = spec.get("burn")
+    if not isinstance(burn, dict):
+        return None
+    surface_map = burn.get("surface_map")
+    origin_mm = burn.get("origin_mm")
+    px_per_mm = burn.get("px_per_mm")
+    size_px = burn.get("size_px")
+    if (
+        surface_map is None
+        or not isinstance(origin_mm, tuple)
+        or not isinstance(px_per_mm, tuple)
+        or not isinstance(size_px, tuple)
+        or len(origin_mm) != 2
+        or len(px_per_mm) != 2
+        or len(size_px) != 2
+        or px_per_mm[0] <= 0
+        or px_per_mm[1] <= 0
+        or size_px[0] < 1
+        or size_px[1] < 1
+    ):
+        logger.warning(
+            "Ignoring invalid burn entry of stock %r", spec.get("name")
+        )
+        return None
+    (ox, oy), (ppm_x, ppm_y), (w_px, h_px) = (
+        origin_mm,
+        px_per_mm,
+        size_px,
+    )
+    aabb = (
+        float(ox),
+        float(oy),
+        float(ox) + float(w_px) / float(ppm_x),
+        float(oy) + float(h_px) / float(ppm_y),
+    )
+    return _BurnData(
+        surface_map=surface_map,
+        size_px=(int(w_px), int(h_px)),
+        aabb=aabb,
+        power_grid=(origin_mm, px_per_mm, size_px),
+    )
+
+
 def _compile_stock_spec(
     spec: dict, stock_w2v: np.ndarray
 ) -> StockLayer | None:
@@ -251,10 +322,12 @@ def _compile_stock_spec(
         return None
 
     thickness = _positive_float(spec.get("thickness"), DEFAULT_THICKNESS_MM)
+    burn = _parse_burn_spec(spec)
 
     pos_parts: list[np.ndarray] = []
     norm_parts: list[np.ndarray] = []
     uv_parts: list[np.ndarray] = []
+    power_uv_parts: list[np.ndarray] = []
     idx_parts: list[np.ndarray] = []
     base = 0
     for outer in outers:
@@ -274,14 +347,40 @@ def _compile_stock_spec(
         pos = np.asarray(mesh.positions, dtype=np.float32)
         if pos.shape[0] == 0:
             continue
+        norm = np.asarray(mesh.normals, dtype=np.float32)
+        uvs = np.asarray(mesh.uvs, dtype=np.float32)
+        ring_idx = np.asarray(mesh.indices, dtype=np.uint32)
+        puv: np.ndarray | None = None
+        if burn is not None:
+            puv = np.asarray(
+                compute_power_uvs(
+                    pos.reshape(-1, 3),
+                    burn.power_grid[0],
+                    burn.power_grid[1],
+                    burn.power_grid[2],
+                ),
+                dtype=np.float32,
+            )
         pos_parts.append(pos)
-        norm_parts.append(np.asarray(mesh.normals, dtype=np.float32))
-        uv_parts.append(np.asarray(mesh.uvs, dtype=np.float32))
-        idx_parts.append(np.asarray(mesh.indices, dtype=np.uint32) + base)
+        norm_parts.append(norm)
+        uv_parts.append(uvs)
+        if puv is not None:
+            power_uv_parts.append(puv)
+        idx_parts.append(ring_idx + base)
         base += pos.shape[0]
 
     if not idx_parts:
         return None
+
+    if burn is not None and power_uv_parts:
+        arr = burn.surface_map.to_numpy()
+        logger.info(
+            "Stock %r: burn-in surface map applied (%d/%d px burned, aabb=%s)",
+            spec.get("name"),
+            int((arr > 0).sum()),
+            arr.size,
+            burn.aabb,
+        )
 
     return StockLayer(
         positions=np.concatenate(pos_parts),
@@ -295,6 +394,14 @@ def _compile_stock_spec(
         metallic=metallic,
         fallback_rgba=fallback_rgba,
         tint_rgba=tint_rgba,
+        power_texture=burn.surface_map if burn is not None else None,
+        power_size_px=burn.size_px if burn is not None else None,
+        power_aabb=burn.aabb if burn is not None else None,
+        power_uvs=(
+            np.concatenate(power_uv_parts)
+            if power_uv_parts
+            else np.empty((0, 2), dtype=np.float32)
+        ),
     )
 
 
@@ -334,6 +441,22 @@ def _compile_rotary_stock_spec(
 
 
 # ── Public API ───────────────────────────────────────────────────
+
+
+def stock_burn_aabbs(
+    stock_specs: list[dict],
+) -> list[tuple[float, float, float, float]]:
+    """World-mm AABBs of every spec's burn surface map.
+
+    Used by the scene compiler to decide which LUT engrave quads are
+    superseded by a stock's burned-in charring.
+    """
+    aabbs: list[tuple[float, float, float, float]] = []
+    for spec in stock_specs:
+        burn = _parse_burn_spec(spec)
+        if burn is not None:
+            aabbs.append(burn.aabb)
+    return aabbs
 
 
 def compile_stock_layers(

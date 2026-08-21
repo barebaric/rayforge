@@ -1,3 +1,3 @@
 """
-Auto-plan command (planned for Phase 5).
+Auto-plan command.
 """

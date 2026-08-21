@@ -415,9 +415,17 @@ class TextureArtifactRenderer(BaseRenderer):
         )
 
     def update_from_artifact(self, artifact: CompiledSceneArtifact):
-        """Clears existing instances and uploads the artifact's layers."""
+        """Clears existing instances and uploads the artifact's layers.
+
+        Layers whose engrave output is burned into a stock's surface
+        map (``artifact.burn_layer_indices``) are skipped — the
+        charring on the stock replaces the floating LUT quads.
+        """
         self.clear()
-        for tl in artifact.texture_layers:
+        suppressed = set(artifact.burn_layer_indices)
+        for i, tl in enumerate(artifact.texture_layers):
+            if i in suppressed:
+                continue
             self.add_instance_from_texture_layer(tl, artifact.laser_uid_order)
 
     def update_color_lut(self, lut_data: np.ndarray, num_lasers: int = 1):

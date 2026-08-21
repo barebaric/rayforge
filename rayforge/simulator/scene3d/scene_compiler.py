@@ -21,7 +21,7 @@ from .compiled_scene import (
 )
 from .cylinder_compiler import generate_cylinder_vertices
 from .render_config import RenderConfig3D
-from .stock_compiler import compile_stock_layers
+from .stock_compiler import compile_stock_layers, stock_burn_aabbs
 
 logger = logging.getLogger(__name__)
 
@@ -82,8 +82,18 @@ def _generate_texture_layers(
     ops: Ops,
     layer_infos: list[LayerInfo],
     config: RenderConfig3D,
-) -> list[TextureLayer]:
+    burn_aabbs: list[tuple[float, float, float, float]],
+) -> tuple[list[TextureLayer], set[int]]:
+    """Build the LUT engrave quad layers.
+
+    Returns ``(layers, burn_layer_indices)``: indices of flat layers
+    whose world bbox intersects a stock burn area — the texture
+    renderer skips those (the charring lives on the stock itself)
+    unless the LUT overlay debug toggle is on. Rotary layers keep
+    their quads until rotary burn-in lands.
+    """
     texture_layers: list[TextureLayer] = []
+    burn_layer_indices: set[int] = set()
     dot_widths = config.laser_dot_widths_mm or {}
 
     for li in layer_infos:
@@ -110,6 +120,11 @@ def _generate_texture_layers(
 
         tex_buf, w_px, h_px, _actual_ppm = raster_result
         x0, y0, bw, bh = bbox
+
+        if not is_rot and _bbox_hits_any(
+            (x0, y0, x0 + bw, y0 + bh), burn_aabbs
+        ):
+            burn_layer_indices.add(len(texture_layers))
 
         diameter = li.diameter
 
@@ -146,7 +161,24 @@ def _generate_texture_layers(
             )
         )
 
-    return texture_layers
+    return texture_layers, burn_layer_indices
+
+
+def _bbox_hits_any(
+    bbox: tuple[float, float, float, float],
+    aabbs: list[tuple[float, float, float, float]],
+) -> bool:
+    """True if *bbox* ``(min_x, min_y, max_x, max_y)`` overlaps any of
+    *aabbs*. Touching edges do not count."""
+    for a in aabbs:
+        if not (
+            bbox[2] <= a[0]
+            or a[2] <= bbox[0]
+            or bbox[3] <= a[1]
+            or a[3] <= bbox[1]
+        ):
+            return True
+    return False
 
 
 # ── Spec building ─────────────────────────────────────────────────
@@ -200,7 +232,10 @@ def _wrap_compiled_scene(
         )
 
     layer_infos = raw.layer_infos
-    texture_layers = _generate_texture_layers(ops, layer_infos, config)
+    burn_aabbs = stock_burn_aabbs(config.stock_specs or [])
+    texture_layers, burn_layer_indices = _generate_texture_layers(
+        ops, layer_infos, config, burn_aabbs
+    )
     stock_w2v = (
         config.stock_world_to_visual
         if config.stock_world_to_visual is not None
@@ -215,6 +250,7 @@ def _wrap_compiled_scene(
         overlay_layers=overlay_layers,
         laser_uid_order=raw.laser_uid_order,
         stock_layers=stock_layers,
+        burn_layer_indices=burn_layer_indices,
     )
 
 

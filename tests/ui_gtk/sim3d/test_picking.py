@@ -2,6 +2,7 @@
 
 import numpy as np
 import pytest
+from raygeo.compressed_array import CompressedArray
 
 from rayforge.simulator.scene3d import (
     PickContext,
@@ -247,8 +248,6 @@ def test_build_pick_scene_accepts_custom_scene_item():
 
 
 def test_texture_layer_pick_mesh_maps_quad():
-    from raygeo.compressed_array import CompressedArray
-
     model_matrix = np.eye(4, dtype=np.float32)
     model_matrix[0, 0] = 100.0
     model_matrix[1, 1] = 100.0
