@@ -60,6 +60,7 @@ if TYPE_CHECKING:
     from ..machine.models.machine import Machine
 
 from raygeo.pipeline.completed import ErrorKind
+from raygeo.pipeline.execute import PipelineCancelled
 
 logger = logging.getLogger(__name__)
 
@@ -378,6 +379,9 @@ class IntentController:
                         on_batch_progress=self._on_batch_progress,
                         pipeline=self._raygeo_pipeline,
                     )
+            except PipelineCancelled:
+                # Cancellation is expected during rapid rebuilds.
+                logger.info("Intent execution cancelled")
             except Exception:
                 logger.exception("Intent execution failed")
                 self._task_manager.schedule_on_main_thread(
