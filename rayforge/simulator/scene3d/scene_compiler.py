@@ -86,11 +86,12 @@ def _generate_texture_layers(
 ) -> tuple[list[TextureLayer], set[int]]:
     """Build the LUT engrave quad layers.
 
-    Returns ``(layers, burn_layer_indices)``: indices of flat layers
-    whose world bbox intersects a stock burn area — the texture
-    renderer skips those (the charring lives on the stock itself)
-    unless the LUT overlay debug toggle is on. Rotary layers keep
-    their quads until rotary burn-in lands.
+    Returns ``(layers, burn_layer_indices)``: indices of layers whose
+    world bbox intersects a stock burn area — the texture renderer
+    skips those (the charring lives on the stock itself). Flat stocks
+    burn in world XY; rotary stocks burn over the unrolled axial ×
+    circumference domain, which is the same space rotary layer ops
+    live in.
     """
     texture_layers: list[TextureLayer] = []
     burn_layer_indices: set[int] = set()
@@ -121,9 +122,7 @@ def _generate_texture_layers(
         tex_buf, w_px, h_px, _actual_ppm = raster_result
         x0, y0, bw, bh = bbox
 
-        if not is_rot and _bbox_hits_any(
-            (x0, y0, x0 + bw, y0 + bh), burn_aabbs
-        ):
+        if _bbox_hits_any((x0, y0, x0 + bw, y0 + bh), burn_aabbs):
             burn_layer_indices.add(len(texture_layers))
 
         diameter = li.diameter

@@ -487,13 +487,19 @@ class ScenePresenter:
         handles = getattr(pipeline, "_material_state_handles", {}) or {}
         changed = False
         seen: set[str] = set()
-        for item in self.doc.stock_items:
-            if item.uid not in handles:
+        hosts: list[tuple[str, str]] = [
+            (item.uid, item.name) for item in self.doc.stock_items
+        ]
+        hosts.extend(
+            (layer.uid, layer.name)
+            for layer in self.doc.layers
+            if layer.rotary_enabled and layer.stock_material is not None
+        )
+        for uid, name in hosts:
+            if uid not in handles:
                 continue
-            seen.add(item.uid)
-            if self._store_material_state(
-                item.uid, item.name, handles[item.uid]
-            ):
+            seen.add(uid)
+            if self._store_material_state(uid, name, handles[uid]):
                 changed = True
         for uid in list(self._material_states):
             if uid not in seen:
@@ -502,17 +508,17 @@ class ScenePresenter:
         return changed
 
     def _on_material_state_ready(self, sender, **kwargs):
-        """Store a stock's folded burn surface map and recompile.
+        """Store a material host's folded burn surface map and recompile.
 
         The fold emits during the pipeline run; the stock specs pick
         the burn data up on the next scene compile, which reuses the
         current job handle when the pipeline is still running.
         """
-        stock_item = kwargs.get("stock_item")
+        item = kwargs.get("item")
         handle = kwargs.get("handle")
-        if stock_item is None or handle is None:
+        if item is None or handle is None:
             return
-        if self._store_material_state(stock_item.uid, stock_item.name, handle):
+        if self._store_material_state(item.uid, item.name, handle):
             self.update_scene_from_doc()
 
     def _build_op_player_async(self):
@@ -818,24 +824,31 @@ class ScenePresenter:
                 continue
             material = layer.stock_material
             if material is None:
+                logger.debug(
+                    "Rotary layer %r has no stock material; not "
+                    "rendering its stock",
+                    layer.name,
+                )
                 continue
             appearance = material.appearance
             texture_path = material.get_texture_path()
-            specs.append(
-                {
-                    "name": _("{layer} stock").format(layer=layer.name),
-                    "kind": "rotary",
-                    "diameter": float(layer.rotary_diameter),
-                    "length": float(max_length),
-                    "texture_path": (
-                        str(texture_path) if texture_path is not None else None
-                    ),
-                    "texture_size_mm": float(appearance.texture_size_mm),
-                    "roughness": float(appearance.roughness),
-                    "metallic": float(appearance.metallic),
-                    "color": appearance.color,
-                }
-            )
+            spec = {
+                "name": _("{layer} stock").format(layer=layer.name),
+                "kind": "rotary",
+                "diameter": float(layer.rotary_diameter),
+                "length": float(max_length),
+                "texture_path": (
+                    str(texture_path) if texture_path is not None else None
+                ),
+                "texture_size_mm": float(appearance.texture_size_mm),
+                "roughness": float(appearance.roughness),
+                "metallic": float(appearance.metallic),
+                "color": appearance.color,
+            }
+            burn = self._material_states.get(layer.uid)
+            if burn is not None:
+                spec["burn"] = dict(burn)
+            specs.append(spec)
         return specs
 
     def update_scene_from_doc(self):

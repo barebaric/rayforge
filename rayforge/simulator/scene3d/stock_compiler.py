@@ -138,7 +138,12 @@ def _build_cylinder_shell(
     j_vals = np.linspace(0.0, 1.0, rings + 1, dtype=np.float64)
     ii, jj = np.meshgrid(i_vals, j_vals, indexing="ij")
 
-    theta = 2.0 * math.pi * jj
+    # The angular parametrization starts at pi (the bottom of the
+    # roller) so the duplicated seam sits opposite the beam-home
+    # direction: the burn grid's unrolled domain is centered on the
+    # machine origin (y = 0 at the top), and a power-uv v of 0..1
+    # then spans it without crossing the texture cut mid-surface.
+    theta = math.pi + 2.0 * math.pi * jj
     x = ii * length
     y = radius * np.sin(theta)
     z = radius * np.cos(theta)
@@ -212,6 +217,33 @@ def _build_cylinder_shell(
         np.uint32
     )
     return positions, normals, uvs, indices
+
+
+def _rotary_power_uvs(
+    diameter: float,
+    length: float,
+    power_grid: tuple[
+        tuple[float, float], tuple[float, float], tuple[int, int]
+    ],
+    rings: int = CYLINDER_RINGS,
+    length_segments: int = CYLINDER_LENGTH_SEGMENTS,
+) -> np.ndarray:
+    """Power UVs for a cylinder shell built by ``_build_cylinder_shell``.
+
+    Derived from the same parametrization as the mesh so the vertex
+    order matches exactly (side vertices, then the two cap centers).
+    U maps axial position through the burn grid like the flat path;
+    V follows the angular parameter, with the duplicated seam mapping
+    to 0 and 1 so no quad interpolates across it.
+    """
+    origin_mm, px_per_mm, size_px = power_grid
+    i_vals = np.linspace(0.0, 1.0, length_segments + 1, dtype=np.float64)
+    j_vals = np.linspace(0.0, 1.0, rings + 1, dtype=np.float64)
+    ii, jj = np.meshgrid(i_vals, j_vals, indexing="ij")
+    u = ((ii * length - origin_mm[0]) * px_per_mm[0]) / size_px[0]
+    side = np.stack([u.ravel(), jj.ravel()], axis=-1).astype(np.float32)
+    caps = np.zeros((2, 2), dtype=np.float32)
+    return np.concatenate([side, caps], axis=0)
 
 
 class _BurnData(NamedTuple):
@@ -424,6 +456,10 @@ def _compile_rotary_stock_spec(
     positions, normals, uvs, indices = _build_cylinder_shell(
         diameter, length, texture_size_mm
     )
+    burn = _parse_burn_spec(spec)
+    power_uvs: np.ndarray = np.empty((0, 2), dtype=np.float32)
+    if burn is not None:
+        power_uvs = _rotary_power_uvs(diameter, length, burn.power_grid)
     return StockLayer(
         positions=positions,
         normals=normals,
@@ -437,6 +473,10 @@ def _compile_rotary_stock_spec(
         fallback_rgba=fallback_rgba,
         tint_rgba=tint_rgba,
         is_rotary=True,
+        power_texture=(burn.surface_map if burn is not None else None),
+        power_size_px=(burn.size_px if burn is not None else None),
+        power_aabb=(burn.aabb if burn is not None else None),
+        power_uvs=power_uvs,
     )
 
 
