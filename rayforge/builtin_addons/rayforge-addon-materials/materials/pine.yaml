@@ -24,7 +24,6 @@ category:
   uk: Деревина
   zh_CN: 木材
 appearance:
-  color: "#FAEBD7"
   pattern: wood_grain
   texture: pine.webp
   texture_size_mm: 300

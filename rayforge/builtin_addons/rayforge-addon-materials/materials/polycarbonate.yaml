@@ -24,8 +24,6 @@ category:
   uk: Пластик
   zh_CN: 塑料
 appearance:
-  color: "#E0FFFF"
   pattern: transparent
-  tintable: true
   texture: polycarbonate.webp
   texture_size_mm: 300

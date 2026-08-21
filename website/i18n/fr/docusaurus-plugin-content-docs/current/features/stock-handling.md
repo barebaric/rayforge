@@ -55,8 +55,7 @@ Note : Les propriétés de matériau sont définies dans les bibliothèques de m
 
 ### Couleur par Élément de Matériau
 
-Pour les matériaux définis comme **teintables** (ex : acrylique coloré),
-chaque élément de matériau peut remplacer indépendamment la couleur de
+Chaque élément de matériau peut remplacer indépendamment la couleur de
 teinte du matériau :
 
 1. Ouvrez la boîte de dialogue **Propriétés du Matériau** pour l'élément
@@ -66,9 +65,8 @@ teinte du matériau :
 La couleur n'est appliquée qu'à cet élément de matériau — les autres
 éléments utilisant le même matériau conservent leurs propres couleurs.
 Utilisez le bouton d'effacement à côté de la rangée de couleur pour revenir
-à la couleur par défaut du matériau. Pour les matériaux non teintables, la
-rangée de couleur est désactivée et l'apparence provient de la définition
-du matériau.
+à la couleur par défaut du matériau. Lorsque ni l'élément ni le matériau
+ne définissent de couleur, la texture est affichée sans teinte.
 
 ## Convertir des Pièces en Matériau
 

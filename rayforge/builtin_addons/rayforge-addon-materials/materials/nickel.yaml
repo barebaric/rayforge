@@ -24,7 +24,6 @@ category:
   uk: Метал
   zh_CN: 金属
 appearance:
-  color: "#E0E0E0"
   pattern: metallic
   texture: nickel.webp
   texture_size_mm: 300

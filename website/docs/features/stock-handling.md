@@ -51,14 +51,13 @@ Materials define the visual properties of your stock:
 - **Description**: Additional information about the material
 
 See [Materials](../application-settings/materials.md) for the full list of
-appearance properties (texture, roughness, metallic, and tinting).
+appearance properties (texture, roughness, metallic, and tint color).
 
 Note: Material properties are defined in material libraries and cannot be edited through the stock properties dialog. The stock properties only allow you to assign a material to a stock item.
 
 ### Per-Instance Stock Color
 
-For materials that are defined as **tintable** (e.g. colored acrylic),
-each stock item can override the material's tint color independently:
+Each stock item can override the material's tint color independently:
 
 1. Open the **Stock Properties** dialog for the stock item
 2. Click the color button in the **Color** row
@@ -66,9 +65,8 @@ each stock item can override the material's tint color independently:
 
 The color is applied only to that stock item — other items using the same
 material keep their own colors. Use the clear button next to the color
-row to revert to the material's default color. For materials that are not
-tintable, the color row is disabled and the appearance comes from the
-material definition.
+row to revert to the material's default color. When neither the item nor
+the material defines a color, the texture is shown untinted.
 
 ## Converting Workpieces to Stock
 

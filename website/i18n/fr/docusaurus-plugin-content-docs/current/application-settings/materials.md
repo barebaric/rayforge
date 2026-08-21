@@ -65,18 +65,14 @@ surface.
 
 #### Couleur
 
-La couleur de base du matériau. Lorsqu'une texture est définie et que le
-matériau est teintable, la couleur teinte la texture. La couleur est
-uniquement utilisée pour l'apparence visuelle sur la surface de travail -
-elle n'affecte pas le parcours laser de quelque manière que ce soit.
-
-#### Teintable
-
-Lorsqu'elle est activée, la texture du matériau peut être teintée avec la
-couleur ci-dessus. Cela permet à un seul matériau texturé (ex :
-"Acrylique") de couvrir plusieurs variantes de couleur : la couleur est
-appliquée par brut dans la boîte de dialogue [Propriétés du
-brut](../features/stock-handling.md).
+Une couleur de teinte facultative. Lorsqu'elle est définie, la texture du
+matériau est teintée avec cette couleur ; sinon, la texture est affichée
+telle quelle. Cela permet à un seul matériau texturé (ex : "Acrylique")
+de couvrir plusieurs variantes de couleur : la couleur est appliquée par
+brut dans la boîte de dialogue [Propriétés du
+brut](../features/stock-handling.md). La couleur est uniquement utilisée
+pour l'apparence visuelle sur la surface de travail - elle n'affecte pas
+le parcours laser de quelque manière que ce soit.
 
 #### Rugosité
 

@@ -24,8 +24,6 @@ category:
   uk: Пластик
   zh_CN: 塑料
 appearance:
-  color: "#F0F8FF"
   pattern: transparent
-  tintable: true
   texture: petg.webp
   texture_size_mm: 300
