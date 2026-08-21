@@ -5,6 +5,32 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.10.1
+
+### Fixed
+
+- GRBL: the driver now owns the hold/pause state, so the hold/resume
+  toggle stays in sync and Resume actually sends "~" instead of
+  re-sending "!" (pause)
+- GRBL: status polling is no longer starved while the send loop waits
+  on a full RX buffer, so driver state no longer goes stale during
+  pauses and buffer stalls
+- GRBL: a job is now aborted (with a connection error) instead of
+  retrying forever when the device stops responding during a buffer
+  stall
+- GRBL: realtime console commands (~, !, ?) are sent directly via the
+  control path instead of being streamed as buffered gcode, so they no
+  longer queue behind commands or start phantom jobs
+- GRBL: the UI now reflects the RUN state at job start when status
+  polling is disabled
+- Refusing to start a job while another is running now shows an
+  actionable message telling the user to wait for it to finish or press
+  Stop
+- Machine job failure notifications are now localized per job type
+  (frame vs. send) with complete, translatable sentences
+- The camera calibration wizard now passes the generated CharucoBoard
+  to the capture page, so Capture Frame works again
+
 ## 1.10.0
 
 ### Added
