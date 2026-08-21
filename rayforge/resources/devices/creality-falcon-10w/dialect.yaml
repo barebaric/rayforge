@@ -20,6 +20,7 @@ probe_cycle: G38.2 {axis_letter}{max_travel} F{feed_rate}
 preamble:
 - G21 ;Set units to mm
 - G90 ;Absolute positioning
+- M9 ;turn on extraction fan
 postscript:
 - M5 ;Ensure laser is off
 - G0 X0 Y0 ;Return to origin
