@@ -126,6 +126,7 @@ class GrblSerialSimpleDriver(Driver):
         self._cmd_lock = asyncio.Lock()
         self._is_cancelled = False
         self._job_running = False
+        self._is_holding = False
         self._raw_grbl_status: DeviceStatus = DeviceStatus.UNKNOWN
         self._handshake_received = asyncio.Event()
         self._on_command_done: (
@@ -423,6 +424,12 @@ class GrblSerialSimpleDriver(Driver):
         if self._job_running and state.status == DeviceStatus.IDLE:
             state.status = DeviceStatus.RUN
 
+        # The driver owns the pause state. While we have requested a hold,
+        # force HOLD so a firmware status report cannot mask it (status
+        # polling is disabled while a job runs, so HOLD may never be observed).
+        if self._is_holding and state.status != DeviceStatus.ALARM:
+            state.status = DeviceStatus.HOLD
+
         self.state.status = state.status
         if state.error is not None:
             self.state.error = state.error
@@ -435,6 +442,7 @@ class GrblSerialSimpleDriver(Driver):
     ) -> None:
         self._is_cancelled = False
         self._job_running = True
+        self._is_holding = False
         self._job_exception: Exception | None = None
         self._on_command_done = on_command_done
         self._current_op_index = -1
@@ -490,6 +498,7 @@ class GrblSerialSimpleDriver(Driver):
             logger.exception("Unexpected streaming error")
         finally:
             self._job_running = False
+            self._is_holding = False
             self._on_command_done = None
             if job_completed_successfully:
                 self.job_finished.send(self)
@@ -535,6 +544,7 @@ class GrblSerialSimpleDriver(Driver):
         job_was_running = self._job_running
         self._is_cancelled = True
         self._job_running = False
+        self._is_holding = False
         self._on_command_done = None
 
         if self._transport and self._transport.is_connected:
@@ -562,10 +572,21 @@ class GrblSerialSimpleDriver(Driver):
         return await self._execute_command(command)
 
     async def set_hold(self, hold: bool = True) -> None:
+        self._is_holding = hold
         self._is_cancelled = False
         realtime = b"!" if hold else b"~"
         if self._transport and self._transport.is_connected:
             await self._transport.send(realtime)
+        desired = (
+            DeviceStatus.HOLD
+            if hold
+            else DeviceStatus.RUN
+            if self._job_running
+            else DeviceStatus.IDLE
+        )
+        if self.state.status != desired:
+            self.state.status = desired
+            self.state_changed.send(self, state=self.state)
 
     def can_home(self, axis: Axis | None = None) -> bool:
         return True

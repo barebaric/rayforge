@@ -100,6 +100,11 @@ class GrblSerialDriver(Driver):
         self._is_cancelled = False
         self._raw_grbl_status: DeviceStatus = DeviceStatus.UNKNOWN
         self._job_running = False
+        # Tracks whether we have requested the machine to hold (pause). The
+        # driver owns this state: status polling is disabled while a job runs,
+        # so the firmware's HOLD status is not observed. Without this, the UI
+        # never learns that the job is paused and cannot offer a resume.
+        self._is_holding = False
         self._on_command_done: (
             Callable[[int], None | Awaitable[None]] | None
         ) = None
@@ -534,6 +539,7 @@ class GrblSerialDriver(Driver):
         """Initializes state for a new streaming job."""
         self._is_cancelled = False
         self._job_running = True
+        self._is_holding = False
         self._on_command_done = on_command_done
         self._last_reported_op_index = -1
         self._job_exception = None
@@ -869,6 +875,7 @@ class GrblSerialDriver(Driver):
         finally:
             self._raw_grbl_status = DeviceStatus.UNKNOWN
             self._job_running = False
+            self._is_holding = False
             self._on_command_done = None
             if job_completed_successfully:
                 self.job_finished.send(self)
@@ -1052,8 +1059,19 @@ class GrblSerialDriver(Driver):
         return request.response_lines
 
     async def set_hold(self, hold: bool = True) -> None:
+        self._is_holding = hold
         self._is_cancelled = False
         await self._send_realtime("!" if hold else "~", add_newline=False)
+        desired = (
+            DeviceStatus.HOLD
+            if hold
+            else DeviceStatus.RUN
+            if self._job_running
+            else DeviceStatus.IDLE
+        )
+        if self.state.status != desired:
+            self.state.status = desired
+            self.state_changed.send(self, state=self.state)
 
     def can_home(self, axis: Axis | None = None) -> bool:
         """GRBL supports homing for all axes."""
@@ -1443,6 +1461,12 @@ class GrblSerialDriver(Driver):
         # reported as 'Run' to the UI.
         if self._job_running and state.status == DeviceStatus.IDLE:
             state.status = DeviceStatus.RUN
+
+        # The driver owns the pause state. While we have requested a hold,
+        # force HOLD so a firmware status report (which we may not receive
+        # while status polling is disabled during a job) cannot mask it.
+        if self._is_holding and state.status != DeviceStatus.ALARM:
+            state.status = DeviceStatus.HOLD
 
         old_status = self.state.status
         if state != self.state:
