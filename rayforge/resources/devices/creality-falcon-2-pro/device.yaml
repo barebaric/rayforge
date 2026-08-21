@@ -16,6 +16,7 @@ machine:
   max_travel_speed: 25000
   max_cut_speed: 3000
   home_on_start: false
+  has_z: false
   heads:
   - max_power: 1000
     frame_power_percent: 0.1

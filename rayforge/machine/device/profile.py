@@ -314,6 +314,7 @@ class MachineConfig:
             home_on_start=machine.home_on_start,
             acceleration=machine.acceleration,
             single_axis_homing_enabled=(machine.single_axis_homing_enabled),
+            has_z=machine.has_z_axis,
             rotary_enabled_default=machine.rotary_enabled_default,
             unit_system=machine.unit_system,
             heads=heads,
