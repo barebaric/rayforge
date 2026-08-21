@@ -21,6 +21,7 @@ def test_2d_overlay_buttons(ui_context_initializer):
     assert overlay.workpiece_button.get_action_name() == "win.show_workpieces"
     assert overlay.camera_button.get_action_name() == "win.toggle_camera_view"
     assert overlay.tabs_button.get_action_name() == "win.show_tabs"
+    assert overlay.stock_button is not None
     assert overlay.stock_button.get_action_name() == "win.show_stock"
     assert overlay.travel_button.get_action_name() == "win.toggle_travel_view"
     assert overlay.nogo_button.get_action_name() == "win.show_nogo_zones"
@@ -42,6 +43,7 @@ def test_3d_overlay_buttons(ui_context_initializer):
     assert overlay.grid_button.get_action_name() == "win.show_grid"
     assert overlay.underlay_button is not None
     assert overlay.underlay_button.get_action_name() == "win.show_ops_underlay"
+    assert overlay.stock_button is not None
     assert overlay.stock_button.get_action_name() == "win.show_stock"
     assert overlay.workpiece_image_button is not None
     assert (

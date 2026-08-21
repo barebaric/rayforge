@@ -143,6 +143,8 @@ class MainWindow(Adw.ApplicationWindow):
         self._saved_bottom_panel_visible = False
         self._old_doc = None  # Track previous document for signal reconnection
         self.canvas3d: Canvas3D | None = None
+        self._canvas3d_vis_overlay: VisibilityOverlay | None = None
+        self._surface_vis_overlay: VisibilityOverlay | None = None
         self._canvas3d_time_overlay: TimeEstimateOverlay | None = None
         self._is_syncing_3d = False
 
@@ -1284,6 +1286,14 @@ class MainWindow(Adw.ApplicationWindow):
         # Update button sensitivity and other state
         self._update_actions_and_ui()
 
+        # The stock and ops-underlay toggles are mutually exclusive:
+        # show the stock toggle only when the document has stock.
+        has_stock = bool(doc.stock_items)
+        if self._surface_vis_overlay is not None:
+            self._surface_vis_overlay.set_stock_present(has_stock)
+        if self._canvas3d_vis_overlay is not None:
+            self._canvas3d_vis_overlay.set_stock_present(has_stock)
+
     def _sync_element_selectability(self):
         """
         Updates the 'selectable' property of StockElements on the canvas
@@ -1602,12 +1612,14 @@ class MainWindow(Adw.ApplicationWindow):
         has_cameras = bool(
             config.machine and any(c.enabled for c in config.machine.cameras)
         )
-        self._surface_vis_overlay.set_camera_visible(has_cameras)
+        if self._surface_vis_overlay is not None:
+            self._surface_vis_overlay.set_camera_visible(has_cameras)
 
         # Show/hide no-go zone toggle based on whether the machine has any
         has_nogo_zones = bool(config.machine and config.machine.nogo_zones)
-        self._surface_vis_overlay.set_nogo_visible(has_nogo_zones)
-        if self.canvas3d is not None:
+        if self._surface_vis_overlay is not None:
+            self._surface_vis_overlay.set_nogo_visible(has_nogo_zones)
+        if self._canvas3d_vis_overlay is not None:
             self._canvas3d_vis_overlay.set_nogo_visible(has_nogo_zones)
 
         self.surface.update_from_doc()

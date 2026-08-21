@@ -28,6 +28,7 @@ from ...machine.kinematic_mapping import (
 from ...machine.models.laser import LaserHead
 from ...pipeline.artifact.handle import BaseArtifactHandle
 from ...pipeline.artifact.job import JobArtifact
+from ...pipeline.artifact.material_state import MaterialStateArtifact
 from ...shared.tasker import Task, task_mgr
 from ...simulator.op_player import OpPlayer, build_snapshots
 from ...simulator.scene3d import (
@@ -211,6 +212,9 @@ class ScenePresenter:
         self._workpiece_image_task: Task | None = None
         self._workpiece_image_generation = 0
         self._workpiece_images: list[WorkpieceImage] = []
+        # Folded material state per stock uid (burn surface map data),
+        # updated from Pipeline.material_state_ready.
+        self._material_states: dict[str, dict] = {}
 
     def connect(self):
         """Subscribe to the pipeline and upload events that drive the scene.
@@ -228,6 +232,14 @@ class ScenePresenter:
             pipeline.job_generation_finished.connect(
                 self._on_job_generation_finished
             )
+            pipeline.material_state_ready.connect(
+                self._on_material_state_ready
+            )
+        # The pipeline may have already produced material states before
+        # this presenter connected (the 3D canvas realizes after the
+        # job settles); pick those up so they are not lost.
+        if self._refresh_material_states():
+            self.update_scene_from_doc()
 
     def disconnect(self):
         """Unsubscribe from pipeline and upload events."""
@@ -239,6 +251,9 @@ class ScenePresenter:
             )
             pipeline.job_generation_finished.disconnect(
                 self._on_job_generation_finished
+            )
+            pipeline.material_state_ready.disconnect(
+                self._on_material_state_ready
             )
 
     @property
@@ -413,6 +428,92 @@ class ScenePresenter:
         self._build_op_player_async()
         if self._compiled_artifact and self._op_player:
             self._scene.extract_playback_offsets(self._compiled_artifact)
+
+    def _store_material_state(
+        self, stock_uid: str, stock_name: str, handle
+    ) -> bool:
+        """Resolve a material-state artifact handle into the burn dict.
+
+        Returns ``True`` if ``_material_states`` changed (i.e. a scene
+        update should be triggered), ``False`` otherwise (duplicate or
+        no change).
+        """
+        try:
+            artifact = self._context.artifact_store.get(handle)
+        except RuntimeError:
+            logger.exception("Failed to resolve material state artifact")
+            return False
+        if not isinstance(artifact, MaterialStateArtifact):
+            return False
+        state = artifact.material_state
+        if state.surface_map is not None and state.grid is not None:
+            grid = state.grid
+            burn = {
+                "handle_key": handle.key,
+                "surface_map": state.surface_map,
+                "origin_mm": tuple(grid.origin_mm),
+                "px_per_mm": tuple(grid.px_per_mm),
+                "size_px": tuple(grid.size_px),
+            }
+            previous = self._material_states.get(stock_uid)
+            if previous is not None and previous["handle_key"] == handle.key:
+                return False
+            self._material_states[stock_uid] = burn
+            logger.info(
+                "Burn surface map ready for stock %r (grid %sx%s px)",
+                stock_name,
+                grid.size_px[0],
+                grid.size_px[1],
+            )
+            return True
+        if stock_uid in self._material_states:
+            self._material_states.pop(stock_uid, None)
+            return True
+        return False
+
+    def _refresh_material_states(self) -> bool:
+        """Pick up any material states the Pipeline already computed.
+
+        The pipeline can finish (and deliver a fold's material state)
+        before this presenter connects (the 3D canvas realizes after
+        the job settles). Relying on the live signal alone would miss
+        that state, so re-read the Pipeline's stored handles and drop
+        any that are no longer present. Returns whether anything
+        changed.
+        """
+        pipeline = self._doc_editor.pipeline
+        if pipeline is None:
+            return False
+        handles = getattr(pipeline, "_material_state_handles", {}) or {}
+        changed = False
+        seen: set[str] = set()
+        for item in self.doc.stock_items:
+            if item.uid not in handles:
+                continue
+            seen.add(item.uid)
+            if self._store_material_state(
+                item.uid, item.name, handles[item.uid]
+            ):
+                changed = True
+        for uid in list(self._material_states):
+            if uid not in seen:
+                self._material_states.pop(uid, None)
+                changed = True
+        return changed
+
+    def _on_material_state_ready(self, sender, **kwargs):
+        """Store a stock's folded burn surface map and recompile.
+
+        The fold emits during the pipeline run; the stock specs pick
+        the burn data up on the next scene compile, which reuses the
+        current job handle when the pipeline is still running.
+        """
+        stock_item = kwargs.get("stock_item")
+        handle = kwargs.get("handle")
+        if stock_item is None or handle is None:
+            return
+        if self._store_material_state(stock_item.uid, stock_item.name, handle):
+            self.update_scene_from_doc()
 
     def _build_op_player_async(self):
         ops = self._get_ops_for_playback()
@@ -658,38 +759,38 @@ class ScenePresenter:
                 appearance = None
                 texture_path = None
 
-            specs.append(
-                {
-                    "name": item.name,
-                    "thickness": (
-                        float(thickness) if thickness is not None else None
-                    ),
-                    "outers": outers,
-                    "holes": holes,
-                    "texture_path": (
-                        str(texture_path) if texture_path is not None else None
-                    ),
-                    "texture_size_mm": float(
-                        appearance.texture_size_mm
-                        if appearance is not None
-                        else 300.0
-                    ),
-                    "roughness": float(
-                        appearance.roughness if appearance is not None else 0.8
-                    ),
-                    "metallic": float(
-                        appearance.metallic if appearance is not None else 0.0
-                    ),
-                    "color": appearance.color
+            spec = {
+                "name": item.name,
+                "thickness": (
+                    float(thickness) if thickness is not None else None
+                ),
+                "outers": outers,
+                "holes": holes,
+                "texture_path": (
+                    str(texture_path) if texture_path is not None else None
+                ),
+                "texture_size_mm": float(
+                    appearance.texture_size_mm
                     if appearance is not None
-                    else None,
-                    # Tinting is a material-level feature: the stock's color
-                    # only applies when the material is tintable.
-                    "tint": item.get_effective_color()
-                    if (appearance is not None and appearance.tintable)
-                    else None,
-                }
-            )
+                    else 300.0
+                ),
+                "roughness": float(
+                    appearance.roughness if appearance is not None else 0.8
+                ),
+                "metallic": float(
+                    appearance.metallic if appearance is not None else 0.0
+                ),
+                "color": appearance.color if appearance is not None else None,
+                # Tinting is a material-level feature: the stock's color
+                # only applies when the material is tintable.
+                "tint": item.get_effective_color()
+                if (appearance is not None and appearance.tintable)
+                else None,
+            }
+            burn = self._material_states.get(item.uid)
+            if burn is not None:
+                spec["burn"] = dict(burn)
+            specs.append(spec)
 
         if machine is not None:
             specs.extend(self._build_rotary_stock_specs(viewport, machine))
@@ -750,6 +851,11 @@ class ScenePresenter:
         t_update_start = time.perf_counter()
         logger.debug("Canvas3D: Updating scene from document.")
 
+        # Folded material states may arrive after the last update (or
+        # before this presenter connected); re-read the Pipeline's
+        # stored states so the stock specs always carry the burn.
+        self._refresh_material_states()
+
         # Theme/color updates only need to happen once per theme change
         if self._theme_resolver.theme_is_dirty:
             self._theme_resolver.update_theme_and_colors()
@@ -785,10 +891,15 @@ class ScenePresenter:
 
         if machine:
             if has_z_axis:
+                # Has-Z machines render content at its authored Z
+                # (plus WCS Z), faithful to the coordinates.
                 world_to_visual = self._compute_world_to_visual(
                     viewport, machine
                 )
             else:
+                # No-Z machines author everything at z=0 (the stock
+                # top in the toolpath convention), so lift content
+                # onto the stock top in visual space.
                 wcs = viewport.wcs_offset_mm
                 content_z = wcs[2] + stock_top_z
                 world_to_visual = self._compute_world_to_visual(
