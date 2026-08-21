@@ -366,7 +366,10 @@ class Pipeline:
             return
         agg = self._last_aggregate_output
         if agg is None:
-            logger.debug("Encode finished but no aggregate output cached")
+            logger.warning("Encode finished but no aggregate output cached")
+            self.job_generation_finished.send(
+                self, handle=None, task_status=task_status
+            )
             return
 
         text = handle.text or ""
@@ -480,6 +483,12 @@ class Pipeline:
 
         def _on_finished(sender, *, handle, task_status):
             self.job_generation_finished.disconnect(_on_finished)
+            if task_status == "failed":
+                when_done(
+                    None,
+                    RuntimeError("Job generation failed — see logs."),
+                )
+                return
             when_done(handle, None)
 
         self.job_generation_finished.connect(_on_finished, weak=False)

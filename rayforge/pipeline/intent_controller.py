@@ -354,22 +354,35 @@ class IntentController:
                     self._emit_configuration_error, str(exc)
                 )
                 return
-            self._refresh_key_to_item_map(nodes)
-            new_intent = create_intent_from_nodes(nodes)
-            if self._intent is None:
-                self._intent = new_intent
-            else:
-                self._intent.update(new_intent, pipeline=self._raygeo_pipeline)
-            if nodes:
-                try:
+            except Exception:
+                # An unexpected build error must still complete anyone
+                # waiting for job generation, or job sending wedges.
+                logger.exception("Intent build failed")
+                self._task_manager.schedule_on_main_thread(
+                    self._emit_job_generation_failed
+                )
+                return
+            try:
+                self._refresh_key_to_item_map(nodes)
+                new_intent = create_intent_from_nodes(nodes)
+                if self._intent is None:
+                    self._intent = new_intent
+                else:
+                    self._intent.update(
+                        new_intent, pipeline=self._raygeo_pipeline
+                    )
+                if nodes:
                     run_intent(
                         self._intent,
                         on_completed=self._on_completed,
                         on_batch_progress=self._on_batch_progress,
                         pipeline=self._raygeo_pipeline,
                     )
-                except RuntimeError as exc:
-                    logger.debug("run_intent failed: %s", exc)
+            except Exception:
+                logger.exception("Intent execution failed")
+                self._task_manager.schedule_on_main_thread(
+                    self._emit_job_generation_failed
+                )
 
         def _on_done(_task: Any) -> None:
             self._rebuild_task = None
@@ -384,6 +397,18 @@ class IntentController:
 
         self._rebuild_task = self._task_manager.run_thread(
             _worker, when_done=_on_done, key="intent-rebuild"
+        )
+
+    def _emit_job_generation_failed(self) -> None:
+        """
+        Completes job-generation waiters after an unexpected failure.
+
+        Without this, anyone awaiting ``job_generation_finished``
+        (e.g. ``generate_job_artifact_async``) would block forever,
+        wedging all future send attempts behind the stuck job guard.
+        """
+        self.job_generation_finished.send(
+            self, handle=None, task_status="failed"
         )
 
     def _emit_rebuild_finished(self) -> None:
