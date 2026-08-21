@@ -221,9 +221,25 @@ class CameraWizard(PatchedDialogWindow):
                 )
         self._current = name
         page = self._pages[name]
+        if isinstance(page, CapturePage):
+            self._sync_capture_board(page)
         page.enter()
         self._stack.set_visible_child_name(name)
         self._update_footer(name, page)
+
+    def _sync_capture_board(self, capture: CapturePage) -> None:
+        """Propagate the calibration card board to the capture page.
+
+        The card page owns the generated :class:`CharucoBoard` (it may
+        be regenerated when the user tweaks the card size). Without this
+        the capture page never receives a board, so its calibrator is
+        never initialised and Capture Frame silently does nothing.
+        """
+        card = self._pages.get("card")
+        if not isinstance(card, CardPage):
+            return
+        if card.board is not None:
+            capture.set_board(card.board)
 
     def _on_page_changed(self, _stack, _pspec) -> None:
         name = self._stack.get_visible_child_name()
