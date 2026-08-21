@@ -24,7 +24,6 @@ category:
   uk: Кераміка
   zh_CN: 陶瓷
 appearance:
-  color: "#F5F5F5"
   pattern: solid
   texture: ceramic.webp
   texture_size_mm: 300

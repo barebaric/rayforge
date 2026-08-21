@@ -24,8 +24,6 @@ category:
   uk: Скло
   zh_CN: 玻璃
 appearance:
-  color: "#ADD8E6"
   pattern: transparent
-  tintable: true
   texture: glass.webp
   texture_size_mm: 300

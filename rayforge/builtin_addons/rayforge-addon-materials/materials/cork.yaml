@@ -24,7 +24,6 @@ category:
   uk: Органічний
   zh_CN: 有机材料
 appearance:
-  color: "#DEB887"
   pattern: solid
   texture: cork.webp
   texture_size_mm: 300

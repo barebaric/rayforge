@@ -24,7 +24,6 @@ category:
   uk: Деревина
   zh_CN: 木材
 appearance:
-  color: "#8B4513"
   pattern: wood_grain
   texture: mahogany.webp
   texture_size_mm: 300

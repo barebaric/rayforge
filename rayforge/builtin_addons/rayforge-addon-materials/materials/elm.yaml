@@ -24,7 +24,6 @@ category:
   uk: Деревина
   zh_CN: 木材
 appearance:
-  color: "#CD853F"
   pattern: wood_grain
   texture: elm.webp
   texture_size_mm: 300

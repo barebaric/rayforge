@@ -24,7 +24,6 @@ category:
   uk: Метал
   zh_CN: 金属
 appearance:
-  color: "#71797E"
   pattern: metallic
   texture: titanium.webp
   texture_size_mm: 300
