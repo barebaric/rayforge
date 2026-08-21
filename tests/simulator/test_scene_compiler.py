@@ -487,3 +487,36 @@ class TestBurnLayerSuppression:
         )
         assert len(artifact.texture_layers) == 1
         assert artifact.burn_layer_indices == set()
+
+
+class TestRotaryBurnLayerSuppression:
+    def test_rotary_layer_suppressed_when_inside_burn(self):
+        """A rotary layer's quads are suppressed when its bbox
+        intersects a rotary stock's unrolled burn AABB."""
+        ops = Ops()
+        ops.move_to(1.0, 1.0, 0.0)
+        ops.scan_to(4.0, 1.0, 0.0, bytearray([255, 255, 255]))
+        ops.move_to(1.0, 2.0, 0.0)
+        ops.scan_to(4.0, 2.0, 0.0, bytearray([255, 255, 255]))
+        config = make_test_config(
+            layer_configs={"layer1": make_rotary_layer_config(diameter=50.0)}
+        )
+        config.stock_specs = [
+            {
+                "name": "rotary stock",
+                "kind": "rotary",
+                "diameter": 50.0,
+                "length": 200.0,
+                "burn": {
+                    "surface_map": CompressedArray.from_uint8_2d(
+                        np.full((100, 100), 255, dtype=np.uint8)
+                    ),
+                    "origin_mm": (0.0, 0.0),
+                    "px_per_mm": (10.0, 10.0),
+                    "size_px": (100, 100),
+                },
+            }
+        ]
+        artifact = compile_scene(_single_layer_ops(ops), config)
+        assert len(artifact.texture_layers) == 1
+        assert artifact.burn_layer_indices == {0}

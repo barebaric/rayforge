@@ -68,3 +68,14 @@ def test_set_nogo_visible(ui_context_initializer):
     assert not overlay.nogo_button.get_visible()
     overlay.set_nogo_visible(True)
     assert overlay.nogo_button.get_visible()
+
+
+@pytest.mark.ui
+def test_set_stock_present_toggles_button_visibility(ui_context_initializer):
+    overlay = VisibilityOverlay(show_stock=True)
+    assert overlay.stock_button is not None
+    assert overlay.stock_button.get_visible()
+    overlay.set_stock_present(False)
+    assert not overlay.stock_button.get_visible()
+    overlay.set_stock_present(True)
+    assert overlay.stock_button.get_visible()

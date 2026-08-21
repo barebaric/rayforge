@@ -56,6 +56,7 @@ from .status_messages import status_message_for_key
 if TYPE_CHECKING:
     from ..core.doc import Doc
     from ..core.item import DocItem
+    from ..core.layer import Layer
     from ..core.step import Step
     from ..core.stock import StockItem
     from ..core.workpiece import WorkPiece
@@ -618,11 +619,13 @@ class IntentController:
         elif key.startswith("stock:"):
             stock_uid = parse_stock_key(key)
             if stock_uid is not None:
-                stock_item = self._find_stock_item(stock_uid)
-                if stock_item is not None:
+                host: DocItem | None = self._find_stock_item(stock_uid)
+                if host is None:
+                    host = self._find_layer(stock_uid)
+                if host is not None:
                     self.material_state_ready.send(
                         self,
-                        stock_item=stock_item,
+                        item=host,
                         output=output,
                         generation_id=gen,
                     )
@@ -657,10 +660,14 @@ class IntentController:
         self._steps_by_uid = steps
 
         stock_items: dict[str, StockItem] = {}
+        layers_by_uid: dict[str, Layer] = {}
         if self._doc is not None:
             for item in self._doc.stock_items:
                 stock_items[item.uid] = item
+            for layer in self._doc.layers:
+                layers_by_uid[layer.uid] = layer
         self._stock_items_by_uid = stock_items
+        self._layers_by_uid = layers_by_uid
 
         for n in nodes:
             key = n.key
@@ -681,13 +688,16 @@ class IntentController:
                 step = steps.get(s_uid)
                 if step is not None:
                     self._key_to_item[key] = step
-            # ``stock:{stock_uid}``
+            # ``stock:{stock_uid}`` — a flat stock item or, when no
+            # stock item carries the uid, a rotary layer.
             elif key.startswith("stock:"):
                 stock_uid = parse_stock_key(key)
                 if stock_uid is not None:
-                    stock = stock_items.get(stock_uid)
-                    if stock is not None:
-                        self._key_to_item[key] = stock
+                    item = stock_items.get(stock_uid)
+                    if item is None:
+                        item = layers_by_uid.get(stock_uid)
+                    if item is not None:
+                        self._key_to_item[key] = item
             # ``job`` or ``job:encode``
             elif key == "job" or key == "job:encode":
                 self._key_to_item[key] = self._doc
@@ -700,6 +710,9 @@ class IntentController:
 
     def _find_stock_item(self, uid: str) -> StockItem | None:
         return self._stock_items_by_uid.get(uid)
+
+    def _find_layer(self, uid: str) -> Layer | None:
+        return self._layers_by_uid.get(uid)
 
     def shutdown(self) -> None:
         """Cancel any pending rebuild timer and disconnect signals."""

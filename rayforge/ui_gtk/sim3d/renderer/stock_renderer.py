@@ -481,7 +481,8 @@ class StockRenderer(BaseRenderer):
             GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
 
     def _draw_instance(self, shader, instance: dict) -> None:
-        if instance.get("is_rotary"):
+        is_rotary = bool(instance.get("is_rotary"))
+        if is_rotary:
             if self._cyl_mvp is None or self._cyl_model is None:
                 return
             mvp = self._cyl_mvp
@@ -491,6 +492,7 @@ class StockRenderer(BaseRenderer):
             model = instance["transform"]
         shader.set_mat4("uMVP", mvp)
         shader.set_mat4("uModel", model)
+        shader.set_float("uRotary", 1.0 if is_rotary else 0.0)
         shader.set_vec4("uAlbedo", instance["fallback_rgba"])
         shader.set_float("uRoughness", instance["roughness"])
         shader.set_float("uMetallic", instance["metallic"])

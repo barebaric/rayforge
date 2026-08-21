@@ -358,31 +358,31 @@ class Pipeline:
         )
 
     def _on_material_state(
-        self, sender, *, stock_item, output, generation_id
+        self, sender, *, item, output, generation_id
     ) -> None:
         """Wrap a ``MaterialState`` into a :class:`MaterialStateArtifact`,
         store it, and emit :attr:`material_state_ready` with the handle.
 
         ``output`` is a raygeo ``MaterialState`` returned by the fold
-        compute node. No renderer consumes it yet; the artifact is
-        stored so renderers can pick it up without changing the signal
-        path.
+        compute node. ``item`` is the material host — a flat stock item
+        or a rotary layer. The artifact is stored so renderers can pick
+        it up without changing the signal path.
         """
         if self._is_shutting_down or output is None:
             return
         artifact = MaterialStateArtifact(
             material_state=output,
-            stock_uid=stock_item.uid,
+            stock_uid=item.uid,
             generation_id=generation_id,
         )
-        old = self._material_state_handles.pop(stock_item.uid, None)
+        old = self._material_state_handles.pop(item.uid, None)
         if old is not None:
             self._store.release(old)
         handle = self._store.put(artifact, "material")
-        self._material_state_handles[stock_item.uid] = handle
+        self._material_state_handles[item.uid] = handle
         self.material_state_ready.send(
             self,
-            stock_item=stock_item,
+            item=item,
             handle=handle,
             generation_id=generation_id,
         )

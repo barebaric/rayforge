@@ -28,7 +28,7 @@ from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.contour import ContourSpec
 from raygeo.ops.axis import Axis
 from raygeo.ops.convert import Encoder, GcodeSpec
-from raygeo.ops.material.spec import MaterialFoldSpec
+from raygeo.ops.material.spec import CylinderStock, MaterialFoldSpec
 from raygeo.ops.part import Part
 from raygeo.pipeline.execute import execute_stages
 from raygeo.pipeline.request import NodeRequest
@@ -1862,3 +1862,147 @@ def test_existing_node_count_unchanged_with_stock(isolated_machine):
         n.key for n in with_stock if not n.key.startswith("stock:")
     ]
     assert len(non_stock_keys) == len(no_stock)
+
+
+# ----------------------------------------------------------------------
+# Rotary layer fold nodes
+# ----------------------------------------------------------------------
+
+
+def _with_default_rotary(machine) -> RotaryModule:
+    module = RotaryModule()
+    module.max_workpiece_length = 300.0
+    machine.rotary_modules[module.uid] = module
+    machine.default_rotary_module_uid = module.uid
+    return module
+
+
+def _make_doc_with_rotary_wp(step: _TestStep, wp: WorkPiece) -> Doc:
+    """A Doc whose active layer is rotary-enabled with a workpiece in
+    the unrolled domain."""
+    doc = _make_doc(step, wp)
+    doc.active_layer.rotary_enabled = True
+    doc.active_layer.rotary_diameter = 50.0
+    return doc
+
+
+def test_rotary_layer_emits_fold_node(isolated_machine):
+    """A rotary layer with an intersecting workpiece emits a fold node
+    keyed by the layer's uid."""
+    _with_default_rotary(isolated_machine)
+    step = _TestStep(name="s1")
+    wp = _wp_with_geometry()
+    doc = _make_doc_with_rotary_wp(step, wp)
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+    sk = stock_key(doc.active_layer.uid)
+    assert sk in [n.key for n in nodes]
+
+
+def test_rotary_fold_node_uses_cylinder_stock(isolated_machine):
+    """The rotary fold node's stage is a ``MaterialFoldSpec`` against
+    a ``CylinderStock`` spanning the module's max workpiece length."""
+    module = _with_default_rotary(isolated_machine)
+    step = _TestStep(name="s1")
+    wp = _wp_with_geometry()
+    doc = _make_doc_with_rotary_wp(step, wp)
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+    sk = stock_key(doc.active_layer.uid)
+    spec = next(n for n in nodes if n.key == sk).stage
+    assert isinstance(spec, MaterialFoldSpec)
+    assert isinstance(spec.stock, CylinderStock)
+    assert spec.stock.diameter == 50.0
+    assert spec.stock.length == module.max_workpiece_length
+    near_key = workpiece_key(wp.uid, step.uid)
+    assert {e.source_key for e in spec.entries} == {near_key}
+
+
+def test_rotary_fold_node_skipped_without_module(isolated_machine):
+    """Without a default rotary module, no rotary fold node is
+    emitted even when a layer is rotary-enabled."""
+    step = _TestStep(name="s1")
+    wp = _wp_with_geometry()
+    doc = _make_doc_with_rotary_wp(step, wp)
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+    sk = stock_key(doc.active_layer.uid)
+    assert sk not in [n.key for n in nodes]
+
+
+def test_rotary_fold_node_includes_far_workpieces(isolated_machine):
+    """Workpieces far from the unrolled domain still contribute fold
+    entries: image workpieces may not resolve world geometry, and the
+    fold's raster sampling is harmless for misses."""
+    _with_default_rotary(isolated_machine)
+    step = _TestStep(name="s1")
+    wp = _wp_with_geometry()
+    wp.matrix = Matrix.translation(10000.0, 10000.0)
+    doc = _make_doc_with_rotary_wp(step, wp)
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+    sk = stock_key(doc.active_layer.uid)
+    spec = next(n for n in nodes if n.key == sk).stage
+    assert {e.source_key for e in spec.entries} == {
+        workpiece_key(wp.uid, step.uid)
+    }
+
+
+def test_flat_stock_node_not_emitted_for_rotary_layer(isolated_machine):
+    """Rotary layers don't emit flat-stock keys and vice versa."""
+    _with_default_rotary(isolated_machine)
+    step = _TestStep(name="s1")
+    wp = _wp_with_geometry()
+    doc = _make_doc_with_rotary_wp(step, wp)
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+    stock_keys = [n.key for n in nodes if n.key.startswith("stock:")]
+    assert stock_keys == [stock_key(doc.active_layer.uid)]
+
+
+def test_rotary_fold_executes_end_to_end(
+    contour_step_class, test_machine_and_config
+):
+    """A rotary layer's fold node runs through ``execute_stages`` and
+    produces a cylindrical material state."""
+    machine, context = test_machine_and_config
+    module = RotaryModule()
+    module.max_workpiece_length = 300.0
+    machine.rotary_modules[module.uid] = module
+    machine.default_rotary_module_uid = module.uid
+
+    step = contour_step_class.create(context, name="cut")
+    geo = Geometry()
+    geo.move_to(0.0, 0.0)
+    geo.line_to(10.0, 0.0)
+    geo.line_to(10.0, 10.0)
+    geo.line_to(0.0, 10.0)
+    geo.close_path()
+    wp = WorkPiece(name="rect")
+    wp._edited_boundaries = geo
+    wp.set_size(50.0, 30.0)
+    doc = _make_doc(step, wp)
+    doc.active_layer.rotary_enabled = True
+    doc.active_layer.rotary_diameter = 50.0
+
+    nodes = IntentBuilder(machine=machine, generation_id=1).build(doc)
+    sk = stock_key(doc.active_layer.uid)
+
+    completed = []
+
+    def on_completed(node):
+        completed.append(node)
+
+    assert sk in [n.key for n in nodes], [n.key for n in nodes]
+
+    execute_stages(nodes, on_completed)
+
+    fold_result = next(c for c in completed if c.key == sk)
+    assert fold_result.error is None, fold_result.error
+    state = fold_result.output
+    assert state.profile == "cylindrical"
+    assert state.surface_map is not None
+    assert state.grid is not None
+    # Arc axis centered on the machine origin (diameter 50).
+    assert state.grid.origin_mm[0] == 0.0
+    assert state.grid.origin_mm[1] == pytest.approx(-np.pi * 25.0)
