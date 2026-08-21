@@ -88,6 +88,12 @@ class Config:
         self.cache_budget_bytes: int = 2 * 1024 * 1024 * 1024
         # Language preference: None = system default, or a code like "de"
         self.language: str | None = None
+        # Default stock material UID: None = use the bundled fallback
+        # material (oak). When the user picks a material in the
+        # settings, its UID is stored here.
+        self.default_stock_material_uid: str | None = None
+        # Default stock thickness in mm, applied to new stock assets.
+        self.default_stock_thickness_mm: float = 18.0
         self.changed = Signal()
 
     def set_machine(self, machine: Machine | None):
@@ -195,6 +201,24 @@ class Config:
         self.language = language
         self.changed.send(self)
 
+    def set_default_stock_material(self, uid: str | None):
+        """Sets the default stock material UID.
+
+        Args:
+            uid: Material UID, or None to use the bundled fallback.
+        """
+        if self.default_stock_material_uid == uid:
+            return
+        self.default_stock_material_uid = uid
+        self.changed.send(self)
+
+    def set_default_stock_thickness(self, thickness_mm: float):
+        """Sets the default stock thickness in mm."""
+        if self.default_stock_thickness_mm == thickness_mm:
+            return
+        self.default_stock_thickness_mm = thickness_mm
+        self.changed.send(self)
+
     def set_usage_consent(self, consent: bool):
         """Sets the usage tracking consent preference."""
         new_value = ""
@@ -249,6 +273,8 @@ class Config:
             "import_dpi": self.import_dpi,
             "cache_budget_bytes": self.cache_budget_bytes,
             "language": self.language,
+            "default_stock_material_uid": self.default_stock_material_uid,
+            "default_stock_thickness_mm": self.default_stock_thickness_mm,
         }
 
     @classmethod
@@ -320,6 +346,16 @@ class Config:
 
         # Load language preference (None = system default)
         config.language = data.get("language", None)
+
+        # Load default stock material (None = bundled fallback)
+        config.default_stock_material_uid = data.get(
+            "default_stock_material_uid", None
+        )
+
+        # Load default stock thickness
+        config.default_stock_thickness_mm = data.get(
+            "default_stock_thickness_mm", 18.0
+        )
 
         # Get the machine by ID. add fallbacks in case the machines
         # no longer exist.
