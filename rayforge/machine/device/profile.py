@@ -1,6 +1,9 @@
+import hashlib
+import json
 import logging
 import shutil
-from dataclasses import asdict, dataclass
+from collections.abc import Callable
+from dataclasses import asdict, dataclass, field
 from dataclasses import fields as dc_fields
 from gettext import gettext as _
 from pathlib import Path
@@ -40,6 +43,7 @@ class DeviceMeta:
     model: str = ""
     description: str = ""
     api_version: int = CURRENT_API_VERSION
+    id: str = ""
 
 
 _DEVICE_META_FIELDS = frozenset(f.name for f in dc_fields(DeviceMeta))
@@ -214,29 +218,205 @@ def _copy_model_ref(
     data["model_path"] = filename
 
 
+@dataclass(frozen=True)
+class SettingBinding:
+    """
+    Describes how a :class:`MachineConfig` field maps onto a live
+    :class:`Machine`, so profile updates can be diffed and applied.
+
+    Declared per-field in ``MachineConfig`` via the ``setting`` field
+    metadata; fields without a binding are not reviewable (connection
+    info, ID-bearing objects, ...).
+    """
+
+    section: str
+    label: str
+    get: Callable[["Machine"], Any]
+    apply: Callable[["Machine", Any], None]
+
+
+def _binding(
+    section: str,
+    label: str,
+    get: Callable[["Machine"], Any],
+    apply: Callable[["Machine", Any], None],
+) -> dict[str, Any]:
+    return {"setting": SettingBinding(section, label, get, apply)}
+
+
+def _get_capabilities(machine: "Machine") -> list[str] | None:
+    if machine._explicit_capabilities is None:
+        return None
+    return sorted(c.value for c in machine._explicit_capabilities)
+
+
 @dataclass
 class MachineConfig:
     driver: str | None = None
     driver_args: dict[str, Any] | None = None
     driver_config: dict[str, Any] | None = None
-    gcode_precision: int | None = None
-    supports_arcs: bool | None = None
-    supports_curves: bool | None = None
-    axis_extents: tuple[float, float] | None = None
-    work_margins: tuple[float, float, float, float] | None = None
-    soft_limits: tuple[float, float, float, float] | None = None
-    origin: Origin | None = None
-    panel_orientation: PanelOrientation | None = None
-    max_travel_speed: int | None = None
-    max_cut_speed: int | None = None
-    home_on_start: bool | None = None
-    acceleration: int | None = None
-    single_axis_homing_enabled: bool | None = None
-    has_z: bool | None = None
-    rotary_enabled_default: bool | None = None
-    unit_system: UnitSystem | None = None
+
+    gcode_precision: int | None = field(
+        default=None,
+        metadata=_binding(
+            _("G-code"),
+            _("G-code Precision"),
+            lambda m: m.gcode_precision,
+            lambda m, v: setattr(m, "gcode_precision", v),
+        ),
+    )
+    supports_arcs: bool | None = field(
+        default=None,
+        metadata=_binding(
+            _("G-code"),
+            _("Supports Arcs (G2/G3)"),
+            lambda m: m.supports_arcs,
+            lambda m, v: setattr(m, "supports_arcs", v),
+        ),
+    )
+    supports_curves: bool | None = field(
+        default=None,
+        metadata=_binding(
+            _("G-code"),
+            _("Supports Curves"),
+            lambda m: m.supports_curves,
+            lambda m, v: setattr(m, "supports_curves", v),
+        ),
+    )
+
+    axis_extents: tuple[float, float] | None = field(
+        default=None,
+        metadata=_binding(
+            _("Hardware"),
+            _("Work Area Size (X × Y)"),
+            lambda m: m.axis_extents,
+            lambda m, v: m.set_axis_extents(*v),
+        ),
+    )
+    work_margins: tuple[float, float, float, float] | None = field(
+        default=None,
+        metadata=_binding(
+            _("Hardware"),
+            _("Work Margins"),
+            lambda m: m.work_margins,
+            lambda m, v: m.set_work_margins(*v),
+        ),
+    )
+    soft_limits: tuple[float, float, float, float] | None = field(
+        default=None,
+        metadata=_binding(
+            _("Hardware"),
+            _("Soft Limits"),
+            lambda m: m.soft_limits,
+            lambda m, v: m.set_soft_limits(*v),
+        ),
+    )
+    origin: Origin | None = field(
+        default=None,
+        metadata=_binding(
+            _("Hardware"),
+            _("Coordinate Origin"),
+            lambda m: m.origin,
+            lambda m, v: setattr(m, "origin", v),
+        ),
+    )
+    panel_orientation: PanelOrientation | None = field(
+        default=None,
+        metadata=_binding(
+            _("Hardware"),
+            _("Panel Orientation"),
+            lambda m: m.panel_orientation,
+            lambda m, v: m.set_panel_orientation(v),
+        ),
+    )
+    has_z: bool | None = field(
+        default=None,
+        metadata=_binding(
+            _("Hardware"),
+            _("Has Z-Axis"),
+            lambda m: m.has_z_axis,
+            lambda m, v: m.set_has_z_axis(v),
+        ),
+    )
+
+    max_travel_speed: int | None = field(
+        default=None,
+        metadata=_binding(
+            _("Speeds"),
+            _("Max Travel Speed"),
+            lambda m: m.max_travel_speed,
+            lambda m, v: setattr(m, "max_travel_speed", v),
+        ),
+    )
+    max_cut_speed: int | None = field(
+        default=None,
+        metadata=_binding(
+            _("Speeds"),
+            _("Max Cut Speed"),
+            lambda m: m.max_cut_speed,
+            lambda m, v: setattr(m, "max_cut_speed", v),
+        ),
+    )
+    acceleration: int | None = field(
+        default=None,
+        metadata=_binding(
+            _("Speeds"),
+            _("Acceleration"),
+            lambda m: m.acceleration,
+            lambda m, v: setattr(m, "acceleration", v),
+        ),
+    )
+
+    home_on_start: bool | None = field(
+        default=None,
+        metadata=_binding(
+            _("Behavior"),
+            _("Home on Start"),
+            lambda m: m.home_on_start,
+            lambda m, v: setattr(m, "home_on_start", v),
+        ),
+    )
+    single_axis_homing_enabled: bool | None = field(
+        default=None,
+        metadata=_binding(
+            _("Behavior"),
+            _("Single-Axis Homing"),
+            lambda m: m.single_axis_homing_enabled,
+            lambda m, v: setattr(m, "single_axis_homing_enabled", v),
+        ),
+    )
+    rotary_enabled_default: bool | None = field(
+        default=None,
+        metadata=_binding(
+            _("Behavior"),
+            _("Rotary Enabled by Default"),
+            lambda m: m.rotary_enabled_default,
+            lambda m, v: m.set_rotary_enabled_default(v),
+        ),
+    )
+
+    unit_system: UnitSystem | None = field(
+        default=None,
+        metadata=_binding(
+            _("Units"),
+            _("Unit System"),
+            lambda m: m.unit_system,
+            lambda m, v: setattr(m, "unit_system", v),
+        ),
+    )
+
     heads: list[dict[str, Any]] | None = None
-    capabilities: list[str] | None = None
+    capabilities: list[str] | None = field(
+        default=None,
+        metadata=_binding(
+            _("General"),
+            _("Capabilities"),
+            _get_capabilities,
+            lambda m, v: m.set_explicit_capabilities(
+                Machine._parse_capabilities(v)
+            ),
+        ),
+    )
     hookmacros: list[dict[str, Any]] | None = None
     rotary_modules: list[dict[str, Any]] | None = None
     nogo_zones: list[dict[str, Any]] | None = None
@@ -349,6 +529,25 @@ class DeviceProfile:
     def name(self) -> str:
         return self.meta.name
 
+    @property
+    def id(self) -> str:
+        """Stable identifier used to link machines to this profile."""
+        return self.meta.id or self.meta.name
+
+    def content_hash(self) -> str:
+        """
+        Returns a hash over the profile's machine and dialect settings.
+
+        Machines store the hash current at their last review so profile
+        updates can be detected without keeping a full snapshot.
+        """
+        payload = {
+            "machine": self.machine_config.to_dict(),
+            "dialect": self.dialect_config,
+        }
+        canonical = json.dumps(payload, sort_keys=True, default=str)
+        return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
     @classmethod
     def from_path(cls, path: Path) -> "DeviceProfile":
         """
@@ -383,6 +582,8 @@ class DeviceProfile:
             )
 
         meta = parse_meta(data, manifest_path)
+        if not meta.id:
+            meta.id = path.name
         machine_config = parse_machine_config(data, manifest_path)
 
         driver_uses_gcode = True
@@ -412,6 +613,8 @@ class DeviceProfile:
         m = Machine(context)
         m.name = self.meta.name
         cfg = self.machine_config
+        m.source_profile_id = self.id
+        m.reviewed_profile_hash = self.content_hash()
 
         context.machine_mgr.add_machine(m)
 
@@ -521,9 +724,12 @@ def export_machine_to_dir(
     dest_dir.mkdir(parents=True, exist_ok=True)
 
     mc = MachineConfig.from_machine(machine)
+    device_section: dict[str, Any] = {"name": machine.name}
+    if machine.source_profile_id:
+        device_section["id"] = machine.source_profile_id
     device_data = {
         "api_version": CURRENT_API_VERSION,
-        "device": {"name": machine.name},
+        "device": device_section,
         "machine": mc.to_dict(),
     }
 

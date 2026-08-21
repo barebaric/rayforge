@@ -649,6 +649,8 @@ class TestExportMachine:
         machine.rotary_modules = {}
         machine.hookmacros = {}
         machine.nogo_zones = {}
+        machine.source_profile_id = None
+        machine.has_z_axis = False
         machine.dialect = GcodeDialect.from_dict({"label": name})
         for k, v in overrides.items():
             setattr(machine, k, v)

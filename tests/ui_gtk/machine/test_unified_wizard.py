@@ -236,6 +236,32 @@ def test_source_selected_other_goes_to_controller(ui_context_initializer):
 
 
 @pytest.mark.ui
+def test_clone_profile_preserves_all_config_fields(ui_context_initializer):
+    """The working-profile clone must carry every MachineConfig field
+    (e.g. has_z) and the stable meta id, so machines created from the
+    wizard match direct profile creation."""
+    from dataclasses import fields as dc_fields
+
+    src = _profile()
+    src.meta.id = "test-machine"
+    src.machine_config.has_z = False
+    src.machine_config.max_cut_speed = 4242
+
+    wizard = _make_wizard(ui_context_initializer)
+    cloned = wizard._clone_profile(src)
+
+    for f in dc_fields(MachineConfig):
+        assert getattr(cloned.machine_config, f.name) == getattr(
+            src.machine_config, f.name
+        ), f"clone dropped field '{f.name}'"
+    assert cloned.meta.id == "test-machine"
+    assert cloned.dialect_config == src.dialect_config
+    assert isinstance(cloned.meta, DeviceMeta)
+    # The review page renames the machine via profile.meta.name.
+    cloned.meta.name = "Renamed Machine"
+
+
+@pytest.mark.ui
 def test_known_profile_skips_ai_hw_head_pages(ui_context_initializer):
     """A picked profile carries trusted specs, so after Connection the
     wizard skips probe, AI, hardware and head — landing on Rotary.

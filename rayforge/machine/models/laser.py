@@ -3,7 +3,7 @@ from gettext import gettext as _
 from typing import Any, Optional
 
 from ...core.capability import MachineCapability
-from .head import _HEAD_SERIALIZED_KEYS, Head
+from .head import _HEAD_SERIALIZED_KEYS, Head, head_setting
 
 
 class LaserType(Enum):
@@ -47,25 +47,55 @@ class LaserHead(Head):
 
     HEAD_TYPE: str = "LaserHead"
 
+    # Reviewable settings. The ``head_setting`` markers carry the
+    # review label and the conversion to the serialized (profile YAML)
+    # value domain; the instance values live in the 0-1 percent domain.
+    max_power = head_setting(_("Max Power"))
+    frame_power_percent = head_setting(
+        _("Frame Power"),
+        to_yaml=lambda v: v * 100,
+        from_yaml=lambda v: v / 100.0,
+    )
+    focus_power_percent = head_setting(
+        _("Focus Power"),
+        to_yaml=lambda v: v * 100,
+        from_yaml=lambda v: v / 100.0,
+    )
+    frame_speed = head_setting(_("Frame Speed"))
+    frame_repeat_count = head_setting(_("Frame Repeat Count"))
+    frame_corner_pause = head_setting(_("Frame Corner Pause"))
+    spot_size_mm = head_setting(_("Spot Size (mm)"))
+    focal_distance = head_setting(_("Focal Distance"))
+    laser_type = head_setting(
+        _("Laser Type"),
+        to_yaml=lambda v: v.value,
+        from_yaml=LaserType,
+    )
+    pwm_frequency = head_setting(_("PWM Frequency"))
+    max_pwm_frequency = head_setting(_("Max PWM Frequency"))
+    pulse_width = head_setting(_("Pulse Width"))
+    min_pulse_width = head_setting(_("Min Pulse Width"))
+    max_pulse_width = head_setting(_("Max Pulse Width"))
+
     def __init__(self):
         super().__init__()
-        self.name: str = _("Laser Head")
-        self.max_power: int = 1000  # Max power (0-1000 for GRBL)
-        self.frame_power_percent: float = 0  # in percent (0-1.0)
-        self.focus_power_percent: float = 0  # in percent (0-1.0)
-        self.frame_speed: int = 0  # mm/min, 0 = use machine max travel speed
-        self.frame_repeat_count: int = 20
-        self.frame_corner_pause: float = 0  # seconds
-        self.spot_size_mm: tuple[float, float] = 0.1, 0.1  # millimeters
+        self.name = _("Laser Head")
+        self.max_power = 1000  # Max power (0-1000 for GRBL)
+        self.frame_power_percent = 0  # in percent (0-1.0)
+        self.focus_power_percent = 0  # in percent (0-1.0)
+        self.frame_speed = 0  # mm/min, 0 = use machine max travel speed
+        self.frame_repeat_count = 20
+        self.frame_corner_pause = 0  # seconds
+        self.spot_size_mm = 0.1, 0.1  # millimeters
         self.cut_color: str = "#ff00ff"  # Magenta for cut
         self.raster_color: str = "#000000"  # Black for raster
-        self.focal_distance: float = 0.0
-        self.laser_type: LaserType = LaserType.DIODE
-        self.pwm_frequency: int = 500
-        self.max_pwm_frequency: int = 5000
-        self.pulse_width: int = 50
-        self.min_pulse_width: int = 5
-        self.max_pulse_width: int = 500
+        self.focal_distance = 0.0
+        self.laser_type = LaserType.DIODE
+        self.pwm_frequency = 500
+        self.max_pwm_frequency = 5000
+        self.pulse_width = 50
+        self.min_pulse_width = 5
+        self.max_pulse_width = 500
 
     @property
     def machine_capability(self) -> MachineCapability:
