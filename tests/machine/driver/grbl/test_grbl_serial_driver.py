@@ -278,6 +278,51 @@ class TestGrblSerialDriver:
         await run_task
 
     @pytest.mark.asyncio
+    async def test_run_raw_sends_realtime_commands_directly(
+        self, connected_driver: GrblSerialDriver, mock_serial_transport
+    ):
+        """GRBL realtime characters (~, !, ?) are executed by the
+        firmware on receipt and never acknowledged, so they must
+        bypass the streaming protocol and must not start a job (a
+        console '~' that clobbered job state once wedged a paused
+        machine for good)."""
+        driver = connected_driver
+        driver.on_serial_data_received(
+            mock_serial_transport, b"<Idle|MPos:0,0,0|FS:0,0>\r\n"
+        )
+        await asyncio.sleep(0)
+        mock_serial_transport.send.reset_mock()
+
+        await driver.run_raw("~")
+
+        sent = [c.args[0] for c in mock_serial_transport.send.await_args_list]
+        assert b"~" in sent
+        assert driver._job_running is False
+        assert driver.state.status == DeviceStatus.IDLE
+
+    @pytest.mark.asyncio
+    async def test_run_raw_streams_mixed_realtime_and_gcode(
+        self, connected_driver: GrblSerialDriver, mock_serial_transport
+    ):
+        """Realtime lines are sent directly while remaining lines are
+        streamed as a regular job."""
+        driver = connected_driver
+        mock_serial_transport.send.reset_mock()
+
+        run_task = asyncio.create_task(driver.run_raw("G0 X10\n~\n"))
+        await asyncio.sleep(0.01)
+
+        sent = [c.args[0] for c in mock_serial_transport.send.await_args_list]
+        assert b"~" in sent
+        assert b"G0 X10\n" in sent
+        assert driver._job_running is True
+        assert driver.state.status == DeviceStatus.RUN
+
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
+        await run_task
+        assert driver._job_running is False
+
+    @pytest.mark.asyncio
     async def test_run_streams_gcode_and_completes(
         self, connected_driver: GrblSerialDriver, mock_serial_transport, doc
     ):

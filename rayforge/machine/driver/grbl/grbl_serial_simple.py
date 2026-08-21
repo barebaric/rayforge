@@ -55,6 +55,7 @@ from .grbl_util import (
     parse_grbl_parser_state,
     parse_state,
     prb_re,
+    split_realtime_commands,
     strip_gcode_comments,
     wcs_re,
 )
@@ -528,14 +529,30 @@ class GrblSerialSimpleDriver(Driver):
             logger.warning(f"Job terminated: {e}")
 
     async def run_raw(self, machine_code: str) -> None:
+        """
+        Executes a raw G-code string using the ping-pong streaming
+        protocol.
+
+        GRBL realtime commands (?, ~, !) are sent directly instead:
+        the firmware executes them on receipt and never acknowledges
+        them, so streaming them as gcode would wedge the protocol.
+        """
         lines = [
             line.strip() for line in machine_code.splitlines() if line.strip()
         ]
-        if not lines:
+        gcode_lines, realtime_lines = split_realtime_commands(lines)
+
+        for line in realtime_lines:
+            if not self._transport or not self._transport.is_connected:
+                raise ConnectionError("Serial transport not initialized")
+            logger.info(line, extra=self._log_extra("USER_COMMAND"))
+            await self._transport.send(line.encode("utf-8"))
+
+        if not gcode_lines:
             return
         self._start_job()
         try:
-            await self._stream_gcode_ping_pong(lines)
+            await self._stream_gcode_ping_pong(gcode_lines)
         except DeviceConnectionError as e:
             logger.warning(f"Raw G-code terminated: {e}")
 
