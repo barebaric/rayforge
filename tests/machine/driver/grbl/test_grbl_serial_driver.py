@@ -286,6 +286,45 @@ class TestGrblSerialDriver:
         await run_task
 
     @pytest.mark.asyncio
+    async def test_status_polling_continues_during_buffer_stall(
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
+    ):
+        """Status polls must not starve while the streamer waits for
+        buffer space: the gcode send holds _cmd_lock for the entire
+        wait, so polling for the lock would leave the driver state
+        stale (e.g. HOLD unobserved while a job is paused)."""
+        driver = connected_driver
+        driver._poll_status_while_running = True
+
+        line1 = b"G1 X10 Y10 " + b"A" * 110 + b"\n"
+        line2 = b"G1 X20 Y20\n"
+        assert len(line1) + len(line2) > 127
+
+        run_task = asyncio.create_task(
+            driver.run_raw(line1.decode() + line2.decode())
+        )
+
+        # Wait for line1 to be sent; the streamer must now be blocked
+        # inside send_gcode(), holding _cmd_lock while waiting for
+        # buffer space for line2.
+        await asyncio.sleep(0.05)
+        mock_serial_transport.send.assert_called_once_with(line1)
+        assert driver._job_running is True
+
+        mock_serial_transport.send.reset_mock()
+        await asyncio.sleep(1.2)
+        mock_serial_transport.send.assert_any_call(b"?")
+
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
+        await asyncio.sleep(0.01)
+        mock_serial_transport.send.assert_called_with(line2)
+
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
+        await run_task
+
+    @pytest.mark.asyncio
     async def test_run_handles_mid_job_error(
         self,
         connected_driver: GrblSerialDriver,

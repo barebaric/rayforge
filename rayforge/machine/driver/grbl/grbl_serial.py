@@ -428,16 +428,24 @@ class GrblSerialDriver(Driver):
                         await asyncio.sleep(0.5)
                         continue
 
-                    async with self._cmd_lock:
-                        try:
-                            payload = b"?"
-                            await transport.send_poll(payload)
-                        except ConnectionError as e:
-                            logger.warning(
-                                "Connection lost while sending poll"
-                                f" command: {e}"
-                            )
-                            break
+                    # Deliberately not taking _cmd_lock here: a gcode
+                    # send holds the lock for the whole buffer-space
+                    # wait, including stall retries, which can last a
+                    # long time while a job is paused. Polls are
+                    # realtime bytes that bypass the GRBL RX buffer
+                    # and its accounting, so they are safe to send
+                    # without the lock (same as other realtime
+                    # commands sent via _send_realtime). Blocking on
+                    # the lock here would starve status polling, so
+                    # the driver state would go stale.
+                    try:
+                        payload = b"?"
+                        await transport.send_poll(payload)
+                    except ConnectionError as e:
+                        logger.warning(
+                            f"Connection lost while sending poll command: {e}"
+                        )
+                        break
                     await asyncio.sleep(0.5)
 
                     if not self.keep_running or not transport.is_connected:
