@@ -114,7 +114,8 @@ class TestRecipeVarsetBehavior:
 
     def test_contour_step_rows_match_dialog_order(self):
         """The contour dialog adds CutSideRow, OffsetRow, CutOrderRow,
-        RemoveInnerPathsRow, OvercutRow, ThresholdRow, RescanContentRow."""
+        RemoveInnerPathsRow, OvercutRow, RescanContentRow,
+        ThresholdRow (shown only when rescanning)."""
         keys = [var.key for var in ContourStep.recipe_varset()]
         expected = [
             "cut_side",
@@ -122,8 +123,8 @@ class TestRecipeVarsetBehavior:
             "cut_order",
             "remove_inner_paths",
             "overcut",
-            "threshold",
             "override_threshold",
+            "threshold",
         ]
         assert keys[-len(expected) :] == expected
 

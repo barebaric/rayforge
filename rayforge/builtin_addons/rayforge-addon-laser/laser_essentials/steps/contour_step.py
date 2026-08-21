@@ -93,6 +93,15 @@ class ContourStep(LaserStep):
                     min_val=0.0,
                     max_val=100.0,
                 ),
+                BoolVar(
+                    key="override_threshold",
+                    label=_("Rescan Content"),
+                    description=_(
+                        "Ignore source geometry and re-trace within "
+                        "the workpiece"
+                    ),
+                    default=False,
+                ),
                 FloatVar(
                     key="threshold",
                     label=_("Threshold"),
@@ -103,15 +112,6 @@ class ContourStep(LaserStep):
                     min_val=0.0,
                     max_val=1.0,
                     visible_when=lambda v: v.get("override_threshold", False),
-                ),
-                BoolVar(
-                    key="override_threshold",
-                    label=_("Rescan Content"),
-                    description=_(
-                        "Ignore source geometry and re-trace within "
-                        "the workpiece"
-                    ),
-                    default=False,
                 ),
             ]
         )
@@ -132,6 +132,23 @@ class ContourStep(LaserStep):
             return CutSide[self.cut_side].label()
         except (KeyError, TypeError):
             return None
+
+    def get_cache_params(self) -> dict:
+        """Cache params must cover the raster fallback tracing.
+
+        When "Rescan Content" is enabled, the Part is re-traced from
+        pixels using the threshold, so either setting changing must
+        invalidate the workpiece compute cache even though the
+        assembler spec itself is unchanged.
+        """
+        params = super().get_cache_params()
+        params.update(
+            {
+                "override_threshold": self.override_threshold,
+                "threshold": self.threshold,
+            }
+        )
+        return params
 
     def get_assembler_kwargs(
         self,
