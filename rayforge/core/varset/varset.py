@@ -132,7 +132,6 @@ class VarSet:
         var.definition_changed.connect(
             self._on_child_var_definition_changed, weak=False
         )
-        logger.debug(f"Emitting signal: var_added for var '{var.key}'")
         self.var_added.send(self, var=var)
 
     def remove(self, key: str) -> Var | None:
@@ -147,7 +146,6 @@ class VarSet:
             var.definition_changed.disconnect(
                 self._on_child_var_definition_changed
             )
-            logger.debug(f"Emitting signal: var_removed for var '{var.key}'")
             self.var_removed.send(self, var=var)
         return var
 
@@ -265,7 +263,6 @@ class VarSet:
             var._varset = None
         self._vars.clear()
         self._order.clear()
-        logger.debug("Emitting signal: cleared")
         self.cleared.send(self)
 
     def validate(self):
