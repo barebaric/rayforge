@@ -18,6 +18,10 @@ from ..core.registration import call_registration_hooks
 from ..core.undo import Command, HistoryManager
 from ..doceditor.editor import DocEditor
 from ..machine.cmd import MachineCmd
+from ..machine.device.profile_diff import (
+    find_outdated_profiles,
+    split_reviewable,
+)
 from ..machine.driver.driver import DeviceState, DeviceStatus
 from ..machine.driver.dummy import NoDeviceDriver
 from ..machine.models.machine import Machine
@@ -50,6 +54,7 @@ from .doceditor.missing_features_dialog import MissingFeaturesDialog
 from .doceditor.property_providers import register_builtin_providers
 from .doceditor.workflow_view import WorkflowView
 from .machine.machine_dropdown import MachineDropdown
+from .machine.profile_review_dialog import ProfileReviewDialog
 from .machine.settings_dialog import MachineSettingsDialog
 from .main_menu import MainMenu
 from .project_cmd import ProjectCmd
@@ -560,6 +565,43 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Trigger the non-blocking check for app version updates
         self.app_update_checker.check_on_startup()
+
+        # Check configured machines against their source device profiles
+        GLib.idle_add(self._check_profile_updates)
+
+    def _check_profile_updates(self) -> bool:
+        """
+        Presents the profile-review dialog for machines whose source
+        device profile changed since their last review. Pairs without
+        any setting difference are marked reviewed silently.
+        """
+        context = get_context()
+        profiles_by_id = {
+            p.id: p for p in context.device_profile_mgr.get_all()
+        }
+        outdated = find_outdated_profiles(
+            context.machine_mgr.get_machines(), profiles_by_id
+        )
+        reviewable, nothing_to_do = split_reviewable(outdated)
+        for machine, profile in nothing_to_do:
+            machine.reviewed_profile_hash = profile.content_hash()
+            machine.changed.send(machine)
+        if reviewable:
+            self._present_profile_reviews(reviewable)
+        return GLib.SOURCE_REMOVE
+
+    def _present_profile_reviews(self, queue):
+        """Shows review dialogs sequentially for outdated machines."""
+        if not queue:
+            return
+        machine, profile = queue[0]
+        dialog = ProfileReviewDialog(
+            machine,
+            profile,
+            transient_for=self,
+            on_closed=lambda: self._present_profile_reviews(queue[1:]),
+        )
+        dialog.present()
 
     def _on_click_to_zero_mode_changed(self, sender, *, active: bool):
         """Handle click-to-zero mode toggle from control panel."""

@@ -12,7 +12,9 @@ Replaces the legacy ``MachineProfileSelectorDialog`` + ``ConfigWizard``
 pair.
 """
 
+import copy
 import logging
+from dataclasses import replace as dc_replace
 from gettext import gettext as _
 from typing import Any
 
@@ -24,11 +26,7 @@ from ...camera.models.camera import Camera
 from ...camera.v4l import display_name
 from ...context import get_context
 from ...core.ai.spec_lookup import is_ai_configured
-from ...machine.device.profile import (
-    DeviceMeta,
-    DeviceProfile,
-    MachineConfig,
-)
+from ...machine.device.profile import DeviceProfile
 from ...machine.driver import get_driver_cls
 from ...machine.driver.dummy import NoDeviceDriver
 from ..camera.wizard.wizard import CameraWizard
@@ -601,7 +599,7 @@ class UnifiedWizard(PatchedDialogWindow):
     def _clone_profile(self, src: DeviceProfile) -> DeviceProfile:
         """Adopt an existing profile's data into our working copy."""
         return DeviceProfile(
-            meta=_clone_meta(src),
+            meta=_clone_meta(src.meta),
             machine_config=_clone_machine_config(src.machine_config),
             dialect_config=dict(src.dialect_config),
             source_dir=src.source_dir,
@@ -615,79 +613,12 @@ class UnifiedWizard(PatchedDialogWindow):
 
 
 def _clone_meta(src) -> Any:
-    return DeviceMeta(
-        name=src.name,
-        vendor=src.meta.vendor,
-        model=src.meta.model,
-        description=src.meta.description,
-        api_version=src.meta.api_version,
-    )
+    return dc_replace(src)
 
 
 def _clone_machine_config(src) -> Any:
     """Deep-copy a MachineConfig into a new mutable instance."""
-    out = MachineConfig()
-    for attr in (
-        "driver",
-        "driver_args",
-        "driver_config",
-        "gcode_precision",
-        "supports_arcs",
-        "supports_curves",
-        "axis_extents",
-        "work_margins",
-        "soft_limits",
-        "origin",
-        "panel_orientation",
-        "max_travel_speed",
-        "max_cut_speed",
-        "home_on_start",
-        "acceleration",
-        "single_axis_homing_enabled",
-        "rotary_enabled_default",
-        "unit_system",
-        "heads",
-        "capabilities",
-        "hookmacros",
-        "rotary_modules",
-        "nogo_zones",
-        "cameras",
-    ):
-        value = getattr(src, attr, None)
-        if isinstance(value, dict):
-            value = dict(value)
-        elif isinstance(value, list) and (
-            attr
-            in (
-                "heads",
-                "hookmacros",
-                "rotary_modules",
-                "nogo_zones",
-                "cameras",
-                "capabilities",
-                "driver_args",
-            )
-        ):
-            # Lists of dicts and tuples need to be copied with the
-            # inner structures preserved too.
-            value = _copy_list_of_containers(value)
-        setattr(out, attr, value)
-    return out
-
-
-def _copy_list_of_containers(value: list) -> list:
-    """Shallow-but-not-too-shallow copy of a list of containers."""
-    out = []
-    for item in value:
-        if isinstance(item, dict):
-            out.append(dict(item))
-        elif isinstance(item, list):
-            out.append(_copy_list_of_containers(item))
-        elif isinstance(item, tuple):
-            out.append(tuple(item))
-        else:
-            out.append(item)
-    return out
+    return copy.deepcopy(src)
 
 
 __all__ = ["_STEP_ORDER", "UnifiedWizard"]
