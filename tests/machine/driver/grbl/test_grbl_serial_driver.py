@@ -201,6 +201,25 @@ class TestGrblSerialDriver:
         assert response == ["error:20"]
 
     @pytest.mark.asyncio
+    @pytest.mark.asyncio
+    async def test_set_hold_updates_device_state(
+        self, connected_driver: GrblSerialDriver
+    ):
+        """Pausing must flag the device state as HOLD so the UI can offer a
+        resume, even though status polling is disabled while a job runs and
+        the firmware's HOLD status is never observed."""
+        driver = connected_driver
+        driver._job_running = True
+
+        await driver.set_hold(True)
+        assert driver._is_holding is True
+        assert driver.state.status == DeviceStatus.HOLD
+
+        await driver.set_hold(False)
+        assert driver._is_holding is False
+        assert driver.state.status == DeviceStatus.RUN
+
+    @pytest.mark.asyncio
     async def test_run_streams_gcode_and_completes(
         self, connected_driver: GrblSerialDriver, mock_serial_transport, doc
     ):
