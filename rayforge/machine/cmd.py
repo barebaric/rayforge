@@ -79,7 +79,7 @@ class MachineCmd:
         a JobMonitor for progress reporting.
         """
         if self._current_monitor:
-            msg = "Tried to start a job while another is running."
+            msg = _("Tried to start a job while another is running.")
             logger.warning(msg)
             # A running job is a failure condition for starting a new one.
             raise RuntimeError(msg)
@@ -263,13 +263,12 @@ class MachineCmd:
     async def _start_job(
         self,
         machine: Machine,
-        job_name: str,
         final_job_action: Callable[..., Coroutine],
         on_progress: Callable[[dict], None] | None = None,
     ):
         """
-        Generic, awaitable job starter that orchestrates assembly and
-        execution.
+        Generic, awaitable job executor that orchestrates artifact
+        assembly and execution.
         """
         handle: BaseArtifactHandle | None = None
         artifact_store = self._editor.pipeline.artifact_store
@@ -279,9 +278,7 @@ class MachineCmd:
             handle = await self._editor.pipeline.generate_job_artifact_async()
 
             if not handle:
-                logger.warning(
-                    f"{job_name.capitalize()} job has no operations."
-                )
+                logger.warning("Job has no operations.")
                 return
 
             # 2. Use the safe context manager to acquire and release the
@@ -294,14 +291,8 @@ class MachineCmd:
 
                 await final_job_action(artifact, machine, on_progress)
 
-        except Exception as e:
-            logger.exception(f"Failed to assemble or execute {job_name} job")
-            self._editor.notification_requested.send(
-                self,
-                message=_("{job_name} failed: {error}").format(
-                    job_name=job_name.capitalize(), error=e
-                ),
-            )
+        except Exception:
+            logger.exception("Failed to assemble or execute job")
             # Manually release handle on error if checkout was not entered
             if handle and "artifact" not in locals():
                 artifact_store.release(handle)
@@ -316,12 +307,18 @@ class MachineCmd:
         Asynchronously generates ops and runs a framing job.
         This is an awaitable coroutine.
         """
-        await self._start_job(
-            machine,
-            job_name="framing",
-            final_job_action=self._run_frame_action,
-            on_progress=on_progress,
-        )
+        try:
+            await self._start_job(
+                machine,
+                final_job_action=self._run_frame_action,
+                on_progress=on_progress,
+            )
+        except Exception as e:
+            self._editor.notification_requested.send(
+                self,
+                message=_("Framing failed: {error}").format(error=e),
+            )
+            raise
 
     async def send_job(
         self,
@@ -332,24 +329,25 @@ class MachineCmd:
         Asynchronously generates ops and sends the job to the machine.
         This is an awaitable coroutine.
         """
-        await self._start_job(
-            machine,
-            job_name="sending",
-            final_job_action=self._run_send_action,
-            on_progress=on_progress,
-        )
+        try:
+            await self._start_job(
+                machine,
+                final_job_action=self._run_send_action,
+                on_progress=on_progress,
+            )
+        except Exception as e:
+            self._editor.notification_requested.send(
+                self,
+                message=_("Sending failed: {error}").format(error=e),
+            )
+            raise
 
     def run_send_job(self, machine: Machine):
         """
         Schedules the send_job coroutine to run via the task manager.
         """
         self._editor.task_manager.add_coroutine(
-            lambda ctx: self._start_job(
-                machine,
-                job_name="sending",
-                final_job_action=self._run_send_action,
-                on_progress=None,
-            ),
+            lambda ctx: self.send_job(machine),
             key="send-job",
         )
 
