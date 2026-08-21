@@ -16,6 +16,7 @@ from rayforge.core.workpiece import WorkPiece
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.models.machine_panel import PanelOrientation
 from rayforge.pipeline.intent_builder import (
+    IntentBuilder,
     job_encode_key,
     job_key,
     step_key,
@@ -311,6 +312,38 @@ def test_rotary_panel_error_is_reported(isolated_machine):
         )
     ]
     assert ctrl.intent is not None
+    ctrl.shutdown()
+
+
+def test_unexpected_build_error_completes_job_waiters(
+    monkeypatch, isolated_machine
+):
+    """An unexpected exception during intent building must still emit
+    ``job_generation_finished`` (with a failure status), so callers
+    awaiting job generation are never left blocked forever."""
+    doc = _make_doc(_TestStep(name="s1"), WorkPiece(name="wp"))
+    tm = ImmediateMainThreadTaskManager()
+    ctrl = IntentController(doc, tm, machine=isolated_machine)
+    finished: list[tuple] = []
+    ctrl.job_generation_finished.connect(
+        lambda _sender, **kw: finished.append(
+            (kw.get("handle"), kw.get("task_status"))
+        ),
+        weak=False,
+    )
+
+    def _boom(self, doc):
+        raise KeyError("simulated serialization bug")
+
+    monkeypatch.setattr(IntentBuilder, "build", _boom)
+
+    ctrl.force_rebuild()
+
+    assert ("failed" in [status for _, status in finished]) or (
+        None,
+        "failed",
+    ) in finished
+    assert (None, "failed") in finished
     ctrl.shutdown()
 
 
