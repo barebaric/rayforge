@@ -139,12 +139,7 @@ class Camera:
         self, aspect_ratio: float, near: float, far: float
     ) -> np.ndarray:
         """Builds an orthographic projection matrix."""
-        ref = self._ortho_ref_distance
-        if ref is None:
-            ref = np.linalg.norm(self.target - self.position)
-        effective_distance = ref / self._ortho_zoom
-        fov_y_rad = math.radians(45.0)
-        ortho_height = effective_distance * math.tan(fov_y_rad / 2.0) * 2.0
+        ortho_height = self.get_ortho_height()
         ortho_width = ortho_height * aspect_ratio
         right, top = ortho_width / 2.0, ortho_height / 2.0
 
@@ -158,9 +153,22 @@ class Camera:
             dtype=np.float32,
         )
 
+    def get_ortho_height(self) -> float:
+        """Returns the visible world height of the orthographic view."""
+        ref = self._ortho_ref_distance
+        if ref is None:
+            ref = np.linalg.norm(self.target - self.position)
+        effective_distance = ref / self._ortho_zoom
+        fov_y_rad = math.radians(45.0)
+        return effective_distance * math.tan(fov_y_rad / 2.0) * 2.0
+
     def pan(self, delta_x: float, delta_y: float):
         """
         Moves the camera and its target sideways and up/down.
+
+        The pan speed is derived from the on-screen scale so the scene
+        tracks the mouse 1:1 in world units per pixel, in perspective and
+        orthographic views alike.
 
         Args:
             delta_x: The horizontal change in screen coordinates.
@@ -168,8 +176,14 @@ class Camera:
         """
         distance = np.linalg.norm(self.target - self.position)
 
-        if not self.is_perspective and self._ortho_ref_distance is not None:
-            pan_speed = 0.001 * self._ortho_ref_distance / self._ortho_zoom
+        if self.height > 0:
+            if self.is_perspective:
+                fov_y_rad = math.radians(45.0)
+                pan_speed = (
+                    2.0 * distance * math.tan(fov_y_rad / 2.0) / self.height
+                )
+            else:
+                pan_speed = self.get_ortho_height() / self.height
         else:
             pan_speed = 0.001 * distance
 
@@ -208,12 +222,20 @@ class Camera:
 
         forward = self.target - self.position
         distance = np.linalg.norm(forward)
-
-        if distance < 0.2 and delta_z < 0:
+        if distance < 1e-9:
             return
 
-        zoom_amount = -delta_z * 0.1 * distance
-        self.position += (forward / distance) * zoom_amount
+        # Zoom by a fixed percentage per scroll tick.  The new distance is
+        # clamped so the camera never passes through the target (which would
+        # reverse the view and make zooming run the wrong way) and never gets
+        # so close that geometry is lost to the near clip plane.
+        new_distance = distance * (1.0 + 0.1 * delta_z)
+        if delta_z < 0:
+            new_distance = max(new_distance, 0.2)
+        else:
+            new_distance = min(new_distance, 100000.0)
+
+        self.position += (forward / distance) * (distance - new_distance)
 
     def orbit(self, pivot: np.ndarray, axis: np.ndarray, angle: float):
         """

@@ -101,6 +101,14 @@ class CameraController:
         if t < 0:
             return None
 
+        # When the ray grazes the plane (a near-flat view), the
+        # intersection is almost infinitely far away.  Anchoring a pan or
+        # zoom on such a point amplifies mouse movement into extreme,
+        # erratic camera motion, so bail out and let callers fall back to
+        # stable pixel-based panning / dolly-only zoom.
+        if abs(denom) < 0.1:
+            return None
+
         return ray_origin + t * ray_dir
 
     def _setup_interactions(self, on_key_pressed: Callable | None = None):
@@ -186,7 +194,14 @@ class CameraController:
             # falling back to the point on the floor plane.
             self._rotation_pivot = self._pick_pivot(x, y)
             if self._rotation_pivot is None:
-                self._rotation_pivot = self.camera.target.copy()
+                # Fall back to the camera target projected onto the grid
+                # plane and clamped to the grid.  The raw target can drift
+                # far below the plane during navigation, and orbiting around
+                # such a point would sweep the camera through an enormous
+                # arc.
+                fallback = self.camera.target.copy()
+                fallback[2] = 0.0
+                self._rotation_pivot = self._clamp_to_grid(fallback)
 
             self._last_orbit_pos = None
             self._is_orbiting = True
@@ -195,6 +210,8 @@ class CameraController:
             self._pan_start_screen = x, y
             self._last_pan_offset = 0.0, 0.0
             self._is_orbiting = False
+            if self._pan_anchor is not None:
+                self._pan_anchor = self._clamp_to_grid(self._pan_anchor)
 
     def on_drag_update(self, gesture, offset_x: float, offset_y: float):
         """Handles updates during a drag operation (panning or orbiting)."""
@@ -219,35 +236,67 @@ class CameraController:
         """Returns the point on scene geometry under the cursor.
 
         Uses the scene's pickable geometry when available and falls
-        back to the floor plane point otherwise.
+        back to the floor plane point otherwise.  A picked object point is
+        kept as-is (bounded only by distance), while a plane point with no
+        object under the cursor is clamped onto the grid so that orbiting
+        around far-away empty space does not rotate the view extremely
+        rapidly.
         """
         if self._get_pick_scene is not None and self.camera is not None:
             scene = self._get_pick_scene()
             if scene is not None:
                 point = pick_point(scene, self.camera, x, y)
                 if point is not None:
-                    return point
-        return self.get_world_coords_on_plane(x, y)
+                    return self._clamp_pivot(point)
+        pivot = self.get_world_coords_on_plane(x, y)
+        if pivot is None:
+            return None
+        return self._clamp_to_grid(pivot)
+
+    def _clamp_to_grid(self, point: np.ndarray) -> np.ndarray:
+        """Clamps a point on the plane to the grid bounds.
+
+        When the cursor is over empty plane away from the grid, the picked
+        point would otherwise be far outside the working area, making orbit
+        sweep the camera through an enormous arc or making pan track a
+        distant point and move the camera extremely fast.  Pulling the point
+        back onto the grid keeps navigation comfortable.  The z component is
+        flattened onto the plane as well, since these points live on it.
+        """
+        viewport = self._get_viewport()
+        point = point.copy()
+        point[0] = min(max(point[0], 0.0), viewport.width_mm)
+        point[1] = min(max(point[1], 0.0), viewport.depth_mm)
+        point[2] = 0.0
+        return point
+
+    def _clamp_pivot(self, pivot: np.ndarray) -> np.ndarray:
+        """Limits the orbit pivot to a reasonable distance from the camera.
+
+        The pivot is pulled in towards the camera along the pick ray when it
+        is farther than a few times the camera-to-target distance, keeping
+        the orbit comfortable regardless of where the cursor was clicked.
+        """
+        camera = self.camera
+        if camera is None:
+            return pivot
+        to_pivot = pivot - camera.position
+        distance = np.linalg.norm(to_pivot)
+        if distance < 1e-9:
+            return pivot
+        ref = np.linalg.norm(camera.target - camera.position)
+        max_distance = max(3.0 * ref, 1.0)
+        if distance <= max_distance:
+            return pivot
+        return camera.position + to_pivot * (max_distance / distance)
 
     def _update_pan(self, camera: Camera, offset_x: float, offset_y: float):
-        """Pans so the floor-plane point under the cursor tracks the mouse.
+        """Pans the camera so the scene tracks the mouse 1:1 on screen.
 
-        The world point on the XY plane that was grabbed at drag start is
-        kept pinned under the cursor, so the plane moves 1:1 with the mouse
-        in every view.  Falls back to pixel-based panning when the ray to
-        the cursor does not hit the plane.
+        The camera is moved by the on-screen pixel delta scaled to world
+        units (see :meth:`Camera.pan`), so the plane and model translate at
+        the speed of the mouse pointer in every view.
         """
-        if self._pan_anchor is not None and self._pan_start_screen is not None:
-            start_x, start_y = self._pan_start_screen
-            current = self.get_world_coords_on_plane(
-                start_x + offset_x, start_y + offset_y
-            )
-            if current is not None:
-                shift = self._pan_anchor - current
-                camera.position += shift
-                camera.target += shift
-                return
-
         if self._last_pan_offset is None:
             self._last_pan_offset = 0.0, 0.0
         dx = offset_x - self._last_pan_offset[0]
@@ -282,6 +331,15 @@ class CameraController:
     ):
         """Orbits the camera around the given pivot by the drag delta."""
         sensitivity = 0.004
+
+        # A pivot far from the camera makes the camera sweep a huge arc for
+        # a fixed angular step, so the view races across the screen.  Scale
+        # the sensitivity down with the pivot distance to keep the on-screen
+        # rotation rate consistent no matter how far the clicked point is.
+        ref = np.linalg.norm(camera.target - camera.position)
+        pivot_dist = np.linalg.norm(pivot - camera.position)
+        if ref > 1e-9 and pivot_dist > 1e-9:
+            sensitivity *= min(ref / pivot_dist, 1.0)
 
         if camera.is_perspective:
             self._orbit_perspective(
@@ -318,9 +376,22 @@ class CameraController:
         delta_y: float,
         sensitivity: float,
     ):
-        """Orthographic orbit (Z-Up Turntable)."""
-        yaw_angle = -delta_x * sensitivity
-        pitch_angle = -delta_y * sensitivity
+        """Orthographic orbit (Z-Up Turntable).
+
+        The on-screen rotation rate of an orthographic view scales with the
+        orthographic zoom (zooming in does not move the camera, so a fixed
+        angular step sweeps the view across proportionally more pixels).  The
+        sensitivity is therefore normalised by the visible height so the
+        rotation feels the same at every zoom level.
+        """
+        ref = camera._ortho_ref_distance
+        if ref is None:
+            ref = np.linalg.norm(camera.target - camera.position)
+        if ref < 1e-9:
+            return
+        scale = camera.get_ortho_height() / ref
+        yaw_angle = -delta_x * sensitivity * scale
+        pitch_angle = -delta_y * sensitivity * scale
 
         # Yaw Rotation (around World Z axis)
         if abs(yaw_angle) > 1e-6:
@@ -441,11 +512,15 @@ class CameraController:
 
     def zoom_towards_point(self, x: float, y: float, dy: float) -> None:
         """
-        Dollies the camera keeping the floor plane point under the cursor.
+        Dollies the camera, keeping the plane point under the cursor.
 
-        The plane point under the screen position (x, y) is anchored before
-        the dolly and the camera is translated afterwards so that the same
-        point stays under (x, y) at the new zoom level.
+        The camera is dollied along the line of sight (towards the target)
+        so the zoom direction and amount are always consistent.  A lateral
+        correction then keeps the plane point under the cursor from sliding
+        sideways.  The correction's component along the view direction is
+        dropped, because keeping a distant plane point under the cursor
+        would otherwise pull the camera back and cancel (or reverse) the
+        zoom.
 
         Args:
             x: The screen x coordinate of the anchor point.
@@ -458,9 +533,18 @@ class CameraController:
 
         anchor = self.get_world_coords_on_plane(x, y)
         camera.dolly(dy)
-        if anchor is not None:
-            follow = self.get_world_coords_on_plane(x, y)
-            if follow is not None:
-                shift = anchor - follow
-                camera.position += shift
-                camera.target += shift
+        if anchor is None:
+            return
+        follow = self.get_world_coords_on_plane(x, y)
+        if follow is None:
+            return
+
+        shift = anchor - follow
+        forward = camera.target - camera.position
+        forward_norm = np.linalg.norm(forward)
+        if forward_norm < 1e-9:
+            return
+        forward /= forward_norm
+        lateral = shift - forward * np.dot(shift, forward)
+        camera.position += lateral
+        camera.target += lateral
