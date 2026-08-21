@@ -33,6 +33,16 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+class JobAlreadyRunningError(RuntimeError):
+    """
+    Raised when a job is started while another one is still running.
+
+    The message is user-facing (it surfaces via notification_requested)
+    and tells the user how to resolve the situation instead of just
+    describing the programming error.
+    """
+
+
 class MachineCmd:
     """Handles commands sent to the machine driver."""
 
@@ -79,10 +89,13 @@ class MachineCmd:
         a JobMonitor for progress reporting.
         """
         if self._current_monitor:
-            msg = _("Tried to start a job while another is running.")
+            msg = _(
+                "A job is already running. Wait for it to finish or "
+                "press Stop to cancel it."
+            )
             logger.warning(msg)
             # A running job is a failure condition for starting a new one.
-            raise RuntimeError(msg)
+            raise JobAlreadyRunningError(msg)
 
         if ops.is_empty():
             logger.warning("Job has no operations. Skipping execution.")
@@ -291,6 +304,9 @@ class MachineCmd:
 
                 await final_job_action(artifact, machine, on_progress)
 
+        except JobAlreadyRunningError:
+            # Already logged as a warning by the guard; not an error.
+            raise
         except Exception:
             logger.exception("Failed to assemble or execute job")
             # Manually release handle on error if checkout was not entered
@@ -313,6 +329,13 @@ class MachineCmd:
                 final_job_action=self._run_frame_action,
                 on_progress=on_progress,
             )
+        except JobAlreadyRunningError as e:
+            # An expected refusal, not a failure: the guard's message
+            # already tells the user what to do.
+            self._editor.notification_requested.send(
+                self,
+                message=str(e),
+            )
         except Exception as e:
             self._editor.notification_requested.send(
                 self,
@@ -334,6 +357,13 @@ class MachineCmd:
                 machine,
                 final_job_action=self._run_send_action,
                 on_progress=on_progress,
+            )
+        except JobAlreadyRunningError as e:
+            # An expected refusal, not a failure: the guard's message
+            # already tells the user what to do.
+            self._editor.notification_requested.send(
+                self,
+                message=str(e),
             )
         except Exception as e:
             self._editor.notification_requested.send(

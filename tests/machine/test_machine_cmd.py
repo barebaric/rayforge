@@ -8,7 +8,7 @@ from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
 
 from rayforge.core.config import ConfigManager
-from rayforge.machine.cmd import MachineCmd
+from rayforge.machine.cmd import JobAlreadyRunningError, MachineCmd
 from rayforge.machine.models.machine import Machine
 from rayforge.pipeline.artifact import JobArtifact
 from rayforge.shared.tasker.manager import TaskManager
@@ -202,6 +202,52 @@ class TestMachineCmdJobMonitoring:
 
         # 3. Verify cleanup happened
         assert machine_cmd._current_monitor is None
+
+    @pytest.mark.asyncio
+    async def test_second_job_rejected_with_actionable_error(
+        self, machine_cmd, machine, job_artifact
+    ):
+        """
+        Starting a second job while one runs must raise a dedicated
+        error whose message tells the user what to do (Stop), and must
+        not clobber the running job's monitor.
+        """
+        running_monitor = MagicMock()
+        machine_cmd._current_monitor = running_monitor
+
+        with pytest.raises(JobAlreadyRunningError) as excinfo:
+            await machine_cmd._run_send_action(
+                job_artifact, machine, on_progress=lambda metrics: None
+            )
+
+        assert "Stop" in str(excinfo.value)
+        assert machine_cmd._current_monitor is running_monitor
+
+    @pytest.mark.asyncio
+    async def test_send_job_notifies_user_of_running_job(
+        self, machine_cmd, machine, mocker
+    ):
+        """
+        The rejection must surface as a user notification carrying the
+        actionable message. Unlike real failures, the refusal is fully
+        handled: it is not re-raised and is not prefixed with
+        'Sending failed'.
+        """
+        notification_spy = MagicMock()
+        machine_cmd._editor.notification_requested.connect(notification_spy)
+        mocker.patch.object(
+            machine_cmd,
+            "_start_job",
+            new_callable=mocker.AsyncMock,
+            side_effect=JobAlreadyRunningError("A job is already running."),
+        )
+
+        await machine_cmd.send_job(machine)
+
+        notification_spy.assert_called_once()
+        message = notification_spy.call_args.kwargs["message"]
+        assert "already running" in message
+        assert "Sending failed" not in message
 
 
 class TestMachineCmdJog:
