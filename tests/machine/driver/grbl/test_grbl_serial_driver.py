@@ -220,6 +220,64 @@ class TestGrblSerialDriver:
         assert driver.state.status == DeviceStatus.RUN
 
     @pytest.mark.asyncio
+    async def test_job_start_updates_device_state_without_polls(
+        self, connected_driver: GrblSerialDriver, mock_serial_transport
+    ):
+        """With status polling disabled during jobs (the default), no
+        firmware reports arrive while a job runs, so the driver must
+        reflect RUN at job start itself -- otherwise the UI keeps
+        showing Idle during the whole job."""
+        driver = connected_driver
+        assert driver._poll_status_while_running is False
+
+        driver.on_serial_data_received(
+            mock_serial_transport, b"<Idle|MPos:0,0,0|FS:0,0>\r\n"
+        )
+        await asyncio.sleep(0)
+        assert driver.state.status == DeviceStatus.IDLE
+
+        state_changed_mock = MagicMock()
+        driver.state_changed.send = state_changed_mock
+
+        run_task = asyncio.create_task(driver.run_raw("G0 X10"))
+        await asyncio.sleep(0.01)
+
+        assert driver._job_running is True
+        assert driver.state.status == DeviceStatus.RUN
+        state_changed_mock.assert_called_once()
+
+        # After the job ends, the first status report (polling has
+        # resumed) must correct the state back to Idle.
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
+        await run_task
+        assert driver._job_running is False
+        driver.on_serial_data_received(
+            mock_serial_transport, b"<Idle|MPos:0,0,0|FS:0,0>\r\n"
+        )
+        await asyncio.sleep(0)
+        assert driver.state.status == DeviceStatus.IDLE
+
+    @pytest.mark.asyncio
+    async def test_job_start_does_not_mask_alarm(
+        self, connected_driver: GrblSerialDriver, mock_serial_transport
+    ):
+        """Starting a job while the machine is in ALARM must not
+        replace the ALARM state; the job aborts immediately."""
+        driver = connected_driver
+        driver.on_serial_data_received(
+            mock_serial_transport, b"<Alarm|MPos:0,0,0|FS:0,0>\r\n"
+        )
+        await asyncio.sleep(0)
+        assert driver.state.status == DeviceStatus.ALARM
+
+        run_task = asyncio.create_task(driver.run_raw("G0 X10"))
+        await asyncio.sleep(0.01)
+
+        assert driver.state.status == DeviceStatus.ALARM
+        assert driver._job_running is False
+        await run_task
+
+    @pytest.mark.asyncio
     async def test_run_streams_gcode_and_completes(
         self, connected_driver: GrblSerialDriver, mock_serial_transport, doc
     ):
