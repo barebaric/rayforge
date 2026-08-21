@@ -11,13 +11,25 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 from blinker import Signal
+from raygeo.geo import Geometry, Matrix
 from raygeo.ops.axis import Axis
+from raygeo.ops.material import RasterEffect
+from raygeo.ops.material.fold import fold_effects
+from raygeo.ops.material.spec import (
+    FoldEntry,
+    MaterialFoldSpec,
+    PrismaticStock,
+)
 
+from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
+from rayforge.core.stock import StockItem
+from rayforge.core.stock_asset import StockAsset
 from rayforge.core.workpiece import WorkPiece
 from rayforge.machine.models.laser import LaserHead
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.models.rotary_module import RotaryMode, RotaryModule
+from rayforge.pipeline.artifact.material_state import MaterialStateArtifact
 from rayforge.simulator.scene3d import (
     CompiledSceneArtifact,
     compile_stock_scene,
@@ -404,6 +416,9 @@ def test_connect_and_disconnect_subscribe_pipeline(ui_context_initializer):
     pipeline.job_generation_finished.connect.assert_called_once_with(
         presenter._on_job_generation_finished
     )
+    pipeline.material_state_ready.connect.assert_called_once_with(
+        presenter._on_material_state_ready
+    )
 
     presenter.disconnect()
     pipeline.processing_state_changed.disconnect.assert_called_once_with(
@@ -411,6 +426,9 @@ def test_connect_and_disconnect_subscribe_pipeline(ui_context_initializer):
     )
     pipeline.job_generation_finished.disconnect.assert_called_once_with(
         presenter._on_job_generation_finished
+    )
+    pipeline.material_state_ready.disconnect.assert_called_once_with(
+        presenter._on_material_state_ready
     )
 
 
@@ -699,3 +717,202 @@ def test_on_workpiece_images_ready_ignores_stale_generation(
 
     scene.workpiece_image_renderer.set_images.assert_not_called()
     assert calls["rendered"] == []
+
+
+# ── LUT overlay toggle ──────────────────────────────────────────
+
+
+# ── Folded material states ──────────────────────────────────────
+
+
+def _burned_state():
+    """A real MaterialState with a raster-burn surface map."""
+    effect = RasterEffect(
+        np.full((10, 10), 255, dtype=np.uint8),
+        origin_mm=(0.0, 0.0),
+        px_per_mm=(10.0, 10.0),
+    )
+    spec = MaterialFoldSpec(
+        stock=PrismaticStock(
+            polygons=[
+                [(0.0, 0.0), (100.0, 0.0), (100.0, 100.0), (0.0, 100.0)]
+            ],
+            thickness=3.0,
+        ),
+        entries=[FoldEntry("w1", Matrix.identity(), [effect])],
+    )
+    return fold_effects(spec)
+
+
+def _empty_state():
+    spec = MaterialFoldSpec(
+        stock=PrismaticStock(
+            polygons=[
+                [(0.0, 0.0), (100.0, 0.0), (100.0, 100.0), (0.0, 100.0)]
+            ],
+            thickness=3.0,
+        ),
+        entries=[],
+    )
+    return fold_effects(spec)
+
+
+@pytest.mark.ui
+def test_on_material_state_ready_stores_burn(ui_context_initializer):
+    presenter, defaults, _ = _make_presenter()
+    presenter.update_scene_from_doc = MagicMock()
+
+    state = _burned_state()
+    assert state.surface_map is not None
+    assert state.grid is not None
+    defaults[
+        "context"
+    ].artifact_store.get.return_value = MaterialStateArtifact(
+        material_state=state, stock_uid="s1", generation_id=1
+    )
+    stock_item = MagicMock()
+    stock_item.uid = "s1"
+
+    presenter._on_material_state_ready(
+        None, stock_item=stock_item, handle=MagicMock(), generation_id=1
+    )
+
+    burn = presenter._material_states.get("s1")
+    assert burn is not None
+    np.testing.assert_array_equal(
+        burn["surface_map"].to_numpy(), state.surface_map.to_numpy()
+    )
+    assert burn["origin_mm"] == tuple(state.grid.origin_mm)
+    assert burn["px_per_mm"] == tuple(state.grid.px_per_mm)
+    assert burn["size_px"] == tuple(state.grid.size_px)
+    presenter.update_scene_from_doc.assert_called_once()
+
+
+@pytest.mark.ui
+def test_on_material_state_ready_drops_empty_state(ui_context_initializer):
+    presenter, defaults, _ = _make_presenter()
+    presenter.update_scene_from_doc = MagicMock()
+
+    defaults[
+        "context"
+    ].artifact_store.get.return_value = MaterialStateArtifact(
+        material_state=_empty_state(),
+        stock_uid="s1",
+        generation_id=1,
+    )
+    stock_item = MagicMock()
+    stock_item.uid = "s1"
+
+    presenter._on_material_state_ready(
+        None, stock_item=stock_item, handle=MagicMock(), generation_id=1
+    )
+
+    assert "s1" not in presenter._material_states
+
+
+@pytest.mark.ui
+def test_on_material_state_ready_ignores_other_artifacts(
+    ui_context_initializer,
+):
+    presenter, defaults, _ = _make_presenter()
+    presenter.update_scene_from_doc = MagicMock()
+
+    defaults["context"].artifact_store.get.return_value = MagicMock()
+
+    stock_item = MagicMock()
+    stock_item.uid = "s1"
+
+    presenter._on_material_state_ready(
+        None, stock_item=stock_item, handle=MagicMock(), generation_id=1
+    )
+
+    assert presenter._material_states == {}
+    presenter.update_scene_from_doc.assert_not_called()
+
+
+# ── Stock-top content lift ───────────────────────────────────────
+
+
+def _machine_with(z_axis: bool):
+    machine = MagicMock()
+    machine.has_z_axis = z_axis
+    machine.heads = []
+    machine.assembly = MagicMock()
+    machine.assembly.has_rotary = False
+    machine.get_default_rotary_module.return_value = None
+    return machine
+
+
+def _doc_with_stock(thickness):
+    doc = Doc()
+    asset = StockAsset(name="sheet")
+    asset.set_thickness(thickness)
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(100, 0)
+    geo.line_to(100, 80)
+    geo.line_to(0, 80)
+    geo.close_path()
+    asset.geometry = geo
+    doc.add_asset(asset)
+    doc.add_child(StockItem(stock_asset_uid=asset.uid, name="sheet"))
+    return doc
+
+
+def _content_z(render_config_dict) -> float:
+    blob = render_config_dict["world_to_visual"]
+    w2v = np.frombuffer(blob, dtype=np.float32).reshape(4, 4)
+    return float(w2v[2, 3])
+
+
+@pytest.mark.ui
+def test_content_not_lifted_for_z_machine(ui_context_initializer):
+    """Has-Z machines render content at its authored Z (plus WCS Z):
+    no stock-top lift."""
+    doc_editor = MagicMock()
+    doc_editor.doc = _doc_with_stock(thickness=4.0)
+    presenter, _, _ = _make_presenter(
+        context=MagicMock(machine=_machine_with(z_axis=True)),
+        doc_editor=doc_editor,
+        get_viewport=lambda: ViewportConfig.default(),
+    )
+    presenter._schedule_scene_preparation = MagicMock()
+
+    presenter.update_scene_from_doc()
+
+    config = presenter._schedule_scene_preparation.call_args.args[0]
+    assert _content_z(config) == pytest.approx(0.0)
+
+
+@pytest.mark.ui
+def test_content_lifted_to_stock_top_for_no_z_machine(ui_context_initializer):
+    doc_editor = MagicMock()
+    doc_editor.doc = _doc_with_stock(thickness=4.0)
+    presenter, _, _ = _make_presenter(
+        context=MagicMock(machine=_machine_with(z_axis=False)),
+        doc_editor=doc_editor,
+        get_viewport=lambda: ViewportConfig.default(),
+    )
+    presenter._schedule_scene_preparation = MagicMock()
+
+    presenter.update_scene_from_doc()
+
+    config = presenter._schedule_scene_preparation.call_args.args[0]
+    assert _content_z(config) == pytest.approx(4.0)
+
+
+@pytest.mark.ui
+def test_content_not_lifted_without_stock(ui_context_initializer):
+    doc_editor = MagicMock()
+    doc_editor.doc = Doc()
+    presenter, _, _ = _make_presenter(
+        context=MagicMock(machine=_machine_with(z_axis=True)),
+        doc_editor=doc_editor,
+        get_viewport=lambda: ViewportConfig.default(),
+    )
+    presenter._schedule_scene_preparation = MagicMock()
+
+    presenter.update_scene_from_doc()
+
+    config = presenter._schedule_scene_preparation.call_args.args[0]
+    assert _content_z(config) == pytest.approx(0.0)

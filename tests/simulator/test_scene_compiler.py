@@ -6,6 +6,7 @@ from compile_scene_helper import (
     make_rotary_layer_config,
     make_test_config,
 )
+from raygeo.compressed_array import CompressedArray
 from raygeo.ops import Ops
 
 from rayforge.simulator.scene3d.scene_compiler import compile_scene
@@ -413,3 +414,76 @@ class TestOverlayOffsets:
 
         ov_pos = ol.positions.to_numpy().reshape(-1, 3)
         assert ov_pos.shape[0] == 4
+
+
+# ── Burn-linked LUT suppression ─────────────────────────────────
+
+
+class TestBurnLayerSuppression:
+    def _scanline_ops(self):
+        ops = Ops()
+        ops.move_to(1.0, 1.0, 0.0)
+        ops.scan_to(4.0, 1.0, 0.0, bytearray([255, 255, 255]))
+        ops.move_to(1.0, 2.0, 0.0)
+        ops.scan_to(4.0, 2.0, 0.0, bytearray([255, 255, 255]))
+        return ops
+
+    def _config(self, burn=None):
+        config = make_test_config(
+            layer_configs={"layer1": make_flat_layer_config()}
+        )
+        if burn is not None:
+            config.stock_specs = [
+                {
+                    "name": "stock",
+                    "thickness": 5.0,
+                    "outers": [
+                        (0.0, 0.0),
+                        (10.0, 0.0),
+                        (10.0, 10.0),
+                        (0.0, 10.0),
+                    ],
+                    "holes": [],
+                    "burn": burn,
+                }
+            ]
+        return config
+
+    def _burn(
+        self, origin_mm=(0.0, 0.0), px_per_mm=(10.0, 10.0), size_px=(100, 100)
+    ):
+        w, h = size_px
+        return {
+            "surface_map": CompressedArray.from_uint8_2d(
+                np.full((h, w), 255, dtype=np.uint8)
+            ),
+            "origin_mm": origin_mm,
+            "px_per_mm": px_per_mm,
+            "size_px": size_px,
+        }
+
+    def test_layer_suppressed_when_inside_burn(self):
+        # Burn grid covers (0,0)-(10,10) mm; scanline bbox (1,1)-(4,1)
+        # sits inside it.
+        artifact = compile_scene(
+            _single_layer_ops(self._scanline_ops()), self._config(self._burn())
+        )
+        assert len(artifact.texture_layers) == 1
+        assert artifact.burn_layer_indices == {0}
+
+    def test_layer_kept_when_burn_disjoint(self):
+        # Burn grid covers (100,100)-(110,110) mm; scanline at (1,1)
+        # does not overlap.
+        burn = self._burn(origin_mm=(100.0, 100.0))
+        artifact = compile_scene(
+            _single_layer_ops(self._scanline_ops()), self._config(burn)
+        )
+        assert len(artifact.texture_layers) == 1
+        assert artifact.burn_layer_indices == set()
+
+    def test_layer_kept_without_burn(self):
+        artifact = compile_scene(
+            _single_layer_ops(self._scanline_ops()), self._config()
+        )
+        assert len(artifact.texture_layers) == 1
+        assert artifact.burn_layer_indices == set()

@@ -175,16 +175,22 @@ class TextureUploadItem:
     )
 
     def prepare(self) -> None:
-        """Decompresses/mip-maps texture layers off the main thread."""
+        """Decompresses/mip-maps texture layers off the main thread.
+
+        Layers superseded by a stock burn are skipped, mirroring
+        ``TextureArtifactRenderer.update_from_artifact``.
+        """
         if self.renderer is None:
             return
+        suppressed = set(self.artifact.burn_layer_indices)
         prepared = [
             prepare_texture_layer(
                 tl,
                 self.artifact.laser_uid_order,
                 self.renderer.max_texture_size,
             )
-            for tl in self.artifact.texture_layers
+            for i, tl in enumerate(self.artifact.texture_layers)
+            if i not in suppressed
         ]
         self._prepared_layers = prepared
 
