@@ -170,13 +170,29 @@ class UnitSpinRow(SpinRow):
         if not self._unit:
             self.update_unit_and_bounds()
             return
+        try:
+            text_value = float(self._spin_button.get_text())
+        except ValueError:
+            text_value = float(self._spin_button.get_value())
+        committed = float(self._spin_button.get_value())
+        # A text that differs from the committed adjustment value is an
+        # in-progress user edit; rewriting it would yank the cursor.
+        user_editing = abs(text_value - committed) >= 1e-9
         base_value = self._unit.to_base(self._get_display_value())
         self._is_updating = True
         try:
             self.update_unit_and_bounds()
             if self._unit:
                 display_value = self._unit.from_base(base_value)
-                if abs(display_value - self._get_display_value()) >= 1e-12:
+                # Compare against the raw entry text (not the range-
+                # clamped readback): a unit switch may narrow the
+                # bounds below the stale text, making the clamped
+                # readback equal the converted value while the entry
+                # still shows the old text.
+                if (
+                    not user_editing
+                    and abs(display_value - text_value) >= 1e-12
+                ):
                     self._spin_button.set_value(display_value)
         finally:
             self._is_updating = False
