@@ -182,12 +182,12 @@ function FeatureCardsSection() {
     {
       title: 'Design',
       subtitle: 'Powerful 2D CAD sketcher with parametric tools.',
-      image: '/images/screenshot-sketcher.png',
+      image: '/images/screenshot-sketcher.webp',
     },
     {
       title: 'Prepare',
       subtitle: 'Trace images, optimize toolpaths, and fine-tune every detail.',
-      image: '/images/screenshot-optimizer.png',
+      image: '/images/screenshot-optimizer.webp',
     },
     {
       title: 'Create',

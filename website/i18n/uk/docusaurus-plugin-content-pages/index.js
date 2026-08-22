@@ -181,13 +181,13 @@ function FeatureCardsSection() {
     {
       title: 'Дизайн',
       subtitle: 'Потужний 2D CAD-скетчер з параметричними інструментами.',
-      image: '/images/screenshot-sketcher.png',
+      image: '/images/screenshot-sketcher.webp',
     },
     {
       title: 'Підготовка',
       subtitle:
         'Трасуйте зображення, оптимізуйте шляхи та тонко налаштовуйте кожну деталь.',
-      image: '/images/screenshot-optimizer.png',
+      image: '/images/screenshot-optimizer.webp',
     },
     {
       title: 'Створення',

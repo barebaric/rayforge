@@ -174,12 +174,12 @@ function FeatureCardsSection() {
     {
       title: '设计',
       subtitle: '强大的参数化 2D CAD 绘图工具。',
-      image: '/images/screenshot-sketcher.png',
+      image: '/images/screenshot-sketcher.webp',
     },
     {
       title: '准备',
       subtitle: '描摹图像、优化加工路径，微调每一个细节。',
-      image: '/images/screenshot-optimizer.png',
+      image: '/images/screenshot-optimizer.webp',
     },
     {
       title: '创作',

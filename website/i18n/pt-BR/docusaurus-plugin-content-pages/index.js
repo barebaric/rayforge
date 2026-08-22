@@ -181,13 +181,13 @@ function FeatureCardsSection() {
     {
       title: 'Projeto',
       subtitle: 'Sketcher CAD 2D poderoso com ferramentas paramétricas.',
-      image: '/images/screenshot-sketcher.png',
+      image: '/images/screenshot-sketcher.webp',
     },
     {
       title: 'Preparar',
       subtitle:
         'Vetorize imagens, otimize trajetórias e ajuste cada detalhe.',
-      image: '/images/screenshot-optimizer.png',
+      image: '/images/screenshot-optimizer.webp',
     },
     {
       title: 'Criar',

@@ -181,13 +181,13 @@ function FeatureCardsSection() {
     {
       title: 'Entwerfen',
       subtitle: 'Leistungsstarker 2D-CAD-Sketcher mit parametrischen Werkzeugen.',
-      image: '/images/screenshot-sketcher.png',
+      image: '/images/screenshot-sketcher.webp',
     },
     {
       title: 'Vorbereiten',
       subtitle:
         'Bilder nachzeichnen, Werkzeugpfade optimieren und jedes Detail feinjustieren.',
-      image: '/images/screenshot-optimizer.png',
+      image: '/images/screenshot-optimizer.webp',
     },
     {
       title: 'Erstellen',
