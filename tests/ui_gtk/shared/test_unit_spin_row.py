@@ -397,6 +397,27 @@ def test_display_unit_switch_still_reformats(ui_context_initializer):
 
 
 @pytest.mark.ui
+def test_unit_switch_narrowing_bounds_reformats_stale_text(
+    ui_context_initializer,
+):
+    """A unit switch that narrows the bounds below the displayed value
+    must rewrite the entry text.
+
+    Switching mm/min -> mm/s shrinks the adjustment upper bound (1000
+    mm/min becomes ~16.7 mm/s). The stale text then clamps to the new
+    bound, which used to fool the clamp-echo guard into skipping the
+    rewrite and leaving the old text visible.
+    """
+    row = SpeedSpinRow(
+        "Cut", lower=0.0, upper=1000.0, value_in_base=1000.0, digits=0
+    )
+    assert row.get_spin_button().get_text() == "1000"
+    ui_context_initializer.config.set_unit_preference("speed", "mm/s")
+    assert row.get_value_in_base_units() == pytest.approx(1000.0)
+    assert row.get_spin_button().get_text() == "16.7"
+
+
+@pytest.mark.ui
 def test_length_choice_defaults_to_preferred_unit(ui_context_initializer):
     config = ui_context_initializer.config
     config.unit_preferences["length"] = "mm"

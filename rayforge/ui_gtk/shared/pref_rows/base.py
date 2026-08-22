@@ -130,6 +130,12 @@ class SpinRow(Adw.ActionRow):
         clamped = max(adj.get_lower(), min(raw, adj.get_upper()))
         if abs(clamped - raw) < 1e-9:
             return False
+        # A text that matches the committed adjustment value is a stale
+        # rendering (e.g. a unit switch or a bound change narrowed the
+        # range below the displayed value), not an in-progress user
+        # edit; it must be rewritten rather than preserved.
+        if abs(raw - float(self._spin_button.get_value())) < 1e-9:
+            return False
         return abs(value - clamped) < 1e-9
 
     def set_value(self, value: float) -> None:
