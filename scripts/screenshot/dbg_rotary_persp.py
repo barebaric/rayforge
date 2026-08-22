@@ -12,6 +12,7 @@ from utils import (
     get_target,
     hide_panel,
     load_project,
+    restore_config,
     restore_panel_states,
     run_on_main_thread,
     save_panel_states,
@@ -34,6 +35,7 @@ logger = logging.getLogger(__name__)
 PANELS = ["show_3d_view", "toggle_bottom_panel"]
 
 
+@restore_config
 def main():
     target = get_target("dbg-rotary-persp")
     set_window_size(win, 2400, 1650)

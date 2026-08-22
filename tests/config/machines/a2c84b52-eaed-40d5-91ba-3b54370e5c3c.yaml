@@ -8,26 +8,19 @@ machine:
       direction: normal
       extents:
       - 0
-      - 200
+      - 120.0
       letter: X
       resolution: 0.01
     - axis_type: linear
       direction: normal
       extents:
       - 0
-      - 200
+      - 120.0
       letter: Y
       resolution: 0.01
-    - axis_type: linear
-      direction: normal
-      extents:
-      - -50
-      - 50
-      letter: Z
-      resolution: 0.01
   axis_extents:
-  - 200
-  - 200
+  - 120.0
+  - 120.0
   cameras: []
   capabilities: null
   clear_alarm_on_connect: false
@@ -70,7 +63,7 @@ machine:
   gcode:
     gcode_precision: 3
   heads:
-  - cut_color: '#ff00ff'
+  - cut_color: '#000000'
     focal_distance: 0.0
     focus_power_percent: 1.0
     frame_corner_pause: 0
@@ -129,10 +122,12 @@ machine:
   reverse_x_axis: false
   reverse_y_axis: false
   reverse_z_axis: false
+  reviewed_profile_hash: null
   rotary_enabled_default: false
   rotary_modules: []
   single_axis_homing_enabled: true
   soft_limits: null
+  source_profile_id: null
   speeds:
     acceleration: 1000
     max_cut_speed: 1000

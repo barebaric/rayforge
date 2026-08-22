@@ -7,6 +7,7 @@ from pathlib import Path
 
 from utils import (
     get_target,
+    restore_config,
     run_on_main_thread,
     set_window_size,
     take_screenshot,
@@ -108,6 +109,7 @@ def show_apply_page(wizard):
     wizard.present()
 
 
+@restore_config
 def main():
     set_window_size(win, 1400, 1000)
 

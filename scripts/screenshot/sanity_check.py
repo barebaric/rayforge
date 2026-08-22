@@ -11,6 +11,7 @@ from threading import Event
 from utils import (
     get_target,
     load_project,
+    restore_config,
     run_on_main_thread,
     set_window_size,
     take_screenshot,
@@ -23,6 +24,7 @@ from rayforge.uiscript import app, win
 logger = logging.getLogger(__name__)
 
 
+@restore_config
 def main():
     target = get_target("sanity-check")
     set_window_size(win, 1400, 1000)

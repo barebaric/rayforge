@@ -6,6 +6,7 @@ import time
 from utils import (
     get_target,
     open_material_test,
+    restore_config,
     set_window_size,
     take_screenshot,
     target_to_filename,
@@ -16,6 +17,7 @@ from rayforge.uiscript import app, win
 logger = logging.getLogger(__name__)
 
 
+@restore_config
 def main():
     target = get_target("material-test")
     set_window_size(win, 2400, 1650)

@@ -6,6 +6,7 @@ import time
 from utils import (
     get_target,
     open_recipe_editor,
+    restore_config,
     take_screenshot,
     target_to_filename,
 )
@@ -32,6 +33,7 @@ CONFIGS = {
 }
 
 
+@restore_config
 def main():
     target = get_target("recipe-editor:step-settings")
     _, subpage = target.split(":", 1)

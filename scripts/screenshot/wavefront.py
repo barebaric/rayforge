@@ -11,6 +11,7 @@ from utils import (
     clear_window_subtitle,
     get_target,
     load_project,
+    restore_config,
     set_window_size,
     take_cropped_screenshot,
     target_to_filename,
@@ -22,6 +23,7 @@ from rayforge.uiscript import app, win
 logger = logging.getLogger(__name__)
 
 
+@restore_config
 def main():
     target = get_target("operations:wavefront")
     set_window_size(win, 2400, 1650)
