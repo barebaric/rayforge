@@ -119,6 +119,36 @@
         </ul>
       </description>
     </release>
+    <release version="1.10.1" date="2026-08-21">
+      <description>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>GRBL: the driver now owns the hold/pause state, so the
+          hold/resume toggle stays in sync and Resume actually sends "~"
+          instead of re-sending "!" (pause)</li>
+          <li>GRBL: status polling is no longer starved while the send
+          loop waits on a full RX buffer, so driver state no longer goes
+          stale during pauses and buffer stalls</li>
+          <li>GRBL: a job is now aborted (with a connection error)
+          instead of retrying forever when the device stops responding
+          during a buffer stall</li>
+          <li>GRBL: realtime console commands (~, !, ?) are sent directly
+          via the control path instead of being streamed as buffered
+          gcode, so they no longer queue behind commands or start phantom
+          jobs</li>
+          <li>GRBL: the UI now reflects the RUN state at job start when
+          status polling is disabled</li>
+          <li>Refusing to start a job while another is running now shows
+          an actionable message telling the user to wait for it to finish
+          or press Stop</li>
+          <li>Machine job failure notifications are now localized per job
+          type (frame vs. send) with complete, translatable sentences</li>
+          <li>The camera calibration wizard now passes the generated
+          CharucoBoard to the capture page, so Capture Frame works
+          again</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.10.0" date="2026-08-19">
       <description>
         <p>Physically-shaded 3D stock, material textures, and more
@@ -188,36 +218,6 @@
           timezone-safe</li>
           <li>Traced contours no longer come out wider than the image
           content</li>
-        </ul>
-      </description>
-    </release>
-    <release version="1.10.1" date="2026-08-21">
-      <description>
-        <p>Bug Fixes:</p>
-        <ul>
-          <li>GRBL: the driver now owns the hold/pause state, so the
-          hold/resume toggle stays in sync and Resume actually sends "~"
-          instead of re-sending "!" (pause)</li>
-          <li>GRBL: status polling is no longer starved while the send
-          loop waits on a full RX buffer, so driver state no longer goes
-          stale during pauses and buffer stalls</li>
-          <li>GRBL: a job is now aborted (with a connection error)
-          instead of retrying forever when the device stops responding
-          during a buffer stall</li>
-          <li>GRBL: realtime console commands (~, !, ?) are sent directly
-          via the control path instead of being streamed as buffered
-          gcode, so they no longer queue behind commands or start phantom
-          jobs</li>
-          <li>GRBL: the UI now reflects the RUN state at job start when
-          status polling is disabled</li>
-          <li>Refusing to start a job while another is running now shows
-          an actionable message telling the user to wait for it to finish
-          or press Stop</li>
-          <li>Machine job failure notifications are now localized per job
-          type (frame vs. send) with complete, translatable sentences</li>
-          <li>The camera calibration wizard now passes the generated
-          CharucoBoard to the capture page, so Capture Frame works
-          again</li>
         </ul>
       </description>
     </release>
@@ -341,7 +341,7 @@
         </ul>
       </description>
     </release>
-    <release version="1.9.0-beta4" date="2026-08-08">
+    <release version="1.9.0~beta4" date="2026-08-08">
       <description>
         <p>Smooth simulated playback, refined 3D interaction, and
         rotary simulation fixes</p>
@@ -398,7 +398,7 @@
         </ul>
       </description>
     </release>
-    <release version="1.9.0-beta3" date="2026-08-06">
+    <release version="1.9.0~beta3" date="2026-08-06">
       <description>
         <p>Unit system support, unit-aware inputs, and raster fixes</p>
         <p>New Features:</p>
@@ -434,7 +434,7 @@
         </ul>
       </description>
     </release>
-    <release version="1.9.0-beta2" date="2026-08-04">
+    <release version="1.9.0~beta2" date="2026-08-04">
       <description>
         <p>Unified machine wizard, SVG color layers, and raster
         fixes</p>
@@ -490,7 +490,7 @@
         </ul>
       </description>
     </release>
-    <release version="1.9.0-beta1" date="2026-07-30">
+    <release version="1.9.0~beta1" date="2026-07-30">
       <description>
         <p>Array/Pattern tool, raygeo compute pipeline, 3D canvas
         performance, and bug fixes</p>
@@ -555,7 +555,7 @@
     </release>
     <release version="1.8.5" date="2026-07-16">
       <description>
-        <p>raygeo upgrade, group selection improvements</p>
+        <p>Raygeo upgrade, group selection improvements</p>
         <p>Improvements:</p>
         <ul>
           <li>Upgrade raygeo to 1.21.3 fixing adaptive wavefronts
@@ -1659,7 +1659,7 @@
         </ul>
       </description>
     </release>
-    <release version="0.27.1" date="2025-01-03">
+    <release version="0.27.1" date="2026-01-03">
       <description>
         <p>Maintenance release with performance improvements</p>
         <ul>
@@ -1671,7 +1671,7 @@
         </ul>
       </description>
     </release>
-    <release version="0.27" date="2025-01-02">
+    <release version="0.27" date="2026-01-02">
       <description>
         <p>Enhanced Sketching, Machine Control &amp; UI Refinements</p>
         <ul>
