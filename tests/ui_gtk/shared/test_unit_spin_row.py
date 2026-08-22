@@ -221,6 +221,69 @@ def test_plain_same_value_sync_preserves_cursor(ui_context_initializer):
 
 
 @pytest.mark.ui
+def test_clamp_round_trip_preserves_mid_edit_text(ui_context_initializer):
+    """Editing below the lower bound must not be clobbered by syncs.
+
+    Deleting one digit of ``150.00`` yields ``10.00``, below the 50
+    lower bound. The emitted value is the clamped 50; when consumers
+    round-trip that value back, the entry must keep showing the user's
+    intermediate text with the cursor intact. Rewriting it to
+    ``50.00`` would reset the cursor and read as if Backspace had
+    deleted the leading digit instead. GTK reformats the text itself
+    when editing ends (activation or focus-out).
+    """
+    row = LengthSpinRow(
+        "Y Extent", lower=50.0, upper=10000.0, value_in_base=150.0
+    )
+    received = []
+    row.value_changed.connect(
+        lambda r: received.append(r.get_value_in_base_units()), weak=False
+    )
+    spin = row.get_spin_button()
+    spin.grab_focus()
+    spin.select_region(0, -1)
+    spin.delete_selection()
+    spin.set_text("150.00")
+    spin.set_position(1)
+    # pressing Delete behind the '1' removes the '5': 150.00 -> 10.00
+    spin.set_text("10.00")
+    spin.set_position(1)
+    assert received[-1] == pytest.approx(50.0)
+
+    # the model round-trip echoes the clamped value; the entry keeps
+    # the user's text and cursor position.
+    row.set_value_in_base_units(50.0)
+    assert spin.get_text() == "10.00"
+    assert spin.get_position() == 1
+
+    # a genuinely different value from elsewhere still updates the text
+    row.set_value_in_base_units(2000.0)
+    assert row.get_value_in_base_units() == pytest.approx(2000.0)
+
+
+@pytest.mark.ui
+def test_plain_clamp_round_trip_preserves_mid_edit_text(
+    ui_context_initializer,
+):
+    """The plain SpinRow setter likewise skips clamp-only echoes."""
+    row = SpinRow("Count", lower=50, upper=10000, digits=2, value=150)
+    received = []
+    row.value_changed.connect(lambda r: received.append(r), weak=False)
+    spin = row.get_spin_button()
+    spin.grab_focus()
+    spin.set_text("10.00")
+    spin.set_position(1)
+    assert received[-1].get_value() == pytest.approx(50.0)
+
+    row.set_value(50.0)
+    assert spin.get_text() == "10.00"
+    assert spin.get_position() == 1
+
+    row.set_value(80.0)
+    assert spin.get_text() == "80.00"
+
+
+@pytest.mark.ui
 def test_debounce_coalesces_rapid_changes(ui_context_initializer):
     row = LengthSpinRow("Len", value_in_base=0.0, debounce_ms=10)
     received = []
