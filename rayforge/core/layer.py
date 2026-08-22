@@ -177,6 +177,11 @@ class Layer(DocItem):
         return self.get_content_items()
 
     @property
+    def is_empty(self) -> bool:
+        """Returns True if the layer holds no user-facing items."""
+        return not self.get_content_items()
+
+    @property
     def workflow(self) -> Workflow | None:
         """Returns the layer's workflow. A layer must have one workflow."""
         for child in self.children:
