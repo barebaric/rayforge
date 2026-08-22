@@ -22,6 +22,5 @@ class SceneVisibility:
     show_grid: bool = True
     show_nogo_zones: bool = True
     show_models: bool = True
-    show_ops_underlay: bool = True
     show_stock: bool = True
     show_workpiece_image: bool = True

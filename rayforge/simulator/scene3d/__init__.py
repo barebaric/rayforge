@@ -3,7 +3,6 @@ from .compiled_scene import (
     CompiledSceneArtifactHandle,
     ScanlineOverlayLayer,
     StockLayer,
-    TextureLayer,
     VertexLayer,
     WorkpieceImage,
 )
@@ -30,7 +29,6 @@ __all__ = [
     "ScanlineOverlayLayer",
     "SceneItem",
     "StockLayer",
-    "TextureLayer",
     "VertexLayer",
     "WorkpieceImage",
     "build_pick_scene",

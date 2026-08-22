@@ -24,6 +24,10 @@ category:
   uk: Метал
   zh_CN: 金属
 appearance:
+  absorption:
+    blue: 0.4
+    ir: 0.05
+    co2: 0.05
   pattern: metallic
   texture: nickel.webp
   texture_size_mm: 300

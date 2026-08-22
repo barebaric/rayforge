@@ -269,9 +269,12 @@ class RingBufferRenderer(BaseRenderer):
         # the trail on a cylinder) while the laser head model still
         # occludes it.  Depth writes stay off so later geometry is
         # unaffected.
+        GL.glEnable(GL.GL_BLEND)
+        GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
         GL.glDepthFunc(GL.GL_LEQUAL)
         GL.glDepthMask(GL.GL_FALSE)
         shader.set_float("uFragDepthBias", LINE_DEPTH_WINDOW_BIAS)
         set_line_width(line_width)
         GL.glBindVertexArray(self.vao)
         GL.glDrawArrays(GL.GL_LINES, 0, draw_count)
+        GL.glBindVertexArray(0)

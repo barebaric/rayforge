@@ -6,7 +6,6 @@ from compile_scene_helper import (
     make_rotary_layer_config,
     make_test_config,
 )
-from raygeo.compressed_array import CompressedArray
 from raygeo.ops import Ops
 
 from rayforge.simulator.scene3d.scene_compiler import compile_scene
@@ -171,47 +170,6 @@ class TestCompileEmpty:
         artifact = compile_scene(assembled, config)
         assert len(artifact.vertex_layers) == 0
         assert len(artifact.overlay_layers) == 0
-
-
-class TestTextureLineWidth:
-    """End-to-end: the generated texture scales with the laser dot width."""
-
-    def _scanline_ops(self, head_uid="head1"):
-        ops = Ops()
-        ops.job_start()
-        ops.layer_start("layer1")
-        ops.set_head(head_uid)
-        for y in range(0, 30, 5):
-            ops.move_to(0.0, y, 0.0)
-            ops.scan_to(20.0, y, 0.0, bytearray([255] * 20))
-        ops.layer_end("layer1")
-        ops.job_end()
-        return ops
-
-    def _compile(self, dot_width=None, head_uid="head1"):
-        config = make_test_config(
-            layer_configs={"layer1": make_flat_layer_config()},
-        )
-        if dot_width is not None:
-            config.laser_dot_widths_mm = {head_uid: dot_width}
-        return compile_scene(self._scanline_ops(head_uid), config)
-
-    @staticmethod
-    def _interior_thickness(texture):
-        tex = np.asarray(texture)
-        col = np.argwhere(tex[:, 0].astype(bool))
-        runs = np.split(col[:, 0], np.where(np.diff(col[:, 0]) > 1)[0] + 1)
-        return max(len(run) for run in runs)
-
-    def test_texture_line_width_uses_default_without_config(self):
-        artifact = self._compile()
-        assert len(artifact.texture_layers) == 1
-        assert (
-            self._interior_thickness(
-                artifact.texture_layers[0].power_texture.to_numpy()
-            )
-            > 1
-        )
 
 
 class TestCompileMultiLayer:
@@ -417,106 +375,3 @@ class TestOverlayOffsets:
 
 
 # ── Burn-linked LUT suppression ─────────────────────────────────
-
-
-class TestBurnLayerSuppression:
-    def _scanline_ops(self):
-        ops = Ops()
-        ops.move_to(1.0, 1.0, 0.0)
-        ops.scan_to(4.0, 1.0, 0.0, bytearray([255, 255, 255]))
-        ops.move_to(1.0, 2.0, 0.0)
-        ops.scan_to(4.0, 2.0, 0.0, bytearray([255, 255, 255]))
-        return ops
-
-    def _config(self, burn=None):
-        config = make_test_config(
-            layer_configs={"layer1": make_flat_layer_config()}
-        )
-        if burn is not None:
-            config.stock_specs = [
-                {
-                    "name": "stock",
-                    "thickness": 5.0,
-                    "outers": [
-                        (0.0, 0.0),
-                        (10.0, 0.0),
-                        (10.0, 10.0),
-                        (0.0, 10.0),
-                    ],
-                    "holes": [],
-                    "burn": burn,
-                }
-            ]
-        return config
-
-    def _burn(
-        self, origin_mm=(0.0, 0.0), px_per_mm=(10.0, 10.0), size_px=(100, 100)
-    ):
-        w, h = size_px
-        return {
-            "surface_map": CompressedArray.from_uint8_2d(
-                np.full((h, w), 255, dtype=np.uint8)
-            ),
-            "origin_mm": origin_mm,
-            "px_per_mm": px_per_mm,
-            "size_px": size_px,
-        }
-
-    def test_layer_suppressed_when_inside_burn(self):
-        # Burn grid covers (0,0)-(10,10) mm; scanline bbox (1,1)-(4,1)
-        # sits inside it.
-        artifact = compile_scene(
-            _single_layer_ops(self._scanline_ops()), self._config(self._burn())
-        )
-        assert len(artifact.texture_layers) == 1
-        assert artifact.burn_layer_indices == {0}
-
-    def test_layer_kept_when_burn_disjoint(self):
-        # Burn grid covers (100,100)-(110,110) mm; scanline at (1,1)
-        # does not overlap.
-        burn = self._burn(origin_mm=(100.0, 100.0))
-        artifact = compile_scene(
-            _single_layer_ops(self._scanline_ops()), self._config(burn)
-        )
-        assert len(artifact.texture_layers) == 1
-        assert artifact.burn_layer_indices == set()
-
-    def test_layer_kept_without_burn(self):
-        artifact = compile_scene(
-            _single_layer_ops(self._scanline_ops()), self._config()
-        )
-        assert len(artifact.texture_layers) == 1
-        assert artifact.burn_layer_indices == set()
-
-
-class TestRotaryBurnLayerSuppression:
-    def test_rotary_layer_suppressed_when_inside_burn(self):
-        """A rotary layer's quads are suppressed when its bbox
-        intersects a rotary stock's unrolled burn AABB."""
-        ops = Ops()
-        ops.move_to(1.0, 1.0, 0.0)
-        ops.scan_to(4.0, 1.0, 0.0, bytearray([255, 255, 255]))
-        ops.move_to(1.0, 2.0, 0.0)
-        ops.scan_to(4.0, 2.0, 0.0, bytearray([255, 255, 255]))
-        config = make_test_config(
-            layer_configs={"layer1": make_rotary_layer_config(diameter=50.0)}
-        )
-        config.stock_specs = [
-            {
-                "name": "rotary stock",
-                "kind": "rotary",
-                "diameter": 50.0,
-                "length": 200.0,
-                "burn": {
-                    "surface_map": CompressedArray.from_uint8_2d(
-                        np.full((100, 100), 255, dtype=np.uint8)
-                    ),
-                    "origin_mm": (0.0, 0.0),
-                    "px_per_mm": (10.0, 10.0),
-                    "size_px": (100, 100),
-                },
-            }
-        ]
-        artifact = compile_scene(_single_layer_ops(ops), config)
-        assert len(artifact.texture_layers) == 1
-        assert artifact.burn_layer_indices == {0}

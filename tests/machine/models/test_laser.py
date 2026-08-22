@@ -151,6 +151,25 @@ def test_laser_roundtrip_serialization():
     assert new_laser.uid == original_laser.uid
 
 
+def test_laser_none_colors_coerce_to_magenta():
+    """A laser must never hold a None operation colour.
+
+    Unset (None) cut/raster colours — which can arrive via imported
+    profiles — coerce to magenta so the scanline/ops rendering never
+    falls back to the theme foreground (grey in light mode).
+    """
+    laser = Laser.from_dict(
+        {"uid": "l1", "cut_color": None, "raster_color": None}
+    )
+    assert laser.cut_color == "#ff00ff"
+    assert laser.raster_color == "#ff00ff"
+
+    laser.set_cut_color(None)
+    laser.set_raster_color(None)
+    assert laser.cut_color == "#ff00ff"
+    assert laser.raster_color == "#ff00ff"
+
+
 def test_backward_compatibility_old_format():
     """Test that old format data (without _percent fields) is converted
     correctly.

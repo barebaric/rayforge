@@ -19,13 +19,13 @@ from blinker import Signal
 from raygeo.ops import Ops
 
 from ...context import RayforgeContext
+from ...core.optical import material_burn_response
 from ...core.workpiece import WorkPiece
 from ...machine.kinematic_mapping import (
     KinematicMapping,
     build_layer_assembly,
     resolve_layer_rotary,
 )
-from ...machine.models.laser import LaserHead
 from ...pipeline.artifact.handle import BaseArtifactHandle
 from ...pipeline.artifact.job import JobArtifact
 from ...pipeline.artifact.material_state import MaterialStateArtifact
@@ -336,13 +336,6 @@ class ScenePresenter:
         self.visibility.show_models = visible
         self._request_render()
 
-    def set_show_ops_underlay(self, visible: bool) -> None:
-        """Sets the ops-underlay visibility and requests a re-render."""
-        if self.visibility.show_ops_underlay == visible:
-            return
-        self.visibility.show_ops_underlay = visible
-        self._request_render()
-
     def set_show_stock(self, visible: bool) -> None:
         """Sets stock visibility and requests a re-render."""
         if self.visibility.show_stock == visible:
@@ -429,6 +422,24 @@ class ScenePresenter:
         if self._compiled_artifact and self._op_player:
             self._scene.extract_playback_offsets(self._compiled_artifact)
 
+    @staticmethod
+    def _add_material_optical(spec: dict, material) -> None:
+        """Stamp the material's resolved optical fields onto a stock spec.
+
+        Adds the absorption dict and burn-response char curve parameters
+        so the stock compiler/renderer can wire them into the shader's
+        physical burn block. The wavelength is read from the burn entry
+        at compile time (it travels with the surface map); here we only
+        resolve the material-side response.
+        """
+        appearance = getattr(material, "appearance", None)
+        absorption = None
+        if appearance is not None:
+            absorption = appearance.extra.get("absorption")
+        if isinstance(absorption, dict):
+            spec["absorption"] = absorption
+        spec["burn_response"] = material_burn_response(material)
+
     def _store_material_state(
         self, stock_uid: str, stock_name: str, handle
     ) -> bool:
@@ -454,6 +465,8 @@ class ScenePresenter:
                 "origin_mm": tuple(grid.origin_mm),
                 "px_per_mm": tuple(grid.px_per_mm),
                 "size_px": tuple(grid.size_px),
+                "wavelength_nm": float(state.wavelength_nm),
+                "max_power_watts": float(state.max_power_watts),
             }
             previous = self._material_states.get(stock_uid)
             if previous is not None and previous["handle_key"] == handle.key:
@@ -674,8 +687,6 @@ class ScenePresenter:
             for renderer in self._scene.ring_renderers:
                 renderer.clear()
                 renderer.ring_offsets = np.array([], dtype=np.int32)
-            if self._scene.texture_renderer:
-                self._scene.texture_renderer.clear()
             self._request_render()
             return
 
@@ -779,6 +790,7 @@ class ScenePresenter:
                 "color": appearance.color,
                 "tint": item.get_effective_color(),
             }
+            self._add_material_optical(spec, material)
             burn = self._material_states.get(item.uid)
             if burn is not None:
                 spec["burn"] = dict(burn)
@@ -825,6 +837,7 @@ class ScenePresenter:
                 "metallic": float(appearance.metallic),
                 "color": appearance.color,
             }
+            self._add_material_optical(spec, material)
             burn = self._material_states.get(layer.uid)
             if burn is not None:
                 spec["burn"] = dict(burn)
@@ -837,8 +850,6 @@ class ScenePresenter:
         entry point for refreshing the 3D view.
         """
         if not self._get_gl_initialized():
-            return
-        if not self._scene.texture_renderer:
             return
 
         t_update_start = time.perf_counter()
@@ -914,13 +925,6 @@ class ScenePresenter:
             viewport, machine, z_offset=0.0
         )
 
-        laser_dot_widths_mm: dict[str, float] = {}
-        if machine:
-            for head in machine.heads:
-                if isinstance(head, LaserHead):
-                    spot_x, _spot_y = LaserHead.get_spot_size(head)
-                    laser_dot_widths_mm[head.uid] = spot_x
-
         layer_configs: dict[str, LayerRenderConfig] = {}
         for layer in self.doc.layers:
             axis_position = 0.0
@@ -959,7 +963,6 @@ class ScenePresenter:
             stock_top_z=stock_top_z,
             has_z_axis=has_z_axis,
             layer_configs=layer_configs,
-            laser_dot_widths_mm=laser_dot_widths_mm,
             stock_specs=stock_specs,
         )
 

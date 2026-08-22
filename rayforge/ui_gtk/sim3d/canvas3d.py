@@ -269,20 +269,17 @@ class Canvas3D(Gtk.GLArea):
     def _build_pick_scene(self) -> PickScene | None:
         """Assembles pickable geometry for cursor ray-casting.
 
-        Collects the visible scene items (stock, engrave texture,
-        workpiece base images, machine models) and hands them, with a
-        per-frame :class:`PickContext`, to the scene-item picker.  Only
-        items whose category is currently visible contribute, so
-        picking always matches what is drawn.
+        Collects the visible scene items (stock, workpiece base images,
+        machine models) and hands them, with a per-frame
+        :class:`PickContext`, to the scene-item picker.  Only items
+        whose category is currently visible contribute, so picking
+        always matches what is drawn.
         """
         vis = self._presenter.visibility
         items: list[SceneItem] = []
         artifact = self._presenter.compiled_artifact
-        if artifact is not None:
-            if vis.show_stock:
-                items.extend(artifact.stock_layers)
-            if vis.show_ops_underlay:
-                items.extend(artifact.texture_layers)
+        if artifact is not None and vis.show_stock:
+            items.extend(artifact.stock_layers)
         if vis.show_workpiece_image:
             items.extend(self._presenter.workpiece_images)
         if vis.show_models:
@@ -372,6 +369,21 @@ class Canvas3D(Gtk.GLArea):
             self._scene.prepare(self._ctx)
             self._scene.render(self._ctx, None)
 
+            # Force the framebuffer alpha to 1.0 so the GLArea is
+            # always opaque.  Blended render passes (ops lines, ring
+            # buffer, workpiece image) write sub-unity alpha to the
+            # framebuffer; without this fixup GTK composites those
+            # pixels with the widget background, making the scanline
+            # overlay colour depend on the theme instead of the stock
+            # behind it.  Writing only the alpha channel (RGB masked
+            # off) with a clear leaves the rendered colours untouched.
+            saved_clear = GL.glGetFloatv(GL.GL_COLOR_CLEAR_VALUE)
+            GL.glColorMask(GL.GL_FALSE, GL.GL_FALSE, GL.GL_FALSE, GL.GL_TRUE)
+            GL.glClearColor(0.0, 0.0, 0.0, 1.0)
+            GL.glClear(GL.GL_COLOR_BUFFER_BIT)
+            GL.glColorMask(GL.GL_TRUE, GL.GL_TRUE, GL.GL_TRUE, GL.GL_TRUE)
+            GL.glClearColor(*saved_clear[:4])
+
         except Exception:
             logger.exception("OpenGL Render Error")
             return False
@@ -393,9 +405,6 @@ class Canvas3D(Gtk.GLArea):
 
     def set_show_grid(self, visible: bool):
         self._presenter.set_show_grid(visible)
-
-    def set_show_ops_underlay(self, visible: bool):
-        self._presenter.set_show_ops_underlay(visible)
 
     def set_show_stock(self, visible: bool):
         self._presenter.set_show_stock(visible)

@@ -1,6 +1,10 @@
 """
 Scene compiler: thin wrapper that delegates vertex compilation to
-raygeo's Rust ``compile_scene_3d`` and handles texture generation.
+raygeo's Rust ``compile_scene_3d`` and packs the stock meshes.
+
+Engraving is visualized by the burned-in stock only; the Ops lines and
+the scanline ring buffer carry the toolpath/trail. No LUT engrave
+underlay quads are produced.
 """
 
 from __future__ import annotations
@@ -9,175 +13,17 @@ import logging
 from collections.abc import Callable
 
 import numpy as np
-from raygeo.compressed_array import CompressedArray
-from raygeo.image import rasterize_scanlines
-from raygeo.ops import LayerInfo, Ops
+from raygeo.ops import Ops
 
 from .compiled_scene import (
     CompiledSceneArtifact,
     ScanlineOverlayLayer,
-    TextureLayer,
     VertexLayer,
 )
-from .cylinder_compiler import generate_cylinder_vertices
 from .render_config import RenderConfig3D
-from .stock_compiler import compile_stock_layers, stock_burn_aabbs
+from .stock_compiler import compile_stock_layers
 
 logger = logging.getLogger(__name__)
-
-MAX_TEXTURE_DIMENSION = 8192
-PX_PER_MM = 50.0
-
-# Fallback laser dot width (mm) when no laser head info is available,
-# matching the minimum sane spot size used elsewhere in the codebase.
-DEFAULT_DOT_WIDTH_MM = 0.1
-
-
-# ── Texture generation ─────────────────────────
-
-
-def _rasterize_scanlines(
-    ops: Ops,
-    bbox: tuple[float, float, float, float],
-    dot_width_mm: float,
-) -> tuple[CompressedArray, int, int, float] | None:
-    x0, y0, w_mm, h_mm = bbox
-    if w_mm <= 0 or h_mm <= 0:
-        return None
-
-    px_per_mm = PX_PER_MM
-    width_px = round(w_mm * px_per_mm)
-    height_px = round(h_mm * px_per_mm)
-
-    if width_px > MAX_TEXTURE_DIMENSION or height_px > MAX_TEXTURE_DIMENSION:
-        scale = min(
-            MAX_TEXTURE_DIMENSION / width_px,
-            MAX_TEXTURE_DIMENSION / height_px,
-        )
-        px_per_mm *= scale
-        width_px = round(w_mm * px_per_mm)
-        height_px = round(h_mm * px_per_mm)
-
-    if width_px <= 0 or height_px <= 0:
-        return None
-
-    dot_width_px = dot_width_mm * px_per_mm
-    radius_px = max(0, int((dot_width_px - 1) / 2))
-
-    buffer = rasterize_scanlines(
-        ops,
-        width_px,
-        height_px,
-        (px_per_mm, px_per_mm),
-        origin_mm=(x0, y0),
-        radius_px=radius_px,
-    )
-    if not isinstance(buffer, CompressedArray):
-        return None
-
-    return buffer, width_px, height_px, px_per_mm
-
-
-def _generate_texture_layers(
-    ops: Ops,
-    layer_infos: list[LayerInfo],
-    config: RenderConfig3D,
-    burn_aabbs: list[tuple[float, float, float, float]],
-) -> tuple[list[TextureLayer], set[int]]:
-    """Build the LUT engrave quad layers.
-
-    Returns ``(layers, burn_layer_indices)``: indices of layers whose
-    world bbox intersects a stock burn area — the texture renderer
-    skips those (the charring lives on the stock itself). Flat stocks
-    burn in world XY; rotary stocks burn over the unrolled axial ×
-    circumference domain, which is the same space rotary layer ops
-    live in.
-    """
-    texture_layers: list[TextureLayer] = []
-    burn_layer_indices: set[int] = set()
-    dot_widths = config.laser_dot_widths_mm or {}
-
-    for li in layer_infos:
-        if not li.has_scanlines:
-            continue
-
-        layer_ops = ops.extract_range(li.cmd_start, li.cmd_end)
-
-        is_rot = li.is_rotary
-
-        if is_rot:
-            layer_ops = layer_ops.bake_visual_positions()
-
-        bbox = layer_ops.scanline_bbox()
-        if bbox is None:
-            continue
-
-        dot_width_mm = dot_widths.get(li.scanline_laser)
-        if dot_width_mm is None:
-            dot_width_mm = DEFAULT_DOT_WIDTH_MM
-        raster_result = _rasterize_scanlines(layer_ops, bbox, dot_width_mm)
-        if raster_result is None:
-            continue
-
-        tex_buf, w_px, h_px, _actual_ppm = raster_result
-        x0, y0, bw, bh = bbox
-
-        if _bbox_hits_any((x0, y0, x0 + bw, y0 + bh), burn_aabbs):
-            burn_layer_indices.add(len(texture_layers))
-
-        diameter = li.diameter
-
-        if is_rot and diameter > 0:
-            tex_transform = np.eye(4, dtype=np.float32)
-        else:
-            tex_transform = config.world_to_visual
-
-        model = np.eye(4, dtype=np.float32)
-        model[0, 0] = bw
-        model[1, 1] = bh
-        model[0, 3] = x0
-        model[1, 3] = y0
-        final_model = (tex_transform @ model).astype(np.float32)
-
-        cyl_verts = None
-        if is_rot and diameter > 0:
-            cyl_verts = generate_cylinder_vertices(
-                grid_matrix=final_model,
-                diameter=diameter,
-            )
-
-        texture_layers.append(
-            TextureLayer(
-                power_texture=tex_buf,
-                width_px=w_px,
-                height_px=h_px,
-                model_matrix=final_model,
-                cylinder_vertices=cyl_verts,
-                rotary_diameter=diameter,
-                rotary_enabled=is_rot,
-                activation_cmd_idx=li.activation_cmd_idx,
-                laser_uid=li.scanline_laser,
-            )
-        )
-
-    return texture_layers, burn_layer_indices
-
-
-def _bbox_hits_any(
-    bbox: tuple[float, float, float, float],
-    aabbs: list[tuple[float, float, float, float]],
-) -> bool:
-    """True if *bbox* ``(min_x, min_y, max_x, max_y)`` overlaps any of
-    *aabbs*. Touching edges do not count."""
-    for a in aabbs:
-        if not (
-            bbox[2] <= a[0]
-            or a[2] <= bbox[0]
-            or bbox[3] <= a[1]
-            or a[3] <= bbox[1]
-        ):
-            return True
-    return False
 
 
 # ── Spec building ─────────────────────────────────────────────────
@@ -202,7 +48,6 @@ def _build_scene_spec(config: RenderConfig3D) -> tuple[list, dict]:
 
 def _wrap_compiled_scene(
     raw,
-    ops: Ops,
     config: RenderConfig3D,
     generation_id: int = 0,
 ) -> CompiledSceneArtifact:
@@ -230,11 +75,6 @@ def _wrap_compiled_scene(
             )
         )
 
-    layer_infos = raw.layer_infos
-    burn_aabbs = stock_burn_aabbs(config.stock_specs or [])
-    texture_layers, burn_layer_indices = _generate_texture_layers(
-        ops, layer_infos, config, burn_aabbs
-    )
     stock_w2v = (
         config.stock_world_to_visual
         if config.stock_world_to_visual is not None
@@ -245,11 +85,9 @@ def _wrap_compiled_scene(
     return CompiledSceneArtifact(
         generation_id=generation_id,
         vertex_layers=vertex_layers,
-        texture_layers=texture_layers,
         overlay_layers=overlay_layers,
         laser_uid_order=raw.laser_uid_order,
         stock_layers=stock_layers,
-        burn_layer_indices=burn_layer_indices,
     )
 
 
@@ -267,8 +105,6 @@ def compile_scene(
 
     w2v, layer_configs = _build_scene_spec(config)
     raw = ops.compile_scene_3d(w2v, layer_configs)
-    artifact = _wrap_compiled_scene(
-        raw, ops, config, generation_id=generation_id
-    )
+    artifact = _wrap_compiled_scene(raw, config, generation_id=generation_id)
 
     return artifact

@@ -34,15 +34,12 @@ def test_3d_overlay_buttons(ui_context_initializer):
         show_workpiece=False,
         show_models=True,
         show_grid=True,
-        show_ops_underlay=True,
         show_stock=True,
         show_workpiece_image=True,
     )
     assert getattr(overlay, "workpiece_button", None) is None
     assert overlay.models_button.get_action_name() == "win.show_models"
     assert overlay.grid_button.get_action_name() == "win.show_grid"
-    assert overlay.underlay_button is not None
-    assert overlay.underlay_button.get_action_name() == "win.show_ops_underlay"
     assert overlay.stock_button is not None
     assert overlay.stock_button.get_action_name() == "win.show_stock"
     assert overlay.workpiece_image_button is not None

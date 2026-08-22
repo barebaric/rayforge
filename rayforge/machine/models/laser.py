@@ -47,6 +47,9 @@ DEFAULT_FOCAL_DISTANCE_MM = 50.0
 # to this so unconfigured heads still produce a plausible burn.
 DEFAULT_MAX_POWER_WATTS = 40.0
 
+# Fallback operation colour when a laser's cut/raster colour is unset.
+DEFAULT_LASER_COLOR = "#ff00ff"
+
 
 def effective_focal_distance(head: Head | None) -> float:
     """The focal distance used for 3D visuals for a laser head.
@@ -109,8 +112,8 @@ class LaserHead(Head):
         self.frame_repeat_count = 20
         self.frame_corner_pause = 0  # seconds
         self.spot_size_mm = 0.1, 0.1  # millimeters
-        self.cut_color: str = "#ff00ff"  # Magenta for cut
-        self.raster_color: str = "#000000"  # Black for raster
+        self.cut_color: str = DEFAULT_LASER_COLOR
+        self.raster_color: str = DEFAULT_LASER_COLOR
         self.focal_distance = 0.0
         self.laser_type = LaserType.DIODE
         self.wavelength_nm = 0.0  # 0 ⇒ LaserType.default_wavelength_nm
@@ -193,12 +196,12 @@ class LaserHead(Head):
         self.spot_size_mm = spot_size_x_mm, spot_size_y_mm
         self.changed.send(self)
 
-    def set_cut_color(self, color: str):
-        self.cut_color = color
+    def set_cut_color(self, color: str | None):
+        self.cut_color = color or DEFAULT_LASER_COLOR
         self.changed.send(self)
 
-    def set_raster_color(self, color: str):
-        self.raster_color = color
+    def set_raster_color(self, color: str | None):
+        self.raster_color = color or DEFAULT_LASER_COLOR
         self.changed.send(self)
 
     def set_focal_distance(self, distance: float):
@@ -350,8 +353,8 @@ class LaserHead(Head):
             lh.focus_power_percent = focus_power / lh.max_power
 
         lh.spot_size_mm = data.get("spot_size_mm", lh.spot_size_mm)
-        lh.cut_color = data.get("cut_color", lh.cut_color)
-        lh.raster_color = data.get("raster_color", lh.raster_color)
+        lh.cut_color = data.get("cut_color") or DEFAULT_LASER_COLOR
+        lh.raster_color = data.get("raster_color") or DEFAULT_LASER_COLOR
         lh.frame_speed = data.get("frame_speed", lh.frame_speed)
         lh.frame_repeat_count = data.get(
             "frame_repeat_count", lh.frame_repeat_count

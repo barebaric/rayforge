@@ -2,12 +2,10 @@
 
 import numpy as np
 import pytest
-from raygeo.compressed_array import CompressedArray
 
 from rayforge.simulator.scene3d import (
     PickContext,
     StockLayer,
-    TextureLayer,
     WorkpieceImage,
 )
 from rayforge.simulator.scene3d.picking import (
@@ -245,27 +243,6 @@ def test_build_pick_scene_accepts_custom_scene_item():
     point = pick_point(scene, cam, 320, 240)
     assert point is not None
     assert point[2] == pytest.approx(5.0, abs=1e-5)
-
-
-def test_texture_layer_pick_mesh_maps_quad():
-    model_matrix = np.eye(4, dtype=np.float32)
-    model_matrix[0, 0] = 100.0
-    model_matrix[1, 1] = 100.0
-    model_matrix[2, 3] = 12.0
-    layer = TextureLayer(
-        power_texture=CompressedArray.from_uint8_2d(
-            np.zeros((2, 2), dtype=np.uint8)
-        ),
-        width_px=100,
-        height_px=100,
-        model_matrix=model_matrix,
-    )
-
-    scene = build_pick_scene([layer], PickContext())
-    assert scene is not None
-    point = pick_point(scene, _camera(), 320, 240)
-    assert point is not None
-    assert point[2] == pytest.approx(12.0, abs=1e-4)
 
 
 def test_workpiece_image_pick_mesh_maps_quad():

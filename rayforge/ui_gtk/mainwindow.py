@@ -985,17 +985,6 @@ class MainWindow(Adw.ApplicationWindow):
         config.canvas_view.show_grid = is_visible
         config.changed.send(config)
 
-    def on_show_ops_underlay_state_change(
-        self, action: Gio.SimpleAction, value: GLib.Variant
-    ):
-        is_visible = value.get_boolean()
-        if self.canvas3d is not None:
-            self.canvas3d.set_show_ops_underlay(is_visible)
-        action.set_state(value)
-        config = get_context().config
-        config.canvas_view.show_ops_underlay = is_visible
-        config.changed.send(config)
-
     def on_show_stock_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant
     ):
@@ -1111,14 +1100,6 @@ class MainWindow(Adw.ApplicationWindow):
         self.on_show_grid_state_change(
             am.get_action("show_grid"),
             GLib.Variant.new_boolean(cv.show_grid),
-        )
-
-        am.get_action("show_ops_underlay").set_state(
-            GLib.Variant.new_boolean(not cv.show_ops_underlay)
-        )
-        self.on_show_ops_underlay_state_change(
-            am.get_action("show_ops_underlay"),
-            GLib.Variant.new_boolean(cv.show_ops_underlay),
         )
 
         am.get_action("show_stock").set_state(
@@ -1535,7 +1516,6 @@ class MainWindow(Adw.ApplicationWindow):
             show_workpiece=False,
             show_models=True,
             show_grid=True,
-            show_ops_underlay=True,
             show_stock=True,
             show_workpiece_image=True,
             show_nogo_zones=bool(machine and machine.nogo_zones),

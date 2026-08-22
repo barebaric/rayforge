@@ -24,6 +24,10 @@ category:
   uk: Деревина
   zh_CN: 木材
 appearance:
+  absorption:
+    blue: 0.95
+    ir: 0.3
+    co2: 0.95
   pattern: wood_grain
   texture: rosewood.webp
   texture_size_mm: 300
