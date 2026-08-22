@@ -6,6 +6,7 @@ from pathlib import Path
 
 from utils import (
     get_target,
+    restore_config,
     run_on_main_thread,
     set_window_size,
     take_screenshot,
@@ -42,6 +43,7 @@ def show_projector():
     raise RuntimeError("Projector window not found")
 
 
+@restore_config
 def main():
     target = get_target("addon:projector-mode")
     set_window_size(win, 1400, 1000)

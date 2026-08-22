@@ -6,6 +6,7 @@ import time
 from utils import (
     get_target,
     open_machine_settings,
+    restore_config,
     run_on_main_thread,
     take_screenshot,
     target_to_filename,
@@ -37,6 +38,7 @@ def inject_fake_device_settings(dialog):
     run_on_main_thread(_inject)
 
 
+@restore_config
 def main():
     target = get_target(f"machine-settings:{PAGE}")
     time.sleep(0.25)

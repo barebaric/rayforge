@@ -8,6 +8,7 @@ from utils import (
     get_target,
     load_project,
     open_step_settings,
+    restore_config,
     run_on_main_thread,
     set_window_size,
     take_screenshot,
@@ -79,6 +80,7 @@ def set_engrave_mode(dialog, mode_name: str):
     return False
 
 
+@restore_config
 def main():
     set_window_size(win, 2400, 1650)
 

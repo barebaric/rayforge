@@ -6,6 +6,7 @@ from pathlib import Path
 
 from utils import (
     get_target,
+    restore_config,
     run_on_main_thread,
     set_window_size,
     take_screenshot,
@@ -54,6 +55,7 @@ def open_dialog():
     return dialog
 
 
+@restore_config
 def main():
     target = get_target("addon:deepnest")
     _ensure_addon_loaded()

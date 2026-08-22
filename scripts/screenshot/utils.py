@@ -6,6 +6,8 @@ Scripts run in a background thread, so UI operations use
 GLib.idle_add for thread safety.
 """
 
+import atexit
+import functools
 import logging
 import os
 import subprocess
@@ -16,6 +18,7 @@ from pathlib import Path
 from threading import Event
 from typing import (
     TYPE_CHECKING,
+    Any,
     Optional,
     TypeVar,
 )
@@ -53,6 +56,101 @@ SCREENSHOT_TOOLS = [
 ]
 
 T = TypeVar("T")
+
+
+def _snapshot_config_dir() -> dict[str, bytes]:
+    """Return a byte-exact copy of every file in the config dir."""
+    from rayforge.config import CONFIG_DIR
+
+    return {
+        str(path.relative_to(CONFIG_DIR)): path.read_bytes()
+        for path in CONFIG_DIR.rglob("*")
+        if path.is_file()
+    }
+
+
+def _write_config_dir(files: dict[str, bytes]) -> None:
+    """Restore the config dir to the given snapshot of file contents."""
+    from rayforge.config import CONFIG_DIR
+
+    for path in CONFIG_DIR.rglob("*"):
+        if path.is_file():
+            rel = str(path.relative_to(CONFIG_DIR))
+            if rel not in files:
+                path.unlink()
+                logger.debug(f"Removed generated config file: {rel}")
+    for rel, content in files.items():
+        path = CONFIG_DIR / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+
+
+def _noop_save() -> None:
+    pass
+
+
+def _noop_save_machine(machine) -> None:
+    pass
+
+
+def _suppress_config_writes() -> None:
+    """
+    Stop Rayforge from persisting configuration for this process.
+
+    The config manager auto-saves on every config change, the machine
+    manager auto-saves on every machine change, and the app saves the
+    config once more during shutdown. Both save entry points are
+    neutered here, so staging machine settings for a screenshot can
+    never reach the disk -- not during the run, not from late driver
+    events, and not from the shutdown sequence.
+    """
+    try:
+        from rayforge.context import get_context
+
+        context = get_context()
+        context.config_mgr.save = _noop_save
+        context.machine_mgr.save_machine = _noop_save_machine
+        logger.info("Config persistence suppressed for this run")
+    except Exception as e:  # noqa: BLE001 - must not break scripts
+        logger.warning(f"Could not suppress config writes: {e}")
+
+
+def restore_config(func: Callable) -> Callable:
+    """
+    Guarantee the configuration is set back after a screenshot script.
+
+    Screenshot scripts routinely stage machine settings -- switching
+    the active machine, changing the WCS, adding cameras, toggling the
+    theme -- and Rayforge persists every one of those changes
+    immediately. When such a script runs against the shared test
+    configuration, those modifications leak into tests/config and
+    pollute subsequent runs and commits.
+
+    Two layers of protection are applied for the duration of the
+    wrapped function:
+
+    * The config and machine managers' save entry points are replaced
+      with no-ops, so nothing can persist through them -- neither
+      during the run nor from the app shutdown sequence afterwards.
+    * Every file in the configuration directory is snapshotted before
+      the run and restored byte-for-byte when it exits, even on error.
+      This catches writers outside those two managers, such as dialect
+      migrations or machines removed without going through the savers.
+      A final restore is registered with atexit so it wins over any
+      straggler regardless of thread scheduling.
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        files = _snapshot_config_dir()
+        _suppress_config_writes()
+        atexit.register(_write_config_dir, files)
+        try:
+            return func(*args, **kwargs)
+        finally:
+            _write_config_dir(files)
+
+    return wrapper
 
 
 def get_target(default: str) -> str:

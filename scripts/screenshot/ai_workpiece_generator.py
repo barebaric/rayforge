@@ -9,6 +9,7 @@ import time
 
 from utils import (
     get_target,
+    restore_config,
     run_on_main_thread,
     take_screenshot,
     target_to_filename,
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 EXAMPLE_PROMPT = "A gear with 12 teeth, outer diameter 50mm, center hole 10mm"
 
 
+@restore_config
 def main():
     target = get_target("addon:ai-workpiece-generator")
     logger.info("Waiting for document to settle...")

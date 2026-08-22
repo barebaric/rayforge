@@ -10,6 +10,7 @@ from pathlib import Path
 
 from utils import (
     get_target,
+    restore_config,
     run_on_main_thread,
     set_window_size,
     take_screenshot,
@@ -30,6 +31,7 @@ TEST_IMAGE = (
 )
 
 
+@restore_config
 def main():
     target = get_target("import-dialog")
     set_window_size(win, 1400, 1000)

@@ -10,6 +10,7 @@ from gi.repository import GLib
 from utils import (
     get_target,
     open_machine_settings,
+    restore_config,
     run_on_main_thread,
     take_screenshot,
     target_to_filename,
@@ -199,6 +200,7 @@ def take_wizard_screenshot(parent_dialog, wizard_page: str, output: str):
     time.sleep(0.25)
 
 
+@restore_config
 def main():
     target_info = parse_target(TARGET)
     output = target_to_filename(TARGET)

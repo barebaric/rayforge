@@ -25,6 +25,7 @@ import time
 
 from utils import (
     get_target,
+    restore_config,
     run_on_main_thread,
     set_window_size,
     take_screenshot,
@@ -70,6 +71,7 @@ def wizard_step_for(target: str) -> str:
     return target.split(":")[-1].replace("-", "_")
 
 
+@restore_config
 def main():
     target = get_target("config-wizard:connect")
     if not target.startswith("config-wizard:"):
