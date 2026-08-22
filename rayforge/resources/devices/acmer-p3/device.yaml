@@ -23,6 +23,8 @@ machine:
   - name: Blue Diode Laser
     tool_number: 0
     max_power: 1000
+    wavelength_nm: 455
+    max_power_watts: 10
     frame_power_percent: 1.0
     focus_power_percent: 1.0
     spot_size_mm:
@@ -34,6 +36,8 @@ machine:
   - name: Infra Red Diode
     tool_number: 1
     max_power: 1000
+    wavelength_nm: 1064
+    max_power_watts: 2
     frame_power_percent: 0.0
     focus_power_percent: 0.0
     spot_size_mm:

@@ -18,10 +18,6 @@ from ..core.registration import call_registration_hooks
 from ..core.undo import Command, HistoryManager
 from ..doceditor.editor import DocEditor
 from ..machine.cmd import MachineCmd
-from ..machine.device.profile_diff import (
-    find_outdated_profiles,
-    split_reviewable,
-)
 from ..machine.driver.driver import DeviceState, DeviceStatus
 from ..machine.driver.dummy import NoDeviceDriver
 from ..machine.models.machine import Machine
@@ -54,7 +50,10 @@ from .doceditor.missing_features_dialog import MissingFeaturesDialog
 from .doceditor.property_providers import register_builtin_providers
 from .doceditor.workflow_view import WorkflowView
 from .machine.machine_dropdown import MachineDropdown
-from .machine.profile_review_dialog import ProfileReviewDialog
+from .machine.profile_review_dialog import (
+    ProfileReviewDialog,
+    SchemaReviewDialog,
+)
 from .machine.settings_dialog import MachineSettingsDialog
 from .main_menu import MainMenu
 from .project_cmd import ProjectCmd
@@ -572,34 +571,71 @@ class MainWindow(Adw.ApplicationWindow):
     def _check_profile_updates(self) -> bool:
         """
         Presents the profile-review dialog for machines whose source
-        device profile changed since their last review. Pairs without
-        any setting difference are marked reviewed silently.
+        device profile changed since their last review, then the
+        schema-review dialog for machines saved by an older app
+        version that are missing new settings.
+
+        The schema check runs *after* the profile reviews so that
+        profile-provided values are written first — the schema
+        migration then only surfaces settings the profile did not
+        cover.
         """
         context = get_context()
-        profiles_by_id = {
-            p.id: p for p in context.device_profile_mgr.get_all()
-        }
-        outdated = find_outdated_profiles(
-            context.machine_mgr.get_machines(), profiles_by_id
-        )
-        reviewable, nothing_to_do = split_reviewable(outdated)
-        for machine, profile in nothing_to_do:
-            machine.reviewed_profile_hash = profile.content_hash()
-            machine.changed.send(machine)
+        reviewable = context.machine_mgr.get_pending_profile_reviews()
         if reviewable:
-            self._present_profile_reviews(reviewable)
+            self._present_profile_reviews(
+                reviewable,
+                on_done=self._check_schema_migrations,
+            )
+            return GLib.SOURCE_REMOVE
+
+        # No profile reviews pending — go straight to schema migrations.
+        GLib.idle_add(self._check_schema_migrations)
         return GLib.SOURCE_REMOVE
 
-    def _present_profile_reviews(self, queue):
-        """Shows review dialogs sequentially for outdated machines."""
+    def _check_schema_migrations(self) -> bool:
+        """Presents the schema-review dialog for machines saved by an
+        older app version that are missing new head/machine settings.
+        """
+        context = get_context()
+        pending = context.machine_mgr.get_pending_schema_migrations()
+        if pending:
+            self._present_schema_reviews(pending)
+        return GLib.SOURCE_REMOVE
+
+    def _present_schema_reviews(self, queue):
+        """Shows schema-review dialogs sequentially for outdated
+        machines."""
         if not queue:
+            return
+        machine, diffs = queue[0]
+        dialog = SchemaReviewDialog(
+            machine,
+            diffs,
+            transient_for=self,
+            on_closed=lambda: self._present_schema_reviews(queue[1:]),
+        )
+        dialog.present()
+
+    def _present_profile_reviews(self, queue, on_done=None):
+        """Shows review dialogs sequentially for outdated machines.
+
+        ``on_done`` is called after the last dialog closes so the
+        caller can chain a follow-up (e.g. the schema-migration
+        check).
+        """
+        if not queue:
+            if on_done is not None:
+                GLib.idle_add(on_done)
             return
         machine, profile = queue[0]
         dialog = ProfileReviewDialog(
             machine,
             profile,
             transient_for=self,
-            on_closed=lambda: self._present_profile_reviews(queue[1:]),
+            on_closed=lambda: self._present_profile_reviews(
+                queue[1:], on_done=on_done
+            ),
         )
         dialog.present()
 

@@ -176,6 +176,7 @@ class Machine:
         self.wcs_origin_is_workarea_origin: bool = False
         self.source_profile_id: str | None = None
         self.reviewed_profile_hash: str | None = None
+        self.schema_version: int = 0
         self.extra: dict[str, Any] = {}
         self._settings_lock = asyncio.Lock()
 
@@ -1542,6 +1543,7 @@ class Machine:
                 ),
                 "source_profile_id": self.source_profile_id,
                 "reviewed_profile_hash": self.reviewed_profile_hash,
+                "schema_version": self.schema_version,
                 "heads": [head.to_dict() for head in self.heads],
                 "cameras": [camera.to_dict() for camera in self.cameras],
                 "rotary_modules": [
@@ -1816,6 +1818,7 @@ class Machine:
         )
         ma.source_profile_id = ma_data.pop("source_profile_id", None)
         ma.reviewed_profile_hash = ma_data.pop("reviewed_profile_hash", None)
+        ma.schema_version = ma_data.pop("schema_version", 0)
         ma_data.pop("frozen_dialect", None)
 
         # Deserialize remaining hookmacros from the (potentially cleaned) data

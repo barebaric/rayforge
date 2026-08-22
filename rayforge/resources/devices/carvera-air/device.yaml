@@ -15,6 +15,8 @@ machine:
   heads:
   - tool_number: 8888
     max_power: 1.0
+    wavelength_nm: 455
+    max_power_watts: 5
     frame_power_percent: 1.0
     focus_power_percent: 1.0
     spot_size_mm:

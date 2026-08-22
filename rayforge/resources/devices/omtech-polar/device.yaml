@@ -18,6 +18,8 @@ machine:
     jog_port: 50210
   heads:
   - max_power: 1000
+    wavelength_nm: 10600
+    max_power_watts: 50
     frame_power_percent: 0.0
     focus_power_percent: 0.0
     spot_size_mm:

@@ -1,9 +1,17 @@
-"""Dialog reviewing device-profile changes against a configured machine.
+"""Dialogs reviewing setting changes against a configured machine.
 
-Shows one row per differing setting (machine settings and G-code
-dialect), lets the user pick which profile values to apply via switch
-rows, and records the review so the warning stays quiet until the
-profile changes again.
+Two variants share the same switch-row UI:
+
+* :class:`ProfileReviewDialog` — shown when a machine's source device
+  profile changed since its last review. Stamps
+  ``reviewed_profile_hash`` on close.
+
+* :class:`SchemaReviewDialog` — shown when a machine was loaded from an
+  older app version that predates new head/machine settings (detected
+  via ``machine.schema_version``). Stamps ``schema_version`` on close.
+
+Both let the user pick which new values to apply via switch rows and
+use the same :class:`SettingDiff` infrastructure.
 """
 
 import logging
@@ -21,6 +29,10 @@ from ...machine.device.profile_diff import (
     diff_dialect_with_profile,
     diff_heads_with_profile,
     diff_machine_with_profile,
+)
+from ...machine.device.schema_migration import (
+    CURRENT_SCHEMA_VERSION,
+    apply_schema_migrations,
 )
 from ...machine.models.machine import Machine
 from ..shared.patched_dialog_window import PatchedDialogWindow
@@ -43,21 +55,19 @@ def format_value(value) -> str:
     return str(value)
 
 
-class ProfileReviewDialog(PatchedDialogWindow):
-    """
-    Lists the differences between *machine* and *profile*.
+class _ReviewDialogBase(PatchedDialogWindow):
+    """Shared switch-row layout for both profile and schema reviews.
 
-    Every changed setting is an :class:`Adw.SwitchRow` grouped into
-    Machine Settings and G-code Dialect sections; each switch selects
-    whether the profile value overwrites the device setting. Closing
-    the dialog in any way marks the profile as reviewed so the startup
-    check does not re-trigger until the profile changes again.
+    Subclasses provide ``_build_diffs()``, ``_apply()``, and
+    ``_finish()``.
     """
 
     def __init__(
         self,
         machine: Machine,
-        profile: DeviceProfile,
+        diffs: list[SettingDiff],
+        title: str,
+        intro: str,
         transient_for=None,
         on_closed=None,
         **kwargs,
@@ -66,13 +76,10 @@ class ProfileReviewDialog(PatchedDialogWindow):
         if transient_for:
             self.set_transient_for(transient_for)
         self.machine = machine
-        self.profile = profile
         self._on_closed = on_closed
         self._finished = False
 
-        self.set_title(
-            _("{machine} - Profile Updated").format(machine=machine.name)
-        )
+        self.set_title(title)
         self.set_default_size(600, 520)
 
         # --- Layout ---
@@ -91,23 +98,8 @@ class ProfileReviewDialog(PatchedDialogWindow):
         apply_button.connect("clicked", self._on_apply_clicked)
         header_bar.pack_end(apply_button)
 
-        diffs = (
-            diff_machine_with_profile(machine, profile)
-            + diff_heads_with_profile(machine, profile)
-            + diff_dialect_with_profile(machine, profile)
-        )
-
-        # The preferences page provides the scrolling and margins used
-        # by the rest of the app's preference dialogs.
         page = Adw.PreferencesPage()
         toolbar_view.set_content(page)
-
-        intro = _(
-            "The machine “{machine}” was created from the device "
-            "profile “{profile}”, which has changed since its "
-            "last review. Turn on the settings you want to take "
-            "over from the profile."
-        ).format(machine=machine.name, profile=profile.name)
 
         self._rows: list[tuple[SettingDiff, Adw.SwitchRow]] = []
         first_group: Adw.PreferencesGroup | None = None
@@ -116,8 +108,6 @@ class ProfileReviewDialog(PatchedDialogWindow):
             if not section_diffs:
                 continue
             group = self._build_section(section, section_diffs)
-            # Fold the intro into the first group's description; an
-            # extra empty group would just add dead space above.
             if first_group is None:
                 first_group = group
             page.add(group)
@@ -157,24 +147,114 @@ class ProfileReviewDialog(PatchedDialogWindow):
         return [diff for diff, row in self._rows if row.get_active()]
 
     def _on_apply_clicked(self, button):
-        apply_diffs(self.machine, self.profile, self._selected_diffs())
+        self._apply(self._selected_diffs())
         self._finish()
 
     def _on_ignore_clicked(self, button):
         self._finish()
 
     def do_close_request(self, *args) -> bool:
-        # Treat window close (X, Escape) like Ignore so the review is
-        # recorded either way.
         self._finish()
         return False
 
-    def _finish(self):
-        """Marks the profile reviewed and closes."""
+    # ----- subclass hooks --------------------------------------------------
+
+    def _apply(self, diffs: list[SettingDiff]) -> None:
+        raise NotImplementedError
+
+    def _finish(self) -> None:
+        raise NotImplementedError
+
+
+class ProfileReviewDialog(_ReviewDialogBase):
+    """Shows settings where a machine's source device profile changed
+    since the last review. Closing marks the profile reviewed."""
+
+    def __init__(
+        self,
+        machine: Machine,
+        profile: DeviceProfile,
+        transient_for=None,
+        on_closed=None,
+        **kwargs,
+    ):
+        self.profile = profile
+        diffs = (
+            diff_machine_with_profile(machine, profile)
+            + diff_heads_with_profile(machine, profile)
+            + diff_dialect_with_profile(machine, profile)
+        )
+        title = _("{machine} - Profile Updated").format(machine=machine.name)
+        intro = _(
+            "The machine “{machine}” was created from the device "
+            "profile “{profile}”, which has changed since its "
+            "last review. Turn on the settings you want to take "
+            "over from the profile."
+        ).format(machine=machine.name, profile=profile.name)
+        super().__init__(
+            machine=machine,
+            diffs=diffs,
+            title=title,
+            intro=intro,
+            transient_for=transient_for,
+            on_closed=on_closed,
+            **kwargs,
+        )
+
+    def _apply(self, diffs: list[SettingDiff]) -> None:
+        apply_diffs(self.machine, self.profile, diffs)
+
+    def _finish(self) -> None:
         if self._finished:
             return
         self._finished = True
         self.machine.reviewed_profile_hash = self.profile.content_hash()
+        self.machine.changed.send(self.machine)
+        self.close()
+        if self._on_closed is not None:
+            self._on_closed()
+
+
+class SchemaReviewDialog(_ReviewDialogBase):
+    """Shows new settings a machine is missing because it was saved by
+    an older app version. Closing stamps the current schema version."""
+
+    def __init__(
+        self,
+        machine: Machine,
+        diffs: list[SettingDiff],
+        transient_for=None,
+        on_closed=None,
+        **kwargs,
+    ):
+        title = _("{machine} - New Settings Available").format(
+            machine=machine.name
+        )
+        intro = _(
+            "New configuration options are available for the machine "
+            "“{machine}”. Turn on the settings you want to apply."
+        ).format(machine=machine.name)
+        super().__init__(
+            machine=machine,
+            diffs=diffs,
+            title=title,
+            intro=intro,
+            transient_for=transient_for,
+            on_closed=on_closed,
+            **kwargs,
+        )
+
+    def _apply(self, diffs: list[SettingDiff]) -> None:
+        apply_schema_migrations(self.machine, diffs)
+
+    def _finish(self) -> None:
+        if self._finished:
+            return
+        self._finished = True
+        # Stamp the version even when the user ignores, so the dialog
+        # does not reappear on every startup. When applying, this is a
+        # no-op (apply_schema_migrations already stamped).
+        self.machine.schema_version = CURRENT_SCHEMA_VERSION
         self.machine.changed.send(self.machine)
         self.close()
         if self._on_closed is not None:

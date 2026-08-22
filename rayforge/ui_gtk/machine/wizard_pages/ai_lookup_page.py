@@ -56,6 +56,8 @@ _FIELD_SPEC: list[tuple[str, str, str]] = [
     ("max_rpm", _("Head max RPM"), "head_spindle"),
     ("min_rpm", _("Head min RPM"), "head_spindle"),
     ("spot_size_mm", _("Spot size (X, Y)"), "head_laser_tuple2"),
+    ("wavelength_nm", _("Wavelength (nm)"), "head_laser"),
+    ("max_power_watts", _("Optical power (W)"), "head_laser"),
     ("pwm_frequency", _("PWM frequency (Hz)"), "head_laser"),
     ("focal_distance", _("Focal distance"), "head_laser"),
     ("home_on_start", _("Home on start"), "bool"),
@@ -405,6 +407,8 @@ class AILookupPage(WizardPage):
                 "max_rpm",
                 "min_rpm",
                 "spot_size_mm",
+                "wavelength_nm",
+                "max_power_watts",
                 "pwm_frequency",
                 "focal_distance",
             ):
@@ -442,6 +446,10 @@ class AILookupPage(WizardPage):
                 pass
         elif key == "pwm_frequency":
             head["pwm_frequency"] = int(value)
+        elif key == "wavelength_nm":
+            head["wavelength_nm"] = float(value)
+        elif key == "max_power_watts":
+            head["max_power_watts"] = float(value)
         elif key == "focal_distance":
             head["focal_distance"] = float(value)
 

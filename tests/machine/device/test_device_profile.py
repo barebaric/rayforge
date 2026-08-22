@@ -800,3 +800,60 @@ class TestCreateMachine:
         head = m.heads[0]
         assert isinstance(head, LaserHead)
         assert head.laser_type == LaserType.DIODE
+
+    @pytest.mark.asyncio
+    async def test_profile_loads_physical_power_fields(
+        self, tmp_path, lite_context, task_mgr
+    ):
+        """wavelength_nm and max_power_watts round-trip through the
+        device profile into the live LaserHead."""
+        device_dir = _make_device(
+            tmp_path,
+            name="Physical Power Test",
+            subdir="phys-power",
+            machine_extra={
+                "heads": [
+                    {
+                        "max_power": 1000,
+                        "laser_type": "co2",
+                        "wavelength_nm": 10600,
+                        "max_power_watts": 80,
+                    }
+                ],
+            },
+        )
+        pkg = DeviceProfile.from_path(device_dir)
+        m = pkg.create_machine(lite_context)
+        await _wait_for_tasks(task_mgr)
+
+        head = m.heads[0]
+        assert isinstance(head, LaserHead)
+        assert head.wavelength_nm == 10600
+        assert head.max_power_watts == 80
+        assert head.effective_wavelength_nm() == 10600
+        assert head.effective_max_power_watts() == 80
+
+    @pytest.mark.asyncio
+    async def test_profile_without_physical_fields_uses_defaults(
+        self, tmp_path, lite_context, task_mgr
+    ):
+        """A diode profile with no wavelength/power fields falls back
+        to the LaserType defaults."""
+        device_dir = _make_device(
+            tmp_path,
+            name="Legacy Diode",
+            subdir="legacy-diode",
+            machine_extra={
+                "heads": [{"max_power": 1000}],
+            },
+        )
+        pkg = DeviceProfile.from_path(device_dir)
+        m = pkg.create_machine(lite_context)
+        await _wait_for_tasks(task_mgr)
+
+        head = m.heads[0]
+        assert isinstance(head, LaserHead)
+        assert head.wavelength_nm == 0.0
+        assert head.max_power_watts == 0.0
+        assert head.effective_wavelength_nm() == 455.0
+        assert head.effective_max_power_watts() == 40.0

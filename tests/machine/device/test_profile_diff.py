@@ -15,6 +15,7 @@ from rayforge.machine.device.profile_diff import (
     find_outdated_profiles,
 )
 from rayforge.machine.models.dialect import GcodeDialect
+from rayforge.machine.models.laser import LaserHead
 from rayforge.machine.models.machine import Machine, Origin
 from rayforge.shared import tasker
 
@@ -146,6 +147,51 @@ def test_head_diff_reports_changed_fields(
     assert "Frame Power" in diff.path
 
 
+def test_head_diff_detects_new_physical_power_fields(
+    profile: DeviceProfile, machine: "Machine"
+):
+    """A profile that gains wavelength_nm/max_power_watts (e.g. after
+    an app upgrade populates the device YAML) shows up as reviewable
+    diffs against a machine created before the fields existed.
+
+    The iCube profile already carries the fields now, so we strip
+    them from the machine head to simulate a pre-upgrade machine and
+    verify the diff + apply round-trip.
+    """
+    head = machine.heads[0]
+    assert isinstance(head, LaserHead)
+    head.wavelength_nm = 0.0
+    head.max_power_watts = 0.0
+
+    diffs = {d.key: d for d in diff_heads_with_profile(machine, profile)}
+
+    assert "head.0.wavelength_nm" in diffs
+    assert "head.0.max_power_watts" in diffs
+    assert diffs["head.0.wavelength_nm"].current_value == 0.0
+    assert diffs["head.0.wavelength_nm"].profile_value == 455
+    assert diffs["head.0.max_power_watts"].current_value == 0.0
+    assert diffs["head.0.max_power_watts"].profile_value == 3
+
+
+def test_apply_physical_power_fields(
+    profile: DeviceProfile, machine: "Machine"
+):
+    """Applying the physical-power diffs writes the profile values
+    onto the existing head object."""
+    head = machine.heads[0]
+    assert isinstance(head, LaserHead)
+    head.wavelength_nm = 0.0
+    head.max_power_watts = 0.0
+
+    diffs = diff_heads_with_profile(machine, profile)
+    apply_diffs(machine, profile, diffs)
+
+    head = machine.heads[0]
+    assert isinstance(head, LaserHead)
+    assert head.wavelength_nm == 455
+    assert head.max_power_watts == 3
+
+
 def test_apply_head_field_keeps_head_object(
     profile: DeviceProfile, machine: "Machine"
 ):
@@ -225,6 +271,19 @@ def test_find_outdated_ignores_unlinked_machines(
 
     bare = Machine(context_initializer)
     assert find_outdated_profiles([bare], {profile.id: profile}) == []
+
+
+def test_find_outdated_includes_never_reviewed(
+    profile: DeviceProfile, machine: "Machine"
+):
+    """A machine with a source_profile_id but no reviewed_profile_hash
+    (created before the profile-review system existed) is included so
+    its first review can pick up new profile settings."""
+    machine.reviewed_profile_hash = None
+    profiles_by_id = {profile.id: profile}
+    assert find_outdated_profiles([machine], profiles_by_id) == [
+        (machine, profile)
+    ]
 
 
 def test_builtin_profiles_have_stable_ids():
