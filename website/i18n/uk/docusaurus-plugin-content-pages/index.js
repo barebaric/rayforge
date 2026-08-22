@@ -1,10 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
-import useBaseUrl from '@docusaurus/useBaseUrl';
 import styles from '@site/src/pages/index.module.css';
 import Icon from '@mdi/react';
-import { mdiRocketLaunch, mdiViewDashboard, mdiFeatureSearch } from '@mdi/js';
+import {
+  mdiDownload,
+  mdiGithub,
+  mdiArrowRight,
+  mdiPlayCircleOutline,
+  mdiYoutube,
+  mdiShareVariant,
+  mdiVectorSquare,
+  mdiLayersOutline,
+  mdiCameraOutline,
+  mdiRotate3d,
+  mdiBookOpenOutline,
+  mdiMapOutline,
+} from '@mdi/js';
+import { tutorials } from '@site/src/data/tutorials';
 
 function detectOs() {
   if (typeof window === 'undefined') {
@@ -42,55 +55,43 @@ function HeroSection() {
   return (
     <section className={styles.hero}>
       <div className={styles.heroInner}>
-        
+
         <div className={styles.heroContent}>
+          <p className={styles.kicker}>Проєктування / Підготовка / Створення</p>
           <h1 className={styles.heroTitle}>
-            <span className={styles.titleGradient}>Найпотужніше відкрите програмне забезпечення</span> для лазерів
+            <span className={styles.heroTitleLine1}>Від ідей</span>
+            <span className={styles.heroTitleLine2}>до реальних проєктів</span>
           </h1>
           <p className={styles.heroSubtitle}>
-            Rayforge — це повноцінна творча студія для вашого лазерного різака,
-            яка об'єднує 2D CAD, CAM та керування машиною в одному динамічному пакеті.
+            Rayforge — творчий набір для вашого лазерного верстата.
+            Проєктуйте, готуйте та створюйте — усе в одній безкоштовній
+            програмі з відкритим кодом.
           </p>
           <div className={styles.heroCtaButtons}>
-            <Link
-              to={downloadTo}
-              className={styles.buttonPrimary}
-            >
-              Завантажити
+            <Link to={downloadTo} className={styles.buttonDark}>
+              <Icon path={mdiDownload} size={0.85} />
+              <span>Завантажити безкоштовно</span>
             </Link>
             <a
               href="https://github.com/barebaric/rayforge"
-              className={styles.buttonSecondary}
+              className={styles.buttonOutline}
               target="_blank"
               rel="noopener noreferrer"
             >
-              Переглянути на GitHub
+              <Icon path={mdiGithub} size={0.85} />
+              <span>Відкритий код</span>
             </a>
           </div>
-        </div>
-
-        <div className={styles.heroVisuals}>
-          <div className={styles.visualBlob}></div>
-          
-          <div className={styles.screenshotLayer}>
-            <img
-              src={useBaseUrl('/screenshots/main-standard.png')}
-              alt="Знімок екрану програми Rayforge"
-              className={styles.heroImage}
-            />
-          </div>
-
-          <div className={styles.videoLayer}>
-            <div className={styles.videoWrapper}>
-              <iframe
-                src="https://www.youtube.com/embed/srKXs2p31VY"
-                title="Вступ до Rayforge"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen>
-              </iframe>
-            </div>
-          </div>
+          <a
+            href="https://www.youtube.com/watch?v=srKXs2p31VY"
+            className={styles.heroVideoLink}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Icon path={mdiPlayCircleOutline} size={0.9} />
+            <span>Переглянути вступ</span>
+            <Icon path={mdiArrowRight} size={0.65} />
+          </a>
         </div>
 
       </div>
@@ -98,73 +99,215 @@ function HeroSection() {
   );
 }
 
-function QuickLinks() {
+const capabilities = [
+  {
+    icon: mdiVectorSquare,
+    label: '2D CAD-скетчер',
+    to: '/docs/features/sketcher',
+  },
+  {
+    icon: mdiLayersOutline,
+    label: 'Багатошарові завдання',
+    to: '/docs/features/multi-layer',
+  },
+  {
+    icon: mdiCameraOutline,
+    label: 'Вирівнювання камерою',
+    to: '/docs/machine/camera',
+  },
+  {
+    icon: mdiRotate3d,
+    label: 'Ротаційна вісь',
+    to: '/docs/machine/rotary',
+  },
+  {
+    icon: mdiBookOpenOutline,
+    label: 'Рецепти матеріалів',
+    to: '/docs/application-settings/recipes',
+  },
+  {
+    icon: mdiMapOutline,
+    label: 'Оптимізація шляхів',
+    to: '/docs/features/path-optimization',
+  },
+];
+
+function CapabilityStrip() {
   return (
-    <div className={styles.linksContainer}>
-      <div className={styles.cardGrid}>
-        <Link to="/docs/getting-started/installation" className={styles.cardLink}>
-          <div className={`${styles.card} ${styles.cardCyan}`}>
-            <div className={styles.cardIcon}>
-              <Icon path={mdiRocketLaunch} size={1.5} />
-            </div>
-            <h3>Початок роботи</h3>
-            <p>Встановіть та налаштуйте Rayforge.</p>
-          </div>
-        </Link>
-        
-        <Link to="/docs/ui/main-window" className={styles.cardLink}>
-          <div className={`${styles.card} ${styles.cardPurple}`}>
-            <div className={styles.cardIcon}>
-              <Icon path={mdiViewDashboard} size={1.5} />
-            </div>
-            <h3>Інтерфейс користувача</h3>
-            <p>Ознайомтеся з інструментами та макетом.</p>
-          </div>
-        </Link>
-        
-        <Link to="/docs/features/sketcher" className={styles.cardLink}>
-          <div className={`${styles.card} ${styles.cardOrange}`}>
-            <div className={styles.cardIcon}>
-              <Icon path={mdiFeatureSearch} size={1.5} />
-            </div>
-            <h3>Функції</h3>
-            <p>Дослідіть більше можливостей.</p>
-          </div>
-        </Link>
+    <section className={styles.stripSection}>
+      <div className={styles.stripInner}>
+        {capabilities.map((cap) => (
+          <Link key={cap.label} to={cap.to} className={styles.stripItem}>
+            <Icon path={cap.icon} size={1.15} />
+            <span>{cap.label}</span>
+          </Link>
+        ))}
       </div>
-    </div>
+    </section>
   );
 }
 
-function FeatureSection({ 
-  title, 
-  description, 
-  features, 
-  image, 
-  reverse, 
-  compatibilityHeading,
-  blobClass 
-}) {
+function DesignYourPartsSection() {
   return (
-    <section className={styles.featureSection}>
-      <div className={`${styles.featureSectionInner} ${reverse ? styles.reverse : ''}`}>
-        
-        <div className={styles.featureVisual}>
-          <div className={`${styles.blobShape} ${blobClass}`}></div>
-          <img src={useBaseUrl(image)} alt={title} />
+    <section className={styles.partsSection}>
+      <div className={styles.partsLayers}>
+        <div className={styles.partsLeft} />
+        <div className={styles.partsRight} />
+      </div>
+      <div className={styles.partsInner}>
+        <div className={styles.partsContent}>
+          <p className={styles.partsKicker}>
+            Потужні інструменти. Безмежні можливості.
+          </p>
+          <h2 className={styles.partsTitle}>Створюйте власні деталі</h2>
+          <p className={styles.partsText}>
+            Замальовуйте, формуйте та вдосконалюйте власні дизайни прямо в
+            Rayforge. Вбудовані інструменти малювання дають життя будь-якій
+            ідеї — або опишіть, що ви хочете, і AI-генератор заготовок створить
+            це миттєво.
+          </p>
+          <Link to="/docs/features/sketcher" className={styles.partsLink}>
+            <span>Дізнатися більше</span>
+            <Icon path={mdiArrowRight} size={0.65} />
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FeatureCardsSection() {
+  const cards = [
+    {
+      title: 'Дизайн',
+      subtitle: 'Потужний 2D CAD-скетчер з параметричними інструментами.',
+      image: '/images/screenshot-sketcher.png',
+    },
+    {
+      title: 'Підготовка',
+      subtitle:
+        'Трасуйте зображення, оптимізуйте шляхи та тонко налаштовуйте кожну деталь.',
+      image: '/images/screenshot-optimizer.png',
+    },
+    {
+      title: 'Створення',
+      subtitle:
+        'Запускайте лазерні та CNC-завдання впевнено. Швидко. Точно. Надійно.',
+      image: '/screenshots/main-3d-bee.png',
+    },
+  ];
+
+  return (
+    <section className={styles.cardsSection}>
+      <div className={styles.cardsTrees}>
+        <div className={styles.cardsTreeLeft} />
+        <div className={styles.cardsTreeRight} />
+      </div>
+      <div className={styles.cardsInner}>
+        <p className={styles.cardsKicker}>
+          Усе, що потрібно. Нічого зайвого.
+        </p>
+        <div className={styles.cardsGrid}>
+          {cards.map((card) => (
+            <div key={card.title} className={styles.card}>
+              <div className={styles.cardImage}>
+                <img src={card.image} alt={card.title} loading="lazy" />
+              </div>
+              <div className={styles.cardBody}>
+                <h3 className={styles.cardTitle}>{card.title}</h3>
+                <p className={styles.cardSubtitle}>{card.subtitle}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TutorialSpotlight() {
+  return (
+    <section className={styles.spotlightSection}>
+      <div className={styles.spotlightInner}>
+        <div className={styles.spotlightHeader}>
+          <p className={styles.kicker}>Спільнота</p>
+          <h2 className={styles.spotlightTitle}>
+            Навчальні відео від справжніх користувачів
+          </h2>
+          <p className={styles.spotlightSubtitle}>
+            Вчіться з відео, створених справжніми користувачами Rayforge. Ваше
+            відео може з'явитися тут наступним.
+          </p>
         </div>
 
-        <div className={styles.featureContent}>
-          <h2>{title}</h2>
-          <p>{description}</p>
-          {compatibilityHeading && <p className={styles.compatibilityHeading}>{compatibilityHeading}</p>}
-          {features && (
-            <ul>
-              {features.map((f, i) => <li key={i}>{f}</li>)}
-            </ul>
-          )}
-        </div>
-        
+        {tutorials.length > 0 ? (
+          <div className={styles.spotlightGrid}>
+            {tutorials.map((tutorial) => (
+              <a
+                key={tutorial.id}
+                href={`https://www.youtube.com/watch?v=${tutorial.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.spotlightCard}
+              >
+                <div className={styles.spotlightThumb}>
+                  <img
+                    src={`https://img.youtube.com/vi/${tutorial.id}/hqdefault.jpg`}
+                    alt={tutorial.title}
+                    loading="lazy"
+                  />
+                  <span className={styles.spotlightPlay}>
+                    <Icon path={mdiPlayCircleOutline} size={1.4} />
+                  </span>
+                </div>
+                <h3 className={styles.spotlightVideoTitle}>{tutorial.title}</h3>
+                <span className={styles.spotlightCreator}>
+                  {tutorial.creator}
+                </span>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <div className={styles.spotlightEmpty}>
+            <div className={styles.spotlightEmptyIcon}>
+              <Icon path={mdiYoutube} size={1.6} />
+            </div>
+            <h3>Ця вітрина порожня — станьте її першою зіркою.</h3>
+            <p>
+              Створіть навчальне відео про Rayforge, і ми розмістимо його прямо
+              тут, на головній сторінці, із вашим ім'ям та посиланням на ваш
+              канал.
+            </p>
+            <Link to="/contributing" className={styles.buttonDark}>
+              <Icon path={mdiPlayCircleOutline} size={0.85} />
+              <span>Створіть перше відео</span>
+            </Link>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function CommunitySection() {
+  return (
+    <section className={styles.communitySection}>
+      <div className={styles.communityInner}>
+        <p className={styles.kicker}>Вітрина</p>
+        <h2 className={styles.communityTitle}>Створено з Rayforge</h2>
+        <p className={styles.communitySubtitle}>
+          Дивіться, що створють автори по всьому світу, і діліться власними
+          роботами.
+        </p>
+        <a
+          href="https://discord.gg/sTHNdTtpQJ"
+          className={styles.buttonDark}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Icon path={mdiShareVariant} size={0.85} />
+          <span>Поділіться своїми роботами</span>
+        </a>
       </div>
     </section>
   );
@@ -172,90 +315,23 @@ function FeatureSection({
 
 export default function Home() {
   return (
-    <Layout description="Проектуйте та створюйте за допомогою лазерного різака — повноцінна творча студія для майстрів, художників та ремісників">
+    <Layout
+      title="Безкоштовне програмне забезпечення з відкритим кодом для лазерного різання"
+      description="Rayforge — безкоштовне програмне забезпечення з відкритим кодом для лазерного різання та гравіювання на верстатах з GRBL. Проєктуйте з AI, симулюйте у 3D та керуйте лазером — альтернатива LightBurn."
+    >
       <main className={styles.pageWrapper}>
-        
+
         <HeroSection />
 
-        <QuickLinks />
+        <CapabilityStrip />
 
-        <div className={styles.featuresWrapper}>
-          <FeatureSection
-            blobClass={styles.blobPurple}
-            title="Дизайн на основі ШІ"
-            description="Створюйте дизайни, просто описуючи те, що ви хочете. Генератор деталей ШІ
-              миттєво перетворює ваші текстові описи на дизайни, готові для лазера."
-            features={[
-              'Генеруйте дизайни з текстових підказок',
-              'Не потрібні навички дизайну',
-              'Працює з будь-яким сумісним з OpenAI постачальником',
-            ]}
-            image="/images/ai-prompt.png"
-          />
+        <DesignYourPartsSection />
 
-          <FeatureSection
-            blobClass={styles.blobCyan}
-            title="Ваші творіння в 3D"
-            description="Безшовний перехід від 2D-дизайнів до 3D-траєкторій інструменту. Rayforge генерує G-код для 2-осьових, 3-осьових та 4-осьових лазерних різаків і граверів, заповнюючи розрив між пласкими дизайнами та фізичними об'єктами."
-            compatibilityHeading="Сумісно з: Grbl, Smoothieware"
-            features={[
-              'Повна 3D-симуляція вашої роботи',
-              'Різка та гравіювання круглих об\'єктів',
-              'Гравіювання з поступовим заглибленням та обертовими осями',
-            ]}
-            image="/images/screenshot-rotary-closeup.png"
-            reverse
-          />
+        <FeatureCardsSection />
 
-          <FeatureSection
-            blobClass={styles.blobOrange}
-            title="Створюйте власні форми"
-            description="Створюйте власні дизайни безпосередньо в Rayforge. Вбудовані інструменти малювання дозволяють створювати ескізи, форми та уточнювати ваші ідеї без необхідності в окремому програмному забезпеченні для дизайну."
-            features={[
-              'Малюйте лінії, кола, криві та заповнені форми',
-              'Вирівнюйте все ідеально',
-              'Встановлюйте розміри, що оновлюються автоматично',
-            ]}
-            image="/images/screenshot-sketcher.png"
-          />
+        <TutorialSpotlight />
 
-          <FeatureSection
-            blobClass={styles.blobPurple}
-            title="Розумні траєкторії різання"
-            description="Працюйте швидше та витрачайте менше матеріалу. Rayforge визначає найефективніший спосіб різання вашого дизайну, щоб ваш лазер витрачав менше часу на переміщення та більше на творення."
-            features={[
-              'Швидше різання з оптимізованими переміщеннями',
-              'Економте матеріал завдяки автоматичному компонуванню',
-              'Плавні та точні криві',
-            ]}
-            image="/images/screenshot-optimizer.png"
-            reverse
-          />
-
-          <FeatureSection
-            blobClass={styles.blobCyan}
-            title="Попередній перегляд перед різанням"
-            description="Побачте, як ваш дизайн оживає віртуально, перш ніж різати справжній матеріал. Виявляйте потенційні проблеми на ранній стадії та економте час і матеріали."
-            features={[
-              'Бачте точно, як рухатиметься ваш лазер',
-              'Виявляйте помилки перед різанням',
-              'Інтерактивний попередній перегляд, що оновлюється під час дизайну',
-            ]}
-            image="/screenshots/main-simulation.png"
-          />
-
-          <FeatureSection
-            blobClass={styles.blobOrange}
-            title="Керування матеріалами та робочими процесами"
-            description="Зберігайте улюблені налаштування та отримуйте стабільні результати для всіх ваших проектів. Чи ріжете ви дерево, акрил чи шкіру, Rayforge пам'ятає, що працює найкраще."
-            features={[
-              'Зберігайте налаштування для різних матеріалів',
-              'Створюйте рецепти для повторного використання',
-            ]}
-            image="/images/screenshot-recipe.png"
-            reverse
-          />
-        </div>
+        <CommunitySection />
 
       </main>
     </Layout>

@@ -1,10 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
-import useBaseUrl from '@docusaurus/useBaseUrl';
 import styles from '@site/src/pages/index.module.css';
 import Icon from '@mdi/react';
-import { mdiRocketLaunch, mdiViewDashboard, mdiFeatureSearch } from '@mdi/js';
+import {
+  mdiDownload,
+  mdiGithub,
+  mdiArrowRight,
+  mdiPlayCircleOutline,
+  mdiYoutube,
+  mdiShareVariant,
+  mdiVectorSquare,
+  mdiLayersOutline,
+  mdiCameraOutline,
+  mdiRotate3d,
+  mdiBookOpenOutline,
+  mdiMapOutline,
+} from '@mdi/js';
+import { tutorials } from '@site/src/data/tutorials';
 
 function detectOs() {
   if (typeof window === 'undefined') {
@@ -42,58 +55,41 @@ function HeroSection() {
   return (
     <section className={styles.hero}>
       <div className={styles.heroInner}>
-        
-        {/* Left Side: Original Content */}
+
         <div className={styles.heroContent}>
+          <p className={styles.kicker}>设计 / 准备 / 创作</p>
           <h1 className={styles.heroTitle}>
-            全球<span className={styles.titleGradient}>最强大的开源</span>激光软件
+            <span className={styles.heroTitleLine1}>从创意出发</span>
+            <span className={styles.heroTitleLine2}>做出真实作品</span>
           </h1>
           <p className={styles.heroSubtitle}>
-            Rayforge 是一款适合您激光切割机的完整创意工作室，将 2D CAD、CAM 和机器控制集成在一个充满活力的软件包中。
+            Rayforge 是你的激光切割机创作套件。设计、准备、制作——尽在这一款免费开源应用中。
           </p>
           <div className={styles.heroCtaButtons}>
-            <Link
-              to={downloadTo}
-              className={styles.buttonPrimary}
-            >
-              下载
+            <Link to={downloadTo} className={styles.buttonDark}>
+              <Icon path={mdiDownload} size={0.85} />
+              <span>免费下载</span>
             </Link>
             <a
               href="https://github.com/barebaric/rayforge"
-              className={styles.buttonSecondary}
+              className={styles.buttonOutline}
               target="_blank"
               rel="noopener noreferrer"
             >
-              在 GitHub 上查看
+              <Icon path={mdiGithub} size={0.85} />
+              <span>开源</span>
             </a>
           </div>
-        </div>
-
-        {/* Right Side: Visual Cluster (Screenshot + Video) */}
-        <div className={styles.heroVisuals}>
-          <div className={styles.visualBlob}></div>
-          
-          {/* Main Back Layer: Screenshot */}
-          <div className={styles.screenshotLayer}>
-            <img
-              src={useBaseUrl('/screenshots/main-standard.png')}
-              alt="Rayforge 应用程序截图"
-              className={styles.heroImage}
-            />
-          </div>
-
-          {/* Floating Front Layer: Video */}
-          <div className={styles.videoLayer}>
-            <div className={styles.videoWrapper}>
-              <iframe
-                src="https://www.youtube.com/embed/srKXs2p31VY"
-                title="Rayforge 介绍"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen>
-              </iframe>
-            </div>
-          </div>
+          <a
+            href="https://www.youtube.com/watch?v=srKXs2p31VY"
+            className={styles.heroVideoLink}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Icon path={mdiPlayCircleOutline} size={0.9} />
+            <span>观看介绍视频</span>
+            <Icon path={mdiArrowRight} size={0.65} />
+          </a>
         </div>
 
       </div>
@@ -101,76 +97,200 @@ function HeroSection() {
   );
 }
 
-function QuickLinks() {
+const capabilities = [
+  {
+    icon: mdiVectorSquare,
+    label: '2D CAD 绘图',
+    to: '/docs/features/sketcher',
+  },
+  {
+    icon: mdiLayersOutline,
+    label: '多层任务',
+    to: '/docs/features/multi-layer',
+  },
+  {
+    icon: mdiCameraOutline,
+    label: '摄像头对位',
+    to: '/docs/machine/camera',
+  },
+  {
+    icon: mdiRotate3d,
+    label: '旋转轴支持',
+    to: '/docs/machine/rotary',
+  },
+  {
+    icon: mdiBookOpenOutline,
+    label: '材料配方',
+    to: '/docs/application-settings/recipes',
+  },
+  {
+    icon: mdiMapOutline,
+    label: '路径优化',
+    to: '/docs/features/path-optimization',
+  },
+];
+
+function CapabilityStrip() {
   return (
-    <div className={styles.linksContainer}>
-      <div className={styles.cardGrid}>
-        {/* Cyan Theme Card */}
-        <Link to="/docs/getting-started/installation" className={styles.cardLink}>
-          <div className={`${styles.card} ${styles.cardCyan}`}>
-            <div className={styles.cardIcon}>
-              <Icon path={mdiRocketLaunch} size={1.5} />
-            </div>
-            <h3>快速入门</h3>
-            <p>安装和配置 Rayforge。</p>
-          </div>
-        </Link>
-        
-        {/* Purple Theme Card */}
-        <Link to="/docs/ui/main-window" className={styles.cardLink}>
-          <div className={`${styles.card} ${styles.cardPurple}`}>
-            <div className={styles.cardIcon}>
-              <Icon path={mdiViewDashboard} size={1.5} />
-            </div>
-            <h3>用户界面</h3>
-            <p>探索工具和布局。</p>
-          </div>
-        </Link>
-        
-        {/* Orange Theme Card */}
-        <Link to="/docs/features/sketcher" className={styles.cardLink}>
-          <div className={`${styles.card} ${styles.cardOrange}`}>
-            <div className={styles.cardIcon}>
-              <Icon path={mdiFeatureSearch} size={1.5} />
-            </div>
-            <h3>功能特性</h3>
-            <p>发现更多功能。</p>
-          </div>
-        </Link>
+    <section className={styles.stripSection}>
+      <div className={styles.stripInner}>
+        {capabilities.map((cap) => (
+          <Link key={cap.label} to={cap.to} className={styles.stripItem}>
+            <Icon path={cap.icon} size={1.15} />
+            <span>{cap.label}</span>
+          </Link>
+        ))}
       </div>
-    </div>
+    </section>
   );
 }
 
-function FeatureSection({ 
-  title, 
-  description, 
-  features, 
-  image, 
-  reverse, 
-  compatibilityHeading,
-  blobClass 
-}) {
+function DesignYourPartsSection() {
   return (
-    <section className={styles.featureSection}>
-      <div className={`${styles.featureSectionInner} ${reverse ? styles.reverse : ''}`}>
-        
-        <div className={styles.featureVisual}>
-          <div className={`${styles.blobShape} ${blobClass}`}></div>
-          <img src={useBaseUrl(image)} alt={title} />
+    <section className={styles.partsSection}>
+      <div className={styles.partsLayers}>
+        <div className={styles.partsLeft} />
+        <div className={styles.partsRight} />
+      </div>
+      <div className={styles.partsInner}>
+        <div className={styles.partsContent}>
+          <p className={styles.partsKicker}>强大工具，无限可能。</p>
+          <h2 className={styles.partsTitle}>制作你自己的零件</h2>
+          <p className={styles.partsText}>
+            在 Rayforge 中直接绘制、塑形并完善自定义设计。内置绘图工具让任何创意成为现实——也可以直接描述你想要的东西，AI 工件生成器会立即为你生成设计。
+          </p>
+          <Link to="/docs/features/sketcher" className={styles.partsLink}>
+            <span>了解更多</span>
+            <Icon path={mdiArrowRight} size={0.65} />
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FeatureCardsSection() {
+  const cards = [
+    {
+      title: '设计',
+      subtitle: '强大的参数化 2D CAD 绘图工具。',
+      image: '/images/screenshot-sketcher.png',
+    },
+    {
+      title: '准备',
+      subtitle: '描摹图像、优化加工路径，微调每一个细节。',
+      image: '/images/screenshot-optimizer.png',
+    },
+    {
+      title: '创作',
+      subtitle: '自信地运行激光与 CNC 任务。快速。精准。可靠。',
+      image: '/screenshots/main-3d-bee.png',
+    },
+  ];
+
+  return (
+    <section className={styles.cardsSection}>
+      <div className={styles.cardsTrees}>
+        <div className={styles.cardsTreeLeft} />
+        <div className={styles.cardsTreeRight} />
+      </div>
+      <div className={styles.cardsInner}>
+        <p className={styles.cardsKicker}>应有尽有，绝不多余。</p>
+        <div className={styles.cardsGrid}>
+          {cards.map((card) => (
+            <div key={card.title} className={styles.card}>
+              <div className={styles.cardImage}>
+                <img src={card.image} alt={card.title} loading="lazy" />
+              </div>
+              <div className={styles.cardBody}>
+                <h3 className={styles.cardTitle}>{card.title}</h3>
+                <p className={styles.cardSubtitle}>{card.subtitle}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TutorialSpotlight() {
+  return (
+    <section className={styles.spotlightSection}>
+      <div className={styles.spotlightInner}>
+        <div className={styles.spotlightHeader}>
+          <p className={styles.kicker}>社区</p>
+          <h2 className={styles.spotlightTitle}>真实用户制作的教程</h2>
+          <p className={styles.spotlightSubtitle}>
+            向 Rayforge 真实用户制作的视频学习。下一个出现在这里的可能就是你的教程。
+          </p>
         </div>
 
-        <div className={styles.featureContent}>
-          <h2>{title}</h2>
-          <p>{description}</p>
-          {compatibilityHeading && <p className={styles.compatibilityHeading}>{compatibilityHeading}</p>}
-          {features && (
-            <ul>
-              {features.map((f, i) => <li key={i}>{f}</li>)}
-            </ul>
-          )}
-        </div>
-        
+        {tutorials.length > 0 ? (
+          <div className={styles.spotlightGrid}>
+            {tutorials.map((tutorial) => (
+              <a
+                key={tutorial.id}
+                href={`https://www.youtube.com/watch?v=${tutorial.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.spotlightCard}
+              >
+                <div className={styles.spotlightThumb}>
+                  <img
+                    src={`https://img.youtube.com/vi/${tutorial.id}/hqdefault.jpg`}
+                    alt={tutorial.title}
+                    loading="lazy"
+                  />
+                  <span className={styles.spotlightPlay}>
+                    <Icon path={mdiPlayCircleOutline} size={1.4} />
+                  </span>
+                </div>
+                <h3 className={styles.spotlightVideoTitle}>{tutorial.title}</h3>
+                <span className={styles.spotlightCreator}>
+                  {tutorial.creator}
+                </span>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <div className={styles.spotlightEmpty}>
+            <div className={styles.spotlightEmptyIcon}>
+              <Icon path={mdiYoutube} size={1.6} />
+            </div>
+            <h3>这里还空着——来做第一位主角吧。</h3>
+            <p>
+              制作一个 Rayforge 教程，我们会在首页展示它，附上你的名字和你的频道链接。
+            </p>
+            <Link to="/contributing" className={styles.buttonDark}>
+              <Icon path={mdiPlayCircleOutline} size={0.85} />
+              <span>制作第一个教程</span>
+            </Link>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function CommunitySection() {
+  return (
+    <section className={styles.communitySection}>
+      <div className={styles.communityInner}>
+        <p className={styles.kicker}>作品展示</p>
+        <h2 className={styles.communityTitle}>用 Rayforge 制作</h2>
+        <p className={styles.communitySubtitle}>
+          看看世界各地的创作者在做什么，并分享你自己的作品。
+        </p>
+        <a
+          href="https://discord.gg/sTHNdTtpQJ"
+          className={styles.buttonDark}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Icon path={mdiShareVariant} size={0.85} />
+          <span>分享你的作品</span>
+        </a>
       </div>
     </section>
   );
@@ -178,90 +298,23 @@ function FeatureSection({
 
 export default function Home() {
   return (
-    <Layout description="使用激光切割机设计和创作 - 为创客、艺术家和手工艺人打造的完整创意工作室">
+    <Layout
+      title="免费开源激光切割软件"
+      description="Rayforge 是适用于 GRBL 机器的免费开源激光切割与雕刻软件。用 AI 设计、3D 模拟并控制你的激光机——LightBurn 的替代品。"
+    >
       <main className={styles.pageWrapper}>
-        
+
         <HeroSection />
 
-        <QuickLinks />
+        <CapabilityStrip />
 
-        <div className={styles.featuresWrapper}>
-          <FeatureSection
-            blobClass={styles.blobPurple}
-            title="AI 驱动设计"
-            description="只需描述您想要什么即可创建设计。AI 工件生成器
-              即时将您的文本描述转化为激光就绪的设计。"
-            features={[
-              '从文本提示生成设计',
-              '无需设计技能',
-              '适用于任何 OpenAI 兼容提供商',
-            ]}
-            image="/images/ai-prompt.png"
-          />
+        <DesignYourPartsSection />
 
-          <FeatureSection
-            blobClass={styles.blobCyan}
-            title="您的 3D 创作"
-            description="无缝地从 2D 设计过渡到 3D 刀具路径。Rayforge 为 2 轴、3 轴和 4 轴激光切割机和雕刻机生成 G-code，在平面设计和实体对象之间架起桥梁。"
-            compatibilityHeading="兼容：Grbl、Smoothieware"
-            features={[
-              '完整 3D 模拟您的工作',
-              '切割和雕刻圆形物体',
-              '使用步进下降和旋转轴进行雕刻',
-            ]}
-            image="/images/screenshot-rotary-closeup.png"
-            reverse
-          />
+        <FeatureCardsSection />
 
-          <FeatureSection
-            blobClass={styles.blobOrange}
-            title="设计您自己的形状"
-            description="直接在 Rayforge 中创建自定义设计。内置绘图工具让您无需单独的设计软件即可绘制、塑造和完善您的创意。"
-            features={[
-              '绘制线条、圆形、曲线和填充形状',
-              '完美对齐所有元素',
-              '设置自动更新的尺寸',
-            ]}
-            image="/images/screenshot-sketcher.png"
-          />
+        <TutorialSpotlight />
 
-          <FeatureSection
-            blobClass={styles.blobPurple}
-            title="智能切割路径"
-            description="更快地工作，更少地浪费材料。Rayforge 会找出切割您设计最高效的方式，让您的激光器花更少的时间移动，更多的时间创作。"
-            features={[
-              "通过优化的移动实现更快切割",
-              '通过自动布局节省材料',
-              '流畅、精确的曲线',
-            ]}
-            image="/images/screenshot-optimizer.png"
-            reverse
-          />
-
-          <FeatureSection
-            blobClass={styles.blobCyan}
-            title="切割前预览"
-            description="在实际切割之前，先虚拟地看到您的设计呈现效果。提前发现潜在问题，节省时间和材料。"
-            features={[
-              '准确查看激光的移动方式',
-              '在切割前发现错误',
-              '设计时实时预览更新',
-            ]}
-            image="/screenshots/main-simulation.png"
-          />
-
-          <FeatureSection
-            blobClass={styles.blobOrange}
-            title="材料和工作流管理"
-            description="保存您最喜爱的设置，在所有项目中获得一致的结果。无论您切割木材、亚克力还是皮革，Rayforge 都会记住最佳设置。"
-            features={[
-              '保存不同材料的设置',
-              '创建可重复使用的配方',
-            ]}
-            image="/images/screenshot-recipe.png"
-            reverse
-          />
-        </div>
+        <CommunitySection />
 
       </main>
     </Layout>

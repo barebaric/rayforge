@@ -1,10 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
-import useBaseUrl from '@docusaurus/useBaseUrl';
 import styles from '@site/src/pages/index.module.css';
 import Icon from '@mdi/react';
-import { mdiRocketLaunch, mdiViewDashboard, mdiFeatureSearch } from '@mdi/js';
+import {
+  mdiDownload,
+  mdiGithub,
+  mdiArrowRight,
+  mdiPlayCircleOutline,
+  mdiYoutube,
+  mdiShareVariant,
+  mdiVectorSquare,
+  mdiLayersOutline,
+  mdiCameraOutline,
+  mdiRotate3d,
+  mdiBookOpenOutline,
+  mdiMapOutline,
+} from '@mdi/js';
+import { tutorials } from '@site/src/data/tutorials';
 
 function detectOs() {
   if (typeof window === 'undefined') {
@@ -42,55 +55,43 @@ function HeroSection() {
   return (
     <section className={styles.hero}>
       <div className={styles.heroInner}>
-        
+
         <div className={styles.heroContent}>
+          <p className={styles.kicker}>Entwerfen / Vorbereiten / Erstellen</p>
           <h1 className={styles.heroTitle}>
-            <span className={styles.titleGradient}>Die weltweit leistungsstärkste Open-Source</span> Laser-Software
+            <span className={styles.heroTitleLine1}>Von der Idee</span>
+            <span className={styles.heroTitleLine2}>zum echten Projekt</span>
           </h1>
           <p className={styles.heroSubtitle}>
-            Rayforge ist ein komplettes Kreativstudio für deinen Lasercutter,
-            das 2D-CAD, CAM und Maschinensteuerung in einem dynamischen Paket vereint.
+            Rayforge ist die kreative Suite für deinen Lasercutter. Entwerfen,
+            vorbereiten und erstellen – alles in einer kostenlosen
+            Open-Source-App.
           </p>
           <div className={styles.heroCtaButtons}>
-            <Link
-              to={downloadTo}
-              className={styles.buttonPrimary}
-            >
-              Download
+            <Link to={downloadTo} className={styles.buttonDark}>
+              <Icon path={mdiDownload} size={0.85} />
+              <span>Kostenlos herunterladen</span>
             </Link>
             <a
               href="https://github.com/barebaric/rayforge"
-              className={styles.buttonSecondary}
+              className={styles.buttonOutline}
               target="_blank"
               rel="noopener noreferrer"
             >
-              Auf GitHub ansehen
+              <Icon path={mdiGithub} size={0.85} />
+              <span>Open Source</span>
             </a>
           </div>
-        </div>
-
-        <div className={styles.heroVisuals}>
-          <div className={styles.visualBlob}></div>
-          
-          <div className={styles.screenshotLayer}>
-            <img
-              src={useBaseUrl('/screenshots/main-standard.png')}
-              alt="Rayforge Anwendung Screenshot"
-              className={styles.heroImage}
-            />
-          </div>
-
-          <div className={styles.videoLayer}>
-            <div className={styles.videoWrapper}>
-              <iframe
-                src="https://www.youtube.com/embed/srKXs2p31VY"
-                title="Rayforge Einführung"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen>
-              </iframe>
-            </div>
-          </div>
+          <a
+            href="https://www.youtube.com/watch?v=srKXs2p31VY"
+            className={styles.heroVideoLink}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Icon path={mdiPlayCircleOutline} size={0.9} />
+            <span>Die Einführung ansehen</span>
+            <Icon path={mdiArrowRight} size={0.65} />
+          </a>
         </div>
 
       </div>
@@ -98,73 +99,213 @@ function HeroSection() {
   );
 }
 
-function QuickLinks() {
+const capabilities = [
+  {
+    icon: mdiVectorSquare,
+    label: '2D-CAD-Sketcher',
+    to: '/docs/features/sketcher',
+  },
+  {
+    icon: mdiLayersOutline,
+    label: 'Mehrschicht-Aufträge',
+    to: '/docs/features/multi-layer',
+  },
+  {
+    icon: mdiCameraOutline,
+    label: 'Kamera-Ausrichtung',
+    to: '/docs/machine/camera',
+  },
+  {
+    icon: mdiRotate3d,
+    label: 'Rotationsachsen',
+    to: '/docs/machine/rotary',
+  },
+  {
+    icon: mdiBookOpenOutline,
+    label: 'Material-Rezepte',
+    to: '/docs/application-settings/recipes',
+  },
+  {
+    icon: mdiMapOutline,
+    label: 'Pfadoptimierung',
+    to: '/docs/features/path-optimization',
+  },
+];
+
+function CapabilityStrip() {
   return (
-    <div className={styles.linksContainer}>
-      <div className={styles.cardGrid}>
-        <Link to="/docs/getting-started/installation" className={styles.cardLink}>
-          <div className={`${styles.card} ${styles.cardCyan}`}>
-            <div className={styles.cardIcon}>
-              <Icon path={mdiRocketLaunch} size={1.5} />
-            </div>
-            <h3>Erste Schritte</h3>
-            <p>Rayforge installieren und konfigurieren.</p>
-          </div>
-        </Link>
-        
-        <Link to="/docs/ui/main-window" className={styles.cardLink}>
-          <div className={`${styles.card} ${styles.cardPurple}`}>
-            <div className={styles.cardIcon}>
-              <Icon path={mdiViewDashboard} size={1.5} />
-            </div>
-            <h3>Benutzeroberfläche</h3>
-            <p>Werkzeuge und Layout erkunden.</p>
-          </div>
-        </Link>
-        
-        <Link to="/docs/features/sketcher" className={styles.cardLink}>
-          <div className={`${styles.card} ${styles.cardOrange}`}>
-            <div className={styles.cardIcon}>
-              <Icon path={mdiFeatureSearch} size={1.5} />
-            </div>
-            <h3>Funktionen</h3>
-            <p>Weitere Möglichkeiten entdecken.</p>
-          </div>
-        </Link>
+    <section className={styles.stripSection}>
+      <div className={styles.stripInner}>
+        {capabilities.map((cap) => (
+          <Link key={cap.label} to={cap.to} className={styles.stripItem}>
+            <Icon path={cap.icon} size={1.15} />
+            <span>{cap.label}</span>
+          </Link>
+        ))}
       </div>
-    </div>
+    </section>
   );
 }
 
-function FeatureSection({ 
-  title, 
-  description, 
-  features, 
-  image, 
-  reverse, 
-  compatibilityHeading,
-  blobClass 
-}) {
+function DesignYourPartsSection() {
   return (
-    <section className={styles.featureSection}>
-      <div className={`${styles.featureSectionInner} ${reverse ? styles.reverse : ''}`}>
-        
-        <div className={styles.featureVisual}>
-          <div className={`${styles.blobShape} ${blobClass}`}></div>
-          <img src={useBaseUrl(image)} alt={title} />
+    <section className={styles.partsSection}>
+      <div className={styles.partsLayers}>
+        <div className={styles.partsLeft} />
+        <div className={styles.partsRight} />
+      </div>
+      <div className={styles.partsInner}>
+        <div className={styles.partsContent}>
+          <p className={styles.partsKicker}>
+            Starke Werkzeuge. Grenzenlose Möglichkeiten.
+          </p>
+          <h2 className={styles.partsTitle}>Erstelle deine eigenen Teile</h2>
+          <p className={styles.partsText}>
+            Skizziere, forme und verfeinere eigene Designs direkt in Rayforge.
+            Mit den integrierten Zeichenwerkzeugen bringst du jede Idee zum
+            Leben – oder beschreibe einfach, was du möchtest, und der
+            KI-Werkstückgenerator entwirft es sofort für dich.
+          </p>
+          <Link to="/docs/features/sketcher" className={styles.partsLink}>
+            <span>Mehr erfahren</span>
+            <Icon path={mdiArrowRight} size={0.65} />
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FeatureCardsSection() {
+  const cards = [
+    {
+      title: 'Entwerfen',
+      subtitle: 'Leistungsstarker 2D-CAD-Sketcher mit parametrischen Werkzeugen.',
+      image: '/images/screenshot-sketcher.png',
+    },
+    {
+      title: 'Vorbereiten',
+      subtitle:
+        'Bilder nachzeichnen, Werkzeugpfade optimieren und jedes Detail feinjustieren.',
+      image: '/images/screenshot-optimizer.png',
+    },
+    {
+      title: 'Erstellen',
+      subtitle:
+        'Führe Laser- und CNC-Aufträge souverän aus. Schnell. Präzise. Zuverlässig.',
+      image: '/screenshots/main-3d-bee.png',
+    },
+  ];
+
+  return (
+    <section className={styles.cardsSection}>
+      <div className={styles.cardsTrees}>
+        <div className={styles.cardsTreeLeft} />
+        <div className={styles.cardsTreeRight} />
+      </div>
+      <div className={styles.cardsInner}>
+        <p className={styles.cardsKicker}>
+          Alles, was du brauchst. Nichts Überflüssiges.
+        </p>
+        <div className={styles.cardsGrid}>
+          {cards.map((card) => (
+            <div key={card.title} className={styles.card}>
+              <div className={styles.cardImage}>
+                <img src={card.image} alt={card.title} loading="lazy" />
+              </div>
+              <div className={styles.cardBody}>
+                <h3 className={styles.cardTitle}>{card.title}</h3>
+                <p className={styles.cardSubtitle}>{card.subtitle}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TutorialSpotlight() {
+  return (
+    <section className={styles.spotlightSection}>
+      <div className={styles.spotlightInner}>
+        <div className={styles.spotlightHeader}>
+          <p className={styles.kicker}>Community</p>
+          <h2 className={styles.spotlightTitle}>
+            Tutorials von echten Nutzern
+          </h2>
+          <p className={styles.spotlightSubtitle}>
+            Lerne aus Videos von echten-Rayforge-Nutzern. Dein Tutorial könnte
+            als Nächstes hier erscheinen.
+          </p>
         </div>
 
-        <div className={styles.featureContent}>
-          <h2>{title}</h2>
-          <p>{description}</p>
-          {compatibilityHeading && <p className={styles.compatibilityHeading}>{compatibilityHeading}</p>}
-          {features && (
-            <ul>
-              {features.map((f, i) => <li key={i}>{f}</li>)}
-            </ul>
-          )}
-        </div>
-        
+        {tutorials.length > 0 ? (
+          <div className={styles.spotlightGrid}>
+            {tutorials.map((tutorial) => (
+              <a
+                key={tutorial.id}
+                href={`https://www.youtube.com/watch?v=${tutorial.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.spotlightCard}
+              >
+                <div className={styles.spotlightThumb}>
+                  <img
+                    src={`https://img.youtube.com/vi/${tutorial.id}/hqdefault.jpg`}
+                    alt={tutorial.title}
+                    loading="lazy"
+                  />
+                  <span className={styles.spotlightPlay}>
+                    <Icon path={mdiPlayCircleOutline} size={1.4} />
+                  </span>
+                </div>
+                <h3 className={styles.spotlightVideoTitle}>{tutorial.title}</h3>
+                <span className={styles.spotlightCreator}>
+                  {tutorial.creator}
+                </span>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <div className={styles.spotlightEmpty}>
+            <div className={styles.spotlightEmptyIcon}>
+              <Icon path={mdiYoutube} size={1.6} />
+            </div>
+            <h3>Dieses Spotlight ist leer – werde sein erster Star.</h3>
+            <p>
+              Erstelle ein Rayforge-Tutorial, und wir zeigen es direkt hier auf
+              der Startseite – mit deinem Namen und einem Link zu deinem Kanal.
+            </p>
+            <Link to="/contributing" className={styles.buttonDark}>
+              <Icon path={mdiPlayCircleOutline} size={0.85} />
+              <span>Erstelle das erste Tutorial</span>
+            </Link>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function CommunitySection() {
+  return (
+    <section className={styles.communitySection}>
+      <div className={styles.communityInner}>
+        <p className={styles.kicker}>Showcase</p>
+        <h2 className={styles.communityTitle}>Mit Rayforge erstellt</h2>
+        <p className={styles.communitySubtitle}>
+          Sieh, was Creator weltweit erstellen, und teile deine eigenen Werke.
+        </p>
+        <a
+          href="https://discord.gg/sTHNdTtpQJ"
+          className={styles.buttonDark}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Icon path={mdiShareVariant} size={0.85} />
+          <span>Teile deine Kreationen</span>
+        </a>
       </div>
     </section>
   );
@@ -172,90 +313,23 @@ function FeatureSection({
 
 export default function Home() {
   return (
-    <Layout description="Gestalte und erschaffe mit deinem Lasercutter - das komplette Kreativstudio für Maker, Künstler und Handwerker">
+    <Layout
+      title="Kostenlose Open-Source-Lasercutter-Software"
+      description="Rayforge ist eine kostenlose Open-Source-Software für Laserschneiden und -gravur für GRBL-basierte Maschinen. Entwirf mit KI, simuliere in 3D und steuere deinen Laser – die LightBurn-Alternative."
+    >
       <main className={styles.pageWrapper}>
-        
+
         <HeroSection />
 
-        <QuickLinks />
+        <CapabilityStrip />
 
-        <div className={styles.featuresWrapper}>
-          <FeatureSection
-            blobClass={styles.blobPurple}
-            title="KI-gestütztes Design"
-            description="Erstelle Designs, indem du einfach beschreibst, was du möchtest. Der KI-Werkstückgenerator
-              verwandelt deine Textbeschreibungen sofort in laserbereite Designs."
-            features={[
-              'Designs aus Text-Prompts generieren',
-              'Keine Designkenntnisse erforderlich',
-              'Funktioniert mit jedem OpenAI-kompatiblen Anbieter',
-            ]}
-            image="/images/ai-prompt.png"
-          />
+        <DesignYourPartsSection />
 
-          <FeatureSection
-            blobClass={styles.blobCyan}
-            title="Deine Kreationen in 3D"
-            description="Nahtloser Übergang von 2D-Designs zu 3D-Werkzeugpfaden. Rayforge generiert G-Code für 2-Achsen-, 3-Achsen- und 4-Achsen-Lasercutter und -gravierer und überbrückt die Lücke zwischen flachen Designs und physischen Objekten."
-            compatibilityHeading="Kompatibel mit: Grbl, Smoothieware"
-            features={[
-              'Simulieren Sie Ihre Arbeit in 3D',
-              'Schneiden und gravieren Sie runde Objekte',
-              'Gravieren Sie mit Schritt-ab und Rotationsachsen',
-            ]}
-            image="/images/screenshot-rotary-closeup.png"
-            reverse
-          />
+        <FeatureCardsSection />
 
-          <FeatureSection
-            blobClass={styles.blobOrange}
-            title="Gestalte deine eigenen Formen"
-            description="Erstelle benutzerdefinierte Designs direkt in Rayforge. Die integrierten Zeichenwerkzeuge ermöglichen es dir, deine Ideen zu skizzieren, zu formen und zu verfeinern, ohne separate Designsoftware zu benötigen."
-            features={[
-              'Zeichne Linien, Kreise, Kurven und gefüllte Formen',
-              'Richte alles perfekt aus',
-              'Definiere Abmessungen, die sich automatisch aktualisieren',
-            ]}
-            image="/images/screenshot-sketcher.png"
-          />
+        <TutorialSpotlight />
 
-          <FeatureSection
-            blobClass={styles.blobPurple}
-            title="Intelligente Schneidepfade"
-            description="Arbeite schneller und verschwende weniger Material. Rayforge ermittelt die effizienteste Methode, dein Design zu schneiden, damit dein Laser weniger Zeit mit Bewegen und mehr Zeit mit Erschaffen verbringt."
-            features={[
-              "Schnelleres Schneiden durch optimierte Bewegungen",
-              'Material sparen durch automatisches Layout',
-              'Glatte, präzise Kurven',
-            ]}
-            image="/images/screenshot-optimizer.png"
-            reverse
-          />
-
-          <FeatureSection
-            blobClass={styles.blobCyan}
-            title="Vorschau Vor Dem Schneiden"
-            description="Sieh dein Design virtuell zum Leben erwachen, bevor du dich auf das echte Material festlegst. Erkenne potenzielle Probleme früh und spare Zeit und Material."
-            features={[
-              'Sieh genau, wie sich dein Laser bewegen wird',
-              'Fehler erkennen bevor du schneidest',
-              'Live-Vorschau, die sich während des Designs aktualisiert',
-            ]}
-            image="/screenshots/main-simulation.png"
-          />
-
-          <FeatureSection
-            blobClass={styles.blobOrange}
-            title="Material- und Workflow-Verwaltung"
-            description="Speichere deine Lieblingseinstellungen und erhalte konsistente Ergebnisse in all deinen Projekten. Ob du Holz, Acryl oder Leder schneidest - Rayforge merkt sich, was am besten funktioniert."
-            features={[
-              'Einstellungen für verschiedene Materialien speichern',
-              'Wiederverwendbare Rezepte erstellen',
-            ]}
-            image="/images/screenshot-recipe.png"
-            reverse
-          />
-        </div>
+        <CommunitySection />
 
       </main>
     </Layout>
