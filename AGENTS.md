@@ -10,6 +10,8 @@
    o `pixi run lint`. Performs linting and static code analysis
    o `pixi run print-untranslated list`: List languages with untranslated strings
    o `pixi run print-untranslated <lang>`: Print untranslated strings from po file
+   o `python3 scripts/media/gen_image.sh --prompt "a wooden CNC part" --out part.png`:
+      Generates an image using AI. Only works if environment set up for it (pytorch)
 
 ## Code style
 
