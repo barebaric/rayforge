@@ -15,6 +15,7 @@ Coordinate Spaces:
 import gc
 from typing import ClassVar
 
+import numpy as np
 import pytest
 
 from rayforge import config
@@ -787,3 +788,41 @@ class TestCoordinateSpaces:
         )
 
         assert offset[2] == pytest.approx(0.0)
+
+    def test_machine_to_command_matrix_subtracts_wcs_offset(self, machine):
+        """
+        The machine→command matrix must translate by the negative WCS
+        command offset so the controller lands at the machine position
+        after adding the offset back (issue #362).
+        """
+        machine.set_axis_extents(100.0, 100.0)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        machine.wcs_origin_is_workarea_origin = False
+        machine.active_wcs = "G56"
+        machine.update_wcs_offset("G56", (60.0, 60.0, 0.0))
+
+        space = machine.get_coordinate_space()
+        matrix = space.get_machine_to_command_matrix(
+            wcs_offset=machine.get_active_wcs_offset(),
+            wcs_is_workarea_origin=False,
+        )
+        command = matrix @ np.array([70.0, 70.0, 0.0, 1.0])
+
+        assert command[0] == pytest.approx(10.0)
+        assert command[1] == pytest.approx(10.0)
+        assert command[2] == pytest.approx(0.0)
+
+    def test_machine_to_command_matrix_zero_offset_is_identity(self, machine):
+        """
+        With a zero WCS offset, machine and command coordinates match.
+        """
+        machine.set_axis_extents(100.0, 100.0)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        machine.wcs_origin_is_workarea_origin = False
+
+        space = machine.get_coordinate_space()
+        matrix = space.get_machine_to_command_matrix()
+        command = matrix @ np.array([25.0, 45.0, 0.0, 1.0])
+
+        assert command[0] == pytest.approx(25.0)
+        assert command[1] == pytest.approx(45.0)

@@ -227,14 +227,22 @@ class MachineCmd:
         frame_with_laser = frame_ops * head.frame_repeat_count
         frame_with_laser.job_end()
 
-        # Transform world-space frame ops to machine space.
+        # Transform world-space frame ops to machine space, then to
+        # command space: the emitted coordinates must be relative to
+        # the active WCS origin because the controller adds the WCS
+        # offset back (issue #362). The regular send path performs the
+        # same adjustment in the machine-transform stage.
         space = MachineSpace.from_machine(machine)
         combined = space.get_world_to_machine_matrix()
         if machine.reverse_z_axis:
             z_flip = np.eye(4)
             z_flip[2, 2] = -1.0
             combined = z_flip @ combined
-        frame_with_laser.transform(combined)
+        to_command = space.get_machine_to_command_matrix(
+            wcs_offset=machine.get_active_wcs_offset(),
+            wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
+        )
+        frame_with_laser.transform(to_command @ combined)
 
         # AXIS_REPLACEMENT modules encode the rotary degrees into the
         # replaced machine axis after the world→machine transform.

@@ -237,6 +237,29 @@ class MachineSpace(CoordinateSpace):
 
         return matrix
 
+    def get_machine_to_command_matrix(
+        self,
+        wcs_offset: Point3D = (0.0, 0.0, 0.0),
+        wcs_is_workarea_origin: bool = False,
+    ) -> np.ndarray:
+        """
+        Returns the 4x4 transformation matrix to convert from machine
+        space to command space (G-code output).
+
+        Command coordinates are machine coordinates minus the command
+        offset returned by get_command_offset(), so that the controller
+        lands at the machine position when it adds the active WCS offset
+        back on its end.
+        """
+        off_x, off_y, _ = self.get_command_offset(
+            wcs_offset=wcs_offset,
+            wcs_is_workarea_origin=wcs_is_workarea_origin,
+        )
+        matrix = np.identity(4, dtype=np.float64)
+        matrix[0, 3] = -off_x
+        matrix[1, 3] = -off_y
+        return matrix
+
     def get_machine_to_world_matrix(self) -> np.ndarray:
         """
         Returns the inverse of get_world_to_machine_matrix().
