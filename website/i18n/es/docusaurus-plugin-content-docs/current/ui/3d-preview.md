@@ -93,8 +93,8 @@ Personaliza lo que ves:
 - **Colorear por Operación**: Diferentes colores para cada operación
 
 :::tip Colores por Láser
-Al usar máquinas con múltiples cabezales láser, cada láser puede tener sus propios
-colores de corte y raster configurados en [Ajustes de Láser](../machine/laser.md).
+Al usar máquinas con múltiples cabezales láser, cada láser puede tener su propio
+color configurado en [Ajustes de Láser](../machine/laser.md).
 Esto facilita identificar qué láser realizará cada operación.
 :::
 

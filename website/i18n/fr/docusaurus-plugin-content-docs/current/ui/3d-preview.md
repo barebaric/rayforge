@@ -93,7 +93,7 @@ Personnalise ce que tu vois :
 
 :::tip Couleurs par Laser
 Lors de l'utilisation de machines avec plusieurs têtes laser, chaque laser peut
-avoir ses propres couleurs de coupe et de raster configurées dans
+avoir sa propre couleur configurée dans
 [Paramètres Laser](../machine/laser.md). Cela facilite l'identification du laser
 qui effectuera chaque opération.
 :::

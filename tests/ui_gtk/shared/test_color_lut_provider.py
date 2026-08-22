@@ -124,7 +124,6 @@ def test_from_machine_filters_non_laser_heads():
     head1 = LaserHead()
     head2 = LaserHead()
     head2.set_cut_color("#00ff00")
-    head2.set_raster_color("#00ff00")
     machine = MagicMock(heads=[head1, MagicMock(uid="spindle"), head2])
 
     provider = ColorLutProvider.from_machine(machine, _theme_color_set())

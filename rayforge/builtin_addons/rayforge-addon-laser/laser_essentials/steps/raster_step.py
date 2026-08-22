@@ -321,12 +321,6 @@ class EngraveStep(LaserStep):
         except KeyError:
             return None
 
-    def get_operation_color(self, head) -> str | None:
-        """The head's raster color, used to represent engraving."""
-        if isinstance(head, LaserHead):
-            return head.raster_color
-        return None
-
     def is_position_sensitive(self) -> bool:
         """The raster assembler bakes ``workpiece.bbox`` into its
         output via ``offset_x_mm`` / ``offset_y_mm`` so the compute

@@ -91,25 +91,16 @@ Um deine Punktgröße zu messen:
 3. Verwende den Durchschnitt mehrerer Messungen
 :::
 
-#### Schnittfarbe
+#### Farbe
 
-Die Farbe, die zum Anzeigen von Schnittoperationen für diesen Laser im Canvas und
-in der 3D-Vorschau verwendet wird. Dies hilft dir, visuell zu unterscheiden,
-welcher Laser welche Schnittoperation durchführen wird, wenn du mit mehreren
-Laserköpfen arbeitest.
+Die Farbe, die zum Anzeigen der Operationen dieses Lasers (Schnitte und
+Gravuren) im Canvas und in der 3D-Vorschau verwendet wird. Dies hilft dir,
+visuell zu unterscheiden, welcher Laser welche Operation durchführen wird,
+wenn du mit mehreren Laserköpfen arbeitest.
 
 - Klicke auf die Farbauswahl, um einen Farbwähler zu öffnen
 - Wähle eine Farbe, die gut mit deiner Materialvorschau kontrastiert
 - Standardfarben werden automatisch zugewiesen
-
-#### Rasterfarbe
-
-Die Farbe, die zum Anzeigen von Raster-/Gravuroperationen für diesen Laser im
-Canvas und in der 3D-Vorschau verwendet wird.
-
-- Klicke auf die Farbauswahl, um einen Farbwähler zu öffnen
-- Nützlich zur Unterscheidung von Rasteroperationen von Schnitten
-- Jeder Laser kann seine eigene Rasterfarbe haben
 
 :::tip Multi-Laser-Workflows
 Bei der Verwendung mehrerer Laserköpfe erleichtert das Zuweisen unterschiedlicher

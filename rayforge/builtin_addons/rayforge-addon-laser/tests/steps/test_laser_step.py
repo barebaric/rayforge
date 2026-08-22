@@ -286,24 +286,22 @@ def test_create_applies_head_pwm_defaults():
     assert s.pulse_width == 50
 
 
-def test_laser_step_uses_cut_color():
-    """A cutting laser step reports the head's cut color."""
+def test_laser_step_uses_head_color():
+    """A laser step reports the head's color."""
     head = MagicMock(spec=LaserHead)
     head.cut_color = "#112233"
-    head.raster_color = "#445566"
 
     s = ContourStep(name="t")
     assert s.get_operation_color(head) == "#112233"
 
 
-def test_engrave_step_uses_raster_color():
-    """An engraving step reports the head's raster color."""
+def test_engrave_step_uses_head_color():
+    """An engraving step reports the head's color."""
     head = MagicMock(spec=LaserHead)
     head.cut_color = "#112233"
-    head.raster_color = "#445566"
 
     s = EngraveStep(name="t")
-    assert s.get_operation_color(head) == "#445566"
+    assert s.get_operation_color(head) == "#112233"
 
 
 def test_laser_step_color_none_for_non_laser_head():

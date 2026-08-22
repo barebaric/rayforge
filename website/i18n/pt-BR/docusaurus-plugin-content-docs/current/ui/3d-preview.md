@@ -96,8 +96,8 @@ Personalize o que você vê:
 - **Colorir por Operação**: Cores diferentes para cada operação
 
 :::tip Cores por Laser
-Ao usar máquinas com múltiplas cabeças de laser, cada laser pode ter suas
-próprias cores de corte e raster configuradas nas
+Ao usar máquinas com múltiplas cabeças de laser, cada laser pode ter sua
+própria cor configurada nas
 [Configurações do Laser](../machine/laser.md). Isso facilita identificar qual laser
 realizará cada operação.
 :::
