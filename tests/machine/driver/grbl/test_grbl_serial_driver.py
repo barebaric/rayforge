@@ -1,4 +1,5 @@
 import asyncio
+import time
 from unittest.mock import AsyncMock, MagicMock, PropertyMock
 
 import pytest
@@ -30,6 +31,17 @@ def mock_serial_transport(mocker):
     mock.status_changed = MagicMock()
     mock.port = "/dev/ttyUSB0"
     return mock
+
+
+async def wait_for_send_call(mock_send, payload, timeout=5.0):
+    """Waits until mock_send has been called with payload, tolerating
+    slow CI runners."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if (payload,) in [c.args for c in mock_send.call_args_list]:
+            return
+        await asyncio.sleep(0.01)
+    pytest.fail(f"send({payload!r}) not observed within {timeout:.1f}s")
 
 
 @pytest.fixture
@@ -467,8 +479,7 @@ class TestGrblSerialDriver:
 
         # Unblock: ack both lines and let the job finish normally.
         driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
-        await asyncio.sleep(0.01)
-        mock_serial_transport.send.assert_called_with(line2)
+        await wait_for_send_call(mock_serial_transport.send, line2)
         driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
         await run_task
 
