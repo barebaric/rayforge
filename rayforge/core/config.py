@@ -2,6 +2,7 @@ import logging
 from dataclasses import dataclass, fields
 from datetime import datetime, timezone
 from enum import Enum
+from gettext import gettext as _
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +27,25 @@ class StartupBehavior(Enum):
     NONE = "none"
     LAST_PROJECT = "last_project"
     SPECIFIC_PROJECT = "specific_project"
+
+
+class RightPanelMode(Enum):
+    """Enum for right panel display modes."""
+
+    HIDDEN = "hidden"
+    ACTIVE_LAYER = "active_layer"
+    NON_EMPTY_LAYERS = "non_empty_layers"
+    ALL_LAYERS = "all_layers"
+
+    def label(self) -> str:
+        """Return a translatable label for this panel mode."""
+        labels = {
+            self.HIDDEN: _("Hidden"),
+            self.ACTIVE_LAYER: _("Active Layer Workflow"),
+            self.NON_EMPTY_LAYERS: _("All Non-Empty Layers"),
+            self.ALL_LAYERS: _("All Layers"),
+        }
+        return labels[self]
 
 
 @dataclass
@@ -75,6 +95,7 @@ class Config:
         # UI visibility states
         self.bottom_panel: dict[str, Any] | None = None
         self.right_panel_visible: bool = True
+        self.right_panel_mode: RightPanelMode = RightPanelMode.NON_EMPTY_LAYERS
         self.canvas_view: CanvasViewState = CanvasViewState()
         self.auto_pipeline: bool = True
         self.ops_color_mode: OpsColorMode = OpsColorMode.LASER
@@ -147,6 +168,13 @@ class Config:
         if self.right_panel_visible == visible:
             return
         self.right_panel_visible = visible
+        self.changed.send(self)
+
+    def set_right_panel_mode(self, mode: RightPanelMode):
+        """Sets the right panel display mode."""
+        if self.right_panel_mode == mode:
+            return
+        self.right_panel_mode = mode
         self.changed.send(self)
 
     def set_import_dpi(self, dpi: float):
@@ -241,6 +269,7 @@ class Config:
             ),
             "bottom_panel": self.bottom_panel,
             "right_panel_visible": self.right_panel_visible,
+            "right_panel_mode": self.right_panel_mode.value,
             "canvas_view": self.canvas_view.to_dict(),
             "auto_pipeline": self.auto_pipeline,
             "check_for_app_updates": self.check_for_app_updates,
@@ -293,6 +322,12 @@ class Config:
         # Load UI visibility states
         config.bottom_panel = data.get("bottom_panel", None)
         config.right_panel_visible = data.get("right_panel_visible", True)
+        default_panel_mode = RightPanelMode.NON_EMPTY_LAYERS.value
+        panel_mode_str = data.get("right_panel_mode", default_panel_mode)
+        try:
+            config.right_panel_mode = RightPanelMode(panel_mode_str)
+        except ValueError:
+            config.right_panel_mode = RightPanelMode.NON_EMPTY_LAYERS
         config.canvas_view = CanvasViewState.from_dict(
             data.get("canvas_view", {})
         )
