@@ -76,6 +76,8 @@ def test_render_publishes_ring_exec_count():
 
     shader = MagicMock()
     with (
+        patch("OpenGL.GL.glEnable"),
+        patch("OpenGL.GL.glBlendFunc"),
         patch("OpenGL.GL.glBindVertexArray"),
         patch("OpenGL.GL.glBindTexture"),
         patch("OpenGL.GL.glActiveTexture"),
@@ -102,6 +104,8 @@ def test_render_noop_when_empty():
 
     shader = MagicMock()
     with (
+        patch("OpenGL.GL.glEnable"),
+        patch("OpenGL.GL.glBlendFunc"),
         patch("OpenGL.GL.glBindVertexArray"),
         patch("OpenGL.GL.glBindTexture"),
         patch("OpenGL.GL.glActiveTexture"),
