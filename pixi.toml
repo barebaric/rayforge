@@ -79,6 +79,7 @@ gettext = "==0.25.1"
 
 [feature.test.dependencies]
 pytest = "==9.1.1"
+appstream = ">=1.0"
 
 [feature.test.pypi-dependencies]
 pytest-asyncio = "==1.4.0"
@@ -105,7 +106,7 @@ workdir = "."
 
 [tasks]
 pre-commit-install = "pre-commit install"
-lint = { depends-on = ["ruff", "flake", "pyflakes", "pyright"] }
+lint = { depends-on = ["ruff", "flake", "pyflakes", "pyright", "validate-metainfo"] }
 update-translations = "bash scripts/update_translations.sh"
 compile-translations = "bash scripts/update_translations.sh --compile-only"
 print-untranslated = "bash scripts/print_untranslated.sh"
@@ -139,6 +140,9 @@ cmd = "pyflakes rayforge tests"
 depends-on = ["format"]
 env = { VIRTUAL_ENV = ".pixi/envs/default" }
 cmd = "pyright"
+
+[tasks.validate-metainfo]
+cmd = "appstreamcli validate --no-net data/org.rayforge.rayforge.metainfo.xml"
 
 [tasks.rayforge]
 env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
