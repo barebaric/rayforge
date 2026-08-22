@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-19 20:47+0200\n"
+"POT-Creation-Date: 2026-08-21 15:33+0200\n"
 "PO-Revision-Date: 2026-03-01 19:25+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -522,16 +522,16 @@ msgid ""
 msgstr ""
 
 #: laser_essentials/steps/contour_step.py
-msgid "Brightness level (0.0-1.0) to define edges"
-msgstr "Brightness level (0.0-1.0) to define edges"
-
-#: laser_essentials/steps/contour_step.py
 msgid "Rescan Content"
 msgstr "Rescan Content"
 
 #: laser_essentials/steps/contour_step.py
 msgid "Ignore source geometry and re-trace within the workpiece"
 msgstr "Ignore source geometry and re-trace within the workpiece"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Brightness level (0.0-1.0) to define edges"
+msgstr "Brightness level (0.0-1.0) to define edges"
 
 #: laser_essentials/steps/material_test.py
 #: laser_essentials/commands/material_test_cmd.py

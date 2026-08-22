@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-19 20:47+0200\n"
+"POT-Creation-Date: 2026-08-21 15:33+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -548,16 +548,16 @@ msgstr ""
 "coupe se chevauche"
 
 #: laser_essentials/steps/contour_step.py
-msgid "Brightness level (0.0-1.0) to define edges"
-msgstr "Niveau de luminosité (0.0-1.0) pour définir les bords"
-
-#: laser_essentials/steps/contour_step.py
 msgid "Rescan Content"
 msgstr "Réanalyser le contenu"
 
 #: laser_essentials/steps/contour_step.py
 msgid "Ignore source geometry and re-trace within the workpiece"
 msgstr "Ignorer la géométrie source et retracer à l'intérieur de la pièce"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Brightness level (0.0-1.0) to define edges"
+msgstr "Niveau de luminosité (0.0-1.0) pour définir les bords"
 
 #: laser_essentials/steps/material_test.py
 #: laser_essentials/commands/material_test_cmd.py
