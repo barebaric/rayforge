@@ -147,6 +147,8 @@ class UnitSpinRow(SpinRow):
                     display_value,
                 )
                 self._spin_button.set_text(text)
+            elif self._echoes_clamped_text(display_value):
+                return
             else:
                 self._spin_button.set_value(display_value)
         finally:

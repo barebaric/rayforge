@@ -110,6 +110,28 @@ class SpinRow(Adw.ActionRow):
         """Return the current value as an int, clamped to the range."""
         return round(self._get_display_value())
 
+    def _echoes_clamped_text(self, value: float) -> bool:
+        """Return True when ``value`` is merely the range-clamped
+        version of the raw entry text.
+
+        While the user edits, the text may hold an out-of-range
+        intermediate value (e.g. deleting one digit of ``150.00``
+        yields ``10.00``, below a lower bound of 50). Consumers see the
+        clamped value and may round-trip it back; rewriting the text
+        then would reset the cursor position and look as if Backspace
+        had deleted a digit. GTK clamps the visible text itself when
+        editing ends (activation or focus-out).
+        """
+        try:
+            raw = float(self._spin_button.get_text())
+        except ValueError:
+            return False
+        adj = self._spin_button.get_adjustment()
+        clamped = max(adj.get_lower(), min(raw, adj.get_upper()))
+        if abs(clamped - raw) < 1e-9:
+            return False
+        return abs(value - clamped) < 1e-9
+
     def set_value(self, value: float) -> None:
         """
         Set the value programmatically.
@@ -117,18 +139,22 @@ class SpinRow(Adw.ActionRow):
         This does not emit :attr:`value_changed`; only user edits do.
         A no-op when the entry already shows ``value`` so redundant model
         syncs (e.g. a backend update round-tripping an unchanged value)
-        do not rewrite the text and yank the cursor mid-edit.
+        do not rewrite the text and yank the cursor mid-edit. A value
+        that only echoes the clamp of an out-of-range intermediate edit
+        is likewise skipped for the same reason.
         """
         if self._is_updating:
             return
+        try:
+            current = float(self._spin_button.get_text())
+        except ValueError:
+            current = float(self._spin_button.get_value())
+        if abs(value - current) < 1e-9:
+            return
+        if self._echoes_clamped_text(value):
+            return
         self._is_updating = True
         try:
-            try:
-                current = float(self._spin_button.get_text())
-            except ValueError:
-                current = float(self._spin_button.get_value())
-            if abs(value - current) < 1e-9:
-                return
             self._spin_button.set_value(value)
         finally:
             self._is_updating = False
