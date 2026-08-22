@@ -68,6 +68,53 @@
   </screenshots>
 
   <releases>
+    <release version="1.10.2" date="2026-08-22">
+      <description>
+        <p>Laser head optics data, device-profile update reviews, and
+        several fixes</p>
+        <p>New Features:</p>
+        <ul>
+          <li>Laser heads now carry physical power data: emission
+          wavelength and optical output wattage, with researched values
+          shipped for all built-in device profiles and effective
+          fallback values shown when unset. These values are not used
+          by any feature yet; they lay the groundwork for upcoming
+          physics-based features. Laser settings are split into
+          Properties and Optics groups</li>
+          <li>Machines created from a device profile now detect when
+          that profile has changed and offer a review dialog listing
+          every differing setting before applying updates</li>
+          <li>The Creality Falcon 10W preamble now turns on the
+          extraction fan</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>Upgrade raygeo to 1.45.1</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Framing applied the active work coordinate system offset
+          twice, driving the head toward doubled coordinates (#362)</li>
+          <li>A failed background job rebuild could wedge all later job
+          sends; failures now surface as an error instead of blocking
+          forever</li>
+          <li>Toggling "Rescan Content" on a contour step now takes
+          effect, and the threshold row appears directly below it</li>
+          <li>Built-in device profiles for two-axis lasers now correctly
+          report no Z axis, and the Z setting survives wizard edits and
+          profile exports</li>
+          <li>Numeric spin entries no longer lose in-progress text when
+          a value gets clamped or after switching the display unit</li>
+          <li>The 3D simulator camera no longer overshoots or spins
+          wildly on far clicks; pan, zoom, and orbit now track the
+          pointer consistently in every view</li>
+          <li>The simulator always turns the laser off at the end of a
+          job</li>
+          <li>Expected cancellations during rapid rebuilds no longer
+          produce tracebacks in the log</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.10.0" date="2026-08-19">
       <description>
         <p>Physically-shaded 3D stock, material textures, and more

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-19 20:47+0200\n"
+"POT-Creation-Date: 2026-08-21 15:33+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -544,16 +544,16 @@ msgstr ""
 "Продовжувати замкнуті контури за початкову точку, щоб різання перетиналося"
 
 #: laser_essentials/steps/contour_step.py
-msgid "Brightness level (0.0-1.0) to define edges"
-msgstr "Рівень яскравості (0.0-1.0) для визначення країв"
-
-#: laser_essentials/steps/contour_step.py
 msgid "Rescan Content"
 msgstr "Пересканувати вміст"
 
 #: laser_essentials/steps/contour_step.py
 msgid "Ignore source geometry and re-trace within the workpiece"
 msgstr "Ігнорувати вихідну геометрію і повторно трасувати в робочій деталі"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Brightness level (0.0-1.0) to define edges"
+msgstr "Рівень яскравості (0.0-1.0) для визначення країв"
 
 #: laser_essentials/steps/material_test.py
 #: laser_essentials/commands/material_test_cmd.py
