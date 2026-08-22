@@ -12,23 +12,12 @@
   position: relative;
   padding: 5rem 2rem 4rem;
   text-align: center;
-  background:
-    radial-gradient(at 30% 0%, rgba(255, 159, 67, 0.1) 0px, transparent 50%),
-    radial-gradient(at 70% 0%, rgba(95, 39, 205, 0.1) 0px, transparent 50%),
-    linear-gradient(180deg, var(--ifm-background-color) 0%, var(--ifm-background-color) 100%);
-}
-
-html[data-theme='dark'] .hero {
-  background:
-    radial-gradient(at 30% 0%, rgba(255, 159, 67, 0.06) 0px, transparent 50%),
-    radial-gradient(at 70% 0%, rgba(95, 39, 205, 0.06) 0px, transparent 50%),
-    linear-gradient(180deg, var(--ifm-background-color) 0%, var(--ifm-background-color) 100%);
+  background: var(--ifm-background-color);
 }
 
 .heroInner {
   max-width: 800px;
   margin: 0 auto;
-  animation: fadeIn 0.8s ease-out;
 }
 
 .heroTitle {
@@ -40,11 +29,11 @@ html[data-theme='dark'] .hero {
 }
 
 .heroTitleGradient {
-  background: linear-gradient(135deg, #ff9f43 0%, #ee5253 50%, #5f27cd 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  display: inline;
+  color: inherit;
+}
+
+html[data-theme='dark'] .heroTitleGradient {
+  color: inherit;
 }
 
 .heroSubtitle {
@@ -58,22 +47,20 @@ html[data-theme='dark'] .hero {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.875rem 2.25rem;
+  padding: 0.75rem 1.75rem;
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 600;
   color: #fff !important;
-  background: linear-gradient(90deg, #ff9f43, #ee5253);
-  border-radius: 50px;
+  background: #1a1a2e;
+  border-radius: 10px;
   text-decoration: none !important;
-  box-shadow: 0 10px 20px rgba(238, 82, 83, 0.3);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: opacity 0.15s ease;
   gap: 0.5rem;
 }
 
 .heroCta:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 15px 30px rgba(238, 82, 83, 0.4);
   color: #fff !important;
+  opacity: 0.88;
 }
 
 /* --- Sponsors Section --- */
@@ -116,8 +103,7 @@ html[data-theme='dark'] .sponsorCard {
 }
 
 .sponsorCard:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  border-color: var(--ifm-color-emphasis-300);
 }
 
 .sponsorIcon {
@@ -156,10 +142,11 @@ html[data-theme='dark'] .statsSection {
   font-weight: 800;
   margin-bottom: 0.25rem;
   white-space: nowrap;
-  background: linear-gradient(135deg, #ff9f43, #5f27cd);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--ifm-font-color-base);
+}
+
+html[data-theme='dark'] .statNumber {
+  color: var(--ifm-font-color-base);
 }
 
 .statLabel {
@@ -217,8 +204,7 @@ html[data-theme='dark'] .benefitCard {
 }
 
 .benefitCard:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+  border-color: var(--ifm-color-emphasis-300);
 }
 
 .benefitIcon {
@@ -232,23 +218,31 @@ html[data-theme='dark'] .benefitCard {
 }
 
 .benefitIconCyan {
-  background: rgba(0, 210, 211, 0.1);
-  color: #00d2d3;
+  background: rgba(26, 26, 46, 0.1);
+  color: #1a1a2e;
 }
 
 .benefitIconPurple {
-  background: rgba(95, 39, 205, 0.1);
-  color: #5f27cd;
+  background: rgba(26, 26, 46, 0.1);
+  color: #1a1a2e;
 }
 
 .benefitIconOrange {
-  background: rgba(255, 159, 67, 0.1);
-  color: #ff9f43;
+  background: rgba(26, 26, 46, 0.1);
+  color: #1a1a2e;
 }
 
 .benefitIconRed {
-  background: rgba(238, 82, 83, 0.1);
-  color: #ee5253;
+  background: rgba(26, 26, 46, 0.1);
+  color: #1a1a2e;
+}
+
+html[data-theme='dark'] .benefitIconCyan,
+html[data-theme='dark'] .benefitIconPurple,
+html[data-theme='dark'] .benefitIconOrange,
+html[data-theme='dark'] .benefitIconRed {
+  background: rgba(236, 236, 241, 0.12);
+  color: #ececf1;
 }
 
 .benefitTitle {
@@ -270,12 +264,12 @@ html[data-theme='dark'] .benefitCard {
   color: var(--ifm-color-emphasis-600);
   font-style: italic;
   padding-left: 1rem;
-  border-left: 3px solid var(--color-ray-purple-light);
+  border-left: 3px solid var(--ifm-color-emphasis-300);
   line-height: 1.6;
 }
 
 html[data-theme='dark'] .benefitValue {
-  border-left-color: #5f27cd;
+  border-left-color: var(--ifm-color-emphasis-400);
 }
 
 /* --- Comparison Section --- */
@@ -406,18 +400,14 @@ html[data-theme='dark'] .comparisonTable td {
 }
 
 .comparisonTable th.comparisonHighlight {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 159, 67, 0.9),
-    rgba(95, 39, 205, 0.9)
-  );
+  background: #1a1a2e;
   color: #fff !important;
   font-weight: 800;
   border-right-color: rgba(255, 255, 255, 0.15);
 }
 
 .comparisonTable td.comparisonHighlight {
-  background: rgba(255, 159, 67, 0.08);
+  background: rgba(232, 89, 12, 0.08);
   color: var(--ifm-font-color-base);
   font-weight: 700;
 }
@@ -435,7 +425,7 @@ html[data-theme='dark'] .comparisonTable tbody tr:nth-child(odd) td:not(.compari
 }
 
 .comparisonTable tbody tr:hover td.comparisonHighlight {
-  background: rgba(255, 159, 67, 0.12);
+  background: rgba(232, 89, 12, 0.12);
 }
 
 html[data-theme='dark'] .comparisonTable tbody tr:hover td:not(.comparisonHighlight) {
@@ -471,17 +461,15 @@ html[data-theme='dark'] .tierCard {
 }
 
 .tierCard:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+  border-color: var(--ifm-color-emphasis-300);
 }
 
 .tierFeatured {
-  border-color: #ff9f43;
-  box-shadow: 0 0 40px rgba(255, 159, 67, 0.1);
+  border-color: #1a1a2e;
 }
 
 .tierFeatured:hover {
-  box-shadow: 0 20px 40px rgba(255, 159, 67, 0.15);
+  border-color: #1a1a2e;
 }
 
 .tierBadge {
@@ -489,12 +477,12 @@ html[data-theme='dark'] .tierCard {
   top: -12px;
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(90deg, #ff9f43, #ee5253);
+  background: #1a1a2e;
   color: #fff;
   font-size: 0.75rem;
   font-weight: 700;
   padding: 0.35rem 1.25rem;
-  border-radius: 50px;
+  border-radius: 999px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -512,10 +500,7 @@ html[data-theme='dark'] .tierCard {
   font-weight: 800;
   text-align: center;
   margin-bottom: 0.25rem;
-  background: linear-gradient(135deg, #ff9f43, #5f27cd);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--ifm-font-color-base);
 }
 
 .tierPriceSuffix {
@@ -544,7 +529,7 @@ html[data-theme='dark'] .tierCard {
   content: '✓';
   position: absolute;
   left: 0;
-  color: #00d2d3;
+  color: var(--color-ray-orange);
   font-weight: 900;
 }
 
@@ -552,15 +537,7 @@ html[data-theme='dark'] .tierCard {
 .ctaSection {
   padding: 5rem 1rem;
   text-align: center;
-  background:
-    radial-gradient(at 50% 100%, rgba(95, 39, 205, 0.08) 0px, transparent 50%),
-    var(--ifm-background-color);
-}
-
-html[data-theme='dark'] .ctaSection {
-  background:
-    radial-gradient(at 50% 100%, rgba(95, 39, 205, 0.05) 0px, transparent 50%),
-    var(--ifm-background-color);
+  background: var(--ifm-background-color);
 }
 
 .ctaInner {
@@ -580,12 +557,6 @@ html[data-theme='dark'] .ctaSection {
   font-size: 1.1rem;
   line-height: 1.7;
   margin-bottom: 2rem;
-}
-
-/* --- Animations --- */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 /* --- Mobile --- */

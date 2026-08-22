@@ -113,6 +113,13 @@ module.exports = {
     },
   },
 
+  stylesheets: [
+    {
+      href: 'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Open+Sans:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap',
+      rel: 'stylesheet',
+    },
+  ],
+
   scripts: [
     {
       src: 'https://analytics.barebaric.com/script.js',

@@ -4,17 +4,6 @@
 
 .hero {
   padding: 3.5rem 0 2.25rem;
-  background:
-    radial-gradient(
-      900px 450px at 15% 15%,
-      rgba(94, 234, 212, 0.18),
-      transparent 60%
-    ),
-    radial-gradient(
-      900px 450px at 85% 25%,
-      rgba(168, 85, 247, 0.14),
-      transparent 60%
-    );
 }
 
 .heroInner {
@@ -39,10 +28,11 @@
 }
 
 .heroTitleGradient {
-  background: linear-gradient(90deg, #5eead4, #a855f7 55%, #fb923c);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: inherit;
+}
+
+html[data-theme='dark'] .heroTitleGradient {
+  color: inherit;
 }
 
 .heroSubtitle {
@@ -198,20 +188,19 @@
   color: #fff;
 }
 
-.iconCyan {
-  background: linear-gradient(145deg, #06b6d4, #0ea5e9);
-}
-
-.iconPurple {
-  background: linear-gradient(145deg, #a855f7, #6366f1);
-}
-
-.iconOrange {
-  background: linear-gradient(145deg, #fb923c, #ef4444);
-}
-
+.iconCyan,
+.iconPurple,
+.iconOrange,
 .iconRed {
-  background: linear-gradient(145deg, #ee5253, #eb4b4b);
+  background: #1a1a2e;
+}
+
+html[data-theme='dark'] .iconCyan,
+html[data-theme='dark'] .iconPurple,
+html[data-theme='dark'] .iconOrange,
+html[data-theme='dark'] .iconRed {
+  background: #ececf1;
+  color: #1a1a2e;
 }
 
 .cardBody {
@@ -235,21 +224,8 @@
   grid-template-columns: auto 1fr auto;
   align-items: center;
   padding: 1.15rem 1.35rem;
-  border: 1px solid transparent;
-  background:
-    linear-gradient(
-        var(--ifm-background-surface-color),
-        var(--ifm-background-surface-color)
-      )
-      padding-box,
-    linear-gradient(
-        90deg,
-        rgba(238, 82, 83, 0.55),
-        rgba(255, 159, 67, 0.5),
-        rgba(94, 234, 212, 0.45)
-      )
-      border-box;
-  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.07);
+  border: 1px solid var(--ifm-color-emphasis-300);
+  background: var(--ifm-background-surface-color);
 }
 
 .featuredCardCta {
@@ -257,12 +233,13 @@
   align-items: center;
   gap: 0.45rem;
   padding: 0.6rem 1.15rem;
-  border-radius: 999px;
+  border-radius: 10px;
   font-size: 0.9rem;
-  font-weight: 700;
+  font-weight: 600;
   color: #fff;
-  background: linear-gradient(90deg, #ee5253, #fb923c);
+  background: var(--color-ray-orange-dark);
   white-space: nowrap;
+  text-decoration: none;
 }
 
 .impactGrid {
@@ -285,33 +262,8 @@
 }
 
 .impactTutorial {
-  border: 1px solid transparent;
-  background:
-    linear-gradient(
-        var(--ifm-background-surface-color),
-        var(--ifm-background-surface-color)
-      )
-      padding-box,
-    linear-gradient(
-        135deg,
-        rgba(238, 82, 83, 0.55),
-        rgba(255, 159, 67, 0.4),
-        rgba(94, 234, 212, 0.35)
-      )
-      border-box;
+  border: 1px solid var(--ifm-color-emphasis-300);
   scroll-margin-top: 5.5rem;
-}
-
-.impactTutorial::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    500px 220px at 85% 0%,
-    rgba(238, 82, 83, 0.12),
-    transparent 60%
-  );
-  pointer-events: none;
 }
 
 .impactBadge {
@@ -329,13 +281,13 @@
 }
 
 .impactBadgeTutorial {
-  background: rgba(238, 82, 83, 0.12);
-  color: #ee5253;
+  background: rgba(232, 89, 12, 0.12);
+  color: #e8590c;
 }
 
 .impactBadgeSupport {
-  background: rgba(95, 39, 205, 0.1);
-  color: #5f27cd;
+  background: rgba(26, 26, 46, 0.1);
+  color: #1a1a2e;
 }
 
 .impactCardHeader {
@@ -404,8 +356,8 @@
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--ifm-color-emphasis-800);
-  background: rgba(238, 82, 83, 0.1);
-  border: 1px solid rgba(238, 82, 83, 0.28);
+  background: rgba(26, 26, 46, 0.08);
+  border: 1px solid rgba(26, 26, 46, 0.22);
 }
 
 .twoCol {
@@ -421,19 +373,6 @@
   border-radius: 1.1rem;
   padding: 1.1rem 1.1rem;
   overflow: hidden;
-}
-
-.block::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    500px 220px at 10% 0%,
-    rgba(94, 234, 212, 0.14),
-    transparent 60%
-  );
-  opacity: 0.5;
-  pointer-events: none;
 }
 
 .blockHeader {
@@ -493,11 +432,17 @@
   border-radius: 0.75rem;
   display: grid;
   place-items: center;
-  background: #ff9f43;
-  border: 1px solid #ff9f43;
-  color: #1b1b1d;
+  background: #1a1a2e;
+  border: 1px solid #1a1a2e;
+  color: #ffffff;
   font-weight: 800;
   font-size: 0.85rem;
+}
+
+html[data-theme='dark'] .step::before {
+  background: #ececf1;
+  border-color: #ececf1;
+  color: #1a1a2e;
 }
 
 .bullets {
@@ -524,7 +469,7 @@
   width: 0.55rem;
   height: 0.55rem;
   border-radius: 999px;
-  background: linear-gradient(145deg, #fb923c, #ef4444);
+  background: var(--color-ray-orange-dark);
 }
 
 @media (max-width: 1100px) {

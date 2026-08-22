@@ -58,11 +58,16 @@
   justify-content: center;
   min-width: 2rem;
   height: 2rem;
-  background: var(--color-ray-orange);
-  color: #1b1b1d;
+  background: #1a1a2e;
+  color: #ffffff;
   border-radius: 50%;
   font-weight: bold;
   font-size: 0.9rem;
+}
+
+html[data-theme='dark'] .install-step-number {
+  background: #ececf1;
+  color: #1a1a2e;
 }
 
 .install-step-content {
