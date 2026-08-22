@@ -4,17 +4,6 @@
 
 .hero {
   padding: 3.5rem 0 2.25rem;
-  background:
-    radial-gradient(
-      900px 450px at 15% 15%,
-      rgba(94, 234, 212, 0.18),
-      transparent 60%
-    ),
-    radial-gradient(
-      900px 450px at 85% 25%,
-      rgba(168, 85, 247, 0.14),
-      transparent 60%
-    );
 }
 
 .heroInner {
@@ -100,12 +89,12 @@
 
 .noteWarning {
   border-color: var(--ifm-color-warning);
-  background: rgba(255, 159, 67, 0.08);
+  background: rgba(232, 89, 12, 0.08);
 }
 
 .noteInfo {
   border-color: var(--color-ray-cyan);
-  background: rgba(0, 210, 211, 0.08);
+  background: rgba(26, 26, 46, 0.08);
 }
 
 .noteIcon {
@@ -211,19 +200,16 @@
   margin: 0 1rem 0.85rem;
   padding: 0.55rem 0;
   border-radius: 0.65rem;
-  background: linear-gradient(90deg, #ff9f43, #ee5253);
+  background: var(--color-ray-orange-dark);
   color: #fff;
   font-size: 0.85rem;
   font-weight: 700;
   text-decoration: none;
-  transition:
-    transform 140ms ease,
-    box-shadow 140ms ease;
+  transition: background-color 140ms ease;
 }
 
 .cardAffiliate:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 18px rgba(238, 82, 83, 0.35);
+  background: #d63a3a;
   text-decoration: none;
   color: #fff;
 }

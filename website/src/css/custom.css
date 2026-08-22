@@ -1,25 +1,25 @@
 /* --- START OF FILE src/css/custom.css --- */
 
 :root {
-  /* Vibrant Palette based on the Mockup */
-  --color-ray-orange: #ff9f43;
-  --color-ray-orange-dark: #ee5253;
-  --color-ray-purple: #5f27cd;
-  --color-ray-purple-light: #a29bfe;
-  --color-ray-cyan: #00d2d3;
-  --color-ray-cyan-dark: #0abde3;
-  
+  /* Palette aligned with the landing page: charcoal/white + warm accent */
+  --color-ray-orange: #e8590c;
+  --color-ray-orange-dark: #c44a06;
+  --color-ray-purple: #1a1a2e;
+  --color-ray-purple-light: #6b7280;
+  --color-ray-cyan: #1a1a2e;
+  --color-ray-cyan-dark: #e8590c;
+
   /* Global defaults */
-  --ifm-color-primary: var(--color-ray-purple);
-  --ifm-color-primary-dark: #481cb5;
-  --ifm-color-primary-darker: #3d169e;
-  --ifm-color-primary-light: #763ceb;
-  --ifm-font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --ifm-color-primary: #1a1a2e;
+  --ifm-color-primary-dark: #15151f;
+  --ifm-color-primary-darker: #101018;
+  --ifm-color-primary-light: #2a2a3e;
+  --ifm-font-family-base: 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --rf-codeblock-bg: #2b2b2f;
   --rf-codeblock-fg: #f1f1f1;
-  
+
   /* Buttons Global Roundness */
-  --ifm-button-border-radius: 50px;
+  --ifm-button-border-radius: 10px;
 }
 
 /* Light Mode Specifics */
@@ -38,8 +38,8 @@
 [data-theme='dark'] {
   --ifm-background-color: #1b1b1d;
   --ifm-navbar-background-color: rgba(30, 30, 32, 0.95);
-  --ifm-color-primary: #a29bfe; /* Lighter purple for dark mode contrast */
-  --ifm-link-color: #ff9f43; /* Orange pops well on dark */
+  --ifm-color-primary: #ececf1; /* Light ink for dark mode contrast */
+  --ifm-link-color: #ff8a4c; /* Warm accent on dark */
   --ifm-font-color-base: #e0e0e0;
   --prism-background-color: var(--rf-codeblock-bg);
   --prism-color: var(--rf-codeblock-fg);
@@ -67,101 +67,104 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.875rem 2.25rem;
-  font-size: 1rem;
-  font-weight: 700;
-  border-radius: 50px;
+  gap: 0.5rem;
+  padding: 0.7rem 1.4rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 10px;
   text-decoration: none;
-  border: 0;
+  border: 1px solid transparent;
   cursor: pointer;
   appearance: none;
   background-clip: border-box;
   transition:
-    transform 0.3s ease,
-    box-shadow 0.3s ease,
-    background-color 0.3s ease,
-    color 0.3s ease,
-    border-color 0.3s ease;
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    opacity 0.15s ease;
 }
 
 .rfButton:hover {
-  transform: translateY(-3px);
   text-decoration: none;
 }
 
-.rfButtonPrimary {
-  color: #fff !important;
-  background: linear-gradient(90deg, #ff9f43, #ee5253);
-  box-shadow: 0 10px 20px rgba(238, 82, 83, 0.3);
-}
-
-.rfButtonPrimary:hover {
-  box-shadow: 0 15px 30px rgba(238, 82, 83, 0.4);
-  color: #fff !important;
-}
-
-.rfButtonSecondary {
-  color: var(--ifm-color-primary);
-  background: transparent;
-  border: 2px solid var(--ifm-color-primary);
-}
-
-.rfButtonSecondary:hover {
-  background: rgba(95, 39, 205, 0.05);
-  color: var(--ifm-color-primary);
-}
-
-.rfButtonOrange {
-  color: #fff !important;
-  background: linear-gradient(
-    90deg,
-    var(--color-ray-orange),
-    var(--color-ray-orange-dark)
-  );
-  box-shadow: 0 10px 20px rgba(255, 159, 67, 0.28);
-}
-
-.rfButtonOrange:hover {
-  box-shadow: 0 15px 30px rgba(255, 159, 67, 0.36);
-  color: #fff !important;
-}
-
-.rfButtonDownload {
-  color: #fff !important;
-  background: linear-gradient(90deg, var(--color-ray-cyan), #0ea5e9);
-  box-shadow: 0 10px 20px rgba(14, 165, 233, 0.28);
-}
-
-.rfButtonDownload:hover {
-  box-shadow: 0 15px 30px rgba(14, 165, 233, 0.36);
-  color: #fff !important;
-}
-
+/* Solid buttons share the homepage's dark ink style */
+.rfButtonPrimary,
+.rfButtonOrange,
+.rfButtonDownload,
 .rfButtonPurple {
-  color: #fff !important;
-  background: linear-gradient(90deg, var(--color-ray-purple), #a855f7);
-  box-shadow: 0 10px 20px rgba(95, 39, 205, 0.26);
+  color: #ffffff !important;
+  background: #1a1a2e;
+  border-color: #1a1a2e;
 }
 
+.rfButtonPrimary:hover,
+.rfButtonOrange:hover,
+.rfButtonDownload:hover,
 .rfButtonPurple:hover {
-  box-shadow: 0 15px 30px rgba(95, 39, 205, 0.36);
-  color: #fff !important;
+  color: #ffffff !important;
+  background: #1a1a2e;
+  border-color: #1a1a2e;
+  opacity: 0.88;
 }
 
+html[data-theme='dark'] .rfButtonPrimary,
+html[data-theme='dark'] .rfButtonOrange,
+html[data-theme='dark'] .rfButtonDownload,
+html[data-theme='dark'] .rfButtonPurple {
+  color: #1a1a2e !important;
+  background: #ececf1;
+  border-color: #ececf1;
+}
+
+html[data-theme='dark'] .rfButtonPrimary:hover,
+html[data-theme='dark'] .rfButtonOrange:hover,
+html[data-theme='dark'] .rfButtonDownload:hover,
+html[data-theme='dark'] .rfButtonPurple:hover {
+  color: #1a1a2e !important;
+  background: #ececf1;
+  border-color: #ececf1;
+  opacity: 0.88;
+}
+
+/* OS selector chips: ghost when idle, ink when selected */
 .rfButtonOs {
-  color: #fff !important;
-  background: #2d3436;
-  border: 2px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
+  color: var(--ifm-font-color-base);
+  background: transparent;
+  border: 1px solid var(--ifm-color-emphasis-300);
 }
 
 .rfButtonOs:hover {
-  background: #394245;
-  color: #fff !important;
+  color: var(--ifm-font-color-base);
+  background: rgba(106, 114, 128, 0.08);
+  border-color: var(--ifm-color-emphasis-400);
 }
 
 .rfButtonOsActive {
-  border-color: var(--color-ray-orange);
+  color: #ffffff !important;
+  background: #1a1a2e;
+  border-color: #1a1a2e;
+}
+
+html[data-theme='dark'] .rfButtonOsActive {
+  color: #1a1a2e !important;
+  background: #ececf1;
+  border-color: #ececf1;
+}
+
+.rfButtonSecondary {
+  color: var(--ifm-font-color-base);
+  background: transparent;
+  border: 0;
+}
+
+.rfButtonSecondary:hover {
+  color: var(--ifm-font-color-base);
+  background: rgba(106, 114, 128, 0.08);
+}
+
+.rfButtonOsActive {
+  border-color: transparent;
 }
 
 /* Footer styling */
@@ -268,11 +271,11 @@ html[data-theme='dark'] .theme-doc-sidebar-container .menu__list-item-collapsibl
   outline: none;
   background: var(--ifm-background-color);
   border-color: var(--ifm-color-primary);
-  box-shadow: 0 0 0 4px rgba(95, 39, 205, 0.18);
+  box-shadow: 0 0 0 4px rgba(26, 26, 46, 0.16);
 }
 
 html[data-theme='dark'] .theme-doc-sidebar-container .navbar__search-input:focus {
-  box-shadow: 0 0 0 4px rgba(162, 155, 254, 0.22);
+  box-shadow: 0 0 0 4px rgba(232, 89, 12, 0.22);
 }
 
 .theme-doc-sidebar-container .navbar__search [class*="dropdownMenu"] {
@@ -316,7 +319,7 @@ html[data-theme='dark'] .theme-doc-sidebar-container .navbar__search [class*="dr
 }
 
 .theme-doc-sidebar-container .navbar__search [class*="dropdownMenu"] mark {
-  background: rgba(255, 159, 67, 0.25);
+  background: rgba(232, 89, 12, 0.22);
   color: inherit;
   border-radius: 0.35rem;
   padding: 0.05rem 0.2rem;
@@ -415,11 +418,13 @@ html[data-theme='dark'] .blog-post-page article:hover {
 
 .blog-list-page article h2 a,
 .blog-post-page article h1 a {
+  color: var(--ifm-font-color-base);
   text-decoration: none;
 }
 
 .blog-list-page article h2 a:hover,
 .blog-post-page article h1 a:hover {
+  color: var(--ifm-font-color-base);
   text-decoration: none;
 }
 
@@ -649,7 +654,7 @@ html[data-theme='dark'] .blog-post-page a.tag {
 }
 
 .blog-post-page article .markdown blockquote {
-  border-left: 4px solid var(--color-ray-purple-light);
+  border-left: 4px solid var(--color-ray-orange);
   border-radius: 0.75rem;
   background: rgba(148, 163, 184, 0.12);
   padding: 0.95rem 1rem;
@@ -868,7 +873,7 @@ html[data-theme='dark'] .theme-doc-markdown {
 }
 
 .theme-doc-markdown blockquote {
-  border-left: 4px solid var(--color-ray-purple-light);
+  border-left: 4px solid var(--color-ray-orange);
   border-radius: 0.75rem;
   background: rgba(148, 163, 184, 0.12);
   padding: 0.95rem 1rem;
@@ -971,7 +976,7 @@ html[data-theme='dark'] .theme-code-block [class*='codeBlockTitle'] {
 }
 
 .theme-code-block-highlighted-line {
-  background: rgba(255, 159, 67, 0.12);
+  background: rgba(232, 89, 12, 0.12);
   border-left: 3px solid var(--color-ray-orange);
 }
 
