@@ -64,18 +64,14 @@ superficie.
 
 #### Color
 
-El color base del material. Cuando se establece una textura y el material
-es teñible, el color tiñe la textura. El color solo se usa para la
+Un color de tinte opcional. Cuando se establece, la textura del material
+se tiñe con este color; cuando no, la textura se muestra tal cual. Esto
+permite que un único material texturizado (ej., "Acrílico") cubra
+múltiples variantes de color: el color se aplica por elemento de material
+de base en el diálogo [Propiedades del material de
+base](../features/stock-handling.md). El color solo se usa para la
 apariencia visual en la superficie de trabajo - no afecta la trayectoria
 del láser de ninguna manera.
-
-#### Teñible
-
-Cuando está habilitado, la textura del material se puede teñir con el
-color anterior. Esto permite que un único material texturizado (ej.,
-"Acrílico") cubra múltiples variantes de color: el color se aplica por
-elemento de material de base en el diálogo [Propiedades del material de
-base](../features/stock-handling.md).
 
 #### Rugosidad
 

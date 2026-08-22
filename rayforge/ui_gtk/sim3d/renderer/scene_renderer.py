@@ -175,16 +175,22 @@ class TextureUploadItem:
     )
 
     def prepare(self) -> None:
-        """Decompresses/mip-maps texture layers off the main thread."""
+        """Decompresses/mip-maps texture layers off the main thread.
+
+        Layers superseded by a stock burn are skipped, mirroring
+        ``TextureArtifactRenderer.update_from_artifact``.
+        """
         if self.renderer is None:
             return
+        suppressed = set(self.artifact.burn_layer_indices)
         prepared = [
             prepare_texture_layer(
                 tl,
                 self.artifact.laser_uid_order,
                 self.renderer.max_texture_size,
             )
-            for tl in self.artifact.texture_layers
+            for i, tl in enumerate(self.artifact.texture_layers)
+            if i not in suppressed
         ]
         self._prepared_layers = prepared
 
@@ -473,50 +479,15 @@ class SceneRenderer(BaseRenderer):
         return True
 
     def update_cylinders_from_doc(self, doc, viewport, machine):
-        """Reads chuck diameters from the assembly and rebuilds cylinders.
+        """Remove any wireframe cylinder renderers.
 
-        Layers whose diameter is covered by a rotary stock material
-        skip the wireframe — the solid stock shell replaces it.
+        Rotary layers now always render a solid stock shell (using the
+        default material when none is explicitly assigned), so the
+        wireframe placeholder is no longer needed.
         """
-        desired_diameters: dict[float, bool] = {}
-        if machine and self.had_rotary_layers:
-            for layer in doc.layers:
-                if layer.rotary_enabled and layer.rotary_diameter > 0:
-                    if layer.stock_material is not None:
-                        continue
-                    desired_diameters[layer.rotary_diameter] = True
-
-        max_length = viewport.width_mm
-        if machine:
-            default_rm = machine.get_default_rotary_module()
-            if default_rm:
-                max_length = min(max_length, default_rm.max_workpiece_length)
-
         for diameter, renderer in list(self.cylinder_renderers.items()):
-            if diameter not in desired_diameters:
-                renderer.cleanup()
-                del self.cylinder_renderers[diameter]
-
-        grid_size = (
-            self.axis_renderer.grid_size_mm if self.axis_renderer else 10.0
-        )
-        length_segments = max(1, round(max_length / grid_size))
-
-        for diameter in desired_diameters:
-            if diameter not in self.cylinder_renderers:
-                renderer = CylinderRenderer(
-                    diameter=diameter,
-                    length=max_length,
-                    rings=24,
-                    length_segments=length_segments,
-                )
-                renderer.set_color((0.4, 0.6, 0.8, 0.25))
-                renderer.init_gl()
-                self.cylinder_renderers[diameter] = renderer
-                logger.debug(
-                    f"Initialized cylinder renderer: "
-                    f"diameter={diameter}mm, length={max_length}mm"
-                )
+            renderer.cleanup()
+            del self.cylinder_renderers[diameter]
         self._rebuild_registry()
 
     def update_zones_from_machine(self, machine):

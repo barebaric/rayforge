@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from raygeo.geo import Geometry, Matrix
 
+from ..context import get_context
 from ..core.stock import StockItem
 from ..core.stock_asset import StockAsset
 from ..core.undo import ChangePropertyCommand, Command
@@ -34,7 +35,10 @@ class _AddStockCommand(Command):
     ):
         super().__init__(name=_("Add Stock"))
         self.doc = doc
+        ctx = get_context()
         self.asset = StockAsset(name=name, geometry=geometry)
+        self.asset.material_uid = ctx.material_mgr.get_default_material().uid
+        self.asset.thickness = ctx.config.default_stock_thickness_mm
         self.item = StockItem(stock_asset_uid=self.asset.uid, name=name)
         w, h = self.asset.get_natural_size()
         self.item.matrix = Matrix.scale(w, h)
@@ -88,7 +92,10 @@ class ConvertToStockCommand(Command):
         if geometry is None:
             geometry = Geometry()
 
+        ctx = get_context()
         self.asset = StockAsset(name=workpiece.name, geometry=geometry)
+        self.asset.material_uid = ctx.material_mgr.get_default_material().uid
+        self.asset.thickness = ctx.config.default_stock_thickness_mm
         self.stock_item = StockItem(
             stock_asset_uid=self.asset.uid, name=workpiece.name
         )

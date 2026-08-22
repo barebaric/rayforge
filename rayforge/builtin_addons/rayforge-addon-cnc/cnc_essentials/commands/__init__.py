@@ -1,3 +1,3 @@
 """
-CNC Commands (planned for Phase 5).
+CNC Commands.
 """

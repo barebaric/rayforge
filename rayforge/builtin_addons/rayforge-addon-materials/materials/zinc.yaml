@@ -24,7 +24,6 @@ category:
   uk: Метал
   zh_CN: 金属
 appearance:
-  color: "#A0A0A0"
   pattern: metallic
   texture: zinc.webp
   texture_size_mm: 300

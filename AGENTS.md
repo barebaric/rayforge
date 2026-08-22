@@ -29,6 +29,8 @@ Source repository: https://github.com/barebaric/raygeo
 
 ### Testing with a local Raygeo checkout
 
+Attention: Running "pixi run", even to lint, reinstalls from PyPi.
+
 `scripts/pixi-raygeo.sh` wraps any pixi command with a
 `dependency-override` that uses a local raygeo checkout. The project's
 real `pixi.toml`/`pixi.lock` are never permanently modified.

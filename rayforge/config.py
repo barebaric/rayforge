@@ -61,6 +61,8 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 # Material directories
 USER_MATERIALS_DIR = CONFIG_DIR / "materials"
+BUNDLED_MATERIALS_DIR = Path(__file__).parent / "resources" / "materials"
+BUNDLED_DEFAULT_MATERIAL_UID = "oak"
 USER_RECIPES_DIR = CONFIG_DIR / "recipes"
 USER_COLOR_PRESETS_DIR = CONFIG_DIR / "color_presets"
 

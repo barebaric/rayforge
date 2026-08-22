@@ -24,7 +24,6 @@ category:
   uk: Деревина
   zh_CN: 木材
 appearance:
-  color: "#DEB887"
   pattern: wood_grain
   texture: plywood.webp
   texture_size_mm: 300

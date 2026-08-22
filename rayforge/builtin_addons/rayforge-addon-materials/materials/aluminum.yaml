@@ -24,7 +24,6 @@ category:
   uk: Метал
   zh_CN: 金属
 appearance:
-  color: "#C0C0C0"
   pattern: metallic
   texture: aluminum.webp
   texture_size_mm: 300

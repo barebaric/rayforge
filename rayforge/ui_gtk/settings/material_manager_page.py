@@ -3,10 +3,14 @@
 import logging
 from gettext import gettext as _
 
+from gi.repository import Adw
+
 from ...context import get_context
 from ...core.material_library import MaterialLibrary
 from ..doceditor.material_library_list import LibraryListWidget
 from ..doceditor.material_list import MaterialListWidget
+from ..doceditor.material_selector import MaterialRow
+from ..shared.pref_rows.length_spin_row import LengthSpinRow
 from ..shared.preferences_page import TrackedPreferencesPage
 
 logger = logging.getLogger(__name__)
@@ -28,6 +32,39 @@ class MaterialManagerPage(TrackedPreferencesPage):
             title=_("Materials"),
             icon_name="material-symbolic",
         )
+
+        defaults_group = Adw.PreferencesGroup(
+            title=_("New Stock Defaults"),
+            description=_(
+                "Material and thickness applied when a new stock or "
+                "rotary layer is created."
+            ),
+        )
+        self.default_material_row = MaterialRow(
+            _("Default Stock Material"),
+            _("Material used when a new stock or rotary layer is created"),
+            on_select=self._on_default_material_selected,
+        )
+        config = get_context().config
+        current_uid = config.default_stock_material_uid
+        if current_uid:
+            current = get_context().material_mgr.get_material_or_none(
+                current_uid
+            )
+            self.default_material_row.set_material(current)
+        defaults_group.add(self.default_material_row)
+
+        self.default_thickness_row = LengthSpinRow(
+            _("Default Stock Thickness"),
+            _("Thickness applied to new stock assets"),
+            upper=999,
+            value_in_base=config.default_stock_thickness_mm,
+        )
+        self.default_thickness_row.value_changed.connect(
+            self._on_default_thickness_changed
+        )
+        defaults_group.add(self.default_thickness_row)
+        self.add(defaults_group)
 
         self.library_list_editor = LibraryListWidget(
             title=_("Material Libraries"),
@@ -59,6 +96,23 @@ class MaterialManagerPage(TrackedPreferencesPage):
         )
 
         self.library_list_editor.populate_and_select()
+
+    def _on_default_material_selected(self, material_uid: str | None):
+        """Persist the user's default stock material choice."""
+        if material_uid is None:
+            return
+        get_context().config.set_default_stock_material(material_uid)
+        material = get_context().material_mgr.get_material_or_none(
+            material_uid
+        )
+        if material is not None:
+            self.default_material_row.set_material(material)
+
+    def _on_default_thickness_changed(self, row: LengthSpinRow):
+        """Persist the user's default stock thickness choice."""
+        get_context().config.set_default_stock_thickness(
+            row.get_value_in_base_units()
+        )
 
     def _on_library_selected(
         self, sender, library: MaterialLibrary | None = None

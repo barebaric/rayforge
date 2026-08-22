@@ -91,8 +91,7 @@ class StockPropertiesDialog(PatchedDialogWindow):
         )
         properties_group.add(self.material_row)
 
-        # Per-instance color row (only usable for tintable materials; for
-        # other materials the color comes from the material definition).
+        # Per-instance color row.
         self.color_row = Adw.ActionRow(title=_("Color"))
         color_dialog = Gtk.ColorDialog()
         color_dialog.set_with_alpha(False)
@@ -216,19 +215,11 @@ class StockPropertiesDialog(PatchedDialogWindow):
 
     def _update_color_display(self):
         """Refresh the per-instance color row to match the stock item."""
-        material = self.stock_item.material
-        tintable = material is not None and material.appearance.tintable
-        self.color_row.set_sensitive(tintable)
-
         # Only show the clear button while a per-instance override exists.
-        self._clear_color_button.set_visible(
-            tintable and self.stock_item.color is not None
-        )
+        self._clear_color_button.set_visible(self.stock_item.color is not None)
 
         effective = self.stock_item.get_effective_color()
-        if not tintable:
-            self.color_row.set_subtitle(_("Set by the material definition"))
-        elif self.stock_item.color == StockItem.COLOR_NONE:
+        if self.stock_item.color == StockItem.COLOR_NONE:
             self.color_row.set_subtitle(_("No color"))
         elif self.stock_item.color:
             self.color_row.set_subtitle(

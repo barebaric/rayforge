@@ -3,6 +3,7 @@ import logging
 import cairo
 from raygeo.geo import Matrix
 
+from ....context import get_context
 from ....core.stock import StockItem
 from ....image.geo_renderer import geometry_to_cairo
 from ...canvas import CanvasElement
@@ -105,41 +106,29 @@ class StockElement(CanvasElement):
         # Texture the stock with the material's texture, tiled so that
         # one image covers `texture_size_mm` world millimeters.
         material = self.data.material
+        if material is None:
+            material = get_context().material_mgr.get_default_material()
         texture_source = None
         texture_size_mm = None
-        if material:
-            texture_path = material.get_texture_path()
-            if texture_path is not None:
-                # Tinting is a material-level feature: the stock's color only
-                # applies when the material is tintable.
-                tint = (
-                    self.data.get_effective_rgba()
-                    if material.appearance.tintable
-                    else None
+        texture_path = material.get_texture_path()
+        if texture_path is not None:
+            tint = self.data.get_effective_rgba()
+            if tint is not None:
+                texture_source = tinted_texture_cairo_surface(
+                    texture_path, tint
                 )
-                if tint is not None:
-                    # Tintable material with a color: use the cached
-                    # tinted copy of the texture surface (computed once
-                    # per texture+tint, reused across redraws).
-                    texture_source = tinted_texture_cairo_surface(
-                        texture_path, tint
-                    )
-                else:
-                    texture_source = load_texture_cairo_surface(texture_path)
-                texture_size_mm = material.appearance.texture_size_mm
+            else:
+                texture_source = load_texture_cairo_surface(texture_path)
+            texture_size_mm = material.appearance.texture_size_mm
 
         if texture_source is not None and texture_size_mm is not None:
             surface, _buffer = texture_source
             self._set_tiled_texture_source(
                 ctx, surface, texture_size_mm, geo_width, geo_height
             )
-        elif material:
-            # Use material color with 0.5 alpha
+        else:
             r, g, b, a = material.get_display_rgba(0.5)
             ctx.set_source_rgba(r, g, b, a)
-        else:
-            # Use default color when no material is assigned
-            ctx.set_source_rgba(0.5, 0.5, 0.5, 0.3)
 
         ctx.fill_preserve()
 

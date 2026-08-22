@@ -54,8 +54,7 @@ Nota: As propriedades do material são definidas em bibliotecas de materiais e n
 
 ### Cor por Item de Material
 
-Para materiais definidos como **tingíveis** (ex., acrílico colorido),
-cada item de material pode substituir a cor de tingimento do material
+Cada item de material pode substituir a cor de tingimento do material
 independentemente:
 
 1. Abra o diálogo de **Propriedades do Material** para o item
@@ -64,9 +63,8 @@ independentemente:
 
 A cor é aplicada apenas a esse item de material — outros itens que usam o
 mesmo material mantêm suas próprias cores. Use o botão de limpar ao lado
-da linha de cor para reverter à cor padrão do material. Para materiais que
-não são tingíveis, a linha de cor fica desativada e a aparência vem da
-definição do material.
+da linha de cor para reverter à cor padrão do material. Quando nem o item
+nem o material definem uma cor, a textura é exibida sem tingimento.
 
 ## Convertendo Peças em Material
 

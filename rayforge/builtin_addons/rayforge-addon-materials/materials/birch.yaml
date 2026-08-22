@@ -24,7 +24,6 @@ category:
   uk: Деревина
   zh_CN: 木材
 appearance:
-  color: "#FFE4C4"
   pattern: wood_grain
   texture: birch.webp
   texture_size_mm: 300

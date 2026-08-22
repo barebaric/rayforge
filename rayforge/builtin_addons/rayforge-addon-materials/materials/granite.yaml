@@ -24,7 +24,6 @@ category:
   uk: Камінь
   zh_CN: 石材
 appearance:
-  color: "#DCDCDC"
   pattern: solid
   texture: granite.webp
   texture_size_mm: 300

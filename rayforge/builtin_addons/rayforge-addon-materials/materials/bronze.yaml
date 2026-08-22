@@ -24,7 +24,6 @@ category:
   uk: Метал
   zh_CN: 金属
 appearance:
-  color: "#CD7F32"
   pattern: metallic
   texture: bronze.webp
   texture_size_mm: 300

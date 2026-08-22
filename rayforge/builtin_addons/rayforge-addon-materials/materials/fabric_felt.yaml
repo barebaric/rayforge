@@ -24,7 +24,6 @@ category:
   uk: Органічний
   zh_CN: 有机材料
 appearance:
-  color: "#9370DB"
   pattern: solid
   texture: fabric_felt.webp
   texture_size_mm: 300

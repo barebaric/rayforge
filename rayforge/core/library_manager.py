@@ -7,6 +7,8 @@ from pathlib import Path
 
 from blinker import Signal
 
+from ..config import BUNDLED_DEFAULT_MATERIAL_UID, BUNDLED_MATERIALS_DIR
+from ..context import get_context
 from .material import Material
 from .material_library import MaterialLibrary
 
@@ -214,6 +216,60 @@ class LibraryManager:
             logger.debug(f"Material reference '{uid}' could not be resolved")
 
         return material
+
+    def get_default_material(self) -> Material:
+        """Resolve the default stock material.
+
+        Resolution order:
+        1. The user-configured default (``config.default_stock_material_uid``)
+           if it resolves in any registered library.
+        2. The bundled fallback UID (``"oak"``) in any registered library
+           (e.g. the core-materials addon is active).
+        3. The bundled fallback material loaded directly from
+           ``rayforge/resources/materials/`` (not registered as a
+           library, so invisible in the material manager UI).
+        4. The first material from any registered library.
+        5. Raise ``RuntimeError`` if no material is available at all.
+
+        Returns:
+            A Material instance that is guaranteed to exist.
+        """
+        configured_uid = get_context().config.default_stock_material_uid
+        if configured_uid:
+            mat = self.get_material_or_none(configured_uid)
+            if mat is not None:
+                return mat
+
+        mat = self.get_material_or_none(BUNDLED_DEFAULT_MATERIAL_UID)
+        if mat is not None:
+            return mat
+
+        mat = self._load_bundled_material()
+        if mat is not None:
+            return mat
+
+        all_mats = self.get_all_materials()
+        if all_mats:
+            return all_mats[0]
+
+        raise RuntimeError("No materials available")
+
+    def _load_bundled_material(self) -> Material | None:
+        """Load the bundled fallback material directly from resources.
+
+        This bypasses the library system entirely so the bundled
+        material is never visible in the material manager UI but is
+        always available as a fallback default.
+        """
+        yaml_path = (
+            BUNDLED_MATERIALS_DIR / f"{BUNDLED_DEFAULT_MATERIAL_UID}.yaml"
+        )
+        try:
+            if yaml_path.is_file():
+                return Material.from_file(yaml_path)
+        except OSError as e:
+            logger.warning("Could not load bundled default material: %s", e)
+        return None
 
     def add_material(self, material: Material, library_id: str) -> bool:
         """

@@ -70,17 +70,13 @@ values repeat the texture more often across the same surface.
 
 #### Color
 
-The base color of the material. When a texture is set and the material is
-tintable, the color tints the texture instead. The color is only used for
-visual appearance on the work surface - it does not affect the laser path
-in any way.
-
-#### Tintable
-
-When enabled, the material's texture can be tinted with the color above.
-This lets a single textured material (e.g. "Acrylic") cover multiple color
-variants: the color is applied per stock item in the [Stock
-Properties](../features/stock-handling.md) dialog.
+An optional tint color. When set, the material's texture is tinted with
+this color; when unset, the texture is shown as-is. This lets a single
+textured material (e.g. "Acrylic") cover multiple color variants: the
+color is applied per stock item in the [Stock
+Properties](../features/stock-handling.md) dialog. The color is only
+used for visual appearance on the work surface - it does not affect the
+laser path in any way.
 
 #### Roughness
 
