@@ -1,4 +1,4 @@
-from .base import BaseArtifact, TextureData
+from .base import BaseArtifact
 from .handle import BaseArtifactHandle, create_handle_from_dict
 from .job import JobArtifact
 from .material_state import (
@@ -23,7 +23,6 @@ __all__ = [
     "MaterialStateArtifactHandle",
     "RenderContext",
     "StepOpsArtifact",
-    "TextureData",
     "WorkPieceArtifact",
     "WorkPieceArtifactHandle",
     "WorkPieceViewArtifact",

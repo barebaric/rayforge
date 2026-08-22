@@ -80,6 +80,7 @@ from ..machine.driver.dummy import NoDeviceDriver
 from ..machine.kinematic_math import KinematicMath
 from ..machine.models.coordspace import MachineSpace
 from ..machine.models.dialect import GRBL_DIALECT
+from ..machine.models.laser import LaserHead
 from ..machine.models.rotary_module import RotaryMode, RotaryType
 from .encoder.base import EncodedOutput
 from .encoder.rust_helpers import build_encode_context, dialect_to_spec
@@ -426,6 +427,52 @@ class IntentBuilder:
     # Stock fold compute nodes
     # ------------------------------------------------------------------
 
+    def _workpiece_world_aabb(
+        self, wp: WorkPiece
+    ) -> tuple[float, float, float, float] | None:
+        """The workpiece's world-space AABB for fold dependency wiring.
+
+        Uses the resolved world geometry when available (vector
+        workpieces). Image/raster workpieces carry no vector geometry
+        (``get_world_geometry`` returns ``None``), so their AABB is
+        derived from the workpiece ``size`` transformed into world
+        space via its world transform. Returns ``None`` when neither
+        yields a usable rect (no geometry and no size).
+        """
+        geo = wp.get_world_geometry()
+        if geo is not None and not geo.is_empty():
+            return geo.rect()
+        if not wp.size:
+            return None
+        w, h = wp.size
+        if w <= 0 or h <= 0:
+            return None
+        world = wp.get_world_transform()
+        corners = [(0.0, 0.0), (w, 0.0), (0.0, h), (w, h)]
+        pts = [world.transform_point(x, y) for x, y in corners]
+        xs = [p[0] for p in pts]
+        ys = [p[1] for p in pts]
+        return (min(xs), min(ys), max(xs), max(ys))
+
+    def _active_laser_physics(self) -> tuple[float, float]:
+        """The active laser's ``(wavelength_nm, max_power_watts)``.
+
+        Used as provenance for the fold's surface map: the renderer
+        looks up the material's absorption coefficient for this
+        wavelength's band. Falls back to ``(0, 0)`` (unconfigured) when
+        the machine has no laser head, so the renderer falls back to
+        full absorption.
+        """
+        if self._machine is None:
+            return (0.0, 0.0)
+        for head in self._machine.heads:
+            if isinstance(head, LaserHead):
+                return (
+                    head.effective_wavelength_nm(),
+                    head.effective_max_power_watts(),
+                )
+        return (0.0, 0.0)
+
     def _build_stock_fold_nodes(
         self,
         doc: Doc,
@@ -462,10 +509,9 @@ class IntentBuilder:
         entries: list[FoldEntry] = []
         source_keys: list[str] = []
         for wp_key, wp in wp_compute_keys:
-            wp_geo = wp.get_world_geometry()
-            if wp_geo is None or wp_geo.is_empty():
+            wp_rect = self._workpiece_world_aabb(wp)
+            if wp_rect is None:
                 continue
-            wp_rect = wp_geo.rect()
             if not _aabb_intersects(stock_rect, wp_rect):
                 continue
             placement = _workpiece_placement_matrix_obj(wp)
@@ -483,12 +529,15 @@ class IntentBuilder:
 
         key = stock_key(stock_item.uid)
         token = self._stock_fold_token(stock_item, source_keys)
+        wavelength_nm, max_power_watts = self._active_laser_physics()
         spec = MaterialFoldSpec(
             stock=PrismaticStock(
                 polygons=stock_polygons,
                 thickness=thickness,
             ),
             entries=entries,
+            wavelength_nm=wavelength_nm,
+            max_power_watts=max_power_watts,
         )
         # The MaterialFoldSpec is passed directly as the node's stage.
         out.append(self._make_request(key, token, spec))
@@ -568,9 +617,12 @@ class IntentBuilder:
 
         key = stock_key(layer.uid)
         token = self._rotary_fold_token(layer, max_length, source_keys)
+        wavelength_nm, max_power_watts = self._active_laser_physics()
         spec = MaterialFoldSpec(
             stock=CylinderStock(diameter=diameter, length=max_length),
             entries=entries,
+            wavelength_nm=wavelength_nm,
+            max_power_watts=max_power_watts,
         )
         logger.info(
             "Emitting burn fold for rotary layer %r (domain %.0fx%.0f mm,"
@@ -662,6 +714,12 @@ class IntentBuilder:
             "geo_rev": wp.geometry_revision,
             "wp_size": list(wp.size) if wp.size else [0, 0],
             "step_params": step.get_cache_params(),
+            # The burn fluence model consumes the selected head's laser
+            # physics; fold them in so a machine power/wavelength/spot
+            # change invalidates the compute cache.
+            "laser_params": _canonical(
+                step.get_laser_cache_params(self._machine)
+            ),
             "assembler_params": _canonical(self._assembler_params(step, wp)),
             "wpxf": _canonical(step.per_workpiece_transformers_dicts),
         }

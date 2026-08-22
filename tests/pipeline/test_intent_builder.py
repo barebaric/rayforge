@@ -41,6 +41,7 @@ from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
 from rayforge.core.workpiece import WorkPiece
 from rayforge.machine.models.dialect.grbl import GRBL_DIALECT
+from rayforge.machine.models.laser import LaserHead
 from rayforge.machine.models.machine import Machine, Origin
 from rayforge.machine.models.machine_panel import PanelOrientation
 from rayforge.machine.models.rotary_module import RotaryMode, RotaryModule
@@ -545,6 +546,33 @@ def test_compute_token_changes_on_machine_arc_tolerance(
     machine.arc_tolerance = 0.25
     after = IntentBuilder(machine=machine).build(doc)
     before_t = next(n.version_token for n in before if n.key == wpk)
+    after_t = next(n.version_token for n in after if n.key == wpk)
+    assert before_t != after_t
+
+
+def test_compute_token_changes_on_laser_power_change(
+    contour_step_class, test_machine_and_config
+):
+    """Changing the machine's laser optical power invalidates the
+    compute cache.
+
+    The burn fluence model scales with ``max_power_watts``; without
+    folding it into the compute token, the pipeline would keep serving
+    the pre-change burn until an unrelated edit (e.g. a workpiece
+    resize) bumped the token.
+    """
+    machine, context = test_machine_and_config
+    step = contour_step_class.create(context, name="cut")
+    wp = WorkPiece(name="wp")
+    doc = _make_doc(step, wp)
+
+    laser = next(h for h in machine.heads if isinstance(h, LaserHead))
+    before = IntentBuilder(machine=machine).build(doc)
+    wpk = workpiece_key(wp.uid, step.uid)
+    before_t = next(n.version_token for n in before if n.key == wpk)
+
+    laser.max_power_watts = 55.0
+    after = IntentBuilder(machine=machine).build(doc)
     after_t = next(n.version_token for n in after if n.key == wpk)
     assert before_t != after_t
 
@@ -1837,6 +1865,44 @@ def test_fold_node_entries_cover_intersecting_workpieces(isolated_machine):
     far_key = workpiece_key(wp_far.uid, step.uid)
     assert near_key in source_keys
     assert far_key not in source_keys
+
+
+def test_fold_node_includes_image_workpiece_without_geometry(
+    isolated_machine,
+):
+    """An image/raster workpiece (no vector geometry) still contributes
+    a fold entry when its size-based world AABB intersects the stock.
+
+    Raster workpieces carry no ``boundaries`` geometry, so
+    ``get_world_geometry`` returns ``None``; the fold wiring must fall
+    back to the workpiece's ``size`` transformed into world space,
+    otherwise scanline burns never reach the stock.
+    """
+    step = _TestStep(name="s1")
+    wp = WorkPiece(name="wp")
+    wp.set_size(50.0, 50.0)
+    doc, item = _make_doc_with_stock_and_wp(step, wp)
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+    sk = stock_key(item.uid)
+    fold_node = next(n for n in nodes if n.key == sk)
+    assert isinstance(fold_node.stage, MaterialFoldSpec)
+    source_keys = {e.source_key for e in fold_node.stage.entries}
+    assert workpiece_key(wp.uid, step.uid) in source_keys
+
+
+def test_fold_node_skips_image_workpiece_outside_stock(isolated_machine):
+    """An image workpiece whose world AABB does not intersect the
+    stock is still excluded from the fold."""
+    step = _TestStep(name="s1")
+    wp = WorkPiece(name="wp")
+    wp.set_size(50.0, 50.0)
+    wp.matrix = Matrix.translation(10000.0, 10000.0)
+    doc, item = _make_doc_with_stock_and_wp(step, wp)
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+    keys = [n.key for n in nodes]
+    assert stock_key(item.uid) not in keys
 
 
 def test_existing_node_count_unchanged_with_stock(isolated_machine):

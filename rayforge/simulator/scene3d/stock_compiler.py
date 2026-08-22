@@ -33,6 +33,7 @@ import numpy as np
 from raygeo.mesh.build import build_prism_mesh
 from raygeo.ops.material.grid import compute_power_uvs
 
+from ...core.optical import absorption_for
 from .compiled_scene import StockLayer
 
 if TYPE_CHECKING:
@@ -255,6 +256,31 @@ class _BurnData(NamedTuple):
     power_grid: tuple[
         tuple[float, float], tuple[float, float], tuple[int, int]
     ]
+    wavelength_nm: float
+    max_power_watts: float
+
+
+def _default_burn_response() -> dict:
+    """Default char-curve parameters (match the shader fallback).
+
+    In the fluence (J/cm²) domain, calibrated against real-world
+    desktop diode behaviour: ~30 J/cm² (5 W at 10 %, 1000 mm/min)
+    leaves no mark, full power (~300 J/cm²) engraves solidly.
+    Char colors are black (carbonized material), not the laser color.
+    """
+    return {
+        "char_threshold": 35.0,
+        "char_saturation": 125.0,
+        "char_color_low": (0.04, 0.03, 0.02),
+        "char_color_high": (0.01, 0.01, 0.01),
+    }
+
+
+def _resolve_absorption(
+    absorption_dict: dict | None, wavelength_nm: float
+) -> float:
+    """Absorption coefficient for the burn's wavelength band."""
+    return absorption_for(wavelength_nm, absorption_dict)
 
 
 def _parse_burn_spec(spec: dict) -> _BurnData | None:
@@ -309,6 +335,8 @@ def _parse_burn_spec(spec: dict) -> _BurnData | None:
         size_px=(int(w_px), int(h_px)),
         aabb=aabb,
         power_grid=(origin_mm, px_per_mm, size_px),
+        wavelength_nm=float(burn.get("wavelength_nm") or 0.0),
+        max_power_watts=float(burn.get("max_power_watts") or 0.0),
     )
 
 
@@ -323,6 +351,10 @@ def _compile_stock_spec(
     metallic = float(spec.get("metallic") or 0.0)
     fallback_rgba = _parse_rgba(spec.get("color"))
     tint_rgba = _parse_rgba_optional(spec.get("tint"))
+    burn_response = spec.get("burn_response") or _default_burn_response()
+    absorption_dict = spec.get("absorption")
+    if not isinstance(absorption_dict, dict):
+        absorption_dict = None
 
     if spec.get("kind") == "rotary":
         return _compile_rotary_stock_spec(
@@ -333,6 +365,8 @@ def _compile_stock_spec(
             fallback_rgba=fallback_rgba,
             tint_rgba=tint_rgba,
             stock_w2v=stock_w2v,
+            burn_response=burn_response,
+            absorption_dict=absorption_dict,
         )
 
     outers = [
@@ -414,6 +448,9 @@ def _compile_stock_spec(
             burn.aabb,
         )
 
+    absorption = _resolve_absorption(
+        absorption_dict, burn.wavelength_nm if burn is not None else 0.0
+    )
     return StockLayer(
         positions=np.concatenate(pos_parts),
         normals=np.concatenate(norm_parts),
@@ -434,6 +471,9 @@ def _compile_stock_spec(
             if power_uv_parts
             else np.empty((0, 2), dtype=np.float32)
         ),
+        wavelength_nm=burn.wavelength_nm if burn is not None else 0.0,
+        absorption=absorption,
+        burn_response=burn_response,
     )
 
 
@@ -446,6 +486,8 @@ def _compile_rotary_stock_spec(
     fallback_rgba: tuple[float, float, float, float],
     tint_rgba: tuple[float, float, float, float] | None,
     stock_w2v: np.ndarray,
+    burn_response: dict,
+    absorption_dict: dict | None,
 ) -> StockLayer | None:
     """Compile a rotary stock spec into a cylinder shell layer."""
     diameter = _positive_float(spec.get("diameter"), 0.0)
@@ -460,6 +502,9 @@ def _compile_rotary_stock_spec(
     power_uvs: np.ndarray = np.empty((0, 2), dtype=np.float32)
     if burn is not None:
         power_uvs = _rotary_power_uvs(diameter, length, burn.power_grid)
+    absorption = _resolve_absorption(
+        absorption_dict, burn.wavelength_nm if burn is not None else 0.0
+    )
     return StockLayer(
         positions=positions,
         normals=normals,
@@ -477,26 +522,13 @@ def _compile_rotary_stock_spec(
         power_size_px=(burn.size_px if burn is not None else None),
         power_aabb=(burn.aabb if burn is not None else None),
         power_uvs=power_uvs,
+        wavelength_nm=(burn.wavelength_nm if burn is not None else 0.0),
+        absorption=absorption,
+        burn_response=burn_response,
     )
 
 
 # ── Public API ───────────────────────────────────────────────────
-
-
-def stock_burn_aabbs(
-    stock_specs: list[dict],
-) -> list[tuple[float, float, float, float]]:
-    """World-mm AABBs of every spec's burn surface map.
-
-    Used by the scene compiler to decide which LUT engrave quads are
-    superseded by a stock's burned-in charring.
-    """
-    aabbs: list[tuple[float, float, float, float]] = []
-    for spec in stock_specs:
-        burn = _parse_burn_spec(spec)
-        if burn is not None:
-            aabbs.append(burn.aabb)
-    return aabbs
 
 
 def compile_stock_layers(

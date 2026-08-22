@@ -40,7 +40,6 @@ class CanvasViewState:
     show_grid: bool = True
     show_models: bool = True
     show_tabs: bool = True
-    show_ops_underlay: bool = True
     show_stock: bool = True
     perspective_mode: bool = False
 

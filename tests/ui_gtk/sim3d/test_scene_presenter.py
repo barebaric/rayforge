@@ -28,7 +28,6 @@ from rayforge.core.material import Material
 from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
 from rayforge.core.workpiece import WorkPiece
-from rayforge.machine.models.laser import LaserHead
 from rayforge.machine.models.machine import Machine
 from rayforge.machine.models.rotary_module import RotaryMode, RotaryModule
 from rayforge.pipeline.artifact.material_state import MaterialStateArtifact
@@ -139,56 +138,6 @@ def test_update_scene_from_doc_schedules_compilation(ui_context_initializer):
     config = presenter._schedule_scene_preparation.call_args.args[0]
     assert "world_to_visual" in config
     assert "world_to_cyl_local" in config
-
-
-@pytest.mark.ui
-def test_update_scene_from_doc_populates_laser_dot_widths(
-    ui_context_initializer,
-):
-    """Laser head spot sizes reach the render config so the 3D raster
-    preview can draw scanlines at the physical dot width."""
-    head1 = LaserHead()
-    head1.spot_size_mm = (0.1, 0.2)
-    head2 = LaserHead()
-    head2.spot_size_mm = (0.3, 0.4)
-
-    machine = MagicMock()
-    machine.heads = [head1, head2]
-    machine.assembly = MagicMock()
-    machine.assembly.has_rotary = False
-    machine.get_default_rotary_module.return_value = None
-
-    doc_editor = MagicMock()
-    doc_editor.doc.layers = []
-    presenter, _, _ = _make_presenter(
-        context=MagicMock(machine=machine),
-        doc_editor=doc_editor,
-        get_viewport=lambda: ViewportConfig.default(),
-    )
-    presenter._schedule_scene_preparation = MagicMock()
-
-    presenter.update_scene_from_doc()
-
-    config = presenter._schedule_scene_preparation.call_args.args[0]
-    assert config["laser_dot_widths_mm"] == {
-        head1.uid: 0.1,
-        head2.uid: 0.3,
-    }
-
-
-@pytest.mark.ui
-def test_update_scene_from_doc_dot_widths_empty_without_machine(
-    ui_context_initializer,
-):
-    doc_editor = MagicMock()
-    doc_editor.doc.layers = []
-    presenter, _, _ = _make_presenter(doc_editor=doc_editor)
-    presenter._schedule_scene_preparation = MagicMock()
-
-    presenter.update_scene_from_doc()
-
-    config = presenter._schedule_scene_preparation.call_args.args[0]
-    assert config.get("laser_dot_widths_mm") is None
 
 
 @pytest.mark.ui
@@ -730,7 +679,7 @@ def test_on_workpiece_images_ready_ignores_stale_generation(
 def _burned_state():
     """A real MaterialState with a raster-burn surface map."""
     effect = RasterEffect(
-        np.full((10, 10), 255, dtype=np.uint8),
+        np.full((10, 10), 255.0, dtype=np.float32),
         origin_mm=(0.0, 0.0),
         px_per_mm=(10.0, 10.0),
     )
@@ -954,8 +903,8 @@ def test_build_rotary_stock_specs_attaches_burn(ui_context_initializer):
         viewport.width_mm = 400.0
         presenter._material_states[layer.uid] = {
             "handle_key": "h1",
-            "surface_map": CompressedArray.from_uint8_2d(
-                np.zeros((4, 4), dtype=np.uint8)
+            "surface_map": CompressedArray.from_float32_2d(
+                np.zeros((4, 4), dtype=np.float32)
             ),
             "origin_mm": (0.0, 0.0),
             "px_per_mm": (10.0, 10.0),

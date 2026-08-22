@@ -299,11 +299,6 @@ def _measure_scene_presenter(presenter: ScenePresenter) -> OwnerReport:
         _claim_compressed(r, f"{label}.zero_power_verts", vl.zero_power_verts)
         _claim_array(r, f"{label}.powered_cmd_offsets", vl.powered_cmd_offsets)
         _claim_array(r, f"{label}.travel_cmd_offsets", vl.travel_cmd_offsets)
-    for i, tl in enumerate(art.texture_layers):
-        label = f"TextureLayer[{i}]"
-        _claim_compressed(r, f"{label}.power_texture", tl.power_texture)
-        _claim_array(r, f"{label}.model_matrix", tl.model_matrix)
-        _claim_array(r, f"{label}.cylinder_vertices", tl.cylinder_vertices)
     for i, ol in enumerate(art.overlay_layers):
         label = f"OverlayLayer[{i}]"
         _claim_compressed(r, f"{label}.positions", ol.positions)

@@ -45,7 +45,6 @@ def _update(
     show_grid=True,
     show_nogo_zones=True,
     show_models=True,
-    show_ops_underlay=True,
     show_stock=True,
     show_workpiece_image=True,
 ):
@@ -54,7 +53,6 @@ def _update(
         show_grid=show_grid,
         show_nogo_zones=show_nogo_zones,
         show_models=show_models,
-        show_ops_underlay=show_ops_underlay,
         show_stock=show_stock,
         show_workpiece_image=show_workpiece_image,
     )
@@ -241,7 +239,6 @@ def test_update_propagates_show_toggles():
         show_grid=False,
         show_nogo_zones=False,
         show_models=False,
-        show_ops_underlay=False,
         show_stock=False,
         show_workpiece_image=False,
     )
@@ -249,7 +246,6 @@ def test_update_propagates_show_toggles():
     assert ctx.visibility.show_grid is False
     assert ctx.visibility.show_nogo_zones is False
     assert ctx.visibility.show_models is False
-    assert ctx.visibility.show_ops_underlay is False
     assert ctx.visibility.show_stock is False
     assert ctx.visibility.show_workpiece_image is False
 

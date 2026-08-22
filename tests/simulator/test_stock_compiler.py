@@ -15,7 +15,6 @@ from raygeo.compressed_array import CompressedArray
 from rayforge.simulator.scene3d.compiled_scene import StockLayer
 from rayforge.simulator.scene3d.stock_compiler import (
     compile_stock_layers,
-    stock_burn_aabbs,
 )
 
 RECT_OUTER = [(0.0, 0.0), (200.0, 0.0), (200.0, 100.0), (0.0, 100.0)]
@@ -327,9 +326,9 @@ def _burn_entry(
     fill=0,
 ):
     w, h = size_px
-    pixels = np.full((h, w), fill, dtype=np.uint8)
+    pixels = np.full((h, w), fill, dtype=np.float32)
     return {
-        "surface_map": CompressedArray.from_uint8_2d(pixels),
+        "surface_map": CompressedArray.from_float32_2d(pixels),
         "origin_mm": origin_mm,
         "px_per_mm": px_per_mm,
         "size_px": size_px,
@@ -386,25 +385,6 @@ def test_compile_stock_layers_invalid_burn_ignored():
     layers = compile_stock_layers([spec], _identity())
     assert len(layers) == 1
     assert layers[0].power_texture is None
-
-
-def test_stock_burn_aabbs():
-    plain = {"name": "no burn", "outers": [RECT_OUTER]}
-    burned = {
-        "name": "burned",
-        "outers": [RECT_OUTER],
-        "burn": _burn_entry(origin_mm=(10.0, 20.0)),
-    }
-    aabbs = stock_burn_aabbs([plain, burned])
-    # 100 px at 50 px/mm from (10, 20): 2 x 1 mm.
-    assert aabbs == [
-        (
-            pytest.approx(10.0),
-            pytest.approx(20.0),
-            pytest.approx(12.0),
-            pytest.approx(21.0),
-        )
-    ]
 
 
 def test_compile_rotary_stock_burn_spec():
@@ -467,17 +447,3 @@ def test_compile_rotary_stock_without_burn_has_no_power_data():
     assert layer.power_size_px is None
     assert layer.power_aabb is None
     assert layer.power_uvs.shape == (0, 2)
-
-
-def test_rotary_burn_aabb_in_stock_burn_aabbs():
-    """Rotary specs' burn AABBs feed the LUT suppression list."""
-    size_px = (100, 100)
-    spec = _rotary_spec(
-        burn=_burn_entry(
-            origin_mm=(0.0, 0.0),
-            px_per_mm=(10.0, 10.0),
-            size_px=size_px,
-        )
-    )
-    aabbs = stock_burn_aabbs([spec])
-    assert aabbs == [pytest.approx((0.0, 0.0, 10.0, 10.0))]

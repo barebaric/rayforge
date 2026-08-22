@@ -213,7 +213,6 @@ def test_update_from_artifact(renderer):
     artifact = CompiledSceneArtifact(
         generation_id=1,
         vertex_layers=[],
-        texture_layers=[],
         overlay_layers=[],
         stock_layers=[_make_layer(), _make_layer()],
     )

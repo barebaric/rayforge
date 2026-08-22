@@ -5,7 +5,6 @@ from rayforge.pipeline.artifact.store import ArtifactStore
 from rayforge.simulator.scene3d.compiled_scene import (
     CompiledSceneArtifact,
     ScanlineOverlayLayer,
-    TextureLayer,
     VertexLayer,
 )
 
@@ -14,10 +13,6 @@ def _ca_f32(data):
     return CompressedArray.from_float32(
         np.asarray(data, dtype=np.float32).ravel()
     )
-
-
-def _ca_u8_2d(data):
-    return CompressedArray.from_uint8_2d(np.asarray(data, dtype=np.uint8))
 
 
 def _make_vertex_layer(n_powered=10, n_travel=5, n_zero=3):
@@ -31,19 +26,6 @@ def _make_vertex_layer(n_powered=10, n_travel=5, n_zero=3):
         zero_power_verts=_ca_f32(np.random.rand(n_zero, 3)),
         powered_cmd_offsets=np.array([0, 2, n_powered], dtype=np.int32),
         travel_cmd_offsets=np.array([0, n_travel], dtype=np.int32),
-    )
-
-
-def _make_texture_layer(with_cylinder=True):
-    kw = {}
-    if with_cylinder:
-        kw["cylinder_vertices"] = np.random.rand(64, 3).astype(np.float32)
-    return TextureLayer(
-        power_texture=_ca_u8_2d(np.random.randint(0, 255, (32, 48))),
-        width_px=48,
-        height_px=32,
-        model_matrix=np.eye(4, dtype=np.float32),
-        **kw,
     )
 
 
@@ -72,7 +54,6 @@ class TestCompiledSceneArtifactRoundTrip:
         artifact = CompiledSceneArtifact(
             generation_id=42,
             vertex_layers=[_make_vertex_layer(), _make_vertex_layer()],
-            texture_layers=[],
             overlay_layers=[],
         )
         store = ArtifactStore()
@@ -80,7 +61,6 @@ class TestCompiledSceneArtifactRoundTrip:
 
         assert loaded.generation_id == 42
         assert len(loaded.vertex_layers) == 2
-        assert len(loaded.texture_layers) == 0
         assert len(loaded.overlay_layers) == 0
 
         for orig, restored in zip(
@@ -111,41 +91,11 @@ class TestCompiledSceneArtifactRoundTrip:
 
         store.release(handle)
 
-    def test_texture_layers_with_optionals(self):
-        artifact = CompiledSceneArtifact(
-            generation_id=1,
-            vertex_layers=[],
-            texture_layers=[
-                _make_texture_layer(with_cylinder=True),
-                _make_texture_layer(with_cylinder=False),
-            ],
-            overlay_layers=[],
-        )
-        store = ArtifactStore()
-        handle, loaded = _roundtrip(artifact, store, "test_tl")
-
-        assert len(loaded.texture_layers) == 2
-
-        tl0 = loaded.texture_layers[0]
-        assert tl0.width_px == 48
-        assert tl0.height_px == 32
-        assert tl0.cylinder_vertices is not None
-        np.testing.assert_array_equal(
-            artifact.texture_layers[0].power_texture.to_numpy(),
-            tl0.power_texture.to_numpy(),
-        )
-
-        tl1 = loaded.texture_layers[1]
-        assert tl1.cylinder_vertices is None
-
-        store.release(handle)
-
     def test_overlay_layers(self):
         overlay = _make_overlay_layer()
         artifact = CompiledSceneArtifact(
             generation_id=7,
             vertex_layers=[],
-            texture_layers=[],
             overlay_layers=[overlay],
         )
         store = ArtifactStore()
@@ -168,7 +118,6 @@ class TestCompiledSceneArtifactRoundTrip:
         artifact = CompiledSceneArtifact(
             generation_id=0,
             vertex_layers=[],
-            texture_layers=[],
             overlay_layers=[],
         )
         store = ArtifactStore()
@@ -176,7 +125,6 @@ class TestCompiledSceneArtifactRoundTrip:
 
         assert loaded.generation_id == 0
         assert len(loaded.vertex_layers) == 0
-        assert len(loaded.texture_layers) == 0
         assert len(loaded.overlay_layers) == 0
 
         store.release(handle)
@@ -193,7 +141,6 @@ class TestCompiledSceneArtifactRoundTrip:
         artifact = CompiledSceneArtifact(
             generation_id=0,
             vertex_layers=[vl],
-            texture_layers=[],
             overlay_layers=[],
         )
         store = ArtifactStore()
@@ -218,7 +165,6 @@ class TestCompiledSceneArtifactRoundTrip:
         artifact = CompiledSceneArtifact(
             generation_id=0,
             vertex_layers=[big_vl],
-            texture_layers=[],
             overlay_layers=[],
         )
         store = ArtifactStore()
@@ -235,7 +181,6 @@ class TestCompiledSceneArtifactRoundTrip:
         artifact = CompiledSceneArtifact(
             generation_id=99,
             vertex_layers=[_make_vertex_layer()],
-            texture_layers=[_make_texture_layer()],
             overlay_layers=[_make_overlay_layer()],
         )
         store = ArtifactStore()
@@ -243,7 +188,6 @@ class TestCompiledSceneArtifactRoundTrip:
 
         assert loaded.generation_id == 99
         assert len(loaded.vertex_layers) == 1
-        assert len(loaded.texture_layers) == 1
         assert len(loaded.overlay_layers) == 1
 
         store.release(handle)

@@ -60,13 +60,17 @@ class PreparedStockLayer:
     texture_key: tuple[str, int, int] | None = None
     texture_pixels: np.ndarray | None = None
     is_rotary: bool = False
-    # Burn-in surface map (R8, world-y-up rows) decoded for GL upload,
-    # its size, and the per-vertex coordinates into it.
+    # Burn-in surface map (F32 fluence, world-y-up rows) decoded for
+    # GL upload, its size, and the per-vertex coordinates into it.
     power_pixels: np.ndarray | None = None
     power_size: tuple[int, int] | None = None
     power_uvs: np.ndarray = field(
         default_factory=lambda: np.empty((0, 2), dtype=np.float32)
     )
+    # Resolved absorption coefficient (0-1) for the shader's burn block.
+    absorption: float = 1.0
+    # Resolved char-curve parameters for the shader's burn block.
+    burn_response: dict = field(default_factory=dict)
 
 
 @lru_cache(maxsize=MAX_CACHED_DECODES)
@@ -157,6 +161,8 @@ def prepare_stock_layer(layer: StockLayer) -> PreparedStockLayer:
         power_pixels=power_pixels,
         power_size=power_size,
         power_uvs=np.ascontiguousarray(power_uvs, dtype=np.float32),
+        absorption=getattr(layer, "absorption", 1.0),
+        burn_response=getattr(layer, "burn_response", {}),
     )
 
 
@@ -267,20 +273,51 @@ class StockRenderer(BaseRenderer):
         GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
         return texture_id
 
+    @staticmethod
+    def _power_mipmap_levels(data: np.ndarray) -> list[np.ndarray]:
+        """Builds a max-reduction mip pyramid of a fluence map.
+
+        Down-sampling with the maximum (rather than the average) keeps
+        the scanline structure intact at every zoom level: when the
+        burn texture is minified (the stock grid is far denser than the
+        screen), each mip texel covers a block of fluence samples and
+        reports the hottest one, so engrave rows stay visible instead
+        of aliasing into flickering single pixels.
+        """
+        levels = [data]
+        level = data
+        while max(level.shape) > 1:
+            h, w = level.shape
+            out = level
+            if h > 1:
+                out = out[: 2 * (h // 2)].reshape(h // 2, 2, w).max(axis=1)
+            if w > 1:
+                out = (
+                    out[:, : 2 * (w // 2)]
+                    .reshape(out.shape[0], w // 2, 2)
+                    .max(axis=2)
+                )
+            levels.append(out)
+            level = out
+        return levels
+
     def _create_power_texture(self, pixels: np.ndarray) -> int:
-        """Uploads an R8 burn power map.
+        """Uploads an F32 fluence burn map with max-reduced mipmaps.
 
         The buffer is world-y-up (row 0 = min y) and the mesh's
-        ``power_uvs`` v grows with y, so rows upload as-is. No
-        mipmaps: the burn signal is low-frequency and crisp edges are
-        wanted; switch to a mipmapped filter if aliasing appears at
-        grazing angles.
+        ``power_uvs`` v grows with y, so rows upload as-is.  The
+        internal format is ``GL_R32F`` to carry the fluence's wide
+        dynamic range (J/cm²) without the 0–255 quantization of the
+        old R8 PWM path.          Mipmaps are max-reduced (see
+        :meth:`_power_mipmap_levels`) so minifying the dense stock grid
+        keeps the scanline burn crisp instead of aliased.
         """
         texture_id = GL.glGenTextures(1)
-        height, width = pixels.shape[:2]
         GL.glBindTexture(GL.GL_TEXTURE_2D, texture_id)
         GL.glTexParameteri(
-            GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR
+            GL.GL_TEXTURE_2D,
+            GL.GL_TEXTURE_MIN_FILTER,
+            GL.GL_LINEAR_MIPMAP_LINEAR,
         )
         GL.glTexParameteri(
             GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR
@@ -292,17 +329,19 @@ class StockRenderer(BaseRenderer):
             GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE
         )
         GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 1)
-        GL.glTexImage2D(
-            GL.GL_TEXTURE_2D,
-            0,
-            GL.GL_R8,
-            width,
-            height,
-            0,
-            GL.GL_RED,
-            GL.GL_UNSIGNED_BYTE,
-            pixels,
-        )
+        for level, mip in enumerate(self._power_mipmap_levels(pixels)):
+            mh, mw = mip.shape
+            GL.glTexImage2D(
+                GL.GL_TEXTURE_2D,
+                level,
+                GL.GL_R32F,
+                mw,
+                mh,
+                0,
+                GL.GL_RED,
+                GL.GL_FLOAT,
+                np.ascontiguousarray(mip, dtype=np.float32),
+            )
         GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 4)
         GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
         return texture_id
@@ -422,6 +461,8 @@ class StockRenderer(BaseRenderer):
                     "texture_id": texture_id,
                     "is_rotary": prepared.is_rotary,
                     "power_texture_id": power_texture_id,
+                    "absorption": prepared.absorption,
+                    "burn_response": prepared.burn_response,
                 }
             )
 
@@ -515,6 +556,25 @@ class StockRenderer(BaseRenderer):
         if power_texture_id:
             GL.glActiveTexture(GL.GL_TEXTURE2)
             GL.glBindTexture(GL.GL_TEXTURE_2D, power_texture_id)
+            br = instance.get("burn_response") or {}
+            shader.set_float(
+                "uAbsorption", float(instance.get("absorption", 1.0))
+            )
+            shader.set_float(
+                "uCharThreshold", float(br.get("char_threshold", 35.0))
+            )
+            shader.set_float(
+                "uCharSaturation", float(br.get("char_saturation", 125.0))
+            )
+            low = br.get("char_color_low", (0.04, 0.03, 0.02))
+            high = br.get("char_color_high", (0.01, 0.01, 0.01))
+            shader.set_vec3(
+                "uCharColorLow", (float(low[0]), float(low[1]), float(low[2]))
+            )
+            shader.set_vec3(
+                "uCharColorHigh",
+                (float(high[0]), float(high[1]), float(high[2])),
+            )
 
         GL.glBindVertexArray(instance["vao"])
         GL.glDrawArrays(GL.GL_TRIANGLES, 0, instance["vertex_count"])

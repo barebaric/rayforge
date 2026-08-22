@@ -24,6 +24,10 @@ category:
   uk: Органічний
   zh_CN: 有机材料
 appearance:
+  absorption:
+    blue: 0.8
+    ir: 0.3
+    co2: 0.85
   pattern: solid
   texture: fabric_canvas.webp
   texture_size_mm: 300

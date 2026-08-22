@@ -54,7 +54,6 @@ class RenderConfig3D:
     stock_top_z: float = 0.0
     has_z_axis: bool = True
     layer_configs: dict[str, LayerRenderConfig] | None = None
-    laser_dot_widths_mm: dict[str, float] | None = None
     stock_specs: list[dict] | None = None
 
     def to_dict(self) -> dict:
@@ -78,8 +77,6 @@ class RenderConfig3D:
             d["layer_configs"] = {
                 k: v.to_dict() for k, v in self.layer_configs.items()
             }
-        if self.laser_dot_widths_mm:
-            d["laser_dot_widths_mm"] = dict(self.laser_dot_widths_mm)
         if self.stock_specs:
             d["stock_specs"] = list(self.stock_specs)
         return d
@@ -116,6 +113,5 @@ class RenderConfig3D:
             stock_top_z=data.get("stock_top_z", 0.0),
             has_z_axis=data.get("has_z_axis", True),
             layer_configs=layer_configs,
-            laser_dot_widths_mm=data.get("laser_dot_widths_mm"),
             stock_specs=data.get("stock_specs"),
         )

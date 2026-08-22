@@ -71,6 +71,13 @@ uniform sampler2D uBrdfLut;
 uniform sampler2D uPowerTexture;
 uniform float uUsePowerTexture;
 uniform float uRotary;
+// Physical burn model uniforms (set per-stock from the material's
+// absorption and burn_response fields; see physical-burn.md step 4).
+uniform float uAbsorption;       // 0–1 absorption coefficient
+uniform float uCharThreshold;    // fluence below which no char
+uniform float uCharSaturation;   // fluence for full char
+uniform vec3 uCharColorLow;      // warm scorch at low char
+uniform vec3 uCharColorHigh;     // near-black char at full burn
 uniform vec3 uAmbientSky;
 uniform vec3 uAmbientGround;
 uniform vec3 uTint;
@@ -139,13 +146,16 @@ vec3 env_irradiance(vec3 n) {
     return mix(uAmbientGround, uAmbientSky, 0.5 + 0.5 * n.z);
 }
 
-// Burn transfer: the laser PWM fraction shaped by a noise floor and a
-// sub-unity exponent, mapping typical engraving power to
-// mostly-charred. Near-zero power (image blacks, laser off) stays at 0.
+// Burn transfer: the folded surface map carries laser fluence
+// (J/cm²). The absorbed fluence (fluence × uAbsorption) drives a
+// char curve clamped between uCharThreshold (no char below) and
+// uCharSaturation (full char above). Near-zero fluence (laser off)
+// stays at 0.
 float burn_transfer(vec2 uv) {
-    float power = texture(uPowerTexture, uv).r;
-    float shaped = clamp((power - 0.05) / 0.95, 0.0, 1.0);
-    return pow(shaped, 0.45);
+    float fluence = texture(uPowerTexture, uv).r;
+    float absorbed = fluence * uAbsorption;
+    float span = max(uCharSaturation - uCharThreshold, 1e-4);
+    return clamp((absorbed - uCharThreshold) / span, 0.0, 1.0);
 }
 
 void main() {
@@ -189,22 +199,21 @@ void main() {
 
         burn = burn_transfer(vPowerUV);
 
-        // Char colour ramps from warm scorch at low power, through
-        // near-black char, to cool ash when over-burned.
-        vec3 scorch = vec3(0.14, 0.07, 0.02);
-        vec3 char_dark = vec3(0.02, 0.012, 0.006);
-        vec3 ash = vec3(0.11, 0.11, 0.13);
-        vec3 char_color;
-        if (burn < 0.5) {
-            char_color = mix(scorch, char_dark, burn * 2.0);
-        } else {
-            char_color = mix(char_dark, ash, (burn - 0.5) * 2.0);
-        }
+        // Char colour ramps from warm scorch at low char to near-black
+        // char at full burn. The ramp endpoints are material-driven
+        // uniforms (uCharColorLow, uCharColorHigh) so per-material
+        // tuning comes from the YAML, not GLSL constants. Full burn is
+        // black (carbonized material), never lighter.
+        vec3 char_color = mix(uCharColorLow, uCharColorHigh, burn);
         char_albedo = mix(albedo, char_color, burn);
         roughness = clamp(mix(roughness, 0.55, burn), 0.045, 1.0);
 
-        // Soft heat-affected halo: a wider warm-brown fringe around
-        // the sharp char, strongest at the burn boundary.
+        // Soft heat-affected halo: a wider warm fringe around the
+        // sharp char, strongest at the burn boundary. The halo reads
+        // raw fluence (before the absorption/threshold shaping) so a
+        // low-absorption material (e.g. clear acrylic under a blue
+        // diode) still shows a faint heat fringe even when the char
+        // itself is suppressed.
         float halo = 0.0;
         for (int x = -1; x <= 1; x++) {
             for (int y = -1; y <= 1; y++) {
@@ -213,9 +222,10 @@ void main() {
                 ).r;
             }
         }
-        halo = clamp((halo / 9.0 - 0.05) / 0.95, 0.0, 1.0);
+        float halo_span = max(uCharSaturation - uCharThreshold, 1e-4);
+        halo = clamp((halo / 9.0 - uCharThreshold) / halo_span, 0.0, 1.0);
         halo = pow(halo, 0.8) * (1.0 - burn);
-        char_albedo = mix(char_albedo, scorch * 1.3, 0.45 * halo);
+        char_albedo = mix(char_albedo, uCharColorLow * 1.3, 0.45 * halo);
     }
     albedo = char_albedo;
 
@@ -311,6 +321,11 @@ class StockShader(Shader):
         self.set_int("uPowerTexture", 2)
         self.set_float("uUsePowerTexture", 0.0)
         self.set_float("uRotary", 0.0)
+        self.set_float("uAbsorption", 1.0)
+        self.set_float("uCharThreshold", 35.0)
+        self.set_float("uCharSaturation", 125.0)
+        self.set_vec3("uCharColorLow", (0.04, 0.03, 0.02))
+        self.set_vec3("uCharColorHigh", (0.01, 0.01, 0.01))
         self.set_vec3("uTint", (1.0, 1.0, 1.0))
         self.set_float("uUseTint", 0.0)
         self.set_vec3("uAmbientSky", (0.18, 0.20, 0.24))

@@ -24,6 +24,10 @@ category:
   uk: Пластик
   zh_CN: 塑料
 appearance:
+  absorption:
+    blue: 0.3
+    ir: 0.2
+    co2: 0.85
   pattern: transparent
   texture: petg.webp
   texture_size_mm: 300

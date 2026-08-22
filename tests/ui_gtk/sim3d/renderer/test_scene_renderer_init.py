@@ -56,11 +56,9 @@ def test_scene_renderer_constructs_children():
     assert scene.model_renderers == []
     assert scene.had_rotary_layers is False
     assert scene.axis_renderer is None
-    assert scene.texture_renderer is None
     assert scene.zone_renderer is None
     assert scene.main_shader is None
     assert scene.text_shader is None
-    assert scene.texture_shader is None
     assert scene.background_shader is None
     assert scene.stock_shader is None
     assert scene.shader_set is None
@@ -85,9 +83,6 @@ def test_scene_renderer_init_gl_creates_children():
             "rayforge.ui_gtk.sim3d.renderer.scene_renderer.TextShader"
         ) as mock_text,
         patch(
-            "rayforge.ui_gtk.sim3d.renderer.scene_renderer.TextureShader"
-        ) as mock_texture,
-        patch(
             "rayforge.ui_gtk.sim3d.renderer.scene_renderer.BackgroundShader"
         ) as mock_background,
         patch(
@@ -99,10 +94,6 @@ def test_scene_renderer_init_gl_creates_children():
         patch(
             "rayforge.ui_gtk.sim3d.renderer.scene_renderer.AxisRenderer3D"
         ) as mock_axis,
-        patch(
-            "rayforge.ui_gtk.sim3d.renderer.scene_renderer."
-            "TextureArtifactRenderer"
-        ) as mock_tex,
         patch(
             "rayforge.ui_gtk.sim3d.renderer.scene_renderer.ZoneRenderer"
         ) as mock_zone,
@@ -116,7 +107,6 @@ def test_scene_renderer_init_gl_creates_children():
         scene.init_gl()
 
     assert scene.axis_renderer is mock_axis.return_value
-    assert scene.texture_renderer is mock_tex.return_value
     assert scene.zone_renderer is mock_zone.return_value
     assert scene.background_shader is mock_background.return_value
     assert scene.stock_shader is mock_stock.return_value
@@ -124,16 +114,13 @@ def test_scene_renderer_init_gl_creates_children():
     assert scene.shader_set.main is mock_simple.return_value
     assert scene.shader_set.main_lines is mock_line.return_value
     assert scene.shader_set.text is mock_text.return_value
-    assert scene.shader_set.texture is mock_texture.return_value
     assert scene.shader_set.background is mock_background.return_value
     assert scene.shader_set.stock is mock_stock.return_value
     assert scene.shader_set.image is mock_image.return_value
     mock_axis.return_value.init_gl.assert_called_once()
-    mock_tex.return_value.init_gl.assert_called_once()
     mock_zone.return_value.init_gl.assert_called_once()
     mock_simple.assert_called_once()
     mock_text.assert_called_once()
-    mock_texture.assert_called_once()
     mock_background.assert_called_once()
     mock_stock.assert_called_once()
     mock_image.assert_called_once()
@@ -145,7 +132,6 @@ def test_scene_renderer_init_gl_creates_children():
         scene.zone_renderer,
         scene.stock_renderer,
         scene.workpiece_image_renderer,
-        scene.texture_renderer,
         scene.laser_beam_renderer,
     ]
 
@@ -201,7 +187,7 @@ def test_update_axis_from_viewport_swaps_child_registration():
     assert new_axis in scene._owned_renderers
 
 
-def test_render_registry_orders_rings_after_texture():
+def test_render_registry_orders_rings_after_ops():
     scene = SceneRenderer()
 
     ops = MagicMock()
@@ -210,7 +196,6 @@ def test_render_registry_orders_rings_after_texture():
     scene.ring_renderers = [ring]
     scene.cylinder_renderers = {25.0: MagicMock()}
     scene.model_renderers = [MagicMock()]
-    scene.texture_renderer = MagicMock()
 
     scene._rebuild_registry()
 
@@ -218,12 +203,8 @@ def test_render_registry_orders_rings_after_texture():
     assert ring in renderers
     assert ops in renderers
     ring_index = renderers.index(ring)
-    texture_index = renderers.index(scene.texture_renderer)
     ops_index = renderers.index(ops)
-    # The ring trail always draws on top of the toolpath and the raster.
-    assert ring_index > texture_index
-    # The toolpath draws above the raster texture but below the trail.
-    assert ops_index > texture_index
+    # The ring trail always draws on top of the toolpath.
     assert ops_index < ring_index
 
 

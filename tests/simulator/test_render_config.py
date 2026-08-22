@@ -96,26 +96,6 @@ class TestRenderConfig3D:
         restored = RenderConfig3D.from_dict(config.to_dict())
         assert restored.layer_configs is None
 
-    def test_laser_dot_widths_round_trip(self):
-        config = RenderConfig3D(
-            world_to_visual=np.eye(4, dtype=np.float32),
-            world_to_cyl_local=np.eye(4, dtype=np.float32),
-            laser_dot_widths_mm={"head1": 0.1, "head2": 0.3},
-        )
-        restored = RenderConfig3D.from_dict(config.to_dict())
-        assert restored.laser_dot_widths_mm == {
-            "head1": 0.1,
-            "head2": 0.3,
-        }
-
-    def test_laser_dot_widths_none_when_absent(self):
-        config = RenderConfig3D(
-            world_to_visual=np.eye(4, dtype=np.float32),
-            world_to_cyl_local=np.eye(4, dtype=np.float32),
-        )
-        restored = RenderConfig3D.from_dict(config.to_dict())
-        assert restored.laser_dot_widths_mm is None
-
     def test_missing_field_raises(self):
         with pytest.raises(KeyError):
             RenderConfig3D.from_dict({"world_to_visual": b"\x00" * 64})
@@ -151,8 +131,8 @@ class TestRenderConfig3D:
         to_dict/from_dict unchanged — the config dict crosses the
         compile-thread boundary in-process."""
         burn = {
-            "surface_map": CompressedArray.from_uint8_2d(
-                np.full((4, 4), 255, dtype=np.uint8)
+            "surface_map": CompressedArray.from_float32_2d(
+                np.full((4, 4), 255.0, dtype=np.float32)
             ),
             "origin_mm": (1.0, 2.0),
             "px_per_mm": (10.0, 10.0),
