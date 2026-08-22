@@ -29,6 +29,8 @@ machine:
     model_path: creality-roller.glb
   heads:
   - max_power: 1000
+    wavelength_nm: 455
+    max_power_watts: 10
     frame_power_percent: 0.1
     spot_size_mm:
     - 0.1

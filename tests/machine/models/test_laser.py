@@ -5,6 +5,7 @@ from rayforge.machine.driver.driver import PWMParams
 from rayforge.machine.models.head import Head
 from rayforge.machine.models.laser import (
     DEFAULT_FOCAL_DISTANCE_MM,
+    DEFAULT_MAX_POWER_WATTS,
     Laser,
     LaserHead,
     LaserType,
@@ -532,3 +533,96 @@ def test_laser_type_missing_defaults_to_diode():
     }
     laser = Laser.from_dict(data)
     assert laser.laser_type == LaserType.DIODE
+
+
+# --- Wavelength / physical power model -------------------------------
+
+
+def test_laser_type_default_wavelengths():
+    """Each LaserType has a published default wavelength."""
+    assert LaserType.DIODE.default_wavelength_nm == 455.0
+    assert LaserType.CO2.default_wavelength_nm == 10600.0
+    assert LaserType.FIBER.default_wavelength_nm == 1064.0
+
+
+def test_wavelength_defaults_to_zero():
+    """A fresh LaserHead has wavelength_nm = 0 (sentinel for the
+    laser-type default)."""
+    assert LaserHead().wavelength_nm == 0.0
+
+
+def test_max_power_watts_defaults_to_zero():
+    """A fresh LaserHead has max_power_watts = 0 (sentinel for the
+    nominal 40 W default)."""
+    assert LaserHead().max_power_watts == 0.0
+
+
+def test_effective_wavelength_uses_explicit_value():
+    laser = LaserHead()
+    laser.set_laser_type(LaserType.DIODE)
+    laser.wavelength_nm = 405.0
+    assert laser.effective_wavelength_nm() == 405.0
+
+
+def test_effective_wavelength_falls_back_to_laser_type():
+    laser = LaserHead()
+    laser.set_laser_type(LaserType.CO2)
+    laser.wavelength_nm = 0.0
+    assert laser.effective_wavelength_nm() == 10600.0
+
+
+def test_effective_max_power_watts_uses_explicit_value():
+    laser = LaserHead()
+    laser.max_power_watts = 20.0
+    assert laser.effective_max_power_watts() == 20.0
+
+
+def test_effective_max_power_watts_falls_back_to_default():
+    laser = LaserHead()
+    laser.max_power_watts = 0.0
+    assert laser.effective_max_power_watts() == DEFAULT_MAX_POWER_WATTS
+
+
+def test_watts_at_scales_with_power_fraction():
+    laser = LaserHead()
+    laser.max_power_watts = 60.0
+    assert laser.watts_at(1.0) == 60.0
+    assert laser.watts_at(0.5) == 30.0
+    assert laser.watts_at(0.0) == 0.0
+
+
+def test_watts_at_uses_default_when_unconfigured():
+    laser = LaserHead()
+    laser.max_power_watts = 0.0
+    assert laser.watts_at(1.0) == DEFAULT_MAX_POWER_WATTS
+
+
+def test_wavelength_and_power_serialization_roundtrip():
+    laser = LaserHead()
+    laser.wavelength_nm = 1064.0
+    laser.max_power_watts = 100.0
+
+    data = laser.to_dict()
+    assert data["wavelength_nm"] == 1064.0
+    assert data["max_power_watts"] == 100.0
+
+    restored = Laser.from_dict(data)
+    assert restored.wavelength_nm == 1064.0
+    assert restored.max_power_watts == 100.0
+
+
+def test_wavelength_and_power_missing_fields_use_defaults():
+    data = {
+        "uid": "test-uid",
+        "name": "Test Laser",
+        "tool_number": 0,
+        "max_power": 1000,
+    }
+    laser = Laser.from_dict(data)
+    assert laser.wavelength_nm == 0.0
+    assert laser.max_power_watts == 0.0
+    assert (
+        laser.effective_wavelength_nm()
+        == LaserType.DIODE.default_wavelength_nm
+    )
+    assert laser.effective_max_power_watts() == DEFAULT_MAX_POWER_WATTS

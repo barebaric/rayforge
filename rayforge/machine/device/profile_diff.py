@@ -168,7 +168,7 @@ def apply_diffs(
             dialect_values[dialect_key] = diff.profile_value
             continue
         if diff.section == HEADS_SECTION:
-            _apply_head_value(machine, diff)
+            apply_head_value(machine, diff)
             continue
         binding = bindings.get(diff.key)
         if binding is None:
@@ -180,7 +180,7 @@ def apply_diffs(
         _apply_dialect_values(machine, dialect_values)
 
 
-def _apply_head_value(machine: "Machine", diff: SettingDiff):
+def apply_head_value(machine: "Machine", diff: SettingDiff):
     """Applies one head-field diff to the existing head object."""
     rest = diff.key.removeprefix(HEAD_KEY_PREFIX)
     index_str, _, key = rest.partition(".")
@@ -202,7 +202,10 @@ def find_outdated_profiles(machines, profiles_by_id):
     """
     Returns ``(machine, profile)`` pairs whose profile content hash no
     longer matches the hash recorded at the machine's last review.
-    Machines without profile provenance are ignored.
+    Machines without profile provenance are ignored. A machine with a
+    ``source_profile_id`` but no recorded hash (created before the
+    profile-review system existed) is treated as never-reviewed and
+    included so the first review can pick up new profile settings.
     """
     outdated = []
     for machine in machines:
@@ -217,10 +220,7 @@ def find_outdated_profiles(machines, profiles_by_id):
             )
             continue
         if not machine.reviewed_profile_hash:
-            logger.debug(
-                f"Machine '{machine.name}' has no recorded profile "
-                "review; skipping profile review"
-            )
+            outdated.append((machine, profile))
             continue
         if profile.content_hash() != machine.reviewed_profile_hash:
             outdated.append((machine, profile))

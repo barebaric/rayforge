@@ -22,6 +22,8 @@ device:
   heads:
   - laser_type: diode
     max_power: 1000
+    wavelength_nm: 455
+    max_power_watts: 6
     frame_power_percent: 1.0
     focus_power_percent: 0.3
     spot_size_mm:

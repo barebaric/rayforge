@@ -40,6 +40,8 @@ this exact schema:
   "max_rpm": int,             // for spindle heads
   "min_rpm": int,             // for spindle heads
   "spot_size_mm": [x, y],     // for laser heads
+  "wavelength_nm": float,     // emission wavelength for laser heads
+  "max_power_watts": float,   // optical output power for laser heads
   "pwm_frequency": int_hz,    // for laser heads
   "focal_distance": float_mm, // for laser heads
   "home_on_start": bool
