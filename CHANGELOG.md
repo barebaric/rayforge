@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   has changed and offer a review dialog listing every differing
   setting before applying updates
 - The Creality Falcon 10W preamble now turns on the extraction fan
+- New device profile for the NEJE Master 2s
 
 ### Changed
 
@@ -43,6 +44,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The simulator always turns the laser off at the end of a job
 - Expected cancellations during rapid rebuilds no longer produce
   tracebacks in the log
+- Jog panel "Home All" button now sends $H instead of per-axis
+  homing commands, fixing a hang on firmwares that do not support
+  $HX/$HY/$HZ (#363)
 
 ## 1.10.1
 

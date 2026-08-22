@@ -86,6 +86,7 @@
           every differing setting before applying updates</li>
           <li>The Creality Falcon 10W preamble now turns on the
           extraction fan</li>
+          <li>New device profile for the NEJE Master 2s</li>
         </ul>
         <p>Improvements:</p>
         <ul>
@@ -112,6 +113,9 @@
           job</li>
           <li>Expected cancellations during rapid rebuilds no longer
           produce tracebacks in the log</li>
+          <li>Jog panel "Home All" button now sends $H instead of
+          per-axis homing commands, fixing a hang on firmwares that
+          do not support $HX/$HY/$HZ (#363)</li>
         </ul>
       </description>
     </release>
