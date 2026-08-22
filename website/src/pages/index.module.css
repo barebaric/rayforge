@@ -94,7 +94,7 @@ html[data-theme='dark'] .pageWrapper {
       #f0efed 32%,
       rgba(240, 239, 237, 0) 58%
     ),
-    url('/images/hero.png');
+    url('/images/hero.webp');
   background-size: auto, 102% auto;
   background-position: left top, left center;
   background-repeat: no-repeat, no-repeat;
@@ -108,7 +108,7 @@ html[data-theme='dark'] .hero {
       #1b1b1d 34%,
       rgba(27, 27, 29, 0) 60%
     ),
-    url('/images/hero.png');
+    url('/images/hero.webp');
 }
 
 .heroInner {
@@ -246,7 +246,7 @@ html[data-theme='dark'] .hero {
 .partsLeft {
   left: -8%;
   width: 72%;
-  background-image: url('/images/cnc-part.png');
+  background-image: url('/images/cnc-part.webp');
   background-size: cover;
   background-position: center;
   -webkit-mask-image: linear-gradient(
@@ -270,7 +270,7 @@ html[data-theme='dark'] .hero {
 .partsRight {
   right: 0;
   width: 58%;
-  background-image: url('/images/plant.png');
+  background-image: url('/images/plant.webp');
   background-size: cover;
   background-position: center;
   filter: blur(10px);
@@ -374,7 +374,7 @@ html[data-theme='dark'] .hero {
   top: -3%;
   bottom: -3%;
   width: 34%;
-  background-image: url('/images/plant.png');
+  background-image: url('/images/plant.webp');
   background-size: cover;
   background-position: center;
   filter: blur(8px);
@@ -779,7 +779,7 @@ html[data-theme='dark'] .featureVisual img {
          rgba(240, 239, 237, 0.85) 55%,
          rgba(240, 239, 237, 0.6) 100%
        ),
-       url('/images/hero.png');
+       url('/images/hero.webp');
     background-size: auto, cover;
   }
 
@@ -791,7 +791,7 @@ html[data-theme='dark'] .featureVisual img {
         rgba(27, 27, 29, 0.82) 55%,
         rgba(27, 27, 29, 0.6) 100%
       ),
-      url('/images/hero.png');
+      url('/images/hero.webp');
     background-size: auto, cover;
   }
 

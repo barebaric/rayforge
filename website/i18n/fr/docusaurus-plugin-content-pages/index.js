@@ -181,13 +181,13 @@ function FeatureCardsSection() {
     {
       title: 'Concevoir',
       subtitle: "Esquisseur 2D CAD puissant avec outils paramétriques.",
-      image: '/images/screenshot-sketcher.png',
+      image: '/images/screenshot-sketcher.webp',
     },
     {
       title: 'Préparer',
       subtitle:
         "Tracez des images, optimisez les trajectoires et peaufinez chaque détail.",
-      image: '/images/screenshot-optimizer.png',
+      image: '/images/screenshot-optimizer.webp',
     },
     {
       title: 'Créer',

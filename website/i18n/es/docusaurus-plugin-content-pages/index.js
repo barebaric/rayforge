@@ -181,13 +181,13 @@ function FeatureCardsSection() {
     {
       title: 'Diseñar',
       subtitle: 'Potente editor 2D CAD con herramientas paramétricas.',
-      image: '/images/screenshot-sketcher.png',
+      image: '/images/screenshot-sketcher.webp',
     },
     {
       title: 'Preparar',
       subtitle:
         'Calca imágenes, optimiza trayectorias y ajusta cada detalle.',
-      image: '/images/screenshot-optimizer.png',
+      image: '/images/screenshot-optimizer.webp',
     },
     {
       title: 'Crear',
