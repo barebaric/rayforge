@@ -138,9 +138,18 @@ class OpPlayer:
 
         The playhead is described as the command currently being
         executed plus the fraction of its duration that has elapsed.
+        Once playback has run to completion the laser is turned off.
         """
         self._sim_time = float(t)
         self._playback = self._compute_playback_progress(self._sim_time)
+        if self.is_finished:
+            self.state.laser_on = False
+
+    @property
+    def is_finished(self) -> bool:
+        """True when the playhead has reached the end of the job."""
+        p, frac = self._playback
+        return p >= self.ops.len() - 1 and frac >= 1.0
 
     def playback_progress(self) -> tuple[int, float]:
         """Return ``(in_progress_command_index, fraction)`` for the
@@ -177,10 +186,11 @@ class OpPlayer:
 
         ``laser_on`` follows the in-progress command so the laser beam
         fires for the whole duration of a cut (not just after the cut's
-        command completes). Returns the plain machine state when paused
-        or when the in-progress command does not move (state changes,
-        dwells), so stepped frames render exactly like the
-        non-interpolated path.
+        command completes), except once playback has run to completion,
+        where the laser is always off. Returns the plain machine state
+        when paused or when the in-progress command does not move
+        (state changes, dwells), so stepped frames render exactly like
+        the non-interpolated path.
         """
         p, frac = self._playback
         if frac <= 0.0 or p >= self.ops.len():
@@ -212,7 +222,10 @@ class OpPlayer:
                 )
         st = MachineState(axis_letters=axes.keys())
         st.axes = axes
-        st.laser_on = self.ops.command_type(p) != CommandType.MOVE_TO
+        st.laser_on = (
+            self.ops.command_type(p) != CommandType.MOVE_TO
+            and not self.is_finished
+        )
         return st
 
     def _build_snapshots(self):
