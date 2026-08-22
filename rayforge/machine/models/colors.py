@@ -42,17 +42,16 @@ class OpsColorSet:
         Create an OpsColorSet from a Laser model and theme colors.
 
         Args:
-            laser: The Laser model with cut_color and raster_color properties
+            laser: The Laser model with a cut_color property
             theme_colors: The theme's ColorSet for travel and zero_power colors
 
         Returns:
-            An OpsColorSet with laser-specific cut/raster LUTs
+            An OpsColorSet with laser-specific cut/engrave LUTs
         """
-        cut_rgba = hex_to_rgba(laser.cut_color)
-        raster_rgba = hex_to_rgba(laser.raster_color)
+        rgba = hex_to_rgba(laser.cut_color)
 
-        cut_lut = create_lut_from_color(cut_rgba)
-        engrave_lut = create_alpha_lut_from_color(raster_rgba)
+        cut_lut = create_lut_from_color(rgba)
+        engrave_lut = create_alpha_lut_from_color(rgba)
 
         travel_rgba = theme_colors.get_rgba("travel")
         zero_power_rgba = theme_colors.get_rgba("zero_power")

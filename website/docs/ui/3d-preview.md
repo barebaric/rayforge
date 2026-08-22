@@ -96,7 +96,7 @@ Customize what you see:
 
 :::tip Per-Laser Colors
 When using machines with multiple laser heads, each laser can have its own
-cut and raster colors configured in [Laser Settings](../machine/laser.md).
+color configured in [Laser Settings](../machine/laser.md).
 This makes it easy to identify which laser will perform each operation.
 :::
 

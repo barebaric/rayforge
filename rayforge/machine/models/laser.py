@@ -113,7 +113,6 @@ class LaserHead(Head):
         self.frame_corner_pause = 0  # seconds
         self.spot_size_mm = 0.1, 0.1  # millimeters
         self.cut_color: str = DEFAULT_LASER_COLOR
-        self.raster_color: str = DEFAULT_LASER_COLOR
         self.focal_distance = 0.0
         self.laser_type = LaserType.DIODE
         self.wavelength_nm = 0.0  # 0 ⇒ LaserType.default_wavelength_nm
@@ -198,10 +197,6 @@ class LaserHead(Head):
 
     def set_cut_color(self, color: str | None):
         self.cut_color = color or DEFAULT_LASER_COLOR
-        self.changed.send(self)
-
-    def set_raster_color(self, color: str | None):
-        self.raster_color = color or DEFAULT_LASER_COLOR
         self.changed.send(self)
 
     def set_focal_distance(self, distance: float):
@@ -292,7 +287,6 @@ class LaserHead(Head):
                 "frame_corner_pause": self.frame_corner_pause,
                 "spot_size_mm": self.spot_size_mm,
                 "cut_color": self.cut_color,
-                "raster_color": self.raster_color,
                 "focal_distance": self.focal_distance,
                 "laser_type": self.laser_type.value,
                 "wavelength_nm": self.wavelength_nm,
@@ -354,7 +348,6 @@ class LaserHead(Head):
 
         lh.spot_size_mm = data.get("spot_size_mm", lh.spot_size_mm)
         lh.cut_color = data.get("cut_color") or DEFAULT_LASER_COLOR
-        lh.raster_color = data.get("raster_color") or DEFAULT_LASER_COLOR
         lh.frame_speed = data.get("frame_speed", lh.frame_speed)
         lh.frame_repeat_count = data.get(
             "frame_repeat_count", lh.frame_repeat_count
