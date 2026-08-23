@@ -1,5 +1,6 @@
 import asyncio
 import queue
+from types import SimpleNamespace
 
 import pytest
 
@@ -8,7 +9,9 @@ from rayforge.machine.transport.serial import (
     SerialPort,
     SerialPortPermissionError,
     SerialTransport,
+    is_usb_serial_port,
     safe_list_ports_linux,
+    sort_ports,
 )
 
 
@@ -367,3 +370,109 @@ class TestSerialTransportIntegration:
 
         # Should not raise any errors
         await transport.purge()
+
+
+def test_is_usb_serial_port(mocker):
+    """Test the USB port detection heuristic."""
+    mocker.patch("os.name", "posix")
+    assert is_usb_serial_port("/dev/ttyUSB0")
+    assert is_usb_serial_port("/dev/ttyACM0")
+    assert not is_usb_serial_port("/dev/ttyS0")
+
+    mocker.patch("os.name", "nt")
+    assert is_usb_serial_port("/dev/ttyS0")
+
+
+def test_sort_ports_usb_first():
+    """
+    USB adapters must come first; each group ordered naturally,
+    so ttyUSB2 sorts before ttyUSB10.
+    """
+    ports = [
+        "/dev/ttyS3",
+        "/dev/ttyUSB10",
+        "/dev/ttyACM0",
+        "/dev/ttyUSB2",
+        "/dev/ttyS0",
+    ]
+    assert sort_ports(ports) == [
+        "/dev/ttyACM0",
+        "/dev/ttyUSB2",
+        "/dev/ttyUSB10",
+        "/dev/ttyS0",
+        "/dev/ttyS3",
+    ]
+
+
+def test_list_port_info_with_descriptions(monkeypatch):
+    """
+    Outside a Snap, pyserial's descriptions are used. Placeholder
+    descriptions ('n/a') are discarded.
+    """
+    monkeypatch.delenv("SNAP", raising=False)
+    devices = [
+        SimpleNamespace(device="/dev/ttyS0", description="ttyS0"),
+        SimpleNamespace(device="/dev/ttyUSB10", description="CH340"),
+        SimpleNamespace(device="/dev/ttyACM0", description="n/a"),
+        SimpleNamespace(device="/dev/ttyUSB2", description=None),
+    ]
+    monkeypatch.setattr(
+        "rayforge.machine.transport.serial.list_ports.comports",
+        lambda: devices,
+    )
+    infos = SerialTransport.list_port_info()
+    assert [i.device for i in infos] == [
+        "/dev/ttyACM0",
+        "/dev/ttyUSB2",
+        "/dev/ttyUSB10",
+        "/dev/ttyS0",
+    ]
+    by_device = {i.device: i for i in infos}
+    assert by_device["/dev/ttyUSB10"].description == "CH340"
+    assert by_device["/dev/ttyACM0"].description is None
+    assert by_device["/dev/ttyUSB2"].description is None
+    assert by_device["/dev/ttyS0"].description == "ttyS0"
+
+
+def test_list_port_info_snap_by_id_descriptions(monkeypatch):
+    """
+    In a Snap, descriptions are derived from /dev/serial/by-id symlink
+    names and also applied to the resolved device paths.
+    """
+    monkeypatch.setattr("os.name", "posix")
+    monkeypatch.setenv("SNAP", "/snap/rayforge/123")
+    by_id = "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AH03K1A0-if00-port0"
+
+    def mock_glob(pattern):
+        if pattern == "/dev/serial/by-id/*":
+            return [by_id]
+        if pattern in ["/dev/ttyUSB*", "/dev/ttyACM*"]:
+            return ["/dev/ttyUSB0"]
+        return []
+
+    monkeypatch.setattr(
+        "rayforge.machine.transport.serial.glob.glob", mock_glob
+    )
+    monkeypatch.setattr(
+        "os.path.realpath",
+        lambda p: "/dev/ttyUSB0" if p == by_id else p,
+    )
+    infos = SerialTransport.list_port_info()
+    descriptions = {i.device: i.description for i in infos}
+    desc = "FTDI FT232R USB UART AH03K1A0"
+    assert descriptions["/dev/ttyUSB0"] == desc
+    assert descriptions[by_id] == desc
+
+
+def test_list_port_info_pyserial_error(monkeypatch):
+    """If pyserial fails, an empty list is returned instead of raising."""
+    monkeypatch.delenv("SNAP", raising=False)
+
+    def raise_error():
+        raise OSError("boom")
+
+    monkeypatch.setattr(
+        "rayforge.machine.transport.serial.list_ports.comports",
+        raise_error,
+    )
+    assert SerialTransport.list_port_info() == []
