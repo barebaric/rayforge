@@ -383,11 +383,12 @@ def test_is_usb_serial_port(mocker):
     assert is_usb_serial_port("/dev/ttyS0")
 
 
-def test_sort_ports_usb_first():
+def test_sort_ports_usb_first(mocker):
     """
     USB adapters must come first; each group ordered naturally,
     so ttyUSB2 sorts before ttyUSB10.
     """
+    mocker.patch("os.name", "posix")
     ports = [
         "/dev/ttyS3",
         "/dev/ttyUSB10",
@@ -404,11 +405,12 @@ def test_sort_ports_usb_first():
     ]
 
 
-def test_list_port_info_with_descriptions(monkeypatch):
+def test_list_port_info_with_descriptions(monkeypatch, mocker):
     """
     Outside a Snap, pyserial's descriptions are used. Placeholder
     descriptions ('n/a') are discarded.
     """
+    mocker.patch("os.name", "posix")
     monkeypatch.delenv("SNAP", raising=False)
     devices = [
         SimpleNamespace(device="/dev/ttyS0", description="ttyS0"),
