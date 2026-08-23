@@ -32,6 +32,9 @@ class ParallelogramConstraint(Constraint):
         self.p_height: EntityID = p_height
         self.p4: EntityID = p4
 
+    def get_referenced_point_ids(self) -> set[EntityID]:
+        return {self.p_origin, self.p_width, self.p_height, self.p4}
+
     @classmethod
     def can_apply_to(
         cls, selection: SketchSelection, sketch: Sketch | None = None
