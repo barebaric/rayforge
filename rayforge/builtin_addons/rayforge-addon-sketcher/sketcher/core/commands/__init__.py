@@ -25,6 +25,7 @@ from .line import LineCommand, LinePreviewState
 from .live_text_edit import LiveTextEditCommand
 from .point import (
     MoveControlPointCommand,
+    MoveEntitiesCommand,
     MovePointCommand,
     UnstickJunctionCommand,
 )
@@ -71,6 +72,7 @@ __all__ = [
     "ModifyConstraintCommand",
     "ModifyTextPropertyCommand",
     "MoveControlPointCommand",
+    "MoveEntitiesCommand",
     "MovePointCommand",
     "PreviewState",
     "RectangleCommand",

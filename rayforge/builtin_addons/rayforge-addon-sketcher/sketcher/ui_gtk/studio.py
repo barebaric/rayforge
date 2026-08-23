@@ -9,6 +9,7 @@ from rayforge.core.varset import FloatVar, IntVar, SliderFloatVar, Var
 from rayforge.ui_gtk.icons import get_icon
 from rayforge.ui_gtk.shared.keyboard import PRIMARY_ACCEL
 from rayforge.ui_gtk.shared.status_bar import StatusBar
+from rayforge.ui_gtk.shared.undo_button import RedoButton, UndoButton
 from rayforge.ui_gtk.varset.varset_editor import VarSetEditorWidget
 
 from ..core.entities.text_box import TextBoxEntity
@@ -46,6 +47,10 @@ class SketchStudio(Gtk.Box):
         self.finished = Signal()
         self.cancelled = Signal()
 
+        # Flag to suppress spurious commands while programmatically
+        # populating UI fields (e.g. the name row) during set_sketch.
+        self._suppress_name_changed = False
+
         self._build_ui()
 
     def set_world_size(self, width_mm: float, height_mm: float):
@@ -65,6 +70,19 @@ class SketchStudio(Gtk.Box):
         toolbar.set_margin_start(12)
         toolbar.set_margin_end(12)
         self.append(toolbar)
+
+        self.undo_button = UndoButton()
+        self.undo_button.set_tooltip_text(_("Undo"))
+        self.undo_button.set_action_name("sketch.undo")
+        toolbar.append(self.undo_button)
+
+        self.redo_button = RedoButton()
+        self.redo_button.set_tooltip_text(_("Redo"))
+        self.redo_button.set_action_name("sketch.redo")
+        toolbar.append(self.redo_button)
+
+        sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
+        toolbar.append(sep)
 
         self.constraints_button = Gtk.ToggleButton()
         self.constraints_button.set_child(
@@ -340,7 +358,9 @@ class SketchStudio(Gtk.Box):
         self.canvas.set_sketch(sketch)
 
         # Populate side panel with sketch data
+        self._suppress_name_changed = True
         self.name_row.set_text(sketch.name)
+        self._suppress_name_changed = False
         self.varset_editor.populate(sketch.input_parameters)
 
         # Connect to selection changes to show/hide font properties
@@ -371,6 +391,15 @@ class SketchStudio(Gtk.Box):
             self.conflicts_widget.set_sketch_element(
                 self.canvas.sketch_element
             )
+
+            # Connect undo/redo buttons to the sketch editor's history
+            if self.canvas.sketch_editor:
+                self.undo_button.set_history_manager(
+                    self.canvas.sketch_editor.history_manager
+                )
+                self.redo_button.set_history_manager(
+                    self.canvas.sketch_editor.history_manager
+                )
 
             # Connect to text editing signals to show font properties
             text_tool = self.canvas.sketch_element.tools.get("text_box")
@@ -404,6 +433,8 @@ class SketchStudio(Gtk.Box):
 
     def _on_name_changed(self, entry_row: Adw.EntryRow):
         """Updates the sketch's name with undo support."""
+        if self._suppress_name_changed:
+            return
         if not self.canvas or not self.canvas.sketch_element:
             return
         sketch = self.canvas.sketch_element.sketch
