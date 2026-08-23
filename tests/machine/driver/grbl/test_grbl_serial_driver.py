@@ -520,7 +520,7 @@ class TestGrblSerialDriver:
         assert driver._job_exception is None
 
         driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
-        await asyncio.sleep(0.01)
+        await wait_for_send_call(mock_serial_transport.send, line2)
         driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
         await run_task
 
