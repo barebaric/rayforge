@@ -143,8 +143,11 @@ class GcodeViewer(Gtk.Box):
 
         start_line, line_count = self.op_map.span_for_op(op_index)
         if line_count:
-            # Highlight the first line associated with this op
-            self.editor.highlight_line(start_line)
+            # An op's span can bundle state lines that the encoder
+            # deferred into it (e.g. a lazily emitted "M4" before the
+            # first cutting move).  The op's own action line is the
+            # last one, so highlight that.
+            self.editor.highlight_line(start_line + line_count - 1)
         else:
             # Op produced no g-code, so clear any existing highlight
             self.clear_highlight()

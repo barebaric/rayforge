@@ -1020,9 +1020,11 @@ class MainWindow(Adw.ApplicationWindow):
         """Updates the G-code preview panel from a pre-generated string."""
         if gcode_string is None:
             self.bottom_panel.gcode_viewer.clear()
+            self._canvas3d_playback.set_op_map(None)
             return
 
         self.bottom_panel.gcode_viewer.set_gcode(gcode_string)
+        self._canvas3d_playback.set_op_map(op_map)
         if op_map:
             self.bottom_panel.gcode_viewer.set_op_map(op_map)
 
