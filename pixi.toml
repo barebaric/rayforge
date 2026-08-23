@@ -116,6 +116,7 @@ normalize-icons = "python3 scripts/normalize_icons.py"
 gen-affiliate = "python3 scripts/generate_affiliate_link.py"
 optimize-textures = "python3 scripts/optimize_material_textures.py"
 optimize-images = "python3 scripts/optimize_images.py"
+create-icon = "python3 scripts/create_icon.py"
 
 [tasks.clean]
 cmd = "bash scripts/clean.sh"
