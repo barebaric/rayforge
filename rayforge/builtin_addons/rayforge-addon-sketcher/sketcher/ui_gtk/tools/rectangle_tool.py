@@ -30,6 +30,7 @@ class RectangleTool(SnapMixin, SketchTool):
         self._dim_input = DimensionInputHandler(
             field_count=2, field_labels=[_("W"), _("H")]
         )
+        self._shift_held = False
 
     def is_available(self, target, target_type) -> bool:
         return target is None
@@ -96,7 +97,11 @@ class RectangleTool(SnapMixin, SketchTool):
 
         try:
             RectangleCommand.update_preview(
-                self.element.sketch.registry, self._preview_state, mx, my
+                self.element.sketch.registry,
+                self._preview_state,
+                mx,
+                my,
+                center_on_start=self._shift_held,
             )
             self.element.mark_dirty()
         except (IndexError, KeyError):
@@ -133,6 +138,7 @@ class RectangleTool(SnapMixin, SketchTool):
                 (mx, my),
                 end_pid=final_pid,
                 is_start_temp=start_temp,
+                center_on_start=self._shift_held,
             )
             self.element.execute_command(cmd)
 
@@ -146,6 +152,17 @@ class RectangleTool(SnapMixin, SketchTool):
 
     def on_release(self, world_x: float, world_y: float):
         pass
+
+    def on_modifier_change(self, shift: bool = False, ctrl: bool = False):
+        """Called when modifier keys change during preview."""
+        if self._preview_state is None:
+            return
+
+        changed = self._shift_held != shift
+        self._shift_held = shift
+
+        if changed:
+            self.element.mark_dirty()
 
     def handle_text_input(self, text: str) -> bool:
         """Handle numeric input for setting rectangle dimensions."""
@@ -284,6 +301,7 @@ class RectangleTool(SnapMixin, SketchTool):
             is_start_temp=start_temp,
             fixed_width=fixed_width,
             fixed_height=fixed_height,
+            center_on_start=self._shift_held,
         )
         self.element.execute_command(cmd)
         self.clear_snap_result()
@@ -297,6 +315,7 @@ class RectangleTool(SnapMixin, SketchTool):
             if self._dim_input.is_active():
                 return self._dim_input.get_active_shortcuts()
             return [
+                ("Shift", _("Center on start point"), None),
                 ("0-9", _("Type dimensions (W H)"), None),
                 ("Tab", _("Toggle Magnetic Snap"), None),
             ]
