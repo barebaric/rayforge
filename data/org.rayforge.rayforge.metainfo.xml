@@ -68,6 +68,16 @@
   </screenshots>
 
   <releases>
+    <release version="1.10.3" date="2026-08-23">
+      <description>
+        <p>Maintenance release</p>
+        <ul>
+          <li>AppStream metainfo entries reordered and corrected to
+          pass the Flathub linter</li>
+          <li>Added AppStream metainfo validation to lint</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.10.2" date="2026-08-22">
       <description>
         <p>Laser head optics data, device-profile update reviews, and
