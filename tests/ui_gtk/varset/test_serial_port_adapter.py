@@ -3,6 +3,7 @@
 
 import os
 import sys
+from contextlib import ExitStack
 from typing import cast
 from unittest.mock import patch
 
@@ -54,12 +55,24 @@ def _make_infos() -> list:
     ]
 
 
+def _scan_patches(infos: list):
+    """
+    Returns context managers patching the port scan on a POSIX system.
+    USB detection behaves differently on non-POSIX platforms, where
+    every port is treated as USB.
+    """
+    return [
+        patch.object(SerialTransport, "list_port_info", return_value=infos),
+        patch("os.name", "posix"),
+    ]
+
+
 def test_usb_ports_come_first(ui_context_initializer):
     """USB adapters are listed before hardware ports."""
     var = SerialPortVar(key="port", label="Port")
-    with patch.object(
-        SerialTransport, "list_port_info", return_value=_make_infos()
-    ):
+    with ExitStack() as stack:
+        for p in _scan_patches(_make_infos()):
+            stack.enter_context(p)
         row, _adapter = _create_row(var)
         assert _model_strings(row) == [
             NULL_LABEL,
@@ -73,9 +86,9 @@ def test_usb_ports_come_first(ui_context_initializer):
 def test_descriptions_collected_for_factory(ui_context_initializer):
     """Known descriptions are stored for the two-line factory."""
     var = SerialPortVar(key="port", label="Port")
-    with patch.object(
-        SerialTransport, "list_port_info", return_value=_make_infos()
-    ):
+    with ExitStack() as stack:
+        for p in _scan_patches(_make_infos()):
+            stack.enter_context(p)
         _row, adapter = _create_row(var)
         assert adapter._descriptions == {
             "/dev/ttyS0": "ttyS0",
@@ -88,9 +101,9 @@ def test_descriptions_collected_for_factory(ui_context_initializer):
 def test_device_paths_round_trip(ui_context_initializer):
     """Selecting an entry yields the raw device path and back."""
     var = SerialPortVar(key="port", label="Port")
-    with patch.object(
-        SerialTransport, "list_port_info", return_value=_make_infos()
-    ):
+    with ExitStack() as stack:
+        for p in _scan_patches(_make_infos()):
+            stack.enter_context(p)
         _row, adapter = _create_row(var)
         adapter.set_value("/dev/ttyUSB0")
         assert adapter.get_value() == "/dev/ttyUSB0"
@@ -104,7 +117,9 @@ def test_configured_port_pinned_when_not_plugged_in(ui_context_initializer):
     relegated to the end of the list; it stays on top.
     """
     var = SerialPortVar(key="port", label="Port", value="/dev/ttyUSB0")
-    with patch.object(SerialTransport, "list_port_info", return_value=[]):
+    with ExitStack() as stack:
+        for p in _scan_patches([]):
+            stack.enter_context(p)
         row, adapter = _create_row(var)
         strings = _model_strings(row)
         assert strings == [NULL_LABEL, "/dev/ttyUSB0"]
@@ -118,16 +133,18 @@ def test_rescan_preserves_configured_value(ui_context_initializer):
     port reappears in the live scan.
     """
     var = SerialPortVar(key="port", label="Port", value="/dev/ttyUSB0")
-    with patch.object(SerialTransport, "list_port_info", return_value=[]):
+    with ExitStack() as stack:
+        for p in _scan_patches([]):
+            stack.enter_context(p)
         _row, adapter = _create_row(var)
 
-    with patch.object(
-        SerialTransport,
-        "list_port_info",
-        return_value=[
-            SerialPortInfo("/dev/ttyUSB0", "CH340"),
-            SerialPortInfo("/dev/ttyS0", "ttyS0"),
-        ],
-    ):
+    with ExitStack() as stack:
+        for p in _scan_patches(
+            [
+                SerialPortInfo("/dev/ttyUSB0", "CH340"),
+                SerialPortInfo("/dev/ttyS0", "ttyS0"),
+            ]
+        ):
+            stack.enter_context(p)
         adapter._refresh(adapter.get_value())
         assert adapter.get_value() == "/dev/ttyUSB0"
