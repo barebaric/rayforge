@@ -7,6 +7,7 @@ from raygeo.geo import Matrix
 
 from rayforge.ui_gtk.canvas import CanvasElement
 
+from ..core.commands import DuplicateCommand
 from ..core.entities import Line
 from ..core.selection import SketchSelection
 from ..core.sketch import Sketch
@@ -336,6 +337,27 @@ class SketchElement(CanvasElement):
 
     def delete_selection(self) -> bool:
         return self.tools["delete"]._delete_selection()
+
+    def duplicate_selection(self) -> bool:
+        """
+        Duplicates the current selection. On success, only the newly
+        created copies are selected.
+        """
+        sel = self.selection
+        if not sel.entity_ids and not sel.point_ids:
+            return False
+        if DuplicateCommand.prepare(self.sketch, sel.copy()) is None:
+            return False
+
+        cmd = DuplicateCommand(self.sketch, sel)
+        self.execute_command(cmd)
+
+        sel.clear()
+        sel.entity_ids = list(cmd.new_entity_ids)
+        sel.point_ids = list(cmd.new_point_ids)
+        sel.changed.send(sel)
+        self.mark_dirty()
+        return True
 
     def toggle_construction_on_selection(self):
         self.tools["construction"]._toggle_construction()

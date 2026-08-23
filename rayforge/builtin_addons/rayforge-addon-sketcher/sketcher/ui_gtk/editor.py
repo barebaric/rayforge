@@ -395,6 +395,10 @@ class SketchEditor:
                 self.history_manager.redo()
                 self._reset_key_sequence()
                 return True
+            if keyval == Gdk.KEY_d:
+                self.sketch_element.duplicate_selection()
+                self._reset_key_sequence()
+                return True
             # Let other Ctrl-based shortcuts (e.g. Ctrl+S) propagate to
             # the application-level shortcut controller.
             self._reset_key_sequence()
