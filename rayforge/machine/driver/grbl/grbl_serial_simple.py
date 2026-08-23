@@ -118,6 +118,13 @@ class GrblSerialSimpleDriver(Driver):
     _status_re = re.compile(rb"<([^>]+)>")
     _line_re = re.compile(rb"([^\r\n]+)\r*\n")
 
+    # Handshake verification bounds. The '?' realtime poll is repeated
+    # every POLL_INTERVAL until a response arrives, because devices
+    # that are still booting silently drop queries sent before their
+    # serial stream is ready.
+    HANDSHAKE_TIMEOUT: float = 3.0
+    HANDSHAKE_POLL_INTERVAL: float = 0.5
+
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
         self._transport: SerialTransport | None = None
@@ -230,6 +237,27 @@ class GrblSerialSimpleDriver(Driver):
         self.keep_running = True
         self._connection_task = asyncio.ensure_future(self._connection_loop())
 
+    async def _await_handshake(self) -> bool:
+        """
+        Polls the device with realtime '?' commands until it responds
+        with a status report (or its welcome message arrives), bounded
+        by HANDSHAKE_TIMEOUT. Returns True once the handshake event is
+        set, False if the device stayed silent.
+        """
+        loop = asyncio.get_event_loop()
+        deadline = loop.time() + self.HANDSHAKE_TIMEOUT
+        while True:
+            await self._send_raw(b"?\n")
+            try:
+                await asyncio.wait_for(
+                    self._handshake_received.wait(),
+                    timeout=self.HANDSHAKE_POLL_INTERVAL,
+                )
+                return True
+            except asyncio.TimeoutError:
+                if loop.time() >= deadline:
+                    return False
+
     async def _connection_loop(self) -> None:
         transport = self._transport
         if not transport:
@@ -237,18 +265,13 @@ class GrblSerialSimpleDriver(Driver):
 
         while self.keep_running:
             try:
+                self._handshake_received.clear()
                 await transport.connect()
                 self._update_connection_status(
                     TransportStatus.CONNECTED, "Connected"
                 )
-                self._handshake_received.clear()
 
-                await self._send_raw(b"?\n")
-                try:
-                    await asyncio.wait_for(
-                        self._handshake_received.wait(), timeout=3.0
-                    )
-                except asyncio.TimeoutError:
+                if not await self._await_handshake():
                     logger.warning("Handshake timeout. Retrying connection.")
                     await transport.disconnect()
                     self._update_connection_status(
@@ -394,7 +417,7 @@ class GrblSerialSimpleDriver(Driver):
                 self._pending.set_result(error=line)
             return
 
-        if line.startswith(("Grbl ", "grbl ")):
+        if line.startswith(("Grbl ", "GrblHAL ", "grbl ")):
             self._handshake_received.set()
             return
 

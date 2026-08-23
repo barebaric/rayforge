@@ -159,6 +159,49 @@ class TestGrblSerialDriver:
 
         await driver.cleanup()
 
+    @pytest.mark.parametrize(
+        "banner",
+        [
+            b"Grbl 1.1h ['$' for help]",
+            b"GrblHAL 1.1f ['$' or '$HELP' for help]",
+        ],
+    )
+    def test_welcome_message_satisfies_handshake(
+        self, driver: GrblSerialDriver, banner: bytes
+    ):
+        """Classic Grbl and grblHAL banners both complete the
+        handshake."""
+        driver._handshake_received.clear()
+        assert not driver._handshake_received.is_set()
+
+        driver.on_serial_data_received(None, banner + b"\r\n")
+
+        assert driver._handshake_received.is_set()
+
+    @pytest.mark.asyncio
+    async def test_handshake_repeats_poll_while_booting(
+        self, driver: GrblSerialDriver, mock_serial_transport, mocker
+    ):
+        """Devices still booting drop the first '?', so the poll is
+        repeated until a response arrives."""
+        mocker.patch.object(
+            mock_serial_transport,
+            "is_connected",
+            new_callable=PropertyMock,
+            return_value=True,
+        )
+
+        handshake_task = asyncio.create_task(driver._await_handshake())
+
+        await wait_for_send_call(mock_serial_transport.send, b"?")
+        mock_serial_transport.send.reset_mock()
+        await wait_for_send_call(mock_serial_transport.send, b"?", timeout=2.0)
+
+        report = b"<Idle|MPos:0.000,0.000,0.000>\r\n"
+        driver.on_serial_data_received(mock_serial_transport, report)
+
+        assert await asyncio.wait_for(handshake_task, timeout=2.0) is True
+
     @pytest.mark.asyncio
     async def test_status_report_parsing(
         self,
