@@ -80,6 +80,25 @@ class HistoryManager:
             return
         self._add_to_history(command)
 
+    def coalesce(self, command: Command):
+        """
+        Executes a command and forces it to coalesce with the previous
+        command on the undo stack, bypassing the time threshold.
+
+        This is used for actions that are logically a single user operation
+        but are split across multiple commands with arbitrary delays
+        between them (e.g., creating a constraint and then editing its
+        value via a dialog).
+        """
+        command.execute()
+        if self.in_transaction:
+            self.transaction_commands.append(command)
+            return
+        if self.undo_stack and self.undo_stack[-1].coalesce_with(command):
+            self.changed.send(self, command=self.undo_stack[-1])
+            return
+        self._add_to_history(command)
+
     def _add_to_history(self, command: Command):
         """
         Adds a command to the undo stack, handling the coalescing logic.
