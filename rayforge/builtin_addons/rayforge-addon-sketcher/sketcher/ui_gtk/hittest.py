@@ -151,7 +151,7 @@ class SketchHitTester:
         min_dist_sq = float("inf")
 
         points = element.sketch.registry.points or []
-        for p in points:
+        for p in reversed(points):
             pt_sx, pt_sy = to_screen.transform_point((p.x, p.y))
             dist_sq = (cursor_sx - pt_sx) ** 2 + (cursor_sy - pt_sy) ** 2
             if dist_sq < threshold**2 and dist_sq < min_dist_sq:
@@ -248,7 +248,7 @@ class SketchHitTester:
 
         registry = element.sketch.registry
         entities = registry.entities or []
-        for entity in entities:
+        for entity in reversed(entities):
             if entity.invisible:
                 continue
             if entity.hit_test(mx, my, threshold, registry):
