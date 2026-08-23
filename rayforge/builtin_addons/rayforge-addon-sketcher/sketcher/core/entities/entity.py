@@ -7,6 +7,7 @@ from raygeo.geo.types import Polygon, Rect
 from ..types import EntityID
 
 if TYPE_CHECKING:
+    from ..commands.mirror import MirrorAxis
     from ..constraints import Constraint
     from ..registry import EntityRegistry
 
@@ -96,6 +97,17 @@ class Entity:
         should drag all points together).
         """
         return []
+
+    def mirror(self, axis: "MirrorAxis") -> None:
+        """
+        Updates entity-specific non-point state for a mirror transform.
+
+        Point positions are mirrored centrally by the command (since points
+        are shared resources in the registry). This method handles only
+        entity-internal state such as bezier control-point deltas or arc
+        chirality. The default is a no-op: entities whose geometry is fully
+        defined by their control points need no special handling.
+        """
 
     def is_contained_by(
         self,

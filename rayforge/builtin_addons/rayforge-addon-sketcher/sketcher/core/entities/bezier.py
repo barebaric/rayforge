@@ -14,6 +14,7 @@ from ..types import EntityID
 from .entity import Entity
 
 if TYPE_CHECKING:
+    from ..commands.mirror import MirrorAxis
     from ..constraints import Constraint
     from ..registry import EntityRegistry
 
@@ -34,6 +35,28 @@ class Bezier(Entity):
         self.type = "bezier"
         self.cp1 = cp1
         self.cp2 = cp2
+
+    def get_state(self) -> dict[str, Any] | None:
+        state = super().get_state() or {}
+        state["cp1"] = self.cp1
+        state["cp2"] = self.cp2
+        return state
+
+    def set_state(self, state: dict[str, Any]) -> None:
+        super().set_state(state)
+        if "cp1" in state:
+            self.cp1 = state["cp1"]
+        if "cp2" in state:
+            self.cp2 = state["cp2"]
+
+    def mirror(self, axis: "MirrorAxis") -> None:
+        # Control points are stored as (dx, dy) offsets relative to the
+        # start/end points. Since the endpoints are mirrored by the command,
+        # we must mirror the deltas too so the curve bulges correctly.
+        if self.cp1 is not None:
+            self.cp1 = axis.flip_offset(self.cp1)
+        if self.cp2 is not None:
+            self.cp2 = axis.flip_offset(self.cp2)
 
     def get_control_points(
         self, registry: "EntityRegistry"

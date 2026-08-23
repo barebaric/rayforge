@@ -47,6 +47,12 @@ class SketchMenu(Gio.Menu):
             _("Toggle Construction"), "sketch.toggle_construction"
         )
         constr_group.append(_("Chamfer Corner"), "sketch.chamfer_corner")
+        constr_group.append(
+            _("Mirror Vertically"), "sketch.tool_mirror_vertical"
+        )
+        constr_group.append(
+            _("Mirror Horizontally"), "sketch.tool_mirror_horizontal"
+        )
         tools_menu.append_section(_("Modify"), constr_group)
 
         self.append_submenu(_("_Sketch"), tools_menu)
