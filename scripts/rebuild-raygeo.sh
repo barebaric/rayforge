@@ -53,5 +53,5 @@ EOF
 cd "$ROOT_DIR"
 
 # First solve so the lock records the local checkout, then force a rebuild.
-pixi install
-pixi reinstall raygeo
+pixi install "$@"
+pixi reinstall raygeo "$@"
