@@ -1,6 +1,8 @@
 api_version: 1
 device:
   name: Sculpfun S70 MAX
+  vendor: Sculpfun
+  model: S70 MAX
   description: 70W diode laser cutter with 830x800mm work area and auto-focus
 machine:
   driver: GrblSerialDriver

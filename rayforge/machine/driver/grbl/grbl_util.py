@@ -18,6 +18,23 @@ GRBL_REPORT_INCHES_KEY = "13"
 # be queued behind buffered gcode, and never produce an 'ok' ack.
 GRBL_REALTIME_COMMANDS = frozenset({"?", "~", "!"})
 
+# Matches Grbl / grblHAL welcome banners ("Grbl 1.1f ['$' for help]")
+# and realtime status reports ("<Idle|MPos:...>"). Also matches
+# build-info / feedback messages ("[VER:...]", "[OPT:...]",
+# "[MSG:...]"): some forks never mention Grbl in their boot output
+# and instead greet with $I-style lines (e.g. the Sculpfun iCube).
+# Used to claim a serial port during device discovery.
+grbl_discovery_re = re.compile(
+    rb"\bgrbl(?:hal)?\b|<(?:Idle|Run|Hold|Alarm|Home)[,|>]"
+    rb"|\[(?:VER|OPT|MSG|GC):",
+    re.IGNORECASE,
+)
+
+
+def is_grbl_output(data: bytes) -> bool:
+    """True when raw serial output identifies a Grbl device."""
+    return bool(grbl_discovery_re.search(data))
+
 
 def split_realtime_commands(
     lines: list[str],
@@ -666,6 +683,21 @@ def extract_device_name(build_info: list[str]) -> str:
             if build_name:
                 return build_name
     return "Unknown Grbl Device"
+
+
+def extract_device_name_from_output(data: bytes) -> str | None:
+    """
+    Extract a human-readable device name from raw serial output, as
+    captured during device discovery.
+
+    Returns None when the output carries no usable name (e.g. a stock
+    Grbl whose banner only states its version).
+    """
+    lines = data.decode("ascii", errors="replace").splitlines()
+    name = extract_device_name(lines)
+    if not name or name == "Unknown Grbl Device":
+        return None
+    return name
 
 
 def version_supports_single_axis_homing(

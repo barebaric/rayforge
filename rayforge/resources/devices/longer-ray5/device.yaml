@@ -1,6 +1,8 @@
 api_version: 1
 device:
   name: Longer Ray5 20W
+  vendor: Longer
+  model: Ray5 20W
   description: Diode laser engraver with 375x375mm work area and touchscreen display
 machine:
   driver: GrblNetworkDriver

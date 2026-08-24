@@ -1,6 +1,8 @@
 api_version: 1
 device:
   name: TwoTrees TTS-55
+  vendor: TwoTrees
+  model: TTS-55
   description: 55W diode laser engraver with 400x400mm work area
 machine:
   driver: GrblSerialDriver

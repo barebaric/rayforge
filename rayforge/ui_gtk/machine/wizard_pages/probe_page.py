@@ -35,8 +35,8 @@ if TYPE_CHECKING:
 
 
 class ProbePage(WizardPage):
-    step_number = 4
-    title = _("Discover Device")
+    step_number = 5
+    title = _("Probe Device")
     subtitle = _(
         "Connect to the device and read its configuration, "
         "or skip to enter the values manually."

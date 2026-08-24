@@ -233,3 +233,19 @@ class SerialPortAdapter(ComboAdapter):
         if value_str and value_str in devices:
             selected = devices.index(value_str) + 1
         self._row.set_selected(selected)
+
+    def set_value(self, value: Any) -> None:
+        if value is None:
+            super().set_value(None)
+            return
+        value_str = str(value)
+        model = self._row.get_model()
+        strings: list[str | None] = []
+        if isinstance(model, Gtk.StringList):
+            strings = [model.get_string(i) for i in range(model.get_n_items())]
+        if value_str not in strings:
+            # Unknown port (e.g. just plugged in or not seen by the
+            # last scan): rebuild the list so it becomes selectable.
+            self._refresh(value_str)
+            return
+        super().set_value(value_str)

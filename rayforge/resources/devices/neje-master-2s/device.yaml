@@ -1,6 +1,8 @@
 api_version: 1
 device:
   name: NEJE Master 2s
+  vendor: NEJE
+  model: Master 2S
   description: Diode laser engraver with 170x170mm work area
 machine:
   driver: GrblSerialDriver

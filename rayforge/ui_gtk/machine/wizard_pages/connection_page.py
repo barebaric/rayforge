@@ -1,9 +1,11 @@
-"""Step 3 — Connection parameters.
+"""Step 4 — Connection parameters.
 
 Always required: even after picking a known profile or importing a
 snapshot, the user must supply host-specific values like the USB
 device path, IP address, hostname, or OctoPrint API key. The page
 prefills any defaults the profile supplies and leaves the rest blank.
+(Device discovery happens up front on the wizard's first page; any
+parameters it produced are prefilled here.)
 
 Reuses :class:`~rayforge.ui_gtk.varset.varsetwidget.VarSetWidget` to
 render the driver's ``get_setup_vars()`` definition, mirroring the
@@ -11,6 +13,7 @@ pattern in the legacy ``config_wizard.py``.
 """
 
 from gettext import gettext as _
+from typing import TYPE_CHECKING, Any
 
 from gi.repository import Adw, Gtk
 
@@ -20,15 +23,18 @@ from ....machine.driver.driver import Driver
 from ...varset.varsetwidget import VarSetWidget
 from . import WizardPage, _makePreferencesGroup
 
+if TYPE_CHECKING:
+    from ..unified_wizard import UnifiedWizard
+
 
 class ConnectionPage(WizardPage):
-    step_number = 3
+    step_number = 4
     title = _("Connection")
     subtitle = _("Enter the connection parameters for your device.")
 
-    def __init__(self, wizard, **kwargs):
+    def __init__(self, wizard: "UnifiedWizard", **kwargs: Any) -> None:
         self._driver_cls: type[Driver] | None = None
-        self._required_keys: set = set()
+        self._required_keys: set[str] = set()
         super().__init__(wizard, **kwargs)
 
     def build_ui(self) -> None:
@@ -88,7 +94,7 @@ class ConnectionPage(WizardPage):
         self.connect_widget.populate(var_set)
         self._refresh_ready()
 
-    def _on_data_changed(self, sender, **kwargs) -> None:
+    def _on_data_changed(self, sender: Any, **kwargs: Any) -> None:
         self._refresh_ready()
 
     def _refresh_ready(self) -> None:
@@ -117,7 +123,7 @@ class ConnectionPage(WizardPage):
             self.wizard.show_error(_("Invalid input"), str(exc))
             return False
         # Drop empty-string / None values so we don't blur defaults.
-        cleaned: dict = {}
+        cleaned: dict[str, Any] = {}
         for key, value in values.items():
             if value in (None, ""):
                 continue

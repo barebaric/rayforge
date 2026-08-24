@@ -1,6 +1,8 @@
 api_version: 1
 device:
   name: OMTech Polar 50W
+  vendor: OMTech
+  model: Polar 50W
   description: Desktop 50W CO2 laser cutter with 508x305mm work area and Ruida controller
 machine:
   driver: RuidaDriver

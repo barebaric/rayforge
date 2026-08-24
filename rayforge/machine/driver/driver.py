@@ -7,6 +7,7 @@ from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
+    ClassVar,
     Optional,
 )
 
@@ -27,6 +28,7 @@ if TYPE_CHECKING:
     from ..models.head import Head
     from ..models.laser import Laser
     from ..models.machine import Machine
+    from .discovery import DeviceRecognizer
 
 
 logger = logging.getLogger(__name__)
@@ -220,6 +222,12 @@ class Driver(ABC):
     # When True, the driver can query the device to detect its
     # native unit system (metric vs imperial).
     supports_unit_detection: bool = False
+    # Declarative description of what a device this driver can talk
+    # to looks like on the wire. When set, the driver participates
+    # in automatic device discovery: discovery scans each transport
+    # once and evaluates the captured output against every
+    # recognizer (see rayforge.machine.driver.discovery).
+    DISCOVERY: ClassVar["DeviceRecognizer | None"] = None
 
     @property
     @abstractmethod
