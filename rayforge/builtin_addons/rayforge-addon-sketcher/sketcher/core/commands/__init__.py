@@ -7,12 +7,14 @@ from .circle import CircleCommand, CirclePreviewState
 from .constraint import ModifyConstraintCommand
 from .constraint_create import CreateOrEditConstraintCommand
 from .construction import ToggleConstructionCommand
+from .create_pattern import CreatePatternCommand
 from .dimension import DimensionData
 from .distance_constraint import (
     DistanceConstraintCommand,
     DistanceConstraintParams,
 )
 from .duplicate import DuplicateCommand
+from .edit_pattern import EditPatternCommand
 from .ellipse import EllipseCommand, EllipsePreviewState
 from .equal_constraint import (
     EqualConstraintCommand,
@@ -21,7 +23,7 @@ from .equal_constraint import (
 from .fill import AddFillCommand, RemoveFillCommand, SetTextFillCommand
 from .fillet import FilletCommand
 from .grid import GridCommand
-from .items import AddItemsCommand
+from .items import AddItemsCommand, RemoveItemsCommand
 from .line import LineCommand, LinePreviewState
 from .live_text_edit import LiveTextEditCommand
 from .mirror import MirrorAxis, MirrorCommand, MirrorDirection
@@ -59,10 +61,12 @@ __all__ = [
     "CircleCommand",
     "CirclePreviewState",
     "CreateOrEditConstraintCommand",
+    "CreatePatternCommand",
     "DimensionData",
     "DistanceConstraintCommand",
     "DistanceConstraintParams",
     "DuplicateCommand",
+    "EditPatternCommand",
     "EllipseCommand",
     "EllipsePreviewState",
     "EqualConstraintCommand",
@@ -84,6 +88,7 @@ __all__ = [
     "RectangleCommand",
     "RectanglePreviewState",
     "RemoveFillCommand",
+    "RemoveItemsCommand",
     "RoundedRectCommand",
     "RoundedRectPreviewState",
     "SetTextFillCommand",

@@ -53,6 +53,7 @@ class EntityRegistry:
             e_cls = _ENTITY_CLASSES.get(e_type)
             if e_cls:
                 entity = e_cls.from_dict(e_data)
+                entity.restore_base_flags(e_data)
                 new_reg.entities.append(entity)
                 new_reg._entity_map[entity.id] = entity
 

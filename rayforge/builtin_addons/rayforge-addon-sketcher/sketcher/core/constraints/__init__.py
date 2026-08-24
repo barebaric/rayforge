@@ -17,6 +17,7 @@ from .parallelogram import ParallelogramConstraint
 from .perpendicular import PerpendicularConstraint
 from .point_on_line import PointOnLineConstraint
 from .radius import RadiusConstraint
+from .rotational import RotationalConstraint
 from .symmetry import SymmetryConstraint
 from .tangent import TangentConstraint
 from .vertical import VerticalConstraint
@@ -35,6 +36,7 @@ CONSTRAINT_TYPE_MAP: dict[str, type[Constraint]] = {
     "symmetry": SymmetryConstraint,
     "aspect_ratio": AspectRatioConstraint,
     "angle": AngleConstraint,
+    "rotational": RotationalConstraint,
 }
 
 
@@ -57,6 +59,7 @@ __all__ = [
     "PerpendicularConstraint",
     "PointOnLineConstraint",
     "RadiusConstraint",
+    "RotationalConstraint",
     "SymmetryConstraint",
     "TangentConstraint",
     "VerticalConstraint",

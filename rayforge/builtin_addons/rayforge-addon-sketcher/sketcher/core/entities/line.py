@@ -119,14 +119,12 @@ class Line(Entity):
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Line":
         """Deserializes a dictionary into a Line instance."""
-        line = cls(
+        return cls(
             id=data["id"],
             p1_idx=data["p1_idx"],
             p2_idx=data["p2_idx"],
             construction=data.get("construction", False),
         )
-        line.invisible = data.get("invisible", False)
-        return line
 
     def __repr__(self) -> str:
         return (
