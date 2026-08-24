@@ -177,6 +177,8 @@ class SelectTool(SnapMixin, SketchTool):
         if n_press == 2 and hit_type == "entity":
             logger.debug("Double-click on entity detected.")
             entity = cast(Entity, hit_obj)
+            if self.element.request_pattern_edit(entity):
+                return True
             if isinstance(entity, (Arc, Line, Circle)):
                 cmd = CreateOrEditConstraintCommand(
                     self.element.sketch, entity
@@ -416,6 +418,19 @@ class SelectTool(SnapMixin, SketchTool):
                 )
                 self.element.execute_command(cmd)
 
+        # Sync pattern radius dimensions to the dragged geometry: while
+        # dragging they were excluded from the solve so they must follow
+        # the members instead of snapping them back.
+        affected = set(self.element.selection.entity_ids)
+        if self.dragged_point_id is not None:
+            affected |= {
+                e.id
+                for e in self.element.sketch.registry.entities
+                if self.dragged_point_id in e.get_point_ids()
+            }
+        if affected:
+            self.element.sketch.sync_pattern_dimensions(affected)
+
         # Clear all drag-related state
         self.dragged_point_id = None
         self.drag_point_start_pos = None
@@ -582,6 +597,24 @@ class SelectTool(SnapMixin, SketchTool):
         mdx, mdy = ct_vec.transform_vector((ldx, ldy))
         return mdx, mdy
 
+    def _get_dragged_pattern_constraint_indices(self) -> set[int]:
+        """
+        Returns indices of pattern radius constraints that must yield
+        during a drag of pattern members. The radius dimension would
+        otherwise fight the radial component of the drag and distort
+        the array; instead it is excluded from the solve and follows
+        the geometry (synced on release).
+        """
+        sketch = self.element.sketch
+        dragged = set(self.element.selection.entity_ids)
+        if self.dragged_point_id is not None:
+            dragged |= {
+                e.id
+                for e in sketch.registry.entities
+                if self.dragged_point_id in e.get_point_ids()
+            }
+        return sketch.get_pattern_constraint_indices_for_entities(dragged)
+
     def _handle_point_drag(self, world_dx: float, world_dy: float):
         """Logic for dragging a single point."""
         if self.dragged_point_id is None or self.drag_point_start_pos is None:
@@ -660,9 +693,20 @@ class SelectTool(SnapMixin, SketchTool):
         max_hops = max(
             (d for d in self.drag_point_distances.values() if d > 0), default=1
         )
+        # Points of a pattern containing the dragged point's entities are
+        # exempt from holding: the linkage constraints must stay in full
+        # control so the whole array follows the drag smoothly.
+        owning_entities = {
+            e.id
+            for e in self.element.sketch.registry.entities
+            if self.dragged_point_id in e.get_point_ids()
+        }
+        excluded = self.element.sketch.get_pattern_points_for_entities(
+            owning_entities
+        )
         for pid, pos in self.drag_initial_positions.items():
             # Skip any point that is part of the actively dragged group.
-            if pid in dragged_group:
+            if pid in dragged_group or pid in excluded:
                 continue
 
             p = self._safe_get_point(pid)
@@ -679,8 +723,16 @@ class SelectTool(SnapMixin, SketchTool):
                     DragConstraint(pid, pos[0], pos[1], weight=weight)
                 )
 
+        excluded = self._get_dragged_pattern_constraint_indices()
+        logger.debug(
+            "PointDrag: pid=%s radius dims excluded: %r",
+            self.dragged_point_id,
+            sorted(excluded),
+        )
         self.element.sketch.solve(
-            extra_constraints=drag_constraints, update_constraint_status=False
+            extra_constraints=drag_constraints,
+            update_constraint_status=False,
+            excluded_constraints=excluded,
         )
         self.element.mark_dirty()
 
@@ -741,10 +793,16 @@ class SelectTool(SnapMixin, SketchTool):
                     )
                 )
 
-        # 3. Add weak "holding" constraints for all other points
+        # 3. Add weak "holding" constraints for all other points.
+        # Points belonging to a pattern that contains dragged geometry
+        # are exempt: their linkage constraints must stay in full
+        # control so the whole array follows the drag smoothly.
+        excluded = self.element.sketch.get_pattern_points_for_entities(
+            set(self.element.selection.entity_ids)
+        )
         hold_weight = 0.01
         for pid, pos in self.drag_initial_positions.items():
-            if pid in points_to_drag:
+            if pid in points_to_drag or pid in excluded:
                 continue
             p = self._safe_get_point(pid)
             if not p or p.fixed:
@@ -754,8 +812,16 @@ class SelectTool(SnapMixin, SketchTool):
             )
 
         # 4. Solve and update
+        excluded = self._get_dragged_pattern_constraint_indices()
+        logger.debug(
+            "EntityDrag: %d points dragged, radius dims excluded: %r",
+            len(points_to_drag),
+            sorted(excluded),
+        )
         self.element.sketch.solve(
-            extra_constraints=drag_constraints, update_constraint_status=False
+            extra_constraints=drag_constraints,
+            update_constraint_status=False,
+            excluded_constraints=excluded,
         )
         self.element.mark_dirty()
 

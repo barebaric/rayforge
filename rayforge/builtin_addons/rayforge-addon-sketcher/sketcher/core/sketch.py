@@ -9,19 +9,11 @@ from pathlib import Path
 from typing import Any, ClassVar
 
 from blinker import Signal
-from raygeo.geo import (
-    Arc as GeoArc,
-)
-from raygeo.geo import (
-    Bezier as GeoBezier,
-)
+from raygeo.geo import Arc as GeoArc
+from raygeo.geo import Bezier as GeoBezier
 from raygeo.geo import Geometry
-from raygeo.geo import (
-    Line as GeoLine,
-)
-from raygeo.geo import (
-    Move as GeoMove,
-)
+from raygeo.geo import Line as GeoLine
+from raygeo.geo import Move as GeoMove
 from raygeo.geo.shape.polygon import is_point_inside_polygon
 
 from rayforge.core.asset import IAsset
@@ -48,6 +40,7 @@ from .constraints import (
     PerpendicularConstraint,
     PointOnLineConstraint,
     RadiusConstraint,
+    RotationalConstraint,
     SymmetryConstraint,
     TangentConstraint,
     VerticalConstraint,
@@ -64,6 +57,7 @@ from .entities import (
 )
 from .entities.point import WaypointType
 from .params import ParameterContext
+from .patterns import PatternDefinition
 from .registry import EntityRegistry
 from .solver import Solver
 from .types import EntityID
@@ -91,6 +85,7 @@ _CONSTRAINT_CLASSES = {
     "PerpendicularConstraint": PerpendicularConstraint,
     "PointOnLineConstraint": PointOnLineConstraint,
     "RadiusConstraint": RadiusConstraint,
+    "RotationalConstraint": RotationalConstraint,
     "SymmetryConstraint": SymmetryConstraint,
     "TangentConstraint": TangentConstraint,
     "VerticalConstraint": VerticalConstraint,
@@ -176,6 +171,7 @@ class Sketch(IAsset, IGeometryProvider):
         self.registry = EntityRegistry()
         self.constraints: list[Constraint] = []
         self.fills: list[Fill] = []
+        self.patterns: list[PatternDefinition] = []
         self.input_parameters = VarSet(
             title=_DEFAULT_VARSET_TITLE,
             description=_DEFAULT_VARSET_DESCRIPTION,
@@ -394,6 +390,7 @@ class Sketch(IAsset, IGeometryProvider):
             "registry": self.registry.to_dict(),
             "constraints": [c.to_dict() for c in self.constraints],
             "fills": [f.to_dict() for f in self.fills],
+            "patterns": [p.to_dict() for p in self.patterns],
             "origin_id": self.origin_id,
             "hidden": self._hidden,
         }
@@ -438,8 +435,106 @@ class Sketch(IAsset, IGeometryProvider):
         for f_data in data.get("fills", []):
             new_sketch.fills.append(Fill.from_dict(f_data))
 
+        new_sketch.patterns = [
+            PatternDefinition.from_dict(p_data)
+            for p_data in data.get("patterns", [])
+        ]
+
         new_sketch._hidden = data.get("hidden", False)
         return new_sketch
+
+    def prune_patterns(self) -> None:
+        """
+        Removes pattern definitions whose master geometry is gone and
+        drops deleted entities from member groups. Groups themselves are
+        never dissolved by deletion; deleting them does not dissolve the
+        pattern as long as the master geometry still exists.
+        """
+        registry = self.registry
+        surviving: list[PatternDefinition] = []
+        for pattern in self.patterns:
+            if registry.get_entity(pattern.guide_circle_id) is None:
+                continue
+            pattern.members = pattern.living_members(registry)
+            surviving.append(pattern)
+        self.patterns = surviving
+
+    def get_pattern_constraint_indices_for_entities(
+        self, entity_ids: set[int]
+    ) -> set[int]:
+        """
+        Returns indices (into self.constraints) of pattern dimension
+        constraints (radius of the guide circle) for patterns containing
+        one of the given entities. These must be excluded from solves
+        during member drags so the dimension follows instead of fights.
+        """
+        wanted = set(entity_ids)
+        indices: set[int] = set()
+        for idx, constr in enumerate(self.constraints):
+            if not isinstance(constr, RadiusConstraint):
+                continue
+            for pattern in self.patterns:
+                if (
+                    pattern.guide_circle_id == constr.entity_id
+                    and set(pattern.living_entity_ids(self.registry)) & wanted
+                ):
+                    indices.add(idx)
+                    break
+        return indices
+
+    def sync_pattern_dimensions(self, entity_ids: set[int]) -> None:
+        """
+        Updates the radius dimension of every pattern touched by the
+        given entities to match the guide circle's current geometry.
+        Called after member drags, where the radius dimension was
+        excluded from the interactive solves and must follow the
+        dragged geometry instead of fighting it.
+        """
+        wanted = set(entity_ids)
+        for pattern in self.patterns:
+            member_ids = set(pattern.living_entity_ids(self.registry))
+            if not member_ids & wanted:
+                continue
+            circle = self.registry.get_entity(pattern.guide_circle_id)
+            if not isinstance(circle, Circle):
+                continue
+            try:
+                center = self.registry.get_point(circle.center_idx)
+                radius_pt = self.registry.get_point(circle.radius_pt_idx)
+            except IndexError:
+                continue
+            radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+            for constr in self.constraints:
+                if (
+                    isinstance(constr, RadiusConstraint)
+                    and constr.entity_id == pattern.guide_circle_id
+                ):
+                    constr.value = radius
+
+    def get_pattern_points_for_entities(
+        self, entity_ids: set[int]
+    ) -> set[int]:
+        """
+        Returns all points belonging to any pattern that contains one of
+        the given entities (member geometry plus master circle). During
+        drags these points must stay free of holding constraints so the
+        pattern's linkage constraints can carry the whole array.
+        """
+        result: set[int] = set()
+        wanted = set(entity_ids)
+        registry = self.registry
+        for pattern in self.patterns:
+            member_ids = set(pattern.living_entity_ids(registry))
+            if not member_ids & wanted:
+                continue
+            for eid in member_ids:
+                entity = registry.get_entity(eid)
+                if entity is not None:
+                    result.update(entity.get_point_ids())
+            guide = registry.get_entity(pattern.guide_circle_id)
+            if guide is not None:
+                result.update(guide.get_point_ids())
+        return result
 
     @classmethod
     def from_file(cls, file_path: str | Path) -> "Sketch":
@@ -1173,6 +1268,7 @@ class Sketch(IAsset, IGeometryProvider):
         extra_constraints: list[Constraint] | None = None,
         update_constraint_status: bool = True,
         variable_overrides: dict[str, Any] | None = None,
+        excluded_constraints: set[int] | None = None,
     ) -> bool:
         """
         Resolves all constraints.
@@ -1185,6 +1281,9 @@ class Sketch(IAsset, IGeometryProvider):
             variable_overrides: A dictionary of parameter values to use for
                 this solve only, without permanently changing the sketch's
                 parameters. e.g., `{'width': 150.0}`.
+            excluded_constraints: Indices (into self.constraints) of
+                constraints to skip for this solve, e.g. a pattern's radius
+                dimension while a member is being dragged.
 
         Returns:
             True if the solver converged successfully.
@@ -1232,9 +1331,13 @@ class Sketch(IAsset, IGeometryProvider):
                     )
 
             # Step 4: Update constraints with the final, resolved values.
-            all_constraints = self.constraints
+            excluded = excluded_constraints or set()
+            kept_indices = [
+                i for i in range(len(self.constraints)) if i not in excluded
+            ]
+            all_constraints = [self.constraints[i] for i in kept_indices]
             if extra_constraints:
-                all_constraints = self.constraints + extra_constraints
+                all_constraints = all_constraints + extra_constraints
             for c in all_constraints:
                 if hasattr(c, "update_from_context"):
                     c.update_from_context(ctx)
@@ -1249,25 +1352,31 @@ class Sketch(IAsset, IGeometryProvider):
             )
             success = solver.solve(update_dof=update_constraint_status)
 
-            # Step 6: Update constraint conflict status
+            # Step 6: Update constraint conflict status. Map solver indices
+            # back to sketch constraint indices when constraints were
+            # excluded.
             if update_constraint_status:
-                self._update_conflict_status(solver)
+                conflicting = solver.get_conflicting_constraints()
+                mapped = {
+                    kept_indices[i]
+                    for i in conflicting
+                    if 0 <= i < len(kept_indices)
+                }
+                self._apply_conflict_status(mapped)
 
         except Exception:
-            import logging
-
-            logging.getLogger(__name__).exception("Sketch solve failed")
+            logger.exception("Sketch solve failed")
             success = False
 
         return success
 
-    def _update_conflict_status(self, solver: Solver) -> None:
+    def _apply_conflict_status(self, conflicting_indices: set[int]) -> None:
         """
-        Updates the conflict status of all constraints based on solver results.
-        Constraints with significant residual error are marked as CONFLICTING.
+        Updates the conflict status of all constraints based on solver
+        results. Indices refer to positions in self.constraints.
+        Constraints with significant residual error are marked as
+        CONFLICTING.
         """
-        conflicting_indices = solver.get_conflicting_constraints()
-
         for idx, constraint in enumerate(self.constraints):
             if idx in conflicting_indices:
                 if constraint.status != ConstraintStatus.ERROR:
