@@ -1,6 +1,8 @@
 api_version: 1
 device:
   name: Atomstack A70
+  vendor: Atomstack
+  model: A70
   description: 70W diode laser cutter with 500x500mm work area and spot compression
 machine:
   driver: GrblSerialDriver

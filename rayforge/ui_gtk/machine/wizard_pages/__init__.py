@@ -49,6 +49,9 @@ class WizardPage(Adw.Bin):
     # page advances only through its own explicit affordances (e.g.
     # Step 1, which fires source_selected on row activation).
     next_on_footer: bool = True
+    # Optional override for the footer "Next" button label (e.g.
+    # "Configure Manually" on the discover step).
+    next_label: str | None = None
 
     def __init__(self, wizard: "UnifiedWizard", **kwargs):
         super().__init__(**kwargs)

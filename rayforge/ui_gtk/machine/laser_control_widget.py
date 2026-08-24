@@ -141,9 +141,18 @@ class LaserControlWidget(Gtk.Box):
                 self._on_connection_status_changed
             )
             self.machine.changed.disconnect(self._on_machine_changed)
-            self.machine.controller.laser_power_changed.disconnect(
-                self._on_laser_power_changed
-            )
+            # The laser power signal is sourced directly from the
+            # controller object rather than proxied through the
+            # machine. When the old machine has been removed (e.g. the
+            # user deleted it), its controller is torn down before
+            # this handler runs, so accessing ``controller`` would
+            # lazily fail with a ValueError. Skip the disconnect in
+            # that case: the controller (and its signal) is already
+            # gone, so there is nothing left to detach.
+            if self.machine.has_controller:
+                self.machine.controller.laser_power_changed.disconnect(
+                    self._on_laser_power_changed
+                )
         self.machine = machine
         self.machine_cmd = machine_cmd
         if self.machine:

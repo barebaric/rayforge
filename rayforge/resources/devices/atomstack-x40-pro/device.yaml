@@ -1,6 +1,8 @@
 api_version: 1
 device:
   name: Atomstack X40 Pro
+  vendor: Atomstack
+  model: X40 Pro
   description: 40W diode laser engraver with 400x400mm work area and air assist
 machine:
   driver: GrblSerialDriver

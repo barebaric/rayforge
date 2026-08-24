@@ -1,6 +1,8 @@
 api_version: 1
 device:
   name: Thunder Laser Nova 35
+  vendor: Thunder Laser
+  model: Nova 35
   description: 80W CO2 laser cutter with 900x600mm work area and Ruida controller
 machine:
   driver: RuidaDriver

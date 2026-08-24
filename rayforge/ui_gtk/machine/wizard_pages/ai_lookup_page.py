@@ -79,7 +79,7 @@ def _format_value(value: Any, kind: str) -> str:
 
 
 class AILookupPage(WizardPage):
-    step_number = 6
+    step_number = 7
     title = _("AI Spec Lookup")
     subtitle = _(
         "If your machine is a known commercial model, the AI can "

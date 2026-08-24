@@ -212,19 +212,17 @@ class MachineSettingsPage(TrackedPreferencesPage):
         profile: DeviceProfile,
         machine: Machine | None = None,
     ):
-        """Creates a machine and opens its settings editor.
+        """Makes the new machine the active one.
 
         The UnifiedWizard hands back the live ``Machine`` it created
         via ``profile.create_machine(...)`` so we don't double-create.
+        The machine list rebuilds via the config.changed signal, so
+        the new machine shows up as active right away.
         """
         if machine is None:
             machine = profile.create_machine(get_context())
 
-        editor_dialog = MachineSettingsDialog(
-            machine=machine,
-            transient_for=self.get_ancestor(Gtk.Window),
-        )
-        editor_dialog.present()
+        get_context().machine_mgr.set_active_machine(machine)
 
     def _create_add_button(self) -> Gtk.Button:
         """Creates the add button with icon and label."""

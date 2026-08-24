@@ -39,7 +39,7 @@ _DEFAULT_ACCELERATION = 1000.0
 
 
 class HardwarePage(WizardPage):
-    step_number = 7
+    step_number = 8
     title = _("Hardware")
     subtitle = _("Work area, origin, speeds and acceleration.")
 

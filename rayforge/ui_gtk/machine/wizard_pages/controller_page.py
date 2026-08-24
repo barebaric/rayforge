@@ -36,7 +36,7 @@ _EXPORT_ONLY_ICON = "document-save-symbolic"
 
 
 class ControllerPage(WizardPage):
-    step_number = 2
+    step_number = 3
     title = _("Choose Controller")
     subtitle = _("What kind of controller board does this machine use?")
 

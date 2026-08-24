@@ -128,6 +128,17 @@ def is_boot_message(line: str) -> bool:
     return any(stripped.startswith(p) for p in prefixes)
 
 
+def is_marlin_output(data: bytes) -> bool:
+    """
+    True when raw serial output identifies a Marlin device.
+
+    Reuses :func:`is_boot_message` so device discovery and the
+    driver itself agree on what a Marlin boot banner looks like.
+    """
+    text = data.decode("ascii", errors="replace")
+    return any(is_boot_message(line) for line in text.splitlines())
+
+
 def parse_m115_firmware_info(
     response_lines: list[str],
 ) -> dict[str, str]:

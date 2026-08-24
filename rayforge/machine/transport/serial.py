@@ -29,11 +29,14 @@ class SerialPortPermissionError(Exception):
 
 @dataclass(frozen=True)
 class SerialPortInfo:
-    """A serial port path together with an optional human-readable
-    description."""
+    """A serial port path together with optional metadata used to
+    identify the underlying USB device."""
 
     device: str
     description: str | None = None
+    manufacturer: str | None = None
+    vid: int | None = None
+    pid: int | None = None
 
 
 def is_usb_serial_port(port: str) -> bool:
@@ -177,7 +180,15 @@ class SerialTransport(Transport):
                 desc = port.description
                 if not desc or desc == "n/a":
                     desc = None
-                infos.append(SerialPortInfo(port.device, desc))
+                infos.append(
+                    SerialPortInfo(
+                        device=port.device,
+                        description=desc,
+                        manufacturer=getattr(port, "manufacturer", None),
+                        vid=getattr(port, "vid", None),
+                        pid=getattr(port, "pid", None),
+                    )
+                )
             infos.sort(key=lambda info: _port_sort_key(info.device))
             return infos
         except (OSError, serial.SerialException, TypeError) as e:
