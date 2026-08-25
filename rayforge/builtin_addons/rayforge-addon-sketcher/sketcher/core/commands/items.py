@@ -219,6 +219,40 @@ class RemoveItemsCommand(SketchChangeCommand):
                 or constr.depends_on_entities(to_delete_entity_ids)
             ) and constr not in to_delete_constraints:
                 to_delete_constraints.append(constr)
+
+        # 4.5. Orphan Points Owned Only by Deleted Constraints
+        # A point may be referenced solely by constraints (e.g. a
+        # rectangle's auto-created center point) and belong to no
+        # entity. Step C above only orphans points that belonged to
+        # deleted entities, so handle constraint-only points here.
+        to_delete_constraint_set = {id(c) for c in to_delete_constraints}
+        constr_point_attrs = ["p1", "p2", "p3", "p4", "center", "point_id"]
+        points_of_deleted_constraints: set[int] = set()
+        used_points_by_surviving: set[int] = set()
+
+        for constr in sketch.constraints:
+            if id(constr) in to_delete_constraint_set:
+                for attr in constr_point_attrs:
+                    pid = getattr(constr, attr, None)
+                    if isinstance(pid, int):
+                        points_of_deleted_constraints.add(pid)
+            else:
+                for attr in constr_point_attrs:
+                    pid = getattr(constr, attr, None)
+                    if isinstance(pid, int):
+                        used_points_by_surviving.add(pid)
+
+        for e in sketch.registry.entities:
+            if e.id not in to_delete_entity_ids:
+                used_points_by_surviving.update(e.get_point_ids())
+
+        constraint_orphans = (
+            points_of_deleted_constraints
+            - used_points_by_surviving
+            - to_delete_point_ids
+        )
+        to_delete_point_ids.update(constraint_orphans)
+
         # 5. Get actual objects from IDs
         final_points = [
             p
