@@ -12,6 +12,7 @@ from .distance_constraint import (
     DistanceConstraintCommand,
     DistanceConstraintParams,
 )
+from .duplicate import DuplicateCommand
 from .ellipse import EllipseCommand, EllipsePreviewState
 from .equal_constraint import (
     EqualConstraintCommand,
@@ -23,8 +24,10 @@ from .grid import GridCommand
 from .items import AddItemsCommand
 from .line import LineCommand, LinePreviewState
 from .live_text_edit import LiveTextEditCommand
+from .mirror import MirrorAxis, MirrorCommand, MirrorDirection
 from .point import (
     MoveControlPointCommand,
+    MoveEntitiesCommand,
     MovePointCommand,
     UnstickJunctionCommand,
 )
@@ -59,6 +62,7 @@ __all__ = [
     "DimensionData",
     "DistanceConstraintCommand",
     "DistanceConstraintParams",
+    "DuplicateCommand",
     "EllipseCommand",
     "EllipsePreviewState",
     "EqualConstraintCommand",
@@ -68,9 +72,13 @@ __all__ = [
     "LineCommand",
     "LinePreviewState",
     "LiveTextEditCommand",
+    "MirrorAxis",
+    "MirrorCommand",
+    "MirrorDirection",
     "ModifyConstraintCommand",
     "ModifyTextPropertyCommand",
     "MoveControlPointCommand",
+    "MoveEntitiesCommand",
     "MovePointCommand",
     "PreviewState",
     "RectangleCommand",

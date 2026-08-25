@@ -8,13 +8,17 @@ from ....core.varset import (
     SerialPortVar,
     Var,
 )
-from ....machine.transport.serial import SerialTransport
+from ....machine.transport.serial import (
+    SerialPortInfo,
+    SerialTransport,
+    is_usb_serial_port,
+    natural_key,
+)
 from ...shared.adwfix import ensure_row_min_width
 from .base import (
     NULL_CHOICE_LABEL,
     RowAdapter,
     escape_title,
-    natural_sort_key,
     register_adapter,
 )
 
@@ -124,43 +128,108 @@ class BaudRateAdapter(ComboAdapter):
 
 @register_adapter(SerialPortVar)
 class SerialPortAdapter(ComboAdapter):
+    """
+    A two-line port selector, mirroring the WCS selector: the device
+    path on the first line and the USB description (if known) as a
+    dimmed second line. The model holds raw device paths, so value
+    mapping is handled by ComboAdapter directly.
+    """
+
+    def __init__(self, row: Adw.ComboRow, var: Var) -> None:
+        super().__init__(row, var)
+        self._descriptions: dict[str, str] = {}
+
     @classmethod
     def create(
         cls, var: Var, target_property: str
     ) -> tuple[Adw.PreferencesRow, "SerialPortAdapter"]:
         initial_val = getattr(var, target_property)
-        port_set = set(SerialTransport.list_ports())
-        if initial_val:
-            port_set.add(initial_val)
-        sorted_ports = sorted(port_set, key=natural_sort_key)
-        choices = [NULL_CHOICE_LABEL] + sorted_ports
-        store = Gtk.StringList.new(choices)
-        row = Adw.ComboRow(model=store, title=escape_title(var.label))
+        row = Adw.ComboRow(title=escape_title(var.label))
         if var.description:
             row.set_subtitle(var.description)
-        if initial_val and initial_val in choices:
-            row.set_selected(choices.index(initial_val))
+        adapter = cls(row, var)
 
-        def on_open(gesture, n_press, x, y):
-            selected_obj = row.get_selected_item()
-            current_sel = None
-            if selected_obj:
-                current_sel = selected_obj.get_string()  # type: ignore
+        factory = Gtk.SignalListItemFactory()
+        factory.connect("setup", adapter._on_factory_setup)
+        factory.connect("bind", adapter._on_factory_bind)
+        row.set_factory(factory)
 
-            new_ports = SerialTransport.list_ports()
-            port_set = set(new_ports)
-            if current_sel and current_sel != NULL_CHOICE_LABEL:
-                port_set.add(current_sel)
-            new_sorted = sorted(port_set, key=natural_sort_key)
-            new_choices = [NULL_CHOICE_LABEL] + new_sorted
+        adapter._refresh(initial_val)
 
-            model = row.get_model()
-            if isinstance(model, Gtk.StringList):
-                model.splice(0, model.get_n_items(), new_choices)
-                if current_sel in new_choices:
-                    row.set_selected(new_choices.index(current_sel))
+        def on_open(
+            gesture: Gtk.GestureClick, n_press: int, x: float, y: float
+        ) -> None:
+            adapter._refresh(adapter.get_value())
 
         click_controller = Gtk.GestureClick.new()
         click_controller.connect("pressed", on_open)
         row.add_controller(click_controller)
-        return row, cls(row, var)
+        return row, adapter
+
+    def _on_factory_setup(
+        self, factory: Gtk.SignalListItemFactory, list_item: Gtk.ListItem
+    ) -> None:
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        name_label = Gtk.Label(xalign=0)
+        subtitle_label = Gtk.Label(xalign=0)
+        subtitle_label.add_css_class("dim-label")
+        box.append(name_label)
+        box.append(subtitle_label)
+        list_item.set_child(box)
+
+    def _on_factory_bind(
+        self, factory: Gtk.SignalListItemFactory, list_item: Gtk.ListItem
+    ) -> None:
+        item = list_item.get_item()
+        assert isinstance(item, Gtk.StringObject)
+        path = item.get_string()
+        box = list_item.get_child()
+        assert box is not None
+        name_label = box.get_first_child()
+        assert isinstance(name_label, Gtk.Label)
+        sibling = name_label.get_next_sibling()
+        assert isinstance(sibling, Gtk.Label)
+        name_label.set_label(path)
+        description = self._descriptions.get(path)
+        sibling.set_visible(bool(description))
+        if description:
+            sibling.set_label(description)
+
+    @staticmethod
+    def _scan_ports(extra_value: str | None) -> list[SerialPortInfo]:
+        """
+        Returns the available ports. USB adapters come first; a
+        configured port that is not currently plugged in is pinned
+        to the top so it stays immediately visible.
+        """
+        ports: list[SerialPortInfo] = []
+        seen: set[str] = set()
+        for info in SerialTransport.list_port_info():
+            if info.device in seen:
+                continue
+            seen.add(info.device)
+            ports.append(info)
+        ports.sort(
+            key=lambda i: (
+                not is_usb_serial_port(i.device),
+                natural_key(i.device),
+            )
+        )
+        if extra_value and extra_value not in seen:
+            ports.insert(0, SerialPortInfo(extra_value))
+        return ports
+
+    def _refresh(self, current_value: Any | None) -> None:
+        """Re-scans ports and rebuilds the dropdown contents."""
+        value_str = str(current_value) if current_value else None
+        ports = self._scan_ports(value_str)
+        self._descriptions = {
+            p.device: p.description for p in ports if p.description
+        }
+        devices = [p.device for p in ports]
+        model = Gtk.StringList.new([NULL_CHOICE_LABEL] + devices)
+        self._row.set_model(model)
+        selected = 0
+        if value_str and value_str in devices:
+            selected = devices.index(value_str) + 1
+        self._row.set_selected(selected)

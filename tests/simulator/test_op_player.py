@@ -358,7 +358,7 @@ def test_build_snapshots_targets_spaced_every_interval():
     ops = _make_long_ops(n=2500)
     snapshots = build_snapshots(ops, _make_machine(), Doc())
     assert [s[0] for s in snapshots] == [1000, 2000]
-    for target, state, source, rotary in snapshots:
+    for target, state, source, rotary, dpm in snapshots:
         assert isinstance(target, int)
         assert isinstance(state, MachineState)
         assert source == Axis.Y
@@ -391,7 +391,7 @@ def test_build_snapshots_clears_reached_textures():
 
     snapshots = build_snapshots(ops, _make_machine(), Doc())
     assert snapshots
-    for _, state, _, _ in snapshots:
+    for _, state, _, _, _ in snapshots:
         assert len(state.reached_textures) == 0
 
 
@@ -676,3 +676,203 @@ def test_render_state_laser_on_for_whole_cut():
     assert player.render_state().laser_on is True
     player.set_sim_time(0.74)
     assert player.render_state().laser_on is True
+
+
+def _make_arc_player():
+    """Player with a full-circle arc command."""
+    ops = Ops()
+    ops.set_feed_rate(600)  # 10 mm/s
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.arc_to(0.0, 0.0, 10.0, 0.0, True)  # full circle CW, r=10
+    # Arc circumference = 2*pi*10 ~ 62.83mm at 10mm/s ~ 6.283s
+    return ops
+
+
+def _make_rotary_arc_player():
+    """Player with an arc in AXIS_REPLACEMENT rotary mode.
+
+    Creates a half-circle arc on a cylinder.  The arc's Y displacement
+    in Cartesian space should cause the rotary axis to oscillate.
+    """
+    machine = _make_machine()
+    rm = RotaryModule()
+    rm.set_mode(RotaryMode.AXIS_REPLACEMENT)
+    rm.set_axis(Axis.Y)
+    machine.add_rotary_module(rm)
+
+    diameter = 40.0
+
+    ops = Ops()
+    ops.set_feed_rate(600)
+    ops.move_to(0.0, 5.0, 0.0)
+    ops.layer_start("test")
+    # Half-circle arc from (0,5) to (10,5), center (5,5), radius 5,
+    # CCW.  In Cartesian space Y ranges from 5 to 10.
+    ops.arc_to(10.0, 5.0, 5.0, 0.0, False)
+    ops.layer_end("test")
+
+    mapping = KinematicMapping.from_rotary_module(rm, diameter)
+    assert mapping is not None
+    mapping.apply(ops)
+
+    doc = Doc()
+    doc.active_layer.uid = "test"
+    doc.active_layer.set_rotary_enabled(True)
+    doc.active_layer.set_rotary_diameter(diameter)
+    doc.active_layer.set_rotary_module_uid(rm.uid)
+
+    player = OpPlayer(ops, machine, doc)
+    player.set_playback_params(600.0, 3000.0, 0.0)
+    return player, diameter
+
+
+def _arc_cum(ops, idx):
+    """Cumulative time at command *idx* for feed=600, rapid=3000."""
+    return ops.get_cumulative_time_at(idx, 600.0, 3000.0, 0.0)
+
+
+def test_render_state_full_circle_interpolates_along_arc():
+    """Full circle (start == end) must trace the arc, not stay put."""
+    ops = _make_arc_player()
+    player = OpPlayer(ops, _make_machine(), Doc())
+    player.set_playback_params(600.0, 3000.0, 0.0)
+    player.seek(1)  # state at (0, 0) after move_to
+    # The arc is command 2. Its duration is cum[2]-cum[1].
+    arc_dur = _arc_cum(ops, 2) - _arc_cum(ops, 1)
+    # Quarter way through the circle.
+    player.set_sim_time(_arc_cum(ops, 1) + 0.25 * arc_dur)
+    p, _frac = player.playback_progress()
+    assert p == 2
+    state = player.render_state()
+    # Quarter CW circle from (0,0) around center (10,0):
+    # start angle = atan2(0-0, 0-10) = pi
+    # sweep = -2pi, frac=0.25 → angle = pi - pi/2 = pi/2
+    # pos = (10 + 10*cos(pi/2), 0 + 10*sin(pi/2)) = (10, 10)
+    assert state.axes[Axis.X] == pytest.approx(10.0, abs=1e-6)
+    assert state.axes[Axis.Y] == pytest.approx(10.0, abs=1e-6)
+
+
+def test_render_state_full_circle_halfway():
+    """Halfway through a full circle the head is diametrically opposite."""
+    ops = _make_arc_player()
+    player = OpPlayer(ops, _make_machine(), Doc())
+    player.set_playback_params(600.0, 3000.0, 0.0)
+    player.seek(1)
+    arc_dur = _arc_cum(ops, 2) - _arc_cum(ops, 1)
+    player.set_sim_time(_arc_cum(ops, 1) + 0.5 * arc_dur)
+    p, _frac = player.playback_progress()
+    assert p == 2
+    state = player.render_state()
+    # Half CW circle from (0,0) around center (10,0):
+    # start angle = pi, sweep = -2pi, frac=0.5 → angle = pi - pi = 0
+    # pos = (10 + 10*cos(0), 0 + 10*sin(0)) = (20, 0)
+    assert state.axes[Axis.X] == pytest.approx(20.0, abs=1e-6)
+    assert state.axes[Axis.Y] == pytest.approx(0.0, abs=1e-6)
+
+
+def test_render_state_partial_arc_interpolates_along_curve():
+    """Full circle (start == end) must trace the arc, not stay put.
+
+    This is a regression test for the linearization bug where arc
+    commands were linearly interpolated between start and end points.
+    """
+    ops = _make_arc_player()
+    player = OpPlayer(ops, _make_machine(), Doc())
+    player.set_playback_params(600.0, 3000.0, 0.0)
+    player.seek(1)
+    arc_dur = _arc_cum(ops, 2) - _arc_cum(ops, 1)
+    # At 75% through the full circle CW:
+    # start angle = pi, sweep = -2pi, frac=0.75 → angle = pi - 3pi/2 = -pi/2
+    # pos = (10 + 10*cos(-pi/2), 0 + 10*sin(-pi/2)) = (10, -10)
+    player.set_sim_time(_arc_cum(ops, 1) + 0.75 * arc_dur)
+    state = player.render_state()
+    assert state.axes[Axis.X] == pytest.approx(10.0, abs=1e-6)
+    assert state.axes[Axis.Y] == pytest.approx(-10.0, abs=1e-6)
+
+
+def test_render_state_partial_arc_ccw():
+    """CCW partial arc interpolates along the curve."""
+    ops = Ops()
+    ops.set_feed_rate(600)
+    ops.move_to(0.0, -10.0, 0.0)
+    # Quarter circle CCW from (0,-10) to (10,0), center offset (0,10) →
+    # absolute center (0,0), radius 10.
+    ops.arc_to(10.0, 0.0, 0.0, 10.0, False)
+    player = OpPlayer(ops, _make_machine(), Doc())
+    player.set_playback_params(600.0, 3000.0, 0.0)
+    player.seek(1)
+    arc_dur = _arc_cum(ops, 2) - _arc_cum(ops, 1)
+    player.set_sim_time(_arc_cum(ops, 1) + 0.5 * arc_dur)
+    state = player.render_state()
+    # start angle: atan2(-10-0, 0-0) = -pi/2
+    # end angle: atan2(0-0, 10-0) = 0
+    # sweep_ccw = (0 - (-pi/2)) % 2pi = pi/2
+    # CCW → sweep = pi/2
+    # At frac=0.5: angle = -pi/2 + 0.5 * pi/2 = -pi/4
+    # pos = (10*cos(-pi/4), 10*sin(-pi/4)) = (7.071, -7.071)
+    assert state.axes[Axis.X] == pytest.approx(
+        10.0 * math.cos(-math.pi / 4), abs=1e-6
+    )
+    assert state.axes[Axis.Y] == pytest.approx(
+        10.0 * math.sin(-math.pi / 4), abs=1e-6
+    )
+
+
+def test_render_state_partial_arc_cw():
+    """CW partial arc interpolates along the curve."""
+    ops = Ops()
+    ops.set_feed_rate(600)
+    ops.move_to(0.0, 10.0, 0.0)
+    # Quarter circle CW from (0,10) to (10,0), center offset (0,-10) →
+    # absolute center (0,0), radius 10.
+    ops.arc_to(10.0, 0.0, 0.0, -10.0, True)
+    player = OpPlayer(ops, _make_machine(), Doc())
+    player.set_playback_params(600.0, 3000.0, 0.0)
+    player.seek(1)
+    arc_dur = _arc_cum(ops, 2) - _arc_cum(ops, 1)
+    player.set_sim_time(_arc_cum(ops, 1) + 0.5 * arc_dur)
+    state = player.render_state()
+    # start angle: atan2(10-0, 0-0) = pi/2
+    # end angle: atan2(0-0, 10-0) = 0
+    # sweep_ccw = (0 - pi/2) % 2pi = 3pi/2
+    # CW → sweep = 3pi/2 - 2pi = -pi/2
+    # At frac=0.5: angle = pi/2 + 0.5 * (-pi/2) = pi/4
+    # pos = (10*cos(pi/4), 10*sin(pi/4)) = (7.071, 7.071)
+    assert state.axes[Axis.X] == pytest.approx(
+        10.0 * math.cos(math.pi / 4), abs=1e-6
+    )
+    assert state.axes[Axis.Y] == pytest.approx(
+        10.0 * math.sin(math.pi / 4), abs=1e-6
+    )
+
+
+def test_render_state_rotary_arc_rotation_oscillates():
+    """Rotary axis changes during an arc on a cylinder.
+
+    Regression test: the rotary angle was constant during arcs because
+    the arc geometry mixed Cartesian Y with the rotary angle.  The
+    rotation should follow the arc's Cartesian Y displacement,
+    converted via the degrees-per-mm factor.
+    """
+    player, _diameter = _make_rotary_arc_player()
+    # Arc is command index 3 (after set_feed_rate, move_to, layer_start).
+    cum2 = _arc_cum(player.ops, 2)
+    cum3 = _arc_cum(player.ops, 3)
+    arc_dur = cum3 - cum2
+    # The arc is a half-circle CCW from (0,5) to (10,5) around
+    # center (5,5).  At the midpoint (frac=0.5), the arc passes
+    # through Y=0 (bottom of circle), so the rotary angle should
+    # be LOWER than at the start.
+    player.seek(2)
+    t_mid = cum2 + 0.5 * arc_dur
+    player.set_sim_time(t_mid)
+    state_mid = player.render_state()
+    rot_mid = state_mid.axes[Axis.Y]
+
+    # At start (frac=0), rotation should be at the initial value.
+    player.set_sim_time(cum2 + 0.01 * arc_dur)
+    state_start = player.render_state()
+    rot_start = state_start.axes[Axis.Y]
+
+    # The arc dips to Y=0 at the midpoint, so rotary angle is lower.
+    assert rot_mid < rot_start

@@ -397,7 +397,7 @@ class SketchCanvas(WorldSurface):
                     new_value=new_value,
                     new_expression=new_expr,
                 )
-                self.sketch_editor.history_manager.execute(cmd)
+                self.sketch_editor.history_manager.coalesce(cmd)
 
             # Explicitly close the dialog
             dialog.close()

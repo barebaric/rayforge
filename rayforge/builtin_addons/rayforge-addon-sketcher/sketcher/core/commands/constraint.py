@@ -4,6 +4,8 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
+from rayforge.core.undo.command import Command
+
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
@@ -41,3 +43,18 @@ class ModifyConstraintCommand(SketchChangeCommand):
     def _do_undo(self) -> None:
         self.constraint.value = self.old_value
         self.constraint.expression = self.old_expression
+
+    def can_coalesce_with(self, next_command: Command) -> bool:
+        return (
+            isinstance(next_command, ModifyConstraintCommand)
+            and self.constraint is next_command.constraint
+        )
+
+    def coalesce_with(self, next_command: Command) -> bool:
+        if not self.can_coalesce_with(next_command):
+            return False
+        assert isinstance(next_command, ModifyConstraintCommand)
+        self.new_value = next_command.new_value
+        self.new_expression = next_command.new_expression
+        self.timestamp = next_command.timestamp
+        return True

@@ -15,6 +15,7 @@ from raygeo.geo.types import Point as GeoPoint
 from ...core.commands import (
     CreateOrEditConstraintCommand,
     MoveControlPointCommand,
+    MoveEntitiesCommand,
     MovePointCommand,
 )
 from ...core.constraints import (
@@ -390,6 +391,30 @@ class SelectTool(SnapMixin, SketchTool):
                     self.element.execute_command(cmd)
 
                 self.current_snap_result = None
+
+        # If an entity (or group) was dragged, create an undoable command
+        if self.dragged_entity is not None and self.drag_initial_positions:
+            end_positions = {}
+            moved = False
+            for pid, (sx, sy) in self.drag_initial_positions.items():
+                p = self._safe_get_point(pid)
+                if p:
+                    end_positions[pid] = (p.x, p.y)
+                    if abs(p.x - sx) > 1e-6 or abs(p.y - sy) > 1e-6:
+                        moved = True
+            if moved:
+                snapshot = (
+                    self.drag_initial_positions.copy(),
+                    self.drag_initial_entity_states.copy(),
+                )
+                cmd = MoveEntitiesCommand(
+                    self.element.sketch,
+                    list(self.element.selection.entity_ids),
+                    self.drag_initial_positions,
+                    end_positions,
+                    snapshot=snapshot,
+                )
+                self.element.execute_command(cmd)
 
         # Clear all drag-related state
         self.dragged_point_id = None

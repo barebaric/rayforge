@@ -10,7 +10,6 @@ import {
   mdiHandCoinOutline,
   mdiGithub,
   mdiYoutube,
-  mdiVideoOutline,
   mdiPlayCircleOutline,
   mdiStarOutline,
   mdiFire,
@@ -18,7 +17,6 @@ import {
 import styles from '@site/src/pages/contributing.module.css';
 
 const wishlistTopics = [
-  'Ваше перше гравіювання',
   'Налаштування ротаційного модуля',
   'AI-генератор деталей',
   'Калібрування камери',
@@ -54,15 +52,6 @@ const quickActions = [
     to: '/docs/getting-started/installation',
     icon: mdiBookOpenPageVariantOutline,
     iconClass: styles.iconCyan,
-  },
-  {
-    title: 'Створюйте відеоуроки',
-    description:
-      'Навчіть світ Rayforge — готові уроки публікуються на головній сторінці.',
-    href: '#video-tutorials',
-    icon: mdiVideoOutline,
-    iconClass: styles.iconRed,
-    featured: true,
   },
 ];
 
@@ -299,22 +288,6 @@ export default function Contributing() {
                   </>
                 );
 
-                if (action.featured) {
-                  return (
-                    <a
-                      key={action.title}
-                      href={action.href}
-                      className={`${styles.card} ${styles.featuredCard}`}
-                    >
-                      {cardInner}
-                      <span className={styles.featuredCardCta}>
-                        <Icon path={mdiPlayCircleOutline} size={0.85} />
-                        <span>Потрапити на головну</span>
-                      </span>
-                    </a>
-                  );
-                }
-
                 if (action.to) {
                   return (
                     <Link key={action.title} to={action.to} className={styles.card}>
@@ -335,117 +308,6 @@ export default function Contributing() {
                   </a>
                 );
               })}
-            </div>
-          </div>
-        </section>
-
-        <section className={styles.section}>
-          <div className={styles.sectionInner}>
-            <h2 className={styles.sectionTitle}>Способи взяти участь</h2>
-            <p className={styles.lead}>
-              Ми вітаємо внески всіх видів. Кожен звіт про помилку, PR і
-              виправлення документації робить Rayforge кращим для всіх.
-            </p>
-
-            <div className={styles.twoCol}>
-              <div className={styles.block}>
-                <div className={styles.blockHeader}>
-                  <div className={`${styles.blockIcon} ${styles.iconCyan}`}>
-                    <Icon path={mdiBugOutline} size={0.95} />
-                  </div>
-                  <h3 className={styles.blockTitle}>Повідомити про помилки</h3>
-                </div>
-                <ol className={styles.steps}>
-                  <li className={styles.step}>
-                    Перевірте{' '}
-                    <a
-                      href="https://github.com/barebaric/rayforge/issues"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      наявні issues
-                    </a>{' '}
-                    щоб уникнути дублювання.
-                  </li>
-                  <li className={styles.step}>
-                    Створіть{' '}
-                    <a
-                      href="https://github.com/barebaric/rayforge/issues/new"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      нове issue
-                    </a>{' '}
-                    з чітким описом, кроками відтворення, очікуваною та
-                    фактичною поведінкою, інформацією про систему та знімками
-                    екрана, якщо застосовно.
-                  </li>
-                </ol>
-              </div>
-
-              <div className={styles.block}>
-                <div className={styles.blockHeader}>
-                  <div className={`${styles.blockIcon} ${styles.iconOrange}`}>
-                    <Icon path={mdiLightbulbOnOutline} size={0.95} />
-                  </div>
-                  <h3 className={styles.blockTitle}>Запропонувати функції</h3>
-                </div>
-                <ol className={styles.steps}>
-                  <li className={styles.step}>
-                    Перегляньте{' '}
-                    <a
-                      href="https://github.com/barebaric/rayforge/issues?q=is%3Aissue+label%3Aenhancement"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      наявні запити на функції
-                    </a>
-                    .
-                  </li>
-                  <li className={styles.step}>
-                    Відкрийте запит на функцію з описом ідеї, варіантом
-                    використання, перевагами та (за бажанням) можливим
-                    підходом.
-                  </li>
-                </ol>
-              </div>
-
-              <div className={styles.block}>
-                <div className={styles.blockHeader}>
-                  <div className={`${styles.blockIcon} ${styles.iconPurple}`}>
-                    <Icon path={mdiSourcePull} size={0.95} />
-                  </div>
-                  <h3 className={styles.blockTitle}>Надіслати код</h3>
-                </div>
-                <p className={styles.blockBody}>
-                  Детальну інформацію про надсилання кодових внесків можна
-                  знайти в посібнику{' '}
-                  <Link to="/docs/developer/getting-started">
-                    Документація для розробників – Початок роботи
-                  </Link>{' '}
-                  .
-                </p>
-              </div>
-
-              <div className={styles.block}>
-                <div className={styles.blockHeader}>
-                  <div className={`${styles.blockIcon} ${styles.iconCyan}`}>
-                    <Icon path={mdiBookOpenPageVariantOutline} size={0.95} />
-                  </div>
-                  <h3 className={styles.blockTitle}>Покращити документацію</h3>
-                </div>
-                <ul className={styles.bullets}>
-                  <li>Виправлення помилок або незрозумілих пояснень</li>
-                  <li>Додавання прикладів та знімків екрана</li>
-                  <li>Покращення структури</li>
-                  <li>Переклад іншими мовами</li>
-                </ul>
-                <p className={styles.blockBody}>
-                  Ви можете натиснути кнопку «Редагувати цю сторінку» на
-                  будь-якій сторінці документації, а потім надіслати PR так
-                  само, як і внески коду.
-                </p>
-              </div>
             </div>
           </div>
         </section>

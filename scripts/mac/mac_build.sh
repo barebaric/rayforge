@@ -252,9 +252,9 @@ PY
 
     if [ "$ICON_SOURCE" = "icns" ]; then
         if [ ! -f "rayforge.icns" ] || \
-           [ "website/static/images/icon-app.svg" -nt "rayforge.icns" ]; then
+           [ "rayforge/resources/icons/org.rayforge.rayforge.svg" -nt "rayforge.icns" ]; then
             echo "Generating macOS icon..."
-            bash scripts/mac/mac_create_icon.sh
+            "$VENV_PY" scripts/create_icon.py
         else
             echo "Icon is up to date, skipping generation."
         fi

@@ -10,7 +10,6 @@ import {
   mdiHandCoinOutline,
   mdiGithub,
   mdiYoutube,
-  mdiVideoOutline,
   mdiPlayCircleOutline,
   mdiStarOutline,
   mdiFire,
@@ -18,7 +17,6 @@ import {
 import styles from '@site/src/pages/contributing.module.css';
 
 const wishlistTopics = [
-  '第一次雕刻',
   '旋转轴雕刻设置',
   'AI 工件生成器',
   '相机校准',
@@ -54,14 +52,6 @@ const quickActions = [
     to: '/docs/getting-started/installation',
     icon: mdiBookOpenPageVariantOutline,
     iconClass: styles.iconCyan,
-  },
-  {
-    title: '制作视频教程',
-    description: '向世界传授 Rayforge——制作完成的教程会展示在首页。',
-    href: '#video-tutorials',
-    icon: mdiVideoOutline,
-    iconClass: styles.iconRed,
-    featured: true,
   },
 ];
 
@@ -293,22 +283,6 @@ export default function Contributing() {
                   </>
                 );
 
-                if (action.featured) {
-                  return (
-                    <a
-                      key={action.title}
-                      href={action.href}
-                      className={`${styles.card} ${styles.featuredCard}`}
-                    >
-                      {cardInner}
-                      <span className={styles.featuredCardCta}>
-                        <Icon path={mdiPlayCircleOutline} size={0.85} />
-                        <span>获得展示</span>
-                      </span>
-                    </a>
-                  );
-                }
-
                 if (action.to) {
                   return (
                     <Link key={action.title} to={action.to} className={styles.card}>
@@ -329,113 +303,6 @@ export default function Contributing() {
                   </a>
                 );
               })}
-            </div>
-          </div>
-        </section>
-
-        <section className={styles.section}>
-          <div className={styles.sectionInner}>
-            <h2 className={styles.sectionTitle}>贡献方式</h2>
-            <p className={styles.lead}>
-              我们欢迎各种形式的贡献。每一份错误报告、PR 和文档修正都会让
-              Rayforge 对所有人更好。
-            </p>
-
-            <div className={styles.twoCol}>
-              <div className={styles.block}>
-                <div className={styles.blockHeader}>
-                  <div className={`${styles.blockIcon} ${styles.iconCyan}`}>
-                    <Icon path={mdiBugOutline} size={0.95} />
-                  </div>
-                  <h3 className={styles.blockTitle}>报告错误</h3>
-                </div>
-                <ol className={styles.steps}>
-                  <li className={styles.step}>
-                    查看{' '}
-                    <a
-                      href="https://github.com/barebaric/rayforge/issues"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      现有问题
-                    </a>{' '}
-                    以避免重复。
-                  </li>
-                  <li className={styles.step}>
-                    创建一个{' '}
-                    <a
-                      href="https://github.com/barebaric/rayforge/issues/new"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      新问题
-                    </a>{' '}
-                    ，包含清晰的描述、重现步骤、预期行为与实际行为、系统信息，
-                    以及适用时的截图。
-                  </li>
-                </ol>
-              </div>
-
-              <div className={styles.block}>
-                <div className={styles.blockHeader}>
-                  <div className={`${styles.blockIcon} ${styles.iconOrange}`}>
-                    <Icon path={mdiLightbulbOnOutline} size={0.95} />
-                  </div>
-                  <h3 className={styles.blockTitle}>建议功能</h3>
-                </div>
-                <ol className={styles.steps}>
-                  <li className={styles.step}>
-                    查看{' '}
-                    <a
-                      href="https://github.com/barebaric/rayforge/issues?q=is%3Aissue+label%3Aenhancement"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      现有功能请求
-                    </a>
-                    。
-                  </li>
-                  <li className={styles.step}>
-                    打开一个功能请求，描述想法、使用场景、好处以及（可选）可能
-                    的实现方式。
-                  </li>
-                </ol>
-              </div>
-
-              <div className={styles.block}>
-                <div className={styles.blockHeader}>
-                  <div className={`${styles.blockIcon} ${styles.iconPurple}`}>
-                    <Icon path={mdiSourcePull} size={0.95} />
-                  </div>
-                  <h3 className={styles.blockTitle}>提交代码</h3>
-                </div>
-                <p className={styles.blockBody}>
-                  有关提交代码贡献的详细信息，请参阅{' '}
-                  <Link to="/docs/developer/getting-started">
-                    开发者文档 – 快速入门
-                  </Link>{' '}
-                  指南。
-                </p>
-              </div>
-
-              <div className={styles.block}>
-                <div className={styles.blockHeader}>
-                  <div className={`${styles.blockIcon} ${styles.iconCyan}`}>
-                    <Icon path={mdiBookOpenPageVariantOutline} size={0.95} />
-                  </div>
-                  <h3 className={styles.blockTitle}>改进文档</h3>
-                </div>
-                <ul className={styles.bullets}>
-                  <li>修正错别字或不清楚的解释</li>
-                  <li>添加示例和截图</li>
-                  <li>改进组织结构</li>
-                  <li>翻译成其他语言</li>
-                </ul>
-                <p className={styles.blockBody}>
-                  您可以点击任何文档页面上的“编辑此页”按钮，然后像提交代码
-                  贡献一样提交 PR。
-                </p>
-              </div>
             </div>
           </div>
         </section>

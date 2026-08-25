@@ -734,6 +734,16 @@ class Canvas(Gtk.DrawingArea):
             ok, start_x, start_y = self._drag_gesture.get_start_point()
             if not ok:
                 return
+            if not self._edit_dragging:
+                # Apply a threshold to distinguish clicks from real
+                # drags. This prevents sub-pixel jitter (e.g. between
+                # the two clicks of a double-click) from triggering
+                # tool drag logic.
+                dist_sq = offset_x**2 + offset_y**2
+                if dist_sq < (DRAG_THRESHOLD**2):
+                    return
+                self._edit_dragging = True
+                self.edit_drag_begin.send(self)
             current_x, current_y = start_x + offset_x, start_y + offset_y
             start_world_x, start_world_y = self._get_world_coords(
                 start_x, start_y
@@ -743,9 +753,6 @@ class Canvas(Gtk.DrawingArea):
             )
             world_dx = current_world_x - start_world_x
             world_dy = current_world_y - start_world_y
-            if not self._edit_dragging:
-                self._edit_dragging = True
-                self.edit_drag_begin.send(self)
             logger.debug(
                 f"on_mouse_drag: calling handle_edit_drag with "
                 f"dx={world_dx}, dy={world_dy}"

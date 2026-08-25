@@ -14,6 +14,7 @@ from .fill_tool import FillTool
 from .fillet_tool import FilletTool
 from .grid_tool import GridTool
 from .horizontal_constraint_tool import HorizontalConstraintTool
+from .mirror_tool import MirrorHorizontalTool, MirrorVerticalTool
 from .path_tool import PathTool
 from .perpendicular_constraint_tool import PerpendicularConstraintTool
 from .radius_constraint_tool import RadiusConstraintTool
@@ -46,6 +47,8 @@ TOOL_REGISTRY = {
     "fillet": FilletTool,
     "grid": GridTool,
     "horizontal": HorizontalConstraintTool,
+    "mirror_vertical": MirrorVerticalTool,
+    "mirror_horizontal": MirrorHorizontalTool,
     "path": PathTool,
     "perpendicular": PerpendicularConstraintTool,
     "radius": RadiusConstraintTool,
@@ -103,6 +106,8 @@ __all__ = [
     "FilletTool",
     "GridTool",
     "HorizontalConstraintTool",
+    "MirrorHorizontalTool",
+    "MirrorVerticalTool",
     "PathTool",
     "PerpendicularConstraintTool",
     "RadiusConstraintTool",

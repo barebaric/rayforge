@@ -41,6 +41,7 @@ class SketchTool(ABC):
     LABEL: str | None = None
     SHORTCUTS: ClassVar[list[str]] = []
     CURSOR_ICON: str | None = None
+    SHOW_IN_PIE: bool = True
 
     def __init__(self, element: SketchElement):
         self.element = element

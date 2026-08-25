@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-19 20:47+0200\n"
+"POT-Creation-Date: 2026-08-21 15:33+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -525,16 +525,16 @@ msgid ""
 msgstr "将闭合轮廓延伸至起点以外，使切口重叠"
 
 #: laser_essentials/steps/contour_step.py
-msgid "Brightness level (0.0-1.0) to define edges"
-msgstr "定义边缘的亮度级别 (0.0-1.0)"
-
-#: laser_essentials/steps/contour_step.py
 msgid "Rescan Content"
 msgstr "重新扫描内容"
 
 #: laser_essentials/steps/contour_step.py
 msgid "Ignore source geometry and re-trace within the workpiece"
 msgstr "忽略源几何图形并在工件内重新描摹"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Brightness level (0.0-1.0) to define edges"
+msgstr "定义边缘的亮度级别 (0.0-1.0)"
 
 #: laser_essentials/steps/material_test.py
 #: laser_essentials/commands/material_test_cmd.py
