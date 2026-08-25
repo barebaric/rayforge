@@ -29,7 +29,7 @@ from . import WizardPage, _makePreferencesGroup
 
 
 class CameraPage(WizardPage):
-    step_number = 10
+    step_number = 11
     title = _("Cameras")
     subtitle = _(
         "Optional. Configure any cameras you want to use for "

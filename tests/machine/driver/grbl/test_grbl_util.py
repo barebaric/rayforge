@@ -10,7 +10,9 @@ from rayforge.machine.driver.grbl.grbl_util import (
     _recalculate_positions,
     _split_status_line,
     error_code_to_device_error,
+    extract_device_name_from_output,
     gcode_to_p_number,
+    is_grbl_output,
     is_report_in_inches,
     parse_grbl_parser_state,
     parse_opt_info,
@@ -776,3 +778,70 @@ class TestSplitRealtimeCommands:
 
     def test_empty_input(self):
         assert split_realtime_commands([]) == ([], [])
+
+
+class TestIsGrblOutput:
+    """The driver-owned matcher used for serial device discovery."""
+
+    def test_matches_banner(self):
+        assert is_grbl_output(b"Grbl 1.1f ['$' for help]\r\n")
+
+    def test_matches_grblhal(self):
+        assert is_grbl_output(b"GrblHAL 2.0a\r\n")
+
+    def test_matches_status_report(self):
+        assert is_grbl_output(b"<Idle|MPos:0.000,0.000,0.000|FS:0,0>")
+
+    def test_matches_accumulated_noise(self):
+        assert is_grbl_output(b"\r\n\x00garbage\r\nok\r\nGrbl 1.1f\r\n")
+
+    def test_rejects_other_firmware(self):
+        assert not is_grbl_output(b"start\r\necho:Marlin 2.1.2\r\n")
+        assert not is_grbl_output(b"Smoothie ok\r\n")
+        assert not is_grbl_output(b"hello world\r\n")
+        assert not is_grbl_output(b"")
+
+
+# Real-world capture from a Sculpfun iCube: a Grbl fork whose boot
+# output never mentions Grbl — only $I-style build-info lines.
+SCULPFUN_ICUBE_BANNER = (
+    b"[VER:1.0.15,20240923:]\r\n"
+    b"[OPT:VMP,31,511]\r\n"
+    b"[MSG:mechine:Sculpfun iCube]\r\n"
+    b"[MSG:Mode=BT]\r\n"
+    b"[BT_VER:8.1.2,FSC-BT836B]\r\n"
+    b"Connection status: CONNECTED \r\n"
+)
+
+
+class TestIsGrblOutputBuildInfo:
+    def test_matches_build_info_only_banner(self):
+        assert is_grbl_output(SCULPFUN_ICUBE_BANNER)
+
+    def test_matches_single_msg_line(self):
+        assert is_grbl_output(b"[MSG:Caution: Unlocked]\r\n")
+
+    def test_matches_ver_line(self):
+        assert is_grbl_output(b"[VER:1.1h.ORTUR:]\r\n")
+
+    def test_rejects_square_brackets_from_other_firmware(self):
+        # Marlin and friends echo with 'echo:', not '[...]'.
+        assert not is_grbl_output(b"echo:busy: processing\r\nok\r\n")
+
+
+class TestExtractDeviceNameFromOutput:
+    def test_extracts_machine_name_from_msg(self):
+        assert (
+            extract_device_name_from_output(SCULPFUN_ICUBE_BANNER)
+            == "Sculpfun iCube"
+        )
+
+    def test_falls_back_to_ver_build_name(self):
+        data = b"[VER:1.1h.ORTUR:]\r\n[OPT:V,15,128]\r\n"
+        assert extract_device_name_from_output(data) == "ORTUR"
+
+    def test_returns_none_for_stock_grbl(self):
+        assert (
+            extract_device_name_from_output(b"Grbl 1.1f ['$' for help]\r\n")
+            is None
+        )

@@ -40,7 +40,7 @@ _TYPE_ROLLERS = 1
 
 
 class RotaryPage(WizardPage):
-    step_number = 9
+    step_number = 10
     title = _("Rotary Module")
     subtitle = _(
         "Optional. Set up a rotary attachment now or skip this "

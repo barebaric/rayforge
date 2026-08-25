@@ -37,7 +37,7 @@ def _is_spindle_head_dict(head: dict[str, Any] | None) -> bool:
 
 
 class HeadPage(WizardPage):
-    step_number = 8
+    step_number = 9
     title = _("Head")
     subtitle = _("What's attached to the gantry: a laser, a spindle, or both?")
 

@@ -34,6 +34,7 @@ from ...transport.grbl import (
     GrblSerialTransport,
 )
 from ...transport.serial import SerialPortPermissionError
+from ..discovery import DeviceRecognizer
 from ..driver import (
     Axis,
     DeviceConnectionError,
@@ -50,9 +51,11 @@ from .grbl_util import (
     alarm_code_to_device_error,
     detect_unit_system_from_settings,
     error_code_to_device_error,
+    extract_device_name_from_output,
     gcode_to_p_number,
     get_grbl_setting_varsets,
     grbl_setting_re,
+    is_grbl_output,
     is_report_in_inches,
     parse_grbl_parser_state,
     parse_opt_info,
@@ -87,6 +90,12 @@ class GrblSerialDriver(Driver):
     reports_granular_progress = True
     supports_probing = True
     supports_unit_detection = True
+    DISCOVERY = DeviceRecognizer(
+        label=lambda: _("GRBL device"),
+        firmware="grbl",
+        matches=is_grbl_output,
+        name=extract_device_name_from_output,
+    )
 
     # Buffer-stall timeout bounds for a single gcode line. The actual
     # timeout scales with the estimated duration of the command

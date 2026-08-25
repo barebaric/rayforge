@@ -1,6 +1,8 @@
 api_version: 1
 device:
   name: Acmer P3
+  vendor: Acmer
+  model: P3
   description: Dual-head diode laser engraver with 400x390mm work area
 machine:
   driver: GrblSerialDriver

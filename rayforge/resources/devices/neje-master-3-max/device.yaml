@@ -1,6 +1,8 @@
 api_version: 1
 device:
   name: NEJE Master 3 Max
+  vendor: NEJE
+  model: Master 3 Max
   description: 40W diode laser engraver with 460x460mm work area
 machine:
   driver: GrblSerialDriver

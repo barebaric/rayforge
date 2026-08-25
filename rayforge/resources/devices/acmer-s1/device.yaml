@@ -1,6 +1,8 @@
 api_version: 1
 device:
   name: Acmer S1
+  vendor: Acmer
+  model: S1
   description: Compact diode laser engraver with 130x130mm work area
 machine:
   driver: GrblSerialDriver

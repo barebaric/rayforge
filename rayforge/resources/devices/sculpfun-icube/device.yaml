@@ -1,6 +1,8 @@
 api_version: 1
 device:
   name: Sculpfun iCube
+  vendor: Sculpfun
+  model: iCube
   description: Compact diode laser engraver with 120x120mm work area
 machine:
   driver: GrblSerialDriver
