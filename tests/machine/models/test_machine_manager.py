@@ -61,6 +61,25 @@ class TestMachineManager:
         assert hasattr(manager, "machine_removed")
         assert hasattr(manager, "machine_updated")
 
+    def test_create_default_machine_marks_placeholder(
+        self, lite_context, tmp_path
+    ):
+        """Machines created by create_default_machine are placeholders."""
+        manager = MachineManager(tmp_path)
+        machine = manager.create_default_machine()
+
+        assert machine.placeholder is True
+        assert manager.get_placeholder_machines() == [machine]
+
+    def test_get_placeholder_machines_filters(self, lite_context, tmp_path):
+        """Only machines flagged as placeholder are returned."""
+        manager = MachineManager(tmp_path)
+        placeholder = manager.create_default_machine()
+        real = Machine(lite_context)
+        manager.add_machine(real)
+
+        assert manager.get_placeholder_machines() == [placeholder]
+
     def test_has_controller_does_not_lazily_create(
         self, lite_context, tmp_path
     ):

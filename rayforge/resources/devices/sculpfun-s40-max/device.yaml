@@ -1,6 +1,8 @@
 api_version: 1
 device:
   name: Sculpfun S40 MAX
+  vendor: Sculpfun
+  model: S40 MAX
   description: 48W diode laser cutter with 830x800mm work area and auto-focus
 machine:
   driver: GrblSerialDriver

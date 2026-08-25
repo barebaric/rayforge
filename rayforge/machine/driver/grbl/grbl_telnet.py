@@ -24,6 +24,10 @@ class GrblTelnetDriver(GrblSerialDriver):
 
     label = _("GRBL (Telnet)")
     subtitle = _("GRBL-compatible controller over a raw TCP/telnet connection")
+    # Serial-port discovery is inherited from GrblSerialDriver but
+    # makes no sense here: a telnet connection has no serial port and
+    # must not claim devices found on one.
+    DISCOVERY = None
 
     def __init__(self, context, machine):
         super().__init__(context, machine)

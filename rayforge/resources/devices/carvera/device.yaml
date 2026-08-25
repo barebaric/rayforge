@@ -1,6 +1,7 @@
 api_version: 1
 device:
   name: Carvera
+  vendor: Carvera
   description: Desktop CNC machine with Smoothieware controller and 210x170mm work area
 machine:
   driver: SmoothieDriver

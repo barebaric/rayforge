@@ -1,6 +1,8 @@
 api_version: 1
 device:
   name: Sculpfun C1
+  vendor: Sculpfun
+  model: C1
   description: Budget diode laser engraver with 150x130mm work area
 machine:
   driver: GrblSerialDriver

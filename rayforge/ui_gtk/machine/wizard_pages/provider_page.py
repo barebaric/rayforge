@@ -21,7 +21,7 @@ _DEFAULT_BASE_URL = "https://api.openai.com/v1"
 
 
 class AIProviderPage(WizardPage):
-    step_number = 5
+    step_number = 6
     title = _("AI Provider")
     subtitle = _(
         "Configure an AI provider so the wizard can pre-fill "

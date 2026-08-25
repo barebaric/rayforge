@@ -610,11 +610,18 @@ class DeviceProfile:
         )
 
     def create_machine(self, context: "RayforgeContext") -> Machine:
+        # Imported here: schema_migration transitively imports this
+        # module, so a module-level import would be circular.
+        from .schema_migration import CURRENT_SCHEMA_VERSION
+
         m = Machine(context)
         m.name = self.meta.name
         cfg = self.machine_config
         m.source_profile_id = self.id
         m.reviewed_profile_hash = self.content_hash()
+        # Fresh machines already carry current defaults; stamp them so
+        # they never trigger the schema-migration review dialog.
+        m.schema_version = CURRENT_SCHEMA_VERSION
 
         context.machine_mgr.add_machine(m)
 

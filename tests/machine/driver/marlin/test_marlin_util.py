@@ -6,6 +6,7 @@ from rayforge.machine.driver.marlin.marlin_util import (
     gcode_to_p_number,
     is_boot_message,
     is_error_response,
+    is_marlin_output,
     is_ok_response,
     parse_error_message,
     parse_m114_position,
@@ -361,3 +362,24 @@ class TestExtractMarlinDeviceName:
 
     def test_no_info_returns_unknown(self):
         assert extract_marlin_device_name([]) == ("Unknown Marlin Device")
+
+
+class TestIsMarlinOutput:
+    """The driver-owned matcher used for serial device discovery."""
+
+    def test_matches_start_banner(self):
+        assert is_marlin_output(b"start\r\n")
+
+    def test_matches_echo_lines(self):
+        assert is_marlin_output(b"start\r\necho:Marlin initialized\r\n")
+
+    def test_matches_marlin_name(self):
+        assert is_marlin_output(b"Marlin 2.1.2\r\n")
+
+    def test_matches_accumulated_noise(self):
+        assert is_marlin_output(b"\r\n\x00garbage\r\nstart\r\n")
+
+    def test_rejects_other_firmware(self):
+        assert not is_marlin_output(b"Grbl 1.1f ['$' for help]\r\n")
+        assert not is_marlin_output(b"hello world\r\n")
+        assert not is_marlin_output(b"")

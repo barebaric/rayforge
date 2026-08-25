@@ -9,6 +9,11 @@ from typing import TYPE_CHECKING, Optional
 import yaml
 
 from ...core.model import ModelLibrary
+from ..driver.discovery import (
+    GENERIC_TOKENS,
+    DeviceIdentity,
+    normalize_tokens,
+)
 from .lightburn_importer import (
     ImportSummary,
     convert_to_profile,
@@ -140,6 +145,56 @@ class DeviceProfileManager:
 
     def get_load_errors(self) -> dict[str, str]:
         return dict(self._load_errors)
+
+    def match_device(self, identity: DeviceIdentity) -> "DeviceProfile | None":
+        """
+        Match a discovered device's *identity* against the known
+        device profiles.
+
+        A profile matches when all tokens of its ``vendor`` (and, if
+        set, its ``model``) appear among the identity's tokens —
+        e.g. a vendor branded into the USB description or a
+        ``/dev/serial/by-id`` link name. Generic USB-serial chip
+        names (CH340, CP210x, ...) never count as a match. Profiles
+        whose model matched are preferred over model-less profiles
+        of the same vendor.
+
+        Returns the single unambiguous candidate, or ``None`` when
+        nothing matches or multiple profiles match equally well.
+        """
+        candidates: list[tuple[bool, DeviceProfile]] = []
+        for profile in self._profiles.values():
+            vendor = (profile.meta.vendor or "").strip()
+            if not vendor:
+                continue
+            vendor_tokens = normalize_tokens(vendor)
+            if not vendor_tokens or vendor_tokens <= GENERIC_TOKENS:
+                continue
+            if not vendor_tokens <= identity.tokens:
+                continue
+            model_matched = False
+            model = (profile.meta.model or "").strip()
+            if model:
+                model_tokens = normalize_tokens(model)
+                if model_tokens and not model_tokens <= identity.tokens:
+                    continue
+                model_matched = bool(model_tokens)
+            candidates.append((model_matched, profile))
+
+        # A profile whose model tokens matched is more specific than
+        # a model-less profile of the same vendor; the latter cannot
+        # win while any specific match exists.
+        if any(model_matched for model_matched, _ in candidates):
+            candidates = [entry for entry in candidates if entry[0]]
+
+        if len(candidates) == 1:
+            return candidates[0][1]
+        if len(candidates) > 1:
+            logger.debug(
+                "Device identity matched %d profiles ambiguously",
+                len(candidates),
+            )
+        return None
 
     def load_profile(self, path: Path) -> DeviceProfile:
         """

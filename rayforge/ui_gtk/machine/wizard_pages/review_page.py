@@ -101,7 +101,7 @@ def _prefill_name(profile: DeviceProfile) -> str:
 
 
 class ReviewPage(WizardPage):
-    step_number = 11
+    step_number = 12
     title = _("Review & Name")
     subtitle = _("Final name and sanity check before creating the machine.")
 

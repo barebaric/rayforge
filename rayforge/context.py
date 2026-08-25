@@ -226,6 +226,9 @@ class RayforgeContext:
             logger.info("Lazy loading machine manager")
             self._machine_mgr = MachineManager(MACHINE_DIR)
             if not self._machine_mgr.machines:
+                # Creates a marked placeholder machine so the app stays
+                # usable. On first launch the UI presents the setup
+                # wizard instead of silently keeping the placeholder.
                 self._machine_mgr.create_default_machine()
         return self._machine_mgr
 

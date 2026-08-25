@@ -211,12 +211,22 @@ class MachineManager:
     def get_machine_by_id(self, machine_id):
         return self.machines.get(machine_id)
 
+    def get_placeholder_machines(self) -> list["Machine"]:
+        """Returns all machines that are still untouched placeholders."""
+        return [m for m in self.machines.values() if m.placeholder]
+
     def get_machines(self) -> list["Machine"]:
         """Returns a list of all managed machines, sorted by name."""
         return sorted(self.machines.values(), key=lambda m: m.name)
 
     def create_default_machine(self):
         machine = Machine(get_context())
+        # Mark it so the UI can offer the setup wizard while this
+        # placeholder is still the active machine.
+        machine.placeholder = True
+        # Fresh machines already carry current defaults; stamp them so
+        # they never trigger the schema-migration review dialog.
+        machine.schema_version = CURRENT_SCHEMA_VERSION
         self.add_machine(machine)
         return machine
 

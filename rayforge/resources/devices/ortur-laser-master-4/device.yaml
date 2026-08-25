@@ -1,6 +1,8 @@
 api_version: 1
 device:
   name: Ortur Laser Master 4
+  vendor: Ortur
+  model: Laser Master 4
   description: Diode laser engraver with 400x400mm work area and high-speed capabilities
 machine:
   driver: GrblSerialDriver

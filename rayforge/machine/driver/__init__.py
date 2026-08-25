@@ -1,6 +1,13 @@
 import inspect
 from typing import cast
 
+from .discovery import (
+    DeviceIdentity,
+    DeviceRecognizer,
+    DiscoveredDevice,
+    find_all_devices,
+    normalize_tokens,
+)
 from .driver import (
     DRIVER_MATURITY_LABELS,
     Driver,
@@ -44,6 +51,9 @@ def register_driver(driver: type[Driver]):
 
 __all__ = [
     "DRIVER_MATURITY_LABELS",
+    "DeviceIdentity",
+    "DeviceRecognizer",
+    "DiscoveredDevice",
     "Driver",
     "DriverMaturity",
     "GrblNetworkDriver",
@@ -56,4 +66,6 @@ __all__ = [
     "PWMParams",
     "RuidaDriver",
     "SmoothieDriver",
+    "find_all_devices",
+    "normalize_tokens",
 ]

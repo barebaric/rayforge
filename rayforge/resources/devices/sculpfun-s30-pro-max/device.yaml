@@ -1,6 +1,8 @@
 api_version: 1
 device:
   name: Sculpfun S30 Pro Max
+  vendor: Sculpfun
+  model: S30 Pro Max
   description: 20W diode laser engraver with 370x360mm work area and automatic
     air-assist
 machine:
