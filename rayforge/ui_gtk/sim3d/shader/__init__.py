@@ -8,7 +8,6 @@ from .image_shader import ImageShader
 from .simple_shader import LineDepthBiasShader, SimpleShader
 from .stock_shader import StockShader
 from .text_shader import TextShader
-from .texture_shader import TextureShader
 
 __all__ = (
     "BackgroundShader",
@@ -18,5 +17,4 @@ __all__ = (
     "SimpleShader",
     "StockShader",
     "TextShader",
-    "TextureShader",
 )

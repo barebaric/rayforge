@@ -94,24 +94,15 @@ Para medir el tamaño de tu punto:
 3. Usa el promedio de múltiples mediciones
 :::
 
-#### Color de Corte
+#### Color
 
-El color usado para mostrar operaciones de corte para este láser en el lienzo y
-la vista previa 3D. Esto te ayuda a distinguir visualmente qué láser realizará
-cada operación de corte cuando trabajas con múltiples cabezales láser.
+El color usado para mostrar las operaciones de este láser (cortes y grabado) en
+el lienzo y la vista previa 3D. Esto te ayuda a distinguir visualmente qué
+láser realizará cada operación cuando trabajas con múltiples cabezales láser.
 
 - Haz clic en la muestra de color para abrir un selector de color
 - Elige un color que contraste bien con la vista previa de tu material
 - Los colores predeterminados se asignan automáticamente
-
-#### Color de Raster
-
-El color usado para mostrar operaciones de raster/grabado para este láser en
-el lienzo y la vista previa 3D.
-
-- Haz clic en la muestra de color para abrir un selector de color
-- Útil para diferenciar operaciones de raster de cortes
-- Cada láser puede tener su propio color de raster distintivo
 
 :::tip Flujos de Trabajo Multi-Láser
 Al usar múltiples cabezales láser, asignar diferentes colores a cada láser

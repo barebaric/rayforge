@@ -19,6 +19,7 @@ from raygeo.ops.part import Part
 from raygeo.ops.state import CoolantMode
 
 from ..machine.models.head import Head
+from ..machine.models.laser import LaserHead
 from ..machine.models.spindle import SpindleHead
 from ..pipeline.transformer.registry import transformer_registry
 from ..shared.units.formatter import format_value
@@ -427,6 +428,51 @@ class Step(DocItem, ABC):
         head = self.get_selected_head(machine)
         payload.head_uid = head.uid if head else None
         payload.power = 0.0
+        self._populate_laser_physics(payload, head)
+
+    @staticmethod
+    def _populate_laser_physics(payload, head) -> None:
+        """Stamp the laser physics fields the burn fluence model needs.
+
+        Reads wavelength, optical wattage, spot size, and scan speed
+        from the selected head when it is a ``LaserHead``. The cut
+        speed is the step's ``cut_speed`` (mm/min → mm/s). Unconfigured
+        heads leave the 0-sentinels; the raygeo converter falls back
+        to neutral defaults so the burn still renders.
+        """
+        if not isinstance(head, LaserHead):
+            return
+        payload.wavelength_nm = head.effective_wavelength_nm()
+        payload.max_power_watts = head.effective_max_power_watts()
+        spot_x, spot_y = LaserHead.get_spot_size(head)
+        payload.spot_size_mm = (spot_x, spot_y)
+        # cut_speed is mm/min; the fluence model wants mm/s.
+        payload.scan_speed_mm_per_s = max(0.0, payload.cut_speed / 60.0)
+        if payload.scan_speed_mm_per_s <= 0.0:
+            # Fallback so a zero cut speed does not zero the fluence.
+            payload.scan_speed_mm_per_s = 100.0
+
+    def get_laser_cache_params(self, machine) -> dict[str, Any]:
+        """JSON-serialisable effective laser physics for cache tokens.
+
+        The burn fluence model consumes the selected head's wavelength,
+        optical wattage, and spot size (plus this step's cut speed via
+        the scan-speed conversion). Folding them into the compute token
+        ensures a machine-power/wavelength/spot change invalidates the
+        raster/vector compute cache — otherwise the pipeline would keep
+        returning the pre-change burn until some unrelated edit bumps
+        the token. Returns ``{}`` for non-laser or headless steps.
+        """
+        head = self.get_selected_head(machine)
+        if not isinstance(head, LaserHead):
+            return {}
+        spot_x, spot_y = LaserHead.get_spot_size(head)
+        return {
+            "wavelength_nm": head.effective_wavelength_nm(),
+            "max_power_watts": head.effective_max_power_watts(),
+            "spot_size_mm": [spot_x, spot_y],
+            "cut_speed_mm_min": self.cut_speed,
+        }
 
     def get_cache_params(self) -> dict[str, Any]:
         """JSON-serialisable step attributes that influence compute output.

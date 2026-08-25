@@ -550,8 +550,8 @@ class LaserHeadDetailWidget(DebounceMixin):
         self.cut_color_button = Gtk.ColorButton()
         self.cut_color_button.set_size_request(32, 32)
         self.cut_color_row = Adw.ActionRow(
-            title=_("Cut Color"),
-            subtitle=_("Color for cutting operations"),
+            title=_("Color"),
+            subtitle=_("Color used for operations of this laser"),
             activatable_widget=self.cut_color_button,
         )
         self.cut_color_row.add_suffix(self.cut_color_button)
@@ -559,19 +559,6 @@ class LaserHeadDetailWidget(DebounceMixin):
             "color-set", self._on_cut_color_changed
         )
         self.properties_group.add(self.cut_color_row)
-
-        self.raster_color_button = Gtk.ColorButton()
-        self.raster_color_button.set_size_request(32, 32)
-        self.raster_color_row = Adw.ActionRow(
-            title=_("Raster Color"),
-            subtitle=_("Color for engraving/raster operations"),
-            activatable_widget=self.raster_color_button,
-        )
-        self.raster_color_row.add_suffix(self.raster_color_button)
-        self._handler_ids["raster_color"] = self.raster_color_button.connect(
-            "color-set", self._on_raster_color_changed
-        )
-        self.properties_group.add(self.raster_color_row)
 
         self.focal_distance_row = LengthSpinRow(
             _("Focal Distance"),
@@ -715,9 +702,6 @@ class LaserHeadDetailWidget(DebounceMixin):
         self.name_row.handler_block(self._handler_ids["name"])
         self.laser_type_row.handler_block(self._handler_ids["laser_type"])
         self.cut_color_button.handler_block(self._handler_ids["cut_color"])
-        self.raster_color_button.handler_block(
-            self._handler_ids["raster_color"]
-        )
 
         self.name_row.set_text(head.name)
         self.tool_number_row.set_value(head.tool_number)
@@ -727,7 +711,6 @@ class LaserHeadDetailWidget(DebounceMixin):
         self.spot_size_x_row.set_value_in_base_units(spot_x)
         self.spot_size_y_row.set_value_in_base_units(spot_y)
         self._set_color_button(self.cut_color_button, head.cut_color)
-        self._set_color_button(self.raster_color_button, head.raster_color)
         self.focal_distance_row.set_value_in_base_units(head.focal_distance)
         self.frame_power_row.set_value(head.frame_power_percent * 100)
         self.frame_speed_row.set_value_in_base_units(head.frame_speed)
@@ -753,9 +736,6 @@ class LaserHeadDetailWidget(DebounceMixin):
         self.name_row.handler_unblock(self._handler_ids["name"])
         self.laser_type_row.handler_unblock(self._handler_ids["laser_type"])
         self.cut_color_button.handler_unblock(self._handler_ids["cut_color"])
-        self.raster_color_button.handler_unblock(
-            self._handler_ids["raster_color"]
-        )
 
     def _on_name_changed(self, entry_row):
         """Update the name of the selected laser."""
@@ -806,14 +786,9 @@ class LaserHeadDetailWidget(DebounceMixin):
         return f"#{r:02x}{g:02x}{b:02x}"
 
     def _on_cut_color_changed(self, button: Gtk.ColorButton):
-        """Update the cut color of the selected laser."""
+        """Update the color of the selected laser."""
         if self._head:
             self._head.set_cut_color(self._get_hex_color(button))
-
-    def _on_raster_color_changed(self, button: Gtk.ColorButton):
-        """Update the raster color of the selected laser."""
-        if self._head:
-            self._head.set_raster_color(self._get_hex_color(button))
 
     def _on_frame_speed_changed(self, spinrow):
         """Update the frame speed of the selected laser."""

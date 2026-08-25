@@ -32,7 +32,6 @@ class VisibilityOverlay(Gtk.Box):
         show_models=False,
         show_grid=False,
         show_tabs=False,
-        show_ops_underlay=False,
         show_stock=False,
         show_workpiece_image=False,
         show_nogo_zones=True,
@@ -90,6 +89,7 @@ class VisibilityOverlay(Gtk.Box):
             )
             self.append(self.workpiece_image_button)
 
+        self.stock_button: Gtk.ToggleButton | None = None
         if show_stock:
             self.stock_button = Gtk.ToggleButton()
             self.stock_button.set_child(get_icon("stock-symbolic"))
@@ -154,20 +154,6 @@ class VisibilityOverlay(Gtk.Box):
             self.grid_button.set_action_name("win.show_grid")
             self.append(self.grid_button)
 
-        self.underlay_button = None
-        if show_ops_underlay:
-            self.underlay_button = Gtk.ToggleButton()
-            self.underlay_button.set_child(get_icon("ops-underlay-symbolic"))
-            self.underlay_button.set_active(True)
-            self.underlay_button.set_tooltip_text(
-                self._format_tooltip(
-                    _("Toggle ops underlay visibility"),
-                    "win.show_ops_underlay",
-                )
-            )
-            self.underlay_button.set_action_name("win.show_ops_underlay")
-            self.append(self.underlay_button)
-
         self.travel_button = Gtk.ToggleButton()
         self.travel_button.set_child(get_icon("travel-path-symbolic"))
         self.travel_button.set_active(False)
@@ -197,6 +183,16 @@ class VisibilityOverlay(Gtk.Box):
 
     def set_nogo_visible(self, visible: bool):
         self.nogo_button.set_visible(visible)
+
+    def set_stock_present(self, present: bool) -> None:
+        """Shows the stock toggle only when a stock exists in the doc.
+
+        Engraving is visualized solely by the burned-in stock; there is
+        no floating ops underlay to replace, so the stock toggle is
+        simply hidden when no stock exists.
+        """
+        if self.stock_button is not None:
+            self.stock_button.set_visible(present)
 
     def _format_tooltip(self, text, action_name):
         if action_name in self._shortcuts:

@@ -19,15 +19,16 @@ from blinker import Signal
 from raygeo.ops import Ops
 
 from ...context import RayforgeContext
+from ...core.optical import material_burn_response
 from ...core.workpiece import WorkPiece
 from ...machine.kinematic_mapping import (
     KinematicMapping,
     build_layer_assembly,
     resolve_layer_rotary,
 )
-from ...machine.models.laser import LaserHead
 from ...pipeline.artifact.handle import BaseArtifactHandle
 from ...pipeline.artifact.job import JobArtifact
+from ...pipeline.artifact.material_state import MaterialStateArtifact
 from ...shared.tasker import Task, task_mgr
 from ...simulator.op_player import OpPlayer, build_snapshots
 from ...simulator.scene3d import (
@@ -211,6 +212,9 @@ class ScenePresenter:
         self._workpiece_image_task: Task | None = None
         self._workpiece_image_generation = 0
         self._workpiece_images: list[WorkpieceImage] = []
+        # Folded material state per stock uid (burn surface map data),
+        # updated from Pipeline.material_state_ready.
+        self._material_states: dict[str, dict] = {}
 
     def connect(self):
         """Subscribe to the pipeline and upload events that drive the scene.
@@ -228,6 +232,14 @@ class ScenePresenter:
             pipeline.job_generation_finished.connect(
                 self._on_job_generation_finished
             )
+            pipeline.material_state_ready.connect(
+                self._on_material_state_ready
+            )
+        # The pipeline may have already produced material states before
+        # this presenter connected (the 3D canvas realizes after the
+        # job settles); pick those up so they are not lost.
+        if self._refresh_material_states():
+            self.update_scene_from_doc()
 
     def disconnect(self):
         """Unsubscribe from pipeline and upload events."""
@@ -239,6 +251,9 @@ class ScenePresenter:
             )
             pipeline.job_generation_finished.disconnect(
                 self._on_job_generation_finished
+            )
+            pipeline.material_state_ready.disconnect(
+                self._on_material_state_ready
             )
 
     @property
@@ -319,13 +334,6 @@ class ScenePresenter:
         if self.visibility.show_models == visible:
             return
         self.visibility.show_models = visible
-        self._request_render()
-
-    def set_show_ops_underlay(self, visible: bool) -> None:
-        """Sets the ops-underlay visibility and requests a re-render."""
-        if self.visibility.show_ops_underlay == visible:
-            return
-        self.visibility.show_ops_underlay = visible
         self._request_render()
 
     def set_show_stock(self, visible: bool) -> None:
@@ -413,6 +421,118 @@ class ScenePresenter:
         self._build_op_player_async()
         if self._compiled_artifact and self._op_player:
             self._scene.extract_playback_offsets(self._compiled_artifact)
+
+    @staticmethod
+    def _add_material_optical(spec: dict, material) -> None:
+        """Stamp the material's resolved optical fields onto a stock spec.
+
+        Adds the absorption dict and burn-response char curve parameters
+        so the stock compiler/renderer can wire them into the shader's
+        physical burn block. The wavelength is read from the burn entry
+        at compile time (it travels with the surface map); here we only
+        resolve the material-side response.
+        """
+        appearance = getattr(material, "appearance", None)
+        absorption = None
+        if appearance is not None:
+            absorption = appearance.extra.get("absorption")
+        if isinstance(absorption, dict):
+            spec["absorption"] = absorption
+        spec["burn_response"] = material_burn_response(material)
+
+    def _store_material_state(
+        self, stock_uid: str, stock_name: str, handle
+    ) -> bool:
+        """Resolve a material-state artifact handle into the burn dict.
+
+        Returns ``True`` if ``_material_states`` changed (i.e. a scene
+        update should be triggered), ``False`` otherwise (duplicate or
+        no change).
+        """
+        try:
+            artifact = self._context.artifact_store.get(handle)
+        except RuntimeError:
+            logger.exception("Failed to resolve material state artifact")
+            return False
+        if not isinstance(artifact, MaterialStateArtifact):
+            return False
+        state = artifact.material_state
+        if state.surface_map is not None and state.grid is not None:
+            grid = state.grid
+            burn = {
+                "handle_key": handle.key,
+                "surface_map": state.surface_map,
+                "origin_mm": tuple(grid.origin_mm),
+                "px_per_mm": tuple(grid.px_per_mm),
+                "size_px": tuple(grid.size_px),
+                "wavelength_nm": float(state.wavelength_nm),
+                "max_power_watts": float(state.max_power_watts),
+            }
+            previous = self._material_states.get(stock_uid)
+            if previous is not None and previous["handle_key"] == handle.key:
+                return False
+            self._material_states[stock_uid] = burn
+            logger.info(
+                "Burn surface map ready for stock %r (grid %sx%s px)",
+                stock_name,
+                grid.size_px[0],
+                grid.size_px[1],
+            )
+            return True
+        if stock_uid in self._material_states:
+            self._material_states.pop(stock_uid, None)
+            return True
+        return False
+
+    def _refresh_material_states(self) -> bool:
+        """Pick up any material states the Pipeline already computed.
+
+        The pipeline can finish (and deliver a fold's material state)
+        before this presenter connects (the 3D canvas realizes after
+        the job settles). Relying on the live signal alone would miss
+        that state, so re-read the Pipeline's stored handles and drop
+        any that are no longer present. Returns whether anything
+        changed.
+        """
+        pipeline = self._doc_editor.pipeline
+        if pipeline is None:
+            return False
+        handles = getattr(pipeline, "_material_state_handles", {}) or {}
+        changed = False
+        seen: set[str] = set()
+        hosts: list[tuple[str, str]] = [
+            (item.uid, item.name) for item in self.doc.stock_items
+        ]
+        hosts.extend(
+            (layer.uid, layer.name)
+            for layer in self.doc.layers
+            if layer.rotary_enabled
+        )
+        for uid, name in hosts:
+            if uid not in handles:
+                continue
+            seen.add(uid)
+            if self._store_material_state(uid, name, handles[uid]):
+                changed = True
+        for uid in list(self._material_states):
+            if uid not in seen:
+                self._material_states.pop(uid, None)
+                changed = True
+        return changed
+
+    def _on_material_state_ready(self, sender, **kwargs):
+        """Store a material host's folded burn surface map and recompile.
+
+        The fold emits during the pipeline run; the stock specs pick
+        the burn data up on the next scene compile, which reuses the
+        current job handle when the pipeline is still running.
+        """
+        item = kwargs.get("item")
+        handle = kwargs.get("handle")
+        if item is None or handle is None:
+            return
+        if self._store_material_state(item.uid, item.name, handle):
+            self.update_scene_from_doc()
 
     def _build_op_player_async(self):
         ops = self._get_ops_for_playback()
@@ -567,8 +687,6 @@ class ScenePresenter:
             for renderer in self._scene.ring_renderers:
                 renderer.clear()
                 renderer.ring_offsets = np.array([], dtype=np.int32)
-            if self._scene.texture_renderer:
-                self._scene.texture_renderer.clear()
             self._request_render()
             return
 
@@ -651,45 +769,32 @@ class ScenePresenter:
                 continue
 
             material = item.material
-            if material is not None:
-                appearance = material.appearance
-                texture_path = material.get_texture_path()
-            else:
-                appearance = None
-                texture_path = None
+            if material is None:
+                material = self._context.material_mgr.get_default_material()
+            appearance = material.appearance
+            texture_path = material.get_texture_path()
 
-            specs.append(
-                {
-                    "name": item.name,
-                    "thickness": (
-                        float(thickness) if thickness is not None else None
-                    ),
-                    "outers": outers,
-                    "holes": holes,
-                    "texture_path": (
-                        str(texture_path) if texture_path is not None else None
-                    ),
-                    "texture_size_mm": float(
-                        appearance.texture_size_mm
-                        if appearance is not None
-                        else 300.0
-                    ),
-                    "roughness": float(
-                        appearance.roughness if appearance is not None else 0.8
-                    ),
-                    "metallic": float(
-                        appearance.metallic if appearance is not None else 0.0
-                    ),
-                    "color": appearance.color
-                    if appearance is not None
-                    else None,
-                    # Tinting is a material-level feature: the stock's color
-                    # only applies when the material is tintable.
-                    "tint": item.get_effective_color()
-                    if (appearance is not None and appearance.tintable)
-                    else None,
-                }
-            )
+            spec = {
+                "name": item.name,
+                "thickness": (
+                    float(thickness) if thickness is not None else None
+                ),
+                "outers": outers,
+                "holes": holes,
+                "texture_path": (
+                    str(texture_path) if texture_path is not None else None
+                ),
+                "texture_size_mm": float(appearance.texture_size_mm),
+                "roughness": float(appearance.roughness),
+                "metallic": float(appearance.metallic),
+                "color": appearance.color,
+                "tint": item.get_effective_color(),
+            }
+            self._add_material_optical(spec, material)
+            burn = self._material_states.get(item.uid)
+            if burn is not None:
+                spec["burn"] = dict(burn)
+            specs.append(spec)
 
         if machine is not None:
             specs.extend(self._build_rotary_stock_specs(viewport, machine))
@@ -698,11 +803,10 @@ class ScenePresenter:
     def _build_rotary_stock_specs(
         self, viewport: "ViewportConfig", machine
     ) -> list[dict]:
-        """Collect rotary layers with a stock material into specs.
+        """Collect rotary layers into stock specs.
 
-        The axial length matches the wireframe cylinder: the work area
-        width capped by the default rotary module's maximum workpiece
-        length.
+        The axial length matches the work area width capped by the
+        default rotary module's maximum workpiece length.
         """
         specs: list[dict] = []
         max_length = viewport.width_mm
@@ -717,24 +821,27 @@ class ScenePresenter:
                 continue
             material = layer.stock_material
             if material is None:
-                continue
+                material = self._context.material_mgr.get_default_material()
             appearance = material.appearance
             texture_path = material.get_texture_path()
-            specs.append(
-                {
-                    "name": _("{layer} stock").format(layer=layer.name),
-                    "kind": "rotary",
-                    "diameter": float(layer.rotary_diameter),
-                    "length": float(max_length),
-                    "texture_path": (
-                        str(texture_path) if texture_path is not None else None
-                    ),
-                    "texture_size_mm": float(appearance.texture_size_mm),
-                    "roughness": float(appearance.roughness),
-                    "metallic": float(appearance.metallic),
-                    "color": appearance.color,
-                }
-            )
+            spec = {
+                "name": _("{layer} stock").format(layer=layer.name),
+                "kind": "rotary",
+                "diameter": float(layer.rotary_diameter),
+                "length": float(max_length),
+                "texture_path": (
+                    str(texture_path) if texture_path is not None else None
+                ),
+                "texture_size_mm": float(appearance.texture_size_mm),
+                "roughness": float(appearance.roughness),
+                "metallic": float(appearance.metallic),
+                "color": appearance.color,
+            }
+            self._add_material_optical(spec, material)
+            burn = self._material_states.get(layer.uid)
+            if burn is not None:
+                spec["burn"] = dict(burn)
+            specs.append(spec)
         return specs
 
     def update_scene_from_doc(self):
@@ -744,11 +851,14 @@ class ScenePresenter:
         """
         if not self._get_gl_initialized():
             return
-        if not self._scene.texture_renderer:
-            return
 
         t_update_start = time.perf_counter()
         logger.debug("Canvas3D: Updating scene from document.")
+
+        # Folded material states may arrive after the last update (or
+        # before this presenter connected); re-read the Pipeline's
+        # stored states so the stock specs always carry the burn.
+        self._refresh_material_states()
 
         # Theme/color updates only need to happen once per theme change
         if self._theme_resolver.theme_is_dirty:
@@ -785,10 +895,15 @@ class ScenePresenter:
 
         if machine:
             if has_z_axis:
+                # Has-Z machines render content at its authored Z
+                # (plus WCS Z), faithful to the coordinates.
                 world_to_visual = self._compute_world_to_visual(
                     viewport, machine
                 )
             else:
+                # No-Z machines author everything at z=0 (the stock
+                # top in the toolpath convention), so lift content
+                # onto the stock top in visual space.
                 wcs = viewport.wcs_offset_mm
                 content_z = wcs[2] + stock_top_z
                 world_to_visual = self._compute_world_to_visual(
@@ -809,13 +924,6 @@ class ScenePresenter:
         stock_world_to_visual = self._compute_world_to_visual(
             viewport, machine, z_offset=0.0
         )
-
-        laser_dot_widths_mm: dict[str, float] = {}
-        if machine:
-            for head in machine.heads:
-                if isinstance(head, LaserHead):
-                    spot_x, _spot_y = LaserHead.get_spot_size(head)
-                    laser_dot_widths_mm[head.uid] = spot_x
 
         layer_configs: dict[str, LayerRenderConfig] = {}
         for layer in self.doc.layers:
@@ -855,7 +963,6 @@ class ScenePresenter:
             stock_top_z=stock_top_z,
             has_z_axis=has_z_axis,
             layer_configs=layer_configs,
-            laser_dot_widths_mm=laser_dot_widths_mm,
             stock_specs=stock_specs,
         )
 

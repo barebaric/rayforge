@@ -24,7 +24,10 @@ category:
   uk: Органічний
   zh_CN: 有机材料
 appearance:
-  color: "#FFF8DC"
+  absorption:
+    blue: 0.85
+    ir: 0.4
+    co2: 0.9
   pattern: solid
   texture: foam.webp
   texture_size_mm: 300

@@ -94,25 +94,16 @@ Pour mesurer la taille de ton spot :
 3. Utilise la moyenne de plusieurs mesures
 :::
 
-#### Couleur de Coupe
+#### Couleur
 
-La couleur utilisée pour afficher les opérations de coupe pour ce laser dans
-le canevas et la prévisualisation 3D. Cela t'aide à distinguer visuellement
-quel laser effectuera chaque opération de coupe lorsque tu travailles avec
+La couleur utilisée pour afficher les opérations de ce laser (coupes et
+gravure) dans le canevas et la prévisualisation 3D. Cela t'aide à distinguer
+visuellement quel laser effectuera chaque opération lorsque tu travailles avec
 plusieurs têtes laser.
 
 - Clique sur l'échantillon de couleur pour ouvrir un sélecteur de couleur
 - Choisis une couleur qui contraste bien avec l'aperçu de ton matériau
 - Les couleurs par défaut sont attribuées automatiquement
-
-#### Couleur de Raster
-
-La couleur utilisée pour afficher les opérations de raster/gravure pour ce
-laser dans le canevas et la prévisualisation 3D.
-
-- Clique sur l'échantillon de couleur pour ouvrir un sélecteur de couleur
-- Utile pour différencier les opérations de raster des coupes
-- Chaque laser peut avoir sa propre couleur de raster distincte
 
 :::tip Workflows Multi-Laser
 Lors de l'utilisation de plusieurs têtes laser, l'attribution de couleurs

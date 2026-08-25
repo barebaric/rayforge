@@ -24,7 +24,10 @@ category:
   uk: Деревина
   zh_CN: 木材
 appearance:
-  color: "#F5DEB3"
+  absorption:
+    blue: 0.7
+    ir: 0.25
+    co2: 0.9
   pattern: wood_grain
   texture: maple.webp
   texture_size_mm: 300

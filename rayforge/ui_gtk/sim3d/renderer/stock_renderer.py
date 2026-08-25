@@ -9,7 +9,7 @@ texture objects instead of re-uploading multi-megabyte WebPs.
 """
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
 
@@ -25,7 +25,7 @@ from .base import BaseRenderer
 
 logger = logging.getLogger(__name__)
 
-# Size of the split-sum BRDF integration LUT (32x32 per the plan).
+# Size of the split-sum BRDF integration LUT.
 BRDF_LUT_SIZE = 32
 
 # Decoded material textures to keep in the CPU-side cache.
@@ -60,6 +60,17 @@ class PreparedStockLayer:
     texture_key: tuple[str, int, int] | None = None
     texture_pixels: np.ndarray | None = None
     is_rotary: bool = False
+    # Burn-in surface map (F32 fluence, world-y-up rows) decoded for
+    # GL upload, its size, and the per-vertex coordinates into it.
+    power_pixels: np.ndarray | None = None
+    power_size: tuple[int, int] | None = None
+    power_uvs: np.ndarray = field(
+        default_factory=lambda: np.empty((0, 2), dtype=np.float32)
+    )
+    # Resolved absorption coefficient (0-1) for the shader's burn block.
+    absorption: float = 1.0
+    # Resolved char-curve parameters for the shader's burn block.
+    burn_response: dict = field(default_factory=dict)
 
 
 @lru_cache(maxsize=MAX_CACHED_DECODES)
@@ -103,7 +114,7 @@ def _texture_key(
 
 
 def prepare_stock_layer(layer: StockLayer) -> PreparedStockLayer:
-    """Expands indices and decodes the texture without touching GL.
+    """Expands indices and decodes the textures without touching GL.
 
     Runs in a worker thread; the result is uploaded with GL calls on
     the main thread.
@@ -112,6 +123,11 @@ def prepare_stock_layer(layer: StockLayer) -> PreparedStockLayer:
     positions = layer.positions.reshape(-1, 3)[indices]
     normals = layer.normals.reshape(-1, 3)[indices]
     uvs = layer.uvs.reshape(-1, 2)[indices]
+    power_uvs = (
+        layer.power_uvs.reshape(-1, 2)[indices]
+        if layer.power_uvs.size
+        else np.empty((0, 2), dtype=np.float32)
+    )
 
     key = _texture_key(layer.texture_path)
     pixels: np.ndarray | None = None
@@ -121,6 +137,14 @@ def prepare_stock_layer(layer: StockLayer) -> PreparedStockLayer:
             _width, _height, pixels = decoded
         # Tinting happens on the GPU (per-instance shader uniform); the
         # decoded texture is shared and cached unchanged.
+
+    power_pixels: np.ndarray | None = None
+    power_size: tuple[int, int] | None = None
+    if layer.power_texture is not None and layer.power_size_px is not None:
+        decoded_burn = layer.power_texture.to_numpy()
+        if decoded_burn is not None and decoded_burn.size:
+            power_pixels = np.ascontiguousarray(decoded_burn)
+            power_size = layer.power_size_px
 
     return PreparedStockLayer(
         positions=np.ascontiguousarray(positions, dtype=np.float32),
@@ -134,6 +158,11 @@ def prepare_stock_layer(layer: StockLayer) -> PreparedStockLayer:
         texture_key=key if pixels is not None else None,
         texture_pixels=pixels,
         is_rotary=layer.is_rotary,
+        power_pixels=power_pixels,
+        power_size=power_size,
+        power_uvs=np.ascontiguousarray(power_uvs, dtype=np.float32),
+        absorption=getattr(layer, "absorption", 1.0),
+        burn_response=getattr(layer, "burn_response", {}),
     )
 
 
@@ -244,6 +273,79 @@ class StockRenderer(BaseRenderer):
         GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
         return texture_id
 
+    @staticmethod
+    def _power_mipmap_levels(data: np.ndarray) -> list[np.ndarray]:
+        """Builds a max-reduction mip pyramid of a fluence map.
+
+        Down-sampling with the maximum (rather than the average) keeps
+        the scanline structure intact at every zoom level: when the
+        burn texture is minified (the stock grid is far denser than the
+        screen), each mip texel covers a block of fluence samples and
+        reports the hottest one, so engrave rows stay visible instead
+        of aliasing into flickering single pixels.
+        """
+        levels = [data]
+        level = data
+        while max(level.shape) > 1:
+            h, w = level.shape
+            out = level
+            if h > 1:
+                out = out[: 2 * (h // 2)].reshape(h // 2, 2, w).max(axis=1)
+            if w > 1:
+                out = (
+                    out[:, : 2 * (w // 2)]
+                    .reshape(out.shape[0], w // 2, 2)
+                    .max(axis=2)
+                )
+            levels.append(out)
+            level = out
+        return levels
+
+    def _create_power_texture(self, pixels: np.ndarray) -> int:
+        """Uploads an F32 fluence burn map with max-reduced mipmaps.
+
+        The buffer is world-y-up (row 0 = min y) and the mesh's
+        ``power_uvs`` v grows with y, so rows upload as-is.  The
+        internal format is ``GL_R32F`` to carry the fluence's wide
+        dynamic range (J/cm²) without the 0–255 quantization of the
+        old R8 PWM path.          Mipmaps are max-reduced (see
+        :meth:`_power_mipmap_levels`) so minifying the dense stock grid
+        keeps the scanline burn crisp instead of aliased.
+        """
+        texture_id = GL.glGenTextures(1)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, texture_id)
+        GL.glTexParameteri(
+            GL.GL_TEXTURE_2D,
+            GL.GL_TEXTURE_MIN_FILTER,
+            GL.GL_LINEAR_MIPMAP_LINEAR,
+        )
+        GL.glTexParameteri(
+            GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR
+        )
+        GL.glTexParameteri(
+            GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_EDGE
+        )
+        GL.glTexParameteri(
+            GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE
+        )
+        GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 1)
+        for level, mip in enumerate(self._power_mipmap_levels(pixels)):
+            mh, mw = mip.shape
+            GL.glTexImage2D(
+                GL.GL_TEXTURE_2D,
+                level,
+                GL.GL_R32F,
+                mw,
+                mh,
+                0,
+                GL.GL_RED,
+                GL.GL_FLOAT,
+                np.ascontiguousarray(mip, dtype=np.float32),
+            )
+        GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 4)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
+        return texture_id
+
     def _create_instance_buffers(
         self, prepared: PreparedStockLayer
     ) -> tuple[int, list[int]]:
@@ -254,12 +356,18 @@ class StockRenderer(BaseRenderer):
         vbo_uv = GL.glGenBuffers(1)
         vbos = [vbo_pos, vbo_norm, vbo_uv]
 
-        GL.glBindVertexArray(vao)
-        for attr, vbo, data in (
+        attributes = [
             (0, vbo_pos, prepared.positions),
             (1, vbo_norm, prepared.normals),
             (2, vbo_uv, prepared.uvs),
-        ):
+        ]
+        if prepared.power_uvs.size:
+            vbo_power = GL.glGenBuffers(1)
+            vbos.append(vbo_power)
+            attributes.append((3, vbo_power, prepared.power_uvs))
+
+        GL.glBindVertexArray(vao)
+        for attr, vbo, data in attributes:
             GL.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo)
             GL.glBufferData(
                 GL.GL_ARRAY_BUFFER, data.nbytes, data, GL.GL_STATIC_DRAW
@@ -274,10 +382,13 @@ class StockRenderer(BaseRenderer):
         return vao, vbos
 
     def _delete_instance(self, instance: dict) -> None:
-        """Deletes one instance's VAO/VBOs."""
+        """Deletes one instance's VAO/VBOs and burn texture."""
         try:
             GL.glDeleteVertexArrays(1, [instance["vao"]])
             GL.glDeleteBuffers(len(instance["vbos"]), instance["vbos"])
+            power_texture_id = instance.get("power_texture_id")
+            if power_texture_id:
+                GL.glDeleteTextures([power_texture_id])
         except GL.GLError:
             logger.exception("Error deleting stock instance buffers")
 
@@ -318,6 +429,24 @@ class StockRenderer(BaseRenderer):
                         prepared.texture_pixels
                     )
                     self._texture_cache[prepared.texture_key] = texture_id
+            power_texture_id = 0
+            if (
+                prepared.power_pixels is not None
+                and prepared.power_size is not None
+                and prepared.power_uvs.size
+            ):
+                # Burn maps change with every fold, so they are not
+                # cached; they are a few hundred KB at the stock-grid
+                # budget.
+                power_texture_id = self._create_power_texture(
+                    prepared.power_pixels
+                )
+                logger.info(
+                    "Stock renderer: uploaded burn texture %sx%s px (id %s)",
+                    prepared.power_size[0],
+                    prepared.power_size[1],
+                    power_texture_id,
+                )
             vao, vbos = self._create_instance_buffers(prepared)
             self.instances.append(
                 {
@@ -331,6 +460,9 @@ class StockRenderer(BaseRenderer):
                     "tint_rgba": prepared.tint_rgba,
                     "texture_id": texture_id,
                     "is_rotary": prepared.is_rotary,
+                    "power_texture_id": power_texture_id,
+                    "absorption": prepared.absorption,
+                    "burn_response": prepared.burn_response,
                 }
             )
 
@@ -365,6 +497,8 @@ class StockRenderer(BaseRenderer):
         GL.glActiveTexture(GL.GL_TEXTURE1)
         shader.set_int("uBrdfLut", 1)
         GL.glBindTexture(GL.GL_TEXTURE_2D, self._brdf_lut_texture)
+        GL.glActiveTexture(GL.GL_TEXTURE2)
+        shader.set_int("uPowerTexture", 2)
 
         GL.glDisable(GL.GL_BLEND)
         GL.glDepthMask(GL.GL_TRUE)
@@ -388,7 +522,8 @@ class StockRenderer(BaseRenderer):
             GL.glDisable(GL.GL_POLYGON_OFFSET_FILL)
 
     def _draw_instance(self, shader, instance: dict) -> None:
-        if instance.get("is_rotary"):
+        is_rotary = bool(instance.get("is_rotary"))
+        if is_rotary:
             if self._cyl_mvp is None or self._cyl_model is None:
                 return
             mvp = self._cyl_mvp
@@ -398,6 +533,7 @@ class StockRenderer(BaseRenderer):
             model = instance["transform"]
         shader.set_mat4("uMVP", mvp)
         shader.set_mat4("uModel", model)
+        shader.set_float("uRotary", 1.0 if is_rotary else 0.0)
         shader.set_vec4("uAlbedo", instance["fallback_rgba"])
         shader.set_float("uRoughness", instance["roughness"])
         shader.set_float("uMetallic", instance["metallic"])
@@ -414,6 +550,31 @@ class StockRenderer(BaseRenderer):
             shader.set_float("uUseTint", 0.0)
         GL.glActiveTexture(GL.GL_TEXTURE0)
         GL.glBindTexture(GL.GL_TEXTURE_2D, texture_id if texture_id else 0)
+
+        power_texture_id = instance.get("power_texture_id", 0)
+        shader.set_float("uUsePowerTexture", 1.0 if power_texture_id else 0.0)
+        if power_texture_id:
+            GL.glActiveTexture(GL.GL_TEXTURE2)
+            GL.glBindTexture(GL.GL_TEXTURE_2D, power_texture_id)
+            br = instance.get("burn_response") or {}
+            shader.set_float(
+                "uAbsorption", float(instance.get("absorption", 1.0))
+            )
+            shader.set_float(
+                "uCharThreshold", float(br.get("char_threshold", 35.0))
+            )
+            shader.set_float(
+                "uCharSaturation", float(br.get("char_saturation", 125.0))
+            )
+            low = br.get("char_color_low", (0.04, 0.03, 0.02))
+            high = br.get("char_color_high", (0.01, 0.01, 0.01))
+            shader.set_vec3(
+                "uCharColorLow", (float(low[0]), float(low[1]), float(low[2]))
+            )
+            shader.set_vec3(
+                "uCharColorHigh",
+                (float(high[0]), float(high[1]), float(high[2])),
+            )
 
         GL.glBindVertexArray(instance["vao"])
         GL.glDrawArrays(GL.GL_TRIANGLES, 0, instance["vertex_count"])

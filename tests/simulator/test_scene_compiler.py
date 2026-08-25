@@ -172,47 +172,6 @@ class TestCompileEmpty:
         assert len(artifact.overlay_layers) == 0
 
 
-class TestTextureLineWidth:
-    """End-to-end: the generated texture scales with the laser dot width."""
-
-    def _scanline_ops(self, head_uid="head1"):
-        ops = Ops()
-        ops.job_start()
-        ops.layer_start("layer1")
-        ops.set_head(head_uid)
-        for y in range(0, 30, 5):
-            ops.move_to(0.0, y, 0.0)
-            ops.scan_to(20.0, y, 0.0, bytearray([255] * 20))
-        ops.layer_end("layer1")
-        ops.job_end()
-        return ops
-
-    def _compile(self, dot_width=None, head_uid="head1"):
-        config = make_test_config(
-            layer_configs={"layer1": make_flat_layer_config()},
-        )
-        if dot_width is not None:
-            config.laser_dot_widths_mm = {head_uid: dot_width}
-        return compile_scene(self._scanline_ops(head_uid), config)
-
-    @staticmethod
-    def _interior_thickness(texture):
-        tex = np.asarray(texture)
-        col = np.argwhere(tex[:, 0].astype(bool))
-        runs = np.split(col[:, 0], np.where(np.diff(col[:, 0]) > 1)[0] + 1)
-        return max(len(run) for run in runs)
-
-    def test_texture_line_width_uses_default_without_config(self):
-        artifact = self._compile()
-        assert len(artifact.texture_layers) == 1
-        assert (
-            self._interior_thickness(
-                artifact.texture_layers[0].power_texture.to_numpy()
-            )
-            > 1
-        )
-
-
 class TestCompileMultiLayer:
     def test_flat_and_rotary_separated(self):
         ops_flat = Ops()
@@ -413,3 +372,6 @@ class TestOverlayOffsets:
 
         ov_pos = ol.positions.to_numpy().reshape(-1, 3)
         assert ov_pos.shape[0] == 4
+
+
+# ── Burn-linked LUT suppression ─────────────────────────────────

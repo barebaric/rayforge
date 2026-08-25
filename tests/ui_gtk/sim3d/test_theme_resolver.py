@@ -42,7 +42,7 @@ def _make_resolver(service, gl_initialized=True):
     widget.get_style_context.return_value = MagicMock()
     scene = MagicMock()
     scene.axis_renderer = MagicMock()
-    scene.texture_renderer = MagicMock()
+    scene.stock_renderer = MagicMock()
     rendered = []
 
     resolver = ThemeResolver(

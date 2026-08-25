@@ -104,17 +104,13 @@ class WorkflowRow(Gtk.Box):
         self.add_controller(self._drop_target)
 
     def _connect_machine(self):
-        machine = get_context().machine
-        if machine:
-            machine.changed.connect(self._on_machine_changed)
+        get_context().config.changed.connect(self._on_machine_changed)
 
     def _disconnect_machine(self):
-        machine = get_context().machine
-        if machine:
-            try:
-                machine.changed.disconnect(self._on_machine_changed)
-            except (TypeError, ValueError):
-                pass
+        try:
+            get_context().config.changed.disconnect(self._on_machine_changed)
+        except (TypeError, ValueError):
+            pass
 
     def _on_machine_changed(self, sender, **kwargs):
         self._rebuild()

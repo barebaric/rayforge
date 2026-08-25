@@ -73,7 +73,6 @@ def compile_stock_scene(
     return CompiledSceneArtifact(
         generation_id=0,
         vertex_layers=[],
-        texture_layers=[],
         overlay_layers=[],
         laser_uid_order=[],
         stock_layers=stock_layers,

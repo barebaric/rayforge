@@ -25,18 +25,23 @@ STOCK_VERTEX_SHADER = """
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aNormal;
 layout (location = 2) in vec2 aUV;
+layout (location = 3) in vec2 aPowerUV;
 uniform mat4 uMVP;
 uniform mat4 uModel;
 out vec3 vNormal;
+out vec3 vLocalNormal;
 out vec3 vWorldPos;
 out vec2 vUV;
+out vec2 vPowerUV;
 void main() {
     vWorldPos = (uModel * vec4(aPos, 1.0)).xyz;
     // The stock transform is a pure translation (world -> visual), so
     // the upper-left 3x3 safely maps normals without a transpose of
     // the inverse.
     vNormal = normalize(mat3(uModel) * aNormal);
+    vLocalNormal = aNormal;
     vUV = aUV;
+    vPowerUV = aPowerUV;
     gl_Position = uMVP * vec4(aPos, 1.0);
 }
 """
@@ -44,8 +49,10 @@ void main() {
 STOCK_FRAGMENT_SHADER = """
 out vec4 FragColor;
 in vec3 vNormal;
+in vec3 vLocalNormal;
 in vec3 vWorldPos;
 in vec2 vUV;
+in vec2 vPowerUV;
 uniform vec3 uCameraPos;
 uniform vec3 uLightDir;
 uniform vec3 uLightColor;
@@ -61,6 +68,16 @@ uniform float uUseTexture;
 uniform float uAlpha;
 uniform sampler2D uTexture;
 uniform sampler2D uBrdfLut;
+uniform sampler2D uPowerTexture;
+uniform float uUsePowerTexture;
+uniform float uRotary;
+// Physical burn model uniforms (set per-stock from the material's
+// absorption and burn_response fields; see physical-burn.md step 4).
+uniform float uAbsorption;       // 0–1 absorption coefficient
+uniform float uCharThreshold;    // fluence below which no char
+uniform float uCharSaturation;   // fluence for full char
+uniform vec3 uCharColorLow;      // warm scorch at low char
+uniform vec3 uCharColorHigh;     // near-black char at full burn
 uniform vec3 uAmbientSky;
 uniform vec3 uAmbientGround;
 uniform vec3 uTint;
@@ -129,6 +146,18 @@ vec3 env_irradiance(vec3 n) {
     return mix(uAmbientGround, uAmbientSky, 0.5 + 0.5 * n.z);
 }
 
+// Burn transfer: the folded surface map carries laser fluence
+// (J/cm²). The absorbed fluence (fluence × uAbsorption) drives a
+// char curve clamped between uCharThreshold (no char below) and
+// uCharSaturation (full char above). Near-zero fluence (laser off)
+// stays at 0.
+float burn_transfer(vec2 uv) {
+    float fluence = texture(uPowerTexture, uv).r;
+    float absorbed = fluence * uAbsorption;
+    float span = max(uCharSaturation - uCharThreshold, 1e-4);
+    return clamp((absorbed - uCharThreshold) / span, 0.0, 1.0);
+}
+
 void main() {
     vec3 n = normalize(vNormal);
     vec3 v = normalize(uCameraPos - vWorldPos);
@@ -147,6 +176,59 @@ void main() {
     );
 
     float roughness = clamp(uRoughness, 0.045, 1.0);
+
+    // Laser burn-in: the folded surface map chars the material. Power
+    // maps carry the laser PWM fraction (often 0.2-0.6 for engraving);
+    // a noise floor plus a sub-unity exponent maps that range to
+    // mostly-charred, and the char also absorbs light, so the lit
+    // result is attenuated beyond the albedo mix. Near-zero power
+    // (image blacks, laser off) does not char.
+    //
+    // The burn is confined to the engraved faces, tested on the local
+    // normal so cylinder kinematics don't affect the test. Flat stock
+    // is engraved on its top face (local normal +z); rotary stock on
+    // its lateral surface (normals radial to the local x axis), not
+    // the end caps.
+    float burn = 0.0;
+    vec3 char_albedo = albedo;
+    bool burn_face = uRotary > 0.5
+        ? abs(vLocalNormal.x) < 0.5
+        : vLocalNormal.z > 0.5;
+    if (uUsePowerTexture > 0.5 && burn_face) {
+        vec2 ts = 1.0 / vec2(textureSize(uPowerTexture, 0));
+
+        burn = burn_transfer(vPowerUV);
+
+        // Char colour ramps from warm scorch at low char to near-black
+        // char at full burn. The ramp endpoints are material-driven
+        // uniforms (uCharColorLow, uCharColorHigh) so per-material
+        // tuning comes from the YAML, not GLSL constants. Full burn is
+        // black (carbonized material), never lighter.
+        vec3 char_color = mix(uCharColorLow, uCharColorHigh, burn);
+        char_albedo = mix(albedo, char_color, burn);
+        roughness = clamp(mix(roughness, 0.55, burn), 0.045, 1.0);
+
+        // Soft heat-affected halo: a wider warm fringe around the
+        // sharp char, strongest at the burn boundary. The halo reads
+        // raw fluence (before the absorption/threshold shaping) so a
+        // low-absorption material (e.g. clear acrylic under a blue
+        // diode) still shows a faint heat fringe even when the char
+        // itself is suppressed.
+        float halo = 0.0;
+        for (int x = -1; x <= 1; x++) {
+            for (int y = -1; y <= 1; y++) {
+                halo += texture(
+                    uPowerTexture, vPowerUV + vec2(float(x), float(y)) * ts
+                ).r;
+            }
+        }
+        float halo_span = max(uCharSaturation - uCharThreshold, 1e-4);
+        halo = clamp((halo / 9.0 - uCharThreshold) / halo_span, 0.0, 1.0);
+        halo = pow(halo, 0.8) * (1.0 - burn);
+        char_albedo = mix(char_albedo, uCharColorLow * 1.3, 0.45 * halo);
+    }
+    albedo = char_albedo;
+
     vec3 f0 = mix(vec3(0.04), albedo, uMetallic);
 
     vec3 color = vec3(0.0);
@@ -192,8 +274,21 @@ void main() {
 
     color += diffuse_ibl + specular_ibl;
 
-    // Tonemap and encode for the display-ready framebuffer.
-    vec3 mapped = color / (color + vec3(1.0));
+    // Charred material absorbs light overall, not just diffuse
+    // albedo — attenuate the lit result by the burn factor. Kept mild
+    // so the bump-driven self-shadowing (from the perturbed normal)
+    // does most of the "carved groove" shading.
+    color *= 1.0 - 0.25 * burn;
+
+    // Tonemap and encode for the display-ready framebuffer.  ACES
+    // Filmic (Narkowicz 2015) keeps darks dark and rolls off
+    // highlights, unlike Reinhard which lifts midtones and washed the
+    // dark stock out toward grey.
+    vec3 mapped = clamp(
+        (color * (2.51 * color + 0.03))
+            / (color * (2.43 * color + 0.59) + 0.14),
+        0.0, 1.0
+    );
     FragColor = vec4(linear_to_srgb(mapped), uAlbedo.a * uAlpha);
 }
 """
@@ -210,7 +305,7 @@ class StockShader(Shader):
         self.use()
         self.set_vec3("uCameraPos", (0.0, 0.0, 0.0))
         self.set_vec3("uLightDir", (0.5, 0.8, 1.0))
-        self.set_vec3("uLightColor", (1.2, 1.17, 1.12))
+        self.set_vec3("uLightColor", (1.0, 0.97, 0.93))
         self.set_vec3("uLightDir2", (-0.6, -0.4, 0.3))
         self.set_vec3("uLightColor2", (0.25, 0.28, 0.33))
         self.set_vec3("uPointLightPos", (0.0, 0.0, 0.0))
@@ -223,9 +318,17 @@ class StockShader(Shader):
         self.set_float("uAlpha", 1.0)
         self.set_int("uTexture", 0)
         self.set_int("uBrdfLut", 1)
+        self.set_int("uPowerTexture", 2)
+        self.set_float("uUsePowerTexture", 0.0)
+        self.set_float("uRotary", 0.0)
+        self.set_float("uAbsorption", 1.0)
+        self.set_float("uCharThreshold", 35.0)
+        self.set_float("uCharSaturation", 125.0)
+        self.set_vec3("uCharColorLow", (0.04, 0.03, 0.02))
+        self.set_vec3("uCharColorHigh", (0.01, 0.01, 0.01))
         self.set_vec3("uTint", (1.0, 1.0, 1.0))
         self.set_float("uUseTint", 0.0)
-        self.set_vec3("uAmbientSky", (0.34, 0.39, 0.47))
-        self.set_vec3("uAmbientGround", (0.20, 0.18, 0.16))
+        self.set_vec3("uAmbientSky", (0.18, 0.20, 0.24))
+        self.set_vec3("uAmbientGround", (0.10, 0.09, 0.08))
         self.set_mat4("uModel", np.eye(4, dtype=np.float32))
         self.set_mat4("uMVP", np.eye(4, dtype=np.float32))

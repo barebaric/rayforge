@@ -21,9 +21,6 @@ from rayforge.ui_gtk.sim3d.render_context import (
     ViewportContext,
 )
 from rayforge.ui_gtk.sim3d.renderer.plane_renderer import PlaneRenderer
-from rayforge.ui_gtk.sim3d.renderer.texture_renderer import (
-    TextureArtifactRenderer,
-)
 from rayforge.ui_gtk.sim3d.shader.base import Shader
 
 
@@ -133,24 +130,3 @@ def test_plane_renderer_passes_row_major_mvp():
     name, mat = shader.set_mat4.call_args.args
     assert name == "uMVP"
     np.testing.assert_allclose(mat, mvp_ui @ model_matrix)
-
-
-@pytest.mark.ui
-def test_texture_renderer_cylinder_mvp_kept_row_major():
-    """The cylinder MVP is stored row-major with no double transpose."""
-    renderer = TextureArtifactRenderer()
-    cyl_mvp = np.array(
-        [
-            [1.0, 2.0, 3.0, 4.0],
-            [5.0, 6.0, 7.0, 8.0],
-            [9.0, 10.0, 11.0, 12.0],
-            [13.0, 14.0, 15.0, 16.0],
-        ],
-        dtype=np.float32,
-    )
-    ctx = _make_ctx(cyl_mesh_mvp=cyl_mvp)
-
-    renderer.prepare(ctx)
-
-    assert renderer._cyl_mvp is cyl_mvp
-    assert renderer._flat_mvp is ctx.camera.mvp_ui

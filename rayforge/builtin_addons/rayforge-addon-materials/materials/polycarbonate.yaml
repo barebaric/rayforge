@@ -24,8 +24,10 @@ category:
   uk: Пластик
   zh_CN: 塑料
 appearance:
-  color: "#E0FFFF"
+  absorption:
+    blue: 0.05
+    ir: 0.1
+    co2: 0.92
   pattern: transparent
-  tintable: true
   texture: polycarbonate.webp
   texture_size_mm: 300

@@ -317,11 +317,6 @@ class ActionManager:
             GLib.Variant.new_boolean(cv.show_models),
         )
         self._add_stateful_action(
-            "show_ops_underlay",
-            self.win.on_show_ops_underlay_state_change,
-            GLib.Variant.new_boolean(cv.show_ops_underlay),
-        )
-        self._add_stateful_action(
             "show_workpiece_image",
             self.win.on_show_workpiece_image_state_change,
             GLib.Variant.new_boolean(cv.show_workpiece_image),
