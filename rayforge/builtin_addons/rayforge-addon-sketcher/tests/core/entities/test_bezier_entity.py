@@ -172,7 +172,11 @@ def test_bezier_get_set_state(registry):
     bezier = registry.get_entity(bid)
 
     state = bezier.get_state()
-    assert state == {"construction": False}
+    assert state == {
+        "construction": False,
+        "cp1": None,
+        "cp2": None,
+    }
 
     bezier.construction = True
 

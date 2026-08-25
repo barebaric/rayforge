@@ -117,6 +117,31 @@ class SketchStudio(Gtk.Box):
         color_box.append(self.fill_color_button)
         toolbar.append(color_box)
 
+        mirror_sep = Gtk.Separator(orientation=Gtk.Orientation.VERTICAL)
+        toolbar.append(mirror_sep)
+
+        self.mirror_vertical_button = Gtk.Button()
+        self.mirror_vertical_button.set_child(
+            get_icon("flip-vertical-symbolic")
+        )
+        self.mirror_vertical_button.set_tooltip_text(_("Mirror Vertically"))
+        self.mirror_vertical_button.set_action_name(
+            "sketch.tool_mirror_vertical"
+        )
+        toolbar.append(self.mirror_vertical_button)
+
+        self.mirror_horizontal_button = Gtk.Button()
+        self.mirror_horizontal_button.set_child(
+            get_icon("flip-horizontal-symbolic")
+        )
+        self.mirror_horizontal_button.set_tooltip_text(
+            _("Mirror Horizontally")
+        )
+        self.mirror_horizontal_button.set_action_name(
+            "sketch.tool_mirror_horizontal"
+        )
+        toolbar.append(self.mirror_horizontal_button)
+
         spacer = Gtk.Box()
         spacer.set_hexpand(True)
         toolbar.append(spacer)
