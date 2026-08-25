@@ -26,6 +26,7 @@ from .live_text_edit import LiveTextEditCommand
 from .mirror import MirrorAxis, MirrorCommand, MirrorDirection
 from .point import (
     MoveControlPointCommand,
+    MoveEntitiesCommand,
     MovePointCommand,
     UnstickJunctionCommand,
 )
@@ -75,6 +76,7 @@ __all__ = [
     "ModifyConstraintCommand",
     "ModifyTextPropertyCommand",
     "MoveControlPointCommand",
+    "MoveEntitiesCommand",
     "MovePointCommand",
     "PreviewState",
     "RectangleCommand",
