@@ -230,3 +230,53 @@ class UnstickJunctionCommand(SketchChangeCommand):
             registry.points = [
                 p for p in registry.points if p.id != self.new_point.id
             ]
+
+
+class MoveEntitiesCommand(SketchChangeCommand):
+    """An undoable command for moving one or more entities as a group."""
+
+    def __init__(
+        self,
+        sketch: Sketch,
+        entity_ids: list[EntityID],
+        start_positions: dict[EntityID, GeoPoint],
+        end_positions: dict[EntityID, GeoPoint],
+        snapshot: tuple[dict[EntityID, GeoPoint], dict[EntityID, Any]]
+        | None = None,
+    ):
+        super().__init__(sketch, _("Move Entities"))
+        self.entity_ids = list(entity_ids)
+        self.start_positions = dict(start_positions)
+        self.end_positions = dict(end_positions)
+        if snapshot:
+            self._snapshot = snapshot
+
+    def _apply_positions(self, positions: dict[EntityID, GeoPoint]):
+        registry = self.sketch.registry
+        for pid, (x, y) in positions.items():
+            try:
+                p = registry.get_point(pid)
+                p.x = x
+                p.y = y
+            except IndexError:
+                pass
+
+    def _do_execute(self) -> None:
+        self._apply_positions(self.end_positions)
+
+    def _do_undo(self) -> None:
+        self._apply_positions(self.start_positions)
+
+    def can_coalesce_with(self, next_command: Command) -> bool:
+        return (
+            isinstance(next_command, MoveEntitiesCommand)
+            and self.entity_ids == next_command.entity_ids
+        )
+
+    def coalesce_with(self, next_command: Command) -> bool:
+        if not self.can_coalesce_with(next_command):
+            return False
+        assert isinstance(next_command, MoveEntitiesCommand)
+        self.end_positions = next_command.end_positions
+        self.timestamp = next_command.timestamp
+        return True
