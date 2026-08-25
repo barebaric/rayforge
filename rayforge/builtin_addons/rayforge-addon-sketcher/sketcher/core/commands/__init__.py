@@ -23,6 +23,7 @@ from .grid import GridCommand
 from .items import AddItemsCommand
 from .line import LineCommand, LinePreviewState
 from .live_text_edit import LiveTextEditCommand
+from .mirror import MirrorAxis, MirrorCommand, MirrorDirection
 from .point import (
     MoveControlPointCommand,
     MovePointCommand,
@@ -68,6 +69,9 @@ __all__ = [
     "LineCommand",
     "LinePreviewState",
     "LiveTextEditCommand",
+    "MirrorAxis",
+    "MirrorCommand",
+    "MirrorDirection",
     "ModifyConstraintCommand",
     "ModifyTextPropertyCommand",
     "MoveControlPointCommand",
