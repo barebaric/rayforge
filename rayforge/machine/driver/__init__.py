@@ -6,6 +6,7 @@ from .discovery import (
     DeviceRecognizer,
     DiscoveredDevice,
     find_all_devices,
+    find_network_devices,
     normalize_tokens,
 )
 from .driver import (
@@ -67,5 +68,6 @@ __all__ = [
     "RuidaDriver",
     "SmoothieDriver",
     "find_all_devices",
+    "find_network_devices",
     "normalize_tokens",
 ]

@@ -5,8 +5,10 @@ Discovery is split into two processes:
 * **Scanning** (one per discovery run) —
   :func:`rayforge.machine.transport.serial_scan.scan_serial_ports`
   opens every serial port once and captures what the device sends
-  as a :class:`PortObservation`. This is transport work and knows
-  nothing about firmware.
+  as a :class:`PortObservation`, while
+  :func:`rayforge.machine.transport.mdns_scan.scan_mdns_services`
+  browses the network for announced services. Both are transport
+  work and know nothing about firmware.
 
 * **Evaluating** (this module) — each driver that wants to be
   discoverable declares a :class:`DeviceRecognizer` as its
@@ -14,12 +16,13 @@ Discovery is split into two processes:
   like, how to label it, which firmware it runs. Recognition is a
   pure function over the captured bytes; no port is ever opened on
   behalf of a single driver, so adding drivers never multiplies
-  scan cost.
+  scan cost. Drivers may additionally declare ``MDNS_SERVICES`` to
+  have their network services discovered.
 
-:func:`find_all_devices` ties the two together: one scan, every
-recognizer, merged results. The module also defines the
-:class:`DiscoveredDevice` / :class:`DeviceIdentity` result types
-plus identity-token helpers used for profile matching.
+:func:`find_all_devices` ties it all together: one serial scan, one
+mDNS browse, every recognizer, merged results. The module also
+defines the :class:`DiscoveredDevice` / :class:`DeviceIdentity`
+result types plus identity-token helpers used for profile matching.
 
 This module is GTK-free so it can be unit-tested in isolation.
 """
@@ -32,6 +35,11 @@ from dataclasses import dataclass, field
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
+from ..transport.mdns_scan import (
+    MDNSService,
+    normalize_service_type,
+    scan_mdns_services,
+)
 from ..transport.serial import SerialPortInfo
 from ..transport.serial_scan import (
     PortObservation,
@@ -45,6 +53,10 @@ logger = logging.getLogger(__name__)
 
 # Upper bound for the whole discovery scan.
 _SCAN_TIMEOUT = 20.0
+
+# Upper bound for the network (mDNS) part; the browse window itself
+# is much shorter (see rayforge.machine.transport.mdns_scan).
+_NETWORK_SCAN_TIMEOUT = 10.0
 
 # USB vendor/product strings that identify the USB-serial chip, not
 # the machine built around it. Never used for profile matching.
@@ -137,7 +149,16 @@ class DiscoveredDevice:
     @property
     def key(self) -> str:
         """Stable identity for deduplication in the UI."""
-        return f"{self.driver_name}:{self.params.get('port', '')}"
+        # Serial devices are identified by their port path, network
+        # devices by host and TCP port (so two servers that both
+        # listen on 80 stay distinguishable).
+        serial_port = self.params.get("port")
+        if isinstance(serial_port, str) and serial_port:
+            return f"{self.driver_name}:{serial_port}"
+        host = self.params.get("host")
+        if isinstance(host, str) and host:
+            return f"{self.driver_name}:{host}:{self.params.get('port')}"
+        return f"{self.driver_name}:{serial_port!r}"
 
     @property
     def probe_name(self) -> str | None:
@@ -235,11 +256,12 @@ async def find_all_devices(
     exclude_ports: Iterable[str] | None = None,
 ) -> list[DiscoveredDevice]:
     """
-    Runs a single serial scan and lets every driver's ``DISCOVERY``
-    recognizer evaluate the captured output.
+    Runs a serial scan and an mDNS browse concurrently and lets
+    every driver's ``DISCOVERY`` recognizer and ``MDNS_SERVICES``
+    declaration evaluate the results.
 
-    *exclude_ports* keeps the scan away from ports whose devices
-    are already held (e.g. being probed by the caller).
+    *exclude_ports* keeps the serial scan away from ports whose
+    devices are already held (e.g. being probed by the caller).
 
     A failing or slow scan never raises: it is bounded by a timeout
     and exceptions are logged. A recognizer that raises is skipped
@@ -250,6 +272,21 @@ async def find_all_devices(
 
         driver_classes = drivers
 
+    serial_devices, network_devices = await asyncio.gather(
+        _find_serial_devices(driver_classes, ports, baud_rates, exclude_ports),
+        find_network_devices(driver_classes),
+    )
+    return serial_devices + network_devices
+
+
+async def _find_serial_devices(
+    driver_classes: Iterable[type],
+    ports: Iterable[str] | None,
+    baud_rates: Iterable[int] | None,
+    exclude_ports: Iterable[str] | None,
+) -> list[DiscoveredDevice]:
+    """Runs one serial scan and evaluates it against every
+    ``DISCOVERY`` recognizer."""
     recognizers = _collect_recognizers(driver_classes)
     if not recognizers:
         return []
@@ -274,6 +311,102 @@ async def find_all_devices(
     for observation in observations:
         devices.extend(_evaluate(observation, recognizers))
     return devices
+
+
+async def find_network_devices(
+    driver_classes: Iterable[type] | None = None,
+) -> list[DiscoveredDevice]:
+    """
+    Browses the network (mDNS) for every service type a driver
+    declares in ``MDNS_SERVICES`` and maps each resolved service to
+    a :class:`DiscoveredDevice`.
+
+    Like the serial scan, this never raises: failures are logged
+    and bounded by a timeout.
+    """
+    if driver_classes is None:
+        from . import drivers
+
+        driver_classes = drivers
+
+    declarations = _collect_mdns_services(driver_classes)
+    if not declarations:
+        return []
+
+    service_types = {
+        service_type
+        for _, declared in declarations
+        for service_type in declared
+    }
+    try:
+        services = await asyncio.wait_for(
+            scan_mdns_services(service_types),
+            timeout=_NETWORK_SCAN_TIMEOUT,
+        )
+    except asyncio.TimeoutError:
+        logger.warning("Network device discovery timed out")
+        return []
+    except Exception:
+        logger.exception("Network device discovery failed")
+        return []
+
+    devices: list[DiscoveredDevice] = []
+    for service in services:
+        for cls, declared in declarations:
+            if service.service_type in declared:
+                devices.append(_build_network_device(cls, service))
+                break
+    return devices
+
+
+def _collect_mdns_services(
+    driver_classes: Iterable[type],
+) -> list[tuple[type, frozenset[str]]]:
+    """Pairs every driver that declares mDNS services with their
+    normalized service types."""
+    declarations = []
+    for cls in driver_classes:
+        declared = getattr(cls, "MDNS_SERVICES", None)
+        if declared:
+            declarations.append(
+                (
+                    cls,
+                    frozenset(normalize_service_type(s) for s in declared),
+                )
+            )
+    return declarations
+
+
+def _build_network_device(
+    cls: type,
+    service: MDNSService,
+) -> DiscoveredDevice:
+    """Assembles a :class:`DiscoveredDevice` from a resolved mDNS
+    service."""
+    detail = _("{host}:{port}").format(host=service.host, port=service.port)
+    if service.server:
+        detail = f"{detail} ({service.server})"
+    return DiscoveredDevice(
+        driver_name=cls.__name__,
+        params={
+            "host": service.host,
+            "port": service.port,
+        },
+        label=getattr(cls, "label", None) or cls.__name__,
+        detail=detail,
+        identity=DeviceIdentity(
+            firmware=_driver_firmware_id(cls),
+            banner=service.name or None,
+            tokens=normalize_tokens(service.name, service.server),
+        ),
+    )
+
+
+def _driver_firmware_id(cls: type) -> str:
+    """A firmware identifier derived from the driver class name
+    (e.g. ``OctoPrintDriver`` → ``octoprint``)."""
+    name = cls.__name__.removesuffix("Driver")
+    return name.lower()
 
 
 def _collect_recognizers(
@@ -342,5 +475,6 @@ __all__ = [
     "build_identity",
     "extract_banner",
     "find_all_devices",
+    "find_network_devices",
     "normalize_tokens",
 ]

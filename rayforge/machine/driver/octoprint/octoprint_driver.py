@@ -77,6 +77,9 @@ class OctoPrintDriver(Driver):
     reports_granular_progress = False
     uses_gcode = True
     maturity = DriverMaturity.UNTESTED
+    # Advertised by OctoPrint's discovery plugin; used for network
+    # device discovery.
+    MDNS_SERVICES = ("_octoprint._tcp.local.",)
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)

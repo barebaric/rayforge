@@ -1103,6 +1103,80 @@ def test_device_selected_without_match_shows_profile(ui_context_initializer):
     }
 
 
+def _octoprint_device():
+    """A device discovered over mDNS, as network discovery yields it."""
+    return _discovered_device(
+        driver_name="OctoPrintDriver",
+        params={"host": "192.168.1.42", "port": 80},
+        label="OctoPrint",
+        detail="192.168.1.42:80 (octopi.local)",
+        identity=DeviceIdentity(
+            firmware="octoprint", banner="OctoPrint on octopi"
+        ),
+    )
+
+
+@pytest.mark.ui
+def test_discover_page_lists_network_device(ui_context_initializer):
+    """mDNS-found devices appear like serial ones, are never held on
+    a serial port, and vanish again when the network loses them."""
+    wizard = _make_wizard(ui_context_initializer)
+    page = wizard._get_page("discover")
+    assert isinstance(page, DiscoverPage)
+
+    page._update_devices([_octoprint_device()])
+    key = "OctoPrintDriver:192.168.1.42:80"
+    assert list(page._device_rows) == [key]
+    assert page._held_ports == set()
+    row = page._device_rows[key]
+    assert row.get_title() == "OctoPrint"
+    subtitle = row.get_subtitle()
+    assert subtitle is not None
+    assert "192.168.1.42:80" in subtitle
+
+    # No serial port to hold: an empty rescan drops the row.
+    page._update_devices([])
+    assert list(page._device_rows) == []
+
+
+@pytest.mark.ui
+def test_octoprint_device_selected_goes_to_connect(ui_context_initializer):
+    """Selecting a discovered OctoPrint server keeps the resolved
+    address and asks for the missing API key on the connect page."""
+    wizard = _make_wizard(ui_context_initializer)
+    page = wizard._get_page("discover")
+    assert isinstance(page, DiscoverPage)
+
+    with patch.object(
+        type(ui_context_initializer.device_profile_mgr),
+        "match_device",
+        return_value=None,
+    ):
+        wizard._on_device_selected(page, device=_octoprint_device())
+
+    # host/port alone don't complete the connection args (no API
+    # key yet), so the profile picker comes first.
+    assert wizard.stack.get_visible_child_name() == "profile"
+    mc = wizard.profile.machine_config
+    assert mc.driver == "OctoPrintDriver"
+    assert mc.driver_args == {"host": "192.168.1.42", "port": 80}
+
+    profile_page = wizard._get_page("profile")
+    assert isinstance(profile_page, ProfilePage)
+    wizard._on_profile_source_selected(
+        profile_page, kind="other", profile=None
+    )
+
+    assert wizard.stack.get_visible_child_name() == "connect"
+    connect_page = wizard._get_page("connect")
+    assert isinstance(connect_page, ConnectionPage)
+    values = connect_page.connect_widget.get_values()
+    assert values.get("host") == "192.168.1.42"
+    assert values.get("port") == 80
+    # The API key is still missing: not ready to continue.
+    assert connect_page.ready is False
+
+
 def _probed_profile(name="Mystery CNC", **machine_overrides):
     return DeviceProfile(
         meta=DeviceMeta(name=name),

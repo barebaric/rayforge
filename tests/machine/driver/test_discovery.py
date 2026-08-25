@@ -3,6 +3,14 @@ from typing import ClassVar
 
 import pytest
 
+from rayforge.machine.driver import (
+    GrblSerialDriver,
+    GrblTelnetDriver,
+    MarlinSerialDriver,
+    OctoPrintDriver,
+    discovery,
+    drivers,
+)
 from rayforge.machine.driver.discovery import (
     GENERIC_TOKENS,
     DeviceIdentity,
@@ -11,8 +19,11 @@ from rayforge.machine.driver.discovery import (
     build_identity,
     extract_banner,
     find_all_devices,
+    find_network_devices,
     normalize_tokens,
 )
+from rayforge.machine.transport import serial_scan
+from rayforge.machine.transport.mdns_scan import MDNSService
 from rayforge.machine.transport.serial import SerialPortInfo
 
 
@@ -40,6 +51,11 @@ class FakeMarlinDriver:
         matches=_marlin_matcher,
         firmware="marlin",
     )
+
+
+class FakeOctoPrintDriver:
+    MDNS_SERVICES = ("_octoprint._tcp.local.",)
+    label = "OctoPrint"
 
 
 class FakeSerial:
@@ -103,14 +119,23 @@ class NudgeAnsweringSerial:
 
 @pytest.fixture(autouse=True)
 def fast_timeouts(monkeypatch):
-    from rayforge.machine.transport import serial_scan
-
     monkeypatch.setattr(serial_scan, "_BANNER_TIMEOUT", 0.05)
     monkeypatch.setattr(serial_scan, "_NUDGE_TIMEOUT", 0.05)
     monkeypatch.setattr(serial_scan, "_DRAIN_TIMEOUT", 0.05)
     monkeypatch.setattr(serial_scan, "_QUIET_GAP", 0.01)
     monkeypatch.setattr(serial_scan, "_READ_CHUNK", 0.01)
     FakeSerial.attempts.clear()
+
+
+@pytest.fixture(autouse=True)
+def no_mdns(monkeypatch):
+    """Tests opt into mDNS explicitly; by default no browse happens
+    (find_all_devices also scans the network)."""
+
+    async def _no_browse(service_types):
+        return []
+
+    monkeypatch.setattr(discovery, "scan_mdns_services", _no_browse)
 
 
 def _patch_serial(monkeypatch, responses):
@@ -184,8 +209,6 @@ SCULPFUN_ICUBE_BANNER = (
 async def test_sculpfun_banner_end_to_end(monkeypatch):
     """The real GrblSerialDriver recognizer claims build-info-only
     banners and extracts the machine name for identity/matching."""
-    from rayforge.machine.driver.grbl import GrblSerialDriver
-
     _patch_serial(monkeypatch, {"/dev/ttyUSB0": SCULPFUN_ICUBE_BANNER})
     devices = await find_all_devices(
         [GrblSerialDriver], ports=["/dev/ttyUSB0"]
@@ -243,8 +266,6 @@ async def test_broken_recognizer_does_not_break_discovery(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_scan_timeout_returns_empty(monkeypatch):
-    from rayforge.machine.driver import discovery
-
     async def slow_scan(**kwargs):
         await asyncio.sleep(1.0)
         return []
@@ -257,8 +278,6 @@ async def test_scan_timeout_returns_empty(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_scan_failure_returns_empty(monkeypatch):
-    from rayforge.machine.driver import discovery
-
     async def broken_scan(**kwargs):
         raise OSError("boom")
 
@@ -269,13 +288,6 @@ async def test_scan_failure_returns_empty(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_builtin_discovery_drivers():
-    from rayforge.machine.driver import (
-        GrblSerialDriver,
-        GrblTelnetDriver,
-        MarlinSerialDriver,
-        drivers,
-    )
-
     discoverable = [d for d in drivers if d.DISCOVERY is not None]
     assert {d.__name__ for d in discoverable} == {
         "GrblSerialDriver",
@@ -323,3 +335,130 @@ def test_discovered_device_key():
     )
     assert device.key == "GrblSerialDriver:/dev/ttyUSB0"
     assert DeviceIdentity() == DeviceIdentity()
+
+
+def test_discovered_device_key_network_unique_per_host():
+    def _device(host):
+        return DiscoveredDevice(
+            driver_name="OctoPrintDriver",
+            params={"host": host, "port": 80},
+            label="OctoPrint",
+            detail=f"{host}:80",
+        )
+
+    # Two servers behind the same TCP port stay distinguishable.
+    assert _device("192.168.1.42").key != _device("192.168.1.43").key
+    assert _device("192.168.1.42").key == "OctoPrintDriver:192.168.1.42:80"
+
+
+def _octoprint_service(**overrides):
+    defaults = {
+        "service_type": "_octoprint._tcp",
+        "name": "OctoPrint on octopi",
+        "host": "192.168.1.42",
+        "port": 80,
+        "server": "octopi.local",
+        "txt": {},
+    }
+    defaults.update(overrides)
+    return MDNSService(**defaults)
+
+
+@pytest.mark.asyncio
+async def test_network_devices_from_mdns(monkeypatch):
+    async def fake_scan(service_types):
+        assert service_types == {"_octoprint._tcp"}
+        return [_octoprint_service()]
+
+    monkeypatch.setattr(discovery, "scan_mdns_services", fake_scan)
+    devices = await find_network_devices([FakeOctoPrintDriver])
+    assert len(devices) == 1
+    device = devices[0]
+    assert device.driver_name == "FakeOctoPrintDriver"
+    assert device.params == {"host": "192.168.1.42", "port": 80}
+    assert device.label == "OctoPrint"
+    assert device.detail == "192.168.1.42:80 (octopi.local)"
+    assert device.key == "FakeOctoPrintDriver:192.168.1.42:80"
+    assert device.identity.banner == "OctoPrint on octopi"
+    assert "octoprint" in device.identity.tokens
+    assert "octopi" in device.identity.tokens
+
+
+@pytest.mark.asyncio
+async def test_mdns_declaration_without_local_suffix(monkeypatch):
+    """Service type declarations and browse results are normalized
+    on both sides, so "_octoprint._tcp" finds "_octoprint._tcp.local."
+    announcements."""
+
+    class BareDeclarationDriver:
+        MDNS_SERVICES = ("_octoprint._tcp",)
+
+    async def fake_scan(service_types):
+        assert service_types == {"_octoprint._tcp"}
+        return [_octoprint_service()]
+
+    monkeypatch.setattr(discovery, "scan_mdns_services", fake_scan)
+    devices = await find_network_devices([BareDeclarationDriver])
+    assert [d.driver_name for d in devices] == ["BareDeclarationDriver"]
+
+
+@pytest.mark.asyncio
+async def test_find_all_devices_merges_serial_and_network(monkeypatch):
+    _patch_serial(monkeypatch, {"/dev/ttyUSB0": b"Grbl 1.1f\r\n"})
+
+    async def fake_mdns(service_types):
+        return [_octoprint_service()]
+
+    monkeypatch.setattr(discovery, "scan_mdns_services", fake_mdns)
+    devices = await find_all_devices(
+        [FakeGrblDriver, FakeOctoPrintDriver], ports=["/dev/ttyUSB0"]
+    )
+    assert {d.driver_name for d in devices} == {
+        "FakeGrblDriver",
+        "FakeOctoPrintDriver",
+    }
+
+
+@pytest.mark.asyncio
+async def test_no_mdns_declarations_skips_network_scan(monkeypatch):
+    calls = []
+
+    async def fake_mdns(service_types):
+        calls.append(service_types)
+        return []
+
+    monkeypatch.setattr(discovery, "scan_mdns_services", fake_mdns)
+    _patch_serial(monkeypatch, {"/dev/ttyUSB0": b"Grbl 1.1f\r\n"})
+    devices = await find_all_devices(
+        [FakeGrblDriver, FakeMarlinDriver], ports=["/dev/ttyUSB0"]
+    )
+    assert [d.driver_name for d in devices] == ["FakeGrblDriver"]
+    assert calls == []
+
+
+@pytest.mark.asyncio
+async def test_network_scan_timeout_returns_empty(monkeypatch):
+    async def slow_scan(service_types):
+        await asyncio.sleep(1.0)
+        return []
+
+    monkeypatch.setattr(discovery, "scan_mdns_services", slow_scan)
+    monkeypatch.setattr(discovery, "_NETWORK_SCAN_TIMEOUT", 0.05)
+    assert await find_network_devices([FakeOctoPrintDriver]) == []
+
+
+@pytest.mark.asyncio
+async def test_network_scan_failure_returns_empty(monkeypatch):
+    async def broken_scan(service_types):
+        raise OSError("boom")
+
+    monkeypatch.setattr(discovery, "scan_mdns_services", broken_scan)
+    assert await find_network_devices([FakeOctoPrintDriver]) == []
+
+
+def test_builtin_mdns_services():
+    declared = {
+        d.__name__: d.MDNS_SERVICES for d in drivers if d.MDNS_SERVICES
+    }
+    assert declared == {"OctoPrintDriver": ("_octoprint._tcp.local.",)}
+    assert OctoPrintDriver.MDNS_SERVICES == ("_octoprint._tcp.local.",)

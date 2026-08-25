@@ -3,8 +3,9 @@
 Starts scanning for machines the moment the wizard opens — before
 the user has selected anything. Every driver that declares a
 ``DISCOVERY`` recognizer participates (see
-:mod:`rayforge.machine.driver.discovery`); found devices are listed
-as rows the user can activate to adopt them.
+:mod:`rayforge.machine.driver.discovery`); drivers that declare
+``MDNS_SERVICES`` are found over the network the same way. Found
+devices are listed as rows the user can activate to adopt them.
 
 Discovery and data collection are fully automatic: as soon as a
 device is identified, its driver is asked to probe it (firmware
@@ -68,7 +69,8 @@ class DiscoverPage(WizardPage):
     step_number = 1
     title = _("Add a Machine")
     subtitle = _(
-        "Connect your machine via USB — we will find it automatically."
+        "Connect your machine via USB or network — we will find it "
+        "automatically."
     )
     next_label = _("Configure Manually")
 
@@ -92,7 +94,7 @@ class DiscoverPage(WizardPage):
             title=_("Detected Devices"),
             description=_(
                 "Plug in and power on your machine. Devices found on "
-                "USB serial connections appear here automatically."
+                "USB or network connections appear here automatically."
             ),
         )
         self.content.append(self.group)

@@ -76,6 +76,9 @@ class TestClassAttributes:
     def test_supports_settings(self):
         assert OctoPrintDriver.supports_settings is False
 
+    def test_mdns_services(self):
+        assert OctoPrintDriver.MDNS_SERVICES == ("_octoprint._tcp.local.",)
+
 
 class TestProperties:
     def test_machine_space_wcs(self, setup_driver):

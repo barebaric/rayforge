@@ -228,6 +228,10 @@ class Driver(ABC):
     # once and evaluates the captured output against every
     # recognizer (see rayforge.machine.driver.discovery).
     DISCOVERY: ClassVar["DeviceRecognizer | None"] = None
+    # mDNS service types announcing devices this driver can talk to
+    # over the network. When non-empty, the driver participates in
+    # network discovery (see rayforge.machine.driver.discovery).
+    MDNS_SERVICES: ClassVar[tuple[str, ...]] = ()
 
     @property
     @abstractmethod
