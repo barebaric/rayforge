@@ -24,7 +24,10 @@ category:
   uk: Папір
   zh_CN: 纸张
 appearance:
-  color: "#D3D3D3"
+  absorption:
+    blue: 0.9
+    ir: 0.3
+    co2: 0.9
   pattern: solid
   texture: cardboard.webp
   texture_size_mm: 300

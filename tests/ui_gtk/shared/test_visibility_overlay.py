@@ -21,6 +21,7 @@ def test_2d_overlay_buttons(ui_context_initializer):
     assert overlay.workpiece_button.get_action_name() == "win.show_workpieces"
     assert overlay.camera_button.get_action_name() == "win.toggle_camera_view"
     assert overlay.tabs_button.get_action_name() == "win.show_tabs"
+    assert overlay.stock_button is not None
     assert overlay.stock_button.get_action_name() == "win.show_stock"
     assert overlay.travel_button.get_action_name() == "win.toggle_travel_view"
     assert overlay.nogo_button.get_action_name() == "win.show_nogo_zones"
@@ -33,15 +34,13 @@ def test_3d_overlay_buttons(ui_context_initializer):
         show_workpiece=False,
         show_models=True,
         show_grid=True,
-        show_ops_underlay=True,
         show_stock=True,
         show_workpiece_image=True,
     )
     assert getattr(overlay, "workpiece_button", None) is None
     assert overlay.models_button.get_action_name() == "win.show_models"
     assert overlay.grid_button.get_action_name() == "win.show_grid"
-    assert overlay.underlay_button is not None
-    assert overlay.underlay_button.get_action_name() == "win.show_ops_underlay"
+    assert overlay.stock_button is not None
     assert overlay.stock_button.get_action_name() == "win.show_stock"
     assert overlay.workpiece_image_button is not None
     assert (
@@ -66,3 +65,14 @@ def test_set_nogo_visible(ui_context_initializer):
     assert not overlay.nogo_button.get_visible()
     overlay.set_nogo_visible(True)
     assert overlay.nogo_button.get_visible()
+
+
+@pytest.mark.ui
+def test_set_stock_present_toggles_button_visibility(ui_context_initializer):
+    overlay = VisibilityOverlay(show_stock=True)
+    assert overlay.stock_button is not None
+    assert overlay.stock_button.get_visible()
+    overlay.set_stock_present(False)
+    assert not overlay.stock_button.get_visible()
+    overlay.set_stock_present(True)
+    assert overlay.stock_button.get_visible()

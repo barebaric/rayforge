@@ -87,6 +87,7 @@ machine:
     frame_speed: 0
     laser_type: diode
     max_power: 1000
+    max_power_watts: 40.0
     max_pulse_width: 500
     max_pwm_frequency: 5000
     min_pulse_width: 5
@@ -118,6 +119,7 @@ machine:
     - 1.0
     type: LaserHead
     uid: d9277039-5ccc-456a-b3a6-5054b3c363b0
+    wavelength_nm: 455.0
   home_on_start: false
   hookmacros: {}
   machine_hours:
@@ -154,6 +156,7 @@ machine:
   reverse_x_axis: false
   reverse_y_axis: false
   reverse_z_axis: false
+  reviewed_profile_hash: null
   rotary_enabled_default: false
   rotary_modules:
   - axis: A
@@ -185,8 +188,10 @@ machine:
     - 0.0
     - 1.0
     uid: bc50197d-9f95-44c2-be99-18f66026e5b1
+  schema_version: 1
   single_axis_homing_enabled: true
   soft_limits: null
+  source_profile_id: null
   speeds:
     acceleration: 1000
     max_cut_speed: 1000

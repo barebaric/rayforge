@@ -67,7 +67,6 @@ def test_set_machine_resolves_laser_sets(ui_context_initializer):
     service, widget = ThemeColorService(), MagicMock()
     laser = LaserHead()
     laser.set_cut_color("#ff0000")
-    laser.set_raster_color("#00ff00")
     machine = MagicMock(heads=[laser, MagicMock(uid="spindle")])
 
     with pytest.MonkeyPatch.context() as mp:

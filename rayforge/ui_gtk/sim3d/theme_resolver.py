@@ -68,7 +68,7 @@ class ThemeResolver:
         """
         Resolves the ColorSet and updates other theme-dependent elements.
         """
-        if not self._scene.axis_renderer or not self._scene.texture_renderer:
+        if not self._scene.axis_renderer or not self._scene.stock_renderer:
             return
 
         service = get_context().theme

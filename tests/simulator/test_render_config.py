@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from raygeo.compressed_array import CompressedArray
 
 from rayforge.simulator.scene3d.render_config import (
     LayerRenderConfig,
@@ -95,26 +96,6 @@ class TestRenderConfig3D:
         restored = RenderConfig3D.from_dict(config.to_dict())
         assert restored.layer_configs is None
 
-    def test_laser_dot_widths_round_trip(self):
-        config = RenderConfig3D(
-            world_to_visual=np.eye(4, dtype=np.float32),
-            world_to_cyl_local=np.eye(4, dtype=np.float32),
-            laser_dot_widths_mm={"head1": 0.1, "head2": 0.3},
-        )
-        restored = RenderConfig3D.from_dict(config.to_dict())
-        assert restored.laser_dot_widths_mm == {
-            "head1": 0.1,
-            "head2": 0.3,
-        }
-
-    def test_laser_dot_widths_none_when_absent(self):
-        config = RenderConfig3D(
-            world_to_visual=np.eye(4, dtype=np.float32),
-            world_to_cyl_local=np.eye(4, dtype=np.float32),
-        )
-        restored = RenderConfig3D.from_dict(config.to_dict())
-        assert restored.laser_dot_widths_mm is None
-
     def test_missing_field_raises(self):
         with pytest.raises(KeyError):
             RenderConfig3D.from_dict({"world_to_visual": b"\x00" * 64})
@@ -144,3 +125,31 @@ class TestRenderConfig3D:
         assert restored.has_z_axis is True
         assert restored.stock_top_z == 0.0
         assert restored.stock_world_to_visual is None
+
+    def test_stock_specs_burn_round_trip(self):
+        """The burn entry (with its CompressedArray) passes through
+        to_dict/from_dict unchanged — the config dict crosses the
+        compile-thread boundary in-process."""
+        burn = {
+            "surface_map": CompressedArray.from_float32_2d(
+                np.full((4, 4), 255.0, dtype=np.float32)
+            ),
+            "origin_mm": (1.0, 2.0),
+            "px_per_mm": (10.0, 10.0),
+            "size_px": (100, 50),
+        }
+        config = RenderConfig3D(
+            world_to_visual=np.eye(4, dtype=np.float32),
+            world_to_cyl_local=np.eye(4, dtype=np.float32),
+            stock_specs=[{"name": "oak", "burn": burn}],
+        )
+        restored = RenderConfig3D.from_dict(config.to_dict())
+        assert restored.stock_specs is not None
+        spec = restored.stock_specs[0]
+        restored_burn = spec["burn"]
+        np.testing.assert_array_equal(
+            restored_burn["surface_map"].to_numpy(),
+            burn["surface_map"].to_numpy(),
+        )
+        assert restored_burn["origin_mm"] == (1.0, 2.0)
+        assert restored_burn["size_px"] == (100, 50)

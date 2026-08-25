@@ -10,9 +10,12 @@ import math
 
 import numpy as np
 import pytest
+from raygeo.compressed_array import CompressedArray
 
 from rayforge.simulator.scene3d.compiled_scene import StockLayer
-from rayforge.simulator.scene3d.stock_compiler import compile_stock_layers
+from rayforge.simulator.scene3d.stock_compiler import (
+    compile_stock_layers,
+)
 
 RECT_OUTER = [(0.0, 0.0), (200.0, 0.0), (200.0, 100.0), (0.0, 100.0)]
 
@@ -311,3 +314,136 @@ def test_compile_stock_layers_preserves_panel_transform(
     corner = layer.transform @ np.array([100.0, 50.0, 0.0, 1.0])
     # ROTATED_RIGHT presents world (100, 50) at panel (50, 300).
     assert corner[:2] == pytest.approx([50.0, 300.0])
+
+
+# ── Burn surface map ────────────────────────────────────────────
+
+
+def _burn_entry(
+    origin_mm=(0.0, 0.0),
+    px_per_mm=(50.0, 50.0),
+    size_px=(100, 50),
+    fill=0,
+):
+    w, h = size_px
+    pixels = np.full((h, w), fill, dtype=np.float32)
+    return {
+        "surface_map": CompressedArray.from_float32_2d(pixels),
+        "origin_mm": origin_mm,
+        "px_per_mm": px_per_mm,
+        "size_px": size_px,
+    }
+
+
+def test_compile_stock_layers_burn_spec():
+    spec = {
+        "name": "oak stock",
+        "thickness": 18.0,
+        "outers": [RECT_OUTER],
+        "holes": [],
+        "burn": _burn_entry(),
+    }
+    layers = compile_stock_layers([spec], _identity())
+    assert len(layers) == 1
+    layer = layers[0]
+    assert layer.power_texture is not None
+    assert layer.power_size_px == (100, 50)
+    # Grid: 100 px at 50 px/mm = 2 mm wide, 50 px = 1 mm tall.
+    assert layer.power_aabb == pytest.approx((0.0, 0.0, 2.0, 1.0))
+    assert layer.power_uvs.shape == (layer.positions.shape[0], 2)
+    assert layer.power_uvs.dtype == np.float32
+    # UVs are normalized into the grid; the stock (200x100 mm) is far
+    # larger than the 2x1 mm grid, so most UVs exceed 1 (clamped by
+    # GL_CLAMP_TO_EDGE at draw time). The (0, 0) corner maps to 0.
+    assert layer.power_uvs.min() == pytest.approx(0.0)
+
+
+def test_compile_stock_layers_without_burn_has_no_power_data():
+    spec = {
+        "name": "oak stock",
+        "thickness": 18.0,
+        "outers": [RECT_OUTER],
+        "holes": [],
+    }
+    layers = compile_stock_layers([spec], _identity())
+    assert len(layers) == 1
+    layer = layers[0]
+    assert layer.power_texture is None
+    assert layer.power_size_px is None
+    assert layer.power_aabb is None
+    assert layer.power_uvs.shape == (0, 2)
+
+
+def test_compile_stock_layers_invalid_burn_ignored():
+    spec = {
+        "name": "oak stock",
+        "thickness": 18.0,
+        "outers": [RECT_OUTER],
+        "holes": [],
+        "burn": {"surface_map": None},
+    }
+    layers = compile_stock_layers([spec], _identity())
+    assert len(layers) == 1
+    assert layers[0].power_texture is None
+
+
+def test_compile_rotary_stock_burn_spec():
+    """A rotary spec with a burn entry compiles power data onto the
+    shell; the grid covers the unrolled axial x circumference domain."""
+    diameter, length = 50.0, 200.0
+    # Grid over the full unrolled domain at 10 px/mm.
+    size_px = (
+        int(length * 10),
+        int(math.pi * diameter * 10),
+    )
+    spec = _rotary_spec(
+        burn=_burn_entry(
+            origin_mm=(0.0, 0.0),
+            px_per_mm=(10.0, 10.0),
+            size_px=size_px,
+        )
+    )
+    layer = compile_stock_layers([spec], _identity())[0]
+    assert layer.is_rotary is True
+    assert layer.power_texture is not None
+    assert layer.power_size_px == size_px
+    assert layer.power_aabb is not None
+    assert layer.power_aabb[0] == pytest.approx(0.0)
+    assert layer.power_aabb[1] == pytest.approx(0.0)
+    assert layer.power_aabb[2] == pytest.approx(length)
+    assert layer.power_aabb[3] == pytest.approx(size_px[1] / 10.0)
+    puv = layer.power_uvs
+    assert puv.shape == (layer.positions.shape[0], 2)
+    assert puv.min() >= 0.0 and puv.max() <= 1.0
+
+    from rayforge.simulator.scene3d.stock_compiler import (
+        CYLINDER_LENGTH_SEGMENTS,
+        CYLINDER_RINGS,
+    )
+
+    shell_verts = (CYLINDER_LENGTH_SEGMENTS + 1) * (CYLINDER_RINGS + 1)
+    pos = layer.positions.reshape(-1, 3)
+    # Axial ends map through the grid to u = 0 and u = 1.
+    shell_pos = pos[:shell_verts]
+    shell_puv = puv[:shell_verts]
+    at_start = shell_puv[np.isclose(shell_pos[:, 0], 0.0)]
+    at_end = shell_puv[np.isclose(shell_pos[:, 0], length)]
+    assert np.allclose(at_start[:, 0], 0.0)
+    assert np.allclose(at_end[:, 0], 1.0)
+    # The duplicated seam (at -z, theta = pi) maps to v = 0 and v = 1.
+    radius = 25.0
+    on_seam = (shell_pos[:, 2] < -(radius - 1e-3)) & (
+        np.abs(shell_pos[:, 1]) < 1e-3
+    )
+    vs = sorted(shell_puv[on_seam][:, 1])
+    assert len(vs) > 0
+    assert vs[0] == pytest.approx(0.0, abs=1e-6)
+    assert vs[-1] == pytest.approx(1.0)
+
+
+def test_compile_rotary_stock_without_burn_has_no_power_data():
+    layer = compile_stock_layers([_rotary_spec()], _identity())[0]
+    assert layer.power_texture is None
+    assert layer.power_size_px is None
+    assert layer.power_aabb is None
+    assert layer.power_uvs.shape == (0, 2)

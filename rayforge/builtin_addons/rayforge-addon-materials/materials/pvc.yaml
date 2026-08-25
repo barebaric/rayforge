@@ -24,8 +24,10 @@ category:
   uk: Пластик
   zh_CN: 塑料
 appearance:
-  color: "#E0FFFF"
+  absorption:
+    blue: 0.3
+    ir: 0.2
+    co2: 0.85
   pattern: solid
-  tintable: true
   texture: pvc.webp
   texture_size_mm: 300

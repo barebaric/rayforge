@@ -24,8 +24,10 @@ category:
   uk: Пластик
   zh_CN: 塑料
 appearance:
-  color: "#F0F0F0"
+  absorption:
+    blue: 0.3
+    ir: 0.2
+    co2: 0.85
   pattern: solid
-  tintable: true
   texture: polypropylene.webp
   texture_size_mm: 300

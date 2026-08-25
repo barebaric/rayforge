@@ -21,13 +21,14 @@ canvas_view:
   show_grid: true
   show_models: true
   show_nogo_zones: true
-  show_ops_underlay: false
   show_stock: true
   show_tabs: true
   show_travel_lines: false
   show_workpiece_image: false
   show_workpieces: true
 check_for_app_updates: true
+default_stock_material_uid: null
+default_stock_thickness_mm: 18.0
 import_dpi: 96.0
 language: null
 last_opened_project: tests/assets/rotary.ryp

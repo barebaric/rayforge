@@ -28,6 +28,7 @@ from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.contour import ContourSpec
 from raygeo.ops.axis import Axis
 from raygeo.ops.convert import Encoder, GcodeSpec
+from raygeo.ops.material.spec import CylinderStock, MaterialFoldSpec
 from raygeo.ops.part import Part
 from raygeo.pipeline.execute import execute_stages
 from raygeo.pipeline.request import NodeRequest
@@ -40,6 +41,7 @@ from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
 from rayforge.core.workpiece import WorkPiece
 from rayforge.machine.models.dialect.grbl import GRBL_DIALECT
+from rayforge.machine.models.laser import LaserHead
 from rayforge.machine.models.machine import Machine, Origin
 from rayforge.machine.models.machine_panel import PanelOrientation
 from rayforge.machine.models.rotary_module import RotaryMode, RotaryModule
@@ -50,7 +52,9 @@ from rayforge.pipeline.intent_builder import (
     job_encode_key,
     job_key,
     job_machinexform_key,
+    parse_stock_key,
     step_key,
+    stock_key,
     workpiece_key,
 )
 
@@ -542,6 +546,33 @@ def test_compute_token_changes_on_machine_arc_tolerance(
     machine.arc_tolerance = 0.25
     after = IntentBuilder(machine=machine).build(doc)
     before_t = next(n.version_token for n in before if n.key == wpk)
+    after_t = next(n.version_token for n in after if n.key == wpk)
+    assert before_t != after_t
+
+
+def test_compute_token_changes_on_laser_power_change(
+    contour_step_class, test_machine_and_config
+):
+    """Changing the machine's laser optical power invalidates the
+    compute cache.
+
+    The burn fluence model scales with ``max_power_watts``; without
+    folding it into the compute token, the pipeline would keep serving
+    the pre-change burn until an unrelated edit (e.g. a workpiece
+    resize) bumped the token.
+    """
+    machine, context = test_machine_and_config
+    step = contour_step_class.create(context, name="cut")
+    wp = WorkPiece(name="wp")
+    doc = _make_doc(step, wp)
+
+    laser = next(h for h in machine.heads if isinstance(h, LaserHead))
+    before = IntentBuilder(machine=machine).build(doc)
+    wpk = workpiece_key(wp.uid, step.uid)
+    before_t = next(n.version_token for n in before if n.key == wpk)
+
+    laser.max_power_watts = 55.0
+    after = IntentBuilder(machine=machine).build(doc)
     after_t = next(n.version_token for n in after if n.key == wpk)
     assert before_t != after_t
 
@@ -1646,3 +1677,398 @@ def test_panel_rotation_does_not_change_gcode(
 
     assert len(native_coords) >= 4
     assert rotated_coords == native_coords
+
+
+# ----------------------------------------------------------------------
+# Stock fold nodes
+# ----------------------------------------------------------------------
+
+
+def _wp_with_geometry(name: str = "wp") -> WorkPiece:
+    """A WorkPiece whose world geometry overlaps the stock's
+    ``(0,0)-(100,100)`` rect: a 50×50 mm piece at the origin."""
+    wp = WorkPiece(name=name)
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(1, 0)
+    geo.line_to(1, 1)
+    geo.line_to(0, 1)
+    geo.close_path()
+    # The boundaries are a 1x1 normalized box; scale it to 50×50 mm
+    # via the workpiece matrix so its world rect overlaps the stock.
+    wp._boundaries_cache = geo
+    wp.matrix = Matrix.scale(50.0, 50.0)
+    return wp
+
+
+def _make_doc_with_stock_and_wp(
+    step: _TestStep,
+    wp: WorkPiece,
+    stock_visible: bool = True,
+    thickness: float = 18.0,
+) -> tuple[Doc, StockItem]:
+    """Build a Doc with *step*, *wp*, and a 100×80 mm stock item that
+    overlaps the workpiece, returning ``(doc, stock_item)``."""
+    doc = _make_doc(step, wp)
+    asset = StockAsset(name="sheet", geometry=None)
+    asset.set_thickness(thickness)
+    geo = Geometry()
+    geo.move_to(0, 0)
+    geo.line_to(100, 0)
+    geo.line_to(100, 80)
+    geo.line_to(0, 80)
+    geo.close_path()
+    asset.geometry = geo
+    doc.add_asset(asset)
+    item = StockItem(stock_asset_uid=asset.uid, name="sheet")
+    item.visible = stock_visible
+    doc.add_child(item)
+    return doc, item
+
+
+def test_stock_key_roundtrip():
+    """``stock_key``/``parse_stock_key`` are inverse."""
+    key = stock_key("abc-123")
+    assert key == "stock:abc-123"
+    assert parse_stock_key(key) == "abc-123"
+    assert parse_stock_key("workpiece:x:y") is None
+    assert parse_stock_key("stock:") is None
+    assert parse_stock_key("stock:a:b") is None
+
+
+def test_builds_one_fold_node_per_visible_stock(isolated_machine):
+    """Two visible stock items → two ``stock:{uid}`` fold nodes."""
+    step = _TestStep(name="s1")
+    wp = _wp_with_geometry()
+    doc, item = _make_doc_with_stock_and_wp(step, wp)
+    # Add a second stock item.
+    asset2 = StockAsset(name="sheet2")
+    asset2.set_thickness(5.0)
+    geo2 = Geometry()
+    geo2.move_to(0, 0)
+    geo2.line_to(50, 0)
+    geo2.line_to(50, 50)
+    geo2.line_to(0, 50)
+    geo2.close_path()
+    asset2.geometry = geo2
+    doc.add_asset(asset2)
+    item2 = StockItem(stock_asset_uid=asset2.uid, name="sheet2")
+    doc.add_child(item2)
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+    keys = [n.key for n in nodes]
+    assert stock_key(item.uid) in keys
+    assert stock_key(item2.uid) in keys
+
+
+def test_no_fold_node_for_invisible_stock(isolated_machine):
+    """An invisible stock item emits no fold node."""
+    step = _TestStep(name="s1")
+    wp = _wp_with_geometry()
+    doc, item = _make_doc_with_stock_and_wp(step, wp, stock_visible=False)
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+    keys = [n.key for n in nodes]
+    assert stock_key(item.uid) not in keys
+
+
+def test_fold_node_token_stability(isolated_machine):
+    """Building twice with unchanged inputs yields equal fold tokens."""
+    step = _TestStep(name="s1")
+    wp = _wp_with_geometry()
+    doc, item = _make_doc_with_stock_and_wp(step, wp)
+
+    before = IntentBuilder(machine=isolated_machine).build(doc)
+    after = IntentBuilder(machine=isolated_machine).build(doc)
+    sk = stock_key(item.uid)
+    before_t = next(n.version_token for n in before if n.key == sk)
+    after_t = next(n.version_token for n in after if n.key == sk)
+    assert before_t == after_t
+
+
+def test_fold_node_token_changes_on_stock_move(isolated_machine):
+    """Moving the stock changes its fold node token."""
+    step = _TestStep(name="s1")
+    wp = _wp_with_geometry()
+    doc, item = _make_doc_with_stock_and_wp(step, wp)
+    sk = stock_key(item.uid)
+
+    before = IntentBuilder(machine=isolated_machine).build(doc)
+    # Small move keeps the stock overlapping the workpiece so the fold
+    # node is still emitted, while changing the token.
+    item.matrix = Matrix.translation(10.0, 0.0)
+    after = IntentBuilder(machine=isolated_machine).build(doc)
+    before_t = next(n.version_token for n in before if n.key == sk)
+    after_t = next(n.version_token for n in after if n.key == sk)
+    assert before_t != after_t
+
+
+def test_fold_node_token_changes_on_thickness_change(isolated_machine):
+    """Changing the stock thickness changes its fold node token."""
+    step = _TestStep(name="s1")
+    wp = _wp_with_geometry()
+    doc, item = _make_doc_with_stock_and_wp(step, wp, thickness=18.0)
+    sk = stock_key(item.uid)
+
+    before = IntentBuilder(machine=isolated_machine).build(doc)
+    asset = item.stock_asset
+    assert asset is not None
+    asset.set_thickness(5.0)
+    after = IntentBuilder(machine=isolated_machine).build(doc)
+    before_t = next(n.version_token for n in before if n.key == sk)
+    after_t = next(n.version_token for n in after if n.key == sk)
+    assert before_t != after_t
+
+
+def test_fold_node_no_intersecting_workpieces_skipped(isolated_machine):
+    """A stock item with no intersecting workpiece emits no fold node."""
+    step = _TestStep(name="s1")
+    wp = _wp_with_geometry()
+    doc, item = _make_doc_with_stock_and_wp(step, wp)
+    # Move the stock far away from the workpiece.
+    item.matrix = Matrix.translation(10000.0, 10000.0)
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+    keys = [n.key for n in nodes]
+    assert stock_key(item.uid) not in keys
+
+
+def test_fold_node_is_material_fold_stage(isolated_machine):
+    """The fold node's stage is a ``MaterialFoldSpec`` (passed directly,
+    not wrapped in a ``StageSpec`` — pipeline is domain-free)."""
+    step = _TestStep(name="s1")
+    wp = _wp_with_geometry()
+    doc, item = _make_doc_with_stock_and_wp(step, wp)
+    sk = stock_key(item.uid)
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+    fold_node = next(n for n in nodes if n.key == sk)
+    assert isinstance(fold_node.stage, MaterialFoldSpec)
+
+
+def test_fold_node_entries_cover_intersecting_workpieces(isolated_machine):
+    """The fold spec's entries list every intersecting workpiece compute
+    node; non-intersecting workpieces are absent."""
+    step = _TestStep(name="s1")
+    wp_far = _wp_with_geometry("wp_far")
+    wp_far.matrix = Matrix.translation(10000.0, 10000.0)
+    wp_near = _wp_with_geometry("wp_near")
+    doc, item = _make_doc_with_stock_and_wp(step, wp_near)
+    doc.active_layer.add_child(wp_far)
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+    sk = stock_key(item.uid)
+    fold_node = next(n for n in nodes if n.key == sk)
+    spec = fold_node.stage
+    source_keys = {e.source_key for e in spec.entries}
+    near_key = workpiece_key(wp_near.uid, step.uid)
+    far_key = workpiece_key(wp_far.uid, step.uid)
+    assert near_key in source_keys
+    assert far_key not in source_keys
+
+
+def test_fold_node_includes_image_workpiece_without_geometry(
+    isolated_machine,
+):
+    """An image/raster workpiece (no vector geometry) still contributes
+    a fold entry when its size-based world AABB intersects the stock.
+
+    Raster workpieces carry no ``boundaries`` geometry, so
+    ``get_world_geometry`` returns ``None``; the fold wiring must fall
+    back to the workpiece's ``size`` transformed into world space,
+    otherwise scanline burns never reach the stock.
+    """
+    step = _TestStep(name="s1")
+    wp = WorkPiece(name="wp")
+    wp.set_size(50.0, 50.0)
+    doc, item = _make_doc_with_stock_and_wp(step, wp)
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+    sk = stock_key(item.uid)
+    fold_node = next(n for n in nodes if n.key == sk)
+    assert isinstance(fold_node.stage, MaterialFoldSpec)
+    source_keys = {e.source_key for e in fold_node.stage.entries}
+    assert workpiece_key(wp.uid, step.uid) in source_keys
+
+
+def test_fold_node_skips_image_workpiece_outside_stock(isolated_machine):
+    """An image workpiece whose world AABB does not intersect the
+    stock is still excluded from the fold."""
+    step = _TestStep(name="s1")
+    wp = WorkPiece(name="wp")
+    wp.set_size(50.0, 50.0)
+    wp.matrix = Matrix.translation(10000.0, 10000.0)
+    doc, item = _make_doc_with_stock_and_wp(step, wp)
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+    keys = [n.key for n in nodes]
+    assert stock_key(item.uid) not in keys
+
+
+def test_existing_node_count_unchanged_with_stock(isolated_machine):
+    """Adding a stock item does not change the count of workpiece/step/
+    job nodes — fold nodes are additive."""
+    step = _TestStep(name="s1")
+    wp1 = _wp_with_geometry("wp1")
+    wp2 = _wp_with_geometry("wp2")
+    doc_no_stock = _make_doc(step, wp1, wp2)
+
+    # Build a separate doc with its own workpieces + a stock item, so
+    # workpieces are not re-parented between docs.
+    step2 = _TestStep(name="s1")
+    wp1b = _wp_with_geometry("wp1")
+    wp2b = _wp_with_geometry("wp2")
+    doc_with_stock, _item = _make_doc_with_stock_and_wp(step2, wp1b)
+    doc_with_stock.active_layer.add_child(wp2b)
+
+    no_stock = IntentBuilder(machine=isolated_machine).build(doc_no_stock)
+    with_stock = IntentBuilder(machine=isolated_machine).build(doc_with_stock)
+
+    non_stock_keys = [
+        n.key for n in with_stock if not n.key.startswith("stock:")
+    ]
+    assert len(non_stock_keys) == len(no_stock)
+
+
+# ----------------------------------------------------------------------
+# Rotary layer fold nodes
+# ----------------------------------------------------------------------
+
+
+def _with_default_rotary(machine) -> RotaryModule:
+    module = RotaryModule()
+    module.max_workpiece_length = 300.0
+    machine.rotary_modules[module.uid] = module
+    machine.default_rotary_module_uid = module.uid
+    return module
+
+
+def _make_doc_with_rotary_wp(step: _TestStep, wp: WorkPiece) -> Doc:
+    """A Doc whose active layer is rotary-enabled with a workpiece in
+    the unrolled domain."""
+    doc = _make_doc(step, wp)
+    doc.active_layer.rotary_enabled = True
+    doc.active_layer.rotary_diameter = 50.0
+    return doc
+
+
+def test_rotary_layer_emits_fold_node(isolated_machine):
+    """A rotary layer with an intersecting workpiece emits a fold node
+    keyed by the layer's uid."""
+    _with_default_rotary(isolated_machine)
+    step = _TestStep(name="s1")
+    wp = _wp_with_geometry()
+    doc = _make_doc_with_rotary_wp(step, wp)
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+    sk = stock_key(doc.active_layer.uid)
+    assert sk in [n.key for n in nodes]
+
+
+def test_rotary_fold_node_uses_cylinder_stock(isolated_machine):
+    """The rotary fold node's stage is a ``MaterialFoldSpec`` against
+    a ``CylinderStock`` spanning the module's max workpiece length."""
+    module = _with_default_rotary(isolated_machine)
+    step = _TestStep(name="s1")
+    wp = _wp_with_geometry()
+    doc = _make_doc_with_rotary_wp(step, wp)
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+    sk = stock_key(doc.active_layer.uid)
+    spec = next(n for n in nodes if n.key == sk).stage
+    assert isinstance(spec, MaterialFoldSpec)
+    assert isinstance(spec.stock, CylinderStock)
+    assert spec.stock.diameter == 50.0
+    assert spec.stock.length == module.max_workpiece_length
+    near_key = workpiece_key(wp.uid, step.uid)
+    assert {e.source_key for e in spec.entries} == {near_key}
+
+
+def test_rotary_fold_node_skipped_without_module(isolated_machine):
+    """Without a default rotary module, no rotary fold node is
+    emitted even when a layer is rotary-enabled."""
+    step = _TestStep(name="s1")
+    wp = _wp_with_geometry()
+    doc = _make_doc_with_rotary_wp(step, wp)
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+    sk = stock_key(doc.active_layer.uid)
+    assert sk not in [n.key for n in nodes]
+
+
+def test_rotary_fold_node_includes_far_workpieces(isolated_machine):
+    """Workpieces far from the unrolled domain still contribute fold
+    entries: image workpieces may not resolve world geometry, and the
+    fold's raster sampling is harmless for misses."""
+    _with_default_rotary(isolated_machine)
+    step = _TestStep(name="s1")
+    wp = _wp_with_geometry()
+    wp.matrix = Matrix.translation(10000.0, 10000.0)
+    doc = _make_doc_with_rotary_wp(step, wp)
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+    sk = stock_key(doc.active_layer.uid)
+    spec = next(n for n in nodes if n.key == sk).stage
+    assert {e.source_key for e in spec.entries} == {
+        workpiece_key(wp.uid, step.uid)
+    }
+
+
+def test_flat_stock_node_not_emitted_for_rotary_layer(isolated_machine):
+    """Rotary layers don't emit flat-stock keys and vice versa."""
+    _with_default_rotary(isolated_machine)
+    step = _TestStep(name="s1")
+    wp = _wp_with_geometry()
+    doc = _make_doc_with_rotary_wp(step, wp)
+
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
+    stock_keys = [n.key for n in nodes if n.key.startswith("stock:")]
+    assert stock_keys == [stock_key(doc.active_layer.uid)]
+
+
+def test_rotary_fold_executes_end_to_end(
+    contour_step_class, test_machine_and_config
+):
+    """A rotary layer's fold node runs through ``execute_stages`` and
+    produces a cylindrical material state."""
+    machine, context = test_machine_and_config
+    module = RotaryModule()
+    module.max_workpiece_length = 300.0
+    machine.rotary_modules[module.uid] = module
+    machine.default_rotary_module_uid = module.uid
+
+    step = contour_step_class.create(context, name="cut")
+    geo = Geometry()
+    geo.move_to(0.0, 0.0)
+    geo.line_to(10.0, 0.0)
+    geo.line_to(10.0, 10.0)
+    geo.line_to(0.0, 10.0)
+    geo.close_path()
+    wp = WorkPiece(name="rect")
+    wp._edited_boundaries = geo
+    wp.set_size(50.0, 30.0)
+    doc = _make_doc(step, wp)
+    doc.active_layer.rotary_enabled = True
+    doc.active_layer.rotary_diameter = 50.0
+
+    nodes = IntentBuilder(machine=machine, generation_id=1).build(doc)
+    sk = stock_key(doc.active_layer.uid)
+
+    completed = []
+
+    def on_completed(node):
+        completed.append(node)
+
+    assert sk in [n.key for n in nodes], [n.key for n in nodes]
+
+    execute_stages(nodes, on_completed)
+
+    fold_result = next(c for c in completed if c.key == sk)
+    assert fold_result.error is None, fold_result.error
+    state = fold_result.output
+    assert state.profile == "cylindrical"
+    assert state.surface_map is not None
+    assert state.grid is not None
+    # Arc axis centered on the machine origin (diameter 50).
+    assert state.grid.origin_mm[0] == 0.0
+    assert state.grid.origin_mm[1] == pytest.approx(-np.pi * 25.0)

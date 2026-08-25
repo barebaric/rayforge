@@ -64,18 +64,13 @@ Kleinere Werte wiederholen die Textur häufiger auf derselben Fläche.
 
 #### Farbe
 
-Die Grundfarbe des Materials. Wenn eine Textur festgelegt ist und das
-Material einfärbbar ist, färbt die Farbe die Textur. Die Farbe wird nur
-für das visuelle Erscheinungsbild auf der Arbeitsfläche verwendet - sie
-beeinflusst den Laserpfad in keiner Weise.
-
-#### Einfärbbar
-
-Wenn aktiviert, kann die Textur des Materials mit der obigen Farbe
-eingefärbt werden. Dadurch kann ein einzelnes texturiertes Material
+Eine optionale Tönungsfarbe. Wenn sie festgelegt ist, wird die Textur
+des Materials mit dieser Farbe eingefärbt; andernfalls wird die Textur
+unverändert angezeigt. Dadurch kann ein einzelnes texturiertes Material
 (z.B. "Acryl") mehrere Farbvarianten abdecken: Die Farbe wird pro
 Materialstück im Dialog [Materialeigenschaften](../features/stock-handling.md)
-angewendet.
+angewendet. Die Farbe wird nur für das visuelle Erscheinungsbild auf der
+Arbeitsfläche verwendet - sie beeinflusst den Laserpfad in keiner Weise.
 
 #### Rauheit
 

@@ -97,9 +97,9 @@ Passe an, was du siehst:
 - **Nach Operation färben**: Verschiedene Farben für jede Operation
 
 :::tip Farben pro Laser
-Bei Maschinen mit mehreren Laserköpfen kann jeder Laser eigene Schnitt- und
-Rasterfarben haben, die in den [Lasereinstellungen](../machine/laser.md)
-konfiguriert werden. Dies erleichtert die Identifizierung, welcher Laser
+Bei Maschinen mit mehreren Laserköpfen kann jeder Laser eine eigene Farbe haben,
+die in den [Lasereinstellungen](../machine/laser.md)
+konfiguriert wird. Dies erleichtert die Identifizierung, welcher Laser
 welche Operation ausführt.
 :::
 

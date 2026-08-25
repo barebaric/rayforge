@@ -2,9 +2,12 @@
 
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
+import pytest
 import yaml
 
+from rayforge.core.config import Config
 from rayforge.core.library_manager import LibraryManager
 from rayforge.core.material import Material
 
@@ -527,3 +530,269 @@ class TestLibraryManager:
                 metadata = yaml.safe_load(f)
             assert metadata["id"] == lib_id
             assert metadata["name"] == "Test Library"
+
+
+class TestGetDefaultMaterial:
+    """Tests for LibraryManager.get_default_material."""
+
+    def test_returns_bundled_material_when_no_libraries(self):
+        """With no libraries, falls back to the bundled oak."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manager = LibraryManager(Path(temp_dir))
+            manager.load_all_libraries()
+
+            mat = manager.get_default_material()
+
+            assert mat is not None
+            assert mat.uid == "oak"
+
+    def test_load_bundled_material_directly(self):
+        """_load_bundled_material loads oak from resources."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manager = LibraryManager(Path(temp_dir))
+
+            mat = manager._load_bundled_material()
+
+            assert mat is not None
+            assert mat.uid == "oak"
+
+    def test_prefers_library_material_over_bundled(self):
+        """When oak exists in a registered library, it is used."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            user_dir = Path(temp_dir)
+            lib_dir = user_dir / "test_lib"
+            lib_dir.mkdir()
+            meta = {"name": "Test", "id": "test-lib"}
+            with open(lib_dir / "__library__.yaml", "w") as f:
+                yaml.dump(meta, f)
+            mat_data = {
+                "uid": "oak",
+                "name": "Library Oak",
+                "category": "Wood",
+            }
+            with open(lib_dir / "oak.yaml", "w") as f:
+                yaml.dump(mat_data, f)
+
+            manager = LibraryManager(user_dir)
+            manager.load_all_libraries()
+
+            mat = manager.get_default_material()
+
+            assert mat.uid == "oak"
+            assert mat.name == "Library Oak"
+
+    def test_prefers_configured_default(self):
+        """When config has a default UID, it takes priority."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            user_dir = Path(temp_dir)
+            lib_dir = user_dir / "test_lib"
+            lib_dir.mkdir()
+            meta = {"name": "Test", "id": "test-lib"}
+            with open(lib_dir / "__library__.yaml", "w") as f:
+                yaml.dump(meta, f)
+            mat_data = {
+                "uid": "cherry",
+                "name": "Cherry",
+                "category": "Wood",
+            }
+            with open(lib_dir / "cherry.yaml", "w") as f:
+                yaml.dump(mat_data, f)
+
+            manager = LibraryManager(user_dir)
+            manager.load_all_libraries()
+
+            fake_config = type(
+                "FakeConfig",
+                (),
+                {"default_stock_material_uid": "cherry"},
+            )()
+            with patch(
+                "rayforge.core.library_manager.get_context"
+            ) as mock_ctx:
+                mock_ctx.return_value.config = fake_config
+                mat = manager.get_default_material()
+
+            assert mat.uid == "cherry"
+
+    def test_falls_back_to_bundled_when_configured_missing(self):
+        """When the configured UID is unavailable, falls back to oak."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manager = LibraryManager(Path(temp_dir))
+            manager.load_all_libraries()
+
+            fake_config = type(
+                "FakeConfig",
+                (),
+                {"default_stock_material_uid": "nonexistent"},
+            )()
+            with patch(
+                "rayforge.core.library_manager.get_context"
+            ) as mock_ctx:
+                mock_ctx.return_value.config = fake_config
+                mat = manager.get_default_material()
+
+            assert mat.uid == "oak"
+
+    def test_falls_back_to_first_material_if_no_oak(self):
+        """When no oak is anywhere, returns the first available material."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            user_dir = Path(temp_dir)
+            lib_dir = user_dir / "test_lib"
+            lib_dir.mkdir()
+            meta = {"name": "Test", "id": "test-lib"}
+            with open(lib_dir / "__library__.yaml", "w") as f:
+                yaml.dump(meta, f)
+            mat_data = {
+                "uid": "custom_mat",
+                "name": "Custom",
+                "category": "test",
+            }
+            with open(lib_dir / "custom_mat.yaml", "w") as f:
+                yaml.dump(mat_data, f)
+
+            manager = LibraryManager(user_dir)
+            manager.load_all_libraries()
+
+            with patch.object(
+                manager, "_load_bundled_material", return_value=None
+            ):
+                fake_config = type(
+                    "FakeConfig",
+                    (),
+                    {"default_stock_material_uid": None},
+                )()
+                with patch(
+                    "rayforge.core.library_manager.get_context"
+                ) as mock_ctx:
+                    mock_ctx.return_value.config = fake_config
+                    mat = manager.get_default_material()
+
+            assert mat.uid == "custom_mat"
+
+    def test_raises_when_no_materials(self):
+        """Raises RuntimeError when no materials are available at all."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manager = LibraryManager(Path(temp_dir))
+            manager.load_all_libraries()
+
+            with patch.object(
+                manager, "_load_bundled_material", return_value=None
+            ):
+                fake_config = type(
+                    "FakeConfig",
+                    (),
+                    {"default_stock_material_uid": None},
+                )()
+                with patch(
+                    "rayforge.core.library_manager.get_context"
+                ) as mock_ctx:
+                    mock_ctx.return_value.config = fake_config
+                    with pytest.raises(RuntimeError):
+                        manager.get_default_material()
+
+
+class TestConfigDefaultMaterial:
+    """Tests for Config default stock settings."""
+
+    def test_material_defaults_to_none(self):
+        config = Config()
+        assert config.default_stock_material_uid is None
+
+    def test_thickness_defaults_to_18(self):
+        config = Config()
+        assert config.default_stock_thickness_mm == 18.0
+
+    def test_set_material_updates_value(self):
+        config = Config()
+        config.set_default_stock_material("oak")
+        assert config.default_stock_material_uid == "oak"
+
+    def test_set_thickness_updates_value(self):
+        config = Config()
+        config.set_default_stock_thickness(5.0)
+        assert config.default_stock_thickness_mm == 5.0
+
+    def test_set_material_emits_changed_signal(self):
+        config = Config()
+        fired = []
+
+        def on_changed(sender, **kwargs):
+            fired.append(True)
+
+        config.changed.connect(on_changed)
+        config.set_default_stock_material("oak")
+        assert len(fired) == 1
+
+    def test_set_thickness_emits_changed_signal(self):
+        config = Config()
+        fired = []
+
+        def on_changed(sender, **kwargs):
+            fired.append(True)
+
+        config.changed.connect(on_changed)
+        config.set_default_stock_thickness(5.0)
+        assert len(fired) == 1
+
+    def test_set_material_no_op_on_same_value(self):
+        config = Config()
+        config.set_default_stock_material("oak")
+        fired = []
+
+        def on_changed(sender, **kwargs):
+            fired.append(True)
+
+        config.changed.connect(on_changed)
+        config.set_default_stock_material("oak")
+        assert len(fired) == 0
+
+    def test_set_thickness_no_op_on_same_value(self):
+        config = Config()
+        config.set_default_stock_thickness(5.0)
+        fired = []
+
+        def on_changed(sender, **kwargs):
+            fired.append(True)
+
+        config.changed.connect(on_changed)
+        config.set_default_stock_thickness(5.0)
+        assert len(fired) == 0
+
+    def test_to_dict_includes_material_uid(self):
+        config = Config()
+        config.set_default_stock_material("cherry")
+        data = config.to_dict()
+        assert data["default_stock_material_uid"] == "cherry"
+
+    def test_to_dict_includes_thickness(self):
+        config = Config()
+        config.set_default_stock_thickness(12.5)
+        data = config.to_dict()
+        assert data["default_stock_thickness_mm"] == 12.5
+
+    def test_to_dict_includes_none_material(self):
+        config = Config()
+        data = config.to_dict()
+        assert data["default_stock_material_uid"] is None
+
+    def test_from_dict_loads_material_uid(self):
+        config = Config.from_dict(
+            {"default_stock_material_uid": "walnut"},
+            lambda mid: None,
+        )
+        assert config.default_stock_material_uid == "walnut"
+
+    def test_from_dict_loads_thickness(self):
+        config = Config.from_dict(
+            {"default_stock_thickness_mm": 6.0},
+            lambda mid: None,
+        )
+        assert config.default_stock_thickness_mm == 6.0
+
+    def test_from_dict_defaults_material_to_none(self):
+        config = Config.from_dict({}, lambda mid: None)
+        assert config.default_stock_material_uid is None
+
+    def test_from_dict_defaults_thickness_to_18(self):
+        config = Config.from_dict({}, lambda mid: None)
+        assert config.default_stock_thickness_mm == 18.0
