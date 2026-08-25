@@ -141,6 +141,19 @@ class SketchTool(ABC):
         """
         return self.ICON is not None and self.LABEL is not None
 
+    def is_available_for_edit(self, pattern) -> bool:
+        """
+        Returns True if this tool can edit the given pattern definition.
+        Pattern tools override this; all other tools return False.
+        """
+        return False
+
+    def set_edit_target(self, pattern) -> None:
+        """
+        Arms a pattern tool for editing an existing pattern definition.
+        Must be called before the tool is activated. No-op by default.
+        """
+
     def shortcut_is_active(self) -> bool:
         """
         Determines if this tool's shortcut should be shown in the status bar.
