@@ -7,6 +7,7 @@ from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
+    ClassVar,
     cast,
 )
 
@@ -21,6 +22,7 @@ from ....core.varset import (
     VarSet,
 )
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
+from ....core.varset.var import Var
 from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
 from ....pipeline.encoder.gcode import GcodeEncoder
 from ...transport import TransportStatus
@@ -64,6 +66,24 @@ _RECONNECT_INTERVAL = 5.0
 _WS_PING_INTERVAL = 30.0
 
 
+def _normalize_path_prefix(path: str) -> str:
+    """Normalizes a URL path prefix for constructing API base URLs.
+
+    ``/`` (the common case) yields an empty prefix so URLs stay
+    clean (``http://host:port/api/…``). A non-root prefix like
+    ``/octoprint`` is kept as-is (no trailing slash); request paths
+    already start with ``/`` and are appended directly.
+    """
+    if not path:
+        return ""
+    prefix = path.strip()
+    while len(prefix) > 1 and prefix.endswith("/"):
+        prefix = prefix[:-1]
+    if prefix == "/":
+        return ""
+    return prefix
+
+
 class OctoPrintDriver(Driver):
     """
     Submits G-code jobs to an OctoPrint server via its REST API and
@@ -80,6 +100,11 @@ class OctoPrintDriver(Driver):
     # Advertised by OctoPrint's discovery plugin; used for network
     # device discovery.
     MDNS_SERVICES = ("_octoprint._tcp.local.",)
+    # OctoPrint's TXT record carries a ``path`` key (the URL prefix
+    # the server is mounted under, e.g. ``/`` or ``/octoprint``).
+    # Forward it into the ``path`` setup-var so connections target
+    # the right base path.
+    MDNS_TXT_MAP: ClassVar[dict[str, str]] = {"path": "path"}
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
@@ -133,6 +158,16 @@ class OctoPrintDriver(Driver):
                     label=_("Port"),
                     description=_("HTTP port of the OctoPrint server"),
                     default=80,
+                ),
+                Var(
+                    key="path",
+                    label=_("Path"),
+                    description=_(
+                        "URL prefix the OctoPrint server is mounted "
+                        'under (discovered automatically; usually "/").'
+                    ),
+                    var_type=str,
+                    default="/",
                 ),
                 AppKeyVar(
                     key="api_key",
@@ -189,7 +224,10 @@ class OctoPrintDriver(Driver):
         self.host = host
         self.port = port
         self._api_key = api_key
-        self._base_url = f"http://{host}:{port}"
+        self._path_prefix = _normalize_path_prefix(
+            cast(str, kwargs.get("path", "/"))
+        )
+        self._base_url = f"http://{host}:{port}{self._path_prefix}"
 
     async def cleanup(self):
         self.keep_running = False
@@ -338,7 +376,9 @@ class OctoPrintDriver(Driver):
                     return
 
     async def _run_websocket(self) -> None:
-        ws_url = f"ws://{self.host}:{self.port}/sockjs/websocket"
+        ws_url = (
+            f"ws://{self.host}:{self.port}{self._path_prefix}/sockjs/websocket"
+        )
         self._update_connection_status(TransportStatus.CONNECTING)
 
         async with aiohttp.ClientSession() as session:

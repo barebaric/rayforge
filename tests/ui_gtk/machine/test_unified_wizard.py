@@ -1177,6 +1177,50 @@ def test_octoprint_device_selected_goes_to_connect(ui_context_initializer):
     assert connect_page.ready is False
 
 
+@pytest.mark.ui
+def test_octoprint_device_with_path_prefills_connect(ui_context_initializer):
+    """A path forwarded from the mDNS TXT record prefills the
+    connection page's path field and survives into driver_args."""
+    wizard = _make_wizard(ui_context_initializer)
+    page = wizard._get_page("discover")
+    assert isinstance(page, DiscoverPage)
+
+    device = _discovered_device(
+        driver_name="OctoPrintDriver",
+        params={
+            "host": "192.168.1.42",
+            "port": 80,
+            "path": "/octoprint",
+        },
+        label="OctoPrint",
+        detail="192.168.1.42:80 (octopi.local)",
+        identity=DeviceIdentity(
+            firmware="octoprint", banner="OctoPrint on octopi"
+        ),
+    )
+
+    with patch.object(
+        type(ui_context_initializer.device_profile_mgr),
+        "match_device",
+        return_value=None,
+    ):
+        wizard._on_device_selected(page, device=device)
+
+    assert wizard.stack.get_visible_child_name() == "profile"
+    wizard._on_profile_source_selected(
+        wizard._get_page("profile"), kind="other", profile=None
+    )
+
+    assert wizard.stack.get_visible_child_name() == "connect"
+    connect_page = wizard._get_page("connect")
+    assert isinstance(connect_page, ConnectionPage)
+    values = connect_page.connect_widget.get_values()
+    assert values.get("host") == "192.168.1.42"
+    assert values.get("path") == "/octoprint"
+    # host/port/path present but API key still missing: not ready.
+    assert connect_page.ready is False
+
+
 def _probed_profile(name="Mystery CNC", **machine_overrides):
     return DeviceProfile(
         meta=DeviceMeta(name=name),

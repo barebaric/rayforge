@@ -1,6 +1,7 @@
 import json
 from unittest.mock import AsyncMock, MagicMock
 
+import aiohttp
 import pytest
 from raygeo.ops.axis import Axis
 
@@ -172,7 +173,51 @@ class TestSetup:
         assert driver.port == 5000
         assert driver._api_key == "mykey"
         assert driver._base_url == "http://192.168.1.50:5000"
+        assert driver._path_prefix == ""
         assert driver.did_setup is True
+
+    def test_setup_default_path_is_root(self, driver):
+        """path defaults to "/" which normalizes to an empty prefix,
+        so the base URL has no trailing slash."""
+        driver.setup(
+            host="host",
+            port=80,
+            api_key=_api_key_json("key"),
+            path="/",
+        )
+        assert driver._path_prefix == ""
+        assert driver._base_url == "http://host:80"
+
+    def test_setup_custom_path_prefix(self, driver):
+        """A non-root path from mDNS TXT is folded into the base URL."""
+        driver.setup(
+            host="host",
+            port=80,
+            api_key=_api_key_json("key"),
+            path="/octoprint",
+        )
+        assert driver._path_prefix == "/octoprint"
+        assert driver._base_url == "http://host:80/octoprint"
+
+    def test_setup_path_strips_trailing_slash(self, driver):
+        driver.setup(
+            host="host",
+            port=80,
+            api_key=_api_key_json("key"),
+            path="/octoprint/",
+        )
+        assert driver._path_prefix == "/octoprint"
+        assert driver._base_url == "http://host:80/octoprint"
+
+    def test_setup_empty_path_normalizes_to_root(self, driver):
+        driver.setup(
+            host="host",
+            port=80,
+            api_key=_api_key_json("key"),
+            path="",
+        )
+        assert driver._path_prefix == ""
+        assert driver._base_url == "http://host:80"
 
     def test_setup_no_host_raises(self, driver):
         driver.setup(host="", port=80, api_key=_api_key_json())
@@ -218,6 +263,83 @@ class TestApiRequest:
         call_kwargs = mock_session.request.call_args
         headers = call_kwargs[1].get("headers", {})
         assert headers["X-Api-Key"] == "mykey"
+
+    @pytest.mark.asyncio
+    async def test_api_request_url_includes_path_prefix(self, driver, mocker):
+        """When discovered with a non-root path, API requests target
+        the prefixed base URL."""
+        driver.setup(
+            host="host",
+            port=80,
+            api_key=_api_key_json("key"),
+            path="/octoprint",
+        )
+
+        mock_response = AsyncMock()
+        mock_response.status = 200
+        mock_response.content_type = "application/json"
+        mock_response.raise_for_status = MagicMock()
+        mock_response.json = AsyncMock(return_value={})
+        mock_response.text = AsyncMock(return_value="")
+
+        mock_ctx = AsyncMock()
+        mock_ctx.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_ctx.__aexit__ = AsyncMock(return_value=False)
+
+        mock_session = MagicMock()
+        mock_session.request = MagicMock(return_value=mock_ctx)
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=False)
+
+        mocker.patch(
+            "rayforge.machine.driver.octoprint.octoprint_driver"
+            ".aiohttp.ClientSession",
+            return_value=mock_session,
+        )
+
+        await driver._api_request("GET", "/api/printer")
+        request_args = mock_session.request.call_args
+        _method, url = request_args[0]
+        assert url == "http://host:80/octoprint/api/printer"
+
+    @pytest.mark.asyncio
+    async def test_websocket_url_includes_path_prefix(self, driver, mocker):
+        """The SockJS WebSocket URL inherits the path prefix so
+        servers mounted under a sub-path receive the connection."""
+        driver.setup(
+            host="host",
+            port=80,
+            api_key=_api_key_json("key"),
+            path="/octoprint",
+        )
+
+        msg = MagicMock()
+        msg.type = aiohttp.WSMsgType.TEXT
+        msg.data = 'c[3000,"Server closed"]'
+
+        ws = AsyncMock()
+        ws.receive = AsyncMock(return_value=msg)
+
+        ws_cm = AsyncMock()
+        ws_cm.__aenter__ = AsyncMock(return_value=ws)
+        ws_cm.__aexit__ = AsyncMock(return_value=False)
+
+        mock_session = MagicMock()
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=False)
+        mock_session.ws_connect = MagicMock(return_value=ws_cm)
+
+        mocker.patch(
+            "rayforge.machine.driver.octoprint.octoprint_driver"
+            ".aiohttp.ClientSession",
+            return_value=mock_session,
+        )
+
+        with pytest.raises(DeviceConnectionError, match="closed"):
+            await driver._run_websocket()
+        ws_call = mock_session.ws_connect.call_args
+        ws_url = ws_call[0][0]
+        assert ws_url == "ws://host:80/octoprint/sockjs/websocket"
 
     @pytest.mark.asyncio
     async def test_api_request_403_raises(self, setup_driver, mocker):

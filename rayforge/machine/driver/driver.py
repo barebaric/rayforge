@@ -232,6 +232,13 @@ class Driver(ABC):
     # over the network. When non-empty, the driver participates in
     # network discovery (see rayforge.machine.driver.discovery).
     MDNS_SERVICES: ClassVar[tuple[str, ...]] = ()
+    # Maps mDNS TXT record keys to the driver-args keys they should be
+    # forwarded as during network discovery. Keys are TXT record
+    # field names; values are the ``driver_args`` / setup-var keys
+    # the driver consumes. Only keys present in both the map and the
+    # resolved TXT record are forwarded. (See
+    # rayforge.machine.driver.discovery._build_network_device.)
+    MDNS_TXT_MAP: ClassVar[dict[str, str]] = {}
 
     @property
     @abstractmethod

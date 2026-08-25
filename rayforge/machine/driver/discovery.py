@@ -370,22 +370,45 @@ def _build_network_device(
     service: MDNSService,
 ) -> DiscoveredDevice:
     """Assembles a :class:`DiscoveredDevice` from a resolved mDNS
-    service."""
+    service.
+
+    TXT record fields the driver declared in ``MDNS_TXT_MAP`` are
+    forwarded into ``params`` (mapped to the driver-arg key the
+    driver consumes). Identity-strengthening TXT fields
+    (``vendor``, ``model``) feed the matching token set; ``version``
+    becomes the identity banner when the service announced no
+    instance name of its own.
+    """
     detail = _("{host}:{port}").format(host=service.host, port=service.port)
     if service.server:
         detail = f"{detail} ({service.server})"
+
+    params: dict = {"host": service.host, "port": service.port}
+    txt_map = getattr(cls, "MDNS_TXT_MAP", None) or {}
+    for txt_key, arg_key in txt_map.items():
+        value = service.txt.get(txt_key)
+        if value:
+            params[arg_key] = value
+
+    banner = service.name or None
+    if not banner and service.txt.get("version"):
+        banner = service.txt["version"]
+
+    tokens = normalize_tokens(
+        service.name,
+        service.server,
+        service.txt.get("vendor"),
+        service.txt.get("model"),
+    )
     return DiscoveredDevice(
         driver_name=cls.__name__,
-        params={
-            "host": service.host,
-            "port": service.port,
-        },
+        params=params,
         label=getattr(cls, "label", None) or cls.__name__,
         detail=detail,
         identity=DeviceIdentity(
             firmware=_driver_firmware_id(cls),
-            banner=service.name or None,
-            tokens=normalize_tokens(service.name, service.server),
+            banner=banner,
+            tokens=tokens,
         ),
     )
 

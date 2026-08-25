@@ -81,6 +81,12 @@ class FakeOctoPrintDriver:
     label = "OctoPrint"
 
 
+class FakeOctoPrintWithTxtDriver:
+    MDNS_SERVICES = ("_octoprint._tcp.local.",)
+    MDNS_TXT_MAP: ClassVar[dict[str, str]] = {"path": "path"}
+    label = "OctoPrint"
+
+
 class FakeSerial:
     """A fake pyserial.Serial for discovery tests."""
 
@@ -411,6 +417,88 @@ async def test_network_devices_from_mdns(monkeypatch):
     assert device.identity.banner == "OctoPrint on octopi"
     assert "octoprint" in device.identity.tokens
     assert "octopi" in device.identity.tokens
+
+
+@pytest.mark.asyncio
+async def test_mdns_txt_forwarded_into_params(monkeypatch):
+    """A TXT key declared in the driver's MDNS_TXT_MAP is forwarded
+    into the discovered device's params under the mapped arg key."""
+    service = _octoprint_service(
+        txt={"path": "/octoprint", "version": "1.10.3", "api": "0.1"}
+    )
+
+    async def fake_scan(service_types):
+        return [service]
+
+    monkeypatch.setattr(discovery, "scan_mdns_services", fake_scan)
+    devices = await find_network_devices([FakeOctoPrintWithTxtDriver])
+    assert len(devices) == 1
+    device = devices[0]
+    assert device.params == {
+        "host": "192.168.1.42",
+        "port": 80,
+        "path": "/octoprint",
+    }
+
+
+@pytest.mark.asyncio
+async def test_mdns_txt_empty_value_not_forwarded(monkeypatch):
+    """A TXT key whose value is empty is not forwarded, so the
+    driver's own default applies."""
+    service = _octoprint_service(txt={"path": ""})
+
+    async def fake_scan(service_types):
+        return [service]
+
+    monkeypatch.setattr(discovery, "scan_mdns_services", fake_scan)
+    devices = await find_network_devices([FakeOctoPrintWithTxtDriver])
+    assert len(devices) == 1
+    assert devices[0].params == {"host": "192.168.1.42", "port": 80}
+
+
+@pytest.mark.asyncio
+async def test_mdns_txt_vendor_model_enrich_identity(monkeypatch):
+    """vendor and model TXT keys strengthen the identity token set
+    used for profile matching; version becomes the banner when the
+    service announced no instance name."""
+    service = _octoprint_service(
+        name="",
+        server="octopi.local",
+        txt={
+            "vendor": "Prusa Research",
+            "model": "MK4",
+            "version": "OctoPrint 1.10.3",
+        },
+    )
+
+    async def fake_scan(service_types):
+        return [service]
+
+    monkeypatch.setattr(discovery, "scan_mdns_services", fake_scan)
+    devices = await find_network_devices([FakeOctoPrintWithTxtDriver])
+    assert len(devices) == 1
+    device = devices[0]
+    # version is the banner because no instance name was announced
+    assert device.identity.banner == "OctoPrint 1.10.3"
+    assert "prusa" in device.identity.tokens
+    assert "mk4" in device.identity.tokens
+
+
+@pytest.mark.asyncio
+async def test_mdns_txt_instance_name_preferred_as_banner(monkeypatch):
+    """When the service announces an instance name it is the banner,
+    even if a version TXT is also present."""
+    service = _octoprint_service(
+        name="OctoPrint on octopi",
+        txt={"version": "1.10.3"},
+    )
+
+    async def fake_scan(service_types):
+        return [service]
+
+    monkeypatch.setattr(discovery, "scan_mdns_services", fake_scan)
+    devices = await find_network_devices([FakeOctoPrintWithTxtDriver])
+    assert devices[0].identity.banner == "OctoPrint on octopi"
 
 
 @pytest.mark.asyncio
