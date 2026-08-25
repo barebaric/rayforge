@@ -417,6 +417,17 @@ class SketchRenderer:
                 else:
                     ctx.set_source_rgb(0.3, 0.5, 0.8)
                 ctx.stroke()
+            elif entity.pattern_copy:
+                # Solid like regular geometry, slightly thinner to read
+                # as derived rather than seed geometry.
+                ctx.set_line_width(base_line_width * 0.6)
+                self._set_standard_color(
+                    ctx,
+                    is_sel or is_hovered,
+                    entity.constrained,
+                    is_sketch_fully_constrained,
+                )
+                ctx.stroke()
             else:
                 self._set_standard_color(
                     ctx,

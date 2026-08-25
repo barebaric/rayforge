@@ -8,7 +8,8 @@ from raygeo.geo import Matrix
 from rayforge.ui_gtk.canvas import CanvasElement
 
 from ..core.commands import DuplicateCommand, MoveEntitiesCommand
-from ..core.entities import Line, Point
+from ..core.entities import Entity, Line, Point
+from ..core.patterns import find_pattern_for_entity
 from ..core.selection import SketchSelection
 from ..core.sketch import Sketch
 from ..core.snap import SnapEngine
@@ -409,6 +410,33 @@ class SketchElement(CanvasElement):
         )
         self.execute_command(cmd)
         return True
+
+    def request_pattern_edit(self, entity: Entity) -> bool:
+        """
+        Opens the edit dialog for the pattern whose master geometry is
+        the given entity. Returns True if a pattern was found and the
+        edit tool was activated.
+        """
+        pattern = find_pattern_for_entity(self.sketch.patterns, entity.id)
+        if pattern is None:
+            logging.getLogger(__name__).info(
+                "Pattern edit request: entity e%s is not a master "
+                "(%d patterns registered)",
+                entity.id,
+                len(self.sketch.patterns),
+            )
+            return False
+        logging.getLogger(__name__).info(
+            "Pattern edit request: found uid=%s for e%s",
+            pattern.uid[:8],
+            entity.id,
+        )
+        for name, tool in self.tools.items():
+            if tool.is_available_for_edit(pattern):
+                tool.set_edit_target(pattern)
+                self.set_tool(name)
+                return True
+        return False
 
     def toggle_construction_on_selection(self):
         self.tools["construction"]._toggle_construction()

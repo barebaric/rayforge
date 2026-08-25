@@ -55,6 +55,10 @@ class SketchMenu(Gio.Menu):
         )
         tools_menu.append_section(_("Modify"), constr_group)
 
+        array_group = Gio.Menu()
+        array_group.append(_("Circular Array"), "sketch.tool_circular_array")
+        tools_menu.append_section(_("Arrays"), array_group)
+
         self.append_submenu(_("_Sketch"), tools_menu)
 
         # View
