@@ -122,6 +122,9 @@ class Machine:
         self.auto_connect: bool = True
         self.home_on_start: bool = False
         self.clear_alarm_on_connect: bool = False
+        # True while this machine is the auto-created placeholder that
+        # keeps the app usable before the user sets up a real machine.
+        self.placeholder: bool = False
         self.single_axis_homing_enabled: bool = True
         self.dialect_uid: str | None = "grbl"
         self.dialect_migrated: bool = False
@@ -1515,6 +1518,7 @@ class Machine:
                 "driver_config": self.driver_config,
                 "auto_connect": self.auto_connect,
                 "clear_alarm_on_connect": self.clear_alarm_on_connect,
+                "placeholder": self.placeholder,
                 "home_on_start": self.home_on_start,
                 "single_axis_homing_enabled": self.single_axis_homing_enabled,
                 "dialect_uid": self.dialect_uid,
@@ -1692,6 +1696,7 @@ class Machine:
             "clear_alarm_on_connect",
             ma.clear_alarm_on_connect,
         )
+        ma.placeholder = ma_data.pop("placeholder", ma.placeholder)
         ma.home_on_start = ma_data.pop("home_on_start", ma.home_on_start)
         ma.single_axis_homing_enabled = ma_data.pop(
             "single_axis_homing_enabled",

@@ -432,6 +432,18 @@ class TestMachineModel:
         assert machine.work_margins == (50, 50, 50, 50)
         assert machine.soft_limits == (10, 10, 280, 380)
 
+    def test_placeholder_round_trip(self, lite_context):
+        """The placeholder flag survives serialization and defaults off."""
+        machine = Machine(lite_context)
+        assert machine.placeholder is False
+
+        data = machine.to_dict()
+        assert data["machine"]["placeholder"] is False
+
+        machine.placeholder = True
+        restored = Machine.from_dict(machine.to_dict(), context=lite_context)
+        assert restored.placeholder is True
+
     def test_from_dict_migrates_offsets_to_margins(self, lite_context):
         """Test that from_dict migrates old offsets to margins."""
         data = {

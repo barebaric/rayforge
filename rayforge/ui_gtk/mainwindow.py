@@ -56,6 +56,7 @@ from .machine.profile_review_dialog import (
     SchemaReviewDialog,
 )
 from .machine.settings_dialog import MachineSettingsDialog
+from .machine.unified_wizard import UnifiedWizard
 from .main_menu import MainMenu
 from .project_cmd import ProjectCmd
 from .settings.settings_dialog import SettingsWindow
@@ -152,6 +153,8 @@ class MainWindow(Adw.ApplicationWindow):
         self._surface_vis_overlay: VisibilityOverlay | None = None
         self._canvas3d_time_overlay: TimeEstimateOverlay | None = None
         self._is_syncing_3d = False
+        self._setup_wizard: UnifiedWizard | None = None
+        self._setup_wizard_completed = True
 
         # The ToastOverlay will wrap the main content box
         self.toast_overlay = Adw.ToastOverlay()
@@ -206,6 +209,16 @@ class MainWindow(Adw.ApplicationWindow):
         self.menubar = Gtk.PopoverMenuBar.new_from_model(self.menu_model)
         self.menubar.add_css_class("in-header-menubar")
         self.header_bar.pack_start(self.menubar)
+
+        # Persistent banner shown while the active machine is still the
+        # untouched placeholder created on first launch.
+        self.setup_banner = Adw.Banner()
+        self.setup_banner.set_title(_("Set up your machine to get started"))
+        self.setup_banner.set_button_label(_("Set Up Machine"))
+        self.setup_banner.connect(
+            "button-clicked", self._on_setup_banner_clicked
+        )
+        vbox.append(self.setup_banner)
 
         # Set up Recent Files manager
         self.recent_manager = Gtk.RecentManager.get_default()
@@ -557,6 +570,9 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Initialize usage tracking based on saved consent
         config = get_context().config
+        consent_pending = not (
+            config.has_consented_tracking or config.has_declined_tracking
+        )
         if config.has_consented_tracking:
             get_usage_tracker().set_enabled(True)
             get_usage_tracker().track_page_view("/view/2d", "2D View")
@@ -565,6 +581,9 @@ class MainWindow(Adw.ApplicationWindow):
         else:
             dialog = UsageConsentDialog(self)
             dialog.present()
+            # Avoid piling windows: open the first-run wizard only
+            # after the consent dialog has been answered.
+            dialog.connect("response", self._on_consent_responded)
 
         # Trigger the non-blocking check for addon updates
         self.update_cmd.check_for_updates_on_startup()
@@ -574,6 +593,93 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Check configured machines against their source device profiles
         GLib.idle_add(self._check_profile_updates)
+
+        # On first launch, offer the machine setup wizard instead of
+        # silently keeping the auto-created placeholder machine. While
+        # the consent dialog is up, it chains the presentation so the
+        # two don't stack up.
+        if consent_pending:
+            return
+        GLib.idle_add(self._maybe_present_first_run_wizard)
+
+    def _on_consent_responded(self, dialog, response_id):
+        GLib.idle_add(self._maybe_present_first_run_wizard)
+
+    def _maybe_present_first_run_wizard(self) -> bool:
+        """
+        Presents the setup wizard once if no real machine has ever been
+        set up (only untouched placeholder machines exist).
+        """
+        context = get_context()
+        config = context.config
+        machines = list(context.machine_mgr.machines.values())
+        if config.setup_completed:
+            return GLib.SOURCE_REMOVE
+        if not all(machine.placeholder for machine in machines):
+            return GLib.SOURCE_REMOVE
+        logger.info("First launch detected; presenting setup wizard.")
+        self.present_setup_wizard()
+        return GLib.SOURCE_REMOVE
+
+    def present_setup_wizard(self):
+        """Opens the unified machine setup wizard."""
+        if self._setup_wizard is not None:
+            self._setup_wizard.present()
+            return
+        dialog = UnifiedWizard(transient_for=self)
+        self._setup_wizard = dialog
+        self._setup_wizard_completed = False
+        dialog.profile_created.connect(self._on_setup_wizard_profile_created)
+        dialog.connect("close-request", self._on_setup_wizard_closed)
+        dialog.present()
+
+    def _on_setup_wizard_closed(self, *args) -> bool:
+        """Handles the user cancelling the setup wizard.
+
+        Falls back to the placeholder machine and marks setup as
+        handled so the wizard is never forced on the user again.
+        """
+        self._setup_wizard = None
+        if self._setup_wizard_completed:
+            return False
+        self._setup_wizard_completed = True
+        get_context().config.set_setup_completed(True)
+        logger.info("Setup wizard cancelled; keeping placeholder machine.")
+        return False
+
+    def _on_setup_wizard_profile_created(
+        self,
+        sender,
+        *,
+        profile,
+        machine=None,
+    ):
+        """Activates the machine created by the wizard.
+
+        The placeholder machine is removed so it does not linger in
+        the machine list.
+        """
+        context = get_context()
+        if machine is None:
+            machine = profile.create_machine(context)
+        self._setup_wizard_completed = True
+        self._setup_wizard = None
+        context.config.set_setup_completed(True)
+
+        manager = context.machine_mgr
+        manager.set_active_machine(machine)
+        for placeholder in manager.get_placeholder_machines():
+            if placeholder.id != machine.id:
+                manager.remove_machine(placeholder.id)
+
+    def _on_setup_banner_clicked(self, banner):
+        self.present_setup_wizard()
+
+    def _update_setup_banner(self):
+        """Shows the banner only while a placeholder machine is active."""
+        config = get_context().config
+        show_banner = bool(config.machine and config.machine.placeholder)
+        self.setup_banner.set_revealed(show_banner)
 
     def _check_profile_updates(self) -> bool:
         """
@@ -1687,6 +1793,7 @@ class MainWindow(Adw.ApplicationWindow):
         self._update_workflow_views()
         self._apply_right_panel_visibility()
         self._update_macros_menu()
+        self._update_setup_banner()
 
         # Check for any pending notifications from the new machine immediately
         if self._current_machine:
