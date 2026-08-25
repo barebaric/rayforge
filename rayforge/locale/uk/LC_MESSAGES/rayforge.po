@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-22 21:19+0200\n"
+"POT-Creation-Date: 2026-08-25 22:59+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -73,6 +73,22 @@ msgstr "Шар"
 #, python-brace-format
 msgid "{name} (copy)"
 msgstr "{name} (копія)"
+
+#: rayforge/core/config.py
+msgid "Hidden"
+msgstr "Приховано"
+
+#: rayforge/core/config.py
+msgid "Active Layer Workflow"
+msgstr "Робочий процес активного шару"
+
+#: rayforge/core/config.py
+msgid "All Non-Empty Layers"
+msgstr "Усі непорожні шари"
+
+#: rayforge/core/config.py
+msgid "All Layers"
+msgstr "Усі шари"
 
 #: rayforge/core/ai/provider.py
 msgid "Bad request"
@@ -361,6 +377,11 @@ msgstr "Машинні координати"
 #: rayforge/machine/driver/ruida/ruida_driver.py
 msgid "No settings"
 msgstr "Без налаштувань"
+
+#: rayforge/machine/driver/discovery.py
+#, python-brace-format
+msgid "{port} at {baud} baud"
+msgstr "{port}, {baud} бод"
 
 #: rayforge/machine/driver/driver.py
 #, python-brace-format
@@ -711,6 +732,10 @@ msgstr "Marlin (Serial)"
 #: rayforge/machine/driver/marlin/marlin_serial.py
 msgid "Marlin firmware via serial connection"
 msgstr "Прошивка Marlin через послідовне з'єднання"
+
+#: rayforge/machine/driver/marlin/marlin_serial.py
+msgid "Marlin device"
+msgstr "Пристрій Marlin"
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
@@ -1420,6 +1445,10 @@ msgstr "GRBL (Послідовний)"
 #: rayforge/machine/driver/grbl/grbl_serial.py
 msgid "GRBL-compatible serial connection"
 msgstr "Сумісний з GRBL послідовний зв'язок"
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "GRBL device"
+msgstr "Пристрій GRBL"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
 msgid "RX Buffer Size Override"
@@ -2626,6 +2655,7 @@ msgid "Add"
 msgstr "Додати"
 
 #: rayforge/ui_gtk/settings/color_presets_page.py
+#: rayforge/ui_gtk/machine/head_preferences_page.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "Color"
@@ -2690,6 +2720,33 @@ msgstr ""
 #: rayforge/ui_gtk/settings/material_manager_page.py
 msgid "Materials"
 msgstr "Матеріали"
+
+#: rayforge/ui_gtk/settings/material_manager_page.py
+msgid "New Stock Defaults"
+msgstr "Типові значення нової заготовки"
+
+#: rayforge/ui_gtk/settings/material_manager_page.py
+msgid ""
+"Material and thickness applied when a new stock or rotary layer is created."
+msgstr ""
+"Матеріал і товщина, що застосовуються при створенні нової заготовки або "
+"поворотного шару."
+
+#: rayforge/ui_gtk/settings/material_manager_page.py
+msgid "Default Stock Material"
+msgstr "Типовий матеріал"
+
+#: rayforge/ui_gtk/settings/material_manager_page.py
+msgid "Material used when a new stock or rotary layer is created"
+msgstr "Використовується при створенні нової заготовки або поворотного шару."
+
+#: rayforge/ui_gtk/settings/material_manager_page.py
+msgid "Default Stock Thickness"
+msgstr "Типова товщина"
+
+#: rayforge/ui_gtk/settings/material_manager_page.py
+msgid "Thickness applied to new stock assets"
+msgstr "Застосовується до нових заготовок."
 
 #: rayforge/ui_gtk/settings/material_manager_page.py
 msgid "Material Libraries"
@@ -2803,6 +2860,14 @@ msgstr "Кольори операцій"
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Choose whether operation colors represent the laser or the layer"
 msgstr "Виберіть, чи кольори операцій представляють лазер чи шар"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Right Panel"
+msgstr "Права панель"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Choose what the right panel displays"
+msgstr "Виберіть, що відображає права панель."
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Set the display units for various values throughout the application."
@@ -3949,20 +4014,8 @@ msgid "Size of the laser spot in the Y direction"
 msgstr "Розмір лазерної плями в напрямку Y"
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
-msgid "Cut Color"
-msgstr "Колір різання"
-
-#: rayforge/ui_gtk/machine/head_preferences_page.py
-msgid "Color for cutting operations"
-msgstr "Колір для операцій різання"
-
-#: rayforge/ui_gtk/machine/head_preferences_page.py
-msgid "Raster Color"
-msgstr "Колір растру"
-
-#: rayforge/ui_gtk/machine/head_preferences_page.py
-msgid "Color for engraving/raster operations"
-msgstr "Колір для операцій гравіювання/растру"
+msgid "Color used for operations of this laser"
+msgstr "Колір для операцій цього лазера"
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 msgid "Distance from the laser head to the work surface (Z offset)"
@@ -4066,7 +4119,7 @@ msgstr ""
 "підтримує."
 
 #: rayforge/ui_gtk/machine/unified_wizard.py
-#: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
 msgid "Add a Machine"
 msgstr "Додати машину"
 
@@ -5267,6 +5320,44 @@ msgstr "Реверсувати напрямок осі"
 msgid "Invert the rotary's rotation direction"
 msgstr "Інвертувати напрямок обертання поворотного пристрою"
 
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+#: rayforge/ui_gtk/shared/model_selection_dialog.py
+msgid "Select"
+msgstr "Вибрати"
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+msgid "Connect your machine via USB — we will find it automatically."
+msgstr "Підключи свою машину через USB — ми знайдемо її автоматично."
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+msgid "Configure Manually"
+msgstr "Налаштувати вручну"
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+msgid "Detected Devices"
+msgstr "Виявлені пристрої"
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+msgid ""
+"Plug in and power on your machine. Devices found on USB serial connections "
+"appear here automatically."
+msgstr ""
+"Підключи машину і увімкни живлення. Пристрої, знайдені на USB-серійних "
+"з'єднаннях, з'являться тут автоматично."
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+msgid "Searching for devices…"
+msgstr "Пошук пристроїв…"
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+msgid "No devices detected yet"
+msgstr "Пристрої ще не виявлено"
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+#, python-brace-format
+msgid "{w}×{h} mm work area"
+msgstr "Робоча область {w}×{h} мм"
+
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 msgid "—"
 msgstr "—"
@@ -5376,8 +5467,8 @@ msgid "Please enter a name."
 msgstr "Будь ласка, введіть назву."
 
 #: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
-msgid "Discover Device"
-msgstr "Виявити пристрій"
+msgid "Probe Device"
+msgstr "Перевірити пристрій"
 
 #: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
 msgid ""
@@ -5428,8 +5519,24 @@ msgid "Retry"
 msgstr "Повторити"
 
 #: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
+msgid "Choose a Machine"
+msgstr "Обрати машину"
+
+#: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
 msgid "Pick a starting point for the new machine."
 msgstr "Оберіть початкову точку для нової машини."
+
+#: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
+msgid "A device was detected"
+msgstr "Виявлено пристрій"
+
+#: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
+msgid ""
+"No profile matched it automatically. Pick the matching profile below, or "
+"continue with 'Device Not Listed'."
+msgstr ""
+"Жоден профіль не збігся автоматично. Обери відповідний профіль нижче або "
+"продовжи з «Пристрій не вказаний»."
 
 #: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
 msgid "Machine Templates"
@@ -6528,10 +6635,6 @@ msgid "Toggle grid visibility"
 msgstr "Перемкнути видимість сітки"
 
 #: rayforge/ui_gtk/shared/visibility_overlay.py
-msgid "Toggle ops underlay visibility"
-msgstr "Перемкнути видимість підкладки операцій"
-
-#: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle travel move visibility"
 msgstr "Перемкнути видимість холостих переміщень"
 
@@ -6550,10 +6653,6 @@ msgstr "Показати всі параметри"
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
 msgid "Select Model"
 msgstr "Вибрати модель"
-
-#: rayforge/ui_gtk/shared/model_selection_dialog.py
-msgid "Select"
-msgstr "Вибрати"
 
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "Job Sanity Check"
@@ -6847,6 +6946,14 @@ msgstr "_Допомога"
 #: rayforge/ui_gtk/main_menu.py
 msgid "(No Recent Items)"
 msgstr "(Немає останніх елементів)"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "Set up your machine to get started"
+msgstr "Налаштуй свою машину, щоб почати"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "Set Up Machine"
+msgstr "Налаштувати машину"
 
 #: rayforge/ui_gtk/mainwindow.py
 #, python-brace-format
@@ -7585,14 +7692,6 @@ msgid "Unset the tint color (texture is shown as-is)"
 msgstr "Скинути колір тонування (текстура відображається як є)"
 
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
-msgid "Tintable"
-msgstr "Можна тонувати"
-
-#: rayforge/ui_gtk/doceditor/add_material_dialog.py
-msgid "Allow tinting the texture with a color"
-msgstr "Дозволити тонування текстури кольором"
-
-#: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Texture Scale"
 msgstr "Масштаб текстури"
 
@@ -7656,10 +7755,6 @@ msgstr "Товщина матеріалу"
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "Use the material's default color"
 msgstr "Використовувати стандартний колір матеріалу"
-
-#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
-msgid "Set by the material definition"
-msgstr "Встановлено визначенням матеріалу"
 
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "No color"

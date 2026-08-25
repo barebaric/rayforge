@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-22 21:19+0200\n"
+"POT-Creation-Date: 2026-08-25 22:59+0200\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -72,6 +72,22 @@ msgstr "Capa"
 #, python-brace-format
 msgid "{name} (copy)"
 msgstr "{name} (copia)"
+
+#: rayforge/core/config.py
+msgid "Hidden"
+msgstr "Oculto"
+
+#: rayforge/core/config.py
+msgid "Active Layer Workflow"
+msgstr "Flujo de la capa activa"
+
+#: rayforge/core/config.py
+msgid "All Non-Empty Layers"
+msgstr "Todas las capas no vacías"
+
+#: rayforge/core/config.py
+msgid "All Layers"
+msgstr "Todas las capas"
 
 #: rayforge/core/ai/provider.py
 msgid "Bad request"
@@ -365,6 +381,11 @@ msgstr "Coordenadas de máquina"
 #: rayforge/machine/driver/ruida/ruida_driver.py
 msgid "No settings"
 msgstr "Sin ajustes"
+
+#: rayforge/machine/driver/discovery.py
+#, python-brace-format
+msgid "{port} at {baud} baud"
+msgstr "{port} a {baud} baudios"
 
 #: rayforge/machine/driver/driver.py
 #, python-brace-format
@@ -719,6 +740,10 @@ msgstr "Marlin (Serie)"
 #: rayforge/machine/driver/marlin/marlin_serial.py
 msgid "Marlin firmware via serial connection"
 msgstr "Firmware Marlin mediante conexión serie"
+
+#: rayforge/machine/driver/marlin/marlin_serial.py
+msgid "Marlin device"
+msgstr "Dispositivo Marlin"
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
@@ -1442,6 +1467,10 @@ msgstr "GRBL (Serial)"
 #: rayforge/machine/driver/grbl/grbl_serial.py
 msgid "GRBL-compatible serial connection"
 msgstr "Conexión serie compatible con GRBL"
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "GRBL device"
+msgstr "Dispositivo GRBL"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
 msgid "RX Buffer Size Override"
@@ -2657,6 +2686,7 @@ msgid "Add"
 msgstr "Añadir"
 
 #: rayforge/ui_gtk/settings/color_presets_page.py
+#: rayforge/ui_gtk/machine/head_preferences_page.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "Color"
@@ -2723,6 +2753,32 @@ msgstr ""
 #: rayforge/ui_gtk/settings/material_manager_page.py
 msgid "Materials"
 msgstr "Materiales"
+
+#: rayforge/ui_gtk/settings/material_manager_page.py
+msgid "New Stock Defaults"
+msgstr "Valores predeterminados del nuevo material"
+
+#: rayforge/ui_gtk/settings/material_manager_page.py
+msgid ""
+"Material and thickness applied when a new stock or rotary layer is created."
+msgstr ""
+"Material y grosor aplicados al crear un nuevo material o una capa rotativa."
+
+#: rayforge/ui_gtk/settings/material_manager_page.py
+msgid "Default Stock Material"
+msgstr "Material predeterminado"
+
+#: rayforge/ui_gtk/settings/material_manager_page.py
+msgid "Material used when a new stock or rotary layer is created"
+msgstr "Se usa al crear un nuevo material o una capa rotativa."
+
+#: rayforge/ui_gtk/settings/material_manager_page.py
+msgid "Default Stock Thickness"
+msgstr "Grosor predeterminado"
+
+#: rayforge/ui_gtk/settings/material_manager_page.py
+msgid "Thickness applied to new stock assets"
+msgstr "Se aplica a los nuevos materiales."
 
 #: rayforge/ui_gtk/settings/material_manager_page.py
 msgid "Material Libraries"
@@ -2837,6 +2893,14 @@ msgstr "Colores de operaciÃ³n"
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Choose whether operation colors represent the laser or the layer"
 msgstr "Elige si los colores de operaciÃ³n representan el lÃ¡ser o la capa"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Right Panel"
+msgstr "Panel derecho"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Choose what the right panel displays"
+msgstr "Elija lo que muestra el panel derecho."
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Set the display units for various values throughout the application."
@@ -3988,20 +4052,8 @@ msgid "Size of the laser spot in the Y direction"
 msgstr "Tamaño del punto láser en la dirección Y"
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
-msgid "Cut Color"
-msgstr "Color de corte"
-
-#: rayforge/ui_gtk/machine/head_preferences_page.py
-msgid "Color for cutting operations"
-msgstr "Color para operaciones de corte"
-
-#: rayforge/ui_gtk/machine/head_preferences_page.py
-msgid "Raster Color"
-msgstr "Color de rasterizado"
-
-#: rayforge/ui_gtk/machine/head_preferences_page.py
-msgid "Color for engraving/raster operations"
-msgstr "Color para operaciones de grabado/rasterizado"
+msgid "Color used for operations of this laser"
+msgstr "Color usado para las operaciones de este láser"
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 msgid "Distance from the laser head to the work surface (Z offset)"
@@ -4107,7 +4159,7 @@ msgid ""
 msgstr "Puedes configurar varios láseres o husillos si tu máquina lo permite."
 
 #: rayforge/ui_gtk/machine/unified_wizard.py
-#: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
 msgid "Add a Machine"
 msgstr "Añadir una máquina"
 
@@ -5327,6 +5379,44 @@ msgstr "Invertir dirección del eje"
 msgid "Invert the rotary's rotation direction"
 msgstr "Invierte la dirección de rotación del rotativo"
 
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+#: rayforge/ui_gtk/shared/model_selection_dialog.py
+msgid "Select"
+msgstr "Seleccionar"
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+msgid "Connect your machine via USB — we will find it automatically."
+msgstr "Conecta tu máquina por USB — la encontraremos automáticamente."
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+msgid "Configure Manually"
+msgstr "Configurar manualmente"
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+msgid "Detected Devices"
+msgstr "Dispositivos detectados"
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+msgid ""
+"Plug in and power on your machine. Devices found on USB serial connections "
+"appear here automatically."
+msgstr ""
+"Conecta y enciende tu máquina. Los dispositivos encontrados en conexiones "
+"USB serie aparecen aquí automáticamente."
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+msgid "Searching for devices…"
+msgstr "Buscando dispositivos…"
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+msgid "No devices detected yet"
+msgstr "Aún no se han detectado dispositivos"
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+#, python-brace-format
+msgid "{w}×{h} mm work area"
+msgstr "Área de trabajo de {w}×{h} mm"
+
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 msgid "—"
 msgstr "—"
@@ -5437,8 +5527,8 @@ msgid "Please enter a name."
 msgstr "Introduce un nombre."
 
 #: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
-msgid "Discover Device"
-msgstr "Detectar dispositivo"
+msgid "Probe Device"
+msgstr "Analizar el dispositivo"
 
 #: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
 msgid ""
@@ -5490,8 +5580,24 @@ msgid "Retry"
 msgstr "Reintentar"
 
 #: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
+msgid "Choose a Machine"
+msgstr "Elegir una máquina"
+
+#: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
 msgid "Pick a starting point for the new machine."
 msgstr "Elige un punto de partida para la nueva máquina."
+
+#: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
+msgid "A device was detected"
+msgstr "Se detectó un dispositivo"
+
+#: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
+msgid ""
+"No profile matched it automatically. Pick the matching profile below, or "
+"continue with 'Device Not Listed'."
+msgstr ""
+"Ningún perfil coincidió automáticamente. Elige el perfil correspondiente a "
+"continuación o continúa con 'Dispositivo no listado'."
 
 #: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
 msgid "Machine Templates"
@@ -6594,10 +6700,6 @@ msgid "Toggle grid visibility"
 msgstr "Alternar visibilidad de la cuadrícula"
 
 #: rayforge/ui_gtk/shared/visibility_overlay.py
-msgid "Toggle ops underlay visibility"
-msgstr "Alternar visibilidad de la subcapa de operaciones"
-
-#: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle travel move visibility"
 msgstr "Alternar visibilidad del movimiento de desplazamiento"
 
@@ -6616,10 +6718,6 @@ msgstr "Mostrar todas las opciones"
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
 msgid "Select Model"
 msgstr "Seleccionar modelo"
-
-#: rayforge/ui_gtk/shared/model_selection_dialog.py
-msgid "Select"
-msgstr "Seleccionar"
 
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "Job Sanity Check"
@@ -6913,6 +7011,14 @@ msgstr "_Ayuda"
 #: rayforge/ui_gtk/main_menu.py
 msgid "(No Recent Items)"
 msgstr "(Sin elementos recientes)"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "Set up your machine to get started"
+msgstr "Configure su máquina para comenzar"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "Set Up Machine"
+msgstr "Configurar la máquina"
 
 #: rayforge/ui_gtk/mainwindow.py
 #, python-brace-format
@@ -7656,14 +7762,6 @@ msgid "Unset the tint color (texture is shown as-is)"
 msgstr "Quitar el color de tinte (la textura se muestra tal cual)"
 
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
-msgid "Tintable"
-msgstr "Teñible"
-
-#: rayforge/ui_gtk/doceditor/add_material_dialog.py
-msgid "Allow tinting the texture with a color"
-msgstr "Permitir teñir la textura con un color"
-
-#: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Texture Scale"
 msgstr "Escala de textura"
 
@@ -7727,10 +7825,6 @@ msgstr "Grosor del material"
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "Use the material's default color"
 msgstr "Usar el color predeterminado del material"
-
-#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
-msgid "Set by the material definition"
-msgstr "Establecido por la definición del material"
 
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "No color"

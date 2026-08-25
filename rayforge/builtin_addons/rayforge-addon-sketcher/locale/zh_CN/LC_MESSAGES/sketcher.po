@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-09 02:18+0200\n"
+"POT-Creation-Date: 2026-08-25 10:44+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -69,6 +69,10 @@ msgstr "相切"
 #: sketcher/core/constraints/tangent.py
 msgid "Line to {} at {}"
 msgstr "直线到 {} 在 {}"
+
+#: sketcher/core/constraints/rotational.py
+msgid "Rotational Pattern"
+msgstr "旋转阵列"
 
 #: sketcher/core/constraints/distance.py
 #: sketcher/ui_gtk/tools/distance_constraint_tool.py
@@ -142,6 +146,7 @@ msgid "At {}"
 msgstr "在 {}"
 
 #: sketcher/core/constraints/radius.py
+#: sketcher/ui_gtk/tools/circular_array_tool.py
 #: sketcher/ui_gtk/tools/radius_constraint_tool.py
 msgid "Radius"
 msgstr "半径"
@@ -183,6 +188,10 @@ msgstr "设置文本填充"
 msgid "Edit Constraint"
 msgstr "编辑约束"
 
+#: sketcher/core/commands/edit_pattern.py
+msgid "Edit Pattern"
+msgstr "编辑阵列"
+
 #: sketcher/core/commands/bezier.py sketcher/core/commands/line.py
 msgid "Add Line"
 msgstr "添加直线"
@@ -207,6 +216,10 @@ msgstr "添加网格"
 msgid "Add Chamfer"
 msgstr "添加倒角"
 
+#: sketcher/core/commands/mirror.py
+msgid "Mirror Selection"
+msgstr "镜像选择"
+
 #: sketcher/core/commands/arc.py
 msgid "Add Arc"
 msgstr "添加圆弧"
@@ -215,6 +228,10 @@ msgstr "添加圆弧"
 #: sketcher/ui_gtk/tools/straighten_tool.py
 msgid "Straighten"
 msgstr "拉直"
+
+#: sketcher/core/commands/duplicate.py
+msgid "Duplicate Selection"
+msgstr "复制选择"
 
 #: sketcher/core/commands/rounded_rect.py
 msgid "Add Rounded Rectangle"
@@ -232,6 +249,10 @@ msgstr "修改文本属性"
 msgid "Set Waypoint Type"
 msgstr "设置路点类型"
 
+#: sketcher/core/commands/create_pattern.py
+msgid "Create Pattern"
+msgstr "创建阵列"
+
 #: sketcher/core/commands/point.py
 msgid "Move Point"
 msgstr "移动点"
@@ -243,6 +264,10 @@ msgstr "移动控制点"
 #: sketcher/core/commands/point.py
 msgid "Unstick Junction"
 msgstr "取消连接点"
+
+#: sketcher/core/commands/point.py
+msgid "Move Entities"
+msgstr "移动实体"
 
 #: sketcher/core/commands/ellipse.py
 msgid "Add Ellipse"
@@ -284,6 +309,14 @@ msgstr "编辑草图"
 msgid "Export Object..."
 msgstr "导出对象..."
 
+#: sketcher/ui_gtk/studio.py sketcher/ui_gtk/menu.py
+msgid "Undo"
+msgstr "撤销"
+
+#: sketcher/ui_gtk/studio.py sketcher/ui_gtk/menu.py
+msgid "Redo"
+msgstr "重做"
+
 #: sketcher/ui_gtk/studio.py
 msgid "Toggle constraints"
 msgstr "切换约束"
@@ -295,6 +328,16 @@ msgstr "切换辅助几何"
 #: sketcher/ui_gtk/studio.py
 msgid "Fill color:"
 msgstr "填充颜色："
+
+#: sketcher/ui_gtk/studio.py sketcher/ui_gtk/tools/mirror_tool.py
+#: sketcher/ui_gtk/menu.py
+msgid "Mirror Vertically"
+msgstr "垂直镜像"
+
+#: sketcher/ui_gtk/studio.py sketcher/ui_gtk/tools/mirror_tool.py
+#: sketcher/ui_gtk/menu.py
+msgid "Mirror Horizontally"
+msgstr "水平镜像"
 
 #: sketcher/ui_gtk/studio.py sketcher/ui_gtk/tools/dimension_input.py
 #: sketcher/ui_gtk/tools/grid_tool.py sketcher/ui_gtk/tools/circle_tool.py
@@ -399,6 +442,10 @@ msgstr "宽"
 msgid "H"
 msgstr "高"
 
+#: sketcher/ui_gtk/tools/rectangle_tool.py sketcher/ui_gtk/tools/circle_tool.py
+msgid "Center on start point"
+msgstr "以起点为中心"
+
 #: sketcher/ui_gtk/tools/rectangle_tool.py
 msgid "Type dimensions (W H)"
 msgstr "输入尺寸（宽 高）"
@@ -452,16 +499,56 @@ msgid "Ellipse"
 msgstr "椭圆"
 
 #: sketcher/ui_gtk/tools/circle_tool.py
-msgid "Center on start point"
-msgstr "以起点为中心"
-
-#: sketcher/ui_gtk/tools/circle_tool.py
 msgid "Constrain to circle"
 msgstr "约束为圆形"
 
 #: sketcher/ui_gtk/tools/vertical_constraint_tool.py
 msgid "Add Vertical Constraint"
 msgstr "添加垂直约束"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py sketcher/ui_gtk/menu.py
+msgid "Circular Array"
+msgstr "圆形阵列"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Edit Circular Array"
+msgstr "编辑圆形阵列"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Circular"
+msgstr "圆形"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Places copies along a circular arc around a centre."
+msgstr "沿圆弧围绕中心放置副本。"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Count"
+msgstr "数量"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Total angle (deg)"
+msgstr "总角度（度）"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Center X"
+msgstr "中心 X"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Center Y"
+msgstr "中心 Y"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Rotate copies"
+msgstr "旋转副本"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Resizes the whole array."
+msgstr "调整整个阵列的大小。"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Derived from the seed's anchor point."
+msgstr "由源实体的锚点派生。"
 
 #: sketcher/ui_gtk/tools/delete_tool.py
 msgid "Delete Selection"
@@ -535,6 +622,14 @@ msgstr "添加相等约束"
 msgid "Add Distance Constraint"
 msgstr "添加距离约束"
 
+#: sketcher/ui_gtk/tools/array_base.py
+msgid "_Cancel"
+msgstr "取消(_C)"
+
+#: sketcher/ui_gtk/tools/array_base.py
+msgid "_Apply"
+msgstr "应用(_A)"
+
 #: sketcher/ui_gtk/conflicts_widget.py
 msgid "Conflicting Constraints"
 msgstr "冲突的约束"
@@ -572,14 +667,6 @@ msgid "_File"
 msgstr "文件(_F)"
 
 #: sketcher/ui_gtk/menu.py
-msgid "Undo"
-msgstr "撤销"
-
-#: sketcher/ui_gtk/menu.py
-msgid "Redo"
-msgstr "重做"
-
-#: sketcher/ui_gtk/menu.py
 msgid "_Edit"
 msgstr "编辑(_E)"
 
@@ -602,6 +689,10 @@ msgstr "倒角"
 #: sketcher/ui_gtk/menu.py
 msgid "Modify"
 msgstr "修改"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Arrays"
+msgstr "阵列"
 
 #: sketcher/ui_gtk/menu.py
 msgid "_Sketch"

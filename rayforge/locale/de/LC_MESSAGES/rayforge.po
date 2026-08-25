@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-22 21:19+0200\n"
+"POT-Creation-Date: 2026-08-25 22:59+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -54,11 +54,11 @@ msgstr "Flach"
 #: rayforge/core/layer.py
 #, python-brace-format
 msgid "Rotary · {name}"
-msgstr "Drehtisch · {name}"
+msgstr "Rotationsmodul · {name}"
 
 #: rayforge/core/layer.py rayforge/core/capability.py
 msgid "Rotary"
-msgstr "Drehtisch"
+msgstr "Rotationsmodul"
 
 #: rayforge/core/doc.py
 msgid "Layer {}"
@@ -72,6 +72,22 @@ msgstr "Ebene"
 #, python-brace-format
 msgid "{name} (copy)"
 msgstr "{name} (Kopie)"
+
+#: rayforge/core/config.py
+msgid "Hidden"
+msgstr "Ausgeblendet"
+
+#: rayforge/core/config.py
+msgid "Active Layer Workflow"
+msgstr "Workflow der aktiven Ebene"
+
+#: rayforge/core/config.py
+msgid "All Non-Empty Layers"
+msgstr "Alle nicht leeren Ebenen"
+
+#: rayforge/core/config.py
+msgid "All Layers"
+msgstr "Alle Ebenen"
 
 #: rayforge/core/ai/provider.py
 msgid "Bad request"
@@ -368,6 +384,11 @@ msgstr "Maschinenkoordinaten"
 #: rayforge/machine/driver/ruida/ruida_driver.py
 msgid "No settings"
 msgstr "Keine Einstellungen"
+
+#: rayforge/machine/driver/discovery.py
+#, python-brace-format
+msgid "{port} at {baud} baud"
+msgstr "{port} mit {baud} Baud"
 
 #: rayforge/machine/driver/driver.py
 #, python-brace-format
@@ -724,6 +745,10 @@ msgstr "Marlin (Seriell)"
 #: rayforge/machine/driver/marlin/marlin_serial.py
 msgid "Marlin firmware via serial connection"
 msgstr "Marlin-Firmware über serielle Verbindung"
+
+#: rayforge/machine/driver/marlin/marlin_serial.py
+msgid "Marlin device"
+msgstr "Marlin-Gerät"
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
@@ -1450,6 +1475,10 @@ msgid "GRBL-compatible serial connection"
 msgstr "GRBL-kompatible serielle Verbindung"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "GRBL device"
+msgstr "GRBL-Gerät"
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
 msgid "RX Buffer Size Override"
 msgstr "RX-Puffergröße überschreiben"
 
@@ -1672,7 +1701,7 @@ msgstr "Einzelachsen-Referenzierung"
 
 #: rayforge/machine/device/profile.py
 msgid "Rotary Enabled by Default"
-msgstr "Drehtisch standardmäßig aktiviert"
+msgstr "Rotationsmodul standardmäßig aktiviert"
 
 #: rayforge/machine/device/profile.py
 #: rayforge/ui_gtk/settings/general_preferences_page.py
@@ -2667,6 +2696,7 @@ msgid "Add"
 msgstr "Hinzufügen"
 
 #: rayforge/ui_gtk/settings/color_presets_page.py
+#: rayforge/ui_gtk/machine/head_preferences_page.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "Color"
@@ -2733,6 +2763,35 @@ msgstr ""
 #: rayforge/ui_gtk/settings/material_manager_page.py
 msgid "Materials"
 msgstr "Materialien"
+
+#: rayforge/ui_gtk/settings/material_manager_page.py
+msgid "New Stock Defaults"
+msgstr "Standardwerte für neues Material"
+
+#: rayforge/ui_gtk/settings/material_manager_page.py
+msgid ""
+"Material and thickness applied when a new stock or rotary layer is created."
+msgstr ""
+"Material und Dicke, die angewendet werden, wenn ein neues Material oder eine "
+"Rotationsmodul-Ebene erstellt wird."
+
+#: rayforge/ui_gtk/settings/material_manager_page.py
+msgid "Default Stock Material"
+msgstr "Standardmaterial"
+
+#: rayforge/ui_gtk/settings/material_manager_page.py
+msgid "Material used when a new stock or rotary layer is created"
+msgstr ""
+"Wird verwendet, wenn ein neues Material oder eine Rotationsmodul-Ebene "
+"erstellt wird."
+
+#: rayforge/ui_gtk/settings/material_manager_page.py
+msgid "Default Stock Thickness"
+msgstr "Standardmaterialdicke"
+
+#: rayforge/ui_gtk/settings/material_manager_page.py
+msgid "Thickness applied to new stock assets"
+msgstr "Wird auf neue Materialien angewendet."
 
 #: rayforge/ui_gtk/settings/material_manager_page.py
 msgid "Material Libraries"
@@ -2846,6 +2905,14 @@ msgstr "Operationsfarben"
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Choose whether operation colors represent the laser or the layer"
 msgstr "Wähle, ob Operationsfarben den Laser oder die Ebene darstellen"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Right Panel"
+msgstr "Rechtes Bedienfeld"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Choose what the right panel displays"
+msgstr "Wählen Sie aus, was das rechte Bedienfeld anzeigt."
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Set the display units for various values throughout the application."
@@ -3997,20 +4064,8 @@ msgid "Size of the laser spot in the Y direction"
 msgstr "Größe des Laserpunkts in Y-Richtung"
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
-msgid "Cut Color"
-msgstr "Schnittfarbe"
-
-#: rayforge/ui_gtk/machine/head_preferences_page.py
-msgid "Color for cutting operations"
-msgstr "Farbe für Schnittoperationen"
-
-#: rayforge/ui_gtk/machine/head_preferences_page.py
-msgid "Raster Color"
-msgstr "Rasterfarbe"
-
-#: rayforge/ui_gtk/machine/head_preferences_page.py
-msgid "Color for engraving/raster operations"
-msgstr "Farbe für Gravur-/Rasteroperationen"
+msgid "Color used for operations of this laser"
+msgstr "Farbe für Operationen dieses Lasers"
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 msgid "Distance from the laser head to the work surface (Z offset)"
@@ -4114,7 +4169,7 @@ msgstr ""
 "dies unterstützt."
 
 #: rayforge/ui_gtk/machine/unified_wizard.py
-#: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
 msgid "Add a Machine"
 msgstr "Maschine hinzufügen"
 
@@ -5029,7 +5084,7 @@ msgid ""
 "require Native"
 msgstr ""
 "Drehe den flachen Arbeitsbereich und ordne die Ausgabe der Maschine zu; "
-"Drehtisch-Ebenen erfordern Native"
+"Rotationsmodul-Ebenen erfordern Native"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
@@ -5249,8 +5304,8 @@ msgid ""
 "Optional. Set up a rotary attachment now or skip this step to add one later "
 "from machine settings."
 msgstr ""
-"Optional. Richte jetzt einen Drehtisch ein oder überspringe diesen Schritt, "
-"um später über die Maschineneinstellungen einen hinzuzufügen."
+"Optional. Richte jetzt einen Rotationsmodul ein oder überspringe diesen "
+"Schritt, um später über die Maschineneinstellungen einen hinzuzufügen."
 
 #: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
 msgid "Module"
@@ -5258,7 +5313,7 @@ msgstr "Modul"
 
 #: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
 msgid "Pick rotary type, axis, mode, and geometry."
-msgstr "Wähle Drehtisch-Typ, Achse, Modus und Geometrie."
+msgstr "Wähle Rotationsmodul-Typ, Achse, Modus und Geometrie."
 
 #: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
 msgid "Jaws / chuck"
@@ -5271,7 +5326,7 @@ msgstr "Rollen"
 
 #: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
 msgid "Rotary Type"
-msgstr "Drehtisch-Typ"
+msgstr "Rotationsmodul-Typ"
 
 #: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
 msgid "How the workpiece is held"
@@ -5283,7 +5338,7 @@ msgstr "Drehachse"
 
 #: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
 msgid "Which axis the rotary uses"
-msgstr "Welche Achse der Drehtisch verwendet"
+msgstr "Welche Achse der Rotationsmodul verwendet"
 
 #: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
 msgid "True 4th Axis (keeps X/Y/Z)"
@@ -5320,7 +5375,7 @@ msgstr "Rollen-Ø"
 
 #: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
 msgid "Required when using roller-type rotary"
-msgstr "Erforderlich bei Verwendung eines Rollen-Drehtisches"
+msgstr "Erforderlich bei Verwendung eines Rollen-Rotationsmodules"
 
 #: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
 msgid "Reverse Axis Direction"
@@ -5328,7 +5383,45 @@ msgstr "Achsenrichtung umkehren"
 
 #: rayforge/ui_gtk/machine/wizard_pages/rotary_page.py
 msgid "Invert the rotary's rotation direction"
-msgstr "Rotationsrichtung des Drehtisches umkehren"
+msgstr "Rotationsrichtung des Rotationsmodules umkehren"
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+#: rayforge/ui_gtk/shared/model_selection_dialog.py
+msgid "Select"
+msgstr "Auswählen"
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+msgid "Connect your machine via USB — we will find it automatically."
+msgstr "Verbinde deine Maschine per USB — wir finden sie automatisch."
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+msgid "Configure Manually"
+msgstr "Manuell konfigurieren"
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+msgid "Detected Devices"
+msgstr "Erkannte Geräte"
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+msgid ""
+"Plug in and power on your machine. Devices found on USB serial connections "
+"appear here automatically."
+msgstr ""
+"Schließe deine Maschine an und schalte sie ein. Geräte mit USB-"
+"Serialverbindung erscheinen hier automatisch."
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+msgid "Searching for devices…"
+msgstr "Geräte werden gesucht…"
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+msgid "No devices detected yet"
+msgstr "Noch keine Geräte erkannt"
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+#, python-brace-format
+msgid "{w}×{h} mm work area"
+msgstr "{w}×{h} mm Arbeitsfläche"
 
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 msgid "—"
@@ -5399,7 +5492,7 @@ msgstr "Arbeitsbereich X×Y"
 
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 msgid "Rotary Modules"
-msgstr "Drehtisch-Module"
+msgstr "Rotationsmodul-Module"
 
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 msgid ""
@@ -5443,8 +5536,8 @@ msgid "Please enter a name."
 msgstr "Bitte gib einen Namen ein."
 
 #: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
-msgid "Discover Device"
-msgstr "Gerät erkennen"
+msgid "Probe Device"
+msgstr "Gerät prüfen"
 
 #: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
 msgid ""
@@ -5496,8 +5589,24 @@ msgid "Retry"
 msgstr "Erneut versuchen"
 
 #: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
+msgid "Choose a Machine"
+msgstr "Maschine auswählen"
+
+#: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
 msgid "Pick a starting point for the new machine."
 msgstr "Wähle einen Ausgangspunkt für die neue Maschine."
+
+#: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
+msgid "A device was detected"
+msgstr "Ein Gerät wurde erkannt"
+
+#: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
+msgid ""
+"No profile matched it automatically. Pick the matching profile below, or "
+"continue with 'Device Not Listed'."
+msgstr ""
+"Kein Profil hat automatisch dazu gepasst. Wähle unten das passende Profil "
+"aus oder fahre mit „Gerät nicht aufgeführt“ fort."
 
 #: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
 msgid "Machine Templates"
@@ -5991,7 +6100,7 @@ msgid ""
 "explicit configuration. They control which steps are offered when adding to "
 "a workflow."
 msgstr ""
-"Fähigkeiten werden aus den Köpfen, Drehtisch-Modulen und expliziten "
+"Fähigkeiten werden aus den Köpfen, Rotationsmodul-Modulen und expliziten "
 "Konfigurationen der Maschine abgeleitet. Sie steuern, welche Schritte beim "
 "Hinzufügen zu einem Workflow angeboten werden."
 
@@ -6603,10 +6712,6 @@ msgid "Toggle grid visibility"
 msgstr "Gitter-Sichtbarkeit umschalten"
 
 #: rayforge/ui_gtk/shared/visibility_overlay.py
-msgid "Toggle ops underlay visibility"
-msgstr "Sichtbarkeit der Operationsunterlage umschalten"
-
-#: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle travel move visibility"
 msgstr "Sichtbarkeit der Verfahrwege umschalten"
 
@@ -6625,10 +6730,6 @@ msgstr "Alle Optionen anzeigen"
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
 msgid "Select Model"
 msgstr "Modell auswählen"
-
-#: rayforge/ui_gtk/shared/model_selection_dialog.py
-msgid "Select"
-msgstr "Auswählen"
 
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "Job Sanity Check"
@@ -6922,6 +7023,14 @@ msgstr "_Hilfe"
 #: rayforge/ui_gtk/main_menu.py
 msgid "(No Recent Items)"
 msgstr "(Keine kürzlichen Elemente)"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "Set up your machine to get started"
+msgstr "Richte deine Maschine ein, um loszulegen"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "Set Up Machine"
+msgstr "Maschine einrichten"
 
 #: rayforge/ui_gtk/mainwindow.py
 #, python-brace-format
@@ -7673,14 +7782,6 @@ msgid "Unset the tint color (texture is shown as-is)"
 msgstr "Farbton zurücksetzen (Textur wird unverändert angezeigt)"
 
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
-msgid "Tintable"
-msgstr "Einfärbbar"
-
-#: rayforge/ui_gtk/doceditor/add_material_dialog.py
-msgid "Allow tinting the texture with a color"
-msgstr "Ermöglicht das Einfärben der Textur mit einer Farbe"
-
-#: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Texture Scale"
 msgstr "Texturskalierung"
 
@@ -7744,10 +7845,6 @@ msgstr "Materialdicke"
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "Use the material's default color"
 msgstr "Standardfarbe des Materials verwenden"
-
-#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
-msgid "Set by the material definition"
-msgstr "Durch die Materialdefinition festgelegt"
 
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "No color"
@@ -8236,7 +8333,7 @@ msgstr "Durchmesser des zylindrischen Objekts"
 
 #: rayforge/ui_gtk/doceditor/layer_settings_dialog.py
 msgid "Material rendered on the rotary object"
-msgstr "Material, das auf dem Drehtisch-Objekt gerendert wird"
+msgstr "Material, das auf dem Rotationsmodul-Objekt gerendert wird"
 
 #: rayforge/ui_gtk/doceditor/material_list.py
 msgid "No materials in selected library."

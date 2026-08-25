@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-09 02:18+0200\n"
+"POT-Creation-Date: 2026-08-25 10:44+0200\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -69,6 +69,10 @@ msgstr "Tangente"
 #: sketcher/core/constraints/tangent.py
 msgid "Line to {} at {}"
 msgstr "Linha para {} em {}"
+
+#: sketcher/core/constraints/rotational.py
+msgid "Rotational Pattern"
+msgstr "Padrão de rotação"
 
 #: sketcher/core/constraints/distance.py
 #: sketcher/ui_gtk/tools/distance_constraint_tool.py
@@ -142,6 +146,7 @@ msgid "At {}"
 msgstr "Em {}"
 
 #: sketcher/core/constraints/radius.py
+#: sketcher/ui_gtk/tools/circular_array_tool.py
 #: sketcher/ui_gtk/tools/radius_constraint_tool.py
 msgid "Radius"
 msgstr "Raio"
@@ -183,6 +188,10 @@ msgstr "Definir preenchimento do texto"
 msgid "Edit Constraint"
 msgstr "Editar Restrição"
 
+#: sketcher/core/commands/edit_pattern.py
+msgid "Edit Pattern"
+msgstr "Editar padrão"
+
 #: sketcher/core/commands/bezier.py sketcher/core/commands/line.py
 msgid "Add Line"
 msgstr "Adicionar Linha"
@@ -207,6 +216,10 @@ msgstr "Adicionar Grade"
 msgid "Add Chamfer"
 msgstr "Adicionar Chanfro"
 
+#: sketcher/core/commands/mirror.py
+msgid "Mirror Selection"
+msgstr "Espelhar seleção"
+
 #: sketcher/core/commands/arc.py
 msgid "Add Arc"
 msgstr "Adicionar Arco"
@@ -215,6 +228,10 @@ msgstr "Adicionar Arco"
 #: sketcher/ui_gtk/tools/straighten_tool.py
 msgid "Straighten"
 msgstr "Endireitar"
+
+#: sketcher/core/commands/duplicate.py
+msgid "Duplicate Selection"
+msgstr "Duplicar seleção"
 
 #: sketcher/core/commands/rounded_rect.py
 msgid "Add Rounded Rectangle"
@@ -232,6 +249,10 @@ msgstr "Modificar Propriedade de Texto"
 msgid "Set Waypoint Type"
 msgstr "Definir Tipo de Ponto de Passagem"
 
+#: sketcher/core/commands/create_pattern.py
+msgid "Create Pattern"
+msgstr "Criar padrão"
+
 #: sketcher/core/commands/point.py
 msgid "Move Point"
 msgstr "Mover Ponto"
@@ -243,6 +264,10 @@ msgstr "Mover Ponto de Controle"
 #: sketcher/core/commands/point.py
 msgid "Unstick Junction"
 msgstr "Descolar Junção"
+
+#: sketcher/core/commands/point.py
+msgid "Move Entities"
+msgstr "Mover entidades"
 
 #: sketcher/core/commands/ellipse.py
 msgid "Add Ellipse"
@@ -284,6 +309,14 @@ msgstr "Editar Esboço"
 msgid "Export Object..."
 msgstr "Exportar objeto..."
 
+#: sketcher/ui_gtk/studio.py sketcher/ui_gtk/menu.py
+msgid "Undo"
+msgstr "Desfazer"
+
+#: sketcher/ui_gtk/studio.py sketcher/ui_gtk/menu.py
+msgid "Redo"
+msgstr "Refazer"
+
 #: sketcher/ui_gtk/studio.py
 msgid "Toggle constraints"
 msgstr "Mostrar/Ocultar restrições"
@@ -295,6 +328,16 @@ msgstr "Mostrar/Ocultar geometria de construção"
 #: sketcher/ui_gtk/studio.py
 msgid "Fill color:"
 msgstr "Cor de preenchimento:"
+
+#: sketcher/ui_gtk/studio.py sketcher/ui_gtk/tools/mirror_tool.py
+#: sketcher/ui_gtk/menu.py
+msgid "Mirror Vertically"
+msgstr "Espelhar verticalmente"
+
+#: sketcher/ui_gtk/studio.py sketcher/ui_gtk/tools/mirror_tool.py
+#: sketcher/ui_gtk/menu.py
+msgid "Mirror Horizontally"
+msgstr "Espelhar horizontalmente"
 
 #: sketcher/ui_gtk/studio.py sketcher/ui_gtk/tools/dimension_input.py
 #: sketcher/ui_gtk/tools/grid_tool.py sketcher/ui_gtk/tools/circle_tool.py
@@ -399,6 +442,10 @@ msgstr "L"
 msgid "H"
 msgstr "A"
 
+#: sketcher/ui_gtk/tools/rectangle_tool.py sketcher/ui_gtk/tools/circle_tool.py
+msgid "Center on start point"
+msgstr "Centralizar no ponto inicial"
+
 #: sketcher/ui_gtk/tools/rectangle_tool.py
 msgid "Type dimensions (W H)"
 msgstr "Digitar dimensões (L A)"
@@ -452,16 +499,56 @@ msgid "Ellipse"
 msgstr "Elipse"
 
 #: sketcher/ui_gtk/tools/circle_tool.py
-msgid "Center on start point"
-msgstr "Centralizar no ponto inicial"
-
-#: sketcher/ui_gtk/tools/circle_tool.py
 msgid "Constrain to circle"
 msgstr "Restringir a círculo"
 
 #: sketcher/ui_gtk/tools/vertical_constraint_tool.py
 msgid "Add Vertical Constraint"
 msgstr "Adicionar Restrição Vertical"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py sketcher/ui_gtk/menu.py
+msgid "Circular Array"
+msgstr "Matriz circular"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Edit Circular Array"
+msgstr "Editar matriz circular"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Circular"
+msgstr "Circular"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Places copies along a circular arc around a centre."
+msgstr "Coloca cópias ao longo de um arco circular em torno de um centro."
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Count"
+msgstr "Quantidade"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Total angle (deg)"
+msgstr "Ângulo total (graus)"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Center X"
+msgstr "Centro X"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Center Y"
+msgstr "Centro Y"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Rotate copies"
+msgstr "Rodar cópias"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Resizes the whole array."
+msgstr "Redimensiona toda a matriz."
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Derived from the seed's anchor point."
+msgstr "Derivado do ponto de ancoragem da entidade original."
 
 #: sketcher/ui_gtk/tools/delete_tool.py
 msgid "Delete Selection"
@@ -535,6 +622,14 @@ msgstr "Adicionar Restrição de Igualdade"
 msgid "Add Distance Constraint"
 msgstr "Adicionar Restrição de Distância"
 
+#: sketcher/ui_gtk/tools/array_base.py
+msgid "_Cancel"
+msgstr "_Cancelar"
+
+#: sketcher/ui_gtk/tools/array_base.py
+msgid "_Apply"
+msgstr "_Aplicar"
+
 #: sketcher/ui_gtk/conflicts_widget.py
 msgid "Conflicting Constraints"
 msgstr "Restrições em Conflito"
@@ -572,14 +667,6 @@ msgid "_File"
 msgstr "_Arquivo"
 
 #: sketcher/ui_gtk/menu.py
-msgid "Undo"
-msgstr "Desfazer"
-
-#: sketcher/ui_gtk/menu.py
-msgid "Redo"
-msgstr "Refazer"
-
-#: sketcher/ui_gtk/menu.py
 msgid "_Edit"
 msgstr "_Editar"
 
@@ -602,6 +689,10 @@ msgstr "Chanfrar Canto"
 #: sketcher/ui_gtk/menu.py
 msgid "Modify"
 msgstr "Modificar"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Arrays"
+msgstr "Matrizes"
 
 #: sketcher/ui_gtk/menu.py
 msgid "_Sketch"

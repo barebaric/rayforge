@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-22 21:19+0200\n"
+"POT-Creation-Date: 2026-08-25 22:59+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -72,6 +72,22 @@ msgstr "图层"
 #, python-brace-format
 msgid "{name} (copy)"
 msgstr "{name} (副本)"
+
+#: rayforge/core/config.py
+msgid "Hidden"
+msgstr "隐藏"
+
+#: rayforge/core/config.py
+msgid "Active Layer Workflow"
+msgstr "活动图层工作流"
+
+#: rayforge/core/config.py
+msgid "All Non-Empty Layers"
+msgstr "所有非空图层"
+
+#: rayforge/core/config.py
+msgid "All Layers"
+msgstr "所有图层"
 
 #: rayforge/core/ai/provider.py
 msgid "Bad request"
@@ -360,6 +376,11 @@ msgstr "机器坐标"
 #: rayforge/machine/driver/ruida/ruida_driver.py
 msgid "No settings"
 msgstr "无设置"
+
+#: rayforge/machine/driver/discovery.py
+#, python-brace-format
+msgid "{port} at {baud} baud"
+msgstr "{port} ({baud} 波特)"
 
 #: rayforge/machine/driver/driver.py
 #, python-brace-format
@@ -689,6 +710,10 @@ msgstr "Marlin (串行)"
 #: rayforge/machine/driver/marlin/marlin_serial.py
 msgid "Marlin firmware via serial connection"
 msgstr "通过串行连接的Marlin固件"
+
+#: rayforge/machine/driver/marlin/marlin_serial.py
+msgid "Marlin device"
+msgstr "Marlin设备"
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
@@ -1311,6 +1336,10 @@ msgstr "GRBL（串口）"
 #: rayforge/machine/driver/grbl/grbl_serial.py
 msgid "GRBL-compatible serial connection"
 msgstr "GRBL兼容的串口连接"
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "GRBL device"
+msgstr "GRBL设备"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
 msgid "RX Buffer Size Override"
@@ -2485,6 +2514,7 @@ msgid "Add"
 msgstr "添加"
 
 #: rayforge/ui_gtk/settings/color_presets_page.py
+#: rayforge/ui_gtk/machine/head_preferences_page.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "Color"
@@ -2547,6 +2577,31 @@ msgstr "将 SVG 颜色映射到步骤类型，以便在导入时自动应用。"
 #: rayforge/ui_gtk/settings/material_manager_page.py
 msgid "Materials"
 msgstr "材料"
+
+#: rayforge/ui_gtk/settings/material_manager_page.py
+msgid "New Stock Defaults"
+msgstr "新毛坯默认值"
+
+#: rayforge/ui_gtk/settings/material_manager_page.py
+msgid ""
+"Material and thickness applied when a new stock or rotary layer is created."
+msgstr "创建新毛坯或旋转模块图层时应用的材料和厚度。"
+
+#: rayforge/ui_gtk/settings/material_manager_page.py
+msgid "Default Stock Material"
+msgstr "默认材料"
+
+#: rayforge/ui_gtk/settings/material_manager_page.py
+msgid "Material used when a new stock or rotary layer is created"
+msgstr "创建新毛坯或旋转模块图层时使用的材料"
+
+#: rayforge/ui_gtk/settings/material_manager_page.py
+msgid "Default Stock Thickness"
+msgstr "默认厚度"
+
+#: rayforge/ui_gtk/settings/material_manager_page.py
+msgid "Thickness applied to new stock assets"
+msgstr "应用于新毛坯资产的厚度"
 
 #: rayforge/ui_gtk/settings/material_manager_page.py
 msgid "Material Libraries"
@@ -2658,6 +2713,14 @@ msgstr "操作颜色"
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Choose whether operation colors represent the laser or the layer"
 msgstr "选择操作颜色代表激光还是图层"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Right Panel"
+msgstr "右侧面板"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Choose what the right panel displays"
+msgstr "选择右侧面板显示的内容"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Set the display units for various values throughout the application."
@@ -3769,20 +3832,8 @@ msgid "Size of the laser spot in the Y direction"
 msgstr "Y方向上的激光光斑大小"
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
-msgid "Cut Color"
-msgstr "切割颜色"
-
-#: rayforge/ui_gtk/machine/head_preferences_page.py
-msgid "Color for cutting operations"
-msgstr "切割操作的颜色"
-
-#: rayforge/ui_gtk/machine/head_preferences_page.py
-msgid "Raster Color"
-msgstr "光栅颜色"
-
-#: rayforge/ui_gtk/machine/head_preferences_page.py
-msgid "Color for engraving/raster operations"
-msgstr "雕刻/光栅操作的颜色"
+msgid "Color used for operations of this laser"
+msgstr "此激光器的操作使用的颜色"
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 msgid "Distance from the laser head to the work surface (Z offset)"
@@ -3882,7 +3933,7 @@ msgid ""
 msgstr "如果您的机器支持，您可以配置多个激光器或主轴。"
 
 #: rayforge/ui_gtk/machine/unified_wizard.py
-#: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
 msgid "Add a Machine"
 msgstr "添加机器"
 
@@ -5038,6 +5089,42 @@ msgstr "反转轴方向"
 msgid "Invert the rotary's rotation direction"
 msgstr "反转旋转装置的旋转方向"
 
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+#: rayforge/ui_gtk/shared/model_selection_dialog.py
+msgid "Select"
+msgstr "选择"
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+msgid "Connect your machine via USB — we will find it automatically."
+msgstr "通过USB连接你的机器，我们会自动找到它。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+msgid "Configure Manually"
+msgstr "手动配置"
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+msgid "Detected Devices"
+msgstr "检测到的设备"
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+msgid ""
+"Plug in and power on your machine. Devices found on USB serial connections "
+"appear here automatically."
+msgstr "插上机器并开启电源。通过USB串口连接找到的设备会自动显示在此处。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+msgid "Searching for devices…"
+msgstr "正在搜索设备…"
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+msgid "No devices detected yet"
+msgstr "尚未检测到设备"
+
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+#, python-brace-format
+msgid "{w}×{h} mm work area"
+msgstr "{w}×{h} mm工作区域"
+
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 msgid "—"
 msgstr "—"
@@ -5145,8 +5232,8 @@ msgid "Please enter a name."
 msgstr "请输入名称。"
 
 #: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
-msgid "Discover Device"
-msgstr "发现设备"
+msgid "Probe Device"
+msgstr "检测设备"
 
 #: rayforge/ui_gtk/machine/wizard_pages/probe_page.py
 msgid ""
@@ -5193,8 +5280,24 @@ msgid "Retry"
 msgstr "重试"
 
 #: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
+msgid "Choose a Machine"
+msgstr "选择机器"
+
+#: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
 msgid "Pick a starting point for the new machine."
 msgstr "为新机器选择起点。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
+msgid "A device was detected"
+msgstr "已检测到设备"
+
+#: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
+msgid ""
+"No profile matched it automatically. Pick the matching profile below, or "
+"continue with 'Device Not Listed'."
+msgstr ""
+"没有自动匹配到任何配置文件。请在下方选择匹配的配置文件，或继续选择\n"
+"“未列出的设备”。"
 
 #: rayforge/ui_gtk/machine/wizard_pages/profile_page.py
 msgid "Machine Templates"
@@ -6255,10 +6358,6 @@ msgid "Toggle grid visibility"
 msgstr "切换网格可见性"
 
 #: rayforge/ui_gtk/shared/visibility_overlay.py
-msgid "Toggle ops underlay visibility"
-msgstr "切换操作底图可见性"
-
-#: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle travel move visibility"
 msgstr "切换移动路径可见性"
 
@@ -6277,10 +6376,6 @@ msgstr "显示所有选项"
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
 msgid "Select Model"
 msgstr "选择模型"
-
-#: rayforge/ui_gtk/shared/model_selection_dialog.py
-msgid "Select"
-msgstr "选择"
 
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "Job Sanity Check"
@@ -6572,6 +6667,14 @@ msgstr "帮助(_H)"
 #: rayforge/ui_gtk/main_menu.py
 msgid "(No Recent Items)"
 msgstr "(无最近项目)"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "Set up your machine to get started"
+msgstr "设置好你的机器即可开始"
+
+#: rayforge/ui_gtk/mainwindow.py
+msgid "Set Up Machine"
+msgstr "设置机器"
 
 #: rayforge/ui_gtk/mainwindow.py
 #, python-brace-format
@@ -7288,14 +7391,6 @@ msgid "Unset the tint color (texture is shown as-is)"
 msgstr "取消色调颜色（纹理按原样显示）"
 
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
-msgid "Tintable"
-msgstr "可着色"
-
-#: rayforge/ui_gtk/doceditor/add_material_dialog.py
-msgid "Allow tinting the texture with a color"
-msgstr "允许使用颜色为纹理着色"
-
-#: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Texture Scale"
 msgstr "纹理缩放"
 
@@ -7359,10 +7454,6 @@ msgstr "材料厚度"
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "Use the material's default color"
 msgstr "使用材料的默认颜色"
-
-#: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
-msgid "Set by the material definition"
-msgstr "由材料定义设置"
 
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 msgid "No color"

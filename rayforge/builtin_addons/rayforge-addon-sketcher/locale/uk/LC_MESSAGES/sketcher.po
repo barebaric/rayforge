@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-09 02:18+0200\n"
+"POT-Creation-Date: 2026-08-25 10:44+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -70,6 +70,10 @@ msgstr "Дотична"
 #: sketcher/core/constraints/tangent.py
 msgid "Line to {} at {}"
 msgstr "Лінія до {} у {}"
+
+#: sketcher/core/constraints/rotational.py
+msgid "Rotational Pattern"
+msgstr "Ротаційний шаблон"
 
 #: sketcher/core/constraints/distance.py
 #: sketcher/ui_gtk/tools/distance_constraint_tool.py
@@ -143,6 +147,7 @@ msgid "At {}"
 msgstr "У {}"
 
 #: sketcher/core/constraints/radius.py
+#: sketcher/ui_gtk/tools/circular_array_tool.py
 #: sketcher/ui_gtk/tools/radius_constraint_tool.py
 msgid "Radius"
 msgstr "Радіус"
@@ -184,6 +189,10 @@ msgstr "Встановити заливку тексту"
 msgid "Edit Constraint"
 msgstr "Редагувати обмеження"
 
+#: sketcher/core/commands/edit_pattern.py
+msgid "Edit Pattern"
+msgstr "Редагувати шаблон"
+
 #: sketcher/core/commands/bezier.py sketcher/core/commands/line.py
 msgid "Add Line"
 msgstr "Додати лінію"
@@ -208,6 +217,10 @@ msgstr "Додати сітку"
 msgid "Add Chamfer"
 msgstr "Додати фаску"
 
+#: sketcher/core/commands/mirror.py
+msgid "Mirror Selection"
+msgstr "Дзеркальна копія виділеного"
+
 #: sketcher/core/commands/arc.py
 msgid "Add Arc"
 msgstr "Додати дугу"
@@ -216,6 +229,10 @@ msgstr "Додати дугу"
 #: sketcher/ui_gtk/tools/straighten_tool.py
 msgid "Straighten"
 msgstr "Випрямити"
+
+#: sketcher/core/commands/duplicate.py
+msgid "Duplicate Selection"
+msgstr "Дублювати виділення"
 
 #: sketcher/core/commands/rounded_rect.py
 msgid "Add Rounded Rectangle"
@@ -233,6 +250,10 @@ msgstr "Змінити властивість тексту"
 msgid "Set Waypoint Type"
 msgstr "Встановити тип опорної точки"
 
+#: sketcher/core/commands/create_pattern.py
+msgid "Create Pattern"
+msgstr "Створити шаблон"
+
 #: sketcher/core/commands/point.py
 msgid "Move Point"
 msgstr "Перемістити точку"
@@ -244,6 +265,10 @@ msgstr "Перемістити контрольну точку"
 #: sketcher/core/commands/point.py
 msgid "Unstick Junction"
 msgstr "Від'єднати вузол"
+
+#: sketcher/core/commands/point.py
+msgid "Move Entities"
+msgstr "Перемістити об'єкти"
 
 #: sketcher/core/commands/ellipse.py
 msgid "Add Ellipse"
@@ -285,6 +310,14 @@ msgstr "Редагувати ескіз"
 msgid "Export Object..."
 msgstr "Експортувати об'єкт..."
 
+#: sketcher/ui_gtk/studio.py sketcher/ui_gtk/menu.py
+msgid "Undo"
+msgstr "Скасувати"
+
+#: sketcher/ui_gtk/studio.py sketcher/ui_gtk/menu.py
+msgid "Redo"
+msgstr "Повторити"
+
 #: sketcher/ui_gtk/studio.py
 msgid "Toggle constraints"
 msgstr "Перемкнути обмеження"
@@ -296,6 +329,16 @@ msgstr "Перемкнути допоміжну геометрію"
 #: sketcher/ui_gtk/studio.py
 msgid "Fill color:"
 msgstr "Колір заливки:"
+
+#: sketcher/ui_gtk/studio.py sketcher/ui_gtk/tools/mirror_tool.py
+#: sketcher/ui_gtk/menu.py
+msgid "Mirror Vertically"
+msgstr "Дзеркально по вертикалі"
+
+#: sketcher/ui_gtk/studio.py sketcher/ui_gtk/tools/mirror_tool.py
+#: sketcher/ui_gtk/menu.py
+msgid "Mirror Horizontally"
+msgstr "Дзеркально по горизонталі"
 
 #: sketcher/ui_gtk/studio.py sketcher/ui_gtk/tools/dimension_input.py
 #: sketcher/ui_gtk/tools/grid_tool.py sketcher/ui_gtk/tools/circle_tool.py
@@ -400,6 +443,10 @@ msgstr "Ш"
 msgid "H"
 msgstr "В"
 
+#: sketcher/ui_gtk/tools/rectangle_tool.py sketcher/ui_gtk/tools/circle_tool.py
+msgid "Center on start point"
+msgstr "Центр на початковій точці"
+
 #: sketcher/ui_gtk/tools/rectangle_tool.py
 msgid "Type dimensions (W H)"
 msgstr "Введіть розміри (Ш В)"
@@ -453,16 +500,56 @@ msgid "Ellipse"
 msgstr "Еліпс"
 
 #: sketcher/ui_gtk/tools/circle_tool.py
-msgid "Center on start point"
-msgstr "Центр на початковій точці"
-
-#: sketcher/ui_gtk/tools/circle_tool.py
 msgid "Constrain to circle"
 msgstr "Обмежити до кола"
 
 #: sketcher/ui_gtk/tools/vertical_constraint_tool.py
 msgid "Add Vertical Constraint"
 msgstr "Додати вертикальне обмеження"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py sketcher/ui_gtk/menu.py
+msgid "Circular Array"
+msgstr "Круговий масив"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Edit Circular Array"
+msgstr "Редагувати круговий масив"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Circular"
+msgstr "Круговий"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Places copies along a circular arc around a centre."
+msgstr "Розміщує копії вздовж дуги навколо центру."
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Count"
+msgstr "Кількість"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Total angle (deg)"
+msgstr "Загальний кут (град.)"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Center X"
+msgstr "Центр X"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Center Y"
+msgstr "Центр Y"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Rotate copies"
+msgstr "Обертати копії"
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Resizes the whole array."
+msgstr "Змінює розмір усього масиву."
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Derived from the seed's anchor point."
+msgstr "Визначається за якорною точкою початкового об'єкта."
 
 #: sketcher/ui_gtk/tools/delete_tool.py
 msgid "Delete Selection"
@@ -536,6 +623,14 @@ msgstr "Додати обмеження рівності"
 msgid "Add Distance Constraint"
 msgstr "Додати обмеження відстані"
 
+#: sketcher/ui_gtk/tools/array_base.py
+msgid "_Cancel"
+msgstr "_Скасувати"
+
+#: sketcher/ui_gtk/tools/array_base.py
+msgid "_Apply"
+msgstr "_Застосувати"
+
 #: sketcher/ui_gtk/conflicts_widget.py
 msgid "Conflicting Constraints"
 msgstr "Конфліктуючі обмеження"
@@ -573,14 +668,6 @@ msgid "_File"
 msgstr "_Файл"
 
 #: sketcher/ui_gtk/menu.py
-msgid "Undo"
-msgstr "Скасувати"
-
-#: sketcher/ui_gtk/menu.py
-msgid "Redo"
-msgstr "Повторити"
-
-#: sketcher/ui_gtk/menu.py
 msgid "_Edit"
 msgstr "_Редагування"
 
@@ -603,6 +690,10 @@ msgstr "Фаска кута"
 #: sketcher/ui_gtk/menu.py
 msgid "Modify"
 msgstr "Змінити"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Arrays"
+msgstr "Масиви"
 
 #: sketcher/ui_gtk/menu.py
 msgid "_Sketch"

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-09 02:18+0200\n"
+"POT-Creation-Date: 2026-08-25 10:44+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -69,6 +69,10 @@ msgstr ""
 
 #: sketcher/core/constraints/tangent.py
 msgid "Line to {} at {}"
+msgstr ""
+
+#: sketcher/core/constraints/rotational.py
+msgid "Rotational Pattern"
 msgstr ""
 
 #: sketcher/core/constraints/distance.py
@@ -144,6 +148,7 @@ msgid "At {}"
 msgstr ""
 
 #: sketcher/core/constraints/radius.py
+#: sketcher/ui_gtk/tools/circular_array_tool.py
 #: sketcher/ui_gtk/tools/radius_constraint_tool.py
 msgid "Radius"
 msgstr ""
@@ -187,6 +192,10 @@ msgstr ""
 msgid "Edit Constraint"
 msgstr ""
 
+#: sketcher/core/commands/edit_pattern.py
+msgid "Edit Pattern"
+msgstr ""
+
 #: sketcher/core/commands/bezier.py
 #: sketcher/core/commands/line.py
 msgid "Add Line"
@@ -212,6 +221,10 @@ msgstr ""
 msgid "Add Chamfer"
 msgstr ""
 
+#: sketcher/core/commands/mirror.py
+msgid "Mirror Selection"
+msgstr ""
+
 #: sketcher/core/commands/arc.py
 msgid "Add Arc"
 msgstr ""
@@ -219,6 +232,10 @@ msgstr ""
 #: sketcher/core/commands/straighten.py
 #: sketcher/ui_gtk/tools/straighten_tool.py
 msgid "Straighten"
+msgstr ""
+
+#: sketcher/core/commands/duplicate.py
+msgid "Duplicate Selection"
 msgstr ""
 
 #: sketcher/core/commands/rounded_rect.py
@@ -237,6 +254,10 @@ msgstr ""
 msgid "Set Waypoint Type"
 msgstr ""
 
+#: sketcher/core/commands/create_pattern.py
+msgid "Create Pattern"
+msgstr ""
+
 #: sketcher/core/commands/point.py
 msgid "Move Point"
 msgstr ""
@@ -247,6 +268,10 @@ msgstr ""
 
 #: sketcher/core/commands/point.py
 msgid "Unstick Junction"
+msgstr ""
+
+#: sketcher/core/commands/point.py
+msgid "Move Entities"
 msgstr ""
 
 #: sketcher/core/commands/ellipse.py
@@ -291,6 +316,16 @@ msgid "Export Object..."
 msgstr ""
 
 #: sketcher/ui_gtk/studio.py
+#: sketcher/ui_gtk/menu.py
+msgid "Undo"
+msgstr ""
+
+#: sketcher/ui_gtk/studio.py
+#: sketcher/ui_gtk/menu.py
+msgid "Redo"
+msgstr ""
+
+#: sketcher/ui_gtk/studio.py
 msgid "Toggle constraints"
 msgstr ""
 
@@ -300,6 +335,18 @@ msgstr ""
 
 #: sketcher/ui_gtk/studio.py
 msgid "Fill color:"
+msgstr ""
+
+#: sketcher/ui_gtk/studio.py
+#: sketcher/ui_gtk/tools/mirror_tool.py
+#: sketcher/ui_gtk/menu.py
+msgid "Mirror Vertically"
+msgstr ""
+
+#: sketcher/ui_gtk/studio.py
+#: sketcher/ui_gtk/tools/mirror_tool.py
+#: sketcher/ui_gtk/menu.py
+msgid "Mirror Horizontally"
 msgstr ""
 
 #: sketcher/ui_gtk/studio.py
@@ -415,6 +462,11 @@ msgid "H"
 msgstr ""
 
 #: sketcher/ui_gtk/tools/rectangle_tool.py
+#: sketcher/ui_gtk/tools/circle_tool.py
+msgid "Center on start point"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/rectangle_tool.py
 msgid "Type dimensions (W H)"
 msgstr ""
 
@@ -468,15 +520,56 @@ msgid "Ellipse"
 msgstr ""
 
 #: sketcher/ui_gtk/tools/circle_tool.py
-msgid "Center on start point"
-msgstr ""
-
-#: sketcher/ui_gtk/tools/circle_tool.py
 msgid "Constrain to circle"
 msgstr ""
 
 #: sketcher/ui_gtk/tools/vertical_constraint_tool.py
 msgid "Add Vertical Constraint"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+#: sketcher/ui_gtk/menu.py
+msgid "Circular Array"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Edit Circular Array"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Circular"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Places copies along a circular arc around a centre."
+msgstr ""
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Count"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Total angle (deg)"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Center X"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Center Y"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Rotate copies"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Resizes the whole array."
+msgstr ""
+
+#: sketcher/ui_gtk/tools/circular_array_tool.py
+msgid "Derived from the seed's anchor point."
 msgstr ""
 
 #: sketcher/ui_gtk/tools/delete_tool.py
@@ -553,6 +646,14 @@ msgstr ""
 msgid "Add Distance Constraint"
 msgstr ""
 
+#: sketcher/ui_gtk/tools/array_base.py
+msgid "_Cancel"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/array_base.py
+msgid "_Apply"
+msgstr ""
+
 #: sketcher/ui_gtk/conflicts_widget.py
 msgid "Conflicting Constraints"
 msgstr ""
@@ -590,14 +691,6 @@ msgid "_File"
 msgstr ""
 
 #: sketcher/ui_gtk/menu.py
-msgid "Undo"
-msgstr ""
-
-#: sketcher/ui_gtk/menu.py
-msgid "Redo"
-msgstr ""
-
-#: sketcher/ui_gtk/menu.py
 msgid "_Edit"
 msgstr ""
 
@@ -619,6 +712,10 @@ msgstr ""
 
 #: sketcher/ui_gtk/menu.py
 msgid "Modify"
+msgstr ""
+
+#: sketcher/ui_gtk/menu.py
+msgid "Arrays"
 msgstr ""
 
 #: sketcher/ui_gtk/menu.py
