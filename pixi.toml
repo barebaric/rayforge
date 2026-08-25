@@ -34,7 +34,7 @@ PyOpenGL-accelerate = "==3.1.10"
 PyGObject = "==3.56.3"
 pkg-config = "==0.29.2"
 rust = "==1.97.1"
-patchelf = "==0.17.2|==0.18.0"
+patchelf = "==0.19.1"
 
 [feature.app.pypi-dependencies]
 raygeo = "==1.46.0"
@@ -47,7 +47,7 @@ cairosvg = "==2.9.0"
 ezdxf = "==1.4.4"
 GitPython = "==3.1.59"
 platformdirs = "==4.11.3"
-pypdf = "==6.16.1"
+pypdf = "==6.16.2"
 pymupdf = "==1.28.2"
 pyserial = "==3.5"
 pyvips = "==3.1.1"
@@ -79,6 +79,7 @@ gettext = "==0.25.1"
 
 [feature.test.dependencies]
 pytest = "==9.1.1"
+appstream = "==1.1.1"
 
 [feature.test.pypi-dependencies]
 pytest-asyncio = "==1.4.0"
@@ -88,14 +89,14 @@ pygobject-stubs = "==2.17.0"
 flake8 = "==7.3.0"
 pyflakes = "==3.4.0"
 pyright = "==1.1.411"
-ruff = "==0.16.3"
+ruff = "==0.16.4"
 pre-commit = "==4.6.2"
 
 [feature.website.dependencies]
 nodejs = "==26.6.0"
 [feature.video-tools.dependencies]
 ffmpeg = "==9.0.1"
-python = "==3.14.6"
+python = "==3.14.7"
 
 [feature.video-tools.pypi-dependencies]
 pillow = "==12.3.0"
@@ -105,7 +106,7 @@ workdir = "."
 
 [tasks]
 pre-commit-install = "pre-commit install"
-lint = { depends-on = ["ruff", "flake", "pyflakes", "pyright"] }
+lint = { depends-on = ["ruff", "flake", "pyflakes", "pyright", "validate-metainfo"] }
 update-translations = "bash scripts/update_translations.sh"
 compile-translations = "bash scripts/update_translations.sh --compile-only"
 print-untranslated = "bash scripts/print_untranslated.sh"
@@ -115,6 +116,7 @@ normalize-icons = "python3 scripts/normalize_icons.py"
 gen-affiliate = "python3 scripts/generate_affiliate_link.py"
 optimize-textures = "python3 scripts/optimize_material_textures.py"
 optimize-images = "python3 scripts/optimize_images.py"
+create-icon = "python3 scripts/create_icon.py"
 
 [tasks.clean]
 cmd = "bash scripts/clean.sh"
@@ -139,6 +141,9 @@ cmd = "pyflakes rayforge tests"
 depends-on = ["format"]
 env = { VIRTUAL_ENV = ".pixi/envs/default" }
 cmd = "pyright"
+
+[tasks.validate-metainfo]
+cmd = "appstreamcli validate --no-net data/org.rayforge.rayforge.metainfo.xml"
 
 [tasks.rayforge]
 env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}

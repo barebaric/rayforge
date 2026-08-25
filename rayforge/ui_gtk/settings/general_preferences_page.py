@@ -6,7 +6,7 @@ from typing import ClassVar
 from gi.repository import Adw, GLib, Gtk
 
 from ...context import get_context
-from ...core.config import OpsColorMode, StartupBehavior
+from ...core.config import OpsColorMode, RightPanelMode, StartupBehavior
 from ...shared.units.definitions import (
     get_base_unit_for_quantity,
     get_units_for_quantity,
@@ -66,6 +66,14 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
     OPS_COLOR_MODE_LABELS: ClassVar[list[str]] = [
         _("Laser Color"),
         _("Layer Color"),
+    ]
+
+    # Ordered right panel display modes shown in the combo row
+    RIGHT_PANEL_MODES: ClassVar[list[RightPanelMode]] = [
+        RightPanelMode.HIDDEN,
+        RightPanelMode.ACTIVE_LAYER,
+        RightPanelMode.NON_EMPTY_LAYERS,
+        RightPanelMode.ALL_LAYERS,
     ]
 
     # Language options: None (system default) + supported languages
@@ -139,6 +147,29 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
             "notify::selected", self.on_ops_color_mode_changed
         )
         app_settings_group.add(self.ops_color_mode_row)
+
+        self.right_panel_mode_row = Adw.ComboRow(
+            model=Gtk.StringList.new(
+                [mode.label() for mode in self.RIGHT_PANEL_MODES]
+            )
+        )
+        self.right_panel_mode_row.set_title(_("Right Panel"))
+        self.right_panel_mode_row.set_subtitle(
+            _("Choose what the right panel displays")
+        )
+        try:
+            selected_index = self.RIGHT_PANEL_MODES.index(
+                config.right_panel_mode
+            )
+        except ValueError:
+            selected_index = self.RIGHT_PANEL_MODES.index(
+                RightPanelMode.NON_EMPTY_LAYERS
+            )
+        self.right_panel_mode_row.set_selected(selected_index)
+        self.right_panel_mode_row.connect(
+            "notify::selected", self.on_right_panel_mode_changed
+        )
+        app_settings_group.add(self.right_panel_mode_row)
 
         # Units Preferences
         units_group = Adw.PreferencesGroup()
@@ -440,6 +471,12 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         selected_index = combo_row.get_selected()
         mode_string = self.OPS_COLOR_MODE_MAP[selected_index]
         get_context().config.set_ops_color_mode(OpsColorMode(mode_string))
+
+    def on_right_panel_mode_changed(self, combo_row, _):
+        """Called when the user selects a new right panel mode."""
+        selected_index = combo_row.get_selected()
+        mode = self.RIGHT_PANEL_MODES[selected_index]
+        get_context().config.set_right_panel_mode(mode)
 
     def on_length_unit_changed(self, combo_row, _):
         """Called when the user selects a new length unit."""

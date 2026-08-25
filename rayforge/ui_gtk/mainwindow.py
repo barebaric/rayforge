@@ -12,6 +12,7 @@ from .. import __version__, const
 from ..addon_mgr.update_cmd import UpdateCommand
 from ..context import get_context
 from ..core.asset_registry import asset_type_registry
+from ..core.config import RightPanelMode
 from ..core.group import Group
 from ..core.item import DocItem
 from ..core.registration import call_registration_hooks
@@ -73,6 +74,10 @@ from .toolbar import MainToolbar
 from .view_mode_cmd import ViewModeCmd
 
 logger = logging.getLogger(__name__)
+
+# Horizontal space reserved for the right panel when it is shown
+RIGHT_PANEL_OVERLAY_MARGIN = 454
+DEFAULT_OVERLAY_MARGIN = 6
 
 
 css = """
@@ -354,7 +359,9 @@ class MainWindow(Adw.ApplicationWindow):
             show_nogo_zones=bool(config.machine and config.machine.nogo_zones),
             shortcuts=SHORTCUTS,
         )
-        self._surface_vis_overlay.set_margin_end(454)
+        self._surface_vis_overlay.set_margin_end(
+            self._get_vis_overlay_margin_end()
+        )
         self.surface_overlay.add_overlay(self._surface_vis_overlay)
         self._time_estimate_overlay = TimeEstimateOverlay()
         self.surface_overlay.add_overlay(self._time_estimate_overlay)
@@ -402,16 +409,14 @@ class MainWindow(Adw.ApplicationWindow):
         right_pane_box.set_size_request(430, -1)
         self._right_pane.set_child(right_pane_box)
 
-        # The WorkflowView will be updated when a layer is activated.
-        initial_workflow = self.doc_editor.doc.active_layer.workflow
-        assert initial_workflow, "Initial active layer must have a workflow"
-        self.workflowview = WorkflowView(
-            self.doc_editor,
-            initial_workflow,
-        )
-        self.workflowview.set_margin_top(6)
-        self.workflowview.set_margin_end(12)
-        right_pane_box.append(self.workflowview)
+        # The workflow views are updated when the document or the
+        # active layer changes, according to the right panel mode.
+        self._workflow_views: list[WorkflowView] = []
+        self._workflow_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self._workflow_box.set_margin_top(6)
+        self._workflow_box.set_margin_end(12)
+        right_pane_box.append(self._workflow_box)
+        self._update_workflow_views()
 
         # Register built-in property providers before creating the widget
         register_builtin_providers()
@@ -678,6 +683,8 @@ class MainWindow(Adw.ApplicationWindow):
             and config.bottom_panel.get("visible")
         ):
             bottom_panel_action.change_state(GLib.Variant.new_boolean(True))
+
+        self._apply_right_panel_visibility()
 
     def add_stack_page(self, name: str, widget: Gtk.Widget):
         """Add a page to the main stack.
@@ -1257,9 +1264,7 @@ class MainWindow(Adw.ApplicationWindow):
     def on_doc_changed(self, sender, **kwargs):
         # Synchronize UI elements that depend on the document model
         self.surface.update_from_doc()
-        doc = self.doc_editor.doc
-        if doc.active_layer and doc.active_layer.workflow:
-            self.workflowview.set_workflow(doc.active_layer.workflow)
+        self._update_workflow_views()
 
         # Sync the selectability of stock items based on active layer
         self._sync_element_selectability()
@@ -1270,6 +1275,7 @@ class MainWindow(Adw.ApplicationWindow):
         # The stock and ops-underlay toggles are mutually exclusive:
         # show the stock toggle only when the document has stock —
         # flat stock items or rotary layers with a diameter.
+        doc = self.doc_editor.doc
         has_stock = bool(doc.stock_items) or any(
             layer.rotary_enabled and layer.rotary_diameter > 0
             for layer in doc.layers
@@ -1298,17 +1304,85 @@ class MainWindow(Adw.ApplicationWindow):
         # Reset the paste counter to ensure the next paste is in-place.
         self.doc_editor.edit.reset_paste_counter()
 
-        # Get the newly activated layer from the document
-        activated_layer = self.doc_editor.doc.active_layer
-        has_workflow = activated_layer.workflow is not None
+        self._update_workflow_views()
 
-        # Show/hide the workflow view based on the layer type
-        self.workflowview.set_visible(has_workflow)
+    def _get_visible_workflows(self):
+        """
+        Returns the workflows that should be displayed in the right
+        panel, based on the configured right panel mode.
+        """
+        doc = self.doc_editor.doc
+        if not doc:
+            return []
+        mode = get_context().config.right_panel_mode
+        if mode == RightPanelMode.HIDDEN:
+            return []
+        if mode == RightPanelMode.NON_EMPTY_LAYERS:
+            return [
+                layer.workflow
+                for layer in doc.layers
+                if not layer.is_empty and layer.workflow
+            ]
+        if mode == RightPanelMode.ALL_LAYERS:
+            return [layer.workflow for layer in doc.layers if layer.workflow]
+        active = doc.active_layer
+        if active and active.workflow:
+            return [active.workflow]
+        return []
 
-        if has_workflow:
-            # For regular layers, update the workflow view with the
-            # new workflow
-            self.workflowview.set_workflow(activated_layer.workflow)
+    def _update_workflow_views(self):
+        """
+        Reconciles the workflow views in the right panel with the
+        workflows that should currently be displayed. Rebuilds the views
+        only if the set of workflows has changed.
+        """
+        desired = self._get_visible_workflows()
+        current = [view.workflow for view in self._workflow_views]
+        if current == desired:
+            return
+        for view in self._workflow_views:
+            self._workflow_box.remove(view)
+        self._workflow_views.clear()
+        for workflow in desired:
+            view = WorkflowView(self.doc_editor, workflow)
+            view.set_margin_bottom(6)
+            self._workflow_box.append(view)
+            self._workflow_views.append(view)
+
+    def _is_right_panel_effectively_visible(self) -> bool:
+        """
+        Returns True if the right panel should be on screen, combining
+        the user's visibility toggle with the configured panel mode.
+        """
+        config = get_context().config
+        return (
+            config.right_panel_visible
+            and config.right_panel_mode != RightPanelMode.HIDDEN
+        )
+
+    def _get_vis_overlay_margin_end(self) -> int:
+        """
+        Returns the end margin for the canvas visibility overlays. When
+        the right panel is shown, they shift left to avoid overlapping
+        it; otherwise they align with the canvas edge.
+        """
+        if self._is_right_panel_effectively_visible():
+            return RIGHT_PANEL_OVERLAY_MARGIN
+        return DEFAULT_OVERLAY_MARGIN
+
+    def _apply_right_panel_visibility(self):
+        """
+        Shows or hides the right panel and repositions the canvas
+        visibility overlays accordingly.
+        """
+        self._right_pane.set_visible(
+            self._is_right_panel_effectively_visible()
+        )
+        margin_end = self._get_vis_overlay_margin_end()
+        if self._surface_vis_overlay is not None:
+            self._surface_vis_overlay.set_margin_end(margin_end)
+        if self._canvas3d_vis_overlay is not None:
+            self._canvas3d_vis_overlay.set_margin_end(margin_end)
 
     def _on_document_changed(self, sender):
         """
@@ -1521,7 +1595,9 @@ class MainWindow(Adw.ApplicationWindow):
             show_nogo_zones=bool(machine and machine.nogo_zones),
             shortcuts=SHORTCUTS,
         )
-        self._canvas3d_vis_overlay.set_margin_end(454)
+        self._canvas3d_vis_overlay.set_margin_end(
+            self._get_vis_overlay_margin_end()
+        )
         self._canvas3d_overlay.add_overlay(self._canvas3d_vis_overlay)
         self._canvas3d_playback = PlaybackOverlay()
         self.canvas3d.set_playback_overlay(self._canvas3d_playback)
@@ -1603,10 +1679,13 @@ class MainWindow(Adw.ApplicationWindow):
         has_nogo_zones = bool(config.machine and config.machine.nogo_zones)
         if self._surface_vis_overlay is not None:
             self._surface_vis_overlay.set_nogo_visible(has_nogo_zones)
-        if self._canvas3d_vis_overlay is not None:
+        if self.canvas3d is not None and self._canvas3d_vis_overlay:
+            self._canvas3d_vis_overlay.set_nogo_visible(has_nogo_zones)
             self._canvas3d_vis_overlay.set_nogo_visible(has_nogo_zones)
 
         self.surface.update_from_doc()
+        self._update_workflow_views()
+        self._apply_right_panel_visibility()
         self._update_macros_menu()
 
         # Check for any pending notifications from the new machine immediately
@@ -1998,8 +2077,8 @@ class MainWindow(Adw.ApplicationWindow):
     ):
         is_visible = value.get_boolean()
         action.set_state(value)
-        self._right_pane.set_visible(is_visible)
         get_context().config.set_right_panel_visible(is_visible)
+        self._apply_right_panel_visibility()
 
     def _on_dialog_notification(self, sender, message: str = ""):
         """Shows a toast when requested by a child dialog."""

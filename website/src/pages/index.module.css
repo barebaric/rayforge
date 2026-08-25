@@ -607,7 +607,7 @@ html[data-theme='dark'] .featureVisual img {
 
 /* --- Tutorial Spotlight --- */
 .spotlightSection {
-  padding: 5rem 2rem;
+  padding: 2.5rem 2rem;
   border-top: 1px solid var(--rf-line);
   background: var(--rf-surface);
 }
@@ -619,7 +619,7 @@ html[data-theme='dark'] .featureVisual img {
 
 .spotlightHeader {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 1.5rem;
 }
 
 .spotlightTitle {
@@ -742,7 +742,7 @@ html[data-theme='dark'] .featureVisual img {
 
 /* --- Community Section --- */
 .communitySection {
-  padding: 5rem 2rem 6rem;
+  padding: 2.5rem 2rem 6rem;
   text-align: center;
   background: var(--rf-surface-alt);
   border-top: 1px solid var(--rf-line);
@@ -884,11 +884,11 @@ html[data-theme='dark'] .featureVisual img {
   }
 
   .spotlightSection {
-    padding: 3.25rem 1.25rem;
+    padding: 1.625rem 1.25rem;
   }
 
   .communitySection {
-    padding: 3.25rem 1.25rem 4rem;
+    padding: 1.625rem 1.25rem 4rem;
   }
 }
 

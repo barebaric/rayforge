@@ -219,29 +219,6 @@ html[data-theme='dark'] .iconRed {
   line-height: 1.35;
 }
 
-.featuredCard {
-  grid-column: 1 / -1;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  padding: 1.15rem 1.35rem;
-  border: 1px solid var(--ifm-color-emphasis-300);
-  background: var(--ifm-background-surface-color);
-}
-
-.featuredCardCta {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.6rem 1.15rem;
-  border-radius: 10px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #fff;
-  background: var(--color-ray-orange-dark);
-  white-space: nowrap;
-  text-decoration: none;
-}
-
 .impactGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -360,29 +337,6 @@ html[data-theme='dark'] .iconRed {
   border: 1px solid rgba(26, 26, 46, 0.22);
 }
 
-.twoCol {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
-}
-
-.block {
-  position: relative;
-  background: var(--ifm-background-surface-color);
-  border: 1px solid var(--ifm-color-emphasis-200);
-  border-radius: 1.1rem;
-  padding: 1.1rem 1.1rem;
-  overflow: hidden;
-}
-
-.blockHeader {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.85rem;
-}
-
 .blockIcon {
   width: 40px;
   height: 40px;
@@ -390,18 +344,6 @@ html[data-theme='dark'] .iconRed {
   display: grid;
   place-items: center;
   color: #fff;
-}
-
-.blockTitle {
-  position: relative;
-  margin: 0;
-  font-size: 1.15rem;
-}
-
-.blockBody {
-  position: relative;
-  margin: 0;
-  color: var(--ifm-color-emphasis-700);
 }
 
 .steps {
@@ -445,33 +387,6 @@ html[data-theme='dark'] .step::before {
   color: #1a1a2e;
 }
 
-.bullets {
-  position: relative;
-  margin: 0 0 0.85rem;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 0.55rem;
-  color: var(--ifm-color-emphasis-800);
-}
-
-.bullets li {
-  position: relative;
-  padding-left: 1.35rem;
-  line-height: 1.45;
-}
-
-.bullets li::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0.55rem;
-  width: 0.55rem;
-  height: 0.55rem;
-  border-radius: 999px;
-  background: var(--color-ray-orange-dark);
-}
-
 @media (max-width: 1100px) {
   .cardGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -487,10 +402,6 @@ html[data-theme='dark'] .step::before {
     padding: 3rem 0 2rem;
   }
 
-  .twoCol {
-    grid-template-columns: 1fr;
-  }
-
   .impactGrid {
     grid-template-columns: 1fr;
   }
@@ -499,13 +410,5 @@ html[data-theme='dark'] .step::before {
 @media (max-width: 520px) {
   .cardGrid {
     grid-template-columns: 1fr;
-  }
-
-  .featuredCard {
-    grid-template-columns: 1fr;
-  }
-
-  .featuredCardCta {
-    justify-content: center;
   }
 }

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-19 20:47+0200\n"
+"POT-Creation-Date: 2026-08-21 15:33+0200\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -545,16 +545,16 @@ msgstr ""
 "sobreponha"
 
 #: laser_essentials/steps/contour_step.py
-msgid "Brightness level (0.0-1.0) to define edges"
-msgstr "Nível de brilho (0.0-1.0) para definir bordas"
-
-#: laser_essentials/steps/contour_step.py
 msgid "Rescan Content"
 msgstr "Reexaminar Conteúdo"
 
 #: laser_essentials/steps/contour_step.py
 msgid "Ignore source geometry and re-trace within the workpiece"
 msgstr "Ignorar geometria de origem e retraçar dentro da peça de trabalho"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Brightness level (0.0-1.0) to define edges"
+msgstr "Nível de brilho (0.0-1.0) para definir bordas"
 
 #: laser_essentials/steps/material_test.py
 #: laser_essentials/commands/material_test_cmd.py

@@ -104,6 +104,13 @@ class GrblSerialDriver(Driver):
     POLL_RESPONSE_ATTEMPTS: int = 10
     POLL_RESPONSE_INTERVAL: float = 0.1
 
+    # Handshake verification bounds. The '?' realtime poll is repeated
+    # every POLL_INTERVAL until a response arrives, because devices
+    # that are still booting silently drop queries sent before their
+    # serial stream is ready.
+    HANDSHAKE_TIMEOUT: float = 2.0
+    HANDSHAKE_POLL_INTERVAL: float = 0.5
+
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
         self.grbl_transport: GrblSerialTransport | None = None
@@ -395,6 +402,27 @@ class GrblSerialDriver(Driver):
             else:
                 request.finished.set()
 
+    async def _await_handshake(self) -> bool:
+        """
+        Polls the device with realtime '?' commands until it responds
+        with a status report (or its welcome message arrives), bounded
+        by HANDSHAKE_TIMEOUT. Returns True once the handshake event is
+        set, False if the device stayed silent.
+        """
+        loop = asyncio.get_event_loop()
+        deadline = loop.time() + self.HANDSHAKE_TIMEOUT
+        while True:
+            await self._send_realtime("?", add_newline=False)
+            try:
+                await asyncio.wait_for(
+                    self._handshake_received.wait(),
+                    timeout=self.HANDSHAKE_POLL_INTERVAL,
+                )
+                return True
+            except asyncio.TimeoutError:
+                if loop.time() >= deadline:
+                    return False
+
     async def _connection_loop(self) -> None:
         logger.debug("Entering _connection_loop.")
         while self.keep_running:
@@ -405,19 +433,13 @@ class GrblSerialDriver(Driver):
                 if not transport:
                     raise DriverSetupError("Transport not initialized")
 
+                self._handshake_received.clear()
                 await transport.connect()
                 logger.debug(
                     "Serial port opened. Verifying device response..."
                 )
 
-                self._handshake_received.clear()
-                await self._send_realtime("?", add_newline=False)
-
-                try:
-                    await asyncio.wait_for(
-                        self._handshake_received.wait(), timeout=2.0
-                    )
-                except asyncio.TimeoutError:
+                if not await self._await_handshake():
                     logger.warning(
                         "No response from device. Port may be a phantom "
                         "COM port without a connected device."
@@ -1773,7 +1795,7 @@ class GrblSerialDriver(Driver):
                 self._cache_rx_buffer_size(rx_buffer_size)
                 if self._rx_buffer_size_override <= 0 and self.grbl_transport:
                     self.grbl_transport.set_rx_buffer_size(rx_buffer_size)
-        elif line.startswith("Grbl "):
+        elif line.startswith(("Grbl ", "GrblHAL ")):
             self._handshake_received.set()
             logger.debug(f"Received Grbl welcome message: {line}")
         else:

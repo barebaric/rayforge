@@ -16,6 +16,7 @@ from ..types import EntityID
 from .entity import Entity
 
 if TYPE_CHECKING:
+    from ..commands.mirror import MirrorAxis
     from ..constraints import Constraint
     from ..registry import EntityRegistry
 
@@ -46,6 +47,11 @@ class Arc(Entity):
         super().set_state(state)
         if "clockwise" in state:
             self.clockwise = state["clockwise"]
+
+    def mirror(self, axis: "MirrorAxis") -> None:
+        # Reflection reverses chirality: a clockwise arc becomes CCW and
+        # vice versa. Point positions are mirrored by the command.
+        self.clockwise = not self.clockwise
 
     def get_point_ids(self) -> list[EntityID]:
         return [self.start_idx, self.end_idx, self.center_idx]

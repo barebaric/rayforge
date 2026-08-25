@@ -37,6 +37,58 @@ class SketchModeCmd:
         self._editor = editor
         self.active_sketch_workpiece: WorkPiece | None = None
         self._is_editing_new_sketch = False
+        self._sketch_history_connected = False
+        self._doc_was_saved_on_entry: bool = True
+
+    def _on_sketch_history_changed(self, sender, **kwargs):
+        """Updates the document's saved state based on the sketch history.
+
+        If the sketch has been modified away from its entry state, the
+        document is marked as unsaved. If the sketch is undone back to its
+        entry state, the document's saved state is restored to what it was
+        before entering the sketcher.
+        """
+        sketch_editor = self._get_active_sketch_editor()
+        if not sketch_editor:
+            return
+        if sketch_editor.history_manager.is_at_checkpoint():
+            if self._doc_was_saved_on_entry:
+                self._editor.mark_as_saved()
+            else:
+                self._editor.mark_as_unsaved()
+        else:
+            self._editor.mark_as_unsaved()
+
+    def _get_active_sketch_editor(self):
+        sketch_studio = _get_sketch_studio()
+        if not sketch_studio:
+            return None
+        return sketch_studio.canvas.sketch_editor
+
+    def _connect_sketch_history(self, sketch_studio: "SketchStudio"):
+        """Connects the sketch editor's history to the document's
+        saved-state tracking so edits mark the project as changed."""
+        if self._sketch_history_connected:
+            return
+        sketch_editor = sketch_studio.canvas.sketch_editor
+        if sketch_editor:
+            self._doc_was_saved_on_entry = self._editor.is_saved
+            sketch_editor.history_manager.set_checkpoint()
+            sketch_editor.history_manager.changed.connect(
+                self._on_sketch_history_changed
+            )
+            self._sketch_history_connected = True
+
+    def _disconnect_sketch_history(self, sketch_studio: "SketchStudio"):
+        """Disconnects the sketch history handler."""
+        if not self._sketch_history_connected:
+            return
+        sketch_editor = sketch_studio.canvas.sketch_editor
+        if sketch_editor:
+            sketch_editor.history_manager.changed.disconnect(
+                self._on_sketch_history_changed
+            )
+        self._sketch_history_connected = False
 
     def enter_sketch_mode(
         self, workpiece: WorkPiece, is_new_sketch: bool = False
@@ -70,6 +122,7 @@ class SketchModeCmd:
             self._win.menubar.set_menu_model(sketch_studio.menu_model)
             self._win.insert_action_group("sketch", sketch_studio.action_group)
             self._win.add_controller(sketch_studio.shortcut_controller)
+            self._connect_sketch_history(sketch_studio)
         except Exception:
             logger.exception("Failed to load sketch for editing")
 
@@ -80,6 +133,7 @@ class SketchModeCmd:
         self._win.insert_action_group("sketch", None)
         if sketch_studio:
             self._win.remove_controller(sketch_studio.shortcut_controller)
+            self._disconnect_sketch_history(sketch_studio)
 
         self._win.close_modal_page()
         self.active_sketch_workpiece = None
@@ -102,6 +156,7 @@ class SketchModeCmd:
             self._win.menubar.set_menu_model(sketch_studio.menu_model)
             self._win.insert_action_group("sketch", sketch_studio.action_group)
             self._win.add_controller(sketch_studio.shortcut_controller)
+            self._connect_sketch_history(sketch_studio)
         except Exception:
             logger.exception("Failed to load sketch definition for editing")
 

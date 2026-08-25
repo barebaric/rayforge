@@ -97,6 +97,27 @@ def create_test_workpiece_and_source() -> tuple[WorkPiece, SourceAsset]:
     return workpiece, source
 
 
+def extract_move_positions(gcode: str) -> list[tuple[float, float]]:
+    """Extracts absolute (x, y) positions of all G0/G1 moves from G-code,
+    accounting for modal (omitted) coordinates. Commented lines (e.g.
+    postscript moves) are skipped."""
+    x = y = 0.0
+    points = []
+    for line in gcode.splitlines():
+        if ";" in line:
+            continue
+        tokens = line.split()
+        if not tokens or not tokens[0].startswith(("G0", "G1")):
+            continue
+        for token in tokens[1:]:
+            if token.startswith("X"):
+                x = float(token[1:])
+            elif token.startswith("Y"):
+                y = float(token[1:])
+        points.append((x, y))
+    return points
+
+
 async def wait_for_tasks_to_finish(task_mgr: TaskManager):
     """
     Asynchronously waits for the task manager to become idle.
@@ -657,6 +678,85 @@ class TestMachine:
         assert not last_line.startswith(("G1", "G2", "G3")), (
             f"Laser left on after framing. Last G-code line: '{last_line}'"
         )
+
+    @pytest.mark.asyncio
+    async def test_frame_job_subtracts_wcs_offset(
+        self,
+        doc: Doc,
+        machine: Machine,
+        doc_editor: DocEditor,
+        mocker,
+        lite_context,
+        task_mgr: TaskManager,
+        contour_step_class,
+    ):
+        """
+        Regression test for issue #362: framing must emit coordinates
+        relative to the active WCS origin, like the regular send path.
+        Without the fix the controller applies the WCS offset twice.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_frame_power(1)
+
+        machine.set_axis_extents(200.0, 200.0)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        machine.wcs_origin_is_workarea_origin = False
+        machine.active_wcs = "G56"
+        machine.update_wcs_offset("G56", (60.0, 60.0, 0.0))
+
+        step = contour_step_class.create(lite_context)
+        workflow = doc.active_layer.workflow
+        assert workflow is not None
+        workflow.add_step(step)
+
+        source_file = Path("test.svg")
+        svg_data = b'<svg><path d="M0,0 H10 V10 H0 Z"/></svg>'
+        source = SourceAsset(
+            source_file=source_file,
+            original_data=svg_data,
+            renderer=SVG_RENDERER,
+        )
+        gen_config = SourceAssetSegment(
+            source_asset_uid=source.uid,
+            pristine_geometry=Geometry(),
+            vectorization_spec=PassthroughSpec(),
+        )
+        workpiece = WorkPiece(name=source_file.name, source_segment=gen_config)
+        workpiece.matrix = workpiece.matrix @ Matrix.scale(10, 10)
+        doc.add_asset(source)
+        doc.active_layer.add_child(workpiece)
+
+        await doc_editor.wait_until_settled()
+        await wait_for_tasks_to_finish(task_mgr)
+
+        run_spy = mocker.spy(machine.driver, "run")
+        machine_cmd = MachineCmd(doc_editor)
+
+        await machine_cmd.frame_job(machine)
+        await wait_for_tasks_to_finish(task_mgr)
+
+        run_spy.assert_called_once()
+        with_offset_text = run_spy.call_args.args[0].text
+
+        machine.update_wcs_offset("G56", (0.0, 0.0, 0.0))
+        run_spy.reset_mock()
+
+        await machine_cmd.frame_job(machine)
+        await wait_for_tasks_to_finish(task_mgr)
+
+        run_spy.assert_called_once()
+        baseline_text = run_spy.call_args.args[0].text
+
+        baseline = extract_move_positions(baseline_text)
+        with_offset = extract_move_positions(with_offset_text)
+        assert len(baseline) > 0
+        assert len(with_offset) == len(baseline)
+        for (bx, by), (ox, oy) in zip(baseline, with_offset):
+            assert ox == pytest.approx(bx - 60.0)
+            assert oy == pytest.approx(by - 60.0)
 
     def test_apply_frame_rotary_mapping_drives_a_axis(self, sync_machine, doc):
         """Framing a TRUE_4TH_AXIS rotary layer maps Y movement onto the

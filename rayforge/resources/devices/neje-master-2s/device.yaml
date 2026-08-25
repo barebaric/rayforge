@@ -1,0 +1,28 @@
+api_version: 1
+device:
+  name: NEJE Master 2s
+  description: Diode laser engraver with 170x170mm work area
+machine:
+  driver: GrblSerialDriver
+  driver_args:
+    baudrate: '115200'
+  gcode_precision: 3
+  axis_extents:
+  - 170.0
+  - 170.0
+  origin: bottom_left
+  max_travel_speed: 3000
+  max_cut_speed: 1000
+  acceleration: 1000
+  home_on_start: false
+  has_z: false
+  single_axis_homing_enabled: false
+  heads:
+  - max_power: 1000
+    wavelength_nm: 455
+    max_power_watts: 5.5
+    frame_power_percent: 1.0
+    focus_power_percent: 1.0
+    spot_size_mm:
+    - 0.08
+    - 0.06

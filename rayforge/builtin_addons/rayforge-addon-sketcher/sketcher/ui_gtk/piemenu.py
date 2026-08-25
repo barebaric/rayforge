@@ -72,6 +72,9 @@ class SketchPieMenu(PieMenu):
             if tool.ICON is None or tool.LABEL is None:
                 continue
 
+            if not tool.SHOW_IN_PIE:
+                continue
+
             if not tool.is_available(self.target, self.target_type):
                 continue
 

@@ -10,7 +10,6 @@ import {
   mdiHandCoinOutline,
   mdiGithub,
   mdiYoutube,
-  mdiVideoOutline,
   mdiPlayCircleOutline,
   mdiStarOutline,
   mdiFire,
@@ -18,7 +17,6 @@ import {
 import styles from '@site/src/pages/contributing.module.css';
 
 const wishlistTopics = [
-  'Sua primeira gravação',
   'Configuração do eixo rotativo',
   'Gerador de peças com IA',
   'Calibração de câmera',
@@ -54,15 +52,6 @@ const quickActions = [
     to: '/docs/getting-started/installation',
     icon: mdiBookOpenPageVariantOutline,
     iconClass: styles.iconCyan,
-  },
-  {
-    title: 'Criar Tutoriais em Vídeo',
-    description:
-      'Ensine o Rayforge ao mundo — tutoriais concluídos são exibidos na página inicial.',
-    href: '#video-tutorials',
-    icon: mdiVideoOutline,
-    iconClass: styles.iconRed,
-    featured: true,
   },
 ];
 
@@ -299,22 +288,6 @@ export default function Contributing() {
                   </>
                 );
 
-                if (action.featured) {
-                  return (
-                    <a
-                      key={action.title}
-                      href={action.href}
-                      className={`${styles.card} ${styles.featuredCard}`}
-                    >
-                      {cardInner}
-                      <span className={styles.featuredCardCta}>
-                        <Icon path={mdiPlayCircleOutline} size={0.85} />
-                        <span>Seja Destaque</span>
-                      </span>
-                    </a>
-                  );
-                }
-
                 if (action.to) {
                   return (
                     <Link key={action.title} to={action.to} className={styles.card}>
@@ -335,117 +308,6 @@ export default function Contributing() {
                   </a>
                 );
               })}
-            </div>
-          </div>
-        </section>
-
-        <section className={styles.section}>
-          <div className={styles.sectionInner}>
-            <h2 className={styles.sectionTitle}>Formas de Contribuir</h2>
-            <p className={styles.lead}>
-              Aceitamos contribuições de todos os tipos. Cada relatório de bug,
-              PR e correção de documentação torna o Rayforge melhor para todos.
-            </p>
-
-            <div className={styles.twoCol}>
-              <div className={styles.block}>
-                <div className={styles.blockHeader}>
-                  <div className={`${styles.blockIcon} ${styles.iconCyan}`}>
-                    <Icon path={mdiBugOutline} size={0.95} />
-                  </div>
-                  <h3 className={styles.blockTitle}>Reportar Bugs</h3>
-                </div>
-                <ol className={styles.steps}>
-                  <li className={styles.step}>
-                    Verifique os{' '}
-                    <a
-                      href="https://github.com/barebaric/rayforge/issues"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      issues existentes
-                    </a>{' '}
-                    para evitar duplicatas.
-                  </li>
-                  <li className={styles.step}>
-                    Crie um{' '}
-                    <a
-                      href="https://github.com/barebaric/rayforge/issues/new"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      novo issue
-                    </a>{' '}
-                    com descrição clara, passos para reproduzir, comportamento
-                    esperado vs. atual, informações do sistema e capturas de
-                    tela, se aplicável.
-                  </li>
-                </ol>
-              </div>
-
-              <div className={styles.block}>
-                <div className={styles.blockHeader}>
-                  <div className={`${styles.blockIcon} ${styles.iconOrange}`}>
-                    <Icon path={mdiLightbulbOnOutline} size={0.95} />
-                  </div>
-                  <h3 className={styles.blockTitle}>Sugerir Recursos</h3>
-                </div>
-                <ol className={styles.steps}>
-                  <li className={styles.step}>
-                    Verifique as{' '}
-                    <a
-                      href="https://github.com/barebaric/rayforge/issues?q=is%3Aissue+label%3Aenhancement"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      solicitações de recursos existentes
-                    </a>
-                    .
-                  </li>
-                  <li className={styles.step}>
-                    Abra uma solicitação de recurso descrevendo a ideia, o caso
-                    de uso, os benefícios e (opcionalmente) uma abordagem
-                    possível.
-                  </li>
-                </ol>
-              </div>
-
-              <div className={styles.block}>
-                <div className={styles.blockHeader}>
-                  <div className={`${styles.blockIcon} ${styles.iconPurple}`}>
-                    <Icon path={mdiSourcePull} size={0.95} />
-                  </div>
-                  <h3 className={styles.blockTitle}>Enviar Código</h3>
-                </div>
-                <p className={styles.blockBody}>
-                  Para informações detalhadas sobre o envio de contribuições de
-                  código, consulte o guia{' '}
-                  <Link to="/docs/developer/getting-started">
-                    Documentação para Desenvolvedores – Primeiros Passos
-                  </Link>{' '}
-                  .
-                </p>
-              </div>
-
-              <div className={styles.block}>
-                <div className={styles.blockHeader}>
-                  <div className={`${styles.blockIcon} ${styles.iconCyan}`}>
-                    <Icon path={mdiBookOpenPageVariantOutline} size={0.95} />
-                  </div>
-                  <h3 className={styles.blockTitle}>Melhorar a Documentação</h3>
-                </div>
-                <ul className={styles.bullets}>
-                  <li>Corrigir erros de digitação ou explicações confusas</li>
-                  <li>Adicionar exemplos e capturas de tela</li>
-                  <li>Melhorar a organização</li>
-                  <li>Traduzir para outros idiomas</li>
-                </ul>
-                <p className={styles.blockBody}>
-                  Você pode clicar no botão "editar esta página" em qualquer
-                  página de documentação e depois enviar PRs da mesma forma que
-                  contribuições de código.
-                </p>
-              </div>
             </div>
           </div>
         </section>

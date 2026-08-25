@@ -451,7 +451,7 @@ class JogWidget(Gtk.Widget):
     def _on_home_all_clicked(self, button):
         """Handle Home All button click."""
         if self.machine and self.machine_cmd:
-            self.machine_cmd.home(self.machine, self.machine.available_axes)
+            self.machine_cmd.home(self.machine)
 
     def _on_home_x_clicked(self, button):
         """Handle Home X button click."""

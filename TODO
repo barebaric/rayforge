@@ -1,0 +1,47 @@
+## Videos
+
+- How to Connect Rayforge to Your Laser Machine: Troubleshooting and Setup
+
+- Step-by-Step Guide to Laser Cutting Projects for Beginners
+
+- Switching from Lightburn to Rayforge on Linux: Full Migration Guide
+it is published. upgrade to see if the pixi issue is fixed
+
+## Ruida
+
+# Dealing with driver feature gaps
+
+## Problem description
+
+Ruida does not support raster lines in arbitrary directions. We should add a driver flag that indicates support for non-horizontal Raster lines, and if false then our raster producer should disable the angle and cross hatch options.
+This needs to be done carefully: A user with multiple machines may switch between machines with a project already having these options active, so the rejection must happen on two levels: UI, and production.
+And we need a way for production side to indicate to the UI that an enabled feature is not supported by the current machine.
+
+Also, unlike Grbl, Ruida automatically adds overscan. This requires a similar flag to resolve, which should then disable the Overscan transformer in Rayforge. This needs to be handled similar to the above.
+
+## Proposed design
+
+
+
+# Other
+
+- fix the TODO in test_hull.py: "# TODO: Improve algo to meet the following expectations"
+
+## High Speed engraving
+
+- implement this https://www.reddit.com/r/CNC/comments/1r2xlg3/alig_free_gcode_generator_specifically_for/
+
+Hardware Calibration: You can adjust laser latency (in ms) and thermal curves directly to avoid charring.
+
+## Ideas
+
+- Backlash compensation post processor with calibration cards?
+
+
+## Plugin ideas
+
+- Depth map generator
+
+- Box generator, jigsaw. https://github.com/barebaric/rayforge/issues/24
+
+- Camera based smoke detection?

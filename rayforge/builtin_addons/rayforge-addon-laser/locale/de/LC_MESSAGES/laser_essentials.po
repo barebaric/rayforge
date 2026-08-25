@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-19 20:47+0200\n"
+"POT-Creation-Date: 2026-08-21 15:33+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -546,10 +546,6 @@ msgstr ""
 "Schnitt überlappt"
 
 #: laser_essentials/steps/contour_step.py
-msgid "Brightness level (0.0-1.0) to define edges"
-msgstr "Helligkeitsstufe (0.0-1.0) zur Definition von Kanten"
-
-#: laser_essentials/steps/contour_step.py
 msgid "Rescan Content"
 msgstr "Inhalt neu scannen"
 
@@ -557,6 +553,10 @@ msgstr "Inhalt neu scannen"
 msgid "Ignore source geometry and re-trace within the workpiece"
 msgstr ""
 "Quellgeometrie ignorieren und innerhalb des Werkstücks neu nachzeichnen"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Brightness level (0.0-1.0) to define edges"
+msgstr "Helligkeitsstufe (0.0-1.0) zur Definition von Kanten"
 
 #: laser_essentials/steps/material_test.py
 #: laser_essentials/commands/material_test_cmd.py

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-19 20:47+0200\n"
+"POT-Creation-Date: 2026-08-21 15:33+0200\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -550,10 +550,6 @@ msgstr ""
 "corte se solape"
 
 #: laser_essentials/steps/contour_step.py
-msgid "Brightness level (0.0-1.0) to define edges"
-msgstr "Nivel de brillo (0.0-1.0) para definir bordes"
-
-#: laser_essentials/steps/contour_step.py
 msgid "Rescan Content"
 msgstr "Reescanear contenido"
 
@@ -561,6 +557,10 @@ msgstr "Reescanear contenido"
 msgid "Ignore source geometry and re-trace within the workpiece"
 msgstr ""
 "Ignorar geometría de origen y volver a trazar dentro de la pieza de trabajo"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Brightness level (0.0-1.0) to define edges"
+msgstr "Nivel de brillo (0.0-1.0) para definir bordes"
 
 #: laser_essentials/steps/material_test.py
 #: laser_essentials/commands/material_test_cmd.py

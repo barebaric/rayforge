@@ -78,6 +78,30 @@ class AngleConstraint(Constraint):
     def get_type_key(cls) -> str:
         return "angle"
 
+    def get_referenced_entity_ids(self) -> set[EntityID]:
+        return {self.e1_id, self.e2_id}
+
+    def get_referenced_point_ids(self) -> set[EntityID]:
+        ids: set[EntityID] = set()
+        if self.e1_far_idx is not None:
+            ids.add(self.e1_far_idx)
+        if self.e2_far_idx is not None:
+            ids.add(self.e2_far_idx)
+        return ids
+
+    def is_mirror_compatible(self) -> bool:
+        # An expression-based angle encodes a user intent (e.g. "width/2")
+        # that does not auto-flip under reflection, so it cannot be
+        # preserved. A plain numeric angle can be negated — see mirror().
+        return self.expression is None
+
+    def mirror(self, axis) -> None:
+        # Reflection reverses the signed (CW) angle. Negate the numeric
+        # value so the constraint stays satisfied with the mirrored lines.
+        if self.expression is not None:
+            return  # should have been dropped via is_mirror_compatible
+        self.value = -self.value
+
     @classmethod
     def can_apply_to(
         cls, selection: SketchSelection, sketch: Sketch | None = None

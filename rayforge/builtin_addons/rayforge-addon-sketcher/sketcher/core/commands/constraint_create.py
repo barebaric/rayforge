@@ -4,6 +4,8 @@ import math
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
+from rayforge.core.undo.command import Command
+
 from ..constraints import (
     DiameterConstraint,
     DistanceConstraint,
@@ -11,6 +13,7 @@ from ..constraints import (
 )
 from ..entities import Arc, Circle, Entity, Line
 from .base import SketchChangeCommand
+from .constraint import ModifyConstraintCommand
 from .items import AddItemsCommand
 
 if TYPE_CHECKING:
@@ -183,6 +186,27 @@ class CreateOrEditConstraintCommand(SketchChangeCommand):
     def _do_undo(self) -> None:
         if self._add_cmd is not None:
             self._add_cmd._do_undo()
+
+    def should_skip_undo(self) -> bool:
+        # Skip history for no-op case where an existing constraint was
+        # found and no new one was created.
+        return self._add_cmd is None and self._created_constraint is None
+
+    def can_coalesce_with(self, next_command: Command) -> bool:
+        return (
+            isinstance(next_command, ModifyConstraintCommand)
+            and self._created_constraint is not None
+            and next_command.constraint is self._created_constraint
+        )
+
+    def coalesce_with(self, next_command: Command) -> bool:
+        if not self.can_coalesce_with(next_command):
+            return False
+        # Adopt the new value from the modify command so that undo
+        # correctly removes the constraint entirely (via _add_cmd._do_undo)
+        # rather than reverting to the initial default value.
+        self.timestamp = next_command.timestamp
+        return True
 
     def _get_command_label(self, constraint: Constraint) -> str:
         return _("Add {}").format(constraint.get_type_name())

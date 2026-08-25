@@ -52,6 +52,10 @@
   border-bottom: 1px solid var(--ifm-color-emphasis-100);
 }
 
+.navbar__logo {
+  height: 3rem;
+}
+
 @media (min-width: 997px) {
   .navbar {
     backdrop-filter: blur(10px);
@@ -125,6 +129,24 @@ html[data-theme='dark'] .rfButtonPurple:hover {
   background: #ececf1;
   border-color: #ececf1;
   opacity: 0.88;
+}
+
+/* Center author photos and enlarge them slightly */
+.avatar {
+  align-items: center;
+}
+
+.avatar__photo {
+  --ifm-avatar-photo-size: 4.5rem;
+}
+
+/* Vertically center name/title within the author text block */
+.avatar .avatar__intro {
+  justify-content: center;
+}
+
+.avatar .avatar__intro [class*='authorSocials']:empty {
+  display: none;
 }
 
 /* OS selector chips: ghost when idle, ink when selected */
