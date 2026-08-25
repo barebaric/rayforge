@@ -186,25 +186,14 @@ class DeviceRecognizer:
     #: Returns True if *data* — the bytes captured from a port —
     #: was produced by this driver's firmware.
     matches: Callable[[bytes], bool]
-    #: Optional: extracts a human-readable device name from the
-    #: captured bytes (e.g. Grbl's ``[MSG:machine:...]`` line). The
-    #: name becomes the identity banner and feeds profile matching.
+    #: Optional: extracts a human-readable identity hint from the
+    #: captured bytes — e.g. a firmware version banner or a machine
+    #: name announced by the device. Interpreting the raw bytes is
+    #: the driver's responsibility (it may be text or binary); the
+    #: result becomes the identity banner and feeds profile matching.
     name: Callable[[bytes], str | None] | None = None
     #: Firmware identifier used for identity/profile matching.
     firmware: str | None = None
-
-
-def extract_banner(data: bytes) -> str | None:
-    """
-    Returns the first non-empty line of *data* as a human-readable
-    hint (e.g. the Grbl version banner), or ``None`` if there is none.
-    """
-    text = data.decode("ascii", errors="replace")
-    for line in text.splitlines():
-        line = line.strip()
-        if line:
-            return line[:80]
-    return None
 
 
 def normalize_tokens(*texts: str | None) -> frozenset[str]:
@@ -225,15 +214,14 @@ def normalize_tokens(*texts: str | None) -> frozenset[str]:
 
 def build_identity(
     firmware: str | None,
-    data: bytes | None,
     port_info: SerialPortInfo | None,
     device_name: str | None = None,
 ) -> DeviceIdentity:
     """
     Assembles a :class:`DeviceIdentity` from scan artifacts. A
     *device_name* extracted from the device's own output (when the
-    recognizer provides one) takes precedence over the raw banner
-    and contributes matching tokens.
+    recognizer provides one) is the identity banner and contributes
+    matching tokens.
     """
     tokens = normalize_tokens(
         port_info.description if port_info else None,
@@ -242,7 +230,7 @@ def build_identity(
     )
     return DeviceIdentity(
         firmware=firmware,
-        banner=device_name or (extract_banner(data) if data else None),
+        banner=device_name,
         usb_vid=port_info.vid if port_info else None,
         usb_pid=port_info.pid if port_info else None,
         tokens=tokens,
@@ -460,7 +448,6 @@ def _build_device(
         ),
         identity=build_identity(
             recognizer.firmware,
-            observation.data,
             observation.info,
             device_name,
         ),
@@ -473,7 +460,6 @@ __all__ = [
     "DeviceRecognizer",
     "DiscoveredDevice",
     "build_identity",
-    "extract_banner",
     "find_all_devices",
     "find_network_devices",
     "normalize_tokens",

@@ -486,6 +486,11 @@ class Machine:
 
     async def disconnect(self):
         """Public method to disconnect the driver."""
+        # Avoid lazy-creating a controller (which raises if the machine
+        # has been removed from the manager). If none exists, there is
+        # nothing to disconnect.
+        if not self.has_controller:
+            return
         await self.controller.disconnect()
 
     async def shutdown(self):

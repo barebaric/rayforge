@@ -127,7 +127,6 @@ def test_machine_name_matches_builtin_profile():
 
     identity = build_identity(
         "grbl",
-        b"[VER:1.0.15,20240923:]\r\n[MSG:mechine:Sculpfun iCube]\r\n",
         port_info=None,
         device_name="Sculpfun iCube",
     )

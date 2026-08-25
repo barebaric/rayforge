@@ -119,7 +119,13 @@ class GrblSerialDriver(Driver):
     # every POLL_INTERVAL until a response arrives, because devices
     # that are still booting silently drop queries sent before their
     # serial stream is ready.
-    HANDSHAKE_TIMEOUT: float = 2.0
+    # Opening a USB-serial port toggles DTR, which resets many GRBL
+    # boards (Arduino/CH340 based). Their bootloader can take ~2-3 s
+    # before GRBL starts answering, so the window must outlast it; a
+    # too-short timeout made the connection loop close and reopen the
+    # port on every retry, resetting the board again and never
+    # converging.
+    HANDSHAKE_TIMEOUT: float = 6.0
     HANDSHAKE_POLL_INTERVAL: float = 0.5
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):

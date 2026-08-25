@@ -41,6 +41,7 @@ from ..driver import (
 from .marlin_probe import probe_marlin_device
 from .marlin_util import (
     detect_unit_system_from_m149,
+    extract_marlin_banner_from_output,
     gcode_to_p_number,
     is_boot_message,
     is_error_response,
@@ -72,6 +73,7 @@ class MarlinSerialDriver(Driver):
         label=lambda: _("Marlin device"),
         firmware="marlin",
         matches=is_marlin_output,
+        name=extract_marlin_banner_from_output,
     )
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):

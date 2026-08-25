@@ -841,7 +841,20 @@ class TestExtractDeviceNameFromOutput:
         assert extract_device_name_from_output(data) == "ORTUR"
 
     def test_returns_none_for_stock_grbl(self):
+        # A stock Grbl has no machine name, so the version banner is
+        # the best available identity hint.
         assert (
             extract_device_name_from_output(b"Grbl 1.1f ['$' for help]\r\n")
-            is None
+            == "Grbl 1.1f ['$' for help]"
         )
+
+    def test_falls_back_to_banner_skipping_acks(self):
+        # A bare "ok" (a nudge ack) is skipped in favour of the real
+        # banner behind it, even when a stray byte precedes the "ok".
+        assert (
+            extract_device_name_from_output(
+                b"\xffok\r\nGrbl 1.1f ['$' for help]\r\n"
+            )
+            == "Grbl 1.1f ['$' for help]"
+        )
+        assert extract_device_name_from_output(b"ok\r\nerror:1\r\n") is None

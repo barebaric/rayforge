@@ -690,14 +690,43 @@ def extract_device_name_from_output(data: bytes) -> str | None:
     Extract a human-readable device name from raw serial output, as
     captured during device discovery.
 
-    Returns None when the output carries no usable name (e.g. a stock
-    Grbl whose banner only states its version).
+    Returns the machine name when the output carries one (e.g. Grbl's
+    ``[MSG:machine:...]`` line or a ``[VER:...]`` build name). When no
+    name is present (e.g. a stock Grbl whose banner only states its
+    version), falls back to the first informative banner line — a
+    ``Grbl``/``GrblHAL`` version line, a build-info ``[VER:...]`` /
+    ``[OPT:...]`` / ``[MSG:...]`` line, or a status report — skipping
+    bare ``ok``/``error:`` acks that are merely responses to the
+    scanner's nudge characters. Returns None only when the output has
+    no usable line at all.
     """
     lines = data.decode("ascii", errors="replace").splitlines()
     name = extract_device_name(lines)
-    if not name or name == "Unknown Grbl Device":
-        return None
-    return name
+    if name and name != "Unknown Grbl Device":
+        return name
+    return _extract_grbl_banner(lines)
+
+
+def _extract_grbl_banner(lines: list[str]) -> str | None:
+    """The first GRBL output line worth showing as a banner, skipping
+    bare protocol acknowledgements and stray bytes from a DTR-reset
+    glitch."""
+    for raw in lines:
+        line = raw.strip()
+        if not line:
+            continue
+        if _is_grbl_ack(line):
+            continue
+        return line[:80]
+    return None
+
+
+def _is_grbl_ack(line: str) -> bool:
+    """True when *line* is a bare ``ok``/``error:`` acknowledgement,
+    possibly preceded by stray non-printable bytes (e.g. a NULL byte
+    or a replacement character from a DTR-reset glitch)."""
+    stripped = line.lstrip("\ufffd").lstrip("\x00")
+    return stripped == "ok" or stripped.startswith("error:")
 
 
 def version_supports_single_axis_homing(

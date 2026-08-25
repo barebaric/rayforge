@@ -79,7 +79,10 @@ async def probe_grbl_device(
     driver.connection_status_changed.connect(_on_status)
     try:
         await driver.connect()
-        await asyncio.wait_for(connected.wait(), timeout=15.0)
+        # Bounds the whole connect attempt, including a possible
+        # bootloader-delayed first handshake plus one retry cycle
+        # (HANDSHAKE_TIMEOUT + reconnect sleep + HANDSHAKE_TIMEOUT).
+        await asyncio.wait_for(connected.wait(), timeout=30.0)
         build_info = await driver.execute_interactive_command("$I")
         settings_lines = await driver.execute_interactive_command("$$")
     finally:

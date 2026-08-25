@@ -17,7 +17,6 @@ from rayforge.machine.driver.discovery import (
     DeviceRecognizer,
     DiscoveredDevice,
     build_identity,
-    extract_banner,
     find_all_devices,
     find_network_devices,
     normalize_tokens,
@@ -33,14 +32,37 @@ def _grbl_matcher(data: bytes) -> bool:
     return b"Grbl" in data or b"<Idle" in data
 
 
+def _grbl_name(data: bytes) -> str | None:
+    # Mirrors the real extract_device_name_from_output(): the first
+    # informative line, skipping bare "ok" acks.
+    for raw in data.decode("ascii", errors="replace").splitlines():
+        line = raw.strip()
+        if line and line != "ok":
+            return line[:80]
+    return None
+
+
 def _marlin_matcher(data: bytes) -> bool:
     return b"start" in data or b"echo:" in data
+
+
+def _marlin_name(data: bytes) -> str | None:
+    # Mirrors the real extract_marlin_banner_from_output(): the first
+    # boot message line, skipping "ok" acks.
+    for raw in data.decode("ascii", errors="replace").splitlines():
+        line = raw.strip()
+        if not line or line == "ok":
+            continue
+        if line.startswith(("start", "Marlin")) or "echo:" in line:
+            return line[:80]
+    return None
 
 
 class FakeGrblDriver:
     DISCOVERY = DeviceRecognizer(
         label=lambda: "GRBL device",
         matches=_grbl_matcher,
+        name=_grbl_name,
         firmware="grbl",
     )
 
@@ -49,6 +71,7 @@ class FakeMarlinDriver:
     DISCOVERY = DeviceRecognizer(
         label=lambda: "Marlin device",
         matches=_marlin_matcher,
+        name=_marlin_name,
         firmware="marlin",
     )
 
@@ -171,6 +194,7 @@ async def test_one_scan_serves_all_drivers(monkeypatch):
     marlin = by_driver["FakeMarlinDriver"]
     assert marlin.params["port"] == "/dev/ttyACM0"
     assert marlin.identity.firmware == "marlin"
+    assert marlin.identity.banner == "start"
 
     assert sorted(FakeSerial.attempts) == [
         ("/dev/ttyACM0", 115200),
@@ -190,7 +214,9 @@ async def test_bannerless_grbl_is_recognized(monkeypatch):
         [FakeGrblDriver, FakeMarlinDriver], ports=["/dev/ttyUSB0"]
     )
     assert [d.driver_name for d in devices] == ["FakeGrblDriver"]
-    assert devices[0].identity.banner == "ok"
+    # The bare "ok" ack is skipped in favour of the status report,
+    # which is a more informative banner for a bannerless device.
+    assert devices[0].identity.banner == "<Idle|MPos:0.0,0.0,0.0>"
 
 
 # Real-world capture from a Sculpfun iCube: a Grbl fork whose boot
@@ -296,14 +322,10 @@ async def test_builtin_discovery_drivers():
     assert GrblTelnetDriver.DISCOVERY is None
     assert GrblSerialDriver.DISCOVERY is not None
     assert GrblSerialDriver.DISCOVERY.firmware == "grbl"
+    assert GrblSerialDriver.DISCOVERY.name is not None
     assert MarlinSerialDriver.DISCOVERY is not None
     assert MarlinSerialDriver.DISCOVERY.firmware == "marlin"
-
-
-def test_extract_banner():
-    assert extract_banner(b"\r\nGrbl 1.1f\r\nok\r\n") == "Grbl 1.1f"
-    assert extract_banner(b"") is None
-    assert extract_banner(b"\n\n") is None
+    assert MarlinSerialDriver.DISCOVERY.name is not None
 
 
 def test_normalize_tokens():
@@ -317,13 +339,20 @@ def test_normalize_tokens():
 
 def test_build_identity():
     info = SerialPortInfo("/dev/ttyUSB0", "USB Serial", vid=1, pid=2)
-    identity = build_identity("grbl", b"Grbl 1.1f\r\n", info)
+    identity = build_identity("grbl", info)
     assert identity.firmware == "grbl"
-    assert identity.banner == "Grbl 1.1f"
+    assert identity.banner is None
     assert identity.usb_vid == 1
     assert identity.usb_pid == 2
     assert "usb" in identity.tokens
     assert "serial" in identity.tokens
+
+
+def test_build_identity_uses_device_name_as_banner():
+    info = SerialPortInfo("/dev/ttyUSB0", "USB Serial", vid=1, pid=2)
+    identity = build_identity("grbl", info, "Grbl 1.1f")
+    assert identity.banner == "Grbl 1.1f"
+    assert "grbl" in identity.tokens
 
 
 def test_discovered_device_key():
