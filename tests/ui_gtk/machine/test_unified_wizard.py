@@ -1113,6 +1113,38 @@ def test_smoothie_probe_merges_profile(ui_context_initializer):
 
 
 @pytest.mark.ui
+def test_curated_dialect_config_wins_over_probe(ui_context_initializer):
+    """A curated profile's dialect_config is not overwritten by the
+    probe's detection."""
+    wizard = _make_wizard(ui_context_initializer)
+
+    curated_dialect = {"laser_on": "M3 S{power:.0f}", "laser_off": "M5"}
+    wizard.profile = DeviceProfile(
+        meta=DeviceMeta(name="Curated Machine"),
+        machine_config=MachineConfig(driver="GrblSerialDriver"),
+        dialect_config=dict(curated_dialect),
+    )
+
+    probed = DeviceProfile(
+        meta=DeviceMeta(name="Auto"),
+        machine_config=MachineConfig(
+            driver="GrblSerialDriver",
+            axis_extents=(200.0, 200.0),
+        ),
+        dialect_config={"laser_on": "M4 S0", "laser_off": "M5"},
+    )
+
+    with patch.object(
+        type(ui_context_initializer.device_profile_mgr),
+        "match_device",
+        return_value=[],
+    ):
+        wizard._on_probe_succeeded(None, profile=probed, warnings=[])
+
+    assert wizard.profile.dialect_config["laser_on"] == "M3 S{power:.0f}"
+
+
+@pytest.mark.ui
 def test_device_selected_captures_usb_identity(ui_context_initializer):
     """The discovered device's USB identity is kept for the created
     machine, so exporting the machine later carries the vid/pid."""

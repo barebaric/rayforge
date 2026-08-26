@@ -11,7 +11,10 @@ from typing import (
 from blinker import Signal
 
 from ....shared.units.system import UnitSystem
+from ...models.dialect.grbl import GRBL_DIALECT
+from ...models.dialect.grbl_dynamic import GRBL_DYNAMIC_DIALECT
 from ...transport import TransportStatus
+from .grbl_dialect_detect import detect_grbl_dialect
 from .grbl_util import (
     extract_device_name,
     grbl_opt_re,
@@ -201,6 +204,17 @@ def build_grbl_profile(
             )
         )
 
+    dialect_uid = detect_grbl_dialect(build_info, settings_lines)
+    dialect_config: dict[str, Any] = {}
+    if dialect_uid is not None:
+        dialects = {
+            "grbl": GRBL_DIALECT,
+            "grbl_dynamic": GRBL_DYNAMIC_DIALECT,
+        }
+        dialect = dialects.get(dialect_uid)
+        if dialect is not None:
+            dialect_config = dialect.to_template_dict()
+
     return (
         DeviceProfile(
             meta=DeviceMeta(
@@ -218,7 +232,7 @@ def build_grbl_profile(
                 unit_system=detected_unit_system,
                 heads=heads,
             ),
-            dialect_config={},
+            dialect_config=dialect_config,
         ),
         warnings,
     )

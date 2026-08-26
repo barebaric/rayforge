@@ -706,6 +706,12 @@ class UnifiedWizard(PatchedDialogWindow):
             if value is not None:
                 setattr(dst, field_name, value)
 
+        # A curated profile's own dialect_config wins over the
+        # probe's detection; only apply the probe result when the
+        # working profile has no dialect override.
+        if not self.profile.dialect_config and probed.dialect_config:
+            self.profile.dialect_config = dict(probed.dialect_config)
+
     def _connection_args_complete(self) -> bool:
         """True when driver_args cover every required setup variable."""
         mc = self.profile.machine_config
