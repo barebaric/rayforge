@@ -55,7 +55,7 @@ from .entities import (
     Line,
     TextBoxEntity,
 )
-from .entities.point import WaypointType
+from .entities.point import Point, WaypointType
 from .params import ParameterContext
 from .patterns import PatternDefinition
 from .registry import EntityRegistry
@@ -182,6 +182,7 @@ class Sketch(IAsset, IGeometryProvider):
         self._hidden: bool = False
         self._last_solve_values: dict[str, Any] = {}
         self._resolved_text_cache: dict[EntityID, tuple[str, str | None]] = {}
+        self._solved_ctx: dict[str, Any] | None = None
 
         # Initialize the Origin Point (Fixed Anchor)
         self.origin_id: EntityID = self.registry.add_point(
@@ -275,7 +276,7 @@ class Sketch(IAsset, IGeometryProvider):
         Returns:
             A tuple of (stroke_geometry, fill_render_data).
         """
-        clone = Sketch.from_dict(self.to_dict())
+        clone = self._clone_for_geometry()
         if resolved_text_cache is not None:
             clone._resolved_text_cache = dict(resolved_text_cache)
         clone.solve(variable_overrides=params)
@@ -288,6 +289,49 @@ class Sketch(IAsset, IGeometryProvider):
         if resolved_text_cache is not None:
             resolved_text_cache.update(clone._resolved_text_cache)
         return geo, fills
+
+    def _clone_for_geometry(self) -> "Sketch":
+        """
+        Lightweight clone for geometry generation.
+
+        Copies only the mutable state modified by solve (point positions,
+        parameter context) while sharing structural data (entities,
+        constraints, fills, patterns) by reference.  Much faster than
+        the full to_dict / from_dict round-trip.
+        """
+        clone = Sketch.__new__(Sketch)
+        clone._uid = self._uid
+        clone._name = self._name
+        clone._hidden = self._hidden
+        clone.origin_id = self.origin_id
+        clone._updated = self._updated
+
+        # Shallow-copy the registry: new Point objects (solver mutates x/y),
+        # shared entity list (solver does not touch entity objects).
+        clone.registry = EntityRegistry()
+        clone.registry.points = [
+            Point(p.id, p.x, p.y, p.fixed, p.waypoint_type)
+            for p in self.registry.points
+        ]
+        clone.registry.entities = self.registry.entities
+        clone.registry._entity_map = self.registry._entity_map
+        clone.registry._id_counter = self.registry._id_counter
+
+        # ParameterContext: copy expressions so evaluate_all on the clone
+        # does not disturb the original's cache.
+        clone.params = ParameterContext.from_dict(self.params.to_dict())
+
+        # Share references to data not mutated by solve.
+        clone.constraints = self.constraints
+        clone.fills = self.fills
+        clone.patterns = self.patterns
+        clone.input_parameters = self.input_parameters
+
+        # Fresh mutable state for the solve cycle.
+        clone._last_solve_values = {}
+        clone._resolved_text_cache = {}
+        clone._solved_ctx = None
+        return clone
 
     @property
     def hidden(self) -> bool:
@@ -1324,6 +1368,12 @@ class Sketch(IAsset, IGeometryProvider):
             solve_params.evaluate_all(initial_values=initial_values)
             ctx = solve_params.get_all_values()
 
+            # Cache the solved context (with template functions) for
+            # reuse by _resolve_text_content, avoiding redundant
+            # ParameterContext rebuilds per text box.
+            self._solved_ctx = ctx.copy()
+            self._solved_ctx.update(get_template_functions())
+
             # --- Solver Stabilization ---
             # Add weak, temporary constraints to every non-fixed point,
             # pulling it towards its current location. This acts as an
@@ -1422,13 +1472,21 @@ class Sketch(IAsset, IGeometryProvider):
             return None
 
         try:
-            solve_params = ParameterContext.from_dict(self.params.to_dict())
-            initial_values = dict(self._last_solve_values)
-            if not initial_values and self.input_parameters:
-                initial_values.update(self.input_parameters.get_values())
-            solve_params.evaluate_all(initial_values=initial_values)
-            ctx = solve_params.get_all_values()
-            ctx.update(get_template_functions())
+            # Use the cached context from solve() when available,
+            # avoiding a fresh ParameterContext per text box.
+            if self._solved_ctx is not None:
+                ctx = self._solved_ctx
+            else:
+                solve_params = ParameterContext.from_dict(
+                    self.params.to_dict()
+                )
+                initial_values = dict(self._last_solve_values)
+                if not initial_values and self.input_parameters:
+                    initial_values.update(self.input_parameters.get_values())
+                solve_params.evaluate_all(initial_values=initial_values)
+                ctx = solve_params.get_all_values()
+                ctx.update(get_template_functions())
+
             expr_map = ExpressionMap(ctx)
             resolved = expr_map.format(entity.content)
             logger.debug(
