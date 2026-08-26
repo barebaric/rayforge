@@ -86,6 +86,27 @@ def _raise_error(*args, **kwargs):
     raise RuntimeError("Cannot schedule from worker process")
 
 
+def _format_usb_field(value: int | None) -> str | None:
+    """Serializes a USB vid/pid as the conventional hex string."""
+    if value is None:
+        return None
+    return f"{value:04x}"
+
+
+def _parse_usb_field(value) -> int | None:
+    """Parses a USB vid/pid from its serialized form (hex string or
+    int, for older files)."""
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    try:
+        return int(str(value), 16)
+    except ValueError:
+        logger.warning(f"Ignoring malformed USB id in machine data: {value}")
+        return None
+
+
 class Machine:
     def __init__(self, context: RayforgeContext):
         logger.debug("Machine.__init__")
@@ -180,6 +201,8 @@ class Machine:
         self.source_profile_id: str | None = None
         self.reviewed_profile_hash: str | None = None
         self.schema_version: int = 0
+        self.usb_vid: int | None = None
+        self.usb_pid: int | None = None
         self.extra: dict[str, Any] = {}
         self._settings_lock = asyncio.Lock()
 
@@ -486,6 +509,11 @@ class Machine:
 
     async def disconnect(self):
         """Public method to disconnect the driver."""
+        # Avoid lazy-creating a controller (which raises if the machine
+        # has been removed from the manager). If none exists, there is
+        # nothing to disconnect.
+        if not self.has_controller:
+            return
         await self.controller.disconnect()
 
     async def shutdown(self):
@@ -1548,6 +1576,8 @@ class Machine:
                 "source_profile_id": self.source_profile_id,
                 "reviewed_profile_hash": self.reviewed_profile_hash,
                 "schema_version": self.schema_version,
+                "usb_vid": _format_usb_field(self.usb_vid),
+                "usb_pid": _format_usb_field(self.usb_pid),
                 "heads": [head.to_dict() for head in self.heads],
                 "cameras": [camera.to_dict() for camera in self.cameras],
                 "rotary_modules": [
@@ -1824,6 +1854,8 @@ class Machine:
         ma.source_profile_id = ma_data.pop("source_profile_id", None)
         ma.reviewed_profile_hash = ma_data.pop("reviewed_profile_hash", None)
         ma.schema_version = ma_data.pop("schema_version", 0)
+        ma.usb_vid = _parse_usb_field(ma_data.pop("usb_vid", None))
+        ma.usb_pid = _parse_usb_field(ma_data.pop("usb_pid", None))
         ma_data.pop("frozen_dialect", None)
 
         # Deserialize remaining hookmacros from the (potentially cleaned) data

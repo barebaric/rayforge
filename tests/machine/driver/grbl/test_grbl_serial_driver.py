@@ -157,7 +157,9 @@ class TestGrblSerialDriver:
 
         await driver.connect()
         sent_statuses = []
-        for _ in range(50):
+        # The handshake window scales with HANDSHAKE_TIMEOUT; poll
+        # well past it so a phantom-port failure is observed.
+        for _ in range(100):
             await asyncio.sleep(0.1)
             sent_statuses = [
                 call[1].get("status") for call in status_mock.call_args_list

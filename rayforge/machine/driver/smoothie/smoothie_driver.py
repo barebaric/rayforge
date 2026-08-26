@@ -9,13 +9,13 @@ from typing import (
     cast,
 )
 
-from ...context import RayforgeContext
-from ...core.varset import HostnameVar, PortVar, VarSet
-from ...core.varset.hostnamevar import is_valid_hostname_or_ip
-from ...pipeline.encoder.base import EncodedOutput, OpsEncoder
-from ...pipeline.encoder.gcode import GcodeEncoder
-from ..transport import TelnetTransport, TransportStatus
-from .driver import (
+from ....context import RayforgeContext
+from ....core.varset import HostnameVar, PortVar, VarSet
+from ....core.varset.hostnamevar import is_valid_hostname_or_ip
+from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
+from ....pipeline.encoder.gcode import GcodeEncoder
+from ...transport import TelnetTransport, TransportStatus
+from ..driver import (
     Axis,
     DeviceStatus,
     Driver,
@@ -23,14 +23,16 @@ from .driver import (
     DriverSetupError,
     Pos,
 )
-from .grbl.grbl_util import parse_state
+from ..grbl.grbl_util import parse_state
+from .smoothie_util import build_smoothie_profile
 
 if TYPE_CHECKING:
     from raygeo.ops import Ops
 
-    from ...core.doc import Doc
-    from ..models.laser import Laser
-    from ..models.machine import Machine
+    from ....core.doc import Doc
+    from ...device.profile import DeviceProfile
+    from ...models.laser import Laser
+    from ...models.machine import Machine
 
 
 logger = logging.getLogger(__name__)
@@ -56,6 +58,7 @@ class SmoothieDriver(Driver):
     subtitle = _("Smoothieware via a Telnet connection")
     supports_settings = False
     reports_granular_progress = True
+    supports_probing = True
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
@@ -65,6 +68,9 @@ class SmoothieDriver(Driver):
         self.keep_running = False
         self._connection_task: asyncio.Task | None = None
         self._ok_event = asyncio.Event()
+        self._response_lines: list[str] = []
+        self._rx_buffer: str = ""
+        self._interactive_active: bool = False
 
     @property
     def machine_space_wcs(self) -> str:
@@ -88,6 +94,68 @@ class SmoothieDriver(Driver):
             raise DriverPrecheckError(
                 _("Invalid hostname or IP address: '{host}'").format(host=host)
             )
+
+    @classmethod
+    async def probe(
+        cls, context: RayforgeContext, **kwargs: Any
+    ) -> tuple["DeviceProfile", list[str]]:
+        """Connect to a Smoothie device, query its configuration, and
+        return an auto-populated ``(DeviceProfile, warnings)`` tuple.
+        """
+        from ...models.machine import Machine
+
+        machine = Machine(context)
+        driver = cls(context, machine)
+        driver.setup(**kwargs)
+
+        connected = asyncio.Event()
+
+        def _on_status(sender, status=None, message=None, **kw):
+            if status == TransportStatus.CONNECTED:
+                connected.set()
+
+        driver.connection_status_changed.connect(_on_status)
+        try:
+            await driver.connect()
+            # Smoothieware sends a welcome banner on connect; the
+            # transport emits CONNECTED immediately, but the device
+            # needs a moment before it accepts commands.
+            await asyncio.wait_for(connected.wait(), timeout=15.0)
+            await asyncio.sleep(0.2)
+            version_lines = await driver.execute_interactive_command("version")
+            alpha_max = await driver.execute_interactive_command(
+                "config-get alpha_max"
+            )
+            beta_max = await driver.execute_interactive_command(
+                "config-get beta_max"
+            )
+            alpha_max_rate = await driver.execute_interactive_command(
+                "config-get alpha_max_rate"
+            )
+            beta_max_rate = await driver.execute_interactive_command(
+                "config-get beta_max_rate"
+            )
+            acceleration = await driver.execute_interactive_command(
+                "config-get acceleration"
+            )
+        finally:
+            driver.connection_status_changed.disconnect(_on_status)
+            await driver.cleanup()
+            context.dialect_mgr.dialects_changed.disconnect(
+                machine._on_dialects_changed
+            )
+
+        profile, warnings = build_smoothie_profile(
+            version_lines,
+            alpha_max,
+            beta_max,
+            alpha_max_rate,
+            beta_max_rate,
+            acceleration,
+        )
+        profile.machine_config.driver = cls.__name__
+        profile.machine_config.driver_args = kwargs
+        return profile, warnings
 
     @classmethod
     def get_setup_vars(cls) -> "VarSet":
@@ -163,7 +231,8 @@ class SmoothieDriver(Driver):
                 # The transport handles the connection loop.
                 # We just need to wait here until cleanup.
                 while self.keep_running:
-                    await self._send_and_wait(b"?", wait_for_ok=False)
+                    if not self._interactive_active:
+                        await self._send_and_wait(b"?", wait_for_ok=False)
                     await asyncio.sleep(1)
 
             except asyncio.CancelledError:
@@ -205,6 +274,26 @@ class SmoothieDriver(Driver):
                 raise ConnectionError(
                     f"Command '{cmd.decode()}' not confirmed"
                 ) from e
+
+    async def execute_interactive_command(self, command: str) -> list[str]:
+        """
+        Send a command and return its response lines.
+
+        Used during probing to query ``version`` and ``config-get``
+        values. Suppresses the ``?`` status poll while the command is
+        in flight and collects non-status reply lines until ``ok``.
+        """
+        if not self.telnet or not self.telnet.is_connected:
+            raise ConnectionError("Telnet transport not connected")
+
+        self._interactive_active = True
+        self._response_lines = []
+        self._rx_buffer = ""
+        try:
+            await self._send_and_wait(command.encode("utf-8"))
+        finally:
+            self._interactive_active = False
+        return list(self._response_lines)
 
     async def run(
         self,
@@ -409,31 +498,37 @@ class SmoothieDriver(Driver):
             f"RX: {data!r}",
             extra={"log_category": "RAW_IO", "direction": "RX", "data": data},
         )
-        data_str = data.decode("utf-8")
-        for line in data_str.splitlines():
-            is_status_report = line.startswith("<") and line.endswith(">")
-            log_category = (
-                "STATUS_POLL" if is_status_report else "MACHINE_EVENT"
-            )
-            logger.info(line, extra={"log_category": log_category})
-            if "ok" in line:
-                self._ok_event.set()
-                self.command_status_changed.send(
-                    self, status=TransportStatus.IDLE
-                )
+        self._rx_buffer += data.decode("utf-8", errors="replace")
+        while "\n" in self._rx_buffer:
+            line, self._rx_buffer = self._rx_buffer.split("\n", 1)
+            self._process_line(line.strip())
 
-            if not is_status_report:
-                continue
-            state = parse_state(
-                line, self.state, lambda message: logger.info(message)
+    def _process_line(self, line: str) -> None:
+        if not line:
+            return
+
+        is_status_report = line.startswith("<") and line.endswith(">")
+        log_category = "STATUS_POLL" if is_status_report else "MACHINE_EVENT"
+        logger.info(line, extra={"log_category": log_category})
+
+        if "ok" in line:
+            self._ok_event.set()
+            self.command_status_changed.send(self, status=TransportStatus.IDLE)
+        elif self._interactive_active and not is_status_report:
+            self._response_lines.append(line)
+
+        if not is_status_report:
+            return
+        state = parse_state(
+            line, self.state, lambda message: logger.info(message)
+        )
+        if state != self.state:
+            self.state = state
+            logger.info(
+                f"Device state changed: {self.state.status.name}",
+                extra=self._log_extra("STATE_CHANGE"),
             )
-            if state != self.state:
-                self.state = state
-                logger.info(
-                    f"Device state changed: {self.state.status.name}",
-                    extra=self._log_extra("STATE_CHANGE"),
-                )
-                self.state_changed.send(self, state=self.state)
+            self.state_changed.send(self, state=self.state)
 
     def on_telnet_status_changed(
         self, sender, status: TransportStatus, message: str | None = None

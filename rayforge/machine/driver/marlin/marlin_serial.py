@@ -24,9 +24,9 @@ from ....pipeline.encoder.base import (
 )
 from ....pipeline.encoder.gcode import GcodeEncoder
 from ....shared.units.system import UnitSystem
+from ...discovery.spec import DiscoverySpec, SerialRecognizer
 from ...transport import SerialTransport, TransportStatus
 from ...transport.serial import SerialPortPermissionError
-from ..discovery import DeviceRecognizer
 from ..driver import (
     Axis,
     DeviceConnectionError,
@@ -41,6 +41,7 @@ from ..driver import (
 from .marlin_probe import probe_marlin_device
 from .marlin_util import (
     detect_unit_system_from_m149,
+    extract_marlin_banner_from_output,
     gcode_to_p_number,
     is_boot_message,
     is_error_response,
@@ -68,10 +69,13 @@ class MarlinSerialDriver(Driver):
     maturity = DriverMaturity.EXPERIMENTAL
     supports_probing = True
     supports_unit_detection = True
-    DISCOVERY = DeviceRecognizer(
-        label=lambda: _("Marlin device"),
-        firmware="marlin",
-        matches=is_marlin_output,
+    DISCOVERY = DiscoverySpec(
+        serial=SerialRecognizer(
+            label=lambda: _("Marlin device"),
+            firmware="marlin",
+            matches=is_marlin_output,
+            name=extract_marlin_banner_from_output,
+        )
     )
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):

@@ -650,6 +650,8 @@ class TestExportMachine:
         machine.hookmacros = {}
         machine.nogo_zones = {}
         machine.source_profile_id = None
+        machine.usb_vid = None
+        machine.usb_pid = None
         machine.has_z_axis = False
         machine.dialect = GcodeDialect.from_dict({"label": name})
         for k, v in overrides.items():
@@ -690,6 +692,67 @@ class TestExportMachine:
         assert pkg.meta.name == "Dir Export"
         assert (dest_dir / MANIFEST_FILENAME).exists()
         assert (dest_dir / DIALECT_FILENAME).exists()
+
+    def test_export_machine_includes_usb_ids(self, tmp_path):
+        """The observed USB identity is exported as device.usb_ids and
+        survives a re-import as parsed vid/pid pairs."""
+        machine = self._make_mock_machine(
+            "USB Export", usb_vid=0x1A86, usb_pid=0x7523
+        )
+
+        dest_dir = tmp_path / "pkg"
+        export_machine_to_dir(machine, dest_dir)
+
+        with open(dest_dir / MANIFEST_FILENAME) as f:
+            data = yaml.safe_load(f)
+        assert data["device"]["usb_ids"] == ["1a86:7523"]
+
+        pkg = DeviceProfile.from_path(dest_dir)
+        assert pkg.meta.usb_ids == [(0x1A86, 0x7523)]
+
+    def test_export_zip_roundtrip_preserves_usb_ids(self, tmp_path):
+        machine = self._make_mock_machine(
+            "USB Zip", usb_vid=0xABCD, usb_pid=None
+        )
+        mgr = DeviceProfileManager(install_dir=tmp_path / "inst")
+        zip_path = mgr.export_machine(machine, tmp_path / "out")
+
+        install_dir = tmp_path / "installed"
+        install_dir.mkdir()
+        mgr2 = DeviceProfileManager(install_dir=install_dir)
+        pkg = mgr2.install_from_zip(zip_path)
+        assert pkg.meta.usb_ids == [(0xABCD, None)]
+
+    def test_export_falls_back_to_source_profile_usb_ids(self, tmp_path):
+        """Without an observed vid/pid, the source profile's declared
+        ids are carried over."""
+        curated = tmp_path / "curated"
+        curated.mkdir()
+        (curated / "device.yaml").write_text(
+            """\
+api_version: 1
+device:
+  name: Curated
+  vendor: Frobnicate
+  id: curated-1
+  usb_ids:
+    - abcd:1234
+machine:
+  driver: RuidaDriver
+"""
+        )
+        mgr = DeviceProfileManager(source_dirs=[tmp_path])
+        mgr.discover()
+
+        machine = self._make_mock_ruida_machine("From Curated")
+        machine.source_profile_id = "curated-1"
+        zip_path = mgr.export_machine(machine, tmp_path / "out")
+
+        install_dir = tmp_path / "installed"
+        install_dir.mkdir()
+        mgr2 = DeviceProfileManager(install_dir=install_dir)
+        pkg = mgr2.install_from_zip(zip_path)
+        assert pkg.meta.usb_ids == [(0xABCD, 0x1234)]
 
     def test_export_ruida_machine_no_dialect(self, tmp_path):
         machine = self._make_mock_ruida_machine("Ruida Export")

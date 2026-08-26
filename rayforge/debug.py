@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Optional
 import yaml
 
 from . import const
+from .machine.device.discovery_journal import journal_file, read_entries
 
 if TYPE_CHECKING:
     from .doceditor.editor import DocEditor
@@ -34,7 +35,7 @@ class DebugDumpManager:
         in the archive (regardless of whether it has been saved to disk).
         """
         from . import __version__
-        from .config import LOG_DIR
+        from .config import CONFIG_DIR, LOG_DIR
         from .context import get_context
         from .ui_gtk.about import get_dependency_info
 
@@ -101,7 +102,15 @@ class DebugDumpManager:
                 if addon_config_file.exists():
                     shutil.copy(addon_config_file, tmp_path / "addons.yaml")
 
-                # 6. Serialize and include project if requested
+                # 6. Include the device identification journal
+                entries = read_entries(journal_file(CONFIG_DIR))
+                if entries:
+                    with open(
+                        tmp_path / "device_identification.yaml", "w"
+                    ) as f:
+                        yaml.safe_dump(entries, f)
+
+                # 7. Serialize and include project if requested
                 if editor is not None:
                     doc_dict = editor.doc.to_dict()
                     json_bytes = json.dumps(doc_dict, indent=2).encode("utf-8")
@@ -113,7 +122,7 @@ class DebugDumpManager:
                     ) as zf:
                         zf.writestr("project.json", json_bytes)
 
-                # 7. Create ZIP archive
+                # 8. Create ZIP archive
                 timestamp_str = datetime.now(tz=timezone.utc).strftime(
                     "%Y-%m-%d_%H-%M-%S"
                 )

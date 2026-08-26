@@ -56,6 +56,7 @@ semver = "==3.0.4"
 trimesh = "==5.0.0"
 vtracer = "==0.6.15"
 websockets = "==17.0.1"
+zeroconf = "==0.150.0"
 
 [feature.app.target.linux-64.dependencies]
 xorg-xproto = "==7.0.31"

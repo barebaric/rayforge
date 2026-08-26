@@ -139,6 +139,28 @@ def is_marlin_output(data: bytes) -> bool:
     return any(is_boot_message(line) for line in text.splitlines())
 
 
+def extract_marlin_banner_from_output(data: bytes) -> str | None:
+    """
+    Extract a human-readable identity hint from raw Marlin serial
+    output, as captured during device discovery.
+
+    Returns the first boot message line (``start``, ``Marlin ...``,
+    ``echo:...``), skipping bare ``ok``/``Error:`` acknowledgements
+    that are merely responses to the scanner's nudge characters.
+    Returns None when the output carries no boot message.
+    """
+    text = data.decode("ascii", errors="replace")
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        if is_ok_response(line) or is_error_response(line):
+            continue
+        if is_boot_message(line):
+            return line[:80]
+    return None
+
+
 def parse_m115_firmware_info(
     response_lines: list[str],
 ) -> dict[str, str]:

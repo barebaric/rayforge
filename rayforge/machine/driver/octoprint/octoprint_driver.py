@@ -21,8 +21,10 @@ from ....core.varset import (
     VarSet,
 )
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
+from ....core.varset.var import Var
 from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
 from ....pipeline.encoder.gcode import GcodeEncoder
+from ...discovery.spec import DiscoverySpec, MdnsRecognizer
 from ...transport import TransportStatus
 from ..driver import (
     DeviceConnectionError,
@@ -34,11 +36,13 @@ from ..driver import (
     DriverSetupError,
     Pos,
 )
+from .octoprint_util import build_octoprint_profile
 
 if TYPE_CHECKING:
     from raygeo.ops import Ops
 
     from ....core.doc import Doc
+    from ...device.profile import DeviceProfile
     from ...models.laser import Laser
     from ...models.machine import Machine
 
@@ -64,6 +68,24 @@ _RECONNECT_INTERVAL = 5.0
 _WS_PING_INTERVAL = 30.0
 
 
+def _normalize_path_prefix(path: str) -> str:
+    """Normalizes a URL path prefix for constructing API base URLs.
+
+    ``/`` (the common case) yields an empty prefix so URLs stay
+    clean (``http://host:port/api/…``). A non-root prefix like
+    ``/octoprint`` is kept as-is (no trailing slash); request paths
+    already start with ``/`` and are appended directly.
+    """
+    if not path:
+        return ""
+    prefix = path.strip()
+    while len(prefix) > 1 and prefix.endswith("/"):
+        prefix = prefix[:-1]
+    if prefix == "/":
+        return ""
+    return prefix
+
+
 class OctoPrintDriver(Driver):
     """
     Submits G-code jobs to an OctoPrint server via its REST API and
@@ -76,7 +98,19 @@ class OctoPrintDriver(Driver):
     supports_settings = False
     reports_granular_progress = False
     uses_gcode = True
+    supports_probing = True
     maturity = DriverMaturity.UNTESTED
+    # Advertised by OctoPrint's discovery plugin; used for network
+    # device discovery. The TXT record's ``path`` key (the URL
+    # prefix the server is mounted under, e.g. ``/`` or
+    # ``/octoprint``) is forwarded into the ``path`` setup-var so
+    # connections target the right base path.
+    DISCOVERY = DiscoverySpec(
+        mdns=MdnsRecognizer(
+            services=("_octoprint._tcp.local.",),
+            txt_map={"path": "path"},
+        )
+    )
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
@@ -115,6 +149,53 @@ class OctoPrintDriver(Driver):
             )
 
     @classmethod
+    async def probe(
+        cls, context: RayforgeContext, **kwargs: Any
+    ) -> tuple["DeviceProfile", list[str]]:
+        """Query an OctoPrint server for its specs and return an
+        auto-populated ``(DeviceProfile, warnings)`` tuple.
+
+        Works without an API key when the server has access control
+        disabled (the common case for freshly discovered devices).
+        """
+        from ...models.machine import Machine
+
+        machine = Machine(context)
+        driver = cls(context, machine)
+        host = cast(str, kwargs.get("host", ""))
+        port = cast(int, kwargs.get("port", 80))
+        path = cast(str, kwargs.get("path", "/"))
+        api_key = kwargs.get("api_key", "")
+
+        driver.host = host
+        driver.port = port
+        driver._api_key = driver._extract_api_key(
+            str(api_key) if api_key else ""
+        )
+        driver._path_prefix = _normalize_path_prefix(path)
+        driver._base_url = f"http://{host}:{port}{driver._path_prefix}"
+
+        version_info = None
+        printer_info = None
+        try:
+            version_info = await driver._api_request("GET", "/api/version")
+            printer_info = await driver._api_request(
+                "GET", "/api/printer?exclude=temperature,sd"
+            )
+        except DeviceConnectionError:
+            pass
+        finally:
+            await driver.cleanup()
+            context.dialect_mgr.dialects_changed.disconnect(
+                machine._on_dialects_changed
+            )
+
+        profile, warnings = build_octoprint_profile(version_info, printer_info)
+        profile.machine_config.driver = cls.__name__
+        profile.machine_config.driver_args = kwargs
+        return profile, warnings
+
+    @classmethod
     def get_setup_vars(cls) -> "VarSet":
         return VarSet(
             vars=[
@@ -130,6 +211,16 @@ class OctoPrintDriver(Driver):
                     label=_("Port"),
                     description=_("HTTP port of the OctoPrint server"),
                     default=80,
+                ),
+                Var(
+                    key="path",
+                    label=_("Path"),
+                    description=_(
+                        "URL prefix the OctoPrint server is mounted "
+                        'under (discovered automatically; usually "/").'
+                    ),
+                    var_type=str,
+                    default="/",
                 ),
                 AppKeyVar(
                     key="api_key",
@@ -186,7 +277,10 @@ class OctoPrintDriver(Driver):
         self.host = host
         self.port = port
         self._api_key = api_key
-        self._base_url = f"http://{host}:{port}"
+        self._path_prefix = _normalize_path_prefix(
+            cast(str, kwargs.get("path", "/"))
+        )
+        self._base_url = f"http://{host}:{port}{self._path_prefix}"
 
     async def cleanup(self):
         self.keep_running = False
@@ -335,7 +429,9 @@ class OctoPrintDriver(Driver):
                     return
 
     async def _run_websocket(self) -> None:
-        ws_url = f"ws://{self.host}:{self.port}/sockjs/websocket"
+        ws_url = (
+            f"ws://{self.host}:{self.port}{self._path_prefix}/sockjs/websocket"
+        )
         self._update_connection_status(TransportStatus.CONNECTING)
 
         async with aiohttp.ClientSession() as session:

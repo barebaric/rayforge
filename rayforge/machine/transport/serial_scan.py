@@ -8,7 +8,7 @@ characters) is captured as a :class:`PortObservation`.
 
 Interpreting an observation — deciding which driver could talk to
 the device — is a separate concern that lives with the drivers (see
-:mod:`rayforge.machine.driver.discovery`).
+:mod:`rayforge.machine.discovery`).
 
 This module is GTK-free so it can be unit-tested in isolation. The
 blocking pyserial work runs in an executor; everything is bounded by

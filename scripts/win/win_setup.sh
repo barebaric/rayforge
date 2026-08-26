@@ -198,6 +198,7 @@ if [[ "$1" == "pip" || -z "$1" ]]; then
         "ezdxf$(req_version ezdxf)" \
         "pypdf$(req_version pypdf)" \
         "trimesh$(req_version trimesh)" \
+        "zeroconf$(req_version zeroconf)" \
         --break-system-packages
 
     echo "✅ Windows MSYS2 dependency setup complete."

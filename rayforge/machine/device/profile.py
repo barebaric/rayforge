@@ -44,9 +44,50 @@ class DeviceMeta:
     description: str = ""
     api_version: int = CURRENT_API_VERSION
     id: str = ""
+    usb_ids: list[tuple[int, int | None]] = field(default_factory=list)
 
 
 _DEVICE_META_FIELDS = frozenset(f.name for f in dc_fields(DeviceMeta))
+
+
+def _parse_usb_id(entry: str) -> tuple[int, int | None]:
+    """
+    Parse a ``"vid:pid"`` USB id string (hexadecimal) into an int
+    pair. The pid part is optional ("vid" or "vid:*" declares any
+    pid for the given vid).
+    """
+    text = entry.strip().lower()
+    vid_text, sep, pid_text = text.partition(":")
+    try:
+        vid = int(vid_text, 16)
+        pid: int | None = None
+        if sep and pid_text.strip() != "*":
+            pid = int(pid_text.strip(), 16)
+    except ValueError:
+        raise ValueError(f"Invalid USB id '{entry}'")
+    return (vid, pid)
+
+
+def _parse_usb_ids(
+    raw: list[str], manifest_path: Path
+) -> list[tuple[int, int | None]]:
+    if not isinstance(raw, list):
+        raise TypeError(f"'device.usb_ids' must be a list in {manifest_path}")
+    try:
+        return [_parse_usb_id(entry) for entry in raw]
+    except (ValueError, AttributeError) as e:
+        raise ValueError(f"{e} in {manifest_path}")
+
+
+def format_usb_id(vid: int, pid: int | None) -> str:
+    """
+    Format a USB id pair as the canonical ``"vid:pid"`` yaml string
+    (the inverse of :func:`_parse_usb_id`). A ``None`` pid yields the
+    vid-only form.
+    """
+    if pid is None:
+        return f"{vid:04x}"
+    return f"{vid:04x}:{pid:04x}"
 
 
 def parse_meta(data: dict, manifest_path: Path) -> DeviceMeta:
@@ -68,6 +109,10 @@ def parse_meta(data: dict, manifest_path: Path) -> DeviceMeta:
         k: v for k, v in device_data.items() if k in _DEVICE_META_FIELDS
     }
     filtered.setdefault("api_version", api_version)
+    if "usb_ids" in filtered:
+        filtered["usb_ids"] = _parse_usb_ids(
+            filtered["usb_ids"], manifest_path
+        )
     return DeviceMeta(**filtered)
 
 
@@ -727,6 +772,7 @@ def export_machine_to_dir(
     machine: Machine,
     dest_dir: Path,
     model_mgr: Optional["ModelManager"] = None,
+    usb_ids: list[tuple[int, int | None]] | None = None,
 ) -> DeviceProfile:
     dest_dir.mkdir(parents=True, exist_ok=True)
 
@@ -734,6 +780,18 @@ def export_machine_to_dir(
     device_section: dict[str, Any] = {"name": machine.name}
     if machine.source_profile_id:
         device_section["id"] = machine.source_profile_id
+
+    ids: list[tuple[int, int | None]] = []
+    if isinstance(machine.usb_vid, int):
+        ids.append((machine.usb_vid, machine.usb_pid))
+    for pair in usb_ids or []:
+        if pair not in ids:
+            ids.append(pair)
+    if ids:
+        device_section["usb_ids"] = [
+            format_usb_id(vid, pid) for vid, pid in ids
+        ]
+
     device_data = {
         "api_version": CURRENT_API_VERSION,
         "device": device_section,
