@@ -443,7 +443,7 @@ class RuidaDriver(Driver):
         else:
             await self._client.resume_process()
 
-    async def cancel(self) -> None:
+    async def cancel(self, emergency: bool = False) -> None:
         assert self._client
         await self._client.stop_process()
 

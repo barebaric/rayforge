@@ -25,6 +25,7 @@ SMOOTHIEWARE_DIALECT = GcodeDialect(
     move_to="G90 G0 X{x} Y{y}",
     jog="G91 G0 F{speed}",
     clear_alarm="M999",
+    emergency_stop="M112",
     set_wcs_offset="G10 L20 P{p_num} X{x} Y{y} Z{z}",
     probe_cycle="G38.2 {axis_letter}{max_travel} F{feed_rate}",
     preamble=["G21 ; Set units to mm", "G90 ; Absolute positioning"],

@@ -160,7 +160,7 @@ class NoDeviceDriver(Driver):
     async def set_hold(self, hold: bool = True) -> None:
         pass
 
-    async def cancel(self) -> None:
+    async def cancel(self, emergency: bool = False) -> None:
         pass
 
     def can_home(self, axis: Axis | None = None) -> bool:

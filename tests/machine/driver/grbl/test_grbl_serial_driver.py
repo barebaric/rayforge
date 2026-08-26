@@ -44,6 +44,15 @@ async def wait_for_send_call(mock_send, payload, timeout=5.0):
     pytest.fail(f"send({payload!r}) not observed within {timeout:.1f}s")
 
 
+def _assert_only_safety_commands_pending(driver):
+    """After an abort, only the fire-and-forget safety commands may
+    remain unacknowledged in the streaming queue."""
+    transport = driver.grbl_transport
+    pending = list(transport.pending_queue._queue)
+    assert all(p.command in ("M5\n", "M9\n") for p in pending)
+    assert transport.buffer_count == sum(p.length for p in pending)
+
+
 @pytest.fixture
 def driver(context_initializer, machine, mock_serial_transport, mocker):
     """
@@ -599,8 +608,7 @@ class TestGrblSerialDriver:
         assert isinstance(driver._job_exception, DeviceConnectionError)
         assert "stopped responding" in str(driver._job_exception)
         assert driver.grbl_transport is not None
-        assert driver.grbl_transport.pending_queue.empty()
-        assert driver.grbl_transport.buffer_count == 0
+        _assert_only_safety_commands_pending(driver)
 
     @pytest.mark.asyncio
     async def test_drain_phase_aborts_when_device_stops_responding(
@@ -629,8 +637,7 @@ class TestGrblSerialDriver:
         assert driver._job_exception is not None
         assert "stopped responding" in str(driver._job_exception)
         assert driver.grbl_transport is not None
-        assert driver.grbl_transport.pending_queue.empty()
-        assert driver.grbl_transport.buffer_count == 0
+        _assert_only_safety_commands_pending(driver)
 
     @pytest.mark.asyncio
     async def test_run_handles_mid_job_error(
@@ -668,8 +675,7 @@ class TestGrblSerialDriver:
         assert isinstance(driver._job_exception, DeviceConnectionError)
         assert "error:20" in str(driver._job_exception)
         assert driver.grbl_transport is not None
-        assert driver.grbl_transport.pending_queue.empty()
-        assert driver.grbl_transport.buffer_count == 0
+        _assert_only_safety_commands_pending(driver)
 
         job_finished_mock.assert_called_once_with(driver)
         mock_serial_transport.send.assert_any_call(b"\x18")
@@ -947,6 +953,25 @@ class TestGrblSerialDriver:
         execute_command_mock.assert_called_once_with("$G")
 
     @pytest.mark.asyncio
+    async def test_cancel_sends_safety_shutdown(
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
+    ):
+        """Cancel must turn persistent PWM outputs off, not just reset."""
+        driver = connected_driver
+        job_finished_mock = MagicMock()
+        driver.job_finished.send = job_finished_mock
+        driver._start_job()
+
+        await asyncio.wait_for(driver.cancel(), timeout=1.0)
+
+        assert driver._job_running is False
+        mock_serial_transport.send.assert_any_call(b"\x18")
+        mock_serial_transport.send.assert_any_call(b"M5\n")
+        job_finished_mock.assert_called_once_with(driver)
+
+    @pytest.mark.asyncio
     async def test_alarm_stops_sending_and_driver_state_consistent(
         self,
         connected_driver: GrblSerialDriver,
@@ -996,8 +1021,7 @@ class TestGrblSerialDriver:
         assert "ALARM" in str(driver._job_exception)
 
         assert driver.grbl_transport is not None
-        assert driver.grbl_transport.pending_queue.empty()
-        assert driver.grbl_transport.buffer_count == 0
+        _assert_only_safety_commands_pending(driver)
 
         job_finished_mock.assert_called_once_with(driver)
 
@@ -1038,8 +1062,7 @@ class TestGrblSerialDriver:
         assert driver._job_running is False
         assert driver._job_exception is not None
         assert driver.grbl_transport is not None
-        assert driver.grbl_transport.pending_queue.empty()
-        assert driver.grbl_transport.buffer_count == 0
+        _assert_only_safety_commands_pending(driver)
 
         job_finished_mock.assert_called_once_with(driver)
         mock_serial_transport.send.assert_any_call(b"\x18")
@@ -1086,8 +1109,7 @@ class TestGrblSerialDriver:
 
         assert driver._job_running is False
         assert driver.grbl_transport is not None
-        assert driver.grbl_transport.pending_queue.empty()
-        assert driver.grbl_transport.buffer_count == 0
+        _assert_only_safety_commands_pending(driver)
 
         job_finished_mock.assert_called_once_with(driver)
         mock_serial_transport.send.assert_any_call(b"\x18")
@@ -1124,8 +1146,7 @@ class TestGrblSerialDriver:
             pass
 
         assert driver.grbl_transport is not None
-        assert driver.grbl_transport.pending_queue.empty()
-        assert driver.grbl_transport.buffer_count == 0
+        _assert_only_safety_commands_pending(driver)
         assert driver._job_running is False
 
         job_finished_mock.assert_called_once_with(driver)
@@ -1177,8 +1198,7 @@ class TestGrblSerialDriver:
         assert driver._job_running is False
         assert driver._job_exception is not None
         assert driver.grbl_transport is not None
-        assert driver.grbl_transport.pending_queue.empty()
-        assert driver.grbl_transport.buffer_count == 0
+        _assert_only_safety_commands_pending(driver)
 
         job_finished_mock.assert_called_once_with(driver)
         mock_serial_transport.send.assert_any_call(b"\x18")

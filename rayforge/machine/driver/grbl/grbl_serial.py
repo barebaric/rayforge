@@ -105,6 +105,8 @@ class GrblSerialDriver(Driver):
     STALL_TIMEOUT_SAFETY_FACTOR: float = 3.0
     STALL_TIMEOUT_DEFAULT: float = 30.0
 
+    SAFETY_SHUTDOWN_DELAY: float = 0.2
+
     # A device that stays silent for this many consecutive stall
     # polls (no status report, no ack) is considered dead. GRBL
     # answers '?' in every state (Run, Hold, Door, Alarm), so an
@@ -1013,7 +1015,7 @@ class GrblSerialDriver(Driver):
             # If not cancelled explicitly, send a cancel command
             if not self._is_cancelled:
                 logger.info(f"Calling cancel() due to interruption: {e!r}")
-                await self.cancel()
+                await self.cancel(emergency=True)
             # Do not re-raise ConnectionError or
             # DeviceConnectionError, let the task finish "failed"
             # Only re-raise CancelledError to propagate cancellation
@@ -1113,7 +1115,7 @@ class GrblSerialDriver(Driver):
         except Exception:
             logger.exception("Raw G-code terminated with unexpected error")
 
-    async def cancel(self) -> None:
+    async def cancel(self, emergency: bool = False) -> None:
         logger.debug("Cancel command initiated.")
         job_was_running = self._job_running
         self._is_cancelled = True
@@ -1140,10 +1142,42 @@ class GrblSerialDriver(Driver):
             self.grbl_transport.reset()
             logger.debug("Streaming queue cleared after cancel.")
 
+            await self._send_safety_shutdown(emergency)
+
             if job_was_running:
                 self.job_finished.send(self)
         else:
             raise ConnectionError("Serial transport not initialized")
+
+    async def _send_safety_shutdown(self, emergency: bool = False) -> None:
+        """
+        Best-effort transmission of the dialect's tool-off commands so
+        a cancelled or aborted job cannot leave persistent PWM outputs
+        energized. After a soft reset the firmware needs a moment to
+        become ready again, hence the short delay before sending.
+        """
+        dialect = self.dialect
+        commands = dialect.get_safety_off_commands()
+        if emergency and dialect.emergency_stop:
+            commands.append(dialect.emergency_stop)
+        if not commands:
+            return
+        transport = self.grbl_transport
+        if not transport or not transport.is_connected:
+            return
+        await asyncio.sleep(self.SAFETY_SHUTDOWN_DELAY)
+        for command in commands:
+            if not transport.is_connected:
+                break
+            try:
+                logger.info(command, extra=self._log_extra("USER_COMMAND"))
+                await transport.send_gcode((command + "\n").encode("utf-8"))
+            except (
+                ConnectionError,
+                asyncio.TimeoutError,
+                BufferStallError,
+            ) as e:
+                logger.warning(f"Safety command '{command}' failed: {e}")
 
     async def _execute_command(self, command: str) -> list[str]:
         self._is_cancelled = False

@@ -1,4 +1,5 @@
 import asyncio
+from dataclasses import replace
 from unittest.mock import AsyncMock, PropertyMock
 
 import pytest
@@ -72,3 +73,41 @@ async def test_run_raw_sends_realtime_commands_directly(simple_driver):
 
     driver._transport.send.assert_called_once_with(b"~")
     assert driver._job_running is False
+
+
+def _sent_lines(driver) -> list[bytes]:
+    return [call.args[0] for call in driver._transport.send.await_args_list]
+
+
+@pytest.mark.asyncio
+async def test_cancel_sends_laser_off_after_reset(simple_driver):
+    """Cancel must turn persistent PWM outputs off, not just reset."""
+    driver = simple_driver
+    driver._start_job()
+
+    await asyncio.wait_for(driver.cancel(), timeout=1.0)
+
+    sent = _sent_lines(driver)
+    assert b"\x18" in sent
+    assert b"M5\n" in sent
+
+
+@pytest.mark.asyncio
+async def test_emergency_cancel_sends_failsafe_command(simple_driver, mocker):
+    """An emergency cancel must also send the dialect's failsafe."""
+    driver = simple_driver
+    dialect = replace(driver.dialect, emergency_stop="M112")
+    mocker.patch.object(
+        GrblSerialSimpleDriver,
+        "dialect",
+        new_callable=PropertyMock,
+        return_value=dialect,
+    )
+    driver._start_job()
+
+    await asyncio.wait_for(driver.cancel(emergency=True), timeout=1.0)
+
+    sent = _sent_lines(driver)
+    assert b"\x18" in sent
+    assert b"M5\n" in sent
+    assert b"M112\n" in sent

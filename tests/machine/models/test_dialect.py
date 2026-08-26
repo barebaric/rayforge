@@ -408,3 +408,51 @@ def test_bezier_cubic_serialization():
     data = MARLIN_DIALECT.to_dict()
     assert "bezier_cubic" in data
     assert data["bezier_cubic"] == MARLIN_DIALECT.bezier_cubic
+
+
+def test_emergency_stop_defaults():
+    """Dialects without a failsafe command leave it empty by default."""
+    assert GRBL_DIALECT.emergency_stop == ""
+    assert MARLIN_DIALECT.emergency_stop == "M112"
+    assert SMOOTHIEWARE_DIALECT.emergency_stop == "M112"
+
+
+def test_get_safety_off_commands_deduplicates():
+    """Safety commands must be unique, stripped, and non-empty."""
+    dialect = GcodeDialect(
+        label="Test",
+        description="Test",
+        laser_on="M4 S{power}",
+        laser_off="M5",
+        focus_laser_on="M3 S{power}",
+        tool_change="",
+        set_speed="",
+        travel_move="G0",
+        linear_move="G1",
+        arc_cw="G2",
+        arc_ccw="G3",
+        bezier_cubic="",
+        air_assist_on="M8",
+        air_assist_off="M9 ",
+        home_all="$H",
+        home_axis="$H{axis_letter}",
+        move_to="G0 X{x} Y{y}",
+        jog="G91 G0 F{speed}",
+        clear_alarm="$X",
+        set_wcs_offset="",
+        probe_cycle="",
+        spindle_off=" M5 ",
+        coolant_off="",
+    )
+    assert dialect.get_safety_off_commands() == ["M5", "M9"]
+
+
+def test_get_safety_off_commands_on_default_dialects():
+    assert GRBL_DIALECT.get_safety_off_commands() == [
+        "M5",
+        "M9",
+    ]
+    assert MARLIN_DIALECT.get_safety_off_commands() == [
+        "M5",
+        "M9",
+    ]

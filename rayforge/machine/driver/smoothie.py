@@ -277,9 +277,26 @@ class SmoothieDriver(Driver):
         else:
             await self._send_and_wait(b"~")
 
-    async def cancel(self) -> None:
+    async def cancel(self, emergency: bool = False) -> None:
         # Send Ctrl+C
         await self._send_and_wait(b"\x03")
+        await self._send_safety_shutdown(emergency)
+
+    async def _send_safety_shutdown(self, emergency: bool = False) -> None:
+        """
+        Best-effort transmission of the dialect's tool-off commands so
+        a cancelled or aborted job cannot leave persistent PWM outputs
+        energized.
+        """
+        dialect = self.dialect
+        commands = dialect.get_safety_off_commands()
+        if emergency and dialect.emergency_stop:
+            commands.append(dialect.emergency_stop)
+        for command in commands:
+            try:
+                await self._send_and_wait(command.encode())
+            except ConnectionError as e:
+                logger.warning(f"Safety command '{command}' failed: {e}")
 
     def can_home(self, axis: Axis | None = None) -> bool:
         """Smoothie supports homing for all axes."""

@@ -472,7 +472,7 @@ class GrblNetworkDriver(Driver):
     async def set_hold(self, hold: bool = True) -> None:
         await self._send_command("!" if hold else "~")
 
-    async def cancel(self) -> None:
+    async def cancel(self, emergency: bool = False) -> None:
         self._is_cancelled = True
         # Soft reset: send Ctrl-X (0x18) as a raw byte.  _send_command
         # URL-encodes the argument, so '\x18' becomes '%18' on the wire —
@@ -480,7 +480,25 @@ class GrblNetworkDriver(Driver):
         # GRBL soft-reset byte.  (Do NOT pass the literal string '%18',
         # because quote() would double-encode the '%' to '%2518'.)
         await self._send_command("\x18")
+        await self._send_safety_shutdown(emergency)
         self.job_finished.send(self)
+
+    async def _send_safety_shutdown(self, emergency: bool = False) -> None:
+        """
+        Best-effort transmission of the dialect's tool-off commands so
+        a cancelled or aborted job cannot leave persistent PWM outputs
+        energized.
+        """
+        dialect = self.dialect
+        commands = dialect.get_safety_off_commands()
+        if emergency and dialect.emergency_stop:
+            commands.append(dialect.emergency_stop)
+        for command in commands:
+            try:
+                logger.info(command, extra=self._log_extra("USER_COMMAND"))
+                await self._send_command(command)
+            except DeviceConnectionError as e:
+                logger.warning(f"Safety command '{command}' failed: {e}")
 
     def can_home(self, axis: Axis | None = None) -> bool:
         """GRBL supports homing for all axes."""

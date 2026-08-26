@@ -690,7 +690,7 @@ class OctoPrintDriver(Driver):
                 },
             )
 
-    async def cancel(self) -> None:
+    async def cancel(self, emergency: bool = False) -> None:
         await self._api_request(
             "POST",
             "/api/job",

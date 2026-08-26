@@ -57,6 +57,7 @@ class GcodeDialect:
     coolant_flood: str = "M8"
     coolant_mist: str = "M7"
     coolant_off: str = "M9"
+    emergency_stop: str = ""
 
     preamble: list[str] = field(default_factory=list)
     postscript: list[str] = field(default_factory=list)
@@ -168,6 +169,7 @@ class GcodeDialect:
             ("coolant_flood", _("Coolant Flood")),
             ("coolant_mist", _("Coolant Mist")),
             ("coolant_off", _("Coolant Off")),
+            ("emergency_stop", _("Emergency Stop")),
         ]
         for key, label in template_fields:
             templates_vs.add(Var(key, label, str, value=getattr(self, key)))
@@ -221,6 +223,26 @@ class GcodeDialect:
             parent_uid=self.uid,
             label=new_label,
         )
+
+    def get_safety_off_commands(self) -> list[str]:
+        """
+        Returns the commands that return persistent tool outputs to a
+        safe state. Sent by drivers when a running job is stopped or
+        aborted, since the job's postscript will not be executed in
+        that case.
+        """
+        candidates = [
+            self.laser_off,
+            self.spindle_off,
+            self.air_assist_off,
+            self.coolant_off,
+        ]
+        commands: list[str] = []
+        for candidate in candidates:
+            command = candidate.strip()
+            if command and command not in commands:
+                commands.append(command)
+        return commands
 
     def format_wcs_offset(
         self,

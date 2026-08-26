@@ -421,7 +421,7 @@ class MarlinSerialDriver(Driver):
             logger.warning(f"Job interrupted: {e!r}")
             if not self._is_cancelled:
                 logger.info(f"Calling cancel() due to interruption: {e!r}")
-                await self.cancel()
+                await self.cancel(emergency=True)
             if isinstance(e, asyncio.CancelledError):
                 raise
         finally:
@@ -465,7 +465,7 @@ class MarlinSerialDriver(Driver):
                 "Connection remains active."
             )
 
-    async def cancel(self) -> None:
+    async def cancel(self, emergency: bool = False) -> None:
         logger.debug("Cancel command initiated.")
         job_was_running = self._job_running
         self._is_cancelled = True
@@ -487,12 +487,34 @@ class MarlinSerialDriver(Driver):
                 await self._transport.send(payload)
             except ConnectionError as e:
                 logger.warning(f"Failed to send M410: {e}")
+            await self._send_safety_shutdown(emergency)
 
         if not self._transport:
             raise ConnectionError("Serial transport not initialized")
 
         if job_was_running:
             self.job_finished.send(self)
+
+    async def _send_safety_shutdown(self, emergency: bool = False) -> None:
+        """
+        Best-effort transmission of the dialect's tool-off commands so
+        a cancelled or aborted job cannot leave persistent PWM outputs
+        energized. Responses are ignored: the commands are sent
+        fire-and-forget.
+        """
+        dialect = self.dialect
+        commands = dialect.get_safety_off_commands()
+        if emergency and dialect.emergency_stop:
+            commands.append(dialect.emergency_stop)
+        transport = self._transport
+        if not commands or not transport or not transport.is_connected:
+            return
+        for command in commands:
+            try:
+                logger.info(command, extra=self._log_extra("USER_COMMAND"))
+                await transport.send((command + "\n").encode("utf-8"))
+            except ConnectionError as e:
+                logger.warning(f"Safety command '{command}' failed: {e}")
 
     async def set_hold(self, hold: bool = True) -> None:
         logger.warning(

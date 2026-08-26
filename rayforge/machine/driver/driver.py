@@ -511,9 +511,13 @@ class Driver(ABC):
         """
 
     @abstractmethod
-    async def cancel(self) -> None:
+    async def cancel(self, emergency: bool = False) -> None:
         """
         Sends a command to cancel the currently executing program.
+
+        When *emergency* is True, the cancellation is the result of an
+        unexpected error rather than a user-initiated stop, and drivers
+        should additionally send their dialect's failsafe command.
         """
 
     def can_home(self, axis: Optional["Axis"] = None) -> bool:

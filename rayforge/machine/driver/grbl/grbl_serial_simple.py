@@ -113,6 +113,8 @@ class GrblSerialSimpleDriver(Driver):
     supports_unit_detection = True
     maturity = DriverMaturity.EXPERIMENTAL
 
+    SAFETY_SHUTDOWN_DELAY: float = 0.2
+
     _ok_re = re.compile(rb"ok\r*\n")
     _error_re = re.compile(rb"error:(\d+)\r*\n")
     _status_re = re.compile(rb"<([^>]+)>")
@@ -518,8 +520,10 @@ class GrblSerialSimpleDriver(Driver):
                 job_completed_successfully = True
         except DeviceConnectionError as e:
             logger.warning(f"Job interrupted: {e}")
+            await self._send_safety_shutdown(emergency=True)
         except Exception:
             logger.exception("Unexpected streaming error")
+            await self._send_safety_shutdown(emergency=True)
         finally:
             self._job_running = False
             self._is_holding = False
@@ -579,7 +583,7 @@ class GrblSerialSimpleDriver(Driver):
         except DeviceConnectionError as e:
             logger.warning(f"Raw G-code terminated: {e}")
 
-    async def cancel(self) -> None:
+    async def cancel(self, emergency: bool = False) -> None:
         logger.debug("Cancel command initiated.")
         job_was_running = self._job_running
         self._is_cancelled = True
@@ -594,10 +598,36 @@ class GrblSerialSimpleDriver(Driver):
             if self._pending:
                 self._pending.set_result()
                 self._pending = None
+            await self._send_safety_shutdown(emergency)
             if job_was_running:
                 self.job_finished.send(self)
         else:
             raise ConnectionError("Serial transport not initialized")
+
+    async def _send_safety_shutdown(self, emergency: bool = False) -> None:
+        """
+        Best-effort transmission of the dialect's tool-off commands so
+        a cancelled or aborted job cannot leave persistent PWM outputs
+        energized. After a soft reset the firmware needs a moment to
+        become ready again, hence the short delay before sending.
+        Responses are ignored: the commands are sent fire-and-forget.
+        """
+        dialect = self.dialect
+        commands = dialect.get_safety_off_commands()
+        if emergency and dialect.emergency_stop:
+            commands.append(dialect.emergency_stop)
+        transport = self._transport
+        if not commands or not transport or not transport.is_connected:
+            return
+        await asyncio.sleep(self.SAFETY_SHUTDOWN_DELAY)
+        for command in commands:
+            if not transport.is_connected:
+                break
+            try:
+                logger.info(command, extra=self._log_extra("USER_COMMAND"))
+                await transport.send((command + "\n").encode("utf-8"))
+            except ConnectionError as e:
+                logger.warning(f"Safety command '{command}' failed: {e}")
 
     async def _execute_command(self, command: str) -> list[str]:
         """Send a command using ping-pong and return response lines."""
