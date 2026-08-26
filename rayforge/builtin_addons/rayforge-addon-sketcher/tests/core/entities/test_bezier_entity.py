@@ -60,11 +60,11 @@ def test_bezier_as_line(registry):
 
     vertices = bezier.to_polygon_vertices(registry, forward=True)
     assert len(vertices) == 1
-    assert vertices[0] == pytest.approx((20.0, 0.0))
+    assert vertices[0] == pytest.approx((0.0, 0.0))
 
     vertices_rev = bezier.to_polygon_vertices(registry, forward=False)
     assert len(vertices_rev) == 1
-    assert vertices_rev[0] == pytest.approx((0.0, 0.0))
+    assert vertices_rev[0] == pytest.approx((20.0, 0.0))
 
 
 def test_bezier_with_control_points(registry):

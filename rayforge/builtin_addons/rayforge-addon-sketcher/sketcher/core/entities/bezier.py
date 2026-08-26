@@ -294,10 +294,9 @@ class Bezier(Entity):
             return []
 
         if self.is_line(registry):
-            if forward:
-                return [(end.x, end.y)]
-            else:
-                return [(start.x, start.y)]
+            start_pid = self.start_idx if forward else self.end_idx
+            p = registry.get_point(start_pid)
+            return [(p.x, p.y)]
 
         cp1_x, cp1_y, cp2_x, cp2_y = self.get_control_points_or_endpoints(
             registry
