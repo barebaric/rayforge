@@ -238,16 +238,23 @@ class FontPropertiesWidget(Adw.PreferencesGroup):
 
         new_font_config = self._get_font_config_from_ui()
 
-        # Check if the text box is being edited and use the live buffer
+        # When the text box is being edited, fold the font change into the
+        # active edit session instead of pushing a separate command: the
+        # live resize performed while typing mutates geometry outside the
+        # command system, so a standalone command would snapshot that
+        # mutated state as its pre-state and restore it on undo.
         text_tool = sketch_element.tools.get("text_box")
-        content = entity.content
-        if text_tool and text_tool.editing_entity_id == self._text_entity_id:
-            content = text_tool.text_buffer
+        if (
+            text_tool
+            and text_tool.editing_entity_id == self._text_entity_id
+            and text_tool.apply_font_change(new_font_config)
+        ):
+            return
 
         cmd = ModifyTextPropertyCommand(
             sketch=sketch_element.sketch,
             text_entity_id=self._text_entity_id,
-            new_content=content,
+            new_content=entity.content,
             new_font_config=new_font_config,
         )
         self.editor.history_manager.execute(cmd)

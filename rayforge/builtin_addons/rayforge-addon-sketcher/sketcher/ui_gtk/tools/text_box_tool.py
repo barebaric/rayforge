@@ -8,7 +8,7 @@ import cairo
 from blinker import Signal
 from gi.repository import Gdk, GLib
 from raygeo.geo.shape.polygon import is_point_inside_polygon
-from raygeo.geo.shape.text import text_to_geometry
+from raygeo.geo.shape.text import FontConfig, text_to_geometry
 
 from rayforge.image.geo_renderer import geometry_to_cairo
 
@@ -850,6 +850,44 @@ class TextBoxTool(SketchTool):
         movements so undo restores the expected position."""
         if self.live_edit_cmd is not None:
             self.live_edit_cmd.update_cursor(self.cursor_pos)
+
+    def apply_font_change(self, new_font_config: FontConfig) -> bool:
+        """Applies a font change during an active edit session.
+
+        The live resize performed while typing mutates point positions and
+        the aspect-ratio constraint outside the command system, so a
+        separately executed ModifyTextPropertyCommand would snapshot that
+        mutated geometry as its pre-state. Instead the change is folded
+        into the session's finalize command, whose pre-edit state was
+        captured at session start.
+
+        Returns True when the change was handled here, False when no
+        edit session is active and the caller should commit its own
+        command.
+        """
+        if (
+            self.state != TextBoxState.EDITING
+            or self.editing_entity_id is None
+            or self._edit_cmd is None
+        ):
+            return False
+
+        entity = self.element.sketch.registry.get_entity(
+            self.editing_entity_id
+        )
+        if not isinstance(entity, TextBoxEntity):
+            return False
+
+        entity.font_config = new_font_config
+        self._edit_cmd.new_font_config = new_font_config
+        self._edit_cmd.new_content = self.text_buffer
+        self._resize_box_to_fit_text()
+
+        if self.live_edit_cmd:
+            self.live_edit_cmd.capture_state(self.text_buffer, self.cursor_pos)
+        self.element.mark_dirty()
+        self.cursor_moved.send(self)
+        return True
 
     def draw_overlay(self, ctx: cairo.Context):
         if (

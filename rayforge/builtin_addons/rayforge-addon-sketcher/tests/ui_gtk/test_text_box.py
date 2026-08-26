@@ -15,11 +15,14 @@ if sys.platform.startswith("linux"):
 
 from raygeo.geo.shape.text import FontConfig
 from sketcher.core import Sketch
+from sketcher.core.commands import ModifyTextPropertyCommand
 from sketcher.core.entities import TextBoxEntity
 from sketcher.ui_gtk.renderer import SketchRenderer
 from sketcher.ui_gtk.sketchelement import SketchElement
 from sketcher.ui_gtk.tools import TextBoxTool
 from sketcher.ui_gtk.tools.text_box_tool import TextBoxState
+
+from rayforge.core.undo import HistoryManager
 
 
 @pytest.fixture
@@ -401,3 +404,96 @@ def test_text_box_cursor_visible_with_large_scale(
     text_tool.draw_overlay(mock_cairo_context)
 
     mock_cairo_context.fill.assert_called()
+
+
+@pytest.fixture
+def editor_with_text_box(sketch_with_text_box):
+    """A SketchElement wired to a real HistoryManager via a mock editor."""
+    sketch, tb_id = sketch_with_text_box
+    element = SketchElement(sketch=sketch)
+    element.canvas = Mock()
+    element.canvas.get_view_scale.return_value = (1.0, 1.0)
+    element.canvas.get_color.return_value = Mock(red=0.0, green=0.0, blue=0.0)
+    element.canvas.edit_context = element
+    mock_matrix = Mock()
+    mock_matrix.for_cairo.return_value = (1, 0, 0, 1, 0, 0)
+    element.hittester = Mock()
+    element.hittester.get_model_to_screen_transform.return_value = mock_matrix
+
+    editor = Mock()
+    editor.sketch_element = element
+    editor.history_manager = HistoryManager()
+    element.editor = editor
+    return editor, sketch, tb_id
+
+
+@pytest.mark.ui
+def test_font_change_during_edit_does_not_push_separate_command(
+    editor_with_text_box,
+):
+    """Changing the font via the font properties panel while a text edit
+    session is active must fold the change into the session's finalize
+    command rather than pushing a standalone ModifyTextPropertyCommand.
+
+    The live resize performed while typing mutates point positions and
+    the aspect-ratio constraint outside the command system, so a
+    standalone command would snapshot that mutated geometry as its
+    pre-state and restore it on undo (issue 5)."""
+    from sketcher.ui_gtk.font_properties import FontPropertiesWidget
+
+    editor, sketch, tb_id = editor_with_text_box
+    element = editor.sketch_element
+    widget = FontPropertiesWidget(editor)
+    widget.set_text_entity(tb_id)
+
+    text_tool = element.tools["text_box"]
+    assert isinstance(text_tool, TextBoxTool)
+    text_tool.start_editing(tb_id)
+
+    entity = sketch.registry.get_entity(tb_id)
+    p_width = sketch.registry.get_point(entity.width_id)
+    orig_width = (p_width.x, p_width.y)
+    # Simulate the live resize that typing has performed so far.
+    p_width.x += 30.0
+
+    widget._apply_font_config()
+
+    # No command pushed for the font change while editing.
+    assert len(editor.history_manager.undo_stack) == 0
+    assert text_tool._edit_cmd is not None
+    assert (
+        text_tool._edit_cmd.new_font_config
+        == widget._get_font_config_from_ui()
+    )
+
+    # End the session: the single finalize command carries the
+    # session-start geometry as its pre-state.
+    text_tool.text_buffer = "edited"
+    text_tool.on_deactivate()
+
+    assert len(editor.history_manager.undo_stack) == 1
+    cmd = editor.history_manager.undo_stack[-1]
+    assert isinstance(cmd, ModifyTextPropertyCommand)
+    assert cmd.new_content == "edited"
+    assert cmd.old_point_positions[entity.width_id] == pytest.approx(
+        orig_width
+    )
+
+
+@pytest.mark.ui
+def test_font_change_when_not_editing_pushes_command(
+    editor_with_text_box,
+):
+    """When no edit session is active, the font properties panel must
+    commit its own ModifyTextPropertyCommand as before."""
+    from sketcher.ui_gtk.font_properties import FontPropertiesWidget
+
+    editor, _sketch, tb_id = editor_with_text_box
+    widget = FontPropertiesWidget(editor)
+    widget.set_text_entity(tb_id)
+
+    widget._apply_font_config()
+
+    assert len(editor.history_manager.undo_stack) == 1
+    cmd = editor.history_manager.undo_stack[-1]
+    assert isinstance(cmd, ModifyTextPropertyCommand)

@@ -472,6 +472,75 @@ def test_text_box_tool_undo_targets_session_start_geometry(
 
 
 @pytest.mark.ui
+def test_text_box_tool_apply_font_change_returns_false_when_idle(
+    text_box_tool, mock_element
+):
+    """apply_font_change must report it did not handle the change when no
+    edit session is active so the caller commits its own command."""
+    result = text_box_tool.apply_font_change(
+        FontConfig(family="serif", size=12.0)
+    )
+    assert result is False
+
+
+@pytest.mark.ui
+def test_text_box_tool_apply_font_change_folds_into_finalize_command(
+    text_box_tool, mock_element
+):
+    """A font change during an active edit session must not push a
+    separate command: the live resize mutates geometry outside the
+    command system, so a standalone command would snapshot the mutated
+    state as its pre-state. The change is folded into the session's
+    finalize command, whose pre-edit state was captured at session
+    start."""
+    sketch = Sketch()
+    box_cmd = TextBoxCommand(sketch, (0, 0), 10.0, 10.0)
+    box_cmd.execute()
+    assert box_cmd.text_box_id is not None
+    mock_element.sketch = sketch
+
+    entity_id = box_cmd.text_box_id
+    entity = cast(TextBoxEntity, sketch.registry.get_entity(entity_id))
+
+    text_box_tool.start_editing(entity_id)
+    assert text_box_tool._edit_cmd is not None
+
+    # Simulate the live resize that typing performs: the width point has
+    # moved away from its session-start position.
+    p_width = sketch.registry.get_point(entity.width_id)
+    orig_width = (p_width.x, p_width.y)
+    p_width.x += 25.0
+
+    new_font = FontConfig(family="serif", size=14.0, bold=True)
+    handled = text_box_tool.apply_font_change(new_font)
+
+    assert handled is True
+    # No command was pushed for the font change.
+    assert mock_element.execute_command.call_count == 0
+    # The font change is staged on the finalize command and entity live.
+    assert text_box_tool._edit_cmd.new_font_config == new_font
+    assert entity.font_config == new_font
+
+    # Finalize: the single pushed command carries the session-start
+    # geometry as its pre-state, not the mutated one.
+    text_box_tool.text_buffer = "hello"
+    text_box_tool.on_deactivate()
+
+    executed = [
+        call.args[0] for call in mock_element.execute_command.call_args_list
+    ]
+    finalize = [
+        cmd for cmd in executed if isinstance(cmd, ModifyTextPropertyCommand)
+    ]
+    assert len(finalize) == 1
+    assert finalize[0].new_content == "hello"
+    assert finalize[0].new_font_config == new_font
+    assert finalize[0].old_point_positions[entity.width_id] == (
+        pytest.approx(orig_width)
+    )
+
+
+@pytest.mark.ui
 def test_text_box_tool_toggle_cursor_visibility(text_box_tool, mock_element):
     """Test toggling cursor visibility."""
     text_box_tool.state = TextBoxState.EDITING
