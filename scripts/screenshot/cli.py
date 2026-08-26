@@ -35,6 +35,7 @@ TARGETS = {
     "config-wizard:camera": "config_wizard",
     "config-wizard:controller": "config_wizard",
     "config-wizard:connect": "config_wizard",
+    "config-wizard:permissions": "config_wizard",
     "config-wizard:probe": "config_wizard",
     "config-wizard:profile": "config_wizard",
     "config-wizard:hardware": "config_wizard",

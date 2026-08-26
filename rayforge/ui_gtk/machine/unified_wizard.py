@@ -34,6 +34,7 @@ from ...machine.driver import (
     normalize_tokens,
 )
 from ...machine.driver.dummy import NoDeviceDriver
+from ...shared.util.permissions import check_permissions
 from ..camera.wizard.wizard import CameraWizard
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from .wizard_pages import WizardPage, empty_profile
@@ -44,6 +45,7 @@ from .wizard_pages.controller_page import ControllerPage
 from .wizard_pages.discover_page import DiscoverPage
 from .wizard_pages.hardware_page import HardwarePage
 from .wizard_pages.head_page import HeadPage
+from .wizard_pages.permissions_page import PermissionsPage
 from .wizard_pages.probe_page import ProbePage
 from .wizard_pages.profile_page import ProfilePage
 from .wizard_pages.provider_page import AIProviderPage
@@ -54,8 +56,11 @@ logger = logging.getLogger(__name__)
 
 
 # Ordered list of step names the wizard knows about. Adaptive routing
-# may skip individual entries based on the user's choices.
+# may skip individual entries based on the user's choices. The
+# "permissions" pre-flight only appears when a hardware permission
+# check fails; see _initial_step().
 _STEP_ORDER: list[str] = [
+    "permissions",
     "discover",
     "profile",
     "controller",
@@ -144,10 +149,26 @@ class UnifiedWizard(PatchedDialogWindow):
 
         self._build_buttons(self._main_box)
 
-        # Initial state: discovery page is step 1.
-        self._navigate_to("discover", record_history=False)
+        # Initial state: the permission pre-flight page when a
+        # hardware access problem was detected, discovery otherwise.
+        self._navigate_to(self._initial_step(), record_history=False)
 
     # ----- public API ----------------------------------------------------
+
+    def _initial_step(self) -> str:
+        """The page to open the wizard on.
+
+        Runs the cheap filesystem-only serial/camera checks and routes
+        to the permissions pre-flight only when something is actually
+        inaccessible; "no devices plugged in" is not a permission
+        problem and must not delay setup.
+        """
+        try:
+            issues = check_permissions()
+        except Exception:
+            logger.exception("Permission check failed")
+            return "discover"
+        return "permissions" if issues else "discover"
 
     def show_error(self, heading: str, body: str) -> None:
         """Convenience: surface a transient error to the user."""
@@ -213,6 +234,8 @@ class UnifiedWizard(PatchedDialogWindow):
         # "back", "skip", and the adaptive router call this.
         if name == "discover":
             cls = DiscoverPage
+        elif name == "permissions":
+            cls = PermissionsPage
         elif name == "profile":
             cls = ProfilePage
         elif name == "controller":
@@ -304,8 +327,12 @@ class UnifiedWizard(PatchedDialogWindow):
         # Header title reflects the current step.
         self.set_title(page.title or _("Add a Machine"))
 
-        # Back button visible when there's history.
-        self.back_btn.set_visible(bool(self._history))
+        # Back button visible when there's history. The permission
+        # pre-flight is the wizard's entry page and has no meaningful
+        # "before", so it never offers Back.
+        self.back_btn.set_visible(
+            bool(self._history) and name != "permissions"
+        )
 
         # Skip button is only meaningful on optional steps where it is
         # semantically distinct from Next: the AI provider page (skip =
@@ -450,6 +477,11 @@ class UnifiedWizard(PatchedDialogWindow):
             # profile-first flow. (Selecting a found device routes
             # via _on_device_selected instead.)
             return "profile"
+
+        if name == "permissions":
+            # The pre-flight page never blocks; Next always leads to
+            # discovery.
+            return "discover"
 
         if name == "profile":
             # Routing is set by source_selected signal. If we got here

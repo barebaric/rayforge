@@ -14,12 +14,16 @@ from rayforge.machine.device.profile import (
 from rayforge.machine.driver.discovery import DeviceIdentity
 from rayforge.machine.driver.grbl import GrblSerialDriver
 from rayforge.machine.models.machine import Origin
+from rayforge.shared.util.permissions import PermissionIssue
 from rayforge.ui_gtk.machine.unified_wizard import UnifiedWizard
 from rayforge.ui_gtk.machine.wizard_pages.ai_lookup_page import AILookupPage
 from rayforge.ui_gtk.machine.wizard_pages.camera_page import CameraPage
 from rayforge.ui_gtk.machine.wizard_pages.connection_page import ConnectionPage
 from rayforge.ui_gtk.machine.wizard_pages.controller_page import ControllerPage
 from rayforge.ui_gtk.machine.wizard_pages.discover_page import DiscoverPage
+from rayforge.ui_gtk.machine.wizard_pages.permissions_page import (
+    PermissionsPage,
+)
 from rayforge.ui_gtk.machine.wizard_pages.probe_page import ProbePage
 from rayforge.ui_gtk.machine.wizard_pages.profile_page import ProfilePage
 from rayforge.ui_gtk.machine.wizard_pages.provider_page import AIProviderPage
@@ -29,18 +33,26 @@ _CAMERA_PATCH_TARGET = (
     "rayforge.ui_gtk.machine.wizard_pages.camera_page.get_sorted_by_id_paths"
 )
 
+_PERMISSIONS_PATCH_TARGET = (
+    "rayforge.ui_gtk.machine.unified_wizard.check_permissions"
+)
+_DISCOVER_PATCH_TARGET = (
+    "rayforge.ui_gtk.machine.wizard_pages.discover_page.find_all_devices"
+)
+
 
 @pytest.fixture(autouse=True)
 def _inert_device_discovery():
     """Wizard construction opens the discover page, which would start
-    scanning real serial ports. Keep every test inert."""
+    scanning real serial ports, and runs filesystem-only permission
+    checks whose outcome depends on the host. Keep every test inert."""
 
     async def _fake_find_all_devices(driver_classes=None, **kwargs):
         return []
 
-    with patch(
-        "rayforge.ui_gtk.machine.wizard_pages.discover_page.find_all_devices",
-        _fake_find_all_devices,
+    with (
+        patch(_DISCOVER_PATCH_TARGET, _fake_find_all_devices),
+        patch(_PERMISSIONS_PATCH_TARGET, return_value=[]),
     ):
         yield
 
@@ -65,6 +77,96 @@ def _make_wizard(ui_context_initializer):
 def test_wizard_starts_on_discover_page(ui_context_initializer):
     wizard = _make_wizard(ui_context_initializer)
     assert wizard.stack.get_visible_child_name() == "discover"
+
+
+def _serial_issue():
+    return PermissionIssue(
+        category="serial",
+        title="Serial Port Access",
+        summary="Serial ports cannot be opened.",
+        commands=["sudo usermod -a -G dialout $USER"],
+        note="Log out and back in.",
+    )
+
+
+@pytest.mark.ui
+def test_wizard_starts_on_permissions_page_when_issues(ui_context_initializer):
+    issues = [_serial_issue()]
+    with patch(_PERMISSIONS_PATCH_TARGET, return_value=issues):
+        wizard = _make_wizard(ui_context_initializer)
+    assert wizard.stack.get_visible_child_name() == "permissions"
+    # The pre-flight page never blocks the flow.
+    assert wizard.next_btn.get_visible()
+    assert wizard.next_btn.get_sensitive()
+    assert not wizard.skip_btn.get_visible()
+
+
+@pytest.mark.ui
+def test_permissions_next_routes_to_discover(ui_context_initializer):
+    issues = [_serial_issue()]
+    with patch(_PERMISSIONS_PATCH_TARGET, return_value=issues):
+        wizard = _make_wizard(ui_context_initializer)
+    assert wizard._next_step_after("permissions") == "discover"
+    wizard._on_next_clicked(wizard.next_btn)
+    assert wizard.stack.get_visible_child_name() == "discover"
+
+
+@pytest.mark.ui
+def test_permissions_page_never_shows_back(ui_context_initializer):
+    """The pre-flight page opens the wizard; Back has no meaning there,
+    even when reached again via the history stack."""
+    wizard = _make_wizard(ui_context_initializer)
+    wizard._navigate_to("permissions")
+    wizard._history.append("discover")
+    wizard._update_footer("permissions", wizard._get_page("permissions"))
+    assert not wizard.back_btn.get_visible()
+
+
+@pytest.mark.ui
+def test_permissions_page_lists_copyable_commands(ui_context_initializer):
+    wizard = _make_wizard(ui_context_initializer)
+    wizard._navigate_to("permissions")
+    page = wizard._get_page("permissions")
+    assert isinstance(page, PermissionsPage)
+
+    issue = PermissionIssue(
+        category="serial",
+        title="Serial Port Access",
+        summary="Serial ports cannot be opened.",
+        commands=[
+            "sudo snap set system experimental.hotplug=true",
+            "sudo snap connect rayforge:serial-port",
+        ],
+    )
+    page._rebuild([issue])
+
+    assert [r._command for r in page._command_rows] == [
+        "sudo snap set system experimental.hotplug=true",
+        "sudo snap connect rayforge:serial-port",
+    ]
+    assert page.ready is True
+
+
+@pytest.mark.ui
+def test_permissions_page_shows_ok_state_when_clear(ui_context_initializer):
+    wizard = _make_wizard(ui_context_initializer)
+    wizard._navigate_to("permissions")
+    page = wizard._get_page("permissions")
+    assert isinstance(page, PermissionsPage)
+
+    page._rebuild([])
+    assert page._command_rows == []
+    assert page.intro_label.get_text() != ""
+
+
+@pytest.mark.ui
+def test_initial_step_skips_permissions_when_check_fails(
+    ui_context_initializer,
+):
+    """A broken permission check must never trap the user."""
+    with patch(_PERMISSIONS_PATCH_TARGET, side_effect=RuntimeError("boom")):
+        wizard = _make_wizard(ui_context_initializer)
+    assert wizard._initial_step() == "discover"
 
 
 @pytest.mark.ui
@@ -126,6 +228,7 @@ def test_wizard_step_order_declared():
     from rayforge.ui_gtk.machine.unified_wizard import _STEP_ORDER
 
     assert _STEP_ORDER == [
+        "permissions",
         "discover",
         "profile",
         "controller",

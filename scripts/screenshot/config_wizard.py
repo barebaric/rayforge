@@ -7,6 +7,7 @@ and snapshot the rendered UI.
 
 Targets (``config-wizard:<step>``):
 
+* ``permissions``   — Step 0 (permission pre-flight)
 * ``profile``      — Step 1 (pick source)
 * ``controller``   — Step 2 (choose controller)
 * ``connect``      — Step 3 (connection)
@@ -108,6 +109,34 @@ def main():
         run_on_main_thread(suppress_auto_probe)
 
     run_on_main_thread(lambda: wizard._navigate_to(step))
+
+    if step == "permissions":
+        # The pre-flight page reflects the host's actual permissions;
+        # seed representative issues so the screenshot shows the
+        # remediation instructions.
+        def seed_issues():
+            from rayforge.shared.util.permissions import PermissionIssue
+
+            page = wizard._get_page("permissions")
+            page._rebuild(
+                [
+                    PermissionIssue(
+                        category="serial",
+                        title="Serial Port Access",
+                        summary=(
+                            "Serial ports were detected, but your user "
+                            "cannot open them."
+                        ),
+                        commands=["sudo usermod -a -G dialout $USER"],
+                        note=(
+                            "Log out and log back in for the change to "
+                            "take effect."
+                        ),
+                    ),
+                ]
+            )
+
+        run_on_main_thread(seed_issues)
     time.sleep(0.5)
     take_screenshot(target_to_filename(target))
 
