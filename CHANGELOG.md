@@ -5,6 +5,72 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.11.0-beta1
+
+### Added
+
+- On first launch, the machine setup wizard now opens automatically and
+  discovers nearby devices for you
+- The wizard checks serial-port and camera permissions before
+  discovery, and when access is missing explains how to fix it per
+  platform with one-click copyable commands
+- Network device discovery via mDNS: OctoPrint servers and ESP3D boards
+  appear in the wizard alongside USB serial devices
+- Discovery now matches devices to profiles by USB id with confidence
+  scoring, and marks already-configured devices as read-only
+- GRBL auto-selects the G-code dialect from the `$I` compile flags;
+  OctoPrint and Smoothieware are probed over the network
+- Sketcher: mirror the selection vertically or horizontally across its
+  center
+- Sketcher: duplicate the selection in-place with Ctrl+D
+- Sketcher: nudge selected entities with the arrow keys
+- Sketcher: parametric circular array (polar pattern) tool with a guide
+  circle and live preview dialog
+- Sketcher: rectangles now create a center point; Shift-click draws the
+  rectangle symmetrically around the start point
+- New `--script` CLI flag runs Python at startup so scripts can register
+  plugins and template functions; built-in text-box template functions
+  (date, time, uuid, etc.) are available via a public registry
+- `.rfs` sketch files now record a schema version (backward-compatible
+  with older files)
+- New right panel display mode setting
+- 3D preview: a physical, fluence-based burn model chars the stock as
+  you engrave (and works for rotary), with a power-keyed scorch ramp and
+  heat halo
+- Stock material-fold compute nodes in the pipeline, and the material
+  manager now guarantees a default stock material
+
+### Changed
+
+- Upgrade raygeo to 1.47.0
+- USB serial ports sort ahead of hardware ports; the port selector now
+  shows the device path plus a dimmed description, and a configured but
+  unplugged port stays pinned to the top
+- Tool outputs (laser/aux) are turned off when a job is stopped or
+  aborted
+- Refined app icon and centralized icon generation
+- Updated translations (de, es, fr, pt, uk, zh_CN)
+
+### Fixed
+
+- Slow GRBL serial handshake with grblHAL compatibility level 0
+- Discovery shows the real GRBL banner and survives slow-booting devices
+- Sketcher: text-editing undo/redo, stale cache, workspace lifecycle,
+  control-point drag undo, and font changes are now handled correctly
+- Sketcher: Ctrl+S now saves the document instead of triggering the
+  symmetry tool
+- Line-mode bezier violating the loop-vertex convention
+- Bezier flipping to the opposite bow when committing a path segment
+- Workflow row step button outline not updating on laser color change
+- Sketcher saved-state tracking and history coalescing, with undo/redo
+  buttons
+
+### Performance
+
+- Sketcher hot paths optimized: coincident-point lookup, ellipse
+  tessellation, arc polygonization, and text-box tool costs
+- Snap index is cached and invalidated on registry mutation
+
 ## 1.10.3
 
 ### Changed

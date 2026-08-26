@@ -22,6 +22,7 @@ Jeder Laserkopf hat die folgenden Einstellungen:
 Ein beschreibender Name für diesen Laserkopf.
 
 Beispiele:
+
 - "10W Diode"
 - "CO2-Röhre"
 - "Infrarotlaser"
@@ -86,10 +87,11 @@ Die physische Größe deines fokussierten Laserstrahls in Millimetern.
 
 :::tip Punktgröße messen
 Um deine Punktgröße zu messen:
+
 1. Feuere einen kurzen Impuls bei niedriger Leistung auf ein Testmaterial
 2. Miss die resultierende Markierung mit einer Schieblehre
 3. Verwende den Durchschnitt mehrerer Messungen
-:::
+   :::
 
 #### Farbe
 
@@ -120,6 +122,31 @@ Wähle den Typ des Laserkopfs aus dem Dropdown-Menü:
 Wenn CO2 oder Faser ausgewählt ist, werden zusätzliche **PWM-Einstellungen**
 sichtbar (siehe unten). Für Diodenlaser ist der PWM-Bereich ausgeblendet, da
 er nicht zutreffend ist.
+
+Der Lasertyp legt auch eine Standard-**Wellenlänge** (verwendet vom
+physikalischen Brennmodell) fest, wenn kein expliziter Wert unten eingegeben
+wird.
+
+#### Wellenlänge (nm)
+
+Die Emissionswellenlänge deines Lasers in Nanometern. Diese speist das
+[physikalische Brennmodell](../ui/3d-preview.md#physical-burn-model) in der
+3D-Vorschau: Zusammen mit den [Absorptions-](../application-settings/materials.md#absorption)
+daten des Materials bestimmt sie, wie viel Laserenergie das Material absorbiert.
+
+Wenn auf 0 gesetzt, greift Rayforge auf die typische Wellenlänge für den
+gewählten Lasertyp zurück (z.B. 445 nm für Diode, 1064 nm für Faser,
+10600 nm für CO2).
+
+#### Max. optische Leistung (W)
+
+Die optische Ausgangsleistung deines Lasers bei voller Leistung in Watt. Dies
+ist die tatsächliche Lichtausgabe, nicht der elektrische Eingang. Zusammen
+mit der Punktgröße und Scangeschwindigkeit bestimmt sie die Fluenz (J/cm²),
+die vom [physikalischen Brennmodell](../ui/3d-preview.md#physical-burn-model)
+verwendet wird.
+
+Wenn auf 0 gesetzt, wird ein mittlerer Desktop-Standardwert verwendet.
 
 #### PWM-Einstellungen
 

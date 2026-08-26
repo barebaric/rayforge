@@ -48,7 +48,11 @@ El diseñador permite crear los siguientes elementos geométricos básicos:
 - **Elipses**: Cree elipses (y círculos) definiendo un punto central y
   arrastrando para ajustar el tamaño y la proporción. Mantenga pulsado `Ctrl`
   mientras arrastra para restringir a un círculo perfecto.
-- **Rectángulos**: Dibuje rectángulos especificando dos esquinas opuestas
+- **Rectángulos**: Dibuje rectángulos especificando dos esquinas opuestas.
+  Cada rectángulo crea automáticamente un punto central (restringido al
+  centro geométrico) para que pueda dimensionar o ajustar a él. Mantenga
+  pulsado `Shift` mientras dibuja para colocar el rectángulo simétricamente
+  alrededor del punto inicial, igual que la herramienta de elipse.
 - **Rectángulos redondeados**: Dibuje rectángulos con esquinas redondeadas
 - **Cuadros de texto**: Añada elementos de texto a su boceto. El contenido del
   texto soporta expresiones de plantilla paramétricas (vea
@@ -154,6 +158,7 @@ El diseñador proporciona atajos de teclado para un flujo de trabajo eficiente:
 - `G+O`: Herramienta de rectángulo redondeado
 - `G+F`: Herramienta de relleno de área
 - `G+T`: Herramienta de cuadro de texto
+- `G+Y`: Herramienta de arreglo circular
 - `G+G`: Herramienta de cuadrícula (alternar visibilidad de la cuadrícula)
 - `G+N`: Alternar modo construcción en la selección
 
@@ -162,6 +167,9 @@ El diseñador proporciona atajos de teclado para un flujo de trabajo eficiente:
 - `C+H`: Añadir chaflán en la esquina
 - `C+F`: Añadir redondeo en la esquina
 - `C+S`: Enderezar las curvas Bézier seleccionadas a líneas
+- `M+V`: Reflejar la selección verticalmente
+- `M+H`: Reflejar la selección horizontalmente
+- `Ctrl+D`: Duplicar la selección en el lugar
 
 ### Atajos de restricciones
 
@@ -182,9 +190,51 @@ El diseñador proporciona atajos de teclado para un flujo de trabajo eficiente:
 
 - `Ctrl+Z`: Deshacer
 - `Ctrl+Y` o `Ctrl+Shift+Z`: Rehacer
+- `Ctrl+D`: Duplicar los elementos seleccionados
 - `Delete`: Eliminar los elementos seleccionados
+- `Teclas de flecha`: Desplazar entidades seleccionadas (mantenga pulsado
+  `Shift` para un paso mayor)
 - `Escape`: Cancelar la operación actual o deseleccionar
 - `F`: Ajustar la vista al contenido
+
+## Espejo, Duplicar y Ajuste
+
+Varias herramientas de transformación operan sobre la selección actual:
+
+- **Reflejar Verticalmente / Horizontalmente** (`M+V` / `M+H`): refleja la
+  selección en el lugar a través del centro de su cuadro delimitador. Las
+  restricciones que cruzan el límite de la selección se eliminan; las
+  restricciones internas se conservan.
+- **Duplicar** (`Ctrl+D`): copia la selección en el lugar. Las copias obtienen
+  IDs nuevos y restricciones internas reasignadas; solo las copias permanecen
+  seleccionadas después. Deshacer las elimina.
+- **Ajuste**: con las entidades seleccionadas, las **teclas de flecha** mueven
+  la selección. Mantenga pulsado `Shift` para un paso de ajuste mayor.
+
+Estas están disponibles en la barra de herramientas y el menú **Boceto**.
+
+## Arreglos Circulares
+
+La herramienta de **Arreglo Circular** (`G+Y`) crea un patrón polar paramétrico
+a partir de la selección actual:
+
+1. Seleccione las entidades que desea distribuir en patrón.
+2. Active la herramienta desde la barra de herramientas, el menú
+   **Boceto → Arreglos**, o con `G+Y`.
+3. Aparece una guía circular en el lienzo y se abre un diálogo no modal
+   con una vista previa en vivo.
+4. Establezca el **conteo** y el **ángulo total**. Las copias se generan
+   paramétricamente alrededor del centro de la guía circular.
+5. Arrastre el centro de la guía circular para reposicionar el arreglo, o
+   arrastre la entidad original para cambiar el radio — los campos del
+   diálogo se actualizan en vivo.
+6. El **radio** de la guía circular redimensiona todo el arreglo. Haga
+   **doble clic** en la guía circular para reabrir el diálogo de edición y
+   regenerar miembros faltantes o redistribuir.
+
+Las copias están vinculadas al miembro plantilla a través de restricciones
+rotacionales, por lo que eliminar un miembro solo elimina sus propias
+restricciones y nunca redistribuye los supervivientes.
 
 ## Modo construcción
 

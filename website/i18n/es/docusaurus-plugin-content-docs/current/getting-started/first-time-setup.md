@@ -11,7 +11,10 @@ asistente de configuración y el establecimiento de una conexión.
 ## Paso 1: Iniciar Rayforge
 
 Inicia Rayforge desde el menú de aplicaciones o ejecutando `rayforge` en una
-terminal. Deberías ver la interfaz principal con un lienzo vacío.
+terminal. En el primer inicio — cuando aún no se ha configurado ninguna máquina
+real — el asistente de configuración se abre automáticamente para que puedas
+configurar tu máquina sin buscar en los menús. (Siempre puedes abrirlo después
+desde **Configuración → Máquinas → Add Machine**.)
 
 ## Paso 2: Crear una Máquina con el Asistente
 
@@ -24,8 +27,44 @@ Haz clic en **Add Machine** para abrir el selector de máquinas.
 
 ![Diálogo de Add Machine](/screenshots/app-settings-machines-add.png)
 
-El asistente de configuración se abre y adapta los pasos que muestra según tus
-elecciones:
+### Comprobación de Permisos
+
+Antes de que comience el descubrimiento, el asistente comprueba que Rayforge
+puede realmente abrir tus puertos serie y cámaras. Si un dispositivo está
+presente pero falta el acceso, aparece primero una **página de permisos** que
+explica cómo solucionarlo en tu plataforma:
+
+- **Instalaciones Snap**: concede la interfaz `serial-port` (y la interfaz de
+  cámara si es necesario) — los comandos exactos se muestran con un botón de
+  copia con un solo clic.
+- **Linux sin Snap**: añade tu usuario al grupo `dialout` para que el nodo del
+  dispositivo serie sea accesible.
+
+Una vez que el acceso está disponible, el asistente continúa automáticamente.
+
+![Asistente — Comprobación de Permisos](/screenshots/config-wizard-permissions.png)
+
+### Descubrir Dispositivos Automáticamente
+
+El asistente puede descubrir dispositivos por ti en lugar de requerir que elijas
+un punto de partida y completes todo manualmente:
+
+- **Dispositivos serie USB** se listan a medida que aparecen.
+- **Dispositivos de red** se descubren vía mDNS: servidores OctoPrint y placas
+  ESP3D aparecen junto a dispositivos serie USB.
+- Los dispositivos descubridos se **emparejan con perfiles integrados** cuando
+  se encuentra una coincidencia segura, por lo que a menudo solo puedes confirmar
+  los ajustes detectados en lugar de introducirlos.
+- GRBL selecciona automáticamente el dialecto de código G correcto a partir de
+  las flags de compilación del firmware, y OctoPrint/Smoothieware se sondean a
+  través de la red.
+- Los dispositivos que ya has configurado se muestran como **solo lectura** para
+  que no crees duplicados accidentalmente.
+
+Haz clic en un dispositivo descubierto para rellenar previamente el asistente, o
+elige un punto de partida manualmente como se describe a continuación.
+
+El asistente de configuración adapta los pasos que muestra según tus elecciones:
 
 - Elegir un **perfil integrado** rellena previamente el controlador, el área
   de trabajo y el cabezal — el asistente salta directamente a los pasos de
@@ -72,8 +111,9 @@ dependen del controlador que elegiste:
 
 Cuando tu controlador lo soporta, el asistente ofrece conectarse al dispositivo
 y leer su configuración automáticamente — área de trabajo, velocidades,
-aceleración y capacidades del firmware. Haz clic en **Probe Now** para
-detectar automáticamente estos valores, o usa **Next** para ingresarlos
+aceleración y capacidades del firmware. Esto funciona por serie USB **y por la
+red** (descubrimiento mDNS para OctoPrint y ESP3D). Haz clic en **Probe Now**
+para detectar automáticamente estos valores, o usa **Next** para ingresarlos
 manualmente en los siguientes pasos.
 
 ![Asistente — Descubrir el Dispositivo](/screenshots/config-wizard-probe.png)
@@ -185,13 +225,16 @@ Si tu máquina muestra el estado "Conectado", ¡estás listo para empezar a usar
 - **Linux (Serial)**: Añade tu usuario al grupo `dialout`. Esto es requerido
   para **instalaciones Snap y no Snap** en distribuciones basadas en Debian
   para evitar mensajes AppArmor DENIED:
+
   ```bash
   sudo usermod -a -G dialout $USER
   ```
+
   Cierra sesión y vuelve a entrar para que los cambios surtan efecto.
 
 - **Paquete Snap**: Además del grupo `dialout` arriba, asegúrate de haber
   otorgado permisos de puerto serie:
+
   ```bash
   sudo snap connect rayforge:serial-port
   ```

@@ -52,6 +52,7 @@ die absolute Position der Maschine verwirrt zu werden.
 ### WCS ändern
 
 Die 3D-Ansicht aktualisiert sich automatisch, wenn du das aktive WCS änderst:
+
 - Ein anderes WCS aus der Symbolleisten-Dropdown auswählen
 - Das Raster und die Achsen verschieben sich, um den neuen WCS-Ursprung
   widerzuspiegeln
@@ -64,7 +65,6 @@ das WCS änderst, siehst du die Werkzeugwege scheinbar wandern, weil sich der
 Referenzpunkt (das Raster) geändert hat, nicht weil sich die Werkzeugwege
 selbst bewegt haben.
 :::
-
 
 ## Anzeigeoptionen
 
@@ -113,6 +113,34 @@ Modells können an dein physisches Setup angepasst werden.
 
 Während der Simulation wird ein leuchtender Laserstrahl vom Kopf nach unten
 gezeichnet, wenn der Laser aktiv ist.
+
+## Physikalisches Brennmodell
+
+Wenn du gravierst, zeigt die 3D-Ansicht das Ergebnis nicht mehr als flache
+Überlagerung auf dem Material. Laser-Raster- und Vektoroperationen **braten
+jetzt das Material selbst** — die Vorschau zeigt einen Verbrennungseffekt, der
+von einem physikalisch motivierten Modell gesteuert wird und berücksichtigt:
+
+- Die **Wellenlänge**, **optische Wattzahl** und **Punktgröße** deines Lasers
+  (konfiguriert in den [Lasereinstellungen](../machine/laser.md)).
+- Die **Absorption des Materials** bei dieser Wellenlänge (definiert in der
+  [Materialbibliothek](../application-settings/materials.md#absorption)).
+- Die **Scangeschwindigkeit**, die die pro Flächeneinheit gelieferte Energie
+  bestimmt (Fluenz in J/cm²).
+
+Das Ergebnis ist eine leistungsabhängige Verbrennungsrampung mit einem
+Hitzehalo auf oberflächenausgerichteten Flächen. Es funktioniert auch mit
+Rotation — Gravur wird in das Rotationsmaterial eingebrannt.
+
+:::note Kalibrierung
+Das Brennmodell ist physikalisch motiviert, aber noch nicht vollständig über
+alle Materialien und Lasertypen kalibriert. Du kannst helfen, es zu
+verbessern: Führe ein
+[Materialtestgitter](../features/operations/material-test-grid.md) durch und
+teile das Ergebnisfoto zusammen mit deinen Maschinendaten (Wellenlänge,
+optische Wattzahl, Punktgröße, Geschwindigkeit und die getesteten
+Leistungen/Tiefen).
+:::
 
 ## Simulation
 

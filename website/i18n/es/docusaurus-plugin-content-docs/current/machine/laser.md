@@ -24,6 +24,7 @@ Cada cabezal láser tiene los siguientes ajustes:
 Un nombre descriptivo para este cabezal láser.
 
 Ejemplos:
+
 - "Diodo 10W"
 - "Tubo CO2"
 - "Láser Infrarrojo"
@@ -89,10 +90,11 @@ El tamaño físico de tu haz láser enfocado en milímetros.
 
 :::tip Midiendo el Tamaño del Punto
 Para medir el tamaño de tu punto:
+
 1. Dispara un pulso corto a baja potencia en un material de prueba
 2. Mide la marca resultante con calibradores
 3. Usa el promedio de múltiples mediciones
-:::
+   :::
 
 #### Color
 
@@ -121,6 +123,31 @@ Elige el tipo de cabezal láser en el menú desplegable:
 
 Al seleccionar CO2 o Fibra, aparecen **ajustes PWM** adicionales (ver más
 abajo). Para láseres de diodo, la sección PWM se oculta ya que no aplica.
+
+El tipo de láser también establece una **longitud de onda** predeterminada
+(utilizada por el modelo de quemado físico) cuando no se introduce un valor
+explícito a continuación.
+
+#### Longitud de onda (nm)
+
+La longitud de onda de emisión de tu láser, en nanómetros. Alimenta el
+[modelo de quemado físico](../ui/3d-preview.md#physical-burn-model) en la
+vista previa 3D: junto con los datos de [absorción](../application-settings/materials.md#absorption)
+del material, determina cuánta energía del láser absorbe el material de base.
+
+Cuando se establece en 0, Rayforge usa la longitud de onda típica para el
+tipo de láser seleccionado (ej. 445 nm para diodo, 1064 nm para fibra, 10600 nm
+para CO2).
+
+#### Potencia Óptica Máxima (W)
+
+La potencia de salida óptica de tu láser a potencia máxima, en vatios. Esta es
+la salida de luz real, no la entrada eléctrica. Junto con el tamaño del punto y
+la velocidad de escaneo, determina la fluencia (J/cm²) utilizada por el
+[modelo de quemado físico](../ui/3d-preview.md#physical-burn-model).
+
+Cuando se establece en 0, se usa un valor predeterminado de escritorio de rango
+medio.
 
 #### Ajustes PWM
 

@@ -56,6 +56,7 @@ by the machine's absolute position.
 ### Changing WCS
 
 The 3D view automatically updates when you change the active WCS:
+
 - Select a different WCS from the toolbar dropdown
 - The grid and axes shift to reflect the new WCS origin
 - Labels update to show coordinates relative to the new WCS
@@ -65,7 +66,6 @@ The 3D view shows your toolpaths relative to the selected WCS. When you
 change WCS, you'll see the toolpaths appear to move because the reference
 point (the grid) has changed, not because the toolpaths themselves moved.
 :::
-
 
 ## Display Options
 
@@ -110,6 +110,32 @@ physical setup.
 
 During simulation, a glowing laser beam is drawn from the head downward
 when the laser is active.
+
+## Physical Burn Model
+
+When you engrave, the 3D view no longer shows the result as a flat
+overlay on top of the stock. Laser raster and vector operations now
+**char the stock itself** — the preview shows burning driven by a
+physically motivated model that accounts for:
+
+- Your laser's **wavelength**, **optical wattage**, and **spot size**
+  (configured in [Laser Settings](../machine/laser.md)).
+- The **material's absorption** at that wavelength (defined in the
+  [material library](../application-settings/materials.md#absorption)).
+- The **scan speed**, which sets the energy delivered per unit area
+  (fluence, in J/cm²).
+
+The result is a power-keyed scorch ramp with a heat halo on top-facing
+surfaces. It works for rotary too — engraving bakes into the rotary
+stock.
+
+:::note Calibration
+The burn model is physically motivated but not yet fully calibrated
+across all materials and laser types. You can help improve it: run a
+[material test grid](../features/operations/material-test-grid.md) and
+share the result photo along with your machine data (wavelength,
+optical wattage, spot size, speed, and the powers/depths tested).
+:::
 
 ## Simulation
 

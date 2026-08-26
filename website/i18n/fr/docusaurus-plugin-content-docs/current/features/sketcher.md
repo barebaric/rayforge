@@ -51,7 +51,11 @@ suivants :
 - **Ellipses** : Créez des ellipses (et des cercles) en définissant un point
   central et en glissant pour définir la taille et le rapport d'aspect.
   Maintenez `Ctrl` en glissant pour contraindre à un cercle parfait.
-- **Rectangles** : Dessinez des rectangles en spécifiant deux coins opposés
+- **Rectangles** : Dessinez des rectangles en spécifiant deux coins opposés.
+  Chaque rectangle crée automatiquement un point central (contraint au centre
+  géométrique) pour que vous puissiez dimensionner ou vous y accrocher.
+  Maintenez `Shift` en dessinant pour placer le rectangle symétriquement autour
+  du point de départ, comme l'outil d'ellipse.
 - **Rectangles arrondis** : Dessinez des rectangles avec des coins arrondis
 - **Zones de texte** : Ajoutez des éléments textuels à votre esquisse. Le
   contenu du texte prend en charge les expressions de modèle paramétriques
@@ -163,6 +167,7 @@ L'esquisseur fournit des raccourcis clavier pour un flux de travail efficace :
 - `G+O` : Outil de rectangle arrondi
 - `G+F` : Outil de remplissage de zone
 - `G+T` : Outil de zone de texte
+- `G+Y` : Outil de tableau circulaire
 - `G+G` : Outil de grille (basculer la visibilité de la grille)
 - `G+N` : Basculer le mode construction sur la sélection
 
@@ -171,6 +176,9 @@ L'esquisseur fournit des raccourcis clavier pour un flux de travail efficace :
 - `C+H` : Ajouter un chanfrein
 - `C+F` : Ajouter un congé
 - `C+S` : Aplatir les courbes de Bézier sélectionnées en lignes
+- `M+V` : Symétrie verticale de la sélection
+- `M+H` : Symétrie horizontale de la sélection
+- `Ctrl+D` : Dupliquer la sélection sur place
 
 ### Raccourcis de contraintes
 
@@ -191,9 +199,52 @@ L'esquisseur fournit des raccourcis clavier pour un flux de travail efficace :
 
 - `Ctrl+Z` : Annuler
 - `Ctrl+Y` ou `Ctrl+Shift+Z` : Rétablir
+- `Ctrl+D` : Dupliquer les éléments sélectionnés
 - `Delete` : Supprimer les éléments sélectionnés
+- `Touches fléchées` : Déplacer les entités sélectionnées (maintenez `Shift` pour un pas plus large)
 - `Escape` : Annuler l'opération en cours ou désélectionner
 - `F` : Ajuster la vue au contenu
+
+## Miroir, duplication et décalage
+
+Plusieurs outils de transformation agissent sur la sélection actuelle :
+
+- **Symétrie verticale / horizontale** (`M+V` / `M+H`) : retourne la
+  sélection sur place par rapport au centre de sa boîte d'englobage. Les
+  contraintes traversant la limite de sélection sont supprimées ; les
+  contraintes internes sont préservées.
+- **Dupliquer** (`Ctrl+D`) : copie la sélection sur place. Les copies
+  reçoivent de nouveaux identifiants et des contraintes internes
+  remappées ; seules les copies restent sélectionnées ensuite. L'annulation
+  les supprime.
+- **Décalage** : avec des entités sélectionnées, les **touches fléchées**
+  déplacent la sélection. Maintenez `Shift` pour un pas de décalage plus
+  large.
+
+Ces outils sont accessibles depuis la barre d'outils et le menu **Esquisse**.
+
+## Tableaux circulaires
+
+L'outil **Tableau circulaire** (`G+Y`) crée un motif polaire paramétrique
+à partir de la sélection actuelle :
+
+1. Sélectionnez les entités que vous souhaitez mettre en motif.
+2. Activez l'outil depuis la barre d'outils, le menu **Esquisse → Tableaux**,
+   ou `G+Y`.
+3. Un cercle guide apparaît sur le canevas et une boîte de dialogue non
+   modale s'ouvre avec un aperçu en direct.
+4. Définissez le **nombre** et l'**angle total**. Les copies sont générées
+   paramétriquement autour du centre du cercle guide.
+5. Glissez le centre du cercle guide pour repositionner le tableau, ou
+   glissez l'entité d'origine pour modifier le rayon — les champs de la
+   boîte de dialogue se mettent à jour en direct.
+6. Le **dimension du rayon** du cercle guide redimensionne tout le tableau.
+   **Double-cliquez** sur le cercle guide pour rouvrir la boîte de dialogue
+   d'édition et régénérer les membres manquants ou redistributionner.
+
+Les copies sont liées au membre modèle par des contraintes de rotation,
+la suppression d'un membre ne supprime que ses propres contraintes et ne
+redistribue jamais les survivants.
 
 ## Mode construction
 

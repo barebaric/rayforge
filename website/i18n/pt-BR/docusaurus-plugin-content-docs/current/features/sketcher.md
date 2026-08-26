@@ -48,7 +48,11 @@ O esboçador suporta a criação dos seguintes elementos geométricos básicos:
 - **Elipses**: Crie elipses (e círculos) definindo um ponto central e
   arrastando para definir o tamanho e a proporção. Segure `Ctrl` enquanto
   arrasta para restringir a um círculo perfeito.
-- **Retângulos**: Desenhe retângulos especificando dois cantos opostos
+- **Retângulos**: Desenhe retângulos especificando dois cantos opostos.
+  Cada retângulo cria automaticamente um ponto central (restringido ao
+  centro geométrico) para que você possa dimensionar ou fazer snap nele.
+  Segure `Shift` ao desenhar para posicionar o retângulo simetricamente
+  ao redor do ponto inicial, semelhante à ferramenta de elipse.
 - **Retângulos arredondados**: Desenhe retângulos com cantos arredondados
 - **Caixas de texto**: Adicione elementos de texto ao seu esboço. O conteúdo
   do texto suporta expressões de modelo paramétricas (veja
@@ -155,6 +159,7 @@ O esboçador fornece atalhos de teclado para um fluxo de trabalho eficiente:
 - `G+O`: Ferramenta de retângulo arredondado
 - `G+F`: Ferramenta de preenchimento de área
 - `G+T`: Ferramenta de caixa de texto
+- `G+Y`: Ferramenta de matriz circular
 - `G+G`: Ferramenta de grade (alternar visibilidade da grade)
 - `G+N`: Alternar modo de construção na seleção
 
@@ -163,6 +168,9 @@ O esboçador fornece atalhos de teclado para um fluxo de trabalho eficiente:
 - `C+H`: Adicionar chanfro no canto
 - `C+F`: Adicionar arredondamento no canto
 - `C+S`: Retificar curvas de Bézier selecionadas para linhas
+- `M+V`: Espelhar seleção verticalmente
+- `M+H`: Espelhar seleção horizontalmente
+- `Ctrl+D`: Duplicar seleção no local
 
 ### Atalhos de restrições
 
@@ -183,9 +191,51 @@ O esboçador fornece atalhos de teclado para um fluxo de trabalho eficiente:
 
 - `Ctrl+Z`: Desfazer
 - `Ctrl+Y` ou `Ctrl+Shift+Z`: Refazer
+- `Ctrl+D`: Duplicar elementos selecionados
 - `Delete`: Excluir elementos selecionados
+- `Setas`: Mover entidades selecionadas (segure `Shift` para um passo maior)
 - `Escape`: Cancelar operação atual ou deselecionar
 - `F`: Ajustar visualização ao conteúdo
+
+## Espelhar, Duplicar e Mover
+
+Várias ferramentas de transformação funcionam na seleção atual:
+
+- **Espelhar Verticalmente / Horizontalmente** (`M+V` / `M+H`): espelha a
+  seleção no local através do centro de sua caixa delimitadora. Restrições
+  que atravessam o limite da seleção são removidas; restrições internas
+  são preservadas.
+- **Duplicar** (`Ctrl+D`): copia a seleção no local. As cópias recebem
+  IDs novos e restrições internas remapeadas; apenas as cópias permanecem
+  selecionadas depois. Desfazer remove-as.
+- **Mover**: com entidades selecionadas, as **setas** movem a seleção.
+  Segure `Shift` para um passo de movimento maior.
+
+Essas ferramentas estão disponíveis na barra de ferramentas e no menu
+**Esboço**.
+
+## Matrizes Circulares
+
+A ferramenta **Matriz Circular** (`G+Y`) cria um padrão polar paramétrico
+a partir da seleção atual:
+
+1. Selecione as entidades que deseja padronizar.
+2. Ative a ferramenta pela barra de ferramentas, pelo menu
+   **Esboço → Matrizes** ou `G+Y`.
+3. Um círculo guia aparece na tela e um diálogo não modal é aberto com
+   uma pré-visualização ao vivo.
+4. Defina a **quantidade** e o **ângulo total**. As cópias são geradas
+   parametricamente ao redor do centro do círculo guia.
+5. Arraste o centro do círculo guia para reposicionar a matriz, ou
+   arraste a entidade original para alterar o raio — os campos do
+   diálogo são atualizados ao vivo.
+6. A **dimensão de raio** do círculo guia redimensiona toda a matriz.
+   Dê um **duplo clique** no círculo guia para reabrir o diálogo de
+   edição e regenerar membros ausentes ou redistribuir.
+
+As cópias são vinculadas ao membro modelo através de restrições de
+rotação, então excluir um membro remove apenas suas próprias restrições
+e nunca redistribui os sobreviventes.
 
 ## Modo de construção
 

@@ -52,6 +52,7 @@ a posição absoluta da máquina.
 ### Mudando WCS
 
 A visualização 3D atualiza automaticamente quando você muda o WCS ativo:
+
 - Selecione um WCS diferente no menu suspenso da barra de ferramentas
 - A grade e os eixos se deslocam para refletir a nova origem WCS
 - Os rótulos atualizam para mostrar coordenadas relativas ao novo WCS
@@ -62,7 +63,6 @@ selecionado. Quando você muda o WCS, verá os caminhos de ferramenta parecerem
 se mover porque o ponto de referência (a grade) mudou, não porque os caminhos
 de ferramenta em si se moveram.
 :::
-
 
 ## Opções de Exibição
 
@@ -113,6 +113,34 @@ configuração física.
 
 Durante a simulação, um feixe de laser brilhante é desenhado da cabeça para
 baixo quando o laser está ativo.
+
+## Modelo de Queimadura Física
+
+Quando você grava, a visualização 3D não mostra mais o resultado como uma
+sobreposição plana sobre o material. Operações raster e vetoriais do laser
+agora **queimam o próprio material** — a pré-visualização mostra a queima
+guiada por um modelo fisicamente fundamentado que considera:
+
+- O **comprimento de onda**, a **potência óptica** e o **tamanho do ponto**
+  do seu laser (configurados nas [Configurações do Laser](../machine/laser.md)).
+- A **absorção do material** naquele comprimento de onda (definida na
+  [biblioteca de materiais](../application-settings/materials.md#absorption)).
+- A **velocidade de varredura**, que determina a energia entregue por unidade
+  de área (fluência, em J/cm²).
+
+O resultado é uma rampa de marcas de queima com corona de calor nas
+superfícies voltadas para cima. Funciona também para rotativo — a gravação
+é aplicada no material rotativo.
+
+:::note Calibração
+O modelo de queimadura é fisicamente fundamentado, mas ainda não está
+totalmente calibrado para todos os materiais e tipos de laser. Você pode
+ajudar a melhorá-lo: execute um
+[teste de grade de material](../features/operations/material-test-grid.md) e
+compartilhe a foto do resultado junto com os dados da sua máquina
+(comprimento de onda, potência óptica, tamanho do ponto, velocidade e
+potências/profundidades testadas).
+:::
 
 ## Simulação
 

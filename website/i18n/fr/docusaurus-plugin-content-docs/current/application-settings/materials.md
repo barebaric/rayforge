@@ -5,13 +5,12 @@
 Les bibliothèques de matériaux dans Rayforge vous permettent d'organiser et gérer des collections de matériaux pour vos projets de découpe et gravure laser. Ce guide explique la différence entre les bibliothèques principales et utilisateur, et comment créer vos propres bibliothèques et y ajouter des matériaux.
 
 :::note
- Assigner un matériau à un brut affecte à la fois son apparence visuelle
- dans le canevas 2D et 3D et les [recettes](recipes.md) qui lui sont
- appliquées : les recettes spécifiques à un matériau correspondent au
- matériau assigné. Dans les futures versions, les matériaux seront
- utilisés pour dériver davantage de paramètres fonctionnels.
- :::
-
+Assigner un matériau à un brut affecte à la fois son apparence visuelle
+dans le canevas 2D et 3D et les [recettes](recipes.md) qui lui sont
+appliquées : les recettes spécifiques à un matériau correspondent au
+matériau assigné. Dans les futures versions, les matériaux seront
+utilisés pour dériver davantage de paramètres fonctionnels.
+:::
 
 ## Créer une Nouvelle Bibliothèque
 
@@ -23,7 +22,6 @@ Pour créer votre propre bibliothèque de matériaux :
 4. Cliquez sur **Créer** pour finaliser
 
 Votre nouvelle bibliothèque sera créée dans le répertoire de données utilisateur et sera disponible immédiatement.
-
 
 ## Ajouter des Matériaux aux Bibliothèques
 
@@ -40,10 +38,12 @@ Votre nouvelle bibliothèque sera créée dans le répertoire de données utilis
 ### Propriétés des Matériaux Expliquées
 
 #### Nom
+
 - Nom lisible par l'homme affiché dans l'interface
 - Peut contenir des espaces et caractères spéciaux
 
 #### Catégorie
+
 - Utilisée pour organiser les matériaux dans la bibliothèque
 - Catégories courantes : Bois, Acrylique, Métal, Papier, Cuir
 - Vous pouvez créer des catégories personnalisées selon vos besoins
@@ -86,6 +86,42 @@ Une valeur de 0 à 1 décrivant si la surface réfléchit la lumière comme un
 métal dans la vue 3D. Réglez sur 1 pour les matériaux métalliques, 0 pour
 les matériaux non métalliques.
 
+#### Absorption
+
+:::note Nouveau en 1.11
+Les données d'absorption pilotent le [modèle de brûlure physique](../ui/3d-preview.md#modèle-de-brûlure-physique)
+dans l'aperçu 3D.
+:::
+
+Les coefficients d'absorption par longueur d'onde (0–1) décrivent quelle
+partie de l'énergie du laser le matériau absorbe à une longueur d'onde
+donnée. L'aperçu 3D les utilise, avec la longueur d'onde, la puissance
+optique et la taille du spot de ta tête laser, pour calculer la fluence
+(J/cm²) délivrée et rendre un effet de carbonisation physiquement motivé
+sur le brut.
+
+Ajoute un bloc `absorption` sous `appearance` dans le YAML du matériau :
+
+```yaml
+appearance:
+  absorption:
+    blue: 0.7 # ~445 nm lasers à diode
+    ir: 0.25 # ~1064 nm lasers fibrés / IR
+    co2: 0.9 # ~10600 nm lasers CO2
+  # ...autres propriétés d'apparence
+```
+
+| Bande  | Longueur d'onde représentative | Lasers typiques      |
+| ------ | ------------------------------ | -------------------- |
+| `blue` | 445 nm                         | Lasers à diode bleue |
+| `ir`   | 1064 nm                        | Lasers fibrés        |
+| `co2`  | 10600 nm                       | Lasers à tube CO2    |
+
+Lorsqu'une bande est manquante, une valeur par défaut conservatrice est
+utilisée. La bibliothèque de matériaux fournie contient des valeurs
+d'absorption recherchées pour tous les matériaux inclus ; le modèle de
+brûlure n'est pas encore entièrement calibré, les contributions de données
+de test du monde réel sont les bienvenues.
 
 ## Gérer les Matériaux Existants
 

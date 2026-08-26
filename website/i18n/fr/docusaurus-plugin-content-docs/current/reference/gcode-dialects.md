@@ -3,6 +3,15 @@
 Rayforge prend en charge plusieurs dialectes G-code pour fonctionner avec
 différents firmwares de contrôleur.
 
+## Sélection automatique du dialecte
+
+Lorsqu'un appareil GRBL est découvert (via l'[assistant de configuration](../getting-started/first-time-setup.md)
+ou la découverte d'appareil), Rayforge lit les drapeaux de compilation `$I`
+du firmware et sélectionne automatiquement le dialecte G-code le mieux
+adapté — vous n'avez généralement pas besoin d'en choisir un manuellement.
+Vous pouvez toujours remplacer le choix par la suite dans les paramètres de
+dialecte G-code de la machine.
+
 ## Dialectes pris en charge
 
 Rayforge prend actuellement en charge ces dialectes G-code :

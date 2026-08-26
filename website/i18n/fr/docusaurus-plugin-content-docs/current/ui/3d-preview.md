@@ -52,6 +52,7 @@ par la position absolue de la machine.
 ### Changer de WCS
 
 La vue 3D se met à jour automatiquement lorsque tu changes le WCS actif :
+
 - Sélectionne un WCS différent dans la liste déroulante de la barre d'outils
 - La grille et les axes se décalent pour refléter la nouvelle origine du WCS
 - Les étiquettes se mettent à jour pour afficher les coordonnées relatives au nouveau WCS
@@ -61,7 +62,6 @@ La vue 3D affiche tes trajets d'outil par rapport au WCS sélectionné. Lorsque 
 changes de WCS, tu verras les trajets d'outil sembler bouger parce que le point de référence
 (la grille) a changé, non pas parce que les trajets d'outil eux-mêmes ont bougé.
 :::
-
 
 ## Options d'affichage
 
@@ -108,6 +108,34 @@ installation physique.
 
 Pendant la simulation, un faisceau laser lumineux est tracé depuis la tête vers le bas
 lorsque le laser est actif.
+
+## Modèle de brûlure physique
+
+Lorsque tu graves, la vue 3D ne montre plus le résultat comme un overlay plat
+sur le brut. Les opérations raster et vectorielles laser **brûlent
+maintenant le brut lui-même** — l'aperçu affiche une brûlure pilotée par un
+modèle physiquement motivé qui prend en compte :
+
+- La **longueur d'onde**, la **puissance optique** et la **taille du spot**
+  de ton laser (configurés dans les [Paramètres Laser](../machine/laser.md)).
+- L'**absorption du matériau** à cette longueur d'onde (définie dans la
+  [bibliothèque de matériaux](../application-settings/materials.md#absorption)).
+- La **vitesse de balayage**, qui définit l'énergie délivrée par unité de
+  surface (fluence, en J/cm²).
+
+Le résultat est un escalier de carbonisation avec un halo de chaleur sur les
+faces orientées vers le haut. Cela fonctionne aussi pour le rotatif — la
+gravure se incorpore dans le brut rotatif.
+
+:::note Calibration
+Le modèle de brûlure est physiquement motivé mais pas encore entièrement
+calibré pour tous les matériaux et types de lasers. Tu peux aider à
+l'améliorer : exécute une
+[grille de test de matériau](../features/operations/material-test-grid.md)
+et partage la photo du résultat avec les données de ta machine (longueur
+d'onde, puissance optique, taille du spot, vitesse et les puissances/
+profondeurs testées).
+:::
 
 ## Simulation
 

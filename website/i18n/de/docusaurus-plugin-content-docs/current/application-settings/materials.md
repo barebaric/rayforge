@@ -5,14 +5,13 @@
 Material-Bibliotheken in Rayforge ermöglichen es dir, Material-Sammlungen für deine Laserschneide- und Gravurprojekte zu organisieren und zu verwalten. Diese Anleitung erklärt den Unterschied zwischen Kern- und Benutzer-Bibliotheken und wie du deine eigenen Bibliotheken erstellen und Materialien hinzufügen kannst.
 
 :::note
- Das Zuweisen eines Materials zu einem Materialstück beeinflusst sowohl
- sein optisches Erscheinungsbild in der 2D- und 3D-Ansicht als auch,
- welche [Rezepte](recipes.md) darauf angewendet werden:
- materialspezifische Rezepte werden anhand des zugewiesenen Materials
- abgeglichen. In zukünftigen Versionen werden Materialien verwendet, um
- weitere funktionale Parameter abzuleiten.
- :::
-
+Das Zuweisen eines Materials zu einem Materialstück beeinflusst sowohl
+sein optisches Erscheinungsbild in der 2D- und 3D-Ansicht als auch,
+welche [Rezepte](recipes.md) darauf angewendet werden:
+materialspezifische Rezepte werden anhand des zugewiesenen Materials
+abgeglichen. In zukünftigen Versionen werden Materialien verwendet, um
+weitere funktionale Parameter abzuleiten.
+:::
 
 ## Eine neue Bibliothek erstellen
 
@@ -24,7 +23,6 @@ Um deine eigene Materialbibliothek zu erstellen:
 4. Klicke auf **Erstellen** zum Fertigstellen
 
 Deine neue Bibliothek wird im Benutzerdaten-Verzeichnis erstellt und ist sofort verfügbar.
-
 
 ## Materialien zu Bibliotheken hinzufügen
 
@@ -41,10 +39,12 @@ Deine neue Bibliothek wird im Benutzerdaten-Verzeichnis erstellt und ist sofort 
 ### Materialeigenschaften erklärt
 
 #### Name
+
 - Lesbarer Name, der in der Schnittstelle angezeigt wird
 - Kann Leerzeichen und Sonderzeichen enthalten
 
 #### Kategorie
+
 - Wird zum Organisieren von Materialien innerhalb der Bibliothek verwendet
 - Häufige Kategorien: Holz, Acryl, Metall, Papier, Leder
 - Du kannst benutzerdefinierte Kategorien nach Bedarf erstellen
@@ -84,6 +84,41 @@ Ein Wert von 0-1, der beschreibt, ob die Oberfläche in der 3D-Ansicht
 Licht wie ein Metall reflektiert. Setze 1 für metallische Materialien, 0
 für nicht-metallische.
 
+#### Absorption
+
+:::note Neu in 1.11
+Absorptionsdaten steuern das [physikalische Brennmodell](../ui/3d-preview.md#physical-burn-model)
+in der 3D-Vorschau.
+:::
+
+Wellenlängenabhängige Absorptionskoeffizienten (0–1) beschreiben, wie viel
+der Laserenergie ein Material bei einer bestimmten Wellenlänge absorbiert. Die
+3D-Vorschau verwendet diese zusammen mit der Wellenlänge, optischen Wattzahl
+und Punktgröße deines Laserkopfs, um die Fluenz (J/cm²) zu berechnen und
+einen physikalisch motivierten Verbrandungseffekt auf dem Material zu rendern.
+
+Füge einen `absorption`-Block unter `appearance` in der YAML-Datei des
+Materials hinzu:
+
+```yaml
+appearance:
+  absorption:
+    blue: 0.7 # ~445 nm Diodenlaser
+    ir: 0.25 # ~1064 nm Faser-/IR-Laser
+    co2: 0.9 # ~10600 nm CO2-Laser
+  # ...weitere Aussehens-Eigenschaften
+```
+
+| Band   | Repräsentative Wellenlänge | Typische Laser    |
+| ------ | -------------------------- | ----------------- |
+| `blue` | 445 nm                     | Blaue Diodenlaser |
+| `ir`   | 1064 nm                    | Faserlaser        |
+| `co2`  | 10600 nm                   | CO2-Röhrenlaser   |
+
+Wenn ein Band fehlt, wird ein konservativer Standardwert verwendet. Die
+mitgelieferte Materialbibliothek enthält recherchierte Absorptionswerte für
+alle enthaltenen Materialien; das Brennmodell ist noch nicht vollständig
+kalibriert, daher sind Beiträge mit Daten aus der Praxis willkommen.
 
 ## Bestehende Materialien verwalten
 

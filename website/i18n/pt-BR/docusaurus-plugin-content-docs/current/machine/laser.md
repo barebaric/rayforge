@@ -24,6 +24,7 @@ Cada cabeça de laser tem as seguintes configurações:
 Um nome descritivo para esta cabeça de laser.
 
 Exemplos:
+
 - "Diodo 10W"
 - "Tubo CO2"
 - "Laser Infravermelho"
@@ -88,10 +89,11 @@ O tamanho físico do seu feixe de laser focalizado em milímetros.
 
 :::tip Medindo o Tamanho do Ponto
 Para medir o tamanho do seu ponto:
+
 1. Dispare um pulso curto com baixa potência em um material de teste
 2. Meça a marca resultante com paquímetro
 3. Use a média de múltiplas medições
-:::
+   :::
 
 #### Cor
 
@@ -121,6 +123,30 @@ Escolha o tipo de cabeça de laser no menu suspenso:
 Quando CO2 ou Fibra é selecionado, **configurações PWM** adicionais ficam
 disponíveis (veja abaixo). Para lasers de diodo, a seção PWM fica oculta,
 pois não se aplica.
+
+O tipo de laser também define um **comprimento de onda** padrão (usado pelo
+modelo de queimadura física) quando nenhum valor explícito é inserido abaixo.
+
+#### Comprimento de Onda (nm)
+
+O comprimento de onda de emissão do seu laser, em nanômetros. Alimenta o
+[modelo de queimadura física](../ui/3d-preview.md#modelo-de-queimadura-física)
+na pré-visualização 3D: junto com os dados de
+[absorção](../application-settings/materials.md#absorção) do material,
+determina quanta energia do laser o material absorve.
+
+Quando definido como 0, o Rayforge usa o comprimento de onda típico para o
+tipo de laser selecionado (ex.: 445 nm para diodo, 1064 nm para fibra,
+10600 nm para CO2).
+
+#### Potência Óptica Máxima (W)
+
+A potência de saída óptica do seu laser na potência máxima, em watts. Esta
+é a saída de luz real, não a entrada elétrica. Junto com o tamanho do ponto
+e a velocidade de varredura, determina a fluência (J/cm²) usada pelo
+[modelo de queimadura física](../ui/3d-preview.md#modelo-de-queimadura-física).
+
+Quando definido como 0, um padrão intermediário de mesa é usado.
 
 #### Configurações PWM
 

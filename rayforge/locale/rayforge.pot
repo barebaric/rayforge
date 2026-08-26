@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-26 16:39+0200\n"
+"POT-Creation-Date: 2026-08-26 17:18+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -8340,6 +8340,13 @@ msgstr ""
 msgid ""
 "Path to a Python script to execute after the main window is fully loaded. "
 "Useful for automation and testing."
+msgstr ""
+
+#: rayforge/app.py
+msgid ""
+"Path to a Python script to execute early during startup, before addons are "
+"loaded and before the main window is created. Useful for registering "
+"plugins, services, or configuring the application context."
 msgstr ""
 
 #: rayforge/app.py

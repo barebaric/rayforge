@@ -11,7 +11,10 @@ configuration wizard and establishing a connection.
 ## Step 1: Launch Rayforge
 
 Start Rayforge from your application menu or by running `rayforge` in a
-terminal. You should see the main interface with an empty canvas.
+terminal. On first launch — when no real machine has been configured yet —
+the configuration wizard opens automatically so you can set up your
+machine without hunting through menus. (You can always open it later from
+**Settings → Machines → Add Machine**.)
 
 ## Step 2: Create a Machine with the Wizard
 
@@ -24,7 +27,44 @@ Click **Add Machine** to open the machine picker.
 
 ![Add Machine Dialog](/screenshots/app-settings-machines-add.png)
 
-The configuration wizard opens and adapts which steps it shows to your
+### Permission Check
+
+Before discovery begins, the wizard checks that Rayforge can actually
+open your serial ports and cameras. If a device is present but access is
+missing, a **permissions page** appears first, explaining how to fix it
+on your platform:
+
+- **Snap installations**: grant the `serial-port` interface (and the
+  camera interface if needed) — the exact commands are shown with a
+  one-click copy button.
+- **Non-Snap Linux**: add your user to the `dialout` group so the serial
+  device node is accessible.
+
+Once access is in place, the wizard continues automatically.
+
+![Wizard — Permission Check](/screenshots/config-wizard-permissions.png)
+
+### Discover Devices Automatically
+
+The wizard can discover devices for you instead of requiring you to
+pick a starting point and fill everything in by hand:
+
+- **USB serial devices** are listed as they appear.
+- **Network devices** are discovered via mDNS: OctoPrint servers and
+  ESP3D boards appear alongside USB serial devices.
+- Discovered devices are **matched to built-in profiles** when a
+  confident match is found, so you can often just confirm the detected
+  settings rather than entering them.
+- GRBL auto-selects the correct G-code dialect from the firmware's
+  compile flags, and OctoPrint/Smoothieware are probed over the
+  network.
+- Devices you have already configured are shown as **read-only** so you
+  don't accidentally create duplicates.
+
+Click a discovered device to pre-fill the wizard, or pick a starting
+point manually as described below.
+
+The configuration wizard adapts which steps it shows to your
 choices:
 
 - Picking a **built-in profile** pre-fills the controller, work area, and
@@ -70,8 +110,10 @@ depend on the controller you chose:
 
 When your controller supports it, the wizard offers to connect to the device
 and read its configuration automatically — work area, speeds, acceleration,
-and firmware capabilities. Click **Probe Now** to auto-detect these values,
-or use **Next** to enter them by hand in the following steps.
+and firmware capabilities. This works over USB serial **and over the
+network** (mDNS discovery for OctoPrint and ESP3D). Click **Probe Now** to
+auto-detect these values, or use **Next** to enter them by hand in the
+following steps.
 
 ![Wizard — Discover the Device](/screenshots/config-wizard-probe.png)
 

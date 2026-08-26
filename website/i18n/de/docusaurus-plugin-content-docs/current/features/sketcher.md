@@ -32,7 +32,11 @@ Der Sketcher unterstützt das Erstellen der folgenden grundlegenden geometrische
 - **Ellipsen**: Erstelle Ellipsen (und Kreise) durch Definieren eines Mittelpunkts
   und Ziehen, um Größe und Seitenverhältnis festzulegen. Halte `Strg` während
   des Ziehens gedrückt, um auf einen perfekten Kreis zu beschränken.
-- **Rechtecke**: Rechtecke durch Angeben von zwei gegenüberliegenden Ecken zeichnen
+- **Rechtecke**: Rechtecke durch Angeben von zwei gegenüberliegenden Ecken zeichnen.
+  Jedes Rechteck erstellt automatisch einen Mittelpunkt (auf den geometrischen
+  Mittelpunkt beschränkt), sodass du eine Dimension daran anbringen oder daran
+  einrasten kannst. Halte `Shift` beim Zeichnen gedrückt, um das Rechteck
+  symmetrisch um den Startpunkt zu platzieren, ähnlich wie beim Ellipsen-Werkzeug.
 - **Abgerundete Rechtecke**: Rechtecke mit abgerundeten Ecken zeichnen
 - **Textfelder**: Textelemente zu deiner Skizze hinzufügen. Der Textinhalt
   unterstützt parametrische Vorlagenausdrücke (siehe
@@ -114,6 +118,7 @@ Der Sketcher bietet Tastatur-Kurzbefehle für effizienten Workflow:
 - `G+O`: Abgerundetes Rechteck-Werkzeug
 - `G+F`: Bereich füllen-Werkzeug
 - `G+T`: Textfeld-Werkzeug
+- `G+Y`: Kreisförmiges Array-Werkzeug
 - `G+G`: Raster-Werkzeug (Raster-Sichtbarkeit umschalten)
 - `G+N`: Konstruktionsmodus auf Auswahl umschalten
 
@@ -122,6 +127,9 @@ Der Sketcher bietet Tastatur-Kurzbefehle für effizienten Workflow:
 - `C+H`: Fase-Ecke hinzufügen
 - `C+F`: Verrundungs-Ecke hinzufügen
 - `C+S`: Ausgewählte Bezier-Kurven zu Linien glätten
+- `M+V`: Auswahl vertikal spiegeln
+- `M+H`: Auswahl horizontal spiegeln
+- `Strg+D`: Auswahl vor Ort duplizieren
 
 ### Einschränkungs-Kurzbefehle
 
@@ -142,9 +150,50 @@ Der Sketcher bietet Tastatur-Kurzbefehle für effizienten Workflow:
 
 - `Strg+Z`: Rückgängig
 - `Strg+Y` oder `Strg+Umschalt+Z`: Wiederholen
+- `Strg+D`: Ausgewählte Elemente duplizieren
 - `Entf`: Ausgewählte Elemente löschen
+- `Pfeiltasten`: Ausgewählte Entitäten verschieben (`Umschalt` für größeren Schritt)
 - `Escape`: Aktuelle Operation abbrechen oder Auswahl aufheben
 - `F`: Ansicht an Inhalt anpassen
+
+## Spiegeln, Duplizieren und Verschieben
+
+Mehrere Transformationstools arbeiten mit der aktuellen Auswahl:
+
+- **Vertikal / Horizontal spiegeln** (`M+V` / `M+H`): Spiegelt die
+  Auswahl vor Ort über die Mitte ihres Begrenzungsrahmens. Einschränkungen,
+  die die Auswahlgrenze überschreiten, werden entfernt; interne
+  Einschränkungen bleiben erhalten.
+- **Duplizieren** (`Strg+D`): Kopiert die Auswahl vor Ort. Die Kopien
+  bekommen neue IDs und zugewiesene interne Einschränkungen; danach bleiben
+  nur die Kopien ausgewählt. Rückgängig entfernt sie.
+- **Verschieben**: Mit ausgewählten Entitäten bewegen die **Pfeiltasten**
+  die Auswahl. Halte `Umschalt` für einen größeren Verschiebeschritt.
+
+Diese sind über die Symbolleiste und das **Sketch**-Menü verfügbar.
+
+## Kreisförmige Arrays
+
+Das **Kreisförmige Array**-Werkzeug (`G+Y`) erstellt ein parametrisches
+Polarmuster aus der aktuellen Auswahl:
+
+1. Wähle die Entitäten aus, die du musterhaft anordnen möchtest.
+2. Aktiviere das Werkzeug über die Symbolleiste, das Menü **Sketch → Arrays**
+   oder `G+Y`.
+3. Ein Hilfskreis erscheint auf der Arbeitsfläche und ein nicht-modaler Dialog
+   öffnet sich mit einer Live-Vorschau.
+4. Setze die **Anzahl** und den **Gesamtwinkel**. Kopien werden parametrisch
+   um den Mittelpunkt des Hilfskreises erzeugt.
+5. Ziehe den Mittelpunkt des Hilfskreises, um das Array umzupositionieren,
+   oder ziehe die ursprüngliche Entität, um den Radius zu ändern — die
+   Dialogfelder aktualisieren sich live.
+6. Die **Radius-Dimension** des Hilfskreises skaliert das gesamte Array.
+   **Doppelklicke** auf den Hilfskreis, um den Bearbeitungsdialog erneut zu
+   öffnen und fehlende Elemente zu erzeugen oder die Verteilung zu ändern.
+
+Kopien sind über Rotationseinschränkungen mit dem Vorlagen-Element verknüpft,
+sodass das Löschen eines Elements nur dessen eigene Einschränkungen entfernt
+und die Übrigen nie umverteilt.
 
 ## Konstruktionsmodus
 

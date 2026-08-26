@@ -3,6 +3,16 @@
 O Rayforge suporta múltiplos dialetos G-code para trabalhar com diferentes
 firmware de controlador.
 
+## Seleção Automática de Dialeto
+
+Quando um dispositivo GRBL é descoberto (via o
+[assistente de configuração](../getting-started/first-time-setup.md)
+ou descoberta de dispositivos), o Rayforge lê as flags de compilação `$I`
+do firmware e seleciona automaticamente o dialeto G-code mais adequado —
+você normalmente não precisa escolher um manualmente. Ainda é possível
+sobrescrever a escolha depois nas configurações de dialeto G-code da
+máquina.
+
 ## Dialetos Suportados
 
 O Rayforge atualmente suporta estes dialetos G-code:

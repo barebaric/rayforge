@@ -24,6 +24,7 @@ Chaque tête laser a les paramètres suivants :
 Un nom descriptif pour cette tête laser.
 
 Exemples :
+
 - "Diode 10W"
 - "Tube CO2"
 - "Laser Infrarouge"
@@ -89,10 +90,11 @@ La taille physique de ton faisceau laser focalisé en millimètres.
 
 :::tip Mesurer la Taille du Spot
 Pour mesurer la taille de ton spot :
+
 1. Tire une impulsion courte à faible puissance sur un matériau de test
 2. Mesure la marque résultante avec un pied à coulisse
 3. Utilise la moyenne de plusieurs mesures
-:::
+   :::
 
 #### Couleur
 
@@ -123,6 +125,32 @@ Choisis le type de tête laser dans le menu déroulant :
 Lorsque CO2 ou Fiber est sélectionné, des **paramètres PWM** supplémentaires
 apparaissent (voir ci-dessous). Pour les lasers diode, la section PWM est
 masquée car elle ne s'applique pas.
+
+Le type de laser définit également une **longueur d'onde** par défaut
+(utilisée par le modèle de brûlure physique) lorsqu'aucune valeur explicite
+n'est saisie ci-dessous.
+
+#### Longueur d'onde (nm)
+
+La longueur d'onde d'émission de ton laser, en nanomètres. Alimente le
+[modèle de brûlure physique](../ui/3d-preview.md#modèle-de-brûlure-physique)
+dans l'aperçu 3D : avec les données d'[absorption](../application-settings/materials.md#absorption)
+du matériau, elle détermine quelle partie de l'énergie laser le brut absorbe.
+
+Lorsque définie sur 0, Rayforge utilise la longueur d'onde typique pour le
+type de laser sélectionné (par ex. 445 nm pour diode, 1064 nm pour fibré,
+10600 nm pour CO2).
+
+#### Puissance Optique Max (W)
+
+La puissance de sortie optique de ton laser à pleine puissance, en watts.
+Il s'agit de la sortie lumineuse réelle, pas de l'entrée électrique. Avec
+la taille du spot et la vitesse de balayage, elle détermine la fluence
+(J/cm²) utilisée par le
+[modèle de brûlure physique](../ui/3d-preview.md#modèle-de-brûlure-physique).
+
+Lorsque définie sur 0, une valeur par défaut de milieu de gamme de bureau
+est utilisée.
 
 #### Paramètres PWM
 

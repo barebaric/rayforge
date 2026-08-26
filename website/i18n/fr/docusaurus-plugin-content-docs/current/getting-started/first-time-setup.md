@@ -11,8 +11,11 @@ machine avec l'assistant de configuration et l'établissement d'une connexion.
 ## Étape 1 : Lancer Rayforge
 
 Démarrez Rayforge depuis votre menu d'applications ou en exécutant `rayforge`
-dans un terminal. Vous devriez voir l'interface principale avec un canevas
-vide.
+dans un terminal. Au premier lancement — lorsqu'aucune machine réelle n'a
+encore été configurée — l'assistant de configuration s'ouvre automatiquement
+pour que vous puissiez configurer votre machine sans chercher dans les menus.
+(Vous pouvez toujours l'ouvrir plus tard depuis **Paramètres → Machines →
+Add Machine**.)
 
 ## Étape 2 : Créer une Machine avec l'Assistant
 
@@ -26,8 +29,44 @@ Cliquez sur **Add Machine** pour ouvrir le sélecteur de machine.
 
 ![Boîte de dialogue Add Machine](/screenshots/app-settings-machines-add.png)
 
-L'assistant de configuration s'ouvre et adapte les étapes qu'il affiche à vos
-choix :
+### Vérification des permissions
+
+Avant le démarrage de la découverte, l'assistant vérifie que Rayforge peut
+effectivement accéder à vos ports série et caméras. Si un appareil est présent
+mais l'accès manque, une **page de permissions** apparaît d'abord, expliquant
+comment résoudre le problème sur votre plateforme :
+
+- **Installations Snap** : accordez l'interface `serial-port` (et l'interface
+  caméra si nécessaire) — les commandes exactes sont affichées avec un bouton
+  de copie en un clic.
+- **Linux non-Snap** : ajoutez votre utilisateur au groupe `dialout` pour que
+  le nœud de périphérique série soit accessible.
+
+Une fois l'accès en place, l'assistant continue automatiquement.
+
+![Assistant — Vérification des permissions](/screenshots/config-wizard-permissions.png)
+
+### Découverte automatique des appareils
+
+L'assistant peut découvrir les appareils pour vous au lieu de vous demander de
+choisir un point de départ et de tout remplir à la main :
+
+- **Périphériques série USB** sont listés au fur et à mesure qu'ils apparaissent.
+- **Appareils réseau** sont découverts via mDNS : les serveurs OctoPrint et
+  les cartes ESP3D apparaissent aux côtés des périphériques série USB.
+- Les appareils découverts sont **associés aux profils intégrés** lorsqu'une
+  correspondance fiable est trouvée, vous pouvez donc souvent simplement
+  confirmer les paramètres détectés au lieu de les saisir.
+- GRBL sélectionne automatiquement le dialecte G-code correct à partir des
+  drapeaux de compilation du firmware, et OctoPrint/Smoothieware sont
+  sondés sur le réseau.
+- Les appareils que vous avez déjà configurés sont affichés en **lecture seule**
+  pour que vous ne créiez pas accidentellement des doublons.
+
+Cliquez sur un appareil découvert pour préremplir l'assistant, ou choisissez
+un point de départ manuellement comme décrit ci-dessous.
+
+L'assistant de configuration adapte les étapes qu'il affiche à vos choix :
 
 - Choisir un **profil intégré** préremplit le contrôleur, la zone de travail
   et la tête — l'assistant passe directement aux étapes rotatif, caméra et
@@ -74,9 +113,11 @@ exacts dépendent du contrôleur que vous avez choisi :
 
 Lorsque votre contrôleur le prend en charge, l'assistant propose de se
 connecter à l'appareil et de lire automatiquement sa configuration — zone de
-travail, vitesses, accélération et capacités du firmware. Cliquez sur **Probe
-Now** pour détecter automatiquement ces valeurs, ou utilisez **Next** pour les
-saisir manuellement dans les étapes suivantes.
+travail, vitesses, accélération et capacités du firmware. Cela fonctionne
+via le port série USB **et via le réseau** (découverte mDNS pour OctoPrint
+et ESP3D). Cliquez sur **Probe Now** pour détecter automatiquement ces
+valeurs, ou utilisez **Next** pour les saisir manuellement dans les étapes
+suivantes.
 
 ![Assistant — Découvrir l'Appareil](/screenshots/config-wizard-probe.png)
 
@@ -191,13 +232,16 @@ Rayforge !
 - **Linux (Série)** : Ajoutez votre utilisateur au groupe `dialout`. Ceci est
   requis pour **les installations Snap et non-Snap** sur les distributions
   basées sur Debian pour éviter les messages AppArmor DENIED :
+
   ```bash
   sudo usermod -a -G dialout $USER
   ```
+
   Déconnectez-vous et reconnectez-vous pour que les changements prennent effet.
 
 - **Paquet Snap** : En plus du groupe `dialout` ci-dessus, assurez-vous d'avoir
   accordé les permissions de port série :
+
   ```bash
   sudo snap connect rayforge:serial-port
   ```

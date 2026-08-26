@@ -12,13 +12,12 @@ explains the difference between core and user libraries, and how to create
 your own libraries and add materials to them.
 
 :::note
- Assigning a material to a stock item affects both its visual appearance
- in the 2D and 3D canvas and which [recipes](recipes.md) apply to it:
- material-specific recipes match against the assigned material. In
- future releases, materials will be used to derive more functional
- parameters.
- :::
-
+Assigning a material to a stock item affects both its visual appearance
+in the 2D and 3D canvas and which [recipes](recipes.md) apply to it:
+material-specific recipes match against the assigned material. In
+future releases, materials will be used to derive more functional
+parameters.
+:::
 
 ## Creating a New Library
 
@@ -30,7 +29,6 @@ To create your own material library:
 4. Click **Create** to finalize
 
 Your new library will be created in the user data directory and will be available immediately.
-
 
 ## Adding Materials to Libraries
 
@@ -47,10 +45,12 @@ Your new library will be created in the user data directory and will be availabl
 ### Material Properties Explained
 
 #### Name
+
 - Human-readable name displayed in the interface
 - Can contain spaces and special characters
 
 #### Category
+
 - Used for organizing materials within the library
 - Common categories include: Wood, Acrylic, Metal, Paper, Leather
 - You can create custom categories as needed
@@ -88,6 +88,40 @@ A 0-1 value describing how rough or polished the surface appears in the
 A 0-1 value describing whether the surface reflects light like a metal in
 the 3D view. Set to 1 for metallic materials, 0 for non-metallic ones.
 
+#### Absorption
+
+:::note New in 1.11
+Absorption data drives the [physical burn model](../ui/3d-preview.md#physical-burn-model)
+in the 3D preview.
+:::
+
+Per-wavelength absorption coefficients (0–1) describe how much of the
+laser's energy a material absorbs at a given wavelength. The 3D preview
+uses these, together with your laser head's wavelength, optical wattage,
+and spot size, to compute the fluence (J/cm²) delivered and render a
+physically motivated charring effect on the stock.
+
+Add an `absorption` block under `appearance` in the material's YAML:
+
+```yaml
+appearance:
+  absorption:
+    blue: 0.7 # ~445 nm diode lasers
+    ir: 0.25 # ~1064 nm fiber / IR lasers
+    co2: 0.9 # ~10600 nm CO2 lasers
+  # ...other appearance properties
+```
+
+| Band   | Representative wavelength | Typical lasers    |
+| ------ | ------------------------- | ----------------- |
+| `blue` | 445 nm                    | Blue diode lasers |
+| `ir`   | 1064 nm                   | Fiber lasers      |
+| `co2`  | 10600 nm                  | CO2 tube lasers   |
+
+When a band is missing, a conservative default is used. The bundled
+material library ships researched absorption values for all included
+materials; the burn model is not yet fully calibrated, so contributions
+of real-world test data are welcome.
 
 ## Managing Existing Materials
 
@@ -107,4 +141,3 @@ the 3D view. Set to 1 for metallic materials, 0 for non-metallic ones.
 :::warning
 Deleting a material is permanent and cannot be undone.
 :::
-

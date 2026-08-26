@@ -45,7 +45,11 @@ The sketcher supports creating the following basic geometric elements:
 - **Ellipses**: Create ellipses (and circles) by defining a center point and
   dragging to set the size and aspect ratio. Hold `Ctrl` while dragging to
   constrain to a perfect circle.
-- **Rectangles**: Draw rectangles by specifying two opposite corners
+- **Rectangles**: Draw rectangles by specifying two opposite corners.
+  Each rectangle auto-creates a center point (constrained to the geometric
+  center) so you can dimension or snap to it. Hold `Shift` while drawing to
+  place the rectangle symmetrically around the start point, matching the
+  ellipse tool.
 - **Rounded Rectangles**: Draw rectangles with rounded corners
 - **Text Boxes**: Add text elements to your sketch. Text content supports
   parametric template expressions (see [Text Templates](#text-templates)
@@ -141,6 +145,7 @@ The sketcher provides keyboard shortcuts for efficient workflow:
 - `G+O`: Rounded Rectangle tool
 - `G+F`: Fill Area tool
 - `G+T`: Text Box tool
+- `G+Y`: Circular Array tool
 - `G+G`: Grid tool (toggle grid visibility)
 - `G+N`: Toggle construction mode on selection
 
@@ -148,6 +153,9 @@ The sketcher provides keyboard shortcuts for efficient workflow:
 - `C+H`: Add Chamfer corner
 - `C+F`: Add Fillet corner
 - `C+S`: Straighten selected bezier curves to lines
+- `M+V`: Mirror selection vertically
+- `M+H`: Mirror selection horizontally
+- `Ctrl+D`: Duplicate selection in-place
 
 ### Constraint Shortcuts
 - `H`: Apply Horizontal constraint
@@ -166,9 +174,50 @@ The sketcher provides keyboard shortcuts for efficient workflow:
 ### General Shortcuts
 - `Ctrl+Z`: Undo
 - `Ctrl+Y` or `Ctrl+Shift+Z`: Redo
+- `Ctrl+D`: Duplicate selected elements
 - `Delete`: Delete selected elements
+- `Arrow keys`: Nudge selected entities (hold `Shift` for a larger step)
 - `Escape`: Cancel current operation or deselect
 - `F`: Fit view to content
+
+## Mirror, Duplicate, and Nudge
+
+Several transformation tools work on the current selection:
+
+- **Mirror Vertically / Horizontally** (`M+V` / `M+H`): mirror the
+  selection in-place across its bounding-box center. Constraints that
+  span the selection boundary are dropped; internal constraints are
+  preserved.
+- **Duplicate** (`Ctrl+D`): copy the selection in-place. The copies get
+  fresh IDs and remapped internal constraints; only the copies remain
+  selected afterwards. Undo removes them.
+- **Nudge**: with entities selected, the **arrow keys** move the
+  selection. Hold `Shift` for a larger nudge step.
+
+These are available from the toolbar and the **Sketch** menu.
+
+## Circular Arrays
+
+The **Circular Array** tool (`G+Y`) creates a parametric polar pattern
+from the current selection:
+
+1. Select the entities you want to pattern.
+2. Activate the tool from the toolbar, the **Sketch → Arrays** menu, or
+   `G+Y`.
+3. A guide circle appears on the canvas and a non-modal dialog opens
+   with a live preview.
+4. Set the **count** and **total angle**. Copies are generated
+   parametrically around the guide circle's center.
+5. Drag the guide circle's center to reposition the array, or drag the
+   original entity to change the radius — the dialog fields update
+   live.
+6. The guide circle's **radius dimension** resizes the whole array.
+   **Double-click** the guide circle to reopen the edit dialog and
+   regenerate missing or re-distribute members.
+
+Copies are linked to the template member through rotational
+constraints, so deleting a member removes only its own constraints and
+never redistributes the survivors.
 
 ## Construction Mode
 

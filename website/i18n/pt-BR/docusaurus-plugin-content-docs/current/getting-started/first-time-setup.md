@@ -8,7 +8,7 @@ Após instalar o Rayforge, você precisará configurar sua cortadora ou gravador
 
 ## Etapa 1: Iniciar o Rayforge
 
-Inicie o Rayforge a partir do menu de aplicativos ou executando `rayforge` em um terminal. Você verá a interface principal com uma tela vazia.
+Inicie o Rayforge a partir do menu de aplicativos ou executando `rayforge` em um terminal. Na primeira vez — quando nenhuma máquina real foi configurada ainda — o assistente de configuração abre automaticamente para que você possa configurar sua máquina sem precisar procurar nos menus. (Você sempre pode abri-lo depois em **Configurações → Máquinas → Add Machine**.)
 
 ## Etapa 2: Criar uma Máquina com o Assistente
 
@@ -20,7 +20,45 @@ Clique em **Add Machine** para abrir o seletor de máquinas.
 
 ![Adicionar Máquina](/screenshots/app-settings-machines-add.png)
 
-O assistente de configuração abre e adapta quais etapas ele mostra de acordo com suas escolhas:
+### Verificação de Permissões
+
+Antes da descoberta começar, o assistente verifica se o Rayforge pode realmente
+abrir suas portas seriais e câmeras. Se um dispositivo estiver presente mas o
+acesso estiver faltando, uma **página de permissões** aparece primeiro,
+explicando como corrigir na sua plataforma:
+
+- **Instalações Snap**: conceda a interface `serial-port` (e a interface de
+  câmera, se necessário) — os comandos exatos são mostrados com um botão de
+  cópia com um clique.
+- **Linux fora do Snap**: adicione seu usuário ao grupo `dialout` para que o
+  nó do dispositivo serial seja acessível.
+
+Quando o acesso estiver disponível, o assistente continua automaticamente.
+
+![Assistente — Verificação de Permissões](/screenshots/config-wizard-permissions.png)
+
+### Descobrir Dispositivos Automaticamente
+
+O assistente pode descobrir dispositivos para você em vez de exigir que você
+escolha um ponto de partida e preencha tudo manualmente:
+
+- **Dispositivos seriais USB** são listados à medida que aparecem.
+- **Dispositivos de rede** são descobertos via mDNS: servidores OctoPrint e
+  placas ESP3D aparecem junto com dispositivos seriais USB.
+- Dispositivos descobertos são **correspondidos a perfis integrados** quando
+  uma correspondência confiante é encontrada, então você frequentemente pode
+  apenas confirmar as configurações detectadas em vez de inseri-las.
+- O GRBL seleciona automaticamente o dialeto G-code correto a partir das
+  flags de compilação do firmware, e OctoPrint/Smoothieware são sondados
+  pela rede.
+- Dispositivos que você já configurou são mostrados como **somente leitura**
+  para que você não crie duplicatas acidentalmente.
+
+Clique em um dispositivo descoberto para pré-preencher o assistente, ou
+escolha um ponto de partida manualmente conforme descrito abaixo.
+
+O assistente de configuração adapta as etapas que mostra de acordo com suas
+escolhas:
 
 - Escolher um **perfil integrado** pré-preenche o controlador, a área de
   trabalho e a cabeça — o assistente pula direto para as etapas de rotativo,
@@ -67,7 +105,8 @@ dependem do controlador que você escolheu:
 
 Quando seu controlador suporta, o assistente oferece conectar-se ao
 dispositivo e ler sua configuração automaticamente — área de trabalho,
-velocidades, aceleração e recursos do firmware. Clique em **Probe Now** para
+velocidades, aceleração e recursos do firmware. Isso funciona via serial USB
+**e pela rede** (descoberta mDNS para OctoPrint e ESP3D). Clique em **Probe Now** para
 detectar automaticamente esses valores, ou use **Next** para inseri-los
 manualmente nas etapas seguintes.
 
@@ -180,13 +219,16 @@ Se sua máquina mostrar status "Conectado", você está pronto para começar a u
 - **Linux (Serial)**: Adicione seu usuário ao grupo `dialout`. Isto é
   necessário para **ambas instalações Snap e não-Snap** em distribuições
   baseadas em Debian para evitar mensagens AppArmor DENIED:
+
   ```bash
   sudo usermod -a -G dialout $USER
   ```
+
   Saia e entre novamente para que as alterações tenham efeito.
 
 - **Pacote Snap**: Além do grupo `dialout` acima, certifique-se de ter
   concedido permissões de porta serial:
+
   ```bash
   sudo snap connect rayforge:serial-port
   ```

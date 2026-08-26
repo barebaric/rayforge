@@ -52,6 +52,7 @@ por la posición absoluta de la máquina.
 ### Cambiando WCS
 
 La vista 3D se actualiza automáticamente cuando cambias el WCS activo:
+
 - Selecciona un WCS diferente del menú desplegable de la barra de herramientas
 - La cuadrícula y los ejes se desplazan para reflejar el nuevo origen WCS
 - Las etiquetas se actualizan para mostrar coordenadas relativas al nuevo WCS
@@ -61,7 +62,6 @@ La vista 3D muestra tus trayectorias relativas al WCS seleccionado. Cuando
 cambias WCS, verás las trayectorias parecer moverse porque el punto de referencia
 (la cuadrícula) ha cambiado, no porque las trayectorias mismas se movieron.
 :::
-
 
 ## Opciones de Pantalla
 
@@ -108,6 +108,33 @@ coincidir con tu configuración física.
 
 Durante la simulación, se dibuja un rayo láser brillante desde el cabezal hacia
 abajo cuando el láser está activo.
+
+## Modelo de Quemado Físico
+
+Al grabar, la vista 3D ya no muestra el resultado como una capa plana sobre el
+material de base. Las operaciones raster y vectoriales de láser ahora
+**queman el material de base** — la vista previa muestra un quemado impulsado
+por un modelo físicamente motivado que tiene en cuenta:
+
+- La **longitud de onda**, **potencia óptica** y **tamaño del punto** de tu
+  láser (configurados en [Ajustes de Láser](../machine/laser.md)).
+- La **absorción del material** en esa longitud de onda (definida en la
+  [biblioteca de materiales](../application-settings/materials.md#absorption)).
+- La **velocidad de escaneo**, que establece la energía entregada por unidad
+  de área (fluencia, en J/cm²).
+
+El resultado es una rampa de quemado con un halo de calor en las superficies
+orientadas hacia arriba. También funciona con rotativo — el grabado se hornea
+en el material de base rotativo.
+
+:::note Calibración
+El modelo de quemado está físicamente motivado pero aún no está completamente
+calibrado para todos los materiales y tipos de láser. Puedes ayudar a mejorarlo:
+ejecuta una [cuadrícula de prueba de material](../features/operations/material-test-grid.md)
+y comparte la foto del resultado junto con los datos de tu máquina (longitud
+de onda, potencia óptica, tamaño del punto, velocidad y las potencias/profundidades
+probadas).
+:::
 
 ## Simulación
 

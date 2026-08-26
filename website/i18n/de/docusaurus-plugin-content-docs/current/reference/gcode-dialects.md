@@ -2,6 +2,14 @@
 
 Rayforge unterstützt mehrere G-Code-Dialekte, um mit verschiedener Controller-Firmware zu arbeiten.
 
+## Automatische Dialektauswahl
+
+Wenn ein GRBL-Gerät erkannt wird (über den [Einrichtungs-Assistenten](../getting-started/first-time-setup.md)
+oder die Geräteerkennung), liest Rayforge die `$I`-Compile-Flags der Firmware
+aus und wählt automatisch den am besten passenden G-Code-Dialekt — du musst
+in der Regel keinen manuell auswählen. Du kannst die Auswahl danach jederzeit
+in den G-Code-Dialekt-Einstellungen der Maschine überschreiben.
+
 ## Unterstützte Dialekte
 
 Rayforge unterstützt derzeit diese G-Code-Dialekte:

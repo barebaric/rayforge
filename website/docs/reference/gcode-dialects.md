@@ -7,6 +7,14 @@ description: "G-code dialects supported by Rayforge. Configure output for differ
 Rayforge supports multiple G-code dialects to work with different controller
 firmware.
 
+## Automatic Dialect Selection
+
+When a GRBL device is discovered (via the [setup wizard](../getting-started/first-time-setup.md)
+or device discovery), Rayforge reads the firmware's `$I` compile flags and
+automatically selects the best-matching G-code dialect — you usually don't
+need to pick one manually. You can still override the choice afterwards in
+the machine's G-code dialect settings.
+
 ## Supported Dialects
 
 Rayforge currently supports these G-code dialects:

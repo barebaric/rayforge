@@ -120,6 +120,29 @@ When CO2 or Fiber is selected, additional **PWM settings** become available
 (see below). For diode lasers, the PWM section is hidden since it does not
 apply.
 
+The laser type also sets a default **wavelength** (used by the physical
+burn model) when no explicit value is entered below.
+
+#### Wavelength (nm)
+
+The emission wavelength of your laser, in nanometers. This feeds the
+[physical burn model](../ui/3d-preview.md#physical-burn-model) in the 3D
+preview: together with the material's [absorption](../application-settings/materials.md#absorption)
+data, it determines how much laser energy the stock absorbs.
+
+When set to 0, Rayforge falls back to the typical wavelength for the
+selected laser type (e.g. 445 nm for diode, 1064 nm for fiber, 10600 nm
+for CO2).
+
+#### Max Optical Power (W)
+
+The optical output power of your laser at full power, in watts. This is
+the actual light output, not the electrical input. Together with the
+spot size and scan speed, it determines the fluence (J/cm²) used by the
+[physical burn model](../ui/3d-preview.md#physical-burn-model).
+
+When set to 0, a mid-range desktop default is used.
+
 #### PWM Settings
 
 When a CO2 or Fiber laser type is selected, the following PWM controls appear:
