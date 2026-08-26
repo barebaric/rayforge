@@ -1191,32 +1191,23 @@ class Sketch(IAsset, IGeometryProvider):
         CoincidentConstraints.
         Returns a set including the starting point itself.
         """
-        coincident_group = {start_pid}
+        # Build an adjacency map once (O(C)) so the traversal is
+        # O(C + group_size) instead of O(P * C).
+        adjacency: dict[EntityID, set[EntityID]] = defaultdict(set)
+        for constr in self.constraints:
+            if not isinstance(constr, CoincidentConstraint):
+                continue
+            adjacency[constr.p1].add(constr.p2)
+            adjacency[constr.p2].add(constr.p1)
 
-        # Use a list as a queue for a breadth-first search
-        queue = [start_pid]
-        visited = {start_pid}
-
-        head = 0
-        while head < len(queue):
-            current_pid = queue[head]
-            head += 1
-
-            for constr in self.constraints:
-                if not isinstance(constr, CoincidentConstraint):
-                    continue
-
-                # Find the other point in the constraint
-                other_pid = -1
-                if constr.p1 == current_pid:
-                    other_pid = constr.p2
-                elif constr.p2 == current_pid:
-                    other_pid = constr.p1
-
-                if other_pid != -1 and other_pid not in visited:
-                    visited.add(other_pid)
+        coincident_group: set[EntityID] = {start_pid}
+        stack = [start_pid]
+        while stack:
+            current_pid = stack.pop()
+            for other_pid in adjacency.get(current_pid, ()):
+                if other_pid not in coincident_group:
                     coincident_group.add(other_pid)
-                    queue.append(other_pid)
+                    stack.append(other_pid)
 
         return coincident_group
 

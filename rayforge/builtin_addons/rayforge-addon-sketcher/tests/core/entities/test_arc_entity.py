@@ -71,12 +71,12 @@ def test_arc_to_polygon_vertices(registry):
     arc = registry.get_entity(registry.add_arc(start, end, center, cw=False))
 
     vertices = arc.to_polygon_vertices(registry, forward=True)
-    assert len(vertices) == 17
+    assert len(vertices) == 9
     assert vertices[0] == pytest.approx((10.0, 0.0))
     assert vertices[-1] == pytest.approx((0.0, 10.0))
 
     vertices_rev = arc.to_polygon_vertices(registry, forward=False)
-    assert len(vertices_rev) == 17
+    assert len(vertices_rev) == 25
     assert vertices_rev[0] == pytest.approx((0.0, 10.0))
     assert vertices_rev[-1] == pytest.approx((10.0, 0.0))
 

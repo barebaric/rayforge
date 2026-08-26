@@ -188,7 +188,10 @@ class Arc(Entity):
         end_a = math.atan2(end_pt.y - center_pt.y, end_pt.x - center_pt.x)
 
         vertices: Polygon = []
+        # Scale the sample count by the swept angle so short arcs stay
+        # coarse and ~360° arcs get enough resolution.
         num_segments = 16
+        max_segments = 64
 
         if forward:
             if self.clockwise:
@@ -197,6 +200,10 @@ class Arc(Entity):
             else:
                 if end_a < start_a:
                     end_a += 2 * math.pi
+            sweep = abs(end_a - start_a)
+            num_segments = max(
+                2, min(max_segments, int(num_segments * sweep / math.pi))
+            )
             for i in range(num_segments + 1):
                 t = i / num_segments
                 a = start_a + t * (end_a - start_a)
@@ -210,6 +217,10 @@ class Arc(Entity):
             else:
                 if start_a < end_a:
                     start_a += 2 * math.pi
+            sweep = abs(start_a - end_a)
+            num_segments = max(
+                2, min(max_segments, int(num_segments * sweep / math.pi))
+            )
             for i in range(num_segments + 1):
                 t = i / num_segments
                 a = end_a + t * (start_a - end_a)

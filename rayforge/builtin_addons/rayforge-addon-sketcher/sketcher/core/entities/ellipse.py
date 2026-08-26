@@ -183,7 +183,10 @@ class Ellipse(Entity):
         if abs(rx - ry) < 1e-9:
             return self._circle_geometry(cx, cy, rx, cos_a, sin_a)
 
-        num_segments = max(32, int(64 * max(rx, ry) / min(rx, ry)))
+        # Eccentricity-driven sampling, capped to keep tessellation
+        # bounded even for extreme aspect ratios.
+        ratio = max(rx, ry) / min(rx, ry)
+        num_segments = min(max(32, int(64 * ratio)), 256)
         for i in range(num_segments):
             angle = 2 * math.pi * i / num_segments
             local_x = rx * math.cos(angle)
