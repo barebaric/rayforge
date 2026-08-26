@@ -247,11 +247,20 @@ class VarSet:
     def set_values(self, values: dict[str, Any]):
         """
         Sets the values for multiple Vars from a dictionary.
-        Ignores keys that are not in the VarSet.
+        Ignores keys that are not in the VarSet, and skips values that
+        cannot be coerced to the expected type.
         """
         for key, value in values.items():
             if key in self._vars:
-                self[key] = value
+                try:
+                    self[key] = value
+                except (TypeError, ValueError):
+                    logger.warning(
+                        "Skipping value %r for key '%s': "
+                        "cannot be coerced to expected type",
+                        value,
+                        key,
+                    )
 
     def clear(self):
         """Removes all Var objects from the set."""
