@@ -422,15 +422,17 @@ class BezierCommand(SketchChangeCommand):
                 if not start_pt.is_sharp():
                     connected = start_pt.get_connected_beziers(registry)
                     for other_b in connected:
+                        if other_b.id == new_entity.id:
+                            continue
                         if (
-                            other_b.id != new_entity.id
-                            and other_b.end_idx == self.start_id
+                            other_b.end_idx == self.start_id
                             and other_b.cp2 is not None
                         ):
                             new_entity.cp1 = (
                                 -other_b.cp2[0],
                                 -other_b.cp2[1],
                             )
+                            break
                         elif (
                             other_b.start_idx == self.start_id
                             and other_b.cp1 is not None
@@ -439,7 +441,7 @@ class BezierCommand(SketchChangeCommand):
                                 -other_b.cp1[0],
                                 -other_b.cp1[1],
                             )
-                        break
+                            break
             except (IndexError, ValueError):
                 pass
 
@@ -448,15 +450,17 @@ class BezierCommand(SketchChangeCommand):
                 if end_pt is not None and not end_pt.is_sharp():
                     connected = end_pt.get_connected_beziers(registry)
                     for other_b in connected:
+                        if other_b.id == new_entity.id:
+                            continue
                         if (
-                            other_b.id != new_entity.id
-                            and other_b.start_idx == end_pid
+                            other_b.start_idx == end_pid
                             and other_b.cp1 is not None
                         ):
                             new_entity.cp2 = (
                                 -other_b.cp1[0],
                                 -other_b.cp1[1],
                             )
+                            break
                         elif (
                             other_b.end_idx == end_pid
                             and other_b.cp2 is not None
@@ -465,7 +469,7 @@ class BezierCommand(SketchChangeCommand):
                                 -other_b.cp2[0],
                                 -other_b.cp2[1],
                             )
-                        break
+                            break
             except (IndexError, ValueError):
                 pass
 
