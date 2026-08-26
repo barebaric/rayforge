@@ -7,6 +7,7 @@ from gettext import gettext as _
 from pathlib import Path
 from typing import Any, ClassVar
 
+import numpy as np
 from blinker import Signal
 from raygeo.geo import Arc as GeoArc
 from raygeo.geo import Bezier as GeoBezier
@@ -63,6 +64,7 @@ from .template_functions import get_template_functions
 from .types import EntityID
 
 DEFAULT_FILL_COLOR: ColorRGBA = (0.85, 0.85, 0.85, 0.7)
+FORMAT_VERSION = 1
 _DEFAULT_VARSET_TITLE = _("Sketch Parameters")
 _DEFAULT_VARSET_DESCRIPTION = _(
     "Parameters that control this sketch's geometry"
@@ -380,6 +382,7 @@ class Sketch(IAsset, IGeometryProvider):
     def to_dict(self, include_input_values: bool = False) -> dict[str, Any]:
         """Serializes the Sketch to a dictionary."""
         return {
+            "version": FORMAT_VERSION,
             "uid": self.uid,
             "type": self.asset_type_name,
             "name": self.name,
@@ -398,6 +401,17 @@ class Sketch(IAsset, IGeometryProvider):
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Sketch":
         """Deserializes a dictionary into a Sketch instance."""
+        file_version = data.get("version")
+        if file_version is None:
+            file_version = 1
+        if file_version != FORMAT_VERSION:
+            logger.warning(
+                "Sketch file version %s differs from current version %s; "
+                "loading may produce incorrect results",
+                file_version,
+                FORMAT_VERSION,
+            )
+
         required_keys = ["params", "registry", "constraints", "origin_id"]
         if not all(key in data for key in required_keys):
             raise KeyError(
@@ -1364,7 +1378,7 @@ class Sketch(IAsset, IGeometryProvider):
                 }
                 self._apply_conflict_status(mapped)
 
-        except Exception:
+        except (np.linalg.LinAlgError, ValueError):
             logger.exception("Sketch solve failed")
             success = False
 

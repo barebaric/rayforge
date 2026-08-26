@@ -117,7 +117,13 @@ class SketchImporter(Importer):
         try:
             sketch_dict = json.loads(self.raw_data.decode("utf-8"))
             self.parsed_sketch = Sketch.from_dict(sketch_dict)
-        except (json.JSONDecodeError, KeyError, TypeError) as e:
+        except (
+            json.JSONDecodeError,
+            KeyError,
+            TypeError,
+            AttributeError,
+            ValueError,
+        ) as e:
             logger.error(f"Failed to parse sketch data: {e}")
             self.add_error(_("Failed to load sketch structure: {}").format(e))
             return None
