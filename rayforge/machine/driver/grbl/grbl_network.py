@@ -73,6 +73,10 @@ class GrblNetworkDriver(Driver):
     supports_probing = True
     supports_unit_detection = True
     reports_granular_progress = False
+    # Advertised by ESP3D v3 firmware; used for network device
+    # discovery. FluidNC only announces generic service types and is
+    # not covered by this declaration.
+    MDNS_SERVICES = ("_esp3d._tcp.local.",)
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)

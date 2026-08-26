@@ -1221,6 +1221,42 @@ def test_octoprint_device_with_path_prefills_connect(ui_context_initializer):
     assert connect_page.ready is False
 
 
+@pytest.mark.ui
+def test_esp3d_device_selected_goes_to_probe(ui_context_initializer):
+    """A discovered ESP3D board (GrblNetworkDriver) needs nothing
+    beyond its resolved address — every other setup var has a
+    default — so the wizard goes straight to probing."""
+    wizard = _make_wizard(ui_context_initializer)
+    page = wizard._get_page("discover")
+    assert isinstance(page, DiscoverPage)
+
+    device = _discovered_device(
+        driver_name="GrblNetworkDriver",
+        params={"host": "192.168.1.60", "port": 80},
+        label="GRBL (Network)",
+        detail="192.168.1.60:80 (esp3d.local)",
+        identity=DeviceIdentity(firmware="grblnetwork", banner="ESP3D"),
+    )
+
+    with (
+        patch("rayforge.ui_gtk.machine.wizard_pages.probe_page.task_mgr"),
+        patch.object(
+            type(ui_context_initializer.device_profile_mgr),
+            "match_device",
+            return_value=None,
+        ),
+    ):
+        wizard._on_device_selected(page, device=device)
+
+    assert wizard.stack.get_visible_child_name() == "probe"
+    mc = wizard.profile.machine_config
+    assert mc.driver == "GrblNetworkDriver"
+    assert mc.driver_args == {"host": "192.168.1.60", "port": 80}
+    # host alone completes GrblNetworkDriver's required args; the
+    # connect page never comes up.
+    assert "connect" in wizard._skipped_steps_set
+
+
 def _probed_profile(name="Mystery CNC", **machine_overrides):
     return DeviceProfile(
         meta=DeviceMeta(name=name),

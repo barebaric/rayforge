@@ -4,6 +4,7 @@ from typing import ClassVar
 import pytest
 
 from rayforge.machine.driver import (
+    GrblNetworkDriver,
     GrblSerialDriver,
     GrblTelnetDriver,
     MarlinSerialDriver,
@@ -502,6 +503,41 @@ async def test_mdns_txt_instance_name_preferred_as_banner(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_esp3d_service_maps_to_grbl_network_driver(monkeypatch):
+    """ESP3D v3's dedicated _esp3d._tcp announcements map to the
+    GrblNetworkDriver with connectable params (the driver's own
+    defaults cover ws_port and protocol)."""
+
+    async def fake_scan(service_types):
+        assert service_types == {"_esp3d._tcp", "_octoprint._tcp"}
+        return [
+            MDNSService(
+                service_type="_esp3d._tcp",
+                name="ESP3D",
+                host="192.168.1.60",
+                port=80,
+                server="esp3d.local",
+                txt={"firmware": "ESP3D", "version": "3.0"},
+            )
+        ]
+
+    monkeypatch.setattr(discovery, "scan_mdns_services", fake_scan)
+    devices = await find_network_devices(
+        [FakeOctoPrintDriver, GrblNetworkDriver]
+    )
+    assert len(devices) == 1
+    device = devices[0]
+    assert device.driver_name == "GrblNetworkDriver"
+    assert device.params == {"host": "192.168.1.60", "port": 80}
+    assert device.label == "GRBL (Network)"
+    assert device.detail == "192.168.1.60:80 (esp3d.local)"
+    assert device.identity.firmware == "grblnetwork"
+    assert device.identity.banner == "ESP3D"
+    # The version TXT feeds identity tokens for profile matching.
+    assert "esp3d" in device.identity.tokens
+
+
+@pytest.mark.asyncio
 async def test_mdns_declaration_without_local_suffix(monkeypatch):
     """Service type declarations and browse results are normalized
     on both sides, so "_octoprint._tcp" finds "_octoprint._tcp.local."
@@ -577,5 +613,9 @@ def test_builtin_mdns_services():
     declared = {
         d.__name__: d.MDNS_SERVICES for d in drivers if d.MDNS_SERVICES
     }
-    assert declared == {"OctoPrintDriver": ("_octoprint._tcp.local.",)}
+    assert declared == {
+        "OctoPrintDriver": ("_octoprint._tcp.local.",),
+        "GrblNetworkDriver": ("_esp3d._tcp.local.",),
+    }
     assert OctoPrintDriver.MDNS_SERVICES == ("_octoprint._tcp.local.",)
+    assert GrblNetworkDriver.MDNS_SERVICES == ("_esp3d._tcp.local.",)
