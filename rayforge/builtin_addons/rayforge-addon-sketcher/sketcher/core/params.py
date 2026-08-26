@@ -1,5 +1,35 @@
+import ast
+import logging
 import math
 from typing import Any
+
+from rayforge.core.expression import safe_evaluate
+
+logger = logging.getLogger(__name__)
+
+
+def _unresolved_names(expression: str, available: set[str]) -> set[str]:
+    """Returns the set of names referenced by *expression* that are not
+    in *available* (the set of currently-resolved variables and math
+    functions). Used to tell forward references (retry on the next pass)
+    apart from genuine errors (typos, bad syntax)."""
+    try:
+        tree = ast.parse(expression, mode="eval")
+    except (SyntaxError, ValueError):
+        return set()
+
+    class NameVisitor(ast.NodeVisitor):
+        def __init__(self):
+            self.names: set[str] = set()
+
+        def visit_Name(self, node: ast.Name):
+            if isinstance(node.ctx, ast.Load):
+                self.names.add(node.id)
+            self.generic_visit(node)
+
+    visitor = NameVisitor()
+    visitor.visit(tree)
+    return visitor.names - available
 
 
 class ParameterContext:
@@ -48,7 +78,12 @@ class ParameterContext:
         return self._cache.copy()
 
     def evaluate(self, expression: str | float) -> Any:
-        """Evaluates an arbitrary expression string using current context."""
+        """Evaluates an arbitrary expression string using current context.
+
+        Raises:
+            ValueError: If the expression is invalid (e.g. a typo like
+                'widht/2'). Numeric inputs never raise.
+        """
         if isinstance(expression, (int, float)):
             return float(expression)
 
@@ -64,10 +99,7 @@ class ParameterContext:
         if self._cache:
             ctx.update(self._cache)
 
-        try:
-            return eval(str(expression), {"__builtins__": None}, ctx)
-        except Exception:  # noqa: BLE001 - arbitrary user expression eval
-            return 0.0
+        return safe_evaluate(str(expression), ctx)
 
     def evaluate_all(
         self, initial_values: dict[str, Any] | None = None
@@ -100,18 +132,52 @@ class ParameterContext:
                 if name in self._cache:
                     continue
 
+                eval_ctx = self._math_context.copy()
+                eval_ctx.update(self._cache)
+                # Skip forward references: a name that is not yet resolved
+                # may be defined later in evaluation order, so retry it on
+                # the next pass rather than logging a spurious error.
+                available = set(eval_ctx)
+                missing = _unresolved_names(expr, available)
+                if missing:
+                    continue
+
                 try:
-                    # The context for eval needs math and solved variables
-                    eval_ctx = self._math_context.copy()
-                    eval_ctx.update(self._cache)
-                    val = eval(expr, {"__builtins__": None}, eval_ctx)
+                    val = safe_evaluate(expr, eval_ctx)
                     self._cache[name] = val
                     progress = True
-                except (NameError, TypeError, SyntaxError):
-                    # Dependency missing, try next pass
-                    pass
+                except (ValueError, SyntaxError, TypeError) as e:
+                    # A real error in the expression (typo, bad syntax):
+                    # log it so typos are not silently hidden, and leave
+                    # the value unresolved (defaults to 0.0 on get()).
+                    logger.warning(
+                        "Parameter %r expression %r failed: %s",
+                        name,
+                        expr,
+                        e,
+                    )
 
             if not progress:
                 break
+
+        # After all passes, any expression still unresolved references a
+        # name that is neither a known variable nor a math function: this
+        # is a typo or a genuinely missing dependency. Log it so the user
+        # can find it instead of silently getting 0.0 (issue 6).
+        for name, expr in self._expressions.items():
+            if name in self._cache:
+                continue
+            eval_ctx = self._math_context.copy()
+            eval_ctx.update(self._cache)
+            available = set(eval_ctx)
+            missing = _unresolved_names(expr, available)
+            if missing:
+                logger.warning(
+                    "Parameter %r expression %r references "
+                    "unknown name(s): %s",
+                    name,
+                    expr,
+                    ", ".join(sorted(missing)),
+                )
 
         self._dirty = False

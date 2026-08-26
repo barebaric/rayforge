@@ -3,7 +3,6 @@ import logging
 import math
 import uuid
 from collections import defaultdict
-from datetime import datetime, timezone
 from gettext import gettext as _
 from pathlib import Path
 from typing import Any, ClassVar
@@ -60,6 +59,7 @@ from .params import ParameterContext
 from .patterns import PatternDefinition
 from .registry import EntityRegistry
 from .solver import Solver
+from .template_functions import get_template_functions
 from .types import EntityID
 
 DEFAULT_FILL_COLOR: ColorRGBA = (0.85, 0.85, 0.85, 0.7)
@@ -1414,9 +1414,7 @@ class Sketch(IAsset, IGeometryProvider):
                 initial_values.update(self.input_parameters.get_values())
             solve_params.evaluate_all(initial_values=initial_values)
             ctx = solve_params.get_all_values()
-            ctx["today"] = lambda: datetime.now(tz=timezone.utc).date()
-            ctx["now"] = lambda: datetime.now(tz=timezone.utc)
-            ctx["uuid4"] = lambda: str(uuid.uuid4())[:8]
+            ctx.update(get_template_functions())
             expr_map = ExpressionMap(ctx)
             resolved = expr_map.format(entity.content)
             logger.debug(

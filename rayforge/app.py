@@ -511,6 +511,17 @@ def main():
     )
 
     parser.add_argument(
+        "--script",
+        metavar="SCRIPT",
+        help=_(
+            "Path to a Python script to execute early during startup, "
+            "before addons are loaded and before the main window is "
+            "created. Useful for registering plugins, services, or "
+            "configuring the application context."
+        ),
+    )
+
+    parser.add_argument(
         "--config",
         metavar="DIR",
         help=_(
@@ -576,6 +587,15 @@ def main():
     # before the TaskManager is initialized. This breaks the circular
     # dependency chain (app -> config -> machine -> task_manager).
     get_context()
+
+    # Run the early-startup script (if any) before the TaskManager is
+    # initialized and before addons are loaded. This lets the script
+    # register plugins with the pluggy plugin manager, configure
+    # services, or set environment variables that influence startup.
+    if args.script:
+        from rayforge.script import run_script
+
+        run_script(Path(args.script))
 
     # Initialize the TaskManager with the worker initializer.
     # This MUST happen before accessing addon_mgr because the

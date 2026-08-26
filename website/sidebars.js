@@ -134,6 +134,7 @@ module.exports = {
       label: 'Reference',
       items: [
         'reference/shortcuts',
+        'reference/cli',
         'reference/gcode-dialects',
         'reference/firmware',
       ],

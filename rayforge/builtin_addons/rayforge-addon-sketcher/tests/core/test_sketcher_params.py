@@ -1,3 +1,4 @@
+import logging
 import math
 
 import pytest
@@ -142,3 +143,46 @@ def test_get_with_default(params):
     assert params.get("does_not_exist_either", default=-1.0) == -1.0
     # Test that existing keys don't use the provided default
     assert params.get("exists", default=99.0) == 42.0
+
+
+def test_evaluate_raises_on_typo(params):
+    """evaluate() must surface errors for typos like 'widht/2' instead of
+    silently returning 0.0 (issue 6)."""
+    params.set("width", 100)
+    with pytest.raises(ValueError):
+        params.evaluate("widht / 2")
+
+
+def test_evaluate_numeric_does_not_raise(params):
+    """Numeric inputs to evaluate() never raise."""
+    assert params.evaluate(10) == 10.0
+    assert params.evaluate(3.5) == 3.5
+
+
+def test_evaluate_uses_shared_safe_evaluator(params):
+    """evaluate() must use the shared safe_evaluate, which blocks attribute
+    access that could leak through a no-builtins sandbox (issue 6)."""
+    with pytest.raises(ValueError):
+        params.evaluate("().__class__.__bases__")
+
+
+def test_evaluate_all_logs_typo(params, caplog):
+    """evaluate_all() must log unresolved typos so they are not silently
+    hidden, while still leaving the value unresolved (issue 6)."""
+    params.set("good", 10)
+    params.set("typo", "widht + 5")
+    with caplog.at_level(logging.WARNING, logger="sketcher.core.params"):
+        params.evaluate_all()
+    assert params.get("typo") == 0.0
+    assert any("typo" in r.message for r in caplog.records)
+
+
+def test_evaluate_all_keeps_forward_reference_retry(params, caplog):
+    """A forward reference (a name defined later in set() order) must still
+    resolve via the multi-pass solver; it must not be logged as an error."""
+    params.set("b", "a * 2")
+    params.set("a", 10)
+    with caplog.at_level(logging.WARNING, logger="sketcher.core.params"):
+        params.evaluate_all()
+    assert params.get("b") == 20.0
+    assert not caplog.records

@@ -145,6 +145,7 @@ restricciones aplicables.
 El diseñador proporciona atajos de teclado para un flujo de trabajo eficiente:
 
 ### Atajos de herramientas
+
 - `Space`: Herramienta de selección
 - `G+P`: Herramienta de trazado (líneas y curvas Bézier)
 - `G+A`: Herramienta de arco
@@ -157,11 +158,13 @@ El diseñador proporciona atajos de teclado para un flujo de trabajo eficiente:
 - `G+N`: Alternar modo construcción en la selección
 
 ### Atajos de acciones
+
 - `C+H`: Añadir chaflán en la esquina
 - `C+F`: Añadir redondeo en la esquina
 - `C+S`: Enderezar las curvas Bézier seleccionadas a líneas
 
 ### Atajos de restricciones
+
 - `H`: Aplicar restricción Horizontal
 - `V`: Aplicar restricción Vertical
 - `N`: Aplicar restricción Perpendicular
@@ -176,6 +179,7 @@ El diseñador proporciona atajos de teclado para un flujo de trabajo eficiente:
 - `K+X`: Aplicar restricción de Relación de aspecto
 
 ### Atajos generales
+
 - `Ctrl+Z`: Deshacer
 - `Ctrl+Y` o `Ctrl+Shift+Z`: Rehacer
 - `Delete`: Eliminar los elementos seleccionados
@@ -191,10 +195,12 @@ final. Las entidades de construcción se muestran de forma diferente
 para corte o grabado láser.
 
 Para alternar el modo construcción:
+
 - Seleccione una o más entidades
 - Pulse `N` o `G+N`, o use la opción Construcción en el menú circular
 
 Las entidades de construcción son útiles para:
+
 - Crear líneas y círculos de referencia
 - Definir geometría temporal para alineación
 - Construir formas complejas a partir de un marco de guías
@@ -260,6 +266,7 @@ geometría:
   redondeo.
 
 Para usar chaflán o redondeo:
+
 1. Seleccione un punto de unión donde dos líneas se encuentran
 2. Pulse `C+H` para chaflán o `C+F` para redondeo
 3. Use el menú circular o los atajos de teclado para aplicar la modificación
@@ -291,20 +298,139 @@ están disponibles.
 
 ### Funciones integradas
 
-- `{today()}` — la fecha de hoy (ej.: `2026-05-01`)
-- `{now()}` — fecha y hora actuales
-- `{uuid4()}` — una cadena hexadecimal única de 8 caracteres, regenerada en
-  cada resolución
+| Función         | Tipo retorno | Descripción                                          |
+| --------------- | ------------ | ---------------------------------------------------- |
+| `{today()}`     | `date`       | Fecha UTC actual (ej.: `2026-08-26`)                 |
+| `{date()}`      | `date`       | Alias de `today()`                                   |
+| `{now()}`       | `datetime`   | Fecha y hora UTC actuales                            |
+| `{time()}`      | `time`       | Hora UTC actual (ej.: `15:30:00.123456+00:00`)       |
+| `{timestamp()}` | `float`      | Marca de tiempo Unix (segundos desde época)          |
+| `{uuid4()}`     | `str`        | Cadena hexadecimal de 8 caracteres (ej.: `a1b2c3d4`) |
+| `{uuid8()}`     | `str`        | Alias de `uuid4()`                                   |
+| `{uuid()}`      | `str`        | Cadena UUID v4 completa (36 caracteres)              |
 
-Esto es útil para fechar piezas o generar números de serie únicos para
-etiquetado de producción.
+### Especificaciones de formato
+
+Las especificaciones de formato de Python funcionan con
+cualquier resultado de expresión:
+
+- `{width:.1f}` — un decimal
+- `{timestamp():.0f}` — sin decimales en la marca de tiempo
+- `{today()}` — representación de cadena predeterminada
 
 ### Ejemplos de uso
 
-- `Part #{uuid4()}` — número de serie único en cada resolución
-- `W={width:.1f} H={height:.1f}` — etiquetas de dimensiones en vivo
+- `Pieza #{uuid4()}` — número de serie único en cada resolución
+- `A={width:.1f} A={height:.1f}` — etiquetas de dimensiones en vivo
 - `Fecha: {today()}` — fechar cada pieza
 - `{name} - {count:.0f}uds` — combinar parámetros de cadena y numéricos
+- `{timestamp():.0f}` — marca de tiempo Unix para registro de producción
+
+## Funciones de plantilla personalizadas
+
+Puedes registrar tus propias funciones para usar dentro de
+plantillas de texto. Esto es útil para obtener números de
+serie de una base de datos, leer datos externos o generar
+etiquetas personalizadas.
+
+### Escribir el script de registro
+
+Crea un archivo Python (ej.
+`~/.config/rayforge/mis_funciones.py`):
+
+```python
+"""Registrar funciones personalizadas para plantillas."""
+import sqlite3
+
+from sketcher.core.template_functions import (
+    register_template_function,
+)
+
+RUTA_DB = "/home/usuario/produccion.db"
+
+
+def siguiente_serie() -> str:
+    """Obtener siguiente número de serie de la base."""
+    conn = sqlite3.connect(RUTA_DB)
+    try:
+        cur = conn.execute(
+            "UPDATE contadores SET valor = valor + 1 "
+            "WHERE nombre = 'serial' RETURNING valor"
+        )
+        row = cur.fetchone()
+        conn.commit()
+        return f"SN-{row[0]:06d}"
+    finally:
+        conn.close()
+
+
+register_template_function("siguiente_serie", siguiente_serie)
+```
+
+Puntos clave:
+
+- Llama `register_template_function(nombre, callable)` para
+  cada función.
+- Tu función puede hacer cualquier cosa que Python pueda:
+  abrir archivos, conectarse a bases de datos, llamar APIs,
+  etc.
+- La función se ejecuta en **cada renderizado**, por lo que
+  debe ser rápida.
+- Las funciones son seguras en hilos si tu callable lo es.
+
+### Ejecutar Rayforge con el script
+
+Usa el flag `--script` para cargar tus funciones antes de
+que se abra la ventana:
+
+```bash
+rayforge --script ~/.config/rayforge/mis_funciones.py \
+    mi_documento.ryp
+```
+
+Esto ejecuta tu script temprano durante el inicio — antes
+de que se carguen los complementos y antes de que se cree
+la ventana principal — para que la función esté disponible
+cuando se resuelve el boceto por primera vez.
+
+### Usar la función en un cuadro de texto
+
+Crea un cuadro de texto con:
+
+```
+{siguiente_serie()}
+```
+
+Las especificaciones de formato también funcionan:
+
+```
+{siguiente_serie():>20}
+```
+
+### Registrar funciones programáticamente
+
+Si estás escribiendo un complemento o una biblioteca
+reutilizable, puedes llamar a `register_template_function`
+desde cualquier código Python que se ejecute antes de que
+se resuelva el boceto:
+
+```python
+from sketcher.core.template_functions import (
+    register_template_function,
+)
+
+register_template_function(
+    "numero_parte",
+    lambda: f"P-{hash('x') % 10000:04d}"
+)
+```
+
+### Las funciones integradas no se pueden eliminar
+
+Las funciones integradas (`today`, `now`, `uuid`, etc.)
+no se pueden eliminar del registro. Si necesitas cambiar
+su comportamiento, registra una función con un nombre
+diferente.
 
 ## Importación y exportación
 

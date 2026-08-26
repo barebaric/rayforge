@@ -232,3 +232,104 @@ def test_uuid4_external_cache_gives_fresh_per_caller():
     s.get_geometry(resolved_text_cache=cache_a)
     s.get_geometry(resolved_text_cache=cache_b)
     assert cache_a != cache_b
+
+
+def test_resolve_time():
+    """time() is available as a template function."""
+    s = Sketch()
+    box = _add_text_box(s, "{time()}")
+    s.solve()
+    resolved = s._resolve_text_content(box)
+    assert resolved is not None
+    # Result is a time string; just verify it resolved (not literal).
+    assert "{" not in resolved
+    assert ":" in resolved
+
+
+def test_resolve_uuid():
+    """uuid() returns a full UUID string."""
+    s = Sketch()
+    box = _add_text_box(s, "{uuid()}")
+    s.solve()
+    resolved = s._resolve_text_content(box)
+    assert resolved is not None
+    assert "{" not in resolved
+    assert len(resolved) == 36
+    assert resolved.count("-") == 4
+
+
+def test_resolve_uuid8():
+    """uuid8() returns an 8-char hex string."""
+    s = Sketch()
+    box = _add_text_box(s, "{uuid8()}")
+    s.solve()
+    resolved = s._resolve_text_content(box)
+    assert resolved is not None
+    assert "{" not in resolved
+    assert len(resolved) == 8
+
+
+def test_resolve_timestamp():
+    """timestamp() returns a float string."""
+    s = Sketch()
+    box = _add_text_box(s, "{timestamp()}")
+    s.solve()
+    resolved = s._resolve_text_content(box)
+    assert resolved is not None
+    assert "{" not in resolved
+    float(resolved)
+
+
+def test_resolve_date_alias():
+    """date() is an alias for today()."""
+    s = Sketch()
+    box = _add_text_box(s, "{date()}")
+    s.solve()
+    resolved = s._resolve_text_content(box)
+    assert resolved is not None
+    assert datetime.now(tz=timezone.utc).date().isoformat() in resolved
+
+
+def test_register_template_function():
+    """Addons can register custom template functions."""
+    from sketcher.core.template_functions import (
+        register_template_function,
+        unregister_template_function,
+    )
+
+    register_template_function("greet", lambda: "hello")
+    try:
+        s = Sketch()
+        box = _add_text_box(s, "{greet()}")
+        s.solve()
+        resolved = s._resolve_text_content(box)
+        assert resolved == "hello"
+    finally:
+        unregister_template_function("greet")
+
+
+def test_unregister_template_function():
+    """Unregistering removes a custom function; built-ins remain."""
+    from sketcher.core.template_functions import (
+        get_template_functions,
+        register_template_function,
+        unregister_template_function,
+    )
+
+    register_template_function("tmp", lambda: "x")
+    assert "tmp" in get_template_functions()
+    unregister_template_function("tmp")
+    assert "tmp" not in get_template_functions()
+    # Built-in is still present.
+    assert "today" in get_template_functions()
+
+
+def test_unregister_builtin_is_noop():
+    """Built-in functions cannot be removed."""
+    from sketcher.core.template_functions import (
+        get_template_functions,
+        unregister_template_function,
+    )
+
+    unregister_template_function("today")
+    assert "today" in get_template_functions()
