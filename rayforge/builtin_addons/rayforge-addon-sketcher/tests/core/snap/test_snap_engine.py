@@ -63,7 +63,6 @@ def test_snap_engine_initialization_defaults():
     assert engine.threshold == SnapEngine.DEFAULT_THRESHOLD
     assert engine.enabled is True
     assert len(engine._producers) == 0
-    assert len(engine._cached_points) == 0
     assert engine._last_query_pos is None
 
 
@@ -198,7 +197,6 @@ def test_snap_engine_rebuild_index(engine, registry, drag_context):
     engine.rebuild_index(registry, (5.0, 12.0), drag_context)
 
     assert len(engine._index._horizontal) == 1
-    assert len(engine._cached_points) == 1
     assert engine._last_query_pos == (5.0, 12.0)
 
 
@@ -227,7 +225,6 @@ def test_snap_engine_multiple_producers(engine, registry, drag_context):
     assert producer2.produce_called is True
     assert len(engine._index._horizontal) == 1
     assert len(engine._index._vertical) == 1
-    assert len(engine._cached_points) == 1
 
 
 def test_snap_engine_query_caches_snap_points(engine, registry, drag_context):

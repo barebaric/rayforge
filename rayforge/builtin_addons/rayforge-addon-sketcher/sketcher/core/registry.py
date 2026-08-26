@@ -31,6 +31,7 @@ class EntityRegistry:
         self.entities: list[Entity] = []
         self._entity_map: dict[EntityID, Entity] = {}
         self._id_counter: EntityID = 0
+        self._entity_version: int = 0
 
     def to_dict(self) -> dict[str, Any]:
         """Serializes the registry to a dictionary."""
@@ -75,6 +76,7 @@ class EntityRegistry:
         self.entities.append(entity)
         self._entity_map[eid] = entity
         self._id_counter += 1
+        self._entity_version += 1
         return eid
 
     def add_bezier(
@@ -97,6 +99,7 @@ class EntityRegistry:
         self.entities.append(entity)
         self._entity_map[eid] = entity
         self._id_counter += 1
+        self._entity_version += 1
         return eid
 
     def add_circle(
@@ -112,6 +115,7 @@ class EntityRegistry:
         self.entities.append(entity)
         self._entity_map[eid] = entity
         self._id_counter += 1
+        self._entity_version += 1
         return eid
 
     def add_ellipse(
@@ -132,6 +136,7 @@ class EntityRegistry:
         self.entities.append(entity)
         self._entity_map[eid] = entity
         self._id_counter += 1
+        self._entity_version += 1
         return eid
 
     def add_line(
@@ -142,12 +147,14 @@ class EntityRegistry:
         self.entities.append(entity)
         self._entity_map[eid] = entity
         self._id_counter += 1
+        self._entity_version += 1
         return eid
 
     def add_point(self, x: float, y: float, fixed: bool = False) -> EntityID:
         pid = self._id_counter
         self.points.append(Point(pid, x, y, fixed))
         self._id_counter += 1
+        self._entity_version += 1
         return pid
 
     def add_text_box(
@@ -170,6 +177,7 @@ class EntityRegistry:
         self.entities.append(entity)
         self._entity_map[eid] = entity
         self._id_counter += 1
+        self._entity_version += 1
         return eid
 
     def remove_entities_by_id(self, entity_ids: list[EntityID]):
@@ -177,6 +185,7 @@ class EntityRegistry:
         ids_to_remove = set(entity_ids)
         self.entities = [e for e in self.entities if e.id not in ids_to_remove]
         self._entity_map = {e.id: e for e in self.entities}
+        self._entity_version += 1
 
     def is_point_used(self, pid: EntityID) -> bool:
         """Checks if a point is used by any entity in the sketch."""

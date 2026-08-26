@@ -184,7 +184,7 @@ def test_centers_producer_construction_included(
 
 
 def test_centers_producer_outside_threshold(producer, registry, drag_context):
-    """Tests that centers outside threshold don't produce snaps."""
+    """Tests that all centers produce snap lines regardless of distance."""
     center_point = registry.add_point(100.0, 200.0)
     radius_point = registry.add_point(110.0, 200.0)
     registry.add_circle(center_point, radius_point)
@@ -196,7 +196,7 @@ def test_centers_producer_outside_threshold(producer, registry, drag_context):
         producer.produce(registry, drag_position, drag_context, threshold)
     )
 
-    assert len(snap_lines) == 0
+    assert len(snap_lines) == 2
 
     snap_points = list(
         producer.produce_points(
@@ -221,15 +221,8 @@ def test_centers_producer_source_attribute(producer, registry, drag_context):
         producer.produce(registry, drag_position, drag_context, threshold)
     )
 
+    assert len(snap_lines) == 2
     assert all(sl.source == circle for sl in snap_lines)
-
-    snap_points = list(
-        producer.produce_points(
-            registry, drag_position, drag_context, threshold
-        )
-    )
-
-    assert snap_points[0].source == circle
 
 
 def test_centers_producer_multiple_entities(producer, registry, drag_context):
@@ -249,7 +242,7 @@ def test_centers_producer_multiple_entities(producer, registry, drag_context):
         producer.produce(registry, drag_position, drag_context, threshold)
     )
 
-    assert len(snap_lines) == 2
+    assert len(snap_lines) == 4
 
     snap_points = list(
         producer.produce_points(

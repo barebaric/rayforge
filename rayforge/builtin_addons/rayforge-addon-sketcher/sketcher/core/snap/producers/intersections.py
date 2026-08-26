@@ -28,20 +28,17 @@ class IntersectionsProducer(SnapLineProducer):
         drag_context: DragContext,
         threshold: float,
     ) -> Iterator[SnapLine]:
-        x, y = drag_position
         for ix, iy in self._get_all_intersections(registry, drag_context):
-            if abs(ix - x) <= threshold:
-                yield SnapLine(
-                    is_horizontal=False,
-                    coordinate=ix,
-                    line_type=SnapLineType.INTERSECTION,
-                )
-            if abs(iy - y) <= threshold:
-                yield SnapLine(
-                    is_horizontal=True,
-                    coordinate=iy,
-                    line_type=SnapLineType.INTERSECTION,
-                )
+            yield SnapLine(
+                is_horizontal=False,
+                coordinate=ix,
+                line_type=SnapLineType.INTERSECTION,
+            )
+            yield SnapLine(
+                is_horizontal=True,
+                coordinate=iy,
+                line_type=SnapLineType.INTERSECTION,
+            )
 
     def produce_points(
         self,

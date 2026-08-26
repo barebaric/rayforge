@@ -37,13 +37,12 @@ def test_entity_points_producer_produce_horizontal_lines(
         producer.produce(registry, drag_position, drag_context, threshold)
     )
 
-    assert len(snap_lines) == 3
+    assert len(snap_lines) == 6
     horizontal_lines = [sl for sl in snap_lines if sl.is_horizontal]
-    assert len(horizontal_lines) == 2
+    assert len(horizontal_lines) == 3
     assert all(
         sl.line_type == SnapLineType.ENTITY_POINT for sl in horizontal_lines
     )
-    assert all(sl.coordinate == 20.0 for sl in horizontal_lines)
 
 
 def test_entity_points_producer_produce_vertical_lines(
@@ -61,10 +60,12 @@ def test_entity_points_producer_produce_vertical_lines(
         producer.produce(registry, drag_position, drag_context, threshold)
     )
 
-    assert len(snap_lines) == 2
-    assert all(not sl.is_horizontal for sl in snap_lines)
-    assert all(sl.line_type == SnapLineType.ENTITY_POINT for sl in snap_lines)
-    assert all(sl.coordinate == 10.0 for sl in snap_lines)
+    assert len(snap_lines) == 6
+    vertical_lines = [sl for sl in snap_lines if not sl.is_horizontal]
+    assert len(vertical_lines) == 3
+    assert all(
+        sl.line_type == SnapLineType.ENTITY_POINT for sl in vertical_lines
+    )
 
 
 def test_entity_points_producer_produce_both_axes(
@@ -92,7 +93,7 @@ def test_entity_points_producer_produce_both_axes(
 def test_entity_points_producer_outside_threshold(
     producer, registry, drag_context
 ):
-    """Tests that points outside threshold don't produce snap lines."""
+    """Tests that all points produce snap lines regardless of distance."""
     registry.add_point(10.0, 20.0)
     registry.add_point(100.0, 200.0)
 
@@ -103,7 +104,7 @@ def test_entity_points_producer_outside_threshold(
         producer.produce(registry, drag_position, drag_context, threshold)
     )
 
-    assert len(snap_lines) == 2
+    assert len(snap_lines) == 4
 
 
 def test_entity_points_produce_points(producer, registry, drag_context):
@@ -241,7 +242,7 @@ def test_entity_points_producer_multiple_points(
         producer.produce(registry, drag_position, drag_context, threshold)
     )
 
-    assert len(snap_lines) == 4
+    assert len(snap_lines) == 8
 
     snap_points = list(
         producer.produce_points(
@@ -272,7 +273,7 @@ def test_entity_points_producer_threshold_boundary(
         producer.produce(registry, drag_position, drag_context, threshold)
     )
 
-    assert len(snap_lines) == 1
+    assert len(snap_lines) == 2
 
 
 def test_entity_points_producer_negative_coordinates(
@@ -289,7 +290,7 @@ def test_entity_points_producer_negative_coordinates(
         producer.produce(registry, drag_position, drag_context, threshold)
     )
 
-    assert len(snap_lines) == 2
+    assert len(snap_lines) == 4
 
     snap_points = list(
         producer.produce_points(

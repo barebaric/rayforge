@@ -42,9 +42,10 @@ class SnapEngine:
         self._producers: list[SnapLineProducer] = []
         self._threshold: float = threshold
         self._index: SnapLineIndex = SnapLineIndex()
-        self._cached_points: list[SnapPoint] = []
         self._last_query_pos: GeoPoint | None = None
         self._enabled: bool = True
+        self._registry_version: int = -1
+        self._cached_drag_context_key: tuple | None = None
 
     @property
     def enabled(self) -> bool:
@@ -78,24 +79,56 @@ class SnapEngine:
         drag_position: GeoPoint,
         drag_context: DragContext,
     ) -> None:
+        reg_version = registry._entity_version
+        drag_key = (
+            frozenset(drag_context.dragged_point_ids),
+            frozenset(drag_context.dragged_entity_ids),
+        )
+        if (
+            reg_version == self._registry_version
+            and drag_key == self._cached_drag_context_key
+        ):
+            return
+
         self._index.clear()
-        self._cached_points.clear()
 
         for producer in self._producers:
             try:
                 self._index.add_all(
                     producer.produce(
-                        registry, drag_position, drag_context, self._threshold
+                        registry,
+                        drag_position,
+                        drag_context,
+                        self._threshold,
                     )
                 )
-                for snap_point in producer.produce_points(
-                    registry, drag_position, drag_context, self._threshold
-                ):
-                    self._cached_points.append(snap_point)
             except Exception as e:  # noqa: BLE001 - addon producer boundary
                 logger.warning(f"SnapLineProducer error: {e}")
 
         self._last_query_pos = drag_position
+        self._registry_version = reg_version
+        self._cached_drag_context_key = drag_key
+
+    def _get_snap_points(
+        self,
+        registry: EntityRegistry,
+        drag_position: GeoPoint,
+        drag_context: DragContext,
+    ) -> list[SnapPoint]:
+        points: list[SnapPoint] = []
+        for producer in self._producers:
+            try:
+                points.extend(
+                    producer.produce_points(
+                        registry,
+                        drag_position,
+                        drag_context,
+                        self._threshold,
+                    )
+                )
+            except Exception as e:  # noqa: BLE001 - addon producer boundary
+                logger.warning(f"SnapLineProducer error: {e}")
+        return points
 
     def query(
         self,
@@ -113,7 +146,8 @@ class SnapEngine:
 
         x, y = position
 
-        point_result = self._find_nearest_snap_point(x, y)
+        snap_points = self._get_snap_points(registry, position, drag_context)
+        point_result = self._find_nearest_snap_point(x, y, snap_points)
         if point_result is not None:
             snap_point, dist = point_result
             crossing_lines = self._find_crossing_lines(x, y, snap_point)
@@ -168,13 +202,13 @@ class SnapEngine:
         return (best_h, best_v)
 
     def _find_nearest_snap_point(
-        self, x: float, y: float
+        self, x: float, y: float, snap_points: list[SnapPoint]
     ) -> tuple[SnapPoint, float] | None:
         best_point: SnapPoint | None = None
         best_dist: float = self._threshold
         best_priority: int = -1
 
-        for sp in self._cached_points:
+        for sp in snap_points:
             dx = x - sp.x
             dy = y - sp.y
             dist = (dx * dx + dy * dy) ** 0.5
@@ -232,7 +266,6 @@ class SnapEngine:
         if drag_context is None:
             drag_context = DragContext()
 
-        if self._last_query_pos != position:
-            self.rebuild_index(registry, position, drag_context)
+        self.rebuild_index(registry, position, drag_context)
 
         return self._get_all_lines()
