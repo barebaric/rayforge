@@ -348,12 +348,20 @@ class SelectTool(SnapMixin, SketchTool):
                 start_offset = self.drag_cp_start_offset
                 end_offset = bezier.cp1 if cp_index == 1 else bezier.cp2
                 if start_offset != end_offset:
+                    # Pass the full snapshot (points + entities)
+                    # We must copy because self.drag_initial_* are cleared
+                    # below
+                    snapshot = (
+                        self.drag_initial_positions.copy(),
+                        self.drag_initial_entity_states.copy(),
+                    )
                     cmd = MoveControlPointCommand(
                         self.element.sketch,
                         bezier_id,
                         cp_index,
                         start_offset,
                         end_offset,
+                        snapshot=snapshot,
                     )
                     self.element.execute_command(cmd)
 

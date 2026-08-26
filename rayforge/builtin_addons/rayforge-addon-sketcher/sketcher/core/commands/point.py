@@ -110,6 +110,8 @@ class MoveControlPointCommand(SketchChangeCommand):
         cp_index: int,
         start_offset: GeoPoint | None,
         end_offset: GeoPoint | None,
+        snapshot: tuple[dict[EntityID, GeoPoint], dict[EntityID, Any]]
+        | None = None,
     ):
         label = _("Move Control Point")
         super().__init__(sketch, label)
@@ -117,6 +119,11 @@ class MoveControlPointCommand(SketchChangeCommand):
         self.cp_index = cp_index
         self.start_offset = start_offset
         self.end_offset = end_offset
+        # If we are provided a snapshot (from the tool), use it.
+        # This is critical because the drag operation changes coordinates
+        # *before* the command is executed.
+        if snapshot:
+            self._snapshot = snapshot
 
     def _get_bezier(self) -> Bezier | None:
         entity = self.sketch.registry.get_entity(self.bezier_id)

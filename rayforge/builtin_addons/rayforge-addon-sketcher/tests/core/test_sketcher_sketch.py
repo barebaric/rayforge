@@ -1023,6 +1023,28 @@ def test_find_all_closed_loops_with_circle_hole():
     assert area == pytest.approx(math.pi * 5**2)
 
 
+def test_find_all_closed_loops_clockwise_boundary():
+    """A clockwise-drawn boundary must still be found: the half-edge walk
+    normalizes orientation so every face yields a positive signed area."""
+    s = Sketch()
+    p1 = s.add_point(0, 0)
+    p2 = s.add_point(0, 10)
+    p3 = s.add_point(10, 10)
+    p4 = s.add_point(10, 0)
+    l1 = s.add_line(p1, p2)
+    l2 = s.add_line(p2, p3)
+    l3 = s.add_line(p3, p4)
+    l4 = s.add_line(p4, p1)
+
+    loops = s._find_all_closed_loops()
+    assert len(loops) == 1
+    assert {item[0] for item in loops[0]} == {l1, l2, l3, l4}
+    assert s._calculate_loop_signed_area(loops[0]) == pytest.approx(100.0)
+
+    hit = s.get_loop_at_point(5.0, 5.0)
+    assert hit is not None
+
+
 def test_loop_with_line_mode_bezier_polygon():
     """A loop mixing lines with a straightened bezier must keep all
     vertices (line-mode beziers honor the loop-vertex convention)."""
