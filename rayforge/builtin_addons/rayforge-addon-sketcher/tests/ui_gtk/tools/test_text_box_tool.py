@@ -1,7 +1,12 @@
-from unittest.mock import MagicMock, Mock
+from typing import cast
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from raygeo.geo.shape.text import FontConfig
+from sketcher.core import Sketch
+from sketcher.core.commands import TextBoxCommand
+from sketcher.core.commands.live_text_edit import LiveTextEditCommand
+from sketcher.core.commands.text_property import ModifyTextPropertyCommand
 from sketcher.core.entities import TextBoxEntity
 from sketcher.ui_gtk.tools import TextBoxTool
 from sketcher.ui_gtk.tools.base import SketcherKey
@@ -15,6 +20,8 @@ def mock_element():
     element.sketch = Mock()
     element.sketch.registry._id_counter = 0
     element.sketch.registry.entities = []
+    element.sketch.registry.points = []
+    element.sketch.constraints = []
     element.sketch.is_fully_constrained = False
     element.hittester.get_hit_data.return_value = (None, None)
     element.execute_command = MagicMock()
@@ -131,7 +138,10 @@ def test_text_box_tool_on_press_outside_box_creates_new(
     assert text_box_tool.state == TextBoxState.EDITING
     assert text_box_tool.editing_entity_id == 6
     assert text_box_tool.text_buffer == ""
-    assert mock_element.execute_command.call_count == 2
+    # Only the TextBoxCommand is executed: the previous session had no
+    # finalize command (it was not started via start_editing) and the
+    # session-scoped LiveTextEditCommand is never pushed.
+    assert mock_element.execute_command.call_count == 1
 
 
 @pytest.mark.ui
@@ -227,14 +237,13 @@ def test_text_box_tool_handle_key_event_arrow_right(
 @pytest.mark.ui
 def test_text_box_tool_handle_key_event_return(text_box_tool, mock_element):
     """Test that return key finalizes edit."""
-    text_box_tool.state = TextBoxState.EDITING
-    text_box_tool.editing_entity_id = 5
-    text_box_tool.text_buffer = "Test"
-
-    mock_entity = Mock()
-    mock_entity.id = 5
+    mock_entity = TextBoxEntity(
+        5, 0, 1, 2, content="Test", construction_line_ids=[]
+    )
     mock_entity.font_config = FontConfig(family="sans-serif", size=10.0)
     mock_element.sketch.registry.get_entity = Mock(return_value=mock_entity)
+
+    text_box_tool.start_editing(5)
 
     result = text_box_tool.handle_key_event(SketcherKey.RETURN)
 
@@ -243,6 +252,8 @@ def test_text_box_tool_handle_key_event_return(text_box_tool, mock_element):
     assert text_box_tool.editing_entity_id is None
     assert text_box_tool.text_buffer == ""
     mock_element.execute_command.assert_called_once()
+    executed_cmd = mock_element.execute_command.call_args.args[0]
+    assert executed_cmd.new_content == "Test"
 
 
 @pytest.mark.ui
@@ -324,6 +335,140 @@ def test_text_box_tool_on_deactivate(text_box_tool, mock_element):
     assert text_box_tool.editing_entity_id is None
     assert text_box_tool.text_buffer == ""
     assert text_box_tool.cursor_pos == 0
+
+
+@pytest.mark.ui
+def test_text_box_tool_deactivate_pushes_only_finalize_command(
+    text_box_tool, mock_element
+):
+    """Ending an edit session must push exactly one command for the edit
+    (ModifyTextPropertyCommand). The session-scoped LiveTextEditCommand
+    must never become a global history entry."""
+    entity = MagicMock(spec=TextBoxEntity)
+    entity.content = "before"
+    entity.font_config = FontConfig(family="sans-serif", size=10.0)
+    entity.origin_id = 0
+    entity.width_id = 1
+    entity.height_id = 2
+    entity.get_natural_size.return_value = (10.0, 5.0)
+    entity.construction_line_ids = []
+    mock_element.sketch.registry.get_entity.side_effect = lambda eid: (
+        entity if eid == 5 else None
+    )
+    mock_element.sketch.registry.get_point.side_effect = lambda pid: Mock(
+        x=0.0, y=0.0
+    )
+    mock_element.sketch.constraints = []
+
+    text_box_tool.start_editing(5)
+    assert text_box_tool.live_edit_cmd is not None
+
+    text_box_tool.handle_text_input("!")
+    text_box_tool.on_deactivate()
+
+    executed = [
+        call.args[0] for call in mock_element.execute_command.call_args_list
+    ]
+    assert not any(isinstance(cmd, LiveTextEditCommand) for cmd in executed)
+    finalize_cmds = [
+        cmd for cmd in executed if isinstance(cmd, ModifyTextPropertyCommand)
+    ]
+    assert len(finalize_cmds) == 1
+    # old_content is captured from the entity when the command executes,
+    # which the mocked execute_command does not do.
+    assert finalize_cmds[0].new_content == "before!"
+    assert text_box_tool.live_edit_cmd is None
+
+
+@pytest.mark.ui
+def test_text_box_tool_undo_restores_cursor_position(
+    text_box_tool, mock_element
+):
+    """Undoing a mid-line edit must restore the cursor to the position
+    the edit was made at, not to the stale session-start position."""
+
+    class MockTime:
+        current_time = 1000.0
+
+        @classmethod
+        def time(cls):
+            return cls.current_time
+
+    with patch("time.time", MockTime.time):
+        sketch = Sketch()
+        box_cmd = TextBoxCommand(sketch, (0, 0), 10.0, 10.0)
+        box_cmd.execute()
+        mock_element.sketch = sketch
+
+        assert box_cmd.text_box_id is not None
+        entity_id = box_cmd.text_box_id
+        text_box_tool.state = TextBoxState.EDITING
+        text_box_tool.editing_entity_id = entity_id
+        text_box_tool.text_buffer = "hello world"
+        text_box_tool.cursor_pos = len(text_box_tool.text_buffer)
+        text_box_tool.live_edit_cmd = LiveTextEditCommand(sketch, entity_id)
+        text_box_tool.live_edit_cmd.capture_state(
+            text_box_tool.text_buffer, text_box_tool.cursor_pos
+        )
+
+        # Move the cursor into the middle of the line (pure cursor move,
+        # not an undoable action), then type there.
+        text_box_tool.handle_key_event(SketcherKey.ARROW_LEFT)
+        text_box_tool.handle_key_event(SketcherKey.ARROW_LEFT)
+        assert text_box_tool.cursor_pos == 9
+
+        # Advance time so the keystroke is not coalesced into the
+        # pre-edit history entry.
+        MockTime.current_time += 1.0
+        text_box_tool.handle_text_input("X")
+        assert text_box_tool.text_buffer == "hello worXld"
+
+    text_box_tool.handle_key_event(SketcherKey.UNDO)
+
+    assert text_box_tool.text_buffer == "hello world"
+    assert text_box_tool.cursor_pos == 9
+
+
+@pytest.mark.ui
+def test_text_box_tool_undo_targets_session_start_geometry(
+    text_box_tool, mock_element
+):
+    """The finalize command must record the box geometry as it was when
+    the edit session started, not after the live resize that typing
+    performs (which caused a non-uniform resize on undo)."""
+    sketch = Sketch()
+    box_cmd = TextBoxCommand(sketch, (0, 0), 10.0, 10.0)
+    box_cmd.execute()
+    assert box_cmd.text_box_id is not None
+    mock_element.sketch = sketch
+
+    entity_id = box_cmd.text_box_id
+    entity = cast(TextBoxEntity, sketch.registry.get_entity(entity_id))
+
+    text_box_tool.start_editing(entity_id)
+    assert text_box_tool._edit_cmd is not None
+
+    p_width = sketch.registry.get_point(entity.width_id)
+    orig_width = (p_width.x, p_width.y)
+
+    # Simulate the live resize while typing: the width point moves
+    # before any command is executed.
+    p_width.x += 30.0
+
+    text_box_tool.text_buffer = "something"
+    text_box_tool.on_deactivate()
+
+    executed = [
+        call.args[0] for call in mock_element.execute_command.call_args_list
+    ]
+    finalize = [
+        cmd for cmd in executed if isinstance(cmd, ModifyTextPropertyCommand)
+    ]
+    assert len(finalize) == 1
+    assert finalize[0].new_content == "something"
+    assert finalize[0].old_point_positions[entity.width_id] == pytest.approx(
+        orig_width
+    )
 
 
 @pytest.mark.ui

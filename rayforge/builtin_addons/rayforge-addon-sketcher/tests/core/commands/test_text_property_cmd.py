@@ -1,7 +1,7 @@
 import pytest
 from raygeo.geo.shape.text import FontConfig
 from sketcher.core import Sketch
-from sketcher.core.commands import ModifyTextPropertyCommand
+from sketcher.core.commands import ModifyTextPropertyCommand, TextBoxCommand
 from sketcher.core.entities.text_box import TextBoxEntity
 
 from rayforge.core.undo import HistoryManager
@@ -148,6 +148,45 @@ def test_modify_text_property_command_execute_undo_cycle(sketch_with_text_box):
         assert tb.font_config.bold is False
         assert tb.font_config.size == 10.0
         assert tb.font_config.bold is False
+
+
+def test_modify_text_property_undo_restores_pre_session_geometry(
+    sketch_with_text_box,
+):
+    """Box geometry mutated live during a typing session (before the
+    command executes) must not become the undo target: undo restores
+    the geometry captured at session start."""
+    sketch, tb_id = sketch_with_text_box
+    tb = sketch.registry.get_entity(tb_id)
+    p_width = sketch.registry.get_point(tb.width_id)
+    p_height = sketch.registry.get_point(tb.height_id)
+    orig_width = (p_width.x, p_width.y)
+    orig_height = (p_height.x, p_height.y)
+
+    cmd = ModifyTextPropertyCommand(
+        sketch,
+        tb_id,
+        "Much Longer Text",
+        FontConfig(family="sans-serif", size=10.0),
+    )
+
+    # Session start: freeze pre-edit state, then simulate the live
+    # resize that typing performs outside the command system.
+    cmd.capture_snapshot()
+    cmd.capture_pre_edit_state()
+
+    p_width.x += 40.0
+    p_height.y += 15.0
+
+    cmd.execute()
+    assert cmd.old_content == "Original Text"
+    assert cmd.old_point_positions[tb.width_id] == pytest.approx(orig_width)
+    assert cmd.old_point_positions[tb.height_id] == pytest.approx(orig_height)
+
+    cmd.undo()
+
+    assert (p_width.x, p_width.y) == pytest.approx(orig_width)
+    assert (p_height.x, p_height.y) == pytest.approx(orig_height)
 
 
 def test_modify_text_property_command_with_missing_entity(
@@ -742,3 +781,48 @@ def test_redo_restores_text_box_after_undo_to_empty():
     assert tb is not None
     assert isinstance(tb, TextBoxEntity)
     assert tb.content == "New Text"
+
+
+def test_create_box_transaction_undo_redo_no_duplicate_ids():
+    """Undoing and redoing a create-text-box transaction must not
+    duplicate registry entries. Both commands in the transaction own
+    the same points/entities; a non-idempotent restore produced two
+    objects per ID, which corrupted sketches after save/reload."""
+    sketch = Sketch()
+    history = HistoryManager()
+
+    with history.transaction("Add Text Box") as t:
+        box_cmd = TextBoxCommand(sketch, origin=(0, 0), width=30.0)
+        t.execute(box_cmd)
+        assert box_cmd.text_box_id is not None
+        fin_cmd = ModifyTextPropertyCommand(
+            sketch,
+            box_cmd.text_box_id,
+            "abc",
+            FontConfig(family="sans-serif", size=10.0),
+        )
+        t.execute(fin_cmd)
+
+    def assert_no_duplicates():
+        pids = [p.id for p in sketch.registry.points]
+        eids = [e.id for e in sketch.registry.entities]
+        assert len(pids) == len(set(pids))
+        assert len(eids) == len(set(eids))
+
+    assert_no_duplicates()
+    history.undo()
+    assert_no_duplicates()
+    history.redo()
+    assert_no_duplicates()
+
+    text_boxes = [
+        e for e in sketch.registry.entities if isinstance(e, TextBoxEntity)
+    ]
+    assert len(text_boxes) == 1
+    assert text_boxes[0].content == "abc"
+
+    # A second cycle must stay consistent as well.
+    history.undo()
+    history.redo()
+    assert_no_duplicates()
+    assert sketch.solve() is True

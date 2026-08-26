@@ -167,6 +167,15 @@ class SketchCanvas(WorldSurface):
         """
         self.sketch_editor.deactivate()
 
+        # History commands hold direct references to the Sketch object
+        # they were created against. When the model is swapped (e.g.
+        # after finishing an edit the document stores a freshly
+        # deserialized copy of the sketch), stale entries would undo
+        # into an orphaned object with no visible effect, so they must
+        # be discarded.
+        if self.sketch_element.sketch is not sketch:
+            self.sketch_editor.history_manager.clear()
+
         # Force a solve immediately. The sketch data has just been loaded from
         # disk, so the 'constrained' flags on points/entities are all False.
         # Running solve() calculates the Degrees of Freedom (DOF) and updates

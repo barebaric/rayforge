@@ -53,6 +53,7 @@ class TextBoxTool(SketchTool):
         self.cursor_visible = True
         self.is_hovering = False
         self.live_edit_cmd: LiveTextEditCommand | None = None
+        self._edit_cmd: ModifyTextPropertyCommand | None = None
         self._is_new_text_box = False
 
         # Text selection state
@@ -126,13 +127,26 @@ class TextBoxTool(SketchTool):
         )
         self.live_edit_cmd.capture_state(self.text_buffer, self.cursor_pos)
 
+        # Build the finalize command now and freeze the pre-session
+        # state: typing below resizes the box live outside the command
+        # system, so capturing at finalize time would record the mutated
+        # geometry as the undo target (non-uniform resize on undo).
+        self._edit_cmd = ModifyTextPropertyCommand(
+            self.element.sketch, entity_id, "", entity.font_config
+        )
+        self._edit_cmd.capture_snapshot()
+        self._edit_cmd.capture_pre_edit_state()
+
     def on_deactivate(self):
         if self.state == TextBoxState.EDITING:
             self.editing_finished.send(self)
 
-            if self.live_edit_cmd:
-                self.element.execute_command(self.live_edit_cmd)
-                self.live_edit_cmd = None
+            # The live edit command is session-scoped (intra-session
+            # undo while typing) and must not become a global history
+            # entry: its execute() resets the session history, which
+            # would make an undo of it a no-op. The model change is
+            # committed by _finalize_edit() via self._edit_cmd.
+            self.live_edit_cmd = None
 
             self._finalize_edit()
 
@@ -359,19 +373,22 @@ class TextBoxTool(SketchTool):
         self.cursor_pos = len(self.text_buffer)
 
     def _finalize_edit(self):
-        if self.editing_entity_id is not None:
-            entity = self.element.sketch.registry.get_entity(
-                self.editing_entity_id
-            )
-            if entity:
-                entity = cast(TextBoxEntity, entity)
-                cmd = ModifyTextPropertyCommand(
-                    self.element.sketch,
-                    self.editing_entity_id,
-                    self.text_buffer,
-                    entity.font_config,
-                )
-                self.element.execute_command(cmd)
+        if self.editing_entity_id is None:
+            return
+
+        cmd = self._edit_cmd
+        self._edit_cmd = None
+        if cmd is None:
+            return
+
+        entity = self.element.sketch.registry.get_entity(
+            self.editing_entity_id
+        )
+        if entity:
+            entity = cast(TextBoxEntity, entity)
+            cmd.new_content = self.text_buffer
+            cmd.new_font_config = entity.font_config
+            self.element.execute_command(cmd)
 
     def on_drag(self, world_dx: float, world_dy: float):
         if self.state == TextBoxState.EDITING and self.is_drag_selecting:
@@ -525,6 +542,7 @@ class TextBoxTool(SketchTool):
             else:
                 self.clear_selection()
             self.cursor_pos = new_pos
+            self._sync_cursor_to_live_edit()
             self.element.mark_dirty()
             self.cursor_moved.send(self)
             return True
@@ -535,6 +553,7 @@ class TextBoxTool(SketchTool):
             else:
                 self.clear_selection()
             self.cursor_pos = new_pos
+            self._sync_cursor_to_live_edit()
             self.element.mark_dirty()
             self.cursor_moved.send(self)
             return True
@@ -545,6 +564,7 @@ class TextBoxTool(SketchTool):
             else:
                 self.clear_selection()
             self.cursor_pos = new_pos
+            self._sync_cursor_to_live_edit()
             self.element.mark_dirty()
             self.cursor_moved.send(self)
             return True
@@ -555,12 +575,14 @@ class TextBoxTool(SketchTool):
             else:
                 self.clear_selection()
             self.cursor_pos = new_pos
+            self._sync_cursor_to_live_edit()
             self.element.mark_dirty()
             self.cursor_moved.send(self)
             return True
         elif key == SketcherKey.SELECT_ALL:
             self.set_selection(0, len(self.text_buffer))
             self.cursor_pos = len(self.text_buffer)
+            self._sync_cursor_to_live_edit()
             self.element.mark_dirty()
             return True
         elif key == SketcherKey.COPY and ctrl:
@@ -791,6 +813,7 @@ class TextBoxTool(SketchTool):
         if not self.text_buffer:
             self.cursor_pos = 0
             self.cursor_visible = True
+            self._sync_cursor_to_live_edit()
             self.element.mark_dirty()
             self.cursor_moved.send(self)
             return
@@ -818,8 +841,15 @@ class TextBoxTool(SketchTool):
 
         self.cursor_pos = best_i
         self.cursor_visible = True
+        self._sync_cursor_to_live_edit()
         self.element.mark_dirty()
         self.cursor_moved.send(self)
+
+    def _sync_cursor_to_live_edit(self):
+        """Keeps the live edit history's cursor in sync after pure cursor
+        movements so undo restores the expected position."""
+        if self.live_edit_cmd is not None:
+            self.live_edit_cmd.update_cursor(self.cursor_pos)
 
     def draw_overlay(self, ctx: cairo.Context):
         if (

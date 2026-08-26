@@ -981,7 +981,10 @@ class WorkPiece(DocItem):
         wp.source_asset_uid = data.get("source_asset_uid")
         raw_cache = data.get("resolved_text_cache")
         if raw_cache:
-            wp._resolved_text_cache = {int(k): v for k, v in raw_cache.items()}
+            wp._resolved_text_cache = {
+                int(k): tuple(v) if isinstance(v, list) else v
+                for k, v in raw_cache.items()
+            }
 
         # Hydrate with transient data if provided for subprocesses
         if "data" in data:

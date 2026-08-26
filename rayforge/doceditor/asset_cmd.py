@@ -30,6 +30,7 @@ class UpdateAssetCommand(Command):
         doc: Doc,
         asset_uid: str,
         new_data: dict[str, Any],
+        old_data: dict[str, Any] | None = None,
         name: str = _("Update Asset"),
     ):
         super().__init__(name)
@@ -37,10 +38,16 @@ class UpdateAssetCommand(Command):
         self.asset_uid = asset_uid
 
         # --- Store old state for undo ---
+        # Callers that mutate an IAsset instance in place (e.g. the
+        # sketch editor) must supply the state captured BEFORE the
+        # mutation started; capturing here would already see the new
+        # state and undo would become a no-op.
         old_asset = doc.get_asset_by_uid(asset_uid)
         if not old_asset:
             raise ValueError(f"Asset with UID {asset_uid} not found.")
-        self.old_data = old_asset.to_dict()
+        self.old_data = (
+            old_data if old_data is not None else old_asset.to_dict()
+        )
         self.new_data = new_data
         self.asset_type_name = old_asset.asset_type_name
 

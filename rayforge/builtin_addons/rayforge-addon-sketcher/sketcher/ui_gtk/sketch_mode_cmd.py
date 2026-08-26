@@ -39,6 +39,9 @@ class SketchModeCmd:
         self._is_editing_new_sketch = False
         self._sketch_history_connected = False
         self._doc_was_saved_on_entry: bool = True
+        # Asset state captured when the sketcher was entered; used as
+        # the undo target for the UpdateAssetCommand created on finish.
+        self._sketch_data_on_entry: dict | None = None
 
     def _on_sketch_history_changed(self, sender, **kwargs):
         """Updates the document's saved state based on the sketch history.
@@ -115,6 +118,10 @@ class SketchModeCmd:
 
             self.active_sketch_workpiece = workpiece
             self._is_editing_new_sketch = is_new_sketch
+            # Snapshot BEFORE the editor mutates the asset in place, so
+            # finishing can build an UpdateAssetCommand whose undo
+            # restores the pre-edit state.
+            self._sketch_data_on_entry = sketch.to_dict()
             sketch_studio.set_sketch(sketch)
             self._win.open_modal_page("sketch")
             get_usage_tracker().track_page_view("/sketcher", "Sketch Editor")
@@ -149,6 +156,8 @@ class SketchModeCmd:
 
             self.active_sketch_workpiece = None
             self._is_editing_new_sketch = False
+            # Snapshot BEFORE the editor mutates the asset in place.
+            self._sketch_data_on_entry = sketch.to_dict()
             sketch_studio.set_sketch(sketch)
             self._win.open_modal_page("sketch")
             get_usage_tracker().track_page_view("/sketcher", "Sketch Editor")
@@ -170,6 +179,10 @@ class SketchModeCmd:
             doc=self._editor.doc,
             asset_uid=sketch.uid,
             new_data=sketch.to_dict(),
+            # The editor mutates the live asset in place, so the state
+            # captured at command construction time would already be the
+            # edited one. Use the snapshot taken on entry instead.
+            old_data=self._sketch_data_on_entry,
         )
         self._editor.history_manager.execute(cmd)
 

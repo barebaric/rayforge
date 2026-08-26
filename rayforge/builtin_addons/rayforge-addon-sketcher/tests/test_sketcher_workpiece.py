@@ -1,13 +1,17 @@
 from pathlib import Path
+from typing import cast
 
 import pytest
 from raygeo.geo import Geometry, Matrix
+from raygeo.geo.shape.text import FontConfig
 from sketcher.core import Sketch
+from sketcher.core.entities import TextBoxEntity
 
 from rayforge.core.doc import Doc
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
+from rayforge.doceditor.asset_cmd import UpdateAssetCommand
 
 
 @pytest.fixture
@@ -378,3 +382,64 @@ class TestWorkPieceWithSketch:
         _ = wp.boundaries
         new_val = next(iter(wp._resolved_text_cache.values()))
         assert new_val != first_val
+
+
+def test_undo_reverts_rendered_text_not_just_size(doc):
+    """Undoing a sketcher session must also revert rendered text.
+
+    The workpiece persists a resolved-text cache keyed by entity id;
+    UpdateAssetCommand.undo only clears the geometry caches, so an
+    unvalidated cache hit would keep rendering the newer (longer)
+    text squeezed into the reverted workpiece frame."""
+    sketch = Sketch(name="s")
+    origin = sketch.add_point(0, 0)
+    w_pt = sketch.add_point(30, 0)
+    h_pt = sketch.add_point(0, 10)
+    box_id = sketch.registry.add_text_box(
+        origin, w_pt, h_pt, "ab", FontConfig()
+    )
+    sketch.solve()
+    doc.add_asset(sketch)
+
+    wp = WorkPiece.from_geometry_provider(sketch)
+    doc.active_layer.add_child(wp)
+    _ = wp.boundaries
+
+    # Enter the sketcher: snapshot the pre-edit state.
+    entry_data = sketch.to_dict()
+
+    # Session: the live asset is mutated, then a render caches the
+    # resolved NEW text into the workpiece.
+    box = cast(TextBoxEntity, sketch.registry.get_entity(box_id))
+    box.content = "abcdef"
+    sketch.solve()
+    # The provider-update handler invalidates geometry caches in the
+    # real app (sketchelement mark_dirty -> regenerate on render).
+    wp.clear_render_cache()
+    _ = wp.boundaries
+    assert wp._resolved_text_cache[box_id][0] == "abcdef"
+
+    # Finish: exactly like sketch_mode_cmd.on_sketch_finished.
+    cmd = UpdateAssetCommand(
+        doc=doc,
+        asset_uid=sketch.uid,
+        new_data=sketch.to_dict(),
+        old_data=entry_data,
+    )
+    doc.history_manager.execute(cmd)
+
+    # Undo in the main view.
+    doc.history_manager.undo()
+
+    # Regeneration must use the REVERTED text: the stale cache entry
+    # (whose source is "abcdef") must not be trusted.
+    _ = wp.boundaries
+    source, resolved = wp._resolved_text_cache[box_id]
+    assert source == "ab"
+    assert resolved == "ab"
+
+    ref_wp = WorkPiece.from_geometry_provider(Sketch.from_dict(entry_data))
+    ref_geo = ref_wp.boundaries
+    geo = wp.boundaries
+    assert geo is not None and ref_geo is not None
+    assert len(geo.data) == len(ref_geo.data)

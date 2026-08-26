@@ -179,7 +179,7 @@ class Sketch(IAsset, IGeometryProvider):
         self._updated = Signal()
         self._hidden: bool = False
         self._last_solve_values: dict[str, Any] = {}
-        self._resolved_text_cache: dict[EntityID, str | None] = {}
+        self._resolved_text_cache: dict[EntityID, tuple[str, str | None]] = {}
 
         # Initialize the Origin Point (Fixed Anchor)
         self.origin_id: EntityID = self.registry.add_point(
@@ -1392,13 +1392,19 @@ class Sketch(IAsset, IGeometryProvider):
 
         Results are cached per entity so that volatile expressions
         (e.g. uuid4()) produce the same value across multiple calls
-        within a single solve cycle.
+        within a single solve cycle. Each entry records the source
+        content it was resolved from; a cached entry whose source no
+        longer matches the entity's current content is re-resolved,
+        otherwise reverting an edit would keep rendering stale text.
         """
-        if entity.id in self._resolved_text_cache:
-            return self._resolved_text_cache[entity.id]
+        cached = self._resolved_text_cache.get(entity.id)
+        if isinstance(cached, (tuple, list)):
+            source, resolved = cached
+            if source == entity.content:
+                return resolved
 
         if not entity.content:
-            self._resolved_text_cache[entity.id] = None
+            self._resolved_text_cache[entity.id] = ("", None)
             return None
 
         try:
@@ -1418,13 +1424,19 @@ class Sketch(IAsset, IGeometryProvider):
                 f"{entity.content!r} -> {resolved!r} "
                 f"values={list(ctx.keys())[:5]}"
             )
-            self._resolved_text_cache[entity.id] = resolved
+            self._resolved_text_cache[entity.id] = (
+                entity.content,
+                resolved,
+            )
             return resolved
         except (KeyError, IndexError, ValueError) as e:
             logger.debug(
                 f"Template resolution failed for '{entity.content}': {e}"
             )
-            self._resolved_text_cache[entity.id] = None
+            self._resolved_text_cache[entity.id] = (
+                entity.content,
+                None,
+            )
             return None
 
     def to_geometry(self) -> Geometry:

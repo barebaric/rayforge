@@ -55,6 +55,78 @@ def test_live_text_edit_command_execute():
         assert cmd.get_current_content() == "initial"
 
 
+def test_live_text_edit_execute_preserves_session_history():
+    """Executing an already-active session must not wipe its history,
+    otherwise undo would lose the pre-edit state."""
+    mock_time = MockTime()
+    with patch("time.time", mock_time.time):
+        sketch = Sketch()
+        box_cmd = TextBoxCommand(sketch, (0, 0), 10.0, 10.0)
+        box_cmd.execute()
+        assert box_cmd.text_box_id is not None
+        text_box_id = box_cmd.text_box_id
+
+        cmd = LiveTextEditCommand(sketch, text_box_id)
+        cmd.capture_state("before", 6)
+
+        text_box = cast(TextBoxEntity, sketch.registry.get_entity(text_box_id))
+        text_box.content = "before edited"
+
+        cmd.execute()
+
+        assert len(cmd.history) == 1
+        assert cmd.current_index == 0
+        assert cmd.get_current_content() == "before"
+
+
+def test_live_text_edit_should_skip_undo():
+    """The session-scoped command is never a valid global-history entry."""
+    sketch = Sketch()
+    cmd = LiveTextEditCommand(sketch, 1)
+
+    assert cmd.should_skip_undo() is True
+
+
+def test_live_text_edit_update_cursor_syncs_tip():
+    """Cursor movements must update the current tip without creating
+    history entries, so undo restores the expected cursor position."""
+    mock_time = MockTime()
+    with patch("time.time", mock_time.time):
+        sketch = Sketch()
+        box_cmd = TextBoxCommand(sketch, (0, 0), 10.0, 10.0)
+        box_cmd.execute()
+        assert box_cmd.text_box_id is not None
+        text_box_id = box_cmd.text_box_id
+
+        cmd = LiveTextEditCommand(sketch, text_box_id)
+        cmd.capture_state("hello", 5)
+
+        mock_time.advance(COALESCE_THRESHOLD + 0.1)
+        cmd.update_cursor(2)
+        assert len(cmd.history) == 1
+        assert cmd.get_current_content() == "hello"
+        assert cmd.get_current_cursor_pos() == 2
+
+        cmd.capture_state("hello world", 11)
+        assert len(cmd.history) == 2
+        assert cmd.history[0] == ("hello", 2, cmd.history[0][2])
+
+        cmd.undo()
+        assert cmd.get_current_content() == "hello"
+        assert cmd.get_current_cursor_pos() == 2
+
+
+def test_live_text_edit_update_cursor_empty_history():
+    """update_cursor on an uninitialized session must be a no-op."""
+    sketch = Sketch()
+    cmd = LiveTextEditCommand(sketch, 1)
+
+    cmd.update_cursor(3)
+
+    assert cmd.history == []
+    assert cmd.current_index == -1
+
+
 def test_live_text_edit_capture_state():
     """Test capturing state updates history."""
     mock_time = MockTime()
@@ -135,7 +207,8 @@ def test_live_text_edit_redo():
 
 
 def test_live_text_edit_coalesce_rapid_keystrokes():
-    """Test that rapid keystrokes are coalesced into one history entry."""
+    """Test that rapid keystrokes are coalesced into one history entry,
+    while the pre-edit baseline stays separately undoable."""
     mock_time = MockTime()
     with patch("time.time", mock_time.time):
         sketch = Sketch()
@@ -148,6 +221,7 @@ def test_live_text_edit_coalesce_rapid_keystrokes():
         cmd.execute()
 
         initial_len = len(cmd.history)
+        baseline_content = cmd.get_current_content()
 
         cmd.capture_state("h", 1)
         mock_time.advance(0.05)
@@ -159,8 +233,11 @@ def test_live_text_edit_coalesce_rapid_keystrokes():
         mock_time.advance(0.05)
         cmd.capture_state("hello", 5)
 
-        assert len(cmd.history) == initial_len
+        assert len(cmd.history) == initial_len + 1
         assert cmd.get_current_content() == "hello"
+
+        cmd.undo()
+        assert cmd.get_current_content() == baseline_content
 
 
 def test_live_text_edit_coalesce_after_pause():
@@ -190,8 +267,36 @@ def test_live_text_edit_coalesce_after_pause():
         mock_time.advance(0.05)
         cmd.capture_state("hello", 5)
 
-        assert len(cmd.history) == initial_len + 1
+        assert len(cmd.history) == initial_len + 2
         assert cmd.get_current_content() == "hello"
+
+
+def test_live_text_edit_first_keystroke_keeps_baseline_undoable():
+    """Typing immediately (< COALESCE_THRESHOLD) after session start must
+    not overwrite the pre-edit baseline: the first undo restores it."""
+    mock_time = MockTime()
+    with patch("time.time", mock_time.time):
+        sketch = Sketch()
+        box_cmd = TextBoxCommand(sketch, (0, 0), 10.0, 10.0)
+        box_cmd.execute()
+        assert box_cmd.text_box_id is not None
+
+        text_box_id = box_cmd.text_box_id
+        text_box = cast(TextBoxEntity, sketch.registry.get_entity(text_box_id))
+        text_box.content = "initial"
+
+        cmd = LiveTextEditCommand(sketch, text_box_id)
+        cmd.execute()
+
+        cmd.capture_state("initial h", 9)
+        mock_time.advance(0.05)
+        cmd.capture_state("initial he", 10)
+
+        assert cmd.get_current_content() == "initial he"
+
+        cmd.undo()
+        assert cmd.get_current_content() == "initial"
+        assert cmd.current_index == 0
 
 
 def test_live_text_edit_coalesce_undo_through_coalesced():
