@@ -1256,6 +1256,40 @@ def test_device_selected_captures_usb_identity(ui_context_initializer):
 
 
 @pytest.mark.ui
+def test_device_selected_clears_stale_usb_identity(ui_context_initializer):
+    """Picking a non-USB device after a USB one must clear the stored
+    identity, so the later machine is not stamped with the previous
+    device's vid/pid."""
+    wizard = _make_wizard(ui_context_initializer)
+    page = wizard._get_page("discover")
+    assert isinstance(page, DiscoverPage)
+
+    usb_device = _discovered_device(
+        identity=DeviceIdentity(usb_vid=0x1A86, usb_pid=0x7523)
+    )
+    net_device = _discovered_device(
+        driver_name="OctoPrintDriver",
+        params={"host": "octoprint.local", "port": 80},
+        label="OctoPrint server",
+        detail="octoprint.local:80",
+        identity=DeviceIdentity(firmware="octoprint"),
+    )
+    with (
+        patch.object(GrblSerialDriver, "supports_probing", False),
+        patch.object(
+            type(ui_context_initializer.device_profile_mgr),
+            "match_device",
+            return_value=[],
+        ),
+    ):
+        wizard._on_device_selected(page, device=usb_device)
+        assert wizard._discovered_usb == (0x1A86, 0x7523)
+        wizard._on_device_selected(page, device=net_device)
+
+    assert wizard._discovered_usb is None
+
+
+@pytest.mark.ui
 def test_device_selected_with_uncertain_match_shows_picker(
     ui_context_initializer,
 ):

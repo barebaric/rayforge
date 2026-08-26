@@ -581,11 +581,13 @@ class UnifiedWizard(PatchedDialogWindow):
         self.profile = empty_profile()
         self.profile.machine_config.driver = device.driver_name
         self._overlay_driver_args(device)
-        if device.identity.usb_vid is not None:
-            self._discovered_usb = (
-                device.identity.usb_vid,
-                device.identity.usb_pid,
-            )
+        # Set *and* clear: a later pick of a non-USB (e.g. network)
+        # device must not inherit the identity of an earlier one.
+        self._discovered_usb = (
+            (device.identity.usb_vid, device.identity.usb_pid)
+            if device.identity.usb_vid is not None
+            else None
+        )
         if device.probe_profile is not None:
             self._merge_driver_config(device.probe_profile)
 
