@@ -824,20 +824,34 @@ class TextBoxTool(SketchTool):
         # Map normalized alpha to geometry x-coordinate
         target_x_natural = alpha * advance_width
 
-        # 3. Find closest character break
-        best_i, min_dist = 0, float("inf")
-
-        # Iterate through all possible cursor positions
-        # (before first char ... after last char)
-        for i in range(len(self.text_buffer) + 1):
-            sub_max_x = entity.font_config.get_text_position(
-                self.text_buffer, i
+        # 3. Find closest character break via binary search.
+        #    get_text_position returns monotonically increasing values,
+        #    so we can binary search with O(log n) measurements instead
+        #    of scanning all n+1 positions.
+        n = len(self.text_buffer)
+        lo, hi = 0, n
+        while lo < hi:
+            mid = (lo + hi) // 2
+            pos_mid = entity.font_config.get_text_position(
+                self.text_buffer, mid
             )
+            if pos_mid < target_x_natural:
+                lo = mid + 1
+            else:
+                hi = mid
 
-            dist = abs(sub_max_x - target_x_natural)
-            if dist < min_dist:
-                min_dist = dist
-                best_i = i
+        # lo is the first index whose position >= target.
+        # Pick whichever of lo-1 or lo is closer.
+        best_i = lo
+        if lo > 0:
+            pos_lo = entity.font_config.get_text_position(self.text_buffer, lo)
+            pos_prev = entity.font_config.get_text_position(
+                self.text_buffer, lo - 1
+            )
+            if abs(target_x_natural - pos_prev) < abs(
+                target_x_natural - pos_lo
+            ):
+                best_i = lo - 1
 
         self.cursor_pos = best_i
         self.cursor_visible = True
@@ -933,7 +947,10 @@ class TextBoxTool(SketchTool):
             anchor_y=nat_min_y,
             stable_src_height=nat_max_y - nat_min_y,
         )
-        logger.debug(f"Transformed text geometry: {transformed_geo.rect()}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "Transformed text geometry: %s", transformed_geo.rect()
+            )
 
         ctx.save()
         model_to_screen_matrix = (
