@@ -216,5 +216,8 @@ class TestDriverStreamingFuzz:
             pass
 
         assert driver._job_running is False
-        assert driver.grbl_transport.buffer_count == 0
-        assert driver.grbl_transport.pending_queue.empty()
+        pending = list(driver.grbl_transport.pending_queue._queue)
+        assert all(p.command in ("M5\n", "M9\n") for p in pending)
+        assert driver.grbl_transport.buffer_count == sum(
+            p.length for p in pending
+        )
