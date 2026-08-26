@@ -42,7 +42,9 @@ class DragConstraint(Constraint):
     ) -> bool:
         return False
 
-    def error(self, reg: EntityRegistry, params: ParameterContext) -> Point:
+    def error(
+        self, reg: EntityRegistry, params: ParameterContext
+    ) -> tuple[float, float]:
         p = reg.get_point(self.point_id)
         err_x = (p.x - self.target_x) * self.weight
         err_y = (p.y - self.target_y) * self.weight

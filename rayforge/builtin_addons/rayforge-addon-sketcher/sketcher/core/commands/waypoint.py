@@ -49,7 +49,9 @@ class SetWaypointTypeCommand(SketchChangeCommand):
         self._old_bezier_states: (
             dict[int, tuple[GeoPoint | None, GeoPoint | None]] | None
         ) = None
-        self._converted_lines: list[tuple[int, int, int]] | None = None
+        self._converted_lines: (
+            list[tuple[EntityID, EntityID, EntityID, bool]] | None
+        ) = None
         self._added_bezier_ids: list[int] | None = None
 
     def _get_segment_directions(
@@ -128,10 +130,10 @@ class SetWaypointTypeCommand(SketchChangeCommand):
 
     def _find_connected_lines(
         self, registry: EntityRegistry, waypoint_id: EntityID
-    ) -> list[tuple[EntityID, EntityID, EntityID]]:
+    ) -> list[tuple[EntityID, EntityID, EntityID, bool]]:
         """Find Line entities connected to this waypoint.
 
-        Returns list of (line_id, p1_idx, p2_idx).
+        Returns list of (line_id, p1_idx, p2_idx, construction).
         """
         point_ids = {waypoint_id}
         point_ids.update(self.sketch.get_coincident_points(waypoint_id))
@@ -141,21 +143,31 @@ class SetWaypointTypeCommand(SketchChangeCommand):
             if isinstance(entity, Line) and (
                 entity.p1_idx in point_ids or entity.p2_idx in point_ids
             ):
-                connected.append((entity.id, entity.p1_idx, entity.p2_idx))
+                connected.append(
+                    (
+                        entity.id,
+                        entity.p1_idx,
+                        entity.p2_idx,
+                        entity.construction,
+                    )
+                )
         return connected
 
     def _convert_lines_to_beziers(
         self,
         registry: EntityRegistry,
-        lines: list[tuple[EntityID, EntityID, EntityID]],
+        lines: list[tuple[EntityID, EntityID, EntityID, bool]],
     ) -> list[EntityID]:
         """Remove Line entities and add Bezier entities in their place."""
         bezier_ids = []
-        line_ids_to_remove = [lid for lid, unused1, unused2 in lines]
+        line_ids_to_remove = [lid for lid, *_ in lines]
         registry.remove_entities_by_id(line_ids_to_remove)
 
-        for unused, p1_idx, p2_idx in lines:
-            bezier_id = registry.add_bezier(p1_idx, p2_idx)
+        for entry in lines:
+            _, p1_idx, p2_idx, construction = entry
+            bezier_id = registry.add_bezier(
+                p1_idx, p2_idx, construction=construction
+            )
             bezier_ids.append(bezier_id)
 
         return bezier_ids
@@ -163,13 +175,13 @@ class SetWaypointTypeCommand(SketchChangeCommand):
     def _restore_lines(
         self,
         registry: EntityRegistry,
-        lines: list[tuple[EntityID, EntityID, EntityID]],
+        lines: list[tuple[EntityID, EntityID, EntityID, bool]],
         bezier_ids: list[EntityID],
     ):
         """Remove Bezier entities and restore Line entities."""
         registry.remove_entities_by_id(bezier_ids)
-        for line_id, p1_idx, p2_idx in lines:
-            new_line = Line(line_id, p1_idx, p2_idx)
+        for line_id, p1_idx, p2_idx, construction in lines:
+            new_line = Line(line_id, p1_idx, p2_idx, construction=construction)
             registry.entities.append(new_line)
             registry._entity_map[line_id] = new_line
 

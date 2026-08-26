@@ -120,15 +120,13 @@ class CoincidentConstraint(Constraint):
         # Assuming p1 or p2 exists in registry.
         try:
             p = registry.get_point(self.p1)
+            p2 = registry.get_point(self.p2)
         except IndexError:
-            try:
-                p = registry.get_point(self.p2)
-            except IndexError:
-                return
+            return
 
         # Heuristic: if p1 is fixed (likely origin), draw on p2.
-        if p.fixed and not registry.get_point(self.p2).fixed:
-            p = registry.get_point(self.p2)
+        if p.fixed and not p2.fixed:
+            p = p2
 
         sx, sy = to_screen((p.x, p.y))
 

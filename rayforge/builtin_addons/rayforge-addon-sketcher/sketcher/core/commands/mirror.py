@@ -141,9 +141,6 @@ class MirrorCommand(SketchChangeCommand):
             if e:
                 point_id_set.update(e.get_point_ids())
 
-        if not point_id_set and not entity_id_set:
-            return None
-
         if not point_id_set:
             return None
 

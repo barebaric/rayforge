@@ -587,6 +587,8 @@ class TextBoxTool(SketchTool):
 
             def on_paste_ready(clipboard, result):
                 try:
+                    if self.state != TextBoxState.EDITING:
+                        return
                     text = clipboard.read_text_finish(result)
                     if text:
                         start, end = self._get_selection_range()

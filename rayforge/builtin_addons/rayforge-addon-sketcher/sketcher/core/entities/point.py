@@ -178,36 +178,34 @@ class Point:
         if len(cp_data) < 2:
             return
 
-        b1, attr1, cp1 = cp_data[0]
-        b2, attr2, cp2 = cp_data[1]
-
         if self.is_symmetric():
-            avg_length = (
-                math.sqrt(cp1[0] ** 2 + cp1[1] ** 2)
-                + math.sqrt(cp2[0] ** 2 + cp2[1] ** 2)
-            ) / 2
+            avg_length = sum(
+                math.sqrt(cp[0] ** 2 + cp[1] ** 2) for _, _, cp in cp_data
+            ) / len(cp_data)
             if avg_length < 1e-10:
                 return
 
-            direction = (
-                cp1[0] - cp2[0],
-                cp1[1] - cp2[1],
-            )
-            length = math.sqrt(direction[0] ** 2 + direction[1] ** 2)
+            sum_dx = 0.0
+            sum_dy = 0.0
+            for _, attr, cp in cp_data:
+                sign = 1.0 if attr == "cp1" else -1.0
+                sum_dx += sign * cp[0]
+                sum_dy += sign * cp[1]
+            length = math.sqrt(sum_dx**2 + sum_dy**2)
             if length < 1e-10:
                 return
-            direction = (direction[0] / length, direction[1] / length)
+            direction = (sum_dx / length, sum_dy / length)
 
-            setattr(
-                b1,
-                attr1,
-                (direction[0] * avg_length, direction[1] * avg_length),
-            )
-            setattr(
-                b2,
-                attr2,
-                (-direction[0] * avg_length, -direction[1] * avg_length),
-            )
+            for b, attr, _ in cp_data:
+                sign = 1.0 if attr == "cp1" else -1.0
+                setattr(
+                    b,
+                    attr,
+                    (
+                        sign * direction[0] * avg_length,
+                        sign * direction[1] * avg_length,
+                    ),
+                )
 
     def pos(self) -> GeoPoint:
         return (self.x, self.y)
