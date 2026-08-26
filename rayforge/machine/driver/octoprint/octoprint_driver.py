@@ -36,11 +36,13 @@ from ..driver import (
     DriverSetupError,
     Pos,
 )
+from .octoprint_util import build_octoprint_profile
 
 if TYPE_CHECKING:
     from raygeo.ops import Ops
 
     from ....core.doc import Doc
+    from ...device.profile import DeviceProfile
     from ...models.laser import Laser
     from ...models.machine import Machine
 
@@ -96,6 +98,7 @@ class OctoPrintDriver(Driver):
     supports_settings = False
     reports_granular_progress = False
     uses_gcode = True
+    supports_probing = True
     maturity = DriverMaturity.UNTESTED
     # Advertised by OctoPrint's discovery plugin; used for network
     # device discovery. The TXT record's ``path`` key (the URL
@@ -144,6 +147,53 @@ class OctoPrintDriver(Driver):
             raise DriverPrecheckError(
                 _("Invalid hostname or IP address: '{host}'").format(host=host)
             )
+
+    @classmethod
+    async def probe(
+        cls, context: RayforgeContext, **kwargs: Any
+    ) -> tuple["DeviceProfile", list[str]]:
+        """Query an OctoPrint server for its specs and return an
+        auto-populated ``(DeviceProfile, warnings)`` tuple.
+
+        Works without an API key when the server has access control
+        disabled (the common case for freshly discovered devices).
+        """
+        from ...models.machine import Machine
+
+        machine = Machine(context)
+        driver = cls(context, machine)
+        host = cast(str, kwargs.get("host", ""))
+        port = cast(int, kwargs.get("port", 80))
+        path = cast(str, kwargs.get("path", "/"))
+        api_key = kwargs.get("api_key", "")
+
+        driver.host = host
+        driver.port = port
+        driver._api_key = driver._extract_api_key(
+            str(api_key) if api_key else ""
+        )
+        driver._path_prefix = _normalize_path_prefix(path)
+        driver._base_url = f"http://{host}:{port}{driver._path_prefix}"
+
+        version_info = None
+        printer_info = None
+        try:
+            version_info = await driver._api_request("GET", "/api/version")
+            printer_info = await driver._api_request(
+                "GET", "/api/printer?exclude=temperature,sd"
+            )
+        except DeviceConnectionError:
+            pass
+        finally:
+            await driver.cleanup()
+            context.dialect_mgr.dialects_changed.disconnect(
+                machine._on_dialects_changed
+            )
+
+        profile, warnings = build_octoprint_profile(version_info, printer_info)
+        profile.machine_config.driver = cls.__name__
+        profile.machine_config.driver_args = kwargs
+        return profile, warnings
 
     @classmethod
     def get_setup_vars(cls) -> "VarSet":
