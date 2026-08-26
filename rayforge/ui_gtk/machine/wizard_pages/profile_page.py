@@ -13,11 +13,12 @@ Offers the user three entry points:
   args saved in the snapshot.
 
 When a discovered device is pending (no profile matched it
-automatically), the list is pre-filtered to profiles of the same
-vendor and controller, since the collected identity says which
-machine family it belongs to. Searching always covers everything.
+with certainty), the list is pre-filtered to the profiles the
+matcher considers plausible candidates, best first. Searching
+always covers everything.
 """
 
+from dataclasses import replace
 from gettext import gettext as _
 
 from blinker import Signal
@@ -123,21 +124,18 @@ class ProfilePage(WizardPage):
     def _compute_suggestions(
         self, discovered: DiscoveredDevice
     ) -> list[DeviceProfile]:
-        """Profiles matching what the collected identity says about
-        the machine: same vendor tokens and same controller."""
+        """Profiles the matcher considers plausible candidates for
+        what the collected identity says about the machine, best
+        first."""
+        identity = discovered.identity
         name = discovered.probe_name
-        tokens = set(discovered.identity.tokens)
         if name:
-            tokens |= normalize_tokens(name)
-        suggested = []
-        for pkg in get_context().device_profile_mgr.get_all():
-            vendor_tokens = normalize_tokens(pkg.meta.vendor or "")
-            if not vendor_tokens or not vendor_tokens <= tokens:
-                continue
-            if pkg.machine_config.driver != discovered.driver_name:
-                continue
-            suggested.append(pkg)
-        return suggested
+            identity = replace(
+                identity,
+                tokens=identity.tokens | normalize_tokens(name),
+            )
+        matches = get_context().device_profile_mgr.match_device(identity)
+        return [match.profile for match in matches]
 
     def _filter_and_populate_list(self) -> None:
         search_text = self.search_entry.get_text().lower()

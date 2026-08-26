@@ -6,6 +6,11 @@ from unittest.mock import MagicMock, patch
 import pytest
 from gi.repository import Adw
 
+from rayforge.machine.device.matching import (
+    CONFIDENCE_CERTAIN,
+    CONFIDENCE_VENDOR_TOKENS,
+    ProfileMatch,
+)
 from rayforge.machine.device.profile import (
     DeviceMeta,
     DeviceProfile,
@@ -39,6 +44,16 @@ _PERMISSIONS_PATCH_TARGET = (
 _DISCOVER_PATCH_TARGET = (
     "rayforge.ui_gtk.machine.wizard_pages.discover_page.find_all_devices"
 )
+
+
+def _match_result(
+    profile: DeviceProfile | None,
+    confidence: float = CONFIDENCE_CERTAIN,
+) -> list[ProfileMatch]:
+    """A match_device() return value; empty means no candidate."""
+    if profile is None:
+        return []
+    return [ProfileMatch(profile=profile, confidence=confidence)]
 
 
 @pytest.fixture(autouse=True)
@@ -964,7 +979,7 @@ def test_device_selected_with_match_skips_to_probe(ui_context_initializer):
         patch.object(
             type(ui_context_initializer.device_profile_mgr),
             "match_device",
-            return_value=matched,
+            return_value=_match_result(matched),
         ),
     ):
         wizard._on_device_selected(page, device=device)
@@ -1015,7 +1030,7 @@ def test_probe_result_adopts_matched_profile(ui_context_initializer):
     with patch.object(
         type(ui_context_initializer.device_profile_mgr),
         "match_device",
-        return_value=curated,
+        return_value=_match_result(curated),
     ):
         wizard._on_probe_succeeded(
             None, profile=probed, warnings=["laser mode off"]
@@ -1042,6 +1057,62 @@ def test_probe_result_adopts_matched_profile(ui_context_initializer):
         "rotary",
         "camera",
     } <= wizard._skipped_steps_set
+
+
+@pytest.mark.ui
+def test_device_selected_captures_usb_identity(ui_context_initializer):
+    """The discovered device's USB identity is kept for the created
+    machine, so exporting the machine later carries the vid/pid."""
+    wizard = _make_wizard(ui_context_initializer)
+    page = wizard._get_page("discover")
+    assert isinstance(page, DiscoverPage)
+
+    device = _discovered_device(
+        identity=DeviceIdentity(usb_vid=0x1A86, usb_pid=0x7523)
+    )
+    with (
+        patch.object(GrblSerialDriver, "supports_probing", False),
+        patch.object(
+            type(ui_context_initializer.device_profile_mgr),
+            "match_device",
+            return_value=[],
+        ),
+    ):
+        wizard._on_device_selected(page, device=device)
+
+    assert wizard._discovered_usb == (0x1A86, 0x7523)
+
+
+@pytest.mark.ui
+def test_device_selected_with_uncertain_match_shows_picker(
+    ui_context_initializer,
+):
+    """A plausible-but-not-certain profile match never gets adopted
+    unasked: the wizard falls back to the profile picker, which lists
+    the ranked candidates."""
+    wizard = _make_wizard(ui_context_initializer)
+    page = wizard._get_page("discover")
+    assert isinstance(page, DiscoverPage)
+
+    candidate = DeviceProfile(
+        meta=DeviceMeta(name="Frob One", vendor="Frobnicate"),
+        machine_config=MachineConfig(driver="GrblSerialDriver"),
+        dialect_config={},
+    )
+    with (
+        patch.object(GrblSerialDriver, "supports_probing", False),
+        patch.object(
+            type(ui_context_initializer.device_profile_mgr),
+            "match_device",
+            return_value=_match_result(candidate, CONFIDENCE_VENDOR_TOKENS),
+        ),
+    ):
+        wizard._on_device_selected(page, device=_discovered_device())
+
+    assert wizard.stack.get_visible_child_name() == "profile"
+    assert wizard._source is None
+    assert wizard.aux_state.get("discovered") is not None
+    assert wizard.profile.name != "Frob One"
 
 
 @pytest.mark.ui
@@ -1150,7 +1221,7 @@ def test_octoprint_device_selected_goes_to_connect(ui_context_initializer):
     with patch.object(
         type(ui_context_initializer.device_profile_mgr),
         "match_device",
-        return_value=None,
+        return_value=[],
     ):
         wizard._on_device_selected(page, device=_octoprint_device())
 
@@ -1202,7 +1273,7 @@ def test_octoprint_device_with_path_prefills_connect(ui_context_initializer):
     with patch.object(
         type(ui_context_initializer.device_profile_mgr),
         "match_device",
-        return_value=None,
+        return_value=[],
     ):
         wizard._on_device_selected(page, device=device)
 
@@ -1243,7 +1314,7 @@ def test_esp3d_device_selected_goes_to_probe(ui_context_initializer):
         patch.object(
             type(ui_context_initializer.device_profile_mgr),
             "match_device",
-            return_value=None,
+            return_value=[],
         ),
     ):
         wizard._on_device_selected(page, device=device)
@@ -1296,7 +1367,7 @@ def test_device_selected_with_probe_data_and_match_completes_flow(
     with patch.object(
         type(ui_context_initializer.device_profile_mgr),
         "match_device",
-        return_value=curated,
+        return_value=_match_result(curated),
     ):
         wizard._on_device_selected(page, device=device)
 
@@ -1454,10 +1525,10 @@ def test_discover_page_rescan_excludes_and_prunes(ui_context_initializer):
 
 
 @pytest.mark.ui
-def test_profile_page_suggests_matching_vendor(ui_context_initializer):
+def test_profile_page_suggests_matching_candidates(ui_context_initializer):
     """With a pending discovered device, the profile list narrows to
-    profiles of the same vendor and controller; searching broadens
-    it back to the full catalog."""
+    the matcher's nonzero-confidence candidates, best first; searching
+    broadens it back to the full catalog."""
     from rayforge.machine.driver import normalize_tokens
 
     wizard = _make_wizard(ui_context_initializer)
@@ -1469,8 +1540,8 @@ def test_profile_page_suggests_matching_vendor(ui_context_initializer):
         machine_config=MachineConfig(driver="GrblSerialDriver"),
         dialect_config={},
     )
-    other = DeviceProfile(
-        meta=DeviceMeta(name="Gadget Two", vendor="Gadgetco"),
+    frob_pro = DeviceProfile(
+        meta=DeviceMeta(name="Frob Pro", vendor="Frobnicate", model="Pro"),
         machine_config=MachineConfig(driver="GrblSerialDriver"),
         dialect_config={},
     )
@@ -1480,16 +1551,21 @@ def test_profile_page_suggests_matching_vendor(ui_context_initializer):
     wizard.aux_state = {"discovered": device}
 
     mgr = ui_context_initializer.device_profile_mgr
+    ranked = [
+        ProfileMatch(profile=frob_pro, confidence=CONFIDENCE_VENDOR_TOKENS),
+        ProfileMatch(profile=frob, confidence=CONFIDENCE_VENDOR_TOKENS),
+    ]
     with (
         patch(
             "rayforge.ui_gtk.machine.wizard_pages.profile_page.get_context",
             return_value=ui_context_initializer,
         ),
-        patch.object(mgr, "get_all", return_value=[frob, other]),
+        patch.object(mgr, "match_device", return_value=ranked),
+        patch.object(mgr, "get_all", return_value=[frob, frob_pro]),
     ):
         profile_page.enter(wizard.profile)
         titles = _visible_profile_titles(profile_page)
-        assert titles == ["Frob One"]
+        assert titles == ["Frob Pro", "Frob One"]
 
         # Searching broadens the list back to the full catalog.
         # (search-changed is delay-debounced by GTK, so filter
@@ -1497,7 +1573,7 @@ def test_profile_page_suggests_matching_vendor(ui_context_initializer):
         profile_page.search_entry.set_text("gadget")
         profile_page._filter_and_populate_list()
         titles = _visible_profile_titles(profile_page)
-        assert titles == ["Gadget Two"]
+        assert titles == []
 
 
 def _visible_profile_titles(page: ProfilePage) -> list[str]:

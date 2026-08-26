@@ -26,6 +26,7 @@ from ...camera.models.camera import Camera
 from ...camera.v4l import display_name
 from ...context import get_context
 from ...core.ai.spec_lookup import is_ai_configured
+from ...machine.device.matching import ProfileMatch, certain_match
 from ...machine.device.profile import DeviceProfile
 from ...machine.driver import (
     DeviceIdentity,
@@ -106,6 +107,10 @@ class UnifiedWizard(PatchedDialogWindow):
         # None for "Other / unknown machine". Used to skip the AI
         # lookup steps when the specs are already in the profile.
         self._source: dict[str, Any] | None = None
+        # USB identity of the discovered device this setup started
+        # from, if any; stamped onto the created machine so exports
+        # can carry it.
+        self._discovered_usb: tuple[int, int | None] | None = None
 
         self.toast_overlay = Adw.ToastOverlay()
         self.set_content(self.toast_overlay)
@@ -422,6 +427,9 @@ class UnifiedWizard(PatchedDialogWindow):
         context = get_context()
         machine = self.profile.create_machine(context)
 
+        if self._discovered_usb is not None:
+            machine.usb_vid, machine.usb_pid = self._discovered_usb
+
         # Apply session-only aux_state on the live machine.
         reverse = self.aux_state.get("reverse", {})
         if reverse.get("x"):
@@ -520,7 +528,7 @@ class UnifiedWizard(PatchedDialogWindow):
 
         if name == "probe":
             # A discovery-originated probe that did not resolve to a
-            # profile continues on the (vendor-filtered) profile
+            # profile continues on the (candidate-ranked) profile
             # picker; manual flows go on to the AI/manual steps.
             if self._source is None and self.aux_state.get("discovered"):
                 return "profile"
@@ -565,27 +573,33 @@ class UnifiedWizard(PatchedDialogWindow):
         interaction: driver, connection parameters, and — when the
         driver supports probing — the machine's own answers about
         its identity and specs. All of it feeds one profile match;
-        on a unique match the curated profile is adopted and the
-        wizard continues with whatever data is still missing.
-        Otherwise the user picks a profile from a vendor-filtered
-        list, with the collected data already in place.
+        on a certain match (confidence 1.0) the curated profile is
+        adopted and the wizard continues with whatever data is still
+        missing. Otherwise the user picks a profile from the ranked
+        candidate list, with the collected data already in place.
         """
         self.profile = empty_profile()
         self.profile.machine_config.driver = device.driver_name
         self._overlay_driver_args(device)
+        if device.identity.usb_vid is not None:
+            self._discovered_usb = (
+                device.identity.usb_vid,
+                device.identity.usb_pid,
+            )
         if device.probe_profile is not None:
             self._merge_driver_config(device.probe_profile)
 
-        matched: DeviceProfile | None = None
+        matches: list[ProfileMatch] = []
         try:
-            matched = get_context().device_profile_mgr.match_device(
+            matches = get_context().device_profile_mgr.match_device(
                 self._probe_identity(device)
             )
         except Exception:
             logger.exception("Profile matching failed")
 
-        if matched is not None:
-            self._adopt_matched_profile(matched, device)
+        certain = certain_match(matches)
+        if certain is not None:
+            self._adopt_matched_profile(certain.profile, device)
             self.aux_state = {}
             if self._connection_args_complete():
                 self._skipped_steps_set.add("connect")
@@ -802,15 +816,16 @@ class UnifiedWizard(PatchedDialogWindow):
             return
         device = dc_replace(device, probe_profile=probed)
         try:
-            matched = get_context().device_profile_mgr.match_device(
+            matches = get_context().device_profile_mgr.match_device(
                 self._probe_identity(device)
             )
         except Exception:
             logger.exception("Profile matching failed")
             return
-        if matched is None:
+        certain = certain_match(matches)
+        if certain is None:
             return
-        self._adopt_matched_profile(matched, device)
+        self._adopt_matched_profile(certain.profile, device)
 
     # ----- camera workflow ----------------------------------------------
 
