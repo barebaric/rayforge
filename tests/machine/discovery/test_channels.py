@@ -1,4 +1,5 @@
 import asyncio
+import time
 from typing import ClassVar
 
 import pytest
@@ -344,15 +345,31 @@ async def test_broken_recognizer_does_not_break_discovery(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_scan_timeout_returns_empty(monkeypatch):
-    async def slow_scan(**kwargs):
-        await asyncio.sleep(1.0)
-        return []
+async def test_silent_ports_do_not_hide_responsive_ones(monkeypatch):
+    """Silent adapters used to burn the whole scan budget, and hitting
+    that budget discarded every observation. Now ports that answered
+    before the deadline are still reported, so a responsive machine
+    later in sort order is found alongside dumb adapters."""
 
-    monkeypatch.setattr(serial_channel, "scan_serial_ports", slow_scan)
-    monkeypatch.setattr(serial_channel, "SERIAL_SCAN_TIMEOUT", 0.05)
-    devices = await find_all_devices([FakeGrblDriver], ports=["/dev/x"])
-    assert devices == []
+    class Serial(FakeSerial):
+        def read(self, size=1):
+            if "SLOW" in str(self.port) and not self._pending:
+                time.sleep(0.3)
+            return super().read(size)
+
+    monkeypatch.setattr(
+        "rayforge.machine.transport.serial_scan.serial.Serial",
+        lambda **kw: Serial(
+            responses={"/dev/ttyUSB0": b"Grbl 1.1f\r\n"}, **kw
+        ),
+    )
+    monkeypatch.setattr(serial_channel, "SERIAL_SCAN_TIMEOUT", 0.5)
+
+    devices = await find_all_devices(
+        [FakeGrblDriver],
+        ports=["/dev/ttySLOW1", "/dev/ttyUSB0", "/dev/ttySLOW2"],
+    )
+    assert [d.params["port"] for d in devices] == ["/dev/ttyUSB0"]
 
 
 @pytest.mark.asyncio

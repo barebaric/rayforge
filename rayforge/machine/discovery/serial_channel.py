@@ -8,7 +8,6 @@ ever opened on behalf of a single driver, so adding drivers never
 multiplies scan cost.
 """
 
-import asyncio
 import logging
 import re
 from collections.abc import Iterable
@@ -24,7 +23,9 @@ from .types import DeviceIdentity, DiscoveredDevice
 
 logger = logging.getLogger(__name__)
 
-# Upper bound for the serial part of a discovery scan.
+# Time budget for the serial part of a discovery scan. Ports that
+# have answered before it is hit are still reported; only probes still
+# in flight at that moment are dropped.
 SERIAL_SCAN_TIMEOUT = 20.0
 
 # Tokens identifying the USB-serial adapter itself: the chip, its
@@ -171,25 +172,21 @@ async def find_serial_devices(
 ) -> list[DiscoveredDevice]:
     """
     Runs one serial scan and evaluates it against every declared
-    serial recognizer. Like every channel, this never raises:
-    failures are logged and bounded by a timeout.
+    serial recognizer. Like every channel, this never raises: failures
+    are logged, and the scan is bounded by *SERIAL_SCAN_TIMEOUT*, so a
+    slow or silent adapter can at most cost its own probe time.
     """
     recognizers = collect_serial_recognizers(driver_classes)
     if not recognizers:
         return []
 
     try:
-        observations = await asyncio.wait_for(
-            scan_serial_ports(
-                ports=ports,
-                baud_rates=baud_rates,
-                exclude_ports=exclude_ports,
-            ),
+        observations = await scan_serial_ports(
+            ports=ports,
+            baud_rates=baud_rates,
+            exclude_ports=exclude_ports,
             timeout=SERIAL_SCAN_TIMEOUT,
         )
-    except asyncio.TimeoutError:
-        logger.warning("Serial device discovery timed out")
-        return []
     except Exception:
         logger.exception("Serial device discovery failed")
         return []

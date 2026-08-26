@@ -93,13 +93,20 @@ async def scan_serial_ports(
     ports: Iterable[str] | None = None,
     baud_rates: Iterable[int] | None = None,
     exclude_ports: Iterable[str] | None = None,
+    timeout: float | None = None,
 ) -> list[PortObservation]:
     """
-    Probes every *port* at *baud_rates* and returns one observation
-    per port that produced device-like output. Ports named in
-    *exclude_ports* are skipped entirely (used by callers that hold
-    devices on those ports). Ports that are busy, absent, or silent
-    are skipped silently.
+    Probes every *port* at *baud_rates*, all ports in parallel, and
+    returns one observation per port that produced device-like
+    output. Ports named in *exclude_ports* are skipped entirely (used
+    by callers that hold devices on those ports). Ports that are busy,
+    absent, or silent are skipped silently.
+
+    When *timeout* is given the scan stops waiting after that many
+    seconds: observations collected so far are still returned and
+    probes still in flight are cancelled, so a slow or silent adapter
+    can never push a responsive machine past the deadline. Results
+    keep the order of *ports*.
     """
     if ports is None:
         port_list = sort_ports(SerialTransport.list_usb_ports())
@@ -109,25 +116,53 @@ async def scan_serial_ports(
         excluded = set(exclude_ports)
         port_list = [p for p in port_list if p not in excluded]
     rates = list(baud_rates) if baud_rates is not None else BAUD_CANDIDATES
+    if not port_list:
+        return []
 
     info_map = {info.device: info for info in SerialTransport.list_port_info()}
+    tasks = [
+        asyncio.create_task(_probe_and_record(port, rates, info_map.get(port)))
+        for port in port_list
+    ]
+    try:
+        await asyncio.wait(tasks, timeout=timeout)
+    finally:
+        # After a deadline or an outer cancellation the probes still in
+        # flight are stopped and awaited so no task is left holding a
+        # port open.
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        results = await asyncio.gather(*tasks, return_exceptions=True)
 
-    observations: list[PortObservation] = []
-    for port in port_list:
+    return [r for r in results if isinstance(r, PortObservation)]
+
+
+async def _probe_and_record(
+    port: str,
+    rates: list[int],
+    info: SerialPortInfo | None,
+) -> PortObservation | None:
+    """
+    Probes one *port* and wraps the result as an observation. A
+    failing probe is logged and yields no observation; it must never
+    break the rest of the scan.
+    """
+    try:
         async with _get_port_lock(port):
             result = await _probe_port(port, rates)
-        if result is None:
-            continue
-        baudrate, data = result
-        observations.append(
-            PortObservation(
-                port=port,
-                baud_rate=baudrate,
-                data=data,
-                info=info_map.get(port),
-            )
-        )
-    return observations
+    except Exception:
+        logger.exception("Probe of %s failed", port)
+        return None
+    if result is None:
+        return None
+    baudrate, data = result
+    return PortObservation(
+        port=port,
+        baud_rate=baudrate,
+        data=data,
+        info=info,
+    )
 
 
 async def _probe_port(

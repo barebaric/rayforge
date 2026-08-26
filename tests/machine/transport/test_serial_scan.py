@@ -1,5 +1,6 @@
 import asyncio
 import threading
+import time
 from typing import ClassVar
 
 import pytest
@@ -228,6 +229,83 @@ async def test_scan_uses_port_metadata(monkeypatch):
     assert info.description == "Ortur Laser Master"
     assert info.vid == 0x1A86
     assert info.pid == 0x7523
+
+
+class SlowSilentSerial(FakeSerial):
+    """A silent adapter whose reads block, like a dumb USB-serial
+    bridge that never answers."""
+
+    SLOW_PORT = "/dev/ttySLOW0"
+
+    def __init__(self, port=None, baudrate=9600, timeout=0):
+        responses = {"/dev/ttyUSB0": b"Grbl 1.1f\r\n"}
+        super().__init__(
+            port=port,
+            baudrate=baudrate,
+            timeout=timeout,
+            responses=responses,
+        )
+
+    def read(self, size=1):
+        if str(self.port) == self.SLOW_PORT:
+            time.sleep(0.2)
+            return b""
+        return super().read(size)
+
+
+@pytest.mark.asyncio
+async def test_scan_probes_ports_concurrently(monkeypatch):
+    """A silent adapter must not queue other ports behind it: every
+    port is opened in parallel, so the slow one only costs its own
+    probe time."""
+    open_times: dict[str, float] = {}
+
+    class Serial(SlowSilentSerial):
+        def __init__(self, port=None, baudrate=9600, timeout=0):
+            super().__init__(port=port, baudrate=baudrate, timeout=timeout)
+            open_times.setdefault(str(port), time.monotonic())
+
+    monkeypatch.setattr(
+        "rayforge.machine.transport.serial_scan.serial.Serial", Serial
+    )
+    observations = await scan_serial_ports(
+        ports=[SlowSilentSerial.SLOW_PORT, "/dev/ttyUSB0"], baud_rates=[115200]
+    )
+    assert [o.port for o in observations] == ["/dev/ttyUSB0"]
+    spread = max(open_times.values()) - min(open_times.values())
+    # A sequential scan would open the second port only after the
+    # full silent probe (~0.6 s with fast timeouts) had finished.
+    assert spread < 0.3, f"ports opened {spread:.2f}s apart"
+
+
+@pytest.mark.asyncio
+async def test_scan_returns_partial_results_on_timeout(monkeypatch):
+    """When the scan deadline is hit, ports that already answered are
+    still reported; probes still in flight are cancelled."""
+    monkeypatch.setattr(
+        "rayforge.machine.transport.serial_scan.serial.Serial",
+        SlowSilentSerial,
+    )
+    start = time.monotonic()
+    observations = await scan_serial_ports(
+        ports=[SlowSilentSerial.SLOW_PORT, "/dev/ttyUSB0"],
+        baud_rates=[115200],
+        timeout=0.4,
+    )
+    assert time.monotonic() - start < 1.2
+    # The silent port needs ~0.6 s per rate and is still in flight at
+    # the deadline; only the responsive port makes it into the result.
+    assert [o.port for o in observations] == ["/dev/ttyUSB0"]
+
+
+@pytest.mark.asyncio
+async def test_scan_keeps_port_order(monkeypatch):
+    """Concurrent probes still report observations in the given port
+    order."""
+    ports = ["/dev/ttyUSB2", "/dev/ttyUSB0", "/dev/ttyUSB1"]
+    _patch_serial(monkeypatch, {port: b"Grbl 1.1f\r\n" for port in ports})
+    observations = await scan_serial_ports(ports=ports, baud_rates=[115200])
+    assert [o.port for o in observations] == ports
 
 
 @pytest.mark.asyncio
