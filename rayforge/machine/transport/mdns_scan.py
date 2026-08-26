@@ -7,7 +7,7 @@ captured as an :class:`MDNSService`.
 
 Deciding which driver could talk to a discovered service is a
 separate concern that lives with the drivers (see
-:mod:`rayforge.machine.driver.discovery`).
+:mod:`rayforge.machine.discovery`).
 
 This module is GTK-free so it can be unit-tested in isolation. It
 must work both with current zeroconf releases and the older ones

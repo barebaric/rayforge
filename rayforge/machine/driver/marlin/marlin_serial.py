@@ -24,9 +24,9 @@ from ....pipeline.encoder.base import (
 )
 from ....pipeline.encoder.gcode import GcodeEncoder
 from ....shared.units.system import UnitSystem
+from ...discovery.spec import DiscoverySpec, SerialRecognizer
 from ...transport import SerialTransport, TransportStatus
 from ...transport.serial import SerialPortPermissionError
-from ..discovery import DeviceRecognizer
 from ..driver import (
     Axis,
     DeviceConnectionError,
@@ -69,11 +69,13 @@ class MarlinSerialDriver(Driver):
     maturity = DriverMaturity.EXPERIMENTAL
     supports_probing = True
     supports_unit_detection = True
-    DISCOVERY = DeviceRecognizer(
-        label=lambda: _("Marlin device"),
-        firmware="marlin",
-        matches=is_marlin_output,
-        name=extract_marlin_banner_from_output,
+    DISCOVERY = DiscoverySpec(
+        serial=SerialRecognizer(
+            label=lambda: _("Marlin device"),
+            firmware="marlin",
+            matches=is_marlin_output,
+            name=extract_marlin_banner_from_output,
+        )
     )
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):

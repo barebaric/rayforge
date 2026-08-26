@@ -9,7 +9,8 @@ from typing import TYPE_CHECKING, Optional
 import yaml
 
 from ...core.model import ModelLibrary
-from ..driver.discovery import (
+from ..discovery import (
+    CORPORATE_TOKENS,
     GENERIC_TOKENS,
     DeviceIdentity,
     normalize_tokens,
@@ -155,9 +156,11 @@ class DeviceProfileManager:
         set, its ``model``) appear among the identity's tokens —
         e.g. a vendor branded into the USB description or a
         ``/dev/serial/by-id`` link name. Generic USB-serial chip
-        names (CH340, CP210x, ...) never count as a match. Profiles
-        whose model matched are preferred over model-less profiles
-        of the same vendor.
+        names (CH340, CP210x, ...) never count as a match; corporate
+        suffixes ("Technology", "Inc.", ...) are stripped from the
+        vendor name first so a genuine brand word beside them still
+        matches. Profiles whose model matched are preferred over
+        model-less profiles of the same vendor.
 
         Returns the single unambiguous candidate, or ``None`` when
         nothing matches or multiple profiles match equally well.
@@ -167,7 +170,7 @@ class DeviceProfileManager:
             vendor = (profile.meta.vendor or "").strip()
             if not vendor:
                 continue
-            vendor_tokens = normalize_tokens(vendor)
+            vendor_tokens = normalize_tokens(vendor) - CORPORATE_TOKENS
             if not vendor_tokens or vendor_tokens <= GENERIC_TOKENS:
                 continue
             if not vendor_tokens <= identity.tokens:

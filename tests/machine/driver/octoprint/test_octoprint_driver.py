@@ -78,7 +78,9 @@ class TestClassAttributes:
         assert OctoPrintDriver.supports_settings is False
 
     def test_mdns_services(self):
-        assert OctoPrintDriver.MDNS_SERVICES == ("_octoprint._tcp.local.",)
+        spec = OctoPrintDriver.DISCOVERY
+        assert spec is not None and spec.mdns is not None
+        assert spec.mdns.services == ("_octoprint._tcp.local.",)
 
 
 class TestProperties:

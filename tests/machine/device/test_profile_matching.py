@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from rayforge.machine.device.manager import DeviceProfileManager
-from rayforge.machine.driver.discovery import (
+from rayforge.machine.discovery import (
     GENERIC_TOKENS,
     DeviceIdentity,
     normalize_tokens,
@@ -100,6 +100,23 @@ def test_generic_vendor_is_ignored(tmp_path):
     assert normalize_tokens("USB Serial") <= GENERIC_TOKENS
 
 
+def test_corporate_suffix_does_not_mask_brand_word(tmp_path):
+    """A vendor name with corporate-suffix words still matches on its
+    genuine brand word ("Frobnicate Technology" matches via
+    "frobnicate"); a purely corporate name never does."""
+    _make_profile(tmp_path, "frob-one", "Frob One", "Frobnicate Technology")
+    _make_profile(tmp_path, "generic-co", "Generic Co", "Industry Ltd")
+    mgr = _manager(tmp_path)
+
+    identity = _identity_for("Frobnicate laser engraver")
+    matched = mgr.match_device(identity)
+    assert matched is not None
+    assert matched.name == "Frob One"
+
+    # A purely corporate vendor name never matches anything.
+    assert mgr.match_device(_identity_for("Industry laser")) is None
+
+
 def test_builtin_profiles_all_declare_vendor():
     import rayforge
 
@@ -119,7 +136,7 @@ def test_machine_name_matches_builtin_profile():
     [MSG:machine:...] line) drives matching against the built-in
     profiles."""
     import rayforge
-    from rayforge.machine.driver.discovery import build_identity
+    from rayforge.machine.discovery import build_identity
 
     devices_dir = Path(rayforge.__file__).parent / "resources" / "devices"
     mgr = DeviceProfileManager(source_dirs=[devices_dir])

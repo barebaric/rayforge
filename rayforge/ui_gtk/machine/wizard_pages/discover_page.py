@@ -2,16 +2,19 @@
 
 Starts scanning for machines the moment the wizard opens — before
 the user has selected anything. Every driver that declares a
-``DISCOVERY`` recognizer participates (see
-:mod:`rayforge.machine.driver.discovery`); drivers that declare
-``MDNS_SERVICES`` are found over the network the same way. Found
-devices are listed as rows the user can activate to adopt them.
+``DISCOVERY`` spec participates (see
+:mod:`rayforge.machine.discovery`). Found devices are listed as
+rows the user can activate to adopt them.
 
 Discovery and data collection are fully automatic: as soon as a
 device is identified, its driver is asked to probe it (firmware
 build info, working area, speeds) and the row is updated with what
 the device reported — e.g. "Sculpfun iCube, 120×120 mm". The user
 never interacts with this page beyond picking a row.
+
+All scan/probe state lives in the GTK-free
+:class:`~rayforge.machine.discovery.DiscoverySession`; this page
+only feeds results in and maps them onto rows.
 
 The page keeps polling while it is visible so devices plugged in
 later show up on their own. Ports of already-found devices are
@@ -22,7 +25,6 @@ profile-first flow.
 """
 
 import logging
-from dataclasses import replace
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
@@ -31,11 +33,12 @@ from gi.repository import Adw, GLib, Gtk
 
 from ....context import get_context
 from ....machine.device.profile import DeviceProfile
-from ....machine.driver import (
+from ....machine.discovery import (
     DiscoveredDevice,
+    DiscoverySession,
     find_all_devices,
-    get_driver_cls,
 )
+from ....machine.driver import get_driver_cls
 from ....machine.transport import SerialTransport
 from ....shared.tasker import task_mgr
 from ....shared.tasker.context import ExecutionContext
@@ -83,10 +86,8 @@ class DiscoverPage(WizardPage):
         # Bumped on every scan start; stale completion callbacks are
         # ignored by comparing against this.
         self._scan_generation: int = 0
+        self.session = DiscoverySession()
         self._device_rows: dict[str, _DeviceRow] = {}
-        # Ports of found devices; excluded from rescans (see module
-        # docstring) and monitored for unplug.
-        self._held_ports: set[str] = set()
         super().__init__(wizard, **kwargs)
 
     def build_ui(self) -> None:
@@ -116,8 +117,9 @@ class DiscoverPage(WizardPage):
         self.set_ready(True)
 
     def enter(self, profile: DeviceProfile) -> None:
-        # (Re-)start discovery from scratch every time the page is
-        # shown; the generation bump invalidates stale callbacks.
+        # (Re-)start scanning every time the page is shown; the
+        # generation bump invalidates stale callbacks. Previously
+        # found devices stay listed (their ports remain held).
         self._start_scan()
 
     def footer_buttons(self) -> list[Gtk.Button]:
@@ -131,7 +133,9 @@ class DiscoverPage(WizardPage):
         self._show_scanning()
 
         async def _coroutine(exec_ctx: ExecutionContext) -> Any:
-            return await find_all_devices(exclude_ports=self._held_ports)
+            return await find_all_devices(
+                exclude_ports=self.session.held_ports
+            )
 
         task_mgr.add_coroutine(
             _coroutine,
@@ -151,11 +155,34 @@ class DiscoverPage(WizardPage):
                 devices = []
             if task.get_status() != "completed":
                 return
-            self._prune_unplugged_ports()
-            self._update_devices(devices or [])
+            present = self._present_ports()
+            if present is not None:
+                self._prune_absent_ports(present)
+            self._apply_scan_result(devices or [])
             GLib.timeout_add_seconds(_RESCAN_INTERVAL_S, self._on_rescan_timer)
 
         task_mgr.schedule_on_main_thread(_update)
+
+    def _apply_scan_result(self, devices: list[DiscoveredDevice]) -> None:
+        """Feeds a completed scan into the session and reconciles the
+        visible rows with it."""
+        added, removed_keys = self.session.apply_scan(devices)
+        self._remove_rows(removed_keys)
+        for device in added:
+            self._add_row(device)
+            self._start_probe(device)
+        self._update_status()
+
+    def _present_ports(self) -> set[str] | None:
+        """Serial ports currently present on the system, or None
+        when they could not be enumerated (pruning is skipped)."""
+        try:
+            return {i.device for i in SerialTransport.list_port_info()}
+        except Exception:
+            logger.debug(
+                "Could not enumerate ports for pruning", exc_info=True
+            )
+            return None
 
     def _on_rescan_timer(self) -> bool:
         """Periodic re-scan while the page is visible."""
@@ -169,39 +196,7 @@ class DiscoverPage(WizardPage):
         self.spinner.start()
         self.status_box.set_visible(True)
 
-    def _update_devices(self, devices: list[DiscoveredDevice]) -> None:
-        """Reconciles the visible rows with the scan results."""
-        keep: set[str] = set()
-        for device in devices:
-            keep.add(device.key)
-            port = device.params.get("port")
-            if isinstance(port, str):
-                self._held_ports.add(port)
-            existing = self._device_rows.get(device.key)
-            if existing is not None:
-                continue
-            row = _DeviceRow(
-                device=device,
-                title=device.label,
-                subtitle=_row_subtitle(device),
-                activatable=True,
-            )
-            row.connect("activated", self._on_row_activated)
-            self._device_rows[device.key] = row
-            self.group.add(row)
-            self._start_probe(device)
-
-        for key, row in list(self._device_rows.items()):
-            if key in keep:
-                continue
-            # Devices on held ports are excluded from rescans, so
-            # their absence from the results is expected; they are
-            # dropped by _prune_unplugged_ports instead.
-            port = row.device.params.get("port")
-            if isinstance(port, str) and port in self._held_ports:
-                continue
-            self._remove_row(key)
-
+    def _update_status(self) -> None:
         if self._device_rows:
             self.spinner.stop()
             self.status_box.set_visible(False)
@@ -210,25 +205,33 @@ class DiscoverPage(WizardPage):
             self.spinner.start()
             self.status_box.set_visible(True)
 
+    # ----- rows ------------------------------------------------------------
+
+    def _add_row(self, device: DiscoveredDevice) -> None:
+        row = _DeviceRow(
+            device=device,
+            title=device.label,
+            subtitle=_row_subtitle(device),
+            activatable=True,
+        )
+        row.connect("activated", self._on_row_activated)
+        self._device_rows[device.key] = row
+        self.group.add(row)
+
+    def _remove_rows(self, keys: list[str]) -> None:
+        for key in keys:
+            self._remove_row(key)
+
+    def _prune_absent_ports(self, present_ports: set[str]) -> list[str]:
+        """Drops rows whose port has vanished from the system."""
+        removed = self.session.prune_absent_ports(present_ports)
+        self._remove_rows(removed)
+        return removed
+
     def _remove_row(self, key: str) -> None:
         row = self._device_rows.pop(key, None)
         if row is not None:
             self.group.remove(row)
-
-    def _prune_unplugged_ports(self) -> None:
-        """Drops rows whose port has vanished from the system."""
-        try:
-            present = {i.device for i in SerialTransport.list_port_info()}
-        except Exception:
-            logger.debug(
-                "Could not enumerate ports for pruning", exc_info=True
-            )
-            return
-        for key, row in list(self._device_rows.items()):
-            port = row.device.params.get("port")
-            if isinstance(port, str) and port not in present:
-                self._held_ports.discard(port)
-                self._remove_row(key)
 
     # ----- probing ---------------------------------------------------------
 
@@ -270,7 +273,9 @@ class DiscoverPage(WizardPage):
                 return
             for text in warnings:
                 logger.info("Probing warning: %s", text)
-            enriched = replace(device, probe_profile=profile)
+            enriched = self.session.apply_probe(device.key, profile)
+            if enriched is None:
+                return
             row.device = enriched
             name = enriched.probe_name
             if name:

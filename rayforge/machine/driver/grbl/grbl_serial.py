@@ -26,6 +26,7 @@ from ....pipeline.encoder.base import (
 )
 from ....pipeline.encoder.gcode import GcodeEncoder
 from ....shared.units.system import UnitSystem, inches_to_mm
+from ...discovery.spec import DiscoverySpec, SerialRecognizer
 from ...transport import SerialTransport, TransportStatus
 from ...transport.grbl import (
     DEFAULT_GRBL_RX_BUFFER_SIZE,
@@ -34,7 +35,6 @@ from ...transport.grbl import (
     GrblSerialTransport,
 )
 from ...transport.serial import SerialPortPermissionError
-from ..discovery import DeviceRecognizer
 from ..driver import (
     Axis,
     DeviceConnectionError,
@@ -90,11 +90,13 @@ class GrblSerialDriver(Driver):
     reports_granular_progress = True
     supports_probing = True
     supports_unit_detection = True
-    DISCOVERY = DeviceRecognizer(
-        label=lambda: _("GRBL device"),
-        firmware="grbl",
-        matches=is_grbl_output,
-        name=extract_device_name_from_output,
+    DISCOVERY = DiscoverySpec(
+        serial=SerialRecognizer(
+            label=lambda: _("GRBL device"),
+            firmware="grbl",
+            matches=is_grbl_output,
+            name=extract_device_name_from_output,
+        )
     )
 
     # Buffer-stall timeout bounds for a single gcode line. The actual

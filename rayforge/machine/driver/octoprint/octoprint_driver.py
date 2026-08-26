@@ -7,7 +7,6 @@ from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    ClassVar,
     cast,
 )
 
@@ -25,6 +24,7 @@ from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ....core.varset.var import Var
 from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
 from ....pipeline.encoder.gcode import GcodeEncoder
+from ...discovery.spec import DiscoverySpec, MdnsRecognizer
 from ...transport import TransportStatus
 from ..driver import (
     DeviceConnectionError,
@@ -98,13 +98,16 @@ class OctoPrintDriver(Driver):
     uses_gcode = True
     maturity = DriverMaturity.UNTESTED
     # Advertised by OctoPrint's discovery plugin; used for network
-    # device discovery.
-    MDNS_SERVICES = ("_octoprint._tcp.local.",)
-    # OctoPrint's TXT record carries a ``path`` key (the URL prefix
-    # the server is mounted under, e.g. ``/`` or ``/octoprint``).
-    # Forward it into the ``path`` setup-var so connections target
-    # the right base path.
-    MDNS_TXT_MAP: ClassVar[dict[str, str]] = {"path": "path"}
+    # device discovery. The TXT record's ``path`` key (the URL
+    # prefix the server is mounted under, e.g. ``/`` or
+    # ``/octoprint``) is forwarded into the ``path`` setup-var so
+    # connections target the right base path.
+    DISCOVERY = DiscoverySpec(
+        mdns=MdnsRecognizer(
+            services=("_octoprint._tcp.local.",),
+            txt_map={"path": "path"},
+        )
+    )
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)

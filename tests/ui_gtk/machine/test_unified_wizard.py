@@ -11,7 +11,7 @@ from rayforge.machine.device.profile import (
     DeviceProfile,
     MachineConfig,
 )
-from rayforge.machine.driver.discovery import DeviceIdentity
+from rayforge.machine.discovery import DeviceIdentity
 from rayforge.machine.driver.grbl import GrblSerialDriver
 from rayforge.machine.models.machine import Origin
 from rayforge.shared.util.permissions import PermissionIssue
@@ -869,7 +869,7 @@ def test_ai_lookup_page_progress_bar_tracks_lookup(ui_context_initializer):
 
 
 def _discovered_device(**overrides):
-    from rayforge.machine.driver.discovery import DiscoveredDevice
+    from rayforge.machine.discovery import DiscoveredDevice
 
     defaults = {
         "driver_name": "GrblSerialDriver",
@@ -889,12 +889,12 @@ def test_discover_page_lists_devices(ui_context_initializer):
     page = wizard._get_page("discover")
     assert isinstance(page, DiscoverPage)
 
-    page._update_devices([])
+    page._apply_scan_result([])
     assert page.status_label.get_text() == "No devices detected yet"
     assert page.status_box.get_visible()
 
     with patch.object(GrblSerialDriver, "supports_probing", False):
-        page._update_devices([_discovered_device()])
+        page._apply_scan_result([_discovered_device()])
     assert not page.status_box.get_visible()
     assert list(page._device_rows) == ["GrblSerialDriver:/dev/ttyUSB0"]
     row = page._device_rows["GrblSerialDriver:/dev/ttyUSB0"]
@@ -905,7 +905,7 @@ def test_discover_page_lists_devices(ui_context_initializer):
 
     # A held device is not rescanned, so its row survives empty scan
     # results; only unplugging (port gone from the system) removes it.
-    page._update_devices([])
+    page._apply_scan_result([])
     assert list(page._device_rows) == ["GrblSerialDriver:/dev/ttyUSB0"]
 
 
@@ -918,7 +918,7 @@ def test_discover_page_select_button(ui_context_initializer):
     assert isinstance(page, DiscoverPage)
 
     with patch.object(GrblSerialDriver, "supports_probing", False):
-        page._update_devices([_discovered_device()])
+        page._apply_scan_result([_discovered_device()])
     row = page._device_rows["GrblSerialDriver:/dev/ttyUSB0"]
     assert row.select_button.get_label() == "Select"
 
@@ -1124,10 +1124,10 @@ def test_discover_page_lists_network_device(ui_context_initializer):
     page = wizard._get_page("discover")
     assert isinstance(page, DiscoverPage)
 
-    page._update_devices([_octoprint_device()])
+    page._apply_scan_result([_octoprint_device()])
     key = "OctoPrintDriver:192.168.1.42:80"
     assert list(page._device_rows) == [key]
-    assert page._held_ports == set()
+    assert page.session.held_ports == set()
     row = page._device_rows[key]
     assert row.get_title() == "OctoPrint"
     subtitle = row.get_subtitle()
@@ -1135,7 +1135,7 @@ def test_discover_page_lists_network_device(ui_context_initializer):
     assert "192.168.1.42:80" in subtitle
 
     # No serial port to hold: an empty rescan drops the row.
-    page._update_devices([])
+    page._apply_scan_result([])
     assert list(page._device_rows) == []
 
 
@@ -1383,9 +1383,9 @@ def test_discover_page_probes_and_enriches_found_device(
             "rayforge.ui_gtk.machine.wizard_pages.discover_page.task_mgr"
         ) as tm,
     ):
-        page._update_devices([device])
+        page._apply_scan_result([device])
         assert tm.add_coroutine.called
-        assert page._held_ports == {"/dev/ttyUSB0"}
+        assert page.session.held_ports == {"/dev/ttyUSB0"}
 
         probed = _probed_profile("Sculpfun iCube", axis_extents=(120.0, 120.0))
         task = MagicMock()
@@ -1417,8 +1417,8 @@ def test_discover_page_rescan_excludes_and_prunes(ui_context_initializer):
     assert isinstance(page, DiscoverPage)
 
     with patch.object(GrblSerialDriver, "supports_probing", False):
-        page._update_devices([_discovered_device()])
-    assert page._held_ports == {"/dev/ttyUSB0"}
+        page._apply_scan_result([_discovered_device()])
+    assert page.session.held_ports == {"/dev/ttyUSB0"}
 
     # Rescans keep away from ports whose devices are already held.
     captured = {}
@@ -1446,9 +1446,11 @@ def test_discover_page_rescan_excludes_and_prunes(ui_context_initializer):
         "rayforge.ui_gtk.machine.wizard_pages.discover_page.SerialTransport"
     ) as transport:
         transport.list_port_info.return_value = []
-        page._prune_unplugged_ports()
+        present = page._present_ports()
+    assert present is not None
+    page._prune_absent_ports(present)
     assert page._device_rows == {}
-    assert page._held_ports == set()
+    assert page.session.held_ports == set()
 
 
 @pytest.mark.ui

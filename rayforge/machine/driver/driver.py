@@ -17,6 +17,7 @@ from raygeo.ops.axis import Axis
 from ...context import RayforgeContext
 from ...core.varset import IntVar, VarSet
 from ...shared.units.system import UnitSystem
+from ..discovery.spec import DiscoverySpec
 
 if TYPE_CHECKING:
     from raygeo.ops import Ops
@@ -28,7 +29,6 @@ if TYPE_CHECKING:
     from ..models.head import Head
     from ..models.laser import Laser
     from ..models.machine import Machine
-    from .discovery import DeviceRecognizer
 
 
 logger = logging.getLogger(__name__)
@@ -222,23 +222,13 @@ class Driver(ABC):
     # When True, the driver can query the device to detect its
     # native unit system (metric vs imperial).
     supports_unit_detection: bool = False
-    # Declarative description of what a device this driver can talk
-    # to looks like on the wire. When set, the driver participates
-    # in automatic device discovery: discovery scans each transport
-    # once and evaluates the captured output against every
-    # recognizer (see rayforge.machine.driver.discovery).
-    DISCOVERY: ClassVar["DeviceRecognizer | None"] = None
-    # mDNS service types announcing devices this driver can talk to
-    # over the network. When non-empty, the driver participates in
-    # network discovery (see rayforge.machine.driver.discovery).
-    MDNS_SERVICES: ClassVar[tuple[str, ...]] = ()
-    # Maps mDNS TXT record keys to the driver-args keys they should be
-    # forwarded as during network discovery. Keys are TXT record
-    # field names; values are the ``driver_args`` / setup-var keys
-    # the driver consumes. Only keys present in both the map and the
-    # resolved TXT record are forwarded. (See
-    # rayforge.machine.driver.discovery._build_network_device.)
-    MDNS_TXT_MAP: ClassVar[dict[str, str]] = {}
+    # Everything the driver declares about discoverability: what its
+    # devices look like on the wire and on the network, composed of
+    # per-channel recognizers. When set, the driver participates in
+    # automatic device discovery (see
+    # rayforge.machine.discovery). Serial-only drivers declare only
+    # the serial recognizer; network drivers only the mDNS one.
+    DISCOVERY: ClassVar[DiscoverySpec | None] = None
 
     @property
     @abstractmethod

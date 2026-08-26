@@ -1,9 +1,8 @@
 import inspect
 from typing import cast
 
-from .discovery import (
+from ..discovery import (
     DeviceIdentity,
-    DeviceRecognizer,
     DiscoveredDevice,
     find_all_devices,
     find_network_devices,
@@ -53,7 +52,6 @@ def register_driver(driver: type[Driver]):
 __all__ = [
     "DRIVER_MATURITY_LABELS",
     "DeviceIdentity",
-    "DeviceRecognizer",
     "DiscoveredDevice",
     "Driver",
     "DriverMaturity",

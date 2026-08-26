@@ -3,24 +3,28 @@ from typing import ClassVar
 
 import pytest
 
+from rayforge.machine.discovery import (
+    GENERIC_TOKENS,
+    DiscoverySpec,
+    MdnsRecognizer,
+    SerialRecognizer,
+    build_identity,
+    find_all_devices,
+    find_network_devices,
+    mdns_channel,
+    normalize_tokens,
+    serial_channel,
+)
 from rayforge.machine.driver import (
     GrblNetworkDriver,
     GrblSerialDriver,
     GrblTelnetDriver,
     MarlinSerialDriver,
     OctoPrintDriver,
-    discovery,
     drivers,
 )
-from rayforge.machine.driver.discovery import (
-    GENERIC_TOKENS,
-    DeviceIdentity,
-    DeviceRecognizer,
-    DiscoveredDevice,
-    build_identity,
-    find_all_devices,
-    find_network_devices,
-    normalize_tokens,
+from rayforge.machine.driver.grbl.grbl_fingerprint import (
+    fingerprint_grbl_http,
 )
 from rayforge.machine.transport import serial_scan
 from rayforge.machine.transport.mdns_scan import MDNSService
@@ -60,31 +64,41 @@ def _marlin_name(data: bytes) -> str | None:
 
 
 class FakeGrblDriver:
-    DISCOVERY = DeviceRecognizer(
-        label=lambda: "GRBL device",
-        matches=_grbl_matcher,
-        name=_grbl_name,
-        firmware="grbl",
+    DISCOVERY = DiscoverySpec(
+        serial=SerialRecognizer(
+            label=lambda: "GRBL device",
+            matches=_grbl_matcher,
+            name=_grbl_name,
+            firmware="grbl",
+        )
     )
 
 
 class FakeMarlinDriver:
-    DISCOVERY = DeviceRecognizer(
-        label=lambda: "Marlin device",
-        matches=_marlin_matcher,
-        name=_marlin_name,
-        firmware="marlin",
+    DISCOVERY = DiscoverySpec(
+        serial=SerialRecognizer(
+            label=lambda: "Marlin device",
+            matches=_marlin_matcher,
+            name=_marlin_name,
+            firmware="marlin",
+        )
     )
 
 
 class FakeOctoPrintDriver:
-    MDNS_SERVICES = ("_octoprint._tcp.local.",)
+    DISCOVERY = DiscoverySpec(
+        mdns=MdnsRecognizer(services=("_octoprint._tcp.local.",))
+    )
     label = "OctoPrint"
 
 
 class FakeOctoPrintWithTxtDriver:
-    MDNS_SERVICES = ("_octoprint._tcp.local.",)
-    MDNS_TXT_MAP: ClassVar[dict[str, str]] = {"path": "path"}
+    DISCOVERY = DiscoverySpec(
+        mdns=MdnsRecognizer(
+            services=("_octoprint._tcp.local.",),
+            txt_map={"path": "path"},
+        )
+    )
     label = "OctoPrint"
 
 
@@ -165,7 +179,7 @@ def no_mdns(monkeypatch):
     async def _no_browse(service_types):
         return []
 
-    monkeypatch.setattr(discovery, "scan_mdns_services", _no_browse)
+    monkeypatch.setattr(mdns_channel, "scan_mdns_services", _no_browse)
 
 
 def _patch_serial(monkeypatch, responses):
@@ -173,6 +187,36 @@ def _patch_serial(monkeypatch, responses):
         "rayforge.machine.transport.serial_scan.serial.Serial",
         lambda **kw: FakeSerial(responses=responses, **kw),
     )
+
+
+# ----- serial channel ---------------------------------------------------
+
+
+def test_normalize_tokens():
+    tokens = normalize_tokens("Ortur Laser_Master", "CH340", None)
+    # Generic chip names stay in the token set; they are filtered at
+    # match time via GENERIC_TOKENS.
+    assert tokens == {"ortur", "laser", "master", "ch340"}
+    assert normalize_tokens(None, "") == frozenset()
+    assert "ch340" in GENERIC_TOKENS
+
+
+def test_build_identity():
+    info = SerialPortInfo("/dev/ttyUSB0", "USB Serial", vid=1, pid=2)
+    identity = build_identity("grbl", info)
+    assert identity.firmware == "grbl"
+    assert identity.banner is None
+    assert identity.usb_vid == 1
+    assert identity.usb_pid == 2
+    assert "usb" in identity.tokens
+    assert "serial" in identity.tokens
+
+
+def test_build_identity_uses_device_name_as_banner():
+    info = SerialPortInfo("/dev/ttyUSB0", "USB Serial", vid=1, pid=2)
+    identity = build_identity("grbl", info, "Grbl 1.1f")
+    assert identity.banner == "Grbl 1.1f"
+    assert "grbl" in identity.tokens
 
 
 @pytest.mark.asyncio
@@ -268,7 +312,7 @@ async def test_drivers_without_recognizer_are_ignored(monkeypatch):
     _patch_serial(monkeypatch, {"/dev/ttyUSB0": b"Grbl 1.1f\r\n"})
 
     class UndiscoverableDriver:
-        pass
+        DISCOVERY = None
 
     devices = await find_all_devices(
         [UndiscoverableDriver], ports=["/dev/ttyUSB0"]
@@ -286,9 +330,11 @@ async def test_broken_recognizer_does_not_break_discovery(monkeypatch):
         raise OSError("boom")
 
     class BrokenDriver:
-        DISCOVERY = DeviceRecognizer(
-            label=lambda: "Broken",
-            matches=boom,
+        DISCOVERY = DiscoverySpec(
+            serial=SerialRecognizer(
+                label=lambda: "Broken",
+                matches=boom,
+            )
         )
 
     devices = await find_all_devices(
@@ -303,8 +349,8 @@ async def test_scan_timeout_returns_empty(monkeypatch):
         await asyncio.sleep(1.0)
         return []
 
-    monkeypatch.setattr(discovery, "scan_serial_ports", slow_scan)
-    monkeypatch.setattr(discovery, "_SCAN_TIMEOUT", 0.05)
+    monkeypatch.setattr(serial_channel, "scan_serial_ports", slow_scan)
+    monkeypatch.setattr(serial_channel, "SERIAL_SCAN_TIMEOUT", 0.05)
     devices = await find_all_devices([FakeGrblDriver], ports=["/dev/x"])
     assert devices == []
 
@@ -314,77 +360,33 @@ async def test_scan_failure_returns_empty(monkeypatch):
     async def broken_scan(**kwargs):
         raise OSError("boom")
 
-    monkeypatch.setattr(discovery, "scan_serial_ports", broken_scan)
+    monkeypatch.setattr(serial_channel, "scan_serial_ports", broken_scan)
     devices = await find_all_devices([FakeGrblDriver], ports=["/dev/x"])
     assert devices == []
 
 
-@pytest.mark.asyncio
-async def test_builtin_discovery_drivers():
+def test_builtin_discovery_drivers():
     discoverable = [d for d in drivers if d.DISCOVERY is not None]
     assert {d.__name__ for d in discoverable} == {
         "GrblSerialDriver",
+        "GrblNetworkDriver",
         "MarlinSerialDriver",
+        "OctoPrintDriver",
     }
     assert GrblTelnetDriver.DISCOVERY is None
-    assert GrblSerialDriver.DISCOVERY is not None
-    assert GrblSerialDriver.DISCOVERY.firmware == "grbl"
-    assert GrblSerialDriver.DISCOVERY.name is not None
-    assert MarlinSerialDriver.DISCOVERY is not None
-    assert MarlinSerialDriver.DISCOVERY.firmware == "marlin"
-    assert MarlinSerialDriver.DISCOVERY.name is not None
+    grbl_spec = GrblSerialDriver.DISCOVERY
+    assert grbl_spec is not None
+    assert grbl_spec.serial is not None
+    assert grbl_spec.serial.firmware == "grbl"
+    assert grbl_spec.serial.name is not None
+    marlin_spec = MarlinSerialDriver.DISCOVERY
+    assert marlin_spec is not None
+    assert marlin_spec.serial is not None
+    assert marlin_spec.serial.firmware == "marlin"
+    assert marlin_spec.serial.name is not None
 
 
-def test_normalize_tokens():
-    tokens = normalize_tokens("Ortur Laser_Master", "CH340", None)
-    # Generic chip names stay in the token set; they are filtered at
-    # match time via GENERIC_TOKENS.
-    assert tokens == {"ortur", "laser", "master", "ch340"}
-    assert normalize_tokens(None, "") == frozenset()
-    assert "ch340" in GENERIC_TOKENS
-
-
-def test_build_identity():
-    info = SerialPortInfo("/dev/ttyUSB0", "USB Serial", vid=1, pid=2)
-    identity = build_identity("grbl", info)
-    assert identity.firmware == "grbl"
-    assert identity.banner is None
-    assert identity.usb_vid == 1
-    assert identity.usb_pid == 2
-    assert "usb" in identity.tokens
-    assert "serial" in identity.tokens
-
-
-def test_build_identity_uses_device_name_as_banner():
-    info = SerialPortInfo("/dev/ttyUSB0", "USB Serial", vid=1, pid=2)
-    identity = build_identity("grbl", info, "Grbl 1.1f")
-    assert identity.banner == "Grbl 1.1f"
-    assert "grbl" in identity.tokens
-
-
-def test_discovered_device_key():
-    device = DiscoveredDevice(
-        driver_name="GrblSerialDriver",
-        params={"port": "/dev/ttyUSB0", "baudrate": 115200},
-        label="GRBL device",
-        detail="/dev/ttyUSB0 at 115200 baud",
-    )
-    assert device.key == "GrblSerialDriver:/dev/ttyUSB0"
-    assert DeviceIdentity() == DeviceIdentity()
-
-
-def test_discovered_device_key_network_unique_per_host():
-    def _device(host):
-        return DiscoveredDevice(
-            driver_name="OctoPrintDriver",
-            params={"host": host, "port": 80},
-            label="OctoPrint",
-            detail=f"{host}:80",
-        )
-
-    # Two servers behind the same TCP port stay distinguishable.
-    assert _device("192.168.1.42").key != _device("192.168.1.43").key
-    assert _device("192.168.1.42").key == "OctoPrintDriver:192.168.1.42:80"
+# ----- network channel --------------------------------------------------
 
 
 def _octoprint_service(**overrides):
@@ -406,7 +408,7 @@ async def test_network_devices_from_mdns(monkeypatch):
         assert service_types == {"_octoprint._tcp"}
         return [_octoprint_service()]
 
-    monkeypatch.setattr(discovery, "scan_mdns_services", fake_scan)
+    monkeypatch.setattr(mdns_channel, "scan_mdns_services", fake_scan)
     devices = await find_network_devices([FakeOctoPrintDriver])
     assert len(devices) == 1
     device = devices[0]
@@ -422,7 +424,7 @@ async def test_network_devices_from_mdns(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_mdns_txt_forwarded_into_params(monkeypatch):
-    """A TXT key declared in the driver's MDNS_TXT_MAP is forwarded
+    """A TXT key declared in the recognizer's txt_map is forwarded
     into the discovered device's params under the mapped arg key."""
     service = _octoprint_service(
         txt={"path": "/octoprint", "version": "1.10.3", "api": "0.1"}
@@ -431,7 +433,7 @@ async def test_mdns_txt_forwarded_into_params(monkeypatch):
     async def fake_scan(service_types):
         return [service]
 
-    monkeypatch.setattr(discovery, "scan_mdns_services", fake_scan)
+    monkeypatch.setattr(mdns_channel, "scan_mdns_services", fake_scan)
     devices = await find_network_devices([FakeOctoPrintWithTxtDriver])
     assert len(devices) == 1
     device = devices[0]
@@ -451,7 +453,7 @@ async def test_mdns_txt_empty_value_not_forwarded(monkeypatch):
     async def fake_scan(service_types):
         return [service]
 
-    monkeypatch.setattr(discovery, "scan_mdns_services", fake_scan)
+    monkeypatch.setattr(mdns_channel, "scan_mdns_services", fake_scan)
     devices = await find_network_devices([FakeOctoPrintWithTxtDriver])
     assert len(devices) == 1
     assert devices[0].params == {"host": "192.168.1.42", "port": 80}
@@ -475,7 +477,7 @@ async def test_mdns_txt_vendor_model_enrich_identity(monkeypatch):
     async def fake_scan(service_types):
         return [service]
 
-    monkeypatch.setattr(discovery, "scan_mdns_services", fake_scan)
+    monkeypatch.setattr(mdns_channel, "scan_mdns_services", fake_scan)
     devices = await find_network_devices([FakeOctoPrintWithTxtDriver])
     assert len(devices) == 1
     device = devices[0]
@@ -497,7 +499,7 @@ async def test_mdns_txt_instance_name_preferred_as_banner(monkeypatch):
     async def fake_scan(service_types):
         return [service]
 
-    monkeypatch.setattr(discovery, "scan_mdns_services", fake_scan)
+    monkeypatch.setattr(mdns_channel, "scan_mdns_services", fake_scan)
     devices = await find_network_devices([FakeOctoPrintWithTxtDriver])
     assert devices[0].identity.banner == "OctoPrint on octopi"
 
@@ -509,7 +511,13 @@ async def test_esp3d_service_maps_to_grbl_network_driver(monkeypatch):
     defaults cover ws_port and protocol)."""
 
     async def fake_scan(service_types):
-        assert service_types == {"_esp3d._tcp", "_octoprint._tcp"}
+        # GrblNetworkDriver fingerprints, so the generic _http._tcp
+        # is browsed alongside the declared service types.
+        assert service_types == {
+            "_esp3d._tcp",
+            "_octoprint._tcp",
+            "_http._tcp",
+        }
         return [
             MDNSService(
                 service_type="_esp3d._tcp",
@@ -521,7 +529,7 @@ async def test_esp3d_service_maps_to_grbl_network_driver(monkeypatch):
             )
         ]
 
-    monkeypatch.setattr(discovery, "scan_mdns_services", fake_scan)
+    monkeypatch.setattr(mdns_channel, "scan_mdns_services", fake_scan)
     devices = await find_network_devices(
         [FakeOctoPrintDriver, GrblNetworkDriver]
     )
@@ -544,13 +552,16 @@ async def test_mdns_declaration_without_local_suffix(monkeypatch):
     announcements."""
 
     class BareDeclarationDriver:
-        MDNS_SERVICES = ("_octoprint._tcp",)
+        DISCOVERY = DiscoverySpec(
+            mdns=MdnsRecognizer(services=("_octoprint._tcp",))
+        )
+        label = "Bare"
 
     async def fake_scan(service_types):
         assert service_types == {"_octoprint._tcp"}
         return [_octoprint_service()]
 
-    monkeypatch.setattr(discovery, "scan_mdns_services", fake_scan)
+    monkeypatch.setattr(mdns_channel, "scan_mdns_services", fake_scan)
     devices = await find_network_devices([BareDeclarationDriver])
     assert [d.driver_name for d in devices] == ["BareDeclarationDriver"]
 
@@ -562,7 +573,7 @@ async def test_find_all_devices_merges_serial_and_network(monkeypatch):
     async def fake_mdns(service_types):
         return [_octoprint_service()]
 
-    monkeypatch.setattr(discovery, "scan_mdns_services", fake_mdns)
+    monkeypatch.setattr(mdns_channel, "scan_mdns_services", fake_mdns)
     devices = await find_all_devices(
         [FakeGrblDriver, FakeOctoPrintDriver], ports=["/dev/ttyUSB0"]
     )
@@ -580,7 +591,7 @@ async def test_no_mdns_declarations_skips_network_scan(monkeypatch):
         calls.append(service_types)
         return []
 
-    monkeypatch.setattr(discovery, "scan_mdns_services", fake_mdns)
+    monkeypatch.setattr(mdns_channel, "scan_mdns_services", fake_mdns)
     _patch_serial(monkeypatch, {"/dev/ttyUSB0": b"Grbl 1.1f\r\n"})
     devices = await find_all_devices(
         [FakeGrblDriver, FakeMarlinDriver], ports=["/dev/ttyUSB0"]
@@ -595,8 +606,8 @@ async def test_network_scan_timeout_returns_empty(monkeypatch):
         await asyncio.sleep(1.0)
         return []
 
-    monkeypatch.setattr(discovery, "scan_mdns_services", slow_scan)
-    monkeypatch.setattr(discovery, "_NETWORK_SCAN_TIMEOUT", 0.05)
+    monkeypatch.setattr(mdns_channel, "scan_mdns_services", slow_scan)
+    monkeypatch.setattr(mdns_channel, "NETWORK_SCAN_TIMEOUT", 0.05)
     assert await find_network_devices([FakeOctoPrintDriver]) == []
 
 
@@ -605,17 +616,156 @@ async def test_network_scan_failure_returns_empty(monkeypatch):
     async def broken_scan(service_types):
         raise OSError("boom")
 
-    monkeypatch.setattr(discovery, "scan_mdns_services", broken_scan)
+    monkeypatch.setattr(mdns_channel, "scan_mdns_services", broken_scan)
     assert await find_network_devices([FakeOctoPrintDriver]) == []
 
 
-def test_builtin_mdns_services():
-    declared = {
-        d.__name__: d.MDNS_SERVICES for d in drivers if d.MDNS_SERVICES
-    }
+def test_builtin_mdns_declarations():
+    declared = {}
+    for cls in drivers:
+        spec = cls.DISCOVERY
+        if spec is not None and spec.mdns is not None:
+            declared[cls.__name__] = spec.mdns.services
     assert declared == {
         "OctoPrintDriver": ("_octoprint._tcp.local.",),
         "GrblNetworkDriver": ("_esp3d._tcp.local.",),
     }
-    assert OctoPrintDriver.MDNS_SERVICES == ("_octoprint._tcp.local.",)
-    assert GrblNetworkDriver.MDNS_SERVICES == ("_esp3d._tcp.local.",)
+    octo_spec = OctoPrintDriver.DISCOVERY
+    assert octo_spec is not None and octo_spec.mdns is not None
+    assert octo_spec.mdns.txt_map == {"path": "path"}
+    grbl_net_spec = GrblNetworkDriver.DISCOVERY
+    assert grbl_net_spec is not None and grbl_net_spec.mdns is not None
+    assert grbl_net_spec.mdns.fingerprint is fingerprint_grbl_http
+
+
+# ----- fingerprint pass -------------------------------------------------
+
+
+def _fingerprint_driver(fingerprint):
+    """A fresh driver class claiming _esp3d._tcp by declaration and
+    _http._tcp candidates only via its fingerprint probe."""
+
+    class FingerprintDriver:
+        DISCOVERY = DiscoverySpec(
+            mdns=MdnsRecognizer(
+                services=("_esp3d._tcp.local.",),
+                fingerprint=fingerprint,
+            )
+        )
+        label = "GRBL (Network)"
+
+    return FingerprintDriver
+
+
+def _http_service(host="192.168.1.70", port=80, **txt):
+    return MDNSService(
+        service_type="_http._tcp",
+        name="FluidNC",
+        host=host,
+        port=port,
+        server="fluidnc.local",
+        txt=dict(txt),
+    )
+
+
+@pytest.mark.asyncio
+async def test_http_candidate_fingerprinted_and_claimed(monkeypatch):
+    """A FluidNC announcing only generic _http._tcp is confirmed by
+    the fingerprint probe and claimed by the driver."""
+
+    async def ok_fingerprint(host, port, timeout=1.5):
+        return _http_service()
+
+    async def fake_scan(service_types):
+        assert service_types == {"_esp3d._tcp", "_http._tcp"}
+        return [_http_service()]
+
+    driver = _fingerprint_driver(ok_fingerprint)
+    monkeypatch.setattr(mdns_channel, "scan_mdns_services", fake_scan)
+    devices = await find_network_devices([driver])
+    assert len(devices) == 1
+    device = devices[0]
+    assert device.driver_name == "FingerprintDriver"
+    assert device.params == {"host": "192.168.1.70", "port": 80}
+    assert device.label == "GRBL (Network)"
+
+
+@pytest.mark.asyncio
+async def test_non_matching_http_candidate_ignored(monkeypatch):
+    async def no_match(host, port, timeout=1.5):
+        return None
+
+    async def fake_scan(service_types):
+        return [_http_service()]
+
+    driver = _fingerprint_driver(no_match)
+    monkeypatch.setattr(mdns_channel, "scan_mdns_services", fake_scan)
+    assert await find_network_devices([driver]) == []
+
+
+@pytest.mark.asyncio
+async def test_declared_service_wins_over_fingerprint(monkeypatch):
+    """A host already claimed via its declared service type must not
+    be fingerprinted again."""
+    calls = []
+
+    async def spy_fingerprint(host, port, timeout=1.5):
+        calls.append((host, port))
+        return _http_service(host=host)
+
+    async def fake_scan(service_types):
+        return [
+            MDNSService(
+                service_type="_esp3d._tcp",
+                name="ESP3D",
+                host="192.168.1.60",
+                port=80,
+                server="esp3d.local",
+                txt={},
+            ),
+            _http_service(host="192.168.1.60"),
+        ]
+
+    driver = _fingerprint_driver(spy_fingerprint)
+    monkeypatch.setattr(mdns_channel, "scan_mdns_services", fake_scan)
+    devices = await find_network_devices([driver])
+    assert len(devices) == 1
+    assert devices[0].params["host"] == "192.168.1.60"
+    assert devices[0].identity.banner == "ESP3D"
+    assert calls == []
+
+
+@pytest.mark.asyncio
+async def test_failing_fingerprint_is_isolated(monkeypatch):
+    """One candidate failing (or refusing) to fingerprint does not
+    prevent other candidates from being claimed."""
+
+    async def match_only_second(host, port, timeout=1.5):
+        if host == "192.168.1.71":
+            return _http_service(host=host)
+        return None
+
+    async def fake_scan(service_types):
+        return [_http_service(), _http_service(host="192.168.1.71")]
+
+    driver = _fingerprint_driver(match_only_second)
+    monkeypatch.setattr(mdns_channel, "scan_mdns_services", fake_scan)
+    devices = await find_network_devices([driver])
+    assert [d.params["host"] for d in devices] == ["192.168.1.71"]
+
+
+@pytest.mark.asyncio
+async def test_no_candidates_skips_fingerprint_pass(monkeypatch):
+    """Without _http._tcp announcements no probe runs; declared-service
+    browsing works unchanged."""
+
+    async def spy_fingerprint(host, port, timeout=1.5):
+        raise AssertionError("must not be called")
+
+    async def fake_scan(service_types):
+        assert service_types == {"_esp3d._tcp"}
+        return []
+
+    driver = _fingerprint_driver(spy_fingerprint)
+    monkeypatch.setattr(mdns_channel, "scan_mdns_services", fake_scan)
+    assert await find_network_devices([driver]) == []

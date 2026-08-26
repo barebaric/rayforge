@@ -18,6 +18,7 @@ from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
 from ....pipeline.encoder.gcode import GcodeEncoder
 from ....shared.units.system import UnitSystem, inches_to_mm
+from ...discovery.spec import DiscoverySpec, MdnsRecognizer
 from ...transport import HttpTransport, TransportStatus, WebSocketTransport
 from ..driver import (
     Axis,
@@ -28,6 +29,7 @@ from ..driver import (
     DriverSetupError,
     Pos,
 )
+from .grbl_fingerprint import fingerprint_grbl_http
 from .grbl_probe import probe_grbl_device
 from .grbl_util import (
     CommandRequest,
@@ -73,10 +75,15 @@ class GrblNetworkDriver(Driver):
     supports_probing = True
     supports_unit_detection = True
     reports_granular_progress = False
-    # Advertised by ESP3D v3 firmware; used for network device
-    # discovery. FluidNC only announces generic service types and is
-    # not covered by this declaration.
-    MDNS_SERVICES = ("_esp3d._tcp.local.",)
+    # ESP3D v3 firmware advertises a dedicated _esp3d._tcp service;
+    # FluidNC only announces the generic _http._tcp and is confirmed
+    # by fingerprinting its [ESP800] firmware-info endpoint.
+    DISCOVERY = DiscoverySpec(
+        mdns=MdnsRecognizer(
+            services=("_esp3d._tcp.local.",),
+            fingerprint=fingerprint_grbl_http,
+        )
+    )
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
