@@ -279,7 +279,6 @@ def test_route_controller_without_driver_skips_connection(
         return_value=True,
     ):
         assert wizard._next_step_after("controller") == "ai_lookup"
-    assert {"connect", "probe"} <= wizard._skipped_steps_set
 
 
 @pytest.mark.ui
@@ -293,7 +292,6 @@ def test_route_controller_without_driver_no_ai_goes_to_provider(
         return_value=False,
     ):
         assert wizard._next_step_after("controller") == "ai_provider"
-    assert {"connect", "probe"} <= wizard._skipped_steps_set
 
 
 @pytest.mark.ui
@@ -314,7 +312,6 @@ def test_route_connection_non_probing_driver_skips_probe(
         return_value=True,
     ):
         assert wizard._next_step_after("connect") == "ai_lookup"
-    assert "probe" in wizard._skipped_steps_set
 
 
 @pytest.mark.ui
@@ -371,7 +368,6 @@ def test_source_selected_known_profile_goes_to_connection(
         None, kind="profile", profile=_profile()
     )
     assert wizard.stack.get_visible_child_name() == "connect"
-    assert "controller" in wizard._skipped_steps_set
 
 
 @pytest.mark.ui
@@ -419,16 +415,6 @@ def test_known_profile_skips_to_review(ui_context_initializer):
         None, kind="profile", profile=_profile(driver="RuidaDriver")
     )
     assert wizard._next_step_after("connect") == "review"
-    assert {
-        "controller",
-        "probe",
-        "ai_provider",
-        "ai_lookup",
-        "hardware",
-        "head",
-        "rotary",
-        "camera",
-    } <= wizard._skipped_steps_set
 
 
 @pytest.mark.ui
@@ -445,8 +431,6 @@ def test_import_skips_ai_but_keeps_probe_hw_head(ui_context_initializer):
         return_value=False,
     ):
         assert wizard._next_step_after("probe") == "hardware"
-    assert {"ai_provider", "ai_lookup"} <= wizard._skipped_steps_set
-    assert not ({"hardware", "head"} <= wizard._skipped_steps_set)
 
 
 @pytest.mark.ui
@@ -1076,7 +1060,6 @@ def test_device_selected_with_match_skips_to_probe(ui_context_initializer):
     mc = wizard.profile.machine_config
     assert mc.driver == "GrblSerialDriver"
     assert mc.driver_args == {"port": "/dev/ttyUSB0", "baudrate": 115200}
-    assert {"profile", "controller", "connect"} <= wizard._skipped_steps_set
 
 
 @pytest.mark.ui
@@ -1136,14 +1119,6 @@ def test_probe_result_adopts_matched_profile(ui_context_initializer):
     # Known-machine flow: everything through camera is skipped; the
     # profile is the source of truth for optional hardware too.
     assert wizard._next_step_after("probe") == "review"
-    assert {
-        "ai_provider",
-        "ai_lookup",
-        "hardware",
-        "head",
-        "rotary",
-        "camera",
-    } <= wizard._skipped_steps_set
 
 
 @pytest.mark.ui
@@ -1153,7 +1128,6 @@ def test_smoothie_driver_routes_to_probe(ui_context_initializer):
     wizard = _make_wizard(ui_context_initializer)
     wizard.profile = _profile(driver="SmoothieDriver")
     assert wizard._next_step_after("connect") == "probe"
-    assert "probe" not in wizard._skipped_steps_set
 
 
 @pytest.mark.ui
@@ -1341,7 +1315,6 @@ def test_device_selected_without_match_probes_device(ui_context_initializer):
     assert mc.driver == "GrblSerialDriver"
     assert mc.driver_args == {"port": "/dev/ttyUSB0", "baudrate": 115200}
     assert wizard.aux_state.get("discovered") is not None
-    assert {"controller", "connect"} <= wizard._skipped_steps_set
 
 
 @pytest.mark.ui
@@ -1529,9 +1502,8 @@ def test_esp3d_device_selected_goes_to_probe(ui_context_initializer):
     mc = wizard.profile.machine_config
     assert mc.driver == "GrblNetworkDriver"
     assert mc.driver_args == {"host": "192.168.1.60", "port": 80}
-    # host alone completes GrblNetworkDriver's required args; the
-    # connect page never comes up.
-    assert "connect" in wizard._skipped_steps_set
+    # host alone completes GrblNetworkDriver's required args, so the
+    # connect page never comes up and probing starts directly.
 
 
 def _probed_profile(name="Mystery CNC", **machine_overrides):
@@ -1584,18 +1556,6 @@ def test_device_selected_with_probe_data_and_match_completes_flow(
     assert mc.driver_args == {"port": "/dev/ttyUSB0", "baudrate": 115200}
     assert mc.driver_config == {"rx_buffer_size": 31}
     assert mc.axis_extents == (150.0, 150.0)
-    assert {
-        "profile",
-        "controller",
-        "connect",
-        "probe",
-        "ai_provider",
-        "ai_lookup",
-        "hardware",
-        "head",
-        "rotary",
-        "camera",
-    } <= wizard._skipped_steps_set
 
 
 @pytest.mark.ui
@@ -1616,7 +1576,6 @@ def test_device_selected_with_probe_data_without_match_filters_profiles(
     wizard._on_device_selected(page, device=device)
 
     assert wizard.stack.get_visible_child_name() == "profile"
-    assert {"controller", "connect", "probe"} <= wizard._skipped_steps_set
     assert wizard.profile.machine_config.axis_extents == (120.0, 120.0)
 
     profile_page = wizard._get_page("profile")

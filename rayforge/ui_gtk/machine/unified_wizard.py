@@ -147,11 +147,6 @@ class UnifiedWizard(PatchedDialogWindow):
         # History stack — supports the Back button.
         self._history: list[str] = []
 
-        # Steps we deliberately won't re-enter when the user presses
-        # Back — populated as the user proceeds (e.g. "controller" gets
-        # added when the user picks a known profile or import).
-        self._skipped_steps_set: set = set()
-
         self._build_buttons(self._main_box)
 
         # Initial state: the permission pre-flight page when a
@@ -460,19 +455,8 @@ class UnifiedWizard(PatchedDialogWindow):
         """
         kind = self._source_kind()
         if kind == "profile":
-            self._skipped_steps_set.update(
-                {
-                    "ai_provider",
-                    "ai_lookup",
-                    "hardware",
-                    "head",
-                    "rotary",
-                    "camera",
-                }
-            )
             return "review"
         if kind == "import":
-            self._skipped_steps_set.update({"ai_provider", "ai_lookup"})
             return "hardware"
         return "ai_lookup" if is_ai_configured() else "ai_provider"
 
@@ -501,7 +485,6 @@ class UnifiedWizard(PatchedDialogWindow):
         if name == "controller":
             # `None` controller skips Steps 3 & 4 entirely.
             if not mc.driver:
-                self._skipped_steps_set.update({"connect", "probe"})
                 return self._ai_entry_step()
             return "connect"
 
@@ -511,7 +494,6 @@ class UnifiedWizard(PatchedDialogWindow):
             # reliable, so the user may still probe (when the driver
             # supports it) to verify/correct the imported values.
             if self._source_kind() == "profile":
-                self._skipped_steps_set.update({"probe"})
                 return self._ai_entry_step()
             # Probe page only if driver supports probing.
             driver_cls = None
@@ -523,7 +505,6 @@ class UnifiedWizard(PatchedDialogWindow):
                     driver_cls = None
             if driver_cls is not None and driver_cls.supports_probing:
                 return "probe"
-            self._skipped_steps_set.update({"probe"})
             return self._ai_entry_step()
 
         if name == "probe":
@@ -604,7 +585,6 @@ class UnifiedWizard(PatchedDialogWindow):
             self._adopt_matched_profile(certain.profile, device)
             self.aux_state = {}
             if self._connection_args_complete():
-                self._skipped_steps_set.add("connect")
                 self._navigate_to(self._device_selected_next_step(device))
             else:
                 self._navigate_to("connect")
@@ -616,14 +596,11 @@ class UnifiedWizard(PatchedDialogWindow):
         # page-level probe could not produce data.
         self.aux_state = {"discovered": device}
         self._source = None
-        self._skipped_steps_set.add("controller")
         if device.probe_profile is not None:
             self._merge_probe_specs(device.probe_profile)
-            self._skipped_steps_set.add("probe")
         if not self._connection_args_complete():
             self._navigate_to("profile")
             return
-        self._skipped_steps_set.add("connect")
         if device.probe_profile is None and self._driver_can_probe(device):
             self._navigate_to("probe")
             return
@@ -637,7 +614,6 @@ class UnifiedWizard(PatchedDialogWindow):
         connection and collects the machine's specs.
         """
         if device.probe_profile is not None:
-            self._skipped_steps_set.add("probe")
             return self._ai_entry_step()
         if self._driver_can_probe(device):
             return "probe"
@@ -687,7 +663,6 @@ class UnifiedWizard(PatchedDialogWindow):
             "profile": matched,
             "device": device,
         }
-        self._skipped_steps_set.update({"profile", "controller"})
 
     def _merge_driver_config(self, probed: DeviceProfile) -> None:
         """Overlays hardware facts a probe measured (RX buffer size,
@@ -777,14 +752,11 @@ class UnifiedWizard(PatchedDialogWindow):
         if not isinstance(discovered, DiscoveredDevice):
             # Manual flow: profiles never carry host-specific values,
             # so the connection step is always required.
-            self._skipped_steps_set.add("controller")
             self._navigate_to("connect")
             return
         # Discovery flow: driver and connection data are set; the
         # probe already ran (or cannot run).
-        self._skipped_steps_set.update({"controller", "probe"})
         if self._connection_args_complete():
-            self._skipped_steps_set.add("connect")
             self._navigate_to(self._ai_entry_step())
         else:
             self._navigate_to("connect")
