@@ -169,15 +169,6 @@ class Entity:
         """
         return []
 
-    def create_text_fill_geometry(
-        self, registry: "EntityRegistry"
-    ) -> Geometry | None:
-        """
-        Creates a fill geometry for text entities.
-        Returns None if the entity does not support text fill geometry.
-        """
-        return None
-
     def to_dict(self) -> dict[str, Any]:
         """Base serialization method for entities."""
         data = {

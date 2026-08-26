@@ -65,7 +65,7 @@ class FillTool(SketchTool):
                 continue
             if entity.construction or not entity.content:
                 continue
-            text_geo = entity.create_text_fill_geometry(registry)
+            text_geo = entity.to_geometry(registry)
             if text_geo is None or text_geo.is_empty():
                 continue
             ctx.new_path()

@@ -188,71 +188,24 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
             new_ratio = natural_width / natural_height
             active_ar_constraint.ratio = new_ratio
 
-    def _remove_text_entity(self, text_entity: TextBoxEntity) -> None:
-        """Removes the text entity and its associated points/constraints."""
-        registry = self.sketch.registry
+    def _remove_text_entity(
+        self, text_entity: TextBoxEntity, clear_state: bool = False
+    ) -> None:
+        """Removes the text entity and its associated points/constraints.
 
-        self._removed_entity = text_entity
-
-        p_origin = registry.get_point(text_entity.origin_id)
-        p_width = registry.get_point(text_entity.width_id)
-        p_height = registry.get_point(text_entity.height_id)
-
-        self._removed_points = [p_origin, p_width, p_height]
-
-        p4_id = text_entity.get_fourth_corner_id(registry)
-        if p4_id:
-            p4 = registry.get_point(p4_id)
-            self._removed_points.append(p4)
-
-        for eid in text_entity.construction_line_ids:
-            e = registry.get_entity(eid)
-            if e:
-                self._removed_entities.append(e)
-
-        if self.aspect_ratio_constraint_idx is not None:
-            constr = self.sketch.constraints[self.aspect_ratio_constraint_idx]
-            self._removed_constraints.append(constr)
-
-        point_ids = {pt.id for pt in self._removed_points}
-
-        for constr in self.sketch.constraints:
-            if (
-                constr not in self._removed_constraints
-                and constr.depends_on_points(point_ids)
-            ):
-                self._removed_constraints.append(constr)
-
-        registry.entities = [
-            e for e in registry.entities if e.id != text_entity.id
-        ]
-        registry._entity_map = {e.id: e for e in registry.entities}
-
-        registry.points = [p for p in registry.points if p.id not in point_ids]
-
-        for e in self._removed_entities:
-            registry.entities = [
-                ent for ent in registry.entities if ent.id != e.id
-            ]
-        registry._entity_map = {e.id: e for e in registry.entities}
-
-        for c in self._removed_constraints:
-            if c in self.sketch.constraints:
-                self.sketch.constraints.remove(c)
-
-        self._entity_was_removed = True
-
-    def _remove_text_entity_for_undo(self, text_entity: TextBoxEntity) -> None:
-        """
-        Removes the text entity when undoing to an empty content state.
-        Saves state for redo.
+        When *clear_state* is True (undo path), the recorded
+        ``_removed_*`` lists are reset first so that the state saved for
+        a subsequent redo reflects only this removal.  When False
+        (execute path), previously shed constraints are preserved.
         """
         registry = self.sketch.registry
 
         self._removed_entity = text_entity
-        self._removed_points = []
-        self._removed_entities = []
-        self._removed_constraints = []
+
+        if clear_state:
+            self._removed_points = []
+            self._removed_entities = []
+            self._removed_constraints = []
 
         p_origin = registry.get_point(text_entity.origin_id)
         p_width = registry.get_point(text_entity.width_id)
@@ -314,7 +267,7 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         text_entity = entity
 
         if not self.old_content:
-            self._remove_text_entity_for_undo(text_entity)
+            self._remove_text_entity(text_entity, clear_state=True)
             return
 
         text_entity.content = self.old_content

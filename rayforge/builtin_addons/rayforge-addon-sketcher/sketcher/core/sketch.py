@@ -1704,7 +1704,7 @@ class Sketch(IAsset, IGeometryProvider):
                 continue
             if not entity.construction and isinstance(entity, TextBoxEntity):
                 resolved = self._resolve_text_content(entity)
-                text_geo = entity.create_text_fill_geometry(
+                text_geo = entity.to_geometry(
                     self.registry, resolved_content=resolved
                 )
                 if text_geo:

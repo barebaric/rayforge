@@ -100,33 +100,13 @@ class SketchCanvas(WorldSurface):
             self.set_camera_controllers([])
             return
 
-        current_elements = self._camera_elements
-        current_controllers = set(current_elements.keys())
-
-        machine_controllers: list[CameraController] = []
+        controllers: list[CameraController] = []
         for camera_model in machine.cameras:
             controller = camera_mgr.get_controller(camera_model.device_id)
             if controller:
-                machine_controllers.append(controller)
+                controllers.append(controller)
 
-        new_controllers = set(machine_controllers)
-
-        for controller in current_controllers - new_controllers:
-            element = current_elements[controller]
-            element.remove()
-            controller.unsubscribe()
-            del self._camera_elements[controller]
-
-        for controller in new_controllers - current_controllers:
-            element = CameraImageElement(controller)
-            element.set_visible(
-                self._cam_visible and controller.config.enabled
-            )
-            self.root.insert(0, element)
-            controller.subscribe()
-            self._camera_elements[controller] = element
-
-        self.queue_draw()
+        self.set_camera_controllers(controllers)
 
     def set_camera_controllers(self, controllers: list[CameraController]):
         """Sets the camera controllers and creates/removes camera elements."""

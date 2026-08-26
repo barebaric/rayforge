@@ -17,6 +17,8 @@ from ..core.entities import (
 
 logger = logging.getLogger(__name__)
 
+OVERLAY_HIT_THRESHOLD = 13.0
+
 
 class SketchHitTester:
     """Handles geometric hit testing for sketch elements."""
@@ -167,10 +169,6 @@ class SketchHitTester:
             (wx, wy)
         )
         constraints = element.sketch.constraints or []
-        for constr in constraints:
-            if not constr.user_visible:
-                continue
-        threshold = 13.0
         text_box_point_ids = set()
         for entity in element.sketch.registry.entities:
             if isinstance(entity, TextBoxEntity):
@@ -192,7 +190,7 @@ class SketchHitTester:
                     dx = cursor_sx - cp1_sx
                     dy = cursor_sy - cp1_sy
                     dist_sq = dx * dx + dy * dy
-                    if dist_sq < threshold**2:
+                    if dist_sq < OVERLAY_HIT_THRESHOLD**2:
                         return "control_point_out", (
                             start_pt.id,
                             entity.id,
@@ -207,7 +205,7 @@ class SketchHitTester:
                     dx = cursor_sx - cp2_sx
                     dy = cursor_sy - cp2_sy
                     dist_sq = dx * dx + dy * dy
-                    if dist_sq < threshold**2:
+                    if dist_sq < OVERLAY_HIT_THRESHOLD**2:
                         return "control_point_in", (
                             end_pt.id,
                             entity.id,

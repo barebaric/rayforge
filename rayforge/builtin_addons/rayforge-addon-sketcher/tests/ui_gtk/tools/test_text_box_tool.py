@@ -577,14 +577,13 @@ def test_text_box_tool_is_click_outside_box(text_box_tool, mock_element):
     """Test checking if click is outside box bounds."""
     text_box_tool.editing_entity_id = 5
 
-    mock_entity = MagicMock(spec=TextBoxEntity)
-    mock_entity.origin_id = 0
-    mock_entity.width_id = 1
-    mock_entity.height_id = 2
+    mock_entity = TextBoxEntity(
+        5, 0, 1, 2, content="", construction_line_ids=[]
+    )
+    mock_entity.font_config = FontConfig(family="sans-serif", size=10.0)
 
-    mock_element.sketch.registry.get_entity.return_value = mock_entity
+    mock_element.sketch.registry.get_entity = Mock(return_value=mock_entity)
 
-    # Robust get_point mock
     def get_point_side_effect(pid):
         vals = {0: (0, 0), 1: (50, 0), 2: (0, 10)}
         if pid in vals:

@@ -281,29 +281,9 @@ class TextBoxTool(SketchTool):
         if not isinstance(entity, TextBoxEntity):
             return False
 
-        p_origin = self.element.sketch.registry.get_point(entity.origin_id)
-        p_width = self.element.sketch.registry.get_point(entity.width_id)
-        p_height = self.element.sketch.registry.get_point(entity.height_id)
-
-        p4_id = entity.get_fourth_corner_id(self.element.sketch.registry)
-        if p4_id:
-            p4 = self.element.sketch.registry.get_point(p4_id)
-            p4_x, p4_y = p4.x, p4.y
-        else:
-            # Calculate fourth corner from origin, width, and height points
-            p4_x = p_width.x + p_height.x - p_origin.x
-            p4_y = p_width.y + p_height.y - p_origin.y
-
-        # Define the polygon for the text box
-        polygon = [
-            (p_origin.x, p_origin.y),
-            (p_width.x, p_width.y),
-            (p4_x, p4_y),
-            (p_height.x, p_height.y),
-        ]
-
-        # Use point-in-polygon check for accurate hit testing (handles
-        # rotation)
+        polygon = entity.get_frame_polygon(self.element.sketch.registry)
+        if polygon is None:
+            return False
         return is_point_inside_polygon((mx, my), polygon)
 
     def _is_point_inside_any_text_box(self, mx: float, my: float) -> bool:
@@ -325,25 +305,9 @@ class TextBoxTool(SketchTool):
     def _is_point_inside_entity_box(
         self, entity: TextBoxEntity, mx: float, my: float
     ) -> bool:
-        p_origin = self.element.sketch.registry.get_point(entity.origin_id)
-        p_width = self.element.sketch.registry.get_point(entity.width_id)
-        p_height = self.element.sketch.registry.get_point(entity.height_id)
-
-        p4_id = entity.get_fourth_corner_id(self.element.sketch.registry)
-        if p4_id:
-            p4 = self.element.sketch.registry.get_point(p4_id)
-            p4_x, p4_y = p4.x, p4.y
-        else:
-            p4_x = p_width.x + p_height.x - p_origin.x
-            p4_y = p_width.y + p_height.y - p_origin.y
-
-        polygon = [
-            (p_origin.x, p_origin.y),
-            (p_width.x, p_width.y),
-            (p4_x, p4_y),
-            (p_height.x, p_height.y),
-        ]
-
+        polygon = entity.get_frame_polygon(self.element.sketch.registry)
+        if polygon is None:
+            return False
         return is_point_inside_polygon((mx, my), polygon)
 
     def _select_word_at_cursor(self):

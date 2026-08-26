@@ -55,6 +55,37 @@ class TextBoxEntity(Entity):
     def get_junction_point_ids(self) -> list[EntityID]:
         return []
 
+    def get_frame_polygon(
+        self, registry: "EntityRegistry"
+    ) -> list[tuple[float, float]] | None:
+        """Returns the 4-corner frame polygon, or None if points are
+        missing.  Corner 4 is taken from the construction line when
+        present, otherwise computed from the parallelogram identity."""
+        p_origin = registry.get_point(self.origin_id)
+        p_width = registry.get_point(self.width_id)
+        p_height = registry.get_point(self.height_id)
+        if not (p_origin and p_width and p_height):
+            return None
+
+        p4_id = self.get_fourth_corner_id(registry)
+        if p4_id is not None:
+            p4 = registry.get_point(p4_id)
+            if p4:
+                p4_x, p4_y = p4.x, p4.y
+            else:
+                p4_x = p_width.x + p_height.x - p_origin.x
+                p4_y = p_width.y + p_height.y - p_origin.y
+        else:
+            p4_x = p_width.x + p_height.x - p_origin.x
+            p4_y = p_width.y + p_height.y - p_origin.y
+
+        return [
+            (p_origin.x, p_origin.y),
+            (p_width.x, p_width.y),
+            (p4_x, p4_y),
+            (p_height.x, p_height.y),
+        ]
+
     def hit_test(
         self,
         mx: float,
@@ -62,22 +93,9 @@ class TextBoxEntity(Entity):
         threshold: float,
         registry: "EntityRegistry",
     ) -> bool:
-        p_origin = registry.get_point(self.origin_id)
-        p_width = registry.get_point(self.width_id)
-        p_height = registry.get_point(self.height_id)
-        if not (p_origin and p_width and p_height):
+        polygon = self.get_frame_polygon(registry)
+        if polygon is None:
             return False
-
-        p4_x = p_width.x + p_height.x - p_origin.x
-        p4_y = p_width.y + p_height.y - p_origin.y
-
-        polygon = [
-            (p_origin.x, p_origin.y),
-            (p_width.x, p_width.y),
-            (p4_x, p4_y),
-            (p_height.x, p_height.y),
-        ]
-
         return is_point_inside_polygon((mx, my), polygon)
 
     def get_all_frame_point_ids(
@@ -169,19 +187,9 @@ class TextBoxEntity(Entity):
         rect: Rect,
         registry: "EntityRegistry",
     ) -> bool:
-        p_origin = registry.get_point(self.origin_id)
-        p_width = registry.get_point(self.width_id)
-        p_height = registry.get_point(self.height_id)
-
-        p4_x = p_width.x + p_height.x - p_origin.x
-        p4_y = p_width.y + p_height.y - p_origin.y
-
-        points = [
-            (p_origin.x, p_origin.y),
-            (p_width.x, p_width.y),
-            (p4_x, p4_y),
-            (p_height.x, p_height.y),
-        ]
+        points = self.get_frame_polygon(registry)
+        if points is None:
+            return False
 
         return all(
             rect[0] <= px <= rect[2] and rect[1] <= py <= rect[3]
@@ -193,19 +201,9 @@ class TextBoxEntity(Entity):
         rect: Rect,
         registry: "EntityRegistry",
     ) -> bool:
-        p_origin = registry.get_point(self.origin_id)
-        p_width = registry.get_point(self.width_id)
-        p_height = registry.get_point(self.height_id)
-
-        p4_x = p_width.x + p_height.x - p_origin.x
-        p4_y = p_width.y + p_height.y - p_origin.y
-
-        points = [
-            (p_origin.x, p_origin.y),
-            (p_width.x, p_width.y),
-            (p4_x, p4_y),
-            (p_height.x, p_height.y),
-        ]
+        points = self.get_frame_polygon(registry)
+        if points is None:
+            return False
 
         for i in range(4):
             p1 = points[i]
@@ -297,29 +295,6 @@ class TextBoxEntity(Entity):
         resolved_content: str | None = None,
     ) -> Geometry:
         """Converts the text box to a Geometry object."""
-        text = (
-            resolved_content if resolved_content is not None else self.content
-        )
-        origin, pw, ph = self._build_frame_for_content(registry, text)
-        txt_geo = text_to_geometry(text, font_config=self.font_config)
-        _, geo_min_y, _, geo_max_y = txt_geo.rect()
-        advance_width = self.font_config.get_text_width(text) or 1.0
-        return txt_geo.map_to_frame(
-            origin,
-            pw,
-            ph,
-            anchor_x=0.0,
-            stable_src_width=advance_width,
-            anchor_y=geo_min_y,
-            stable_src_height=geo_max_y - geo_min_y,
-        )
-
-    def create_text_fill_geometry(
-        self,
-        registry: "EntityRegistry",
-        resolved_content: str | None = None,
-    ) -> Geometry | None:
-        """Creates a fill geometry for text entities."""
         text = (
             resolved_content if resolved_content is not None else self.content
         )
