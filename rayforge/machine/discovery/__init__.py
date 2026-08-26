@@ -45,7 +45,7 @@ from .serial_channel import (
 )
 from .session import DiscoverySession
 from .spec import DiscoverySpec, MdnsRecognizer, SerialRecognizer
-from .types import DeviceIdentity, DiscoveredDevice
+from .types import DeviceIdentity, DiscoveredDevice, device_key
 
 __all__ = [
     "CORPORATE_TOKENS",
@@ -59,6 +59,7 @@ __all__ = [
     "MdnsRecognizer",
     "SerialRecognizer",
     "build_identity",
+    "device_key",
     "find_all_devices",
     "find_network_devices",
     "normalize_tokens",

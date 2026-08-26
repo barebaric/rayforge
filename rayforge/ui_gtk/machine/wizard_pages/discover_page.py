@@ -36,6 +36,7 @@ from ....machine.device.profile import DeviceProfile
 from ....machine.discovery import (
     DiscoveredDevice,
     DiscoverySession,
+    device_key,
     find_all_devices,
 )
 from ....machine.driver import get_driver_cls
@@ -56,16 +57,32 @@ _RESCAN_INTERVAL_S = 5
 class _DeviceRow(Adw.ActionRow):
     """A custom row to hold a reference to its discovered device."""
 
-    def __init__(self, device: DiscoveredDevice, **kwargs: Any):
+    select_button: Gtk.Button | None
+
+    def __init__(
+        self, device: DiscoveredDevice, configured: bool = False, **kwargs: Any
+    ):
         super().__init__(**kwargs)
         self.device: DiscoveredDevice = device
-        # Rows are not obviously clickable; an explicit Select
-        # button states the action. The whole row stays activatable.
-        self.select_button = Gtk.Button(label=_("Select"))
-        self.select_button.set_valign(Gtk.Align.CENTER)
-        self.select_button.add_css_class("suggested-action")
-        self.select_button.connect("clicked", lambda *_: self.activate())
-        self.add_suffix(self.select_button)
+        self.configured: bool = configured
+        if configured:
+            # Already set up in the app: show a badge instead of a
+            # Select button and make the row non-activatable so the
+            # user cannot pick it.
+            self.set_activatable(False)
+            badge = Gtk.Label(label=_("Configured"))
+            badge.add_css_class("dim-label")
+            badge.set_valign(Gtk.Align.CENTER)
+            self.add_suffix(badge)
+            self.select_button = None
+        else:
+            # Rows are not obviously clickable; an explicit Select
+            # button states the action. The whole row stays activatable.
+            self.select_button = Gtk.Button(label=_("Select"))
+            self.select_button.set_valign(Gtk.Align.CENTER)
+            self.select_button.add_css_class("suggested-action")
+            self.select_button.connect("clicked", lambda *_: self.activate())
+            self.add_suffix(self.select_button)
 
 
 class DiscoverPage(WizardPage):
@@ -88,6 +105,15 @@ class DiscoverPage(WizardPage):
         self._scan_generation: int = 0
         self.session = DiscoverySession()
         self._device_rows: dict[str, _DeviceRow] = {}
+        # Connection keys of machines already configured in the app,
+        # refreshed every time the page is entered so newly added or
+        # removed machines are reflected. Discovered devices whose key
+        # appears here are shown as read-only "Configured" rows.
+        self._configured_keys: set[str] = set()
+        # Key -> configured Machine, used to enrich the row with the
+        # machine's real name and work area instead of the generic
+        # discovery label.
+        self._configured_machines: dict[str, Any] = {}
         super().__init__(wizard, **kwargs)
 
     def build_ui(self) -> None:
@@ -120,7 +146,30 @@ class DiscoverPage(WizardPage):
         # (Re-)start scanning every time the page is shown; the
         # generation bump invalidates stale callbacks. Previously
         # found devices stay listed (their ports remain held).
+        self._refresh_configured_keys()
         self._start_scan()
+
+    def _refresh_configured_keys(self) -> None:
+        """Recomputes the set of connection keys already claimed by
+        configured machines, so discovered devices matching one are
+        shown as read-only."""
+        self._configured_keys = set()
+        self._configured_machines = {}
+        try:
+            machines = get_context().machine_mgr.get_machines()
+        except Exception:
+            logger.debug("Could not load machines", exc_info=True)
+            return
+        for machine in machines:
+            # Placeholder machines are auto-created stubs, not real
+            # configurations, so they never block discovery.
+            if getattr(machine, "placeholder", False):
+                continue
+            if not machine.driver_name:
+                continue
+            key = device_key(machine.driver_name, machine.driver_args)
+            self._configured_keys.add(key)
+            self._configured_machines[key] = machine
 
     def footer_buttons(self) -> list[Gtk.Button]:
         return []
@@ -170,7 +219,11 @@ class DiscoverPage(WizardPage):
         self._remove_rows(removed_keys)
         for device in added:
             self._add_row(device)
-            self._start_probe(device)
+            # Probing an already-configured device is pointless: the
+            # user cannot select it and the probe would only enrich a
+            # row that stays read-only.
+            if device.key not in self._configured_keys:
+                self._start_probe(device)
         self._update_status()
 
     def _present_ports(self) -> set[str] | None:
@@ -208,11 +261,20 @@ class DiscoverPage(WizardPage):
     # ----- rows ------------------------------------------------------------
 
     def _add_row(self, device: DiscoveredDevice) -> None:
+        machine = self._configured_machines.get(device.key)
+        configured = machine is not None
+        if configured:
+            title = machine.name or device.label
+            subtitle = _configured_row_subtitle(device, machine)
+        else:
+            title = device.label
+            subtitle = _row_subtitle(device)
         row = _DeviceRow(
             device=device,
-            title=device.label,
-            subtitle=_row_subtitle(device),
-            activatable=True,
+            configured=configured,
+            title=title,
+            subtitle=subtitle,
+            activatable=not configured,
         )
         row.connect("activated", self._on_row_activated)
         self._device_rows[device.key] = row
@@ -301,6 +363,21 @@ def _row_subtitle(device: DiscoveredDevice) -> str:
             parts.append(_("{w}×{h} mm work area").format(w=width, h=height))
     elif device.identity.banner:
         parts.append(device.identity.banner)
+    return "\n".join(parts)
+
+
+def _configured_row_subtitle(device: DiscoveredDevice, machine: Any) -> str:
+    """Subtitle for a row backed by an already-configured machine:
+    leads with the connection detail, then the configured work area
+    (which is more trustworthy than a fresh probe of the same board)."""
+    parts = [device.detail]
+    try:
+        width, height = machine.axis_extents
+    except Exception:
+        logger.debug("Could not read axis_extents", exc_info=True)
+        width = height = None
+    if width and height:
+        parts.append(_("{w}×{h} mm work area").format(w=width, h=height))
     return "\n".join(parts)
 
 

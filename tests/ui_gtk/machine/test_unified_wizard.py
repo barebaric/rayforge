@@ -935,6 +935,7 @@ def test_discover_page_select_button(ui_context_initializer):
     with patch.object(GrblSerialDriver, "supports_probing", False):
         page._apply_scan_result([_discovered_device()])
     row = page._device_rows["GrblSerialDriver:/dev/ttyUSB0"]
+    assert row.select_button is not None
     assert row.select_button.get_label() == "Select"
 
     selected = {}
@@ -943,6 +944,92 @@ def test_discover_page_select_button(ui_context_initializer):
     )
     row.select_button.emit("clicked")
     assert selected["device"].key == "GrblSerialDriver:/dev/ttyUSB0"
+
+
+@pytest.mark.ui
+def test_discover_page_marks_already_configured_device(
+    ui_context_initializer,
+):
+    """A device whose connection key matches a configured machine is
+    shown as read-only: insensitive, with a "Configured" badge and no
+    Select button, and it is never probed."""
+    from rayforge.machine.models.machine import Machine
+
+    context = ui_context_initializer
+    # The default placeholder machine must not count as configured.
+    assert any(m.placeholder for m in context.machine_mgr.get_machines())
+
+    machine = Machine(context)
+    machine.placeholder = False
+    machine.name = "My Workshop Laser"
+    machine.driver_name = "GrblSerialDriver"
+    machine.driver_args = {"port": "/dev/ttyUSB0", "baudrate": 115200}
+    machine.set_axis_extents(400, 300)
+    context.machine_mgr.add_machine(machine)
+
+    wizard = _make_wizard(ui_context_initializer)
+    page = wizard._get_page("discover")
+    assert isinstance(page, DiscoverPage)
+    page._refresh_configured_keys()
+    assert "GrblSerialDriver:/dev/ttyUSB0" in page._configured_keys
+
+    with (
+        patch.object(GrblSerialDriver, "supports_probing", True),
+        patch(
+            "rayforge.ui_gtk.machine.wizard_pages.discover_page.task_mgr"
+        ) as tm,
+    ):
+        page._apply_scan_result([_discovered_device()])
+        # Configured devices are never probed.
+        assert not tm.add_coroutine.called
+
+    row = page._device_rows["GrblSerialDriver:/dev/ttyUSB0"]
+    assert row.configured is True
+    assert row.select_button is None
+    assert not row.get_activatable()
+    # The row shows the configured machine's real name and work area,
+    # not the generic discovery label.
+    assert row.get_title() == "My Workshop Laser"
+    subtitle = row.get_subtitle()
+    assert subtitle is not None
+    assert "/dev/ttyUSB0 at 115200 baud" in subtitle
+    assert "400" in subtitle
+    assert "300" in subtitle
+
+
+@pytest.mark.ui
+def test_discover_page_unconfigured_device_has_select_button(
+    ui_context_initializer,
+):
+    """A device with no matching configured machine keeps its Select
+    button and stays activatable."""
+    wizard = _make_wizard(ui_context_initializer)
+    page = wizard._get_page("discover")
+    assert isinstance(page, DiscoverPage)
+    page._refresh_configured_keys()
+
+    with patch.object(GrblSerialDriver, "supports_probing", False):
+        page._apply_scan_result([_discovered_device()])
+    row = page._device_rows["GrblSerialDriver:/dev/ttyUSB0"]
+    assert row.configured is False
+    assert row.select_button is not None
+    assert row.select_button.get_label() == "Select"
+    assert row.get_activatable()
+
+
+@pytest.mark.ui
+def test_discover_page_placeholder_machine_ignored(
+    ui_context_initializer,
+):
+    """Placeholder machines are auto-created stubs, so a device sharing
+    their connection key is still selectable."""
+    wizard = _make_wizard(ui_context_initializer)
+    page = wizard._get_page("discover")
+    assert isinstance(page, DiscoverPage)
+    # The default placeholder has no driver, but even if it had one it
+    # would be ignored.
+    page._refresh_configured_keys()
+    assert page._configured_keys == set()
 
 
 @pytest.mark.ui

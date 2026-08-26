@@ -28,6 +28,26 @@ class DeviceIdentity:
     tokens: frozenset[str] = field(default_factory=frozenset)
 
 
+def device_key(driver_name: str, params: dict) -> str:
+    """Stable identity for a device from its driver and connection
+    parameters.
+
+    Serial devices are identified by their port path, network devices
+    by host and TCP port (so two servers that both listen on 80 stay
+    distinguishable). This is shared by
+    :attr:`DiscoveredDevice.key` and the discovery UI, which needs to
+    compute the same key from a configured machine's stored connection
+    arguments.
+    """
+    serial_port = params.get("port")
+    if isinstance(serial_port, str) and serial_port:
+        return f"{driver_name}:{serial_port}"
+    host = params.get("host")
+    if isinstance(host, str) and host:
+        return f"{driver_name}:{host}:{params.get('port')}"
+    return f"{driver_name}:{serial_port!r}"
+
+
 @dataclass(frozen=True)
 class DiscoveredDevice:
     """A device found by evaluating scan output against a driver's
@@ -50,16 +70,7 @@ class DiscoveredDevice:
     @property
     def key(self) -> str:
         """Stable identity for deduplication in the UI."""
-        # Serial devices are identified by their port path, network
-        # devices by host and TCP port (so two servers that both
-        # listen on 80 stay distinguishable).
-        serial_port = self.params.get("port")
-        if isinstance(serial_port, str) and serial_port:
-            return f"{self.driver_name}:{serial_port}"
-        host = self.params.get("host")
-        if isinstance(host, str) and host:
-            return f"{self.driver_name}:{host}:{self.params.get('port')}"
-        return f"{self.driver_name}:{serial_port!r}"
+        return device_key(self.driver_name, self.params)
 
     @property
     def probe_name(self) -> str | None:
@@ -75,4 +86,5 @@ class DiscoveredDevice:
 __all__ = [
     "DeviceIdentity",
     "DiscoveredDevice",
+    "device_key",
 ]
