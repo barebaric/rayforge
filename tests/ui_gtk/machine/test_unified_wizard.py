@@ -1060,6 +1060,59 @@ def test_probe_result_adopts_matched_profile(ui_context_initializer):
 
 
 @pytest.mark.ui
+def test_smoothie_driver_routes_to_probe(ui_context_initializer):
+    """Smoothie now supports probing, so the wizard routes from the
+    connection page to the probe page instead of skipping it."""
+    wizard = _make_wizard(ui_context_initializer)
+    wizard.profile = _profile(driver="SmoothieDriver")
+    assert wizard._next_step_after("connect") == "probe"
+    assert "probe" not in wizard._skipped_steps_set
+
+
+@pytest.mark.ui
+def test_smoothie_probe_merges_profile(ui_context_initializer):
+    """A successful Smoothie probe merges axis extents, speeds, and
+    acceleration into the working profile, exactly like GRBL/Marlin."""
+    wizard = _make_wizard(ui_context_initializer)
+    probed = DeviceProfile(
+        meta=DeviceMeta(name="Smoothieware"),
+        machine_config=MachineConfig(
+            driver="SmoothieDriver",
+            driver_args={"host": "192.168.1.50", "port": 23},
+            driver_config={"firmware_version": "edge-1234abc1"},
+            axis_extents=(200.0, 300.0),
+            max_travel_speed=30000,
+            max_cut_speed=30000,
+            acceleration=1000,
+        ),
+        dialect_config={},
+    )
+    with (
+        patch(
+            "rayforge.ui_gtk.machine.unified_wizard.is_ai_configured",
+            return_value=False,
+        ),
+        patch.object(
+            type(ui_context_initializer.device_profile_mgr),
+            "match_device",
+            return_value=[],
+        ),
+    ):
+        wizard._on_probe_succeeded(None, profile=probed, warnings=[])
+        # No curated profile matched and no source: the flow continues
+        # to the AI provider entry step (then hardware).
+        assert wizard._source is None
+        assert wizard._next_step_after("probe") == "ai_provider"
+
+    mc = wizard.profile.machine_config
+    assert mc.axis_extents == (200.0, 300.0)
+    assert mc.max_travel_speed == 30000
+    assert mc.max_cut_speed == 30000
+    assert mc.acceleration == 1000
+    assert mc.driver_config == {"firmware_version": "edge-1234abc1"}
+
+
+@pytest.mark.ui
 def test_device_selected_captures_usb_identity(ui_context_initializer):
     """The discovered device's USB identity is kept for the created
     machine, so exporting the machine later carries the vid/pid."""
