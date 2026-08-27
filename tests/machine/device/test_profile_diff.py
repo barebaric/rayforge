@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 @pytest.fixture
 def profile() -> DeviceProfile:
-    return DeviceProfile.from_path(BUILTIN_DEVICES_DIR / "sculpfun-icube")
+    return DeviceProfile.from_path(BUILTIN_DEVICES_DIR / "sculpfun-icube-3w")
 
 
 @pytest.fixture

@@ -165,7 +165,7 @@ async def test_device_without_rotary_modules(
     context_initializer: "RayforgeContext",
 ):
     """Devices without rotary_modules create machines with none."""
-    pkg = DeviceProfile.from_path(BUILTIN_DEVICES_DIR / "sculpfun-icube")
+    pkg = DeviceProfile.from_path(BUILTIN_DEVICES_DIR / "sculpfun-icube-3w")
     machine = pkg.create_machine(context_initializer)
     tasker.task_mgr.wait_until_settled(5000)
     assert machine.rotary_modules == {}

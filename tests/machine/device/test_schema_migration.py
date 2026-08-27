@@ -194,7 +194,7 @@ def test_profile_machine_not_skipped(lite_context):
     filled if the profile provided them)."""
     machine = Machine(lite_context)
     machine.schema_version = 0
-    machine.source_profile_id = "sculpfun-icube"
+    machine.source_profile_id = "sculpfun-icube-3w"
     head = machine.heads[0]
     assert isinstance(head, LaserHead)
     head.wavelength_nm = 0.0

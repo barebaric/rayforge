@@ -477,5 +477,5 @@ def test_machine_name_matches_builtin_profile():
     )
     matches = mgr.match_device(identity)
     assert matches
-    assert matches[0].profile.name == "Sculpfun iCube"
+    assert matches[0].profile.name == "Sculpfun iCube 3W"
     assert certain_match(matches) is not None

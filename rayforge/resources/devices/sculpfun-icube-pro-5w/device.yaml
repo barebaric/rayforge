@@ -1,17 +1,17 @@
 api_version: 1
 device:
-  name: Sculpfun iCube
+  name: Sculpfun iCube Pro 5W
   vendor: Sculpfun
-  model: iCube
-  description: Compact diode laser engraver with 120x120mm work area
+  model: iCube Pro
+  description: Compact 5W diode laser engraver with 125x125mm work area
 machine:
   driver: GrblSerialDriver
   driver_config:
     rx_buffer_size: 31
   gcode_precision: 3
   axis_extents:
-  - 120.0
-  - 120.0
+  - 125.0
+  - 125.0
   origin: bottom_left
   max_travel_speed: 3000
   max_cut_speed: 1000
@@ -20,9 +20,9 @@ machine:
   heads:
   - max_power: 1000
     wavelength_nm: 455
-    max_power_watts: 3
+    max_power_watts: 5
     frame_power_percent: 1.0
     focus_power_percent: 1.0
     spot_size_mm:
-    - 0.1
-    - 0.1
+    - 0.06
+    - 0.06

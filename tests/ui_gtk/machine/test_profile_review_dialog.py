@@ -20,7 +20,9 @@ from rayforge.ui_gtk.machine.profile_review_dialog import ProfileReviewDialog
 
 @pytest.fixture
 def machine(ui_context_initializer) -> Machine:
-    profile = DeviceProfile.from_path(BUILTIN_DEVICES_DIR / "sculpfun-icube")
+    profile = DeviceProfile.from_path(
+        BUILTIN_DEVICES_DIR / "sculpfun-icube-3w"
+    )
     machine = profile.create_machine(ui_context_initializer)
     tasker.task_mgr.wait_until_settled(5000)
     return machine
@@ -44,7 +46,7 @@ def _changed_profile(profile: DeviceProfile) -> DeviceProfile:
 @pytest.mark.ui
 def test_dialog_builds_one_switch_row_per_diff(machine):
     profile = _changed_profile(
-        DeviceProfile.from_path(BUILTIN_DEVICES_DIR / "sculpfun-icube")
+        DeviceProfile.from_path(BUILTIN_DEVICES_DIR / "sculpfun-icube-3w")
     )
     expected = (
         len(diff_machine_with_profile(machine, profile))
@@ -70,7 +72,7 @@ def test_dialog_builds_one_switch_row_per_diff(machine):
 @pytest.mark.ui
 def test_dialog_apply_applies_selected_and_marks_reviewed(machine):
     profile = _changed_profile(
-        DeviceProfile.from_path(BUILTIN_DEVICES_DIR / "sculpfun-icube")
+        DeviceProfile.from_path(BUILTIN_DEVICES_DIR / "sculpfun-icube-3w")
     )
     closed_callback_called = []
 
@@ -94,7 +96,7 @@ def test_dialog_apply_applies_selected_and_marks_reviewed(machine):
 @pytest.mark.ui
 def test_dialog_ignore_marks_reviewed_without_applying(machine):
     profile = _changed_profile(
-        DeviceProfile.from_path(BUILTIN_DEVICES_DIR / "sculpfun-icube")
+        DeviceProfile.from_path(BUILTIN_DEVICES_DIR / "sculpfun-icube-3w")
     )
     old_speed = machine.max_cut_speed
 

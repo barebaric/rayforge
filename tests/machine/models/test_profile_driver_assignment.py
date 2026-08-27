@@ -19,7 +19,7 @@ async def sculpfun_icube_machine(
     context_initializer: "RayforgeContext",
 ) -> "Machine":
     """Provides a Machine instance from the Sculpfun iCube device."""
-    pkg = DeviceProfile.from_path(BUILTIN_DEVICES_DIR / "sculpfun-icube")
+    pkg = DeviceProfile.from_path(BUILTIN_DEVICES_DIR / "sculpfun-icube-3w")
     machine = pkg.create_machine(context_initializer)
     context_initializer.machine_mgr.add_machine(machine)
 
