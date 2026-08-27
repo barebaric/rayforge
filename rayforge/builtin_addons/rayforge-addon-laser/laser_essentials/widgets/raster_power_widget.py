@@ -30,6 +30,11 @@ class RasterPowerWidget(VarSetWidget):
         self._update_power_labels(
             bool(self._context_values.get("invert", False))
         )
+        # Modes without power modulation or levels (constant power)
+        # leave every row hidden; hide the empty section entirely.
+        self.set_visible(
+            any(row.get_visible() for row, _var in self.widget_map.values())
+        )
 
     def _update_power_labels(self, invert: bool):
         """Update min/max power labels based on invert setting."""

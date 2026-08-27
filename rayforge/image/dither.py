@@ -51,6 +51,36 @@ BAYER_MATRICES = {
 }
 
 
+def grayscale_to_dithered_array(
+    grayscale: np.ndarray,
+    dither_algorithm: DitherAlgorithm,
+    invert: bool = False,
+    min_feature_px: int = 1,
+) -> np.ndarray:
+    """
+    Convert a grayscale array to a dithered binary array.
+
+    Args:
+        grayscale: 2D uint8 grayscale array (0-255).
+        dither_algorithm: The dithering algorithm to use.
+        invert: If True, invert the output (engrave light areas).
+        min_feature_px: Minimum feature size in pixels.
+
+    Returns:
+        Binary image where 1 represents areas to engrave.
+    """
+    if dither_algorithm == DitherAlgorithm.FLOYD_STEINBERG:
+        bw_image = apply_floyd_steinberg_dither(grayscale, invert)
+        bw_image = apply_minimum_run_length(bw_image, min_feature_px)
+    else:
+        bayer_matrix = BAYER_MATRICES[dither_algorithm]
+        bw_image = apply_bayer_dither(
+            grayscale, bayer_matrix, invert, cell_size=min_feature_px
+        )
+
+    return bw_image
+
+
 def surface_to_dithered_array(
     surface,
     dither_algorithm: DitherAlgorithm,
@@ -76,13 +106,6 @@ def surface_to_dithered_array(
 
     grayscale, _ = rgba_to_grayscale(buf, width, height, stride_px)
 
-    if dither_algorithm == DitherAlgorithm.FLOYD_STEINBERG:
-        bw_image = apply_floyd_steinberg_dither(grayscale, invert)
-        bw_image = apply_minimum_run_length(bw_image, min_feature_px)
-    else:
-        bayer_matrix = BAYER_MATRICES[dither_algorithm]
-        bw_image = apply_bayer_dither(
-            grayscale, bayer_matrix, invert, cell_size=min_feature_px
-        )
-
-    return bw_image
+    return grayscale_to_dithered_array(
+        grayscale, dither_algorithm, invert, min_feature_px
+    )

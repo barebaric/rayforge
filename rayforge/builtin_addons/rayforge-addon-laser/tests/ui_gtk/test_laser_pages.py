@@ -449,7 +449,33 @@ def test_raster_page_power_section_visible_by_default(
 def test_raster_page_power_section_hidden_outside_grayscale(
     editor, laser_machine, ui_context
 ):
-    """Switching to a non-grayscale mode hides the Power section rows."""
+    """Constant-power mode hides the Power section's level rows.
+
+    With no applicable rows left, the empty section hides entirely.
+    """
+    step_cls = step_registry.get("EngraveStep")
+    assert step_cls is not None
+    step = cast(EngraveStep, step_cls.create(ui_context))
+    page = RasterSettingsPage(editor, step)
+
+    mode_adapter = page.engrave_widget.adapter_for("depth_mode")
+    assert mode_adapter is not None
+    mode_adapter.set_value("CONSTANT_POWER")
+    page._sync_power_context()
+
+    for key in ("auto_levels", "black_point"):
+        row = _row(page, key)
+        assert row.get_visible() is False, f"{key} visible in CONSTANT_POWER"
+    assert page.power_widget.get_visible() is False
+
+
+@pytest.mark.ui
+def test_raster_page_power_section_levels_visible_in_dither(
+    editor, laser_machine, ui_context
+):
+    """Dither mode shows the brightness-range rows so users can
+    adapt the dither input via the histogram, but hides the
+    variable-power rows."""
     step_cls = step_registry.get("EngraveStep")
     assert step_cls is not None
     step = cast(EngraveStep, step_cls.create(ui_context))
@@ -460,7 +486,11 @@ def test_raster_page_power_section_hidden_outside_grayscale(
     mode_adapter.set_value("DITHER")
     page._sync_power_context()
 
-    for key in ("auto_levels", "black_point"):
+    assert page.power_widget.get_visible() is True
+    for key in ("auto_levels", "black_point", "white_point"):
+        row = _row(page, key)
+        assert row.get_visible() is True, f"{key} hidden in DITHER mode"
+    for key in ("min_power_level", "max_power_level", "num_power_levels"):
         row = _row(page, key)
         assert row.get_visible() is False, f"{key} visible in DITHER mode"
 

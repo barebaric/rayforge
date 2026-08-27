@@ -26,7 +26,10 @@ from raygeo.ops.part import Part
 from raygeo.ops.types import RasterMode
 
 from ...core.vectorization_spec import TraceSpec
-from ...image.dither import DitherAlgorithm, surface_to_dithered_array
+from ...image.dither import (
+    DitherAlgorithm,
+    grayscale_to_dithered_array,
+)
 from ...image.tracing import trace_surface
 from ...image.util.grayscale import surface_to_binary, surface_to_grayscale
 
@@ -299,14 +302,16 @@ def preprocess_raster_image(
     """Convert a Cairo surface into an image array for a raster assembler.
 
     Handles depth-mode preprocessing: grayscale with optional levels,
-    dithering, or binary thresholding.
+    dithering, or binary thresholding. Levels (auto or manual
+    black/white points) apply to the grayscale modes and to dithering,
+    where they shape the input brightness before the dither.
 
     Args:
         surface: The rendered Cairo ARGB32 surface.
         mode: The rasterisation depth mode.
         invert: If True, invert grayscale before further processing.
-        auto_levels: For grayscale modes, if True, auto-compute
-            black/white points from the image histogram.
+        auto_levels: If True, auto-compute black/white points from
+            the image histogram.
         computed_auto_levels: Pre-computed ``(black, white)`` points
             from a low-resolution preview (e.g. from
             ``compute_raster_auto_levels``).  When provided, skips
@@ -350,10 +355,21 @@ def preprocess_raster_image(
             round(laser_spot_x_mm * pixels_per_mm_x),
         )
         algo = dither_algorithm or DitherAlgorithm.FLOYD_STEINBERG
-        image = surface_to_dithered_array(
-            surface,
+        gray_image, alpha = surface_to_grayscale(surface)
+        if invert:
+            alpha_mask = alpha > 0
+            gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
+        gray_image = _apply_raster_levels(
+            gray_image,
+            alpha,
+            auto_levels=auto_levels,
+            computed_auto_levels=computed_auto_levels,
+            black_point=black_point,
+            white_point=white_point,
+        )
+        image = grayscale_to_dithered_array(
+            gray_image,
             algo,
-            invert=invert,
             min_feature_px=min_feature_px,
         )
         return image, None

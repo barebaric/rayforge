@@ -232,6 +232,82 @@ class TestPreprocessRasterImage:
         assert alpha is None
         assert set(np.unique(image)).issubset({0, 1})
 
+    def test_dither_respects_manual_levels(self):
+        """Black/white points shape the dither input brightness."""
+        surface = self._gray_surface()
+        kwargs = {
+            "mode": DepthMode.DITHER,
+            "auto_levels": False,
+            "dither_algorithm": DitherAlgorithm.FLOYD_STEINBERG,
+            "laser_spot_x_mm": 0.1,
+            "pixels_per_mm_x": 10.0,
+        }
+        image_plain, _ = preprocess_raster_image(surface, **kwargs)
+        image_dark, _ = preprocess_raster_image(
+            surface, black_point=100, **kwargs
+        )
+        image_light, _ = preprocess_raster_image(
+            surface, white_point=150, **kwargs
+        )
+
+        assert image_plain is not None
+        assert image_dark is not None
+        assert image_light is not None
+        assert np.sum(image_dark) > np.sum(image_plain)
+        assert np.sum(image_light) < np.sum(image_plain)
+
+    def test_dither_auto_levels_stretch_contrast(self):
+        """Auto-levels apply to the dither input like grayscale modes."""
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 100, 100)
+        ctx = cairo.Context(surface)
+        ctx.set_source_rgb(0.392, 0.392, 0.392)
+        ctx.rectangle(0, 0, 50, 100)
+        ctx.fill()
+        ctx.set_source_rgb(0.706, 0.706, 0.706)
+        ctx.rectangle(50, 0, 50, 100)
+        ctx.fill()
+        kwargs = {
+            "mode": DepthMode.DITHER,
+            "dither_algorithm": DitherAlgorithm.FLOYD_STEINBERG,
+            "laser_spot_x_mm": 0.1,
+            "pixels_per_mm_x": 10.0,
+        }
+        image_no_levels, _ = preprocess_raster_image(
+            surface, auto_levels=False, **kwargs
+        )
+        image_auto_levels, _ = preprocess_raster_image(
+            surface, computed_auto_levels=(100, 180), **kwargs
+        )
+
+        assert image_no_levels is not None
+        assert image_auto_levels is not None
+        # gray 100 maps to 0 (fully engraved), gray 180 maps to 255
+        # (clear), so exactly the left half is engraved.
+        assert np.sum(image_auto_levels) == 5000
+        assert np.sum(image_auto_levels) != np.sum(image_no_levels)
+
+    def test_dither_invert_engraves_light_areas_only(self):
+        """Inverted dithering engraves light content but keeps the
+        transparent background clear."""
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+        ctx = cairo.Context(surface)
+        ctx.set_source_rgba(1, 1, 1, 1)
+        ctx.rectangle(0, 0, 5, 10)
+        ctx.fill()
+        image, _ = preprocess_raster_image(
+            surface,
+            mode=DepthMode.DITHER,
+            invert=True,
+            auto_levels=False,
+            dither_algorithm=DitherAlgorithm.BAYER2,
+            laser_spot_x_mm=0.1,
+            pixels_per_mm_x=10.0,
+        )
+
+        assert image is not None
+        assert np.all(image[:, :5] == 1)
+        assert np.all(image[:, 5:] == 0)
+
     def test_mask_scan_returns_binary_no_alpha(self):
         surface = self._black_surface()
         image, alpha = preprocess_raster_image(

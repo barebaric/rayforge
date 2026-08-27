@@ -79,6 +79,9 @@ class EngraveStep(LaserStep):
         def uses_grayscale(v):
             return is_power(v) or is_multi_pass(v)
 
+        def uses_levels(v):
+            return uses_grayscale(v) or is_dither(v)
+
         return VarSet(
             vars=[
                 *LaserStep.recipe_varset().vars,
@@ -215,10 +218,10 @@ class EngraveStep(LaserStep):
                     label=_("Auto Levels"),
                     description=_("Automatically adjust black/white points"),
                     default=True,
-                    visible_when=uses_grayscale,
+                    visible_when=uses_levels,
                 ),
                 LevelsRangeVar(
-                    visible_when=uses_grayscale,
+                    visible_when=uses_levels,
                 ),
                 IntVar(
                     key="white_point",
@@ -226,7 +229,7 @@ class EngraveStep(LaserStep):
                     default=255,
                     min_val=0,
                     max_val=255,
-                    visible_when=uses_grayscale,
+                    visible_when=uses_levels,
                 ),
                 SliderFloatVar(
                     key="min_power_level",
