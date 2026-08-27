@@ -20,11 +20,12 @@ class DiscoverySession:
 
     * :meth:`apply_scan` returns ``(added, removed_keys)`` — devices
       are matched by their stable :attr:`DiscoveredDevice.key`.
-    * Ports of found devices are remembered as *held*; held ports are
-      meant to be excluded from rescans (re-opening them would reset
-      some boards) and their devices stay listed even though a rescan
-      cannot see them. They leave only via :meth:`prune_absent_ports`
-      when the port vanishes from the system.
+    * Serial ports of found devices (those without a ``host``
+      parameter) are remembered as *held*; held ports are meant to be
+      excluded from rescans (re-opening them would reset some boards)
+      and their devices stay listed even though a rescan cannot see
+      them. They leave only via :meth:`prune_absent_ports` when the
+      port vanishes from the system.
     * :meth:`apply_probe` attaches a probed profile to a device and
       returns the enriched copy.
     """
@@ -64,9 +65,9 @@ class DiscoverySession:
             if device.key in seen:
                 continue
             seen.add(device.key)
-            port = device.params.get("port")
-            if isinstance(port, str) and port:
-                self._held_ports.add(port)
+            serial_port = self._serial_port_of(device.params)
+            if serial_port is not None:
+                self._held_ports.add(serial_port)
             if device.key not in self._devices:
                 self._devices[device.key] = device
                 added.append(device)
@@ -101,22 +102,31 @@ class DiscoverySession:
         """
         removed = []
         for key in self._devices:
-            port = self._port_of(key)
+            port = self._serial_port_of(self._devices[key].params)
             if port is not None and port not in present_ports:
                 removed.append(key)
         for key in removed:
-            port = self._port_of(key)
+            port = self._serial_port_of(self._devices[key].params)
             assert port is not None
             self._held_ports.discard(port)
             del self._devices[key]
         return removed
 
     def _on_held_port(self, key: str) -> bool:
-        port = self._port_of(key)
+        port = self._serial_port_of(self._devices[key].params)
         return port is not None and port in self._held_ports
 
-    def _port_of(self, key: str) -> str | None:
-        port = self._devices[key].params.get("port")
+    @staticmethod
+    def _serial_port_of(params: dict) -> str | None:
+        """
+        The serial port path carried by *params*, or ``None`` when the
+        device is not on a serial port. Whether a device is network
+        (and thus never held/pruned) is decided by its ``host``
+        parameter, not by the type of its ``port``.
+        """
+        if "host" in params:
+            return None
+        port = params.get("port")
         if isinstance(port, str) and port:
             return port
         return None

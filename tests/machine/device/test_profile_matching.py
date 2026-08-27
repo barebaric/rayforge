@@ -130,10 +130,13 @@ def test_model_tokens_rank_higher(tmp_path):
     assert matches[0].confidence == CONFIDENCE_CERTAIN
     assert certain_match(matches) is not None
 
-    # Without the model token only the model-less profile matches.
+    # Without the model token both profiles fall back to their
+    # vendor evidence: a declared model missing from the identity is
+    # not negative evidence.
     identity = _identity_for("Frobnicate laser")
     matches = _matches(mgr, identity)
-    assert _names(matches) == ["Frob One"]
+    assert _names(matches) == ["Frob One", "Frob Pro"]
+    assert all(m.confidence == CONFIDENCE_VENDOR_TOKENS for m in matches)
 
 
 def test_name_with_dropped_tokens_is_not_certain(tmp_path):
@@ -201,12 +204,13 @@ def test_unique_vendor_only_match_is_not_adoptable(tmp_path):
     _make_profile(tmp_path, "frob-two", "Frob Two", "Frobnicate")
     mgr = _manager(tmp_path)
 
-    # Only the vendor token is known: the model-specific profile does
-    # not match at all, and the lone weak candidate is not adoptable.
+    # Only the vendor token is known: both same-vendor profiles show
+    # up at vendor confidence (the missing declared model of
+    # "Frob One" does not exclude it), and none is adoptable.
     identity = _identity_for("Frobnicate laser")
     matches = _matches(mgr, identity)
-    assert _names(matches) == ["Frob Two"]
-    assert matches[0].confidence == CONFIDENCE_VENDOR_TOKENS
+    assert set(_names(matches)) == {"Frob One", "Frob Two"}
+    assert all(m.confidence == CONFIDENCE_VENDOR_TOKENS for m in matches)
     assert certain_match(matches) is None
 
 
@@ -281,6 +285,30 @@ def test_vid_only_declaration_matches_any_pid(tmp_path):
     assert _names(matched) == ["Frob One"]
     assert matched[0].confidence == CONFIDENCE_VID_ONLY
     assert certain_match(matched) is None
+
+
+def test_any_pid_entry_survives_sibling_specific_pids(tmp_path):
+    """A profile declaring both specific pids and an "any product id"
+    entry must still match at vid-only confidence when the device's
+    pid is not among the specific ones."""
+    _make_profile(
+        tmp_path,
+        "frob-one",
+        "Frob One",
+        "Frobnicate",
+        usb_ids=["abcd:1234", "abcd"],
+    )
+    mgr = _manager(tmp_path)
+
+    matched = mgr.match_device(_usb_identity(CUSTOM_VID, 0x9999))
+    assert _names(matched) == ["Frob One"]
+    assert matched[0].confidence == CONFIDENCE_VID_ONLY
+    assert certain_match(matched) is None
+
+    # An exact specific pid still wins outright.
+    certain = mgr.match_device(_usb_identity(CUSTOM_VID, CUSTOM_PID))
+    assert certain[0].profile.name == "Frob One"
+    assert certain[0].confidence == CONFIDENCE_CERTAIN
 
 
 def test_ambiguous_certain_usb_ids_are_not_auto_adopted(tmp_path):

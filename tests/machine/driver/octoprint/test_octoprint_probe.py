@@ -1,5 +1,5 @@
 import json
-from typing import Any
+from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -78,22 +78,59 @@ class TestBuildOctoPrintProfile:
         assert dc["server_version"] == "1.9.0"
         assert warnings == []
 
-    def test_no_printer_name_uses_state(self):
+    def test_transient_state_does_not_leak_into_name(self):
         version_info = {"version": "1.8.1"}
         printer_info = {
-            "state": {"text": "Printing", "flags": {}},
+            "state": {"text": "Heating bed", "flags": {}},
             "printer": {},
         }
         profile, _ = build_octoprint_profile(version_info, printer_info)
-        assert profile.meta.name == "OctoPrint (Printing)"
+        assert profile.meta.name == "OctoPrint"
 
-    def test_operational_state_keeps_default_name(self):
+    def test_no_printer_name_keeps_default(self):
         printer_info = {
             "state": {"text": "Operational", "flags": {}},
             "printer": {},
         }
         profile, _ = build_octoprint_profile({"version": "1"}, printer_info)
         assert profile.meta.name == "OctoPrint"
+
+    def test_dimensions_populate_axis_extents(self):
+        version_info = {"version": "1.9.0"}
+        printer_info = {
+            "state": {"text": "Operational", "flags": {}},
+            "printer": {},
+            "dimensions": {"x_length": 603, "y_length": 402},
+        }
+        profile, _ = build_octoprint_profile(version_info, printer_info)
+        assert profile.machine_config.axis_extents == (603.0, 402.0)
+
+    def test_incomplete_or_invalid_dimensions_ignored(self):
+        for dimensions in (
+            {"x_length": 603},
+            {"x_length": "wide", "y_length": 402},
+            {"x_length": -1, "y_length": 402},
+            [603, 402],
+        ):
+            printer_info = {
+                "state": {},
+                "printer": {},
+                "dimensions": dimensions,
+            }
+            profile, _ = build_octoprint_profile(None, printer_info)
+            assert profile.machine_config.axis_extents is None
+
+    def test_malformed_printer_section_never_raises(self):
+        version_info = {"version": "1.9.0"}
+        printer_info = {
+            "state": "Operational",
+            "printer": None,
+            "dimensions": [603, 402],
+        }
+        profile, warnings = build_octoprint_profile(version_info, printer_info)
+        assert profile.meta.name == "OctoPrint"
+        assert profile.machine_config.axis_extents is None
+        assert warnings == []
 
     def test_no_version_info_warns(self):
         profile, warnings = build_octoprint_profile(None, None)
@@ -105,6 +142,17 @@ class TestBuildOctoPrintProfile:
     def test_version_without_version_key(self):
         profile, _ = build_octoprint_profile({"server": "1.0"}, None)
         assert profile.machine_config.driver_config is None
+
+    def test_non_dict_payloads_never_raise(self):
+        # A malformed JSON body (wrong shape) must not raise; it is
+        # simply treated as missing data.
+        version_info = cast("dict[str, Any] | None", ["junk"])
+        profile, warnings = build_octoprint_profile(
+            version_info, {"printer": 42}
+        )
+        assert profile.meta.name == "OctoPrint"
+        assert profile.machine_config.axis_extents is None
+        assert len(warnings) == 0
 
 
 class TestDriverProbe:

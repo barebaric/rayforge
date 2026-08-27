@@ -60,6 +60,34 @@ def test_held_ports_survive_absence_from_rescan():
     assert len(session.devices) == 1
 
 
+def test_network_device_with_string_port_is_never_held_or_pruned():
+    """A device whose params carry both a ``host`` and a *string*
+    port is still a network device: its port must never enter the
+    held set (so absence from a rescan drops it right away) and the
+    serial-port pruning list can never remove it."""
+    session = DiscoverySession()
+    device = DiscoveredDevice(
+        driver_name="GrblNetworkDriver",
+        params={"host": "grbl.local", "port": "80"},
+        label="GRBL network",
+        detail="grbl.local:80",
+    )
+
+    added, _ = session.apply_scan([device])
+    assert [d.key for d in added] == [device.key]
+    assert session.held_ports == set()
+
+    # Absence from a rescan drops it immediately (unlike serial).
+    added, removed = session.apply_scan([])
+    assert added == []
+    assert removed == [device.key]
+
+    # Re-adding and pruning with an empty serial list leaves it.
+    session.apply_scan([device])
+    assert session.prune_absent_ports(set()) == []
+    assert len(session.devices) == 1
+
+
 def test_prune_absent_ports_drops_only_serial_devices():
     session = DiscoverySession()
     session.apply_scan(

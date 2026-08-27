@@ -167,13 +167,12 @@ class OctoPrintDriver(Driver):
         path = cast(str, kwargs.get("path", "/"))
         api_key = kwargs.get("api_key", "")
 
-        driver.host = host
-        driver.port = port
-        driver._api_key = driver._extract_api_key(
-            str(api_key) if api_key else ""
+        driver._configure_connection(
+            host,
+            port,
+            path,
+            driver._extract_api_key(str(api_key) if api_key else ""),
         )
-        driver._path_prefix = _normalize_path_prefix(path)
-        driver._base_url = f"http://{host}:{port}{driver._path_prefix}"
 
         version_info = None
         printer_info = None
@@ -245,6 +244,20 @@ class OctoPrintDriver(Driver):
         assert machine.dialect is not None
         return GcodeEncoder(machine.dialect)
 
+    def _configure_connection(
+        self, host: str, port: int, path: str, api_key: str | None
+    ) -> None:
+        """
+        Stores the connection parameters shared by setup and probe.
+        The probe tolerates a missing API key (servers with access
+        control disabled); setup rejects one up front.
+        """
+        self.host = host
+        self.port = port
+        self._api_key = api_key
+        self._path_prefix = _normalize_path_prefix(path)
+        self._base_url = f"http://{host}:{port}{self._path_prefix}"
+
     @staticmethod
     def _extract_api_key(data: str | None) -> str | None:
         if not data:
@@ -274,13 +287,12 @@ class OctoPrintDriver(Driver):
                 )
             )
 
-        self.host = host
-        self.port = port
-        self._api_key = api_key
-        self._path_prefix = _normalize_path_prefix(
-            cast(str, kwargs.get("path", "/"))
+        self._configure_connection(
+            host,
+            port,
+            cast(str, kwargs.get("path", "/")),
+            api_key,
         )
-        self._base_url = f"http://{host}:{port}{self._path_prefix}"
 
     async def cleanup(self):
         self.keep_running = False

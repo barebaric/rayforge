@@ -38,9 +38,6 @@ if TYPE_CHECKING:
 #: Fully identified; the wizard may adopt this profile unasked.
 CONFIDENCE_CERTAIN = 1.0
 
-#: Exact vendor-specific vid/pid pair declared by the profile.
-CONFIDENCE_USB_ID = 0.9
-
 #: Vendor and model text tokens both found in the device identity.
 CONFIDENCE_MODEL_TOKENS = 0.8
 
@@ -88,14 +85,17 @@ def score_usb_ids(
     if not pids:
         return 0.0
     specific = {pid for pid in pids if pid is not None}
-    if not specific:
+    exact = identity.usb_pid is not None and identity.usb_pid in specific
+    if exact:
+        pair = (identity.usb_vid, identity.usb_pid)
+        if pair in GENERIC_USB_IDS:
+            return CONFIDENCE_GENERIC_USB_ID
+        return CONFIDENCE_CERTAIN
+    # The pid is not declared specifically; an "any product id" entry
+    # for this vid still matches at reduced confidence.
+    if None in pids:
         return CONFIDENCE_VID_ONLY
-    if identity.usb_pid is None or identity.usb_pid not in specific:
-        return 0.0
-    pair = (identity.usb_vid, identity.usb_pid)
-    if pair in GENERIC_USB_IDS:
-        return CONFIDENCE_GENERIC_USB_ID
-    return CONFIDENCE_CERTAIN
+    return 0.0
 
 
 def score_tokens(
@@ -121,10 +121,11 @@ def score_tokens(
         and name_tokens <= tokens
     ):
         return CONFIDENCE_CERTAIN
-    if model_tokens:
-        if model_tokens <= tokens:
-            return CONFIDENCE_MODEL_TOKENS
-        return 0.0
+    if model_tokens and model_tokens <= tokens:
+        return CONFIDENCE_MODEL_TOKENS
+    # A declared model that is absent from the identity (or a
+    # mismatch) is not negative evidence: one product line can ship
+    # with different bridges/banners, so fall back to vendor confidence.
     return CONFIDENCE_VENDOR_TOKENS
 
 
@@ -156,7 +157,6 @@ __all__ = [
     "CONFIDENCE_CERTAIN",
     "CONFIDENCE_GENERIC_USB_ID",
     "CONFIDENCE_MODEL_TOKENS",
-    "CONFIDENCE_USB_ID",
     "CONFIDENCE_VENDOR_TOKENS",
     "CONFIDENCE_VID_ONLY",
     "GENERIC_USB_IDS",
