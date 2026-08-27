@@ -10,6 +10,7 @@ from blinker import Signal
 from raygeo.geo.types import Point3D
 from raygeo.ops.axis import Axis
 
+from rayforge.camera.models.camera import Camera
 from rayforge.machine.models.coordspace import (
     AxisDirection,
     MachineSpace,
@@ -616,6 +617,49 @@ class TestMachinePanelOrientationState:
         machine, _ = test_machine_and_config
         data = machine.to_dict()
         assert data["machine"]["panel_orientation"] == "native"
+
+    @staticmethod
+    def _machine_with_calibrated_camera(test_machine_and_config):
+        machine, _ = test_machine_and_config
+        camera = Camera(name="Test Cam", device_id="test-cam")
+        machine.add_camera(camera)
+        camera.image_to_world = (
+            [(0.0, 0.0), (100.0, 0.0), (100.0, 100.0), (0.0, 100.0)],
+            [(0.0, 0.0), (200.0, 0.0), (200.0, 150.0), (0.0, 150.0)],
+        )
+        return machine, camera
+
+    def test_set_orientation_reprojects_cameras_by_default(
+        self, test_machine_and_config
+    ):
+        """Stored camera calibrations are re-projected into the new
+        presentation so the physical alignment stays valid."""
+        machine, camera = self._machine_with_calibrated_camera(
+            test_machine_and_config
+        )
+        before = camera.image_to_world
+
+        machine.set_panel_orientation(PanelOrientation.ROTATED_LEFT)
+
+        assert camera.image_to_world is not None
+        assert camera.image_to_world != before
+
+    def test_set_orientation_skips_camera_alignment(
+        self, test_machine_and_config
+    ):
+        """align_cameras=False leaves the stored calibration untouched:
+        it already belongs to the new orientation."""
+        machine, camera = self._machine_with_calibrated_camera(
+            test_machine_and_config
+        )
+        before = camera.image_to_world
+
+        machine.set_panel_orientation(
+            PanelOrientation.ROTATED_LEFT, align_cameras=False
+        )
+
+        assert machine.panel_orientation is PanelOrientation.ROTATED_LEFT
+        assert camera.image_to_world == before
 
 
 class TestMachinePanelCalculateJog:

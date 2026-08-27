@@ -146,7 +146,9 @@ class DeviceProfileManager:
     def get_load_errors(self) -> dict[str, str]:
         return dict(self._load_errors)
 
-    def match_device(self, identity: DeviceIdentity) -> list["ProfileMatch"]:
+    def match_device(
+        self, identity: DeviceIdentity, journal: bool = True
+    ) -> list["ProfileMatch"]:
         """
         Score every known device profile against a discovered
         device's *identity* and return the nonzero-confidence
@@ -167,6 +169,11 @@ class DeviceProfileManager:
 
         Callers adopt a result unasked only via :func:`certain_match`;
         everything else belongs in front of the user.
+
+        With *journal* True (the default) the identification event
+        is recorded in the device journal; lookups that only
+        pre-filter a profile list for display pass ``journal=False``
+        so one selection is not recorded twice.
         """
         matches = [
             ProfileMatch(profile=profile, confidence=confidence)
@@ -174,7 +181,7 @@ class DeviceProfileManager:
             if (confidence := score_profile(profile, identity)) > 0.0
         ]
         matches.sort(key=lambda m: (-m.confidence, m.profile.name.lower()))
-        if self._journal_file is not None:
+        if journal and self._journal_file is not None:
             discovery_journal.record_match(
                 self._journal_file, identity, matches
             )

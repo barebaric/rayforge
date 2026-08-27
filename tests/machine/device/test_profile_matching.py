@@ -379,6 +379,28 @@ def test_journal_records_match_events(tmp_path):
     assert discovery_journal.read_entries(journal)[0] == entry
 
 
+def test_journal_flag_suppresses_recording(tmp_path):
+    """journal=False is for display-only pre-filtering: the event is
+    scored but not recorded, so one selection is not journaled twice."""
+    journal = tmp_path / "journal.jsonl"
+    _make_profile(
+        tmp_path,
+        "frob-one",
+        "Frob One",
+        "Frobnicate",
+        usb_ids=["abcd:1234"],
+    )
+    mgr = DeviceProfileManager(source_dirs=[tmp_path], journal_file=journal)
+    mgr.discover()
+    identity = _usb_identity(CUSTOM_VID, CUSTOM_PID)
+
+    assert mgr.match_device(identity)
+    assert len(discovery_journal.read_entries(journal)) == 1
+
+    assert mgr.match_device(identity, journal=False)
+    assert len(discovery_journal.read_entries(journal)) == 1
+
+
 def test_builtin_profiles_parse_without_usb_id_errors():
     devices_dir = Path(rayforge.__file__).parent / "resources" / "devices"
     mgr = DeviceProfileManager(source_dirs=[devices_dir])

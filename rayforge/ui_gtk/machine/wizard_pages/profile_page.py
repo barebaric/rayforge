@@ -134,7 +134,9 @@ class ProfilePage(WizardPage):
                 identity,
                 tokens=identity.tokens | normalize_tokens(name),
             )
-        matches = get_context().device_profile_mgr.match_device(identity)
+        matches = get_context().device_profile_mgr.match_device(
+            identity, journal=False
+        )
         return [match.profile for match in matches]
 
     def _filter_and_populate_list(self) -> None:

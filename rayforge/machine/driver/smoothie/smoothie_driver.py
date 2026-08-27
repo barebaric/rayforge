@@ -24,7 +24,7 @@ from ..driver import (
     Pos,
 )
 from ..grbl.grbl_util import parse_state
-from .smoothie_util import build_smoothie_profile
+from .smoothie_util import SmoothieProbeResult, build_smoothie_profile
 
 if TYPE_CHECKING:
     from raygeo.ops import Ops
@@ -122,21 +122,14 @@ class SmoothieDriver(Driver):
             # needs a moment before it accepts commands.
             await asyncio.wait_for(connected.wait(), timeout=15.0)
             await asyncio.sleep(0.2)
-            version_lines = await driver.execute_interactive_command("version")
-            alpha_max = await driver.execute_interactive_command(
-                "config-get alpha_max"
-            )
-            beta_max = await driver.execute_interactive_command(
-                "config-get beta_max"
-            )
-            alpha_max_rate = await driver.execute_interactive_command(
-                "config-get alpha_max_rate"
-            )
-            beta_max_rate = await driver.execute_interactive_command(
-                "config-get beta_max_rate"
-            )
-            acceleration = await driver.execute_interactive_command(
-                "config-get acceleration"
+            query = driver.execute_interactive_command
+            probe = SmoothieProbeResult(
+                version=await query("version"),
+                alpha_max=await query("config-get alpha_max"),
+                beta_max=await query("config-get beta_max"),
+                alpha_max_rate=await query("config-get alpha_max_rate"),
+                beta_max_rate=await query("config-get beta_max_rate"),
+                acceleration=await query("config-get acceleration"),
             )
         finally:
             driver.connection_status_changed.disconnect(_on_status)
@@ -145,14 +138,7 @@ class SmoothieDriver(Driver):
                 machine._on_dialects_changed
             )
 
-        profile, warnings = build_smoothie_profile(
-            version_lines,
-            alpha_max,
-            beta_max,
-            alpha_max_rate,
-            beta_max_rate,
-            acceleration,
-        )
+        profile, warnings = build_smoothie_profile(probe)
         profile.machine_config.driver = cls.__name__
         profile.machine_config.driver_args = kwargs
         return profile, warnings

@@ -713,9 +713,10 @@ class DeviceProfile:
         if cfg.origin is not None:
             m.origin = cfg.origin
         if cfg.panel_orientation is not None:
-            # Profile cameras replace the machine's cameras below and their
-            # saved alignment already uses the profile's orientation.
-            m.panel._orientation = cfg.panel_orientation
+            # The profile's cameras (installed below) carry alignments
+            # that already use the profile's orientation, so skip the
+            # camera re-projection the setter performs by default.
+            m.set_panel_orientation(cfg.panel_orientation, align_cameras=False)
         if cfg.max_travel_speed is not None:
             m.max_travel_speed = cfg.max_travel_speed
         if cfg.max_cut_speed is not None:

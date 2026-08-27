@@ -858,12 +858,16 @@ class Machine:
         """How the native bed is presented on screen."""
         return self.panel.orientation
 
-    def set_panel_orientation(self, orientation: PanelOrientation) -> None:
+    def set_panel_orientation(
+        self,
+        orientation: PanelOrientation,
+        align_cameras: bool = True,
+    ) -> None:
         """Set how the native bed is presented on screen.
 
         See :meth:`MachinePanel.set_orientation` for details.
         """
-        self.panel.set_orientation(orientation)
+        self.panel.set_orientation(orientation, align_cameras=align_cameras)
 
     def set_reverse_x_axis(self, is_reversed: bool):
         """Sets if the X-axis coordinate display is inverted."""

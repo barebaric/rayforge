@@ -1,8 +1,9 @@
 """Step 4 — Connect + auto-detect.
 
 Only shown when the chosen driver's ``supports_probing`` is True
-(GRBL and Marlin today). Reuses the driver's classmethod ``probe()``
-plumbing originally developed for the legacy ``ConfigWizard``.
+(GRBL, Marlin, Smoothie, and OctoPrint today). Reuses the driver's
+classmethod ``probe()`` plumbing originally developed for the legacy
+``ConfigWizard``.
 
 The page offers:
 

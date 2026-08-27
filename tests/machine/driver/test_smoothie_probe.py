@@ -5,6 +5,7 @@ from blinker import Signal
 
 from rayforge.machine.driver.smoothie import SmoothieDriver
 from rayforge.machine.driver.smoothie.smoothie_util import (
+    SmoothieProbeResult,
     build_smoothie_profile,
 )
 from rayforge.machine.models.machine import Machine
@@ -13,14 +14,15 @@ from rayforge.machine.transport import TransportStatus
 
 class TestBuildSmoothieProfile:
     def test_full_profile(self):
-        version = ["Smoothieware edge-1234abc1"]
         profile, warnings = build_smoothie_profile(
-            version,
-            ["200.000"],
-            ["300.000"],
-            ["500.000"],
-            ["600.000"],
-            ["1000.000"],
+            SmoothieProbeResult(
+                version=["Smoothieware edge-1234abc1"],
+                alpha_max=["200.000"],
+                beta_max=["300.000"],
+                alpha_max_rate=["500.000"],
+                beta_max_rate=["600.000"],
+                acceleration=["1000.000"],
+            )
         )
         assert profile.meta.name == "Smoothieware"
         assert profile.machine_config.driver is None
@@ -38,7 +40,7 @@ class TestBuildSmoothieProfile:
         assert warnings == []
 
     def test_minimal_profile(self):
-        profile, warnings = build_smoothie_profile([], [], [], [], [], [])
+        profile, warnings = build_smoothie_profile(SmoothieProbeResult())
         assert profile.meta.name == "Smoothieware"
         assert profile.machine_config.axis_extents is None
         assert profile.machine_config.max_travel_speed is None
@@ -50,23 +52,25 @@ class TestBuildSmoothieProfile:
 
     def test_different_feedrates_picks_lower(self):
         profile, _ = build_smoothie_profile(
-            [],
-            ["200.000"],
-            ["200.000"],
-            ["500.000"],
-            ["300.000"],
-            ["1000.000"],
+            SmoothieProbeResult(
+                alpha_max=["200.000"],
+                beta_max=["200.000"],
+                alpha_max_rate=["500.000"],
+                beta_max_rate=["300.000"],
+                acceleration=["1000.000"],
+            )
         )
         assert profile.machine_config.max_travel_speed == 18000
 
     def test_non_positive_extents_warning(self):
         profile, warnings = build_smoothie_profile(
-            [],
-            ["0.000"],
-            ["300.000"],
-            ["500.000"],
-            ["500.000"],
-            ["1000.000"],
+            SmoothieProbeResult(
+                alpha_max=["0.000"],
+                beta_max=["300.000"],
+                alpha_max_rate=["500.000"],
+                beta_max_rate=["500.000"],
+                acceleration=["1000.000"],
+            )
         )
         assert profile.machine_config.axis_extents is None
         assert len(warnings) == 1
@@ -74,12 +78,13 @@ class TestBuildSmoothieProfile:
 
     def test_malformed_value_is_ignored(self):
         profile, warnings = build_smoothie_profile(
-            [],
-            ["not-a-number"],
-            ["300.000"],
-            ["500.000"],
-            ["500.000"],
-            ["1000.000"],
+            SmoothieProbeResult(
+                alpha_max=["not-a-number"],
+                beta_max=["300.000"],
+                alpha_max_rate=["500.000"],
+                beta_max_rate=["500.000"],
+                acceleration=["1000.000"],
+            )
         )
         assert profile.machine_config.axis_extents is None
         assert len(warnings) == 1

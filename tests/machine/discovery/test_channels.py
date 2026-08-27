@@ -658,7 +658,7 @@ def test_builtin_mdns_declarations():
 # ----- fingerprint pass -------------------------------------------------
 
 
-def _fingerprint_driver(fingerprint):
+def _fingerprint_driver(fingerprint, name="FingerprintDriver"):
     """A fresh driver class claiming _esp3d._tcp by declaration and
     _http._tcp candidates only via its fingerprint probe."""
 
@@ -671,6 +671,7 @@ def _fingerprint_driver(fingerprint):
         )
         label = "GRBL (Network)"
 
+    FingerprintDriver.__name__ = name
     return FingerprintDriver
 
 
@@ -769,6 +770,30 @@ async def test_failing_fingerprint_is_isolated(monkeypatch):
     monkeypatch.setattr(mdns_channel, "scan_mdns_services", fake_scan)
     devices = await find_network_devices([driver])
     assert [d.params["host"] for d in devices] == ["192.168.1.71"]
+
+
+@pytest.mark.asyncio
+async def test_first_declared_driver_claims_host(monkeypatch):
+    """When several fingerprinting drivers match the same host, the
+    first one in declaration order claims it; every host yields at
+    most one device."""
+
+    async def always_match(host, port, timeout=1.5):
+        return _http_service(host=host)
+
+    first = _fingerprint_driver(always_match, name="FirstDriver")
+    second = _fingerprint_driver(always_match, name="SecondDriver")
+
+    async def fake_scan(service_types):
+        return [_http_service(), _http_service(host="192.168.1.71")]
+
+    monkeypatch.setattr(mdns_channel, "scan_mdns_services", fake_scan)
+    devices = await find_network_devices([first, second])
+    assert [d.params["host"] for d in devices] == [
+        "192.168.1.70",
+        "192.168.1.71",
+    ]
+    assert all(d.driver_name == "FirstDriver" for d in devices)
 
 
 @pytest.mark.asyncio

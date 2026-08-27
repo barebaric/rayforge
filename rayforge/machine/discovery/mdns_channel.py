@@ -143,7 +143,12 @@ async def _run_fingerprints(
     claimed_hosts: set[str],
 ) -> list[DiscoveredDevice]:
     """Fingerprints unclaimed generic-service candidates, bounded in
-    concurrency. The first matching driver claims a candidate."""
+    concurrency.
+
+    All fingerprinting drivers probe every candidate concurrently;
+    the first match in declaration order claims a host, so a host that
+    several drivers recognize yields exactly one device.
+    """
     probes = [
         (cls, recognizer, service)
         for cls, recognizer in declarations
@@ -179,12 +184,17 @@ async def _run_fingerprints(
         return cls, recognizer, service
 
     results = await asyncio.gather(*(_claim(*probe) for probe in probes))
-    return [
-        _build_device(cls, recognizer, service)
-        for result in results
-        if result is not None
-        for cls, recognizer, service in [result]
-    ]
+    devices: list[DiscoveredDevice] = []
+    claimed: set[str] = set()
+    for result in results:
+        if result is None:
+            continue
+        cls, recognizer, service = result
+        if service.host in claimed:
+            continue
+        claimed.add(service.host)
+        devices.append(_build_device(cls, recognizer, service))
+    return devices
 
 
 def _build_device(

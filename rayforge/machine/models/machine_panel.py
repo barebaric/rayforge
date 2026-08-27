@@ -84,7 +84,11 @@ class MachinePanel:
         """The panel orientation (NATIVE / ROTATED_LEFT / ROTATED_RIGHT)."""
         return self._orientation
 
-    def set_orientation(self, orientation: PanelOrientation) -> None:
+    def set_orientation(
+        self,
+        orientation: PanelOrientation,
+        align_cameras: bool = True,
+    ) -> None:
         """Set how the native machine bed is presented on screen.
 
         All interactive changes of the orientation MUST go through this
@@ -97,7 +101,10 @@ class MachinePanel:
         new transforms so an existing physical alignment stays valid.
         The rotation matrices contain only 0/+/-1 entries and exact
         translations, so repeated re-projection does not accumulate
-        floating-point error.
+        floating-point error. Pass ``align_cameras=False`` when the
+        stored calibrations already belong to the new orientation
+        (e.g. profile creation, where the cameras and their
+        alignments come from the same source as the orientation).
 
         Deserialization (``Machine.from_dict``) assigns ``_orientation``
         directly instead, because persisted camera calibration was
@@ -107,8 +114,9 @@ class MachinePanel:
             return
         old_matrix = self._panel_to_world_matrix
         self._orientation = orientation
-        new_inverse = np.linalg.inv(self._panel_to_world_matrix)
-        self._reproject_cameras(old_matrix, new_inverse)
+        if align_cameras:
+            new_inverse = np.linalg.inv(self._panel_to_world_matrix)
+            self._reproject_cameras(old_matrix, new_inverse)
         self._machine.changed.send(self._machine)
 
     @property

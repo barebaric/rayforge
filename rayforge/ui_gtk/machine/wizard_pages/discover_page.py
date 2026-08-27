@@ -77,7 +77,9 @@ class _DeviceRow(Adw.ActionRow):
             self.select_button = None
         else:
             # Rows are not obviously clickable; an explicit Select
-            # button states the action. The whole row stays activatable.
+            # button states the action. The whole row stays
+            # activatable (Adw rows are not by default).
+            self.set_activatable(True)
             self.select_button = Gtk.Button(label=_("Select"))
             self.select_button.set_valign(Gtk.Align.CENTER)
             self.select_button.add_css_class("suggested-action")
@@ -274,7 +276,6 @@ class DiscoverPage(WizardPage):
             configured=configured,
             title=title,
             subtitle=subtitle,
-            activatable=not configured,
         )
         row.connect("activated", self._on_row_activated)
         self._device_rows[device.key] = row
@@ -348,9 +349,6 @@ class DiscoverPage(WizardPage):
 
     def _on_row_activated(self, row: _DeviceRow) -> None:
         self.device_selected.send(self, device=row.device)
-
-    def _on_select_clicked(self, _button: Gtk.Button, row: _DeviceRow) -> None:
-        self._on_row_activated(row)
 
 
 def _row_subtitle(device: DiscoveredDevice) -> str:

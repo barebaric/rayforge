@@ -709,13 +709,15 @@ def extract_device_name_from_output(data: bytes) -> str | None:
 
 def _extract_grbl_banner(lines: list[str]) -> str | None:
     """The first GRBL output line worth showing as a banner, skipping
-    bare protocol acknowledgements and stray bytes from a DTR-reset
-    glitch."""
+    bare protocol acknowledgements, status reports, and stray bytes
+    from a DTR-reset glitch."""
     for raw in lines:
         line = raw.strip()
         if not line:
             continue
         if _is_grbl_ack(line):
+            continue
+        if line.startswith("<") and line.endswith(">"):
             continue
         return line[:80]
     return None

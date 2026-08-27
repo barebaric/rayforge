@@ -1,10 +1,13 @@
-"""Append-only journal of device identification events.
+"""Journal of device identification events.
 
 Every time discovered devices are matched against profiles, the
 device's reported identity and the ranked candidate profiles are
-appended here. Help → Save Debug Log includes the journal, so a
-misidentification can be diagnosed after the fact even though the
-discovery itself was transient.
+recorded here. Only the most recent :data:`MAX_ENTRIES` entries are
+kept; the file is rewritten in full on each record rather than
+appended to, which is simpler than in-place trimming at this size.
+Help → Save Debug Log includes the journal, so a misidentification
+can be diagnosed after the fact even though the discovery itself was
+transient.
 """
 
 import json
@@ -33,7 +36,7 @@ def record_match(
     matches: list[ProfileMatch],
 ) -> None:
     """
-    Append one identification event. Never raises: journaling must
+    Record one identification event. Never raises: journaling must
     not break matching or the wizard.
     """
     vid_hex = (

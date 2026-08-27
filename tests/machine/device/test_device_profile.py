@@ -784,6 +784,48 @@ class TestCreateMachine:
         assert m.panel.orientation is PanelOrientation.ROTATED_RIGHT
 
     @pytest.mark.asyncio
+    async def test_create_machine_keeps_camera_alignment_with_orientation(
+        self, tmp_path, lite_context, task_mgr
+    ):
+        """Profile camera alignments are stored in the profile's panel
+        orientation, so create_machine must apply the orientation
+        without re-projecting the calibrations."""
+        device_dir = _make_device(
+            tmp_path,
+            name="Oriented Cameras",
+            machine_extra={
+                "panel_orientation": "rotated_right",
+                "cameras": [
+                    {
+                        "name": "Bed Cam",
+                        "device_id": "bed-cam",
+                        "image_to_world": [
+                            {"image": "0, 0", "world": "0, 0"},
+                            {"image": "640, 0", "world": "120, 0"},
+                            {"image": "640, 480", "world": "120, 200"},
+                            {"image": "0, 480", "world": "0, 200"},
+                        ],
+                    }
+                ],
+            },
+        )
+        pkg = DeviceProfile.from_path(device_dir)
+        m = pkg.create_machine(lite_context)
+        await _wait_for_tasks(task_mgr)
+
+        assert m.panel.orientation is PanelOrientation.ROTATED_RIGHT
+        assert len(m.cameras) == 1
+        calibration = m.cameras[0].image_to_world
+        assert calibration is not None
+        _image_points, world_points = calibration
+        assert world_points == [
+            (0.0, 0.0),
+            (120.0, 0.0),
+            (120.0, 200.0),
+            (0.0, 200.0),
+        ]
+
+    @pytest.mark.asyncio
     async def test_create_machine_ruida_no_dialect(
         self, tmp_path, lite_context, task_mgr
     ):

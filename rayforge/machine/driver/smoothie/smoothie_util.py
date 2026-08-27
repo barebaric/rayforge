@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass, field
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
@@ -6,6 +7,23 @@ if TYPE_CHECKING:
     from ...device.profile import DeviceProfile
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class SmoothieProbeResult:
+    """Raw Smoothieware responses collected during a probe.
+
+    Each field holds the reply lines of one ``version`` / ``config-get``
+    query, exactly as the driver received them (an empty list means the
+    value could not be read).
+    """
+
+    version: list[str] = field(default_factory=list)
+    alpha_max: list[str] = field(default_factory=list)
+    beta_max: list[str] = field(default_factory=list)
+    alpha_max_rate: list[str] = field(default_factory=list)
+    beta_max_rate: list[str] = field(default_factory=list)
+    acceleration: list[str] = field(default_factory=list)
 
 
 def first_value(lines: list[str]) -> str | None:
@@ -35,20 +53,15 @@ def parse_float(lines: list[str]) -> float | None:
 
 
 def build_smoothie_profile(
-    version_lines: list[str],
-    alpha_max_lines: list[str],
-    beta_max_lines: list[str],
-    alpha_max_rate_lines: list[str],
-    beta_max_rate_lines: list[str],
-    acceleration_lines: list[str],
+    probe: SmoothieProbeResult,
 ) -> tuple["DeviceProfile", list[str]]:
     """
-    Build a ``DeviceProfile`` from raw Smoothieware ``version`` and
-    ``config-get`` response lines.
+    Build a ``DeviceProfile`` from the raw Smoothieware responses in
+    *probe* (``version`` and ``config-get`` response lines).
 
     This is a pure data-transformation function with no I/O. The caller
-    is responsible for communicating with the device and passing the
-    collected response lines.
+    is responsible for communicating with the device and collecting the
+    responses.
 
     Returns a ``(DeviceProfile, warnings)`` tuple where *warnings* is a
     list of human-readable strings about potential issues. All
@@ -63,13 +76,13 @@ def build_smoothie_profile(
     warnings: list[str] = []
 
     name = "Smoothieware"
-    fw_version = first_value(version_lines)
+    fw_version = first_value(probe.version)
     driver_config: dict[str, Any] = {}
     if fw_version:
         driver_config["firmware_version"] = fw_version
 
-    alpha_max = parse_float(alpha_max_lines)
-    beta_max = parse_float(beta_max_lines)
+    alpha_max = parse_float(probe.alpha_max)
+    beta_max = parse_float(probe.beta_max)
     extents: tuple[float, float] | None = None
     if alpha_max is not None and beta_max is not None:
         if alpha_max > 0 and beta_max > 0:
@@ -84,8 +97,8 @@ def build_smoothie_profile(
     else:
         warnings.append(_("Could not read the Smoothie work-area dimensions."))
 
-    alpha_rate = parse_float(alpha_max_rate_lines)
-    beta_rate = parse_float(beta_max_rate_lines)
+    alpha_rate = parse_float(probe.alpha_max_rate)
+    beta_rate = parse_float(probe.beta_max_rate)
     max_speed: int | None = None
     if alpha_rate is not None and beta_rate is not None:
         # config-get rates are in mm/s; machine config expects mm/min.
@@ -93,7 +106,7 @@ def build_smoothie_profile(
     else:
         warnings.append(_("Could not read the Smoothie maximum feed rates."))
 
-    accel_val = parse_float(acceleration_lines)
+    accel_val = parse_float(probe.acceleration)
     accel: int | None = None
     if accel_val is not None:
         accel = int(accel_val)
