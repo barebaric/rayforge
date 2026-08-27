@@ -86,7 +86,6 @@ css = """
     background-color: transparent;
     border-radius: 8px;
     margin: 6px 12px 12px 6px;
-    box-shadow: 0 2px 12px alpha(black, 0.2);
 }
 
 .status-message-overlay {
@@ -372,9 +371,9 @@ class MainWindow(Adw.ApplicationWindow):
             show_nogo_zones=bool(config.machine and config.machine.nogo_zones),
             shortcuts=SHORTCUTS,
         )
-        self._surface_vis_overlay.set_margin_end(
-            self._get_vis_overlay_margin_end()
-        )
+        # The right pane is created later; the final margin is applied
+        # once it exists via _apply_right_panel_visibility.
+        self._surface_vis_overlay.set_margin_end(DEFAULT_OVERLAY_MARGIN)
         self.surface_overlay.add_overlay(self._surface_vis_overlay)
         self._time_estimate_overlay = TimeEstimateOverlay()
         self.surface_overlay.add_overlay(self._time_estimate_overlay)
@@ -429,7 +428,6 @@ class MainWindow(Adw.ApplicationWindow):
         self._workflow_box.set_margin_top(6)
         self._workflow_box.set_margin_end(12)
         right_pane_box.append(self._workflow_box)
-        self._update_workflow_views()
 
         # Register built-in property providers before creating the widget
         register_builtin_providers()
@@ -450,6 +448,8 @@ class MainWindow(Adw.ApplicationWindow):
             Gtk.RevealerTransitionType.SLIDE_UP
         )
         right_pane_box.append(self.item_revealer)
+
+        self._update_workflow_views()
 
         # Connect signals for item selection and actions
         self.surface.selection_changed.connect(self._on_selection_changed)
@@ -1454,16 +1454,29 @@ class MainWindow(Adw.ApplicationWindow):
             view.set_margin_bottom(6)
             self._workflow_box.append(view)
             self._workflow_views.append(view)
+        # The pane content changed, so its allocation may have to.
+        self._apply_right_panel_visibility()
+
+    def _has_right_pane_content(self) -> bool:
+        """
+        Returns True if the right pane has any visible content: at
+        least one workflow view or revealed item properties.
+        """
+        return bool(
+            self._workflow_views or self.item_revealer.get_reveal_child()
+        )
 
     def _is_right_panel_effectively_visible(self) -> bool:
         """
         Returns True if the right panel should be on screen, combining
         the user's visibility toggle with the configured panel mode.
+        An empty pane allocates no space at all.
         """
         config = get_context().config
         return (
             config.right_panel_visible
             and config.right_panel_mode != RightPanelMode.HIDDEN
+            and self._has_right_pane_content()
         )
 
     def _get_vis_overlay_margin_end(self) -> int:
@@ -1701,9 +1714,9 @@ class MainWindow(Adw.ApplicationWindow):
             show_nogo_zones=bool(machine and machine.nogo_zones),
             shortcuts=SHORTCUTS,
         )
-        self._canvas3d_vis_overlay.set_margin_end(
-            self._get_vis_overlay_margin_end()
-        )
+        # The right pane is created later; the final margin is applied
+        # once it exists via _apply_right_panel_visibility.
+        self._canvas3d_vis_overlay.set_margin_end(DEFAULT_OVERLAY_MARGIN)
         self._canvas3d_overlay.add_overlay(self._canvas3d_vis_overlay)
         self._canvas3d_playback = PlaybackOverlay()
         self.canvas3d.set_playback_overlay(self._canvas3d_playback)
@@ -1755,6 +1768,9 @@ class MainWindow(Adw.ApplicationWindow):
 
         self.item_props_widget.set_items(selected_items)
         self.item_revealer.set_reveal_child(bool(selected_items))
+        # Revealing or hiding the item properties changes whether the
+        # pane has content and thus whether it allocates space.
+        self._apply_right_panel_visibility()
         self.bottom_panel.update_position_menu_sensitivity()
         self._update_actions_and_ui()
         selected_uids = {item.uid for item in selected_items}
