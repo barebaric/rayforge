@@ -149,6 +149,45 @@ def run_script(script_name: str, target: str) -> int:
         return subprocess.run(cmd, env=env, check=False).returncode
 
 
+def suggest_targets(target: str) -> list[str]:
+    """Suggest close matches for a non-matching target.
+
+    1. Find targets sharing the longest prefix with the given target.
+    2. Within those, find fuzzy (substring) matches on the last component.
+    3. If no fuzzy matches, return all leaves under the longest prefix.
+    """
+    # Find the longest prefix that exists in TARGETS
+    parts = target.split(":")
+    best_prefix = ""
+    for i in range(len(parts), 0, -1):
+        prefix = ":".join(parts[:i])
+        if (
+            any(t.startswith(prefix + ":") for t in TARGETS)
+            or prefix in TARGETS
+        ):
+            best_prefix = prefix
+            break
+
+    if not best_prefix:
+        return []
+
+    # Collect leaves under this prefix
+    leaves = [
+        t
+        for t in TARGETS
+        if t.startswith(best_prefix + ":")
+        and not any(other.startswith(t + ":") for other in TARGETS)
+    ]
+    if not leaves and best_prefix in TARGETS:
+        leaves = [best_prefix]
+
+    # Try fuzzy match on the last component
+    last = parts[-1].lower()
+    fuzzy = [t for t in leaves if last in t.split(":")[-1].lower()]
+
+    return fuzzy if fuzzy else leaves
+
+
 def generate_help_text() -> str:
     lines = ["Available leaf targets:"]
     for target in sorted(TARGETS.keys()):
@@ -185,6 +224,11 @@ def main() -> int:
 
     if not targets:
         print(f"No targets match: {target}")
+        suggestions = suggest_targets(target)
+        if suggestions:
+            print("\nDid you mean one of these?")
+            for s in suggestions:
+                print(f"  {s}")
         return 1
 
     for target in targets:
