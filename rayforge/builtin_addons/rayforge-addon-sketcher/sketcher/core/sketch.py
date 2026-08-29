@@ -1409,6 +1409,10 @@ class Sketch(IAsset, IGeometryProvider):
             return True
         self._solving = True
         success = False
+        solver: Solver | None = None
+        all_constraints: list[Constraint] = []
+        update_status = False
+        solve_completed = False
         try:
             # A scope referencing deleted points (e.g. after an array
             # re-apply removed geometry mid-drag) cannot be honored;
@@ -1506,18 +1510,7 @@ class Sketch(IAsset, IGeometryProvider):
             )
             update_status = update_constraint_status and scope is None
             success = solver.solve(update_dof=update_status)
-
-            # Step 6: Update constraint conflict status. Map solver indices
-            # back to sketch constraint indices when constraints were
-            # excluded.
-            if update_status:
-                conflicting = solver.get_conflicting_constraints()
-                mapped = {
-                    kept_indices[i]
-                    for i in conflicting
-                    if 0 <= i < len(kept_indices)
-                }
-                self._apply_conflict_status(mapped)
+            solve_completed = True
 
         except (np.linalg.LinAlgError, ValueError):
             logger.exception("Sketch solve failed")
@@ -1532,6 +1525,25 @@ class Sketch(IAsset, IGeometryProvider):
             self.sync_arrays()
         finally:
             self._solving = False
+
+        # Step 6: Update constraint conflict status. This must happen
+        # AFTER the array sync: re-anchoring an array template can
+        # violate constraints the solver had just satisfied (the
+        # template's placement belongs to the array), so residuals are
+        # evaluated against the final geometry. Solver indices are
+        # mapped back by constraint identity, since sync_arrays may
+        # have changed self.constraints.
+        if solve_completed and update_status and solver is not None:
+            conflicting = solver.get_conflicting_constraints()
+            index_of = {id(c): i for i, c in enumerate(self.constraints)}
+            mapped = {
+                index_of[id(all_constraints[i])]
+                for i in conflicting
+                if 0 <= i < len(all_constraints)
+                and id(all_constraints[i]) in index_of
+            }
+            self._apply_conflict_status(mapped)
+
         return success
 
     def _apply_conflict_status(self, conflicting_indices: set[int]) -> None:

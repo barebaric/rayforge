@@ -2,6 +2,8 @@
 Tests for constraint conflict detection in the sketcher.
 """
 
+from sketcher.core.arrays import CurveAlongArrayStrategy
+from sketcher.core.commands import CreateArrayCommand
 from sketcher.core.constraints import (
     ConstraintStatus,
     DistanceConstraint,
@@ -273,3 +275,92 @@ class TestConflictingWithEntities:
         sketch.solve()
 
         assert sketch.has_conflicts is True
+
+
+class TestConflictingWithArrayTemplate:
+    """
+    An array template's placement is owned by the array: sync_arrays
+    re-anchors the template onto the guide after every solve. A
+    template constraint the solver had satisfied can therefore be
+    violated by the sync, and the conflict status must reflect the
+    final (post-sync) geometry.
+    """
+
+    def _build_array_sketch(self):
+        """Horizontal guide line plus a horizontal line template,
+        turned into a tangent-aligned array through the create flow."""
+        sketch = Sketch()
+        g0 = sketch.registry.add_point(0.0, 0.0)
+        g1 = sketch.registry.add_point(40.0, 0.0)
+        guide = sketch.registry.add_line(g0, g1)
+        t0 = sketch.registry.add_point(-6.0, -2.0)
+        t1 = sketch.registry.add_point(6.0, -2.0)
+        template = sketch.registry.add_line(t0, t1)
+        strategy = CurveAlongArrayStrategy(
+            count=3, path_entity_id=guide, align_to_tangent=True
+        )
+        CreateArrayCommand(sketch, strategy, [template]).execute()
+        sketch.solve()
+        return sketch, g1
+
+    def _template_point_ids(self, sketch):
+        registry = sketch.registry
+        _slot, eids = sketch.arrays[0].living_members(registry)[0]
+        line = registry.get_entity(eids[0])
+        return line.p1_idx, line.p2_idx
+
+    def test_orientation_constraint_conflicts_after_guide_edit(self):
+        """Rotating the guide re-anchors the template, breaking a
+        horizontal constraint that the solver itself had satisfied.
+        The constraint must be flagged as conflicting instead of
+        silently staying valid while solver and sync fight."""
+        sketch, g1 = self._build_array_sketch()
+        p1, p2 = self._template_point_ids(sketch)
+        sketch.constrain_horizontal(p1, p2)
+        horizontal = sketch.constraints[-1]
+
+        sketch.solve()
+        assert horizontal.status == ConstraintStatus.VALID
+
+        sketch.registry.get_point(g1).y = 30.0
+        sketch.solve()
+
+        assert horizontal.status == ConstraintStatus.CONFLICTING
+        assert sketch.has_conflicts is True
+
+    def test_conflict_clears_when_guide_tangent_matches_again(self):
+        """Rotating the guide back restores the tangent the template
+        was anchored at, so the constraint becomes satisfiable again
+        and the conflict status must be cleared. The re-anchor applies
+        its stored delta once more after the solver re-satisfies the
+        constraint, so the stable state is reached on the next solve
+        cycle."""
+        sketch, g1 = self._build_array_sketch()
+        p1, p2 = self._template_point_ids(sketch)
+        sketch.constrain_horizontal(p1, p2)
+        horizontal = sketch.constraints[-1]
+
+        sketch.registry.get_point(g1).y = 30.0
+        sketch.solve()
+        assert horizontal.status == ConstraintStatus.CONFLICTING
+
+        sketch.registry.get_point(g1).y = 0.0
+        sketch.solve()
+        sketch.solve()
+
+        assert horizontal.status == ConstraintStatus.VALID
+        assert sketch.has_conflicts is False
+
+    def test_shape_constraint_survives_reanchor(self):
+        """Shape constraints (e.g. a distance) are placement-invariant:
+        the rigid re-anchor keeps them satisfied and they must not be
+        flagged."""
+        sketch, g1 = self._build_array_sketch()
+        p1, p2 = self._template_point_ids(sketch)
+        distance = sketch.constrain_distance(p1, p2, 12.0)
+
+        sketch.registry.get_point(g1).y = 30.0
+        sketch.solve()
+
+        assert distance.status == ConstraintStatus.VALID
+        assert sketch.has_conflicts is False
