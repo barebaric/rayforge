@@ -1259,7 +1259,8 @@ class TestMachine:
     ):
         """Ruida cannot raster the multi-depth depth mode."""
         await wait_for_tasks_to_finish(task_mgr)
-        machine.set_driver(RuidaDriver, {"host": "test"})
+        machine.auto_connect = False
+        machine.set_driver(RuidaDriver, {"host": "localhost"})
         await wait_for_tasks_to_finish(task_mgr)
 
         assert machine.driver_name == "RuidaDriver"
