@@ -324,6 +324,23 @@ class EngraveStep(LaserStep):
         except KeyError:
             return None
 
+    def check(self, machine) -> list[str]:
+        """Extend base checks with a depth-mode capability warning."""
+        warnings = super().check(machine)
+        if machine is None:
+            return warnings
+        if (
+            self.depth_mode == "MULTI_PASS"
+            and not machine.supports_multi_depth_raster()
+        ):
+            warnings.append(
+                _(
+                    "The {mode} depth mode is not supported by this "
+                    "machine's driver."
+                ).format(mode=DepthMode.MULTI_PASS.display_name)
+            )
+        return warnings
+
     def is_position_sensitive(self) -> bool:
         """The raster assembler bakes ``workpiece.bbox`` into its
         output via ``offset_x_mm`` / ``offset_y_mm`` so the compute

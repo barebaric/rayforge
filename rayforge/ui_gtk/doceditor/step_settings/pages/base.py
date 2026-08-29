@@ -51,7 +51,7 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
         self._sections: list[Adw.PreferencesGroup] = []
         self._rows: list[Any] = []
         self._varset_widgets: list[tuple[VarSetWidget, VarSet]] = []
-        self._speed_warning_icons: dict[SpeedSpinRow, Gtk.Image] = {}
+        self._speed_warning_icons: dict[Gtk.Widget, Gtk.Image] = {}
         if self.show_identity:
             self._add_identity_section()
         # Keep varset rows in sync with the model (undo, recipe apply,
@@ -300,33 +300,41 @@ class StepSettingsPage(DebounceMixin, TrackedPreferencesPage):
         for widget, _var_set in self._varset_widgets:
             row = widget.row_for("cut_speed")
             if row is not None:
-                self._set_speed_row_warning(
+                self._set_row_warning(
                     cast(SpeedSpinRow, row),
                     self.step.cut_speed > machine.max_cut_speed,
                     message,
                 )
             row = widget.row_for("travel_speed")
             if row is not None:
-                self._set_speed_row_warning(
+                self._set_row_warning(
                     cast(SpeedSpinRow, row),
                     supports_travel
                     and self.step.travel_speed > machine.max_travel_speed,
                     message,
                 )
 
-    def _set_speed_row_warning(
-        self, row: SpeedSpinRow, active: bool, message: str
+    def _set_row_warning(
+        self, row: Gtk.Widget, active: bool, message: str
     ) -> None:
+        """Attach or remove a warning icon on any settings row.
+
+        The icon explains the problem on hover via ``message``.
+        """
         icon = self._speed_warning_icons.get(row)
         if icon is None:
             icon = get_icon("warning-symbolic")
             icon.add_css_class("warning")
             icon.set_valign(Gtk.Align.CENTER)
-            # Place the icon to the LEFT of the input box (the first
-            # child of the suffix box), so it is visually tied to the
-            # value it flags rather than sitting at the far right.
-            suffix_box = row.get_spin_button().get_parent()
-            cast(Gtk.Box, suffix_box).insert_child_after(icon, None)
+            if isinstance(row, SpeedSpinRow):
+                # Place the icon to the LEFT of the input box (the
+                # first child of the suffix box), so it is visually
+                # tied to the value it flags rather than sitting at
+                # the far right.
+                suffix_box = row.get_spin_button().get_parent()
+                cast(Gtk.Box, suffix_box).insert_child_after(icon, None)
+            else:
+                cast(Adw.ActionRow, row).add_suffix(icon)
             self._speed_warning_icons[row] = icon
         icon.set_visible(active)
         icon.set_tooltip_text(message if active else "")

@@ -222,6 +222,10 @@ class Driver(ABC):
     # When True, the driver can query the device to detect its
     # native unit system (metric vs imperial).
     supports_unit_detection: bool = False
+    # When True, the driver can raster the multi-depth ("Multiple
+    # Depths") depth mode, which requires emitting per-level tool
+    # passes. Drivers without it exclude the mode from raster steps.
+    supports_multi_depth_raster: ClassVar[bool] = True
     # Everything the driver declares about discoverability: what its
     # devices look like on the wire and on the network, composed of
     # per-channel recognizers. When set, the driver participates in

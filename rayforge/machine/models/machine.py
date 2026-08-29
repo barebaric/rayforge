@@ -276,6 +276,16 @@ class Machine:
         driver_cls = get_driver_cls(self.driver_name or "")
         return driver_cls.supports_travel_speed(self.dialect)
 
+    def supports_multi_depth_raster(self) -> bool:
+        """Whether the machine can raster the multi-depth depth mode.
+
+        Delegates to the driver class. Drives whether the raster step
+        settings disable the multi-depth option and whether a warning
+        is produced for steps using it.
+        """
+        driver_cls = get_driver_cls(self.driver_name or "")
+        return driver_cls.supports_multi_depth_raster
+
     def get_pwm_params(self, head: Head | None = None) -> PWMParams | None:
         """
         Returns the driver-reported PWM parameters for the given head, or

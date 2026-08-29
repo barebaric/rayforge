@@ -58,6 +58,7 @@ class RuidaDriver(Driver):
     uses_gcode = False
     maturity = DriverMaturity.KNOWN_BUGGY
     native_overscan = True
+    supports_multi_depth_raster = False
     CONNECTION_TIMEOUT = 2.0
     RECONNECT_INTERVAL = 5.0
     KEEPALIVE_INTERVAL = 1.0

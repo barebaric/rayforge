@@ -19,9 +19,11 @@ from laser_essentials.widgets.raster_page import RasterSettingsPage
 from laser_essentials.widgets.raster_power_widget import RasterPowerWidget
 
 from rayforge.core.step_registry import step_registry
+from rayforge.pipeline.stage.assembler_helpers import DepthMode
 from rayforge.ui_gtk.doceditor.step_settings.dialog import StepSettingsDialog
 from rayforge.ui_gtk.doceditor.step_settings.pages import StepSettingsPage
 from rayforge.ui_gtk.shared.pref_rows import LengthSpinRow, SpeedSpinRow
+from rayforge.ui_gtk.varset.adapter.combo import ComboAdapter
 
 
 def _row(page, key):
@@ -417,6 +419,73 @@ def test_raster_page_mode_visibility(editor, laser_machine, ui_context):
     step.updated.send(step)
     assert threshold.get_visible() is False
     assert sample_interval.get_visible() is True
+
+
+def _depth_mode_adapter(page: RasterSettingsPage) -> ComboAdapter:
+    adapter = page.engrave_widget.adapter_for("depth_mode")
+    assert isinstance(adapter, ComboAdapter)
+    return adapter
+
+
+@pytest.mark.ui
+def test_raster_page_multi_depth_available_by_default(
+    editor, laser_machine, ui_context
+):
+    """G-code drivers keep the multi-depth entry selectable."""
+    step_cls = step_registry.get("EngraveStep")
+    assert step_cls is not None
+    step = cast(EngraveStep, step_cls.create(ui_context))
+    step.depth_mode = "MULTI_PASS"
+    page = RasterSettingsPage(editor, step)
+
+    assert _depth_mode_adapter(page)._disabled_displays == set()
+
+    row = _row(page, "depth_mode")
+    icon = page._speed_warning_icons.get(row)
+    assert icon is None or icon.get_visible() is False
+
+
+@pytest.mark.ui
+def test_raster_page_multi_depth_disabled_on_ruida(
+    editor, laser_machine, ui_context
+):
+    """Ruida machines grey out multi-depth and flag existing usage."""
+    laser_machine.driver_name = "RuidaDriver"
+    step_cls = step_registry.get("EngraveStep")
+    assert step_cls is not None
+    step = cast(EngraveStep, step_cls.create(ui_context))
+    step.depth_mode = "MULTI_PASS"
+    page = RasterSettingsPage(editor, step)
+
+    disabled = _depth_mode_adapter(page)._disabled_displays
+    assert DepthMode.MULTI_PASS.display_name in disabled
+
+    row = _row(page, "depth_mode")
+    icon = page._speed_warning_icons.get(row)
+    assert icon is not None
+    assert icon.get_visible() is True
+    tooltip = icon.get_tooltip_text() or ""
+    assert "Multiple Depths" in tooltip
+
+
+@pytest.mark.ui
+def test_raster_page_multi_depth_no_warning_when_not_selected(
+    editor, laser_machine, ui_context
+):
+    """A Ruida machine only warns when the step uses multi-depth."""
+    laser_machine.driver_name = "RuidaDriver"
+    step_cls = step_registry.get("EngraveStep")
+    assert step_cls is not None
+    step = cast(EngraveStep, step_cls.create(ui_context))
+    assert step.depth_mode == "POWER_MODULATION"
+    page = RasterSettingsPage(editor, step)
+
+    disabled = _depth_mode_adapter(page)._disabled_displays
+    assert DepthMode.MULTI_PASS.display_name in disabled
+
+    row = _row(page, "depth_mode")
+    icon = page._speed_warning_icons.get(row)
+    assert icon is None or icon.get_visible() is False
 
 
 @pytest.mark.ui

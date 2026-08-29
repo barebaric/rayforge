@@ -1245,6 +1245,26 @@ class TestMachine:
         assert machine.supports_travel_speed()
 
     @pytest.mark.asyncio
+    async def test_supports_multi_depth_raster(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
+        await wait_for_tasks_to_finish(task_mgr)
+        # G-code drivers support multi-depth rastering by default.
+        assert machine.supports_multi_depth_raster()
+
+    @pytest.mark.asyncio
+    async def test_supports_multi_depth_raster_ruida(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
+        """Ruida cannot raster the multi-depth depth mode."""
+        await wait_for_tasks_to_finish(task_mgr)
+        machine.set_driver(RuidaDriver, {"host": "test"})
+        await wait_for_tasks_to_finish(task_mgr)
+
+        assert machine.driver_name == "RuidaDriver"
+        assert not machine.supports_multi_depth_raster()
+
+    @pytest.mark.asyncio
     async def test_new_driver_methods_smoothie(
         self, machine: Machine, task_mgr: TaskManager
     ):

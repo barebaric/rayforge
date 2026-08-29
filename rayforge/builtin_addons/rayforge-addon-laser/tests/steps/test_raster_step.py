@@ -244,3 +244,40 @@ class TestEngraveComputePayload:
         step = EngraveStep(name="engrave")
         step.set_dither_algorithm("")
         assert step.dither_algorithm is None
+
+
+class TestEngraveCheck:
+    """Verifies EngraveStep.check() depth-mode capability warning."""
+
+    def _machine(self, supports_multi_depth: bool):
+        machine = MagicMock()
+        machine.max_cut_speed = 5000
+        machine.max_travel_speed = 10000
+        machine.supports_travel_speed.return_value = False
+        machine.supports_multi_depth_raster.return_value = supports_multi_depth
+        return machine
+
+    def test_no_warning_when_supported(self):
+        step = EngraveStep(name="engrave")
+        step.depth_mode = "MULTI_PASS"
+        machine = self._machine(supports_multi_depth=True)
+        assert step.check(machine) == []
+
+    def test_no_warning_for_other_modes(self):
+        step = EngraveStep(name="engrave")
+        step.depth_mode = "POWER_MODULATION"
+        machine = self._machine(supports_multi_depth=False)
+        assert step.check(machine) == []
+
+    def test_warning_on_unsupported_multi_pass(self):
+        step = EngraveStep(name="engrave")
+        step.depth_mode = "MULTI_PASS"
+        machine = self._machine(supports_multi_depth=False)
+        warnings = step.check(machine)
+        assert len(warnings) == 1
+        assert "Multiple Depths" in warnings[0]
+
+    def test_no_warning_without_machine(self):
+        step = EngraveStep(name="engrave")
+        step.depth_mode = "MULTI_PASS"
+        assert step.check(None) == []

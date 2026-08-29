@@ -1,10 +1,12 @@
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
-from gi.repository import GLib
+from gi.repository import Adw, GLib
 
 from rayforge.core.varset import VarSet
 from rayforge.machine.models.laser import LaserHead
+from rayforge.pipeline.stage.assembler_helpers import DepthMode
+from rayforge.ui_gtk.varset.adapter.combo import ComboAdapter
 
 from .laser_step_page import LaserStepSettingsPage
 from .levels_adapter import LevelsAdapter
@@ -129,6 +131,34 @@ class RasterSettingsPage(LaserStepSettingsPage):
             self._commit_power_range(widget, key)
             return
         super()._on_varset_data_changed(widget, key)
+
+    def _update_speed_warnings(self):
+        super()._update_speed_warnings()
+        self._sync_depth_mode_availability()
+
+    def _sync_depth_mode_availability(self):
+        """Grey out depth-mode entries the machine cannot raster.
+
+        Drivers without multi-depth raster support keep the option
+        visible but disabled, and the row carries the step's warning
+        when a project made for another machine holds that mode.
+        """
+        machine = self.get_machine()
+        disabled: set[str] = set()
+        unsupported = False
+        if machine is not None and not machine.supports_multi_depth_raster():
+            disabled = {DepthMode.MULTI_PASS.display_name}
+            unsupported = self.step.depth_mode == "MULTI_PASS"
+        message = "\n".join(self.step.check(machine)) if unsupported else ""
+        for widget, _var_set in self._varset_widgets:
+            adapter = widget.adapter_for("depth_mode")
+            if isinstance(adapter, ComboAdapter):
+                adapter.set_disabled_displays(disabled)
+            row = widget.row_for("depth_mode")
+            if row is not None:
+                self._set_row_warning(
+                    cast(Adw.ComboRow, row), unsupported, message
+                )
 
     def _commit_power_range(self, widget, moved_key):
         """Commit min/max power together, keeping min <= max.

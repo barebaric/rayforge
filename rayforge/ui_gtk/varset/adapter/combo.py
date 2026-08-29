@@ -29,6 +29,8 @@ class ComboAdapter(RowAdapter):
         super().__init__()
         self._row = row
         self._var = var
+        self._disabled_displays: set[str] = set()
+        self._disabled_factory_attached: bool = False
         self._row.connect(
             "notify::selected-item",
             lambda r, p: self.changed.send(self),
@@ -58,6 +60,41 @@ class ComboAdapter(RowAdapter):
         else:
             row.set_selected(0)
         return row, cls(row, var)
+
+    def set_disabled_displays(self, displays: set[str]) -> None:
+        """
+        Disables individual dropdown entries, keyed by display string.
+
+        Disabled entries stay visible but cannot be activated, so a
+        value that the current machine cannot handle remains readable.
+        The popup factory is attached lazily so combo rows without
+        disabled entries keep their default appearance.
+        """
+        if displays == self._disabled_displays:
+            return
+        self._disabled_displays = set(displays)
+        if self._disabled_displays and not self._disabled_factory_attached:
+            factory = Gtk.SignalListItemFactory()
+            factory.connect("setup", self._on_item_setup)
+            factory.connect("bind", self._on_item_bind)
+            self._row.set_factory(factory)
+            self._disabled_factory_attached = True
+
+    def _on_item_setup(
+        self, _factory: Gtk.SignalListItemFactory, list_item: Gtk.ListItem
+    ) -> None:
+        list_item.set_child(Gtk.Label(xalign=0))
+
+    def _on_item_bind(
+        self, _factory: Gtk.SignalListItemFactory, list_item: Gtk.ListItem
+    ) -> None:
+        item = list_item.get_item()
+        assert isinstance(item, Gtk.StringObject)
+        label = list_item.get_child()
+        assert isinstance(label, Gtk.Label)
+        display = item.get_string()
+        label.set_text(display)
+        label.set_sensitive(display not in self._disabled_displays)
 
     def get_value(self) -> Any | None:
         selected = self._row.get_selected_item()
