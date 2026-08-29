@@ -7,9 +7,8 @@ from raygeo.geo.types import Point as GeoPoint
 
 from ..constraints import (
     DistanceConstraint,
-    HorizontalConstraint,
+    PerpendicularConstraint,
     SymmetryConstraint,
-    VerticalConstraint,
 )
 from ..entities import Line, Point
 from ..types import EntityID
@@ -328,10 +327,10 @@ class RectangleCommand(SketchChangeCommand):
         ]
 
         constraints: list[Any] = [
-            HorizontalConstraint(points["p1_id"], points["p2"].id),
-            VerticalConstraint(points["p2"].id, points["p3"].id),
-            HorizontalConstraint(points["p4"].id, points["p3"].id),
-            VerticalConstraint(points["p1_id"], points["p4"].id),
+            PerpendicularConstraint(entities[0].id, entities[1].id),
+            PerpendicularConstraint(entities[1].id, entities[2].id),
+            PerpendicularConstraint(entities[2].id, entities[3].id),
+            PerpendicularConstraint(entities[3].id, entities[0].id),
             SymmetryConstraint(
                 points["p1_id"],
                 points["p3"].id,
@@ -340,31 +339,18 @@ class RectangleCommand(SketchChangeCommand):
             ),
         ]
 
-        top_edge_y = min(ay1, ay2)
-        right_edge_x = max(ax1, ax2)
-
-        if top_edge_y == ay1:
-            top_edge_p1 = points["p1_id"]
-            top_edge_p2 = points["p2"].id
-        else:
-            top_edge_p1 = points["p4"].id
-            top_edge_p2 = points["p3"].id
-
-        if right_edge_x == ax2:
-            right_edge_p1 = points["p2"].id
-            right_edge_p2 = points["p3"].id
-        else:
-            right_edge_p1 = points["p1_id"]
-            right_edge_p2 = points["p4"].id
-
         if fixed_width is not None:
             constraints.append(
-                DistanceConstraint(top_edge_p1, top_edge_p2, fixed_width)
+                DistanceConstraint(
+                    points["p1_id"], points["p2"].id, fixed_width
+                )
             )
 
         if fixed_height is not None:
             constraints.append(
-                DistanceConstraint(right_edge_p1, right_edge_p2, fixed_height)
+                DistanceConstraint(
+                    points["p2"].id, points["p3"].id, fixed_height
+                )
             )
 
         return {

@@ -4,9 +4,8 @@ from sketcher.core.commands import (
     RectanglePreviewState,
 )
 from sketcher.core.constraints import (
-    HorizontalConstraint,
+    PerpendicularConstraint,
     SymmetryConstraint,
-    VerticalConstraint,
 )
 from sketcher.core.entities import Point
 
@@ -154,11 +153,8 @@ def test_rectangle_command_execute_no_snap():
     assert len(sketch.registry.entities) == 4
     assert len(sketch.constraints) == 5
     assert (
-        sum(isinstance(c, HorizontalConstraint) for c in sketch.constraints)
-        == 2
-    )
-    assert (
-        sum(isinstance(c, VerticalConstraint) for c in sketch.constraints) == 2
+        sum(isinstance(c, PerpendicularConstraint) for c in sketch.constraints)
+        == 4
     )
     assert (
         sum(isinstance(c, SymmetryConstraint) for c in sketch.constraints) == 1
