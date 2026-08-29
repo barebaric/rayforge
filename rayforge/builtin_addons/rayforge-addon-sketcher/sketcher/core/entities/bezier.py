@@ -11,7 +11,7 @@ from raygeo.geo.types import Point as GeoPoint
 from raygeo.geo.types import Polygon, Rect
 
 from ..types import EntityID
-from .entity import Entity
+from .entity import Entity, _quantize
 
 if TYPE_CHECKING:
     from ..commands.mirror import MirrorAxis
@@ -57,6 +57,24 @@ class Bezier(Entity):
             self.cp1 = axis.flip_offset(self.cp1)
         if self.cp2 is not None:
             self.cp2 = axis.flip_offset(self.cp2)
+
+    def geometry_signature(self, registry: "EntityRegistry") -> tuple:
+        """Extends the point signature with the quantized
+        control-point offsets, which shape the curve without moving
+        any defining point."""
+        return (
+            *super().geometry_signature(registry),
+            (
+                (_quantize(self.cp1[0]), _quantize(self.cp1[1]))
+                if self.cp1 is not None
+                else None
+            ),
+            (
+                (_quantize(self.cp2[0]), _quantize(self.cp2[1]))
+                if self.cp2 is not None
+                else None
+            ),
+        )
 
     def get_control_points(
         self, registry: "EntityRegistry"

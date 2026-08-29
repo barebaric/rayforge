@@ -79,6 +79,7 @@ class SketchChangeCommand(Command):
         self.sketch = sketch
         # Stores ( {point_id: (x, y)}, {entity_id: state_dict} )
         self._snapshot: tuple[dict[int, Point], dict[int, Any]] | None = None
+        self._capture_snapshot = True
 
     @staticmethod
     def start_preview(
@@ -182,7 +183,7 @@ class SketchChangeCommand(Command):
 
     def execute(self) -> None:
         # If a snapshot wasn't provided during initialization, capture it now.
-        if self._snapshot is None:
+        if self._capture_snapshot and self._snapshot is None:
             self.capture_snapshot()
 
         self._do_execute()

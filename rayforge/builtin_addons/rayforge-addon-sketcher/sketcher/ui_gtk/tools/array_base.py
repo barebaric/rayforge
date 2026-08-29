@@ -9,35 +9,40 @@ from typing import TYPE_CHECKING, Any, ClassVar
 import cairo
 from gi.repository import Adw, Gtk
 
-from ...core.commands import CreatePatternCommand, EditPatternCommand
+from ...core.arrays import (
+    CircularArray,
+    CurveAlongArray,
+    InstancePlacement,
+    resolve_template_center,
+)
+from ...core.commands import CreateArrayCommand, EditArrayCommand
 from ...core.entities import Arc, Bezier, Circle, Ellipse, Line
-from ...core.patterns import make_pattern_strategy
 from .base import SketcherKey, SketchTool
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
+    from ...core.arrays import Array
     from ...core.entities import Entity
-    from ...core.patterns import PatternDefinition, SketchArrayMode
     from ...core.registry import EntityRegistry
 
 
 class ArrayToolBase(SketchTool):
     """
-    Base class for pattern/array tools.
+    Base class for array tools.
 
-    Handles seed capture, a non-modal parameter dialog with live preview,
-    canvas interaction for placing the pattern anchor, and committing a
-    CreatePatternCommand. When an edit target is set before activation,
-    the tool edits an existing pattern definition instead: parameters are
+    Handles template capture, a non-modal parameter dialog with live preview,
+    canvas interaction for placing the array anchor, and committing a
+    CreateArrayCommand. When an edit target is set before activation,
+    the tool edits an existing array definition instead: parameters are
     pre-filled from its master geometry and applying regenerates the
-    instances via an EditPatternCommand.
+    instances via an EditArrayCommand.
 
     Subclasses provide mode-specific parameters, dialog rows, and command
     assembly.
     """
 
-    MODE: ClassVar[SketchArrayMode]
+    ARRAY_TYPE: ClassVar[type[Array]]
     DIALOG_TITLE: ClassVar[str]
     EDIT_DIALOG_TITLE: ClassVar[str] = ""
     GROUP_TITLE: ClassVar[str] = ""
@@ -49,10 +54,9 @@ class ArrayToolBase(SketchTool):
     def __init__(self, element):
         super().__init__(element)
         self._dialog: Adw.Window | None = None
-        self._params: Any = None
-        self._edit_target: PatternDefinition | None = None
-        self._seed_entity_ids: list[int] = []
-        self._seed_points: list[tuple[float, float]] = []
+        self._strategy: Any = None
+        self._edit_target: Array | None = None
+        self._template_entity_ids: list[int] = []
         self._updating_rows = False
 
     # ------------------------------------------------------------------
@@ -62,15 +66,15 @@ class ArrayToolBase(SketchTool):
     def is_available(self, target, target_type) -> bool:
         return bool(self.element.selection.entity_ids)
 
-    def set_edit_target(self, pattern: PatternDefinition) -> None:
+    def set_edit_target(self, array_def: Array) -> None:
         """
-        Arms the tool for editing an existing pattern. Must be called
+        Arms the tool for editing an existing array. Must be called
         before the tool is activated (e.g. before set_tool()).
         """
-        self._edit_target = pattern
+        self._edit_target = array_def
 
-    def is_available_for_edit(self, pattern: PatternDefinition) -> bool:
-        return self.MODE == pattern.mode
+    def is_available_for_edit(self, array_def: Array) -> bool:
+        return isinstance(array_def, self.ARRAY_TYPE)
 
     def on_activate(self):
         if self._edit_target is not None:
@@ -79,17 +83,16 @@ class ArrayToolBase(SketchTool):
             return
 
         registry = self.element.sketch.registry
-        self._seed_entity_ids = [
+        self._template_entity_ids = [
             eid
             for eid in self.element.selection.entity_ids
             if registry.get_entity(eid) is not None
         ]
-        if not self._seed_entity_ids:
+        if not self._template_entity_ids:
             self.element.set_tool("select")
             return
 
-        self._capture_seed_geometry(registry)
-        self._params = self._make_default_params()
+        self._strategy = self._make_default_strategy()
         self._show_dialog()
 
     def _begin_edit(self) -> bool:
@@ -100,38 +103,41 @@ class ArrayToolBase(SketchTool):
         if not living:
             return False
         _template_slot, template_eids = living[0]
-        self._seed_entity_ids = list(template_eids)
-        self._capture_seed_geometry(registry)
-        self._params = self._make_params_from_target()
+        self._template_entity_ids = list(template_eids)
+        self._strategy = self._make_strategy_from_target()
         logger.info(
-            "ArrayTool: begin edit uid=%s living=%r params=%r",
+            "ArrayTool: begin edit uid=%s living=%r strategy=%r",
             self._edit_target.uid[:8],
             living,
-            self._params,
+            self._strategy,
         )
         self._show_dialog()
         return True
 
     def on_deactivate(self):
         self._close_dialog()
-        self._params = None
+        self._strategy = None
         self._edit_target = None
 
-    def _capture_seed_geometry(self, registry: EntityRegistry):
-        seed_pids = CreatePatternCommand.collect_seed_point_ids(
-            registry, self._seed_entity_ids
-        )
-        self._seed_points = []
-        for pid in seed_pids:
-            pt = registry.get_point(pid)
-            self._seed_points.append((pt.x, pt.y))
-
-    def _seed_bbox_center(self) -> tuple[float, float]:
-        if not self._seed_points:
+    def _captured_template_center(self) -> tuple[float, float]:
+        """Resolves the template center with the exact same logic the
+        CreateArrayCommand uses, so the preview places its ghosts
+        exactly where Apply will place the members."""
+        registry = self.element.sketch.registry
+        if not self._template_entity_ids:
             return (0.0, 0.0)
-        xs = [p[0] for p in self._seed_points]
-        ys = [p[1] for p in self._seed_points]
-        return ((min(xs) + max(xs)) / 2.0, (min(ys) + max(ys)) / 2.0)
+        points = []
+        for eid in self._template_entity_ids:
+            entity = registry.get_entity(eid)
+            if entity is None:
+                continue
+            for pid in entity.get_point_ids():
+                pt = registry.get_point(pid)
+                if pt is not None:
+                    points.append(pt)
+        return resolve_template_center(
+            registry, self._template_entity_ids, points
+        )
 
     @property
     def _is_editing(self) -> bool:
@@ -141,11 +147,11 @@ class ArrayToolBase(SketchTool):
     # Subclass hooks
     # ------------------------------------------------------------------
 
-    def _make_default_params(self) -> Any:
-        """Creates initial parameters for creating a new pattern."""
+    def _make_default_strategy(self) -> Any:
+        """Creates initial parameters for creating a new array."""
         raise NotImplementedError
 
-    def _make_params_from_target(self) -> Any:
+    def _make_strategy_from_target(self) -> Any:
         """Creates initial parameters from the current edit target."""
         raise NotImplementedError
 
@@ -153,9 +159,9 @@ class ArrayToolBase(SketchTool):
         raise NotImplementedError
 
     def _sync_params_from_rows(self) -> None:
-        """Reads current widget values into self._params."""
+        """Reads current widget values into self._strategy."""
 
-    def _make_create_command(self) -> CreatePatternCommand | None:
+    def _make_create_command(self) -> CreateArrayCommand | None:
         raise NotImplementedError
 
     # ------------------------------------------------------------------
@@ -221,7 +227,7 @@ class ArrayToolBase(SketchTool):
             logger.warning("ArrayTool: apply skipped, no command built")
             return
         logger.info(
-            "ArrayTool: applying %s with %r", type(cmd).__name__, cmd.params
+            "ArrayTool: applying %s with %r", type(cmd).__name__, cmd.strategy
         )
         self.element.execute_command(cmd)
         if cmd.created_entity_ids:
@@ -245,10 +251,10 @@ class ArrayToolBase(SketchTool):
 
     def _collect_command(self):
         if self._is_editing:
-            assert self._params is not None
+            assert self._strategy is not None
             assert self._edit_target is not None
-            return EditPatternCommand(
-                self.element.sketch, self._edit_target, self._params
+            return EditArrayCommand(
+                self.element.sketch, self._edit_target, self._strategy
             )
         return self._make_create_command()
 
@@ -268,7 +274,7 @@ class ArrayToolBase(SketchTool):
     def on_press(self, world_x: float, world_y: float, n_press: int) -> bool:
         """
         Canvas clicks are deliberately ignored: an accidental click or
-        pan attempt must never relocate the pattern center. The center
+        pan attempt must never relocate the array center. The center
         is set numerically (and stays draggable afterwards via the guide
         circle's own center point).
         """
@@ -298,11 +304,18 @@ class ArrayToolBase(SketchTool):
     # ------------------------------------------------------------------
 
     def draw_overlay(self, ctx: cairo.Context):
-        if self._dialog is None or self._params is None:
+        if self._dialog is None or self._strategy is None:
             return
         registry = self.element.sketch.registry
-        strategy = self._make_strategy()
-        placements = strategy.calculate_placements(self._seed_bbox_center())
+        strategy = self._strategy
+        template_center = self._captured_template_center()
+        placements = strategy.member_placements(template_center, registry)
+        # In create mode the template has not been placed on the guide
+        # yet; ghost its position-0 destination too, using the exact
+        # placement Apply will move it by.
+        slot0: InstancePlacement | None = None
+        if self._edit_target is None:
+            slot0 = strategy.template_placement(template_center, registry)
         # Preview must mirror what Apply will do: when the parameters
         # changed, everything but the template is re-distributed, so
         # ghost every non-template slot. Otherwise only truly missing
@@ -323,7 +336,20 @@ class ArrayToolBase(SketchTool):
         ctx.set_dash([5.0, 4.0])
         ctx.set_source_rgba(*self.PREVIEW_COLOR)
 
-        polylines = _collect_seed_polylines(registry, self._seed_entity_ids)
+        polylines = _collect_template_polylines(
+            registry, self._template_entity_ids
+        )
+        if slot0 is not None:
+            # Create mode: the template is still at its drawn
+            # position. Every member — including slot 0 — derives
+            # from the PLACED template, so compose the position-0
+            # placement into the ghosts.
+            polylines = [
+                [slot0.transform_point(x, y) for x, y in polyline]
+                for polyline in polylines
+            ]
+            for polyline in polylines:
+                _stroke_polyline(ctx, model_to_screen, polyline)
         for index, placement in enumerate(placements):
             if index + 1 in occupied_slots:
                 continue
@@ -339,24 +365,30 @@ class ArrayToolBase(SketchTool):
     def _would_full_regen(self) -> bool:
         """True if applying now would re-distribute all members."""
         target = self._edit_target
-        assert self._params is not None
+        assert self._strategy is not None
         if target is None:
             return False
-        return (
-            self._params.count != target.count
-            or self._params.total_angle_deg != target.total_angle_deg
-            or self._params.rotate_copies != target.rotate_copies
-        )
-
-    def _make_strategy(self):
-        assert self._params is not None
-        return make_pattern_strategy(self.MODE, self._params)
+        if self._strategy.count != target.count:
+            return True
+        if isinstance(target, CircularArray):
+            return (
+                self._strategy.rotate_copies != target.rotate_copies
+                or self._strategy.total_angle_deg != target.total_angle_deg
+            )
+        if isinstance(target, CurveAlongArray):
+            return (
+                self._strategy.path_entity_id != target.path_entity_id
+                or self._strategy.align_to_tangent != target.align_to_tangent
+                or self._strategy.offset_to_start != target.offset_to_start
+                or self._strategy.spacing != target.spacing
+            )
+        return False
 
     def _draw_guide(self, ctx: cairo.Context, model_to_screen, strategy):
         """Draws the guide circle and center marker."""
         if not strategy.needs_center_point:
             return
-        center = self._params.center
+        center = strategy.center
         sx, sy = model_to_screen.transform_point(*center)
         ctx.save()
         cross = 8.0
@@ -368,7 +400,7 @@ class ArrayToolBase(SketchTool):
         ctx.line_to(sx, sy + cross)
         ctx.stroke()
 
-        radius = self._params.radius
+        radius = strategy.radius
         if radius > 0.0:
             radius_pt = model_to_screen.transform_point(
                 center[0] + radius, center[1]
@@ -386,7 +418,7 @@ class ArrayToolBase(SketchTool):
 # ----------------------------------------------------------------------
 
 
-def _collect_seed_polylines(
+def _collect_template_polylines(
     registry: EntityRegistry, entity_ids: list[int]
 ) -> list[list[tuple[float, float]]]:
     polylines: list[list[tuple[float, float]]] = []

@@ -141,16 +141,16 @@ class SketchTool(ABC):
         """
         return self.ICON is not None and self.LABEL is not None
 
-    def is_available_for_edit(self, pattern) -> bool:
+    def is_available_for_edit(self, array_def) -> bool:
         """
-        Returns True if this tool can edit the given pattern definition.
-        Pattern tools override this; all other tools return False.
+        Returns True if this tool can edit the given array definition.
+        Array tools override this; all other tools return False.
         """
         return False
 
-    def set_edit_target(self, pattern) -> None:
+    def set_edit_target(self, array_def) -> None:
         """
-        Arms a pattern tool for editing an existing pattern definition.
+        Arms an array tool for editing an existing array definition.
         Must be called before the tool is activated. No-op by default.
         """
 

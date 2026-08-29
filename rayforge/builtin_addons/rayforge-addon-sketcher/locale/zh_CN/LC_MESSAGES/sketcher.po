@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-25 10:44+0200\n"
+"POT-Creation-Date: 2026-08-29 01:30+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -71,7 +71,7 @@ msgid "Line to {} at {}"
 msgstr "直线到 {} 在 {}"
 
 #: sketcher/core/constraints/rotational.py
-msgid "Rotational Pattern"
+msgid "Rotational Array"
 msgstr "旋转阵列"
 
 #: sketcher/core/constraints/distance.py
@@ -188,10 +188,6 @@ msgstr "设置文本填充"
 msgid "Edit Constraint"
 msgstr "编辑约束"
 
-#: sketcher/core/commands/edit_pattern.py
-msgid "Edit Pattern"
-msgstr "编辑阵列"
-
 #: sketcher/core/commands/bezier.py sketcher/core/commands/line.py
 msgid "Add Line"
 msgstr "添加直线"
@@ -211,6 +207,10 @@ msgstr "添加 {}"
 #: sketcher/core/commands/grid.py
 msgid "Add Grid"
 msgstr "添加网格"
+
+#: sketcher/core/commands/edit_array.py
+msgid "Edit Array"
+msgstr "编辑阵列"
 
 #: sketcher/core/commands/chamfer.py
 msgid "Add Chamfer"
@@ -233,6 +233,10 @@ msgstr "拉直"
 msgid "Duplicate Selection"
 msgstr "复制选择"
 
+#: sketcher/core/commands/create_array.py
+msgid "Create Array"
+msgstr "创建阵列"
+
 #: sketcher/core/commands/rounded_rect.py
 msgid "Add Rounded Rectangle"
 msgstr "添加圆角矩形"
@@ -248,10 +252,6 @@ msgstr "修改文本属性"
 #: sketcher/core/commands/waypoint.py
 msgid "Set Waypoint Type"
 msgstr "设置路点类型"
-
-#: sketcher/core/commands/create_pattern.py
-msgid "Create Pattern"
-msgstr "创建阵列"
 
 #: sketcher/core/commands/point.py
 msgid "Move Point"
@@ -462,7 +462,8 @@ msgstr "添加角度约束"
 msgid "Fill"
 msgstr "填充"
 
-#: sketcher/ui_gtk/tools/arc_tool.py sketcher/ui_gtk/menu.py
+#: sketcher/ui_gtk/tools/arc_tool.py
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py sketcher/ui_gtk/menu.py
 msgid "Arc"
 msgstr "圆弧"
 
@@ -523,6 +524,7 @@ msgid "Places copies along a circular arc around a centre."
 msgstr "沿圆弧围绕中心放置副本。"
 
 #: sketcher/ui_gtk/tools/circular_array_tool.py
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
 msgid "Count"
 msgstr "数量"
 
@@ -547,12 +549,62 @@ msgid "Resizes the whole array."
 msgstr "调整整个阵列的大小。"
 
 #: sketcher/ui_gtk/tools/circular_array_tool.py
-msgid "Derived from the seed's anchor point."
-msgstr "由源实体的锚点派生。"
+msgid "Derived from the template's anchor point."
+msgstr "源自模板的锚点。"
 
 #: sketcher/ui_gtk/tools/delete_tool.py
 msgid "Delete Selection"
 msgstr "删除选中项"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Line"
+msgstr "直线"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Bezier"
+msgstr "贝塞尔"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py sketcher/ui_gtk/menu.py
+msgid "Array Along Curve"
+msgstr "沿曲线阵列"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Edit Array Along Curve"
+msgstr "编辑沿曲线阵列"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Along Curve"
+msgstr "沿曲线"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Distributes copies along a guide path, oriented to its tangent."
+msgstr "沿引导路径分布副本，方向与其切线一致。"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Guide path"
+msgstr "引导路径"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "First selected entity; the rest are repeated."
+msgstr "第一个选中的实体；其余的进行重复。"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Spacing"
+msgstr "间距"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid ""
+"Distance between copies. 0 derives count from the path length; >0 sets the "
+"count from the usable length."
+msgstr "副本之间的距离。0 根据路径长度推算数量；>0 根据可用长度设置数量。"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Start offset"
+msgstr "起始偏移"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Align to tangent"
+msgstr "对齐到切线"
 
 #: sketcher/ui_gtk/tools/rounded_rect_tool.py sketcher/ui_gtk/menu.py
 msgid "Rounded Rectangle"

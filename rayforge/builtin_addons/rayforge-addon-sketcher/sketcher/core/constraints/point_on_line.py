@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 import cairo
 from raygeo.geo.types import Point
 
-from ..entities import Arc, Circle, Line
+from ..entities import Arc, Circle, Line, TextBoxEntity
 from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 
@@ -264,8 +264,6 @@ class PointOnLineConstraint(Constraint):
         is_hovered: bool = False,
         point_radius: float = 5.0,
     ) -> None:
-        from ..entities import TextBoxEntity
-
         # Hide constraint if its point is part of a text box
         text_box_point_ids = set()
         for entity in registry.entities:

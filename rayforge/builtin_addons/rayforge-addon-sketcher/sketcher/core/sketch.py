@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 import math
@@ -24,6 +25,7 @@ from rayforge.core.varset import VarSet
 from rayforge.image.geo_renderer import render_geometry_to_png
 from rayforge.image.structures import FillRenderData, FillStyle
 
+from .arrays import Array
 from .constraints import (
     AngleConstraint,
     AspectRatioConstraint,
@@ -57,7 +59,6 @@ from .entities import (
 )
 from .entities.point import Point, WaypointType
 from .params import ParameterContext
-from .patterns import PatternDefinition
 from .registry import EntityRegistry
 from .solver import Solver
 from .template_functions import get_template_functions
@@ -166,6 +167,11 @@ class Sketch(IAsset, IGeometryProvider):
     activate_action: ClassVar[str | None] = "activate-sketch"
     edit_item_action: ClassVar[str | None] = "edit-sketch-item"
 
+    # Reentrancy guard for solve(). Class-level default so instances
+    # created without __init__ (e.g. _clone_for_geometry via __new__)
+    # always observe False.
+    _solving: bool = False
+
     def __init__(self, name: str = "New Sketch") -> None:
         self._uid: str = str(uuid.uuid4())
         self._name = name
@@ -173,7 +179,7 @@ class Sketch(IAsset, IGeometryProvider):
         self.registry = EntityRegistry()
         self.constraints: list[Constraint] = []
         self.fills: list[Fill] = []
-        self.patterns: list[PatternDefinition] = []
+        self.arrays: list[Array] = []
         self.input_parameters = VarSet(
             title=_DEFAULT_VARSET_TITLE,
             description=_DEFAULT_VARSET_DESCRIPTION,
@@ -246,6 +252,9 @@ class Sketch(IAsset, IGeometryProvider):
     @property
     def renderer(self):
         """The renderer to use for rendering this sketch's geometry."""
+        # Local import: sketcher.image.importer imports this package
+        # (sketcher.core) at runtime, so a module-level import would
+        # be circular.
         from ..image.renderer import SKETCH_RENDERER
 
         return SKETCH_RENDERER
@@ -296,35 +305,46 @@ class Sketch(IAsset, IGeometryProvider):
 
         Copies only the mutable state modified by solve (point positions,
         parameter context) while sharing structural data (entities,
-        constraints, fills, patterns) by reference.  Much faster than
+        constraints, fills) by reference.  Much faster than
         the full to_dict / from_dict round-trip.
+
+        Entity/constraint *lists* and the array *definitions* are
+        copied, not shared: the clone runs a full solve, whose
+        sync_arrays may re-apply arrays (removing/adding
+        entities, dropping constraints, rewriting Array
+        members).  Sharing those containers would corrupt the
+        original sketch's registry.
         """
         clone = Sketch.__new__(Sketch)
         clone._uid = self._uid
         clone._name = self._name
         clone._hidden = self._hidden
         clone.origin_id = self.origin_id
-        clone._updated = self._updated
+        # Fresh signal: the clone must not trigger the original's
+        # subscribers (solve/repaint) mid-clone-solve.
+        clone._updated = Signal()
 
         # Shallow-copy the registry: new Point objects (solver mutates x/y),
-        # shared entity list (solver does not touch entity objects).
+        # copied entity list (sync_arrays may rebuild it).
         clone.registry = EntityRegistry()
         clone.registry.points = [
             Point(p.id, p.x, p.y, p.fixed, p.waypoint_type)
             for p in self.registry.points
         ]
-        clone.registry.entities = self.registry.entities
-        clone.registry._entity_map = self.registry._entity_map
+        clone.registry.entities = list(self.registry.entities)
+        clone.registry._entity_map = dict(self.registry._entity_map)
         clone.registry._id_counter = self.registry._id_counter
 
         # ParameterContext: copy expressions so evaluate_all on the clone
         # does not disturb the original's cache.
         clone.params = ParameterContext.from_dict(self.params.to_dict())
 
+        # Copy containers and definitions that a solve may mutate
+        # (removals/extensions during an array re-apply).
+        clone.constraints = list(self.constraints)
+        clone.arrays = copy.deepcopy(self.arrays)
         # Share references to data not mutated by solve.
-        clone.constraints = self.constraints
         clone.fills = self.fills
-        clone.patterns = self.patterns
         clone.input_parameters = self.input_parameters
 
         # Fresh mutable state for the solve cycle.
@@ -437,7 +457,7 @@ class Sketch(IAsset, IGeometryProvider):
             "registry": self.registry.to_dict(),
             "constraints": [c.to_dict() for c in self.constraints],
             "fills": [f.to_dict() for f in self.fills],
-            "patterns": [p.to_dict() for p in self.patterns],
+            "arrays": [p.to_dict() for p in self.arrays],
             "origin_id": self.origin_id,
             "hidden": self._hidden,
         }
@@ -493,106 +513,130 @@ class Sketch(IAsset, IGeometryProvider):
         for f_data in data.get("fills", []):
             new_sketch.fills.append(Fill.from_dict(f_data))
 
-        new_sketch.patterns = [
-            PatternDefinition.from_dict(p_data)
-            for p_data in data.get("patterns", [])
+        new_sketch.arrays = [
+            Array.from_dict(p_data) for p_data in data.get("arrays", [])
         ]
 
         new_sketch._hidden = data.get("hidden", False)
         return new_sketch
 
-    def prune_patterns(self) -> None:
+    def prune_arrays(self) -> None:
         """
-        Removes pattern definitions whose master geometry is gone and
-        drops deleted entities from member groups. Groups themselves are
-        never dissolved by deletion; deleting them does not dissolve the
-        pattern as long as the master geometry still exists.
+        Removes arrays whose master geometry is gone. Groups themselves
+        are never dissolved by deletion; deleting them does not
+        dissolve the array as long as the master geometry still exists.
         """
-        registry = self.registry
-        surviving: list[PatternDefinition] = []
-        for pattern in self.patterns:
-            if registry.get_entity(pattern.guide_circle_id) is None:
-                continue
-            pattern.members = pattern.living_members(registry)
-            surviving.append(pattern)
-        self.patterns = surviving
+        self.arrays = [
+            array for array in self.arrays if array.prune(self.registry)
+        ]
 
-    def get_pattern_constraint_indices_for_entities(
-        self, entity_ids: set[int]
-    ) -> set[int]:
+    def sync_arrays(self) -> None:
         """
-        Returns indices (into self.constraints) of pattern dimension
-        constraints (radius of the guide circle) for patterns containing
-        one of the given entities. These must be excluded from solves
-        during member drags so the dimension follows instead of fights.
+        Re-applies every array whose guide or template has changed
+        since the last sync.
+
+        Array copies are static baked geometry: they don't carry
+        solver constraints. When the user edits the guide (the guide
+        path of a curve array, the guide circle of a circular array)
+        or the template member, this method detects the change (by
+        comparing cached signatures of the guide's and template's
+        geometry — including Bezier control-point offsets) and re-runs
+        ``EditArrayCommand`` to re-derive the copies. For circular
+        arrays a guide edit similarity-transforms the template into
+        the new guide frame first, so the template stays on the guide.
+        Called after each solve.
+        """
+        for array in self.arrays:
+            guide_sig = array.guide_signature(self.registry)
+            if not guide_sig:
+                continue
+            template_sig = array.template_signature(self.registry)
+            if array.signatures_changed(guide_sig, template_sig):
+                self._reapply_array(array)
+                template_sig = array.template_signature(self.registry)
+            array.update_caches(guide_sig, template_sig)
+
+    def _reapply_array(self, array_def: Array) -> None:
+        """Re-distributes all copies of an array from its current
+        guide and template geometry."""
+        # Local import: the commands package __init__ pulls in modules
+        # that import this module at runtime (e.g. fill), so a
+        # module-level import would be circular.
+        from .commands.edit_array import EditArrayCommand
+
+        cmd = EditArrayCommand(
+            self,
+            array_def,
+            array_def.make_strategy(self.registry),
+            force_full_regen=True,
+            capture_snapshot=False,
+            old_frame=array_def._cached_guide_frame,
+        )
+        cmd.execute()
+
+    def is_array_guide_radius_point(self, pid: int) -> bool:
+        """
+        True when the point is the radius point of an array's
+        construction circle. Its position is governed by the radius
+        dimension (the array's size definition), so drags must not
+        move it.
+        """
+        return any(
+            array.is_guide_radius_point(self.registry, pid)
+            for array in self.arrays
+        )
+
+    def get_derived_point_ids(self) -> set[int]:
+        """
+        Returns the point ids whose position is owned by a master
+        object rather than by the user: the member entities of all
+        arrays (templates and their derived copies). Hit-testing
+        deprioritizes them in favor of coinciding user geometry.
+        """
+        pids: set[int] = set()
+        for array in self.arrays:
+            for _slot, entity_ids in array.members:
+                for eid in entity_ids:
+                    entity = self.registry.get_entity(eid)
+                    if entity is not None:
+                        pids.update(entity.get_point_ids())
+        return pids
+
+    def get_internal_constraints(
+        self, entity_ids: set[int] | list[int]
+    ) -> list[Constraint]:
+        """
+        Returns the constraints that hold a group of entities together
+        as one shape: every point and entity they reference belongs to
+        the group (e.g. the coincident edge/corner-arc endpoints or the
+        line/arc tangencies of a rounded rectangle). Constraints
+        referencing only entities (e.g. tangents) are internal when
+        both entities are in the group.
+
+        Constraints referencing anything outside the group (the
+        origin, other geometry) are global and excluded — and so are
+        world-anchored orientation constraints (horizontal/vertical):
+        they pin the shape to the world axes and would fight any
+        array rotation.
         """
         wanted = set(entity_ids)
-        indices: set[int] = set()
-        for idx, constr in enumerate(self.constraints):
-            if not isinstance(constr, RadiusConstraint):
-                continue
-            for pattern in self.patterns:
-                if (
-                    pattern.guide_circle_id == constr.entity_id
-                    and set(pattern.living_entity_ids(self.registry)) & wanted
-                ):
-                    indices.add(idx)
-                    break
-        return indices
+        group_pids: set[int] = set()
+        for eid in wanted:
+            entity = self.registry.get_entity(eid)
+            if entity is not None:
+                group_pids.update(entity.get_point_ids())
 
-    def sync_pattern_dimensions(self, entity_ids: set[int]) -> None:
-        """
-        Updates the radius dimension of every pattern touched by the
-        given entities to match the guide circle's current geometry.
-        Called after member drags, where the radius dimension was
-        excluded from the interactive solves and must follow the
-        dragged geometry instead of fighting it.
-        """
-        wanted = set(entity_ids)
-        for pattern in self.patterns:
-            member_ids = set(pattern.living_entity_ids(self.registry))
-            if not member_ids & wanted:
+        internal: list[Constraint] = []
+        for constr in self.constraints:
+            if isinstance(constr, (HorizontalConstraint, VerticalConstraint)):
                 continue
-            circle = self.registry.get_entity(pattern.guide_circle_id)
-            if not isinstance(circle, Circle):
+            pids = constr.get_referenced_point_ids()
+            eids = constr.get_referenced_entity_ids()
+            if not (pids & group_pids or eids & wanted):
                 continue
-            try:
-                center = self.registry.get_point(circle.center_idx)
-                radius_pt = self.registry.get_point(circle.radius_pt_idx)
-            except IndexError:
-                continue
-            radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
-            for constr in self.constraints:
-                if (
-                    isinstance(constr, RadiusConstraint)
-                    and constr.entity_id == pattern.guide_circle_id
-                ):
-                    constr.value = radius
-
-    def get_pattern_points_for_entities(
-        self, entity_ids: set[int]
-    ) -> set[int]:
-        """
-        Returns all points belonging to any pattern that contains one of
-        the given entities (member geometry plus master circle). During
-        drags these points must stay free of holding constraints so the
-        pattern's linkage constraints can carry the whole array.
-        """
-        result: set[int] = set()
-        wanted = set(entity_ids)
-        registry = self.registry
-        for pattern in self.patterns:
-            member_ids = set(pattern.living_entity_ids(registry))
-            if not member_ids & wanted:
-                continue
-            for eid in member_ids:
-                entity = registry.get_entity(eid)
-                if entity is not None:
-                    result.update(entity.get_point_ids())
-            guide = registry.get_entity(pattern.guide_circle_id)
-            if guide is not None:
-                result.update(guide.get_point_ids())
-        return result
+            if pids <= group_pids and eids <= wanted:
+                internal.append(constr)
+        return internal
 
     @classmethod
     def from_file(cls, file_path: str | Path) -> "Sketch":
@@ -1331,12 +1375,20 @@ class Sketch(IAsset, IGeometryProvider):
                 this solve only, without permanently changing the sketch's
                 parameters. e.g., `{'width': 150.0}`.
             excluded_constraints: Indices (into self.constraints) of
-                constraints to skip for this solve, e.g. a pattern's radius
+                constraints to skip for this solve, e.g. an array's radius
                 dimension while a member is being dragged.
 
         Returns:
             True if the solver converged successfully.
         """
+        # Guard against recursive solves triggered by notify_update()
+        # during sync_arrays → EditArrayCommand.execute().  The
+        # outer solve already converged; the registry edits applied by
+        # the array re-apply are valid and will be picked up on the
+        # next user-initiated solve.
+        if self._solving:
+            return True
+        self._solving = True
         success = False
         try:
             # Step 1: Create a disposable ParameterContext clone for this
@@ -1423,6 +1475,15 @@ class Sketch(IAsset, IGeometryProvider):
             logger.exception("Sketch solve failed")
             success = False
 
+        # Re-apply arrays whose guide or template has moved. This is
+        # done after solving so the solver's final point positions are
+        # used, which keeps the members following drags live. Keep
+        # _solving=True so that notify_update() inside the command
+        # does not trigger a recursive solve.
+        try:
+            self.sync_arrays()
+        finally:
+            self._solving = False
         return success
 
     def _apply_conflict_status(self, conflicting_indices: set[int]) -> None:

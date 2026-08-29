@@ -208,6 +208,16 @@ class EntityRegistry:
         """Retrieves a geometric entity (Line/Arc/Circle) by ID in O(1)."""
         return self._entity_map.get(idx)
 
+    def geometry_signature(self, entity_id: EntityID) -> tuple | None:
+        """Returns the quantized shape signature of the entity with
+        the given ID, or None if no such entity exists. Delegates to
+        the entity's polymorphic implementation (see
+        ``Entity.geometry_signature``)."""
+        entity = self._entity_map.get(entity_id)
+        if entity is None:
+            return None
+        return entity.geometry_signature(self)
+
     def get_connected_entity_ids(
         self, start_entity_id: EntityID
     ) -> set[EntityID]:

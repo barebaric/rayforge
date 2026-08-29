@@ -3,21 +3,17 @@ from unittest.mock import MagicMock, patch
 
 import cairo
 import pytest
-from sketcher.core.commands import CreatePatternCommand, EditPatternCommand
-from sketcher.core.constraints import RotationalConstraint
+from sketcher.core.arrays import CircularArray, CircularArrayStrategy
+from sketcher.core.commands import CreateArrayCommand, EditArrayCommand
 from sketcher.core.entities import Circle
-from sketcher.core.params import ParameterContext
-from sketcher.core.patterns import CircularPatternParams, SketchArrayMode
-from sketcher.core.patterns.definition import PatternDefinition
 from sketcher.core.sketch import Sketch
 from sketcher.ui_gtk.tools import CircularArrayTool
 from sketcher.ui_gtk.tools.base import SketcherKey
 
 
-def make_pattern(sketch=None, guide_circle_id=99):
-    return PatternDefinition(
+def make_array(sketch=None, guide_circle_id=99):
+    return CircularArray(
         uid="test-uid",
-        mode=SketchArrayMode.CIRCULAR,
         guide_circle_id=guide_circle_id,
         members=[],
         count=8,
@@ -79,7 +75,7 @@ def test_on_activate_captures_seeds(
     _sketch, line, _p0, _p1 = sketch_with_selection
     tool.on_activate()
     mock_show_dialog.assert_called_once()
-    assert tool._seed_entity_ids == [line]
+    assert tool._template_entity_ids == [line]
 
 
 @patch.object(CircularArrayTool, "_show_dialog")
@@ -88,21 +84,22 @@ def test_default_params_derived_from_seed(
 ):
     _sketch, _line, _p0, _p1 = sketch_with_selection
     tool.on_activate()
-    params = tool._params
-    assert isinstance(params, CircularPatternParams)
-    assert params.count == 6
-    assert params.total_angle_deg == 360.0
-    assert params.rotate_copies is True
-    # Radius is derived from the anchor point (first seed point here),
-    # matching what CreatePatternCommand will apply.
-    assert params.radius == pytest.approx(5.0)
+    strategy = tool._strategy
+    assert isinstance(strategy, CircularArrayStrategy)
+    assert strategy.count == 6
+    assert strategy.total_angle_deg == 360.0
+    assert strategy.rotate_copies is True
+    # Radius is derived from the template's center, matching what
+    # CreateArrayCommand will apply. Template line (5,0)-(25,5):
+    # center (15, 2.5).
+    assert strategy.radius == pytest.approx(math.hypot(15.0, 2.5))
 
 
 @patch.object(CircularArrayTool, "_show_dialog")
 def test_creation_radius_always_matches_anchor(
     mock_show_dialog, tool, mock_element, sketch_with_selection
 ):
-    """User-entered radius must not diverge from the anchor-derived
+    """User-entered radius must not diverge from the center-derived
     circle at creation time (that mismatch caused the jump on apply)."""
     tool.on_activate()
     tool._count_row = MagicMock()
@@ -117,10 +114,10 @@ def test_creation_radius_always_matches_anchor(
     tool._radius_row.get_value_in_base_units.return_value = 200.0
     tool._rotate_switch = MagicMock()
     tool._rotate_switch.get_active.return_value = True
-    assert tool._params is not None
-    tool._params.radius = 200.0
+    assert tool._strategy is not None
+    tool._strategy.radius = 200.0
     tool._sync_params()
-    assert tool._params.radius == pytest.approx(5.0)
+    assert tool._strategy.radius == pytest.approx(math.hypot(15.0, 2.5))
 
 
 @patch.object(CircularArrayTool, "_show_dialog")
@@ -130,9 +127,9 @@ def test_collect_command_builds_create_command(
     _sketch, line, _p0, _p1 = sketch_with_selection
     tool.on_activate()
     cmd = tool._collect_command()
-    assert isinstance(cmd, CreatePatternCommand)
-    assert cmd.seed_entity_ids == [line]
-    assert not isinstance(cmd, EditPatternCommand)
+    assert isinstance(cmd, CreateArrayCommand)
+    assert cmd.template_entity_ids == [line]
+    assert not isinstance(cmd, EditArrayCommand)
 
 
 @patch.object(CircularArrayTool, "_show_dialog")
@@ -147,17 +144,17 @@ def test_edit_target_builds_edit_command(
     r = sketch.registry.add_point(30.0, 2.0)
     circle = sketch.registry.add_circle(c, r, construction=True)
 
-    pattern = make_pattern(sketch, guide_circle_id=circle)
-    pattern.members = [(0, [line])]
-    pattern.count = 8
-    pattern.total_angle_deg = 270.0
-    pattern.rotate_copies = False
+    array = make_array(sketch, guide_circle_id=circle)
+    array.members = [(0, [line])]
+    array.count = 8
+    array.total_angle_deg = 270.0
+    array.rotate_copies = False
 
-    tool.set_edit_target(pattern)
+    tool.set_edit_target(array)
     tool.on_activate()
 
     assert tool._is_editing
-    params = tool._params
+    params = tool._strategy
     assert params.count == 8
     assert params.total_angle_deg == 270.0
     assert params.rotate_copies is False
@@ -165,8 +162,8 @@ def test_edit_target_builds_edit_command(
     assert params.radius == pytest.approx(20.0)
 
     cmd = tool._collect_command()
-    assert isinstance(cmd, EditPatternCommand)
-    assert cmd.pattern is pattern
+    assert isinstance(cmd, EditArrayCommand)
+    assert cmd.array is array
 
 
 @patch.object(CircularArrayTool, "_show_dialog")
@@ -178,7 +175,7 @@ def test_apply_executes_command_and_selects_copies(
 
     created = MagicMock()
     created.id = 42
-    created.pattern_copy = True
+    created.array_copy = True
 
     fake_cmd = MagicMock()
     fake_cmd.created_entity_ids = [42]
@@ -203,7 +200,7 @@ def test_apply_executes_command_and_selects_copies(
 
 def test_draw_overlay_noop_without_dialog(tool):
     tool._dialog = None
-    tool._params = None
+    tool._strategy = None
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
     ctx = cairo.Context(surface)
     tool.draw_overlay(ctx)
@@ -213,15 +210,15 @@ def test_draw_overlay_noop_without_dialog(tool):
 def test_on_press_does_not_move_center(
     mock_show_dialog, tool, mock_element, sketch_with_selection
 ):
-    """Canvas clicks must never relocate the pattern center (they
+    """Canvas clicks must never relocate the array center (they
     conflict with panning/navigation while the dialog is open)."""
     tool.on_activate()
     tool._dialog = MagicMock()
-    center_before = tool._params.center
+    center_before = tool._strategy.center
 
     tool.on_press(100.0, 200.0, 1)
 
-    assert tool._params.center == center_before
+    assert tool._strategy.center == center_before
     mock_element.mark_dirty.assert_not_called()
 
 
@@ -244,7 +241,7 @@ def test_full_edit_flow_through_tool_does_not_collapse(
     mock_show_dialog,
 ):
     """
-    Integration: double-click edit flow (tool -> EditPatternCommand)
+    Integration: double-click edit flow (tool -> EditArrayCommand)
     must leave all members at distinct slot angles with zero constraint
     residual - never collapsed onto one position.
     """
@@ -252,19 +249,17 @@ def test_full_edit_flow_through_tool_does_not_collapse(
     p0 = sketch.registry.add_point(30, 0)
     p1 = sketch.registry.add_point(50, 0)
     line = sketch.registry.add_line(p0, p1)
-    params = CircularPatternParams(
+    strategy = CircularArrayStrategy(
         count=6,
         total_angle_deg=360.0,
         center=(0.0, 0.0),
         radius=40.0,
         rotate_copies=True,
     )
-    create_cmd = CreatePatternCommand(
-        sketch, SketchArrayMode.CIRCULAR, params, [line]
-    )
+    create_cmd = CreateArrayCommand(sketch, strategy, [line])
     create_cmd.execute()
     sketch.solve()
-    pattern = sketch.patterns[0]
+    array = sketch.arrays[0]
 
     element = MagicMock()
     element.sketch = sketch
@@ -277,12 +272,12 @@ def test_full_edit_flow_through_tool_does_not_collapse(
     element.hittester.screen_to_model.return_value = (0.0, 0.0)
 
     tool = CircularArrayTool(element)
-    tool.set_edit_target(pattern)
+    tool.set_edit_target(array)
     tool.on_activate()
 
     # User changes the count in the dialog and hits Apply.
-    assert tool._params is not None
-    tool._params.count = 8
+    assert tool._strategy is not None
+    tool._strategy.count = 8
     tool._on_apply()
 
     sketch.solve()
@@ -290,7 +285,7 @@ def test_full_edit_flow_through_tool_does_not_collapse(
     circle = next(e for e in sketch.registry.entities if isinstance(e, Circle))
     center = sketch.registry.get_point(circle.center_idx)
 
-    living = pattern.living_entity_ids(sketch.registry)
+    living = array.living_entity_ids(sketch.registry)
     assert len(living) == 8
 
     angles = []
@@ -318,20 +313,26 @@ def test_full_edit_flow_through_tool_does_not_collapse(
         315.0,
     ]
 
-    worst = max(
-        max(abs(v) for v in c.error(sketch.registry, ParameterContext()))
-        for c in sketch.constraints
-        if isinstance(c, RotationalConstraint)
-    )
-    assert worst < 1e-6
+    # Copies are static baked geometry: no constraints reference
+    # their points, and the points are fixed so the solver never
+    # moves them.
+    copy_pids = set()
+    for eid in living[1:]:
+        copy_entity = sketch.registry.get_entity(eid)
+        assert copy_entity is not None
+        copy_pids.update(copy_entity.get_point_ids())
+    for c in sketch.constraints:
+        assert not c.get_referenced_point_ids() & copy_pids
+    for pid in copy_pids:
+        assert sketch.registry.get_point(pid).fixed
 
 
 @patch.object(CircularArrayTool, "_show_dialog")
 def test_cancel_clears_edit_target(
     mock_show_dialog, tool, mock_element, sketch_with_selection
 ):
-    pattern = make_pattern()
-    tool.set_edit_target(pattern)
+    array = make_array()
+    tool.set_edit_target(array)
     tool.on_activate()
     assert tool._is_editing
 

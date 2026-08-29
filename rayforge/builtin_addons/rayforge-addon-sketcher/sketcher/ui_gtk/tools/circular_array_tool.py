@@ -13,10 +13,13 @@ from rayforge.ui_gtk.shared.pref_rows import (
     SpinRow,
 )
 
-from ...core.commands import CreatePatternCommand
-from ...core.commands.create_pattern import _choose_reference_point
+from ...core.arrays import (
+    CircularArray,
+    CircularArrayStrategy,
+    resolve_template_center,
+)
+from ...core.commands import CreateArrayCommand
 from ...core.entities import Circle
-from ...core.patterns import CircularPatternParams, SketchArrayMode
 from .array_base import ArrayToolBase
 
 logger = logging.getLogger(__name__)
@@ -37,7 +40,7 @@ class CircularArrayTool(ArrayToolBase):
     LABEL = _("Circular Array")
     SHORTCUTS: ClassVar[list[str]] = ["gy"]
 
-    MODE = SketchArrayMode.CIRCULAR
+    ARRAY_TYPE = CircularArray
     DIALOG_TITLE = _("Circular Array")
     EDIT_DIALOG_TITLE = _("Edit Circular Array")
     GROUP_TITLE = _("Circular")
@@ -48,9 +51,9 @@ class CircularArrayTool(ArrayToolBase):
     def is_available(self, target, target_type) -> bool:
         return len(self.element.selection.entity_ids) > 0
 
-    def _make_default_params(self) -> CircularPatternParams:
+    def _make_default_strategy(self) -> CircularArrayStrategy:
         center = self._default_center()
-        return CircularPatternParams(
+        return CircularArrayStrategy(
             count=6,
             total_angle_deg=360.0,
             center=center,
@@ -58,9 +61,10 @@ class CircularArrayTool(ArrayToolBase):
             rotate_copies=True,
         )
 
-    def _make_params_from_target(self) -> CircularPatternParams:
+    def _make_strategy_from_target(self) -> CircularArrayStrategy:
         """Pre-fills parameters from the edit target's master geometry."""
         assert self._edit_target is not None
+        assert isinstance(self._edit_target, CircularArray)
         registry = self.element.sketch.registry
         circle = registry.get_entity(self._edit_target.guide_circle_id)
         center = (0.0, 0.0)
@@ -80,15 +84,15 @@ class CircularArrayTool(ArrayToolBase):
                 )
             except IndexError:
                 pass
-        params = CircularPatternParams(
+        strategy = CircularArrayStrategy(
             count=self._edit_target.count,
             total_angle_deg=self._edit_target.total_angle_deg,
             center=center,
             radius=radius,
             rotate_copies=self._edit_target.rotate_copies,
         )
-        logger.info("ArrayTool: prefilled params %r", params)
-        return params
+        logger.info("ArrayTool: prefilled strategy %r", strategy)
+        return strategy
 
     def _default_center(self) -> tuple[float, float]:
         """Defaults to the sketch origin, like a clock/speaker center."""
@@ -96,56 +100,57 @@ class CircularArrayTool(ArrayToolBase):
 
     def _default_radius(self, center: tuple[float, float]) -> float:
         """
-        Derives the guide circle radius from the anchor point — exactly
-        like CreatePatternCommand does — so the previewed circle matches
-        the applied one without any jump.
+        Derives the guide circle radius from the template's center —
+        exactly like CreateArrayCommand does — so the previewed circle
+        matches the applied one without any jump.
         """
         registry = self.element.sketch.registry
-        pids = CreatePatternCommand.collect_seed_point_ids(
-            registry, self._seed_entity_ids
+        pids = CreateArrayCommand.collect_template_point_ids(
+            registry, self._template_entity_ids
         )
         if not pids:
             return 10.0
-        seed_points = [registry.get_point(pid) for pid in pids]
-        ref_pid = _choose_reference_point(seed_points)
-        ref_pt = registry.get_point(ref_pid)
-        radius = math.hypot(ref_pt.x - center[0], ref_pt.y - center[1])
+        template_points = [registry.get_point(pid) for pid in pids]
+        tcx, tcy = resolve_template_center(
+            registry, self._template_entity_ids, template_points
+        )
+        radius = math.hypot(tcx - center[0], tcy - center[1])
         return radius if radius > 1e-6 else 10.0
 
     def _build_mode_rows(self, group: Adw.PreferencesGroup):
-        params = self._params
+        strategy = self._strategy
 
         self._count_row = SpinRow(
             _("Count"),
             lower=1,
             upper=360,
             digits=0,
-            value=params.count,
+            value=strategy.count,
         )
         self._angle_row = AngleSpinRow(
             _("Total angle (deg)"),
             lower=1.0,
             upper=360.0,
-            value=params.total_angle_deg,
+            value=strategy.total_angle_deg,
         )
         self._center_x_row = LengthSpinRow(
             _("Center X"),
             lower=-10000,
             upper=10000,
-            value_in_base=params.center[0],
+            value_in_base=strategy.center[0],
         )
         self._center_y_row = LengthSpinRow(
             _("Center Y"),
             lower=-10000,
             upper=10000,
-            value_in_base=params.center[1],
+            value_in_base=strategy.center[1],
         )
         self._radius_row = LengthSpinRow(
             _("Radius"),
             subtitle=self._radius_row_subtitle(),
             lower=0.0,
             upper=10000,
-            value_in_base=params.radius,
+            value_in_base=strategy.radius,
         )
 
         # At creation time the radius is derived from where the anchor
@@ -166,7 +171,7 @@ class CircularArrayTool(ArrayToolBase):
         rotate_row = Adw.ActionRow()
         rotate_row.set_title(_("Rotate copies"))
         self._rotate_switch = Gtk.Switch()
-        self._rotate_switch.set_active(params.rotate_copies)
+        self._rotate_switch.set_active(strategy.rotate_copies)
         self._rotate_switch.set_valign(Gtk.Align.CENTER)
         self._rotate_switch.connect(
             "notify::active", lambda *a: self._sync_params()
@@ -178,37 +183,36 @@ class CircularArrayTool(ArrayToolBase):
     def _radius_row_subtitle(self) -> str:
         if self._is_editing:
             return _("Resizes the whole array.")
-        return _("Derived from the seed's anchor point.")
+        return _("Derived from the template's anchor point.")
 
     def _sync_params(self):
-        if self._updating_rows or self._params is None:
+        if self._updating_rows or self._strategy is None:
             return
-        self._params.count = self._count_row.get_int_value()
-        self._params.total_angle_deg = self._angle_row.get_value()
+        self._strategy.count = self._count_row.get_int_value()
+        self._strategy.total_angle_deg = self._angle_row.get_value()
         cx = self._center_x_row.get_value_in_base_units()
         cy = self._center_y_row.get_value_in_base_units()
-        self._params.center = (cx, cy)
-        self._params.radius = self._radius_row.get_value_in_base_units()
+        self._strategy.center = (cx, cy)
+        self._strategy.radius = self._radius_row.get_value_in_base_units()
         if not self._is_editing:
-            # At creation the circle always passes through the seed's
+            # At creation the circle always passes through the template's
             # anchor point; keep the row in sync so preview matches
             # the applied result exactly.
             derived = self._default_radius((cx, cy))
-            self._params.radius = derived
+            self._strategy.radius = derived
             self._updating_rows = True
             try:
                 self._radius_row.set_value_in_base_units(derived)
             finally:
                 self._updating_rows = False
-        self._params.rotate_copies = self._rotate_switch.get_active()
+        self._strategy.rotate_copies = self._rotate_switch.get_active()
         self.element.mark_dirty()
 
-    def _make_create_command(self) -> CreatePatternCommand | None:
-        if self._params is None:
+    def _make_create_command(self) -> CreateArrayCommand | None:
+        if self._strategy is None:
             return None
-        return CreatePatternCommand(
+        return CreateArrayCommand(
             self.element.sketch,
-            SketchArrayMode.CIRCULAR,
-            self._params,
-            list(self._seed_entity_ids),
+            self._strategy,
+            list(self._template_entity_ids),
         )

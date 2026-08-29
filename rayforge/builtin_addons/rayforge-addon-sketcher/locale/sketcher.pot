@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-25 10:44+0200\n"
+"POT-Creation-Date: 2026-08-29 01:30+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -72,7 +72,7 @@ msgid "Line to {} at {}"
 msgstr ""
 
 #: sketcher/core/constraints/rotational.py
-msgid "Rotational Pattern"
+msgid "Rotational Array"
 msgstr ""
 
 #: sketcher/core/constraints/distance.py
@@ -192,10 +192,6 @@ msgstr ""
 msgid "Edit Constraint"
 msgstr ""
 
-#: sketcher/core/commands/edit_pattern.py
-msgid "Edit Pattern"
-msgstr ""
-
 #: sketcher/core/commands/bezier.py
 #: sketcher/core/commands/line.py
 msgid "Add Line"
@@ -215,6 +211,10 @@ msgstr ""
 
 #: sketcher/core/commands/grid.py
 msgid "Add Grid"
+msgstr ""
+
+#: sketcher/core/commands/edit_array.py
+msgid "Edit Array"
 msgstr ""
 
 #: sketcher/core/commands/chamfer.py
@@ -238,6 +238,10 @@ msgstr ""
 msgid "Duplicate Selection"
 msgstr ""
 
+#: sketcher/core/commands/create_array.py
+msgid "Create Array"
+msgstr ""
+
 #: sketcher/core/commands/rounded_rect.py
 msgid "Add Rounded Rectangle"
 msgstr ""
@@ -252,10 +256,6 @@ msgstr ""
 
 #: sketcher/core/commands/waypoint.py
 msgid "Set Waypoint Type"
-msgstr ""
-
-#: sketcher/core/commands/create_pattern.py
-msgid "Create Pattern"
 msgstr ""
 
 #: sketcher/core/commands/point.py
@@ -483,6 +483,7 @@ msgid "Fill"
 msgstr ""
 
 #: sketcher/ui_gtk/tools/arc_tool.py
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
 #: sketcher/ui_gtk/menu.py
 msgid "Arc"
 msgstr ""
@@ -545,6 +546,7 @@ msgid "Places copies along a circular arc around a centre."
 msgstr ""
 
 #: sketcher/ui_gtk/tools/circular_array_tool.py
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
 msgid "Count"
 msgstr ""
 
@@ -569,11 +571,62 @@ msgid "Resizes the whole array."
 msgstr ""
 
 #: sketcher/ui_gtk/tools/circular_array_tool.py
-msgid "Derived from the seed's anchor point."
+msgid "Derived from the template's anchor point."
 msgstr ""
 
 #: sketcher/ui_gtk/tools/delete_tool.py
 msgid "Delete Selection"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Line"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Bezier"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+#: sketcher/ui_gtk/menu.py
+msgid "Array Along Curve"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Edit Array Along Curve"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Along Curve"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Distributes copies along a guide path, oriented to its tangent."
+msgstr ""
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Guide path"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "First selected entity; the rest are repeated."
+msgstr ""
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Spacing"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid ""
+"Distance between copies. 0 derives count from the path length; >0 sets the "
+"count from the usable length."
+msgstr ""
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Start offset"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Align to tangent"
 msgstr ""
 
 #: sketcher/ui_gtk/tools/rounded_rect_tool.py

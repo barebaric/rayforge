@@ -85,6 +85,13 @@ class SelectTool(SnapMixin, SketchTool):
 
         # Snapshots taken at start of drag
         self.drag_initial_positions: dict[EntityID, GeoPoint] = {}
+        # Hold-constraint targets. Starts as a copy of the initial
+        # positions and is re-pinned to the settled position after
+        # each drag solve for points that moved, so holds follow
+        # geometry the array re-derivation legitimately relocates
+        # instead of fighting it back toward stale drag-start
+        # positions.
+        self.drag_hold_positions: dict[EntityID, GeoPoint] = {}
         self.drag_initial_entity_states: dict[EntityID, Any] = {}
 
         self.drag_point_distances: dict[EntityID, int] = {}
@@ -177,7 +184,7 @@ class SelectTool(SnapMixin, SketchTool):
         if n_press == 2 and hit_type == "entity":
             logger.debug("Double-click on entity detected.")
             entity = cast(Entity, hit_obj)
-            if self.element.request_pattern_edit(entity):
+            if self.element.request_array_edit(entity):
                 return True
             if isinstance(entity, (Arc, Line, Circle)):
                 cmd = CreateOrEditConstraintCommand(
@@ -426,25 +433,13 @@ class SelectTool(SnapMixin, SketchTool):
                 )
                 self.element.execute_command(cmd)
 
-        # Sync pattern radius dimensions to the dragged geometry: while
-        # dragging they were excluded from the solve so they must follow
-        # the members instead of snapping them back.
-        affected = set(self.element.selection.entity_ids)
-        if self.dragged_point_id is not None:
-            affected |= {
-                e.id
-                for e in self.element.sketch.registry.entities
-                if self.dragged_point_id in e.get_point_ids()
-            }
-        if affected:
-            self.element.sketch.sync_pattern_dimensions(affected)
-
         # Clear all drag-related state
         self.dragged_point_id = None
         self.drag_point_start_pos = None
         self.dragged_entity = None
         self.drag_start_model_pos = None
         self.drag_initial_positions.clear()
+        self.drag_hold_positions.clear()
         self.drag_initial_entity_states.clear()
         self.drag_point_distances.clear()
         self.drag_start_wt_inv = None
@@ -605,27 +600,33 @@ class SelectTool(SnapMixin, SketchTool):
         mdx, mdy = ct_vec.transform_vector((ldx, ldy))
         return mdx, mdy
 
-    def _get_dragged_pattern_constraint_indices(self) -> set[int]:
-        """
-        Returns indices of pattern radius constraints that must yield
-        during a drag of pattern members. The radius dimension would
-        otherwise fight the radial component of the drag and distort
-        the array; instead it is excluded from the solve and follows
-        the geometry (synced on release).
-        """
-        sketch = self.element.sketch
-        dragged = set(self.element.selection.entity_ids)
-        if self.dragged_point_id is not None:
-            dragged |= {
-                e.id
-                for e in sketch.registry.entities
-                if self.dragged_point_id in e.get_point_ids()
-            }
-        return sketch.get_pattern_constraint_indices_for_entities(dragged)
+    def _reset_point_drag(self) -> None:
+        """End a point drag gracefully when the dragged point is deleted
+        (e.g. by sync_curve_arrays recreating array copies)."""
+        logger.debug(
+            "PointDrag: resetting — point %s no longer exists",
+            self.dragged_point_id,
+        )
+        self.dragged_point_id = None
+        self.drag_point_start_pos = None
+        self.drag_initial_positions.clear()
+        self.drag_hold_positions.clear()
+        self.drag_point_distances.clear()
+        self.drag_start_wt_inv = None
+        self.drag_start_ct_inv = None
+        self.current_snap_result = None
+        self.element.sketch.solve()
+        self.element.mark_dirty()
 
     def _handle_point_drag(self, world_dx: float, world_dy: float):
         """Logic for dragging a single point."""
         if self.dragged_point_id is None or self.drag_point_start_pos is None:
+            return
+
+        # Guard: the point may have been deleted by a previous
+        # sync_curve_arrays (array re-apply during solve).
+        if self._safe_get_point(self.dragged_point_id) is None:
+            self._reset_point_drag()
             return
 
         mdx, mdy = self._get_model_delta(world_dx, world_dy)
@@ -648,6 +649,13 @@ class SelectTool(SnapMixin, SketchTool):
             self.current_snap_result = None
 
         drag_constraints = []
+
+        # The radius dimension owns the construction circle's radius
+        # point: a drag on it must not resize the circle.
+        if self.element.sketch.is_array_guide_radius_point(
+            self.dragged_point_id
+        ):
+            return
 
         # Ask the sketch model for the group of points that must move together.
         coincident_group = self.element.sketch.get_coincident_points(
@@ -701,24 +709,18 @@ class SelectTool(SnapMixin, SketchTool):
         max_hops = max(
             (d for d in self.drag_point_distances.values() if d > 0), default=1
         )
-        # Points of a pattern containing the dragged point's entities are
-        # exempt from holding: the linkage constraints must stay in full
-        # control so the whole array follows the drag smoothly.
-        owning_entities = {
-            e.id
-            for e in self.element.sketch.registry.entities
-            if self.dragged_point_id in e.get_point_ids()
-        }
-        excluded = self.element.sketch.get_pattern_points_for_entities(
-            owning_entities
-        )
-        for pid, pos in self.drag_initial_positions.items():
+        for pid, pos in self.drag_hold_positions.items():
             # Skip any point that is part of the actively dragged group.
-            if pid in dragged_group or pid in excluded:
+            if pid in dragged_group:
                 continue
 
             p = self._safe_get_point(pid)
             if not p or p.fixed:
+                continue
+            # A dimension-driven point (e.g. an array guide circle's
+            # rim) is placed by its hard constraint; holding it would
+            # only fight that constraint and bleed residual.
+            if self.element.sketch.is_array_guide_radius_point(pid):
                 continue
             hops = self.drag_point_distances.get(pid, -1)
             weight = 0
@@ -731,17 +733,20 @@ class SelectTool(SnapMixin, SketchTool):
                     DragConstraint(pid, pos[0], pos[1], weight=weight)
                 )
 
-        excluded = self._get_dragged_pattern_constraint_indices()
-        logger.debug(
-            "PointDrag: pid=%s radius dims excluded: %r",
-            self.dragged_point_id,
-            sorted(excluded),
-        )
         self.element.sketch.solve(
             extra_constraints=drag_constraints,
             update_constraint_status=False,
-            excluded_constraints=excluded,
         )
+        self._refresh_hold_positions(dragged_group)
+
+        # sync_curve_arrays may have deleted the dragged point (e.g.
+        # the user dragged a copy center that sat on a guide
+        # endpoint; the re-apply removed the old copy).  If so, end
+        # the drag gracefully instead of crashing on the next event.
+        if self._safe_get_point(self.dragged_point_id) is None:
+            self._reset_point_drag()
+            return
+
         self.element.mark_dirty()
 
     def _handle_entity_drag(self, world_dx: float, world_dy: float):
@@ -790,6 +795,10 @@ class SelectTool(SnapMixin, SketchTool):
             p = self._safe_get_point(pid)
             if not p or p.fixed:
                 continue
+            if self.element.sketch.is_array_guide_radius_point(pid):
+                # The radius dimension owns this point: drags must not
+                # resize the construction circle.
+                continue
 
             initial_pos = self.drag_initial_positions.get(pid)
             if initial_pos:
@@ -802,35 +811,25 @@ class SelectTool(SnapMixin, SketchTool):
                 )
 
         # 3. Add weak "holding" constraints for all other points.
-        # Points belonging to a pattern that contains dragged geometry
-        # are exempt: their linkage constraints must stay in full
-        # control so the whole array follows the drag smoothly.
-        excluded = self.element.sketch.get_pattern_points_for_entities(
-            set(self.element.selection.entity_ids)
-        )
         hold_weight = 0.01
-        for pid, pos in self.drag_initial_positions.items():
-            if pid in points_to_drag or pid in excluded:
+        for pid, pos in self.drag_hold_positions.items():
+            if pid in points_to_drag:
                 continue
             p = self._safe_get_point(pid)
             if not p or p.fixed:
+                continue
+            if self.element.sketch.is_array_guide_radius_point(pid):
                 continue
             drag_constraints.append(
                 DragConstraint(pid, pos[0], pos[1], weight=hold_weight)
             )
 
         # 4. Solve and update
-        excluded = self._get_dragged_pattern_constraint_indices()
-        logger.debug(
-            "EntityDrag: %d points dragged, radius dims excluded: %r",
-            len(points_to_drag),
-            sorted(excluded),
-        )
         self.element.sketch.solve(
             extra_constraints=drag_constraints,
             update_constraint_status=False,
-            excluded_constraints=excluded,
         )
+        self._refresh_hold_positions(points_to_drag)
         self.element.mark_dirty()
 
     # --- Drag Preparation ---
@@ -902,6 +901,9 @@ class SelectTool(SnapMixin, SketchTool):
                 registry, bezier, self.dragged_cp_index, self.element.sketch
             )
 
+        # Solve so sync_curve_arrays redistributes curve-along
+        # members live while the control point is being dragged.
+        self.element.sketch.solve()
         self.element.mark_dirty()
 
     def _cache_drag_start_state(self):
@@ -915,6 +917,7 @@ class SelectTool(SnapMixin, SketchTool):
         self.drag_initial_positions = {
             pt.id: (pt.x, pt.y) for pt in self.element.sketch.registry.points
         }
+        self.drag_hold_positions = dict(self.drag_initial_positions)
 
         # Capture Entity States
         self.drag_initial_entity_states = {}
@@ -922,6 +925,24 @@ class SelectTool(SnapMixin, SketchTool):
             state = e.get_state()
             if state is not None:
                 self.drag_initial_entity_states[e.id] = state
+
+    def _refresh_hold_positions(self, exclude: set[EntityID]) -> None:
+        """Re-pins hold targets to the settled position of every held
+        point that the solve (including the array re-derivation) has
+        moved. Holds for unmoved points keep their original targets so
+        unrelated geometry stays anchored during the drag."""
+        registry = self.element.sketch.registry
+        for pid in list(self.drag_hold_positions):
+            if pid in exclude:
+                continue
+            try:
+                p = registry.get_point(pid)
+            except IndexError:
+                self.drag_hold_positions.pop(pid, None)
+                continue
+            pos = self.drag_hold_positions[pid]
+            if abs(p.x - pos[0]) > 1e-6 or abs(p.y - pos[1]) > 1e-6:
+                self.drag_hold_positions[pid] = (p.x, p.y)
 
     def _safe_get_point(self, pid: EntityID):
         try:

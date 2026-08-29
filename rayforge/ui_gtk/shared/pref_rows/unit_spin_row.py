@@ -59,6 +59,12 @@ class UnitSpinRow(SpinRow):
         self._min_digits = digits
         self._lower = lower
         self._upper = upper
+        # Exact base-unit value from the last programmatic set. The
+        # spin button rounds to the display digits, so reading back
+        # the text would silently quantize prefilled values (e.g. a
+        # derived array radius); the exact value is returned until the
+        # user edits the entry.
+        self._exact_base_value: float | None = None
 
         self._config_handler_id = get_context().config.changed.connect(
             self._on_config_changed
@@ -70,6 +76,7 @@ class UnitSpinRow(SpinRow):
         try:
             self.update_unit_and_bounds()
             if value_in_base is not None and self._unit:
+                self._exact_base_value = value_in_base
                 self._spin_button.set_value(
                     self._unit.from_base(value_in_base)
                 )
@@ -114,13 +121,21 @@ class UnitSpinRow(SpinRow):
         )
 
     def get_value_in_base_units(self) -> float:
-        """Return the current value converted to application base units."""
+        """Return the current value converted to application base units.
+
+        Returns the exact value of the last programmatic set until the
+        user edits the entry; afterwards the (user-entered) text is
+        authoritative.
+        """
+        if self._exact_base_value is not None:
+            return max(self._lower, min(self._exact_base_value, self._upper))
         if not self._unit:
             return self._get_display_value()
         return float(self._unit.to_base(self._get_display_value()))
 
     def set_value_in_base_units(self, base_value: float) -> None:
         """Set the value from an application base-unit value."""
+        self._exact_base_value = base_value
         if self._is_updating:
             return
         self._is_updating = True
@@ -196,6 +211,12 @@ class UnitSpinRow(SpinRow):
                     self._spin_button.set_value(display_value)
         finally:
             self._is_updating = False
+
+    def _emit_changed(self) -> None:
+        # A user-driven signal means the entry text is authoritative
+        # from now on.
+        self._exact_base_value = None
+        super()._emit_changed()
 
     def _on_destroy(self, _widget) -> None:
         super()._on_destroy(_widget)

@@ -56,8 +56,8 @@ def test_equidistant_producer_no_snap_lines(producer, registry, drag_context):
     assert len(snap_lines) == 0
 
 
-def test_equidistant_vertical_pattern(producer, registry, drag_context):
-    """Tests detecting equidistant vertical pattern."""
+def test_equidistant_vertical_array(producer, registry, drag_context):
+    """Tests detecting equidistant vertical array."""
     registry.add_point(10.0, 0.0)
     registry.add_point(10.0, 10.0)
     registry.add_point(10.0, 20.0)
@@ -78,8 +78,8 @@ def test_equidistant_vertical_pattern(producer, registry, drag_context):
     assert snap_points[0].is_horizontal is True
 
 
-def test_equidistant_horizontal_pattern(producer, registry, drag_context):
-    """Tests detecting equidistant horizontal pattern."""
+def test_equidistant_horizontal_array(producer, registry, drag_context):
+    """Tests detecting equidistant horizontal array."""
     registry.add_point(0.0, 10.0)
     registry.add_point(10.0, 10.0)
     registry.add_point(20.0, 10.0)
@@ -120,7 +120,7 @@ def test_equidistant_spacing_attribute(producer, registry, drag_context):
 
 
 def test_equidistant_pattern_coords(producer, registry, drag_context):
-    """Tests that pattern_coords includes all pattern points."""
+    """Tests that pattern_coords includes all snap points."""
     registry.add_point(10.0, 0.0)
     registry.add_point(10.0, 10.0)
     registry.add_point(10.0, 20.0)
@@ -231,7 +231,7 @@ def test_equidistant_max_spacing_exceeded(producer, registry, drag_context):
 
 
 def test_equidistant_dragged_point_excluded(producer, registry, drag_context):
-    """Tests that dragged points are excluded from pattern."""
+    """Tests that dragged points are excluded from array."""
     registry.add_point(10.0, 0.0)
     p2 = registry.add_point(10.0, 10.0)
     registry.add_point(10.0, 20.0)
@@ -289,7 +289,7 @@ def test_equidistant_tolerance_for_spacing(producer, registry, drag_context):
 
 
 def test_equidistant_backward_extension(producer, registry, drag_context):
-    """Tests extending pattern backwards."""
+    """Tests extending snap pattern backwards."""
     registry.add_point(10.0, 10.0)
     registry.add_point(10.0, 20.0)
     registry.add_point(10.0, 30.0)
@@ -307,8 +307,8 @@ def test_equidistant_backward_extension(producer, registry, drag_context):
     assert abs(snap_points[0].y - 0.0) < 0.001
 
 
-def test_equidistant_middle_of_pattern(producer, registry, drag_context):
-    """Tests detecting position in middle of pattern."""
+def test_equidistant_middle_of_array(producer, registry, drag_context):
+    """Tests detecting position in middle of array."""
     registry.add_point(10.0, 0.0)
     registry.add_point(10.0, 10.0)
     registry.add_point(10.0, 30.0)
@@ -360,8 +360,8 @@ def test_equidistant_empty_registry(producer, registry, drag_context):
     assert len(snap_points) == 0
 
 
-def test_equidistant_single_pattern(producer, registry, drag_context):
-    """Tests detection of a single equidistant pattern."""
+def test_equidistant_single_array(producer, registry, drag_context):
+    """Tests detection of a single equidistant array."""
     registry.add_point(0.0, 10.0)
     registry.add_point(10.0, 10.0)
     registry.add_point(20.0, 10.0)
@@ -380,7 +380,7 @@ def test_equidistant_single_pattern(producer, registry, drag_context):
 
 
 def test_equidistant_multiple_patterns(producer, registry, drag_context):
-    """Tests detection of equidistant pattern with merged columns."""
+    """Tests detection of equidistant snap pattern with merged columns."""
     registry.add_point(0.0, 0.0)
     registry.add_point(0.0, 10.0)
     registry.add_point(0.0, 20.0)
@@ -420,7 +420,7 @@ def test_equidistant_min_spacing_requirement(producer, registry, drag_context):
 
 
 def test_equidistant_duplicate_points(producer, registry, drag_context):
-    """Tests that duplicate points don't break pattern detection."""
+    """Tests that duplicate points don't break snap pattern detection."""
     registry.add_point(10.0, 0.0)
     registry.add_point(10.0, 10.0)
     registry.add_point(10.0, 10.0)
@@ -439,7 +439,7 @@ def test_equidistant_duplicate_points(producer, registry, drag_context):
 
 
 def test_equidistant_exact_match(producer, registry, drag_context):
-    """Tests snap generation at exact pattern position."""
+    """Tests snap generation at exact snap pattern position."""
     registry.add_point(10.0, 0.0)
     registry.add_point(10.0, 10.0)
     registry.add_point(10.0, 20.0)
@@ -458,7 +458,7 @@ def test_equidistant_exact_match(producer, registry, drag_context):
 
 
 def test_equidistant_non_aligned_points(producer, registry, drag_context):
-    """Tests non-aligned points excluded, aligned subset can form pattern."""
+    """Tests non-aligned points excluded, aligned subset can form array."""
     registry.add_point(10.0, 0.0)
     registry.add_point(10.0, 10.0)
     registry.add_point(20.0, 20.0)

@@ -18,9 +18,9 @@ class RotationalConstraint(Constraint):
     Links a target point (p2) to a source point (p1) through a rotation
     of `value` radians around a center point.
 
-    Used by pattern commands to keep array copies parametrically attached
+    Used by array commands to keep array copies parametrically attached
     to the template member: editing any instance propagates to the whole
-    pattern through the solver. Deleting a member deletes only its own
+    array through the solver. Deleting a member deletes only its own
     constraints, so the remaining instances are never redistributed.
     """
 
@@ -55,7 +55,7 @@ class RotationalConstraint(Constraint):
     @staticmethod
     def get_type_name() -> str:
         """Returns to human-readable name of this constraint type."""
-        return _("Rotational Pattern")
+        return _("Rotational Array")
 
     def get_title(self) -> str:
         """Returns a human-readable title for this constraint."""

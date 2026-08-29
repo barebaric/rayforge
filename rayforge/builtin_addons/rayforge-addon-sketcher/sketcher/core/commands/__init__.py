@@ -7,14 +7,14 @@ from .circle import CircleCommand, CirclePreviewState
 from .constraint import ModifyConstraintCommand
 from .constraint_create import CreateOrEditConstraintCommand
 from .construction import ToggleConstructionCommand
-from .create_pattern import CreatePatternCommand
+from .create_array import CreateArrayCommand
 from .dimension import DimensionData
 from .distance_constraint import (
     DistanceConstraintCommand,
     DistanceConstraintParams,
 )
 from .duplicate import DuplicateCommand
-from .edit_pattern import EditPatternCommand
+from .edit_array import EditArrayCommand
 from .ellipse import EllipseCommand, EllipsePreviewState
 from .equal_constraint import (
     EqualConstraintCommand,
@@ -60,13 +60,13 @@ __all__ = [
     "ChamferCommand",
     "CircleCommand",
     "CirclePreviewState",
+    "CreateArrayCommand",
     "CreateOrEditConstraintCommand",
-    "CreatePatternCommand",
     "DimensionData",
     "DistanceConstraintCommand",
     "DistanceConstraintParams",
     "DuplicateCommand",
-    "EditPatternCommand",
+    "EditArrayCommand",
     "EllipseCommand",
     "EllipsePreviewState",
     "EqualConstraintCommand",

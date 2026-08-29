@@ -63,8 +63,6 @@ class DistanceConstraint(Constraint):
             return False
         if sketch is None:
             return False
-        from ..entities import Line
-
         lines = [
             sketch.registry.get_entity(eid)
             for eid in selection.entity_ids
@@ -226,8 +224,6 @@ class DistanceConstraint(Constraint):
         is_hovered: bool = False,
         point_radius: float = 5.0,
     ) -> None:
-        from ..entities import Line
-
         try:
             p1 = registry.get_point(self.p1)
             p2 = registry.get_point(self.p2)

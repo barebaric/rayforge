@@ -8878,8 +8878,8 @@ msgid ""
 "plugins, services, or configuring the application context."
 msgstr ""
 "Pfad zu einem Python-Skript, das früh beim Start ausgeführt wird, bevor "
-"Addons geladen werden und bevor das Hauptfenster erstellt wird. Nützlich "
-"zum Registrieren von Plugins, Services oder zum Konfigurieren des "
+"Addons geladen werden und bevor das Hauptfenster erstellt wird. Nützlich zum "
+"Registrieren von Plugins, Services oder zum Konfigurieren des "
 "Anwendungskontexts."
 
 #: rayforge/app.py

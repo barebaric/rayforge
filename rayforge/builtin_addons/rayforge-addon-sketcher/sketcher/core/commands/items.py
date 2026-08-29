@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Sequence
+from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 from ..constraints import EqualDistanceConstraint
@@ -262,11 +263,14 @@ class RemoveItemsCommand(SketchChangeCommand):
         )
         to_delete_point_ids.update(constraint_orphans)
 
-        # 5. Get actual objects from IDs
+        # 5. Get actual objects from IDs. Fixed points are included
+        # (array copies are fixed and must be deletable) except the
+        # sketch origin, which survives entity cascades.
         final_points = [
             p
             for p in sketch.registry.points
-            if p.id in to_delete_point_ids and not p.fixed
+            if p.id in to_delete_point_ids
+            and (not p.fixed or p.id != sketch.origin_id)
         ]
         final_entities = [
             e for e in sketch.registry.entities if e.id in to_delete_entity_ids
@@ -274,11 +278,15 @@ class RemoveItemsCommand(SketchChangeCommand):
 
         return final_points, final_entities, to_delete_constraints
 
-    def _do_execute(self) -> None:
+    def apply_direct(self) -> None:
+        """
+        Removes this command's items from the sketch directly,
+        bypassing execute so prune_arrays() never sees arrays mid-edit
+        (e.g. while an array command rebuilds its members).
+        """
         registry = self.sketch.registry
         point_ids = {p.id for p in self.points}
         entity_ids = {e.id for e in self.entities}
-
         registry.points = [p for p in registry.points if p.id not in point_ids]
         registry.entities = [
             e for e in registry.entities if e.id not in entity_ids
@@ -287,7 +295,10 @@ class RemoveItemsCommand(SketchChangeCommand):
         for c in self.constraints:
             if c in self.sketch.constraints:
                 self.sketch.constraints.remove(c)
-        self.sketch.prune_patterns()
+
+    def _do_execute(self) -> None:
+        self.apply_direct()
+        self.sketch.prune_arrays()
 
     def _do_undo(self) -> None:
         registry = self.sketch.registry
@@ -295,3 +306,23 @@ class RemoveItemsCommand(SketchChangeCommand):
         registry.entities.extend(self.entities)
         registry._entity_map = {e.id: e for e in registry.entities}
         self.sketch.constraints.extend(self.constraints)
+
+    @classmethod
+    def calculate_dependencies_for_ids(
+        cls,
+        sketch: Sketch,
+        entity_ids: set[int],
+        point_ids: set[int] | None = None,
+    ) -> tuple[list[Point], list[Entity], list[Constraint]]:
+        """
+        Calculates the removal dependencies for a plain set of entity
+        (and optionally point) IDs, without going through a selection.
+        """
+        return cls.calculate_dependencies(
+            sketch,
+            SimpleNamespace(
+                entity_ids=entity_ids,
+                point_ids=point_ids or set(),
+                constraint_idx=None,
+            ),
+        )

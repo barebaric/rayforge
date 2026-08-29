@@ -140,7 +140,15 @@ class SketchHitTester:
         return points_inside, entities_inside
 
     def _hit_test_points(self, wx, wy, element) -> int | None:
-        """Precise point hit-testing in SCREEN coordinates."""
+        """Precise point hit-testing in SCREEN coordinates.
+
+        Derived points (whose position is owned by a master object,
+        see ``Sketch.get_derived_point_ids``) lose to user geometry:
+        where they coincide, the user geometry point is picked,
+        because dragging a derived point is reverted by its master.
+        A derived point is still picked when no user geometry point
+        is nearby.
+        """
         if not element.canvas:
             return None
 
@@ -149,17 +157,27 @@ class SketchHitTester:
             (wx, wy)
         )
         threshold = element.point_radius + 2.0
-        best_pid = None
-        min_dist_sq = float("inf")
 
         points = element.sketch.registry.points or []
-        for p in reversed(points):
-            pt_sx, pt_sy = to_screen.transform_point((p.x, p.y))
-            dist_sq = (cursor_sx - pt_sx) ** 2 + (cursor_sy - pt_sy) ** 2
-            if dist_sq < threshold**2 and dist_sq < min_dist_sq:
-                min_dist_sq = dist_sq
-                best_pid = p.id
-        return best_pid
+        derived = element.sketch.get_derived_point_ids()
+
+        def closest(predicate) -> int | None:
+            best_pid = None
+            min_dist_sq = float("inf")
+            for p in reversed(points):
+                if not predicate(p.id):
+                    continue
+                pt_sx, pt_sy = to_screen.transform_point((p.x, p.y))
+                dist_sq = (cursor_sx - pt_sx) ** 2 + (cursor_sy - pt_sy) ** 2
+                if dist_sq < threshold**2 and dist_sq < min_dist_sq:
+                    min_dist_sq = dist_sq
+                    best_pid = p.id
+            return best_pid
+
+        hit = closest(lambda pid: pid not in derived)
+        if hit is not None:
+            return hit
+        return closest(lambda pid: pid in derived)
 
     def _hit_test_overlays(self, wx, wy, element) -> tuple[str | None, Any]:
         if not element.canvas:

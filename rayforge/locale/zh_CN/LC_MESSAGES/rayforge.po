@@ -8443,8 +8443,8 @@ msgid ""
 "loaded and before the main window is created. Useful for registering "
 "plugins, services, or configuring the application context."
 msgstr ""
-"在启动早期、加载插件之前以及创建主窗口之前执行的 Python 脚本路径。适用于注册插"
-"件、服务或配置应用程序上下文。"
+"在启动早期、加载插件之前以及创建主窗口之前执行的 Python 脚本路径。适用于注册"
+"插件、服务或配置应用程序上下文。"
 
 #: rayforge/app.py
 msgid ""

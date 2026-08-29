@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-25 10:44+0200\n"
+"POT-Creation-Date: 2026-08-29 01:30+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Ukrainian\n"
@@ -72,8 +72,8 @@ msgid "Line to {} at {}"
 msgstr "Лінія до {} у {}"
 
 #: sketcher/core/constraints/rotational.py
-msgid "Rotational Pattern"
-msgstr "Ротаційний шаблон"
+msgid "Rotational Array"
+msgstr "Обертовий масив"
 
 #: sketcher/core/constraints/distance.py
 #: sketcher/ui_gtk/tools/distance_constraint_tool.py
@@ -189,10 +189,6 @@ msgstr "Встановити заливку тексту"
 msgid "Edit Constraint"
 msgstr "Редагувати обмеження"
 
-#: sketcher/core/commands/edit_pattern.py
-msgid "Edit Pattern"
-msgstr "Редагувати шаблон"
-
 #: sketcher/core/commands/bezier.py sketcher/core/commands/line.py
 msgid "Add Line"
 msgstr "Додати лінію"
@@ -212,6 +208,10 @@ msgstr "Додати {}"
 #: sketcher/core/commands/grid.py
 msgid "Add Grid"
 msgstr "Додати сітку"
+
+#: sketcher/core/commands/edit_array.py
+msgid "Edit Array"
+msgstr "Редагувати масив"
 
 #: sketcher/core/commands/chamfer.py
 msgid "Add Chamfer"
@@ -234,6 +234,10 @@ msgstr "Випрямити"
 msgid "Duplicate Selection"
 msgstr "Дублювати виділення"
 
+#: sketcher/core/commands/create_array.py
+msgid "Create Array"
+msgstr "Створити масив"
+
 #: sketcher/core/commands/rounded_rect.py
 msgid "Add Rounded Rectangle"
 msgstr "Додати заокруглений прямокутник"
@@ -249,10 +253,6 @@ msgstr "Змінити властивість тексту"
 #: sketcher/core/commands/waypoint.py
 msgid "Set Waypoint Type"
 msgstr "Встановити тип опорної точки"
-
-#: sketcher/core/commands/create_pattern.py
-msgid "Create Pattern"
-msgstr "Створити шаблон"
 
 #: sketcher/core/commands/point.py
 msgid "Move Point"
@@ -463,7 +463,8 @@ msgstr "Додати обмеження кута"
 msgid "Fill"
 msgstr "Заповнення"
 
-#: sketcher/ui_gtk/tools/arc_tool.py sketcher/ui_gtk/menu.py
+#: sketcher/ui_gtk/tools/arc_tool.py
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py sketcher/ui_gtk/menu.py
 msgid "Arc"
 msgstr "Дуга"
 
@@ -524,6 +525,7 @@ msgid "Places copies along a circular arc around a centre."
 msgstr "Розміщує копії вздовж дуги навколо центру."
 
 #: sketcher/ui_gtk/tools/circular_array_tool.py
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
 msgid "Count"
 msgstr "Кількість"
 
@@ -548,12 +550,64 @@ msgid "Resizes the whole array."
 msgstr "Змінює розмір усього масиву."
 
 #: sketcher/ui_gtk/tools/circular_array_tool.py
-msgid "Derived from the seed's anchor point."
-msgstr "Визначається за якорною точкою початкового об'єкта."
+msgid "Derived from the template's anchor point."
+msgstr "Отримано з опорної точки шаблону."
 
 #: sketcher/ui_gtk/tools/delete_tool.py
 msgid "Delete Selection"
 msgstr "Видалити вибране"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Line"
+msgstr "Лінія"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Bezier"
+msgstr "Безьє"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py sketcher/ui_gtk/menu.py
+msgid "Array Along Curve"
+msgstr "Масив вздовж кривої"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Edit Array Along Curve"
+msgstr "Редагувати масив вздовж кривої"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Along Curve"
+msgstr "Вздовж кривої"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Distributes copies along a guide path, oriented to its tangent."
+msgstr "Розподіляє копії вздовж напрямної, орієнтуючись на її дотичну."
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Guide path"
+msgstr "Напрямна"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "First selected entity; the rest are repeated."
+msgstr "Перший вибраний об'єкт; решта повторюються."
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Spacing"
+msgstr "Відстань між копіями"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid ""
+"Distance between copies. 0 derives count from the path length; >0 sets the "
+"count from the usable length."
+msgstr ""
+"Відстань між копіями. 0 визначає кількість за довжиною контуру; >0 "
+"встановлює кількість за корисною довжиною."
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Start offset"
+msgstr "Початкове зміщення"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Align to tangent"
+msgstr "Вирівняти по дотичній"
 
 #: sketcher/ui_gtk/tools/rounded_rect_tool.py sketcher/ui_gtk/menu.py
 msgid "Rounded Rectangle"

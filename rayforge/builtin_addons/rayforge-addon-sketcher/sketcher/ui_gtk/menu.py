@@ -57,6 +57,9 @@ class SketchMenu(Gio.Menu):
 
         array_group = Gio.Menu()
         array_group.append(_("Circular Array"), "sketch.tool_circular_array")
+        array_group.append(
+            _("Array Along Curve"), "sketch.tool_curve_along_array"
+        )
         tools_menu.append_section(_("Arrays"), array_group)
 
         self.append_submenu(_("_Sketch"), tools_menu)

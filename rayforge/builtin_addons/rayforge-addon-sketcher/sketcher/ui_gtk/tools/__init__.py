@@ -8,6 +8,7 @@ from .circle_tool import CircleTool
 from .circular_array_tool import CircularArrayTool
 from .coincident_constraint_tool import CoincidentConstraintTool
 from .construction_tool import ConstructionTool
+from .curve_along_array_tool import CurveAlongArrayTool
 from .delete_tool import DeleteTool
 from .diameter_constraint_tool import DiameterConstraintTool
 from .distance_constraint_tool import DistanceConstraintTool
@@ -42,6 +43,7 @@ TOOL_REGISTRY = {
     "circular_array": CircularArrayTool,
     "coincident": CoincidentConstraintTool,
     "construction": ConstructionTool,
+    "curve_along_array": CurveAlongArrayTool,
     "delete": DeleteTool,
     "diameter": DiameterConstraintTool,
     "distance": DistanceConstraintTool,
@@ -103,6 +105,7 @@ __all__ = [
     "CircularArrayTool",
     "CoincidentConstraintTool",
     "ConstructionTool",
+    "CurveAlongArrayTool",
     "DeleteTool",
     "DiameterConstraintTool",
     "DistanceConstraintTool",

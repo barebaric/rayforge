@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-25 10:44+0200\n"
+"POT-Creation-Date: 2026-08-29 01:30+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -71,8 +71,8 @@ msgid "Line to {} at {}"
 msgstr "Linie zu {} bei {}"
 
 #: sketcher/core/constraints/rotational.py
-msgid "Rotational Pattern"
-msgstr "Drehmuster"
+msgid "Rotational Array"
+msgstr "Rotationsarray"
 
 #: sketcher/core/constraints/distance.py
 #: sketcher/ui_gtk/tools/distance_constraint_tool.py
@@ -188,10 +188,6 @@ msgstr "Textfüllung festlegen"
 msgid "Edit Constraint"
 msgstr "Bedingung bearbeiten"
 
-#: sketcher/core/commands/edit_pattern.py
-msgid "Edit Pattern"
-msgstr "Muster bearbeiten"
-
 #: sketcher/core/commands/bezier.py sketcher/core/commands/line.py
 msgid "Add Line"
 msgstr "Linie hinzufügen"
@@ -211,6 +207,10 @@ msgstr "{} hinzufügen"
 #: sketcher/core/commands/grid.py
 msgid "Add Grid"
 msgstr "Raster hinzufügen"
+
+#: sketcher/core/commands/edit_array.py
+msgid "Edit Array"
+msgstr "Array bearbeiten"
 
 #: sketcher/core/commands/chamfer.py
 msgid "Add Chamfer"
@@ -233,6 +233,10 @@ msgstr "Geraderichten"
 msgid "Duplicate Selection"
 msgstr "Auswahl duplizieren"
 
+#: sketcher/core/commands/create_array.py
+msgid "Create Array"
+msgstr "Array erstellen"
+
 #: sketcher/core/commands/rounded_rect.py
 msgid "Add Rounded Rectangle"
 msgstr "Abgerundetes Rechteck hinzufügen"
@@ -248,10 +252,6 @@ msgstr "Texteigenschaft ändern"
 #: sketcher/core/commands/waypoint.py
 msgid "Set Waypoint Type"
 msgstr "Wegpunkttyp festlegen"
-
-#: sketcher/core/commands/create_pattern.py
-msgid "Create Pattern"
-msgstr "Muster erstellen"
 
 #: sketcher/core/commands/point.py
 msgid "Move Point"
@@ -462,7 +462,8 @@ msgstr "Winkelbedingung hinzufügen"
 msgid "Fill"
 msgstr "Füllung"
 
-#: sketcher/ui_gtk/tools/arc_tool.py sketcher/ui_gtk/menu.py
+#: sketcher/ui_gtk/tools/arc_tool.py
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py sketcher/ui_gtk/menu.py
 msgid "Arc"
 msgstr "Bogen"
 
@@ -523,6 +524,7 @@ msgid "Places copies along a circular arc around a centre."
 msgstr "Platziert Kopien entlang eines Kreisbogens um einen Mittelpunkt."
 
 #: sketcher/ui_gtk/tools/circular_array_tool.py
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
 msgid "Count"
 msgstr "Anzahl"
 
@@ -547,12 +549,65 @@ msgid "Resizes the whole array."
 msgstr "Ändert die Größe des gesamten Arrays."
 
 #: sketcher/ui_gtk/tools/circular_array_tool.py
-msgid "Derived from the seed's anchor point."
-msgstr "Wird aus dem Ankerpunkt des Ausgangselements abgeleitet."
+msgid "Derived from the template's anchor point."
+msgstr "Abgeleitet vom Ankerpunkt der Vorlage."
 
 #: sketcher/ui_gtk/tools/delete_tool.py
 msgid "Delete Selection"
 msgstr "Auswahl löschen"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Line"
+msgstr "Linie"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Bezier"
+msgstr "Bezier"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py sketcher/ui_gtk/menu.py
+msgid "Array Along Curve"
+msgstr "Array entlang Kurve"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Edit Array Along Curve"
+msgstr "Array entlang Kurve bearbeiten"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Along Curve"
+msgstr "Entlang Kurve"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Distributes copies along a guide path, oriented to its tangent."
+msgstr ""
+"Verteilt Kopien entlang eines Leitpfads, orientiert an dessen Tangente."
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Guide path"
+msgstr "Leitpfad"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "First selected entity; the rest are repeated."
+msgstr "Erstes ausgewähltes Element; die restlichen werden wiederholt."
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Spacing"
+msgstr "Abstand"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid ""
+"Distance between copies. 0 derives count from the path length; >0 sets the "
+"count from the usable length."
+msgstr ""
+"Abstand zwischen Kopien. 0 leitet die Anzahl aus der Pfadlänge ab; >0 legt "
+"die Anzahl anhand der nutzbaren Länge fest."
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Start offset"
+msgstr "Startversatz"
+
+#: sketcher/ui_gtk/tools/curve_along_array_tool.py
+msgid "Align to tangent"
+msgstr "An Tangente ausrichten"
 
 #: sketcher/ui_gtk/tools/rounded_rect_tool.py sketcher/ui_gtk/menu.py
 msgid "Rounded Rectangle"
