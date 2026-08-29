@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, ClassVar, Union
 from ...core.commands import AddItemsCommand
 from ...core.constraints import (
     CoincidentConstraint,
+    PointOnCurveConstraint,
     PointOnLineConstraint,
 )
 from ...core.entities import Entity, Point
@@ -31,6 +32,12 @@ class CoincidentConstraintTool(SketchTool):
         if CoincidentConstraint.can_apply_to(sel, sketch):
             p1_id, p2_id = sel.point_ids
             return not self._has_coincident_constraint(sketch, p1_id, p2_id)
+        if PointOnCurveConstraint.can_apply_to(sel, sketch):
+            point_id = sel.point_ids[0]
+            entity_id = sel.entity_ids[0]
+            return not self._has_point_on_curve_constraint(
+                sketch, point_id, entity_id
+            )
         if PointOnLineConstraint.can_apply_to(sel, sketch):
             point_id = sel.point_ids[0]
             entity_id = sel.entity_ids[0]
@@ -56,6 +63,18 @@ class CoincidentConstraintTool(SketchTool):
         for c in sketch.constraints:
             if (
                 isinstance(c, PointOnLineConstraint)
+                and c.point_id == point_id
+                and c.shape_id == entity_id
+            ):
+                return True
+        return False
+
+    def _has_point_on_curve_constraint(
+        self, sketch, point_id: int, entity_id: int
+    ) -> bool:
+        for c in sketch.constraints:
+            if (
+                isinstance(c, PointOnCurveConstraint)
                 and c.point_id == point_id
                 and c.shape_id == entity_id
             ):
@@ -90,6 +109,14 @@ class CoincidentConstraintTool(SketchTool):
             self.element.execute_command(cmd)
             sel.point_ids = [p1_id]
             sel.changed.send(sel)
+        elif PointOnCurveConstraint.can_apply_to(sel, sketch):
+            target_pid = sel.point_ids[0]
+            sel_entity_id = sel.entity_ids[0]
+            constr = PointOnCurveConstraint(target_pid, sel_entity_id)
+            cmd = AddItemsCommand(
+                sketch, _("Add Point On Curve"), constraints=[constr]
+            )
+            self.element.execute_command(cmd)
         elif PointOnLineConstraint.can_apply_to(sel, sketch):
             sel_entity_id = sel.entity_ids[0]
             target_pid = sel.point_ids[0]

@@ -16,6 +16,7 @@ from ..core.commands import BezierPreviewState
 from ..core.commands.dimension import DimensionData
 from ..core.constraints import (
     CoincidentConstraint,
+    PointOnCurveConstraint,
     PointOnLineConstraint,
 )
 from ..core.entities import (
@@ -636,7 +637,12 @@ class SketchRenderer:
 
             # Filter specific constraints on text box points to reduce clutter
             if isinstance(
-                constr, (CoincidentConstraint, PointOnLineConstraint)
+                constr,
+                (
+                    CoincidentConstraint,
+                    PointOnCurveConstraint,
+                    PointOnLineConstraint,
+                ),
             ) and constr.depends_on_points(text_box_point_ids):
                 continue
 

@@ -7,6 +7,7 @@ from rayforge.ui_gtk.canvas.worldsurface import WorldSurface
 
 from ..core.constraints import (
     CoincidentConstraint,
+    PointOnCurveConstraint,
     PointOnLineConstraint,
 )
 from ..core.entities import (
@@ -239,7 +240,9 @@ class SketchHitTester:
                 ):
                     continue
             elif (
-                isinstance(constr, PointOnLineConstraint)
+                isinstance(
+                    constr, (PointOnCurveConstraint, PointOnLineConstraint)
+                )
                 and constr.point_id in text_box_point_ids
             ):
                 continue
