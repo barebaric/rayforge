@@ -271,3 +271,15 @@ class EntityRegistry:
             rigid_points = entity.get_rigidly_connected_points(point_id)
             result.extend(rigid_points)
         return list(set(result))
+
+    def get_drag_anchor_points(self, point_id: EntityID) -> list[EntityID]:
+        """
+        Returns point IDs that should be pinned at their current position
+        while the given point is dragged. Iterates over all entities to
+        find any that define anchor points for this point.
+        """
+        result = []
+        for entity in self.entities:
+            anchor_points = entity.get_drag_anchor_points(point_id)
+            result.extend(anchor_points)
+        return list(set(result))

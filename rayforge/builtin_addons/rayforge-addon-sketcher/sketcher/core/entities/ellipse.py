@@ -50,6 +50,11 @@ class Ellipse(Entity):
             ]
         return []
 
+    def get_drag_anchor_points(self, point_id: EntityID) -> list[EntityID]:
+        if point_id in (self.radius_x_pt_idx, self.radius_y_pt_idx):
+            return [self.center_idx]
+        return []
+
     def hit_test(
         self,
         mx: float,

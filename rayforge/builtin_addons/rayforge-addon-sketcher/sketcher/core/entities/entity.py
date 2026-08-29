@@ -125,6 +125,14 @@ class Entity:
         """
         return []
 
+    def get_drag_anchor_points(self, point_id: EntityID) -> list[EntityID]:
+        """
+        Returns point IDs that should be pinned at their current position
+        while the given point is dragged (e.g., an ellipse center should
+        stay put when one of its radius points is dragged).
+        """
+        return []
+
     def mirror(self, axis: "MirrorAxis") -> None:
         """
         Updates entity-specific non-point state for a mirror transform.

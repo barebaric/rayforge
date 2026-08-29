@@ -46,6 +46,13 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# Hold weight used to pin drag anchor points (e.g. an ellipse center
+# while one of its radius points is dragged). Stronger than the drag
+# weight (0.1) so the dragged shape rotates/scales around its anchor
+# instead of drifting, but equal to hard-constraint stiffness so it
+# never fights real constraints.
+ANCHOR_HOLD_WEIGHT = 1.0
+
 
 class SelectTool(SnapMixin, SketchTool):
     """Handles selection and point dragging."""
@@ -717,6 +724,33 @@ class SelectTool(SnapMixin, SketchTool):
                             )
                         )
             dragged_group = coincident_group | set(rigid_points)
+
+        # Pin drag anchor points (e.g. an ellipse center while one of
+        # its radius points is dragged) at their drag-start position so
+        # the shape rotates/scales around them instead of drifting.
+        anchor_pids = set(
+            self.element.sketch.registry.get_drag_anchor_points(
+                self.dragged_point_id
+            )
+        )
+        scope = self.drag_scope_point_ids
+        for pid in anchor_pids:
+            if pid in dragged_group:
+                continue
+            if scope is not None and pid not in scope:
+                continue
+            initial_pos = self.drag_initial_positions.get(pid)
+            p = self._safe_get_point(pid)
+            if initial_pos and p and not p.fixed:
+                drag_constraints.append(
+                    DragConstraint(
+                        pid,
+                        initial_pos[0],
+                        initial_pos[1],
+                        weight=ANCHOR_HOLD_WEIGHT,
+                    )
+                )
+        dragged_group |= anchor_pids
 
         base_hold_weight = 0.01
         max_hops = max(

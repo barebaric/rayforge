@@ -67,6 +67,11 @@ class Arc(Entity):
     def get_junction_point_ids(self) -> list[EntityID]:
         return [self.start_idx, self.end_idx, self.center_idx]
 
+    def get_drag_anchor_points(self, point_id: EntityID) -> list[EntityID]:
+        if point_id in (self.start_idx, self.end_idx):
+            return [self.center_idx]
+        return []
+
     def hit_test(
         self,
         mx: float,

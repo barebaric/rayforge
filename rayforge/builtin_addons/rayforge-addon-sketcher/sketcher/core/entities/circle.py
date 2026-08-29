@@ -39,6 +39,11 @@ class Circle(Entity):
     def get_junction_point_ids(self) -> list[EntityID]:
         return [self.center_idx, self.radius_pt_idx]
 
+    def get_drag_anchor_points(self, point_id: EntityID) -> list[EntityID]:
+        if point_id == self.radius_pt_idx:
+            return [self.center_idx]
+        return []
+
     def hit_test(
         self,
         mx: float,

@@ -79,6 +79,7 @@ def test_select_tool_on_press_no_hit(select_tool, mock_element):
 def test_select_tool_on_press_point_hit(select_tool, mock_element):
     """Test on_press when a point is hit."""
     mock_element.hittester.get_hit_data.return_value = ("point", 5)
+    _mock_point_drag_state(mock_element)
 
     result = select_tool.on_press(100.0, 200.0, 1)
 
@@ -160,6 +161,17 @@ def test_select_tool_on_hover_motion_change(select_tool, mock_element):
     mock_element.mark_dirty.assert_called_once()
 
 
+def _mock_point_drag_state(mock_element):
+    """Configures mock_element so _prepare_point_drag can run: the
+    drag prep iterates the coincident group, rigid connections,
+    constraints and all registry points/entities."""
+    mock_element.sketch.get_coincident_points.return_value = set()
+    mock_element.sketch.constraints = []
+    mock_element.sketch.registry.get_rigidly_connected_points.return_value = []
+    mock_element.sketch.registry.points = []
+    mock_element.sketch.registry.entities = []
+
+
 @pytest.mark.ui
 def test_select_tool_prepare_point_drag(select_tool, mock_element):
     """Test _prepare_point_drag sets up drag state."""
@@ -167,6 +179,7 @@ def test_select_tool_prepare_point_drag(select_tool, mock_element):
     mock_point.x = 10.0
     mock_point.y = 20.0
     mock_element.sketch.registry.get_point.return_value = mock_point
+    _mock_point_drag_state(mock_element)
     mock_element.get_world_transform.return_value.invert.return_value = Mock()
     mock_element.content_transform.invert.return_value = Mock()
 
