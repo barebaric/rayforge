@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-29 01:30+0200\n"
+"POT-Creation-Date: 2026-08-29 21:19+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -45,12 +45,17 @@ msgstr ""
 msgid "Origin at {}"
 msgstr ""
 
+#: sketcher/core/constraints/point_on_curve.py
+msgid "Point on Curve"
+msgstr ""
+
+#: sketcher/core/constraints/point_on_curve.py
 #: sketcher/core/constraints/point_on_line.py
-msgid "Point on Line"
+msgid "Point at {}"
 msgstr ""
 
 #: sketcher/core/constraints/point_on_line.py
-msgid "Point at {}"
+msgid "Point on Line"
 msgstr ""
 
 #: sketcher/core/constraints/collinear.py
@@ -443,11 +448,22 @@ msgid "H"
 msgstr ""
 
 #: sketcher/ui_gtk/tools/rectangle_tool.py sketcher/ui_gtk/tools/circle_tool.py
+#: sketcher/ui_gtk/tools/rounded_rect_tool.py
 msgid "Center on start point"
 msgstr ""
 
 #: sketcher/ui_gtk/tools/rectangle_tool.py
+#: sketcher/ui_gtk/tools/rounded_rect_tool.py
+msgid "Constrain to square"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/rectangle_tool.py
 msgid "Type dimensions (W H)"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/rectangle_tool.py sketcher/ui_gtk/tools/circle_tool.py
+#: sketcher/ui_gtk/tools/rounded_rect_tool.py
+msgid "Set edge point"
 msgstr ""
 
 #: sketcher/ui_gtk/tools/aspect_ratio_constraint_tool.py
@@ -644,6 +660,10 @@ msgstr ""
 
 #: sketcher/ui_gtk/tools/coincident_constraint_tool.py
 msgid "Add Coincident Constraint"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/coincident_constraint_tool.py
+msgid "Add Point On Curve"
 msgstr ""
 
 #: sketcher/ui_gtk/tools/coincident_constraint_tool.py

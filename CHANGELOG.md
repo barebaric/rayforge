@@ -5,6 +5,67 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.11.0-beta2
+
+### Added
+
+- Sketcher: new curve-along array tool distributes copies of the
+  selection along a line, arc, or bezier guide, rotated to follow the
+  curve's tangent
+- Sketcher: Point on Curve constraint pins a point onto a bezier path;
+  select a point plus a curve with the coincident tool
+- Sketcher: rectangles are now defined with perpendicular constraints,
+  so they stay rectangles when rotated
+- Sketcher: circle, ellipse, rectangle, and rounded-rectangle tools
+  share one interaction model: drag to commit, Shift draws from the
+  center, Ctrl constrains to a square or circle
+- Sketcher: dragging a radius point keeps the entity's center pinned
+- Raster: dither mode now applies the histogram levels (auto levels,
+  brightness range, white point) before dithering, so they shape the
+  output; the Power section hides itself when it has no effect
+
+### Changed
+
+- Upgrade raygeo to 1.48.0
+- The "Multiple Depths" raster depth mode is disabled on machines whose
+  driver cannot support it (e.g. Ruida), and affected steps show a
+  warning when opened
+- The pie menu has an opaque background with outlined labels and grows
+  to fit long item labels
+- The right panel collapses entirely when it has no content
+- Split the Sculpfun iCube profile into 3W and Pro-5W variants
+
+### Fixed
+
+- Windows: the installer now removes the previous installation before
+  copying and aborts with a clear message when files are still locked;
+  stale DLLs from older versions no longer crash the app at startup
+- Travel speed settings are no longer hidden on machines whose driver
+  speaks a binary protocol (e.g. Ruida), and machines created from a
+  profile are no longer saved with the wrong G-code dialect
+- The machine settings dialog could fail to open when stored driver
+  settings did not match the selected driver type
+- Discovery: serial ports are probed in parallel and ports that
+  answered before a scan timeout are still reported
+- Discovery: picking a network device after a USB device no longer
+  stamps the board's USB identity onto it, and machines whose USB
+  description carries only the brand name still match their profile
+- OctoPrint: configured machine dimensions are picked up during
+  probing, and transient state text no longer leaks into the profile
+  name
+- Sketcher: snap lines no longer reference stale geometry, the solver
+  no longer re-triggers itself in a loop, and drags no longer jitter
+  between moving snap attractors
+- Sketcher: constraints violated by re-anchoring an array are now
+  flagged
+- Canvas: modifier key state is re-synced on focus changes so Shift/
+  Ctrl no longer get stuck after dialogs or focus loss
+
+### Performance
+
+- Sketcher drags now solve only the dragged geometry and reuse a cached
+  snap index, so dragging stays smooth regardless of sketch size
+
 ## 1.11.0-beta1
 
 ### Added

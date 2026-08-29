@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-21 15:33+0200\n"
+"POT-Creation-Date: 2026-08-29 16:07+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -507,6 +507,11 @@ msgstr "Niveaux de puissance"
 #: laser_essentials/steps/raster_step.py
 msgid "Number of discrete power steps (lower = fewer moves)"
 msgstr "Nombre de pas de puissance discrets (plus bas = moins de déplacements)"
+
+#: laser_essentials/steps/raster_step.py
+#, python-brace-format
+msgid "The {mode} depth mode is not supported by this machine's driver."
+msgstr "Le mode de profondeur {mode} n'est pas pris en charge par le pilote de cette machine."
 
 #: laser_essentials/steps/contour_step.py
 msgid "Contour"

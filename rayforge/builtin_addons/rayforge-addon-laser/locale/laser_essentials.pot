@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-21 15:33+0200\n"
+"POT-Creation-Date: 2026-08-29 16:07+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -488,6 +488,11 @@ msgstr ""
 
 #: laser_essentials/steps/raster_step.py
 msgid "Number of discrete power steps (lower = fewer moves)"
+msgstr ""
+
+#: laser_essentials/steps/raster_step.py
+#, python-brace-format
+msgid "The {mode} depth mode is not supported by this machine's driver."
 msgstr ""
 
 #: laser_essentials/steps/contour_step.py
