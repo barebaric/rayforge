@@ -16,10 +16,10 @@ from rayforge.ui_gtk.shared.pref_rows import (
 from ...core.arrays import (
     CircularArray,
     CircularArrayStrategy,
-    resolve_template_center,
 )
 from ...core.commands import CreateArrayCommand
 from ...core.entities import Circle
+from ...core.entity_group import EntityGroup
 from .array_base import ArrayToolBase
 
 logger = logging.getLogger(__name__)
@@ -105,15 +105,10 @@ class CircularArrayTool(ArrayToolBase):
         matches the applied one without any jump.
         """
         registry = self.element.sketch.registry
-        pids = CreateArrayCommand.collect_template_point_ids(
-            registry, self._template_entity_ids
-        )
-        if not pids:
+        group = EntityGroup(registry, self._template_entity_ids)
+        if not group.point_ids():
             return 10.0
-        template_points = [registry.get_point(pid) for pid in pids]
-        tcx, tcy = resolve_template_center(
-            registry, self._template_entity_ids, template_points
-        )
+        tcx, tcy = group.center()
         radius = math.hypot(tcx - center[0], tcy - center[1])
         return radius if radius > 1e-6 else 10.0
 

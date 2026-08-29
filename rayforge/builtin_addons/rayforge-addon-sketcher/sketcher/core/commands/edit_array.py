@@ -10,7 +10,8 @@ from ..arrays import (
     InstancePlacement,
     resolve_template_center,
 )
-from ..entities import Bezier, Circle
+from ..entities import Circle
+from ..entity_group import EntityGroup
 from ..params import ParameterContext
 from .base import SketchChangeCommand
 from .create_array import CreateArrayCommand
@@ -154,17 +155,11 @@ class EditArrayCommand(SketchChangeCommand):
             # groups that no longer match the template (partial
             # deletions) and slots beyond the count are rebuilt/removed.
             self._reanchor_template(registry, template_eids)
-            template_pts: list[Point] = []
-            for eid in template_eids:
-                entity = registry.get_entity(eid)
-                if entity is None:
-                    continue
-                for pid in entity.get_point_ids():
-                    pt = registry.get_point(pid)
-                    if pt is not None:
-                        template_pts.append(pt)
+            template_group = EntityGroup(registry, template_eids)
             placements = self.strategy.member_placements(
-                resolve_template_center(registry, template_eids, template_pts),
+                resolve_template_center(
+                    registry, template_eids, template_group.points()
+                ),
                 registry,
             )
             kept_members = [(0, list(template_eids))]
@@ -318,33 +313,11 @@ class EditArrayCommand(SketchChangeCommand):
             placement.target_center,
             placement.angle,
         )
-        for tpl_eid, copy_eid in zip(template_eids, copy_eids):
-            tpl_entity = registry.get_entity(tpl_eid)
-            copy_entity = registry.get_entity(copy_eid)
-            if tpl_entity is None or copy_entity is None:
-                continue
-            for tpl_pid, copy_pid in zip(
-                tpl_entity.get_point_ids(), copy_entity.get_point_ids()
-            ):
-                tpl_pt = registry.get_point(tpl_pid)
-                copy_pt = registry.get_point(copy_pid)
-                if tpl_pt is None or copy_pt is None:
-                    continue
-                copy_pt.x, copy_pt.y = placement.transform_point(
-                    tpl_pt.x, tpl_pt.y
-                )
-                self._copy_updates.append((copy_pt, copy_pt.x, copy_pt.y))
-            if isinstance(tpl_entity, Bezier) and isinstance(
-                copy_entity, Bezier
-            ):
-                if tpl_entity.cp1 is not None:
-                    copy_entity.cp1 = placement.transform_offset(
-                        *tpl_entity.cp1
-                    )
-                if tpl_entity.cp2 is not None:
-                    copy_entity.cp2 = placement.transform_offset(
-                        *tpl_entity.cp2
-                    )
+        self._copy_updates.extend(
+            EntityGroup(registry, template_eids).rewrite_copy_from(
+                EntityGroup(registry, copy_eids), placement
+            )
+        )
 
     def _create_members(self, slots: list[int]) -> None:
         """Creates static copies of the template group at the slots."""
@@ -429,15 +402,9 @@ class EditArrayCommand(SketchChangeCommand):
     ) -> None:
         """Saves the current positions of all template points so undo
         can restore them after ``_reanchor_template`` moves them."""
-        self._template_point_snapshot = []
-        for eid in template_eids:
-            entity = registry.get_entity(eid)
-            if entity is None:
-                continue
-            for pid in entity.get_point_ids():
-                pt = registry.get_point(pid)
-                if pt is not None:
-                    self._template_point_snapshot.append((pt, pt.x, pt.y))
+        self._template_point_snapshot = EntityGroup(
+            registry, template_eids
+        ).snapshot_positions()
 
     def _redo(self) -> None:
         if self.remove_cmd is not None:
@@ -487,9 +454,7 @@ class EditArrayCommand(SketchChangeCommand):
             self.remove_cmd._do_undo()
         # Restore template point positions that were moved by
         # _reanchor_template.
-        for pt, x, y in self._template_point_snapshot:
-            pt.x = x
-            pt.y = y
+        EntityGroup.restore_positions(self._template_point_snapshot)
         self._template_point_snapshot = []
         if self._old_array_state is None:
             return

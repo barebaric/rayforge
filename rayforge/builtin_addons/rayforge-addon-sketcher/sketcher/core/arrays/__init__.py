@@ -5,7 +5,6 @@ from .base import (
     ArrayStrategy,
     InstancePlacement,
     PlacementKind,
-    apply_placement_to_entities,
     find_array_for_entity,
     resolve_template_center,
 )
@@ -26,7 +25,6 @@ __all__ = [
     "CurveAlongArrayStrategy",
     "InstancePlacement",
     "PlacementKind",
-    "apply_placement_to_entities",
     "find_array_for_entity",
     "path_length",
     "resolve_template_center",

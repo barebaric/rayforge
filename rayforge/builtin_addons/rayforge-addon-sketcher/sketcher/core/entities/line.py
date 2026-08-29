@@ -110,6 +110,15 @@ class Line(Entity):
         p = registry.get_point(start_pid)
         return [(p.x, p.y)]
 
+    def to_polyline(
+        self, registry: "EntityRegistry"
+    ) -> list[tuple[float, float]]:
+        """A line's polyline is its two endpoints. Overridden because
+        raygeo's polygon conversion skips lone segments."""
+        p1 = registry.get_point(self.p1_idx)
+        p2 = registry.get_point(self.p2_idx)
+        return [(p1.x, p1.y), (p2.x, p2.y)]
+
     def to_dict(self) -> dict[str, Any]:
         """Serializes the Line to a dictionary."""
         data = super().to_dict()

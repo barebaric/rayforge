@@ -7,7 +7,8 @@ from dataclasses import dataclass
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from ..entities import Bezier, Circle, Ellipse
+from ..entities import Circle
+from ..entity_group import EntityGroup
 
 if TYPE_CHECKING:
     from ..constraints import Constraint
@@ -214,12 +215,6 @@ class ArrayStrategy(ABC):
         return
 
 
-def points_bbox_center(points: list[Point]) -> tuple[float, float]:
-    xs = [p.x for p in points]
-    ys = [p.y for p in points]
-    return ((min(xs) + max(xs)) / 2.0, (min(ys) + max(ys)) / 2.0)
-
-
 def resolve_template_center(
     registry: EntityRegistry,
     template_entity_ids: list[int],
@@ -232,17 +227,10 @@ def resolve_template_center(
     the logical center — the defining points of an ellipse only span
     a quarter of its area, so a bbox over them is wrong. For anything
     else the bbox center of all defining points is used.
+
+    Compatibility wrapper; the logic lives on ``EntityGroup.center``.
     """
-    shapes = [
-        entity
-        for entity in (registry.get_entity(eid) for eid in template_entity_ids)
-        if isinstance(entity, (Circle, Ellipse))
-    ]
-    if len(shapes) == 1:
-        cpt = registry.get_point(shapes[0].center_idx)
-        if cpt is not None:
-            return (cpt.x, cpt.y)
-    return points_bbox_center(template_points)
+    return EntityGroup(registry, template_entity_ids).center()
 
 
 class Array(ABC):
@@ -609,42 +597,3 @@ def find_array_for_entity(arrays: list[Array], entity_id: int) -> Array | None:
         if arr.guide_entity_id == entity_id:
             return arr
     return None
-
-
-def apply_placement_to_entities(
-    registry: EntityRegistry,
-    entity_ids: list[int],
-    placement: InstancePlacement,
-) -> None:
-    """
-    Rigidly moves the entities' defining points and Bezier
-    control-point offsets by the placement transform.
-
-    Points shared between entities (e.g. the joined edges of a
-    rounded rectangle) are moved exactly once: every new position is
-    computed from the pre-move geometry before anything is written.
-    """
-    pids: dict[int, None] = {}
-    beziers: list[Bezier] = []
-    for eid in entity_ids:
-        entity = registry.get_entity(eid)
-        if entity is None:
-            continue
-        for pid in entity.get_point_ids():
-            pids.setdefault(pid)
-        if isinstance(entity, Bezier):
-            beziers.append(entity)
-
-    old = {}
-    for pid in pids:
-        pt = registry.get_point(pid)
-        if pt is not None:
-            old[pid] = (pt.x, pt.y)
-    for pid, (x, y) in old.items():
-        pt = registry.get_point(pid)
-        pt.x, pt.y = placement.transform_point(x, y)
-    for entity in beziers:
-        if entity.cp1 is not None:
-            entity.cp1 = placement.transform_offset(*entity.cp1)
-        if entity.cp2 is not None:
-            entity.cp2 = placement.transform_offset(*entity.cp2)

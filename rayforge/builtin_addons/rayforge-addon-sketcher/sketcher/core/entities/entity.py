@@ -193,6 +193,18 @@ class Entity:
         """
         return []
 
+    def to_polyline(
+        self, registry: "EntityRegistry"
+    ) -> list[tuple[float, float]]:
+        """
+        Samples this entity into a polyline in model coordinates,
+        e.g. for preview rendering. The entity's geometry is flattened
+        by raygeo with a 0.1 unit deviation tolerance. Entities
+        without a stroked shape yield an empty polyline.
+        """
+        polygons = self.to_geometry(registry).to_polygons(0.1)
+        return polygons[0] if polygons else []
+
     def to_dict(self) -> dict[str, Any]:
         """Base serialization method for entities."""
         data = {

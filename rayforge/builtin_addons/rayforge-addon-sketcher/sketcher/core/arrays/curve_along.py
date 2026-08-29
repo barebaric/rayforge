@@ -5,13 +5,12 @@ import math
 from typing import TYPE_CHECKING, Any
 
 from ..entities import Arc, Bezier, Line
+from ..entity_group import EntityGroup
 from .base import (
     Array,
     ArrayStrategy,
     InstancePlacement,
     PlacementKind,
-    apply_placement_to_entities,
-    resolve_template_center,
 )
 
 if TYPE_CHECKING:
@@ -499,23 +498,13 @@ class CurveAlongArray(Array):
         the guide start (e.g. a snapped coincidence) agrees with the
         sync instead of fighting it.
         """
-        template_points: list[Point] = []
-        for eid in template_eids:
-            entity = registry.get_entity(eid)
-            if entity is None:
-                continue
-            for pid in entity.get_point_ids():
-                pt = registry.get_point(pid)
-                if pt is not None:
-                    template_points.append(pt)
-        if not template_points:
+        group = EntityGroup(registry, template_eids)
+        if not group.points():
             return
         assert self.template_anchor is not None, (
             "reanchor requires a created array (template anchor set)"
         )
-        current_center = resolve_template_center(
-            registry, template_eids, template_points
-        )
+        current_center = group.center()
         placement = strategy.template_placement(current_center, registry)
         if placement.kind is not PlacementKind.CURVE_ALIGNED:
             # No usable path: position 0 is undefined, leave the
@@ -554,7 +543,7 @@ class CurveAlongArray(Array):
             target,
             delta,
         )
-        apply_placement_to_entities(registry, template_eids, motion)
+        group.apply_rigid_motion(motion)
         self.template_anchor = (
             (float(target[0]), float(target[1])),
             float(placement.angle),

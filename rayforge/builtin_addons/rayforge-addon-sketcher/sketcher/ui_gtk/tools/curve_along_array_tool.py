@@ -18,7 +18,8 @@ from ...core.arrays import (
 )
 from ...core.commands import CreateArrayCommand
 from ...core.entities import Arc, Bezier, Line
-from .array_base import ArrayToolBase, _entity_polylines
+from ...core.entity_group import EntityGroup
+from .array_base import ArrayToolBase
 
 logger = logging.getLogger(__name__)
 
@@ -331,5 +332,5 @@ class CurveAlongArrayTool(ArrayToolBase):
         ctx.restore()
 
     def _path_polyline(self, registry, entity):
-        polylines = _entity_polylines(entity, registry)
+        polylines = EntityGroup(registry, [entity.id]).polylines()
         return polylines[0] if polylines else []

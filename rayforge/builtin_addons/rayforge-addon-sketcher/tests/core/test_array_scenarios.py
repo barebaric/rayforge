@@ -21,6 +21,7 @@ from sketcher.core.constraints import (
     RadiusConstraint,
 )
 from sketcher.core.entities import Circle
+from sketcher.core.entity_group import EntityGroup
 from sketcher.core.sketch import Sketch
 
 
@@ -139,9 +140,7 @@ def test_dragging_template_redistributes_copies(app_flow):
     """
     sketch, array = app_flow
     template_id = array.living_entity_ids(sketch.registry)[0]
-    pids = CreateArrayCommand.collect_template_point_ids(
-        sketch.registry, [template_id]
-    )
+    pids = EntityGroup(sketch.registry, [template_id]).point_ids()
     circle = sketch.registry.get_entity(array.guide_circle_id)
     center = sketch.registry.get_point(circle.center_idx)
     radius_pt = sketch.registry.get_point(circle.radius_pt_idx)
@@ -324,9 +323,7 @@ def test_radial_drag_does_not_distort_the_array(app_flow):
     """
     sketch, array = app_flow
     template_id = array.living_entity_ids(sketch.registry)[0]
-    pids = CreateArrayCommand.collect_template_point_ids(
-        sketch.registry, [template_id]
-    )
+    pids = EntityGroup(sketch.registry, [template_id]).point_ids()
 
     # Simulate a substantial radial drag: strong drag targets (like
     # _handle_entity_drag) solved per frame, no exclusions.

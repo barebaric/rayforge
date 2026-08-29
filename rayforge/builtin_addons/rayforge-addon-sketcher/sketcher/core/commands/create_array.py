@@ -11,11 +11,15 @@ from ..arrays import (
     ArrayStrategy,
     CircularArrayStrategy,
     InstancePlacement,
-    apply_placement_to_entities,
     resolve_template_center,
 )
-from ..entities import Bezier, Circle, Ellipse, TextBoxEntity
+from ..entities import Bezier, Circle, Ellipse
 from ..entities import Point as SketchPoint
+from ..entity_group import (
+    EntityGroup,
+    remap_point_refs,
+    transform_bezier_offsets,
+)
 from .base import SketchChangeCommand
 from .items import AddItemsCommand
 
@@ -65,21 +69,6 @@ class CreateArrayCommand(SketchChangeCommand):
         self._extracted_helper_ids: list[int] = []
 
     @staticmethod
-    def collect_template_point_ids(
-        registry: EntityRegistry, template_entity_ids: list[int]
-    ) -> list[int]:
-        """Returns all unique point IDs referenced by the template entities."""
-        pids: list[int] = []
-        for eid in template_entity_ids:
-            entity = registry.get_entity(eid)
-            if entity is None:
-                continue
-            for pid in entity.get_point_ids():
-                if pid not in pids:
-                    pids.append(pid)
-        return pids
-
-    @staticmethod
     def calculate_geometry(
         registry: EntityRegistry,
         strategy: ArrayStrategy,
@@ -103,9 +92,8 @@ class CreateArrayCommand(SketchChangeCommand):
             'instance_entity_groups', 'center_pid', 'radius_pt_pid' and
             'guide_circle' keys, or None if the array cannot be built.
         """
-        template_pids = CreateArrayCommand.collect_template_point_ids(
-            registry, template_entity_ids
-        )
+        template_group = EntityGroup(registry, template_entity_ids)
+        template_pids = template_group.point_ids()
         if not template_pids or len(template_entity_ids) < 1:
             return None
 
@@ -166,9 +154,9 @@ class CreateArrayCommand(SketchChangeCommand):
                 clone.id = next_temp_id()
                 clone.array_copy = True
                 eid_map[tpl_entity.id] = clone.id
-                _remap_point_refs(clone, pid_map)
+                remap_point_refs(clone, pid_map)
                 if isinstance(clone, Bezier):
-                    _transform_bezier_offsets(clone, placement)
+                    transform_bezier_offsets(clone, placement)
                 # Copied Ellipses must not retain the template's
                 # helper-line IDs — those reference entities that will
                 # be deleted, causing calculate_dependencies to cascade
@@ -347,14 +335,11 @@ class CreateArrayCommand(SketchChangeCommand):
         """
         registry = self.sketch.registry
         template = set(self.template_entity_ids)
-        helper_ids = self._template_helper_ids(registry)
+        template_group = EntityGroup(registry, self.template_entity_ids)
+        helper_ids = template_group.helper_ids()
         template.update(helper_ids)
         self._extracted_helper_ids = sorted(helper_ids)
-        template_pids = set(
-            CreateArrayCommand.collect_template_point_ids(
-                registry, self.template_entity_ids
-            )
-        )
+        template_pids = set(template_group.point_ids())
 
         # Erase external constraints: everything that touches template
         # geometry but is not internal to the template group.
@@ -384,59 +369,28 @@ class CreateArrayCommand(SketchChangeCommand):
                     self._clone_pid_map[pid] = clone_pid
                     self._cloned_points.append(registry.get_point(clone_pid))
         if self._clone_pid_map:
-            for eid in self.template_entity_ids + self._extracted_helper_ids:
-                entity = registry.get_entity(eid)
-                if entity is not None:
-                    _remap_point_refs(entity, self._clone_pid_map)
-            for constr in internal:
-                _remap_point_refs(constr, self._clone_pid_map)
-
-    def _template_helper_ids(self, registry: EntityRegistry) -> list[int]:
-        """
-        Returns the helper geometry belonging to the template entities:
-        registered helpers (an ellipse's helper_line_ids, a text box's
-        construction lines) plus any construction/invisible entity
-        that is fully attached to the template's points (e.g. an
-        ellipse's visible axis lines, which are not registered as
-        helpers). The helpers share the template's points and must be
-        extracted — and placed — along with it.
-        """
-        helper_ids: list[int] = []
-        for eid in self.template_entity_ids:
-            entity = registry.get_entity(eid)
-            if isinstance(entity, Ellipse):
-                helper_ids.extend(entity.helper_line_ids)
-            elif isinstance(entity, TextBoxEntity):
-                helper_ids.extend(entity.construction_line_ids)
-        template_pids = set(
-            CreateArrayCommand.collect_template_point_ids(
-                registry, self.template_entity_ids
+            extraction_group = EntityGroup(
+                registry,
+                self.template_entity_ids + self._extracted_helper_ids,
             )
-        )
-        taken = set(helper_ids) | set(self.template_entity_ids)
-        for entity in registry.entities:
-            if entity.id in taken:
-                continue
-            if not (entity.construction or entity.invisible):
-                continue
-            point_ids = entity.get_point_ids()
-            if point_ids and set(point_ids) <= template_pids:
-                helper_ids.append(entity.id)
-        return helper_ids
+            extraction_group.remap_point_refs(self._clone_pid_map)
+            for constr in internal:
+                remap_point_refs(constr, self._clone_pid_map)
 
     def _rollback_extraction(self) -> None:
         """Undoes _extract_template: restores erased constraints,
         hands the shared points back and removes the clones."""
         if self._clone_pid_map:
             inverse = {v: k for k, v in self._clone_pid_map.items()}
-            for eid in self.template_entity_ids + self._extracted_helper_ids:
-                entity = self.sketch.registry.get_entity(eid)
-                if entity is not None:
-                    _remap_point_refs(entity, inverse)
+            extraction_group = EntityGroup(
+                self.sketch.registry,
+                self.template_entity_ids + self._extracted_helper_ids,
+            )
+            extraction_group.remap_point_refs(inverse)
             for constr in self.sketch.get_internal_constraints(
                 set(self.template_entity_ids)
             ):
-                _remap_point_refs(constr, inverse)
+                remap_point_refs(constr, inverse)
             self.sketch.registry.points = [
                 p
                 for p in self.sketch.registry.points
@@ -449,14 +403,15 @@ class CreateArrayCommand(SketchChangeCommand):
         """Redoes _extract_template after an undo rolled it back."""
         if self._clone_pid_map:
             self.sketch.registry.points.extend(self._cloned_points)
-            for eid in self.template_entity_ids + self._extracted_helper_ids:
-                entity = self.sketch.registry.get_entity(eid)
-                if entity is not None:
-                    _remap_point_refs(entity, self._clone_pid_map)
+            extraction_group = EntityGroup(
+                self.sketch.registry,
+                self.template_entity_ids + self._extracted_helper_ids,
+            )
+            extraction_group.remap_point_refs(self._clone_pid_map)
             for constr in self.sketch.get_internal_constraints(
                 set(self.template_entity_ids)
             ):
-                _remap_point_refs(constr, self._clone_pid_map)
+                remap_point_refs(constr, self._clone_pid_map)
         for constr in self._erased_constraints:
             if constr in self.sketch.constraints:
                 self.sketch.constraints.remove(constr)
@@ -469,29 +424,22 @@ class CreateArrayCommand(SketchChangeCommand):
         """
         registry = self.sketch.registry
         strategy = self.strategy
-        pids = CreateArrayCommand.collect_template_point_ids(
-            registry, self.template_entity_ids
-        )
-        pts = [registry.get_point(pid) for pid in pids]
-        pts = [p for p in pts if p is not None]
+        template_group = EntityGroup(registry, self.template_entity_ids)
+        pts = template_group.points()
         if not pts:
             return
         template_center = resolve_template_center(
             registry, self.template_entity_ids, pts
         )
         placement = strategy.template_placement(template_center, registry)
-        self._pre_place_snapshot = [(p, p.x, p.y) for p in pts]
+        self._pre_place_snapshot = template_group.snapshot_positions()
         self._pre_place_cp_snapshot = [
             (entity, entity.cp1, entity.cp2)
-            for entity in (
-                registry.get_entity(eid) for eid in self.template_entity_ids
-            )
+            for entity in template_group.entities()
             if isinstance(entity, Bezier)
         ]
         self._template_placement = placement
-        apply_placement_to_entities(
-            registry, self.template_entity_ids, placement
-        )
+        template_group.apply_placement(placement)
 
     def _do_undo(self) -> None:
         if self.add_cmd:
@@ -503,9 +451,7 @@ class CreateArrayCommand(SketchChangeCommand):
         # Restore the template's pre-place position, then undo the
         # extraction (shared points handed back, external constraints
         # restored).
-        for pt, x, y in self._pre_place_snapshot:
-            pt.x = x
-            pt.y = y
+        EntityGroup.restore_positions(self._pre_place_snapshot)
         for entity, cp1, cp2 in self._pre_place_cp_snapshot:
             entity.cp1 = cp1
             entity.cp2 = cp2
@@ -515,36 +461,8 @@ class CreateArrayCommand(SketchChangeCommand):
         assert self.add_cmd is not None
         self._reapply_extraction()
         if self._template_placement is not None:
-            apply_placement_to_entities(
-                self.sketch.registry,
-                self.template_entity_ids,
-                self._template_placement,
-            )
+            EntityGroup(
+                self.sketch.registry, self.template_entity_ids
+            ).apply_placement(self._template_placement)
         self.add_cmd._do_execute()
         self._register_array()
-
-
-def _remap_point_refs(
-    obj: Entity | Constraint, pid_map: dict[int, int]
-) -> None:
-    """Rewrites point ID references on an entity or constraint."""
-    for attr, value in vars(obj).items():
-        # Note: bool is an int subclass; never remap flag attributes.
-        if (
-            isinstance(value, int)
-            and not isinstance(value, bool)
-            and value in pid_map
-        ):
-            setattr(obj, attr, pid_map[value])
-
-
-def _transform_bezier_offsets(clone: Bezier, placement: Any) -> None:
-    """
-    Rotates bezier control point offsets so curve orientation follows
-    rotation placements. Offsets are relative to their anchor endpoints,
-    which are already transformed.
-    """
-    if clone.cp1 is not None:
-        clone.cp1 = placement.transform_offset(*clone.cp1)
-    if clone.cp2 is not None:
-        clone.cp2 = placement.transform_offset(*clone.cp2)

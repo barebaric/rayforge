@@ -5,12 +5,12 @@ from typing import TYPE_CHECKING, Any
 
 from ..constraints import RadiusConstraint
 from ..entities import Circle, Point
+from ..entity_group import EntityGroup
 from .base import (
     Array,
     ArrayStrategy,
     InstancePlacement,
     PlacementKind,
-    resolve_template_center,
 )
 
 if TYPE_CHECKING:
@@ -181,20 +181,13 @@ class CircularArrayStrategy(ArrayStrategy):
         if abs(dx) > 1e-12 or abs(dy) > 1e-12:
             # Entities of the array share points (e.g. an ellipse's
             # helper lines are built on the ellipse's own points), so
-            # collect unique points: translating per reference would
-            # move shared points once per referencing entity and tear
-            # the members apart.
-            unique_pids: dict[int, None] = {}
-            for eid in array_def.living_entity_ids(registry):
-                entity = registry.get_entity(eid)
-                if entity is None:
-                    continue
-                for pid in entity.get_point_ids():
-                    unique_pids.setdefault(pid)
-            for pid in unique_pids:
-                p = registry.get_point(pid)
-                p.x += dx
-                p.y += dy
+            # the group translates unique points only: translating per
+            # reference would move shared points once per referencing
+            # entity and tear the members apart.
+            whole = EntityGroup(
+                registry, array_def.living_entity_ids(registry)
+            )
+            whole.translate(dx, dy)
 
         # The template center always sits on the guide circle (the
         # radius drives the member placement): re-projecting is
@@ -217,33 +210,7 @@ class CircularArrayStrategy(ArrayStrategy):
         on the circle of the given radius, shape and angle preserved."""
         ccx, ccy = center
         for _slot, eids in array_def.living_members(registry):
-            # Entities of a member share points (e.g. an ellipse's
-            # helper lines are built on the ellipse's own points), so
-            # collect unique points: translating per occurrence would
-            # move shared points once per referencing entity and tear
-            # the member apart.
-            unique_pts: dict[int, Point] = {}
-            for eid in eids:
-                entity = registry.get_entity(eid)
-                if entity is None:
-                    continue
-                for pid in entity.get_point_ids():
-                    if pid not in unique_pts:
-                        p = registry.get_point(pid)
-                        if p is not None:
-                            unique_pts[pid] = p
-            if not unique_pts:
-                continue
-            pts = list(unique_pts.values())
-            mcx, mcy = resolve_template_center(registry, eids, pts)
-            vx, vy = mcx - ccx, mcy - ccy
-            d = math.hypot(vx, vy)
-            if d < 1e-9:
-                continue
-            scale = (radius - d) / d
-            for p in pts:
-                p.x += vx * scale
-                p.y += vy * scale
+            EntityGroup(registry, eids).radial_project((ccx, ccy), radius)
 
     def _pin_guide_circle(
         self,

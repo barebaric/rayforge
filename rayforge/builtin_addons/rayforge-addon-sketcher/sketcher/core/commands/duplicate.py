@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from ..entities import Ellipse, TextBoxEntity
 from ..entities.point import Point
+from ..entity_group import EntityGroup
 from ..types import EntityID
 from .base import SketchChangeCommand
 
@@ -103,10 +104,9 @@ class DuplicateCommand(SketchChangeCommand):
                             changed = True
 
         # 2. Resolve point set from entities
-        for eid in entity_id_set:
-            e = registry.get_entity(eid)
-            if e:
-                point_id_set.update(e.get_point_ids())
+        point_id_set.update(
+            EntityGroup(registry, sorted(entity_id_set)).point_ids()
+        )
 
         if not entity_id_set and not point_id_set:
             return None

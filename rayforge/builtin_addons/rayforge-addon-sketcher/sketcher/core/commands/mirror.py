@@ -7,6 +7,7 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from ..entities import Ellipse, TextBoxEntity
+from ..entity_group import EntityGroup, points_bbox_center
 from ..types import EntityID
 from .base import SketchChangeCommand
 
@@ -136,30 +137,22 @@ class MirrorCommand(SketchChangeCommand):
                             changed = True
 
         # 2. Resolve point set from entities
-        for eid in entity_id_set:
-            e = registry.get_entity(eid)
-            if e:
-                point_id_set.update(e.get_point_ids())
+        point_id_set.update(
+            EntityGroup(registry, sorted(entity_id_set)).point_ids()
+        )
 
         if not point_id_set:
             return None
 
-        # 3. Compute mirror axis = bbox center of selected points
-        xs = []
-        ys = []
-        for pid in point_id_set:
-            p = registry.get_point(pid)
-            if p:
-                xs.append(p.x)
-                ys.append(p.y)
-
-        if not xs:
-            return None
-
+        # 3. Compute mirror axis = bbox center of the selected points
+        # (plain bbox: unlike an array group's logical center, a
+        # selected circle contributes its defining points only).
+        pts = [registry.get_point(pid) for pid in sorted(point_id_set)]
+        bbox_cx, bbox_cy = points_bbox_center(pts)
         if direction == MirrorDirection.VERTICAL:
-            axis_pos = (min(ys) + max(ys)) / 2.0
+            axis_pos = bbox_cy
         else:
-            axis_pos = (min(xs) + max(xs)) / 2.0
+            axis_pos = bbox_cx
 
         axis = MirrorAxis(direction=direction, position=axis_pos)
 
@@ -204,18 +197,19 @@ class MirrorCommand(SketchChangeCommand):
         self._dropped_constraints = list(dropped)
 
         registry = self.sketch.registry
+        group = EntityGroup(registry, entity_ids)
 
-        # Mirror points
+        # Mirror points centrally (fixed points, e.g. the origin,
+        # stay put). The set also carries bare selected points, which
+        # belong to no entity and are therefore not in the group.
         for pid in point_ids:
             p = registry.get_point(pid)
             if p and not p.fixed:
                 p.x, p.y = axis.apply(p.x, p.y)
 
         # Mirror entity-specific state
-        for eid in entity_ids:
-            e = registry.get_entity(eid)
-            if e:
-                e.mirror(axis)
+        for e in group.entities():
+            e.mirror(axis)
 
         # Mirror internal constraints (e.g. negate angle values)
         # Constraints that were dropped are skipped.

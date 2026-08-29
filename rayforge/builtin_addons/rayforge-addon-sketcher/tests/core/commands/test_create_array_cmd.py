@@ -4,6 +4,7 @@ import pytest
 from sketcher.core.arrays import CircularArrayStrategy
 from sketcher.core.commands import CreateArrayCommand
 from sketcher.core.constraints import RadiusConstraint
+from sketcher.core.entity_group import EntityGroup
 from sketcher.core.sketch import Sketch
 
 
@@ -147,7 +148,7 @@ def test_apply_places_template_on_the_guide(sketch_with_template):
     circle = next(e for e in sketch.registry.entities if e.type == "circle")
     center = sketch.registry.get_point(circle.center_idx)
     eids = cmd.array.living_members(sketch.registry)[0][1]
-    pids = CreateArrayCommand.collect_template_point_ids(sketch.registry, eids)
+    pids = EntityGroup(sketch.registry, eids).point_ids()
     pts = [sketch.registry.get_point(pid) for pid in pids]
     xs = [p.x for p in pts]
     ys = [p.y for p in pts]

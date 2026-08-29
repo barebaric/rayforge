@@ -13,18 +13,15 @@ from ...core.arrays import (
     CircularArray,
     CurveAlongArray,
     InstancePlacement,
-    resolve_template_center,
 )
 from ...core.commands import CreateArrayCommand, EditArrayCommand
-from ...core.entities import Arc, Bezier, Circle, Ellipse, Line
+from ...core.entity_group import EntityGroup
 from .base import SketcherKey, SketchTool
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from ...core.arrays import Array
-    from ...core.entities import Entity
-    from ...core.registry import EntityRegistry
 
 
 class ArrayToolBase(SketchTool):
@@ -126,18 +123,7 @@ class ArrayToolBase(SketchTool):
         registry = self.element.sketch.registry
         if not self._template_entity_ids:
             return (0.0, 0.0)
-        points = []
-        for eid in self._template_entity_ids:
-            entity = registry.get_entity(eid)
-            if entity is None:
-                continue
-            for pid in entity.get_point_ids():
-                pt = registry.get_point(pid)
-                if pt is not None:
-                    points.append(pt)
-        return resolve_template_center(
-            registry, self._template_entity_ids, points
-        )
+        return EntityGroup(registry, self._template_entity_ids).center()
 
     @property
     def _is_editing(self) -> bool:
@@ -336,9 +322,9 @@ class ArrayToolBase(SketchTool):
         ctx.set_dash([5.0, 4.0])
         ctx.set_source_rgba(*self.PREVIEW_COLOR)
 
-        polylines = _collect_template_polylines(
+        polylines = EntityGroup(
             registry, self._template_entity_ids
-        )
+        ).polylines()
         if slot0 is not None:
             # Create mode: the template is still at its drawn
             # position. Every member — including slot 0 — derives
@@ -414,142 +400,8 @@ class ArrayToolBase(SketchTool):
 
 
 # ----------------------------------------------------------------------
-# Preview geometry sampling helpers
+# Preview geometry helpers
 # ----------------------------------------------------------------------
-
-
-def _collect_template_polylines(
-    registry: EntityRegistry, entity_ids: list[int]
-) -> list[list[tuple[float, float]]]:
-    polylines: list[list[tuple[float, float]]] = []
-    for eid in entity_ids:
-        entity = registry.get_entity(eid)
-        if entity is None:
-            continue
-        polylines.extend(_entity_polylines(entity, registry))
-    return polylines
-
-
-def _entity_polylines(
-    entity: Entity, registry: EntityRegistry
-) -> list[list[tuple[float, float]]]:
-
-    def point(pid):
-        pt = registry.get_point(pid)
-        return (pt.x, pt.y)
-
-    if isinstance(entity, Line):
-        return [[point(entity.p1_idx), point(entity.p2_idx)]]
-
-    if isinstance(entity, Circle):
-        c = point(entity.center_idx)
-        r_pt = point(entity.radius_pt_idx)
-        radius = math.hypot(r_pt[0] - c[0], r_pt[1] - c[1])
-        return [_sample_arc(c, radius, 0.0, 2 * math.pi, clockwise=False)]
-
-    if isinstance(entity, Arc):
-        start = point(entity.start_idx)
-        end = point(entity.end_idx)
-        c = point(entity.center_idx)
-        radius = math.hypot(start[0] - c[0], start[1] - c[1])
-        start_a = math.atan2(start[1] - c[1], start[0] - c[0])
-        end_a = math.atan2(end[1] - c[1], end[0] - c[0])
-        return [
-            _sample_arc(c, radius, start_a, end_a, clockwise=entity.clockwise)
-        ]
-
-    if isinstance(entity, Ellipse):
-        c = point(entity.center_idx)
-        rx_pt = point(entity.radius_x_pt_idx)
-        ry_pt = point(entity.radius_y_pt_idx)
-        rx = math.hypot(rx_pt[0] - c[0], rx_pt[1] - c[1])
-        ry = math.hypot(ry_pt[0] - c[0], ry_pt[1] - c[1])
-        rotation = math.atan2(rx_pt[1] - c[1], rx_pt[0] - c[0])
-        return [_sample_ellipse(c, rx, ry, rotation)]
-
-    if isinstance(entity, Bezier):
-        start = point(entity.start_idx)
-        end = point(entity.end_idx)
-        cp1 = start
-        if entity.cp1 is not None:
-            cp1 = (start[0] + entity.cp1[0], start[1] + entity.cp1[1])
-        cp2 = end
-        if entity.cp2 is not None:
-            cp2 = (end[0] + entity.cp2[0], end[1] + entity.cp2[1])
-        return [_sample_bezier(start, cp1, cp2, end)]
-
-    return []
-
-
-def _sample_arc(
-    center: tuple[float, float],
-    radius: float,
-    start_a: float,
-    end_a: float,
-    clockwise: bool,
-) -> list[tuple[float, float]]:
-    two_pi = 2 * math.pi
-    sweep = end_a - start_a
-    if clockwise:
-        while sweep >= 0:
-            sweep -= two_pi
-    else:
-        while sweep <= 0:
-            sweep += two_pi
-
-    segments = max(8, int(abs(sweep) / two_pi * 48))
-    return [
-        (
-            center[0] + radius * math.cos(start_a + sweep * i / segments),
-            center[1] + radius * math.sin(start_a + sweep * i / segments),
-        )
-        for i in range(segments + 1)
-    ]
-
-
-def _sample_ellipse(
-    center: tuple[float, float],
-    rx: float,
-    ry: float,
-    rotation: float,
-) -> list[tuple[float, float]]:
-    cos_r = math.cos(rotation)
-    sin_r = math.sin(rotation)
-    segments = 48
-    result = []
-    for i in range(segments + 1):
-        t = 2 * math.pi * i / segments
-        ex = rx * math.cos(t)
-        ey = ry * math.sin(t)
-        result.append(
-            (
-                center[0] + ex * cos_r - ey * sin_r,
-                center[1] + ex * sin_r + ey * cos_r,
-            )
-        )
-    return result
-
-
-def _sample_bezier(p0, p1, p2, p3):
-    segments = 24
-    result = []
-    for i in range(segments + 1):
-        t = i / segments
-        u = 1.0 - t
-        x = (
-            u * u * u * p0[0]
-            + 3 * u * u * t * p1[0]
-            + 3 * u * t * t * p2[0]
-            + t * t * t * p3[0]
-        )
-        y = (
-            u * u * u * p0[1]
-            + 3 * u * u * t * p1[1]
-            + 3 * u * t * t * p2[1]
-            + t * t * t * p3[1]
-        )
-        result.append((x, y))
-    return result
 
 
 def _stroke_polyline(ctx: cairo.Context, model_to_screen, points) -> None:
