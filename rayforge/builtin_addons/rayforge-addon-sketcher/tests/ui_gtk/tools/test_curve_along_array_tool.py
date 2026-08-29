@@ -48,7 +48,7 @@ def tool(mock_element):
 
 
 def test_initialization(tool):
-    assert tool.ICON is not None
+    assert tool.ICON == "sketch-curve-array-symbolic"
     assert tool.LABEL is not None
     assert "gw" in tool.SHORTCUTS
     assert tool.ARRAY_TYPE is CurveAlongArray

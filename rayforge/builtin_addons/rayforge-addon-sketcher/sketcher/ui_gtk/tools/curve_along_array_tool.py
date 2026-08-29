@@ -52,7 +52,7 @@ class CurveAlongArrayTool(ArrayToolBase):
     path re-opens this dialog.
     """
 
-    ICON = "sketch-array-symbolic"
+    ICON = "sketch-curve-array-symbolic"
     LABEL = _("Array Along Curve")
     SHORTCUTS: ClassVar[list[str]] = ["gw"]
 
