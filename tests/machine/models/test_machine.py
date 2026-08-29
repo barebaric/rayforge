@@ -1237,7 +1237,7 @@ class TestMachine:
         """A Ruida machine has no dialect but can emit travel speed."""
         await wait_for_tasks_to_finish(task_mgr)
         machine.set_dialect_uid(None)
-        machine.set_driver(RuidaDriver, {"host": "test"})
+        machine.set_driver(RuidaDriver, {"host": "localhost"})
         await wait_for_tasks_to_finish(task_mgr)
 
         assert machine.driver_name == "RuidaDriver"
