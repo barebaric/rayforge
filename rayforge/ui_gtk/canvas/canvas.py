@@ -205,8 +205,33 @@ class Canvas(Gtk.DrawingArea):
         self.add_controller(self._key_controller)
         self._shift_pressed: bool = False
         self._ctrl_pressed: bool = False
+
+        self._focus_controller = Gtk.EventControllerFocus()
+        self._focus_controller.connect("leave", self._on_focus_leave)
+        self.add_controller(self._focus_controller)
         self.set_focusable(True)
         self.grab_focus()
+
+    def _sync_modifier_state(self, state: Gdk.ModifierType | None) -> None:
+        """
+        Re-derives the latched modifier flags from the live event
+        state. Key releases are routinely missed (focus loss, dialogs,
+        releases outside the canvas), so the key-based latch alone can
+        get stuck; every event carries the authoritative mask.
+        """
+        if state is None:
+            return
+        self._shift_pressed = bool(state & Gdk.ModifierType.SHIFT_MASK)
+        self._ctrl_pressed = bool(state & Gdk.ModifierType.CONTROL_MASK)
+
+    def _on_focus_leave(self, controller: Gtk.EventControllerFocus) -> None:
+        """
+        Clears latched modifier state when the canvas loses keyboard
+        focus: a Shift release while unfocused is never delivered, and
+        the stale flag would change what the next click selects.
+        """
+        self._shift_pressed = False
+        self._ctrl_pressed = False
 
     def do_size_allocate(self, width: int, height: int, baseline: int):
         """GTK handler for when the widget's size changes."""
@@ -577,6 +602,8 @@ class Canvas(Gtk.DrawingArea):
         Handles mouse movement, updating hover state and cursor icon.
         This is the single source of truth for cursor updates.
         """
+        self._sync_modifier_state(gesture.get_current_event_state())
+
         # Store raw pixel coordinates for selection frame rendering
         self._last_mouse_x = x
         self._last_mouse_y = y

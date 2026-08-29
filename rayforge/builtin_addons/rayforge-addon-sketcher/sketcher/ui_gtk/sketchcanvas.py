@@ -441,6 +441,7 @@ class SketchCanvas(WorldSurface):
         world_x, world_y = self._get_world_coords(x, y)
 
         state = gesture.get_current_event_state()
+        self._sync_modifier_state(state)
         shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
         ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
 
