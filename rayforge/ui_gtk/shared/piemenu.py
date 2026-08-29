@@ -56,6 +56,8 @@ class PieMenu(Gtk.Popover):
         self.icon_size = 24
         self.label_gap = 15
         self.label_font_size = 13
+        self.label_outline_width = 3.0
+        self.background_opacity = 0.95
 
         # Margin to allow text to be drawn outside the pie without clipping
         self.text_margin = 120
@@ -127,6 +129,41 @@ class PieMenu(Gtk.Popover):
         ctx = cairo.Context(surface)
         self._apply_label_font(ctx)
         return max(ctx.text_extents(i.label).width for i in items)
+
+    def _get_background_color(
+        self, style: Gtk.StyleContext, fg: tuple
+    ) -> tuple:
+        """
+        Returns the theme background color as an RGB tuple. Falls back
+        to a contrasting value derived from the foreground if the theme
+        does not provide one.
+        """
+        found, bg = style.lookup_color("theme_bg_color")
+        if not found:
+            found, bg = style.lookup_color("view_bg_color")
+        if found:
+            return (bg.red, bg.green, bg.blue)
+        luminance = 0.299 * fg[0] + 0.587 * fg[1] + 0.114 * fg[2]
+        return (1.0, 1.0, 1.0) if luminance < 0.5 else (0.0, 0.0, 0.0)
+
+    def _paint_icon(self, ctx, pixbuf, x: float, y: float, fg: tuple):
+        """
+        Recolors the icon to the foreground color and composites it.
+
+        The recoloring is done in an isolated group: the mask operation
+        only affects the icon shape, not the rest of the surface.
+        """
+        ctx.save()
+        ctx.push_group()
+        Gdk.cairo_set_source_pixbuf(ctx, pixbuf, x, y)
+        ctx.paint()
+        ctx.set_operator(cairo.OPERATOR_IN)
+        ctx.set_source_rgba(*fg)
+        ctx.paint()
+        ctx.pop_group_to_source()
+        ctx.set_operator(cairo.OPERATOR_OVER)
+        ctx.paint()
+        ctx.restore()
 
     def _update_size(self):
         """
@@ -244,6 +281,9 @@ class PieMenu(Gtk.Popover):
 
         # Create palette based on theme foreground
         color_fg = (r, g, b, 1.0)
+        # Outline is the inverted fill color, keeping the label readable
+        # on any canvas background
+        color_outline = (1 - r, 1 - g, 1 - b, 1.0)
         # Slices use the FG color but with low opacity
         color_slice_normal = (r, g, b, 0.1)
         color_slice_active = (r, g, b, 0.3)
@@ -254,7 +294,16 @@ class PieMenu(Gtk.Popover):
         count = len(items)
         step = (2 * math.pi) / count
 
-        # 1. Draw Slices and Icons
+        # 1. Draw Background Ring
+        bg = self._get_background_color(style, (r, g, b))
+        ctx.new_path()
+        ctx.arc(cx, cy, self.radius_outer, 0, 2 * math.pi)
+        ctx.arc_negative(cx, cy, self.radius_inner, 2 * math.pi, 0)
+        ctx.close_path()
+        ctx.set_source_rgba(*bg, self.background_opacity)
+        ctx.fill()
+
+        # 2. Draw Slices and Icons
         for i, item in enumerate(items):
             start_angle = i * step
             end_angle = (i + 1) * step
@@ -290,23 +339,11 @@ class PieMenu(Gtk.Popover):
                 if icon_pixbuf:
                     icon_x = ix - (icon_pixbuf.get_width() / 2)
                     icon_y = iy - (icon_pixbuf.get_height() / 2)
-
-                    ctx.save()
-                    # 1. Place the icon in the source
-                    Gdk.cairo_set_source_pixbuf(
-                        ctx, icon_pixbuf, icon_x, icon_y
+                    self._paint_icon(
+                        ctx, icon_pixbuf, icon_x, icon_y, color_fg
                     )
-                    # 2. Paint it (creates the shape)
-                    ctx.paint()
-                    # 3. Use operator IN to keep only the intersection of the
-                    #    next paint with the previously drawn icon shape
-                    ctx.set_operator(cairo.OPERATOR_IN)
-                    # 4. Set source to theme foreground and paint
-                    ctx.set_source_rgba(*color_fg)
-                    ctx.paint()
-                    ctx.restore()
 
-        # 2. Draw Active Label (External)
+        # 3. Draw Active Label (External)
         if self._active_index >= 0 and self._active_index < len(items):
             active_item = items[self._active_index]
 
@@ -320,7 +357,6 @@ class PieMenu(Gtk.Popover):
             ly = cy + math.sin(mid_angle) * label_dist
 
             ctx.save()
-            ctx.set_source_rgba(*color_fg)
             self._apply_label_font(ctx)
             extents = ctx.text_extents(active_item.label)
 
@@ -341,5 +377,11 @@ class PieMenu(Gtk.Popover):
                 text_x = lx - (extents.width / 2) - extents.x_bearing
 
             ctx.move_to(text_x, text_y)
-            ctx.show_text(active_item.label)
+            ctx.text_path(active_item.label)
+            ctx.set_source_rgba(*color_outline)
+            ctx.set_line_width(self.label_outline_width)
+            ctx.set_line_join(cairo.LINE_JOIN_ROUND)
+            ctx.stroke_preserve()
+            ctx.set_source_rgba(*color_fg)
+            ctx.fill()
             ctx.restore()
