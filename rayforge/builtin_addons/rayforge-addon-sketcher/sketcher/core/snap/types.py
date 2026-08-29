@@ -183,3 +183,31 @@ class DragContext:
 
     def is_entity_dragged(self, entity_id: EntityID) -> bool:
         return entity_id in self.dragged_entity_ids
+
+    def coincides_with_dragged(
+        self,
+        x: float,
+        y: float,
+        registry: Any,
+        epsilon: float = 1e-6,
+    ) -> bool:
+        """
+        True if (x, y) lies within ``epsilon`` of any dragged point's
+        current position.
+
+        A non-dragged point that coincides with a dragged one must not
+        act as a snap target: arrays place a template point exactly
+        onto guide geometry (distinct points separated by float noise
+        only), and its axis snap lines would otherwise glue the drag
+        to its own start position.
+        """
+        for pid in self.dragged_point_ids:
+            try:
+                point = registry.get_point(pid)
+            except (IndexError, KeyError):
+                continue
+            if point is None:
+                continue
+            if abs(point.x - x) <= epsilon and abs(point.y - y) <= epsilon:
+                return True
+        return False

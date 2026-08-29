@@ -1305,3 +1305,27 @@ def test_get_coincident_points_separate_groups():
 
     assert result1 == {p1, p2}
     assert result3 == {p3, p4}
+
+
+def test_notify_update_suppressed_during_solve():
+    """Sync-driven re-apply mutations must not emit sketch.updated while
+    the outer solve is running: the emission fans out into the UI
+    pipeline and re-triggers solves (solve/sync feedback loop)."""
+    sketch = Sketch()
+    received = []
+    sketch.updated.connect(
+        lambda sender, **kwargs: received.append(sender), weak=False
+    )
+
+    sketch.notify_update()
+    assert len(received) == 1
+
+    sketch._solving = True
+    try:
+        sketch.notify_update()
+    finally:
+        sketch._solving = False
+    assert len(received) == 1
+
+    sketch.notify_update()
+    assert len(received) == 2

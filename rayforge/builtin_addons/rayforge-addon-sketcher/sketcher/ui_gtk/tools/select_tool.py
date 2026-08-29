@@ -33,6 +33,7 @@ from ...core.entities import (
     Line,
     TextBoxEntity,
 )
+from ...core.snap import DragContext
 from ...core.types import EntityID
 from .base import SketcherKey, SketchTool
 from .snap_mixin import SnapMixin
@@ -642,7 +643,10 @@ class SelectTool(SnapMixin, SketchTool):
                 self.element,
                 target_x,
                 target_y,
-                dragged_point_ids=coincident_group,
+                dragged_point_ids=(
+                    coincident_group
+                    | self.element.sketch.get_derived_point_ids()
+                ),
                 initial_positions=self.drag_initial_positions,
             )
         else:
@@ -747,6 +751,18 @@ class SelectTool(SnapMixin, SketchTool):
             self._reset_point_drag()
             return
 
+        # The solve and sync_arrays ran after the snap query and moved
+        # geometry: re-query at the dragged point's final position so
+        # the drawn snap feedback matches what is on screen.
+        if self.magnetic_snap_enabled:
+            self._refresh_drag_snap_feedback(
+                point_id=self.dragged_point_id,
+                dragged_point_ids=(
+                    coincident_group
+                    | self.element.sketch.get_derived_point_ids()
+                ),
+            )
+
         self.element.mark_dirty()
 
     def _handle_entity_drag(self, world_dx: float, world_dy: float):
@@ -776,7 +792,10 @@ class SelectTool(SnapMixin, SketchTool):
                     self.element,
                     ref_target_x,
                     ref_target_y,
-                    dragged_point_ids=points_to_drag,
+                    dragged_point_ids=(
+                        points_to_drag
+                        | self.element.sketch.get_derived_point_ids()
+                    ),
                     dragged_entity_ids=set(self.element.selection.entity_ids),
                     initial_positions=self.drag_initial_positions,
                 )
@@ -830,7 +849,47 @@ class SelectTool(SnapMixin, SketchTool):
             update_constraint_status=False,
         )
         self._refresh_hold_positions(points_to_drag)
+
+        # The solve and sync_arrays ran after the snap query: refresh
+        # the snap feedback against the final geometry so the drawn
+        # lines match what is on screen.
+        if self.magnetic_snap_enabled and first_entity_point is not None:
+            self._refresh_drag_snap_feedback(
+                point_id=first_entity_point,
+                dragged_point_ids=(
+                    points_to_drag
+                    | self.element.sketch.get_derived_point_ids()
+                ),
+                dragged_entity_ids=set(self.element.selection.entity_ids),
+            )
+
         self.element.mark_dirty()
+
+    def _refresh_drag_snap_feedback(
+        self,
+        point_id: EntityID,
+        dragged_point_ids: set[int],
+        dragged_entity_ids: set[int] | None = None,
+    ) -> None:
+        """
+        Re-queries the snap engine at a dragged point's current
+        position, after the solve and sync_arrays have moved geometry.
+        The snap constraints were already applied from the pre-solve
+        query; this result is only used for the drawn feedback, which
+        must reference the geometry actually on screen.
+        """
+        point = self._safe_get_point(point_id)
+        if point is None:
+            self.current_snap_result = None
+            return
+        context = DragContext(
+            dragged_point_ids=dragged_point_ids,
+            dragged_entity_ids=dragged_entity_ids or set(),
+            initial_positions=self.drag_initial_positions,
+        )
+        self.current_snap_result = self._query_snap_engine(
+            self.element, (point.x, point.y), context
+        )
 
     # --- Drag Preparation ---
 

@@ -197,6 +197,13 @@ class Sketch(IAsset, IGeometryProvider):
 
     def notify_update(self):
         """Public method to signal that the sketch has been modified."""
+        if self._solving:
+            # Re-entrant update from sync_arrays' array re-apply. The
+            # solve() caller owns the redraw; re-emitting here would
+            # fan out into the UI pipeline mid-solve and re-trigger
+            # solves (solve/sync feedback loop with the array sync,
+            # pipeline churn on every frame).
+            return
         self._updated.send(self)
 
     def _validate_and_cleanup_fills(self):

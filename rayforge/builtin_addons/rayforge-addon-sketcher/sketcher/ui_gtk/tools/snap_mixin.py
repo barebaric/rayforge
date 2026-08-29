@@ -335,6 +335,14 @@ class SnapMixin:
         if not self.current_snap_result or not element.canvas:
             return
 
+        # The solve and array sync ran after the snap query: geometry
+        # has moved since the result was computed, and drawing it
+        # would flash snap lines that reference no visible geometry.
+        if not element.snap_engine.is_snap_result_current(
+            element.sketch.registry
+        ):
+            return
+
         to_screen = element.hittester.get_model_to_screen_transform(element)
         canvas_width = element.canvas.get_width()
         canvas_height = element.canvas.get_height()

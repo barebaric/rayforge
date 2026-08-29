@@ -37,6 +37,10 @@ class CentersProducer(SnapLineProducer):
             center = self._get_center(entity, registry)
             if center is None:
                 continue
+            if drag_context.coincides_with_dragged(
+                center[0], center[1], registry
+            ):
+                continue
 
             cx, cy = center
             yield SnapLine(
@@ -74,6 +78,10 @@ class CentersProducer(SnapLineProducer):
 
             center = self._get_center(entity, registry)
             if center is None:
+                continue
+            if drag_context.coincides_with_dragged(
+                center[0], center[1], registry
+            ):
                 continue
 
             cx, cy = center

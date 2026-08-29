@@ -21,6 +21,8 @@ class EntityPointsProducer(SnapLineProducer):
         for point in registry.points:
             if drag_context.is_point_dragged(point.id):
                 continue
+            if drag_context.coincides_with_dragged(point.x, point.y, registry):
+                continue
 
             px, py = point.x, point.y
             yield SnapLine(
@@ -46,6 +48,8 @@ class EntityPointsProducer(SnapLineProducer):
         x, y = drag_position
         for point in registry.points:
             if drag_context.is_point_dragged(point.id):
+                continue
+            if drag_context.coincides_with_dragged(point.x, point.y, registry):
                 continue
 
             px, py = point.x, point.y
