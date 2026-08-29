@@ -54,6 +54,8 @@ class PieMenu(Gtk.Popover):
         self.radius_outer = 75
         self.radius_inner = 30
         self.icon_size = 24
+        self.label_gap = 15
+        self.label_font_size = 13
 
         # Margin to allow text to be drawn outside the pie without clipping
         self.text_margin = 120
@@ -101,12 +103,44 @@ class PieMenu(Gtk.Popover):
 
     def add_item(self, item: PieMenuItem):
         self.items.append(item)
+        self._update_size()
         self.drawing_area.queue_draw()
 
     def set_items(self, items: list[PieMenuItem]):
         self.items = items
         self._active_index = -1
+        self._update_size()
         self.drawing_area.queue_draw()
+
+    def _apply_label_font(self, ctx):
+        ctx.select_font_face(
+            "Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD
+        )
+        ctx.set_font_size(self.label_font_size)
+
+    def _get_max_label_width(self) -> float:
+        """Measures the widest item label using the label font."""
+        items = [i for i in self.items if i.visible]
+        if not items:
+            return 0.0
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 0, 0)
+        ctx = cairo.Context(surface)
+        self._apply_label_font(ctx)
+        return max(ctx.text_extents(i.label).width for i in items)
+
+    def _update_size(self):
+        """
+        Enlarges the drawing area so the label of the active item fits
+        between the pie rim and the widget edge without being clipped.
+        """
+        needed = (
+            self.radius_outer + self.label_gap + self._get_max_label_width()
+        )
+        minimum = self.radius_outer + self.text_margin
+        self.total_radius = max(minimum, needed)
+        size = int(self.total_radius * 2)
+        self.drawing_area.set_content_width(size)
+        self.drawing_area.set_content_height(size)
 
     def popup_at_location(self, widget_x: float, widget_y: float):
         """
@@ -281,16 +315,13 @@ class PieMenu(Gtk.Popover):
             mid_angle = start_angle + (step / 2)
 
             # Determine position outside the ring
-            label_dist = self.radius_outer + 15
+            label_dist = self.radius_outer + self.label_gap
             lx = cx + math.cos(mid_angle) * label_dist
             ly = cy + math.sin(mid_angle) * label_dist
 
             ctx.save()
             ctx.set_source_rgba(*color_fg)
-            ctx.select_font_face(
-                "Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD
-            )
-            ctx.set_font_size(13)
+            self._apply_label_font(ctx)
             extents = ctx.text_extents(active_item.label)
 
             # Determine Alignment based on angle (cos)
