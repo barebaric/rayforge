@@ -1,3 +1,4 @@
+import math
 from collections.abc import Callable
 from gettext import gettext as _
 from typing import ClassVar
@@ -16,6 +17,9 @@ from .snap_mixin import SnapMixin
 class RectangleTool(SnapMixin, SketchTool):
     """Handles creating rectangles.
 
+    - Default: click -> move -> click (drag-to-create also works)
+    - Shift: center the rectangle on the starting point
+    - Ctrl: constrain to square
     - Tab: toggle magnetic snap
     """
 
@@ -24,6 +28,8 @@ class RectangleTool(SnapMixin, SketchTool):
     SHORTCUTS: ClassVar[list[str]] = ["gr"]
     CURSOR_ICON = "sketch-rect-symbolic"
 
+    DRAG_THRESHOLD = 2.0
+
     def __init__(self, element):
         super().__init__(element)
         self._preview_state: RectanglePreviewState | None = None
@@ -31,6 +37,9 @@ class RectangleTool(SnapMixin, SketchTool):
             field_count=2, field_labels=[_("W"), _("H")]
         )
         self._shift_held = False
+        self._ctrl_held = False
+        self._press_world_pos: tuple[float, float] | None = None
+        self._in_press = False
 
     def is_available(self, target, target_type) -> bool:
         return target is None
@@ -44,6 +53,8 @@ class RectangleTool(SnapMixin, SketchTool):
     def on_deactivate(self):
         """Clean up if the tool is deactivated mid-creation."""
         self._dim_input.cancel()
+        self._press_world_pos = None
+        self._in_press = False
         if self._preview_state is not None:
             start_id = self._preview_state.start_id
             start_temp = self._preview_state.start_temp
@@ -75,7 +86,83 @@ class RectangleTool(SnapMixin, SketchTool):
         )
         pid_hit = self.get_snapped_point_id()
 
-        return self._handle_click(pid_hit, mx, my)
+        if self._preview_state is None:
+            self._preview_state = RectangleCommand.start_preview(
+                self.element.sketch.registry, mx, my, snapped_pid=pid_hit
+            )
+            self._press_world_pos = (world_x, world_y)
+            self._in_press = True
+            self.element.preview_changed.send(self.element)
+            self.element.mark_dirty()
+        else:
+            self._commit(pid_hit)
+        return True
+
+    def _commit(self, pid_hit: int | None) -> None:
+        """Finalize the preview rectangle at the position it displays.
+
+        The end position and the modifier interpretation are taken from
+        the preview state rather than the live pointer, so the committed
+        rectangle always matches the preview regardless of pointer jitter
+        or modifier changes between the last motion and the commit.
+        """
+        if self._preview_state is None:
+            return
+
+        preview_ids = self._preview_state.get_preview_point_ids()
+        start_id = self._preview_state.start_id
+        start_temp = self._preview_state.start_temp
+        center_on_start = self._preview_state.center_on_start
+        constrain_square = self._preview_state.constrain_square
+
+        mx, my = 0.0, 0.0
+        try:
+            end_p = self.element.sketch.registry.get_point(
+                self._preview_state.p_end_id
+            )
+            mx, my = end_p.x, end_p.y
+        except IndexError:
+            pass
+
+        RectangleCommand.cleanup_preview(
+            self.element.sketch.registry, self._preview_state
+        )
+        self._preview_state = None
+        self._press_world_pos = None
+        self._in_press = False
+        self._dim_input.cancel()
+        self.element.preview_changed.send(self.element)
+
+        final_pid = None if pid_hit in preview_ids else pid_hit
+
+        cmd = RectangleCommand(
+            self.element.sketch,
+            start_id,
+            (mx, my),
+            end_pid=final_pid,
+            is_start_temp=start_temp,
+            center_on_start=center_on_start,
+            constrain_square=constrain_square,
+        )
+        self.element.execute_command(cmd)
+        self.element.mark_dirty()
+
+        self.clear_snap_result()
+
+    def on_release(self, world_x: float, world_y: float):
+        self._in_press = False
+        if self._preview_state is None or self._press_world_pos is None:
+            return
+
+        dx = world_x - self._press_world_pos[0]
+        dy = world_y - self._press_world_pos[1]
+        if math.hypot(dx, dy) < self.DRAG_THRESHOLD:
+            return
+
+        # The commit position comes from the preview's end point; the
+        # snap result from the last hover provides the target pid.
+        pid_hit = self.get_snapped_point_id()
+        self._commit(pid_hit)
 
     def on_hover_motion(self, world_x: float, world_y: float):
         """Updates the live preview of the rectangle."""
@@ -102,6 +189,7 @@ class RectangleTool(SnapMixin, SketchTool):
                 mx,
                 my,
                 center_on_start=self._shift_held,
+                constrain_square=self._ctrl_held,
             )
             self.element.mark_dirty()
         except (IndexError, KeyError):
@@ -112,45 +200,7 @@ class RectangleTool(SnapMixin, SketchTool):
         if self._preview_state is not None:
             self.draw_snap_feedback(ctx, self.element)
 
-    def _handle_click(self, pid_hit: int | None, mx: float, my: float) -> bool:
-        if self._preview_state is None:
-            self._preview_state = RectangleCommand.start_preview(
-                self.element.sketch.registry, mx, my, snapped_pid=pid_hit
-            )
-            self.element.preview_changed.send(self.element)
-        else:
-            preview_ids = self._preview_state.get_preview_point_ids()
-            start_id = self._preview_state.start_id
-            start_temp = self._preview_state.start_temp
-
-            RectangleCommand.cleanup_preview(
-                self.element.sketch.registry, self._preview_state
-            )
-            self._preview_state = None
-            self.element.preview_changed.send(self.element)
-            self._dim_input.cancel()
-
-            final_pid = None if pid_hit in preview_ids else pid_hit
-
-            cmd = RectangleCommand(
-                self.element.sketch,
-                start_id,
-                (mx, my),
-                end_pid=final_pid,
-                is_start_temp=start_temp,
-                center_on_start=self._shift_held,
-            )
-            self.element.execute_command(cmd)
-
-            self.clear_snap_result()
-
-        self.element.mark_dirty()
-        return True
-
     def on_drag(self, world_dx: float, world_dy: float):
-        pass
-
-    def on_release(self, world_x: float, world_y: float):
         pass
 
     def on_modifier_change(self, shift: bool = False, ctrl: bool = False):
@@ -158,8 +208,9 @@ class RectangleTool(SnapMixin, SketchTool):
         if self._preview_state is None:
             return
 
-        changed = self._shift_held != shift
+        changed = self._shift_held != shift or self._ctrl_held != ctrl
         self._shift_held = shift
+        self._ctrl_held = ctrl
 
         if changed:
             self.element.mark_dirty()
@@ -275,6 +326,7 @@ class RectangleTool(SnapMixin, SketchTool):
             return
         start_id = self._preview_state.start_id
         start_temp = self._preview_state.start_temp
+        center_on_start = self._preview_state.center_on_start
         try:
             end_pt = self.element.sketch.registry.get_point(
                 self._preview_state.p_end_id
@@ -301,7 +353,7 @@ class RectangleTool(SnapMixin, SketchTool):
             is_start_temp=start_temp,
             fixed_width=fixed_width,
             fixed_height=fixed_height,
-            center_on_start=self._shift_held,
+            center_on_start=center_on_start,
         )
         self.element.execute_command(cmd)
         self.clear_snap_result()
@@ -314,9 +366,15 @@ class RectangleTool(SnapMixin, SketchTool):
         if self._preview_state is not None:
             if self._dim_input.is_active():
                 return self._dim_input.get_active_shortcuts()
-            return [
+            shortcuts: list[
+                tuple[str | list[str], str, Callable[[], bool] | None]
+            ] = [
                 ("Shift", _("Center on start point"), None),
+                ("Ctrl", _("Constrain to square"), None),
                 ("0-9", _("Type dimensions (W H)"), None),
                 ("Tab", _("Toggle Magnetic Snap"), None),
             ]
+            if not self._in_press:
+                shortcuts.append(("Click", _("Set edge point"), None))
+            return shortcuts
         return []

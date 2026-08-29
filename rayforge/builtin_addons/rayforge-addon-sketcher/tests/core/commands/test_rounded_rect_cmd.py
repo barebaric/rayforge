@@ -29,6 +29,55 @@ def test_rounded_rect_calculate_geometry_degenerate():
     assert RoundedRectCommand.calculate_geometry(0, 0, 0, 50, 10.0) is None
 
 
+def test_rounded_rect_calculate_geometry_constrain_square():
+    """Test constrain_square equalizes both extents from the start."""
+    result = RoundedRectCommand.calculate_geometry(
+        0, 0, 100, 50, 10.0, constrain_square=True
+    )
+    assert result is not None
+    points = {(p.x, p.y) for p in result["points"]}
+    # min(100, 50) = 50 wins on both axes
+    assert (10.0, 0.0) in points
+    assert (40.0, 0.0) in points
+    assert (50.0, 10.0) in points
+    assert (40.0, 50.0) in points
+
+
+def test_rounded_rect_calculate_geometry_center_on_start():
+    """Test center_on_start mirrors the shape around the start point."""
+    result = RoundedRectCommand.calculate_geometry(
+        50, 25, 100, 50, 10.0, center_on_start=True
+    )
+    assert result is not None
+    points = {(p.x, p.y) for p in result["points"]}
+    # center (50, 25), extent (100, 50) -> corners (0, 0) to (100, 50)
+    assert (10.0, 0.0) in points
+    assert (90.0, 0.0) in points
+    assert (100.0, 10.0) in points
+    assert (90.0, 40.0) in points
+    assert (10.0, 50.0) in points
+
+
+def test_rounded_rect_calculate_geometry_square_center_on_start():
+    """Test constrain_square combined with center_on_start."""
+    result = RoundedRectCommand.calculate_geometry(
+        50,
+        25,
+        100,
+        50,
+        10.0,
+        center_on_start=True,
+        constrain_square=True,
+    )
+    assert result is not None
+    points = {(p.x, p.y) for p in result["points"]}
+    # half-extent min(50, 25) = 25 -> corners (25, 0) to (75, 50)
+    assert (35.0, 0.0) in points
+    assert (65.0, 0.0) in points
+    assert (75.0, 10.0) in points
+    assert (35.0, 50.0) in points
+
+
 def test_rounded_rect_command_execute():
     """Test command execution creates the correct number of items."""
     sketch = Sketch()
@@ -41,6 +90,25 @@ def test_rounded_rect_command_execute():
     assert len(sketch.registry.points) == 14
     assert len(sketch.registry.entities) == 8
     assert len(sketch.constraints) == 17
+
+
+def test_rounded_rect_command_execute_center_on_start():
+    """Test execution in center mode mirrors the shape around start."""
+    sketch = Sketch()
+    start_pid = sketch.add_point(50, 25)
+    cmd = RoundedRectCommand(
+        sketch, start_pid, (100, 50), 10.0, center_on_start=True
+    )
+    cmd.execute()
+
+    assert len(sketch.registry.points) == 14
+    assert len(sketch.registry.entities) == 8
+
+    pts = {(round(p.x, 3), round(p.y, 3)) for p in sketch.registry.points}
+    # corners span (0, 0) to (100, 50), mirrored through (50, 25)
+    assert (10.0, 0.0) in pts
+    assert (90.0, 50.0) in pts
+    assert (50.0, 25.0) in pts
 
 
 def test_rounded_rect_start_preview_no_snap():
@@ -88,6 +156,45 @@ def test_rounded_rect_update_preview():
     end_p = sketch.registry.get_point(state.p_end_id)
     assert end_p.x == 100
     assert end_p.y == 50
+
+
+def test_rounded_rect_update_preview_constrain_square():
+    """Test update_preview squashes the end point to a square."""
+    sketch = Sketch()
+    state = RoundedRectCommand.start_preview(
+        sketch.registry, 0, 0, snapped_pid=None, radius=10.0
+    )
+
+    RoundedRectCommand.update_preview(
+        sketch.registry, state, 100, 50, constrain_square=True
+    )
+
+    end_p = sketch.registry.get_point(state.p_end_id)
+    assert end_p.x == 50
+    assert end_p.y == 50
+    assert state.constrain_square is True
+
+
+def test_rounded_rect_update_preview_center_on_start():
+    """Test update_preview in center mode mirrors through the start."""
+    sketch = Sketch()
+    state = RoundedRectCommand.start_preview(
+        sketch.registry, 50, 25, snapped_pid=None, radius=10.0
+    )
+
+    RoundedRectCommand.update_preview(
+        sketch.registry, state, 100, 50, center_on_start=True
+    )
+
+    # p_end stays on the mouse position; the drawn shape is mirrored
+    end_p = sketch.registry.get_point(state.p_end_id)
+    assert end_p.x == 100
+    assert end_p.y == 50
+
+    # far tangent points sit on the mirrored corner (0, 0)
+    t1 = sketch.registry.get_point(state.preview_ids["t1"])
+    assert (t1.x, t1.y) == (10.0, 0.0)
+    assert state.center_on_start is True
 
 
 def test_rounded_rect_cleanup_preview():

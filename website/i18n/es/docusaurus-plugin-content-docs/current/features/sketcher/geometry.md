@@ -11,15 +11,22 @@ El diseñador permite crear los siguientes elementos geométricos básicos:
   arrastre para crear tiradores Bézier.
 - **Arcos**: Dibuje arcos especificando un punto central, un punto de inicio y
   un punto final
-- **Elipses**: Cree elipses (y círculos) definiendo un punto central y
-  arrastrando para ajustar el tamaño y la proporción. Mantenga pulsado `Ctrl`
-  mientras arrastra para restringir a un círculo perfecto.
-- **Rectángulos**: Dibuje rectángulos especificando dos esquinas opuestas.
+- **Elipses**: Cree elipses (y círculos) con dos clics: el primero define el
+  punto central y el segundo el punto del borde. También puede pulsar en el
+  centro, arrastrar y soltar en el borde; ambos gestos funcionan de manera
+  intercambiable. Mantenga pulsado `Ctrl` para restringir a un círculo
+  perfecto y `Shift` para usar el punto inicial como centro de la elipse.
+- **Rectángulos**: Dibuje rectángulos especificando dos esquinas opuestas, o
+  pulse en la primera esquina, arrastre y suelte en la esquina opuesta.
   Cada rectángulo crea automáticamente un punto central (restringido al
   centro geométrico) para que pueda dimensionar o ajustar a él. Mantenga
   pulsado `Shift` mientras dibuja para colocar el rectángulo simétricamente
-  alrededor del punto inicial, igual que la herramienta de elipse.
+  alrededor del punto inicial, y `Ctrl` para restringirlo a un cuadrado.
 - **Rectángulos redondeados**: Dibuje rectángulos con esquinas redondeadas
+  usando los mismos gestos y modificadores que la herramienta de rectángulo:
+  dos clics o clic-y-arrastre, con `Shift` para centrar en el punto inicial
+  y `Ctrl` para restringir a un cuadrado. El radio de las esquinas se puede
+  ajustar escribiendo dimensiones (`0-9`, campos W, H y R).
 - **Cuadros de texto**: Añada elementos de texto a su boceto. El contenido del
   texto soporta expresiones de plantilla paramétricas (vea
   [Plantillas de texto](../text.md)).
@@ -28,6 +35,17 @@ El diseñador permite crear los siguientes elementos geométricos básicos:
 Estos elementos forman la base de sus diseños 2D y pueden combinarse para crear
 formas complejas. Los rellenos son especialmente útiles para crear regiones
 sólidas que se grabarán o cortarán como una sola pieza.
+
+## Dos clics o arrastre
+
+Las herramientas de creación de formas (elipse, rectángulo, rectángulo
+redondeado) aceptan dos gestos de manera intercambiable: haga clic en el
+primer punto, mueva y haga clic en el segundo, o pulse en el primer punto,
+arrastre y suelte en el segundo. Un clic rápido sin movimiento simplemente
+activa la herramienta y espera el segundo punto, por lo que los clics
+accidentales nunca dejan geometría degenerada. Mientras haya una vista
+previa activa, la barra de estado muestra las teclas modificadoras
+disponibles, y `Esc` cancela la vista previa.
 
 ## Trabajar con curvas Bézier
 

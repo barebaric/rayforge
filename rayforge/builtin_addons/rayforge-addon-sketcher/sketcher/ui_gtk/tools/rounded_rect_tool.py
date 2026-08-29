@@ -1,3 +1,4 @@
+import math
 from collections.abc import Callable
 from gettext import gettext as _
 from typing import ClassVar
@@ -11,7 +12,12 @@ from .dimension_input import DimensionInputHandler
 
 
 class RoundedRectTool(SketchTool):
-    """Handles creating rounded rectangles."""
+    """Handles creating rounded rectangles.
+
+    - Default: click -> move -> click (drag-to-create also works)
+    - Shift: center the rounded rectangle on the starting point
+    - Ctrl: constrain to square
+    """
 
     ICON = "sketch-rounded-rect-symbolic"
     LABEL = _("Rounded Rectangle")
@@ -19,12 +25,18 @@ class RoundedRectTool(SketchTool):
     CURSOR_ICON = "sketch-rounded-rect-symbolic"
     DEFAULT_RADIUS = 10.0
 
+    DRAG_THRESHOLD = 2.0
+
     def __init__(self, element):
         super().__init__(element)
         self._preview_state: RoundedRectPreviewState | None = None
         self._dim_input = DimensionInputHandler(
             field_count=3, field_labels=[_("W"), _("H"), _("R")]
         )
+        self._shift_held = False
+        self._ctrl_held = False
+        self._press_world_pos: tuple[float, float] | None = None
+        self._in_press = False
 
     def is_available(self, target, target_type) -> bool:
         return target is None
@@ -38,6 +50,8 @@ class RoundedRectTool(SketchTool):
     def on_deactivate(self):
         """Clean up if the tool is deactivated mid-creation."""
         self._dim_input.cancel()
+        self._press_world_pos = None
+        self._in_press = False
         if self._preview_state is None:
             return
 
@@ -62,7 +76,83 @@ class RoundedRectTool(SketchTool):
             world_x, world_y, self.element
         )
         pid_hit = hit_obj if hit_type == "point" else None
-        return self._handle_click(pid_hit, mx, my)
+
+        if self._preview_state is None:
+            self._preview_state = RoundedRectCommand.start_preview(
+                self.element.sketch.registry,
+                mx,
+                my,
+                snapped_pid=pid_hit,
+                radius=self.DEFAULT_RADIUS,
+            )
+            self._press_world_pos = (world_x, world_y)
+            self._in_press = True
+        else:
+            self._commit(pid_hit)
+
+        self.element.mark_dirty()
+        return True
+
+    def _commit(self, pid_hit: int | None) -> None:
+        """Finalize the preview rounded rectangle as displayed.
+
+        The end position and the modifier interpretation are taken from
+        the preview state rather than the live pointer, so the committed
+        shape matches the preview regardless of pointer jitter or
+        modifier changes between the last motion and the commit.
+        """
+        if self._preview_state is None:
+            return
+
+        start_id = self._preview_state.start_id
+        start_temp = self._preview_state.start_temp
+        center_on_start = self._preview_state.center_on_start
+        constrain_square = self._preview_state.constrain_square
+
+        mx, my = 0.0, 0.0
+        try:
+            end_p = self.element.sketch.registry.get_point(
+                self._preview_state.p_end_id
+            )
+            mx, my = end_p.x, end_p.y
+        except IndexError:
+            pass
+
+        RoundedRectCommand.cleanup_preview(
+            self.element.sketch.registry, self._preview_state
+        )
+        self._preview_state = None
+        self._press_world_pos = None
+        self._in_press = False
+        self._dim_input.cancel()
+
+        cmd = RoundedRectCommand(
+            self.element.sketch,
+            start_id,
+            (mx, my),
+            self.DEFAULT_RADIUS,
+            is_start_temp=start_temp,
+            center_on_start=center_on_start,
+            constrain_square=constrain_square,
+        )
+        self.element.execute_command(cmd)
+        self.element.mark_dirty()
+
+    def on_release(self, world_x: float, world_y: float):
+        self._in_press = False
+        if self._preview_state is None or self._press_world_pos is None:
+            return
+
+        dx = world_x - self._press_world_pos[0]
+        dy = world_y - self._press_world_pos[1]
+        if math.hypot(dx, dy) < self.DRAG_THRESHOLD:
+            return
+
+        hit_type, hit_obj = self.element.hittester.get_hit_data(
+            world_x, world_y, self.element
+        )
+        pid_hit = hit_obj if hit_type == "point" else None
+        self._commit(pid_hit)
 
     def on_hover_motion(self, world_x: float, world_y: float):
         """Updates the live preview of the rounded rectangle."""
@@ -78,49 +168,30 @@ class RoundedRectTool(SketchTool):
 
         try:
             RoundedRectCommand.update_preview(
-                self.element.sketch.registry, self._preview_state, mx, my
+                self.element.sketch.registry,
+                self._preview_state,
+                mx,
+                my,
+                center_on_start=self._shift_held,
+                constrain_square=self._ctrl_held,
             )
             self.element.mark_dirty()
         except (IndexError, KeyError):
             self.on_deactivate()
 
-    def _handle_click(self, pid_hit: int | None, mx: float, my: float) -> bool:
+    def on_modifier_change(self, shift: bool = False, ctrl: bool = False):
+        """Called when modifier keys change during preview."""
         if self._preview_state is None:
-            # --- First Click: Start preview ---
-            self._preview_state = RoundedRectCommand.start_preview(
-                self.element.sketch.registry,
-                mx,
-                my,
-                snapped_pid=pid_hit,
-                radius=self.DEFAULT_RADIUS,
-            )
-        else:
-            # --- Second Click: Finalize the rounded rectangle ---
-            start_id = self._preview_state.start_id
-            start_temp = self._preview_state.start_temp
+            return
 
-            RoundedRectCommand.cleanup_preview(
-                self.element.sketch.registry, self._preview_state
-            )
-            self._preview_state = None
-            self._dim_input.cancel()
+        changed = self._shift_held != shift or self._ctrl_held != ctrl
+        self._shift_held = shift
+        self._ctrl_held = ctrl
 
-            cmd = RoundedRectCommand(
-                self.element.sketch,
-                start_id,
-                (mx, my),
-                self.DEFAULT_RADIUS,
-                is_start_temp=start_temp,
-            )
-            self.element.execute_command(cmd)
-
-        self.element.mark_dirty()
-        return True
+        if changed:
+            self.element.mark_dirty()
 
     def on_drag(self, world_dx: float, world_dy: float):
-        pass
-
-    def on_release(self, world_x: float, world_y: float):
         pass
 
     def handle_text_input(self, text: str) -> bool:
@@ -238,6 +309,7 @@ class RoundedRectTool(SketchTool):
             return
         start_id = self._preview_state.start_id
         start_temp = self._preview_state.start_temp
+        center_on_start = self._preview_state.center_on_start
         radius = (
             fixed_radius
             if fixed_radius is not None
@@ -268,6 +340,7 @@ class RoundedRectTool(SketchTool):
             fixed_width=fixed_width,
             fixed_height=fixed_height,
             fixed_radius=fixed_radius,
+            center_on_start=center_on_start,
         )
         self.element.execute_command(cmd)
         self.element.mark_dirty()
@@ -279,7 +352,14 @@ class RoundedRectTool(SketchTool):
         if self._preview_state is not None:
             if self._dim_input.is_active():
                 return self._dim_input.get_active_shortcuts()
-            return [
+            shortcuts: list[
+                tuple[str | list[str], str, Callable[[], bool] | None]
+            ] = [
+                ("Shift", _("Center on start point"), None),
+                ("Ctrl", _("Constrain to square"), None),
                 ("0-9", _("Type dimensions (W H R)"), None),
             ]
+            if not self._in_press:
+                shortcuts.append(("Click", _("Set edge point"), None))
+            return shortcuts
         return []

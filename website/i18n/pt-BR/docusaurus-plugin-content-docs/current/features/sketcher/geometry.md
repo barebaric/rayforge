@@ -11,15 +11,22 @@ O esboçador suporta a criação dos seguintes elementos geométricos básicos:
   pontos, arraste para criar alças de Bézier.
 - **Arcos**: Desenhe arcos especificando um ponto central, um ponto inicial e um
   ponto final
-- **Elipses**: Crie elipses (e círculos) definindo um ponto central e
-  arrastando para definir o tamanho e a proporção. Segure `Ctrl` enquanto
-  arrasta para restringir a um círculo perfeito.
-- **Retângulos**: Desenhe retângulos especificando dois cantos opostos.
-  Cada retângulo cria automaticamente um ponto central (restringido ao
+- **Elipses**: Crie elipses (e círculos) com dois cliques: o primeiro define
+  o ponto central e o segundo define o ponto da borda. Você também pode
+  pressionar no centro, arrastar e soltar na borda - ambos os gestos
+  funcionam de forma intercambiável. Segure `Ctrl` para restringir a um
+  círculo perfeito e `Shift` para usar o ponto inicial como centro da elipse.
+- **Retângulos**: Desenhe retângulos especificando dois cantos opostos, ou
+  pressione no primeiro canto, arraste e solte no canto oposto. Cada
+  retângulo cria automaticamente um ponto central (restringido ao
   centro geométrico) para que você possa dimensionar ou fazer snap nele.
   Segure `Shift` ao desenhar para posicionar o retângulo simetricamente
-  ao redor do ponto inicial, semelhante à ferramenta de elipse.
+  ao redor do ponto inicial e `Ctrl` para restringi-lo a um quadrado.
 - **Retângulos arredondados**: Desenhe retângulos com cantos arredondados
+  usando os mesmos gestos e modificadores da ferramenta de retângulo: dois
+  cliques ou clicar-e-arrastar, com `Shift` para centralizar no ponto
+  inicial e `Ctrl` para restringir a um quadrado. O raio dos cantos pode
+  ser definido digitando dimensões (`0-9`, campos W, H e R).
 - **Caixas de texto**: Adicione elementos de texto ao seu esboço. O conteúdo
   do texto suporta expressões de modelo paramétricas (veja
   [Modelos de Texto](../text.md)).
@@ -28,6 +35,16 @@ O esboçador suporta a criação dos seguintes elementos geométricos básicos:
 Esses elementos formam a base dos seus designs 2D e podem ser combinados para
 criar formas complexas. Os preenchimentos são particularmente úteis para criar
 regiões sólidas que serão gravadas ou cortadas como uma única peça.
+
+## Dois cliques ou arrastar
+
+As ferramentas de criação de formas (elipse, retângulo, retângulo arredondado)
+aceitam dois gestos de forma intercambiável: clique no primeiro ponto, mova e
+clique no segundo, ou pressione no primeiro ponto, arraste e solte no segundo.
+Um clique rápido sem movimento apenas arma a ferramenta e aguarda o segundo
+ponto, então cliques acidentais nunca deixam geometria degenerada para trás.
+Enquanto uma pré-visualização estiver ativa, a barra de status mostra as
+teclas modificadoras disponíveis, e `Esc` cancela a pré-visualização.
 
 ## Trabalhando com curvas de Bézier
 

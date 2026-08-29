@@ -64,6 +64,8 @@ def test_circle_tool_initialization(circle_tool, mock_element):
     assert circle_tool._preview_state is None
     assert circle_tool._ctrl_held is False
     assert circle_tool._shift_held is False
+    assert circle_tool._press_world_pos is None
+    assert circle_tool._in_press is False
 
 
 @pytest.mark.ui
@@ -98,9 +100,39 @@ def test_circle_tool_get_preview_state(circle_tool):
 @pytest.mark.ui
 def test_circle_tool_on_deactivate_no_preview(circle_tool, mock_element):
     """Test that on_deactivate works when no preview state."""
+    circle_tool._press_world_pos = (100.0, 200.0)
+    circle_tool._in_press = True
     circle_tool.on_deactivate()
     assert circle_tool._preview_state is None
+    assert circle_tool._press_world_pos is None
+    assert circle_tool._in_press is False
     mock_element.mark_dirty.assert_not_called()
+
+
+@pytest.mark.ui
+def test_circle_tool_on_deactivate_clears_press_state(
+    circle_tool, mock_element
+):
+    """Test that on_deactivate resets press state alongside preview."""
+    circle_tool._preview_state = EllipsePreviewState(
+        start_id=1,
+        start_temp=True,
+        center_id=2,
+        radius_x_id=3,
+        radius_y_id=4,
+        entity_id=5,
+    )
+    circle_tool._press_world_pos = (100.0, 200.0)
+    circle_tool._in_press = True
+
+    with patch(
+        "sketcher.ui_gtk.tools.circle_tool.EllipseCommand.cleanup_preview"
+    ):
+        circle_tool.on_deactivate()
+
+    assert circle_tool._preview_state is None
+    assert circle_tool._press_world_pos is None
+    assert circle_tool._in_press is False
 
 
 @pytest.mark.ui
@@ -208,22 +240,71 @@ def test_circle_tool_on_press_with_snapped_point(circle_tool, mock_element):
 
 
 @pytest.mark.ui
-def test_circle_tool_on_press_already_in_preview(circle_tool, mock_element):
-    """Test on_press when already in preview mode does nothing."""
-    circle_tool._preview_state = EllipsePreviewState(
-        start_id=1,
-        start_temp=True,
-        center_id=2,
-        radius_x_id=3,
-        radius_y_id=4,
-        entity_id=5,
+def test_circle_tool_two_click_commits_on_second_press(
+    circle_tool, mock_element
+):
+    """Test two-click flow commits the ellipse on the second press."""
+    mock_element.hittester.get_hit_data.return_value = (None, None)
+    mock_element.hittester.screen_to_model.side_effect = [
+        (10.0, 20.0),
+        (30.0, 40.0),
+    ]
+
+    with (
+        patch(
+            "sketcher.ui_gtk.tools.circle_tool.EllipseCommand.start_preview"
+        ) as mock_start,
+        patch(
+            "sketcher.ui_gtk.tools.circle_tool.EllipseCommand.cleanup_preview"
+        ),
+    ):
+        mock_start.return_value = EllipsePreviewState(
+            start_id=0,
+            start_temp=True,
+            center_id=1,
+            radius_x_id=2,
+            radius_y_id=3,
+            entity_id=4,
+        )
+        assert circle_tool.on_press(100.0, 200.0, 1) is True
+        assert circle_tool.on_press(150.0, 250.0, 1) is True
+
+    assert circle_tool._preview_state is None
+    assert circle_tool._press_world_pos is None
+    assert circle_tool._in_press is False
+    mock_element.execute_command.assert_called_once()
+
+
+@pytest.mark.ui
+def test_circle_tool_second_press_at_start_cancels(circle_tool, mock_element):
+    """Test second press at the start point cancels without committing."""
+    mock_element.sketch.registry.get_point = Mock(
+        return_value=MagicMock(x=10.0, y=20.0)
     )
+    mock_element.hittester.get_hit_data.return_value = (None, None)
     mock_element.hittester.screen_to_model.return_value = (10.0, 20.0)
 
-    result = circle_tool.on_press(100.0, 200.0, 1)
+    with (
+        patch(
+            "sketcher.ui_gtk.tools.circle_tool.EllipseCommand.start_preview"
+        ) as mock_start,
+        patch(
+            "sketcher.ui_gtk.tools.circle_tool.EllipseCommand.cleanup_preview"
+        ),
+    ):
+        mock_start.return_value = EllipsePreviewState(
+            start_id=0,
+            start_temp=True,
+            center_id=1,
+            radius_x_id=2,
+            radius_y_id=3,
+            entity_id=4,
+        )
+        circle_tool.on_press(100.0, 200.0, 1)
+        circle_tool.on_press(100.0, 200.0, 1)
 
-    assert result is True
-    mock_element.mark_dirty.assert_not_called()
+    assert circle_tool._preview_state is None
+    mock_element.execute_command.assert_not_called()
 
 
 @pytest.mark.ui
@@ -231,6 +312,62 @@ def test_circle_tool_on_drag(circle_tool):
     """Test on_drag does nothing."""
     circle_tool.on_drag(10.0, 20.0)
     assert True
+
+
+@pytest.mark.ui
+def test_circle_tool_release_without_movement_keeps_preview(
+    circle_tool, mock_element
+):
+    """Test stray click does not commit and keeps the preview armed."""
+    mock_element.hittester.get_hit_data.return_value = (None, None)
+    mock_element.hittester.screen_to_model.return_value = (10.0, 20.0)
+
+    with patch(
+        "sketcher.ui_gtk.tools.circle_tool.EllipseCommand.start_preview"
+    ) as mock_start:
+        mock_start.return_value = EllipsePreviewState(
+            start_id=0,
+            start_temp=True,
+            center_id=1,
+            radius_x_id=2,
+            radius_y_id=3,
+            entity_id=4,
+        )
+        assert circle_tool.on_press(100.0, 200.0, 1) is True
+
+    circle_tool.on_release(100.0, 200.0)
+
+    assert circle_tool._preview_state is not None
+    assert circle_tool._press_world_pos == (100.0, 200.0)
+    assert circle_tool._in_press is False
+    mock_element.execute_command.assert_not_called()
+
+
+@pytest.mark.ui
+def test_circle_tool_release_below_threshold_keeps_preview(
+    circle_tool, mock_element
+):
+    """Test release after sub-threshold jitter does not commit."""
+    mock_element.hittester.get_hit_data.return_value = (None, None)
+    mock_element.hittester.screen_to_model.return_value = (10.0, 20.0)
+
+    with patch(
+        "sketcher.ui_gtk.tools.circle_tool.EllipseCommand.start_preview"
+    ) as mock_start:
+        mock_start.return_value = EllipsePreviewState(
+            start_id=0,
+            start_temp=True,
+            center_id=1,
+            radius_x_id=2,
+            radius_y_id=3,
+            entity_id=4,
+        )
+        assert circle_tool.on_press(100.0, 200.0, 1) is True
+
+    circle_tool.on_release(101.0, 200.5)
+
+    assert circle_tool._preview_state is not None
+    mock_element.execute_command.assert_not_called()
 
 
 @pytest.mark.ui
@@ -243,27 +380,24 @@ def test_circle_tool_on_release_no_preview(circle_tool, mock_element):
 
 @pytest.mark.ui
 def test_circle_tool_on_release_with_preview(circle_tool, mock_element):
-    """Test on_release creates command and cleans up."""
-    circle_tool._preview_state = EllipsePreviewState(
-        start_id=1,
-        start_temp=True,
-        center_id=2,
-        radius_x_id=3,
-        radius_y_id=4,
-        entity_id=5,
-    )
-    mock_element.hittester.screen_to_model.return_value = (50.0, 50.0)
+    """Test drag-and-release creates command and cleans up."""
     mock_element.hittester.get_hit_data.return_value = (None, None)
+    mock_element.hittester.screen_to_model.return_value = (50.0, 50.0)
 
-    with (
-        patch(
-            "sketcher.ui_gtk.tools.circle_tool.EllipseCommand.cleanup_preview"
-        ),
-        patch("sketcher.ui_gtk.tools.circle_tool.EllipseCommand"),
-    ):
-        circle_tool.on_release(100.0, 200.0)
+    with patch("sketcher.ui_gtk.tools.circle_tool.EllipseCommand") as MockCmd:
+        MockCmd.start_preview.return_value = EllipsePreviewState(
+            start_id=1,
+            start_temp=True,
+            center_id=2,
+            radius_x_id=3,
+            radius_y_id=4,
+            entity_id=5,
+        )
+        assert circle_tool.on_press(100.0, 200.0, 1) is True
+        circle_tool.on_release(140.0, 200.0)
 
     assert circle_tool._preview_state is None
+    assert circle_tool._press_world_pos is None
     mock_element.execute_command.assert_called_once()
     mock_element.mark_dirty.assert_called()
 
@@ -273,14 +407,6 @@ def test_circle_tool_on_release_with_snapped_endpoint(
     circle_tool, mock_element
 ):
     """Test on_release snaps to existing point."""
-    circle_tool._preview_state = EllipsePreviewState(
-        start_id=1,
-        start_temp=True,
-        center_id=2,
-        radius_x_id=3,
-        radius_y_id=4,
-        entity_id=5,
-    )
     mock_element.hittester.screen_to_model.return_value = (50.0, 50.0)
     mock_point = SketchPoint(99, 50.0, 50.0)
     mock_snap_point = MagicMock()
@@ -295,15 +421,17 @@ def test_circle_tool_on_release_with_snapped_endpoint(
         primary_snap_point=mock_snap_point,
     )
 
-    with (
-        patch(
-            "sketcher.ui_gtk.tools.circle_tool.EllipseCommand.cleanup_preview"
-        ),
-        patch("sketcher.ui_gtk.tools.circle_tool.EllipseCommand") as MockCmd,
-    ):
-        mock_cmd_instance = Mock()
-        MockCmd.return_value = mock_cmd_instance
-        circle_tool.on_release(100.0, 200.0)
+    with patch("sketcher.ui_gtk.tools.circle_tool.EllipseCommand") as MockCmd:
+        MockCmd.start_preview.return_value = EllipsePreviewState(
+            start_id=1,
+            start_temp=True,
+            center_id=2,
+            radius_x_id=3,
+            radius_y_id=4,
+            entity_id=5,
+        )
+        circle_tool.on_press(100.0, 200.0, 1)
+        circle_tool.on_release(140.0, 200.0)
 
         call_kwargs = MockCmd.call_args[1]
         assert call_kwargs["end_pid"] == 99
@@ -314,14 +442,6 @@ def test_circle_tool_on_release_ignores_preview_points(
     circle_tool, mock_element
 ):
     """Test on_release ignores snapped points that are preview points."""
-    circle_tool._preview_state = EllipsePreviewState(
-        start_id=1,
-        start_temp=True,
-        center_id=2,
-        radius_x_id=3,
-        radius_y_id=4,
-        entity_id=5,
-    )
     mock_element.hittester.screen_to_model.return_value = (50.0, 50.0)
     mock_point = SketchPoint(3, 50.0, 50.0)
     mock_snap_point = MagicMock()
@@ -336,15 +456,17 @@ def test_circle_tool_on_release_ignores_preview_points(
         primary_snap_point=mock_snap_point,
     )
 
-    with (
-        patch(
-            "sketcher.ui_gtk.tools.circle_tool.EllipseCommand.cleanup_preview"
-        ),
-        patch("sketcher.ui_gtk.tools.circle_tool.EllipseCommand") as MockCmd,
-    ):
-        mock_cmd_instance = Mock()
-        MockCmd.return_value = mock_cmd_instance
-        circle_tool.on_release(100.0, 200.0)
+    with patch("sketcher.ui_gtk.tools.circle_tool.EllipseCommand") as MockCmd:
+        MockCmd.start_preview.return_value = EllipsePreviewState(
+            start_id=1,
+            start_temp=True,
+            center_id=2,
+            radius_x_id=3,
+            radius_y_id=4,
+            entity_id=5,
+        )
+        circle_tool.on_press(100.0, 200.0, 1)
+        circle_tool.on_release(140.0, 200.0)
 
         call_kwargs = MockCmd.call_args[1]
         assert call_kwargs["end_pid"] is None
@@ -353,28 +475,22 @@ def test_circle_tool_on_release_ignores_preview_points(
 @pytest.mark.ui
 def test_circle_tool_on_release_with_modifiers(circle_tool, mock_element):
     """Test on_release passes modifier state to command."""
-    circle_tool._preview_state = EllipsePreviewState(
-        start_id=1,
-        start_temp=True,
-        center_id=2,
-        radius_x_id=3,
-        radius_y_id=4,
-        entity_id=5,
-    )
     circle_tool._shift_held = True
     circle_tool._ctrl_held = True
-    mock_element.hittester.screen_to_model.return_value = (50.0, 50.0)
     mock_element.hittester.get_hit_data.return_value = (None, None)
+    mock_element.hittester.screen_to_model.return_value = (50.0, 50.0)
 
-    with (
-        patch(
-            "sketcher.ui_gtk.tools.circle_tool.EllipseCommand.cleanup_preview"
-        ),
-        patch("sketcher.ui_gtk.tools.circle_tool.EllipseCommand") as MockCmd,
-    ):
-        mock_cmd_instance = Mock()
-        MockCmd.return_value = mock_cmd_instance
-        circle_tool.on_release(100.0, 200.0)
+    with patch("sketcher.ui_gtk.tools.circle_tool.EllipseCommand") as MockCmd:
+        MockCmd.start_preview.return_value = EllipsePreviewState(
+            start_id=1,
+            start_temp=True,
+            center_id=2,
+            radius_x_id=3,
+            radius_y_id=4,
+            entity_id=5,
+        )
+        circle_tool.on_press(100.0, 200.0, 1)
+        circle_tool.on_release(140.0, 200.0)
 
         call_kwargs = MockCmd.call_args[1]
         assert call_kwargs["center_on_start"] is True
@@ -620,11 +736,33 @@ def test_circle_tool_get_active_shortcuts_with_preview(circle_tool):
 
     shortcuts = circle_tool.get_active_shortcuts()
 
-    assert len(shortcuts) == 4
+    assert len(shortcuts) == 5
     keys = [s[0] for s in shortcuts]
     assert "Shift" in keys
     assert "Ctrl" in keys
     assert "Tab" in keys
+    assert "Click" in keys
+    assert "Esc" in keys
+
+
+@pytest.mark.ui
+def test_circle_tool_get_active_shortcuts_while_pressed(circle_tool):
+    """Test get_active_shortcuts omits the click hint while pressed."""
+    circle_tool._preview_state = EllipsePreviewState(
+        start_id=0,
+        start_temp=True,
+        center_id=1,
+        radius_x_id=2,
+        radius_y_id=3,
+        entity_id=4,
+    )
+    circle_tool._in_press = True
+
+    shortcuts = circle_tool.get_active_shortcuts()
+
+    assert len(shortcuts) == 4
+    keys = [s[0] for s in shortcuts]
+    assert "Click" not in keys
     assert "Esc" in keys
 
 

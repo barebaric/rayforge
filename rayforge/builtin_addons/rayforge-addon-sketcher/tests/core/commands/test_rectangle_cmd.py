@@ -16,12 +16,14 @@ def test_rectangle_calculate_geometry_no_snap():
     result = RectangleCommand.calculate_geometry(0, 0, 100, 50, 0, None)
     assert result is not None
     points = result["points"]
-    assert len(points) == 5
+    assert len(points) == 7
     assert len(result["entities"]) == 4
     assert len(result["constraints"]) == 5
 
     # p1 is the start point, represented by its ID
     assert points["p1_id"] == 0
+    assert points["p1"] is None
+    assert points["center_id"] == points["center"].id
 
     # p2, p3, p4, center are new Point objects
     assert points["p2"].x == 100 and points["p2"].y == 0
@@ -53,11 +55,78 @@ def test_rectangle_calculate_geometry_center_on_start():
     assert result is not None
     points = result["points"]
     # dx = 50, dy = 25 from center; corners span +/- those around start
+    assert points["p1"] is not None
+    assert points["p1"].x == 0 and points["p1"].y == 0
     assert points["p2"].x == 100 and points["p2"].y == 0
     assert points["p3"].x == 100 and points["p3"].y == 50
     assert points["p4"].x == 0 and points["p4"].y == 50
-    # Center is the start point's position
-    assert points["center"].x == 50 and points["center"].y == 25
+    # The start point itself is the symmetry center; no new center point
+    assert points["center"] is None
+    assert points["center_id"] == 0
+
+
+def test_rectangle_command_execute_center_on_start():
+    """Test execution in center mode creates the mirrored rectangle."""
+    sketch = Sketch()
+    start_pid = sketch.add_point(50, 25)
+    cmd = RectangleCommand(sketch, start_pid, (100, 50), center_on_start=True)
+    cmd.execute()
+
+    # origin + start + 4 corners = 6 points; start doubles as center
+    assert len(sketch.registry.points) == 6
+    assert len(sketch.registry.entities) == 4
+
+    pts = {p.id: p for p in sketch.registry.points}
+    corners = sorted(
+        (p.x, p.y)
+        for p in sketch.registry.points
+        if p.id not in (0, start_pid)
+    )
+    assert corners == [(0.0, 0.0), (0.0, 50.0), (100.0, 0.0), (100.0, 50.0)]
+    assert pts[start_pid].x == 50 and pts[start_pid].y == 25
+
+
+def test_rectangle_calculate_geometry_constrain_square():
+    """Test constrain_square equalizes both extents from the start."""
+    result = RectangleCommand.calculate_geometry(
+        0, 0, 100, 50, 0, None, constrain_square=True
+    )
+    assert result is not None
+    points = result["points"]
+    # min(100, 50) = 50 wins on both axes
+    assert points["p2"].x == 50 and points["p2"].y == 0
+    assert points["p3"].x == 50 and points["p3"].y == 50
+    assert points["p4"].x == 0 and points["p4"].y == 50
+    assert points["center"].x == 25 and points["center"].y == 25
+
+
+def test_rectangle_calculate_geometry_constrain_square_center_on_start():
+    """Test constrain_square combined with center_on_start."""
+    result = RectangleCommand.calculate_geometry(
+        50, 25, 100, 50, 0, None, center_on_start=True, constrain_square=True
+    )
+    assert result is not None
+    points = result["points"]
+    # half-extent min(50, 25) = 25 on both axes
+    assert points["p1"].x == 25 and points["p1"].y == 0
+    assert points["p2"].x == 75 and points["p2"].y == 0
+    assert points["p3"].x == 75 and points["p3"].y == 50
+    assert points["p4"].x == 25 and points["p4"].y == 50
+    assert points["center"] is None
+    assert points["center_id"] == 0
+
+
+def test_rectangle_calculate_geometry_square_skipped_when_snapped():
+    """Test a snapped end corner takes precedence over square constraining."""
+    result = RectangleCommand.calculate_geometry(
+        0, 0, 100, 50, 0, 7, constrain_square=True
+    )
+    assert result is not None
+    points = result["points"]
+    # No squashing: the snapped point defines the corner
+    assert points["p2"].x == 100 and points["p2"].y == 0
+    assert points["p3"].x == 100 and points["p3"].y == 50
+    assert points["p4"].x == 0 and points["p4"].y == 50
 
 
 def test_rectangle_calculate_geometry_has_symmetry_constraint():

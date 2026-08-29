@@ -9,16 +9,23 @@ The sketcher supports creating the following basic geometric elements:
 - **Paths (Lines and Bezier Curves)**: Draw straight lines and smooth bezier
   curves using the unified path tool. Click to place points, drag to create
   bezier handles.
-- **Arcs**: Draw arcs by specifying a center point, start point, and end point
-- **Ellipses**: Create ellipses (and circles) by defining a center point and
-  dragging to set the size and aspect ratio. Hold `Ctrl` while dragging to
-  constrain to a perfect circle.
-- **Rectangles**: Draw rectangles by specifying two opposite corners.
-  Each rectangle auto-creates a center point (constrained to the geometric
+- **Arcs**: Draw arcs by specifying a center point, start point, and end point.
+- **Ellipses**: Create ellipses (and circles) with two clicks: the first sets
+  the center, the second sets the edge point. You can also press at the
+  center, drag, and release at the edge - both gestures work
+  interchangeably. Hold `Ctrl` to constrain to a perfect circle and `Shift`
+  to use the start point as the ellipse's center.
+- **Rectangles**: Draw rectangles by specifying two opposite corners, or
+  press at the first corner, drag, and release at the opposite corner. Each
+  rectangle auto-creates a center point (constrained to the geometric
   center) so you can dimension or snap to it. Hold `Shift` while drawing to
-  place the rectangle symmetrically around the start point, matching the
-  ellipse tool.
-- **Rounded Rectangles**: Draw rectangles with rounded corners
+  place the rectangle symmetrically around the start point, and `Ctrl` to
+  constrain it to a square.
+- **Rounded Rectangles**: Draw rectangles with rounded corners using the
+  same gestures and modifiers as the rectangle tool: two clicks or
+  click-and-drag, with `Shift` to center on the start point and `Ctrl` to
+  constrain to a square. The corner radius can be set by typing dimensions
+  (`0-9`, fields W, H and R).
 - **Text Boxes**: Add text elements to your sketch. Text content supports
   parametric template expressions (see [Text Templates](../text.md)).
 - **Fills**: Fill closed regions to create solid areas
@@ -26,6 +33,16 @@ The sketcher supports creating the following basic geometric elements:
 These elements form the foundation of your 2D designs and can be combined to
 create complex shapes. Fills are particularly useful for creating solid regions
 that will be engraved or cut as a single piece.
+
+## Two-Click or Drag
+
+The shape-creation tools (ellipse, rectangle, rounded rectangle) accept two
+gestures interchangeably: click the first point, move, and click the second
+point, or press at the first point, drag, and release at the second. A quick
+click without movement simply arms the tool and waits for the second point,
+so stray clicks never leave degenerate geometry behind. While a preview is
+active, the status bar shows the available modifier keys, and `Esc` cancels
+the preview.
 
 ## Working with Bezier Curves
 

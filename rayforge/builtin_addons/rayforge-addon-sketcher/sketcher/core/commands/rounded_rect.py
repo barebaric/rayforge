@@ -35,6 +35,7 @@ class RoundedRectPreviewState(PreviewState):
         p_end_id: EntityID,
         preview_ids: dict[str, EntityID],
         radius: float,
+        center_on_start: bool = False,
     ):
         self.start_id = start_id
         self.start_temp = start_temp
@@ -44,6 +45,8 @@ class RoundedRectPreviewState(PreviewState):
         self.locked_width: float | None = None
         self.locked_height: float | None = None
         self.locked_radius: float | None = None
+        self.center_on_start = center_on_start
+        self.constrain_square = False
 
     def get_preview_point_ids(self) -> set[EntityID]:
         """
@@ -94,15 +97,32 @@ class RoundedRectPreviewState(PreviewState):
         sign_x = 1.0 if dx >= 0 else -1.0
         sign_y = 1.0 if dy >= 0 else -1.0
 
-        new_width = (
-            self.locked_width if self.locked_width is not None else abs(dx)
-        )
-        new_height = (
-            self.locked_height if self.locked_height is not None else abs(dy)
-        )
-
-        end_p.x = start_p.x + sign_x * new_width
-        end_p.y = start_p.y + sign_y * new_height
+        if self.center_on_start:
+            # locked width/height are the full dimensions; the end point
+            # defines a half-extent from the center.
+            new_dx = (
+                self.locked_width / 2.0
+                if self.locked_width is not None
+                else abs(dx)
+            )
+            new_dy = (
+                self.locked_height / 2.0
+                if self.locked_height is not None
+                else abs(dy)
+            )
+            end_p.x = start_p.x + sign_x * new_dx
+            end_p.y = start_p.y + sign_y * new_dy
+        else:
+            new_width = (
+                self.locked_width if self.locked_width is not None else abs(dx)
+            )
+            new_height = (
+                self.locked_height
+                if self.locked_height is not None
+                else abs(dy)
+            )
+            end_p.x = start_p.x + sign_x * new_width
+            end_p.y = start_p.y + sign_y * new_height
 
         RoundedRectCommand.create_preview(
             registry,
@@ -110,6 +130,7 @@ class RoundedRectPreviewState(PreviewState):
             self.p_end_id,
             self.radius,
             preview_ids=self.preview_ids,
+            center_on_start=self.center_on_start,
         )
 
     def get_dimensions(self, registry: EntityRegistry) -> list[DimensionData]:
@@ -127,19 +148,28 @@ class RoundedRectPreviewState(PreviewState):
             p2 = registry.get_point(self.p_end_id)
         except IndexError:
             return []
-        width = (
-            self.locked_width
-            if self.locked_width is not None
-            else abs(p2.x - p1.x)
-        )
-        height = (
-            self.locked_height
-            if self.locked_height is not None
-            else abs(p2.y - p1.y)
-        )
-        mid_x = (p1.x + p2.x) / 2
-        top_y = min(p1.y, p2.y)
-        right_x = max(p1.x, p2.x)
+        if self.center_on_start:
+            width = abs(p2.x - p1.x) * 2
+            height = abs(p2.y - p1.y) * 2
+            mid_x = p1.x
+            mid_y = p1.y
+            top_y = p1.y - abs(p2.y - p1.y)
+            right_x = p1.x + abs(p2.x - p1.x)
+        else:
+            width = (
+                self.locked_width
+                if self.locked_width is not None
+                else abs(p2.x - p1.x)
+            )
+            height = (
+                self.locked_height
+                if self.locked_height is not None
+                else abs(p2.y - p1.y)
+            )
+            mid_x = (p1.x + p2.x) / 2
+            mid_y = (p1.y + p2.y) / 2
+            top_y = min(p1.y, p2.y)
+            right_x = max(p1.x, p2.x)
         dimensions = [
             DimensionData(
                 label=DimensionData.format_length(width),
@@ -147,7 +177,7 @@ class RoundedRectPreviewState(PreviewState):
             ),
             DimensionData(
                 label=DimensionData.format_length(height),
-                position=(right_x, (p1.y + p2.y) / 2),
+                position=(right_x, mid_y),
             ),
         ]
         if self.radius > 0:
@@ -173,6 +203,8 @@ class RoundedRectCommand(SketchChangeCommand):
         fixed_width: float | None = None,
         fixed_height: float | None = None,
         fixed_radius: float | None = None,
+        center_on_start: bool = False,
+        constrain_square: bool = False,
     ):
         super().__init__(sketch, _("Add Rounded Rectangle"))
         self.start_pid = start_pid
@@ -182,6 +214,8 @@ class RoundedRectCommand(SketchChangeCommand):
         self.fixed_width = fixed_width
         self.fixed_height = fixed_height
         self.fixed_radius = fixed_radius
+        self.center_on_start = center_on_start
+        self.constrain_square = constrain_square
         self.add_cmd: AddItemsCommand | None = None
         self._committed_end_id: EntityID | None = None
 
@@ -193,6 +227,29 @@ class RoundedRectCommand(SketchChangeCommand):
         return self._committed_end_id
 
     @staticmethod
+    def _constrain_point_to_square(
+        registry: EntityRegistry,
+        start_id: EntityID,
+        x: float,
+        y: float,
+    ) -> tuple[float, float]:
+        """
+        Adjusts a corner position so the shape defined by start_id and
+        (x, y) is square, keeping the start point fixed.
+
+        The smaller extent wins; the direction of each axis is kept.
+        """
+        try:
+            start_p = registry.get_point(start_id)
+        except IndexError:
+            return x, y
+
+        size = min(abs(x - start_p.x), abs(y - start_p.y))
+        sign_x = 1.0 if x >= start_p.x else -1.0
+        sign_y = 1.0 if y >= start_p.y else -1.0
+        return start_p.x + sign_x * size, start_p.y + sign_y * size
+
+    @staticmethod
     def calculate_geometry(
         x1: float,
         y1: float,
@@ -202,8 +259,27 @@ class RoundedRectCommand(SketchChangeCommand):
         fixed_width: float | None = None,
         fixed_height: float | None = None,
         fixed_radius: float | None = None,
+        center_on_start: bool = False,
+        constrain_square: bool = False,
     ) -> dict[str, Any] | None:
-        """Calculates geometry for a rounded rectangle."""
+        """Calculates geometry for a rounded rectangle.
+
+        When center_on_start is True the start point (x1, y1) is the
+        shape's center and the mouse point defines the extent, so the
+        rounded rectangle is drawn symmetrically around the start point.
+        When constrain_square is True the mouse point is adjusted so both
+        extents are equal, keeping the start point fixed.
+        """
+        if constrain_square:
+            size = min(abs(x2 - x1), abs(y2 - y1))
+            sign_x = 1.0 if x2 >= x1 else -1.0
+            sign_y = 1.0 if y2 >= y1 else -1.0
+            x2 = x1 + sign_x * size
+            y2 = y1 + sign_y * size
+
+        if center_on_start:
+            x1, y1 = x1 - (x2 - x1), y1 - (y2 - y1)
+
         width, height = abs(x2 - x1), abs(y2 - y1)
         if width < 1e-6 or height < 1e-6:
             return None
@@ -352,6 +428,7 @@ class RoundedRectCommand(SketchChangeCommand):
         end_pid: EntityID,
         radius: float,
         preview_ids: dict[str, EntityID] | None = None,
+        center_on_start: bool = False,
     ) -> dict[str, EntityID] | None:
         """
         Creates or updates preview geometry in the registry.
@@ -362,6 +439,9 @@ class RoundedRectCommand(SketchChangeCommand):
             end_pid: The ID of the end corner point (preview corner).
             radius: The corner radius.
             preview_ids: Existing preview IDs to update, or None to create new.
+            center_on_start: When True, the start point is the shape's
+                center and the end point defines the extent; the actual
+                corners are mirrored through the start point.
 
         Returns:
             Dict of preview IDs, or None if geometry is invalid.
@@ -372,8 +452,12 @@ class RoundedRectCommand(SketchChangeCommand):
         except IndexError:
             return None
 
-        x1, y1 = start_p.x, start_p.y
-        x2, y2 = end_p.x, end_p.y
+        if center_on_start:
+            x1, y1 = 2.0 * start_p.x - end_p.x, 2.0 * start_p.y - end_p.y
+            x2, y2 = end_p.x, end_p.y
+        else:
+            x1, y1 = start_p.x, start_p.y
+            x2, y2 = end_p.x, end_p.y
         width, height = abs(x2 - x1), abs(y2 - y1)
 
         if width > 1e-6 and height > 1e-6:
@@ -467,6 +551,7 @@ class RoundedRectCommand(SketchChangeCommand):
         y: float,
         snapped_pid: EntityID | None = None,
         radius: float = 10.0,
+        center_on_start: bool = False,
         **kwargs,
     ) -> RoundedRectPreviewState:
         """
@@ -477,6 +562,8 @@ class RoundedRectCommand(SketchChangeCommand):
             x, y: The initial coordinates.
             snapped_pid: An existing point ID to snap to, or None.
             radius: The corner radius.
+            center_on_start: When True, the start point is the shape's
+                center and the end point defines the extent.
 
         Returns:
             RoundedRectPreviewState for use with update_preview and
@@ -502,6 +589,7 @@ class RoundedRectCommand(SketchChangeCommand):
             p_end_id=p_end_id,
             preview_ids=preview_ids,
             radius=radius,
+            center_on_start=center_on_start,
         )
 
     @staticmethod
@@ -510,6 +598,8 @@ class RoundedRectCommand(SketchChangeCommand):
         preview_state: PreviewState,
         x: float,
         y: float,
+        center_on_start: bool = False,
+        constrain_square: bool = False,
     ) -> None:
         """
         Updates the end point position and refreshes preview geometry.
@@ -518,12 +608,24 @@ class RoundedRectCommand(SketchChangeCommand):
             registry: The entity registry to modify.
             preview_state: The preview state from start_preview.
             x, y: The new end point coordinates.
+            center_on_start: When True, the start point is the shape's
+                center and the end point defines the extent.
+            constrain_square: When True the end point is adjusted so
+                both extents are equal, keeping the start point fixed.
 
         Raises:
             TypeError: If preview_state is not a RoundedRectPreviewState.
         """
         if not isinstance(preview_state, RoundedRectPreviewState):
             raise TypeError("Expected RoundedRectPreviewState")
+
+        if constrain_square:
+            x, y = RoundedRectCommand._constrain_point_to_square(
+                registry, preview_state.start_id, x, y
+            )
+        preview_state.constrain_square = constrain_square
+        preview_state.center_on_start = center_on_start
+
         try:
             p_end = registry.get_point(preview_state.p_end_id)
             p_start = registry.get_point(preview_state.start_id)
@@ -539,13 +641,14 @@ class RoundedRectCommand(SketchChangeCommand):
             sign_x = 1.0 if dx >= 0 else -1.0
             sign_y = 1.0 if dy >= 0 else -1.0
 
+            half = 2.0 if center_on_start else 1.0
             new_x = (
-                p_start.x + sign_x * preview_state.locked_width
+                p_start.x + sign_x * preview_state.locked_width / half
                 if preview_state.locked_width is not None
                 else x
             )
             new_y = (
-                p_start.y + sign_y * preview_state.locked_height
+                p_start.y + sign_y * preview_state.locked_height / half
                 if preview_state.locked_height is not None
                 else y
             )
@@ -561,6 +664,7 @@ class RoundedRectCommand(SketchChangeCommand):
             preview_state.p_end_id,
             preview_state.radius,
             preview_ids=preview_state.preview_ids,
+            center_on_start=center_on_start,
         )
 
     @staticmethod
@@ -613,6 +717,8 @@ class RoundedRectCommand(SketchChangeCommand):
             fixed_width=self.fixed_width,
             fixed_height=self.fixed_height,
             fixed_radius=self.fixed_radius,
+            center_on_start=self.center_on_start,
+            constrain_square=self.constrain_square,
         )
         if not result:
             if self.is_start_temp:

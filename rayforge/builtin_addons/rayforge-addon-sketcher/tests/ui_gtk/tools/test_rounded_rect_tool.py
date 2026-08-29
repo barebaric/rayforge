@@ -30,6 +30,10 @@ def tool(mock_element):
 def test_rounded_rect_tool_initialization(tool):
     """Test tool's initial state."""
     assert tool._preview_state is None
+    assert tool._shift_held is False
+    assert tool._ctrl_held is False
+    assert tool._press_world_pos is None
+    assert tool._in_press is False
 
 
 @pytest.mark.ui
@@ -82,7 +86,9 @@ def test_second_click_creates_rounded_rectangle(tool, mock_element):
         preview_ids={"t2": 2, "line1": 10},
         radius=10.0,
     )
-    mock_element.sketch.registry.get_point.return_value = Point(0, 0, 0)
+    mock_element.sketch.registry.get_point.side_effect = lambda pid: (
+        Point(pid, 100, 50) if pid == 1 else Point(pid, 0, 0)
+    )
 
     mock_element.hittester.screen_to_model.return_value = (100, 50)
     result = tool.on_press(100, 200, 1)
@@ -96,6 +102,7 @@ def test_second_click_creates_rounded_rectangle(tool, mock_element):
     assert cmd.is_start_temp is True
     assert cmd.radius == tool.DEFAULT_RADIUS
     assert tool._preview_state is None
+    assert tool._press_world_pos is None
 
 
 @pytest.mark.ui
@@ -167,3 +174,178 @@ def test_degenerate_rounded_rectangle_aborts_creation(tool, mock_element):
     cmd._do_execute()
     mock_element.sketch.remove_point_if_unused.assert_called_once_with(0)
     assert cmd.add_cmd is None
+
+
+@pytest.mark.ui
+def test_drag_release_creates_rounded_rectangle(tool, mock_element):
+    """Test that press-drag-release finishes the rounded rectangle."""
+    tool._preview_state = RoundedRectPreviewState(
+        start_id=0,
+        start_temp=True,
+        p_end_id=1,
+        preview_ids={"t2": 2, "line1": 10},
+        radius=10.0,
+    )
+    tool._press_world_pos = (100.0, 200.0)
+    mock_element.sketch.registry.get_point.side_effect = lambda pid: (
+        Point(pid, 100, 50) if pid == 1 else Point(pid, 0, 0)
+    )
+
+    tool.on_release(140.0, 200.0)
+
+    mock_element.execute_command.assert_called_once()
+    cmd = mock_element.execute_command.call_args[0][0]
+    assert cmd.end_pos == (100, 50)
+    assert tool._preview_state is None
+    assert tool._press_world_pos is None
+    assert tool._in_press is False
+
+
+@pytest.mark.ui
+def test_release_without_movement_keeps_preview(tool, mock_element):
+    """Test stray click does not commit and keeps the preview armed."""
+    tool._preview_state = RoundedRectPreviewState(
+        start_id=0,
+        start_temp=True,
+        p_end_id=1,
+        preview_ids={"t2": 2, "line1": 10},
+        radius=10.0,
+    )
+    tool._press_world_pos = (100.0, 200.0)
+
+    tool.on_release(100.0, 200.0)
+
+    mock_element.execute_command.assert_not_called()
+    assert tool._preview_state is not None
+    assert tool._press_world_pos == (100.0, 200.0)
+    assert tool._in_press is False
+
+
+@pytest.mark.ui
+def test_release_below_threshold_keeps_preview(tool, mock_element):
+    """Test release after sub-threshold jitter does not commit."""
+    tool._preview_state = RoundedRectPreviewState(
+        start_id=0,
+        start_temp=True,
+        p_end_id=1,
+        preview_ids={"t2": 2, "line1": 10},
+        radius=10.0,
+    )
+    tool._press_world_pos = (100.0, 200.0)
+
+    tool.on_release(101.0, 200.5)
+
+    mock_element.execute_command.assert_not_called()
+    assert tool._preview_state is not None
+
+
+@pytest.mark.ui
+def test_on_deactivate_clears_press_state(tool, mock_element):
+    """Test that deactivating resets the press state."""
+    tool._preview_state = RoundedRectPreviewState(
+        start_id=0,
+        start_temp=True,
+        p_end_id=1,
+        preview_ids={"t2": 2, "line1": 10},
+        radius=10.0,
+    )
+    tool._press_world_pos = (100.0, 200.0)
+    tool._in_press = True
+
+    tool.on_deactivate()
+
+    assert tool._preview_state is None
+    assert tool._press_world_pos is None
+    assert tool._in_press is False
+
+
+@pytest.mark.ui
+def test_get_active_shortcuts_during_preview(tool):
+    """Test status bar shortcuts advertise modifiers and click phase."""
+    tool._preview_state = RoundedRectPreviewState(
+        start_id=0,
+        start_temp=True,
+        p_end_id=1,
+        preview_ids={"t2": 2, "line1": 10},
+        radius=10.0,
+    )
+
+    shortcuts = tool.get_active_shortcuts()
+    keys = [s[0] for s in shortcuts]
+    assert "Shift" in keys
+    assert "Ctrl" in keys
+    assert "0-9" in keys
+    assert "Click" in keys
+
+    tool._in_press = True
+    shortcuts = tool.get_active_shortcuts()
+    keys = [s[0] for s in shortcuts]
+    assert "Click" not in keys
+
+
+@pytest.mark.ui
+def test_on_modifier_change_tracks_modifiers(tool, mock_element):
+    """Test that shift/ctrl state is tracked and triggers redraw."""
+    tool._preview_state = RoundedRectPreviewState(
+        start_id=0,
+        start_temp=True,
+        p_end_id=1,
+        preview_ids={"t2": 2, "line1": 10},
+        radius=10.0,
+    )
+
+    tool.on_modifier_change(shift=True, ctrl=True)
+    assert tool._shift_held is True
+    assert tool._ctrl_held is True
+    mock_element.mark_dirty.assert_called_once()
+
+    tool.on_modifier_change(shift=True, ctrl=True)
+    mock_element.mark_dirty.assert_called_once()
+
+
+@pytest.mark.ui
+def test_modifiers_passed_to_update_preview(tool, mock_element):
+    """Test that hovering forwards modifier state to the command."""
+    tool._preview_state = RoundedRectPreviewState(
+        start_id=0,
+        start_temp=True,
+        p_end_id=1,
+        preview_ids={"t2": 2, "line1": 10},
+        radius=10.0,
+    )
+    tool._shift_held = True
+    tool._ctrl_held = True
+    mock_element.hittester.screen_to_model.return_value = (75, 85)
+
+    with patch.object(RoundedRectCommand, "update_preview") as mock_update:
+        tool.on_hover_motion(100, 200)
+
+    assert mock_update.call_args[1]["center_on_start"] is True
+    assert mock_update.call_args[1]["constrain_square"] is True
+
+
+@pytest.mark.ui
+def test_commit_uses_preview_modifier_flags(tool, mock_element):
+    """Test commit matches the preview even if modifiers changed after."""
+    tool._preview_state = RoundedRectPreviewState(
+        start_id=0,
+        start_temp=True,
+        p_end_id=1,
+        preview_ids={"t2": 2, "line1": 10},
+        radius=10.0,
+        center_on_start=True,
+    )
+    tool._preview_state.constrain_square = True
+    tool._shift_held = False
+    tool._ctrl_held = False
+    mock_element.hittester.screen_to_model.return_value = (100, 50)
+    mock_element.sketch.registry.get_point.side_effect = lambda pid: (
+        Point(pid, 100, 50) if pid == 1 else Point(pid, 0, 0)
+    )
+
+    tool.on_press(100, 200, 1)
+
+    cmd = mock_element.execute_command.call_args[0][0]
+    assert cmd.center_on_start is True
+    assert cmd.constrain_square is True
+    assert cmd.end_pos == (100, 50)
