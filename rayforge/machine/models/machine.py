@@ -266,12 +266,15 @@ class Machine:
         return bool(self.driver.supports_pwm(head))
 
     def supports_travel_speed(self) -> bool:
-        """Whether the machine's dialect can emit travel moves at a speed.
+        """Whether the machine can emit travel moves at a speed.
 
-        Drives whether step settings show the travel speed row and
-        whether travel-speed warnings are produced.
+        Delegates to the driver class: non-G-code drivers always carry
+        the travel speed, G-code drivers depend on the dialect's rapid
+        move template. Drives whether step settings show the travel
+        speed row and whether travel-speed warnings are produced.
         """
-        return bool(self.dialect and self.dialect.can_g0_with_speed)
+        driver_cls = get_driver_cls(self.driver_name or "")
+        return driver_cls.supports_travel_speed(self.dialect)
 
     def get_pwm_params(self, head: Head | None = None) -> PWMParams | None:
         """

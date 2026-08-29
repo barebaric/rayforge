@@ -693,8 +693,8 @@ class DeviceProfile:
                 description="",
                 is_custom=True,
             )
-            context.dialect_mgr.add_dialect(dialect)
             m.dialect_uid = dialect.uid
+            context.dialect_mgr.add_dialect(dialect)
         elif not driver_uses_gcode:
             m.dialect_uid = None
 

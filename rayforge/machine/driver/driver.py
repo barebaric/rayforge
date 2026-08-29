@@ -230,6 +230,20 @@ class Driver(ABC):
     # the serial recognizer; network drivers only the mDNS one.
     DISCOVERY: ClassVar[DiscoverySpec | None] = None
 
+    @classmethod
+    def supports_travel_speed(cls, dialect: "GcodeDialect | None") -> bool:
+        """
+        Whether the driver can emit travel moves at a configurable speed.
+
+        Non-G-code drivers (e.g. binary protocols) always carry the
+        travel speed in their command stream. G-code drivers depend on
+        the dialect: the speed can only be emitted if the dialect's
+        rapid-move template accepts an F parameter.
+        """
+        if not cls.uses_gcode:
+            return True
+        return bool(dialect and dialect.can_g0_with_speed)
+
     @property
     @abstractmethod
     def machine_space_wcs(self) -> str:
