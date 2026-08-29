@@ -18,6 +18,7 @@ from ...core.commands import (
     MoveEntitiesCommand,
     MovePointCommand,
 )
+from ...core.components import compute_constraint_components
 from ...core.constraints import (
     AngleConstraint,
     DiameterConstraint,
@@ -96,6 +97,12 @@ class SelectTool(SnapMixin, SketchTool):
         self.drag_initial_entity_states: dict[EntityID, Any] = {}
 
         self.drag_point_distances: dict[EntityID, int] = {}
+
+        # Points the solver may move during the current drag: the
+        # dragged geometry plus the connected components of the
+        # constraint graph containing it. None means no scope
+        # (global solve).
+        self.drag_scope_point_ids: set[EntityID] | None = None
 
     def is_available(self, target, target_type) -> bool:
         return target is None
@@ -443,6 +450,7 @@ class SelectTool(SnapMixin, SketchTool):
         self.drag_hold_positions.clear()
         self.drag_initial_entity_states.clear()
         self.drag_point_distances.clear()
+        self.drag_scope_point_ids = None
         self.drag_start_wt_inv = None
         self.drag_start_ct_inv = None
 
@@ -613,6 +621,7 @@ class SelectTool(SnapMixin, SketchTool):
         self.drag_initial_positions.clear()
         self.drag_hold_positions.clear()
         self.drag_point_distances.clear()
+        self.drag_scope_point_ids = None
         self.drag_start_wt_inv = None
         self.drag_start_ct_inv = None
         self.current_snap_result = None
@@ -713,9 +722,14 @@ class SelectTool(SnapMixin, SketchTool):
         max_hops = max(
             (d for d in self.drag_point_distances.values() if d > 0), default=1
         )
+        scope = self.drag_scope_point_ids
         for pid, pos in self.drag_hold_positions.items():
             # Skip any point that is part of the actively dragged group.
             if pid in dragged_group:
+                continue
+            # Points outside the drag scope are not solved, so holding
+            # them is pointless.
+            if scope is not None and pid not in scope:
                 continue
 
             p = self._safe_get_point(pid)
@@ -740,6 +754,7 @@ class SelectTool(SnapMixin, SketchTool):
         self.element.sketch.solve(
             extra_constraints=drag_constraints,
             update_constraint_status=False,
+            point_scope=scope,
         )
         self._refresh_hold_positions(dragged_group)
 
@@ -831,8 +846,13 @@ class SelectTool(SnapMixin, SketchTool):
 
         # 3. Add weak "holding" constraints for all other points.
         hold_weight = 0.01
+        scope = self.drag_scope_point_ids
         for pid, pos in self.drag_hold_positions.items():
             if pid in points_to_drag:
+                continue
+            # Points outside the drag scope are not solved, so holding
+            # them is pointless.
+            if scope is not None and pid not in scope:
                 continue
             p = self._safe_get_point(pid)
             if not p or p.fixed:
@@ -847,6 +867,7 @@ class SelectTool(SnapMixin, SketchTool):
         self.element.sketch.solve(
             extra_constraints=drag_constraints,
             update_constraint_status=False,
+            point_scope=scope,
         )
         self._refresh_hold_positions(points_to_drag)
 
@@ -893,6 +914,23 @@ class SelectTool(SnapMixin, SketchTool):
 
     # --- Drag Preparation ---
 
+    def _compute_drag_scope(self, dragged_points: set[EntityID]) -> None:
+        """
+        Computes the set of points the solver may move during this
+        drag: the dragged points plus every connected component of the
+        constraint graph that contains one of them. Constraints cannot
+        move points across components, so leaving other components out
+        of the per-move solve does not change the drag result.
+        """
+        sketch = self.element.sketch
+        scope = set(dragged_points)
+        for component in compute_constraint_components(
+            sketch.registry, sketch.constraints
+        ):
+            if not component.isdisjoint(scope):
+                scope |= component
+        self.drag_scope_point_ids = scope
+
     def _prepare_point_drag(self, pid: EntityID):
         """Sets up state for dragging a single point."""
         self.dragged_point_id = pid
@@ -902,6 +940,11 @@ class SelectTool(SnapMixin, SketchTool):
             return
 
         self.drag_point_start_pos = (p.x, p.y)
+        dragged_group = self.element.sketch.get_coincident_points(pid)
+        dragged_group |= set(
+            self.element.sketch.registry.get_rigidly_connected_points(pid)
+        )
+        self._compute_drag_scope(dragged_group)
         self._cache_drag_start_state()
         self._calculate_geometric_hops(pid)
 
@@ -912,6 +955,12 @@ class SelectTool(SnapMixin, SketchTool):
         self.dragged_entity = entity
         self.dragged_point_id = None  # Mutually exclusive
         self.drag_start_model_pos = (model_x, model_y)
+        dragged_group: set[EntityID] = set()
+        for eid in self.element.selection.entity_ids:
+            selected = self.element.sketch.registry.get_entity(eid)
+            if selected is not None:
+                dragged_group.update(selected.get_point_ids())
+        self._compute_drag_scope(dragged_group)
         self._cache_drag_start_state()
 
     def _prepare_control_point_drag(self, bezier_id: EntityID, cp_index: int):
@@ -930,6 +979,7 @@ class SelectTool(SnapMixin, SketchTool):
             self.drag_cp_start_offset = bezier.cp1
         else:
             self.drag_cp_start_offset = bezier.cp2
+        self._compute_drag_scope({bezier.start_idx, bezier.end_idx})
         self._cache_drag_start_state()
 
     def _handle_control_point_drag(self, world_dx: float, world_dy: float):
@@ -962,7 +1012,10 @@ class SelectTool(SnapMixin, SketchTool):
 
         # Solve so sync_curve_arrays redistributes curve-along
         # members live while the control point is being dragged.
-        self.element.sketch.solve()
+        self.element.sketch.solve(
+            update_constraint_status=False,
+            point_scope=self.drag_scope_point_ids,
+        )
         self.element.mark_dirty()
 
     def _cache_drag_start_state(self):

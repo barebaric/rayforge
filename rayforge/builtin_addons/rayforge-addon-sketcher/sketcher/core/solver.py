@@ -8,6 +8,7 @@ from .constraints import Constraint
 from .entities import Point
 from .params import ParameterContext
 from .registry import EntityRegistry
+from .types import EntityID
 
 CONFLICT_ERROR_THRESHOLD = 1e-3
 
@@ -19,11 +20,13 @@ class Solver:
         params: ParameterContext,
         constraints: Sequence[Constraint],
         auxiliary_constraints: Sequence[Constraint] = (),
+        point_filter: set[EntityID] | None = None,
     ):
         self.registry = registry
         self.params = params
         self.constraints = constraints
         self.auxiliary_constraints = auxiliary_constraints
+        self.point_filter = point_filter
 
     def solve(self, tolerance: float = 1e-5, update_dof: bool = True) -> bool:
         """
@@ -31,10 +34,17 @@ class Solver:
         Returns True if successful.
         If update_dof is False, it will skip re-calculating the constrained
         status of points and entities, which is useful for interactive updates.
+        If point_filter is set, only the listed points are optimized;
+        all other points keep their positions. Constraints must then
+        only be passed for constraints that reference filtered points,
+        and update_dof must be False.
         """
         # 1. Identify mutable points (degrees of freedom)
         mutable_points: list[Point] = [
-            p for p in self.registry.points if not p.fixed
+            p
+            for p in self.registry.points
+            if not p.fixed
+            and (self.point_filter is None or p.id in self.point_filter)
         ]
 
         # Map point_id -> index in state vector (0, 2, 4...)

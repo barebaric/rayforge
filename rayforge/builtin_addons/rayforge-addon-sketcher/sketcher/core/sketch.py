@@ -26,6 +26,7 @@ from rayforge.image.geo_renderer import render_geometry_to_png
 from rayforge.image.structures import FillRenderData, FillStyle
 
 from .arrays import Array
+from .components import get_referenced_points
 from .constraints import (
     AngleConstraint,
     AspectRatioConstraint,
@@ -1371,6 +1372,7 @@ class Sketch(IAsset, IGeometryProvider):
         update_constraint_status: bool = True,
         variable_overrides: dict[str, Any] | None = None,
         excluded_constraints: set[int] | None = None,
+        point_scope: set[EntityID] | None = None,
     ) -> bool:
         """
         Resolves all constraints.
@@ -1386,6 +1388,14 @@ class Sketch(IAsset, IGeometryProvider):
             excluded_constraints: Indices (into self.constraints) of
                 constraints to skip for this solve, e.g. an array's radius
                 dimension while a member is being dragged.
+            point_scope: If given, only these points are optimized and
+                only constraints referencing them are applied; points
+                outside keep their positions. The scope must be a union
+                of connected components of the constraint graph (see
+                compute_constraint_components) plus the dragged points.
+                Constraint status is never updated for scoped solves.
+                Falls back to a global solve if the scope references
+                points that no longer exist.
 
         Returns:
             True if the solver converged successfully.
@@ -1400,6 +1410,15 @@ class Sketch(IAsset, IGeometryProvider):
         self._solving = True
         success = False
         try:
+            # A scope referencing deleted points (e.g. after an array
+            # re-apply removed geometry mid-drag) cannot be honored;
+            # solve globally instead.
+            scope = point_scope
+            if scope is not None:
+                existing = {p.id for p in self.registry.points}
+                if not scope.issubset(existing):
+                    scope = None
+
             # Step 1: Create a disposable ParameterContext clone for this
             # solve.
             solve_params = ParameterContext.from_dict(self.params.to_dict())
@@ -1435,16 +1454,17 @@ class Sketch(IAsset, IGeometryProvider):
             stabilizer_constraints = []
             hold_weight = 1e-4
             for p in self.registry.points:
-                if not p.fixed:
-                    stabilizer_constraints.append(
-                        DragConstraint(
-                            p.id,
-                            p.x,
-                            p.y,
-                            weight=hold_weight,
-                            user_visible=False,
-                        )
+                if p.fixed or (scope is not None and p.id not in scope):
+                    continue
+                stabilizer_constraints.append(
+                    DragConstraint(
+                        p.id,
+                        p.x,
+                        p.y,
+                        weight=hold_weight,
+                        user_visible=False,
                     )
+                )
 
             # Step 4: Update constraints with the final, resolved values.
             excluded = excluded_constraints or set()
@@ -1452,8 +1472,25 @@ class Sketch(IAsset, IGeometryProvider):
                 i for i in range(len(self.constraints)) if i not in excluded
             ]
             all_constraints = [self.constraints[i] for i in kept_indices]
+            if scope is not None:
+                # For a valid scope, every constraint touching a scope
+                # point lies fully inside it, so filtering by overlap
+                # keeps exactly the constraints that can move scope
+                # points.
+                all_constraints = [
+                    c
+                    for c in all_constraints
+                    if get_referenced_points(self.registry, c) & scope
+                ]
             if extra_constraints:
-                all_constraints = all_constraints + extra_constraints
+                extra = list(extra_constraints)
+                if scope is not None:
+                    extra = [
+                        c
+                        for c in extra
+                        if get_referenced_points(self.registry, c) & scope
+                    ]
+                all_constraints = all_constraints + extra
             for c in all_constraints:
                 if hasattr(c, "update_from_context"):
                     c.update_from_context(ctx)
@@ -1465,13 +1502,15 @@ class Sketch(IAsset, IGeometryProvider):
                 solve_params,
                 all_constraints,
                 auxiliary_constraints=stabilizer_constraints,
+                point_filter=scope,
             )
-            success = solver.solve(update_dof=update_constraint_status)
+            update_status = update_constraint_status and scope is None
+            success = solver.solve(update_dof=update_status)
 
             # Step 6: Update constraint conflict status. Map solver indices
             # back to sketch constraint indices when constraints were
             # excluded.
-            if update_constraint_status:
+            if update_status:
                 conflicting = solver.get_conflicting_constraints()
                 mapped = {
                     kept_indices[i]
