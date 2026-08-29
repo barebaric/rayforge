@@ -1,5 +1,7 @@
 ; NSIS Script for Rayforge Installer
 
+!include "LogicLib.nsh"
+
 ;--------------------------------
 ; Defines
 ; These are variables passed from our build script using the -D flag
@@ -43,6 +45,21 @@ UninstPage instfiles
 ; Installer Section
 
 Section "MainSection" SEC01
+  ; Remove any previous installation first. The installer overwrites
+  ; files in place, so a stale DLL from an older version that cannot be
+  ; replaced (e.g. because the app is still running) leaves a mix of
+  ; library versions behind, which crashes the app at startup with
+  ; confusing DLL load errors.
+  StrCpy $R0 ""
+  ReadRegStr $R0 HKLM "Software\${PRODUCT_NAME}" "Install_Dir"
+  ${If} $R0 != ""
+    RMDir /r "$R0"
+    ${If} ${FileExists} "$R0"
+      MessageBox MB_ICONSTOP "Could not remove the previous installation at$\n$R0$\n$\nPlease make sure Rayforge is not running, then run the installer again."
+      Abort
+    ${EndIf}
+  ${EndIf}
+
   SetOutPath "$INSTDIR"
   
   ; Copy all files from the PyInstaller output directory
