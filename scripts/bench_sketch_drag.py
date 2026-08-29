@@ -200,18 +200,20 @@ def measure(num_islands, num_moves, scoped):
 def profile_solve(num_islands, num_moves, scoped):
     sketch, target_points = build_sketch(num_islands)
     scope = compute_scope(sketch, target_points) if scoped else None
+    snap_engine = create_snap_engine()
+    moves_times = []
+    snap_times = []
     profiler = cProfile.Profile()
     profiler.enable()
-    for step in range(1, num_moves + 1):
-        dx = DRAG_STEP if step % 2 else -DRAG_STEP
-        drag_constraints = build_drag_constraints(
-            sketch, target_points, dx, scope
-        )
-        sketch.solve(
-            extra_constraints=drag_constraints,
-            update_constraint_status=False,
-            point_scope=scope,
-        )
+    run_moves(
+        sketch,
+        target_points,
+        snap_engine,
+        num_moves,
+        moves_times,
+        snap_times,
+        scope,
+    )
     profiler.disable()
     stats = pstats.Stats(profiler)
     stats.sort_stats("cumulative")
