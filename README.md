@@ -15,7 +15,7 @@ Smoothieware-based laser cutters and engravers.
 Built with Gtk4 and Libadwaita, it provides a clean, native interface for Linux, MacOS and Windows, offering a full suite of tools
 for both hobbyists and professionals.
 
-![Screenshot](website/static/screenshots/main-3d-rotary.png)
+![Screenshot](website/static/screenshots/main-3d-rotary.webp)
 
 You can also check the [official Rayforge homepage](https://rayforge.org).
 We also have a [Discord](https://discord.gg/sTHNdTtpQJ).
