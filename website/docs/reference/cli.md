@@ -116,7 +116,7 @@ register_template_function("myid", lambda: "PART-001")
 Now `{myid()}` works in any text box.
 
 See
-[Custom Template Functions](../features/sketcher.md#custom-template-functions)
+[Custom Template Functions](../features/sketcher/expressions.md#custom-template-functions)
 in the Sketcher docs for a full tutorial.
 
 ---

@@ -50,4 +50,4 @@ Before using this addon, you need to configure an AI provider. See
 ## Related Topics
 
 - [AI Provider](../application-settings/ai-provider.md) - Configure AI providers
-- [Sketcher](../features/sketcher.md) - Draw shapes manually
+- [Sketcher](../features/sketcher/index.md) - Draw shapes manually

@@ -29,7 +29,7 @@ El diseñador permite crear los siguientes elementos geométricos básicos:
   ajustar escribiendo dimensiones (`0-9`, campos W, H y R).
 - **Cuadros de texto**: Añada elementos de texto a su boceto. El contenido del
   texto soporta expresiones de plantilla paramétricas (vea
-  [Plantillas de texto](../text.md)).
+  [Expresiones](expressions.md#template-expressions-in-text-boxes)).
 - **Rellenos**: Rellene regiones cerradas para crear áreas sólidas
 
 Estos elementos forman la base de sus diseños 2D y pueden combinarse para crear

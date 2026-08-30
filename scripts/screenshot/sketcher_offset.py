@@ -25,7 +25,6 @@ from utils import (
     take_screenshot,
     take_window_screenshot,
     target_to_filename,
-    uses_synthetic_decorations,
     wait_for_settled,
 )
 
@@ -121,11 +120,10 @@ def _capture_geometry(target: str) -> bool:
 
     margin = 100
     x0, y0, x1, y1 = rect
-    if uses_synthetic_decorations():
-        x0 += DECOR_MARGIN_PX
-        y0 += DECOR_MARGIN_PX + DECOR_OFFSET_Y_PX
-        x1 += DECOR_MARGIN_PX
-        y1 += DECOR_MARGIN_PX + DECOR_OFFSET_Y_PX
+    x0 += DECOR_MARGIN_PX
+    y0 += DECOR_MARGIN_PX + DECOR_OFFSET_Y_PX
+    x1 += DECOR_MARGIN_PX
+    y1 += DECOR_MARGIN_PX + DECOR_OFFSET_Y_PX
     left = max(x0 - margin, 0)
     top = max(y0 - margin, 0)
 

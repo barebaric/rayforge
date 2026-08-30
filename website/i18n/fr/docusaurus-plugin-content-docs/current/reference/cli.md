@@ -114,7 +114,7 @@ register_template_function("mon_id", lambda: "PIECE-001")
 Maintenant `{mon_id()}` fonctionne dans toute zone de texte.
 
 Voir
-[Fonctions de modèle personnalisées](../features/sketcher.md#custom-template-functions)
+[Fonctions de modèle personnalisées](../features/sketcher/expressions.md#custom-template-functions)
 dans la documentation du sketcher pour un tutoriel complet.
 
 ---

@@ -31,7 +31,7 @@ suivants :
   défini en saisissant des dimensions (`0-9`, champs W, H et R).
 - **Zones de texte** : Ajoutez des éléments textuels à votre esquisse. Le
   contenu du texte prend en charge les expressions de modèle paramétriques
-  (voir [Modèles de texte](../text.md)).
+  (voir [Expressions](expressions.md#template-expressions-in-text-boxes)).
 - **Remplissages** : Remplissez des régions fermées pour créer des zones
   solides
 

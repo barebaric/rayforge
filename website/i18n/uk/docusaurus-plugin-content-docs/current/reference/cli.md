@@ -114,7 +114,7 @@ register_template_function("мій_id", lambda: "ДЕТАЛЬ-001")
 Тепер `{мій_id()}` працює в будь-якому текстовому полі.
 
 Див.
-[Кастомні функції шаблонів](../features/sketcher.md#custom-template-functions)
+[Кастомні функції шаблонів](../features/sketcher/expressions.md#custom-template-functions)
 у документації скетчера для повного підручника.
 
 ---

@@ -114,7 +114,7 @@ register_template_function("minha_id", lambda: "PECA-001")
 Agora `{minha_id()}` funciona em qualquer caixa de texto.
 
 Consulte
-[Funções de modelo personalizadas](../features/sketcher.md#custom-template-functions)
+[Funções de modelo personalizadas](../features/sketcher/expressions.md#custom-template-functions)
 na documentação do sketcher para um tutorial completo.
 
 ---

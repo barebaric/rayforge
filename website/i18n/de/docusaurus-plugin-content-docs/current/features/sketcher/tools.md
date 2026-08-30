@@ -4,14 +4,6 @@ description: "Sketcher-Werkzeuge, Tastatur-Kurzbefehle, Kreismenü, Konstruktion
 
 # Sketcher-Werkzeuge
 
-## Kreismenü-Oberfläche
-
-Der Sketcher verfügt über ein kontextsensitives Kreismenü, das schnellen Zugriff auf alle Zeichen- und Einschränkungswerkzeuge bietet. Dieses Radialmenü erscheint, wenn du im Sketch-Arbeitsbereich rechtsklickst, und passt sich basierend auf deinem aktuellen Kontext und deiner Auswahl an.
-
-Die Kreismenü-Elemente zeigen dynamisch verfügbare Optionen basierend darauf, was du ausgewählt hast. Wenn du beispielsweise auf leeren Raum klickst, siehst du Zeichenwerkzeuge. Wenn du auf ausgewählte Geometrie klickst, siehst du anwendbare Einschränkungen.
-
-![Sketcher-Kreismenü](/screenshots/sketcher-pie-menu.webp)
-
 ## Tastatur-Kurzbefehle
 
 Der Sketcher bietet Tastatur-Kurzbefehle für effizienten Workflow:
@@ -28,7 +20,7 @@ Der Sketcher bietet Tastatur-Kurzbefehle für effizienten Workflow:
 - `G+T`: Textfeld-Werkzeug
 - `G+Y`: Kreisförmiges Array-Werkzeug
 - `G+W`: Array-entlang-Kurve-Werkzeug
-- `G+G`: Raster-Werkzeug (Raster-Sichtbarkeit umschalten)
+- `G+G`: Raster-Werkzeug (Raster von Kopien aus der Auswahl erstellen)
 - `G+N`: Konstruktionsmodus auf Auswahl umschalten
 
 ### Aktions-Kurzbefehle
@@ -97,35 +89,11 @@ Konstruktions-Entitäten sind nützlich für:
 - Definieren temporärer Geometrie zur Ausrichtung
 - Aufbauen komplexer Formen aus einem Rahmen von Hilfslinien
 
-## Raster, Einrasten und Sichtbarkeits-Steuerung
+## Sichtbarkeits-Steuerung
 
-### Raster-Werkzeug
-
-Das Raster-Werkzeug bietet eine visuelle Referenz für Ausrichtung und
-Größenbestimmung:
-
-- Raster ein/ausschalten mit dem Raster-Werkzeug-Button oder `G+G`
-- Das Raster passt sich an deinen Zoom-Level an für konsistente Abstände
-
-### Magnetisches Einrasten
-
-Beim Erstellen oder Verschieben von Geometrie zieht Rayforge deinen Cursor
-automatisch zu nahegelegenen Elementen — Endpunkten, Linienmittelpunkten,
-Schnittpunkten und anderen Referenzpunkten. Dies macht es einfach, Formen präzise
-zu verbinden, ohne jeden Punkt manuell zu platzieren. Der Einrast-Indikator wird
-hervorgehoben, wenn dein Cursor nahe an einem Einrast-Ziel ist.
-
-### Automatische Einschränkung bei Erstellung
-
-Viele Zeichenwerkzeuge wenden automatisch Einschränkungen an, während du Geometrie
-erstellst. Wenn du beispielsweise eine Linie nahe der Horizontalen oder Vertikalen
-zeichnest, bietet der Sketcher an, sie an Ort und Stelle zu fixieren. Das
-Pfad-Werkzeug erstellt auch automatisch horizontale und vertikale
-Einschränkungen, wenn Einrast-Hilfslinien während des Zeichnens eine
-Ausrichtung anzeigen. Dies hilft, deine Skizze von Anfang an ordentlich zu
-halten, anstatt nachträglich Korrekturen vorzunehmen.
-
-### Anzeigen/Verbergen-Steuerung
+Das Raster passt sich der Zoomstufe an und steht stets als Größenreferenz
+zur Verfügung; wie das Einrasten funktioniert, ist in der
+[Sketcher-Übersicht](index.md#raster-und-einrasten) beschrieben.
 
 Die Sketcher-Symbolleiste enthält Umschalt-Buttons zur Sichtbarkeitssteuerung:
 
@@ -136,6 +104,14 @@ Die Sketcher-Symbolleiste enthält Umschalt-Buttons zur Sichtbarkeitssteuerung:
 
 Diese Steuerungen helfen, visuelle Unordnung bei der Arbeit an komplexen Skizzen
 zu reduzieren.
+
+### Automatische Einschränkung bei Erstellung
+
+Viele Zeichenwerkzeuge wenden automatisch Einschränkungen an, während du
+Geometrie erstellst. Das Pfad-Werkzeug erstellt horizontale und vertikale
+Einschränkungen, wenn Einrast-Hilfslinien während des Zeichnens eine
+Ausrichtung anzeigen, was hilft, deine Skizze von Anfang an ordentlich zu
+halten, anstatt nachträglich Korrekturen vorzunehmen.
 
 ### Achsenbeschränkte Bewegung
 

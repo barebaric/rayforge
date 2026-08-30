@@ -1,67 +1,114 @@
 ---
-description: "Use Rayforge's built-in parametric 2D sketcher to create custom laser-ready designs with lines, circles, bezier curves, and constraints."
+description: "Rayforge's built-in parametric 2D sketcher lets you draw constraint-based, dimension-driven designs that stay editable and precise."
 ---
 
 # Parametric 2D Sketcher
 
-The Parametric 2D Sketcher is a powerful feature in Rayforge that allows you to
-create and edit precise, constraint-based 2D designs directly within the
-application. This feature enables you to design custom parts from scratch
-without needing external CAD software.
+Rayforge includes a parametric 2D sketcher for drawing parts directly in the
+application. Instead of importing finished artwork from another program, you
+sketch lines, curves, and shapes on an infinite canvas and tie them together
+with constraints. The result is a design that stays precise no matter how
+often you change your mind about its dimensions.
 
-## Overview
+![The sketch editor](/screenshots/addons-sketcher-editor.webp)
 
-The sketcher provides a complete set of tools for creating geometric shapes and
-applying parametric constraints to define precise relationships between elements.
-This approach ensures your designs maintain their intended geometry even when
-dimensions are modified.
+## What "parametric" means here
 
-## Creating and Editing Sketches
+A sketch is more than a drawing — it is a small model with rules. The rules
+are **constraints**: statements like "these two lines are parallel", "this
+corner is a right angle", or "this edge is exactly 100 mm long". After every
+change, a solver re-arranges the geometry so that all rules hold again.
 
-### Creating a New Sketch
+This has a practical consequence: you can capture your design intent once and
+then keep editing. Raise the distance constraint from 100 mm to 130 mm and the
+whole part follows. Dimensional constraints accept expressions, too — a radius
+of `width/2` stays half the width, whatever the width becomes.
 
-1. Open the bottom panel and click the **New Sketch** button, or right-click
-   on the canvas and select **New Sketch** from the context menu.
-2. A new empty sketch workspace will open with the sketch editor interface
-3. Start creating geometry using the drawing tools from the pie menu or keyboard
-   shortcuts
-4. Apply constraints to define relationships between elements
-5. Click "Finish Sketch" to save your work and return to the main workspace
+When every remaining degree of freedom is pinned down by a constraint, the
+sketch is *fully constrained*. The editor tells you where you stand through
+colors: geometry that is held by constraints is drawn in green, unconstrained
+points in black, and once a sketch is fully constrained the green turns
+darker. Constraints that contradict each other are marked in red and listed
+in the conflicts panel in the sidebar, where you can inspect or delete them.
 
-### Editing Existing Sketches
+![A dimensioned sketch](/screenshots/addons-sketcher-constraints.webp)
 
-1. Double-click on a sketch-based workpiece in the main workspace
-2. Alternatively, select a sketch and choose "Edit Sketch" from the context menu
-3. Make your modifications using the same tools and constraints
-4. Click "Finish Sketch" to save changes or "Cancel Sketch" to discard them
+An under-constrained sketch is not a mistake — it is often exactly what you
+want while experimenting. The [Constraints](constraints.md) page explains
+every available constraint type in detail.
 
-## Workflow Tips
+## The sketch editor
 
-1. **Start with Rough Geometry**: Create basic shapes first, then refine with
-   constraints
-2. **Use Constraints Early**: Apply constraints as you build to maintain design
-   intent
-3. **Check Constraint Status**: The system indicates when sketches are fully
-   constrained
-4. **Watch for Conflicts**: Constraints that conflict with each other are
-   highlighted in red and shown in the constraints panel for easy identification
-5. **Utilize Symmetry**: Symmetry constraints can significantly speed up complex
-   designs
-6. **Use the Grid**: Enable the grid for precise alignment, and use Ctrl to snap
-   to grid
-7. **Iterate and Refine**: Don't hesitate to modify constraints to achieve the
-   desired result
+Sketches live in the document like any other workpiece. Create one with the
+**New Sketch** button in the bottom panel (or right-click the canvas and pick
+the same entry from the context menu), and the sketch editor takes over the
+window: the canvas in the middle, a properties panel with the sketch name and
+its parameters on the left, and a toolbar on top.
 
-## Editing Features
+The toolbar collects the session-level tools — undo and redo, toggles for
+constraint and construction-geometry visibility, fill and line colors,
+mirroring — and the **Finish** and **Cancel** buttons. **Finish** saves the
+sketch back into the document; **Cancel** discards the changes made in this
+session. To re-edit an existing sketch later, double-click it in the main
+workspace, or select it and choose **Edit Sketch** from the context menu.
 
-- **Full Undo/Redo Support**: The entire sketch state is saved with each
-  operation
-- **Dynamic Cursor**: The cursor changes to reflect the active drawing tool
-- **Constraint Visualization**: Applied constraints are clearly indicated in the
-  interface
-- **Real-time Updates**: Changes to constraints immediately update the geometry
-- **Double-Click Editing**: Double-click on dimensional constraints (Distance,
-  Radius, Diameter, Angle, Aspect Ratio) opens a dialog to edit their values
-- **Parametric Expressions**: Dimensional constraints support expressions,
-  allowing values to be calculated from other parameters (e.g., `width/2` for a
-  radius that's half the width)
+The editor is keyboard-first. The status bar at the bottom always lists the
+shortcuts that apply to the current tool and selection, so the relevant keys
+are on screen exactly when you need them. Full undo and redo is available for
+every operation.
+
+## The pie menu
+
+Right-clicking anywhere in the sketch editor opens the pie menu — a radial
+menu that puts every drawing and modification tool one click away. The menu
+is context-aware: right-clicking empty space offers the drawing tools, while
+right-clicking a selected line offers the constraints and modifications that
+make sense for a line. Related tools are collapsed into groups; hover a group
+to fan out its children. Right-click again to close the menu or re-open it
+somewhere else.
+
+![The pie menu opened on a selected line](/screenshots/addons-sketcher-pie-menu.webp)
+
+## Grid and snapping
+
+The canvas shows an adaptive grid whose spacing adjusts to the zoom level and
+is labeled along the axes in your preferred units, so it doubles as a ruler:
+you can read sizes and positions straight off the canvas.
+
+While you draw or drag, *magnetic snapping* pulls the cursor toward nearby
+reference points. The canvas marks what the cursor is attracted to:
+
+- a **blue circle** marks an existing point (endpoint),
+- **green arrows** mark a midpoint,
+- a **pink highlight** means the cursor is over an edge,
+- **dashed lines** across the canvas are alignment guides, shown when the
+  cursor lines up horizontally or vertically with another point,
+- further indicators cover special cases such as equidistant spacings
+  (orange), tangency (purple), and centers (red).
+
+Snapping is not just visual aid — committing geometry onto a snap target
+creates the matching constraint automatically. Finishing a line on an
+existing endpoint makes the two coincident; snapping to a midpoint creates a
+symmetry constraint; alignment guides become horizontal or vertical
+constraints. If you prefer free placement, `Tab` toggles magnetic snapping
+off. Holding `Shift` while dragging constrains movement to the nearest axis.
+
+![Alignment guides and the equidistant snap indicator while drawing](/screenshots/addons-sketcher-snap.webp)
+
+## Construction geometry
+
+Any entity can be flagged as construction geometry. Construction entities are
+drawn dashed, act as layout guides for the solver like any other geometry,
+and are excluded from the toolpaths when the sketch is manufactured. They are
+handy for center lines, construction circles, and the scaffolding behind
+symmetrical designs. The construction toggle in the toolbar hides them when
+they get in the way.
+
+## Where to go next
+
+[Creating 2D Geometry](geometry.md) introduces the drawing tools and their
+modifiers, [Sketcher Tools](tools.md) is the reference for keyboard shortcuts
+and modifications such as offset, chamfer, and fillet, [Arrays](arrays.md)
+covers circular and along-curve arrays, and [Expressions](expressions.md)
+explains parameters, expressions, and parametric text boxes. Sketches can be saved and re-imported with
+all constraints intact — see [Import and Export](import-export.md).

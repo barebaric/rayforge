@@ -4,18 +4,6 @@ description: "Sketcher tools, keyboard shortcuts, pie menu, construction mode, g
 
 # Sketcher Tools
 
-## Pie Menu Interface
-
-The sketcher features a context-aware pie menu that provides quick access to all
-drawing and constraint tools. This radial menu appears when you right-click in
-the sketch workspace and adapts based on your current context and selection.
-
-The pie menu items dynamically show available options based on what you have
-selected. For example, when clicking on empty space, you'll see drawing tools.
-When clicking on selected geometry, you'll see applicable constraints.
-
-![Sketcher Pie Menu](/screenshots/sketcher-pie-menu.webp)
-
 ## Keyboard Shortcuts
 
 The sketcher provides keyboard shortcuts for efficient workflow:
@@ -31,7 +19,7 @@ The sketcher provides keyboard shortcuts for efficient workflow:
 - `G+T`: Text Box tool
 - `G+Y`: Circular Array tool
 - `G+W`: Array Along Curve tool
-- `G+G`: Grid tool (toggle grid visibility)
+- `G+G`: Grid tool (create a grid of copies from the selection)
 - `G+N`: Toggle construction mode on selection
 
 ### Action Shortcuts
@@ -98,33 +86,11 @@ Construction entities are useful for:
 - Defining temporary geometry for alignment
 - Building complex shapes from a framework of guides
 
-## Grid, Snapping, and Visibility Controls
+## Visibility Controls
 
-### Grid Tool
-
-The grid tool provides a visual reference for alignment and sizing:
-
-- Toggle the grid on/off using the grid tool button or `G+G`
-- The grid adapts to your zoom level for consistent spacing
-
-### Magnetic Snap
-
-While creating or moving geometry, Rayforge automatically pulls your cursor
-toward nearby elements — endpoints, line midpoints, intersections, and other
-reference points. This makes it easy to connect shapes precisely without
-manually placing every point. The snap indicator highlights when your cursor
-is close to a snap target.
-
-### Auto-Constrain During Creation
-
-Many drawing tools automatically apply constraints as you create geometry. For
-example, when drawing a line near the horizontal or vertical, the sketcher will
-offer to lock it in place. The path tool also creates horizontal and vertical
-constraints automatically when snap guides show alignment during drawing. This
-helps keep your sketch tidy from the start, rather than fixing things up
-afterward.
-
-### Show/Hide Controls
+The grid adapts to the zoom level and is always available as a sizing
+reference; how snapping works is described in [the sketcher
+overview](index.md#grid-and-snapping).
 
 The sketcher toolbar includes toggle buttons to control visibility:
 
@@ -132,6 +98,13 @@ The sketcher toolbar includes toggle buttons to control visibility:
 - **Show/hide constraints**: Toggle visibility of constraint markers
 
 These controls help reduce visual clutter when working on complex sketches.
+
+### Auto-Constrain During Creation
+
+Many drawing tools automatically apply constraints as you create geometry.
+The path tool creates horizontal and vertical constraints when snap guides
+show alignment during drawing, which helps keep your sketch tidy from the
+start, rather than fixing things up afterward.
 
 ### Axis-Constrained Movement
 

@@ -28,7 +28,7 @@ Der Sketcher unterstützt das Erstellen der folgenden grundlegenden geometrische
   durch Eingabe von Maßen festlegen (`0-9`, Felder W, H und R).
 - **Textfelder**: Textelemente zu deiner Skizze hinzufügen. Der Textinhalt
   unterstützt parametrische Vorlagenausdrücke (siehe
-  [Textvorlagen](../text.md)).
+  [Ausdrücke](expressions.md#template-expressions-in-text-boxes)).
 - **Füllungen**: Geschlossene Bereiche füllen, um feste Bereiche zu erstellen
 
 Diese Elemente bilden die Grundlage deiner 2D-Designs und können kombiniert werden, um komplexe Formen zu erstellen. Füllungen sind besonders nützlich, um feste Bereiche zu erstellen, die als ein Stück graviert oder geschnitten werden.

@@ -116,7 +116,7 @@ register_template_function("mi_id", lambda: "PARTE-001")
 Ahora `{mi_id()}` funciona en cualquier cuadro de texto.
 
 Consulte
-[Funciones de plantilla personalizadas](../features/sketcher.md#custom-template-functions)
+[Funciones de plantilla personalizadas](../features/sketcher/expressions.md#custom-template-functions)
 en la documentación del sketcher para un tutorial completo.
 
 ---

@@ -29,7 +29,7 @@ O esboçador suporta a criação dos seguintes elementos geométricos básicos:
   ser definido digitando dimensões (`0-9`, campos W, H e R).
 - **Caixas de texto**: Adicione elementos de texto ao seu esboço. O conteúdo
   do texto suporta expressões de modelo paramétricas (veja
-  [Modelos de Texto](../text.md)).
+  [Expressões](expressions.md#template-expressions-in-text-boxes)).
 - **Preenchimentos**: Preencha regiões fechadas para criar áreas sólidas
 
 Esses elementos formam a base dos seus designs 2D e podem ser combinados para

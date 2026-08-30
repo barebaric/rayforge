@@ -113,7 +113,7 @@ register_template_function("我的id", lambda: "零件-001")
 现在 `{我的id()}` 在任何文本框中都有效。
 
 参见
-[自定义模板函数](../features/sketcher.md#custom-template-functions)
+[自定义模板函数](../features/sketcher/expressions.md#custom-template-functions)
 了解完整教程。
 
 ---

@@ -27,7 +27,7 @@ The sketcher supports creating the following basic geometric elements:
   constrain to a square. The corner radius can be set by typing dimensions
   (`0-9`, fields W, H and R).
 - **Text Boxes**: Add text elements to your sketch. Text content supports
-  parametric template expressions (see [Text Templates](../text.md)).
+  parametric template expressions (see [Expressions](expressions.md#template-expressions-in-text-boxes)).
 - **Fills**: Fill closed regions to create solid areas
 
 These elements form the foundation of your 2D designs and can be combined to

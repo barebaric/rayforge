@@ -4,20 +4,6 @@ description: "Herramientas del diseñador, atajos de teclado, menú circular, mo
 
 # Herramientas del diseñador
 
-## Interfaz del menú circular
-
-El diseñador incluye un menú circular contextual que proporciona acceso rápido a
-todas las herramientas de dibujo y restricción. Este menú radial aparece al
-hacer clic derecho en el espacio de trabajo del boceto y se adapta según su
-contexto y selección actuales.
-
-Los elementos del menú circular muestran dinámicamente las opciones disponibles
-según lo que tenga seleccionado. Por ejemplo, al hacer clic en un espacio vacío,
-verá herramientas de dibujo. Al hacer clic sobre geometría seleccionada, verá las
-restricciones aplicables.
-
-![Menú circular del diseñador](/screenshots/sketcher-pie-menu.webp)
-
 ## Atajos de teclado
 
 El diseñador proporciona atajos de teclado para un flujo de trabajo eficiente:
@@ -34,7 +20,8 @@ El diseñador proporciona atajos de teclado para un flujo de trabajo eficiente:
 - `G+T`: Herramienta de cuadro de texto
 - `G+Y`: Herramienta de arreglo circular
 - `G+W`: Herramienta de arreglo a lo largo de curva
-- `G+G`: Herramienta de cuadrícula (alternar visibilidad de la cuadrícula)
+- `G+G`: Herramienta de cuadrícula (crear una cuadrícula de copias a partir
+  de la selección)
 - `G+N`: Alternar modo construcción en la selección
 
 ### Atajos de acciones
@@ -108,36 +95,11 @@ Las entidades de construcción son útiles para:
 - Definir geometría temporal para alineación
 - Construir formas complejas a partir de un marco de guías
 
-## Cuadrícula, ajuste y controles de visibilidad
+## Controles de visibilidad
 
-### Herramienta de cuadrícula
-
-La herramienta de cuadrícula proporciona una referencia visual para la alineación
-y el tamaño:
-
-- Active/desactive la cuadrícula con el botón de la herramienta o `G+G`
-- La cuadrícula se adapta a su nivel de zoom para mantener un espaciado
-  consistente
-
-### Ajuste magnético
-
-Mientras crea o mueve geometría, Rayforge atrae automáticamente el cursor hacia
-los elementos cercanos: extremos, puntos medios de líneas, intersecciones y otros
-puntos de referencia. Esto facilita la conexión precisa de formas sin colocar
-manualmente cada punto. El indicador de ajuste se resalta cuando el cursor está
-cerca de un objetivo de ajuste.
-
-### Auto-restricción durante la creación
-
-Muchas herramientas de dibujo aplican restricciones automáticamente al crear
-geometría. Por ejemplo, al dibujar una línea cerca de la horizontal o vertical,
-el diseñador ofrecerá bloquearla en su posición. La herramienta de
-trazado también crea restricciones horizontales y verticales
-automáticamente cuando las guías de ajuste muestran alineación durante el
-dibujo. Esto ayuda a mantener el boceto
-ordenado desde el principio, en lugar de corregirlo después.
-
-### Controles de mostrar/ocultar
+La cuadrícula se adapta al nivel de zoom y siempre está disponible como
+referencia de tamaño; el funcionamiento del ajuste se describe en
+[la descripción general del diseñador](index.md#grid-and-snapping).
 
 La barra de herramientas del diseñador incluye botones de alternancia para
 controlar la visibilidad:
@@ -149,6 +111,14 @@ controlar la visibilidad:
 
 Estos controles ayudan a reducir el desorden visual al trabajar con bocetos
 complejos.
+
+### Auto-restricción durante la creación
+
+Muchas herramientas de dibujo aplican restricciones automáticamente al crear
+geometría. La herramienta de trazado crea restricciones horizontales y
+verticales cuando las guías de ajuste muestran alineación durante el dibujo,
+lo que ayuda a mantener el boceto ordenado desde el principio, en lugar de
+corregirlo después.
 
 ### Movimiento restringido al eje
 

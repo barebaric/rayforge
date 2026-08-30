@@ -116,7 +116,7 @@ register_template_function("meine_id", lambda: "TEIL-001")
 Jetzt funktioniert `{meine_id()}` in jedem Textfeld.
 
 Siehe
-[Benutzerdefinierte Vorlagenfunktionen](../features/sketcher.md#custom-template-functions)
+[Benutzerdefinierte Vorlagenfunktionen](../features/sketcher/expressions.md#custom-template-functions)
 in der Sketcher-Dokumentation für ein vollständiges Tutorial.
 
 ---

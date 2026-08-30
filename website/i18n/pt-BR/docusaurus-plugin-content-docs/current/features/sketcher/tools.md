@@ -4,20 +4,6 @@ description: "Ferramentas do esboçador, atalhos de teclado, menu circular, modo
 
 # Ferramentas do esboçador
 
-## Interface do menu circular
-
-O esboçador apresenta um menu circular contextual que fornece acesso rápido a
-todas as ferramentas de desenho e restrição. Esse menu radial aparece quando
-você clica com o botão direito no espaço de trabalho do esboço e se adapta com
-base no seu contexto e seleção atuais.
-
-Os itens do menu circular mostram dinamicamente as opções disponíveis com base
-no que você selecionou. Por exemplo, ao clicar em um espaço vazio, você verá
-ferramentas de desenho. Ao clicar em geometria selecionada, verá as restrições
-aplicáveis.
-
-![Menu circular do esboçador](/screenshots/sketcher-pie-menu.webp)
-
 ## Atalhos de teclado
 
 O esboçador fornece atalhos de teclado para um fluxo de trabalho eficiente:
@@ -34,7 +20,7 @@ O esboçador fornece atalhos de teclado para um fluxo de trabalho eficiente:
 - `G+T`: Ferramenta de caixa de texto
 - `G+Y`: Ferramenta de matriz circular
 - `G+W`: Ferramenta de matriz ao longo de curva
-- `G+G`: Ferramenta de grade (alternar visibilidade da grade)
+- `G+G`: Ferramenta de grade (criar uma grade de cópias a partir da seleção)
 - `G+N`: Alternar modo de construção na seleção
 
 ### Atalhos de ações
@@ -108,38 +94,14 @@ As entidades de construção são úteis para:
 - Definir geometria temporária para alinhamento
 - Construir formas complexas a partir de uma estrutura de guias
 
-## Grade, snap e controles de visibilidade
+## Controles de visibilidade
 
-### Ferramenta de grade
+A grade se adapta ao nível de zoom e está sempre disponível como referência
+de dimensionamento; como o snap funciona é descrito na [visão geral do
+esboçador](index.md#grid-and-snapping).
 
-A ferramenta de grade fornece uma referência visual para alinhamento e
-dimensionamento:
-
-- Ative/desative a grade usando o botão da ferramenta ou `G+G`
-- A grade se adapta ao seu nível de zoom para manter um espaçamento
-  consistente
-
-### Snap magnético
-
-Ao criar ou mover geometria, o Rayforge automaticamente atrai seu cursor para
-elementos próximos — extremidades, pontos médios de linhas, interseções e outros
-pontos de referência. Isso facilita a conexão precisa de formas sem precisar
-colocar cada ponto manualmente. O indicador de snap destaca quando seu cursor
-está próximo de um alvo de snap.
-
-### Auto-restrição durante a criação
-
-Muitas ferramentas de desenho aplicam restrições automaticamente ao criar
-geometria. Por exemplo, ao desenhar uma linha próxima à horizontal ou vertical,
-o esboçador oferecerá para travá-la no lugar. A ferramenta de caminho
-também cria restrições horizontais e verticais automaticamente quando as
-guias de snap mostram alinhamento durante o desenho. Isso ajuda a manter seu esboço
-organizado desde o início, em vez de corrigir as coisas depois.
-
-### Controles mostrar/ocultar
-
-A barra de ferramentas do esboçador inclui botões de alternância para controlar
-a visibilidade:
+A barra de ferramentas do esboçador inclui botões de alternância para
+controlar a visibilidade:
 
 - **Mostrar/ocultar geometria de construção**: Alterna a visibilidade das
   entidades de construção
@@ -149,10 +111,18 @@ a visibilidade:
 Esses controles ajudam a reduzir a poluição visual ao trabalhar em esboços
 complexos.
 
+### Auto-restrição durante a criação
+
+Muitas ferramentas de desenho aplicam restrições automaticamente ao criar
+geometria. A ferramenta de caminho cria restrições horizontais e verticais
+quando as guias de snap mostram alinhamento durante o desenho, o que ajuda
+a manter seu esboço organizado desde o início, em vez de corrigir as coisas
+depois.
+
 ### Movimento restrito ao eixo
 
-Ao arrastar pontos ou geometria, segure `Shift` para restringir o movimento ao
-eixo mais próximo (horizontal ou vertical). Isso é útil para manter o
+Ao arrastar pontos ou geometria, segure `Shift` para restringir o movimento
+ao eixo mais próximo (horizontal ou vertical). Isso é útil para manter o
 alinhamento durante ajustes.
 
 ## Deslocar contorno
