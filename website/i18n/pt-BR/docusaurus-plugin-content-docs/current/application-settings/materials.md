@@ -85,10 +85,10 @@ altos parecem foscos.
 Um valor de 0-1 que descreve se a superfície reflete luz como um metal na
 visualização 3D. Defina 1 para materiais metálicos, 0 para não metálicos.
 
-#### Absorção
+#### Absorção {#absorption}
 
 :::note Novidade na 1.11
-Dados de absorção alimentam o [modelo de queimadura física](../ui/3d-preview.md#modelo-de-queimadura-física)
+Dados de absorção alimentam o [modelo de queimadura física](../ui/3d-preview.md#physical-burn-model)
 na pré-visualização 3D.
 :::
 

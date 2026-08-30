@@ -130,9 +130,9 @@ modelo de queimadura física) quando nenhum valor explícito é inserido abaixo.
 #### Comprimento de Onda (nm)
 
 O comprimento de onda de emissão do seu laser, em nanômetros. Alimenta o
-[modelo de queimadura física](../ui/3d-preview.md#modelo-de-queimadura-física)
+[modelo de queimadura física](../ui/3d-preview.md#physical-burn-model)
 na pré-visualização 3D: junto com os dados de
-[absorção](../application-settings/materials.md#absorção) do material,
+[absorção](../application-settings/materials.md#absorption) do material,
 determina quanta energia do laser o material absorve.
 
 Quando definido como 0, o Rayforge usa o comprimento de onda típico para o
@@ -144,7 +144,7 @@ tipo de laser selecionado (ex.: 445 nm para diodo, 1064 nm para fibra,
 A potência de saída óptica do seu laser na potência máxima, em watts. Esta
 é a saída de luz real, não a entrada elétrica. Junto com o tamanho do ponto
 e a velocidade de varredura, determina a fluência (J/cm²) usada pelo
-[modelo de queimadura física](../ui/3d-preview.md#modelo-de-queimadura-física).
+[modelo de queimadura física](../ui/3d-preview.md#physical-burn-model).
 
 Quando definido como 0, um padrão intermediário de mesa é usado.
 

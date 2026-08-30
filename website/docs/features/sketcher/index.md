@@ -69,6 +69,51 @@ somewhere else.
 
 ![The pie menu opened on a selected line](/screenshots/addons-sketcher-pie-menu.webp)
 
+## Keyboard shortcuts
+
+The sketcher is operated from the keyboard, and the status bar at the
+bottom always lists the shortcuts that apply to the current tool and
+selection. These general shortcuts work everywhere in the editor:
+
+| Action                                        | Shortcut                        |
+| --------------------------------------------- | ------------------------------- |
+| Select tool                                   | `Space`                         |
+| Undo / Redo                                   | `Ctrl+Z` / `Ctrl+Y` (`Ctrl+Shift+Z`) |
+| Duplicate selection                           | `Ctrl+D`                        |
+| Delete selection                              | `Delete`                        |
+| Nudge selection                               | `Arrow keys` (`Shift`: larger)  |
+| Mirror selection vertically / horizontally    | `M+V` / `M+H`                   |
+| Toggle construction mode                      | `G+N`                           |
+| Cancel operation or deselect                  | `Escape`                        |
+| Fit view to content                           | `1`                             |
+
+Mirroring operates in-place across the selection's bounding-box center;
+constraints that span the selection boundary are dropped, internal
+constraints are preserved. Duplicates get fresh IDs and remapped
+internal constraints; undo removes them.
+
+Each drawing and modification tool additionally has a two-key shortcut,
+documented on its page:
+
+| Tool                                        | Shortcut    |
+| ------------------------------------------- | ----------- |
+| [Path](path.md)                             | `G+P`       |
+| [Arc](arc-ellipse.md)                       | `G+A`       |
+| [Ellipse](arc-ellipse.md)                   | `G+C`       |
+| [Rectangle](rectangle.md)                   | `G+R`       |
+| [Rounded Rectangle](rectangle.md)           | `G+O`       |
+| [Fill Area](fill.md)                        | `G+F`       |
+| [Text Box](expressions.md#template-expressions-in-text-boxes) | `G+T`     |
+| [Circular Array](arrays.md)                 | `G+Y`       |
+| [Array Along Curve](arrays.md)              | `G+W`       |
+| [Grid](grid.md)                             | `G+G`       |
+| [Offset](offset.md)                         | `O+F`       |
+| [Chamfer](chamfer-fillet.md)                | `C+H`       |
+| [Fillet](chamfer-fillet.md)                 | `C+F`       |
+
+The constraint shortcuts are listed on the
+[Constraints](constraints.md) page.
+
 ## Grid and snapping
 
 The canvas shows an adaptive grid whose spacing adjusts to the zoom level and
@@ -101,14 +146,19 @@ Any entity can be flagged as construction geometry. Construction entities are
 drawn dashed, act as layout guides for the solver like any other geometry,
 and are excluded from the toolpaths when the sketch is manufactured. They are
 handy for center lines, construction circles, and the scaffolding behind
-symmetrical designs. The construction toggle in the toolbar hides them when
-they get in the way.
+symmetrical designs. Select one or more entities and press `G+N` (or use the
+Construction entry in the pie menu) to toggle the flag; the construction
+toggle in the toolbar hides them when they get in the way.
 
 ## Where to go next
 
-[Creating 2D Geometry](geometry.md) introduces the drawing tools and their
-modifiers, [Sketcher Tools](tools.md) is the reference for keyboard shortcuts
-and modifications such as offset, chamfer, and fillet, [Arrays](arrays.md)
-covers circular and along-curve arrays, and [Expressions](expressions.md)
-explains parameters, expressions, and parametric text boxes. Sketches can be saved and re-imported with
-all constraints intact — see [Import and Export](import-export.md).
+The drawing tools are each documented on their own page:
+[Path](path.md) (lines and bezier curves), [Arc and
+Ellipse](arc-ellipse.md), [Rectangle](rectangle.md) (and rounded
+rectangles), [Fill Areas](fill.md), and [Grid](grid.md). Modifications
+such as [Offset](offset.md) and [Chamfer and Fillet](chamfer-fillet.md)
+reshape existing geometry, [Arrays](arrays.md) copies it along a circle
+or a curve, and [Expressions](expressions.md) explains parameters,
+expressions, and parametric text boxes. Sketches can be saved and
+re-imported with all constraints intact — see
+[Import and Export](import-export.md).

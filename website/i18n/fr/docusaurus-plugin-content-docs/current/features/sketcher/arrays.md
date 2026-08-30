@@ -17,6 +17,9 @@ L'outil **Tableau circulaire** (`G+Y`) crée un motif polaire paramétrique
    ou `G+Y`.
 3. Un cercle guide apparaît sur le canevas et une boîte de dialogue non
    modale s'ouvre avec un aperçu en direct.
+
+![Boîte de dialogue du tableau circulaire avec aperçu en direct](/screenshots/addons-sketcher-array-circular.webp)
+
 4. Définissez le **nombre** et l'**angle total**. Les copies sont générées
    paramétriquement autour du centre du cercle guide.
 5. Glissez le centre du cercle guide pour repositionner le tableau, ou
@@ -48,6 +51,9 @@ sa tangente à chaque position.
    ou `G+W`.
 4. Une boîte de dialogue non modale s'ouvre avec un aperçu en direct des
    copies distribuées le long du chemin.
+
+![Boîte de dialogue du tableau le long d'une courbe avec aperçu en direct](/screenshots/addons-sketcher-array-curve-along.webp)
+
 5. Ajustez le **nombre** (total des membres incluant le modèle au début du
    chemin) ou définissez une valeur d'**espacement** pour dériver le nombre
    automatiquement de la longueur du chemin.

@@ -55,7 +55,7 @@ exactamente lo que una expresión de restricción puede referenciar. Los
 parámetros de cadena también pueden referenciarse, lo cual es sobre todo útil
 en los cuadros de texto.
 
-## Expresiones de plantilla en cuadros de texto
+## Expresiones de plantilla en cuadros de texto {#template-expressions-in-text-boxes}
 
 Los cuadros de texto resuelven las expresiones entre llaves en el momento de
 la resolución, de modo que las etiquetas y el texto grabado muestran valores
@@ -78,7 +78,7 @@ Aquí también funcionan las matemáticas, ya sea como una expresión como
 con las expresiones de restricción, las plantillas de texto tienen una caja de
 herramientas más rica: junto con el módulo matemático exponen las funciones
 integradas de abajo, y se pueden registrar funciones personalizadas para ellas
-(vea [más abajo](#funciones-de-plantilla-personalizadas)).
+(vea [más abajo](#custom-template-functions)).
 
 ### Funciones de plantilla integradas
 
@@ -99,7 +99,7 @@ Entre los usos típicos se incluyen números de serie únicos en cada resolució
 contadores de producción (`{name} - {count:.0f}uds`) o marcas de tiempo Unix
 para el registro de producción (`{timestamp():.0f}`).
 
-## Funciones de plantilla personalizadas
+## Funciones de plantilla personalizadas {#custom-template-functions}
 
 Puede registrar sus propias funciones para usar dentro de las plantillas de
 los cuadros de texto. Esto es útil para obtener números de serie de una base

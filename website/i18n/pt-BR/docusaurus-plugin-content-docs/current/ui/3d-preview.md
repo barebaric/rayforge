@@ -114,7 +114,7 @@ configuração física.
 Durante a simulação, um feixe de laser brilhante é desenhado da cabeça para
 baixo quando o laser está ativo.
 
-## Modelo de Queimadura Física
+## Modelo de Queimadura Física {#physical-burn-model}
 
 Quando você grava, a visualização 3D não mostra mais o resultado como uma
 sobreposição plana sobre o material. Operações raster e vetoriais do laser

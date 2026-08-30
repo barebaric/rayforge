@@ -57,7 +57,7 @@ herausgefiltert.
 Einschränkungen entstehen auch von selbst, während du zeichnest: Einrasten
 auf einen Endpunkt erzeugt eine Koinzident-Einschränkung, und
 Ausrichtungshilfslinien werden zu horizontalen oder vertikalen
-Einschränkungen (siehe [die Sketcher-Übersicht](index.md#raster-und-einrasten)).
+Einschränkungen (siehe [die Sketcher-Übersicht](index.md#grid-and-snapping)).
 
 ## Geometrische Einschränkungen
 
@@ -206,7 +206,7 @@ widersprüchlichen Regeln die falsche ist.
 
 ## Wo es weitergeht
 
-Die verfügbaren Zeichenwerkzeuge und ihre Kurzbefehle sind in
-[Sketcher-Werkzeuge](tools.md) aufgelistet, und
-[2D-Geometrie erstellen](geometry.md) erklärt, wie man die Formen zeichnet,
+Jedes Zeichenwerkzeug ist auf seiner eigenen Seite dokumentiert — siehe
+[Pfad](path.md), [Bogen und Ellipse](arc-ellipse.md) und
+[Rechteck](rectangle.md), um zu erfahren, wie man die Formen zeichnet,
 an die diese Einschränkungen angeheftet werden.

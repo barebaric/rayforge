@@ -109,7 +109,7 @@ coincidir con tu configuración física.
 Durante la simulación, se dibuja un rayo láser brillante desde el cabezal hacia
 abajo cuando el láser está activo.
 
-## Modelo de Quemado Físico
+## Modelo de Quemado Físico {#physical-burn-model}
 
 Al grabar, la vista 3D ya no muestra el resultado como una capa plana sobre el
 material de base. Las operaciones raster y vectoriales de láser ahora

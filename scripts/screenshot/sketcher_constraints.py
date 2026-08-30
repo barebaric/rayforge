@@ -65,6 +65,12 @@ TARGET = get_target("addons:sketcher:constraint:coincident")
 
 CROP_MARGIN_PX = 110
 FRAME_FRACTION = 0.16
+CONFLICTS_WINDOW_SIZE = (1440, 990)
+CONFLICTS_FRAME_FRACTION = 0.5
+
+
+def _is_conflicts() -> bool:
+    return TARGET.endswith(":conflicts")
 
 
 def _pt(id_, x, y):
@@ -407,7 +413,10 @@ def _capture_geometry():
 
 @restore_config
 def main():
-    set_window_size(win, 2400, 1650)
+    if _is_conflicts():
+        set_window_size(win, *CONFLICTS_WINDOW_SIZE)
+    else:
+        set_window_size(win, 2400, 1650)
 
     load_project(win, "bezier.ryp")
     logger.info("Waiting for document to settle...")
@@ -424,11 +433,12 @@ def main():
 
     run_on_main_thread(_stage_scene)
     time.sleep(0.5)
-    run_on_main_thread(_frame_view)
+    fraction = CONFLICTS_FRAME_FRACTION if _is_conflicts() else FRAME_FRACTION
+    run_on_main_thread(lambda: _frame_view(fraction))
     time.sleep(0.75)
     clear_window_subtitle(win)
 
-    if TARGET.endswith(":conflicts"):
+    if _is_conflicts():
         take_window_screenshot(win)
     else:
         _capture_geometry()

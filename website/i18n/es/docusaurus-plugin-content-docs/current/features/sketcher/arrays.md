@@ -17,6 +17,9 @@ a partir de la selección actual:
    **Boceto → Arreglos**, o con `G+Y`.
 3. Aparece una guía circular en el lienzo y se abre un diálogo no modal
    con una vista previa en vivo.
+
+![Diálogo del Arreglo Circular con vista previa en vivo](/screenshots/addons-sketcher-array-circular.webp)
+
 4. Establezca el **conteo** y el **ángulo total**. Las copias se generan
    paramétricamente alrededor del centro de la guía circular.
 5. Arrastre el centro de la guía circular para reposicionar el arreglo, o
@@ -47,6 +50,9 @@ copias se colocan directamente en la ruta y siguen su tangente en cada posición
    **Boceto → Arreglos**, o `G+W`.
 4. Se abre un diálogo no modal mostrando una vista previa en vivo con copias
    distribuidas a lo largo de la ruta.
+
+![Diálogo del Arreglo a lo largo de curva con vista previa en vivo](/screenshots/addons-sketcher-array-curve-along.webp)
+
 5. Ajuste el **conteo** (total de miembros incluyendo la plantilla al inicio
    de la ruta) o establezca un valor de **espaciado** para derivar el conteo
    automáticamente de la longitud de la ruta.

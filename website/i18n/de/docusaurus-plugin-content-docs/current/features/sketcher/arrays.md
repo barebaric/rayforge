@@ -17,6 +17,9 @@ Polarmuster aus der aktuellen Auswahl:
    oder `G+Y`.
 3. Ein Hilfskreis erscheint auf der Arbeitsfläche und ein nicht-modaler Dialog
    öffnet sich mit einer Live-Vorschau.
+
+![Kreisförmiges-Array-Dialog mit Live-Vorschau](/screenshots/addons-sketcher-array-circular.webp)
+
 4. Setze die **Anzahl** und den **Gesamtwinkel**. Kopien werden parametrisch
    um den Mittelpunkt des Hilfskreises erzeugt.
 5. Ziehe den Mittelpunkt des Hilfskreises, um das Array umzupositionieren,
@@ -48,6 +51,9 @@ seiner Tangente an jeder Position.
    oder `G+W`.
 4. Ein nicht-modaler Dialog öffnet sich mit einer Live-Vorschau mit Kopien,
    die entlang des Pfads verteilt sind.
+
+![Array-entlang-Kurve-Dialog mit Live-Vorschau](/screenshots/addons-sketcher-array-curve-along.webp)
+
 5. Passe die **Anzahl** an (Gesamtzahl inklusive Vorlage am Pfadanfang) oder
    setze einen **Abstandswert**, um die Anzahl automatisch aus der
    Pfadlänge abzuleiten.

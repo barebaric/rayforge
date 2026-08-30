@@ -186,6 +186,7 @@ which of the contradicting rules is the wrong one.
 
 ## Where to go next
 
-The available drawing tools and their shortcuts are catalogued in
-[Sketcher Tools](tools.md), and [Creating 2D Geometry](geometry.md) explains
-how to draw the shapes these constraints attach to.
+Each drawing tool is documented on its own page — see
+[Path](path.md), [Arc and Ellipse](arc-ellipse.md), and
+[Rectangle](rectangle.md) for how to draw the shapes these constraints
+attach to.

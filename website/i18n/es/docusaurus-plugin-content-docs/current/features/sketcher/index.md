@@ -77,7 +77,53 @@ lugar.
 
 ![El menú circular abierto sobre una línea seleccionada](/screenshots/addons-sketcher-pie-menu.webp)
 
-## Cuadrícula y ajuste
+## Atajos de teclado
+
+El diseñador se opera desde el teclado, y la barra de estado de la parte
+inferior siempre muestra los atajos que se aplican a la herramienta y
+selección actuales. Estos atajos generales funcionan en todo el editor:
+
+| Acción                                               | Atajo                                |
+| ---------------------------------------------------- | ------------------------------------ |
+| Herramienta de selección                             | `Space`                              |
+| Deshacer / Rehacer                                   | `Ctrl+Z` / `Ctrl+Y` (`Ctrl+Shift+Z`) |
+| Duplicar la selección                                | `Ctrl+D`                             |
+| Eliminar la selección                                | `Delete`                             |
+| Mover ligeramente la selección                       | `Teclas de flecha` (`Shift`: mayor)  |
+| Espejar la selección verticalmente / horizontalmente | `M+V` / `M+H`                        |
+| Alternar el modo de construcción                     | `G+N`                                |
+| Cancelar la operación o deseleccionar                | `Escape`                             |
+| Ajustar la vista al contenido                        | `1`                                  |
+
+El espejado opera en el sitio a través del centro de la caja delimitadora
+de la selección; las restricciones que cruzan el límite de la selección se
+eliminan y las restricciones internas se conservan. Las copias obtienen
+identificadores nuevos y restricciones internas reasignadas; deshacer las
+elimina.
+
+Además, cada herramienta de dibujo y modificación tiene un atajo de dos
+teclas, documentado en su página:
+
+| Herramienta                                                          | Atajo       |
+| -------------------------------------------------------------------- | ----------- |
+| [Trazado](path.md)                                                   | `G+P`       |
+| [Arco](arc-ellipse.md)                                               | `G+A`       |
+| [Elipse](arc-ellipse.md)                                             | `G+C`       |
+| [Rectángulo](rectangle.md)                                           | `G+R`       |
+| [Rectángulo redondeado](rectangle.md)                                | `G+O`       |
+| [Rellenar área](fill.md)                                             | `G+F`       |
+| [Cuadro de texto](expressions.md#template-expressions-in-text-boxes) | `G+T`       |
+| [Arreglo Circular](arrays.md)                                        | `G+Y`       |
+| [Arreglo a lo largo de curva](arrays.md)                             | `G+W`       |
+| [Cuadrícula](grid.md)                                                | `G+G`       |
+| [Desplazamiento](offset.md)                                          | `O+F`       |
+| [Chaflán](chamfer-fillet.md)                                         | `C+H`       |
+| [Redondeo](chamfer-fillet.md)                                        | `C+F`       |
+
+Los atajos de restricciones están enumerados en la página
+[Restricciones](constraints.md).
+
+## Cuadrícula y ajuste {#grid-and-snapping}
 
 El lienzo muestra una cuadrícula adaptativa cuyo espaciado se ajusta al nivel
 de zoom y que está etiquetada a lo largo de los ejes en sus unidades
@@ -106,22 +152,26 @@ arrastra restringe el movimiento al eje más cercano.
 
 ![Guías de alineación y el indicador de ajuste equidistante al dibujar](/screenshots/addons-sketcher-snap.webp)
 
-## Geometría de construcción
+## Geometría de construcción {#construction-geometry}
 
 Cualquier entidad puede marcarse como geometría de construcción. Las entidades
 de construcción se dibujan discontinuas, actúan como guías de composición para
 el resolvedor igual que cualquier otra geometría, y se excluyen de las
 trayectorias de herramienta cuando se fabrica el boceto. Son útiles para
 líneas de centro, círculos de construcción y el armazón detrás de diseños
-simétricos. El alternador de construcción de la barra de herramientas los
-oculta cuando estorban.
+simétricos. Seleccione una o más entidades y pulse `G+N` (o use la entrada
+Construcción del menú circular) para alternar la marca; el alternador de
+construcción de la barra de herramientas los oculta cuando estorban.
 
 ## Dónde ir a continuación
 
-[Creación de geometría 2D](geometry.md) presenta las herramientas de dibujo y
-sus modificadores, [Herramientas del diseñador](tools.md) es la referencia de
-atajos de teclado y modificaciones como desplazar, chaflán y redondeo,
-[Arreglos](arrays.md) cubre los arreglos circulares y a lo largo de curva, y
+Las herramientas de dibujo están documentadas cada una en su propia página:
+[Trazado](path.md) (líneas y curvas Bézier), [Arco y
+elipse](arc-ellipse.md), [Rectángulo](rectangle.md) (y rectángulos
+redondeados), [Rellenar áreas](fill.md) y [Cuadrícula](grid.md). Las
+modificaciones como [Desplazamiento](offset.md) y [Chaflán y
+redondeo](chamfer-fillet.md) dan nueva forma a la geometría existente,
+[Arreglos](arrays.md) la copia a lo largo de un círculo o una curva, y
 [Expresiones](expressions.md) explica los parámetros, las expresiones y los
 cuadros de texto paramétricos. Los bocetos se pueden guardar y volver a
 importar con todas las restricciones intactas; consulte

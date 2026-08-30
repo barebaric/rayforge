@@ -133,7 +133,7 @@ n'est saisie ci-dessous.
 #### Longueur d'onde (nm)
 
 La longueur d'onde d'émission de ton laser, en nanomètres. Alimente le
-[modèle de brûlure physique](../ui/3d-preview.md#modèle-de-brûlure-physique)
+[modèle de brûlure physique](../ui/3d-preview.md#physical-burn-model)
 dans l'aperçu 3D : avec les données d'[absorption](../application-settings/materials.md#absorption)
 du matériau, elle détermine quelle partie de l'énergie laser le brut absorbe.
 
@@ -147,7 +147,7 @@ La puissance de sortie optique de ton laser à pleine puissance, en watts.
 Il s'agit de la sortie lumineuse réelle, pas de l'entrée électrique. Avec
 la taille du spot et la vitesse de balayage, elle détermine la fluence
 (J/cm²) utilisée par le
-[modèle de brûlure physique](../ui/3d-preview.md#modèle-de-brûlure-physique).
+[modèle de brûlure physique](../ui/3d-preview.md#physical-burn-model).
 
 Lorsque définie sur 0, une valeur par défaut de milieu de gamme de bureau
 est utilisée.

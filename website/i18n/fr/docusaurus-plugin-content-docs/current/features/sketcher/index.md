@@ -81,7 +81,53 @@ fermer le menu ou le rouvrir ailleurs.
 
 ![Le menu radial ouvert sur une ligne sélectionnée](/screenshots/addons-sketcher-pie-menu.webp)
 
-## Grille et accrochage
+## Raccourcis clavier
+
+L'esquisseur se pilote au clavier, et la barre d'état en bas liste toujours
+les raccourcis applicables à l'outil et à la sélection courants. Ces
+raccourcis généraux fonctionnent partout dans l'éditeur :
+
+| Action                                        | Raccourci                       |
+| --------------------------------------------- | ------------------------------- |
+| Outil Sélection                               | `Space`                         |
+| Annuler / Rétablir                            | `Ctrl+Z` / `Ctrl+Y` (`Ctrl+Shift+Z`) |
+| Dupliquer la sélection                        | `Ctrl+D`                        |
+| Supprimer la sélection                        | `Delete`                        |
+| Déplacer la sélection                         | `Touches fléchées` (`Shift` : plus large) |
+| Symétrie verticale / horizontale de la sélection | `M+V` / `M+H`                |
+| Basculer le mode construction                 | `G+N`                           |
+| Annuler l'opération ou désélectionner         | `Escape`                        |
+| Ajuster la vue au contenu                     | `1`                             |
+
+La mise en miroir s'opère sur place par rapport au centre de la boîte
+d'englobage de la sélection ; les contraintes traversant la limite de
+sélection sont supprimées, les contraintes internes sont préservées. Les
+duplications reçoivent de nouveaux identifiants et des contraintes
+internes remappées ; l'annulation les supprime.
+
+Chaque outil de dessin et de modification possède de plus un raccourci à
+deux touches, documenté sur sa page :
+
+| Outil                                        | Raccourci   |
+| -------------------------------------------- | ----------- |
+| [Tracé](path.md)                             | `G+P`       |
+| [Arc](arc-ellipse.md)                        | `G+A`       |
+| [Ellipse](arc-ellipse.md)                    | `G+C`       |
+| [Rectangle](rectangle.md)                    | `G+R`       |
+| [Rectangle arrondi](rectangle.md)            | `G+O`       |
+| [Remplissage de zone](fill.md)               | `G+F`       |
+| [Zone de texte](expressions.md#template-expressions-in-text-boxes) | `G+T` |
+| [Tableau circulaire](arrays.md)              | `G+Y`       |
+| [Tableau le long d'une courbe](arrays.md)    | `G+W`       |
+| [Grille](grid.md)                            | `G+G`       |
+| [Décalage](offset.md)                        | `O+F`       |
+| [Chanfrein](chamfer-fillet.md)               | `C+H`       |
+| [Congé](chamfer-fillet.md)                   | `C+F`       |
+
+Les raccourcis de contraintes sont listés sur la page
+[Contraintes](constraints.md).
+
+## Grille et accrochage {#grid-and-snapping}
 
 Le canevas affiche une grille adaptative dont l'espacement s'ajuste au
 niveau de zoom et est gradué le long des axes dans vos unités préférées ;
@@ -112,23 +158,28 @@ plus proche.
 
 ![Guides d'alignement et indicateur d'accrochage équidistant pendant le dessin](/screenshots/addons-sketcher-snap.webp)
 
-## Géométrie de construction
+## Géométrie de construction {#construction-geometry}
 
 N'importe quelle entité peut être marquée comme géométrie de construction.
 Les entités de construction sont dessinées en tiretés, servent de guides de
 mise en page pour le solveur comme toute autre géométrie, et sont exclues
 des trajectoires d'outils lors de la fabrication de l'esquisse. Elles sont
 pratiques pour les lignes de centre, les cercles de construction et
-l'échafaudage derrière les conceptions symétriques. La bascule de
-construction dans la barre d'outils les masque quand elles gênent.
+l'échafaudage derrière les conceptions symétriques. Sélectionnez une ou
+plusieurs entités et appuyez sur `G+N` (ou utilisez l'entrée Construction
+du menu radial) pour basculer le marquage ; la bascule de construction
+dans la barre d'outils les masque quand elles gênent.
 
 ## Pour aller plus loin
 
-[Création de géométrie 2D](geometry.md) présente les outils de dessin et
-leurs modificateurs, [Outils de l'esquisseur](tools.md) est la référence
-des raccourcis clavier et des modifications comme le décalage, le chanfrein
-et le congé, [Tableaux](arrays.md) couvre les tableaux circulaires et le
-long d'une courbe, et [Expressions](expressions.md) explique les
-paramètres, les expressions et les zones de texte paramétriques. Les
-esquisses peuvent être enregistrées puis réimportées avec toutes leurs
-contraintes — voir [Importation et exportation](import-export.md).
+Chaque outil de dessin est documenté sur sa propre page :
+[Tracé](path.md) (lignes et courbes de Bézier), [Arc et
+ellipse](arc-ellipse.md), [Rectangle](rectangle.md) (et rectangles
+arrondis), [Remplissage de zones](fill.md) et [Grille](grid.md). Les
+modifications comme [Décalage](offset.md) et [Chanfrein et
+congé](chamfer-fillet.md) transforment la géométrie existante,
+[Tableaux](arrays.md) la copie le long d'un cercle ou d'une courbe, et
+[Expressions](expressions.md) explique les paramètres, les expressions et
+les zones de texte paramétriques. Les esquisses peuvent être enregistrées
+puis réimportées avec toutes leurs contraintes — voir
+[Importation et exportation](import-export.md).

@@ -84,7 +84,7 @@ Ein Wert von 0-1, der beschreibt, ob die Oberfläche in der 3D-Ansicht
 Licht wie ein Metall reflektiert. Setze 1 für metallische Materialien, 0
 für nicht-metallische.
 
-#### Absorption
+#### Absorption {#absorption}
 
 :::note Neu in 1.11
 Absorptionsdaten steuern das [physikalische Brennmodell](../ui/3d-preview.md#physical-burn-model)

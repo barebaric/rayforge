@@ -155,7 +155,7 @@ qui porte le même marqueur `=` mais ne peut pas être appliquée à la main.
 
 ![Deux lignes de longueur égale](/screenshots/addons-sketcher-constraint-equal-length.webp)
 
-## Modifier les valeurs dimensionnelles
+## Modifier les valeurs dimensionnelles {#editing-dimensional-values}
 
 Double-cliquez sur l'étiquette d'une contrainte dimensionnelle pour la
 modifier. La boîte de dialogue accepte un nombre simple ou une expression :
@@ -182,7 +182,7 @@ avec elle. Pour les contraintes dimensionnelles, la boîte de dialogue
 d'édition décrite ci-dessus n'a pas de bouton de suppression — retirer une
 dimension se fait par une suppression normale du marqueur sélectionné.
 
-## En cas de conflit entre contraintes
+## En cas de conflit entre contraintes {#when-constraints-conflict}
 
 Des contraintes qui se contredisent — un triangle dont les côtés ne
 peuvent pas être tous vrais à la fois, par exemple — ne peuvent pas casser
@@ -204,7 +204,7 @@ peut pas deviner laquelle des règles contradictoires est la mauvaise.
 
 ## Pour aller plus loin
 
-Les outils de dessin disponibles et leurs raccourcis sont répertoriés dans
-[Outils de l'esquisseur](tools.md), et [Création de géométrie
-2D](geometry.md) explique comment dessiner les formes auxquelles ces
-contraintes s'appliquent.
+Chaque outil de dessin est documenté sur sa propre page — voir
+[Tracé](path.md), [Arc et ellipse](arc-ellipse.md) et
+[Rectangle](rectangle.md) pour savoir comment dessiner les formes
+auxquelles ces contraintes s'attachent.

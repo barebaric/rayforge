@@ -86,10 +86,10 @@ Une valeur de 0 à 1 décrivant si la surface réfléchit la lumière comme un
 métal dans la vue 3D. Réglez sur 1 pour les matériaux métalliques, 0 pour
 les matériaux non métalliques.
 
-#### Absorption
+#### Absorption {#absorption}
 
 :::note Nouveau en 1.11
-Les données d'absorption pilotent le [modèle de brûlure physique](../ui/3d-preview.md#modèle-de-brûlure-physique)
+Les données d'absorption pilotent le [modèle de brûlure physique](../ui/3d-preview.md#physical-burn-model)
 dans l'aperçu 3D.
 :::
 

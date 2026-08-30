@@ -48,4 +48,4 @@ Einrichtungsanweisungen.
 ## Verwandte Themen
 
 - [KI-Anbieter](../application-settings/ai-provider.md) - KI-Anbieter konfigurieren
-- [Skizzierer](../features/sketcher.md) - Formen manuell zeichnen
+- [Skizzierer](../features/sketcher/index.md) - Formen manuell zeichnen

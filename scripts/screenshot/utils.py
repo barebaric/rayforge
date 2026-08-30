@@ -143,7 +143,7 @@ def _get_xid_pid(xid: str) -> int | None:
     return int(match.group(1)) if match else None
 
 
-def _get_frame_extents(xid: str) -> tuple[int, int, int, int]:
+def _get_frame_extents(xid: str | int) -> tuple[int, int, int, int]:
     """Return the CSD shadow border as (left, right, top, bottom).
 
     GTK draws its drop shadow inside the X window but outside the
@@ -266,7 +266,7 @@ def _add_window_decorations(img: Image.Image) -> Image.Image:
     margin = DECOR_MARGIN_PX
     width, height = img.size
     size = (width + 2 * margin, height + 2 * margin)
-    canvas = Image.new("RGBA", size, (0, 0, 0, 0))
+    canvas = Image.new("RGBA", size, (0, 0, 0, 0))  # type: ignore[reportArgumentType]
 
     rect = (
         margin,
@@ -274,7 +274,7 @@ def _add_window_decorations(img: Image.Image) -> Image.Image:
         margin + width,
         margin + height + DECOR_OFFSET_Y_PX,
     )
-    shadow = Image.new("RGBA", size, (0, 0, 0, 0))
+    shadow = Image.new("RGBA", size, (0, 0, 0, 0))  # type: ignore[reportArgumentType]
     ImageDraw.Draw(shadow).rounded_rectangle(
         rect, radius=DECOR_RADIUS_PX, fill=(0, 0, 0, DECOR_SHADOW_ALPHA)
     )
@@ -321,16 +321,16 @@ def capture_app_window() -> Image.Image | None:
 # ---------------------------------------------------------------------------
 # X11 helpers (Xvfb runs without a window manager)
 # ---------------------------------------------------------------------------
-_x11_lib: Optional["ctypes.CDLL"] = None
+_x11_lib: Any | None = None
 _x11_display = None
 
 
-def _load_x11() -> tuple["ctypes.CDLL", int] | None:
+def _load_x11() -> tuple[Any, Any] | None:
     """Load libX11 and open a display connection (cached)."""
     global _x11_lib, _x11_display
     if _x11_lib is None:
         try:
-            lib = ctypes.CDLL("libX11.so.6")
+            lib: Any = ctypes.CDLL("libX11.so.6")
         except OSError:
             return None
         lib.XOpenDisplay.restype = ctypes.c_void_p
@@ -369,6 +369,8 @@ def _load_x11() -> tuple["ctypes.CDLL", int] | None:
             ctypes.c_int,
         ]
         _x11_lib = lib
+    if _x11_lib is None:
+        return None
     if _x11_display is None:
         _x11_display = _x11_lib.XOpenDisplay(None)
     if not _x11_display:
@@ -893,9 +895,84 @@ def take_window_screenshot(
                 wx + ww - right,
                 wy + wh - bottom,
             )
+        # A window wider than the screen (e.g. an open dialog raising
+        # the minimum width) must not pad the capture with black.
+        crop_box = (
+            max(crop_box[0], 0),
+            max(crop_box[1], 0),
+            min(crop_box[2], img.width),
+            min(crop_box[3], img.height),
+        )
         cropped = _add_window_decorations(img.crop(crop_box))
         _save_webp_deterministic(cropped, output_path)
         logger.info(f"Window screenshot saved to {output_path}")
+        return True
+    except (OSError, ValueError, TypeError) as e:
+        logger.error(f"Failed to process screenshot: {e}")
+        return False
+
+
+def take_region_screenshot(
+    win: "MainWindow",
+    region: tuple[int, int, int, int],
+    output_name: str | None = None,
+) -> bool:
+    """
+    Take a screenshot of part of the main window's content.
+
+    Captures the full screen and crops to ``region``, a
+    ``(x0, y0, x1, y1)`` rectangle in main-window content
+    coordinates, then frames the result like a window capture.
+
+    Args:
+        win: The main window.
+        region: Rectangle to crop, in content coordinates.
+        output_name: Filename (saved to OUTPUT_DIR). Defaults to the
+            filename derived from the TARGET environment variable.
+    """
+    if output_name is None:
+        output_name = get_output_name()
+    output_path = OUTPUT_DIR / output_name
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    park_mouse_pointer()
+    time.sleep(0.5)
+
+    xid = run_on_main_thread(lambda: _get_win_xid(win))
+    if xid is None:
+        logger.error("Could not get X11 window id")
+        return False
+
+    geometry = get_xid_geometry(xid)
+    if geometry is None:
+        logger.error("Could not parse window geometry from xwininfo")
+        return False
+    wx, wy, ww, wh = geometry
+
+    img = capture_full_screen()
+    if img is None:
+        return False
+
+    try:
+        if uses_synthetic_decorations():
+            gtk_w, gtk_h = run_on_main_thread(
+                lambda: (win.get_width(), win.get_height())
+            )
+            ox = wx + (ww - gtk_w) // 2
+            oy = wy + (wh - gtk_h) // 2
+        else:
+            left, _, top, _ = _get_frame_extents(xid)
+            ox, oy = wx + left, wy + top
+        x0, y0, x1, y1 = region
+        crop_box = (
+            max(ox + x0, 0),
+            max(oy + y0, 0),
+            min(ox + x1, img.width),
+            min(oy + y1, img.height),
+        )
+        cropped = _add_window_decorations(img.crop(crop_box))
+        _save_webp_deterministic(cropped, output_path)
+        logger.info(f"Region screenshot saved to {output_path}")
         return True
     except (OSError, ValueError, TypeError) as e:
         logger.error(f"Failed to process screenshot: {e}")

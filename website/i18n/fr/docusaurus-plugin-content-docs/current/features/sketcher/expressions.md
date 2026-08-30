@@ -58,7 +58,7 @@ paramètres, est exactement ce qu'une expression de contrainte peut
 référencer. Les paramètres de type chaîne peuvent aussi être référencés,
 ce qui est surtout utile dans les zones de texte.
 
-## Expressions de modèle dans les zones de texte
+## Expressions de modèle dans les zones de texte {#template-expressions-in-text-boxes}
 
 Les zones de texte résolvent les expressions entre accolades au moment de
 la résolution, si bien que les étiquettes et le texte gravé affichent des
@@ -104,7 +104,7 @@ résolution (`Pièce #{uuid4()}`), les étiquettes de dimensions dynamiques
 compteurs de production (`{name} - {count:.0f}pcs`) ou les horodatages Unix
 pour la journalisation de production (`{timestamp():.0f}`).
 
-## Fonctions de modèle personnalisées
+## Fonctions de modèle personnalisées {#custom-template-functions}
 
 Vous pouvez enregistrer vos propres fonctions à utiliser dans les modèles
 de zones de texte. C'est utile pour récupérer des numéros de série depuis

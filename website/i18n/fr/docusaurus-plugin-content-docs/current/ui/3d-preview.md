@@ -109,7 +109,7 @@ installation physique.
 Pendant la simulation, un faisceau laser lumineux est tracé depuis la tête vers le bas
 lorsque le laser est actif.
 
-## Modèle de brûlure physique
+## Modèle de brûlure physique {#physical-burn-model}
 
 Lorsque tu graves, la vue 3D ne montre plus le résultat comme un overlay plat
 sur le brut. Les opérations raster et vectorielles laser **brûlent

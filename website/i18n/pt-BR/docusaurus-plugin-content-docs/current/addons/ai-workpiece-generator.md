@@ -47,4 +47,4 @@ instruções de configuração.
 ## Tópicos Relacionados
 
 - [Provedor de IA](../application-settings/ai-provider.md) - Configurar provedores de IA
-- [Desenhista](../features/sketcher.md) - Desenhar formas manualmente
+- [Desenhista](../features/sketcher/index.md) - Desenhar formas manualmente

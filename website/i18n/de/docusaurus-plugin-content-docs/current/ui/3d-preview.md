@@ -114,7 +114,7 @@ Modells können an dein physisches Setup angepasst werden.
 Während der Simulation wird ein leuchtender Laserstrahl vom Kopf nach unten
 gezeichnet, wenn der Laser aktiv ist.
 
-## Physikalisches Brennmodell
+## Physikalisches Brennmodell {#physical-burn-model}
 
 Wenn du gravierst, zeigt die 3D-Ansicht das Ergebnis nicht mehr als flache
 Überlagerung auf dem Material. Laser-Raster- und Vektoroperationen **braten

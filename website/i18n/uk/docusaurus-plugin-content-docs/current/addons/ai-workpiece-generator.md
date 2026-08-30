@@ -47,4 +47,4 @@
 ## Пов'язані теми
 
 - [Постачальник ШІ](../application-settings/ai-provider.md) - Налаштування постачальників ШІ
-- [Ескізник](../features/sketcher.md) - Малювання форм вручну
+- [Ескізник](../features/sketcher/index.md) - Малювання форм вручну

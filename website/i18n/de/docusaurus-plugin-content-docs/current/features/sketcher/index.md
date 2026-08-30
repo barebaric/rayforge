@@ -80,7 +80,54 @@ schließen oder es an anderer Stelle wieder zu öffnen.
 
 ![Das Kreismenü, geöffnet auf einer ausgewählten Linie](/screenshots/addons-sketcher-pie-menu.webp)
 
-## Raster und Einrasten
+## Tastatur-Kurzbefehle
+
+Der Sketcher wird über die Tastatur bedient, und die Statusleiste unten
+listet immer die Kurzbefehle auf, die für das aktuelle Werkzeug und die
+aktuelle Auswahl gelten. Diese allgemeinen Kurzbefehle funktionieren
+überall im Editor:
+
+| Aktion                                        | Kurzbefehl                           |
+| --------------------------------------------- | ------------------------------------ |
+| Auswahl-Werkzeug                              | `Space`                              |
+| Rückgängig / Wiederholen                      | `Ctrl+Z` / `Ctrl+Y` (`Ctrl+Shift+Z`) |
+| Auswahl duplizieren                           | `Ctrl+D`                             |
+| Auswahl löschen                               | `Delete`                             |
+| Auswahl verschieben                           | `Pfeiltasten` (`Shift`: größer)      |
+| Auswahl vertikal / horizontal spiegeln        | `M+V` / `M+H`                        |
+| Konstruktionsmodus umschalten                 | `G+N`                                |
+| Operation abbrechen oder Auswahl aufheben     | `Escape`                             |
+| Ansicht an Inhalt anpassen                    | `1`                                  |
+
+Das Spiegeln erfolgt vor Ort über die Mitte des Begrenzungsrahmens der
+Auswahl; Einschränkungen, die die Auswahlgrenze überschreiten, werden
+entfernt, interne Einschränkungen bleiben erhalten. Duplikate bekommen
+neue IDs und neu zugewiesene interne Einschränkungen; Rückgängig
+entfernt sie.
+
+Jedes Zeichen- und Bearbeitungswerkzeug hat zusätzlich einen
+Kurzbefehl aus zwei Tasten, der auf seiner Seite dokumentiert ist:
+
+| Werkzeug                                     | Kurzbefehl  |
+| -------------------------------------------- | ----------- |
+| [Pfad](path.md)                              | `G+P`       |
+| [Bogen](arc-ellipse.md)                      | `G+A`       |
+| [Ellipse](arc-ellipse.md)                    | `G+C`       |
+| [Rechteck](rectangle.md)                     | `G+R`       |
+| [Abgerundetes Rechteck](rectangle.md)        | `G+O`       |
+| [Bereiche füllen](fill.md)                   | `G+F`       |
+| [Textfeld](expressions.md#template-expressions-in-text-boxes) | `G+T` |
+| [Kreisförmiges Array](arrays.md)             | `G+Y`       |
+| [Array entlang Kurve](arrays.md)             | `G+W`       |
+| [Raster](grid.md)                            | `G+G`       |
+| [Versatz](offset.md)                         | `O+F`       |
+| [Fase](chamfer-fillet.md)                    | `C+H`       |
+| [Verrundung](chamfer-fillet.md)              | `C+F`       |
+
+Die Einschränkungs-Kurzbefehle sind auf der Seite
+[Einschränkungen](constraints.md) aufgelistet.
+
+## Raster und Einrasten {#grid-and-snapping}
 
 Die Leinwand zeigt ein adaptives Raster, dessen Abstand sich an die
 Zoomstufe anpasst und das entlang der Achsen in deiner bevorzugten Einheit
@@ -112,22 +159,28 @@ gedrückt, um die Bewegung auf die nächstgelegene Achse zu beschränken.
 
 ![Ausrichtungshilfslinien und der Gleichabstand-Einrastindikator beim Zeichnen](/screenshots/addons-sketcher-snap.webp)
 
-## Konstruktionsgeometrie
+## Konstruktionsgeometrie {#construction-geometry}
 
 Jede Entität kann als Konstruktionsgeometrie markiert werden.
 Konstruktions-Entitäten werden gestrichelt gezeichnet, wirken für den
 Solver wie jede andere Geometrie als Layout-Hilfslinien und werden beim
 Fertigen der Skizze von den Werkzeugpfaden ausgeschlossen. Sie sind
 praktisch für Mittellinien, Konstruktionskreise und das Gerüst hinter
-symmetrischen Designs. Der Konstruktions-Umschalter in der Symbolleiste
-blendet sie aus, wenn sie im Weg sind.
+symmetrischen Designs. Wähle eine oder mehrere Entitäten aus und
+drücke `G+N` (oder verwende den Konstruktion-Eintrag im Kreismenü), um
+die Markierung umzuschalten; der Konstruktions-Umschalter in der
+Symbolleiste blendet sie aus, wenn sie im Weg sind.
 
 ## Wo es weitergeht
 
-[2D-Geometrie erstellen](geometry.md) stellt die Zeichenwerkzeuge und ihre
-Zusatztasten vor, [Sketcher-Werkzeuge](tools.md) ist die Referenz für
-Tastatur-Kurzbefehle und Modifikationen wie Versatz, Fase und Verrundung,
-[Arrays](arrays.md) behandelt kreisförmige und Kurven-Arrays, und
-[Ausdrücke](expressions.md) erklärt Parameter, Ausdrücke und parametrische
-Textfelder. Skizzen können mit allen Einschränkungen intakt gespeichert und
-erneut importiert werden — siehe [Import und Export](import-export.md).
+Die Zeichenwerkzeuge sind jeweils auf ihrer eigenen Seite dokumentiert:
+[Pfad](path.md) (Linien und Bezier-Kurven), [Bogen und
+Ellipse](arc-ellipse.md), [Rechteck](rectangle.md) (und abgerundete
+Rechtecke), [Bereiche füllen](fill.md) und [Raster](grid.md).
+Modifikationen wie [Versatz](offset.md) und [Fase und
+Verrundung](chamfer-fillet.md) formen bestehende Geometrie um,
+[Arrays](arrays.md) kopiert sie entlang eines Kreises oder einer Kurve,
+und [Ausdrücke](expressions.md) erklärt Parameter, Ausdrücke und
+parametrische Textfelder. Skizzen können mit allen Einschränkungen
+intakt gespeichert und erneut importiert werden — siehe
+[Import und Export](import-export.md).

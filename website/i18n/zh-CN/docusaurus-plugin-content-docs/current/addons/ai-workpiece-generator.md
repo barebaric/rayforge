@@ -41,4 +41,4 @@ AI 工件生成器插件让您只需描述想要什么就能创建设计。输�
 ## 相关主题
 
 - [AI 提供商](../application-settings/ai-provider.md) - 配置 AI 提供商
-- [绘图器](../features/sketcher.md) - 手动绘制形状
+- [绘图器](../features/sketcher/index.md) - 手动绘制形状

@@ -85,7 +85,7 @@ Un valor de 0-1 que describe si la superficie refleja la luz como un
 metal en la vista 3D. Establece 1 para materiales metálicos, 0 para no
 metálicos.
 
-#### Absorción
+#### Absorción {#absorption}
 
 :::note Nuevo en 1.11
 Los datos de absorción impulsan el [modelo de quemado físico](../ui/3d-preview.md#physical-burn-model)

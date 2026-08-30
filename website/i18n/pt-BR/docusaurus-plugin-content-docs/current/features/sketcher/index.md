@@ -77,7 +77,52 @@ menu ou reabri-lo em outro lugar.
 
 ![O menu circular aberto sobre uma linha selecionada](/screenshots/addons-sketcher-pie-menu.webp)
 
-## Grade e snap
+## Atalhos de teclado
+
+O esboçador é operado pelo teclado, e a barra de status na parte inferior
+sempre lista os atalhos aplicáveis à ferramenta e à seleção atuais.
+Estes atalhos gerais funcionam em todo o editor:
+
+| Ação                                           | Atalho                               |
+| ---------------------------------------------- | ------------------------------------ |
+| Ferramenta de seleção                          | `Space`                              |
+| Desfazer / Refazer                             | `Ctrl+Z` / `Ctrl+Y` (`Ctrl+Shift+Z`) |
+| Duplicar seleção                               | `Ctrl+D`                             |
+| Excluir seleção                                | `Delete`                             |
+| Mover seleção                                  | `Setas` (`Shift`: passo maior)       |
+| Espelhar seleção verticalmente / horizontalmente | `M+V` / `M+H`                      |
+| Alternar modo de construção                    | `G+N`                                |
+| Cancelar operação ou deselecionar              | `Escape`                             |
+| Ajustar visualização ao conteúdo               | `1`                                  |
+
+O espelhamento opera no local através do centro da caixa delimitadora
+da seleção; restrições que atravessam o limite da seleção são
+removidas, e restrições internas são preservadas. Duplicações recebem
+IDs novos e restrições internas remapeadas; desfazer as remove.
+
+Cada ferramenta de desenho e modificação tem, além disso, um atalho de
+duas teclas, documentado em sua página:
+
+| Ferramenta                                  | Atalho      |
+| ------------------------------------------- | ----------- |
+| [Caminho](path.md)                          | `G+P`       |
+| [Arco](arc-ellipse.md)                      | `G+A`       |
+| [Elipse](arc-ellipse.md)                    | `G+C`       |
+| [Retângulo](rectangle.md)                   | `G+R`       |
+| [Retângulo arredondado](rectangle.md)       | `G+O`       |
+| [Preenchimento de áreas](fill.md)           | `G+F`       |
+| [Caixa de texto](expressions.md#template-expressions-in-text-boxes) | `G+T` |
+| [Matriz Circular](arrays.md)                | `G+Y`       |
+| [Matriz ao longo de curva](arrays.md)       | `G+W`       |
+| [Grade](grid.md)                            | `G+G`       |
+| [Deslocamento](offset.md)                   | `O+F`       |
+| [Chanfro](chamfer-fillet.md)                | `C+H`       |
+| [Arredondamento](chamfer-fillet.md)         | `C+F`       |
+
+Os atalhos de restrições estão listados na página
+[Restrições](constraints.md).
+
+## Grade e snap {#grid-and-snapping}
 
 O canvas exibe uma grade adaptativa cujo espaçamento se ajusta ao nível de
 zoom e que é rotulada ao longo dos eixos nas suas unidades preferidas, de
@@ -105,22 +150,28 @@ movimento ao eixo mais próximo.
 
 ![Guias de alinhamento e o indicador de snap equidistante ao desenhar](/screenshots/addons-sketcher-snap.webp)
 
-## Geometria de construção
+## Geometria de construção {#construction-geometry}
 
 Qualquer entidade pode ser marcada como geometria de construção. Entidades
 de construção são desenhadas tracejadas, atuam como guias de layout para o
 solver como qualquer outra geometria, e são excluídas das trajetórias de
 ferramenta quando o esboço é fabricado. Elas são úteis para linhas de
-centro, círculos de construção e a estrutura por trás de designs simétricos.
-O alternador de construção na barra de ferramentas as oculta quando
+centro, círculos de construção e a estrutura por trás de designs
+simétricos. Selecione uma ou mais entidades e pressione `G+N` (ou use a
+entrada Construção no menu circular) para alternar o sinalizador; o
+alternador de construção na barra de ferramentas as oculta quando
 atrapalham.
 
 ## Onde ir a seguir
 
-[Criando geometria 2D](geometry.md) apresenta as ferramentas de desenho e
-seus modificadores, [Ferramentas do esboçador](tools.md) é a referência de
-atalhos de teclado e modificações como deslocamento, chanfro e
-arredondamento, [Matrizes](arrays.md) cobre matrizes circulares e ao longo
-de curvas, e [Expressões](expressions.md) explica parâmetros, expressões e
-caixas de texto paramétricas. Esboços podem ser salvos e reimportados com
-todas as restrições intactas — veja [Importação e exportação](import-export.md).
+As ferramentas de desenho estão documentadas em páginas próprias:
+[Caminho](path.md) (linhas e curvas de Bézier), [Arco e
+Elipse](arc-ellipse.md), [Retângulo](rectangle.md) (e retângulos
+arredondados), [Preenchimento de áreas](fill.md) e [Grade](grid.md).
+Modificações como [Deslocamento](offset.md) e [Chanfro e
+arredondamento](chamfer-fillet.md) remodelam a geometria existente,
+[Matrizes](arrays.md) copiam a geometria ao longo de um círculo ou de
+uma curva, e [Expressões](expressions.md) explica parâmetros, expressões
+e caixas de texto paramétricas. Esboços podem ser salvos e reimportados
+com todas as restrições intactas — veja
+[Importação e exportação](import-export.md).

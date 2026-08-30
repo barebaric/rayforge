@@ -48,4 +48,4 @@ les instructions de configuration.
 ## Sujets Connexes
 
 - [Fournisseur IA](../application-settings/ai-provider.md) - Configurer les fournisseurs IA
-- [Ébaucheur](../features/sketcher.md) - Dessiner des formes manuellement
+- [Ébaucheur](../features/sketcher/index.md) - Dessiner des formes manuellement

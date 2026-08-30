@@ -146,7 +146,7 @@ que carrega o mesmo marcador `=`, mas não pode ser aplicada manualmente.
 
 ![Duas linhas de comprimento igual](/screenshots/addons-sketcher-constraint-equal-length.webp)
 
-## Editando valores dimensionais
+## Editando valores dimensionais {#editing-dimensional-values}
 
 Dê um duplo clique no rótulo de uma restrição dimensional para editá-la. O
 diálogo aceita um número simples ou uma expressão: parâmetros do esboço e
@@ -172,7 +172,7 @@ geometria leva suas restrições junto. Para restrições dimensionais, o
 diálogo de edição descrito acima não tem botão de exclusão — remover uma
 dimensão é uma exclusão normal do marcador selecionado.
 
-## Quando as restrições conflitam
+## Quando as restrições conflitam {#when-constraints-conflict}
 
 Restrições que se contradizem — um triângulo cujos lados não podem ser
 todos verdadeiros ao mesmo tempo, por exemplo — não conseguem quebrar o
@@ -194,6 +194,7 @@ contradição é a errada.
 
 ## Onde ir a seguir
 
-As ferramentas de desenho disponíveis e seus atalhos estão catalogados em
-[Ferramentas do esboçador](tools.md), e [Criando geometria 2D](geometry.md)
-explica como desenhar as formas às quais essas restrições se aplicam.
+Cada ferramenta de desenho está documentada em sua própria página — veja
+[Caminho](path.md), [Arco e Elipse](arc-ellipse.md) e
+[Retângulo](rectangle.md) para saber como desenhar as formas às quais
+essas restrições se aplicam.

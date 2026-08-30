@@ -56,7 +56,7 @@ ist das, worauf ein Einschränkungs-Ausdruck verweisen kann. Auch
 String-Parameter können referenziert werden, was vor allem in Textfeldern
 nützlich ist.
 
-## Vorlagenausdrücke in Textfeldern
+## Vorlagenausdrücke in Textfeldern {#template-expressions-in-text-boxes}
 
 Textfelder lösen Ausdrücke in geschweiften Klammern zum Lösungszeitpunkt
 auf, sodass Beschriftungen und gravierter Text live Werte anzeigen:
@@ -100,8 +100,7 @@ Typische Anwendungen sind eindeutige Seriennummern pro Lösung
 Produktionszähler (`{name} - {count:.0f}pcs`) oder Unix-Zeitstempel für
 die Produktionsprotokollierung (`{timestamp():.0f}`).
 
-## Benutzerdefinierte Vorlagenfunktionen
-
+## Benutzerdefinierte Vorlagenfunktionen {#custom-template-functions}
 Du kannst eigene Funktionen registrieren, um sie in Textfeldvorlagen zu
 verwenden. Dies ist nützlich zum Abrufen von Seriennummern aus einer
 Datenbank, zum Lesen externer Daten oder zum Erstellen benutzerdefinierter

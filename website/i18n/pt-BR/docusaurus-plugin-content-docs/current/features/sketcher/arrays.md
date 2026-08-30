@@ -17,6 +17,9 @@ a partir da seleção atual:
    **Esboço → Matrizes** ou `G+Y`.
 3. Um círculo guia aparece na tela e um diálogo não modal é aberto com
    uma pré-visualização ao vivo.
+
+![Diálogo da Matriz Circular com pré-visualização ao vivo](/screenshots/addons-sketcher-array-circular.webp)
+
 4. Defina a **quantidade** e o **ângulo total**. As cópias são geradas
    parametricamente ao redor do centro do círculo guia.
 5. Arraste o centro do círculo guia para reposicionar a matriz, ou
@@ -48,6 +51,9 @@ posição.
    **Esboço → Matrizes** ou `G+W`.
 4. Um diálogo não modal abre mostrando uma pré-visualização ao vivo com
    cópias distribuídas ao longo do caminho.
+
+![Diálogo da Matriz ao longo de curva com pré-visualização ao vivo](/screenshots/addons-sketcher-array-curve-along.webp)
+
 5. Ajuste a **quantidade** (total de membros incluindo o modelo no início
    do caminho) ou defina um valor de **espaçamento** para derivar a
    quantidade automaticamente do comprimento do caminho.

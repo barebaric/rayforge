@@ -195,7 +195,7 @@ contradictorias es la incorrecta.
 
 ## Dónde ir a continuación
 
-Las herramientas de dibujo disponibles y sus atajos están catalogados en
-[Herramientas del diseñador](tools.md), y
-[Creación de geometría 2D](geometry.md) explica cómo dibujar las formas a las
-que se adjuntan estas restricciones.
+Cada herramienta de dibujo está documentada en su propia página; vea
+[Trazado](path.md), [Arco y elipse](arc-ellipse.md) y
+[Rectángulo](rectangle.md) para saber cómo dibujar las formas a las que se
+adjuntan estas restricciones.

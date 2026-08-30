@@ -55,7 +55,7 @@ que uma expressão de restrição pode referenciar. Parâmetros do tipo string
 também podem ser referenciados, o que é útil principalmente em caixas de
 texto.
 
-## Expressões de modelo em caixas de texto
+## Expressões de modelo em caixas de texto {#template-expressions-in-text-boxes}
 
 As caixas de texto resolvem expressões entre chaves no momento da
 resolução, de modo que rótulos e textos gravados exibem valores ao vivo:
@@ -98,7 +98,7 @@ Usos típicos incluem números de série únicos a cada resolução
 contadores de produção (`{name} - {count:.0f}un`) ou marcas temporais Unix
 para registro de produção (`{timestamp():.0f}`).
 
-## Funções de modelo personalizadas
+## Funções de modelo personalizadas {#custom-template-functions}
 
 Você pode registrar suas próprias funções para usar dentro de modelos de
 texto. Isso é útil para obter números de série de um banco de dados, ler

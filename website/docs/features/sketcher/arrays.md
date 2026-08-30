@@ -17,6 +17,9 @@ from the current selection:
    `G+Y`.
 3. A guide circle appears on the canvas and a non-modal dialog opens
    with a live preview.
+
+![Circular Array dialog with live preview](/screenshots/addons-sketcher-array-circular.webp)
+
 4. Set the **count** and **total angle**. Copies are generated
    parametrically around the guide circle's center.
 5. Drag the guide circle's center to reposition the array, or drag the
@@ -47,6 +50,9 @@ are placed directly on the path and follow its tangent at each position.
    `G+W`.
 4. A non-modal dialog opens showing a live preview with copies
    distributed along the path.
+
+![Array Along Curve dialog with live preview](/screenshots/addons-sketcher-array-curve-along.webp)
+
 5. Adjust the **count** (total members including the template at the
    path start) or set a **spacing** value to derive the count
    automatically from the path length.
