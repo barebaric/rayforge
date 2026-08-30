@@ -7,10 +7,13 @@ GLib.idle_add for thread safety.
 """
 
 import atexit
+import ctypes
 import functools
 import logging
 import os
+import re
 import subprocess
+import tempfile
 import time
 from collections.abc import Callable
 from contextlib import contextmanager
@@ -24,8 +27,8 @@ from typing import (
 )
 
 import numpy as np
-from gi.repository import Adw, GLib
-from PIL import Image
+from gi.repository import Adw, GLib, Gtk
+from PIL import Image, ImageDraw, ImageFilter
 from PIL.PngImagePlugin import PngInfo
 
 from rayforge.core.recipe import Recipe
@@ -56,6 +59,352 @@ SCREENSHOT_TOOLS = [
 ]
 
 T = TypeVar("T")
+
+
+def _under_xvfb() -> bool:
+    return bool(os.environ.get("RAYFORGE_XVFB"))
+
+
+def _wm_active() -> bool:
+    """True when the Xvfb session runs its own window manager.
+
+    The session then provides a private D-Bus and a compositor, so
+    ``gnome-screenshot`` captures the virtual display's windows
+    with real shadows and alpha, exactly like on the desktop.
+    """
+    return bool(os.environ.get("RAYFORGE_XVFB_WM"))
+
+
+def get_screenshot_tools() -> list[tuple[list[str], str]]:
+    """
+    Return the capture tools usable on the current display.
+
+    ``gnome-screenshot`` captures whatever the session's GNOME
+    Shell shows, over its session D-Bus. Without a window manager
+    on the display (plain Xvfb) it would reach the developer's
+    desktop shell and screenshot that, so only X11-native tools
+    may be used there.
+    """
+    if _under_xvfb() and not _wm_active():
+        return [t for t in SCREENSHOT_TOOLS if t[1] != "gnome-screenshot"]
+    return SCREENSHOT_TOOLS
+
+
+def capture_full_screen() -> Image.Image | None:
+    """
+    Capture the entire screen via the first succeeding tool.
+
+    The active-window flag is stripped from ``gnome-screenshot``,
+    so the capture always covers the whole screen: the returned
+    image's (0, 0) is the root origin and matches absolute window
+    geometries as reported by xwininfo.
+    """
+    for cmd_args, _tool_name in get_screenshot_tools():
+        args = [a for a in cmd_args if a != "-w"]
+        with tempfile.TemporaryDirectory(prefix="rayforge-shot-") as tmp:
+            temp_path = Path(tmp) / "capture.png"
+            result = subprocess.run(
+                [*args, str(temp_path)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if result.returncode == 0:
+                try:
+                    return Image.open(temp_path)
+                except (OSError, ValueError) as e:
+                    logger.error(f"Failed to open capture: {e}")
+                    return None
+    logger.error("Failed to take screenshot with available tools")
+    return None
+
+
+def _get_xid_pid(xid: str) -> int | None:
+    result = subprocess.run(
+        ["xprop", "-id", xid, "_NET_WM_PID"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    match = re.search(r"=\s*(\d+)", result.stdout)
+    return int(match.group(1)) if match else None
+
+
+def _get_frame_extents(xid: str) -> tuple[int, int, int, int]:
+    """Return the CSD shadow border as (left, right, top, bottom).
+
+    GTK draws its drop shadow inside the X window but outside the
+    visible content; _GTK_FRAME_EXTENTS advertises that border.
+    """
+    result = subprocess.run(
+        ["xprop", "-id", xid, "_GTK_FRAME_EXTENTS"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    match = re.search(r"=\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)", result.stdout)
+    if not match:
+        return (0, 0, 0, 0)
+    return (
+        int(match.group(1)),
+        int(match.group(2)),
+        int(match.group(3)),
+        int(match.group(4)),
+    )
+
+
+def get_app_window_box() -> tuple[int, int, int, int] | None:
+    """
+    Locate the app's topmost toplevel window on the X server.
+
+    Xvfb runs without a window manager, so there is no 'active
+    window' for capture tools to grab. Direct children of the root
+    window belonging to this process are reported by xwininfo in
+    stacking order; the first match is the window a desktop
+    capture would have shown. The GTK shadow border is excluded,
+    so the box tightly encloses the visible content. Returns
+    (x, y, width, height).
+    """
+    result = subprocess.run(
+        ["xwininfo", "-root", "-tree"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        logger.error(f"xwininfo failed: {result.stderr}")
+        return None
+    pattern = re.compile(
+        r'^ {5}(0x[0-9a-f]+) "[^"]*".*?(\d+)x(\d+)([+-]\d+)([+-]\d+)',
+        re.MULTILINE,
+    )
+    own_pid = os.getpid()
+    for match in pattern.finditer(result.stdout):
+        xid = match.group(1)
+        if _get_xid_pid(xid) != own_pid:
+            continue
+        x = int(match.group(4))
+        y = int(match.group(5))
+        w = int(match.group(2))
+        h = int(match.group(3))
+        left, right, top, bottom = _get_frame_extents(xid)
+        w -= left + right
+        h -= top + bottom
+        if w <= 0 or h <= 0:
+            logger.warning("Invalid window geometry after frame extents")
+            return None
+        box = (x + left, y + top, w, h)
+        logger.info(f"App window content: x={box[0]} y={box[1]} w={w} h={h}")
+        return box
+    logger.warning("Could not locate the app window on the root window")
+    return None
+
+
+# Window framing applied to Xvfb captures, approximating what a
+# desktop compositor would draw around the window.
+DECOR_MARGIN_PX = 24
+DECOR_RADIUS_PX = 12
+DECOR_BLUR_PX = 12
+DECOR_OFFSET_Y_PX = 6
+DECOR_SHADOW_ALPHA = 110
+
+
+def _add_window_decorations(img: Image.Image) -> Image.Image:
+    """Frame a content screenshot with rounded corners and a soft
+    semi-transparent drop shadow."""
+    margin = DECOR_MARGIN_PX
+    width, height = img.size
+    size = (width + 2 * margin, height + 2 * margin)
+    canvas = Image.new("RGBA", size, (0, 0, 0, 0))
+
+    rect = (
+        margin,
+        margin + DECOR_OFFSET_Y_PX,
+        margin + width,
+        margin + height + DECOR_OFFSET_Y_PX,
+    )
+    shadow = Image.new("RGBA", size, (0, 0, 0, 0))
+    ImageDraw.Draw(shadow).rounded_rectangle(
+        rect, radius=DECOR_RADIUS_PX, fill=(0, 0, 0, DECOR_SHADOW_ALPHA)
+    )
+    alpha = shadow.getchannel("A").filter(
+        ImageFilter.GaussianBlur(DECOR_BLUR_PX)
+    )
+    shadow.putalpha(alpha)
+    canvas.alpha_composite(shadow)
+
+    mask = Image.new("L", (width, height), 0)
+    ImageDraw.Draw(mask).rounded_rectangle(
+        (0, 0, width - 1, height - 1),
+        radius=DECOR_RADIUS_PX,
+        fill=255,
+    )
+    canvas.paste(img.convert("RGBA"), (margin, margin), mask)
+    return canvas
+
+
+# ---------------------------------------------------------------------------
+# X11 helpers (Xvfb runs without a window manager)
+# ---------------------------------------------------------------------------
+_x11_lib: Optional["ctypes.CDLL"] = None
+_x11_display = None
+
+
+def _load_x11() -> tuple["ctypes.CDLL", int] | None:
+    """Load libX11 and open a display connection (cached)."""
+    global _x11_lib, _x11_display
+    if _x11_lib is None:
+        try:
+            lib = ctypes.CDLL("libX11.so.6")
+        except OSError:
+            return None
+        lib.XOpenDisplay.restype = ctypes.c_void_p
+        lib.XOpenDisplay.argtypes = [ctypes.c_char_p]
+        lib.XMoveWindow.argtypes = [
+            ctypes.c_void_p,
+            ctypes.c_ulong,
+            ctypes.c_int,
+            ctypes.c_int,
+        ]
+        lib.XFlush.argtypes = [ctypes.c_void_p]
+        _x11_lib = lib
+    if _x11_display is None:
+        _x11_display = _x11_lib.XOpenDisplay(None)
+    if not _x11_display:
+        return None
+    return _x11_lib, _x11_display
+
+
+def move_xid(xid: int, x: int, y: int) -> None:
+    """Move an X window to the given position."""
+    loaded = _load_x11()
+    if loaded is None:
+        return
+    lib, display = loaded
+    lib.XMoveWindow(display, xid, x, y)
+    lib.XFlush(display)
+
+
+def get_xid_geometry(xid: int) -> tuple[int, int, int, int] | None:
+    """Return (x, y, width, height) of an X window via xwininfo."""
+    result = subprocess.run(
+        ["xwininfo", "-id", str(xid)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        logger.debug(f"xwininfo failed: {result.stderr}")
+        return None
+    logger.debug(f"xwininfo output:\n{result.stdout}")
+    info: dict[str, int] = {}
+    for line in result.stdout.splitlines():
+        stripped = line.strip()
+        for key in (
+            "Absolute upper-left X",
+            "Absolute upper-left Y",
+            "Width",
+            "Height",
+        ):
+            if stripped.startswith(key):
+                info[key] = int(stripped.split(":")[-1].strip())
+    wx = info.get("Absolute upper-left X", 0)
+    wy = info.get("Absolute upper-left Y", 0)
+    ww = info.get("Width", 0)
+    wh = info.get("Height", 0)
+    if ww == 0 or wh == 0:
+        return None
+    return (wx, wy, ww, wh)
+
+
+def _center_transient_on_parent(win: Gtk.Window) -> None:
+    """Center a transient dialog on its parent window."""
+    from gi.repository import GdkX11
+
+    parent = win.get_transient_for()
+    if parent is None:
+        return
+    dsurface = win.get_surface()
+    psurface = parent.get_surface()
+    if not isinstance(dsurface, GdkX11.X11Surface):
+        return
+    if not isinstance(psurface, GdkX11.X11Surface):
+        return
+    geometry = get_xid_geometry(psurface.get_xid())
+    if geometry is None:
+        return
+    px, py, pw, ph = geometry
+    dw = dsurface.get_width()
+    dh = dsurface.get_height()
+    x = max(0, int(px + (pw - dw) / 2))
+    y = max(0, int(py + (ph - dh) / 2))
+    logger.info(f"Placing dialog '{win.get_title()}' at {x},{y}")
+    move_xid(dsurface.get_xid(), x, y)
+
+
+def _center_when_mapped(win: Gtk.Window, attempts: int) -> bool:
+    try:
+        if win.get_surface() is None and attempts < 50:
+            return GLib.SOURCE_CONTINUE
+        _center_transient_on_parent(win)
+    except Exception:
+        logger.exception("Dialog placement failed")
+    return GLib.SOURCE_REMOVE
+
+
+def install_dialog_placement() -> None:
+    """Present transient dialogs centered on their parent.
+
+    Xvfb runs no window manager, so dialogs would otherwise map at
+    the top-left corner instead of where a desktop WM places them.
+    """
+    original_present = Gtk.Window.present
+
+    def present(self, *args, **kwargs):
+        result = original_present(self, *args, **kwargs)
+        if self.get_transient_for() is not None:
+            GLib.idle_add(_center_when_mapped, self, 0)
+        return result
+
+    Gtk.Window.present = present
+
+
+def get_desktop_font_name() -> str | None:
+    """Return the desktop default font name (e.g. 'Ubuntu Sans 11')."""
+    for prog in ("gsettings", "/usr/bin/gsettings"):
+        try:
+            result = subprocess.run(
+                [prog, "get", "org.gnome.desktop.interface", "font-name"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except FileNotFoundError:
+            continue
+        if result.returncode == 0:
+            value = result.stdout.strip().strip("'\"")
+            if value:
+                return value
+    return None
+
+
+def _apply_gtk_font() -> None:
+    """Publish the desktop font via GTK settings.
+
+    The private Xvfb session has no XSettings provider, so GTK
+    would fall back to its built-in default font, which renders
+    smaller than the desktop's.
+    """
+    name = get_desktop_font_name()
+    if not name:
+        return
+    settings = Gtk.Settings.get_default()
+    if settings is None:
+        return
+    before = settings.get_property("gtk-font-name")
+    if before != name:
+        logger.info(f"Overriding GTK font {before!r} with {name!r}")
+        settings.set_property("gtk-font-name", name)
 
 
 def _snapshot_config_dir() -> dict[str, bytes]:
@@ -267,7 +616,7 @@ def take_screenshot(output_name: str) -> bool:
 
     temp_path = output_path.with_suffix(".temp.png")
 
-    for cmd_args, tool_name in SCREENSHOT_TOOLS:
+    for cmd_args, tool_name in get_screenshot_tools():
         result = subprocess.run(
             [*cmd_args, str(temp_path)],
             capture_output=True,
@@ -277,6 +626,14 @@ def take_screenshot(output_name: str) -> bool:
         if result.returncode == 0:
             try:
                 img = Image.open(temp_path)
+                if _under_xvfb() and not _wm_active():
+                    box = get_app_window_box()
+                    if box is not None:
+                        x, y, w, h = box
+                        decorated = _add_window_decorations(
+                            img.crop((x, y, x + w, y + h))
+                        )
+                        img = decorated
                 _save_png_deterministic(img, output_path)
                 temp_path.unlink()
                 return True
@@ -315,37 +672,11 @@ def take_window_screenshot(win: "MainWindow", output_name: str) -> bool:
         logger.error("Could not get X11 window id")
         return False
 
-    result = subprocess.run(
-        ["xwininfo", "-id", str(xid)],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if result.returncode != 0:
-        logger.error(f"xwininfo failed: {result.stderr}")
-        return False
-
-    logger.debug(f"xwininfo output:\n{result.stdout}")
-
-    info = {}
-    for line in result.stdout.splitlines():
-        stripped = line.strip()
-        for key in (
-            "Absolute upper-left X",
-            "Absolute upper-left Y",
-            "Width",
-            "Height",
-        ):
-            if stripped.startswith(key):
-                info[key] = int(stripped.split(":")[-1].strip())
-
-    wx = info.get("Absolute upper-left X", 0)
-    wy = info.get("Absolute upper-left Y", 0)
-    ww = info.get("Width", 0)
-    wh = info.get("Height", 0)
-    if ww == 0 or wh == 0:
+    geometry = get_xid_geometry(xid)
+    if geometry is None:
         logger.error("Could not parse window geometry from xwininfo")
         return False
+    wx, wy, ww, wh = geometry
 
     logger.info(f"Window geometry: x={wx} y={wy} w={ww} h={wh}")
 
@@ -359,38 +690,26 @@ def take_window_screenshot(win: "MainWindow", output_name: str) -> bool:
         f"GTK size: {gtk_w}x{gtk_h}, shadow offset: {shadow_x},{shadow_y}"
     )
 
-    temp_path = output_path.with_suffix(".temp.png")
+    img = capture_full_screen()
+    if img is None:
+        return False
 
-    for cmd_args, tool_name in SCREENSHOT_TOOLS:
-        args = [a for a in cmd_args if a != "-w"]
-        result = subprocess.run(
-            [*args, str(temp_path)],
-            capture_output=True,
-            text=True,
-            check=False,
+    try:
+        crop_box = (
+            wx + shadow_x,
+            wy + shadow_y,
+            wx + shadow_x + gtk_w,
+            wy + shadow_y + gtk_h,
         )
-        if result.returncode == 0:
-            try:
-                img = Image.open(temp_path)
-                crop_box = (
-                    wx + shadow_x,
-                    wy + shadow_y,
-                    wx + shadow_x + gtk_w,
-                    wy + shadow_y + gtk_h,
-                )
-                cropped = img.crop(crop_box)
-                _save_png_deterministic(cropped, output_path)
-                temp_path.unlink()
-                logger.info(f"Window screenshot saved to {output_path}")
-                return True
-            except (OSError, ValueError, TypeError) as e:
-                logger.error(f"Failed to process screenshot: {e}")
-                if temp_path.exists():
-                    temp_path.unlink()
-                return False
-
-    logger.error("Failed to take screenshot with available tools")
-    return False
+        cropped = img.crop(crop_box)
+        if _under_xvfb() and not _wm_active():
+            cropped = _add_window_decorations(cropped)
+        _save_png_deterministic(cropped, output_path)
+        logger.info(f"Window screenshot saved to {output_path}")
+        return True
+    except (OSError, ValueError, TypeError) as e:
+        logger.error(f"Failed to process screenshot: {e}")
+        return False
 
 
 def take_cropped_screenshot(
@@ -422,7 +741,7 @@ def take_cropped_screenshot(
     temp_path = output_path.with_suffix(".temp.png")
 
     success = False
-    for cmd_args, tool_name in SCREENSHOT_TOOLS:
+    for cmd_args, tool_name in get_screenshot_tools():
         result = subprocess.run(
             [*cmd_args, str(temp_path)],
             capture_output=True,
@@ -438,9 +757,15 @@ def take_cropped_screenshot(
         return False
 
     try:
-        from PIL import Image
-
         img = Image.open(temp_path)
+        if _under_xvfb() and not _wm_active():
+            box = get_app_window_box()
+            if box is not None:
+                x, y, w, h = box
+                decorated = _add_window_decorations(
+                    img.crop((x, y, x + w, y + h))
+                )
+                img = decorated
         width, height = img.size
 
         left = from_left or 0
@@ -901,3 +1226,21 @@ def wcs(win: "MainWindow", wcs_name: str):
         yield
     finally:
         run_on_main_thread(lambda: machine.set_active_wcs(original))
+
+
+def _bootstrap_xvfb_session() -> None:
+    """Apply session fixes once all helpers are defined.
+
+    Runs when the harness is used inside the composited Xvfb
+    session: place unmanaged dialogs ourselves when no window
+    manager is present, and publish the desktop font, since the
+    private session has no XSettings provider.
+    """
+    if not _under_xvfb():
+        return
+    if not _wm_active():
+        install_dialog_placement()
+    run_on_main_thread(_apply_gtk_font)
+
+
+_bootstrap_xvfb_session()

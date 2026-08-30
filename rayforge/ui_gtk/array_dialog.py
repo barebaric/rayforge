@@ -172,7 +172,8 @@ class _BaseArrayDialog(PatchedDialogWindow):
         machine = get_context().machine
         if not machine:
             return (0.0, 0.0)
-        return machine.panel.work_area_center()
+        x, y, w, h = machine.panel.get_workarea_world_rect()
+        return (x + w / 2.0, y + h / 2.0)
 
     # ------------------------------------------------------------------
     # Preview data

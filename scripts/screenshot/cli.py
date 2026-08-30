@@ -5,10 +5,13 @@ import argparse
 import fnmatch
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
+from xml.sax.saxutils import escape
 
 SCRIPTS_DIR = Path(__file__).parent
 PROJECT_ROOT = SCRIPTS_DIR.parent.parent
@@ -99,6 +102,298 @@ TARGETS = {
 }
 
 
+XFT_RESOURCES = [
+    "Xft.antialias: 1",
+    "Xft.hinting: 1",
+    "Xft.hintstyle: hintslight",
+    "Xft.rgba: none",
+    "Xft.dpi: 96",
+]
+
+FONT_CONFIG_TEMPLATE = """<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<fontconfig>
+  <include ignore_missing="yes">/etc/fonts/fonts.conf</include>
+  <match target="pattern">
+    <test qual="any" name="family"><string>Cantarell</string></test>
+    <edit name="family" mode="prepend" binding="same">
+      <string>{family}</string>
+    </edit>
+  </match>
+  <match target="pattern">
+    <test qual="any" name="family"><string>sans-serif</string></test>
+    <edit name="family" mode="prepend" binding="same">
+      <string>{family}</string>
+    </edit>
+  </match>
+  <match target="font">
+    <edit name="antialias" mode="assign"><bool>true</bool></edit>
+    <edit name="hinting" mode="assign"><bool>true</bool></edit>
+    <edit name="hintstyle" mode="assign"><const>hintslight</const></edit>
+    <edit name="rgba" mode="assign"><const>none</const></edit>
+  </match>
+</fontconfig>
+"""
+
+
+def get_desktop_font_family() -> str | None:
+    """Return the desktop default font family, if it can be read.
+
+    Under Xvfb no XSETTINGS daemon publishes the desktop font, so
+    GTK would fall back to a different family and render the
+    screenshots with different text metrics.
+    """
+    for prog in ("gsettings", "/usr/bin/gsettings"):
+        try:
+            result = subprocess.run(
+                [
+                    prog,
+                    "get",
+                    "org.gnome.desktop.interface",
+                    "font-name",
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except FileNotFoundError:
+            continue
+        if result.returncode != 0:
+            continue
+        value = result.stdout.strip().strip("'\"")
+        parts = value.rsplit(" ", 1)
+        if len(parts) == 2 and parts[0]:
+            return parts[0]
+    return None
+
+
+def write_font_config(family: str) -> str:
+    """Write a fontconfig file mapping GTK's fallback families to
+    the desktop font, with the desktop rendering settings."""
+    fd, path = tempfile.mkstemp(prefix="rayforge-fontconfig-")
+    with os.fdopen(fd, "w") as f:
+        f.write(FONT_CONFIG_TEMPLATE.format(family=escape(family)))
+    return path
+
+
+class XvfbSession:
+    """A temporary Xvfb server providing a headless display.
+
+    Screenshots captured under Xvfb are independent of the
+    developer's desktop (resolution, scale, theme, window focus).
+    RAYFORGE_XVFB tells the capture helpers inside the app to skip
+    desktop-only tools such as gnome-screenshot. GSK_RENDERER=cairo
+    is required because Xvfb has no GLX: GTK's GL renderer blocks
+    forever in frame uploads with drivers such as NVIDIA's.
+    """
+
+    SCREEN = "2560x1700x24"
+    DISPLAY_RANGE = range(99, 200)
+    STARTUP_TIMEOUT = 5.0
+    WM_STARTUP_TIMEOUT = 20.0
+
+    def __init__(self) -> None:
+        self.process: subprocess.Popen | None = None
+        self.wm_process: subprocess.Popen | None = None
+        self._bus_address: str | None = None
+        self._bus_address_file: str | None = None
+        self._font_config: str | None = None
+
+    @staticmethod
+    def is_available() -> bool:
+        return shutil.which("Xvfb") is not None
+
+    @property
+    def env(self) -> dict[str, str]:
+        env = {
+            "DISPLAY": f":{self.number}",
+            "RAYFORGE_XVFB": "1",
+            "GSK_RENDERER": "cairo",
+        }
+        if self._font_config:
+            env["FONTCONFIG_FILE"] = self._font_config
+        if (
+            self.wm_process is not None
+            and self.wm_process.poll() is None
+            and self._bus_address
+        ):
+            env["DBUS_SESSION_BUS_ADDRESS"] = self._bus_address
+            env["RAYFORGE_XVFB_WM"] = "1"
+        return env
+
+    def start(self) -> bool:
+        for number in self.DISPLAY_RANGE:
+            if self._claim_display(number):
+                self._start_wm()
+                self._configure_fonts()
+                return True
+        return False
+
+    def _start_wm(self) -> None:
+        """Run GNOME Shell as a window manager for the display.
+
+        Together with the private D-Bus session this turns the
+        Xvfb display into an invisible but fully functional GNOME
+        session: dialogs are placed by the WM and gnome-screenshot
+        captures window buffers with real shadows and alpha. The
+        developer's own desktop session is never touched.
+        """
+        if (
+            shutil.which("gnome-shell") is None
+            or shutil.which("dbus-run-session") is None
+        ):
+            return
+        fd, self._bus_address_file = tempfile.mkstemp(prefix="rayforge-bus-")
+        os.close(fd)
+        inner = (
+            "gsettings set org.gnome.desktop.interface "
+            "enable-animations false; "
+            f'printf "%s" "$DBUS_SESSION_BUS_ADDRESS" > '
+            f"{self._bus_address_file}; "
+            "exec gnome-shell --x11"
+        )
+        self.wm_process = subprocess.Popen(
+            ["dbus-run-session", "--", "bash", "-c", inner],
+            env={**os.environ, **self.env},
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+        if self._wait_for_wm():
+            self._read_bus_address()
+
+    def _read_bus_address(self) -> None:
+        try:
+            address = Path(self._bus_address_file).read_text().strip()
+        except OSError:
+            address = ""
+        if address:
+            self._bus_address = address
+        else:
+            print("Warning: private session bus address not found")
+
+    def _wait_for_wm(self) -> bool:
+        deadline = time.monotonic() + self.WM_STARTUP_TIMEOUT
+        while time.monotonic() < deadline:
+            if self.wm_process.poll() is not None:
+                print("Warning: GNOME Shell exited during startup")
+                return False
+            check = subprocess.run(
+                ["xprop", "-root", "_NET_SUPPORTING_WM_CHECK"],
+                capture_output=True,
+                text=True,
+                check=False,
+                env={**os.environ, **self.env},
+            )
+            if check.returncode == 0 and "not found" not in check.stdout:
+                print("Running GNOME Shell as window manager")
+                return True
+            time.sleep(0.5)
+        print("Warning: window manager did not register in time")
+        return False
+
+    def _configure_fonts(self) -> None:
+        """Mirror the desktop's font and Xft settings on the
+        headless display."""
+        family = get_desktop_font_family()
+        if family:
+            self._font_config = write_font_config(family)
+        if shutil.which("xrdb") is not None:
+            subprocess.run(
+                ["xrdb", "-merge"],
+                input="\n".join(XFT_RESOURCES),
+                text=True,
+                capture_output=True,
+                check=False,
+                env={**os.environ, **self.env},
+            )
+
+    def _claim_display(self, number: int) -> bool:
+        if self._display_in_use(number):
+            return False
+        self.process = subprocess.Popen(
+            [
+                "Xvfb",
+                f":{number}",
+                "-screen",
+                "0",
+                self.SCREEN,
+                "-nolisten",
+                "tcp",
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        if self._wait_until_ready(number):
+            self.number = number
+            return True
+        self.stop()
+        return False
+
+    @staticmethod
+    def _display_in_use(number: int) -> bool:
+        lock = Path(f"/tmp/.X{number}-lock")
+        socket = Path(f"/tmp/.X11-unix/X{number}")
+        return lock.exists() or socket.exists()
+
+    def _wait_until_ready(self, number: int) -> bool:
+        socket = Path(f"/tmp/.X11-unix/X{number}")
+        deadline = time.monotonic() + self.STARTUP_TIMEOUT
+        while time.monotonic() < deadline:
+            if self.process.poll() is not None:
+                return False
+            if socket.exists():
+                return True
+            time.sleep(0.05)
+        return False
+
+    def stop(self) -> None:
+        self._stop_wm()
+        if self.process is None:
+            return
+        if self.process.poll() is None:
+            self.process.terminate()
+            try:
+                self.process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.process.kill()
+                self.process.wait()
+        self.process = None
+        self.number = None
+        if self._bus_address_file:
+            try:
+                os.unlink(self._bus_address_file)
+            except OSError:
+                pass
+            self._bus_address_file = None
+        self._bus_address = None
+        if self._font_config:
+            try:
+                os.unlink(self._font_config)
+            except OSError:
+                pass
+            self._font_config = None
+
+    def _stop_wm(self) -> None:
+        if self.wm_process is None:
+            return
+        try:
+            group = os.getpgid(self.wm_process.pid)
+            os.killpg(group, signal.SIGTERM)
+            self.wm_process.wait(timeout=5)
+        except (
+            ProcessLookupError,
+            PermissionError,
+            subprocess.TimeoutExpired,
+        ):
+            try:
+                group = os.getpgid(self.wm_process.pid)
+                os.killpg(group, signal.SIGKILL)
+            except (ProcessLookupError, PermissionError):
+                pass
+        self.wm_process = None
+
+
 def get_matching_targets(target: str) -> list[str]:
     """Find all leaf targets that match the given target spec.
 
@@ -127,7 +422,7 @@ def get_matching_targets(target: str) -> list[str]:
     return []
 
 
-def run_script(script_name: str, target: str) -> int:
+def run_script(script_name: str, target: str, base_env: dict[str, str]) -> int:
     with tempfile.TemporaryDirectory(prefix="rayforge-screenshot-") as tmpdir:
         shutil.copytree(TEST_CONFIG_DIR, tmpdir, dirs_exist_ok=True)
         cmd = [
@@ -140,7 +435,7 @@ def run_script(script_name: str, target: str) -> int:
             str(SCRIPTS_DIR / f"{script_name}.py"),
         ]
         print(f"Running: {' '.join(cmd)} (TARGET={target})")
-        env = os.environ.copy()
+        env = dict(base_env)
         env["TARGET"] = target
         # Force the isolated test config even if the --config argument
         # were ever dropped or parsed by a wrapping command, so screenshots
@@ -207,6 +502,22 @@ def generate_help_text() -> str:
     return "\n".join(lines)
 
 
+def setup_display(no_xvfb: bool) -> XvfbSession | None:
+    """Start Xvfb for the run when available, else keep the desktop.
+
+    Returns the started session, or None when the run should use the
+    developer's desktop display.
+    """
+    if no_xvfb or not XvfbSession.is_available():
+        return None
+    session = XvfbSession()
+    if session.start():
+        print(f"Running under Xvfb on display :{session.number}")
+        return session
+    print("Warning: failed to start Xvfb, using the desktop display")
+    return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Take screenshots for Rayforge documentation.",
@@ -214,6 +525,11 @@ def main() -> int:
         epilog=generate_help_text(),
     )
     parser.add_argument("target", help="Screenshot target")
+    parser.add_argument(
+        "--no-xvfb",
+        action="store_true",
+        help="Run on the desktop display even if Xvfb is available",
+    )
     args = parser.parse_args()
     target: str = args.target
 
@@ -231,11 +547,19 @@ def main() -> int:
                 print(f"  {s}")
         return 1
 
-    for target in targets:
-        script = TARGETS[target]
-        result = run_script(script, target)
-        if result != 0:
-            return result
+    base_env = os.environ.copy()
+    session = setup_display(args.no_xvfb)
+    if session is not None:
+        base_env.update(session.env)
+    try:
+        for target in targets:
+            script = TARGETS[target]
+            result = run_script(script, target, base_env)
+            if result != 0:
+                return result
+    finally:
+        if session is not None:
+            session.stop()
 
     return 0
 

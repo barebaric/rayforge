@@ -58,6 +58,7 @@ def run_script(script_path: Path, application, window):
         except Exception as e:  # noqa: BLE001 - arbitrary user script
             logger.error(f"Error executing UI script: {e}")
             traceback.print_exc()
+            application.quit_idle()
         finally:
             if sys.path[0] == script_dir:
                 sys.path.pop(0)

@@ -41,8 +41,6 @@ def _configure_circular_dialog(dialog):
     try:
         dialog._c_count_row.set_value(8)
         dialog._c_angle_row.set_value(360.0)
-        cur_y = dialog._c_center_y_row.get_value()
-        dialog._c_center_y_row.set_value(cur_y - 20.0)
         cur_r = dialog._c_radius_row.get_value()
         dialog._c_radius_row.set_value(max(cur_r - 10.0, 0.0))
     finally:
