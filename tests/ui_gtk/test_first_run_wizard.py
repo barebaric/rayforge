@@ -24,6 +24,10 @@ gi.require_version("Adw", "1")
 gi.require_version("Gdk", "4.0")
 from gi.repository import Adw, GLib
 
+from rayforge.config import BUILTIN_DEVICES_DIR
+from rayforge.context import get_context
+from rayforge.machine.device.profile import DeviceProfile
+from rayforge.machine.models.machine import Machine
 from rayforge.ui_gtk.mainwindow import MainWindow
 
 logger = logging.getLogger(__name__)
@@ -157,6 +161,70 @@ def test_first_launch_wizard_cancel_falls_back(first_run_app_and_window):
     assert win._setup_wizard is None
     # The placeholder machine is still there so the app stays usable.
     assert placeholder_id in ctx.machine_mgr.machines
+
+
+def _machine_with_pending_profile_review(context) -> Machine:
+    """Adds a real machine whose source profile has unreviewed changes."""
+    profile = DeviceProfile.from_path(
+        BUILTIN_DEVICES_DIR / "sculpfun-icube-3w"
+    )
+    machine = profile.create_machine(context)
+    machine.reviewed_profile_hash = None
+    base_speed = profile.machine_config.max_cut_speed or 0
+    machine.max_cut_speed = base_speed + 100
+    return machine
+
+
+@pytest.mark.ui
+def test_startup_defers_profile_reviews_while_consent_pending(
+    setup_app_and_window,
+):
+    """While the consent dialog is up, no profile-review dialogs may
+    present; otherwise one of the modals ends up hidden behind the
+    other but keeps the input grab, leaving buttons unresponsive."""
+    _app, win = setup_app_and_window
+    ctx = get_context()
+    machine = _machine_with_pending_profile_review(ctx)
+    presented = []
+    win._present_profile_reviews = lambda queue, on_done=None: (
+        presented.append(queue)
+    )
+
+    # The map handler already ran (and disconnected) when the fixture
+    # presented the window; reattach it to simulate a fresh startup.
+    win.connect("map", win._trigger_startup_tasks)
+    win._trigger_startup_tasks(None)
+    process_events_for_duration(0.5)
+    assert presented == []
+
+    win._on_consent_responded(None, "accept")
+    process_events_for_duration(0.5)
+    assert len(presented) == 1
+    assert presented[0][0][0] is machine
+
+
+@pytest.mark.ui
+def test_closing_wizard_triggers_profile_reviews(first_run_app_and_window):
+    """The profile-review check runs only after the setup wizard is
+    closed, not alongside it at startup."""
+    _app, win = first_run_app_and_window
+    calls = []
+    original = win._check_profile_updates
+
+    def spy():
+        calls.append(1)
+        return original()
+
+    win._check_profile_updates = spy
+
+    win._maybe_present_first_run_wizard()
+    process_events_for_duration(0.5)
+    assert win._setup_wizard is not None
+    assert not calls
+
+    win._setup_wizard.close()
+    process_events_for_duration(0.5)
+    assert calls
 
 
 @pytest.mark.ui

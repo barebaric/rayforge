@@ -591,13 +591,13 @@ class MainWindow(Adw.ApplicationWindow):
         # Trigger the non-blocking check for app version updates
         self.app_update_checker.check_on_startup()
 
-        # Check configured machines against their source device profiles
-        GLib.idle_add(self._check_profile_updates)
-
         # On first launch, offer the machine setup wizard instead of
         # silently keeping the auto-created placeholder machine. While
         # the consent dialog is up, it chains the presentation so the
-        # two don't stack up.
+        # two don't stack up. The profile-review dialogs likewise run
+        # only after both are done, since presenting several modal
+        # dialogs at once leaves one invisible but focus-grabbing on
+        # some window managers.
         if consent_pending:
             return
         GLib.idle_add(self._maybe_present_first_run_wizard)
@@ -614,8 +614,10 @@ class MainWindow(Adw.ApplicationWindow):
         config = context.config
         machines = list(context.machine_mgr.machines.values())
         if config.setup_completed:
+            self._check_profile_updates()
             return GLib.SOURCE_REMOVE
         if not all(machine.placeholder for machine in machines):
+            self._check_profile_updates()
             return GLib.SOURCE_REMOVE
         logger.info("First launch detected; presenting setup wizard.")
         self.present_setup_wizard()
@@ -641,10 +643,12 @@ class MainWindow(Adw.ApplicationWindow):
         """
         self._setup_wizard = None
         if self._setup_wizard_completed:
+            GLib.idle_add(self._check_profile_updates)
             return False
         self._setup_wizard_completed = True
         get_context().config.set_setup_completed(True)
         logger.info("Setup wizard cancelled; keeping placeholder machine.")
+        GLib.idle_add(self._check_profile_updates)
         return False
 
     def _on_setup_wizard_profile_created(
