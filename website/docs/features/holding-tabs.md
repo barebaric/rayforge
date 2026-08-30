@@ -87,9 +87,13 @@ The **width** is the length of the uncut section along the path.
 - **Brittle materials** (acrylic) can use smaller tabs (easier to break)
 - **Fibrous materials** (wood) may need wider tabs
 
-:::warning Tab Width vs Material Thickness Tabs must be wide enough to support the part but small
+<!-- prettier-ignore-start -->
+:::warning[Tab Width vs Material Thickness]
+Tabs must be wide enough to support the part but small
 enough to remove cleanly. Too narrow = part may break free; too wide = difficult to remove or
-damages the part. :::
+damages the part.
+:::
+<!-- prettier-ignore-end -->
 
 ### Tab Position
 

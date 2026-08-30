@@ -32,8 +32,12 @@ Los dispositivos GRBL tienen dos opciones de controlador serie:
 Tras seleccionar un controlador, aparecerán debajo del selector los ajustes específicos de conexión
 (p. ej., puerto serie, baud rate). Estos varían según el controlador elegido.
 
-:::tip Un banner de error en la parte superior de la página te avisa si el controlador no está
-configurado o si encuentra un problema. :::
+<!-- prettier-ignore-start -->
+:::tip
+Un banner de error en la parte superior de la página te avisa si el controlador no está
+configurado o si encuentra un problema.
+:::
+<!-- prettier-ignore-end -->
 
 ## Velocidades y aceleración
 
@@ -65,8 +69,12 @@ la distancia de overscan predeterminada.
 - **Rango típico**: 500–2000 mm/s²
 - **Nota**: Debe coincidir o ser inferior a los ajustes de aceleración del firmware
 
-:::tip Comienza con valores de velocidad conservadores y auméntalos gradualmente. Observa tu máquina
-para detectar saltos de correa, bloqueos de motor o pérdida de precisión de posicionamiento. :::
+<!-- prettier-ignore-start -->
+:::tip
+Comienza con valores de velocidad conservadores y auméntalos gradualmente. Observa tu máquina
+para detectar saltos de correa, bloqueos de motor o pérdida de precisión de posicionamiento.
+:::
+<!-- prettier-ignore-end -->
 
 ## Exportar un perfil de máquina
 

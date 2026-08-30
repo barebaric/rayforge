@@ -44,7 +44,11 @@ rolamentos.
 **Distribuição de calor:** Caminhos otimizados podem concentrar calor em uma área. Para materiais
 sensíveis ao calor, considere se a ordem importa.
 
-:::tip A otimização roda automaticamente. Apenas habilite-a e o software cuida do resto. :::
+<!-- prettier-ignore-start -->
+:::tip
+A otimização roda automaticamente. Apenas habilite-a e o software cuida do resto.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 

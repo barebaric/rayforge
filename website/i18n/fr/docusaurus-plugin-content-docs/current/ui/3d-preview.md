@@ -56,9 +56,13 @@ La vue 3D se met à jour automatiquement lorsque tu changes le WCS actif :
 - La grille et les axes se décalent pour refléter la nouvelle origine du WCS
 - Les étiquettes se mettent à jour pour afficher les coordonnées relatives au nouveau WCS
 
-:::tip WCS dans la vue 3D La vue 3D affiche tes trajets d'outil par rapport au WCS sélectionné.
+<!-- prettier-ignore-start -->
+:::tip[WCS dans la vue 3D]
+La vue 3D affiche tes trajets d'outil par rapport au WCS sélectionné.
 Lorsque tu changes de WCS, tu verras les trajets d'outil sembler bouger parce que le point de
-référence (la grille) a changé, non pas parce que les trajets d'outil eux-mêmes ont bougé. :::
+référence (la grille) a changé, non pas parce que les trajets d'outil eux-mêmes ont bougé.
+:::
+<!-- prettier-ignore-end -->
 
 ## Options d'affichage
 
@@ -89,9 +93,13 @@ Personnalise ce que tu vois :
   pleines)
 - **Couleur par opération** : Différentes couleurs pour chaque opération
 
-:::tip Couleurs par Laser Lors de l'utilisation de machines avec plusieurs têtes laser, chaque laser
+<!-- prettier-ignore-start -->
+:::tip[Couleurs par Laser]
+Lors de l'utilisation de machines avec plusieurs têtes laser, chaque laser
 peut avoir sa propre couleur configurée dans [Paramètres Laser](../machine/laser.md). Cela facilite
-l'identification du laser qui effectuera chaque opération. :::
+l'identification du laser qui effectuera chaque opération.
+:::
+<!-- prettier-ignore-end -->
 
 ### Modèle de tête laser
 
@@ -119,11 +127,15 @@ une brûlure pilotée par un modèle physiquement motivé qui prend en compte :
 Le résultat est un escalier de carbonisation avec un halo de chaleur sur les faces orientées vers le
 haut. Cela fonctionne aussi pour le rotatif — la gravure se incorpore dans le brut rotatif.
 
-:::note Calibration Le modèle de brûlure est physiquement motivé mais pas encore entièrement calibré
+<!-- prettier-ignore-start -->
+:::note[Calibration]
+Le modèle de brûlure est physiquement motivé mais pas encore entièrement calibré
 pour tous les matériaux et types de lasers. Tu peux aider à l'améliorer : exécute une
 [grille de test de matériau](../features/operations/material-test-grid.md) et partage la photo du
 résultat avec les données de ta machine (longueur d'onde, puissance optique, taille du spot, vitesse
-et les puissances/ profondeurs testées). :::
+et les puissances/ profondeurs testées).
+:::
+<!-- prettier-ignore-end -->
 
 ## Simulation
 

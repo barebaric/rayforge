@@ -28,9 +28,13 @@ un contrôle d'axe Z.
 - **Épaisseur du matériau ÷ passes :** Coupe à profondeur progressive
 - **Petits incréments (0.1-0.5mm) :** Contrôle fin pour la gravure profonde
 
-:::warning Axe Z Requis L'avance en Z fonctionne uniquement avec les machines qui ont un contrôle
+<!-- prettier-ignore-start -->
+:::warning[Axe Z Requis]
+L'avance en Z fonctionne uniquement avec les machines qui ont un contrôle
 d'axe Z motorisé. Pour les machines sans axe Z, toutes les passes se produisent à la même hauteur de
-mise au point. :::
+mise au point.
+:::
+<!-- prettier-ignore-end -->
 
 ## Quand Utiliser la Passe Multiple
 

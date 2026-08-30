@@ -4,7 +4,11 @@
 
 ![G 代码设置](/screenshots/machine-settings-gcode.webp)
 
-:::info 此页面仅在使用基于 G 代码的驱动程序的机器上显示（例如 GRBL、Smoothieware、Marlin）。如果您的机器使用非 G 代码驱动程序（例如 Ruida），此设置页面将完全隐藏。:::
+<!-- prettier-ignore-start -->
+:::info
+此页面仅在使用基于 G 代码的驱动程序的机器上显示（例如 GRBL、Smoothieware、Marlin）。如果您的机器使用非 G 代码驱动程序（例如 Ruida），此设置页面将完全隐藏。
+:::
+<!-- prettier-ignore-end -->
 
 ## G 代码方言
 
@@ -20,7 +24,11 @@
 - **Smoothieware**：用于 Smoothieboard 和类似控制器。
 - **Marlin**：用于基于 Marlin 的控制器。
 
-:::info 方言影响激光功率、移动和其他命令在输出 G 代码中的格式。:::
+<!-- prettier-ignore-start -->
+:::info
+方言影响激光功率、移动和其他命令在输出 G 代码中的格式。
+:::
+<!-- prettier-ignore-end -->
 
 ## 方言前导和后缀
 

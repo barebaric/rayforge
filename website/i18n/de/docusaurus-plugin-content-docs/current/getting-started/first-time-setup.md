@@ -197,8 +197,12 @@ Der Verbindungsstatus wird in der unteren linken Ecke des Hauptfensters mit eine
 einer Beschriftung angezeigt, die den aktuellen Zustand zeigt (Verbunden, Verbinden, Getrennt,
 Fehler usw.).
 
-:::success Verbunden! Wenn deine Maschine den Status "Verbunden" anzeigt, bist du bereit, Rayforge
-zu verwenden! :::
+<!-- prettier-ignore-start -->
+:::success[Verbunden!]
+Wenn deine Maschine den Status "Verbunden" anzeigt, bist du bereit, Rayforge
+zu verwenden!
+:::
+<!-- prettier-ignore-end -->
 
 ---
 

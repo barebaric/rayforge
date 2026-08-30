@@ -14,10 +14,14 @@ Rayforge verwendet drei Koordinatenräume, die zusammenarbeiten:
 | **WORKAREA** | Der nutzbare Bereich innerhalb deiner Maschine, unter Berücksichtigung der Ränder um das Bett.                   |
 | **WCS**      | Das Koordinatensystem deines Auftrags. Benutzerkonfigurierbarer Ursprung für Design- und Auftragspositionierung. |
 
-:::note Hinweis für Entwickler Intern verwendet Rayforge ein normalisiertes Koordinatensystem namens
+<!-- prettier-ignore-start -->
+:::note[Hinweis für Entwickler]
+Intern verwendet Rayforge ein normalisiertes Koordinatensystem namens
 WORLD-Raum. Der WORLD-Raum beschreibt denselben physischen Raum wie der MACHINE-Raum, aber mit einer
 festen Konvention: Y-aufwärts mit Ursprung unten-links. Dies vereinfacht interne Berechnungen und
-Rendering. Benutzer müssen nicht direkt mit dem WORLD-Raum interagieren. :::
+Rendering. Benutzer müssen nicht direkt mit dem WORLD-Raum interagieren.
+:::
+<!-- prettier-ignore-end -->
 
 ### MACHINE-Raum
 

@@ -86,9 +86,13 @@ Die **Breite** ist die Länge des ungeschnittenen Abschnitts entlang des Pfads.
 - **Spröde Materialien** (Acryl) können kleinere Laschen verwenden (leichter zu brechen)
 - **Faserige Materialien** (Holz) benötigen möglicherweise breitere Laschen
 
-:::warning Laschen-Breite vs Material-Dicke Laschen müssen breit genug sein, um das Teil zu stützen,
+<!-- prettier-ignore-start -->
+:::warning[Laschen-Breite vs Material-Dicke]
+Laschen müssen breit genug sein, um das Teil zu stützen,
 aber klein genug, um sauber zu entfernen. Zu schmal = Teil kann abbrechen; zu breit = schwierig zu
-entfernen oder beschädigt das Teil. :::
+entfernen oder beschädigt das Teil.
+:::
+<!-- prettier-ignore-end -->
 
 ### Laschen-Position
 

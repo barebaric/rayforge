@@ -30,8 +30,12 @@ Das untere Panel kann umgeschaltet werden über:
 - **Menü**: Ansicht → Unteres Panel
 - **Tastaturkürzel**: Strg+L
 
-:::note Verbindung erforderlich Die Jog-Steuerung ist nur verfügbar, wenn mit einer Maschine
-verbunden ist, die Jogging-Operationen unterstützt. :::
+<!-- prettier-ignore-start -->
+:::note[Verbindung erforderlich]
+Die Jog-Steuerung ist nur verfügbar, wenn mit einer Maschine
+verbunden ist, die Jogging-Operationen unterstützt.
+:::
+<!-- prettier-ignore-end -->
 
 ## Jog-Steuerung
 
@@ -46,8 +50,12 @@ Referenziere die Achsen deiner Maschine, um eine Referenzposition zu etablieren:
 | ------------------ | ------------------------ | ------------------------------------- |
 | Alle referenzieren | Referenziert alle Achsen | Referenziert alle Achsen gleichzeitig |
 
-:::tip Referenzfahrt-Sequenz Es wird empfohlen, alle Achsen zu referenzieren bevor ein Auftrag
-gestartet wird, um präzise Positionierung sicherzustellen. :::
+<!-- prettier-ignore-start -->
+:::tip[Referenzfahrt-Sequenz]
+Es wird empfohlen, alle Achsen zu referenzieren bevor ein Auftrag
+gestartet wird, um präzise Positionierung sicherzustellen.
+:::
+<!-- prettier-ignore-end -->
 
 ### Richtungssteuerung
 
@@ -72,8 +80,11 @@ Die Jog-Steuerung bietet Schaltflächen für Richtungssteuerung:
 | Z+               | Z-Achse hoch                           | Bild ↑            |
 | Z-               | Z-Achse runter                         | Bild ↓            |
 
-:::note Fokus erforderlich Tastaturkürzel funktionieren nur, wenn das Hauptfenster den Fokus hat.
+<!-- prettier-ignore-start -->
+:::note[Fokus erforderlich]
+Tastaturkürzel funktionieren nur, wenn das Hauptfenster den Fokus hat.
 :::
+<!-- prettier-ignore-end -->
 
 ### Visuelles Feedback
 
@@ -93,11 +104,13 @@ Konfiguriere das Verhalten von Jog-Operationen:
 - **Standard**: 1.000 mm/min
 - **Zweck**: Steuert, wie schnell sich der Laserkopf bewegt
 
-:::tip Geschwindigkeitsauswahl
-
+<!-- prettier-ignore-start -->
+:::tip[Geschwindigkeitsauswahl]
 - Niedrigere Geschwindigkeiten (100-500 mm/min) für präzise Positionierung verwenden
 - Höhere Geschwindigkeiten (1.000-3.000 mm/min) für größere Bewegungen verwenden
-- Sehr hohe Geschwindigkeiten können bei einigen Maschinen zu verpassten Schritten führen :::
+- Sehr hohe Geschwindigkeiten können bei einigen Maschinen zu verpassten Schritten führen
+:::
+<!-- prettier-ignore-end -->
 
 **Jog-Distanz:**
 
@@ -105,11 +118,13 @@ Konfiguriere das Verhalten von Jog-Operationen:
 - **Standard**: 10,0 mm
 - **Zweck**: Steuert, wie weit sich der Laserkopf pro Schaltflächenklick bewegt
 
-:::tip Distanzauswahl
-
+<!-- prettier-ignore-start -->
+:::tip[Distanzauswahl]
 - Kleine Distanzen (0,1-1,0 mm) zum Feinabstimmen verwenden
 - Mittlere Distanzen (5-20 mm) für allgemeines Positionieren verwenden
-- Große Distanzen (50-100 mm) für schnelles Umpositionieren verwenden :::
+- Große Distanzen (50-100 mm) für schnelles Umpositionieren verwenden
+:::
+<!-- prettier-ignore-end -->
 
 ## Maschinenstatus-Anzeige
 
@@ -168,17 +183,22 @@ Definiere, wo der Ursprung des aktiven WCS sein soll:
 | Y nullen           | Y=0 setzen   | Macht aktuelle Y-Position zum Y-Ursprung für aktives WCS                                     |
 | Z nullen           | Z=0 setzen   | Macht aktuelle Z-Position zum Z-Ursprung für aktives WCS                                     |
 
-:::note G53 kann nicht geändert werden Null-Schaltflächen sind deaktiviert wenn G53
+<!-- prettier-ignore-start -->
+:::note[G53 kann nicht geändert werden]
+Null-Schaltflächen sind deaktiviert wenn G53
 (Maschinenkoordinaten) ausgewählt ist, da Maschinenkoordinaten durch die Hardware festgelegt sind.
 :::
+<!-- prettier-ignore-end -->
 
-:::tip WCS-Einrichtungs-Workflow
-
+<!-- prettier-ignore-start -->
+:::tip[WCS-Einrichtungs-Workflow]
 1. Mit deiner Maschine verbinden und alle Achsen referenzieren
 2. Das WCS auswählen, das du konfigurieren möchtest (z.B. G54)
 3. Den Laserkopf zur gewünschten Ursprungsposition jogen
 4. Auf X nullen und Y nullen klicken um diese Position als (0, 0) zu setzen
-5. Der Offset wird im Controller deiner Maschine gespeichert :::
+5. Der Offset wird im Controller deiner Maschine gespeichert
+:::
+<!-- prettier-ignore-end -->
 
 ## Konsole-Tab
 

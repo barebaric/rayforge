@@ -185,8 +185,12 @@ powered on and connected). You don't need to manually click a connect button.
 The connection status is displayed in the bottom-left corner of the main window with a status icon
 and label showing the current state (Connected, Connecting, Disconnected, Error, etc.).
 
-:::success Connected! If your machine shows "Connected" status, you're ready to start using
-Rayforge! :::
+<!-- prettier-ignore-start -->
+:::success[Connected!]
+If your machine shows "Connected" status, you're ready to start using
+Rayforge!
+:::
+<!-- prettier-ignore-end -->
 
 ---
 

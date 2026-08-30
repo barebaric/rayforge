@@ -36,8 +36,12 @@ ayudarle a ver exactamente dónde está posicionado el cabezal del láser.
 4. **Mover el cabezal del láser** para ver la posición del haz en su material
 5. **Hacer clic en el botón Enfoque nuevamente** para apagar cuando termine
 
-:::warning Seguridad Incluso a baja potencia, el láser puede dañar los ojos. Nunca mire directamente
-al haz ni lo apunte a superficies reflectantes. Use protección ocular adecuada. :::
+<!-- prettier-ignore-start -->
+:::warning[Seguridad]
+Incluso a baja potencia, el láser puede dañar los ojos. Nunca mire directamente
+al haz ni lo apunte a superficies reflectantes. Use protección ocular adecuada.
+:::
+<!-- prettier-ignore-end -->
 
 ### Configurar la Potencia de Enfoque
 
@@ -49,9 +53,13 @@ La potencia de enfoque determina qué tan brillante aparece el punto láser:
    - Valores típicos: 1-5% para la mayoría de materiales
    - Establezca en 0 para desactivar la función
 
-:::tip Encontrar la Potencia Correcta Comience con 1% y aumente gradualmente. El punto debe ser
+<!-- prettier-ignore-start -->
+:::tip[Encontrar la Potencia Correcta]
+Comience con 1% y aumente gradualmente. El punto debe ser
 visible pero no dejar ninguna marca en su material. Los materiales más oscuros pueden requerir mayor
-potencia para ver el punto claramente. :::
+potencia para ver el punto claramente.
+:::
+<!-- prettier-ignore-end -->
 
 ### Cuándo Usar el Modo Enfoque
 
@@ -84,12 +92,14 @@ Configurar el comportamiento de enmarcado en **Configuración → Máquina → L
   - Establezca en 0 para enmarcado en aire (láser apagado, solo movimiento)
   - Establezca en 1-5% para un rastro visible en el material
 
-:::tip Enmarcado en Aire vs. Baja Potencia
-
+<!-- prettier-ignore-start -->
+:::tip[Enmarcado en Aire vs. Baja Potencia]
 - **Enmarcado en aire (0% potencia)**: Seguro para cualquier material, pero solo ve el movimiento
   del cabezal
 - **Enmarcado de baja potencia**: Deja una marca visible débil, útil para alineación precisa en
-  materiales oscuros :::
+  materiales oscuros
+:::
+<!-- prettier-ignore-end -->
 
 ### Cuándo Enmarcar
 
@@ -125,12 +135,16 @@ Rayforge usa varios sistemas de coordenadas:
 | **G54**     | Sistema de coordenadas de trabajo 1 (por defecto)    |
 | **G55-G59** | Sistemas de coordenadas de trabajo adicionales       |
 
-:::tip Múltiples Áreas de Trabajo Use diferentes ranuras SCF para diferentes posiciones de fijación.
+<!-- prettier-ignore-start -->
+:::tip[Múltiples Áreas de Trabajo]
+Use diferentes ranuras SCF para diferentes posiciones de fijación.
 Por ejemplo:
 
 - G54 para el lado izquierdo de su cama
 - G55 para el lado derecho
-- G56 para un accesorio rotatorio :::
+- G56 para un accesorio rotatorio
+:::
+<!-- prettier-ignore-end -->
 
 ### Cuándo Establecer Cero SCF
 
@@ -166,11 +180,13 @@ La alineación de cámara mapea los píxeles de la cámara a coordenadas del mun
 3. Ingresar las coordenadas X/Y del mundo real para cada punto
 4. Hacer clic en **Aplicar** para calcular la transformación
 
-:::tip Precisión de Alineación
-
+<!-- prettier-ignore-start -->
+:::tip[Precisión de Alineación]
 - Use puntos distribuidos en toda su área de trabajo
 - Mida las coordenadas del mundo cuidadosamente con una regla
-- Use posiciones de máquina (mover a coordenadas conocidas) para mayor precisión :::
+- Use posiciones de máquina (mover a coordenadas conocidas) para mayor precisión
+:::
+<!-- prettier-ignore-end -->
 
 ### Posicionamiento con Superposición de Cámara
 

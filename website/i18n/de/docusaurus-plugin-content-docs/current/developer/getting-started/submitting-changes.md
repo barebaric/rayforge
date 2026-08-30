@@ -87,9 +87,17 @@ Verwende klare, beschreibende Commit-Nachrichten:
 Halte Pull-Requests auf ein einzelnes Feature oder einen Fix fokussiert. Große Änderungen sollten in
 kleinere, logische Teile zerlegt werden.
 
-:::tip Erst besprechen Für größere Änderungen öffne zuerst ein
+<!-- prettier-ignore-start -->
+:::tip[Erst besprechen]
+Für größere Änderungen öffne zuerst ein
 [Issue](https://github.com/barebaric/rayforge/issues), um deinen Ansatz zu besprechen, bevor du
-erhebliche Zeit investierst. :::
+erhebliche Zeit investierst.
+:::
+<!-- prettier-ignore-end -->
 
-:::note Hilfe benötigt? Wenn du unsicher über einen Teil des Beitragsprozesses bist, zögere nicht,
-in einem Issue oder einer Diskussion um Hilfe zu fragen. :::
+<!-- prettier-ignore-start -->
+:::note[Hilfe benötigt?]
+Wenn du unsicher über einen Teil des Beitragsprozesses bist, zögere nicht,
+in einem Issue oder einer Diskussion um Hilfe zu fragen.
+:::
+<!-- prettier-ignore-end -->

@@ -175,8 +175,12 @@ Documenta tus ajustes exitosos para referencia futura:
 - Número de pasadas
 - Cualquier nota especial
 
-:::tip Base de Datos de Materiales Considera crear un documento de referencia con tus resultados de
-prueba de material para consulta rápida en proyectos futuros. :::
+<!-- prettier-ignore-start -->
+:::tip[Base de Datos de Materiales]
+Considera crear un documento de referencia con tus resultados de
+prueba de material para consulta rápida en proyectos futuros.
+:::
+<!-- prettier-ignore-end -->
 
 ## Uso Avanzado
 

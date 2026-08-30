@@ -30,8 +30,12 @@ Le panneau inférieur peut être basculé via :
 - **Menu** : Affichage → Panneau inférieur
 - **Raccourci clavier** : Ctrl+L
 
-:::note Connexion requise Les contrôles de déplacement ne sont disponibles que lorsque tu es
-connecté à une machine qui prend en charge les opérations de déplacement. :::
+<!-- prettier-ignore-start -->
+:::note[Connexion requise]
+Les contrôles de déplacement ne sont disponibles que lorsque tu es
+connecté à une machine qui prend en charge les opérations de déplacement.
+:::
+<!-- prettier-ignore-end -->
 
 ## Contrôles de déplacement
 
@@ -47,8 +51,12 @@ Mets à l'origine les axes de ta machine pour établir une position de référen
 | ------------ | ----------------------------- | ------------------------------------------- |
 | Origine tout | Met à l'origine tous les axes | Met à l'origine tous les axes simultanément |
 
-:::tip Séquence de mise à l'origine Il est recommandé de mettre à l'origine tous les axes avant de
-commencer tout travail pour assurer un positionnement précis. :::
+<!-- prettier-ignore-start -->
+:::tip[Séquence de mise à l'origine]
+Il est recommandé de mettre à l'origine tous les axes avant de
+commencer tout travail pour assurer un positionnement précis.
+:::
+<!-- prettier-ignore-end -->
 
 ### Mouvement directionnel
 
@@ -73,8 +81,12 @@ Les contrôles de déplacement fournissent des boutons pour le mouvement directi
 | Z+              | Axe Z vers le haut                  | Page Up           |
 | Z-              | Axe Z vers le bas                   | Page Down         |
 
-:::note Focus requis Les raccourcis clavier ne fonctionnent que lorsque la fenêtre principale a le
-focus. :::
+<!-- prettier-ignore-start -->
+:::note[Focus requis]
+Les raccourcis clavier ne fonctionnent que lorsque la fenêtre principale a le
+focus.
+:::
+<!-- prettier-ignore-end -->
 
 ### Retour visuel
 
@@ -94,11 +106,13 @@ Configure le comportement des opérations de déplacement :
 - **Par défaut** : 1 000 mm/min
 - **Objectif** : Contrôle la vitesse de déplacement de la tête laser
 
-:::tip Sélection de vitesse
-
+<!-- prettier-ignore-start -->
+:::tip[Sélection de vitesse]
 - Utilise des vitesses plus faibles (100-500 mm/min) pour un positionnement précis
 - Utilise des vitesses plus élevées (1 000-3 000 mm/min) pour des mouvements plus importants
-- Des vitesses très élevées peuvent causer des pas perdus sur certaines machines :::
+- Des vitesses très élevées peuvent causer des pas perdus sur certaines machines
+:::
+<!-- prettier-ignore-end -->
 
 **Distance de déplacement :**
 
@@ -106,11 +120,13 @@ Configure le comportement des opérations de déplacement :
 - **Par défaut** : 10.0 mm
 - **Objectif** : Contrôle la distance de déplacement de la tête laser par pression de bouton
 
-:::tip Sélection de distance
-
+<!-- prettier-ignore-start -->
+:::tip[Sélection de distance]
 - Utilise de petites distances (0.1-1.0 mm) pour le réglage fin
 - Utilise des distances moyennes (5-20 mm) pour le positionnement général
-- Utilise de grandes distances (50-100 mm) pour le repositionnement rapide :::
+- Utilise de grandes distances (50-100 mm) pour le repositionnement rapide
+:::
+<!-- prettier-ignore-end -->
 
 ## Affichage de l'état de la machine
 
@@ -169,16 +185,22 @@ Définis où l'origine du WCS actif devrait être :
 | Zéro Y               | Définir Y=0   | Fait de la position Y actuelle l'origine Y pour le WCS actif                               |
 | Zéro Z               | Définir Z=0   | Fait de la position Z actuelle l'origine Z pour le WCS actif                               |
 
-:::note G53 ne peut pas être modifié Les boutons Zéro sont désactivés lorsque G53 (Coordonnées
-machine) est sélectionné, car les coordonnées machine sont fixes par le matériel. :::
+<!-- prettier-ignore-start -->
+:::note[G53 ne peut pas être modifié]
+Les boutons Zéro sont désactivés lorsque G53 (Coordonnées
+machine) est sélectionné, car les coordonnées machine sont fixes par le matériel.
+:::
+<!-- prettier-ignore-end -->
 
-:::tip Flux de travail pour définir le WCS
-
+<!-- prettier-ignore-start -->
+:::tip[Flux de travail pour définir le WCS]
 1. Connecte-toi à ta machine et mets à l'origine tous les axes
 2. Sélectionne le WCS que tu veux configurer (par exemple, G54)
 3. Déplace la tête laser à la position d'origine souhaitée
 4. Clique sur Zéro X et Zéro Y pour définir cette position comme (0, 0)
-5. Le décalage est stocké dans le contrôleur de ta machine :::
+5. Le décalage est stocké dans le contrôleur de ta machine
+:::
+<!-- prettier-ignore-end -->
 
 ## Onglet Console
 

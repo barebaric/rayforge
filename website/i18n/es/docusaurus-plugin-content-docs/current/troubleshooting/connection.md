@@ -124,9 +124,13 @@ USB conectados.
 6. En Windows, anota el puerto COM del Administrador de Dispositivos
 7. Evita puertos nombrados `/dev/ttyS*` en Linux - estos son puertos serie de hardware, no USB
 
-:::warning Puertos Serie de Hardware Rayforge te advertirá si seleccionas puertos `/dev/ttyS*` en
+<!-- prettier-ignore-start -->
+:::warning[Puertos Serie de Hardware]
+Rayforge te advertirá si seleccionas puertos `/dev/ttyS*` en
 Linux, ya que estos típicamente no son dispositivos GRBL basados en USB. Los puertos serie USB usan
-`/dev/ttyUSB*` o `/dev/ttyACM*`. :::
+`/dev/ttyUSB*` o `/dev/ttyACM*`.
+:::
+<!-- prettier-ignore-end -->
 
 ### Velocidad de Transmisión Incorrecta
 

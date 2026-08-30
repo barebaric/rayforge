@@ -2,11 +2,13 @@
 
 Referencia completa de atajos de teclado en Rayforge.
 
-:::note Convenciones de Plataforma
-
+<!-- prettier-ignore-start -->
+:::note[Convenciones de Plataforma]
 - **Linux/Windows:** Tecla `Ctrl`
 - **macOS:** Tecla `Command`
-- La documentación usa `Ctrl` - usuarios de macOS sustituyan con `Command` :::
+- La documentación usa `Ctrl` - usuarios de macOS sustituyan con `Command`
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -134,9 +136,13 @@ Referencia completa de atajos de teclado en Rayforge.
 | `Ctrl+&lt;` | Ajustes de Máquina | Abrir diálogo de ajustes de máquina     |
 | `F1`        | Acerca de          | Mostrar diálogo acerca de               |
 
-:::note Operaciones de Máquina Las operaciones de control de máquina (Home, Enmarcar, Enviar, etc.)
+<!-- prettier-ignore-start -->
+:::note[Operaciones de Máquina]
+Las operaciones de control de máquina (Home, Enmarcar, Enviar, etc.)
 actualmente no tienen atajos predeterminados pero se pueden acceder vía botones de la barra de
-herramientas o menús. :::
+herramientas o menús.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -224,8 +230,12 @@ Cuando se edita código G o campos de texto:
 
 ## Personalizando Atajos
 
-:::note Atajos Personalizados Los atajos de teclado están actualmente codificados. La configuración
-de atajos personalizados puede añadirse en futuras versiones. :::
+<!-- prettier-ignore-start -->
+:::note[Atajos Personalizados]
+Los atajos de teclado están actualmente codificados. La configuración
+de atajos personalizados puede añadirse en futuras versiones.
+:::
+<!-- prettier-ignore-end -->
 
 **Limitaciones actuales:**
 

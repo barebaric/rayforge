@@ -5,9 +5,13 @@ máquina.
 
 ![Ajustes de Código G](/screenshots/machine-settings-gcode.webp)
 
-:::info Esta página solo se muestra para máquinas que usan controladores basados en G-code (p.ej.
+<!-- prettier-ignore-start -->
+:::info
+Esta página solo se muestra para máquinas que usan controladores basados en G-code (p.ej.
 GRBL, Smoothieware, Marlin). Si tu máquina usa un controlador no basado en G-code (p.ej. Ruida),
-esta página de ajustes está completamente oculta. :::
+esta página de ajustes está completamente oculta.
+:::
+<!-- prettier-ignore-end -->
 
 ## Dialecto de Código G
 
@@ -27,8 +31,12 @@ controladores usan comandos y formatos ligeramente diferentes.
 - **Smoothieware**: Para Smoothieboard y controladores similares.
 - **Marlin**: Para controladores basados en Marlin.
 
-:::info El dialecto afecta cómo la potencia del láser, los movimientos y otros comandos se formatean
-en el código G de salida. :::
+<!-- prettier-ignore-start -->
+:::info
+El dialecto afecta cómo la potencia del láser, los movimientos y otros comandos se formatean
+en el código G de salida.
+:::
+<!-- prettier-ignore-end -->
 
 ## Preámbulo y Postscript del Dialecto
 

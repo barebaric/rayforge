@@ -2,11 +2,13 @@
 
 Referência completa de atalhos de teclado no Rayforge.
 
-:::note Convenções de Plataforma
-
+<!-- prettier-ignore-start -->
+:::note[Convenções de Plataforma]
 - **Linux/Windows:** Tecla `Ctrl`
 - **macOS:** Tecla `Command`
-- Documentação usa `Ctrl` - usuários macOS substituam por `Command` :::
+- Documentação usa `Ctrl` - usuários macOS substituam por `Command`
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -134,9 +136,13 @@ Referência completa de atalhos de teclado no Rayforge.
 | `Ctrl+&lt;` | Configurações da Máquina | Abrir diálogo de configurações da máquina |
 | `F1`        | Sobre                    | Mostrar diálogo sobre                     |
 
-:::note Operações da Máquina Operações de controle da máquina (Origem, Enquadrar, Enviar, etc.)
+<!-- prettier-ignore-start -->
+:::note[Operações da Máquina]
+Operações de controle da máquina (Origem, Enquadrar, Enviar, etc.)
 atualmente não têm atalhos padrão mas podem ser acessadas via botões da barra de ferramentas ou
-menus. :::
+menus.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -224,8 +230,12 @@ Ao editar G-code ou campos de texto:
 
 ## Personalizando Atalhos
 
-:::note Atalhos Personalizados Atalhos de teclado atualmente são fixos no código. Configuração de
-atalhos personalizados pode ser adicionada em versões futuras. :::
+<!-- prettier-ignore-start -->
+:::note[Atalhos Personalizados]
+Atalhos de teclado atualmente são fixos no código. Configuração de
+atalhos personalizados pode ser adicionada em versões futuras.
+:::
+<!-- prettier-ignore-end -->
 
 **Limitações atuais:**
 

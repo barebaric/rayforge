@@ -224,15 +224,17 @@ O painel de propriedades da câmera mostra o status de alinhamento com um ícone
 5. Insira coordenadas exatas para cada ponto
 6. Aplique e verifique
 
-:::tip Melhores Práticas
-
+<!-- prettier-ignore-start -->
+:::tip[Melhores Práticas]
 - Use pontos nos cantos da sua área de trabalho para cobertura máxima
 - Evite agrupar pontos em uma área
 - Meça as coordenadas do mundo real com cuidado - a precisão aqui determina a qualidade geral do
   alinhamento
 - Realinhe se você mover a câmera ou alterar a distância do foco
 - Realinhe após atualizar a calibração de lente
-- Salve seu alinhamento - ele persiste entre sessões :::
+- Salve seu alinhamento - ele persiste entre sessões
+:::
+<!-- prettier-ignore-end -->
 
 ---
 

@@ -59,9 +59,13 @@ The 3D view automatically updates when you change the active WCS:
 - The grid and axes shift to reflect the new WCS origin
 - Labels update to show coordinates relative to the new WCS
 
-:::tip WCS in 3D View The 3D view shows your toolpaths relative to the selected WCS. When you change
+<!-- prettier-ignore-start -->
+:::tip[WCS in 3D View]
+The 3D view shows your toolpaths relative to the selected WCS. When you change
 WCS, you'll see the toolpaths appear to move because the reference point (the grid) has changed, not
-because the toolpaths themselves moved. :::
+because the toolpaths themselves moved.
+:::
+<!-- prettier-ignore-end -->
 
 ## Display Options
 
@@ -89,9 +93,13 @@ Customize what you see:
 - **Show Work Moves**: Display cutting/engraving moves (solid lines)
 - **Color by Operation**: Different colors for each operation
 
-:::tip Per-Laser Colors When using machines with multiple laser heads, each laser can have its own
+<!-- prettier-ignore-start -->
+:::tip[Per-Laser Colors]
+When using machines with multiple laser heads, each laser can have its own
 color configured in [Laser Settings](../machine/laser.md). This makes it easy to identify which
-laser will perform each operation. :::
+laser will perform each operation.
+:::
+<!-- prettier-ignore-end -->
 
 ### Laser Head Model
 
@@ -117,11 +125,15 @@ by a physically motivated model that accounts for:
 The result is a power-keyed scorch ramp with a heat halo on top-facing surfaces. It works for rotary
 too — engraving bakes into the rotary stock.
 
-:::note Calibration The burn model is physically motivated but not yet fully calibrated across all
+<!-- prettier-ignore-start -->
+:::note[Calibration]
+The burn model is physically motivated but not yet fully calibrated across all
 materials and laser types. You can help improve it: run a
 [material test grid](../features/operations/material-test-grid.md) and share the result photo along
 with your machine data (wavelength, optical wattage, spot size, speed, and the powers/depths
-tested). :::
+tested).
+:::
+<!-- prettier-ignore-end -->
 
 ## Simulation
 

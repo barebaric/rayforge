@@ -86,7 +86,15 @@ Pull request 在以下情况下合并：
 
 保持 pull request 专注于单个功能或修复。大型更改应分解为更小的逻辑部分。
 
-:::tip 先讨论对于重大更改，请先开 [issue](https://github.com/barebaric/rayforge/issues)
-讨论您的方法，然后再投入大量时间。:::
+<!-- prettier-ignore-start -->
+:::tip[先讨论]
+对于重大更改，请先开 [issue](https://github.com/barebaric/rayforge/issues)
+讨论您的方法，然后再投入大量时间。
+:::
+<!-- prettier-ignore-end -->
 
-:::note 需要帮助？如果您对贡献流程的任何部分不确定，不要犹豫在 issue 或讨论中寻求帮助。:::
+<!-- prettier-ignore-start -->
+:::note[需要帮助？]
+如果您对贡献流程的任何部分不确定，不要犹豫在 issue 或讨论中寻求帮助。
+:::
+<!-- prettier-ignore-end -->

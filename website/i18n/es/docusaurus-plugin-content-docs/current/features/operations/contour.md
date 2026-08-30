@@ -125,10 +125,14 @@ creando un corte limpio y completamente separado. Esto es especialmente útil pa
 
 El sobrecorte se aplica tanto a contornos exteriores como a agujeros internos.
 
-:::tip Entrada/Salida vs Sobrecorte [Entrada/Salida](../lead-in-out.md) agrega movimientos de
+<!-- prettier-ignore-start -->
+:::tip[Entrada/Salida vs Sobrecorte]
+[Entrada/Salida](../lead-in-out.md) agrega movimientos de
 aproximación y salida con potencia cero antes y después de la trayectoria de corte. El sobrecorte
 extiende la propia trayectoria de corte más allá de la unión. Pueden usarse juntos para una calidad
-de corte óptima. :::
+de corte óptima.
+:::
+<!-- prettier-ignore-end -->
 
 #### Re-trazado con Umbral Personalizado
 
@@ -213,10 +217,12 @@ Para materiales más gruesos de lo que una sola pasada puede cortar:
 - Crea un corte 2.5D verdadero
 - Configura en 0 para pasadas múltiples a la misma profundidad
 
-:::warning Eje Z Requerido :::
-
+<!-- prettier-ignore-start -->
+:::warning[Eje Z Requerido]
 La profundidad de pasada solo funciona si tu máquina tiene control de eje Z. Para máquinas sin eje
 Z, usa pasadas múltiples a la misma profundidad.
+:::
+<!-- prettier-ignore-end -->
 
 ## Consejos y Mejores Prácticas
 

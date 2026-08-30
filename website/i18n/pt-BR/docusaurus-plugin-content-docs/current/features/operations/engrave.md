@@ -288,10 +288,12 @@ Use inverter para litofanias (áreas claras devem ser finas) ou embossing (área
 
 **Recomendado:** 0.1mm para uso geral
 
-:::tip Correspondência de Resolução :::
-
+<!-- prettier-ignore-start -->
+:::tip[Correspondência de Resolução]
 Para imagens, o intervalo de linha deve corresponder ou exceder a resolução da imagem. Se sua imagem
 tem 10 pixels/mm (254 DPI), use intervalo de linha de 0.1mm ou menor.
+:::
+<!-- prettier-ignore-end -->
 
 #### Direção de Varredura
 

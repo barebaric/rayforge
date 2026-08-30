@@ -12,8 +12,12 @@ Rayforge 支持多种文件格式，包括 SVG、DXF、PDF、Ruida (.rd) 和光�
 
 ![导入设计的画布](/screenshots/main-standard.webp)
 
-:::tip 还没有设计？您可以使用绘图器创建简单的形状，或从 [Flaticon](https://www.flaticon.com/) 或
-[SVG Repo](https://www.svgrepo.com/) 等网站下载免费的 SVG 文件。:::
+<!-- prettier-ignore-start -->
+:::tip[还没有设计？]
+您可以使用绘图器创建简单的形状，或从 [Flaticon](https://www.flaticon.com/) 或
+[SVG Repo](https://www.svgrepo.com/) 等网站下载免费的 SVG 文件。
+:::
+<!-- prettier-ignore-end -->
 
 ## 第 2 步：定位您的设计
 
@@ -45,7 +49,11 @@ Rayforge 支持多种文件格式，包括 SVG、DXF、PDF、Ruida (.rd) 和光�
 
 ![操作设置](/screenshots/step-settings-contour-general.webp)
 
-:::warning 从低功率开始处理新材料时，始终从较低的功率设置开始并运行测试切割。逐渐增加功率，直到达到预期效果。使用[材料测试网格](../features/operations/material-test-grid.md)功能系统地找到最佳设置。:::
+<!-- prettier-ignore-start -->
+:::warning[从低功率开始]
+处理新材料时，始终从较低的功率设置开始并运行测试切割。逐渐增加功率，直到达到预期效果。使用[材料测试网格](../features/operations/material-test-grid.md)功能系统地找到最佳设置。
+:::
+<!-- prettier-ignore-end -->
 
 ## 第 4 步：预览
 
@@ -58,21 +66,27 @@ Rayforge 支持多种文件格式，包括 SVG、DXF、PDF、Ruida (.rd) 和光�
 
 ![3D 预览](/screenshots/main-3d.webp)
 
-:::tip 尽早发现错误 3D 预览可帮助您发现问题，例如：
+<!-- prettier-ignore-start -->
+:::tip[尽早发现错误]
+3D 预览可帮助您发现问题，例如：
 
 - 缺失路径
 - 顺序错误
 - 操作应用于错误的对象
-- 超出工作区域的路径 :::
+- 超出工作区域的路径
+:::
+<!-- prettier-ignore-end -->
 
 ## 第 5 步：发送到机器
 
-:::danger 安全第一
-
+<!-- prettier-ignore-start -->
+:::danger[安全第一]
 - 确保工作区域清空
 - 操作期间切勿离开机器
 - 附近备有消防安全设备
-- 佩戴适当的护目镜 :::
+- 佩戴适当的护目镜
+:::
+<!-- prettier-ignore-end -->
 
 ### 准备材料
 
@@ -104,7 +118,11 @@ Rayforge 支持多种文件格式，包括 SVG、DXF、PDF、Ruida (.rd) 和光�
 2. 小心取出完成的作品
 3. 如有必要，清洁激光床
 
-:::success 恭喜！您已完成第一个 Rayforge 任务！现在您可以探索更多高级功能。:::
+<!-- prettier-ignore-start -->
+:::success[恭喜！]
+您已完成第一个 Rayforge 任务！现在您可以探索更多高级功能。
+:::
+<!-- prettier-ignore-end -->
 
 ## 下一步
 

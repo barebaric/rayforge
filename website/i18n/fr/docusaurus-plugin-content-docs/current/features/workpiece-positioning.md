@@ -36,9 +36,13 @@ pour vous aider à voir exactement où la tête du laser est positionnée.
 4. **Déplacer la tête du laser** pour voir la position du faisceau sur votre matériau
 5. **Cliquer à nouveau sur le bouton Focus** pour éteindre une fois terminé
 
-:::warning Sécurité Même à faible puissance, le laser peut endommager les yeux. Ne regardez jamais
+<!-- prettier-ignore-start -->
+:::warning[Sécurité]
+Même à faible puissance, le laser peut endommager les yeux. Ne regardez jamais
 directement le faisceau et ne le pointez pas vers des surfaces réfléchissantes. Portez une
-protection oculaire appropriée. :::
+protection oculaire appropriée.
+:::
+<!-- prettier-ignore-end -->
 
 ### Configurer la Puissance Focus
 
@@ -50,9 +54,13 @@ La puissance focus détermine la luminosité du point laser :
    - Valeurs typiques : 1-5% pour la plupart des matériaux
    - Définissez sur 0 pour désactiver la fonction
 
-:::tip Trouver la Bonne Puissance Commencez avec 1% et augmentez progressivement. Le point doit être
+<!-- prettier-ignore-start -->
+:::tip[Trouver la Bonne Puissance]
+Commencez avec 1% et augmentez progressivement. Le point doit être
 visible mais ne laisser aucune marque sur votre matériau. Les matériaux plus foncés peuvent
-nécessiter une puissance plus élevée pour voir le point clairement. :::
+nécessiter une puissance plus élevée pour voir le point clairement.
+:::
+<!-- prettier-ignore-end -->
 
 ### Quand Utiliser le Mode Focus
 
@@ -85,12 +93,14 @@ Configurer le comportement du cadrage dans **Paramètres → Machine → Laser**
   - Définissez sur 0 pour le cadrage à l'air (laser éteint, mouvement uniquement)
   - Définissez sur 1-5% pour une trace visible sur le matériau
 
-:::tip Cadrage à l'Air vs. Faible Puissance
-
+<!-- prettier-ignore-start -->
+:::tip[Cadrage à l'Air vs. Faible Puissance]
 - **Cadrage à l'air (0% puissance)** : Sûr pour tout matériau, mais vous ne voyez que le mouvement
   de la tête
 - **Cadrage à faible puissance** : Laisse une marque visible faible, utile pour un alignement précis
-  sur les matériaux foncés :::
+  sur les matériaux foncés
+:::
+<!-- prettier-ignore-end -->
 
 ### Quand Cadrer
 
@@ -127,12 +137,16 @@ Rayforge utilise plusieurs systèmes de coordonnées :
 | **G54**     | Système de coordonnées de travail 1 (par défaut)           |
 | **G55-G59** | Systèmes de coordonnées de travail supplémentaires         |
 
-:::tip Zones de Travail Multiples Utilisez différents emplacements SCF pour différentes positions de
+<!-- prettier-ignore-start -->
+:::tip[Zones de Travail Multiples]
+Utilisez différents emplacements SCF pour différentes positions de
 fixation. Par exemple :
 
 - G54 pour le côté gauche de votre lit
 - G55 pour le côté droit
-- G56 pour un accessoire rotatif :::
+- G56 pour un accessoire rotatif
+:::
+<!-- prettier-ignore-end -->
 
 ### Quand Définir le Zéro SCF
 
@@ -168,12 +182,14 @@ L'alignement de la caméra mappe les pixels de la caméra aux coordonnées du mo
 3. Entrer les coordonnées X/Y du monde réel pour chaque point
 4. Cliquer sur **Appliquer** pour calculer la transformation
 
-:::tip Précision de l'Alignement
-
+<!-- prettier-ignore-start -->
+:::tip[Précision de l'Alignement]
 - Utilisez des points répartis sur toute votre zone de travail
 - Mesurez les coordonnées du monde soigneusement avec une règle
 - Utilisez les positions machine (déplacer vers des coordonnées connues) pour une meilleure
-  précision :::
+  précision
+:::
+<!-- prettier-ignore-end -->
 
 ### Positionnement avec Surimposition Caméra
 

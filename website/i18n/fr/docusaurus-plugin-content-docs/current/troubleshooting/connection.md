@@ -125,9 +125,13 @@ connectés.
 6. Sur Windows, notez le port COM depuis le Gestionnaire de périphériques
 7. Évitez les ports nommés `/dev/ttyS*` sur Linux - ce sont des ports série matériels, pas USB
 
-:::warning Ports série matériels Rayforge vous avertira si vous sélectionnez des ports `/dev/ttyS*`
+<!-- prettier-ignore-start -->
+:::warning[Ports série matériels]
+Rayforge vous avertira si vous sélectionnez des ports `/dev/ttyS*`
 sur Linux, car ce ne sont généralement pas des appareils GRBL basés sur USB. Les ports série USB
-utilisent `/dev/ttyUSB*` ou `/dev/ttyACM*`. :::
+utilisent `/dev/ttyUSB*` ou `/dev/ttyACM*`.
+:::
+<!-- prettier-ignore-end -->
 
 ### Débit en bauds incorrect
 

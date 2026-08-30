@@ -6,9 +6,13 @@ a tu dispositivo conectado (controlador). Estos también se conocen como ajustes
 
 ![Ajustes de Dispositivo](/screenshots/machine-settings-device.webp)
 
-:::warning Precaución al Cambiar Ajustes Los ajustes de firmware incorrectos pueden hacer que tu
+<!-- prettier-ignore-start -->
+:::warning[Precaución al Cambiar Ajustes]
+Los ajustes de firmware incorrectos pueden hacer que tu
 máquina se comporte de manera impredecible, pierda posición o incluso dañe el hardware. Siempre
-registra los valores originales antes de hacer cambios, y modifica un ajuste a la vez. :::
+registra los valores originales antes de hacer cambios, y modifica un ajuste a la vez.
+:::
+<!-- prettier-ignore-end -->
 
 ## Resumen
 
@@ -74,9 +78,13 @@ $100=80.0
 $RST=$
 ```
 
-:::danger Restaurar Valores Predeterminados Borra Todos los Ajustes El comando `$RST=$` reinicia
+<!-- prettier-ignore-start -->
+:::danger[Restaurar Valores Predeterminados Borra Todos los Ajustes]
+El comando `$RST=$` reinicia
 todos los ajustes de GRBL a los valores de fábrica. ¡Perderás cualquier calibración y ajuste! ¡Haz
-una copia de seguridad de tus ajustes primero! :::
+una copia de seguridad de tus ajustes primero!
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -102,9 +110,12 @@ Estos ajustes son los más importantes para la operación láser:
 - No se apaga durante los rápidos
 - **¡Peligroso para uso láser!**
 
-:::warning Siempre Habilita el Modo Láser $32 debería **siempre** establecerse en 1 para cortadores
+<!-- prettier-ignore-start -->
+:::warning[Siempre Habilita el Modo Láser]
+$32 debería **siempre** establecerse en 1 para cortadores
 láser. El modo láser deshabilitado puede causar quemaduras no intencionales y riesgos de incendio.
 :::
+<!-- prettier-ignore-end -->
 
 ### $30 y $31 - Rango de Potencia del Láser
 
@@ -118,9 +129,13 @@ láser. El modo láser deshabilitado puede causar quemaduras no intencionales y 
 - $30=1000, $31=0 (rango S0-S1000, más común)
 - $30=255, $31=0 (rango S0-S255, algunos controladores)
 
-:::tip Coincidir con la Configuración de Rayforge El ajuste "Potencia Máxima" en tus
+<!-- prettier-ignore-start -->
+:::tip[Coincidir con la Configuración de Rayforge]
+El ajuste "Potencia Máxima" en tus
 [Ajustes de Láser](laser) debería coincidir con tu valor $30. Si $30=1000, establece la potencia
-máxima en 1000 en Rayforge. :::
+máxima en 1000 en Rayforge.
+:::
+<!-- prettier-ignore-end -->
 
 ### $130 y $131 - Recorrido Máximo
 
@@ -281,8 +296,12 @@ $132=0.0       ; Recorrido máximo Z
 2. Envía cada línea (`$100=80.0`, etc.) vía consola
 3. Verifica con el comando `$$`
 
-:::tip Copias de Seguridad Regulares Haz copia de seguridad de tus ajustes después de cualquier
-calibración o ajuste. Almacena las copias de seguridad en un lugar seguro. :::
+<!-- prettier-ignore-start -->
+:::tip[Copias de Seguridad Regulares]
+Haz copia de seguridad de tus ajustes después de cualquier
+calibración o ajuste. Almacena las copias de seguridad en un lugar seguro.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 

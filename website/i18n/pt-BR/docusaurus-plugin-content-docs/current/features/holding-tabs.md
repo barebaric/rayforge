@@ -83,9 +83,13 @@ A **largura** é o comprimento da seção não cortada ao longo do caminho.
 - **Materiais frágeis** (acrílico) podem usar abas menores (mais fáceis de quebrar)
 - **Materiais fibrosos** (madeira) podem precisar de abas mais largas
 
-:::warning Largura da Aba vs Espessura do Material Abas devem ser largas o suficiente para suportar
+<!-- prettier-ignore-start -->
+:::warning[Largura da Aba vs Espessura do Material]
+Abas devem ser largas o suficiente para suportar
 a peça mas pequenas o suficiente para remover limpo. Muito estreita = peça pode quebrar livre; muito
-larga = difícil de remover ou dana a peça. :::
+larga = difícil de remover ou dana a peça.
+:::
+<!-- prettier-ignore-end -->
 
 ### Posição da Aba
 

@@ -14,9 +14,13 @@ Echtzeit.
 Um einen Array-Dialog zu öffnen, wähle ein oder mehrere Werksstücke auf der Leinwand aus und wähle
 dann den Array-Modus aus der Werkzeugleiste oder dem Kontextmenü aus.
 
-:::tip Alle Array-Modi sind nicht-modal. Du kannst Werksstücke auf der Leinwand ziehen, während der
+<!-- prettier-ignore-start -->
+:::tip
+Alle Array-Modi sind nicht-modal. Du kannst Werksstücke auf der Leinwand ziehen, während der
 Dialog geöffnet ist, und die Vorschau aktualisiert sich live, um die neuen Positionen
-widerzuspiegeln. :::
+widerzuspiegeln.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -54,8 +58,12 @@ bleibt, aber um einen Bruchteil des Gesamtwinkels gedreht wird.
 | **Anzahl**              | Anzahl der Kopien (1–360)                            |
 | **Gesamtwinkel (Grad)** | Gesamter Winkelbereich aller Kopien (−360° bis 360°) |
 
-:::info Da die Rotation um den eigenen Mittelpunkt der Auswahl erfolgt, verschieben sich beim Ziehen
-des Werksstücks auf der Leinwand alle Kopien gemeinsam, während der Dialog geöffnet bleibt. :::
+<!-- prettier-ignore-start -->
+:::info
+Da die Rotation um den eigenen Mittelpunkt der Auswahl erfolgt, verschieben sich beim Ziehen
+des Werksstücks auf der Leinwand alle Kopien gemeinsam, während der Dialog geöffnet bleibt.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -78,10 +86,18 @@ ziehen, während der Dialog geöffnet ist.
 | **Radius**              | Radius des kreisförmigen Pfads                                    |
 | **Kopien drehen**       | Wenn aktiviert, wird jede Kopie entlang der Bogentangente gedreht |
 
-:::tip Mittelpunkt ziehen Das Fadenkreuz auf der Leinwand repräsentiert den Kreismittelpunkt. Ziehe
+<!-- prettier-ignore-start -->
+:::tip[Mittelpunkt ziehen]
+Das Fadenkreuz auf der Leinwand repräsentiert den Kreismittelpunkt. Ziehe
 es, um das Array interaktiv umzupositionieren — die Felder Mitte X und Mitte Y im Dialog werden
-automatisch aktualisiert. :::
+automatisch aktualisiert.
+:::
+<!-- prettier-ignore-end -->
 
-:::tip Werksstücke ziehen Du kannst auch das ursprüngliche Werkstück auf der Leinwand ziehen. Der
+<!-- prettier-ignore-start -->
+:::tip[Werksstücke ziehen]
+Du kannst auch das ursprüngliche Werkstück auf der Leinwand ziehen. Der
 Radius wird automatisch aktualisiert, um die Kopien bei ihrem aktuellen Abstand vom Mittelpunkt zu
-halten. :::
+halten.
+:::
+<!-- prettier-ignore-end -->

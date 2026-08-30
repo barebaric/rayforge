@@ -5,9 +5,13 @@ machine.
 
 ![Paramètres G-code](/screenshots/machine-settings-gcode.webp)
 
-:::info Cette page n'est affichée que pour les machines utilisant des pilotes basés sur G-code
+<!-- prettier-ignore-start -->
+:::info
+Cette page n'est affichée que pour les machines utilisant des pilotes basés sur G-code
 (p.ex. GRBL, Smoothieware, Marlin). Si votre machine utilise un pilote non G-code (p.ex. Ruida),
-cette page de paramètres est entièrement masquée. :::
+cette page de paramètres est entièrement masquée.
+:::
+<!-- prettier-ignore-end -->
 
 ## Dialecte G-code
 
@@ -28,8 +32,12 @@ contrôleurs utilisent des commandes et des formats légèrement différents.
 - **Smoothieware** : Pour Smoothieboard et contrôleurs similaires.
 - **Marlin** : Pour contrôleurs basés sur Marlin.
 
-:::info Le dialecte affecte la façon dont la puissance laser, les mouvements et autres commandes
-sont formatés dans le G-code de sortie. :::
+<!-- prettier-ignore-start -->
+:::info
+Le dialecte affecte la façon dont la puissance laser, les mouvements et autres commandes
+sont formatés dans le G-code de sortie.
+:::
+<!-- prettier-ignore-end -->
 
 ## Préambule et Postscript du Dialecte
 

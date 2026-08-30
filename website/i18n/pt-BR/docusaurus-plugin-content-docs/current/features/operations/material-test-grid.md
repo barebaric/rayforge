@@ -172,8 +172,12 @@ Documente suas configurações bem-sucedidas para referência futura:
 - Número de passagens
 - Quaisquer notas especiais
 
-:::tip Banco de Dados de Materiais Considere criar um documento de referência com seus resultados de
-teste de material para consulta rápida em projetos futuros. :::
+<!-- prettier-ignore-start -->
+:::tip[Banco de Dados de Materiais]
+Considere criar um documento de referência com seus resultados de
+teste de material para consulta rápida em projetos futuros.
+:::
+<!-- prettier-ignore-end -->
 
 ## Uso Avançado
 

@@ -12,11 +12,15 @@ O sistema multicamadas do Rayforge permite que você organize trabalhos em está
 separados. Cada camada é um contêiner para peças de trabalho e tem seu próprio fluxo de trabalho —
 uma sequência de etapas, cada uma com configurações de laser independentes.
 
-:::tip Quando você não precisa de múltiplas camadas Em muitos casos, uma única camada é suficiente.
+<!-- prettier-ignore-start -->
+:::tip[Quando você não precisa de múltiplas camadas]
+Em muitos casos, uma única camada é suficiente.
 Cada etapa dentro de uma camada tem suas próprias configurações de laser, potência, velocidade e
 outros parâmetros, então você pode gravar e contornar na mesma camada. Camadas separadas são
 necessárias apenas quando você quer contornar partes diferentes de uma imagem com configurações
-diferentes, ou quando precisa de configurações diferentes de WCS ou rotativo. :::
+diferentes, ou quando precisa de configurações diferentes de WCS ou rotativo.
+:::
+<!-- prettier-ignore-end -->
 
 ## Criando e gerenciando camadas
 

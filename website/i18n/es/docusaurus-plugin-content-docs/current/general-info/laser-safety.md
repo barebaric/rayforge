@@ -3,10 +3,14 @@
 Los equipos de corte y grabado láser plantean serios riesgos de seguridad incluyendo incendio, humos
 tóxicos y daño ocular permanente.
 
-:::danger Advertencia de Seguridad Crítica **Siempre sigue las directrices de seguridad y las
+<!-- prettier-ignore-start -->
+:::danger[Advertencia de Seguridad Crítica]
+**Siempre sigue las directrices de seguridad y las
 instrucciones de operación del fabricante de tu láser.** Esta página proporciona principios
 generales de seguridad pero no sustituye la capacitación adecuada y la documentación de seguridad
-específica de tu máquina. :::
+específica de tu máquina.
+:::
+<!-- prettier-ignore-end -->
 
 ## Tu Recurso Principal de Seguridad
 
@@ -184,15 +188,17 @@ del láser se detienen inmediatamente.
 
 ## Reglas Clave de Seguridad
 
-:::warning Reglas de Seguridad Críticas
-
+<!-- prettier-ignore-start -->
+:::warning[Reglas de Seguridad Críticas]
 1. **Nunca dejes el láser desatendido durante la operación**
 2. **Nunca operes sin ventilación apropiada**
 3. **Nunca cortes materiales prohibidos (PVC, vinilo, ABS, etc.)**
 4. **Siempre ten un extintor al alcance**
 5. **Siempre sigue las directrices de seguridad del fabricante**
 6. **Sabe dónde está la parada de emergencia**
-7. **Previsualiza trabajos en Modo Simulación antes de ejecutar** :::
+7. **Previsualiza trabajos en Modo Simulación antes de ejecutar**
+:::
+<!-- prettier-ignore-end -->
 
 ## Recursos Adicionales
 

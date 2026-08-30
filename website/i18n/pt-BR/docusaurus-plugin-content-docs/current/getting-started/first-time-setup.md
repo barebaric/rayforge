@@ -191,8 +191,12 @@ ligada e conectada). Você não precisa clicar manualmente em um botão de conec
 O status da conexão é exibido no canto inferior esquerdo da janela principal com um ícone de status
 e rótulo mostrando o estado atual (Conectado, Conectando, Desconectado, Erro, etc.).
 
-:::success Conectado! Se sua máquina mostrar status "Conectado", você está pronto para começar a
-usar o Rayforge! :::
+<!-- prettier-ignore-start -->
+:::success[Conectado!]
+Se sua máquina mostrar status "Conectado", você está pronto para começar a
+usar o Rayforge!
+:::
+<!-- prettier-ignore-end -->
 
 ---
 

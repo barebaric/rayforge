@@ -56,14 +56,18 @@ Después de realizar el mantenimiento, puedes reiniciar el contador relevante:
 2. Confirma el reinicio en el diálogo
 3. El contador vuelve a cero
 
-:::tip Programa de Mantenimiento Intervalos de mantenimiento comunes:
+<!-- prettier-ignore-start -->
+:::tip[Programa de Mantenimiento]
+Intervalos de mantenimiento comunes:
 
 - **Diario**: Limpiar lente, revisar alineación de espejos
 - **Semanal**: Limpiar rieles, revisar tensión de correas
 - **Mensual**: Lubricar rodamientos, revisar conexiones eléctricas
 - **Anual**: Inspección completa, reemplazar piezas desgastadas
 
-Ajusta los intervalos basándote en tus patrones de uso y recomendaciones del fabricante. :::
+Ajusta los intervalos basándote en tus patrones de uso y recomendaciones del fabricante.
+:::
+<!-- prettier-ignore-end -->
 
 ## Ver También
 

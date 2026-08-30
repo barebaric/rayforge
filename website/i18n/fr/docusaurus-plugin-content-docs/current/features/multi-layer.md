@@ -12,12 +12,16 @@ Le système multi-calques de Rayforge vous permet d'organiser les travaux en ét
 séparées. Chaque calque est un conteneur pour les pièces et possède son propre flux de travail — une
 séquence d'étapes, chacune avec des réglages laser indépendants.
 
-:::tip Quand vous n'avez pas besoin de plusieurs calques Dans de nombreux cas, un seul calque
+<!-- prettier-ignore-start -->
+:::tip[Quand vous n'avez pas besoin de plusieurs calques]
+Dans de nombreux cas, un seul calque
 suffit. Chaque étape au sein d'un calque dispose de ses propres réglages de laser, puissance,
 vitesse et autres paramètres, ce qui vous permet de graver et contourner dans le même calque. Des
 calques séparés ne sont nécessaires que lorsque vous souhaitez contourner différentes parties d'une
 image avec des réglages différents, ou lorsque vous avez besoin de configurations WCS ou rotatives
-différentes. :::
+différentes.
+:::
+<!-- prettier-ignore-end -->
 
 ## Créer et gérer les calques
 

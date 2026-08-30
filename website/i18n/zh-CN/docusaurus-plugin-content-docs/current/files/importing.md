@@ -22,9 +22,11 @@ Rayforge 支持导入多种文件格式，包括矢量格式和光栅格式。�
 | **JPEG** | `.jpg`, `.jpeg` | 描摹为矢量 | 照片、连续色调图像   |
 | **BMP**  | `.bmp`          | 描摹为矢量 | 简单图形、截图       |
 
-:::note 光栅图像导入 :::
-
+<!-- prettier-ignore-start -->
+:::note[光栅图像导入]
 所有光栅图像都会被**描摹**以创建可用于激光操作的矢量路径。描摹质量取决于描摹配置。
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -98,7 +100,11 @@ rayforge file1.svg file2.dxf
 
 SVG（可缩放矢量图形）是矢量设计的**推荐格式**。
 
-:::tip 自动分配步骤您可以配置[颜色规则](../application-settings/color-rules.md)，根据 SVG 中的颜色自动分配步骤类型（轮廓、雕刻等）。当存在规则时，导入对话框默认按颜色对形状进行分组，以便规则生效。:::
+<!-- prettier-ignore-start -->
+:::tip[自动分配步骤]
+您可以配置[颜色规则](../application-settings/color-rules.md)，根据 SVG 中的颜色自动分配步骤类型（轮廓、雕刻等）。当存在规则时，导入对话框默认按颜色对形状进行分组，以便规则生效。
+:::
+<!-- prettier-ignore-end -->
 
 ### 对话框中的导入选项
 

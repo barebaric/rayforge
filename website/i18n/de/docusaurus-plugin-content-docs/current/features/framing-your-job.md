@@ -37,9 +37,13 @@ Einige Maschinen unterstützen Niederleistungs-Einrahmen mit sichtbarem Strahl:
 3. **Rahmen-Operation ausführen**
 4. **Den Umriss beobachten**, der auf der Materialoberfläche nachgezeichnet wird
 
-:::warning Überprüfe deine Maschine Nicht alle Laser unterstützen sicher das
+<!-- prettier-ignore-start -->
+:::warning[Überprüfe deine Maschine]
+Nicht alle Laser unterstützen sicher das
 Niederleistungs-Einrahmen. Konsultiere deine Maschinen-Dokumentation, bevor du diese Funktion
-verwendest. :::
+verwendest.
+:::
+<!-- prettier-ignore-end -->
 
 ## Rahmen-Einstellungen
 

@@ -6,10 +6,14 @@ Bibliotecas de materiais no Rayforge permitem organizar e gerenciar coleções d
 projetos de corte e gravação a laser. Este guia explica a diferença entre bibliotecas do sistema e
 do usuário, e como criar suas próprias bibliotecas e adicionar materiais a elas.
 
-:::note Atribuir um material a um item de material afeta tanto sua aparência visual no canvas 2D e
+<!-- prettier-ignore-start -->
+:::note
+Atribuir um material a um item de material afeta tanto sua aparência visual no canvas 2D e
 3D quanto quais [receitas](recipes.md) se aplicam a ele: receitas específicas de material
 correspondem ao material atribuído. Em versões futuras, materiais serão usados para derivar mais
-parâmetros funcionais. :::
+parâmetros funcionais.
+:::
+<!-- prettier-ignore-end -->
 
 ## Criando uma Nova Biblioteca
 
@@ -79,8 +83,12 @@ para materiais metálicos, 0 para não metálicos.
 
 #### Absorção {#absorption}
 
-:::note Novidade na 1.11 Dados de absorção alimentam o
-[modelo de queimadura física](../ui/3d-preview.md#physical-burn-model) na pré-visualização 3D. :::
+<!-- prettier-ignore-start -->
+:::note[Novidade na 1.11]
+Dados de absorção alimentam o
+[modelo de queimadura física](../ui/3d-preview.md#physical-burn-model) na pré-visualização 3D.
+:::
+<!-- prettier-ignore-end -->
 
 Coeficientes de absorção por comprimento de onda (0–1) descrevem quanta energia do laser um material
 absorve em determinado comprimento de onda. A pré-visualização 3D usa esses dados, junto com o
@@ -123,4 +131,8 @@ ainda não está totalmente calibrado, então contribuições de dados de teste 
 2. Clique no botão **Excluir**
 3. Confirme a exclusão no diálogo
 
-:::warning Excluir um material é permanente e não pode ser desfeito. :::
+<!-- prettier-ignore-start -->
+:::warning
+Excluir um material é permanente e não pode ser desfeito.
+:::
+<!-- prettier-ignore-end -->

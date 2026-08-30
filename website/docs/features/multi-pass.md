@@ -33,8 +33,12 @@ control.
 - **Material thickness ÷ passes:** Progressive depth cutting
 - **Small increments (0.1-0.5mm):** Fine control for deep engraving
 
-:::warning Z-Axis Required Z step-down only works with machines that have motorized Z-axis control.
-For machines without Z-axis, all passes occur at the same focus height. :::
+<!-- prettier-ignore-start -->
+:::warning[Z-Axis Required]
+Z step-down only works with machines that have motorized Z-axis control.
+For machines without Z-axis, all passes occur at the same focus height.
+:::
+<!-- prettier-ignore-end -->
 
 ## When to Use Multi-Pass
 

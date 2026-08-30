@@ -121,9 +121,13 @@ sudo snap connect rayforge:serial-port
 6. 在 Windows 上，记下设备管理器中的 COM 端口
 7. 避免在 Linux 上选择名为 `/dev/ttyS*` 的端口 - 这些是硬件串口，不是 USB
 
-:::warning 硬件串口如果您在 Linux 上选择 `/dev/ttyS*`
+<!-- prettier-ignore-start -->
+:::warning[硬件串口]
+如果您在 Linux 上选择 `/dev/ttyS*`
 端口，Rayforge 会警告您，因为这些通常不是基于 USB 的 GRBL 设备。USB 串口使用 `/dev/ttyUSB*` 或
-`/dev/ttyACM*`。:::
+`/dev/ttyACM*`。
+:::
+<!-- prettier-ignore-end -->
 
 ### 波特率不正确
 

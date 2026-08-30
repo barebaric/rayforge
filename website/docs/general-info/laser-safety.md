@@ -9,9 +9,13 @@ description:
 Laser cutting and engraving equipment poses serious safety risks including fire, toxic fumes, and
 permanent eye damage.
 
-:::danger Critical Safety Warning **Always follow your laser manufacturer's safety guidelines and
+<!-- prettier-ignore-start -->
+:::danger[Critical Safety Warning]
+**Always follow your laser manufacturer's safety guidelines and
 operating instructions.** This page provides general safety principles but is not a substitute for
-proper training and your machine's specific safety documentation. :::
+proper training and your machine's specific safety documentation.
+:::
+<!-- prettier-ignore-end -->
 
 ## Your Primary Safety Resource
 
@@ -184,15 +188,17 @@ Before every job:
 
 ## Key Safety Rules
 
-:::warning Critical Safety Rules
-
+<!-- prettier-ignore-start -->
+:::warning[Critical Safety Rules]
 1. **Never leave laser unattended during operation**
 2. **Never operate without proper ventilation**
 3. **Never cut prohibited materials (PVC, vinyl, ABS, etc.)**
 4. **Always have fire extinguisher within reach**
 5. **Always follow manufacturer's safety guidelines**
 6. **Know where emergency stop is**
-7. **Preview jobs in Simulation Mode before running** :::
+7. **Preview jobs in Simulation Mode before running**
+:::
+<!-- prettier-ignore-end -->
 
 ## Additional Resources
 

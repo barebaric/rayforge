@@ -11,9 +11,13 @@ device (controller). These are also known as "dollar settings" or `$$` settings 
 
 ![Device Settings](/screenshots/machine-settings-device.webp)
 
-:::warning Caution When Changing Settings Incorrect firmware settings can cause your machine to
+<!-- prettier-ignore-start -->
+:::warning[Caution When Changing Settings]
+Incorrect firmware settings can cause your machine to
 behave unpredictably, lose position, or even damage hardware. Always record original values before
-making changes, and modify one setting at a time. :::
+making changes, and modify one setting at a time.
+:::
+<!-- prettier-ignore-end -->
 
 ## Overview
 
@@ -78,8 +82,12 @@ $100=80.0
 $RST=$
 ```
 
-:::danger Restore Defaults Erases All Settings The `$RST=$` command resets all GRBL settings to
-factory defaults. You'll lose any calibration and tuning. Back up your settings first! :::
+<!-- prettier-ignore-start -->
+:::danger[Restore Defaults Erases All Settings]
+The `$RST=$` command resets all GRBL settings to
+factory defaults. You'll lose any calibration and tuning. Back up your settings first!
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -105,8 +113,12 @@ These settings are most important for laser operation:
 - Doesn't turn off during rapids
 - **Dangerous for laser use!**
 
-:::warning Always Enable Laser Mode $32 should **always** be set to 1 for laser cutters. Disabled
-laser mode can cause unintended burns and fire hazards. :::
+<!-- prettier-ignore-start -->
+:::warning[Always Enable Laser Mode]
+$32 should **always** be set to 1 for laser cutters. Disabled
+laser mode can cause unintended burns and fire hazards.
+:::
+<!-- prettier-ignore-end -->
 
 ### $30 & $31 - Laser Power Range
 
@@ -120,8 +132,12 @@ laser mode can cause unintended burns and fire hazards. :::
 - $30=1000, $31=0 (S0-S1000 range, most common)
 - $30=255, $31=0 (S0-S255 range, some controllers)
 
-:::tip Matching Rayforge Configuration The "Max Power" setting in your [Laser Settings](laser)
-should match your $30 value. If $30=1000, set max power to 1000 in Rayforge. :::
+<!-- prettier-ignore-start -->
+:::tip[Matching Rayforge Configuration]
+The "Max Power" setting in your [Laser Settings](laser)
+should match your $30 value. If $30=1000, set max power to 1000 in Rayforge.
+:::
+<!-- prettier-ignore-end -->
 
 ### $130 & $131 - Maximum Travel
 
@@ -282,8 +298,12 @@ $132=0.0       ; Z max travel
 2. Send each line (`$100=80.0`, etc.) via console
 3. Verify with `$$` command
 
-:::tip Regular Backups Back up your settings after any calibration or tuning. Store backups in a
-safe location. :::
+<!-- prettier-ignore-start -->
+:::tip[Regular Backups]
+Back up your settings after any calibration or tuning. Store backups in a
+safe location.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 

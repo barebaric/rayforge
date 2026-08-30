@@ -47,5 +47,9 @@ Maschinen zu wechseln. Die Auswahl wird zwischen Sitzungen gespeichert.
 1. Klicke auf das Lösch-Symbol neben der Maschine
 2. Bestätige das Löschen
 
-:::warning Das Löschen einer Maschine kann nicht rückgängig gemacht werden. Exportiere das Profil
-zuerst, wenn du die Konfiguration behalten möchtest. :::
+<!-- prettier-ignore-start -->
+:::warning
+Das Löschen einer Maschine kann nicht rückgängig gemacht werden. Exportiere das Profil
+zuerst, wenn du die Konfiguration behalten möchtest.
+:::
+<!-- prettier-ignore-end -->

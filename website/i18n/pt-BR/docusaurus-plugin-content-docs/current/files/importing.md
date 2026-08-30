@@ -23,10 +23,12 @@ explica como importar arquivos e otimizá-los para obter os melhores resultados.
 | **JPEG** | `.jpg`, `.jpeg` | Vetorização          | Fotos, imagens de tom contínuo     |
 | **BMP**  | `.bmp`          | Vetorização          | Gráficos simples, capturas de tela |
 
-:::note Importação de imagens raster :::
-
+<!-- prettier-ignore-start -->
+:::note[Importação de imagens raster]
 Todas as imagens raster são **vetorizadas** para criar caminhos vetoriais que podem ser usados em
 operações a laser. A qualidade depende da configuração da vetorização.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -108,10 +110,14 @@ flexibilidade de restaurar o tamanho original, se necessário.
 
 SVG (Scalable Vector Graphics) é o **formato recomendado** para designs vetoriais.
 
-:::tip Automatizar a atribuição de etapas Você pode configurar
+<!-- prettier-ignore-start -->
+:::tip[Automatizar a atribuição de etapas]
+Você pode configurar
 [Regras de Cor](../application-settings/color-rules.md) para atribuir automaticamente tipos de etapa
 (Contorno, Gravação, etc.) com base nas cores do seu SVG. Quando existem regras, o diálogo de
-importação agrupa formas por cor por padrão para que as regras entrem em vigor. :::
+importação agrupa formas por cor por padrão para que as regras entrem em vigor.
+:::
+<!-- prettier-ignore-end -->
 
 ### Opções de importação no diálogo
 

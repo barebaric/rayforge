@@ -47,5 +47,9 @@ configuradas. A seleção é lembrada entre sessões.
 1. Clique no ícone de exclusão ao lado da máquina
 2. Confirme a exclusão
 
-:::warning Excluir uma máquina não pode ser desfeito. Exporte o perfil primeiro se desejar preservar
-a configuração. :::
+<!-- prettier-ignore-start -->
+:::warning
+Excluir uma máquina não pode ser desfeito. Exporte o perfil primeiro se desejar preservar
+a configuração.
+:::
+<!-- prettier-ignore-end -->

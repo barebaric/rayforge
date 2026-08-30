@@ -66,11 +66,14 @@ potência para atuar como "ponteiro laser" para posicionamento.
 - Defina como 0 para desabilitar o recurso de modo foco
 - Use para alinhamento visual e posicionamento
 
-:::tip Usando o Modo Foco Clique no botão foco (ícone de laser) na barra de ferramentas para
+<!-- prettier-ignore-start -->
+:::tip[Usando o Modo Foco]
+Clique no botão foco (ícone de laser) na barra de ferramentas para
 alternar o modo foco. O laser ligará neste nível de potência, ajudando você a ver exatamente onde o
 laser está posicionado. Consulte
 [Posicionamento de Peça de Trabalho](../features/workpiece-positioning.md) para mais informações.
 :::
+<!-- prettier-ignore-end -->
 
 #### Tamanho do Ponto
 
@@ -80,11 +83,15 @@ O tamanho físico do seu feixe de laser focalizado em milímetros.
 - A maioria dos lasers tem um ponto circular (ex: 0,1 x 0,1)
 - Afeta cálculos de qualidade de gravação
 
-:::tip Medindo o Tamanho do Ponto Para medir o tamanho do seu ponto:
+<!-- prettier-ignore-start -->
+:::tip[Medindo o Tamanho do Ponto]
+Para medir o tamanho do seu ponto:
 
 1. Dispare um pulso curto com baixa potência em um material de teste
 2. Meça a marca resultante com paquímetro
-3. Use a média de múltiplas medições :::
+3. Use a média de múltiplas medições
+:::
+<!-- prettier-ignore-end -->
 
 #### Cor
 
@@ -96,9 +103,13 @@ múltiplas cabeças de laser.
 - Escolha uma cor que contraste bem com a visualização do seu material
 - Cores padrão são atribuídas automaticamente
 
-:::tip Fluxos de Trabalho Multi-Laser Ao usar múltiplas cabeças de laser, atribuir cores diferentes
+<!-- prettier-ignore-start -->
+:::tip[Fluxos de Trabalho Multi-Laser]
+Ao usar múltiplas cabeças de laser, atribuir cores diferentes
 a cada laser facilita ver quais operações serão realizadas por qual laser. Por exemplo, use vermelho
-para seu laser de corte principal e azul para um laser de gravação secundário. :::
+para seu laser de corte principal e azul para um laser de gravação secundário.
+:::
+<!-- prettier-ignore-end -->
 
 #### Tipo de Laser
 

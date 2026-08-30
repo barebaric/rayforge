@@ -27,8 +27,12 @@ eje Z.
 - **Espesor del material ÷ pasadas:** Corte de profundidad progresiva
 - **Incrementos pequeños (0.1-0.5mm):** Control fino para grabado profundo
 
-:::warning Eje Z Requerido El descenso Z solo funciona con máquinas que tienen control de eje Z
-motorizado. Para máquinas sin eje Z, todas las pasadas ocurren a la misma altura de enfoque. :::
+<!-- prettier-ignore-start -->
+:::warning[Eje Z Requerido]
+El descenso Z solo funciona con máquinas que tienen control de eje Z
+motorizado. Para máquinas sin eje Z, todas las pasadas ocurren a la misma altura de enfoque.
+:::
+<!-- prettier-ignore-end -->
 
 ## Cuándo Usar Multi-Pasada
 

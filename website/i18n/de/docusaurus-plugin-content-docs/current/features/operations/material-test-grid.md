@@ -174,8 +174,12 @@ Dokumentiere deine erfolgreichen Einstellungen zur späteren Referenz:
 - Anzahl der Durchgänge
 - Alle speziellen Hinweise
 
-:::tip Materialdatenbank Erwäge, ein Referenzdokument mit deinen Materialtest-Ergebnissen zu
-erstellen, um in zukünftigen Projekten schnell nachzuschlagen. :::
+<!-- prettier-ignore-start -->
+:::tip[Materialdatenbank]
+Erwäge, ein Referenzdokument mit deinen Materialtest-Ergebnissen zu
+erstellen, um in zukünftigen Projekten schnell nachzuschlagen.
+:::
+<!-- prettier-ignore-end -->
 
 ## Erweiterte Verwendung
 

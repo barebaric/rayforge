@@ -47,5 +47,9 @@ máquinas configuradas. La selección se recuerda entre sesiones.
 1. Haz clic en el icono de eliminación junto a la máquina
 2. Confirma la eliminación
 
-:::warning Eliminar una máquina no se puede deshacer. Exporta el perfil primero si deseas conservar
-la configuración. :::
+<!-- prettier-ignore-start -->
+:::warning
+Eliminar una máquina no se puede deshacer. Exporta el perfil primero si deseas conservar
+la configuración.
+:::
+<!-- prettier-ignore-end -->

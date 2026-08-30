@@ -6,10 +6,14 @@ paramètres `$$` dans GRBL.
 
 ![Paramètres de l'Appareil](/screenshots/machine-settings-device.webp)
 
-:::warning Attention Lors du Changement de Paramètres Des paramètres de firmware incorrects peuvent
+<!-- prettier-ignore-start -->
+:::warning[Attention Lors du Changement de Paramètres]
+Des paramètres de firmware incorrects peuvent
 faire se comporter votre machine de manière imprévisible, perdre sa position ou même endommager le
 matériel. Enregistrez toujours les valeurs originales avant d'effectuer des changements, et modifiez
-un paramètre à la fois. :::
+un paramètre à la fois.
+:::
+<!-- prettier-ignore-end -->
 
 ## Aperçu
 
@@ -75,9 +79,13 @@ $100=80.0
 $RST=$
 ```
 
-:::danger Restaurer les Défauts Efface Tous les Paramètres La commande `$RST=$` réinitialise tous
+<!-- prettier-ignore-start -->
+:::danger[Restaurer les Défauts Efface Tous les Paramètres]
+La commande `$RST=$` réinitialise tous
 les paramètres GRBL aux valeurs d'usine par défaut. Vous perdrez toute calibration et tout réglage.
-Sauvegardez vos paramètres d'abord ! :::
+Sauvegardez vos paramètres d'abord !
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -103,9 +111,13 @@ Ces paramètres sont les plus importants pour le fonctionnement laser :
 - Ne s'éteint pas pendant les rapides
 - **Dangereux pour l'utilisation laser !**
 
-:::warning Activez Toujours le Mode Laser $32 devrait **toujours** être défini à 1 pour les
+<!-- prettier-ignore-start -->
+:::warning[Activez Toujours le Mode Laser]
+$32 devrait **toujours** être défini à 1 pour les
 découpeuses laser. Le mode laser désactivé peut causer des brûlures involontaires et des risques
-d'incendie. :::
+d'incendie.
+:::
+<!-- prettier-ignore-end -->
 
 ### $30 & $31 - Plage de Puissance Laser
 
@@ -119,9 +131,13 @@ d'incendie. :::
 - $30=1000, $31=0 (plage S0-S1000, le plus courant)
 - $30=255, $31=0 (plage S0-S255, certains contrôleurs)
 
-:::tip Correspondance avec la Configuration Rayforge Le paramètre "Puissance Max" dans vos
+<!-- prettier-ignore-start -->
+:::tip[Correspondance avec la Configuration Rayforge]
+Le paramètre "Puissance Max" dans vos
 [Paramètres Laser](laser) devrait correspondre à votre valeur $30. Si $30=1000, définissez la
-puissance max à 1000 dans Rayforge. :::
+puissance max à 1000 dans Rayforge.
+:::
+<!-- prettier-ignore-end -->
 
 ### $130 & $131 - Déplacement Maximum
 
@@ -282,8 +298,12 @@ $132=0.0       ; Déplacement max Z
 2. Envoyez chaque ligne (`$100=80.0`, etc.) via console
 3. Vérifiez avec la commande `$$`
 
-:::tip Sauvegardes Régulières Sauvegardez vos paramètres après toute calibration ou réglage. Stockez
-les sauvegardes dans un emplacement sûr. :::
+<!-- prettier-ignore-start -->
+:::tip[Sauvegardes Régulières]
+Sauvegardez vos paramètres après toute calibration ou réglage. Stockez
+les sauvegardes dans un emplacement sûr.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 

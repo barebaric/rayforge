@@ -124,9 +124,13 @@ sind.
 6. Unter Windows die COM-Port-Nummer aus dem Geräte-Manager notieren
 7. Vermeide Ports namens `/dev/ttyS*` unter Linux - dies sind Hardware-Seriell-Ports, nicht USB
 
-:::warning Hardware-Seriell-Ports Rayforge warnt dich, wenn du `/dev/ttyS*`-Ports unter Linux
+<!-- prettier-ignore-start -->
+:::warning[Hardware-Seriell-Ports]
+Rayforge warnt dich, wenn du `/dev/ttyS*`-Ports unter Linux
 auswählst, da diese typischerweise keine USB-basierten GRBL-Geräte sind. USB-Seriell-Ports verwenden
-`/dev/ttyUSB*` oder `/dev/ttyACM*`. :::
+`/dev/ttyUSB*` oder `/dev/ttyACM*`.
+:::
+<!-- prettier-ignore-end -->
 
 ### Falsche Baudrate
 

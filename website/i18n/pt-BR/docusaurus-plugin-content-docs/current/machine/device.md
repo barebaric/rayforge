@@ -6,9 +6,13 @@ ou `$$` no GRBL.
 
 ![Configurações do Dispositivo](/screenshots/machine-settings-device.webp)
 
-:::warning Cuidado ao Alterar Configurações Configurações incorretas de firmware podem fazer sua
+<!-- prettier-ignore-start -->
+:::warning[Cuidado ao Alterar Configurações]
+Configurações incorretas de firmware podem fazer sua
 máquina se comportar de forma imprevisível, perder posição ou até danificar o hardware. Sempre anote
-os valores originais antes de fazer alterações e modifique uma configuração de cada vez. :::
+os valores originais antes de fazer alterações e modifique uma configuração de cada vez.
+:::
+<!-- prettier-ignore-end -->
 
 ## Visão Geral
 
@@ -74,9 +78,13 @@ $100=80.0
 $RST=$
 ```
 
-:::danger Restaurar Padrões Apaga Todas as Configurações O comando `$RST=$` reseta todas as
+<!-- prettier-ignore-start -->
+:::danger[Restaurar Padrões Apaga Todas as Configurações]
+O comando `$RST=$` reseta todas as
 configurações GRBL para os padrões de fábrica. Você perderá qualquer calibração e ajuste. Faça
-backup das suas configurações primeiro! :::
+backup das suas configurações primeiro!
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -102,8 +110,12 @@ Estas configurações são mais importantes para operação a laser:
 - Não desliga durante rápidos
 - **Perigoso para uso com laser!**
 
-:::warning Sempre Habilite o Modo Laser $32 deve **sempre** ser definido como 1 para cortadoras a
-laser. Modo laser desabilitado pode causar queimaduras não intencionais e riscos de incêndio. :::
+<!-- prettier-ignore-start -->
+:::warning[Sempre Habilite o Modo Laser]
+$32 deve **sempre** ser definido como 1 para cortadoras a
+laser. Modo laser desabilitado pode causar queimaduras não intencionais e riscos de incêndio.
+:::
+<!-- prettier-ignore-end -->
 
 ### $30 & $31 - Faixa de Potência do Laser
 
@@ -117,9 +129,13 @@ laser. Modo laser desabilitado pode causar queimaduras não intencionais e risco
 - $30=1000, $31=0 (faixa S0-S1000, mais comum)
 - $30=255, $31=0 (faixa S0-S255, alguns controladores)
 
-:::tip Correspondência com Configuração do Rayforge A configuração "Potência Máxima" nas suas
+<!-- prettier-ignore-start -->
+:::tip[Correspondência com Configuração do Rayforge]
+A configuração "Potência Máxima" nas suas
 [Configurações do Laser](laser) deve corresponder ao seu valor $30. Se $30=1000, defina potência
-máxima para 1000 no Rayforge. :::
+máxima para 1000 no Rayforge.
+:::
+<!-- prettier-ignore-end -->
 
 ### $130 & $131 - Deslocamento Máximo
 
@@ -280,8 +296,12 @@ $132=0.0       ; Deslocamento máximo Z
 2. Envie cada linha (`$100=80.0`, etc.) via console
 3. Verifique com comando `$$`
 
-:::tip Backups Regulares Faça backup das suas configurações após qualquer calibração ou ajuste.
-Armazene backups em um local seguro. :::
+<!-- prettier-ignore-start -->
+:::tip[Backups Regulares]
+Faça backup das suas configurações após qualquer calibração ou ajuste.
+Armazene backups em um local seguro.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 

@@ -23,10 +23,12 @@ Rasterformate. Diese Seite erklärt, wie du Dateien importierst und für beste E
 | **JPEG** | `.jpg`, `.jpeg` | Tracing zu Vektoren | Fotos, Bilder mit kontinuierlichen Tönen |
 | **BMP**  | `.bmp`          | Tracing zu Vektoren | Einfache Grafiken, Screenshots           |
 
-:::note Raster-Import :::
-
+<!-- prettier-ignore-start -->
+:::note[Raster-Import]
 Alle Rasterbilder werden **traced**, um Vektorpfade zu erstellen, die für Laseroperationen verwendet
 werden können. Die Qualität hängt von der Tracing-Konfiguration ab.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -111,10 +113,14 @@ die Flexibilität hast, die Originalgröße bei Bedarf wiederherzustellen.
 
 SVG (Scalable Vector Graphics) ist das **empfohlene Format** für Vektor-Designs.
 
-:::tip Schrittzuweisung automatisieren Du kannst
+<!-- prettier-ignore-start -->
+:::tip[Schrittzuweisung automatisieren]
+Du kannst
 [Farbregeln](../application-settings/color-rules.md) konfigurieren, um Schritttypen (Kontur, Gravur
 usw.) automatisch basierend auf den Farben in deinem SVG zuzuweisen. Wenn Regeln existieren,
-standardmäßig der Import-Dialog Formen nach Farbe gruppiert, damit die Regeln greifen. :::
+standardmäßig der Import-Dialog Formen nach Farbe gruppiert, damit die Regeln greifen.
+:::
+<!-- prettier-ignore-end -->
 
 ### Importoptionen im Dialog
 

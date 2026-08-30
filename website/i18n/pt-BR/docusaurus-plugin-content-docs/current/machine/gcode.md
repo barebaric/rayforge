@@ -5,9 +5,13 @@ máquina.
 
 ![Configurações de G-code](/screenshots/machine-settings-gcode.webp)
 
-:::info Esta página é exibida apenas para máquinas que usam drivers baseados em G-code (ex. GRBL,
+<!-- prettier-ignore-start -->
+:::info
+Esta página é exibida apenas para máquinas que usam drivers baseados em G-code (ex. GRBL,
 Smoothieware, Marlin). Se sua máquina usa um driver não baseado em G-code (ex. Ruida), esta página
-de configurações fica completamente oculta. :::
+de configurações fica completamente oculta.
+:::
+<!-- prettier-ignore-end -->
 
 ## Dialeto de G-code
 
@@ -27,8 +31,12 @@ controladores usam comandos e formatos ligeiramente diferentes.
 - **Smoothieware**: Para Smoothieboard e controladores similares.
 - **Marlin**: Para controladores baseados em Marlin.
 
-:::info O dialeto afeta como a potência do laser, movimentos e outros comandos são formatados no
-G-code de saída. :::
+<!-- prettier-ignore-start -->
+:::info
+O dialeto afeta como a potência do laser, movimentos e outros comandos são formatados no
+G-code de saída.
+:::
+<!-- prettier-ignore-end -->
 
 ## Preâmbulo e Postscript do Dialeto
 

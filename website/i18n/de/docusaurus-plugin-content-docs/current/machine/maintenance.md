@@ -59,14 +59,18 @@ Nach Durchführung der Wartung kannst du den entsprechenden Zähler zurücksetze
 2. Bestätige das Zurücksetzen im Dialog
 3. Der Zähler kehrt zu Null zurück
 
-:::tip Wartungsplan Häufige Wartungsintervalle:
+<!-- prettier-ignore-start -->
+:::tip[Wartungsplan]
+Häufige Wartungsintervalle:
 
 - **Täglich**: Linse reinigen, Spiegelausrichtung überprüfen
 - **Wöchentlich**: Schienen reinigen, Riemenzug überprüfen
 - **Monatlich**: Lager schmieren, elektrische Verbindungen überprüfen
 - **Jährlich**: Vollständige Inspektion, verschlissene Teile ersetzen
 
-Passe Intervalle basierend auf deinen Nutzungsmustern und Herstellerempfehlungen an. :::
+Passe Intervalle basierend auf deinen Nutzungsmustern und Herstellerempfehlungen an.
+:::
+<!-- prettier-ignore-end -->
 
 ## Siehe auch
 

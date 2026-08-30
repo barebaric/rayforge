@@ -47,5 +47,9 @@ les machines configurées. La sélection est mémorisée entre les sessions.
 1. Cliquez sur l'icône de suppression à côté de la machine
 2. Confirmez la suppression
 
-:::warning La suppression d'une machine ne peut pas être annulée. Exportez le profil au préalable si
-vous souhaitez conserver la configuration. :::
+<!-- prettier-ignore-start -->
+:::warning
+La suppression d'une machine ne peut pas être annulée. Exportez le profil au préalable si
+vous souhaitez conserver la configuration.
+:::
+<!-- prettier-ignore-end -->

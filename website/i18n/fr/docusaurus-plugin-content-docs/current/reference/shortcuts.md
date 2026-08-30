@@ -2,11 +2,13 @@
 
 Référence complète des raccourcis clavier dans Rayforge.
 
-:::note Conventions de plateforme
-
+<!-- prettier-ignore-start -->
+:::note[Conventions de plateforme]
 - **Linux/Windows :** touche `Ctrl`
 - **macOS :** touche `Command`
-- La documentation utilise `Ctrl` - les utilisateurs macOS remplacent par `Command` :::
+- La documentation utilise `Ctrl` - les utilisateurs macOS remplacent par `Command`
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -134,9 +136,13 @@ Référence complète des raccourcis clavier dans Rayforge.
 | `Ctrl+&lt;` | Paramètres machine | Ouvrir la boîte de dialogue des paramètres machine |
 | `F1`        | À propos           | Afficher la boîte de dialogue À propos             |
 
-:::note Opérations machine Les opérations de contrôle de la machine (Origine, Cadrer, Envoyer, etc.)
+<!-- prettier-ignore-start -->
+:::note[Opérations machine]
+Les opérations de contrôle de la machine (Origine, Cadrer, Envoyer, etc.)
 n'ont actuellement pas de raccourcis par défaut mais sont accessibles via les boutons de la barre
-d'outils ou les menus. :::
+d'outils ou les menus.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -224,8 +230,12 @@ Lors de l'édition de G-code ou de champs de texte :
 
 ## Personnaliser les raccourcis
 
-:::note Raccourcis personnalisés Les raccourcis clavier sont actuellement codés en dur. La
-configuration de raccourcis personnalisés pourrait être ajoutée dans les futures versions. :::
+<!-- prettier-ignore-start -->
+:::note[Raccourcis personnalisés]
+Les raccourcis clavier sont actuellement codés en dur. La
+configuration de raccourcis personnalisés pourrait être ajoutée dans les futures versions.
+:::
+<!-- prettier-ignore-end -->
 
 **Limitations actuelles :**
 

@@ -121,9 +121,13 @@ Rayforge soporta estos disparadores de hooks:
 | **Inicio de Pieza** | Antes de procesar cada pieza   | Numeración de partes, marcas de alineación             |
 | **Fin de Pieza**    | Después de procesar cada pieza | Enfriamiento, pausa de inspección                      |
 
-:::note Código G a Nivel de Trabajo El código G de inicio y fin de trabajo se configura a través de
+<!-- prettier-ignore-start -->
+:::note[Código G a Nivel de Trabajo]
+El código G de inicio y fin de trabajo se configura a través de
 los ajustes de preámbulo y postscript del dialecto, no mediante hooks. Ver
-[Ajustes de Código G](gcode) para detalles. :::
+[Ajustes de Código G](gcode) para detalles.
+:::
+<!-- prettier-ignore-end -->
 
 ### Creando un Hook
 
@@ -299,20 +303,28 @@ M8  ; Asistencia de aire ON
 M9  ; Asistencia de aire OFF (evita dispersión de polvo para grabado)
 ```
 
-:::note Hooks Específicos por Capa Rayforge actualmente no soporta personalización de hooks por
-capa. Para lograr esto, usa código G condicional o perfiles de máquina separados. :::
+<!-- prettier-ignore-start -->
+:::note[Hooks Específicos por Capa]
+Rayforge actualmente no soporta personalización de hooks por
+capa. Para lograr esto, usa código G condicional o perfiles de máquina separados.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
 ## Consideraciones de Seguridad
 
-:::danger Prueba Antes de Producción Siempre prueba macros y hooks en **modo simulación** o con el
+<!-- prettier-ignore-start -->
+:::danger[Prueba Antes de Producción]
+Siempre prueba macros y hooks en **modo simulación** o con el
 láser **deshabilitado** antes de ejecutar en trabajos reales. El código G configurado
 incorrectamente puede:
 
 - Hacer que la máquina choque contra los límites
 - Disparar el láser inesperadamente
-- Dañar materiales o equipos :::
+- Dañar materiales o equipos
+:::
+<!-- prettier-ignore-end -->
 
 **Lista de verificación de seguridad:**
 

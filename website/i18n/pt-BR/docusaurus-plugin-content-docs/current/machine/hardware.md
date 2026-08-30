@@ -35,8 +35,12 @@ coordenadas são interpretadas.
 2. Observe para onde a cabeça do laser se move
 3. Essa posição é sua origem (0,0)
 
-:::info A configuração de origem das coordenadas afeta como o G-code é gerado. Certifique-se de que
-corresponde à configuração de homing do seu firmware. :::
+<!-- prettier-ignore-start -->
+:::info
+A configuração de origem das coordenadas afeta como o G-code é gerado. Certifique-se de que
+corresponde à configuração de homing do seu firmware.
+:::
+<!-- prettier-ignore-end -->
 
 ### Direção do Eixo
 
@@ -96,8 +100,12 @@ de jog impedirão movimento fora desses limites.
 Os limites de software são automaticamente restringidos para ficar dentro da extensão dos eixos (0
 ao valor de extensão).
 
-:::tip Use limites de software para proteger áreas da sua superfície de trabalho que nunca devem ser
-alcançadas durante o jog, como áreas com fixadores ou equipamentos sensíveis. :::
+<!-- prettier-ignore-start -->
+:::tip
+Use limites de software para proteger áreas da sua superfície de trabalho que nunca devem ser
+alcançadas durante o jog, como áreas com fixadores ou equipamentos sensíveis.
+:::
+<!-- prettier-ignore-end -->
 
 ## Veja Também
 

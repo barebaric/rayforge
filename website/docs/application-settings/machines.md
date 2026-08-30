@@ -45,5 +45,9 @@ selection is remembered between sessions.
 1. Click the delete icon next to the machine
 2. Confirm the deletion
 
-:::warning Deleting a machine cannot be undone. Export the profile first if you want to preserve the
-configuration. :::
+<!-- prettier-ignore-start -->
+:::warning
+Deleting a machine cannot be undone. Export the profile first if you want to preserve the
+configuration.
+:::
+<!-- prettier-ignore-end -->

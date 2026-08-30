@@ -7,10 +7,14 @@ und Gravurprojekte zu organisieren und zu verwalten. Diese Anleitung erklärt de
 zwischen Kern- und Benutzer-Bibliotheken und wie du deine eigenen Bibliotheken erstellen und
 Materialien hinzufügen kannst.
 
-:::note Das Zuweisen eines Materials zu einem Materialstück beeinflusst sowohl sein optisches
+<!-- prettier-ignore-start -->
+:::note
+Das Zuweisen eines Materials zu einem Materialstück beeinflusst sowohl sein optisches
 Erscheinungsbild in der 2D- und 3D-Ansicht als auch, welche [Rezepte](recipes.md) darauf angewendet
 werden: materialspezifische Rezepte werden anhand des zugewiesenen Materials abgeglichen. In
-zukünftigen Versionen werden Materialien verwendet, um weitere funktionale Parameter abzuleiten. :::
+zukünftigen Versionen werden Materialien verwendet, um weitere funktionale Parameter abzuleiten.
+:::
+<!-- prettier-ignore-end -->
 
 ## Eine neue Bibliothek erstellen
 
@@ -81,8 +85,12 @@ reflektiert. Setze 1 für metallische Materialien, 0 für nicht-metallische.
 
 #### Absorption {#absorption}
 
-:::note Neu in 1.11 Absorptionsdaten steuern das
-[physikalische Brennmodell](../ui/3d-preview.md#physical-burn-model) in der 3D-Vorschau. :::
+<!-- prettier-ignore-start -->
+:::note[Neu in 1.11]
+Absorptionsdaten steuern das
+[physikalische Brennmodell](../ui/3d-preview.md#physical-burn-model) in der 3D-Vorschau.
+:::
+<!-- prettier-ignore-end -->
 
 Wellenlängenabhängige Absorptionskoeffizienten (0–1) beschreiben, wie viel der Laserenergie ein
 Material bei einer bestimmten Wellenlänge absorbiert. Die 3D-Vorschau verwendet diese zusammen mit
@@ -126,4 +134,8 @@ willkommen.
 2. Klicke auf die Schaltfläche **Löschen**
 3. Bestätige das Löschen im Dialog
 
-:::warning Das Löschen eines Materials ist dauerhaft und kann nicht rückgängig gemacht werden. :::
+<!-- prettier-ignore-start -->
+:::warning
+Das Löschen eines Materials ist dauerhaft und kann nicht rückgängig gemacht werden.
+:::
+<!-- prettier-ignore-end -->

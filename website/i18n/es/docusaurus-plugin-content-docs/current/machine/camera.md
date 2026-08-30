@@ -229,15 +229,17 @@ El panel de propiedades de la cámara muestra el estado de alineación con un í
 5. Ingresa las coordenadas exactas para cada punto
 6. Haz clic en **Aplicar** y verifica
 
-:::tip Mejores Prácticas
-
+<!-- prettier-ignore-start -->
+:::tip[Mejores Prácticas]
 - Usa puntos en las esquinas de tu área de trabajo para máxima cobertura
 - Evita agrupar puntos en una área
 - Mide las coordenadas del mundo cuidadosamente - la precisión aquí determina la calidad general de
   la alineación
 - Vuelve a alinear si mueves la cámara o cambias la distancia de enfoque
 - Vuelve a alinear después de actualizar la calibración de lente
-- Guarda tu alineación - persiste entre sesiones :::
+- Guarda tu alineación - persiste entre sesiones
+:::
+<!-- prettier-ignore-end -->
 
 ---
 

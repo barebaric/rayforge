@@ -34,8 +34,12 @@ Koordinaten interpretiert werden.
 2. Beobachte, wohin sich der Laserkopf bewegt
 3. Diese Position ist dein (0,0)-Ursprung
 
-:::info Die Einstellung des Koordinatenursprungs beeinflusst, wie G-Code generiert wird. Stelle
-sicher, dass sie mit der Homing-Konfiguration deiner Firmware übereinstimmt. :::
+<!-- prettier-ignore-start -->
+:::info
+Die Einstellung des Koordinatenursprungs beeinflusst, wie G-Code generiert wird. Stelle
+sicher, dass sie mit der Homing-Konfiguration deiner Firmware übereinstimmt.
+:::
+<!-- prettier-ignore-end -->
 
 ### Achsenrichtung
 
@@ -95,9 +99,13 @@ die Jog-Steuerungen Bewegungen außerhalb dieser Grenzen.
 Software-Limits werden automatisch eingeschränkt, um innerhalb der Achsenbereiche zu bleiben (0 bis
 Bereichswert).
 
-:::tip Verwende Software-Limits, um Bereiche deiner Arbeitsfläche zu schützen, die während des
+<!-- prettier-ignore-start -->
+:::tip
+Verwende Software-Limits, um Bereiche deiner Arbeitsfläche zu schützen, die während des
 Joggings niemals erreicht werden sollten, wie Bereiche mit Vorrichtungen oder empfindlicher
-Ausrüstung. :::
+Ausrüstung.
+:::
+<!-- prettier-ignore-end -->
 
 ## Siehe auch
 

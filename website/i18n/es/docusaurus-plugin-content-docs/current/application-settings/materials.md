@@ -7,10 +7,14 @@ materiales para tus proyectos de corte y grabado láser. Esta guía explica la d
 bibliotecas principales y de usuario, y cómo crear tus propias bibliotecas y añadir materiales a
 ellas.
 
-:::note Asignar un material a un elemento de material de base afecta tanto su apariencia visual en
+<!-- prettier-ignore-start -->
+:::note
+Asignar un material a un elemento de material de base afecta tanto su apariencia visual en
 el lienzo 2D y 3D como qué [recetas](recipes.md) se le aplican: las recetas específicas de material
 coinciden con el material asignado. En futuras versiones, los materiales se usarán para derivar más
-parámetros funcionales. :::
+parámetros funcionales.
+:::
+<!-- prettier-ignore-end -->
 
 ## Creando una Nueva Biblioteca
 
@@ -82,8 +86,12 @@ Un valor de 0-1 que describe si la superficie refleja la luz como un metal en la
 
 #### Absorción {#absorption}
 
-:::note Nuevo en 1.11 Los datos de absorción impulsan el
-[modelo de quemado físico](../ui/3d-preview.md#physical-burn-model) en la vista previa 3D. :::
+<!-- prettier-ignore-start -->
+:::note[Nuevo en 1.11]
+Los datos de absorción impulsan el
+[modelo de quemado físico](../ui/3d-preview.md#physical-burn-model) en la vista previa 3D.
+:::
+<!-- prettier-ignore-end -->
 
 Coeficientes de absorción por longitud de onda (0–1) describen cuánta energía del láser absorbe un
 material a una longitud de onda determinada. La vista previa 3D los usa, junto con la longitud de
@@ -127,4 +135,8 @@ prueba del mundo real.
 2. Haz clic en el botón **Eliminar**
 3. Confirma la eliminación en el diálogo
 
-:::warning Eliminar un material es permanente y no se puede deshacer. :::
+<!-- prettier-ignore-start -->
+:::warning
+Eliminar un material es permanente y no se puede deshacer.
+:::
+<!-- prettier-ignore-end -->

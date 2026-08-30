@@ -58,7 +58,9 @@ Après avoir effectué la maintenance, vous pouvez réinitialiser le compteur pe
 2. Confirmez la réinitialisation dans la boîte de dialogue
 3. Le compteur revient à zéro
 
-:::tip Calendrier de Maintenance Intervalles de maintenance courants :
+<!-- prettier-ignore-start -->
+:::tip[Calendrier de Maintenance]
+Intervalles de maintenance courants :
 
 - **Quotidien** : Nettoyer la lentille, vérifier l'alignement des miroirs
 - **Hebdomadaire** : Nettoyer les rails, vérifier la tension des courroies
@@ -66,7 +68,9 @@ Après avoir effectué la maintenance, vous pouvez réinitialiser le compteur pe
 - **Annuel** : Inspection complète, remplacer les pièces usées
 
 Ajustez les intervalles en fonction de vos modèles d'utilisation et des recommandations du
-fabricant. :::
+fabricant.
+:::
+<!-- prettier-ignore-end -->
 
 ## Voir Aussi
 

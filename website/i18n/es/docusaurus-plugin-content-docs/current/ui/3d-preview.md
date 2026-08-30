@@ -56,9 +56,13 @@ La vista 3D se actualiza automáticamente cuando cambias el WCS activo:
 - La cuadrícula y los ejes se desplazan para reflejar el nuevo origen WCS
 - Las etiquetas se actualizan para mostrar coordenadas relativas al nuevo WCS
 
-:::tip WCS en Vista 3D La vista 3D muestra tus trayectorias relativas al WCS seleccionado. Cuando
+<!-- prettier-ignore-start -->
+:::tip[WCS en Vista 3D]
+La vista 3D muestra tus trayectorias relativas al WCS seleccionado. Cuando
 cambias WCS, verás las trayectorias parecer moverse porque el punto de referencia (la cuadrícula) ha
-cambiado, no porque las trayectorias mismas se movieron. :::
+cambiado, no porque las trayectorias mismas se movieron.
+:::
+<!-- prettier-ignore-end -->
 
 ## Opciones de Pantalla
 
@@ -87,9 +91,13 @@ Personaliza lo que ves:
 - **Mostrar Movimientos de Trabajo**: Mostrar movimientos de corte/grabado (líneas sólidas)
 - **Colorear por Operación**: Diferentes colores para cada operación
 
-:::tip Colores por Láser Al usar máquinas con múltiples cabezales láser, cada láser puede tener su
+<!-- prettier-ignore-start -->
+:::tip[Colores por Láser]
+Al usar máquinas con múltiples cabezales láser, cada láser puede tener su
 propio color configurado en [Ajustes de Láser](../machine/laser.md). Esto facilita identificar qué
-láser realizará cada operación. :::
+láser realizará cada operación.
+:::
+<!-- prettier-ignore-end -->
 
 ### Modelo de Cabezal Láser
 
@@ -117,11 +125,15 @@ muestra un quemado impulsado por un modelo físicamente motivado que tiene en cu
 El resultado es una rampa de quemado con un halo de calor en las superficies orientadas hacia
 arriba. También funciona con rotativo — el grabado se hornea en el material de base rotativo.
 
-:::note Calibración El modelo de quemado está físicamente motivado pero aún no está completamente
+<!-- prettier-ignore-start -->
+:::note[Calibración]
+El modelo de quemado está físicamente motivado pero aún no está completamente
 calibrado para todos los materiales y tipos de láser. Puedes ayudar a mejorarlo: ejecuta una
 [cuadrícula de prueba de material](../features/operations/material-test-grid.md) y comparte la foto
 del resultado junto con los datos de tu máquina (longitud de onda, potencia óptica, tamaño del
-punto, velocidad y las potencias/profundidades probadas). :::
+punto, velocidad y las potencias/profundidades probadas).
+:::
+<!-- prettier-ignore-end -->
 
 ## Simulación
 

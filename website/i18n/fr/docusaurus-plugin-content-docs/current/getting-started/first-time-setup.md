@@ -196,8 +196,12 @@ Le statut de connexion est affiché dans le coin inférieur gauche de la fenêtr
 icône de statut et une étiquette montrant l'état actuel (Connecté, Connexion, Déconnecté, Erreur,
 etc.).
 
-:::success Connecté ! Si votre machine affiche le statut "Connecté", vous êtes prêt à utiliser
-Rayforge ! :::
+<!-- prettier-ignore-start -->
+:::success[Connecté !]
+Si votre machine affiche le statut "Connecté", vous êtes prêt à utiliser
+Rayforge !
+:::
+<!-- prettier-ignore-end -->
 
 ---
 

@@ -42,8 +42,12 @@ exactly where the laser head is positioned.
 4. **Jog the laser head** to see the beam position on your material
 5. **Click the Focus button again** to turn off when done
 
-:::warning Safety Even at low power, the laser can damage eyes. Never look directly into the beam or
-point it at reflective surfaces. Wear appropriate eye protection. :::
+<!-- prettier-ignore-start -->
+:::warning[Safety]
+Even at low power, the laser can damage eyes. Never look directly into the beam or
+point it at reflective surfaces. Wear appropriate eye protection.
+:::
+<!-- prettier-ignore-end -->
 
 ### Configuring Focus Power
 
@@ -55,9 +59,12 @@ The focus power determines how bright the laser dot appears:
    - Typical values: 1-5% for most materials
    - Set to 0 to disable the feature
 
-:::tip Finding the Right Power Start with 1% and increase gradually. The dot should be visible but
+<!-- prettier-ignore-start -->
+:::tip[Finding the Right Power]
+Start with 1% and increase gradually. The dot should be visible but
 not leave any mark on your material. Darker materials may need higher power to see the dot clearly.
 :::
+<!-- prettier-ignore-end -->
 
 ### When to Use Focus Mode
 
@@ -89,11 +96,12 @@ Configure framing behavior in **Settings → Machine → Laser**:
   - Set to 0 for air framing (laser off, just movement)
   - Set to 1-5% for a visible trace on the material
 
-:::tip Air Framing vs. Low Power
-
+<!-- prettier-ignore-start -->
+:::tip[Air Framing vs. Low Power]
 - **Air framing (0% power)**: Safe for any material, but you only see the head movement
 - **Low power framing**: Leaves a faint visible mark, useful for precise alignment on dark materials
-  :::
+:::
+<!-- prettier-ignore-end -->
 
 ### When to Frame
 
@@ -129,11 +137,15 @@ Rayforge uses several coordinate systems:
 | **G54**     | Work coordinate system 1 (default)             |
 | **G55-G59** | Additional work coordinate systems             |
 
-:::tip Multiple Work Areas Use different WCS slots for different fixture positions. For example:
+<!-- prettier-ignore-start -->
+:::tip[Multiple Work Areas]
+Use different WCS slots for different fixture positions. For example:
 
 - G54 for the left side of your bed
 - G55 for the right side
-- G56 for a rotary attachment :::
+- G56 for a rotary attachment
+:::
+<!-- prettier-ignore-end -->
 
 ### When to Set WCS Zero
 
@@ -167,11 +179,13 @@ Camera alignment maps camera pixels to real-world coordinates:
 3. Enter the real-world X/Y coordinates for each point
 4. Click **Apply** to calculate the transformation
 
-:::tip Alignment Accuracy
-
+<!-- prettier-ignore-start -->
+:::tip[Alignment Accuracy]
 - Use points spread across your entire work area
 - Measure world coordinates carefully with a ruler
-- Use machine positions (jog to known coordinates) for best accuracy :::
+- Use machine positions (jog to known coordinates) for best accuracy
+:::
+<!-- prettier-ignore-end -->
 
 ### Positioning with Camera Overlay
 

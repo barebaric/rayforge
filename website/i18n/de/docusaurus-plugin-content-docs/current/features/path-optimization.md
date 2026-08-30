@@ -45,7 +45,11 @@ und Lagern.
 **Wärmeverteilung:** Optimierte Pfade können Hitze in einem Bereich konzentrieren. Bei
 wärmeempfindlichen Materialien überlege, ob die Reihenfolge wichtig ist.
 
-:::tip Optimierung läuft automatisch. Aktiviere sie einfach und die Software erledigt den Rest. :::
+<!-- prettier-ignore-start -->
+:::tip
+Optimierung läuft automatisch. Aktiviere sie einfach und die Software erledigt den Rest.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 

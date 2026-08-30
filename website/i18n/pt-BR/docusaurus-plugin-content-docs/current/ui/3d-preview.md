@@ -55,9 +55,13 @@ A visualização 3D atualiza automaticamente quando você muda o WCS ativo:
 - A grade e os eixos se deslocam para refletir a nova origem WCS
 - Os rótulos atualizam para mostrar coordenadas relativas ao novo WCS
 
-:::tip WCS na Visualização 3D A visualização 3D mostra seus caminhos de ferramenta relativos ao WCS
+<!-- prettier-ignore-start -->
+:::tip[WCS na Visualização 3D]
+A visualização 3D mostra seus caminhos de ferramenta relativos ao WCS
 selecionado. Quando você muda o WCS, verá os caminhos de ferramenta parecerem se mover porque o
-ponto de referência (a grade) mudou, não porque os caminhos de ferramenta em si se moveram. :::
+ponto de referência (a grade) mudou, não porque os caminhos de ferramenta em si se moveram.
+:::
+<!-- prettier-ignore-end -->
 
 ## Opções de Exibição
 
@@ -86,9 +90,13 @@ Personalize o que você vê:
 - **Mostrar Movimentos de Trabalho**: Exibe movimentos de corte/gravação (linhas sólidas)
 - **Colorir por Operação**: Cores diferentes para cada operação
 
-:::tip Cores por Laser Ao usar máquinas com múltiplas cabeças de laser, cada laser pode ter sua
+<!-- prettier-ignore-start -->
+:::tip[Cores por Laser]
+Ao usar máquinas com múltiplas cabeças de laser, cada laser pode ter sua
 própria cor configurada nas [Configurações do Laser](../machine/laser.md). Isso facilita identificar
-qual laser realizará cada operação. :::
+qual laser realizará cada operação.
+:::
+<!-- prettier-ignore-end -->
 
 ### Modelo da Cabeça do Laser
 
@@ -116,11 +124,15 @@ pré-visualização mostra a queima guiada por um modelo fisicamente fundamentad
 O resultado é uma rampa de marcas de queima com corona de calor nas superfícies voltadas para cima.
 Funciona também para rotativo — a gravação é aplicada no material rotativo.
 
-:::note Calibração O modelo de queimadura é fisicamente fundamentado, mas ainda não está totalmente
+<!-- prettier-ignore-start -->
+:::note[Calibração]
+O modelo de queimadura é fisicamente fundamentado, mas ainda não está totalmente
 calibrado para todos os materiais e tipos de laser. Você pode ajudar a melhorá-lo: execute um
 [teste de grade de material](../features/operations/material-test-grid.md) e compartilhe a foto do
 resultado junto com os dados da sua máquina (comprimento de onda, potência óptica, tamanho do ponto,
-velocidade e potências/profundidades testadas). :::
+velocidade e potências/profundidades testadas).
+:::
+<!-- prettier-ignore-end -->
 
 ## Simulação
 

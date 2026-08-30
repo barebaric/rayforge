@@ -55,14 +55,18 @@ Após realizar manutenção, você pode resetar o contador relevante:
 2. Confirme o reset no diálogo
 3. O contador retorna para zero
 
-:::tip Cronograma de Manutenção Intervalos comuns de manutenção:
+<!-- prettier-ignore-start -->
+:::tip[Cronograma de Manutenção]
+Intervalos comuns de manutenção:
 
 - **Diariamente**: Limpar lente, verificar alinhamento do espelho
 - **Semanalmente**: Limpar trilhos, verificar tensão das correias
 - **Mensalmente**: Lubrificar rolamentos, verificar conexões elétricas
 - **Anualmente**: Inspeção completa, substituir peças gastas
 
-Ajuste intervalos com base em seus padrões de uso e recomendações do fabricante. :::
+Ajuste intervalos com base em seus padrões de uso e recomendações do fabricante.
+:::
+<!-- prettier-ignore-end -->
 
 ## Veja Também
 

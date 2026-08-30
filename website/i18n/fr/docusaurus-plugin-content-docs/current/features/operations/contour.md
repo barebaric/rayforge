@@ -128,10 +128,14 @@ jonction, créant une coupe nette et complètement sectionnée. Ceci est particu
 
 La surcoupe s'applique à la fois aux contours extérieurs et aux trous internes.
 
-:::tip Entrée/Sortie vs Surcoupe [L'entrée/sortie](../lead-in-out.md) ajoute des mouvements
+<!-- prettier-ignore-start -->
+:::tip[Entrée/Sortie vs Surcoupe]
+[L'entrée/sortie](../lead-in-out.md) ajoute des mouvements
 d'approche et de sortie à puissance nulle avant et après le parcours de coupe. La surcoupe prolonge
 le parcours de coupe lui-même au-delà de la jonction. Ils peuvent être utilisés ensemble pour une
-qualité de coupe optimale. :::
+qualité de coupe optimale.
+:::
+<!-- prettier-ignore-end -->
 
 #### Retraçage avec Seuil Personnalisé
 
@@ -217,10 +221,12 @@ Pour les matériaux plus épais qu'une seule passe ne peut couper :
 - Crée une véritable coupe 2.5D
 - Définissez à 0 pour des passes multiples à la même profondeur
 
-:::warning Axe Z Requis :::
-
+<!-- prettier-ignore-start -->
+:::warning[Axe Z Requis]
 La profondeur de passe ne fonctionne que si votre machine dispose d'un contrôle de l'axe Z. Pour les
 machines sans axe Z, utilisez des passes multiples à la même profondeur.
+:::
+<!-- prettier-ignore-end -->
 
 ## Conseils & Meilleures Pratiques
 

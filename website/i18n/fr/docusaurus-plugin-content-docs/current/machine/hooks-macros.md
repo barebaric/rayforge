@@ -121,9 +121,13 @@ Rayforge supporte ces déclencheurs de hooks :
 | **Début de Pièce**  | Avant le traitement de chaque pièce  | Numérotation des pièces, marques d'alignement             |
 | **Fin de Pièce**    | Après le traitement de chaque pièce  | Refroidissement, pause d'inspection                       |
 
-:::note G-code au Niveau du Travail Le G-code de début et fin de travail est configuré via les
+<!-- prettier-ignore-start -->
+:::note[G-code au Niveau du Travail]
+Le G-code de début et fin de travail est configuré via les
 paramètres de préambule et postscript du dialecte, pas via les hooks. Voir
-[Paramètres G-code](gcode) pour plus de détails. :::
+[Paramètres G-code](gcode) pour plus de détails.
+:::
+<!-- prettier-ignore-end -->
 
 ### Créer un Hook
 
@@ -300,20 +304,28 @@ M8  ; Assistance air ACTIVÉE
 M9  ; Assistance air ÉTEINTE (empêche la dispersion de poussière pour la gravure)
 ```
 
-:::note Hooks Spécifiques au Calque Rayforge ne supporte actuellement pas la personnalisation de
+<!-- prettier-ignore-start -->
+:::note[Hooks Spécifiques au Calque]
+Rayforge ne supporte actuellement pas la personnalisation de
 hooks par calque. Pour y parvenir, utilisez du G-code conditionnel ou des profils de machine
-séparés. :::
+séparés.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
 ## Considérations de Sécurité
 
-:::danger Testez Avant Production Testez toujours les macros et hooks en **mode simulation** ou avec
+<!-- prettier-ignore-start -->
+:::danger[Testez Avant Production]
+Testez toujours les macros et hooks en **mode simulation** ou avec
 le laser **désactivé** avant de les exécuter sur de vrais travaux. Un G-code mal configuré peut :
 
 - Faire planter la machine contre les limites
 - Déclencher le laser de manière inattendue
-- Endommager les matériaux ou équipements :::
+- Endommager les matériaux ou équipements
+:::
+<!-- prettier-ignore-end -->
 
 **Liste de contrôle de sécurité :**
 

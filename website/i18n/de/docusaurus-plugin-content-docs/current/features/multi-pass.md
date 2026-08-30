@@ -28,9 +28,13 @@ Maschine Z-Achsen-Steuerung hat.
 - **Materialstärke ÷ Durchgänge:** Progressives Tiefenschneiden
 - **Kleine Schritte (0,1-0,5mm):** Feinkontrolle für tiefe Gravur
 
-:::warning Z-Achse erforderlich Z-Abstieg funktioniert nur mit Maschinen, die über motorisierte
+<!-- prettier-ignore-start -->
+:::warning[Z-Achse erforderlich]
+Z-Abstieg funktioniert nur mit Maschinen, die über motorisierte
 Z-Achsen-Steuerung verfügen. Bei Maschinen ohne Z-Achse erfolgen alle Durchgänge auf der gleichen
-Fokushöhe. :::
+Fokushöhe.
+:::
+<!-- prettier-ignore-end -->
 
 ## Wann Mehrfach-Durchgang verwenden
 

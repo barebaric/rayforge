@@ -27,8 +27,8 @@ Rayforge actualmente soporta estos dialectos de código G:
 | **Smoothieware**                              | Smoothieware | Cortadores láser, CNC                   |
 | **Marlin**                                    | Marlin 2.0+  | Impresoras 3D con láser                 |
 
-:::note Dialectos Recomendados :::
-
+<!-- prettier-ignore-start -->
+:::note[Dialectos Recomendados]
 **Grbl (Compat)** es el dialecto más probado y recomendado para aplicaciones láser estándar.
 
 **Grbl Raster** está optimizado para grabado raster en controladores GRBL. Mantiene el láser en modo
@@ -41,6 +41,8 @@ profundidad donde la potencia varía durante los cortes (ej., grabado de profund
 **LinuxCNC** admite curvas Bézier cúbicas nativas a través del comando G5, lo que produce un código
 G muy suave y compacto para caminos curvos. Cuando uses este dialecto, activa la opción «Soportar
 curvas Bézier» en Ajustes Avanzados de Máquina para aprovechar la salida G5.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 

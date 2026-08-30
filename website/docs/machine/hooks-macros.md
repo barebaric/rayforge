@@ -124,8 +124,12 @@ Rayforge supports these hook triggers:
 | **Workpiece Start** | Before processing each workpiece | Part numbering, alignment marks     |
 | **Workpiece End**   | After processing each workpiece  | Cooldown, inspection pause          |
 
-:::note Job-Level G-code Job start and end G-code is configured through the dialect's preamble and
-postscript settings, not hooks. See [G-code Settings](gcode) for details. :::
+<!-- prettier-ignore-start -->
+:::note[Job-Level G-code]
+Job start and end G-code is configured through the dialect's preamble and
+postscript settings, not hooks. See [G-code Settings](gcode) for details.
+:::
+<!-- prettier-ignore-end -->
 
 ### Creating a Hook
 
@@ -300,19 +304,27 @@ M8  ; Air assist ON
 M9  ; Air assist OFF (prevents dust scattering for engraving)
 ```
 
-:::note Layer-Specific Hooks Rayforge doesn't currently support per-layer hook customization. To
-achieve this, use conditional G-code or separate machine profiles. :::
+<!-- prettier-ignore-start -->
+:::note[Layer-Specific Hooks]
+Rayforge doesn't currently support per-layer hook customization. To
+achieve this, use conditional G-code or separate machine profiles.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
 ## Safety Considerations
 
-:::danger Test Before Production Always test macros and hooks in **simulation mode** or with the
+<!-- prettier-ignore-start -->
+:::danger[Test Before Production]
+Always test macros and hooks in **simulation mode** or with the
 laser **disabled** before running on real jobs. Incorrectly configured G-code can:
 
 - Crash the machine into limits
 - Fire the laser unexpectedly
-- Damage materials or equipment :::
+- Damage materials or equipment
+:::
+<!-- prettier-ignore-end -->
 
 **Safety checklist:**
 

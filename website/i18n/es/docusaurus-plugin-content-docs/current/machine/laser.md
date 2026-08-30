@@ -66,11 +66,14 @@ baja potencia para actuar como "puntero láser" para posicionamiento.
 - Establecer en 0 para deshabilitar la función de modo enfoque
 - Usar para alineación visual y posicionamiento
 
-:::tip Usando el Modo Enfoque Haz clic en el botón de enfoque (icono de láser) en la barra de
+<!-- prettier-ignore-start -->
+:::tip[Usando el Modo Enfoque]
+Haz clic en el botón de enfoque (icono de láser) en la barra de
 herramientas para alternar el modo enfoque. El láser se encenderá a este nivel de potencia,
 ayudándote a ver exactamente dónde está posicionado el láser. Consulta
 [Posicionamiento de Piezas de Trabajo](../features/workpiece-positioning.md) para más información.
 :::
+<!-- prettier-ignore-end -->
 
 #### Tamaño del Punto
 
@@ -80,11 +83,15 @@ El tamaño físico de tu haz láser enfocado en milímetros.
 - La mayoría de los láseres tienen un punto circular (ej., 0.1 x 0.1)
 - Afecta los cálculos de calidad de grabado
 
-:::tip Midiendo el Tamaño del Punto Para medir el tamaño de tu punto:
+<!-- prettier-ignore-start -->
+:::tip[Midiendo el Tamaño del Punto]
+Para medir el tamaño de tu punto:
 
 1. Dispara un pulso corto a baja potencia en un material de prueba
 2. Mide la marca resultante con calibradores
-3. Usa el promedio de múltiples mediciones :::
+3. Usa el promedio de múltiples mediciones
+:::
+<!-- prettier-ignore-end -->
 
 #### Color
 
@@ -96,9 +103,13 @@ con múltiples cabezales láser.
 - Elige un color que contraste bien con la vista previa de tu material
 - Los colores predeterminados se asignan automáticamente
 
-:::tip Flujos de Trabajo Multi-Láser Al usar múltiples cabezales láser, asignar diferentes colores a
+<!-- prettier-ignore-start -->
+:::tip[Flujos de Trabajo Multi-Láser]
+Al usar múltiples cabezales láser, asignar diferentes colores a
 cada láser facilita ver qué operaciones serán realizadas por qué láser. Por ejemplo, usa rojo para
-tu láser de corte principal y azul para un láser de grabado secundario. :::
+tu láser de corte principal y azul para un láser de grabado secundario.
+:::
+<!-- prettier-ignore-end -->
 
 #### Tipo de Láser
 

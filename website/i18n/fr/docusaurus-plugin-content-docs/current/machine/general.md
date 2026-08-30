@@ -32,8 +32,12 @@ Les appareils GRBL disposent de deux options de pilote série :
 Après avoir sélectionné un pilote, des paramètres de connexion spécifiques apparaissent sous le
 sélecteur (ex. : port série, baud rate). Ils varient selon le pilote choisi.
 
-:::tip Une bannière d'erreur en haut de la page vous avertit si le pilote n'est pas configuré ou
-rencontre un problème. :::
+<!-- prettier-ignore-start -->
+:::tip
+Une bannière d'erreur en haut de la page vous avertit si le pilote n'est pas configuré ou
+rencontre un problème.
+:::
+<!-- prettier-ignore-end -->
 
 ## Vitesses et accélération
 
@@ -65,9 +69,13 @@ calcul de la distance d'overscan par défaut.
 - **Plage typique** : 500–2000 mm/s²
 - **Remarque** : Doit correspondre ou être inférieure aux paramètres d'accélération du firmware
 
-:::tip Commencez avec des valeurs de vitesse conservatrices et augmentez-les progressivement.
+<!-- prettier-ignore-start -->
+:::tip
+Commencez avec des valeurs de vitesse conservatrices et augmentez-les progressivement.
 Observez votre machine pour détecter tout saut de courroie, calage de moteur ou perte de précision
-de positionnement. :::
+de positionnement.
+:::
+<!-- prettier-ignore-end -->
 
 ## Exporter un profil de machine
 

@@ -2,11 +2,13 @@
 
 Vollständige Referenz der Tastaturkürzel in Rayforge.
 
-:::note Plattformkonventionen
-
+<!-- prettier-ignore-start -->
+:::note[Plattformkonventionen]
 - **Linux/Windows:** `Strg`-Taste
 - **macOS:** `⌘ (Befehl)`-Taste
-- Dokumentation verwendet `Strg` – macOS-Benutzer ersetzen durch `⌘` :::
+- Dokumentation verwendet `Strg` – macOS-Benutzer ersetzen durch `⌘`
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -134,9 +136,13 @@ Vollständige Referenz der Tastaturkürzel in Rayforge.
 | `Strg+<` | Maschineneinstellungen | Maschineneinstellungsdialog öffnen    |
 | `F1`     | Über                   | Über-Dialog anzeigen                  |
 
-:::note Maschinenoperationen Maschinensteuerungsoperationen (Referenzieren, Einrahmen, Senden usw.)
+<!-- prettier-ignore-start -->
+:::note[Maschinenoperationen]
+Maschinensteuerungsoperationen (Referenzieren, Einrahmen, Senden usw.)
 haben derzeit keine Standardkürzel, können aber über Symbolleisten-Buttons oder Menüs aufgerufen
-werden. :::
+werden.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -224,8 +230,12 @@ Beim Bearbeiten von G-Code oder Textfeldern:
 
 ## Tastaturkürzel anpassen
 
-:::note Benutzerdefinierte Kürzel Tastaturkürzel sind derzeit fest codiert. Eine Konfiguration
-benutzerdefinierter Kürzel könnte in zukünftigen Versionen hinzugefügt werden. :::
+<!-- prettier-ignore-start -->
+:::note[Benutzerdefinierte Kürzel]
+Tastaturkürzel sind derzeit fest codiert. Eine Konfiguration
+benutzerdefinierter Kürzel könnte in zukünftigen Versionen hinzugefügt werden.
+:::
+<!-- prettier-ignore-end -->
 
 **Aktuelle Einschränkungen:**
 

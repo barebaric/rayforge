@@ -176,8 +176,12 @@ Documente tes paramètres réussis pour référence future :
 - Nombre de passes
 - Toutes notes spéciales
 
-:::tip Base de Données Matériaux Envisage de créer un document de référence avec tes résultats de
-test de matériau pour une recherche rapide dans les projets futurs. :::
+<!-- prettier-ignore-start -->
+:::tip[Base de Données Matériaux]
+Envisage de créer un document de référence avec tes résultats de
+test de matériau pour une recherche rapide dans les projets futurs.
+:::
+<!-- prettier-ignore-end -->
 
 ## Utilisation Avancée
 

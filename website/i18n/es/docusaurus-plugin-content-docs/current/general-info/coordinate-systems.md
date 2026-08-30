@@ -14,11 +14,15 @@ Rayforge utiliza tres espacios de coordenadas que trabajan juntos:
 | **WORKAREA** | El área utilizable dentro de tu máquina, considerando los márgenes alrededor de la cama.                               |
 | **WCS**      | El sistema de coordenadas de tu trabajo. Origen configurable por el usuario para diseño y posicionamiento de trabajos. |
 
-:::note Nota para Desarrolladores Internamente, Rayforge utiliza un sistema de coordenadas
+<!-- prettier-ignore-start -->
+:::note[Nota para Desarrolladores]
+Internamente, Rayforge utiliza un sistema de coordenadas
 normalizado llamado espacio WORLD. El espacio WORLD describe el mismo espacio físico que el espacio
 MACHINE, pero con una convención fija: Y hacia arriba con origen en la esquina inferior izquierda.
 Esto simplifica los cálculos internos y el renderizado. Los usuarios no necesitan interactuar
-directamente con el espacio WORLD. :::
+directamente con el espacio WORLD.
+:::
+<!-- prettier-ignore-end -->
 
 ### Espacio MACHINE
 

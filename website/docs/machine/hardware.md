@@ -39,8 +39,12 @@ interpreted.
 2. Observe where the laser head moves to
 3. That position is your (0,0) origin
 
-:::info The coordinate origin setting affects how G-code is generated. Make sure it matches your
-firmware's homing configuration. :::
+<!-- prettier-ignore-start -->
+:::info
+The coordinate origin setting affects how G-code is generated. Make sure it matches your
+firmware's homing configuration.
+:::
+<!-- prettier-ignore-end -->
 
 ### Axis Direction
 
@@ -95,8 +99,12 @@ movement outside these limits.
 
 Soft limits are automatically constrained to stay within the axis extents (0 to extent value).
 
-:::tip Use soft limits to protect areas of your work surface that should never be reached during
-jogging, such as areas with fixtures or sensitive equipment. :::
+<!-- prettier-ignore-start -->
+:::tip
+Use soft limits to protect areas of your work surface that should never be reached during
+jogging, such as areas with fixtures or sensitive equipment.
+:::
+<!-- prettier-ignore-end -->
 
 ## See Also
 

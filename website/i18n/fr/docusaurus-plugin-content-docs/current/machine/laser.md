@@ -66,10 +66,14 @@ faible puissance pour agir comme un « pointeur laser » pour le positionnement.
 - Définis à 0 pour désactiver la fonction de mode focus
 - Utilise pour l'alignement visuel et le positionnement
 
-:::tip Utiliser le Mode Focus Clique sur le bouton focus (icône laser) dans la barre d'outils pour
+<!-- prettier-ignore-start -->
+:::tip[Utiliser le Mode Focus]
+Clique sur le bouton focus (icône laser) dans la barre d'outils pour
 activer le mode focus. Le laser s'allumera à ce niveau de puissance, t'aidant à voir exactement où
 le laser est positionné. Consulte [Positionnement de la Pièce](../features/workpiece-positioning.md)
-pour plus d'informations. :::
+pour plus d'informations.
+:::
+<!-- prettier-ignore-end -->
 
 #### Taille du Spot
 
@@ -79,11 +83,15 @@ La taille physique de ton faisceau laser focalisé en millimètres.
 - La plupart des lasers ont un spot circulaire (ex : 0.1 x 0.1)
 - Affecte les calculs de qualité de gravure
 
-:::tip Mesurer la Taille du Spot Pour mesurer la taille de ton spot :
+<!-- prettier-ignore-start -->
+:::tip[Mesurer la Taille du Spot]
+Pour mesurer la taille de ton spot :
 
 1. Tire une impulsion courte à faible puissance sur un matériau de test
 2. Mesure la marque résultante avec un pied à coulisse
-3. Utilise la moyenne de plusieurs mesures :::
+3. Utilise la moyenne de plusieurs mesures
+:::
+<!-- prettier-ignore-end -->
 
 #### Couleur
 
@@ -95,10 +103,14 @@ lorsque tu travailles avec plusieurs têtes laser.
 - Choisis une couleur qui contraste bien avec l'aperçu de ton matériau
 - Les couleurs par défaut sont attribuées automatiquement
 
-:::tip Workflows Multi-Laser Lors de l'utilisation de plusieurs têtes laser, l'attribution de
+<!-- prettier-ignore-start -->
+:::tip[Workflows Multi-Laser]
+Lors de l'utilisation de plusieurs têtes laser, l'attribution de
 couleurs différentes à chaque laser facilite la visualisation des opérations effectuées par chaque
 laser. Par exemple, utilise le rouge pour ton laser de coupe principal et le bleu pour un laser de
-gravure secondaire. :::
+gravure secondaire.
+:::
+<!-- prettier-ignore-end -->
 
 #### Type de Laser
 

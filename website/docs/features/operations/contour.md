@@ -130,9 +130,13 @@ cut. This is especially useful for:
 
 Overcut applies to both outer contours and internal holes.
 
-:::tip Lead-In/Out vs Overcut [Lead-In/Out](../lead-in-out.md) adds zero-power approach and exit
+<!-- prettier-ignore-start -->
+:::tip[Lead-In/Out vs Overcut]
+[Lead-In/Out](../lead-in-out.md) adds zero-power approach and exit
 moves before and after the cut path. Overcut extends the cut path itself past the junction. They can
-be used together for optimal cut quality. :::
+be used together for optimal cut quality.
+:::
+<!-- prettier-ignore-end -->
 
 #### Retracing with Custom Threshold
 
@@ -213,7 +217,10 @@ For materials thicker than a single pass can cut:
 - Creates true 2.5D cutting
 - Set to 0 for same-depth multiple passes
 
-:::warning Z-Axis Required :::
+<!-- prettier-ignore-start -->
+:::warning[Z-Axis Required]
+:::
+<!-- prettier-ignore-end -->
 
 Pass depth only works if your machine has Z-axis control. For machines without Z-axis, use multiple
 passes at the same depth.

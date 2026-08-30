@@ -174,8 +174,12 @@ Document your successful settings for future reference:
 - Number of passes
 - Any special notes
 
-:::tip Material Database Consider creating a reference document with your material test results for
-quick lookup in future projects. :::
+<!-- prettier-ignore-start -->
+:::tip[Material Database]
+Consider creating a reference document with your material test results for
+quick lookup in future projects.
+:::
+<!-- prettier-ignore-end -->
 
 ## Advanced Usage
 

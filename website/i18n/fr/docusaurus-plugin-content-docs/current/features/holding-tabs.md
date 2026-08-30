@@ -85,9 +85,13 @@ La **largeur** est la longueur de la section non coupée le long du parcours.
 - **Matériaux fragiles** (acrylique) peuvent utiliser des ponts plus petits (plus faciles à casser)
 - **Matériaux fibreux** (bois) peuvent nécessiter des ponts plus larges
 
-:::warning Largeur du Pont vs Épaisseur du Matériau Les ponts doivent être assez larges pour
+<!-- prettier-ignore-start -->
+:::warning[Largeur du Pont vs Épaisseur du Matériau]
+Les ponts doivent être assez larges pour
 supporter la pièce mais assez petits pour être retirés proprement. Trop étroit = la pièce peut se
-détacher ; trop large = difficile à retirer ou endommage la pièce. :::
+détacher ; trop large = difficile à retirer ou endommage la pièce.
+:::
+<!-- prettier-ignore-end -->
 
 ### Position du Pont
 

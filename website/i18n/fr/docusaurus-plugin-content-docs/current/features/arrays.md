@@ -14,9 +14,13 @@ jour en temps réel.
 Pour ouvrir un dialogue de tableau, sélectionnez une ou plusieurs pièces de travail sur le canevas,
 puis choisissez le mode de tableau dans la barre d'outils ou le menu contextuel.
 
-:::tip Tous les modes de tableau sont non modaux. Vous pouvez glisser des pièces de travail sur le
+<!-- prettier-ignore-start -->
+:::tip
+Tous les modes de tableau sont non modaux. Vous pouvez glisser des pièces de travail sur le
 canevas pendant que le dialogue est ouvert, et l'aperçu se mettra à jour en direct pour refléter les
-nouvelles positions. :::
+nouvelles positions.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -54,8 +58,12 @@ d'origine mais est tournée d'une fraction de l'angle total.
 | **Nombre**            | Nombre de copies (1–360)                                     |
 | **Angle total (deg)** | Étendue angulaire totale de toutes les copies (−360° à 360°) |
 
-:::info Puisque la rotation est autour du propre centre de la sélection, glisser la pièce de travail
-sur le canevas déplace toutes les copies ensemble tandis que le dialogue reste ouvert. :::
+<!-- prettier-ignore-start -->
+:::info
+Puisque la rotation est autour du propre centre de la sélection, glisser la pièce de travail
+sur le canevas déplace toutes les copies ensemble tandis que le dialogue reste ouvert.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -78,10 +86,18 @@ position pendant que le dialogue est ouvert.
 | **Rayon**              | Rayon de la trajectoire circulaire                                        |
 | **Tourner les copies** | Lorsque activé, chaque copie est tournée pour suivre la tangente de l'arc |
 
-:::tip Glisser le centre La croix sur le canevas représente le centre du cercle. Glissez-la pour
+<!-- prettier-ignore-start -->
+:::tip[Glisser le centre]
+La croix sur le canevas représente le centre du cercle. Glissez-la pour
 repositionner le tableau de manière interactive — les champs Centre X et Centre Y dans le dialogue
-seront mis à jour automatiquement. :::
+seront mis à jour automatiquement.
+:::
+<!-- prettier-ignore-end -->
 
-:::tip Glisser les pièces de travail Vous pouvez également glisser la pièce de travail d'origine sur
+<!-- prettier-ignore-start -->
+:::tip[Glisser les pièces de travail]
+Vous pouvez également glisser la pièce de travail d'origine sur
 le canevas. Le rayon sera mis à jour automatiquement pour maintenir les copies à leur distance
-actuelle du centre. :::
+actuelle du centre.
+:::
+<!-- prettier-ignore-end -->

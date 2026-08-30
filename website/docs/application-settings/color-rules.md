@@ -43,10 +43,14 @@ Click **Add Color Rule** to open the editor dialog:
 Click **Add** to save the rule. It takes effect immediately on the next import. Rules are stored in
 your user configuration and persist across sessions.
 
-:::tip Matching Colors Exactly Color rules match by exact hex value. When picking a color in your
+<!-- prettier-ignore-start -->
+:::tip[Matching Colors Exactly]
+Color rules match by exact hex value. When picking a color in your
 design software (Inkscape, Illustrator, etc.), note the exact hex code and enter the same value in
 Rayforge. For example, `#e34c4c` in your SVG must be `#e34c4c` in the rule — even a one-digit
-difference will prevent the match. :::
+difference will prevent the match.
+:::
+<!-- prettier-ignore-end -->
 
 ## Managing Rules
 

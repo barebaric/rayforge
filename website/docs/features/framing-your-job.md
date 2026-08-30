@@ -42,8 +42,12 @@ Some machines support low-power framing with a visible beam:
 3. **Run frame operation**
 4. **Observe the outline** traced on material surface
 
-:::warning Check Your Machine Not all lasers support low-power framing safely. Consult your machine
-documentation before using this feature. :::
+<!-- prettier-ignore-start -->
+:::warning[Check Your Machine]
+Not all lasers support low-power framing safely. Consult your machine
+documentation before using this feature.
+:::
+<!-- prettier-ignore-end -->
 
 ## Frame Settings
 

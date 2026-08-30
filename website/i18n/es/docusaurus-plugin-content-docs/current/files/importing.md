@@ -23,10 +23,12 @@ bits. Esta página explica cómo importar archivos y optimizarlos para obtener l
 | **JPEG** | `.jpg`, `.jpeg` | Trazo a vectores      | Fotos, imágenes de tono continuo       |
 | **BMP**  | `.bmp`          | Trazo a vectores      | Gráficos simples, capturas de pantalla |
 
-:::note Importación de mapa de bits :::
-
+<!-- prettier-ignore-start -->
+:::note[Importación de mapa de bits]
 Todas las imágenes de mapa de bits se **trazan** para crear trazados vectoriales que pueden
 utilizarse en operaciones láser. La calidad depende de la configuración del trazado.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -109,10 +111,14 @@ flexibilidad de restaurar el tamaño original si es necesario.
 
 SVG (Scalable Vector Graphics) es el **formato recomendado** para diseños vectoriales.
 
-:::tip Automatizar la asignación de pasos Puedes configurar
+<!-- prettier-ignore-start -->
+:::tip[Automatizar la asignación de pasos]
+Puedes configurar
 [Reglas de color](../application-settings/color-rules.md) para asignar automáticamente tipos de paso
 (Contorno, Grabado, etc.) según los colores de tu SVG. Cuando existen reglas, el diálogo de
-importación agrupa las formas por color por defecto para que las reglas surtan efecto. :::
+importación agrupa las formas por color por defecto para que las reglas surtan efecto.
+:::
+<!-- prettier-ignore-end -->
 
 ### Opciones de importación en el diálogo
 

@@ -36,9 +36,13 @@ um dir zu helfen, genau zu sehen, wo der Laserkopf positioniert ist.
 4. **Laserkopf bewegen** um die Strahlposition auf deinem Material zu sehen
 5. **Fokus-Taste erneut klicken** zum Ausschalten wenn fertig
 
-:::warning Sicherheit Selbst bei niedriger Leistung kann der Laser die Augen beschädigen. Schau
+<!-- prettier-ignore-start -->
+:::warning[Sicherheit]
+Selbst bei niedriger Leistung kann der Laser die Augen beschädigen. Schau
 niemals direkt in den Strahl oder richte ihn auf reflektierende Oberflächen. Trage geeigneten
-Augenschutz. :::
+Augenschutz.
+:::
+<!-- prettier-ignore-end -->
 
 ### Fokus-Leistung konfigurieren
 
@@ -50,9 +54,13 @@ Die Fokus-Leistung bestimmt, wie hell der Laserpunkt erscheint:
    - Typische Werte: 1-5% für die meisten Materialien
    - Auf 0 setzen, um die Funktion zu deaktivieren
 
-:::tip Die richtige Leistung finden Beginne mit 1% und erhöhe schrittweise. Der Punkt sollte
+<!-- prettier-ignore-start -->
+:::tip[Die richtige Leistung finden]
+Beginne mit 1% und erhöhe schrittweise. Der Punkt sollte
 sichtbar sein, aber keine Marke auf deinem Material hinterlassen. Dunklere Materialien benötigen
-möglicherweise höhere Leistung, um den Punkt deutlich zu sehen. :::
+möglicherweise höhere Leistung, um den Punkt deutlich zu sehen.
+:::
+<!-- prettier-ignore-end -->
 
 ### Wann den Fokusmodus verwenden
 
@@ -85,11 +93,13 @@ Rahmen-Verhalten konfigurieren in **Einstellungen → Maschine → Laser**:
   - Auf 0 für Luft-Einrahmen setzen (Laser aus, nur Bewegung)
   - Auf 1-5% für eine sichtbare Spur auf dem Material setzen
 
-:::tip Luft-Einrahmen vs. Niedrigleistung
-
+<!-- prettier-ignore-start -->
+:::tip[Luft-Einrahmen vs. Niedrigleistung]
 - **Luft-Einrahmen (0% Leistung)**: Sicher für jedes Material, aber du siehst nur die Kopfbewegung
 - **Niedrigleistung-Einrahmen**: Hinterlässt eine schwache sichtbare Marke, nützlich für präzise
-  Ausrichtung auf dunklen Materialien :::
+  Ausrichtung auf dunklen Materialien
+:::
+<!-- prettier-ignore-end -->
 
 ### Wann einrahmen
 
@@ -125,12 +135,16 @@ Rayforge verwendet mehrere Koordinatensysteme:
 | **G54**     | Arbeitskoordinatensystem 1 (Standard)                   |
 | **G55-G59** | Zusätzliche Arbeitskoordinatensysteme                   |
 
-:::tip Mehrere Arbeitsbereiche Verwende verschiedene WKS-Slots für verschiedene
+<!-- prettier-ignore-start -->
+:::tip[Mehrere Arbeitsbereiche]
+Verwende verschiedene WKS-Slots für verschiedene
 Vorrichtungspositionen. Zum Beispiel:
 
 - G54 für die linke Seite deines Arbeitsbereichs
 - G55 für die rechte Seite
-- G56 für eine Rotationsvorrichtung :::
+- G56 für eine Rotationsvorrichtung
+:::
+<!-- prettier-ignore-end -->
 
 ### Wann WKS-Nullpunkt setzen
 
@@ -165,11 +179,13 @@ Die Kamera-Ausrichtung ordnet Kamerapixel den realen Koordinaten zu:
 3. Gib die realen X/Y-Koordinaten für jeden Punkt ein
 4. Klicke auf **Anwenden** um die Transformation zu berechnen
 
-:::tip Ausrichtungsgenauigkeit
-
+<!-- prettier-ignore-start -->
+:::tip[Ausrichtungsgenauigkeit]
 - Verwende Punkte, die über deinen gesamten Arbeitsbereich verteilt sind
 - Miss Weltkoordinaten sorgfältig mit einem Lineal
-- Verwende Maschinenpositionen (zu bekannten Koordinaten bewegen) für beste Genauigkeit :::
+- Verwende Maschinenpositionen (zu bekannten Koordinaten bewegen) für beste Genauigkeit
+:::
+<!-- prettier-ignore-end -->
 
 ### Positionierung mit Kamera-Overlay
 

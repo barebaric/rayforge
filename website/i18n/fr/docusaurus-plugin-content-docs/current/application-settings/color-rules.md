@@ -42,11 +42,15 @@ Cliquez sur **Ajouter** pour enregistrer la règle. Elle prend effet immédiatem
 importation. Les règles sont stockées dans votre configuration utilisateur et persistent entre les
 sessions.
 
-:::tip Correspondance exacte des couleurs Les règles de couleur correspondent par valeur
+<!-- prettier-ignore-start -->
+:::tip[Correspondance exacte des couleurs]
+Les règles de couleur correspondent par valeur
 hexadécimale exacte. Lorsque vous choisissez une couleur dans votre logiciel de conception
 (Inkscape, Illustrator, etc.), notez le code hexadécimal exact et saisissez la même valeur dans
 Rayforge. Par exemple, `#e34c4c` dans votre SVG doit être `#e34c4c` dans la règle — même une
-différence d'un seul chiffre empêchera la correspondance. :::
+différence d'un seul chiffre empêchera la correspondance.
+:::
+<!-- prettier-ignore-end -->
 
 ## Gérer les règles
 

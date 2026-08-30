@@ -37,8 +37,12 @@ Algumas máquinas suportam enquadramento em baixa potência com um feixe visíve
 3. **Execute a operação de enquadramento**
 4. **Observe o contorno** traçado na superfície do material
 
-:::warning Verifique sua máquina Nem todos os lasers suportam enquadramento em baixa potência com
-segurança. Consulte a documentação da sua máquina antes de usar este recurso. :::
+<!-- prettier-ignore-start -->
+:::warning[Verifique sua máquina]
+Nem todos os lasers suportam enquadramento em baixa potência com
+segurança. Consulte a documentação da sua máquina antes de usar este recurso.
+:::
+<!-- prettier-ignore-end -->
 
 ## Configurações de enquadramento
 

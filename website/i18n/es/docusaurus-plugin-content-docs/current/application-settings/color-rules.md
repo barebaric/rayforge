@@ -39,10 +39,14 @@ Haz clic en **Añadir regla de color** para abrir el diálogo del editor:
 Haz clic en **Añadir** para guardar la regla. Surte efecto de inmediato en la siguiente importación.
 Las reglas se guardan en tu configuración de usuario y persisten entre sesiones.
 
-:::tip Coincidir colores exactamente Las reglas de color coinciden por valor hexadecimal exacto. Al
+<!-- prettier-ignore-start -->
+:::tip[Coincidir colores exactamente]
+Las reglas de color coinciden por valor hexadecimal exacto. Al
 elegir un color en tu software de diseño (Inkscape, Illustrator, etc.), anota el código hexadecimal
 exacto e introduce el mismo valor en Rayforge. Por ejemplo, `#e34c4c` en tu SVG debe ser `#e34c4c`
-en la regla — incluso una diferencia de un dígito impedirá la coincidencia. :::
+en la regla — incluso una diferencia de un dígito impedirá la coincidencia.
+:::
+<!-- prettier-ignore-end -->
 
 ## Administrar reglas
 

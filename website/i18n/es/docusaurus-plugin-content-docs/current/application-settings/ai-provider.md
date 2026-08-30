@@ -37,8 +37,11 @@ servicio compatible.
   el predeterminado
 - **Eliminar**: Elimina un proveedor que ya no necesitas
 
-:::warning Tus claves API se almacenan localmente en tu ordenador y nunca se comparten con terceros.
+<!-- prettier-ignore-start -->
+:::warning
+Tus claves API se almacenan localmente en tu ordenador y nunca se comparten con terceros.
 :::
+<!-- prettier-ignore-end -->
 
 ## Temas Relacionados
 

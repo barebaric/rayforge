@@ -2,11 +2,13 @@
 
 Rayforge 中键盘快捷键的完整参考。
 
-:::note 平台约定
-
+<!-- prettier-ignore-start -->
+:::note[平台约定]
 - **Linux/Windows：** `Ctrl` 键
 - **macOS：** `Command` 键
-- 文档使用 `Ctrl` - macOS 用户替换为 `Command` :::
+- 文档使用 `Ctrl` - macOS 用户替换为 `Command`
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -134,7 +136,11 @@ Rayforge 中键盘快捷键的完整参考。
 | `Ctrl+&lt;` | 机器设置 | 打开机器设置对话框 |
 | `F1`        | 关于     | 显示关于对话框     |
 
-:::note 机器操作机器控制操作（归零、框选、发送等）目前没有默认快捷键，但可以通过工具栏按钮或菜单访问。:::
+<!-- prettier-ignore-start -->
+:::note[机器操作]
+机器控制操作（归零、框选、发送等）目前没有默认快捷键，但可以通过工具栏按钮或菜单访问。
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -222,7 +228,11 @@ Rayforge 中键盘快捷键的完整参考。
 
 ## 自定义快捷键
 
-:::note 自定义快捷键键盘快捷键目前是硬编码的。自定义快捷键配置可能会在未来的版本中添加。:::
+<!-- prettier-ignore-start -->
+:::note[自定义快捷键]
+键盘快捷键目前是硬编码的。自定义快捷键配置可能会在未来的版本中添加。
+:::
+<!-- prettier-ignore-end -->
 
 **当前限制：**
 

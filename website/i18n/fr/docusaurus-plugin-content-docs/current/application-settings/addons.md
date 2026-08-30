@@ -43,7 +43,11 @@ Addons. Cliquez sur **Mettre à Jour** pour installer les mises à jour disponib
 2. Cliquez sur le bouton **Supprimer**
 3. Confirmez la suppression
 
-:::warning Supprimer un addon peut affecter les documents qui utilisent ses fonctionnalités. :::
+<!-- prettier-ignore-start -->
+:::warning
+Supprimer un addon peut affecter les documents qui utilisent ses fonctionnalités.
+:::
+<!-- prettier-ignore-end -->
 
 ## Sources d'Addons
 

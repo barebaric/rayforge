@@ -226,14 +226,16 @@ Das Kameraeigenschaften-Panel zeigt den Ausrichtungsstatus mit einem Symbol:
 5. Exakte Koordinaten für jeden Punkt eingeben
 6. Anwenden und verifizieren
 
-:::tip Best Practices
-
+<!-- prettier-ignore-start -->
+:::tip[Best Practices]
 - Verwende Punkte an den Ecken deines Arbeitsbereichs für maximale Abdeckung
 - Vermeide es, Punkte in einem Bereich zu clusteren
 - Miss Weltkoordinaten sorgfältig - die Genauigkeit hier bestimmt die gesamte Ausrichtungsqualität
 - Richte neu aus, wenn du die Kamera bewegt oder den Fokusabstand geändert hast
 - Richte nach der Aktualisierung der Linsenkalibrierung neu aus
-- Speichere deine Ausrichtung - sie bleibt über Sitzungen hinweg erhalten :::
+- Speichere deine Ausrichtung - sie bleibt über Sitzungen hinweg erhalten
+:::
+<!-- prettier-ignore-end -->
 
 ---
 

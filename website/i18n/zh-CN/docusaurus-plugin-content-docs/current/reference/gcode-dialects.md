@@ -24,8 +24,8 @@ Rayforge 目前支持这些 G 代码方言：
 | **Smoothieware**          | Smoothieware | 激光切割机、CNC       |
 | **Marlin**                | Marlin 2.0+  | 带激光的 3D 打印机    |
 
-:::note 推荐方言 :::
-
+<!-- prettier-ignore-start -->
+:::note[推荐方言]
 **Grbl（兼容）** 是经过最充分测试和推荐的标准激光应用方言。
 
 **Grbl 光栅**
@@ -35,6 +35,8 @@ Rayforge 目前支持这些 G 代码方言：
 
 **LinuxCNC**
 通过 G5 命令支持原生三次 Bézier 曲线，可生成非常平滑且紧凑的曲线路径 G 代码。使用此方言时，请在高级机器设置中启用"支持 Bézier 曲线"选项以利用 G5 输出。
+:::
+<!-- prettier-ignore-end -->
 
 ---
 

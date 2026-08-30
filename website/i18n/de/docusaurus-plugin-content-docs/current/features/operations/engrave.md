@@ -290,10 +290,12 @@ Bereiche).
 
 **Empfohlen:** 0.1mm für allgemeine Verwendung
 
-:::tip Auflösungs-Anpassung :::
-
+<!-- prettier-ignore-start -->
+:::tip[Auflösungs-Anpassung]
 Für Bilder sollte der Linienabstand der Bildauflösung entsprechen oder diese überschreiten. Wenn
 dein Bild 10 Pixel/mm (254 DPI) hat, verwende 0.1mm Linienabstand oder kleiner.
+:::
+<!-- prettier-ignore-end -->
 
 #### Scan-Richtung
 

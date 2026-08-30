@@ -36,8 +36,12 @@ compatível.
 - **Definir como Padrão**: Clique no ícone de marca de seleção para tornar um provedor o padrão
 - **Excluir**: Remova um provedor que você não precisa mais
 
-:::warning Suas chaves de API são armazenadas localmente em seu computador e nunca são
-compartilhadas com terceiros. :::
+<!-- prettier-ignore-start -->
+:::warning
+Suas chaves de API são armazenadas localmente em seu computador e nunca são
+compartilhadas com terceiros.
+:::
+<!-- prettier-ignore-end -->
 
 ## Tópicos Relacionados
 

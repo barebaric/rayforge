@@ -60,14 +60,18 @@ After performing maintenance, reset the relevant counter:
 2. Confirm the reset in the dialog
 3. The counter returns to zero
 
-:::tip Maintenance Schedule Common maintenance intervals:
+<!-- prettier-ignore-start -->
+:::tip[Maintenance Schedule]
+Common maintenance intervals:
 
 - **Daily**: Clean lens, check mirror alignment
 - **Weekly**: Clean rails, check belt tension
 - **Monthly**: Lubricate bearings, check electrical connections
 - **Yearly**: Full inspection, replace worn parts
 
-Adjust intervals based on your usage patterns and manufacturer recommendations. :::
+Adjust intervals based on your usage patterns and manufacturer recommendations.
+:::
+<!-- prettier-ignore-end -->
 
 ## See Also
 

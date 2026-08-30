@@ -31,8 +31,8 @@ Rayforge currently supports these G-code dialects:
 | **Smoothieware**               | Smoothieware | Laser cutters, CNC          |
 | **Marlin**                     | Marlin 2.0+  | 3D printers with laser      |
 
-:::note Recommended Dialects :::
-
+<!-- prettier-ignore-start -->
+:::note[Recommended Dialects]
 **Grbl (Compat)** is the most tested and recommended dialect for standard laser applications.
 
 **Grbl Raster** is optimized for raster engraving on GRBL controllers. It keeps the laser in dynamic
@@ -45,6 +45,8 @@ during cuts (e.g., variable depth engraving).
 **LinuxCNC** supports native cubic Bézier curves through the G5 command, which produces very smooth
 and compact G-code for curved paths. When using this dialect, enable the "Support Bézier Curves"
 option in Advanced Machine Settings to take advantage of G5 output.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 

@@ -13,8 +13,12 @@ while adjusting parameters — the preview updates in real time.
 To open an array dialog, select one or more workpieces on the canvas, then choose the array mode
 from the toolbar or the right-click context menu.
 
-:::tip All array modes are non-modal. You can drag items on the canvas while the dialog is open, and
-the preview will update live to reflect the new positions. :::
+<!-- prettier-ignore-start -->
+:::tip
+All array modes are non-modal. You can drag items on the canvas while the dialog is open, and the
+preview will update live to reflect the new positions.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -52,8 +56,12 @@ by a fraction of the total angle.
 | **Count**             | Number of copies (1–360)                           |
 | **Total angle (deg)** | Total angular spread of all copies (−360° to 360°) |
 
-:::info Since the rotation is around the selection's own centre, dragging the workpiece on the
-canvas moves all copies together while the dialog stays open. :::
+<!-- prettier-ignore-start -->
+:::info
+Since the rotation is around the selection's own centre, dragging the workpiece on the canvas moves
+all copies together while the dialog stays open.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -75,9 +83,16 @@ canvas shows the centre, and you can drag it to a new position while the dialog 
 | **Radius**            | Radius of the circular path                                  |
 | **Rotate copies**     | When enabled, each copy is rotated to follow the arc tangent |
 
-:::tip Dragging the centre The crosshair on the canvas represents the circle centre. Drag it to
-reposition the array interactively — the Center X and Center Y fields in the dialog will update
-automatically. :::
+<!-- prettier-ignore-start -->
+:::tip[Dragging the centre]
+The crosshair on the canvas represents the circle centre. Drag it to reposition the array
+interactively — the Center X and Center Y fields in the dialog will update automatically.
+:::
+<!-- prettier-ignore-end -->
 
-:::tip Dragging workpieces You can also drag the original workpiece on the canvas. The radius will
-update automatically to keep the copies at their current distance from the centre. :::
+<!-- prettier-ignore-start -->
+:::tip[Dragging workpieces]
+You can also drag the original workpiece on the canvas. The radius will update automatically to keep
+the copies at their current distance from the centre.
+:::
+<!-- prettier-ignore-end -->

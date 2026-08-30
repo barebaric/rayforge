@@ -40,8 +40,12 @@ service.
 - **Set as Default**: Click the check icon to make a provider the default
 - **Delete**: Remove a provider you no longer need
 
-:::warning Your API keys are stored locally on your computer and are never shared with third
-parties. :::
+<!-- prettier-ignore-start -->
+:::warning
+Your API keys are stored locally on your computer and are never shared with third
+parties.
+:::
+<!-- prettier-ignore-end -->
 
 ## Related Topics
 

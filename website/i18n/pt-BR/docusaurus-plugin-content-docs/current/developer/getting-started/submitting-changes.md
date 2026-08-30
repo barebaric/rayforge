@@ -87,9 +87,17 @@ Use mensagens de commit claras e descritivas:
 Mantenha pull requests focados em uma única feature ou correção. Alterações grandes devem ser
 divididas em partes menores e lógicas.
 
-:::tip Discuta Primeiro Para mudanças maiores, abra uma
+<!-- prettier-ignore-start -->
+:::tip[Discuta Primeiro]
+Para mudanças maiores, abra uma
 [issue](https://github.com/barebaric/rayforge/issues) primeiro para discutir sua abordagem antes de
-investir tempo significativo. :::
+investir tempo significativo.
+:::
+<!-- prettier-ignore-end -->
 
-:::note Precisa de Ajuda? Se você não tiver certeza sobre qualquer parte do processo de
-contribuição, não hesite em pedir ajuda em uma issue ou discussão. :::
+<!-- prettier-ignore-start -->
+:::note[Precisa de Ajuda?]
+Se você não tiver certeza sobre qualquer parte do processo de
+contribuição, não hesite em pedir ajuda em uma issue ou discussão.
+:::
+<!-- prettier-ignore-end -->

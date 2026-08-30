@@ -56,9 +56,13 @@ Die 3D-Ansicht aktualisiert sich automatisch, wenn du das aktive WCS änderst:
 - Das Raster und die Achsen verschieben sich, um den neuen WCS-Ursprung widerzuspiegeln
 - Beschriftungen aktualisieren sich, um Koordinaten relativ zum neuen WCS zu zeigen
 
-:::tip WCS in der 3D-Ansicht Die 3D-Ansicht zeigt deine Werkzeugwege relativ zum ausgewählten WCS.
+<!-- prettier-ignore-start -->
+:::tip[WCS in der 3D-Ansicht]
+Die 3D-Ansicht zeigt deine Werkzeugwege relativ zum ausgewählten WCS.
 Wenn du das WCS änderst, siehst du die Werkzeugwege scheinbar wandern, weil sich der Referenzpunkt
-(das Raster) geändert hat, nicht weil sich die Werkzeugwege selbst bewegt haben. :::
+(das Raster) geändert hat, nicht weil sich die Werkzeugwege selbst bewegt haben.
+:::
+<!-- prettier-ignore-end -->
 
 ## Anzeigeoptionen
 
@@ -87,9 +91,13 @@ Passe an, was du siehst:
 - **Arbeitsbewegungen anzeigen**: Schneid-/Gravurbewegungen anzeigen (durchgezogene Linien)
 - **Nach Operation färben**: Verschiedene Farben für jede Operation
 
-:::tip Farben pro Laser Bei Maschinen mit mehreren Laserköpfen kann jeder Laser eine eigene Farbe
+<!-- prettier-ignore-start -->
+:::tip[Farben pro Laser]
+Bei Maschinen mit mehreren Laserköpfen kann jeder Laser eine eigene Farbe
 haben, die in den [Lasereinstellungen](../machine/laser.md) konfiguriert wird. Dies erleichtert die
-Identifizierung, welcher Laser welche Operation ausführt. :::
+Identifizierung, welcher Laser welche Operation ausführt.
+:::
+<!-- prettier-ignore-end -->
 
 ### Laserkopf-Modell
 
@@ -119,11 +127,15 @@ Das Ergebnis ist eine leistungsabhängige Verbrennungsrampung mit einem Hitzehal
 oberflächenausgerichteten Flächen. Es funktioniert auch mit Rotation — Gravur wird in das
 Rotationsmaterial eingebrannt.
 
-:::note Kalibrierung Das Brennmodell ist physikalisch motiviert, aber noch nicht vollständig über
+<!-- prettier-ignore-start -->
+:::note[Kalibrierung]
+Das Brennmodell ist physikalisch motiviert, aber noch nicht vollständig über
 alle Materialien und Lasertypen kalibriert. Du kannst helfen, es zu verbessern: Führe ein
 [Materialtestgitter](../features/operations/material-test-grid.md) durch und teile das Ergebnisfoto
 zusammen mit deinen Maschinendaten (Wellenlänge, optische Wattzahl, Punktgröße, Geschwindigkeit und
-die getesteten Leistungen/Tiefen). :::
+die getesteten Leistungen/Tiefen).
+:::
+<!-- prettier-ignore-end -->
 
 ## Simulation
 

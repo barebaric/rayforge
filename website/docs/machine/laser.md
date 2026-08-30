@@ -70,9 +70,13 @@ as a "laser pointer" for positioning.
 - Set to 0 to disable the focus mode feature
 - Use for visual alignment and positioning
 
-:::tip Using Focus Mode Click the focus button (laser icon) in the toolbar to toggle focus mode. The
+<!-- prettier-ignore-start -->
+:::tip[Using Focus Mode]
+Click the focus button (laser icon) in the toolbar to toggle focus mode. The
 laser will turn on at this power level, helping you see exactly where the laser is positioned. See
-[Workpiece Positioning](../features/workpiece-positioning.md) for more information. :::
+[Workpiece Positioning](../features/workpiece-positioning.md) for more information.
+:::
+<!-- prettier-ignore-end -->
 
 #### Spot Size
 
@@ -82,11 +86,15 @@ The physical size of your focused laser beam in millimeters.
 - Most lasers have a circular spot (e.g., 0.1 x 0.1)
 - Affects engraving quality calculations
 
-:::tip Measuring Spot Size To measure your spot size:
+<!-- prettier-ignore-start -->
+:::tip[Measuring Spot Size]
+To measure your spot size:
 
 1. Fire a short pulse at low power on a test material
 2. Measure the resulting mark with calipers
-3. Use the average of multiple measurements :::
+3. Use the average of multiple measurements
+:::
+<!-- prettier-ignore-end -->
 
 #### Color
 
@@ -98,9 +106,13 @@ multiple laser heads.
 - Choose a color that contrasts well with your material preview
 - Default colors are assigned automatically
 
-:::tip Multi-Laser Workflows When using multiple laser heads, assigning different colors to each
+<!-- prettier-ignore-start -->
+:::tip[Multi-Laser Workflows]
+When using multiple laser heads, assigning different colors to each
 laser makes it easy to see which operations will be performed by which laser. For example, use red
-for your main cutting laser and blue for a secondary engraving laser. :::
+for your main cutting laser and blue for a secondary engraving laser.
+:::
+<!-- prettier-ignore-end -->
 
 #### Laser Type
 

@@ -29,10 +29,12 @@ import files and optimize them for best results.
 | **JPEG** | `.jpg`, `.jpeg` | Trace to vectors | Photos, continuous-tone images   |
 | **BMP**  | `.bmp`          | Trace to vectors | Simple graphics, screenshots     |
 
-:::note Raster Import :::
-
+<!-- prettier-ignore-start -->
+:::note[Raster Import]
 All raster images are **traced** to create vector paths that can be used for laser operations. The
 quality depends on the tracing configuration.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -113,10 +115,14 @@ flexibility to restore the original size if needed.
 
 SVG (Scalable Vector Graphics) is the **recommended format** for vector designs.
 
-:::tip Automate Step Assignment You can configure
+<!-- prettier-ignore-start -->
+:::tip[Automate Step Assignment]
+You can configure
 [color rules](../application-settings/color-rules.md) to automatically assign step types (Contour,
 Engrave, etc.) based on the colors in your SVG. When rules exist, the import dialog defaults to
-grouping shapes by color so the rules take effect. :::
+grouping shapes by color so the rules take effect.
+:::
+<!-- prettier-ignore-end -->
 
 ### Import Options in the Dialog
 

@@ -124,9 +124,13 @@ conectados.
 6. No Windows, anote a porta COM do Gerenciador de Dispositivos
 7. Evite portas nomeadas `/dev/ttyS*` no Linux - estas são portas seriais de hardware, não USB
 
-:::warning Portas Seriais de Hardware O Rayforge avisará se você selecionar portas `/dev/ttyS*` no
+<!-- prettier-ignore-start -->
+:::warning[Portas Seriais de Hardware]
+O Rayforge avisará se você selecionar portas `/dev/ttyS*` no
 Linux, pois estas tipicamente não são dispositivos GRBL baseados em USB. Portas seriais USB usam
-`/dev/ttyUSB*` ou `/dev/ttyACM*`. :::
+`/dev/ttyUSB*` ou `/dev/ttyACM*`.
+:::
+<!-- prettier-ignore-end -->
 
 ### Taxa de Transmissão Incorreta
 

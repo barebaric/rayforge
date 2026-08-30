@@ -36,8 +36,12 @@ ajudá-lo a ver exatamente onde a cabeça do laser está posicionada.
 4. **Mover a cabeça do laser** para ver a posição do feixe no seu material
 5. **Clicar no botão Foco novamente** para desligar quando terminar
 
-:::warning Segurança Mesmo em baixa potência, o laser pode danificar os olhos. Nunca olhe
-diretamente para o feixe ou aponte para superfícies reflexivas. Use proteção ocular adequada. :::
+<!-- prettier-ignore-start -->
+:::warning[Segurança]
+Mesmo em baixa potência, o laser pode danificar os olhos. Nunca olhe
+diretamente para o feixe ou aponte para superfícies reflexivas. Use proteção ocular adequada.
+:::
+<!-- prettier-ignore-end -->
 
 ### Configurar a Potência de Foco
 
@@ -49,9 +53,13 @@ A potência de foco determina o quão brilhante o ponto laser aparece:
    - Valores típicos: 1-5% para a maioria dos materiais
    - Defina como 0 para desativar o recurso
 
-:::tip Encontrando a Potência Certa Comece com 1% e aumente gradualmente. O ponto deve ser visível,
+<!-- prettier-ignore-start -->
+:::tip[Encontrando a Potência Certa]
+Comece com 1% e aumente gradualmente. O ponto deve ser visível,
 mas não deixar nenhuma marca no seu material. Materiais mais escuros podem precisar de maior
-potência para ver o ponto claramente. :::
+potência para ver o ponto claramente.
+:::
+<!-- prettier-ignore-end -->
 
 ### Quando Usar o Modo Foco
 
@@ -84,12 +92,14 @@ Configurar comportamento de enquadramento em **Configurações → Máquina → 
   - Defina como 0 para enquadramento a ar (laser desligado, apenas movimento)
   - Defina como 1-5% para um rastro visível no material
 
-:::tip Enquadramento a Ar vs. Baixa Potência
-
+<!-- prettier-ignore-start -->
+:::tip[Enquadramento a Ar vs. Baixa Potência]
 - **Enquadramento a ar (0% potência)**: Seguro para qualquer material, mas você só vê o movimento da
   cabeça
 - **Enquadramento de baixa potência**: Deixa uma marca visível fraca, útil para alinhamento preciso
-  em materiais escuros :::
+  em materiais escuros
+:::
+<!-- prettier-ignore-end -->
 
 ### Quando Enquadrar
 
@@ -125,12 +135,16 @@ O Rayforge usa vários sistemas de coordenadas:
 | **G54**     | Sistema de coordenadas de trabalho 1 (padrão)           |
 | **G55-G59** | Sistemas de coordenadas de trabalho adicionais          |
 
-:::tip Múltiplas Áreas de Trabalho Use slots SCT diferentes para diferentes posições de fixação. Por
+<!-- prettier-ignore-start -->
+:::tip[Múltiplas Áreas de Trabalho]
+Use slots SCT diferentes para diferentes posições de fixação. Por
 exemplo:
 
 - G54 para o lado esquerdo da sua mesa
 - G55 para o lado direito
-- G56 para um acessório rotativo :::
+- G56 para um acessório rotativo
+:::
+<!-- prettier-ignore-end -->
 
 ### Quando Definir Zero SCT
 
@@ -166,11 +180,13 @@ O alinhamento da câmera mapeia os pixels da câmera para coordenadas do mundo r
 3. Inserir as coordenadas X/Y do mundo real para cada ponto
 4. Clicar em **Aplicar** para calcular a transformação
 
-:::tip Precisão do Alinhamento
-
+<!-- prettier-ignore-start -->
+:::tip[Precisão do Alinhamento]
 - Use pontos distribuídos por toda sua área de trabalho
 - Meça as coordenadas do mundo cuidadosamente com uma régua
-- Use posições de máquina (mover para coordenadas conhecidas) para maior precisão :::
+- Use posições de máquina (mover para coordenadas conhecidas) para maior precisão
+:::
+<!-- prettier-ignore-end -->
 
 ### Posicionamento com Sobreposição de Câmera
 

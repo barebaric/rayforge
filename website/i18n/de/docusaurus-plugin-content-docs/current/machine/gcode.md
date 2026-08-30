@@ -5,9 +5,13 @@ generiert.
 
 ![G-Code-Einstellungen](/screenshots/machine-settings-gcode.webp)
 
-:::info Diese Seite wird nur für Maschinen angezeigt, die G-Code-basierte Treiber verwenden (z.B.
+<!-- prettier-ignore-start -->
+:::info
+Diese Seite wird nur für Maschinen angezeigt, die G-Code-basierte Treiber verwenden (z.B.
 GRBL, Smoothieware, Marlin). Wenn deine Maschine einen Nicht-G-Code-Treiber verwendet (z.B. Ruida),
-wird diese Einstellungsseite vollständig ausgeblendet. :::
+wird diese Einstellungsseite vollständig ausgeblendet.
+:::
+<!-- prettier-ignore-end -->
 
 ## G-Code-Dialekt
 
@@ -26,8 +30,12 @@ verwenden leicht unterschiedliche Befehle und Formate.
 - **Smoothieware**: Für Smoothieboard und ähnliche Controller.
 - **Marlin**: Für Marlin-basierte Controller.
 
-:::info Der Dialekt beeinflusst, wie Laserleistung, Bewegungen und andere Befehle im Ausgabe-G-Code
-formatiert werden. :::
+<!-- prettier-ignore-start -->
+:::info
+Der Dialekt beeinflusst, wie Laserleistung, Bewegungen und andere Befehle im Ausgabe-G-Code
+formatiert werden.
+:::
+<!-- prettier-ignore-end -->
 
 ## Dialekt-Präambel und Postscript
 

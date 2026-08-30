@@ -215,14 +215,16 @@ The camera properties panel shows the alignment status with an icon:
 5. Enter exact coordinates for each point
 6. Click **Apply** and verify
 
-:::tip Best Practices
-
+<!-- prettier-ignore-start -->
+:::tip[Best Practices]
 - Use points at the corners of your work area for maximum coverage
 - Avoid clustering points in one area
 - Measure world coordinates carefully — accuracy here determines overall alignment quality
 - Re-align if you move the camera or change the focus distance
 - Re-align after updating lens calibration
-- Save your alignment — it persists across sessions :::
+- Save your alignment — it persists across sessions
+:::
+<!-- prettier-ignore-end -->
 
 ---
 

@@ -194,8 +194,12 @@ El estado de conexión se muestra en la esquina inferior izquierda de la ventana
 ícono de estado y una etiqueta que muestra el estado actual (Conectado, Conectando, Desconectado,
 Error, etc.).
 
-:::success ¡Conectado! Si tu máquina muestra el estado "Conectado", ¡estás listo para empezar a usar
-Rayforge! :::
+<!-- prettier-ignore-start -->
+:::success[¡Conectado!]
+Si tu máquina muestra el estado "Conectado", ¡estás listo para empezar a usar
+Rayforge!
+:::
+<!-- prettier-ignore-end -->
 
 ---
 

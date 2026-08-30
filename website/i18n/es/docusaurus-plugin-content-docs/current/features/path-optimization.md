@@ -46,8 +46,12 @@ rodamientos.
 **Distribución de calor:** Las trayectorias optimizadas pueden concentrar calor en un área. Para
 materiales sensibles al calor, considera si el orden importa.
 
-:::tip La optimización se ejecuta automáticamente. Simplemente habilítala y el software maneja el
-resto. :::
+<!-- prettier-ignore-start -->
+:::tip
+La optimización se ejecuta automáticamente. Simplemente habilítala y el software maneja el
+resto.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 

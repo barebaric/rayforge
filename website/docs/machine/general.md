@@ -32,8 +32,12 @@ GRBL devices have two serial driver options:
 After selecting a driver, connection-specific settings appear below the selector (e.g. serial port,
 baud rate). These vary depending on the chosen driver.
 
-:::tip An error banner at the top of the page warns you if the driver is not configured or
-encounters a problem. :::
+<!-- prettier-ignore-start -->
+:::tip
+An error banner at the top of the page warns you if the driver is not configured or
+encounters a problem.
+:::
+<!-- prettier-ignore-end -->
 
 ## Speeds & Acceleration
 
@@ -64,8 +68,12 @@ the default overscan distance.
 - **Typical range**: 500-2000 mm/s²
 - **Note**: Must match or be lower than firmware acceleration settings
 
-:::tip Start with conservative speed values and increase gradually. Observe your machine for belt
-skipping, motor stalling, or loss of positioning accuracy. :::
+<!-- prettier-ignore-start -->
+:::tip
+Start with conservative speed values and increase gradually. Observe your machine for belt
+skipping, motor stalling, or loss of positioning accuracy.
+:::
+<!-- prettier-ignore-end -->
 
 ## Exporting a Machine Profile
 

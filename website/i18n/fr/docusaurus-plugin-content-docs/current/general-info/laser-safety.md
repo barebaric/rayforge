@@ -3,10 +3,14 @@
 Les équipements de découpe et de gravure laser présentent des risques de sécurité graves, notamment
 des incendies, des fumées toxiques et des dommages oculaires permanents.
 
-:::danger Avertissement de sécurité critique **Suivez toujours les consignes de sécurité et les
+<!-- prettier-ignore-start -->
+:::danger[Avertissement de sécurité critique]
+**Suivez toujours les consignes de sécurité et les
 instructions d'exploitation du fabricant de votre laser.** Cette page fournit des principes de
 sécurité généraux mais ne remplace pas une formation appropriée et la documentation de sécurité
-spécifique à votre machine. :::
+spécifique à votre machine.
+:::
+<!-- prettier-ignore-end -->
 
 ## Votre ressource de sécurité principale
 
@@ -186,15 +190,17 @@ puissance laser s'arrêtent immédiatement.
 
 ## Règles de sécurité clés
 
-:::warning Règles de sécurité critiques
-
+<!-- prettier-ignore-start -->
+:::warning[Règles de sécurité critiques]
 1. **Ne jamais laisser un laser sans surveillance pendant le fonctionnement**
 2. **Ne jamais utiliser sans ventilation appropriée**
 3. **Ne jamais découper de matériaux interdits (PVC, vinyle, ABS, etc.)**
 4. **Avoir toujours un extincteur à portée de main**
 5. **Suivez toujours les consignes de sécurité du fabricant**
 6. **Sachez où se trouve l'arrêt d'urgence**
-7. **Prévisualisez les travaux en mode simulation avant de les exécuter** :::
+7. **Prévisualisez les travaux en mode simulation avant de les exécuter**
+:::
+<!-- prettier-ignore-end -->
 
 ## Ressources supplémentaires
 

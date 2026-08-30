@@ -121,9 +121,13 @@ O Rayforge suporta estes gatilhos de hook:
 | **Início da Peça**   | Antes de processar cada peça   | Numeração de peças, marcas de alinhamento            |
 | **Fim da Peça**      | Após processar cada peça       | Resfriamento, pausa de inspeção                      |
 
-:::note G-code a Nível de Trabalho O G-code de início e fim de trabalho é configurado através das
+<!-- prettier-ignore-start -->
+:::note[G-code a Nível de Trabalho]
+O G-code de início e fim de trabalho é configurado através das
 configurações de preâmbulo e postscript do dialeto, não através de hooks. Veja
-[Configurações de G-code](gcode) para detalhes. :::
+[Configurações de G-code](gcode) para detalhes.
+:::
+<!-- prettier-ignore-end -->
 
 ### Criando um Hook
 
@@ -298,19 +302,27 @@ M8  ; Assistência de ar LIGADA
 M9  ; Assistência de ar DESLIGADA (previne dispersão de poeira para gravação)
 ```
 
-:::note Hooks Específicos por Camada O Rayforge atualmente não suporta personalização de hooks por
-camada. Para conseguir isso, use G-code condicional ou perfis de máquina separados. :::
+<!-- prettier-ignore-start -->
+:::note[Hooks Específicos por Camada]
+O Rayforge atualmente não suporta personalização de hooks por
+camada. Para conseguir isso, use G-code condicional ou perfis de máquina separados.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
 ## Considerações de Segurança
 
-:::danger Teste Antes da Produção Sempre teste macros e hooks no **modo de simulação** ou com o
+<!-- prettier-ignore-start -->
+:::danger[Teste Antes da Produção]
+Sempre teste macros e hooks no **modo de simulação** ou com o
 laser **desabilitado** antes de executar em trabalhos reais. G-code configurado incorretamente pode:
 
 - Colidir a máquina contra os limites
 - Disparar o laser inesperadamente
-- Danificar materiais ou equipamentos :::
+- Danificar materiais ou equipamentos
+:::
+<!-- prettier-ignore-end -->
 
 **Checklist de segurança:**
 

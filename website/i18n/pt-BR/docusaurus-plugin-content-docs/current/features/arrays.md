@@ -13,8 +13,12 @@ interagindo com a tela enquanto ajusta os parâmetros — a visualização é at
 Para abrir um diálogo de array, selecione uma ou mais peças de trabalho na tela, depois escolha o
 modo de array na barra de ferramentas ou no menu contextual.
 
-:::tip Todos os modos de array são não modais. Você pode arrastar peças de trabalho na tela enquanto
-o diálogo está aberto, e a visualização será atualizada ao vivo para refletir as novas posições. :::
+<!-- prettier-ignore-start -->
+:::tip
+Todos os modos de array são não modais. Você pode arrastar peças de trabalho na tela enquanto
+o diálogo está aberto, e a visualização será atualizada ao vivo para refletir as novas posições.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -52,8 +56,12 @@ do ângulo total.
 | **Quantidade**           | Número de cópias (1–360)                                 |
 | **Ângulo total (graus)** | Extensão angular total de todas as cópias (−360° a 360°) |
 
-:::info Como a rotação é em torno do próprio centro da seleção, arrastar a peça de trabalho na tela
-move todas as cópias juntas enquanto o diálogo permanece aberto. :::
+<!-- prettier-ignore-start -->
+:::info
+Como a rotação é em torno do próprio centro da seleção, arrastar a peça de trabalho na tela
+move todas as cópias juntas enquanto o diálogo permanece aberto.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -76,9 +84,17 @@ diálogo está aberto.
 | **Raio**                 | Raio da trajetória circular                                           |
 | **Girar cópias**         | Quando habilitado, cada cópia é girada para seguir a tangente do arco |
 
-:::tip Arrastar o centro A cruz na tela representa o centro do círculo. Arraste-a para reposicionar
+<!-- prettier-ignore-start -->
+:::tip[Arrastar o centro]
+A cruz na tela representa o centro do círculo. Arraste-a para reposicionar
 o array interativamente — os campos Centro X e Centro Y no diálogo serão atualizados
-automaticamente. :::
+automaticamente.
+:::
+<!-- prettier-ignore-end -->
 
-:::tip Arrastar peças de trabalho Você também pode arrastar a peça de trabalho original na tela. O
-raio será atualizado automaticamente para manter as cópias em sua distância atual do centro. :::
+<!-- prettier-ignore-start -->
+:::tip[Arrastar peças de trabalho]
+Você também pode arrastar a peça de trabalho original na tela. O
+raio será atualizado automaticamente para manter as cópias em sua distância atual do centro.
+:::
+<!-- prettier-ignore-end -->

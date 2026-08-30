@@ -49,7 +49,11 @@ install available updates.
 2. Click the **Remove** button
 3. Confirm the removal
 
-:::warning Removing an addon may affect documents that use its features. :::
+<!-- prettier-ignore-start -->
+:::warning
+Removing an addon may affect documents that use its features.
+:::
+<!-- prettier-ignore-end -->
 
 ## Addon Sources
 

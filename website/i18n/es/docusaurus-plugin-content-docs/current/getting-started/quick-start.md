@@ -15,9 +15,13 @@ rasterizadas (JPEG, PNG, BMP).
 
 ![Lienzo con diseño importado](/screenshots/main-standard.webp)
 
-:::tip ¿No tienes un diseño todavía? Puedes crear formas simples usando el diseñador o descargar
+<!-- prettier-ignore-start -->
+:::tip[¿No tienes un diseño todavía?]
+Puedes crear formas simples usando el diseñador o descargar
 archivos SVG gratuitos de sitios como [Flaticon](https://www.flaticon.com/) o
-[SVG Repo](https://www.svgrepo.com/). :::
+[SVG Repo](https://www.svgrepo.com/).
+:::
+<!-- prettier-ignore-end -->
 
 ## Paso 2: Posicionar Tu Diseño
 
@@ -49,11 +53,15 @@ Las operaciones definen cómo Rayforge procesará tu diseño. Las operaciones co
 
 ![Ajustes de Operación](/screenshots/step-settings-contour-general.webp)
 
-:::warning Comienza con Potencia Baja Cuando trabajes con materiales nuevos, siempre comienza con
+<!-- prettier-ignore-start -->
+:::warning[Comienza con Potencia Baja]
+Cuando trabajes con materiales nuevos, siempre comienza con
 ajustes de potencia bajos y ejecuta cortes de prueba. Aumenta gradualmente la potencia hasta lograr
 el resultado deseado. Usa la función
 [Cuadrícula de Prueba de Materiales](../features/operations/material-test-grid.md) para encontrar
-sistemáticamente los ajustes óptimos. :::
+sistemáticamente los ajustes óptimos.
+:::
+<!-- prettier-ignore-end -->
 
 ## Paso 4: Vista Previa
 
@@ -66,21 +74,27 @@ Antes de enviar a tu máquina, previsualiza la trayectoria en 3D:
 
 ![Vista Previa 3D](/screenshots/main-3d.webp)
 
-:::tip Detecta Errores Temprano La vista previa 3D te ayuda a detectar problemas como:
+<!-- prettier-ignore-start -->
+:::tip[Detecta Errores Temprano]
+La vista previa 3D te ayuda a detectar problemas como:
 
 - Trayectorias faltantes
 - Orden incorrecto
 - Operaciones aplicadas a objetos equivocados
-- Trayectorias que exceden tu área de trabajo :::
+- Trayectorias que exceden tu área de trabajo
+:::
+<!-- prettier-ignore-end -->
 
 ## Paso 5: Enviar a la Máquina
 
-:::danger La Seguridad Primero
-
+<!-- prettier-ignore-start -->
+:::danger[La Seguridad Primero]
 - Asegúrate de que el área de trabajo esté despejada
 - Nunca dejes la máquina desatendida durante la operación
 - Ten equipo de seguridad contra incendios cerca
-- Usa protección ocular apropiada :::
+- Usa protección ocular apropiada
+:::
+<!-- prettier-ignore-end -->
 
 ### Preparando Tu Material
 
@@ -116,8 +130,12 @@ Una vez que el trabajo se completa:
 2. Retira cuidadosamente tu pieza terminada
 3. Limpia la cama láser si es necesario
 
-:::success ¡Felicitaciones! ¡Has completado tu primer trabajo con Rayforge! Ahora puedes explorar
-funciones más avanzadas. :::
+<!-- prettier-ignore-start -->
+:::success[¡Felicitaciones!]
+¡Has completado tu primer trabajo con Rayforge! Ahora puedes explorar
+funciones más avanzadas.
+:::
+<!-- prettier-ignore-end -->
 
 ## Siguientes Pasos
 

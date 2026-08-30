@@ -30,8 +30,12 @@ El Panel Inferior puede alternarse vía:
 - **Menú**: Ver → Panel Inferior
 - **Atajo de Teclado**: Ctrl+L
 
-:::note Se Requiere Conexión Los controles de desplazamiento solo están disponibles cuando se está
-conectado a una máquina que soporta operaciones de desplazamiento. :::
+<!-- prettier-ignore-start -->
+:::note[Se Requiere Conexión]
+Los controles de desplazamiento solo están disponibles cuando se está
+conectado a una máquina que soporta operaciones de desplazamiento.
+:::
+<!-- prettier-ignore-end -->
 
 ## Controles de Desplazamiento
 
@@ -50,8 +54,12 @@ Lleva los ejes de tu máquina al origen para establecer una posición de referen
 | Home Z    | Origen eje Z          | Mueve el eje Z a su posición de origen         |
 | Home Todo | Origen todos los ejes | Lleva todos los ejes al origen simultáneamente |
 
-:::tip Secuencia de Homing Se recomienda llevar todos los ejes al origen antes de iniciar cualquier
-trabajo para asegurar posicionamiento preciso. :::
+<!-- prettier-ignore-start -->
+:::tip[Secuencia de Homing]
+Se recomienda llevar todos los ejes al origen antes de iniciar cualquier
+trabajo para asegurar posicionamiento preciso.
+:::
+<!-- prettier-ignore-end -->
 
 ### Movimiento Direccional
 
@@ -76,8 +84,12 @@ Los controles de desplazamiento proporcionan botones para movimiento direccional
 | Z+                     | Eje Z hacia arriba                      | Re Pág           |
 | Z-                     | Eje Z hacia abajo                       | Av Pág           |
 
-:::note Se Requiere Foco Los atajos de teclado solo funcionan cuando la ventana principal tiene
-foco. :::
+<!-- prettier-ignore-start -->
+:::note[Se Requiere Foco]
+Los atajos de teclado solo funcionan cuando la ventana principal tiene
+foco.
+:::
+<!-- prettier-ignore-end -->
 
 ### Retroalimentación Visual
 
@@ -97,11 +109,13 @@ Configura el comportamiento de las operaciones de desplazamiento:
 - **Por defecto**: 1,000 mm/min
 - **Propósito**: Controla qué tan rápido se mueve la cabeza del láser
 
-:::tip Selección de Velocidad
-
+<!-- prettier-ignore-start -->
+:::tip[Selección de Velocidad]
 - Usa velocidades más bajas (100-500 mm/min) para posicionamiento preciso
 - Usa velocidades más altas (1,000-3,000 mm/min) para movimientos grandes
-- Velocidades muy altas pueden causar pasos perdidos en algunas máquinas :::
+- Velocidades muy altas pueden causar pasos perdidos en algunas máquinas
+:::
+<!-- prettier-ignore-end -->
 
 **Distancia de Desplazamiento:**
 
@@ -109,11 +123,13 @@ Configura el comportamiento de las operaciones de desplazamiento:
 - **Por defecto**: 10.0 mm
 - **Propósito**: Controla qué tan lejos se mueve la cabeza del láser por presión de botón
 
-:::tip Selección de Distancia
-
+<!-- prettier-ignore-start -->
+:::tip[Selección de Distancia]
 - Usa distancias pequeñas (0.1-1.0 mm) para ajuste fino
 - Usa distancias medianas (5-20 mm) para posicionamiento general
-- Usa distancias grandes (50-100 mm) para reposicionamiento rápido :::
+- Usa distancias grandes (50-100 mm) para reposicionamiento rápido
+:::
+<!-- prettier-ignore-end -->
 
 ## Pantalla de Estado de la Máquina
 
@@ -172,16 +188,22 @@ Define dónde debería estar el origen del WCS activo:
 | Cero Y         | Establecer Y=0   | Hace que la posición Y actual sea el origen Y para el WCS activo                             |
 | Cero Z         | Establecer Z=0   | Hace que la posición Z actual sea el origen Z para el WCS activo                             |
 
-:::note G53 No Puede Cambiarse Los botones de cero están deshabilitados cuando G53 (Coordenadas de
-Máquina) está seleccionado, ya que las coordenadas de máquina están fijadas por hardware. :::
+<!-- prettier-ignore-start -->
+:::note[G53 No Puede Cambiarse]
+Los botones de cero están deshabilitados cuando G53 (Coordenadas de
+Máquina) está seleccionado, ya que las coordenadas de máquina están fijadas por hardware.
+:::
+<!-- prettier-ignore-end -->
 
-:::tip Flujo de Trabajo para Establecer WCS
-
+<!-- prettier-ignore-start -->
+:::tip[Flujo de Trabajo para Establecer WCS]
 1. Conéctate a tu máquina y lleva todos los ejes al origen
 2. Selecciona el WCS que quieres configurar (ej., G54)
 3. Desplaza la cabeza del láser a la posición de origen deseada
 4. Haz clic en Cero X y Cero Y para establecer esta posición como (0, 0)
-5. El desplazamiento se almacena en el controlador de tu máquina :::
+5. El desplazamiento se almacena en el controlador de tu máquina
+:::
+<!-- prettier-ignore-end -->
 
 ## Pestaña de Consola
 

@@ -3,10 +3,14 @@
 Laserschneid- und Gravurgeräte stellen ernsthafte Sicherheitsrisiken dar, darunter Feuer, giftige
 Dämpfe und dauerhafte Augenschäden.
 
-:::danger Kritische Sicherheitswarnung **Befolge immer die Sicherheitsrichtlinien und
+<!-- prettier-ignore-start -->
+:::danger[Kritische Sicherheitswarnung]
+**Befolge immer die Sicherheitsrichtlinien und
 Betriebsanweisungen deines Laserherstellers.** Diese Seite enthält allgemeine Sicherheitsprinzipien,
 ersetzt aber keine ordnungsgemäße Schulung und die spezifische Sicherheitsdokumentation deiner
-Maschine. :::
+Maschine.
+:::
+<!-- prettier-ignore-end -->
 
 ## Deine wichtigste Sicherheitsressource
 
@@ -184,15 +188,17 @@ sofort.
 
 ## Wichtige Sicherheitsregeln
 
-:::warning Kritische Sicherheitsregeln
-
+<!-- prettier-ignore-start -->
+:::warning[Kritische Sicherheitsregeln]
 1. **Laser niemals während des Betriebs unbeaufsichtigt lassen**
 2. **Niemals ohne ordnungsgemäße Belüftung betreiben**
 3. **Verbotene Materialien niemals schneiden (PVC, Vinyl, ABS usw.)**
 4. **Immer Feuerlöscher in Reichweite haben**
 5. **Immer die Sicherheitsrichtlinien des Herstellers befolgen**
 6. **Wissen, wo sich der Not-Aus befindet**
-7. **Aufträge vor dem Ausführen im Simulationsmodus voranschauen** :::
+7. **Aufträge vor dem Ausführen im Simulationsmodus voranschauen**
+:::
+<!-- prettier-ignore-end -->
 
 ## Zusätzliche Ressourcen
 

@@ -93,9 +93,17 @@ Use clear, descriptive commit messages:
 Keep pull requests focused on a single feature or fix. Large changes should be broken into smaller,
 logical pieces.
 
-:::tip Discuss First For major changes, open an
+<!-- prettier-ignore-start -->
+:::tip[Discuss First]
+For major changes, open an
 [issue](https://github.com/barebaric/rayforge/issues) first to discuss your approach before
-investing significant time. :::
+investing significant time.
+:::
+<!-- prettier-ignore-end -->
 
-:::note Need Help? If you're unsure about any part of the contribution process, don't hesitate to
-ask for help in an issue or discussion. :::
+<!-- prettier-ignore-start -->
+:::note[Need Help?]
+If you're unsure about any part of the contribution process, don't hesitate to
+ask for help in an issue or discussion.
+:::
+<!-- prettier-ignore-end -->

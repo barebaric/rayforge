@@ -128,10 +128,14 @@ erzeugt. Dies ist besonders nützlich für:
 
 Der Überlappungsschnitt wird sowohl auf Außenkonturen als auch auf innere Löcher angewendet.
 
-:::tip Ein-/Auslauf vs. Überlappungsschnitt [Ein-/Auslauf](../lead-in-out.md) fügt Nullleistungs-An-
+<!-- prettier-ignore-start -->
+:::tip[Ein-/Auslauf vs. Überlappungsschnitt]
+[Ein-/Auslauf](../lead-in-out.md) fügt Nullleistungs-An-
 und Abfahrtsbewegungen vor und nach dem Schnittpfad hinzu. Der Überlappungsschnitt verlängert den
 Schnittpfad selbst über die Verbindungsstelle hinaus. Beide können zusammen für optimale
-Schnittqualität verwendet werden. :::
+Schnittqualität verwendet werden.
+:::
+<!-- prettier-ignore-end -->
 
 #### Nachzeichnen mit benutzerdefiniertem Schwellenwert
 
@@ -216,7 +220,10 @@ Für Materialien dicker als ein einzelner Durchgang schneiden kann:
 - Erzeugt echtes 2.5D-Schneiden
 - Auf 0 setzen für gleich tiefe Mehrfach-Durchgänge
 
-:::warning Z-Achse erforderlich :::
+<!-- prettier-ignore-start -->
+:::warning[Z-Achse erforderlich]
+:::
+<!-- prettier-ignore-end -->
 
 Durchgang-Tiefe funktioniert nur, wenn deine Maschine über Z-Achsen-Steuerung verfügt. Für Maschinen
 ohne Z-Achse verwende mehrere Durchgänge auf gleicher Tiefe.

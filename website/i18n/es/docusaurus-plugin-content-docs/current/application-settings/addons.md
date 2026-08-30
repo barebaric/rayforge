@@ -43,7 +43,11 @@ Haz clic en **Actualizar** para instalar las actualizaciones disponibles.
 2. Haz clic en el botón **Eliminar**
 3. Confirma la eliminación
 
-:::warning Eliminar un addon puede afectar documentos que usan sus características. :::
+<!-- prettier-ignore-start -->
+:::warning
+Eliminar un addon puede afectar documentos que usan sus características.
+:::
+<!-- prettier-ignore-end -->
 
 ## Fuentes de Addons
 

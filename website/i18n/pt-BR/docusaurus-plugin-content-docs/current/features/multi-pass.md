@@ -27,8 +27,12 @@ de eixo Z.
 - **Espessura do material ÷ passagens:** Corte de profundidade progressiva
 - **Incrementos pequenos (0.1-0.5mm):** Controle fino para gravação profunda
 
-:::warning Eixo Z Necessário Degrau-Z só funciona com máquinas que têm controle de eixo Z
-motorizado. Para máquinas sem eixo Z, todas as passagens ocorrem na mesma altura de foco. :::
+<!-- prettier-ignore-start -->
+:::warning[Eixo Z Necessário]
+Degrau-Z só funciona com máquinas que têm controle de eixo Z
+motorizado. Para máquinas sem eixo Z, todas as passagens ocorrem na mesma altura de foco.
+:::
+<!-- prettier-ignore-end -->
 
 ## Quando Usar Multi-Passagem
 

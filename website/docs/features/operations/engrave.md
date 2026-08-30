@@ -290,10 +290,11 @@ Use invert for lithophanes (light areas should be thin) or embossing (raised are
 
 **Recommended:** 0.1mm for general use
 
-:::tip Resolution Match :::
-
+<!-- prettier-ignore-start -->
+:::tip[Resolution Match]
 For images, line interval should match or exceed image resolution. If your image is 10 pixels/mm
-(254 DPI), use 0.1mm line interval or smaller.
+(254 DPI), use 0.1mm line interval or smaller.:::
+<!-- prettier-ignore-end -->
 
 #### Scan Direction
 

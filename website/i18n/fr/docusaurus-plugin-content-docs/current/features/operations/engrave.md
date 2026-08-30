@@ -290,10 +290,12 @@ en relief).
 
 **Recommandé :** 0.1mm pour un usage général
 
-:::tip Correspondance de Résolution :::
-
+<!-- prettier-ignore-start -->
+:::tip[Correspondance de Résolution]
 Pour les images, l'intervalle de ligne devrait correspondre ou dépasser la résolution de l'image. Si
 votre image est de 10 pixels/mm (254 DPI), utilisez un intervalle de ligne de 0.1mm ou moins.
+:::
+<!-- prettier-ignore-end -->
 
 #### Direction de Balayage
 

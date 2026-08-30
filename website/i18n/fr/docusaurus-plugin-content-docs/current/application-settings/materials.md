@@ -7,10 +7,14 @@ matériaux pour vos projets de découpe et gravure laser. Ce guide explique la d
 bibliothèques principales et utilisateur, et comment créer vos propres bibliothèques et y ajouter
 des matériaux.
 
-:::note Assigner un matériau à un brut affecte à la fois son apparence visuelle dans le canevas 2D
+<!-- prettier-ignore-start -->
+:::note
+Assigner un matériau à un brut affecte à la fois son apparence visuelle dans le canevas 2D
 et 3D et les [recettes](recipes.md) qui lui sont appliquées : les recettes spécifiques à un matériau
 correspondent au matériau assigné. Dans les futures versions, les matériaux seront utilisés pour
-dériver davantage de paramètres fonctionnels. :::
+dériver davantage de paramètres fonctionnels.
+:::
+<!-- prettier-ignore-end -->
 
 ## Créer une Nouvelle Bibliothèque
 
@@ -82,8 +86,12 @@ Réglez sur 1 pour les matériaux métalliques, 0 pour les matériaux non métal
 
 #### Absorption {#absorption}
 
-:::note Nouveau en 1.11 Les données d'absorption pilotent le
-[modèle de brûlure physique](../ui/3d-preview.md#physical-burn-model) dans l'aperçu 3D. :::
+<!-- prettier-ignore-start -->
+:::note[Nouveau en 1.11]
+Les données d'absorption pilotent le
+[modèle de brûlure physique](../ui/3d-preview.md#physical-burn-model) dans l'aperçu 3D.
+:::
+<!-- prettier-ignore-end -->
 
 Les coefficients d'absorption par longueur d'onde (0–1) décrivent quelle partie de l'énergie du
 laser le matériau absorbe à une longueur d'onde donnée. L'aperçu 3D les utilise, avec la longueur
@@ -127,4 +135,8 @@ monde réel sont les bienvenues.
 2. Cliquez sur le bouton **Supprimer**
 3. Confirmez la suppression dans la boîte de dialogue
 
-:::warning La suppression d'un matériau est permanente et ne peut pas être annulée. :::
+<!-- prettier-ignore-start -->
+:::warning
+La suppression d'un matériau est permanente et ne peut pas être annulée.
+:::
+<!-- prettier-ignore-end -->

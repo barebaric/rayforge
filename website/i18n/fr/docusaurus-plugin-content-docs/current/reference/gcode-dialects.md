@@ -28,8 +28,8 @@ Rayforge prend actuellement en charge ces dialectes G-code :
 | **Smoothieware**                              | Smoothieware | Découpeurs laser, CNC                  |
 | **Marlin**                                    | Marlin 2.0+  | Imprimantes 3D avec laser              |
 
-:::note Dialectes recommandés :::
-
+<!-- prettier-ignore-start -->
+:::note[Dialectes recommandés]
 **Grbl (Compat)** est le dialecte le plus testé et recommandé pour les applications laser standard.
 
 **Grbl Raster** est optimisé pour la gravure raster sur les contrôleurs GRBL. Il garde le laser en
@@ -43,6 +43,8 @@ profondeur où la puissance varie pendant les coupes (par exemple, gravure à pr
 un G-code très fluide et compact pour les trajectoires courbes. Lorsque tu utilises ce dialecte,
 active l'option « Prise en charge des courbes Bézier » dans les paramètres avancés de la machine
 pour profiter de la sortie G5.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 

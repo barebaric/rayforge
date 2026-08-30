@@ -35,8 +35,12 @@ les coordonnées sont interprétées.
 2. Observez où la tête laser se déplace
 3. Cette position est votre origine (0,0)
 
-:::info Le paramètre d'origine des coordonnées affecte la façon dont le G-code est généré.
-Assurez-vous qu'il correspond à la configuration de homing de votre firmware. :::
+<!-- prettier-ignore-start -->
+:::info
+Le paramètre d'origine des coordonnées affecte la façon dont le G-code est généré.
+Assurez-vous qu'il correspond à la configuration de homing de votre firmware.
+:::
+<!-- prettier-ignore-end -->
 
 ### Direction des Axes
 
@@ -95,9 +99,13 @@ commandes de déplacement empêcheront tout mouvement en dehors de ces limites.
 Les limites logicielles sont automatiquement contraintes pour rester dans l'étendue des axes (0 à la
 valeur d'étendue).
 
-:::tip Utilisez les limites logicielles pour protéger les zones de votre surface de travail qui ne
+<!-- prettier-ignore-start -->
+:::tip
+Utilisez les limites logicielles pour protéger les zones de votre surface de travail qui ne
 doivent jamais être atteintes lors du déplacement, comme les zones avec des fixations ou des
-équipements sensibles. :::
+équipements sensibles.
+:::
+<!-- prettier-ignore-end -->
 
 ## Voir Aussi
 

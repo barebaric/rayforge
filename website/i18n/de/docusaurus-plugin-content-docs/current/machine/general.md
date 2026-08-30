@@ -32,8 +32,12 @@ GRBL-Geräte haben zwei serielle Treiber-Optionen:
 Nach der Auswahl eines Treibers werden verbindungsspezifische Einstellungen unter der Auswahl
 angezeigt (z. B. serieller Port, Baudrate). Diese variieren je nach gewähltem Treiber.
 
-:::tip Ein Fehlerbanner oben auf der Seite warnt dich, wenn der Treiber nicht konfiguriert ist oder
-ein Problem auftritt. :::
+<!-- prettier-ignore-start -->
+:::tip
+Ein Fehlerbanner oben auf der Seite warnt dich, wenn der Treiber nicht konfiguriert ist oder
+ein Problem auftritt.
+:::
+<!-- prettier-ignore-end -->
 
 ## Geschwindigkeiten & Beschleunigung
 
@@ -65,8 +69,12 @@ Berechnung des Standard-Overscan-Abstands verwendet.
 - **Typischer Bereich**: 500–2000 mm/s²
 - **Hinweis**: Muss mit den Firmware-Beschleunigungseinstellungen übereinstimmen oder niedriger sein
 
-:::tip Beginne mit konservativen Geschwindigkeitswerten und steigere sie schrittweise. Beobachte
-deine Maschine auf Zahnriemensprünge, Motorblockaden oder Positionsverlust. :::
+<!-- prettier-ignore-start -->
+:::tip
+Beginne mit konservativen Geschwindigkeitswerten und steigere sie schrittweise. Beobachte
+deine Maschine auf Zahnriemensprünge, Motorblockaden oder Positionsverlust.
+:::
+<!-- prettier-ignore-end -->
 
 ## Maschinenprofil exportieren
 

@@ -35,8 +35,12 @@ The Bottom Panel can be toggled via:
 - **Menu**: View → Bottom Panel
 - **Keyboard Shortcut**: Ctrl+L
 
-:::note Connection Required The jog controls are only available when connected to a machine that
-supports jogging operations. :::
+<!-- prettier-ignore-start -->
+:::note[Connection Required]
+The jog controls are only available when connected to a machine that
+supports jogging operations.
+:::
+<!-- prettier-ignore-end -->
 
 ## Jog Controls
 
@@ -51,8 +55,12 @@ Home your machine's axes to establish a reference position:
 | -------- | -------------- | ----------------------------- |
 | Home All | Homes all axes | Homes all axes simultaneously |
 
-:::tip Homing Sequence It's recommended to home all axes before starting any job to ensure accurate
-positioning. :::
+<!-- prettier-ignore-start -->
+:::tip[Homing Sequence]
+It's recommended to home all axes before starting any job to ensure accurate
+positioning.
+:::
+<!-- prettier-ignore-end -->
 
 ### Directional Movement
 
@@ -77,7 +85,11 @@ The jog controls provide buttons for directional movement:
 | Z+               | Z axis up                       | Page Up           |
 | Z-               | Z axis down                     | Page Down         |
 
-:::note Focus Required Keyboard shortcuts only work when the main window has focus. :::
+<!-- prettier-ignore-start -->
+:::note[Focus Required]
+Keyboard shortcuts only work when the main window has focus.
+:::
+<!-- prettier-ignore-end -->
 
 ### Visual Feedback
 
@@ -97,11 +109,13 @@ Configure the behavior of jog operations:
 - **Default**: 1,000 mm/min
 - **Purpose**: Controls how fast the laser head moves
 
-:::tip Speed Selection
-
+<!-- prettier-ignore-start -->
+:::tip[Speed Selection]
 - Use lower speeds (100-500 mm/min) for precise positioning
 - Use higher speeds (1,000-3,000 mm/min) for larger movements
-- Very high speeds may cause missed steps on some machines :::
+- Very high speeds may cause missed steps on some machines
+:::
+<!-- prettier-ignore-end -->
 
 **Jog Distance:**
 
@@ -109,11 +123,13 @@ Configure the behavior of jog operations:
 - **Default**: 10.0 mm
 - **Purpose**: Controls how far the laser head moves per button press
 
-:::tip Distance Selection
-
+<!-- prettier-ignore-start -->
+:::tip[Distance Selection]
 - Use small distances (0.1-1.0 mm) for fine-tuning
 - Use medium distances (5-20 mm) for general positioning
-- Use large distances (50-100 mm) for quick repositioning :::
+- Use large distances (50-100 mm) for quick repositioning
+:::
+<!-- prettier-ignore-end -->
 
 ## Machine Status Display
 
@@ -172,16 +188,22 @@ Define where the origin of the active WCS should be:
 | Zero Y         | Set Y=0   | Makes current Y position the Y origin for active WCS                 |
 | Zero Z         | Set Z=0   | Makes current Z position the Z origin for active WCS                 |
 
-:::note G53 Cannot Be Changed Zero buttons are disabled when G53 (Machine Coordinates) is selected,
-as machine coordinates are fixed by hardware. :::
+<!-- prettier-ignore-start -->
+:::note[G53 Cannot Be Changed]
+Zero buttons are disabled when G53 (Machine Coordinates) is selected,
+as machine coordinates are fixed by hardware.
+:::
+<!-- prettier-ignore-end -->
 
-:::tip Setting WCS Workflow
-
+<!-- prettier-ignore-start -->
+:::tip[Setting WCS Workflow]
 1. Connect to your machine and home all axes
 2. Select the WCS you want to configure (e.g., G54)
 3. Jog the laser head to the desired origin position
 4. Click Zero X and Zero Y to set this position as (0, 0)
-5. The offset is stored in your machine's controller :::
+5. The offset is stored in your machine's controller
+:::
+<!-- prettier-ignore-end -->
 
 ## Console Tab
 

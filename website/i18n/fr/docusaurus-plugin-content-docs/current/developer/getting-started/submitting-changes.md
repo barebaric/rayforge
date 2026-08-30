@@ -87,9 +87,17 @@ Utilisez des messages de commit clairs et descriptifs :
 Gardez les pull requests focalisées sur une seule fonctionnalité ou correction. Les grands
 changements devraient être divisés en morceaux plus petits et logiques.
 
-:::tip Discutez d'abord Pour les changements majeurs, ouvrez d'abord un
+<!-- prettier-ignore-start -->
+:::tip[Discutez d'abord]
+Pour les changements majeurs, ouvrez d'abord un
 [ticket](https://github.com/barebaric/rayforge/issues) pour discuter de votre approche avant
-d'investir beaucoup de temps. :::
+d'investir beaucoup de temps.
+:::
+<!-- prettier-ignore-end -->
 
-:::note Besoin d'aide ? Si vous n'êtes sûr d'aucune partie du processus de contribution, n'hésitez
-pas à demander de l'aide dans un ticket ou une discussion. :::
+<!-- prettier-ignore-start -->
+:::note[Besoin d'aide ?]
+Si vous n'êtes sûr d'aucune partie du processus de contribution, n'hésitez
+pas à demander de l'aide dans un ticket ou une discussion.
+:::
+<!-- prettier-ignore-end -->

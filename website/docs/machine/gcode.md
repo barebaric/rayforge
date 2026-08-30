@@ -10,9 +10,13 @@ The G-code page in Machine Settings configures how Rayforge generates G-code for
 
 ![G-code Settings](/screenshots/machine-settings-gcode.webp)
 
-:::info This page is only shown for machines that use G-code-based drivers (e.g. GRBL, Smoothieware,
+<!-- prettier-ignore-start -->
+:::info
+This page is only shown for machines that use G-code-based drivers (e.g. GRBL, Smoothieware,
 Marlin). If your machine uses a non-G-code driver (e.g. Ruida), this settings page is hidden
-entirely. :::
+entirely.
+:::
+<!-- prettier-ignore-end -->
 
 ## G-code Dialect
 
@@ -30,8 +34,12 @@ different commands and formats.
 - **Smoothieware**: For Smoothieboard and similar controllers.
 - **Marlin**: For Marlin-based controllers.
 
-:::info The dialect affects how laser power, movements, and other commands are formatted in the
-output G-code. :::
+<!-- prettier-ignore-start -->
+:::info
+The dialect affects how laser power, movements, and other commands are formatted in the
+output G-code.
+:::
+<!-- prettier-ignore-end -->
 
 ## Dialect Preamble and Postscript
 

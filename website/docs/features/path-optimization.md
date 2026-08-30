@@ -48,7 +48,11 @@ Toggle path optimization on or off. Enabled by default for most operations.
 **Heat distribution:** Optimized paths may concentrate heat in one area. For heat-sensitive
 materials, consider if order matters.
 
-:::tip Optimization runs automatically. Just enable it and the software handles the rest. :::
+<!-- prettier-ignore-start -->
+:::tip
+Optimization runs automatically. Just enable it and the software handles the rest.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 

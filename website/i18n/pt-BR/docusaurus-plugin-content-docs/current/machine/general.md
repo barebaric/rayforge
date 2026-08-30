@@ -32,8 +32,12 @@ Dispositivos GRBL têm duas opções de driver serial:
 Após selecionar um driver, as definições específicas de conexão aparecem abaixo do seletor (ex.:
 porta serial, baud rate). Elas variam conforme o driver escolhido.
 
-:::tip Um banner de erro no topo da página avisa você se o driver não estiver configurado ou
-encontrar um problema. :::
+<!-- prettier-ignore-start -->
+:::tip
+Um banner de erro no topo da página avisa você se o driver não estiver configurado ou
+encontrar um problema.
+:::
+<!-- prettier-ignore-end -->
 
 ## Velocidades e aceleração
 
@@ -65,8 +69,12 @@ distância de overscan padrão.
 - **Faixa típica**: 500–2000 mm/s²
 - **Nota**: Deve corresponder ou ser inferior às definições de aceleração do firmware
 
-:::tip Comece com valores de velocidade conservadores e aumente gradualmente. Observe sua máquina
-quanto a saltos de correia, travamento do motor ou perda de precisão de posicionamento. :::
+<!-- prettier-ignore-start -->
+:::tip
+Comece com valores de velocidade conservadores e aumente gradualmente. Observe sua máquina
+quanto a saltos de correia, travamento do motor ou perda de precisão de posicionamento.
+:::
+<!-- prettier-ignore-end -->
 
 ## Exportar um perfil de máquina
 

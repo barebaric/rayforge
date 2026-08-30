@@ -37,8 +37,12 @@ kompatiblen Dienst ändern.
   machen
 - **Löschen**: Entferne einen Anbieter, den du nicht mehr benötigst
 
-:::warning Deine API-Schlüssel werden lokal auf deinem Computer gespeichert und niemals an Dritte
-weitergegeben. :::
+<!-- prettier-ignore-start -->
+:::warning
+Deine API-Schlüssel werden lokal auf deinem Computer gespeichert und niemals an Dritte
+weitergegeben.
+:::
+<!-- prettier-ignore-end -->
 
 ## Verwandte Themen
 

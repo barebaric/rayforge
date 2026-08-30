@@ -42,7 +42,11 @@
 2. 点击 **移除** 按钮
 3. 确认移除
 
-:::warning移除扩展可能会影响使用其功能的文档。:::
+<!-- prettier-ignore-start -->
+:::warning
+移除扩展可能会影响使用其功能的文档。
+:::
+<!-- prettier-ignore-end -->
 
 ## 扩展来源
 

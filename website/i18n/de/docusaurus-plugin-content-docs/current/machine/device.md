@@ -6,10 +6,14 @@ oder `$$`-Einstellungen in GRBL bekannt.
 
 ![Geräteeinstellungen](/screenshots/machine-settings-device.webp)
 
-:::warning Vorsicht beim Ändern von Einstellungen Falsche Firmware-Einstellungen können dazu führen,
+<!-- prettier-ignore-start -->
+:::warning[Vorsicht beim Ändern von Einstellungen]
+Falsche Firmware-Einstellungen können dazu führen,
 dass deine Maschine sich unvorhersehbar verhält, die Position verliert oder sogar Hardware
 beschädigt. Notiere dir immer die ursprünglichen Werte, bevor du Änderungen vornimmst, und ändere
-eine Einstellung nach der anderen. :::
+eine Einstellung nach der anderen.
+:::
+<!-- prettier-ignore-end -->
 
 ## Übersicht
 
@@ -75,9 +79,13 @@ $100=80.0
 $RST=$
 ```
 
-:::danger Standardeinstellungen wiederherstellen löscht alle Einstellungen Der Befehl `$RST=$` setzt
+<!-- prettier-ignore-start -->
+:::danger[Standardeinstellungen wiederherstellen löscht alle Einstellungen]
+Der Befehl `$RST=$` setzt
 alle GRBL-Einstellungen auf Werkseinstellungen zurück. Du verlierst alle Kalibrierungen und
-Einstellungen. Sichere deine Einstellungen zuerst! :::
+Einstellungen. Sichere deine Einstellungen zuerst!
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -103,8 +111,12 @@ Diese Einstellungen sind am wichtigsten für den Laserbetrieb:
 - Schaltet während Eilgängen nicht aus
 - **Gefährlich für den Laserbetrieb!**
 
-:::warning Immer Lasermodus aktivieren $32 sollte **immer** auf 1 für Laserschneider gesetzt werden.
-Deaktivierter Lasermodus kann unbeabsichtigte Verbrennungen und Feuergefahren verursachen. :::
+<!-- prettier-ignore-start -->
+:::warning[Immer Lasermodus aktivieren]
+$32 sollte **immer** auf 1 für Laserschneider gesetzt werden.
+Deaktivierter Lasermodus kann unbeabsichtigte Verbrennungen und Feuergefahren verursachen.
+:::
+<!-- prettier-ignore-end -->
 
 ### $30 & $31 - Laserleistungsbereich
 
@@ -118,9 +130,13 @@ Deaktivierter Lasermodus kann unbeabsichtigte Verbrennungen und Feuergefahren ve
 - $30=1000, $31=0 (S0-S1000 Bereich, am häufigsten)
 - $30=255, $31=0 (S0-S255 Bereich, einige Controller)
 
-:::tip Rayforge-Konfiguration anpassen Die "Max. Leistung"-Einstellung in deinen
+<!-- prettier-ignore-start -->
+:::tip[Rayforge-Konfiguration anpassen]
+Die "Max. Leistung"-Einstellung in deinen
 [Lasereinstellungen](laser) sollte deinem $30-Wert entsprechen. Wenn $30=1000, stelle die maximale
-Leistung in Rayforge auf 1000 ein. :::
+Leistung in Rayforge auf 1000 ein.
+:::
+<!-- prettier-ignore-end -->
 
 ### $130 & $131 - Maximaler Verfahrweg
 
@@ -281,8 +297,12 @@ $132=0.0       ; Z max. Verfahrweg
 2. Jede Zeile (`$100=80.0`, etc.) über Konsole senden
 3. Mit Befehl `$$` verifizieren
 
-:::tip Regelmäßige Sicherungen Sichere deine Einstellungen nach jeder Kalibrierung oder Abstimmung.
-Speichere Sicherungen an einem sicheren Ort. :::
+<!-- prettier-ignore-start -->
+:::tip[Regelmäßige Sicherungen]
+Sichere deine Einstellungen nach jeder Kalibrierung oder Abstimmung.
+Speichere Sicherungen an einem sicheren Ort.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 

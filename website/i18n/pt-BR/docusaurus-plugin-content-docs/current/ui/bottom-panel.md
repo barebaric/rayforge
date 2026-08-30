@@ -30,8 +30,12 @@ O Painel Inferior pode ser alternado via:
 - **Menu**: Visualizar → Painel Inferior
 - **Atalho de Teclado**: Ctrl+L
 
-:::note Conexão Necessária Os controles de jog estão disponíveis apenas quando conectado a uma
-máquina que suporta operações de jog. :::
+<!-- prettier-ignore-start -->
+:::note[Conexão Necessária]
+Os controles de jog estão disponíveis apenas quando conectado a uma
+máquina que suporta operações de jog.
+:::
+<!-- prettier-ignore-end -->
 
 ## Controles de Jog
 
@@ -46,8 +50,12 @@ Leve os eixos da sua máquina à origem para estabelecer uma posição de refer�
 | ------------ | ---------------------- | -------------------------------------- |
 | Origem Todos | Origina todos os eixos | Origina todos os eixos simultaneamente |
 
-:::tip Sequência de Homing É recomendado levar todos os eixos à origem antes de iniciar qualquer
-trabalho para garantir posicionamento preciso. :::
+<!-- prettier-ignore-start -->
+:::tip[Sequência de Homing]
+É recomendado levar todos os eixos à origem antes de iniciar qualquer
+trabalho para garantir posicionamento preciso.
+:::
+<!-- prettier-ignore-end -->
 
 ### Movimento Direcional
 
@@ -72,7 +80,11 @@ Os controles de jog fornecem botões para movimento direcional:
 | Z+                    | Eixo Z para cima                    | Page Up            |
 | Z-                    | Eixo Z para baixo                   | Page Down          |
 
-:::note Foco Necessário Atalhos de teclado só funcionam quando a janela principal tem foco. :::
+<!-- prettier-ignore-start -->
+:::note[Foco Necessário]
+Atalhos de teclado só funcionam quando a janela principal tem foco.
+:::
+<!-- prettier-ignore-end -->
 
 ### Feedback Visual
 
@@ -92,11 +104,13 @@ Configure o comportamento das operações de jog:
 - **Padrão**: 1.000 mm/min
 - **Propósito**: Controla quão rápido a cabeça do laser se move
 
-:::tip Seleção de Velocidade
-
+<!-- prettier-ignore-start -->
+:::tip[Seleção de Velocidade]
 - Use velocidades mais baixas (100-500 mm/min) para posicionamento preciso
 - Use velocidades mais altas (1.000-3.000 mm/min) para movimentos maiores
-- Velocidades muito altas podem causar perda de passos em algumas máquinas :::
+- Velocidades muito altas podem causar perda de passos em algumas máquinas
+:::
+<!-- prettier-ignore-end -->
 
 **Distância de Jog:**
 
@@ -104,11 +118,13 @@ Configure o comportamento das operações de jog:
 - **Padrão**: 10,0 mm
 - **Propósito**: Controla quão longe a cabeça do laser se move por pressão de botão
 
-:::tip Seleção de Distância
-
+<!-- prettier-ignore-start -->
+:::tip[Seleção de Distância]
 - Use distâncias pequenas (0,1-1,0 mm) para ajuste fino
 - Use distâncias médias (5-20 mm) para posicionamento geral
-- Use distâncias grandes (50-100 mm) para reposicionamento rápido :::
+- Use distâncias grandes (50-100 mm) para reposicionamento rápido
+:::
+<!-- prettier-ignore-end -->
 
 ## Display de Status da Máquina
 
@@ -167,16 +183,22 @@ Defina onde a origem do WCS ativo deve ser:
 | Zero Y               | Define Y=0   | Torna posição Y atual a origem Y para WCS ativo                  |
 | Zero Z               | Define Z=0   | Torna posição Z atual a origem Z para WCS ativo                  |
 
-:::note G53 Não Pode Ser Alterado Botões de zero são desabilitados quando G53 (Coordenadas da
-Máquina) está selecionado, pois coordenadas da máquina são fixadas pelo hardware. :::
+<!-- prettier-ignore-start -->
+:::note[G53 Não Pode Ser Alterado]
+Botões de zero são desabilitados quando G53 (Coordenadas da
+Máquina) está selecionado, pois coordenadas da máquina são fixadas pelo hardware.
+:::
+<!-- prettier-ignore-end -->
 
-:::tip Fluxo de Trabalho de Definição de WCS
-
+<!-- prettier-ignore-start -->
+:::tip[Fluxo de Trabalho de Definição de WCS]
 1. Conecte à sua máquina e leve todos os eixos à origem
 2. Selecione o WCS que deseja configurar (ex: G54)
 3. Faça jog da cabeça do laser para a posição de origem desejada
 4. Clique Zero X e Zero Y para definir esta posição como (0, 0)
-5. O deslocamento é armazenado no controlador da sua máquina :::
+5. O deslocamento é armazenado no controlador da sua máquina
+:::
+<!-- prettier-ignore-end -->
 
 ## Aba do Console
 

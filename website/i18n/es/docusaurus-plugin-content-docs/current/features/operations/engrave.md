@@ -288,10 +288,12 @@ Usa invertir para litofanías (las áreas claras deben ser delgadas) o repujado 
 
 **Recomendado:** 0.1mm para uso general
 
-:::tip Coincidencia de Resolución :::
-
+<!-- prettier-ignore-start -->
+:::tip[Coincidencia de Resolución]
 Para imágenes, el intervalo de línea debe coincidir o exceder la resolución de la imagen. Si tu
 imagen es de 10 píxeles/mm (254 DPI), usa un intervalo de línea de 0.1mm o menor.
+:::
+<!-- prettier-ignore-end -->
 
 #### Dirección de Escaneo
 

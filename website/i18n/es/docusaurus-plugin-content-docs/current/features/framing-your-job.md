@@ -37,8 +37,12 @@ Algunas máquinas soportan enmarcado a baja potencia con un haz visible:
 3. **Ejecute la operación de enmarcado**
 4. **Observe el contorno** trazado en la superficie del material
 
-:::warning Verifique su máquina No todos los láseres soportan el enmarcado a baja potencia de forma
-segura. Consulte la documentación de su máquina antes de usar esta función. :::
+<!-- prettier-ignore-start -->
+:::warning[Verifique su máquina]
+No todos los láseres soportan el enmarcado a baja potencia de forma
+segura. Consulte la documentación de su máquina antes de usar esta función.
+:::
+<!-- prettier-ignore-end -->
 
 ## Configuración de enmarcado
 

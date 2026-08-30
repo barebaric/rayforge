@@ -13,9 +13,13 @@ con el lienzo mientras ajustas los parámetros — la vista previa se actualiza 
 Para abrir un diálogo de array, selecciona una o más piezas de trabajo en el lienzo, luego elige el
 modo de array desde la barra de herramientas o el menú contextual.
 
-:::tip Todos los modos de array son no modales. Puedes arrastrar piezas de trabajo en el lienzo
+<!-- prettier-ignore-start -->
+:::tip
+Todos los modos de array son no modales. Puedes arrastrar piezas de trabajo en el lienzo
 mientras el diálogo está abierto, y la vista previa se actualizará en vivo para reflejar las nuevas
-posiciones. :::
+posiciones.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -53,8 +57,12 @@ original pero se rota por una fracción del ángulo total.
 | **Cantidad**              | Número de copias (1–360)                                   |
 | **Ángulo total (grados)** | Extensión angular total de todas las copias (−360° a 360°) |
 
-:::info Dado que la rotación es alrededor del propio centro de la selección, arrastrar la pieza de
-trabajo en el lienzo mueve todas las copias juntas mientras el diálogo permanece abierto. :::
+<!-- prettier-ignore-start -->
+:::info
+Dado que la rotación es alrededor del propio centro de la selección, arrastrar la pieza de
+trabajo en el lienzo mueve todas las copias juntas mientras el diálogo permanece abierto.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -77,10 +85,18 @@ el diálogo está abierto.
 | **Radio**                 | Radio de la trayectoria circular                                            |
 | **Rotar copias**          | Cuando está habilitado, cada copia se rota para seguir la tangente del arco |
 
-:::tip Arrastrar el centro La cruz en el lienzo representa el centro del círculo. Arrástrala para
+<!-- prettier-ignore-start -->
+:::tip[Arrastrar el centro]
+La cruz en el lienzo representa el centro del círculo. Arrástrala para
 reposicionar el array interactivamente — los campos Centro X y Centro Y en el diálogo se
-actualizarán automáticamente. :::
+actualizarán automáticamente.
+:::
+<!-- prettier-ignore-end -->
 
-:::tip Arrastrar piezas de trabajo También puedes arrastrar la pieza de trabajo original en el
+<!-- prettier-ignore-start -->
+:::tip[Arrastrar piezas de trabajo]
+También puedes arrastrar la pieza de trabajo original en el
 lienzo. El radio se actualizará automáticamente para mantener las copias a su distancia actual del
-centro. :::
+centro.
+:::
+<!-- prettier-ignore-end -->

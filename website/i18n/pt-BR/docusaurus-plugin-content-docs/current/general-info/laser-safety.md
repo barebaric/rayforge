@@ -3,9 +3,13 @@
 Equipamentos de corte e gravação a laser apresentam riscos de segurança sérios, incluindo incêndio,
 fumos tóxicos e danos permanentes aos olhos.
 
-:::danger Aviso Crítico de Segurança **Sempre siga as diretrizes de segurança e instruções de
+<!-- prettier-ignore-start -->
+:::danger[Aviso Crítico de Segurança]
+**Sempre siga as diretrizes de segurança e instruções de
 operação do fabricante do seu laser.** Esta página fornece princípios gerais de segurança mas não
-substitui treinamento adequado e a documentação de segurança específica da sua máquina. :::
+substitui treinamento adequado e a documentação de segurança específica da sua máquina.
+:::
+<!-- prettier-ignore-end -->
 
 ## Seu Recurso Principal de Segurança
 
@@ -183,15 +187,17 @@ laser param imediatamente.
 
 ## Regras Chave de Segurança
 
-:::warning Regras Críticas de Segurança
-
+<!-- prettier-ignore-start -->
+:::warning[Regras Críticas de Segurança]
 1. **Nunca deixe laser sem supervisão durante operação**
 2. **Nunca opere sem ventilação adequada**
 3. **Nunca corte materiais proibidos (PVC, vinil, ABS, etc.)**
 4. **Sempre tenha extintor de incêndio ao alcance**
 5. **Sempre siga as diretrizes de segurança do fabricante**
 6. **Saiba onde está a parada de emergência**
-7. **Pré-visualize trabalhos no Modo Simulação antes de executar** :::
+7. **Pré-visualize trabalhos no Modo Simulação antes de executar**
+:::
+<!-- prettier-ignore-end -->
 
 ## Recursos Adicionais
 

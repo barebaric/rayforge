@@ -45,8 +45,11 @@ moteurs et roulements.
 **Distribution de chaleur :** Les parcours optimisés peuvent concentrer la chaleur dans une zone.
 Pour les matériaux sensibles à la chaleur, considérez si l'ordre compte.
 
-:::tip L'optimisation s'exécute automatiquement. Activez-la simplement et le logiciel gère le reste.
+<!-- prettier-ignore-start -->
+:::tip
+L'optimisation s'exécute automatiquement. Activez-la simplement et le logiciel gère le reste.
 :::
+<!-- prettier-ignore-end -->
 
 ---
 

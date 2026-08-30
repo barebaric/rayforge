@@ -12,11 +12,15 @@ Das Multi-Ebenen-System von Rayforge ermöglicht es dir, Aufträge in separate V
 zu organisieren. Jede Ebene ist ein Container für Werkstücke und hat ihren eigenen Workflow — eine
 Abfolge von Schritten, jeder mit unabhängigen Lasereinstellungen.
 
-:::tip Wann du keine mehreren Ebenen brauchst In vielen Fällen reicht eine einzige Ebene. Jeder
+<!-- prettier-ignore-start -->
+:::tip[Wann du keine mehreren Ebenen brauchst]
+In vielen Fällen reicht eine einzige Ebene. Jeder
 Schritt innerhalb einer Ebene hat eigene Laser-, Leistungs-, Geschwindigkeits- und andere
 Einstellungen, sodass du gravieren und konturieren in derselben Ebene kannst. Separate Ebenen sind
 nur nötig, wenn du verschiedene Teile eines Bildes mit unterschiedlichen Einstellungen konturieren
-willst oder wenn du unterschiedliche WCS- oder Rotationskonfigurationen brauchst. :::
+willst oder wenn du unterschiedliche WCS- oder Rotationskonfigurationen brauchst.
+:::
+<!-- prettier-ignore-end -->
 
 ## Ebenen erstellen und verwalten
 

@@ -66,10 +66,14 @@ den Laser mit niedriger Leistung ein, um als "Laserzeiger" zur Positionierung zu
 - Auf 0 setzen, um die Fokusmodus-Funktion zu deaktivieren
 - Verwende für visuelle Ausrichtung und Positionierung
 
-:::tip Fokusmodus verwenden Klicke auf die Fokus-Taste (Laser-Symbol) in der Symbolleiste, um den
+<!-- prettier-ignore-start -->
+:::tip[Fokusmodus verwenden]
+Klicke auf die Fokus-Taste (Laser-Symbol) in der Symbolleiste, um den
 Fokusmodus umzuschalten. Der Laser wird bei dieser Leistungsstufe eingeschaltet und hilft dir, genau
 zu sehen, wo der Laser positioniert ist. Siehe
-[Werkstückpositionierung](../features/workpiece-positioning.md) für weitere Informationen. :::
+[Werkstückpositionierung](../features/workpiece-positioning.md) für weitere Informationen.
+:::
+<!-- prettier-ignore-end -->
 
 #### Punktgröße
 
@@ -79,11 +83,15 @@ Die physische Größe deines fokussierten Laserstrahls in Millimetern.
 - Die meisten Laser haben einen runden Punkt (z.B. 0.1 x 0.1)
 - Beeinflusst Gravurqualitäts-Berechnungen
 
-:::tip Punktgröße messen Um deine Punktgröße zu messen:
+<!-- prettier-ignore-start -->
+:::tip[Punktgröße messen]
+Um deine Punktgröße zu messen:
 
 1. Feuere einen kurzen Impuls bei niedriger Leistung auf ein Testmaterial
 2. Miss die resultierende Markierung mit einer Schieblehre
-3. Verwende den Durchschnitt mehrerer Messungen :::
+3. Verwende den Durchschnitt mehrerer Messungen
+:::
+<!-- prettier-ignore-end -->
 
 #### Farbe
 
@@ -95,10 +103,14 @@ Operation durchführen wird, wenn du mit mehreren Laserköpfen arbeitest.
 - Wähle eine Farbe, die gut mit deiner Materialvorschau kontrastiert
 - Standardfarben werden automatisch zugewiesen
 
-:::tip Multi-Laser-Workflows Bei der Verwendung mehrerer Laserköpfe erleichtert das Zuweisen
+<!-- prettier-ignore-start -->
+:::tip[Multi-Laser-Workflows]
+Bei der Verwendung mehrerer Laserköpfe erleichtert das Zuweisen
 unterschiedlicher Farben zu jedem Laser es, zu erkennen, welche Operationen von welchem Laser
 durchgeführt werden. Verwende beispielsweise Rot für deinen Hauptschneidelaser und Blau für einen
-sekundären Gravurlaser. :::
+sekundären Gravurlaser.
+:::
+<!-- prettier-ignore-end -->
 
 #### Lasertyp
 

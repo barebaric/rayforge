@@ -15,9 +15,13 @@ Rayforge unterstützt verschiedene Dateiformate, darunter SVG, DXF, PDF, Ruida (
 
 ![Arbeitsfläche mit importiertem Design](/screenshots/main-standard.webp)
 
-:::tip Noch kein Design? Du kannst einfache Formen mit dem Skizzierer erstellen oder kostenlose
+<!-- prettier-ignore-start -->
+:::tip[Noch kein Design?]
+Du kannst einfache Formen mit dem Skizzierer erstellen oder kostenlose
 SVG-Dateien von Seiten wie [Flaticon](https://www.flaticon.com/) oder
-[SVG Repo](https://www.svgrepo.com/) herunterladen. :::
+[SVG Repo](https://www.svgrepo.com/) herunterladen.
+:::
+<!-- prettier-ignore-end -->
 
 ## Schritt 2: Dein Design positionieren
 
@@ -50,11 +54,15 @@ Operationen definieren, wie Rayforge dein Design verarbeitet. Häufige Operation
 
 ![Operationseinstellungen](/screenshots/step-settings-contour-general.webp)
 
-:::warning Mit niedriger Leistung beginnen Wenn du mit neuen Materialien arbeitest, beginne immer
+<!-- prettier-ignore-start -->
+:::warning[Mit niedriger Leistung beginnen]
+Wenn du mit neuen Materialien arbeitest, beginne immer
 mit niedrigeren Leistungseinstellungen und führe Testschnitte durch. Erhöhe die Leistung
 schrittweise, bis du das gewünschte Ergebnis erzielst. Verwende die Funktion
 [Materialtest-Raster](../features/operations/material-test-grid.md), um systematisch optimale
-Einstellungen zu finden. :::
+Einstellungen zu finden.
+:::
+<!-- prettier-ignore-end -->
 
 ## Schritt 4: Vorschau
 
@@ -67,21 +75,27 @@ Bevor du an deine Maschine sendest, zeige den Werkzeugweg in 3D an:
 
 ![3D-Vorschau](/screenshots/main-3d.webp)
 
-:::tip Fehler frühzeitig erkennen Die 3D-Vorschau hilft dir, Probleme zu erkennen wie:
+<!-- prettier-ignore-start -->
+:::tip[Fehler frühzeitig erkennen]
+Die 3D-Vorschau hilft dir, Probleme zu erkennen wie:
 
 - Fehlende Pfade
 - Falsche Reihenfolge
 - Auf falsche Objekte angewendete Operationen
-- Pfade, die deinen Arbeitsbereich überschreiten :::
+- Pfade, die deinen Arbeitsbereich überschreiten
+:::
+<!-- prettier-ignore-end -->
 
 ## Schritt 5: An die Maschine senden
 
-:::danger Sicherheit geht vor
-
+<!-- prettier-ignore-start -->
+:::danger[Sicherheit geht vor]
 - Stelle sicher, dass der Arbeitsbereich frei ist
 - Verlasse die Maschine während des Betriebs niemals unbeaufsichtigt
 - Halte Feuerlöschgeräte in der Nähe
-- Trage geeigneten Augenschutz :::
+- Trage geeigneten Augenschutz
+:::
+<!-- prettier-ignore-end -->
 
 ### Dein Material vorbereiten
 
@@ -117,8 +131,12 @@ Nachdem der Job abgeschlossen ist:
 2. Entferne vorsichtig dein fertiges Teil
 3. Reinige bei Bedarf das Laserbett
 
-:::success Herzlichen Glückwunsch! Du hast deinen ersten Rayforge-Job abgeschlossen! Jetzt kannst du
-erweiterte Funktionen erkunden. :::
+<!-- prettier-ignore-start -->
+:::success[Herzlichen Glückwunsch!]
+Du hast deinen ersten Rayforge-Job abgeschlossen! Jetzt kannst du
+erweiterte Funktionen erkunden.
+:::
+<!-- prettier-ignore-end -->
 
 ## Nächste Schritte
 

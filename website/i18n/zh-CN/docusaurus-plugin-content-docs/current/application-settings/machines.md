@@ -38,4 +38,8 @@ description:
 1. 点击机器旁边的删除图标
 2. 确认删除
 
-:::warning删除机器无法撤销。如果您想保留配置，请先导出配置文件。:::
+<!-- prettier-ignore-start -->
+:::warning
+删除机器无法撤销。如果您想保留配置，请先导出配置文件。
+:::
+<!-- prettier-ignore-end -->

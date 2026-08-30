@@ -24,10 +24,12 @@ meilleurs résultats.
 | **JPEG** | `.jpg`, `.jpeg` | Vectorisation         | Photos, images à tons continus       |
 | **BMP**  | `.bmp`          | Vectorisation         | Graphiques simples, captures d'écran |
 
-:::note Importation d'images matricielles :::
-
+<!-- prettier-ignore-start -->
+:::note[Importation d'images matricielles]
 Toutes les images matricielles sont **vectorisées** pour créer des tracés vectoriels utilisables
 pour les opérations laser. La qualité dépend de la configuration de la vectorisation.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
@@ -112,11 +114,15 @@ flexibilité de restaurer la taille d'origine si nécessaire.
 
 SVG (Scalable Vector Graphics) est le **format recommandé** pour les dessins vectoriels.
 
-:::tip Automatiser l'affectation des étapes Tu peux configurer
+<!-- prettier-ignore-start -->
+:::tip[Automatiser l'affectation des étapes]
+Tu peux configurer
 [Règles de couleur](../application-settings/color-rules.md) pour affecter automatiquement les types
 d'étape (Contour, Gravure, etc.) en fonction des couleurs de ton SVG. Lorsque des règles existent,
 la boîte de dialogue d'importation regroupe par défaut les formes par couleur afin que les règles
-prennent effet. :::
+prennent effet.
+:::
+<!-- prettier-ignore-end -->
 
 ### Options d'importation dans la boîte de dialogue
 

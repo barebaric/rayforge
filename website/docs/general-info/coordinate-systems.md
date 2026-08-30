@@ -20,10 +20,14 @@ Rayforge uses three coordinate spaces that work together:
 | **WORKAREA** | The usable area within your machine, accounting for margins around the bed.                |
 | **WCS**      | Your job's coordinate system. User-configurable origin for design and job positioning.     |
 
-:::note Developer Note Internally, Rayforge uses a normalized coordinate system called WORLD space.
+<!-- prettier-ignore-start -->
+:::note[Developer Note]
+Internally, Rayforge uses a normalized coordinate system called WORLD space.
 WORLD space describes the same physical space as MACHINE space, but with a fixed convention: Y-up
 with bottom-left origin. This simplifies internal calculations and rendering. Users do not need to
-interact with WORLD space directly. :::
+interact with WORLD space directly.
+:::
+<!-- prettier-ignore-end -->
 
 ### MACHINE Space
 

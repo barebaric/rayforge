@@ -12,7 +12,11 @@ Rayforge 使用三个协同工作的坐标空间：
 | **WORKAREA** | 机器内的可用区域，考虑了工作台周围的边距。             |
 | **WCS**      | 您作业的坐标系。用户可配置的原点，用于设计和作业定位。 |
 
-:::note 开发者说明在内部，Rayforge 使用一个称为 WORLD 空间的标准化坐标系。WORLD 空间描述与 MACHINE 空间相同的物理空间，但采用固定约定：Y 轴向上，原点在左下角。这简化了内部计算和渲染。用户不需要直接与 WORLD 空间交互。:::
+<!-- prettier-ignore-start -->
+:::note[开发者说明]
+在内部，Rayforge 使用一个称为 WORLD 空间的标准化坐标系。WORLD 空间描述与 MACHINE 空间相同的物理空间，但采用固定约定：Y 轴向上，原点在左下角。这简化了内部计算和渲染。用户不需要直接与 WORLD 空间交互。
+:::
+<!-- prettier-ignore-end -->
 
 ### MACHINE 空间
 

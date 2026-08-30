@@ -14,11 +14,14 @@ Rayforge utilise trois espaces de coordonnées qui travaillent ensemble :
 | **WORKAREA** | La zone utilisable dans votre machine, en tenant compte des marges autour du lit.                                                       |
 | **WCS**      | Le système de coordonnées de votre travail. Origine configurable par l'utilisateur pour la conception et le positionnement des travaux. |
 
-:::note Note pour les Développeurs En interne, Rayforge utilise un système de coordonnées normalisé
+<!-- prettier-ignore-start -->
+:::note[Note pour les Développeurs]
+En interne, Rayforge utilise un système de coordonnées normalisé
 appelé espace WORLD. L'espace WORLD décrit le même espace physique que l'espace MACHINE, mais avec
 une convention fixe : Y vers le haut avec origine en bas à gauche. Cela simplifie les calculs
 internes et le rendu. Les utilisateurs n'ont pas besoin d'interagir directement avec l'espace WORLD.
 :::
+<!-- prettier-ignore-end -->
 
 ### Espace MACHINE
 

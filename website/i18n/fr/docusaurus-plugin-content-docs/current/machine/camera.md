@@ -232,15 +232,17 @@ Le panneau des propriétés de la caméra affiche le statut d'alignement avec un
 5. Entre les coordonnées exactes pour chaque point
 6. Clique sur **Appliquer** et vérifie
 
-:::tip Meilleures Pratiques
-
+<!-- prettier-ignore-start -->
+:::tip[Meilleures Pratiques]
 - Utilise des points aux coins de ta zone de travail pour une couverture maximale
 - Évite de regrouper les points dans une zone
 - Mesure les coordonnées monde avec soin — la précision ici détermine la qualité globale de
   l'alignement
 - Ré-aligne si tu déplaces la caméra ou changes la distance de mise au point
 - Ré-aligne après la mise à jour de la calibration d'objectif
-- Sauvegarde ton alignement — il persiste entre les sessions :::
+- Sauvegarde ton alignement — il persiste entre les sessions
+:::
+<!-- prettier-ignore-end -->
 
 ---
 

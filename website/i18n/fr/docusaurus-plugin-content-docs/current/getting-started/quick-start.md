@@ -15,9 +15,13 @@ images raster (JPEG, PNG, BMP).
 
 ![Canevas avec design importé](/screenshots/main-standard.webp)
 
-:::tip Vous n'avez pas encore de design ? Vous pouvez créer des formes simples en utilisant
+<!-- prettier-ignore-start -->
+:::tip[Vous n'avez pas encore de design ?]
+Vous pouvez créer des formes simples en utilisant
 l'esquisseur ou télécharger des fichiers SVG gratuits depuis des sites comme
-[Flaticon](https://www.flaticon.com/) ou [SVG Repo](https://www.svgrepo.com/). :::
+[Flaticon](https://www.flaticon.com/) ou [SVG Repo](https://www.svgrepo.com/).
+:::
+<!-- prettier-ignore-end -->
 
 ## Étape 2 : Positionner Votre Design
 
@@ -50,11 +54,15 @@ Les opérations définissent comment Rayforge traitera votre design. Les opérat
 
 ![Paramètres d'Opération](/screenshots/step-settings-contour-general.webp)
 
-:::warning Commencez avec une Faible Puissance Lorsque vous travaillez avec de nouveaux matériaux,
+<!-- prettier-ignore-start -->
+:::warning[Commencez avec une Faible Puissance]
+Lorsque vous travaillez avec de nouveaux matériaux,
 commencez toujours avec des paramètres de puissance plus bas et effectuez des tests de coupe.
 Augmentez progressivement la puissance jusqu'à obtenir le résultat souhaité. Utilisez la fonction
 [Grille de Test de Matériau](../features/operations/material-test-grid.md) pour trouver
-systématiquement les paramètres optimaux. :::
+systématiquement les paramètres optimaux.
+:::
+<!-- prettier-ignore-end -->
 
 ## Étape 4 : Aperçu
 
@@ -67,21 +75,27 @@ Avant d'envoyer à votre machine, prévisualisez le parcours d'outil en 3D :
 
 ![Aperçu 3D](/screenshots/main-3d.webp)
 
-:::tip Détectez les Erreurs Tôt L'aperçu 3D vous aide à repérer les problèmes comme :
+<!-- prettier-ignore-start -->
+:::tip[Détectez les Erreurs Tôt]
+L'aperçu 3D vous aide à repérer les problèmes comme :
 
 - Parcours manquants
 - Ordre incorrect
 - Opérations appliquées aux mauvais objets
-- Parcours qui dépassent votre zone de travail :::
+- Parcours qui dépassent votre zone de travail
+:::
+<!-- prettier-ignore-end -->
 
 ## Étape 5 : Envoyer à la Machine
 
-:::danger Sécurité Avant Tout
-
+<!-- prettier-ignore-start -->
+:::danger[Sécurité Avant Tout]
 - Assurez-vous que la zone de travail est dégagée
 - Ne laissez jamais la machine sans surveillance pendant le fonctionnement
 - Ayez un équipement de sécurité incendie à proximité
-- Portez une protection oculaire appropriée :::
+- Portez une protection oculaire appropriée
+:::
+<!-- prettier-ignore-end -->
 
 ### Préparer Votre Matériau
 
@@ -118,8 +132,12 @@ Une fois le travail terminé :
 2. Retirez soigneusement votre pièce finie
 3. Nettoyez le lit laser si nécessaire
 
-:::success Félicitations ! Vous avez terminé votre premier travail Rayforge ! Vous pouvez maintenant
-explorer des fonctionnalités plus avancées. :::
+<!-- prettier-ignore-start -->
+:::success[Félicitations !]
+Vous avez terminé votre premier travail Rayforge ! Vous pouvez maintenant
+explorer des fonctionnalités plus avancées.
+:::
+<!-- prettier-ignore-end -->
 
 ## Prochaines Étapes
 

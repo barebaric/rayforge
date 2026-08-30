@@ -86,9 +86,13 @@ El **ancho** es la longitud de la sección sin cortar a lo largo de la trayector
 - **Materiales frágiles** (acrílico) pueden usar pestañas más pequeñas (más fáciles de romper)
 - **Materiales fibrosos** (madera) pueden necesitar pestañas más anchas
 
-:::warning Ancho de Pestaña vs Espesor de Material Las pestañas deben ser lo suficientemente anchas
+<!-- prettier-ignore-start -->
+:::warning[Ancho de Pestaña vs Espesor de Material]
+Las pestañas deben ser lo suficientemente anchas
 para soportar la pieza pero lo suficientemente pequeñas para removerse limpiamente. Muy estrecha =
-la pieza puede liberarse; muy ancha = difícil de remover o daña la pieza. :::
+la pieza puede liberarse; muy ancha = difícil de remover o daña la pieza.
+:::
+<!-- prettier-ignore-end -->
 
 ### Posición de Pestaña
 

@@ -21,9 +21,12 @@ Rayforge supports various file formats including SVG, DXF, PDF, Ruida (.rd), and
 
 ![Canvas with imported design](/screenshots/main-standard.webp)
 
-:::tip Don't have a design yet? You can create simple shapes using the sketcher or download free SVG
+<!-- prettier-ignore-start -->
+:::tip[Don't have a design yet?]
+You can create simple shapes using the sketcher or download free SVG
 files from sites like [Flaticon](https://www.flaticon.com/) or [SVG Repo](https://www.svgrepo.com/).
 :::
+<!-- prettier-ignore-end -->
 
 ## Step 2: Position Your Design
 
@@ -55,10 +58,14 @@ Operations define how Rayforge will process your design. Common operations inclu
 
 ![Operation Settings](/screenshots/step-settings-contour-general.webp)
 
-:::warning Start with Low Power When working with new materials, always start with lower power
+<!-- prettier-ignore-start -->
+:::warning[Start with Low Power]
+When working with new materials, always start with lower power
 settings and run test cuts. Gradually increase power until you achieve the desired result. Use the
 [Material Test Grid](../features/operations/material-test-grid.md) feature to systematically find
-optimal settings. :::
+optimal settings.
+:::
+<!-- prettier-ignore-end -->
 
 ## Step 4: Preview
 
@@ -71,21 +78,27 @@ Before sending to your machine, preview the toolpath in 3D:
 
 ![3D Preview](/screenshots/main-3d.webp)
 
-:::tip Catch Errors Early The 3D preview helps you spot issues like:
+<!-- prettier-ignore-start -->
+:::tip[Catch Errors Early]
+The 3D preview helps you spot issues like:
 
 - Missing paths
 - Incorrect ordering
 - Operations applied to the wrong objects
-- Paths that exceed your working area :::
+- Paths that exceed your working area
+:::
+<!-- prettier-ignore-end -->
 
 ## Step 5: Send to Machine
 
-:::danger Safety First
-
+<!-- prettier-ignore-start -->
+:::danger[Safety First]
 - Ensure the work area is clear
 - Never leave the machine unattended during operation
 - Have fire safety equipment nearby
-- Wear appropriate eye protection :::
+- Wear appropriate eye protection
+:::
+<!-- prettier-ignore-end -->
 
 ### Preparing Your Material
 
@@ -121,8 +134,12 @@ Once the job completes:
 2. Carefully remove your finished piece
 3. Clean the laser bed if necessary
 
-:::success Congratulations! You've completed your first Rayforge job! Now you can explore more
-advanced features. :::
+<!-- prettier-ignore-start -->
+:::success[Congratulations!]
+You've completed your first Rayforge job! Now you can explore more
+advanced features.
+:::
+<!-- prettier-ignore-end -->
 
 ## Next Steps
 

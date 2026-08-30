@@ -39,10 +39,14 @@ Clique em **Adicionar Regra de Cor** para abrir o diálogo do editor:
 Clique em **Adicionar** para salvar a regra. Ela entra em vigor imediatamente na próxima importação.
 As regras são armazenadas na sua configuração de usuário e persistem entre sessões.
 
-:::tip Combinando Cores Exatamente As regras de cor combinam pelo valor hexadecimal exato. Ao
+<!-- prettier-ignore-start -->
+:::tip[Combinando Cores Exatamente]
+As regras de cor combinam pelo valor hexadecimal exato. Ao
 escolher uma cor no seu software de design (Inkscape, Illustrator, etc.), anote o código hexadecimal
 exato e digite o mesmo valor no Rayforge. Por exemplo, `#e34c4c` no seu SVG deve ser `#e34c4c` na
-regra — mesmo uma diferença de um dígito impedirá a correspondência. :::
+regra — mesmo uma diferença de um dígito impedirá a correspondência.
+:::
+<!-- prettier-ignore-end -->
 
 ## Gerenciando Regras
 

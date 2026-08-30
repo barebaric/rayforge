@@ -37,9 +37,13 @@ Certaines machines prennent en charge le cadrage à faible puissance avec un fai
 3. **Lancez l'opération de cadrage**
 4. **Observez le contour** tracé sur la surface du matériau
 
-:::warning Vérifiez votre machine Tous les lasers ne prennent pas en charge le cadrage à faible
+<!-- prettier-ignore-start -->
+:::warning[Vérifiez votre machine]
+Tous les lasers ne prennent pas en charge le cadrage à faible
 puissance en toute sécurité. Consultez la documentation de votre machine avant d'utiliser cette
-fonctionnalité. :::
+fonctionnalité.
+:::
+<!-- prettier-ignore-end -->
 
 ## Paramètres de cadrage
 

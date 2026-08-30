@@ -126,10 +126,14 @@ um corte limpo e completamente separado. Isso é especialmente útil para:
 
 O recorte excessivo se aplica tanto a contornos externos quanto a furos internos.
 
-:::tip Entrada/Saída vs Recorte Excessivo [Entrada/Saída](../lead-in-out.md) adiciona movimentos de
+<!-- prettier-ignore-start -->
+:::tip[Entrada/Saída vs Recorte Excessivo]
+[Entrada/Saída](../lead-in-out.md) adiciona movimentos de
 aproximação e saída com potência zero antes e depois do trajeto de corte. O recorte excessivo
 estende o próprio trajeto de corte além da junção. Eles podem ser usados juntos para qualidade de
-corte ideal. :::
+corte ideal.
+:::
+<!-- prettier-ignore-end -->
 
 #### Retraçamento com Limiar Personalizado
 
@@ -213,10 +217,12 @@ Para materiais mais espessos do que uma única passagem pode cortar:
 - Cria corte verdadeiro 2.5D
 - Defina como 0 para múltiplas passagens na mesma profundidade
 
-:::warning Eixo Z Necessário :::
-
+<!-- prettier-ignore-start -->
+:::warning[Eixo Z Necessário]
 A profundidade de passagem só funciona se sua máquina tem controle de eixo Z. Para máquinas sem eixo
 Z, use múltiplas passagens na mesma profundidade.
+:::
+<!-- prettier-ignore-end -->
 
 ## Dicas e Melhores Práticas
 

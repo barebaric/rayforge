@@ -37,8 +37,12 @@ vers n'importe quel service compatible.
   défaut
 - **Supprimer**: Supprimez un fournisseur dont vous n'avez plus besoin
 
-:::warning Vos clés API sont stockées localement sur votre ordinateur et ne sont jamais partagées
-avec des tiers. :::
+<!-- prettier-ignore-start -->
+:::warning
+Vos clés API sont stockées localement sur votre ordinateur et ne sont jamais partagées
+avec des tiers.
+:::
+<!-- prettier-ignore-end -->
 
 ## Sujets Connexes
 

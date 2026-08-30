@@ -12,10 +12,14 @@ Rayforge's multi-layer system lets you organize jobs into separate processing st
 a container for workpieces and has its own workflow — a sequence of steps, each with independent
 laser settings.
 
-:::tip When You Don't Need Multiple Layers In many cases a single layer is enough. Each step within
+<!-- prettier-ignore-start -->
+:::tip[When You Don't Need Multiple Layers]
+In many cases a single layer is enough. Each step within
 a layer has its own laser, power, speed, and other settings, so you can engrave and contour in the
 same layer. Separate layers are only needed when you want to contour different parts of one image
-with different settings, or when you need different WCS or rotary configurations. :::
+with different settings, or when you need different WCS or rotary configurations.
+:::
+<!-- prettier-ignore-end -->
 
 ## Creating and Managing Layers
 

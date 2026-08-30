@@ -43,7 +43,11 @@ em **Atualizar** para instalar as atualizações disponíveis.
 2. Clique no botão **Remover**
 3. Confirme a remoção
 
-:::warning Remover um addon pode afetar documentos que usam seus recursos. :::
+<!-- prettier-ignore-start -->
+:::warning
+Remover um addon pode afetar documentos que usam seus recursos.
+:::
+<!-- prettier-ignore-end -->
 
 ## Fontes de Addons
 

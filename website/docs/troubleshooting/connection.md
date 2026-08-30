@@ -128,9 +128,13 @@ You might have selected the wrong port, especially if you have multiple USB devi
 6. On Windows, note the COM port from Device Manager
 7. Avoid ports named `/dev/ttyS*` on Linux - these are hardware serial ports, not USB
 
-:::warning Hardware Serial Ports Rayforge will warn you if you select `/dev/ttyS*` ports on Linux,
+<!-- prettier-ignore-start -->
+:::warning[Hardware Serial Ports]
+Rayforge will warn you if you select `/dev/ttyS*` ports on Linux,
 as these are typically not USB-based GRBL devices. USB serial ports use `/dev/ttyUSB*` or
-`/dev/ttyACM*`. :::
+`/dev/ttyACM*`.
+:::
+<!-- prettier-ignore-end -->
 
 ### Incorrect Baud Rate
 

@@ -122,9 +122,13 @@ Rayforge unterstützt diese Hook-Auslöser:
 | **Werkstück-Start** | Vor der Verarbeitung jedes Werkstücks  | Teilenummerierung, Ausrichtungsmarkierungen    |
 | **Werkstück-Ende**  | Nach der Verarbeitung jedes Werkstücks | Abkühlen, Inspektionspause                     |
 
-:::note Job-Level G-Code Job-Start und -Ende G-Code wird über die Präambel- und
+<!-- prettier-ignore-start -->
+:::note[Job-Level G-Code]
+Job-Start und -Ende G-Code wird über die Präambel- und
 Postscript-Einstellungen des Dialekts konfiguriert, nicht über Hooks. Siehe
-[G-Code-Einstellungen](gcode) für Details. :::
+[G-Code-Einstellungen](gcode) für Details.
+:::
+<!-- prettier-ignore-end -->
 
 ### Einen Hook erstellen
 
@@ -299,19 +303,27 @@ M8  ; Luftunterstützung EIN
 M9  ; Luftunterstützung AUS (verhindert Staubspreizung beim Gravieren)
 ```
 
-:::note Ebenen-spezifische Hooks Rayforge unterstützt derzeit keine pro-Ebenen-Hook-Anpassung. Um
-dies zu erreichen, verwende bedingten G-Code oder separate Maschinenprofile. :::
+<!-- prettier-ignore-start -->
+:::note[Ebenen-spezifische Hooks]
+Rayforge unterstützt derzeit keine pro-Ebenen-Hook-Anpassung. Um
+dies zu erreichen, verwende bedingten G-Code oder separate Maschinenprofile.
+:::
+<!-- prettier-ignore-end -->
 
 ---
 
 ## Sicherheitsüberlegungen
 
-:::danger Vor Produktion testen Teste Makros und Hooks immer im **Simulationsmodus** oder mit
+<!-- prettier-ignore-start -->
+:::danger[Vor Produktion testen]
+Teste Makros und Hooks immer im **Simulationsmodus** oder mit
 **deaktiviertem Laser**, bevor du echte Jobs ausführst. Falsch konfigurierter G-Code kann:
 
 - Die Maschine gegen Grenzen krachen lassen
 - Den Laser unerwartet feuern
-- Material oder Ausrüstung beschädigen :::
+- Material oder Ausrüstung beschädigen
+:::
+<!-- prettier-ignore-end -->
 
 **Sicherheits-Checkliste:**
 

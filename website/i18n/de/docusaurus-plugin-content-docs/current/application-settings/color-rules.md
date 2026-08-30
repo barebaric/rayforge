@@ -40,10 +40,14 @@ Klicke auf **Hinzufügen**, um die Regel zu speichern. Sie wird beim nächsten I
 Regeln werden in deiner Benutzerkonfiguration gespeichert und bleiben über Sitzungen hinweg
 erhalten.
 
-:::tip Farben exakt abgleichen Farbregeln gleichen nach exaktem Hex-Wert ab. Notiere beim Auswählen
+<!-- prettier-ignore-start -->
+:::tip[Farben exakt abgleichen]
+Farbregeln gleichen nach exaktem Hex-Wert ab. Notiere beim Auswählen
 einer Farbe in deiner Design-Software (Inkscape, Illustrator, usw.) den exakten Hex-Code und gib
 denselben Wert in Rayforge ein. Zum Beispiel muss `#e34c4c` in deiner SVG-Datei auch `#e34c4c` in
-der Regel sein — schon eine um eine Ziffer abweichende Farbe verhindert den Abgleich. :::
+der Regel sein — schon eine um eine Ziffer abweichende Farbe verhindert den Abgleich.
+:::
+<!-- prettier-ignore-end -->
 
 ## Regeln verwalten
 

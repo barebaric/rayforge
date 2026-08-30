@@ -35,8 +35,12 @@ interpretan las coordenadas.
 2. Observa hacia dónde se mueve la cabeza del láser
 3. Esa posición es tu origen (0,0)
 
-:::info El ajuste del origen de coordenadas afecta cómo se genera el código G. Asegúrate de que
-coincida con la configuración de homing de tu firmware. :::
+<!-- prettier-ignore-start -->
+:::info
+El ajuste del origen de coordenadas afecta cómo se genera el código G. Asegúrate de que
+coincida con la configuración de homing de tu firmware.
+:::
+<!-- prettier-ignore-end -->
 
 ### Dirección del Eje
 
@@ -96,8 +100,12 @@ los controles de desplazamiento impedirán el movimiento fuera de estos límites
 Los límites suaves se restringen automáticamente para permanecer dentro de la extensión de los ejes
 (0 al valor de extensión).
 
-:::tip Usa límites suaves para proteger áreas de tu superficie de trabajo que nunca deben alcanzarse
-durante el desplazamiento, como áreas con fijaciones o equipo sensible. :::
+<!-- prettier-ignore-start -->
+:::tip
+Usa límites suaves para proteger áreas de tu superficie de trabajo que nunca deben alcanzarse
+durante el desplazamiento, como áreas con fijaciones o equipo sensible.
+:::
+<!-- prettier-ignore-end -->
 
 ## Ver También
 

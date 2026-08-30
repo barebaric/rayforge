@@ -15,9 +15,13 @@ O Rayforge suporta vários formatos de arquivo, incluindo SVG, DXF, PDF, Ruida (
 
 ![Tela com design importado](/screenshots/main-standard.webp)
 
-:::tip Não tem um design ainda? Você pode criar formas simples usando o esboçador ou baixar arquivos
+<!-- prettier-ignore-start -->
+:::tip[Não tem um design ainda?]
+Você pode criar formas simples usando o esboçador ou baixar arquivos
 SVG gratuitos de sites como [Flaticon](https://www.flaticon.com/) ou
-[SVG Repo](https://www.svgrepo.com/). :::
+[SVG Repo](https://www.svgrepo.com/).
+:::
+<!-- prettier-ignore-end -->
 
 ## Passo 2: Posicionar Seu Design
 
@@ -49,11 +53,15 @@ As operações definem como o Rayforge processará seu design. As operações co
 
 ![Configurações de Operação](/screenshots/step-settings-contour-general.webp)
 
-:::warning Comece com Potência Baixa Ao trabalhar com novos materiais, sempre comece com
+<!-- prettier-ignore-start -->
+:::warning[Comece com Potência Baixa]
+Ao trabalhar com novos materiais, sempre comece com
 configurações de potência mais baixas e execute cortes de teste. Aumente a potência gradualmente até
 atingir o resultado desejado. Use o recurso
 [Grade de Teste de Material](../features/operations/material-test-grid.md) para encontrar
-sistematicamente as configurações ideais. :::
+sistematicamente as configurações ideais.
+:::
+<!-- prettier-ignore-end -->
 
 ## Passo 4: Visualizar
 
@@ -66,21 +74,27 @@ Antes de enviar para sua máquina, visualize o caminho da ferramenta em 3D:
 
 ![Visualização 3D](/screenshots/main-3d.webp)
 
-:::tip Detecte Erros Cedo A visualização 3D ajuda você a identificar problemas como:
+<!-- prettier-ignore-start -->
+:::tip[Detecte Erros Cedo]
+A visualização 3D ajuda você a identificar problemas como:
 
 - Caminhos faltando
 - Ordem incorreta
 - Operações aplicadas aos objetos errados
-- Caminhos que excedem sua área de trabalho :::
+- Caminhos que excedem sua área de trabalho
+:::
+<!-- prettier-ignore-end -->
 
 ## Passo 5: Enviar para a Máquina
 
-:::danger Segurança em Primeiro Lugar
-
+<!-- prettier-ignore-start -->
+:::danger[Segurança em Primeiro Lugar]
 - Certifique-se de que a área de trabalho está livre
 - Nunca deixe a máquina sem supervisão durante a operação
 - Tenha equipamento de segurança contra incêndio por perto
-- Use proteção ocular apropriada :::
+- Use proteção ocular apropriada
+:::
+<!-- prettier-ignore-end -->
 
 ### Preparando Seu Material
 
@@ -116,8 +130,12 @@ Uma vez que o trabalho é concluído:
 2. Remova cuidadosamente sua peça finalizada
 3. Limpe a mesa do laser se necessário
 
-:::success Parabéns! Você completou seu primeiro trabalho no Rayforge! Agora você pode explorar
-recursos mais avançados. :::
+<!-- prettier-ignore-start -->
+:::success[Parabéns!]
+Você completou seu primeiro trabalho no Rayforge! Agora você pode explorar
+recursos mais avançados.
+:::
+<!-- prettier-ignore-end -->
 
 ## Próximos Passos
 

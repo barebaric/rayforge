@@ -12,11 +12,15 @@ El sistema multicapa de Rayforge te permite organizar trabajos en etapas de proc
 Cada capa es un contenedor para piezas de trabajo y tiene su propio flujo de trabajo — una secuencia
 de pasos, cada uno con ajustes de láser independientes.
 
-:::tip Cuándo no necesitas múltiples capas En muchos casos, una sola capa es suficiente. Cada paso
+<!-- prettier-ignore-start -->
+:::tip[Cuándo no necesitas múltiples capas]
+En muchos casos, una sola capa es suficiente. Cada paso
 dentro de una capa tiene sus propios ajustes de láser, potencia, velocidad y otros parámetros, por
 lo que puedes grabar y contornear en la misma capa. Solo necesitas capas separadas cuando quieres
 contornear diferentes partes de una imagen con distintos ajustes, o cuando necesitas diferentes
-configuraciones de WCS o rotatorio. :::
+configuraciones de WCS o rotatorio.
+:::
+<!-- prettier-ignore-end -->
 
 ## Crear y gestionar capas
 

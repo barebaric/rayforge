@@ -12,10 +12,13 @@ Material libraries in Rayforge allow you to organize and manage collections of m
 laser cutting and engraving projects. This guide explains the difference between core and user
 libraries, and how to create your own libraries and add materials to them.
 
-:::note Assigning a material to a stock item affects both its visual appearance in the 2D and 3D
+<!-- prettier-ignore-start -->
+:::note
+Assigning a material to a stock item affects both its visual appearance in the 2D and 3D
 canvas and which [recipes](recipes.md) apply to it: material-specific recipes match against the
 assigned material. In future releases, materials will be used to derive more functional parameters.
 :::
+<!-- prettier-ignore-end -->
 
 ## Creating a New Library
 
@@ -84,8 +87,12 @@ metallic materials, 0 for non-metallic ones.
 
 #### Absorption
 
-:::note New in 1.11 Absorption data drives the
-[physical burn model](../ui/3d-preview.md#physical-burn-model) in the 3D preview. :::
+<!-- prettier-ignore-start -->
+:::note[New in 1.11]
+Absorption data drives the
+[physical burn model](../ui/3d-preview.md#physical-burn-model) in the 3D preview.
+:::
+<!-- prettier-ignore-end -->
 
 Per-wavelength absorption coefficients (0–1) describe how much of the laser's energy a material
 absorbs at a given wavelength. The 3D preview uses these, together with your laser head's
@@ -128,4 +135,8 @@ so contributions of real-world test data are welcome.
 2. Click the **Delete** button
 3. Confirm the deletion in the dialog
 
-:::warning Deleting a material is permanent and cannot be undone. :::
+<!-- prettier-ignore-start -->
+:::warning
+Deleting a material is permanent and cannot be undone.
+:::
+<!-- prettier-ignore-end -->
