@@ -108,4 +108,4 @@ jobs:
         run: pixi run --frozen compile-translations
 
       - name: Run UI tests
-        run: xvfb-run pixi run --frozen uitest --log-cli-level=DEBUG
+        run: pixi run --frozen uitest --log-cli-level=DEBUG

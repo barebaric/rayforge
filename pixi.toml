@@ -159,8 +159,8 @@ env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection
 cmd = "pytest -v --ignore=tests/ui_gtk"
 
 [tasks.uitest]
-env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0):/usr/lib/x86_64-linux-gnu/girepository-1.0"}
-cmd = "pytest -v -m ui"
+env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0):/usr/lib/x86_64-linux-gnu/girepository-1.0", GSK_RENDERER = "cairo" }
+cmd = "xvfb-run -a pytest -v -m ui"
 
 [tasks.screenshot]
 env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
