@@ -17,6 +17,7 @@ class GridTool(SketchTool):
     ICON = "sketch-grid-symbolic"
     LABEL = _("Grid")
     SHORTCUTS: ClassVar[list[str]] = ["gg"]
+    PIE_GROUP: ClassVar[str | None] = "array"
 
     def is_available(
         self,

@@ -27,6 +27,7 @@ class RectangleTool(SnapMixin, SketchTool):
     LABEL = _("Rectangle")
     SHORTCUTS: ClassVar[list[str]] = ["gr"]
     CURSOR_ICON = "sketch-rect-symbolic"
+    PIE_GROUP: ClassVar[str | None] = "rectangle"
 
     DRAG_THRESHOLD = 2.0
 

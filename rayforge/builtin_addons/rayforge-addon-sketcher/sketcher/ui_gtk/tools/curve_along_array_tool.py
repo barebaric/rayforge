@@ -55,6 +55,7 @@ class CurveAlongArrayTool(ArrayToolBase):
     ICON = "sketch-curve-array-symbolic"
     LABEL = _("Array Along Curve")
     SHORTCUTS: ClassVar[list[str]] = ["gw"]
+    PIE_GROUP: ClassVar[str | None] = "array"
 
     ARRAY_TYPE = CurveAlongArray
     DIALOG_TITLE = _("Array Along Curve")

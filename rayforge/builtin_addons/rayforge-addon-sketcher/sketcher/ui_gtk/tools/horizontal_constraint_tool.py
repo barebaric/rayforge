@@ -17,6 +17,7 @@ class HorizontalConstraintTool(SketchTool):
     ICON = "sketch-constrain-horizontal-symbolic"
     LABEL = _("Horizontal")
     SHORTCUTS: ClassVar[list[str]] = ["h"]
+    PIE_GROUP: ClassVar[str | None] = "constrain"
 
     def is_available(
         self,

@@ -42,6 +42,11 @@ class SketchTool(ABC):
     SHORTCUTS: ClassVar[list[str]] = []
     CURSOR_ICON: str | None = None
     SHOW_IN_PIE: bool = True
+    # Tools sharing a PIE_GROUP key are collapsed into a single pie
+    # menu entry (with the children in the outer ring) when the menu
+    # runs out of inner ring space. Keys resolve to display metadata
+    # via PIE_GROUPS.
+    PIE_GROUP: ClassVar[str | None] = None
 
     def __init__(self, element: SketchElement):
         self.element = element

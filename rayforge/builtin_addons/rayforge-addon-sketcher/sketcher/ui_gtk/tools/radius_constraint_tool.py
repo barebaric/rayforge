@@ -20,6 +20,7 @@ class RadiusConstraintTool(SketchTool):
     ICON = "sketch-radius-symbolic"
     LABEL = _("Radius")
     SHORTCUTS: ClassVar[list[str]] = ["kr"]
+    PIE_GROUP: ClassVar[str | None] = "dimension"
 
     def is_available(
         self,

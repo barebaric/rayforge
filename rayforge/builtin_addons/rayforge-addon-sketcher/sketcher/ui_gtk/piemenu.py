@@ -1,12 +1,13 @@
 import logging
-from typing import TYPE_CHECKING, Union
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Protocol, Union
 
 from blinker import Signal
 from gi.repository import Gtk
 
 from rayforge.ui_gtk.shared.piemenu import PieMenu, PieMenuItem
 
-from .tools import TOOL_REGISTRY
+from .tools import PIE_GROUPS, TOOL_REGISTRY
 
 if TYPE_CHECKING:
     from ..core.constraints import Constraint
@@ -14,6 +15,12 @@ if TYPE_CHECKING:
     from .sketchelement import SketchElement
 
 logger = logging.getLogger(__name__)
+
+
+class GroupedTool(Protocol):
+    """Anything providing a pie menu group key."""
+
+    PIE_GROUP: str | None
 
 
 class SketchPieMenu(PieMenu):
@@ -62,12 +69,13 @@ class SketchPieMenu(PieMenu):
 
     def _rebuild_menu(self):
         """Rebuild menu items based on context and tool availability."""
-        self.items.clear()
         self._active_index = -1
 
         if not self.sketch_element:
+            self.set_items([])
             return
 
+        entries = []
         for tool_name, tool in self.sketch_element.tools.items():
             if tool.ICON is None or tool.LABEL is None:
                 continue
@@ -81,7 +89,34 @@ class SketchPieMenu(PieMenu):
             label = self._get_tool_label(tool_name, tool.LABEL)
             item = PieMenuItem(tool.ICON, label, data=tool_name)
             item.on_click.connect(self._on_tool_clicked, weak=False)
-            self.add_item(item)
+            entries.append((tool, item))
+
+        self.set_items(self._group_items(entries))
+
+    def _group_items(
+        self, entries: Sequence[tuple[GroupedTool, PieMenuItem]]
+    ) -> list[PieMenuItem]:
+        """
+        Collapses tools sharing a PIE_GROUP into one parent entry. The
+        PieMenu decides on its own whether the children end up in the
+        outer ring or stay flattened into the inner ring.
+        """
+        roots: list[PieMenuItem] = []
+        parents: dict[str, PieMenuItem] = {}
+        for tool, item in entries:
+            group = tool.PIE_GROUP
+            if group is None or group not in PIE_GROUPS:
+                roots.append(item)
+                continue
+
+            parent = parents.get(group)
+            if parent is None:
+                icon, label = PIE_GROUPS[group]
+                parent = PieMenuItem(icon, label)
+                parents[group] = parent
+                roots.append(parent)
+            parent.children.append(item)
+        return roots
 
     def has_items(self) -> bool:
         """Returns True if the menu has any items."""

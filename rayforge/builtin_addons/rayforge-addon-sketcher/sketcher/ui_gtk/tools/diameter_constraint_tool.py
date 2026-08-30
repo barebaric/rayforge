@@ -20,6 +20,7 @@ class DiameterConstraintTool(SketchTool):
     ICON = "sketch-diameter-symbolic"
     LABEL = _("Diameter")
     SHORTCUTS: ClassVar[list[str]] = ["ko"]
+    PIE_GROUP: ClassVar[str | None] = "dimension"
 
     def is_available(
         self,

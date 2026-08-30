@@ -20,6 +20,7 @@ class DistanceConstraintTool(SketchTool):
     ICON = "sketch-distance-symbolic"
     LABEL = _("Distance")
     SHORTCUTS: ClassVar[list[str]] = ["kd"]
+    PIE_GROUP: ClassVar[str | None] = "dimension"
 
     def is_available(
         self,

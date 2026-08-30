@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 class WaypointSmoothTool(SketchTool):
     ICON = "sketch-bezier-smooth-symbolic"
     LABEL = _("Smooth")
+    PIE_GROUP = "waypoint"
 
     def is_available(
         self,

@@ -20,6 +20,7 @@ class TangentConstraintTool(SketchTool):
     ICON = "sketch-constrain-tangential-symbolic"
     LABEL = _("Tangent")
     SHORTCUTS: ClassVar[list[str]] = ["t"]
+    PIE_GROUP: ClassVar[str | None] = "constrain"
 
     def is_available(
         self,

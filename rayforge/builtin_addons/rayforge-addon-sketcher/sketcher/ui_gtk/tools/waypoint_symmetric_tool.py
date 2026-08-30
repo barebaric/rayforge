@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 class WaypointSymmetricTool(SketchTool):
     ICON = "sketch-bezier-symmetric-symbolic"
     LABEL = _("Symmetric")
+    PIE_GROUP = "waypoint"
 
     def is_available(
         self,

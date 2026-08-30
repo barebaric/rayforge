@@ -39,6 +39,7 @@ class CircularArrayTool(ArrayToolBase):
     ICON = "sketch-array-symbolic"
     LABEL = _("Circular Array")
     SHORTCUTS: ClassVar[list[str]] = ["gy"]
+    PIE_GROUP: ClassVar[str | None] = "array"
 
     ARRAY_TYPE = CircularArray
     DIALOG_TITLE = _("Circular Array")

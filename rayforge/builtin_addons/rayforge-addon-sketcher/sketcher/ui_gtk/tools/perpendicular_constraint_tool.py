@@ -17,6 +17,7 @@ class PerpendicularConstraintTool(SketchTool):
     ICON = "sketch-constrain-perpendicular-symbolic"
     LABEL = _("Perpendicular")
     SHORTCUTS: ClassVar[list[str]] = ["n"]
+    PIE_GROUP: ClassVar[str | None] = "constrain"
 
     def is_available(
         self,

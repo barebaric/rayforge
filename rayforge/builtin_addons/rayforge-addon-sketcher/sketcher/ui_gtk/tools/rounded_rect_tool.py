@@ -23,6 +23,7 @@ class RoundedRectTool(SketchTool):
     LABEL = _("Rounded Rectangle")
     SHORTCUTS: ClassVar[list[str]] = ["go"]
     CURSOR_ICON = "sketch-rounded-rect-symbolic"
+    PIE_GROUP: ClassVar[str | None] = "rectangle"
     DEFAULT_RADIUS = 10.0
 
     DRAG_THRESHOLD = 2.0

@@ -17,6 +17,7 @@ class VerticalConstraintTool(SketchTool):
     ICON = "sketch-constrain-vertical-symbolic"
     LABEL = _("Vertical")
     SHORTCUTS: ClassVar[list[str]] = ["v"]
+    PIE_GROUP: ClassVar[str | None] = "constrain"
 
     def is_available(
         self,

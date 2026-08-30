@@ -18,6 +18,7 @@ class AspectRatioConstraintTool(SketchTool):
     ICON = "sketch-constrain-aspect-symbolic"
     LABEL = _("Aspect Ratio")
     SHORTCUTS: ClassVar[list[str]] = ["kx"]
+    PIE_GROUP: ClassVar[str | None] = "dimension"
 
     def is_available(
         self,

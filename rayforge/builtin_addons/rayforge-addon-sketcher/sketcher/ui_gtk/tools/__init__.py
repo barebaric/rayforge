@@ -1,3 +1,5 @@
+from gettext import gettext as _
+
 from .angle_constraint_tool import AngleConstraintTool
 from .arc_tool import ArcTool
 from .array_base import ArrayToolBase
@@ -72,6 +74,16 @@ TOOL_REGISTRY = {
     "waypoint_symmetric": WaypointSymmetricTool,
 }
 
+# Display metadata for SketchTool.PIE_GROUP keys: group key ->
+# (icon name, label) of the collapsed pie menu entry.
+PIE_GROUPS: dict[str, tuple[str, str]] = {
+    "array": ("sketch-array-symbolic", _("Array")),
+    "constrain": ("sketch-constrain-point-symbolic", _("Constrain")),
+    "dimension": ("sketch-distance-symbolic", _("Dimension")),
+    "rectangle": ("sketch-rect-symbolic", _("Rectangle")),
+    "waypoint": ("sketch-bezier-symbolic", _("Waypoint")),
+}
+
 
 def build_key_to_tool_map() -> dict[str, str]:
     """Build reverse lookup: key sequence -> tool name."""
@@ -97,6 +109,7 @@ ACTION_TOOL_MAP = build_action_tool_map()
 __all__ = [
     "ACTION_TOOL_MAP",
     "KEY_TO_TOOL",
+    "PIE_GROUPS",
     "TOOL_REGISTRY",
     "AngleConstraintTool",
     "ArcTool",

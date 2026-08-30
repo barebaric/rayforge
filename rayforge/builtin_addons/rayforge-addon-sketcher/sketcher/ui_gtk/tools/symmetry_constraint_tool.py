@@ -20,6 +20,7 @@ class SymmetryConstraintTool(SketchTool):
     ICON = "sketch-constrain-symmetric-symbolic"
     LABEL = _("Symmetry")
     SHORTCUTS: ClassVar[list[str]] = ["s"]
+    PIE_GROUP: ClassVar[str | None] = "constrain"
 
     def is_available(
         self,

@@ -21,6 +21,7 @@ class CoincidentConstraintTool(SketchTool):
     ICON = "sketch-constrain-point-symbolic"
     LABEL = _("Coincident")
     SHORTCUTS: ClassVar[list[str]] = ["o", "c"]
+    PIE_GROUP: ClassVar[str | None] = "constrain"
 
     def is_available(
         self,

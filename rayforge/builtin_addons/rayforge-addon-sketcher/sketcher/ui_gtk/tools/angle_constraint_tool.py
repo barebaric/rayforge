@@ -20,6 +20,7 @@ class AngleConstraintTool(SketchTool):
     ICON = "sketch-constrain-angle-symbolic"
     LABEL = _("Angle")
     SHORTCUTS: ClassVar[list[str]] = ["ka"]
+    PIE_GROUP: ClassVar[str | None] = "dimension"
 
     def is_available(
         self,

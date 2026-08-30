@@ -21,6 +21,7 @@ class EqualConstraintTool(SketchTool):
     ICON = "sketch-constrain-equal-symbolic"
     LABEL = _("Equal")
     SHORTCUTS: ClassVar[list[str]] = ["e"]
+    PIE_GROUP: ClassVar[str | None] = "constrain"
 
     def is_available(
         self,
