@@ -79,7 +79,7 @@ msgstr "Linie zu {} bei {}"
 msgid "Rotational Array"
 msgstr "Rotationsarray"
 
-#: sketcher/core/constraints/distance.py
+#: sketcher/core/constraints/distance.py sketcher/ui_gtk/tools/offset_tool.py
 #: sketcher/ui_gtk/tools/distance_constraint_tool.py
 msgid "Distance"
 msgstr "Abstand"
@@ -246,6 +246,10 @@ msgstr "Array erstellen"
 msgid "Add Rounded Rectangle"
 msgstr "Abgerundetes Rechteck hinzufügen"
 
+#: sketcher/core/commands/offset.py sketcher/ui_gtk/tools/offset_tool.py
+msgid "Offset"
+msgstr "Versatz"
+
 #: sketcher/core/commands/rectangle.py
 msgid "Add Rectangle"
 msgstr "Rechteck hinzufügen"
@@ -346,7 +350,7 @@ msgstr "Horizontal spiegeln"
 
 #: sketcher/ui_gtk/studio.py sketcher/ui_gtk/tools/dimension_input.py
 #: sketcher/ui_gtk/tools/grid_tool.py sketcher/ui_gtk/tools/circle_tool.py
-#: sketcher/ui_gtk/sketchcanvas.py
+#: sketcher/ui_gtk/tools/offset_tool.py sketcher/ui_gtk/sketchcanvas.py
 msgid "Cancel"
 msgstr "Abbrechen"
 
@@ -405,6 +409,7 @@ msgid "Fillet"
 msgstr "Abrundung"
 
 #: sketcher/ui_gtk/tools/dimension_input.py
+#: sketcher/ui_gtk/tools/offset_tool.py
 msgid "Apply"
 msgstr "Anwenden"
 
@@ -648,6 +653,18 @@ msgstr "Konstruktion umschalten"
 #: sketcher/ui_gtk/tools/radius_constraint_tool.py
 msgid "Add Radius Constraint"
 msgstr "Radiusbedingung hinzufügen"
+
+#: sketcher/ui_gtk/tools/offset_tool.py
+msgid "Offset Contour"
+msgstr "Kontur versetzen"
+
+#: sketcher/ui_gtk/tools/offset_tool.py
+msgid ""
+"Replaces the selected contours with their offset. Positive values grow "
+"closed contours; open contours become slots."
+msgstr ""
+"Ersetzt die ausgewählten Konturen durch ihren Versatz. Positive Werte "
+"vergrößern geschlossene Konturen; offene Konturen werden zu Schlitzen."
 
 #: sketcher/ui_gtk/tools/text_box_tool.py
 msgid "Text Box"

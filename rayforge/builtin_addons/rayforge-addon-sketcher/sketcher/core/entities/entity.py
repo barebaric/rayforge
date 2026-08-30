@@ -1,4 +1,5 @@
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from raygeo.geo import Geometry
@@ -9,11 +10,37 @@ from ..types import EntityID
 if TYPE_CHECKING:
     from ..commands.mirror import MirrorAxis
     from ..constraints import Constraint
+    from ..contour import OffsetItem
     from ..registry import EntityRegistry
+    from ..sketch import Sketch
+    from .point import Point
 
 
 def _quantize(value: float) -> float:
     return round(value, 6)
+
+
+_MIN_OFFSET_RADIUS = 1e-6
+
+
+@dataclass
+class OffsetPlan:
+    """
+    Pure description of the changes one offset operation makes.
+
+    ``point_moves`` repositions existing defining points (in-place
+    update, e.g. a circle's radius point). ``points`` and ``entities``
+    are new geometry to add; ``removed_entity_ids`` are source
+    entities to remove (replacement). The offset command turns a plan
+    into snapshot-backed point mutations plus add/remove commands.
+    """
+
+    point_moves: dict[EntityID, tuple[float, float]] = field(
+        default_factory=dict
+    )
+    points: list["Point"] = field(default_factory=list)
+    entities: list["Entity"] = field(default_factory=list)
+    removed_entity_ids: list[EntityID] = field(default_factory=list)
 
 
 class Entity:
@@ -144,6 +171,44 @@ class Entity:
         defined by their control points need no special handling.
         """
 
+    def as_offset_item(self, sketch: "Sketch") -> "OffsetItem | None":
+        """
+        Returns the offsettable item this entity forms when it is
+        offset on its own, or None when it cannot stand alone
+        (chain members fall back to outline sampling; non-offsettable
+        types are skipped). Only called for entities that make up
+        their own connected component.
+        """
+        return None
+
+    def plan_offset(
+        self,
+        registry: "EntityRegistry",
+        offset: float,
+        allocate_id: Callable[[], EntityID],
+    ) -> OffsetPlan | None:
+        """
+        Returns a pure description of the changes offsetting this
+        entity by the given amount would make, or None when the entity
+        has no exact analytic offset or the offset collapses.
+
+        A positive offset grows the enclosed area; a negative one
+        shrinks it. Nothing is applied to the sketch; the caller
+        applies the plan and relies on the command snapshot for undo.
+        """
+        return None
+
+    def preview_polylines(
+        self,
+        registry: "EntityRegistry",
+        offset: float,
+    ) -> list[list[tuple[float, float]]]:
+        """
+        Returns coarse polylines of this entity's offset for live
+        preview, without touching the sketch. Default: no preview.
+        """
+        return []
+
     def is_contained_by(
         self,
         rect: Rect,
@@ -202,15 +267,17 @@ class Entity:
         return []
 
     def to_polyline(
-        self, registry: "EntityRegistry"
+        self,
+        registry: "EntityRegistry",
+        tolerance: float = 0.1,
     ) -> list[tuple[float, float]]:
         """
         Samples this entity into a polyline in model coordinates,
         e.g. for preview rendering. The entity's geometry is flattened
-        by raygeo with a 0.1 unit deviation tolerance. Entities
-        without a stroked shape yield an empty polyline.
+        by raygeo with the given deviation tolerance. Entities without
+        a stroked shape yield an empty polyline.
         """
-        polygons = self.to_geometry(registry).to_polygons(0.1)
+        polygons = self.to_geometry(registry).to_polygons(tolerance)
         return polygons[0] if polygons else []
 
     def to_dict(self) -> dict[str, Any]:

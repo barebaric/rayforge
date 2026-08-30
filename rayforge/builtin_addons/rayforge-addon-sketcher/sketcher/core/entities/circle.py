@@ -1,5 +1,5 @@
 import math
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any
 
 from raygeo.geo import Geometry
@@ -7,14 +7,17 @@ from raygeo.geo.shape.circle import (
     does_circle_intersect_rect,
     is_circle_inside_rect,
 )
-from raygeo.geo.types import Point, Rect
+from raygeo.geo.shape.polygon import get_circle_polygon
+from raygeo.geo.types import Point as GeoPoint
+from raygeo.geo.types import Rect
 
 from ..types import EntityID
-from .entity import Entity
+from .entity import _MIN_OFFSET_RADIUS, Entity, OffsetPlan
 
 if TYPE_CHECKING:
     from ..constraints import Constraint
     from ..registry import EntityRegistry
+    from ..sketch import Sketch
 
 
 class Circle(Entity):
@@ -153,6 +156,50 @@ class Circle(Entity):
         geo.arc_to(radius_pt.x, radius_pt.y, dx, dy, clockwise=False)
         return geo
 
+    def as_offset_item(self, sketch: "Sketch") -> "Circle":
+        """A circle offsets on its own, updated in place."""
+        return self
+
+    def plan_offset(
+        self,
+        registry: "EntityRegistry",
+        offset: float,
+        allocate_id: Callable[[], EntityID],
+    ) -> OffsetPlan | None:
+        """Updates the circle in place: the radius point moves onto the
+        concentric ring at the offset radius."""
+        center = registry.get_point(self.center_idx)
+        radius_pt = registry.get_point(self.radius_pt_idx)
+        radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+        new_radius = radius + offset
+        if new_radius <= _MIN_OFFSET_RADIUS:
+            return None
+
+        dx, dy = radius_pt.x - center.x, radius_pt.y - center.y
+        length = math.hypot(dx, dy)
+        if length < 1e-9:
+            ux, uy = 1.0, 0.0
+        else:
+            ux, uy = dx / length, dy / length
+        plan = OffsetPlan()
+        plan.point_moves[self.radius_pt_idx] = (
+            center.x + ux * new_radius,
+            center.y + uy * new_radius,
+        )
+        return plan
+
+    def preview_polylines(
+        self, registry: "EntityRegistry", offset: float
+    ) -> list[list[tuple[float, float]]]:
+        """Concentric ring at the offset radius, for live preview."""
+        center = registry.get_point(self.center_idx)
+        radius_pt = registry.get_point(self.radius_pt_idx)
+        radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+        if radius + offset <= _MIN_OFFSET_RADIUS:
+            return []
+        ring = get_circle_polygon(center.pos(), radius + offset)
+        return [list(ring) + [ring[0]]]
+
     def to_dict(self) -> dict[str, Any]:
         """Serializes the Circle to a dictionary."""
         data = super().to_dict()
@@ -174,7 +221,7 @@ class Circle(Entity):
             construction=data.get("construction", False),
         )
 
-    def get_midpoint(self, registry: "EntityRegistry") -> Point | None:
+    def get_midpoint(self, registry: "EntityRegistry") -> GeoPoint | None:
         """Returns a point on the circumference (the radius point)."""
         radius_pt = registry.get_point(self.radius_pt_idx)
         if not radius_pt:

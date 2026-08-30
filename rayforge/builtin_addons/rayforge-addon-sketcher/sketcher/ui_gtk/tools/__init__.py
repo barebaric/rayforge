@@ -18,6 +18,7 @@ from .fillet_tool import FilletTool
 from .grid_tool import GridTool
 from .horizontal_constraint_tool import HorizontalConstraintTool
 from .mirror_tool import MirrorHorizontalTool, MirrorVerticalTool
+from .offset_tool import OffsetTool
 from .path_tool import PathTool
 from .perpendicular_constraint_tool import PerpendicularConstraintTool
 from .radius_constraint_tool import RadiusConstraintTool
@@ -54,6 +55,7 @@ TOOL_REGISTRY = {
     "horizontal": HorizontalConstraintTool,
     "mirror_vertical": MirrorVerticalTool,
     "mirror_horizontal": MirrorHorizontalTool,
+    "offset": OffsetTool,
     "path": PathTool,
     "perpendicular": PerpendicularConstraintTool,
     "radius": RadiusConstraintTool,

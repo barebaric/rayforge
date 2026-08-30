@@ -1,5 +1,5 @@
 import math
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any
 
 from raygeo.geo import Geometry
@@ -10,15 +10,17 @@ from raygeo.geo.shape.arc import (
     is_angle_between,
 )
 from raygeo.geo.shape.rect import does_rect_contain_rect
-from raygeo.geo.types import Point, Polygon, Rect
+from raygeo.geo.types import Point as GeoPoint
+from raygeo.geo.types import Polygon, Rect
 
 from ..types import EntityID
-from .entity import Entity
+from .entity import _MIN_OFFSET_RADIUS, Entity, OffsetPlan
 
 if TYPE_CHECKING:
     from ..commands.mirror import MirrorAxis
     from ..constraints import Constraint
     from ..registry import EntityRegistry
+    from ..sketch import Sketch
 
 
 class Arc(Entity):
@@ -265,7 +267,7 @@ class Arc(Entity):
             construction=data.get("construction", False),
         )
 
-    def get_midpoint(self, registry: "EntityRegistry") -> Point | None:
+    def get_midpoint(self, registry: "EntityRegistry") -> GeoPoint | None:
         """
         Calculates the midpoint coordinates along the arc's circumference.
         """
@@ -277,6 +279,74 @@ class Arc(Entity):
         return get_arc_midpoint(
             start.pos(), end.pos(), center.pos(), self.clockwise
         )
+
+    def as_offset_item(self, sketch: "Sketch") -> "Arc":
+        """A lone arc offsets on its own, updated in place. Arcs that
+        belong to a chain never reach this hook."""
+        return self
+
+    def plan_offset(
+        self,
+        registry: "EntityRegistry",
+        offset: float,
+        allocate_id: Callable[[], EntityID],
+    ) -> OffsetPlan | None:
+        """Updates the arc in place: same center and angular extent,
+        start and end points move onto the ring at the offset radius."""
+        start = registry.get_point(self.start_idx)
+        end = registry.get_point(self.end_idx)
+        center = registry.get_point(self.center_idx)
+        radius = math.hypot(start.x - center.x, start.y - center.y)
+        new_radius = radius + offset
+        if new_radius <= _MIN_OFFSET_RADIUS:
+            return None
+
+        plan = OffsetPlan()
+        for pid, pt in (
+            (self.start_idx, start),
+            (self.end_idx, end),
+        ):
+            dx, dy = pt.x - center.x, pt.y - center.y
+            length = math.hypot(dx, dy)
+            if length < 1e-9:
+                ux, uy = 1.0, 0.0
+            else:
+                ux, uy = dx / length, dy / length
+            plan.point_moves[pid] = (
+                center.x + ux * new_radius,
+                center.y + uy * new_radius,
+            )
+        return plan
+
+    def preview_polylines(
+        self, registry: "EntityRegistry", offset: float
+    ) -> list[list[tuple[float, float]]]:
+        """Concentric arc at the offset radius, for live preview."""
+        start = registry.get_point(self.start_idx)
+        end = registry.get_point(self.end_idx)
+        center = registry.get_point(self.center_idx)
+        radius = math.hypot(start.x - center.x, start.y - center.y) + offset
+        if radius <= _MIN_OFFSET_RADIUS:
+            return []
+        start_angle = math.atan2(start.y - center.y, start.x - center.x)
+        end_angle = math.atan2(end.y - center.y, end.x - center.x)
+        sweep = end_angle - start_angle
+        if self.clockwise and sweep > 0:
+            sweep -= 2 * math.pi
+        elif not self.clockwise and sweep < 0:
+            sweep += 2 * math.pi
+        segments = max(8, int(abs(sweep) / math.pi * 32))
+        return [
+            [
+                (
+                    center.x
+                    + radius * math.cos(start_angle + sweep * i / segments),
+                    center.y
+                    + radius * math.sin(start_angle + sweep * i / segments),
+                )
+                for i in range(segments + 1)
+            ]
+        ]
 
     def is_angle_within_sweep(
         self, angle: float, registry: "EntityRegistry"

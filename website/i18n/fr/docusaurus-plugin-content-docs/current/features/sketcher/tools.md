@@ -1,5 +1,5 @@
 ---
-description: "Outils de l'esquisseur, raccourcis clavier, menu radial, mode construction, grille, accrochage, chanfrein et congé dans Rayforge."
+description: "Outils de l'esquisseur, raccourcis clavier, menu radial, mode construction, grille, accrochage, décalage, chanfrein et congé dans Rayforge."
 ---
 
 # Outils de l'esquisseur
@@ -39,6 +39,7 @@ L'esquisseur fournit des raccourcis clavier pour un flux de travail efficace :
 
 ### Raccourcis d'actions
 
+- `O+F` : Décaler le contour sélectionné
 - `C+H` : Ajouter un chanfrein
 - `C+F` : Ajouter un congé
 - `C+S` : Aplatir les courbes de Bézier sélectionnées en lignes
@@ -157,6 +158,40 @@ esquisses complexes.
 Lors du glissement de points ou de géométrie, maintenez `Shift` pour contraindre
 le déplacement à l'axe le plus proche (horizontal ou vertical). Ceci est utile
 pour maintenir l'alignement lors des ajustements.
+
+## Décalage de contour
+
+L'outil de décalage agrandit ou réduit le contour sélectionné d'une distance
+donnée, ou transforme un tracé ouvert en une lumière (slot). Sélectionnez les
+entités formant un contour (ou utilisez le double-clic pour sélectionner la
+géométrie connectée), puis appuyez sur `O+F` ou utilisez l'entrée
+**Décalage** du menu radial.
+
+![Boîte de dialogue de décalage de contour](/screenshots/addons-sketcher-offset-dialog.webp)
+
+La boîte de dialogue demande la distance de décalage et affiche un aperçu en
+direct du résultat sur le canevas pendant la saisie :
+
+- Les **contours fermés** s'agrandissent avec une distance positive et se
+  réduisent avec une distance négative. Un décalage qui ferait s'effondrer le
+  contour est refusé.
+- Les **tracés ouverts** deviennent un contour fermé en forme de lumière de la
+  largeur indiquée, avec des extrémités arrondies.
+
+![Contour de Bézier](/screenshots/addons-sketcher-offset-before.webp)
+![Bézier décalé en une lumière](/screenshots/addons-sketcher-offset-after.webp)
+
+Le décalage remplace le contour sélectionné par le résultat :
+
+- Les cercles, arcs et ellipses isolés conservent leur type d'entité et sont
+  mis à jour sur place : ils restent modifiables et contraints comme avant.
+- Les chaînes de segments connectés (y compris les Béziers) sont remplacées
+  par une entité polygone. Le polygone s'édite comme un tout : faites glisser
+  son point central pour le déplacer et son point de poignée pour le faire
+  pivoter ou le redimensionner uniformément.
+
+Si la sélection contient plusieurs contours déconnectés, chacun est décalé
+indépendamment en une seule étape.
 
 ## Chanfrein et congé
 

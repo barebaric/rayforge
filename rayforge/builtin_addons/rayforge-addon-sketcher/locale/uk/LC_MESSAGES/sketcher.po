@@ -80,7 +80,7 @@ msgstr "Лінія до {} у {}"
 msgid "Rotational Array"
 msgstr "Обертовий масив"
 
-#: sketcher/core/constraints/distance.py
+#: sketcher/core/constraints/distance.py sketcher/ui_gtk/tools/offset_tool.py
 #: sketcher/ui_gtk/tools/distance_constraint_tool.py
 msgid "Distance"
 msgstr "Відстань"
@@ -247,6 +247,10 @@ msgstr "Створити масив"
 msgid "Add Rounded Rectangle"
 msgstr "Додати заокруглений прямокутник"
 
+#: sketcher/core/commands/offset.py sketcher/ui_gtk/tools/offset_tool.py
+msgid "Offset"
+msgstr "Зміщення"
+
 #: sketcher/core/commands/rectangle.py
 msgid "Add Rectangle"
 msgstr "Додати прямокутник"
@@ -347,7 +351,7 @@ msgstr "Дзеркально по горизонталі"
 
 #: sketcher/ui_gtk/studio.py sketcher/ui_gtk/tools/dimension_input.py
 #: sketcher/ui_gtk/tools/grid_tool.py sketcher/ui_gtk/tools/circle_tool.py
-#: sketcher/ui_gtk/sketchcanvas.py
+#: sketcher/ui_gtk/tools/offset_tool.py sketcher/ui_gtk/sketchcanvas.py
 msgid "Cancel"
 msgstr "Скасувати"
 
@@ -406,6 +410,7 @@ msgid "Fillet"
 msgstr "Скруглення"
 
 #: sketcher/ui_gtk/tools/dimension_input.py
+#: sketcher/ui_gtk/tools/offset_tool.py
 msgid "Apply"
 msgstr "Застосувати"
 
@@ -648,6 +653,18 @@ msgstr "Перемкнути конструкцію"
 #: sketcher/ui_gtk/tools/radius_constraint_tool.py
 msgid "Add Radius Constraint"
 msgstr "Додати обмеження радіуса"
+
+#: sketcher/ui_gtk/tools/offset_tool.py
+msgid "Offset Contour"
+msgstr "Зміщення контуру"
+
+#: sketcher/ui_gtk/tools/offset_tool.py
+msgid ""
+"Replaces the selected contours with their offset. Positive values grow "
+"closed contours; open contours become slots."
+msgstr ""
+"Замінює вибрані контури їх зміщенням. Додатні значення збільшують "
+"замкнуті контури; відкриті контури стають пазами."
 
 #: sketcher/ui_gtk/tools/text_box_tool.py
 msgid "Text Box"

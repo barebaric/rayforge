@@ -1,16 +1,17 @@
 import math
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any
 
 from raygeo.geo import Geometry
 from raygeo.geo.types import Point, Rect
 
 from ..types import EntityID
-from .entity import Entity
+from .entity import Entity, OffsetPlan
 
 if TYPE_CHECKING:
     from ..constraints import Constraint
     from ..registry import EntityRegistry
+    from ..sketch import Sketch
 
 
 class Ellipse(Entity):
@@ -232,6 +233,67 @@ class Ellipse(Entity):
         self, registry: "EntityRegistry"
     ) -> Geometry | None:
         return self.to_geometry(registry)
+
+    def as_offset_item(self, sketch: "Sketch") -> "Ellipse":
+        """An ellipse offsets on its own, updated in place."""
+        return self
+
+    def plan_offset(
+        self,
+        registry: "EntityRegistry",
+        offset: float,
+        allocate_id: Callable[[], EntityID],
+    ) -> OffsetPlan | None:
+        """Updates the ellipse in place: both radius points move
+        radially so each semi-axis grows by the offset. The result
+        stays an ellipse (an approximation of the true offset)."""
+        center = registry.get_point(self.center_idx)
+        radius_x_pt = registry.get_point(self.radius_x_pt_idx)
+        radius_y_pt = registry.get_point(self.radius_y_pt_idx)
+        rx, ry = self._get_radii(registry)
+        if rx + offset <= 1e-9 or ry + offset <= 1e-9:
+            return None
+
+        plan = OffsetPlan()
+        for pid, pt, radius in (
+            (self.radius_x_pt_idx, radius_x_pt, rx),
+            (self.radius_y_pt_idx, radius_y_pt, ry),
+        ):
+            scale = (radius + offset) / radius
+            plan.point_moves[pid] = (
+                center.x + (pt.x - center.x) * scale,
+                center.y + (pt.y - center.y) * scale,
+            )
+        return plan
+
+    def preview_polylines(
+        self, registry: "EntityRegistry", offset: float
+    ) -> list[list[tuple[float, float]]]:
+        """Parametric sampling of the ellipse grown by the offset, for
+        live preview (matches plan_offset's in-place update)."""
+        center = registry.get_point(self.center_idx)
+        rx, ry = self._get_radii(registry)
+        if rx + offset <= 1e-9 or ry + offset <= 1e-9:
+            return []
+        rotation = self._get_rotation(registry)
+        cos_a = math.cos(rotation)
+        sin_a = math.sin(rotation)
+        segments = 64
+        return [
+            [
+                (
+                    center.x
+                    + (rx + offset) * math.cos(t) * cos_a
+                    - (ry + offset) * math.sin(t) * sin_a,
+                    center.y
+                    + (rx + offset) * math.cos(t) * sin_a
+                    + (ry + offset) * math.sin(t) * cos_a,
+                )
+                for t in (
+                    2 * math.pi * i / segments for i in range(segments + 1)
+                )
+            ]
+        ]
 
     def to_dict(self) -> dict[str, Any]:
         data = super().to_dict()

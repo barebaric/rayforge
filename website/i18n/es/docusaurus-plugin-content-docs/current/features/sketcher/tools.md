@@ -1,5 +1,5 @@
 ---
-description: "Herramientas del diseñador, atajos de teclado, menú circular, modo construcción, cuadrícula, ajuste, chaflán y redondeo en Rayforge."
+description: "Herramientas del diseñador, atajos de teclado, menú circular, modo construcción, cuadrícula, ajuste, desplazamiento, chaflán y redondeo en Rayforge."
 ---
 
 # Herramientas del diseñador
@@ -39,6 +39,7 @@ El diseñador proporciona atajos de teclado para un flujo de trabajo eficiente:
 
 ### Atajos de acciones
 
+- `O+F`: Desplazar el contorno seleccionado
 - `C+H`: Añadir chaflán en la esquina
 - `C+F`: Añadir redondeo en la esquina
 - `C+S`: Enderezar las curvas Bézier seleccionadas a líneas
@@ -154,6 +155,41 @@ complejos.
 Al arrastrar puntos o geometría, mantenga pulsado `Shift` para restringir el
 movimiento al eje más cercano (horizontal o vertical). Esto es útil para
 mantener la alineación mientras realiza ajustes.
+
+## Desplazar contorno
+
+La herramienta de desplazamiento agranda o encoge el contorno seleccionado una
+distancia dada, o expande un trazado abierto en una ranura. Seleccione las
+entidades que forman un contorno (o use doble clic para seleccionar la
+geometría conectada), luego pulse `O+F`, o use la entrada **Desplazar** del
+menú circular.
+
+![Diálogo de desplazar contorno](/screenshots/addons-sketcher-offset-dialog.webp)
+
+El diálogo pide la distancia de desplazamiento y muestra una vista previa en
+vivo del resultado en el lienzo mientras escribe:
+
+- Los **contornos cerrados** crecen con una distancia positiva y se encogen
+  con una negativa. Se rechaza un desplazamiento que haría colapsar el
+  contorno.
+- Los **trazados abiertos** se convierten en un contorno de ranura cerrado del
+  ancho indicado, con extremos redondeados.
+
+![Contorno Bézier](/screenshots/addons-sketcher-offset-before.webp)
+![Bézier desplazado a una ranura](/screenshots/addons-sketcher-offset-after.webp)
+
+Al desplazar, el contorno seleccionado se reemplaza por el resultado:
+
+- Los círculos, arcos y elipses aislados conservan su tipo de entidad y se
+  actualizan en el lugar, por lo que siguen siendo editables y restringibles
+  como antes.
+- Las cadenas de segmentos conectados (incluidas las Bézier) se reemplazan por
+  una entidad polígono. El polígono se edita como un todo: arrastre su punto
+  central para moverlo y el punto de tirador para rotarlo o escalarlo de forma
+  uniforme.
+
+Si la selección contiene varios contornos desconectados, cada uno se desplaza
+de forma independiente en un solo paso.
 
 ## Chaflán y redondeo
 

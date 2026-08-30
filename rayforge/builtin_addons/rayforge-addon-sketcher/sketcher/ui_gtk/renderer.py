@@ -27,6 +27,7 @@ from ..core.entities import (
     Entity,
     Line,
     Point,
+    PolygonEntity,
     TextBoxEntity,
 )
 from ..core.sketch import FillStyle
@@ -120,6 +121,8 @@ class SketchRenderer:
             has_path = self._define_bezier_path(ctx, entity)
         elif isinstance(entity, Ellipse):
             has_path = self._define_ellipse_path(ctx, entity)
+        elif isinstance(entity, PolygonEntity):
+            has_path = self._define_polygon_path(ctx, entity)
 
         if has_path:
             ctx.set_source_rgba(*color)
@@ -367,6 +370,8 @@ class SketchRenderer:
                 has_path = self._define_circle_path(ctx, entity)
             elif isinstance(entity, Ellipse):
                 has_path = self._define_ellipse_path(ctx, entity)
+            elif isinstance(entity, PolygonEntity):
+                has_path = self._define_polygon_path(ctx, entity)
             elif isinstance(entity, TextBoxEntity):
                 has_path = self._define_text_box_path(ctx, entity)
 
@@ -535,6 +540,21 @@ class SketchRenderer:
         ctx.new_sub_path()
         ctx.arc(0, 0, 1, 0, 2 * math.pi)
         ctx.restore()
+        return True
+
+    def _define_polygon_path(
+        self, ctx: cairo.Context, polygon: PolygonEntity
+    ) -> bool:
+        """Defines the path for a polygon outline without stroking."""
+        registry = self.element.sketch.registry
+        vertices = polygon.get_world_vertices(registry)
+        if len(vertices) < 2:
+            return False
+        ctx.move_to(vertices[0][0], vertices[0][1])
+        for x, y in vertices[1:]:
+            ctx.line_to(x, y)
+        if polygon.closed:
+            ctx.close_path()
         return True
 
     def _define_bezier_path(self, ctx: cairo.Context, bezier: Bezier) -> bool:

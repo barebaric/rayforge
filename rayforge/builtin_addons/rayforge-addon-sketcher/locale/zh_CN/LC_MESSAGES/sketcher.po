@@ -79,7 +79,7 @@ msgstr "直线到 {} 在 {}"
 msgid "Rotational Array"
 msgstr "旋转阵列"
 
-#: sketcher/core/constraints/distance.py
+#: sketcher/core/constraints/distance.py sketcher/ui_gtk/tools/offset_tool.py
 #: sketcher/ui_gtk/tools/distance_constraint_tool.py
 msgid "Distance"
 msgstr "距离"
@@ -246,6 +246,10 @@ msgstr "创建阵列"
 msgid "Add Rounded Rectangle"
 msgstr "添加圆角矩形"
 
+#: sketcher/core/commands/offset.py sketcher/ui_gtk/tools/offset_tool.py
+msgid "Offset"
+msgstr "偏移"
+
 #: sketcher/core/commands/rectangle.py
 msgid "Add Rectangle"
 msgstr "添加矩形"
@@ -346,7 +350,7 @@ msgstr "水平镜像"
 
 #: sketcher/ui_gtk/studio.py sketcher/ui_gtk/tools/dimension_input.py
 #: sketcher/ui_gtk/tools/grid_tool.py sketcher/ui_gtk/tools/circle_tool.py
-#: sketcher/ui_gtk/sketchcanvas.py
+#: sketcher/ui_gtk/tools/offset_tool.py sketcher/ui_gtk/sketchcanvas.py
 msgid "Cancel"
 msgstr "取消"
 
@@ -405,6 +409,7 @@ msgid "Fillet"
 msgstr "圆角"
 
 #: sketcher/ui_gtk/tools/dimension_input.py
+#: sketcher/ui_gtk/tools/offset_tool.py
 msgid "Apply"
 msgstr "应用"
 
@@ -645,6 +650,17 @@ msgstr "切换构造线"
 #: sketcher/ui_gtk/tools/radius_constraint_tool.py
 msgid "Add Radius Constraint"
 msgstr "添加半径约束"
+
+#: sketcher/ui_gtk/tools/offset_tool.py
+msgid "Offset Contour"
+msgstr "偏移轮廓"
+
+#: sketcher/ui_gtk/tools/offset_tool.py
+msgid ""
+"Replaces the selected contours with their offset. Positive values grow "
+"closed contours; open contours become slots."
+msgstr ""
+"用偏移后的轮廓替换选中的轮廓。正值会扩大封闭轮廓；开放轮廓会变成槽口。"
 
 #: sketcher/ui_gtk/tools/text_box_tool.py
 msgid "Text Box"

@@ -1,5 +1,5 @@
 ---
-description: "Sketcher tools, keyboard shortcuts, pie menu, construction mode, grid, snapping, chamfer, and fillet in Rayforge."
+description: "Sketcher tools, keyboard shortcuts, pie menu, construction mode, grid, snapping, offset, chamfer, and fillet in Rayforge."
 ---
 
 # Sketcher Tools
@@ -35,6 +35,7 @@ The sketcher provides keyboard shortcuts for efficient workflow:
 - `G+N`: Toggle construction mode on selection
 
 ### Action Shortcuts
+- `O+F`: Offset the selected contour
 - `C+H`: Add Chamfer corner
 - `C+F`: Add Fillet corner
 - `C+S`: Straighten selected bezier curves to lines
@@ -137,6 +138,38 @@ These controls help reduce visual clutter when working on complex sketches.
 When dragging points or geometry, hold `Shift` to constrain movement to the
 nearest axis (horizontal or vertical). This is useful for maintaining alignment
 while making adjustments.
+
+## Offset Contour
+
+The offset tool grows or shrinks a selected contour by a given distance, or
+expands an open path into a slot. Select the entities that form a contour
+(or use double-click to select connected geometry), then press `O+F`, or
+use the **Offset** entry in the pie menu.
+
+![Offset Contour dialog](/screenshots/addons-sketcher-offset-dialog.webp)
+
+The dialog asks for the offset distance and shows a live preview of the
+result on the canvas while you type:
+
+- **Closed contours** grow with a positive distance and shrink with a
+  negative one. Offsetting past the point where the contour would collapse
+  is refused.
+- **Open paths** become a closed slot outline of the given width, with
+  rounded end caps.
+
+![Bezier contour](/screenshots/addons-sketcher-offset-before.webp)
+![Bezier offset into a slot](/screenshots/addons-sketcher-offset-after.webp)
+
+Offsetting replaces the selected contour with the result:
+
+- Lone circles, arcs, and ellipses keep their entity type and are updated
+  in place, so they remain editable and constrainable as before.
+- Chains of connected segments (including beziers) are replaced by a
+  polygon entity. The polygon is edited as a whole: drag its center point
+  to move it and the handle point to rotate or uniformly scale it.
+
+If the selection contains several disconnected contours, each one is offset
+independently in a single step.
 
 ## Chamfer and Fillet
 

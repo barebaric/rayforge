@@ -81,6 +81,7 @@ msgid "Rotational Array"
 msgstr ""
 
 #: sketcher/core/constraints/distance.py
+#: sketcher/ui_gtk/tools/offset_tool.py
 #: sketcher/ui_gtk/tools/distance_constraint_tool.py
 msgid "Distance"
 msgstr ""
@@ -251,6 +252,11 @@ msgstr ""
 msgid "Add Rounded Rectangle"
 msgstr ""
 
+#: sketcher/core/commands/offset.py
+#: sketcher/ui_gtk/tools/offset_tool.py
+msgid "Offset"
+msgstr ""
+
 #: sketcher/core/commands/rectangle.py
 msgid "Add Rectangle"
 msgstr ""
@@ -358,6 +364,7 @@ msgstr ""
 #: sketcher/ui_gtk/tools/dimension_input.py
 #: sketcher/ui_gtk/tools/grid_tool.py
 #: sketcher/ui_gtk/tools/circle_tool.py
+#: sketcher/ui_gtk/tools/offset_tool.py
 #: sketcher/ui_gtk/sketchcanvas.py
 msgid "Cancel"
 msgstr ""
@@ -421,6 +428,7 @@ msgid "Fillet"
 msgstr ""
 
 #: sketcher/ui_gtk/tools/dimension_input.py
+#: sketcher/ui_gtk/tools/offset_tool.py
 msgid "Apply"
 msgstr ""
 
@@ -670,6 +678,16 @@ msgstr ""
 
 #: sketcher/ui_gtk/tools/radius_constraint_tool.py
 msgid "Add Radius Constraint"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/offset_tool.py
+msgid "Offset Contour"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/offset_tool.py
+msgid ""
+"Replaces the selected contours with their offset. Positive values grow "
+"closed contours; open contours become slots."
 msgstr ""
 
 #: sketcher/ui_gtk/tools/text_box_tool.py

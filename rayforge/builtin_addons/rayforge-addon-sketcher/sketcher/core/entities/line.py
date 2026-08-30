@@ -111,7 +111,9 @@ class Line(Entity):
         return [(p.x, p.y)]
 
     def to_polyline(
-        self, registry: "EntityRegistry"
+        self,
+        registry: "EntityRegistry",
+        tolerance: float = 0.1,
     ) -> list[tuple[float, float]]:
         """A line's polyline is its two endpoints. Overridden because
         raygeo's polygon conversion skips lone segments."""

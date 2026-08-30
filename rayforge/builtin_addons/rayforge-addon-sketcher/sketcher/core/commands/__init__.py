@@ -27,6 +27,7 @@ from .items import AddItemsCommand, RemoveItemsCommand
 from .line import LineCommand, LinePreviewState
 from .live_text_edit import LiveTextEditCommand
 from .mirror import MirrorAxis, MirrorCommand, MirrorDirection
+from .offset import OffsetCommand
 from .point import (
     MoveControlPointCommand,
     MoveEntitiesCommand,
@@ -84,6 +85,7 @@ __all__ = [
     "MoveControlPointCommand",
     "MoveEntitiesCommand",
     "MovePointCommand",
+    "OffsetCommand",
     "PreviewState",
     "RectangleCommand",
     "RectanglePreviewState",

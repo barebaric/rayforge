@@ -10,6 +10,7 @@ from .entities.ellipse import Ellipse
 from .entities.entity import Entity
 from .entities.line import Line
 from .entities.point import Point
+from .entities.polygon import PolygonEntity
 from .entities.text_box import TextBoxEntity
 from .types import EntityID
 
@@ -19,6 +20,7 @@ _ENTITY_CLASSES = {
     "circle": Circle,
     "ellipse": Ellipse,
     "line": Line,
+    "polygon": PolygonEntity,
     "text_box": TextBoxEntity,
 }
 
