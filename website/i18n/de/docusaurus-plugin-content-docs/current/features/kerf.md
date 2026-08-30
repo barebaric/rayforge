@@ -1,12 +1,15 @@
 # Schnittbreiten-Kompensation
 
-Schnittbreite ist das Material, das vom Laserstrahl während des Schneidens entfernt wird. Die Schnittbreiten-Kompensation passt Werkzeugwege an, um dies zu berücksichtigen und stellt sicher, dass geschnittene Teile ihren entworfenen Abmessungen entsprechen.
+Schnittbreite ist das Material, das vom Laserstrahl während des Schneidens entfernt wird. Die
+Schnittbreiten-Kompensation passt Werkzeugwege an, um dies zu berücksichtigen und stellt sicher,
+dass geschnittene Teile ihren entworfenen Abmessungen entsprechen.
 
 ## Was ist Schnittbreite?
 
 **Schnittbreite** = die Breite des durch den Schneideprozess entfernten Materials.
 
 **Beispiel:**
+
 - Laser-Punktgröße: 0.2mm
 - Material-Interaktion: fügt ~0.1mm auf jeder Seite hinzu
 - **Gesamte Schnittbreite:** ~0.4mm
@@ -15,13 +18,16 @@ Schnittbreite ist das Material, das vom Laserstrahl während des Schneidens entf
 
 ## Wie Schnittbreiten-Kompensation funktioniert
 
-Schnittbreiten-Kompensation **offsetet den Werkzeugweg** nach innen oder außen, um Materialentfernung zu berücksichtigen:
+Schnittbreiten-Kompensation **offsetet den Werkzeugweg** nach innen oder außen, um
+Materialentfernung zu berücksichtigen:
 
 **Für Außen-Schnitte (ein Teil schneiden):**
+
 - Pfad um die Hälfte der Schnittbreite **nach außen** offseten
 - Ergebnis: Endteil hat die korrekte Größe
 
 **Für Innen-Schnitte (ein Loch schneiden):**
+
 - Pfad um die Hälfte der Schnittbreite **nach innen** offseten
 - Ergebnis: Endloch hat die korrekte Größe
 
@@ -60,6 +66,7 @@ Nach dem Schneiden:   Teil misst 50.0mm (perfekt!)
 4. **Mitteln:** Den Durchschnitt mehrerer Messungen verwenden
 
 **Variablen, die die Schnittbreite beeinflussen:**
+
 - Laserleistung (höher = breiter)
 - Schneidegeschwindigkeit (langsamer = breiter)
 - Materialtyp und -dichte
@@ -70,7 +77,8 @@ Nach dem Schneiden:   Teil misst 50.0mm (perfekt!)
 
 ## Manuelle Schnittbreiten-Kompensation
 
-Wenn automatische Schnittbreiten-Kompensation nicht verfügbar ist, kompensiere in deiner Design-Software:
+Wenn automatische Schnittbreiten-Kompensation nicht verfügbar ist, kompensiere in deiner
+Design-Software:
 
 **Inkscape:**
 

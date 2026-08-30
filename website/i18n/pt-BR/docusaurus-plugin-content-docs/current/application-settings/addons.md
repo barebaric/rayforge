@@ -2,13 +2,11 @@
 
 ![Configurações de Addons](/screenshots/app-settings-addons.webp)
 
-A página Addons mostra addons de extensão instalados e permite
-gerenciá-los.
+A página Addons mostra addons de extensão instalados e permite gerenciá-los.
 
 ## Visão Geral
 
-Addons são extensões que adicionam funcionalidade ao Rayforge. Eles podem
-fornecer:
+Addons são extensões que adicionam funcionalidade ao Rayforge. Eles podem fornecer:
 
 - Novas operações
 - Filtros de importação/exportação
@@ -36,8 +34,8 @@ A lista de addons mostra todos os addons instalados com:
 
 ### Atualizando Addons
 
-Quando atualizações estão disponíveis, um indicador aparece no diálogo do Registro de Addons.
-Clique em **Atualizar** para instalar as atualizações disponíveis.
+Quando atualizações estão disponíveis, um indicador aparece no diálogo do Registro de Addons. Clique
+em **Atualizar** para instalar as atualizações disponíveis.
 
 ### Removendo Addons
 
@@ -45,9 +43,7 @@ Clique em **Atualizar** para instalar as atualizações disponíveis.
 2. Clique no botão **Remover**
 3. Confirme a remoção
 
-:::warning
-Remover um addon pode afetar documentos que usam seus recursos.
-:::
+:::warning Remover um addon pode afetar documentos que usam seus recursos. :::
 
 ## Fontes de Addons
 

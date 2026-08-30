@@ -1,6 +1,7 @@
 # Ferramentas de Tela
 
-A tela fornece um conjunto abrangente de ferramentas para manipular designs, medir e preparar seus trabalhos a laser.
+A tela fornece um conjunto abrangente de ferramentas para manipular designs, medir e preparar seus
+trabalhos a laser.
 
 ## Ferramenta de Seleção
 
@@ -17,16 +18,20 @@ Selecione, mova e transforme objetos na tela.
 
 Segurar teclas modificadoras enquanto arrasta muda o comportamento:
 
-- <kbd>ctrl</kbd> enquanto **move**: Ajusta o objeto à grade de 5mm, facilitando o alinhamento preciso
-- <kbd>ctrl</kbd> enquanto **rotaciona**: Ajusta a rotação em incrementos de 5 graus para ângulos consistentes
+- <kbd>ctrl</kbd> enquanto **move**: Ajusta o objeto à grade de 5mm, facilitando o alinhamento
+  preciso
+- <kbd>ctrl</kbd> enquanto **rotaciona**: Ajusta a rotação em incrementos de 5 graus para ângulos
+  consistentes
 - <kbd>shift</kbd> enquanto **escala**: Restringe as proporções (escala uniforme)
 - <kbd>ctrl</kbd> enquanto **escala**: Escala a partir do centro em vez da borda oposta
 
 **Alças de Transformação:**
 
-- **Alças de canto**: Escala proporcionalmente (segure <kbd>shift</kbd> para escalar não proporcionalmente)
+- **Alças de canto**: Escala proporcionalmente (segure <kbd>shift</kbd> para escalar não
+  proporcionalmente)
 - **Alças de borda**: Escala em uma direção
-- **Alça de rotação**: Clique uma vez em um objeto selecionado para alternar o modo de rotação, depois arraste para rotacionar ao redor do ponto central
+- **Alça de rotação**: Clique uma vez em um objeto selecionado para alternar o modo de rotação,
+  depois arraste para rotacionar ao redor do ponto central
 
 **Atalhos de Teclado:**
 
@@ -155,12 +160,11 @@ Combine ou subtraia formas:
 
 ## Edição de Vetores
 
-Clique duas vezes em uma peça de trabalho na tela para entrar no modo de
-edição de vetores. Neste modo, você pode selecionar e excluir segmentos de
-vetor individuais da peça de trabalho.
+Clique duas vezes em uma peça de trabalho na tela para entrar no modo de edição de vetores. Neste
+modo, você pode selecionar e excluir segmentos de vetor individuais da peça de trabalho.
 
-Para sair do modo de edição de vetores, clique fora da peça de trabalho ou
-pressione <kbd>Escape</kbd>.
+Para sair do modo de edição de vetores, clique fora da peça de trabalho ou pressione
+<kbd>Escape</kbd>.
 
 ---
 

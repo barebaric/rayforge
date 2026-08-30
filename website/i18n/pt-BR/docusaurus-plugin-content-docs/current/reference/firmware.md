@@ -1,10 +1,12 @@
 # Compatibilidade de Firmware
 
-Esta página documenta a compatibilidade de firmware para controladores de laser usados com o Rayforge.
+Esta página documenta a compatibilidade de firmware para controladores de laser usados com o
+Rayforge.
 
 ## Visão Geral
 
-O Rayforge é projetado principalmente para **controladores baseados em GRBL** mas também suporta Marlin, Smoothieware e outros tipos de firmware.
+O Rayforge é projetado principalmente para **controladores baseados em GRBL** mas também suporta
+Marlin, Smoothieware e outros tipos de firmware.
 
 ### Matriz de Compatibilidade
 
@@ -23,15 +25,14 @@ O Rayforge é projetado principalmente para **controladores baseados em GRBL** m
 
 ## Firmware GRBL
 
-**Status:** Totalmente Suportado
-**Versões:** 1.1+
-**Driver:** GRBL Serial
+**Status:** Totalmente Suportado **Versões:** 1.1+ **Driver:** GRBL Serial
 
 ### GRBL 1.1 (Recomendado)
 
 **O que é GRBL 1.1?**
 
-GRBL 1.1 é o firmware mais comum para máquinas CNC e laser de hobby. Lançado em 2017, é estável, bem documentado e amplamente suportado.
+GRBL 1.1 é o firmware mais comum para máquinas CNC e laser de hobby. Lançado em 2017, é estável, bem
+documentado e amplamente suportado.
 
 **Recursos suportados pelo Rayforge:**
 
@@ -95,9 +96,8 @@ GRBL 0.9 é uma versão antiga com alguns problemas de compatibilidade:
 
 ### Driver GRBL Serial Simple
 
-Rayforge inclui um segundo driver serial GRBL para dispositivos onde
-o driver padrão com contagem de buffer causa falsos alarmes ou erros
-de comunicação.
+Rayforge inclui um segundo driver serial GRBL para dispositivos onde o driver padrão com contagem de
+buffer causa falsos alarmes ou erros de comunicação.
 
 **Como funciona:**
 
@@ -115,16 +115,14 @@ de comunicação.
 **Quando NÃO usar:**
 
 - O driver GRBL Serial padrão funciona de forma confiável na maioria dos dispositivos
-- O driver simple não tem recuperação de deadlock, então os trabalhos
-  podem parar em uma resposta "ok" perdida sem recuperação automática
+- O driver simple não tem recuperação de deadlock, então os trabalhos podem parar em uma resposta
+  "ok" perdida sem recuperação automática
 
 ---
 
 ## grblHAL
 
-**Status:** Compatível
-**Versões:** 2023+
-**Driver:** GRBL Serial
+**Status:** Compatível **Versões:** 2023+ **Driver:** GRBL Serial
 
 ### O que é grblHAL?
 
@@ -155,15 +153,13 @@ grblHAL é um fork moderno do GRBL com recursos aprimorados:
 
 ## Driver GRBL Telnet
 
-**Status:** Suportado
-**Firmware:** grblHAL, ESP3D e outros controladores GRBL em rede
-**Driver:** GRBL Telnet
+**Status:** Suportado **Firmware:** grblHAL, ESP3D e outros controladores GRBL em rede **Driver:**
+GRBL Telnet
 
 ### Sobre o Driver GRBL Telnet
 
-O driver GRBL Telnet se conecta a controladores baseados em GRBL pela rede
-via uma interface Telnet. Ideal para placas com WiFi ou Ethernet integrado —
-sem necessidade de cabo USB.
+O driver GRBL Telnet se conecta a controladores baseados em GRBL pela rede via uma interface Telnet.
+Ideal para placas com WiFi ou Ethernet integrado — sem necessidade de cabo USB.
 
 **Recursos:**
 
@@ -222,13 +218,12 @@ Smoothieware usa sintaxe G-code diferente:
 
 ## Marlin
 
-**Versões:** 2.0+ com suporte a laser
-**Driver:** Marlin Serial
+**Versões:** 2.0+ com suporte a laser **Driver:** Marlin Serial
 
 ### Driver Marlin Serial
 
-O Rayforge inclui um MarlinSerialDriver dedicado que se conecta ao firmware Marlin
-via serial (USB). Marlin 2.0+ pode controlar lasers quando configurado corretamente.
+O Rayforge inclui um MarlinSerialDriver dedicado que se conecta ao firmware Marlin via serial (USB).
+Marlin 2.0+ pode controlar lasers quando configurado corretamente.
 
 **Recursos:**
 
@@ -511,10 +506,9 @@ $22=1       ; Homing ativado
 
 ### Controladores Ruida
 
-O Rayforge inclui suporte experimental para controladores baseados em Ruida (ex.
-RDC6442, RDC6445, Ruida R5). O driver Ruida conecta via rede e suporta jogging,
-relatório de posição, controle de ar assistido, seleção de camada, auto-conexão e
-sondagem de status.
+O Rayforge inclui suporte experimental para controladores baseados em Ruida (ex. RDC6442, RDC6445,
+Ruida R5). O driver Ruida conecta via rede e suporta jogging, relatório de posição, controle de ar
+assistido, seleção de camada, auto-conexão e sondagem de status.
 
 **Funcionalidades:**
 
@@ -534,9 +528,9 @@ sondagem de status.
 
 ### OctoPrint
 
-O Rayforge inclui um driver OctoPrint experimental que envia G-code
-diretamente para um servidor OctoPrint pela rede. Isso é útil se o seu laser
-está conectado a um Raspberry Pi ou outra máquina executando OctoPrint.
+O Rayforge inclui um driver OctoPrint experimental que envia G-code diretamente para um servidor
+OctoPrint pela rede. Isso é útil se o seu laser está conectado a um Raspberry Pi ou outra máquina
+executando OctoPrint.
 
 **Funcionalidades:**
 
@@ -552,8 +546,8 @@ está conectado a um Raspberry Pi ou outra máquina executando OctoPrint.
 1. Selecione o driver "OctoPrint" nas configurações da máquina
 2. Insira o nome do host ou endereço IP do seu servidor OctoPrint
 3. Defina a porta (padrão: 80)
-4. Clique em "Solicitar Acesso" para obter uma chave API através do sistema
-   de chaves de aplicativo do OctoPrint
+4. Clique em "Solicitar Acesso" para obter uma chave API através do sistema de chaves de aplicativo
+   do OctoPrint
 5. Conecte — o Rayforge estabelecerá uma conexão WebSocket
 
 **Limitações:**

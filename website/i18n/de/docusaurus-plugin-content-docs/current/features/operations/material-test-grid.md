@@ -1,10 +1,13 @@
 # Materialtest-Raster
 
-Der Materialtest-Raster-Generator erstellt parametrische Testmuster, um optimale Lasereinstellungen für verschiedene Materialien zu finden.
+Der Materialtest-Raster-Generator erstellt parametrische Testmuster, um optimale Lasereinstellungen
+für verschiedene Materialien zu finden.
 
 ## Übersicht
 
-Material-Testen ist essentiell für Laserarbeit - verschiedene Materialien erfordern verschiedene Leistungs- und Geschwindigkeitseinstellungen. Der Materialtest-Raster automatisiert diesen Prozess durch:
+Material-Testen ist essentiell für Laserarbeit - verschiedene Materialien erfordern verschiedene
+Leistungs- und Geschwindigkeitseinstellungen. Der Materialtest-Raster automatisiert diesen Prozess
+durch:
 
 - Generieren von Testrastern mit konfigurierbaren Geschwindigkeits-/Leistungsbereichen
 - Bereitstellen von Presets für gängige Lasertypen (Diode, CO2)
@@ -24,12 +27,12 @@ Zugriff auf den Materialtest-Raster-Generator:
 
 Rayforge enthält Presets für gängige Szenarien:
 
-| Preset               | Geschwindigkeitsbereich    | Leistungsbereich | Verwendung für               |
-| -------------------- | -------------------------- | ---------------- | ---------------------------- |
-| **Dioden-Gravur**    | 1000-10000 mm/min          | 10-100%          | Diodenlaser-Gravur           |
-| **Dioden-Schnitt**   | 100-5000 mm/min            | 50-100%          | Diodenlaser-Schneiden        |
-| **CO2-Gravur**       | 3000-20000 mm/min          | 10-50%           | CO2-Laser-Gravur             |
-| **CO2-Schnitt**      | 1000-20000 mm/min          | 30-100%          | CO2-Laser-Schneiden          |
+| Preset             | Geschwindigkeitsbereich | Leistungsbereich | Verwendung für        |
+| ------------------ | ----------------------- | ---------------- | --------------------- |
+| **Dioden-Gravur**  | 1000-10000 mm/min       | 10-100%          | Diodenlaser-Gravur    |
+| **Dioden-Schnitt** | 100-5000 mm/min         | 50-100%          | Diodenlaser-Schneiden |
+| **CO2-Gravur**     | 3000-20000 mm/min       | 10-50%           | CO2-Laser-Gravur      |
+| **CO2-Schnitt**    | 1000-20000 mm/min       | 30-100%          | CO2-Laser-Schneiden   |
 
 Presets sind Startpunkte - du kannst alle Parameter nach Auswahl anpassen.
 
@@ -68,12 +71,15 @@ Passe die Testraster-Parameter im Einstellungsdialog an:
 
 #### Beschriftungen
 
-- **Beschriftungen einschließen**: Achsenbeschriftungen ein/aus, die Geschwindigkeits- und Leistungswerte anzeigen
+- **Beschriftungen einschließen**: Achsenbeschriftungen ein/aus, die Geschwindigkeits- und
+  Leistungswerte anzeigen
 - Beschriftungen erscheinen an linken und oberen Kanten
 - **Beschriftungs-Leistung (%)**: Leistungseinstellung zum Gravieren der Beschriftungen
-- **Beschriftungs-Geschwindigkeit (mm/min)**: Geschwindigkeit zum Gravieren der Beschriftungen (Standard: 1000 mm/min)
+- **Beschriftungs-Geschwindigkeit (mm/min)**: Geschwindigkeit zum Gravieren der Beschriftungen
+  (Standard: 1000 mm/min)
 
-Beschriftungen werden zuerst graviert, vor dem Testraster, sodass sie nicht vom Testmuster verdeckt werden.
+Beschriftungen werden zuerst graviert, vor dem Testraster, sodass sie nicht vom Testmuster verdeckt
+werden.
 
 #### Zeilenabstand (nur Gravurtest)
 
@@ -83,7 +89,8 @@ Beschriftungen werden zuerst graviert, vor dem Testraster, sodass sie nicht vom 
 
 ### Schritt 4: Das Raster generieren
 
-Klicke auf **Generieren**, um das Testmuster zu erstellen. Das Raster erscheint auf deiner Arbeitsfläche als spezielles Werkstück.
+Klicke auf **Generieren**, um das Testmuster zu erstellen. Das Raster erscheint auf deiner
+Arbeitsfläche als spezielles Werkstück.
 
 ## Das Raster-Layout verstehen
 
@@ -121,10 +128,12 @@ Leistung (%)     Geschwindigkeit (mm/min) →
 
 ## Ausführungsreihenfolge (Risiko-Optimierung)
 
-Rayforge führt Testzellen in einer **risiko-optimierten Reihenfolge** aus, um Materialschäden zu verhindern:
+Rayforge führt Testzellen in einer **risiko-optimierten Reihenfolge** aus, um Materialschäden zu
+verhindern:
 
 1. **Höchste Geschwindigkeit zuerst**: Schnelle Geschwindigkeiten sind sicherer (weniger Hitzestau)
-2. **Niedrigste Leistung innerhalb der Geschwindigkeit**: Minimiert Risiko bei jeder Geschwindigkeitsstufe
+2. **Niedrigste Leistung innerhalb der Geschwindigkeit**: Minimiert Risiko bei jeder
+   Geschwindigkeitsstufe
 
 Dies verhindert, dass Verrußen oder Feuer mit langsamen, hochleistungs-Kombinationen beginnen.
 
@@ -165,9 +174,8 @@ Dokumentiere deine erfolgreichen Einstellungen zur späteren Referenz:
 - Anzahl der Durchgänge
 - Alle speziellen Hinweise
 
-:::tip Materialdatenbank
-Erwäge, ein Referenzdokument mit deinen Materialtest-Ergebnissen zu erstellen, um in zukünftigen Projekten schnell nachzuschlagen.
-:::
+:::tip Materialdatenbank Erwäge, ein Referenzdokument mit deinen Materialtest-Ergebnissen zu
+erstellen, um in zukünftigen Projekten schnell nachzuschlagen. :::
 
 ## Erweiterte Verwendung
 
@@ -188,39 +196,41 @@ Dies ist nützlich, um das Teststück aus Rohmaterial zu schneiden.
 Für Feinabstimmung erstelle Testbereiche mit engen Grenzen:
 
 **Grobtest** (Bereich finden):
+
 - Geschwindigkeit: 1000-10000 mm/min (5 Spalten)
 - Leistung: 10-100% (5 Zeilen)
 
 **Feinabstimmungs-Test** (optimieren):
+
 - Geschwindigkeit: 4000-6000 mm/min (5 Spalten)
 - Leistung: 35-45% (5 Zeilen)
 
 ### Verschiedene Materialien, gleiches Raster
 
-Führe dieselbe Rasterkonfiguration auf verschiedenen Materialien aus, um deine Materialbibliothek schneller aufzubauen.
+Führe dieselbe Rasterkonfiguration auf verschiedenen Materialien aus, um deine Materialbibliothek
+schneller aufzubauen.
 
 ## Tipps & Best Practices
 
 ### Raster-Design
 
-✅ **Mit Presets beginnen** - Gute Startpunkte für gängige Szenarien
-✅ **5×5-Raster verwenden** - Gute Balance aus Detail und Testzeit
-✅ **Beschriftungen aktivieren** - Essentiell zur Identifizierung von Ergebnissen
-✅ **Quadrate ≥20mm halten** - Einfacher Ergebnisse zu sehen und zu messen
+✅ **Mit Presets beginnen** - Gute Startpunkte für gängige Szenarien ✅ **5×5-Raster verwenden** -
+Gute Balance aus Detail und Testzeit ✅ **Beschriftungen aktivieren** - Essentiell zur
+Identifizierung von Ergebnissen ✅ **Quadrate ≥20mm halten** - Einfacher Ergebnisse zu sehen und zu
+messen
 
 ### Test-Strategie
 
-✅ **Zuerst Abfall testen** - Niemals auf Endmaterial testen
-✅ **Eine Variable nach der anderen** - Geschwindigkeit ODER Leistungsbereich testen, nicht beide Extreme
-✅ **Abkühlen lassen** - Zwischen Tests auf gleichem Material warten
-✅ **Konsistenter Fokus** - Gleiche Fokusdistanz für alle Tests
+✅ **Zuerst Abfall testen** - Niemals auf Endmaterial testen ✅ **Eine Variable nach der anderen** -
+Geschwindigkeit ODER Leistungsbereich testen, nicht beide Extreme ✅ **Abkühlen lassen** - Zwischen
+Tests auf gleichem Material warten ✅ **Konsistenter Fokus** - Gleiche Fokusdistanz für alle Tests
 
 ### Sicherheit
 
-⚠️ **Tests überwachen** - Laufende Tests niemals unbeaufsichtigt lassen
-⚠️ **Konservativ beginnen** - Mit niedrigeren Leistungsbereichen beginnen
-⚠️ **Belüftung überprüfen** - Sicherstellen, dass ordnungsgemäße Rauchabsaugung vorhanden ist
-⚠️ **Feuerwache** - Feuerlöscher bereit haben
+⚠️ **Tests überwachen** - Laufende Tests niemals unbeaufsichtigt lassen ⚠️ **Konservativ
+beginnen** - Mit niedrigeren Leistungsbereichen beginnen ⚠️ **Belüftung überprüfen** -
+Sicherstellen, dass ordnungsgemäße Rauchabsaugung vorhanden ist ⚠️ **Feuerwache** - Feuerlöscher
+bereit haben
 
 ## Fehlerbehebung
 

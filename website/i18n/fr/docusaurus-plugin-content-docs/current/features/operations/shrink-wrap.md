@@ -1,6 +1,8 @@
 # Shrink Wrap
 
-Shrink Wrap crée un parcours de coupe efficace autour de plusieurs objets en générant une limite qui se « rétracte » autour d'eux. C'est utile pour couper plusieurs pièces d'une feuille avec un minimum de gaspillage.
+Shrink Wrap crée un parcours de coupe efficace autour de plusieurs objets en générant une limite qui
+se « rétracte » autour d'eux. C'est utile pour couper plusieurs pièces d'une feuille avec un minimum
+de gaspillage.
 
 ## Aperçu
 
@@ -37,7 +39,8 @@ Shrink wrap crée une limite en utilisant un algorithme de géométrie computati
 3. **Enveloppez** étroitement autour du groupe d'objets
 4. **Décalez** vers l'extérieur de la distance spécifiée
 
-Le résultat est un parcours de coupe efficace qui suit la forme globale de vos pièces tout en maintenant le dégagement.
+Le résultat est un parcours de coupe efficace qui suit la forme globale de vos pièces tout en
+maintenant le dégagement.
 
 ## Créer une Opération Shrink Wrap
 
@@ -62,13 +65,15 @@ Le résultat est un parcours de coupe efficace qui suit la forme globale de vos 
 
 ## Paramètres Clés
 
-La boîte de dialogue des paramètres d'étape comporte trois onglets : **Paramètres d'étape**, **Laser** et **Post-Traitement**. Les paramètres sont décrits ci-dessous dans l'ordre des onglets.
+La boîte de dialogue des paramètres d'étape comporte trois onglets : **Paramètres d'étape**,
+**Laser** et **Post-Traitement**. Les paramètres sont décrits ci-dessous dans l'ordre des onglets.
 
 ### Shrink Wrap
 
 ![Paramètres d'étape shrink wrap](/screenshots/step-settings-shrink-wrap-general.webp)
 
-Le groupe **Shrink Wrap** de l'onglet _Paramètres d'étape_ contrôle la façon dont l'enveloppe s'adapte au contenu.
+Le groupe **Shrink Wrap** de l'onglet _Paramètres d'étape_ contrôle la façon dont l'enveloppe
+s'adapte au contenu.
 
 #### Douceur
 
@@ -123,7 +128,8 @@ Contrôle où le laser coupe par rapport au parcours shrink-wrap :
 
 ![Paramètres laser](/screenshots/step-settings-shrink-wrap-laser.webp)
 
-La puissance, la vitesse et la sélection de la tête laser se trouvent sur la page **Laser** de la boîte de dialogue des paramètres d'étape.
+La puissance, la vitesse et la sélection de la tête laser se trouvent sur la page **Laser** de la
+boîte de dialogue des paramètres d'étape.
 
 Comme les autres opérations de coupe :
 
@@ -137,7 +143,8 @@ Comme les autres opérations de coupe :
 - À quelle vitesse le laser se déplace
 - Correspondez à la vitesse de coupe de votre matériau
 
-Pour couper la limite plus d'une fois, ajoutez un post-processeur [Passe Multiple](../multi-pass.md).
+Pour couper la limite plus d'une fois, ajoutez un post-processeur
+[Passe Multiple](../multi-pass.md).
 
 ## Cas d'Utilisation
 
@@ -221,11 +228,13 @@ Voir [Flux de Travail Multi-Couches](../multi-layer.md) pour plus de détails.
 Les opérations Shrink Wrap supportent plusieurs options de post-traitement :
 
 - **[Lissage de Parcours](../smooth.md)** - Réduire les bords irréguliers dans le parcours de limite
-- **[Ponts de Maintien](../holding-tabs.md)** - Maintenir les pièces coupées attachées au matériau de stock
+- **[Ponts de Maintien](../holding-tabs.md)** - Maintenir les pièces coupées attachées au matériau
+  de stock
 - **[Rognage au Stock](../crop-to-stock.md)** - Limiter les coupes à la limite du matériau
 - **[Optimisation de Parcours](../path-optimization.md)** - Réduire la distance de déplacement
 - **[Passe Multiple](../multi-pass.md)** - Répéter les coupes pour les matériaux épais
-- **[Entrée/Sortie](../lead-in-out.md)** - Ajouter des mouvements d'approche et de sortie à puissance nulle pour des extrémités de coupe plus propres
+- **[Entrée/Sortie](../lead-in-out.md)** - Ajouter des mouvements d'approche et de sortie à
+  puissance nulle pour des extrémités de coupe plus propres
 
 ### Espacement des Pièces
 
@@ -347,7 +356,8 @@ Avant la production :
 
 ### Les pièces bougent pendant la coupe
 
-- **Ajoutez :** De petits ponts pour maintenir les pièces (voir [Ponts de Maintien](../holding-tabs.md))
+- **Ajoutez :** De petits ponts pour maintenir les pièces (voir
+  [Ponts de Maintien](../holding-tabs.md))
 - **Utilisez :** Ordre de coupe : de l'intérieur vers l'extérieur
 - **Assurez-vous :** Le matériau est plat et sécurisé
 - **Vérifiez :** La feuille n'est pas gondolée

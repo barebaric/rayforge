@@ -52,18 +52,18 @@ G0 X0 Y0 ;Zum Ursprung zurückkehren
 
 **Schlüsselbefehle:**
 
-| Befehl | Beschreibung |
-| ------- | ------------ |
-| `G21`   | Millimeter-Modus |
-| `G90`   | Absolute Positionierung |
-| `G54`   | Arbeitskoordinatensystem 1 auswählen |
-| `T0`    | Werkzeug 0 auswählen (Laserkopf) |
-| `G0`    | Eilgang (Laser aus) |
-| `G1`    | Schneidgang (Laser an) |
-| `M4`    | Laser an (dynamischer Leistungsmodus) |
-| `M5`    | Laser aus |
+| Befehl  | Beschreibung                                          |
+| ------- | ----------------------------------------------------- |
+| `G21`   | Millimeter-Modus                                      |
+| `G90`   | Absolute Positionierung                               |
+| `G54`   | Arbeitskoordinatensystem 1 auswählen                  |
+| `T0`    | Werkzeug 0 auswählen (Laserkopf)                      |
+| `G0`    | Eilgang (Laser aus)                                   |
+| `G1`    | Schneidgang (Laser an)                                |
+| `M4`    | Laser an (dynamischer Leistungsmodus)                 |
+| `M5`    | Laser aus                                             |
 | `S500`  | Laserleistung auf 500 setzen (50% für 0-1000 Bereich) |
-| `F3000` | Vorschubrate auf 3000 mm/min setzen |
+| `F3000` | Vorschubrate auf 3000 mm/min setzen                   |
 
 ---
 

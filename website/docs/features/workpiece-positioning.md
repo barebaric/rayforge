@@ -1,12 +1,13 @@
 ---
-description: "Position workpieces precisely on the canvas. Use alignment tools, snapping, and coordinate input to place designs exactly where you need them."
+description:
+  "Position workpieces precisely on the canvas. Use alignment tools, snapping, and coordinate input
+  to place designs exactly where you need them."
 ---
 
 # Workpiece Positioning Guide
 
-This guide covers all the methods available in Rayforge for accurately
-positioning your workpiece and aligning your designs before cutting or
-engraving.
+This guide covers all the methods available in Rayforge for accurately positioning your workpiece
+and aligning your designs before cutting or engraving.
 
 ## Overview
 
@@ -30,8 +31,8 @@ Rayforge provides several complementary tools for positioning:
 
 ## Focus Mode (Laser Pointer)
 
-Focus mode turns on the laser at a low power level, acting as a "laser
-pointer" to help you see exactly where the laser head is positioned.
+Focus mode turns on the laser at a low power level, acting as a "laser pointer" to help you see
+exactly where the laser head is positioned.
 
 ### Enabling Focus Mode
 
@@ -41,11 +42,8 @@ pointer" to help you see exactly where the laser head is positioned.
 4. **Jog the laser head** to see the beam position on your material
 5. **Click the Focus button again** to turn off when done
 
-:::warning Safety
-Even at low power, the laser can damage eyes. Never look directly into
-the beam or point it at reflective surfaces. Wear appropriate eye
-protection.
-:::
+:::warning Safety Even at low power, the laser can damage eyes. Never look directly into the beam or
+point it at reflective surfaces. Wear appropriate eye protection. :::
 
 ### Configuring Focus Power
 
@@ -57,26 +55,23 @@ The focus power determines how bright the laser dot appears:
    - Typical values: 1-5% for most materials
    - Set to 0 to disable the feature
 
-:::tip Finding the Right Power
-Start with 1% and increase gradually. The dot should be visible but not
-leave any mark on your material. Darker materials may need higher power
-to see the dot clearly.
+:::tip Finding the Right Power Start with 1% and increase gradually. The dot should be visible but
+not leave any mark on your material. Darker materials may need higher power to see the dot clearly.
 :::
 
 ### When to Use Focus Mode
 
 - **Quick alignment checks**: See if the laser is roughly where you expect
 - **Finding material edges**: Jog to corners to verify material placement
-- **Setting WCS origin**: Position laser at desired zero point before
-  setting WCS
+- **Setting WCS origin**: Position laser at desired zero point before setting WCS
 - **Verifying home position**: Check that homing worked correctly
 
 ---
 
 ## Framing
 
-Framing traces the bounding rectangle of your job at low (or zero) power,
-showing exactly where your design will be cut or engraved.
+Framing traces the bounding rectangle of your job at low (or zero) power, showing exactly where your
+design will be cut or engraved.
 
 ### How to Frame
 
@@ -89,18 +84,15 @@ showing exactly where your design will be cut or engraved.
 
 Configure framing behavior in **Settings → Machine → Laser**:
 
-- **Frame Speed**: How fast the head moves during framing (slower =
-  easier to see)
+- **Frame Speed**: How fast the head moves during framing (slower = easier to see)
 - **Frame Power**: Laser power during framing
   - Set to 0 for air framing (laser off, just movement)
   - Set to 1-5% for a visible trace on the material
 
 :::tip Air Framing vs. Low Power
 
-- **Air framing (0% power)**: Safe for any material, but you only see
-  the head movement
-- **Low power framing**: Leaves a faint visible mark, useful for
-  precise alignment on dark materials
+- **Air framing (0% power)**: Safe for any material, but you only see the head movement
+- **Low power framing**: Leaves a faint visible mark, useful for precise alignment on dark materials
   :::
 
 ### When to Frame
@@ -116,13 +108,12 @@ See [Framing Your Job](framing-your-job) for more details.
 
 ## Setting WCS Zero (Work Coordinate System)
 
-Work Coordinate Systems (WCS) let you define custom "zero points" for your
-jobs. This makes it easy to align jobs to your material position.
+Work Coordinate Systems (WCS) let you define custom "zero points" for your jobs. This makes it easy
+to align jobs to your material position.
 
 ### Quick WCS Setup
 
-1. **Jog the laser head** to the corner of your material (or desired
-   origin point)
+1. **Jog the laser head** to the corner of your material (or desired origin point)
 2. **Open the Control Panel** (`Ctrl+L`)
 3. **Select a WCS** (G54 is the default work coordinate system)
 4. **Click Zero X** and **Zero Y** to set current position as origin
@@ -138,13 +129,11 @@ Rayforge uses several coordinate systems:
 | **G54**     | Work coordinate system 1 (default)             |
 | **G55-G59** | Additional work coordinate systems             |
 
-:::tip Multiple Work Areas
-Use different WCS slots for different fixture positions. For example:
+:::tip Multiple Work Areas Use different WCS slots for different fixture positions. For example:
 
 - G54 for the left side of your bed
 - G55 for the right side
-- G56 for a rotary attachment
-  :::
+- G56 for a rotary attachment :::
 
 ### When to Set WCS Zero
 
@@ -153,23 +142,21 @@ Use different WCS slots for different fixture positions. For example:
 - **Repeatable jobs**: Same job, different positions
 - **Production runs**: Consistent positioning across multiple pieces
 
-See [Work Coordinate Systems](../general-info/coordinate-systems.md) for
-complete documentation.
+See [Work Coordinate Systems](../general-info/coordinate-systems.md) for complete documentation.
 
 ---
 
 ## Camera-Based Positioning
 
-The camera overlay shows a live view of your material with your design
-superimposed, enabling precise visual alignment.
+The camera overlay shows a live view of your material with your design superimposed, enabling
+precise visual alignment.
 
 ### Setting Up the Camera
 
 1. **Connect a USB camera** above your work area
 2. Go to **Settings → Camera** and add your camera device
 3. **Enable the camera** to see the overlay on your canvas
-4. **Align the camera** using the alignment procedure (required for
-   accurate positioning)
+4. **Align the camera** using the alignment procedure (required for accurate positioning)
 
 ### Camera Alignment
 
@@ -184,8 +171,7 @@ Camera alignment maps camera pixels to real-world coordinates:
 
 - Use points spread across your entire work area
 - Measure world coordinates carefully with a ruler
-- Use machine positions (jog to known coordinates) for best accuracy
-  :::
+- Use machine positions (jog to known coordinates) for best accuracy :::
 
 ### Positioning with Camera Overlay
 
@@ -277,9 +263,7 @@ For running the same job at different locations:
 ## Related Topics
 
 - [Framing Your Job](framing-your-job) - Detailed framing documentation
-- [Work Coordinate Systems](../general-info/coordinate-systems.md) - WCS
-  reference
+- [Work Coordinate Systems](../general-info/coordinate-systems.md) - WCS reference
 - [Camera Integration](../machine/camera.md) - Camera setup and alignment
-- [Control Panel](../ui/bottom-panel.md) - Jog controls and WCS
-  management
+- [Control Panel](../ui/bottom-panel.md) - Jog controls and WCS management
 - [Quick Start Guide](../getting-started/quick-start.md) - Basic workflow

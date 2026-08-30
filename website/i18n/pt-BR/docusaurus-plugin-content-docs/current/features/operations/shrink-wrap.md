@@ -1,6 +1,7 @@
 # Shrink Wrap
 
-Shrink Wrap cria um caminho de corte eficiente ao redor de múltiplos objetos gerando um limite que "encolhe" ao redor deles. É útil para cortar múltiplas peças de uma chapa com desperdício mínimo.
+Shrink Wrap cria um caminho de corte eficiente ao redor de múltiplos objetos gerando um limite que
+"encolhe" ao redor deles. É útil para cortar múltiplas peças de uma chapa com desperdício mínimo.
 
 ## Visão Geral
 
@@ -37,7 +38,8 @@ Shrink wrap cria um limite usando um algoritmo de geometria computacional:
 3. **Envolve** firmemente ao redor do grupo de objetos
 4. **Desloca** para fora pela distância especificada
 
-O resultado é um caminho de corte eficiente que segue a forma geral das suas peças enquanto mantém folga.
+O resultado é um caminho de corte eficiente que segue a forma geral das suas peças enquanto mantém
+folga.
 
 ## Criando uma Operação Shrink Wrap
 
@@ -62,13 +64,15 @@ O resultado é um caminho de corte eficiente que segue a forma geral das suas pe
 
 ## Configurações Principais
 
-O diálogo de configurações de etapa tem três abas: **Configurações de Etapa**, **Laser** e **Pós-Processamento**. As configurações são descritas em ordem de aba abaixo.
+O diálogo de configurações de etapa tem três abas: **Configurações de Etapa**, **Laser** e
+**Pós-Processamento**. As configurações são descritas em ordem de aba abaixo.
 
 ### Shrink Wrap
 
 ![Configurações de etapa Shrink Wrap](/screenshots/step-settings-shrink-wrap-general.webp)
 
-O grupo **Shrink Wrap** na aba _Configurações de Etapa_ controla como o invólucro se ajusta ao redor do conteúdo.
+O grupo **Shrink Wrap** na aba _Configurações de Etapa_ controla como o invólucro se ajusta ao redor
+do conteúdo.
 
 #### Suavidade
 
@@ -123,7 +127,8 @@ Controla onde o laser corta relativo ao caminho shrink-wrap:
 
 ![Configurações do laser](/screenshots/step-settings-shrink-wrap-laser.webp)
 
-Potência, velocidade e seleção da cabeça do laser ficam na página **Laser** do diálogo de configurações de etapa.
+Potência, velocidade e seleção da cabeça do laser ficam na página **Laser** do diálogo de
+configurações de etapa.
 
 Como outras operações de corte:
 
@@ -137,7 +142,8 @@ Como outras operações de corte:
 - Quão rápido o laser se move
 - Corresponda à velocidade de corte do seu material
 
-Para cortar o limite mais de uma vez, adicione um pós-processador de [Multi-Passagem](../multi-pass.md).
+Para cortar o limite mais de uma vez, adicione um pós-processador de
+[Multi-Passagem](../multi-pass.md).
 
 ## Casos de Uso
 
@@ -225,7 +231,8 @@ Operações Shrink Wrap suportam várias opções de pós-processamento:
 - **[Cortar para Estoque](../crop-to-stock.md)** - Limita cortes ao limite do material
 - **[Otimização de Caminho](../path-optimization.md)** - Reduz distância de deslocamento
 - **[Multi-Passagem](../multi-pass.md)** - Repete cortes para materiais espessos
-- **[Entrada/Saída](../lead-in-out.md)** - Adiciona movimentos de aproximação e saída sem potência para extremidades de corte mais limpas
+- **[Entrada/Saída](../lead-in-out.md)** - Adiciona movimentos de aproximação e saída sem potência
+  para extremidades de corte mais limpas
 
 ### Espaçamento de Peças
 

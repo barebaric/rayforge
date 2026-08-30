@@ -1,14 +1,19 @@
 ---
-description: "Manage stock material dimensions and positioning in Rayforge. Define workpiece size, origin, and alignment for consistent laser cutting results."
+description:
+  "Manage stock material dimensions and positioning in Rayforge. Define workpiece size, origin, and
+  alignment for consistent laser cutting results."
 ---
 
 # Stock Handling
 
-Stock in Rayforge represents the physical material you'll be cutting or engraving. Stock is a **document-global** concept—your document can have one or more stock items, and they exist independently of layers.
+Stock in Rayforge represents the physical material you'll be cutting or engraving. Stock is a
+**document-global** concept—your document can have one or more stock items, and they exist
+independently of layers.
 
 ## Adding Stock
 
-Stock represents the physical piece of material you'll be working with. To add stock to your document:
+Stock represents the physical piece of material you'll be working with. To add stock to your
+document:
 
 1. In the **Stock Material** panel in the sidebar, click the **Add Stock** button
 2. A new stock item will be created with default dimensions (80% of your machine's workspace)
@@ -29,8 +34,10 @@ Each stock item has the following properties:
 - **Rename**: Open the Stock Properties dialog and edit the name field
 - **Resize**: Select the stock item in the workspace and drag the corner handles to resize
 - **Move**: Select the stock item in the workspace and drag to reposition it
-- **Delete**: Click the delete button (trash icon) next to the stock item in the Stock Material panel
-- **Edit properties**: Click the properties button (document icon) to open the Stock Properties dialog
+- **Delete**: Click the delete button (trash icon) next to the stock item in the Stock Material
+  panel
+- **Edit properties**: Click the properties button (document icon) to open the Stock Properties
+  dialog
 - **Toggle visibility**: Click the visibility button (eye icon) to show/hide the stock item
 
 ## Assigning Material
@@ -50,10 +57,11 @@ Materials define the visual properties of your stock:
 - **Category**: Grouping (e.g., "Wood", "Acrylic", "Metal")
 - **Description**: Additional information about the material
 
-See [Materials](../application-settings/materials.md) for the full list of
-appearance properties (texture, roughness, metallic, and tint color).
+See [Materials](../application-settings/materials.md) for the full list of appearance properties
+(texture, roughness, metallic, and tint color).
 
-Note: Material properties are defined in material libraries and cannot be edited through the stock properties dialog. The stock properties only allow you to assign a material to a stock item.
+Note: Material properties are defined in material libraries and cannot be edited through the stock
+properties dialog. The stock properties only allow you to assign a material to a stock item.
 
 ### Per-Instance Stock Color
 
@@ -63,14 +71,14 @@ Each stock item can override the material's tint color independently:
 2. Click the color button in the **Color** row
 3. Pick a color from the color picker
 
-The color is applied only to that stock item — other items using the same
-material keep their own colors. Use the clear button next to the color
-row to revert to the material's default color. When neither the item nor
-the material defines a color, the texture is shown untinted.
+The color is applied only to that stock item — other items using the same material keep their own
+colors. Use the clear button next to the color row to revert to the material's default color. When
+neither the item nor the material defines a color, the texture is shown untinted.
 
 ## Converting Workpieces to Stock
 
-You can convert any workpiece into a stock item. This is useful when you have an irregular-shaped piece of material and want to use its exact outline as your stock boundary.
+You can convert any workpiece into a stock item. This is useful when you have an irregular-shaped
+piece of material and want to use its exact outline as your stock boundary.
 
 To convert a workpiece to stock:
 
@@ -88,7 +96,8 @@ The new stock item:
 
 The auto-layout feature helps you efficiently arrange your design elements within stock boundaries:
 
-1. Select the items you want to arrange (or leave nothing selected to arrange all items in the active layer)
+1. Select the items you want to arrange (or leave nothing selected to arrange all items in the
+   active layer)
 2. Click the **Arrange** button in the toolbar and select **Auto Layout (pack workpieces)**
 3. Rayforge will automatically arrange the items to optimize material usage
 
@@ -120,7 +129,8 @@ If you prefer more control, Rayforge also offers manual layout tools:
 2. **Use descriptive names** - Name your stock items clearly (e.g., "Birch Plywood 3mm")
 3. **Set material thickness** - This can be useful for future calculations and reference
 4. **Assign materials early** - This ensures proper visual representation from the start
-5. **Use irregular stock for scrap pieces** - Convert workpieces to stock when using leftover material with custom shapes
+5. **Use irregular stock for scrap pieces** - Convert workpieces to stock when using leftover
+   material with custom shapes
 6. **Check fit before cutting** - Use the 2D view to verify everything fits on your stock material
 
 ## Troubleshooting

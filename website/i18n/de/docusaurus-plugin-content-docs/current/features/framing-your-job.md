@@ -1,14 +1,13 @@
 # Deinen Job einrahmen
 
-Erfahre, wie du die Rahmen-Funktion verwendest, um deine Job-Grenzen vorauszuschauen
-und die korrekte Ausrichtung vor dem Schneiden sicherzustellen.
+Erfahre, wie du die Rahmen-Funktion verwendest, um deine Job-Grenzen vorauszuschauen und die
+korrekte Ausrichtung vor dem Schneiden sicherzustellen.
 
 ## Übersicht
 
-Das Einrahmen ermöglicht es dir, die genauen Grenzen deines Laserjobs vorauszuschauen,
-indem ein Umriss mit dem Laser bei niedriger Leistung oder mit ausgeschaltetem Laser
-nachgezeichnet wird. Dies hilft, die Positionierung zu verifizieren und kostspielige
-Fehler zu verhindern.
+Das Einrahmen ermöglicht es dir, die genauen Grenzen deines Laserjobs vorauszuschauen, indem ein
+Umriss mit dem Laser bei niedriger Leistung oder mit ausgeschaltetem Laser nachgezeichnet wird. Dies
+hilft, die Positionierung zu verifizieren und kostspielige Fehler zu verhindern.
 
 ## Wann Einrahmen verwenden
 
@@ -38,26 +37,24 @@ Einige Maschinen unterstützen Niederleistungs-Einrahmen mit sichtbarem Strahl:
 3. **Rahmen-Operation ausführen**
 4. **Den Umriss beobachten**, der auf der Materialoberfläche nachgezeichnet wird
 
-:::warning Überprüfe deine Maschine
-Nicht alle Laser unterstützen sicher das Niederleistungs-Einrahmen. Konsultiere deine
-Maschinen-Dokumentation, bevor du diese Funktion verwendest.
-:::
-
+:::warning Überprüfe deine Maschine Nicht alle Laser unterstützen sicher das
+Niederleistungs-Einrahmen. Konsultiere deine Maschinen-Dokumentation, bevor du diese Funktion
+verwendest. :::
 
 ## Rahmen-Einstellungen
 
 Konfiguriere das Rahmen-Verhalten in den Laserkopf-Einstellungen deiner Maschine:
 
-- **Rahmen-Geschwindigkeit**: Wie schnell sich der Laserkopf während des Einrahmens
-  bewegt. Dies wird pro Laserkopf eingestellt, sodass du bei Maschinen mit mehreren
-  Lasern unterschiedliche Geschwindigkeiten für jeden verwenden kannst.
-- **Rahmen-Leistung**: Laserleistung während des Einrahmens (0 für aus, niedrig %
-  für sichtbare Spur)
-- **Eck-Verweilzeit**: Eine kurze Pause an jeder Ecke des Rahmen-Umrisses. Dies gibt
-  dir einen Moment, genau zu sehen, wo jede Ecke landet — besonders hilfreich bei
-  höheren Rahmen-Geschwindigkeiten.
-- **Wiederholungsanzahl**: Anzahl der Male, den Umriss nachzuzeichnen. Ein Wert größer
-  als eins kann den Rahmen-Pfad leichter visuell verfolgbar machen.
+- **Rahmen-Geschwindigkeit**: Wie schnell sich der Laserkopf während des Einrahmens bewegt. Dies
+  wird pro Laserkopf eingestellt, sodass du bei Maschinen mit mehreren Lasern unterschiedliche
+  Geschwindigkeiten für jeden verwenden kannst.
+- **Rahmen-Leistung**: Laserleistung während des Einrahmens (0 für aus, niedrig % für sichtbare
+  Spur)
+- **Eck-Verweilzeit**: Eine kurze Pause an jeder Ecke des Rahmen-Umrisses. Dies gibt dir einen
+  Moment, genau zu sehen, wo jede Ecke landet — besonders hilfreich bei höheren
+  Rahmen-Geschwindigkeiten.
+- **Wiederholungsanzahl**: Anzahl der Male, den Umriss nachzuzeichnen. Ein Wert größer als eins kann
+  den Rahmen-Pfad leichter visuell verfolgbar machen.
 
 ## Rahmen-Ergebnisse verwenden
 
@@ -72,8 +69,8 @@ Nach dem Einrahmen kannst du:
 - **Ecken markieren**: Kleine Klebebandstücke an Ecken als Referenz platzieren
 - **Spielraum überprüfen**: Sicherstellen, dass ausreichend Platz um dein Design ist
 - **Ausrichtung verifizieren**: Bestätigen, dass Material richtig orientiert ist
-- **Schnittbreite berücksichtigen**: Denke daran, dass Schnitte etwas breiter sein
-  werden als Umrisse
+- **Schnittbreite berücksichtigen**: Denke daran, dass Schnitte etwas breiter sein werden als
+  Umrisse
 
 ## Mit Kamera einrahmen
 
@@ -88,16 +85,15 @@ Siehe [Kamera-Integration](../machine/camera.md) für Details.
 
 ## Fehlerbehebung
 
-**Rahmen stimmt nicht mit Design überein**: Job-Ursprung und
-Koordinatensystem-Einstellungen überprüfen
+**Rahmen stimmt nicht mit Design überein**: Job-Ursprung und Koordinatensystem-Einstellungen
+überprüfen
 
-**Laser feuert während des Einrahmens**: Rahmen-Leistung deaktivieren oder
-Maschineneinstellungen überprüfen
+**Laser feuert während des Einrahmens**: Rahmen-Leistung deaktivieren oder Maschineneinstellungen
+überprüfen
 
 **Rahmen zu schnell zum Sehen**: Rahmen-Geschwindigkeit in Einstellungen reduzieren
 
-**Kopf erreicht Ecken nicht**: Verifiziere, dass Design innerhalb des
-Maschinen-Arbeitsbereichs ist
+**Kopf erreicht Ecken nicht**: Verifiziere, dass Design innerhalb des Maschinen-Arbeitsbereichs ist
 
 ## Sicherheitshinweise
 
@@ -108,7 +104,6 @@ Maschinen-Arbeitsbereichs ist
 
 ## Verwandte Themen
 
-- [Werkstückpositionierung](workpiece-positioning) - Umfassender
-  Positionierungsleitfaden
+- [Werkstückpositionierung](workpiece-positioning) - Umfassender Positionierungsleitfaden
 - [Kamera-Integration](../machine/camera.md)
 - [Schnellstart-Anleitung](../getting-started/quick-start.md)

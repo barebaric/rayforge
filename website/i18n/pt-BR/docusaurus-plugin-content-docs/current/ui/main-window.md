@@ -1,7 +1,7 @@
 # Janela Principal
 
-A janela principal do Rayforge é sua área de trabalho principal para criar e
-gerenciar trabalhos de laser.
+A janela principal do Rayforge é sua área de trabalho principal para criar e gerenciar trabalhos de
+laser.
 
 ## Layout da Janela
 
@@ -22,33 +22,27 @@ Acesse todas as funções do Rayforge através de menus organizados:
 
 Acesso rápido a controles frequentemente usados:
 
-- **Menu suspenso de máquina**: Selecione sua máquina, veja o status de conexão e
-  veja o tempo estimado durante os trabalhos
-- **Menu suspenso WCS**: Selecione o Sistema de Coordenadas de Trabalho ativo
-  (G53-G59)
+- **Menu suspenso de máquina**: Selecione sua máquina, veja o status de conexão e veja o tempo
+  estimado durante os trabalhos
+- **Menu suspenso WCS**: Selecione o Sistema de Coordenadas de Trabalho ativo (G53-G59)
 - **Alternar simulação**: Habilitar/desabilitar modo de simulação de trabalho
 - **Focar laser**: Alternar modo de focagem do laser
-- **Controles de trabalho**: Botões de Origem, Enquadrar, Enviar, Pausar e
-  Cancelar
+- **Controles de trabalho**: Botões de Origem, Enquadrar, Enviar, Pausar e Cancelar
 
-O menu suspenso de máquina mostra o status de conexão e o estado atual da sua
-máquina (ex: Ocioso, Executando) diretamente na barra de ferramentas. Durante a
-execução do trabalho, também exibe o tempo restante estimado.
+O menu suspenso de máquina mostra o status de conexão e o estado atual da sua máquina (ex: Ocioso,
+Executando) diretamente na barra de ferramentas. Durante a execução do trabalho, também exibe o
+tempo restante estimado.
 
-O menu suspenso WCS permite alternar rapidamente entre sistemas de coordenadas.
-Veja [Sistemas de Coordenadas de Trabalho](../general-info/coordinate-systems.md)
-para mais informação.
+O menu suspenso WCS permite alternar rapidamente entre sistemas de coordenadas. Veja
+[Sistemas de Coordenadas de Trabalho](../general-info/coordinate-systems.md) para mais informação.
 
-Botões de alternância de visibilidade foram movidos para botões de
-sobreposição na própria tela, então estão sempre à mão enquanto você
-trabalha. Na tela 2D eles alternam as imagens base das peças de trabalho,
-abas, feed de câmera (quando uma câmera está habilitada), blocos de
-material, movimentos de deslocamento e zonas de restrição. A [visualização
-3D](3d-preview) tem seus próprios botões para a imagem da peça de trabalho,
-modelo da máquina, grade, subcamada de operações, material, movimentos de
-deslocamento e zonas de restrição.
-O botão de zonas de restrição só aparece quando sua máquina tem pelo menos
-uma zona de restrição configurada.
+Botões de alternância de visibilidade foram movidos para botões de sobreposição na própria tela,
+então estão sempre à mão enquanto você trabalha. Na tela 2D eles alternam as imagens base das peças
+de trabalho, abas, feed de câmera (quando uma câmera está habilitada), blocos de material,
+movimentos de deslocamento e zonas de restrição. A [visualização 3D](3d-preview) tem seus próprios
+botões para a imagem da peça de trabalho, modelo da máquina, grade, subcamada de operações,
+material, movimentos de deslocamento e zonas de restrição. O botão de zonas de restrição só aparece
+quando sua máquina tem pelo menos uma zona de restrição configurada.
 
 ### 3. Tela
 
@@ -67,32 +61,29 @@ A área de trabalho principal onde você:
 
 ### 4. Painel Lateral
 
-O painel lateral é um overlay flutuante no lado direito da tela. Ele mostra o fluxo
-de trabalho da camada ativa como uma lista vertical de etapas. Cada etapa exibe seu
-nome, um resumo (ex: potência e velocidade), e botões para visibilidade,
-configurações e exclusão. Use o botão **+** para adicionar novas etapas. As etapas
-podem ser reordenadas arrastando e soltando.
+O painel lateral é um overlay flutuante no lado direito da tela. Ele mostra o fluxo de trabalho da
+camada ativa como uma lista vertical de etapas. Cada etapa exibe seu nome, um resumo (ex: potência e
+velocidade), e botões para visibilidade, configurações e exclusão. Use o botão **+** para adicionar
+novas etapas. As etapas podem ser reordenadas arrastando e soltando.
 
-Clicar no botão de configurações de uma etapa abre um diálogo onde você configura o
-tipo de operação, potência do laser, velocidade de corte, assistência de ar, largura
-do feixe e opções de pós-processamento. Valores dos controles deslizantes são
-editáveis — clique em um valor ao lado de um controle deslizante e digite o número
-exato que deseja.
+Clicar no botão de configurações de uma etapa abre um diálogo onde você configura o tipo de
+operação, potência do laser, velocidade de corte, assistência de ar, largura do feixe e opções de
+pós-processamento. Valores dos controles deslizantes são editáveis — clique em um valor ao lado de
+um controle deslizante e digite o número exato que deseja.
 
 O painel pode ser movido quando não é necessário.
 
 ### 5. Painel Inferior
 
-O Painel Inferior fornece abas acopláveis que podem ser reorganizadas arrastando e
-divididas em múltiplas colunas. As abas disponíveis incluem:
+O Painel Inferior fornece abas acopláveis que podem ser reorganizadas arrastando e divididas em
+múltiplas colunas. As abas disponíveis incluem:
 
-- **Camadas**: Mostra todas as camadas como colunas lado a lado. Cada coluna tem um
-  cabeçalho com o nome da camada e controles, um pipeline horizontal compacto de
-  ícones de etapas representando o fluxo de trabalho, e uma lista de peças de
-  trabalho. Camadas e peças podem ser reordenadas arrastando e soltando.
+- **Camadas**: Mostra todas as camadas como colunas lado a lado. Cada coluna tem um cabeçalho com o
+  nome da camada e controles, um pipeline horizontal compacto de ícones de etapas representando o
+  fluxo de trabalho, e uma lista de peças de trabalho. Camadas e peças podem ser reordenadas
+  arrastando e soltando.
 - **Ativos**: Lista itens de estoque e esboços no seu documento.
-- **Console**: Terminal interativo para enviar G-code e monitorar a comunicação da
-  máquina.
+- **Console**: Terminal interativo para enviar G-code e monitorar a comunicação da máquina.
 - **Visualizador G-code**: Exibe o G-code gerado com destaque de sintaxe.
 - **Controles**: Controles de jog para posicionamento manual e gerenciamento de WCS.
 

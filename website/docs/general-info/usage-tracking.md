@@ -1,14 +1,19 @@
 ---
-description: "How Rayforge handles anonymous usage tracking. Understand what data is collected and how to disable it."
+description:
+  "How Rayforge handles anonymous usage tracking. Understand what data is collected and how to
+  disable it."
 ---
 
 # Usage Tracking
 
-Rayforge includes optional anonymous usage tracking to help us understand how the application is used and prioritize future development. This page explains what we track, how it works, and your privacy.
+Rayforge includes optional anonymous usage tracking to help us understand how the application is
+used and prioritize future development. This page explains what we track, how it works, and your
+privacy.
 
 ## Opt-In Only
 
-Usage tracking is **completely optional**. When you first start Rayforge, you'll be asked whether you want to participate:
+Usage tracking is **completely optional**. When you first start Rayforge, you'll be asked whether
+you want to participate:
 
 - **Yes**: Anonymous usage data will be sent to our analytics server
 - **No**: No data is ever collected or transmitted
@@ -17,8 +22,8 @@ You can change this choice at any time in the General settings.
 
 ## What We Track
 
-When enabled, we collect only anonymous page view data - similar to website
-analytics. Here's what we can see:
+When enabled, we collect only anonymous page view data - similar to website analytics. Here's what
+we can see:
 
 | Data                 | Example                   |
 | -------------------- | ------------------------- |
@@ -28,9 +33,8 @@ analytics. Here's what we can see:
 | Time spent on page   | 6m 3s                     |
 | Session ID           | a1b2c3d4-e5f6-...         |
 
-The session ID is a random identifier generated each time you start Rayforge.
-It allows us to distinguish between different usage sessions while keeping
-tracking fully anonymous.
+The session ID is a random identifier generated each time you start Rayforge. It allows us to
+distinguish between different usage sessions while keeping tracking fully anonymous.
 
 ## What We See
 
@@ -67,7 +71,8 @@ Usage data helps us:
 
 ## How It Works
 
-Rayforge uses [Umami](https://umami.is/), an open-source, privacy-focused analytics platform. The tracking:
+Rayforge uses [Umami](https://umami.is/), an open-source, privacy-focused analytics platform. The
+tracking:
 
 - Sends small HTTP requests in the background
 - Does not affect application performance

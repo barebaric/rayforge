@@ -1,15 +1,16 @@
 # Segurança do Laser
 
-Equipamentos de corte e gravação a laser apresentam riscos de segurança sérios, incluindo incêndio, fumos tóxicos e danos permanentes aos olhos.
+Equipamentos de corte e gravação a laser apresentam riscos de segurança sérios, incluindo incêndio,
+fumos tóxicos e danos permanentes aos olhos.
 
-:::danger Aviso Crítico de Segurança
-**Sempre siga as diretrizes de segurança e instruções de operação do fabricante do seu laser.** Esta página fornece princípios gerais de segurança mas não substitui treinamento adequado e a documentação de segurança específica da sua máquina.
-:::
-
+:::danger Aviso Crítico de Segurança **Sempre siga as diretrizes de segurança e instruções de
+operação do fabricante do seu laser.** Esta página fornece princípios gerais de segurança mas não
+substitui treinamento adequado e a documentação de segurança específica da sua máquina. :::
 
 ## Seu Recurso Principal de Segurança
 
-**Leia completamente o manual do fabricante do seu laser** antes de operar qualquer equipamento a laser. Ele contém:
+**Leia completamente o manual do fabricante do seu laser** antes de operar qualquer equipamento a
+laser. Ele contém:
 
 - Requisitos de segurança específicos para sua máquina
 - Equipamento de proteção individual (EPI) necessário
@@ -17,15 +18,18 @@ Equipamentos de corte e gravação a laser apresentam riscos de segurança séri
 - Cronogramas de manutenção e inspeção
 - Informações de garantia e responsabilidade
 
-O Rayforge é software de controle - ele não pode substituir os requisitos de segurança física do seu hardware de laser.
+O Rayforge é software de controle - ele não pode substituir os requisitos de segurança física do seu
+hardware de laser.
 
 ## Princípios Essenciais de Segurança
 
 ### Nunca Deixe o Laser Sem Supervisão
 
-**Regra mais importante:** Nunca deixe um laser funcionando sem supervisão, mesmo por alguns segundos.
+**Regra mais importante:** Nunca deixe um laser funcionando sem supervisão, mesmo por alguns
+segundos.
 
-**Por que:** Lasers podem incendiar materiais instantaneamente. Uma pequena chama pode se tornar um incêndio sério em segundos.
+**Por que:** Lasers podem incendiar materiais instantaneamente. Uma pequena chama pode se tornar um
+incêndio sério em segundos.
 
 **Sempre:**
 
@@ -60,25 +64,28 @@ O Rayforge é software de controle - ele não pode substituir os requisitos de s
 - Funcionando durante todas as operações de laser
 - Substituição regular de filtros (se usando filtragem)
 
-**Nunca opere sem ventilação adequada** - você arrisca sérios efeitos à saúde e danificará a óptica do seu laser.
+**Nunca opere sem ventilação adequada** - você arrisca sérios efeitos à saúde e danificará a óptica
+do seu laser.
 
 ### Materiais Proibidos
 
 **Nunca corte ou grave estes materiais:**
 
-| Material                             | Perigo                                   |
-| ------------------------------------ | ---------------------------------------- |
-| **PVC / Vinil**                      | Produz gás cloro (tóxico, corrosivo) |
-| **Plástico ABS**                      | Produz gás cianeto (mortal)            |
+| Material                             | Perigo                                         |
+| ------------------------------------ | ---------------------------------------------- |
+| **PVC / Vinil**                      | Produz gás cloro (tóxico, corrosivo)           |
+| **Plástico ABS**                     | Produz gás cianeto (mortal)                    |
 | **Policarbonato**                    | Fumos tóxicos, resultados ruins                |
-| **Fibra de vidro**                       | Partículas de vidro danificam pulmões e óptica  |
-| **Qualquer material contendo cloro** | Tóxico e corrosivo                      |
+| **Fibra de vidro**                   | Partículas de vidro danificam pulmões e óptica |
+| **Qualquer material contendo cloro** | Tóxico e corrosivo                             |
 
-**Na dúvida:** Verifique a ficha de informações de segurança do material (FISPQ/MSDS) ou teste uma pequena amostra com excelente ventilação.
+**Na dúvida:** Verifique a ficha de informações de segurança do material (FISPQ/MSDS) ou teste uma
+pequena amostra com excelente ventilação.
 
 ### Proteção Ocular
 
-A maioria dos sistemas de laser fechados não requer óculos durante operação normal **se o gabinete está fechado e tem travas de segurança adequadas.**
+A maioria dos sistemas de laser fechados não requer óculos durante operação normal **se o gabinete
+está fechado e tem travas de segurança adequadas.**
 
 **Proteção ocular necessária quando:**
 
@@ -87,14 +94,17 @@ A maioria dos sistemas de laser fechados não requer óculos durante operação 
 - Máquina tem janela de visualização sem filtragem segura para laser
 - Fabricante especifica
 
-**Sempre verifique os requisitos do seu fabricante** - eles variam por design da máquina e tipo de laser.
+**Sempre verifique os requisitos do seu fabricante** - eles variam por design da máquina e tipo de
+laser.
 
 ## Recursos de Segurança do Rayforge
 
 O Rayforge fornece ferramentas para ajudar a operar com segurança:
 
-- **[Visualização 3D](../ui/3d-preview.md)** - Pré-visualize trabalhos antes de executar para identificar problemas
-- **[Grade de Teste de Material](../features/operations/material-test-grid.md)** - Encontre configurações seguras para novos materiais
+- **[Visualização 3D](../ui/3d-preview.md)** - Pré-visualize trabalhos antes de executar para
+  identificar problemas
+- **[Grade de Teste de Material](../features/operations/material-test-grid.md)** - Encontre
+  configurações seguras para novos materiais
 - **Enquadrar Trabalho** - Verifique posicionamento antes de cortar
 
 **Estes recursos ajudam a prevenir erros mas não substituem práticas operacionais seguras.**
@@ -123,7 +133,8 @@ Antes de cada trabalho:
 - Material deslocando perigosamente
 - Qualquer situação de emergência
 
-**Como:** Pressione botão vermelho de parada de emergência na máquina. Todo movimento e potência do laser param imediatamente.
+**Como:** Pressione botão vermelho de parada de emergência na máquina. Todo movimento e potência do
+laser param imediatamente.
 
 ### Resposta a Incêndio
 
@@ -173,15 +184,14 @@ Antes de cada trabalho:
 ## Regras Chave de Segurança
 
 :::warning Regras Críticas de Segurança
+
 1. **Nunca deixe laser sem supervisão durante operação**
 2. **Nunca opere sem ventilação adequada**
 3. **Nunca corte materiais proibidos (PVC, vinil, ABS, etc.)**
 4. **Sempre tenha extintor de incêndio ao alcance**
 5. **Sempre siga as diretrizes de segurança do fabricante**
 6. **Saiba onde está a parada de emergência**
-7. **Pré-visualize trabalhos no Modo Simulação antes de executar**
-:::
-
+7. **Pré-visualize trabalhos no Modo Simulação antes de executar** :::
 
 ## Recursos Adicionais
 
@@ -209,9 +219,12 @@ Antes de cada trabalho:
 ## Páginas Relacionadas
 
 - **[Visualização 3D](../ui/3d-preview.md)** - Pré-visualize trabalhos com segurança
-- **[Grade de Teste de Material](../features/operations/material-test-grid.md)** - Encontre configurações seguras
+- **[Grade de Teste de Material](../features/operations/material-test-grid.md)** - Encontre
+  configurações seguras
 - **[Básico de G-code](gcode-basics)** - Entendendo comandos de controle do laser
 
 ---
 
-**Lembre-se:** Operação segura de laser requer vigilância constante, equipamento adequado e adesão estrita a procedimentos de segurança. Na dúvida, consulte a documentação do seu fabricante e erre pelo lado da cautela.
+**Lembre-se:** Operação segura de laser requer vigilância constante, equipamento adequado e adesão
+estrita a procedimentos de segurança. Na dúvida, consulte a documentação do seu fabricante e erre
+pelo lado da cautela.

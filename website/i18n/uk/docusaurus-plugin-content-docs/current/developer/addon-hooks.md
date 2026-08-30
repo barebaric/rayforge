@@ -1,10 +1,13 @@
 # Хуки аддонів
 
-Хуки — це точки з'єднання між вашим аддоном та Rayforge. Коли в додатку щось відбувається — створюється крок, відкривається діалог або ініціалізується вікно — Rayforge викликає всі зареєстровані хуки, щоб ваш аддон міг відреагувати.
+Хуки — це точки з'єднання між вашим аддоном та Rayforge. Коли в додатку щось відбувається —
+створюється крок, відкривається діалог або ініціалізується вікно — Rayforge викликає всі
+зареєстровані хуки, щоб ваш аддон міг відреагувати.
 
 ## Як працюють хуки
 
-Rayforge використовує [pluggy](https://pluggy.readthedocs.io/) для своєї системи хуків. Щоб реалізувати хук, декоруйте функцію за допомогою `@pluggy.HookimplMarker("rayforge")`:
+Rayforge використовує [pluggy](https://pluggy.readthedocs.io/) для своєї системи хуків. Щоб
+реалізувати хук, декоруйте функцію за допомогою `@pluggy.HookimplMarker("rayforge")`:
 
 ```python
 import pluggy
@@ -25,9 +28,12 @@ def rayforge_init(context):
 
 ### `rayforge_init(context)`
 
-Це ваша головна точка входу. Rayforge викликає цей хук після повної ініціалізації контексту додатку, що означає, що всі менеджери, конфігурації та обладнання готові. Використовуйте це для загального налаштування, логування або впровадження UI-елементів.
+Це ваша головна точка входу. Rayforge викликає цей хук після повної ініціалізації контексту додатку,
+що означає, що всі менеджери, конфігурації та обладнання готові. Використовуйте це для загального
+налаштування, логування або впровадження UI-елементів.
 
-Параметр `context` — це екземпляр `RayforgeContext`, який дає вам доступ до всього в Rayforge. Дивіться [Доступ до даних Rayforge](./addon-overview.md#доступ-до-даних-rayforge) для деталей.
+Параметр `context` — це екземпляр `RayforgeContext`, який дає вам доступ до всього в Rayforge.
+Дивіться [Доступ до даних Rayforge](./addon-overview.md#доступ-до-даних-rayforge) для деталей.
 
 ```python
 @hookimpl
@@ -40,7 +46,8 @@ def rayforge_init(context):
 
 ### `on_unload()`
 
-Rayforge викликає це, коли ваш аддон відключається або вивантажується. Використовуйте це для очищення ресурсів, закриття з'єднань або скасування реєстрації обробників.
+Rayforge викликає це, коли ваш аддон відключається або вивантажується. Використовуйте це для
+очищення ресурсів, закриття з'єднань або скасування реєстрації обробників.
 
 ```python
 @hookimpl
@@ -51,7 +58,8 @@ def on_unload():
 
 ### `main_window_ready(main_window)`
 
-Цей хук спрацьовує, коли головне вікно повністю ініціалізоване. Він корисний для реєстрації UI-сторінок, команд або інших компонентів, які потребують, щоб головне вікно вже існувало.
+Цей хук спрацьовує, коли головне вікно повністю ініціалізоване. Він корисний для реєстрації
+UI-сторінок, команд або інших компонентів, які потребують, щоб головне вікно вже існувало.
 
 Параметр `main_window` — це екземпляр `MainWindow`.
 
@@ -69,7 +77,8 @@ def main_window_ready(main_window):
 
 ### `register_machines(machine_manager)`
 
-Використовуйте це для реєстрації нових драйверів пристроїв. `machine_manager` — це екземпляр `MachineManager`, який керує всіма конфігураціями пристроїв.
+Використовуйте це для реєстрації нових драйверів пристроїв. `machine_manager` — це екземпляр
+`MachineManager`, який керує всіма конфігураціями пристроїв.
 
 ```python
 @hookimpl
@@ -80,7 +89,8 @@ def register_machines(machine_manager):
 
 ### `register_steps(step_registry)`
 
-Реєструє власні типи кроків, які з'являються в панелі операцій. `step_registry` — це екземпляр `StepRegistry`.
+Реєструє власні типи кроків, які з'являються в панелі операцій. `step_registry` — це екземпляр
+`StepRegistry`.
 
 ```python
 @hookimpl
@@ -91,7 +101,8 @@ def register_steps(step_registry):
 
 ### `register_producers(producer_registry)`
 
-Реєструє власних продюсерів операцій, які генерують траєкторії інструменту. `producer_registry` — це екземпляр `ProducerRegistry`.
+Реєструє власних продюсерів операцій, які генерують траєкторії інструменту. `producer_registry` — це
+екземпляр `ProducerRegistry`.
 
 ```python
 @hookimpl
@@ -102,7 +113,8 @@ def register_producers(producer_registry):
 
 ### `register_transformers(transformer_registry)`
 
-Реєструє власні трансформери операцій для постобробки. Трансформери модифікують операції після того, як продюсери їх згенерували. `transformer_registry` — це екземпляр `TransformerRegistry`.
+Реєструє власні трансформери операцій для постобробки. Трансформери модифікують операції після того,
+як продюсери їх згенерували. `transformer_registry` — це екземпляр `TransformerRegistry`.
 
 ```python
 @hookimpl
@@ -113,7 +125,8 @@ def register_transformers(transformer_registry):
 
 ### `register_commands(command_registry)`
 
-Реєструє команди редактора, які розширюють функціональність редактора документів. `command_registry` — це екземпляр `CommandRegistry`.
+Реєструє команди редактора, які розширюють функціональність редактора документів. `command_registry`
+— це екземпляр `CommandRegistry`.
 
 ```python
 @hookimpl
@@ -124,7 +137,9 @@ def register_commands(command_registry):
 
 ### `register_actions(action_registry)`
 
-Реєструє дії вікна з опціональним розміщенням у меню та панелі інструментів. Дії — це спосіб додавання кнопок, пунктів меню та клавіатурних скорочень. `action_registry` — це екземпляр `ActionRegistry`.
+Реєструє дії вікна з опціональним розміщенням у меню та панелі інструментів. Дії — це спосіб
+додавання кнопок, пунктів меню та клавіатурних скорочень. `action_registry` — це екземпляр
+`ActionRegistry`.
 
 ```python
 from gi.repository import Gio
@@ -134,7 +149,7 @@ from rayforge.ui_gtk.action_registry import MenuPlacement, ToolbarPlacement
 def register_actions(action_registry):
     action = Gio.SimpleAction.new("my-action", None)
     action.connect("activate", on_my_action_activated)
-    
+
     action_registry.register(
         action_name="my-action",
         action=action,
@@ -149,7 +164,9 @@ def register_actions(action_registry):
 
 ### `register_layout_strategies(layout_registry)`
 
-Реєструє власні стратегії компонування для розміщення контенту в документі. `layout_registry` — це екземпляр `LayoutStrategyRegistry`. Зауважте, що UI-метадані, такі як мітки та скорочення, мають реєструватися через `register_actions`, а не тут.
+Реєструє власні стратегії компонування для розміщення контенту в документі. `layout_registry` — це
+екземпляр `LayoutStrategyRegistry`. Зауважте, що UI-метадані, такі як мітки та скорочення, мають
+реєструватися через `register_actions`, а не тут.
 
 ```python
 @hookimpl
@@ -160,7 +177,8 @@ def register_layout_strategies(layout_registry):
 
 ### `register_asset_types(asset_type_registry)`
 
-Реєструє власні типи ресурсів, які можуть зберігатися в документах. Це забезпечує динамічну десеріалізацію ресурсів, наданих аддонами. `asset_type_registry` — це екземпляр `AssetTypeRegistry`.
+Реєструє власні типи ресурсів, які можуть зберігатися в документах. Це забезпечує динамічну
+десеріалізацію ресурсів, наданих аддонами. `asset_type_registry` — це екземпляр `AssetTypeRegistry`.
 
 ```python
 @hookimpl
@@ -171,7 +189,8 @@ def register_asset_types(asset_type_registry):
 
 ### `register_renderers(renderer_registry)`
 
-Реєструє власні рендерери для відображення ваших типів ресурсів в UI. `renderer_registry` — це екземпляр `RendererRegistry`.
+Реєструє власні рендерери для відображення ваших типів ресурсів в UI. `renderer_registry` — це
+екземпляр `RendererRegistry`.
 
 ```python
 @hookimpl
@@ -182,7 +201,8 @@ def register_renderers(renderer_registry):
 
 ### `register_exporters(exporter_registry)`
 
-Реєструє експортери файлів для власних форматів експорту. `exporter_registry` — це екземпляр `ExporterRegistry`.
+Реєструє експортери файлів для власних форматів експорту. `exporter_registry` — це екземпляр
+`ExporterRegistry`.
 
 ```python
 @hookimpl
@@ -193,7 +213,8 @@ def register_exporters(exporter_registry):
 
 ### `register_importers(importer_registry)`
 
-Реєструє імпортери файлів для власних форматів імпорту. `importer_registry` — це екземпляр `ImporterRegistry`.
+Реєструє імпортери файлів для власних форматів імпорту. `importer_registry` — це екземпляр
+`ImporterRegistry`.
 
 ```python
 @hookimpl
@@ -204,7 +225,9 @@ def register_importers(importer_registry):
 
 ### `register_material_libraries(library_manager)`
 
-Реєструє додаткові бібліотеки матеріалів. Викличте `library_manager.add_library_from_path(path)`, щоб зареєструвати директорії, що містять YAML-файли матеріалів. За замовчуванням зареєстровані бібліотеки доступні лише для читання.
+Реєструє додаткові бібліотеки матеріалів. Викличте `library_manager.add_library_from_path(path)`,
+щоб зареєструвати директорії, що містять YAML-файли матеріалів. За замовчуванням зареєстровані
+бібліотеки доступні лише для читання.
 
 ```python
 @hookimpl
@@ -220,9 +243,11 @@ def register_material_libraries(library_manager):
 
 ### `step_settings_loaded(dialog, step, producer)`
 
-Rayforge викликає це, коли діалог налаштувань кроку заповнюється. Ви можете додати власні віджети до діалогу на основі типу продюсера кроку.
+Rayforge викликає це, коли діалог налаштувань кроку заповнюється. Ви можете додати власні віджети до
+діалогу на основі типу продюсера кроку.
 
-`dialog` — це екземпляр `GeneralStepSettingsView`. `step` — це `Step`, що налаштовується. `producer` — це екземпляр `OpsProducer` або `None`, якщо недоступний.
+`dialog` — це екземпляр `GeneralStepSettingsView`. `step` — це `Step`, що налаштовується. `producer`
+— це екземпляр `OpsProducer` або `None`, якщо недоступний.
 
 ```python
 @hookimpl
@@ -235,9 +260,11 @@ def step_settings_loaded(dialog, step, producer):
 
 ### `transformer_settings_loaded(dialog, step, transformer)`
 
-Викликається при заповненні налаштувань постобробки. Додавайте власні віджети для ваших трансформерів тут.
+Викликається при заповненні налаштувань постобробки. Додавайте власні віджети для ваших
+трансформерів тут.
 
-`dialog` — це екземпляр `PostProcessingSettingsView`. `step` — це `Step`, що налаштовується. `transformer` — це екземпляр `OpsTransformer`.
+`dialog` — це екземпляр `PostProcessingSettingsView`. `step` — це `Step`, що налаштовується.
+`transformer` — це екземпляр `OpsTransformer`.
 
 ```python
 @hookimpl
@@ -249,11 +276,14 @@ def transformer_settings_loaded(dialog, step, transformer):
 
 ## Історія версій API
 
-Хуки версіонуються для підтримки зворотної сумісності. Коли додаються нові хуки або змінюються існуючі, версія API збільшується. Поле `api_version` вашого аддону має бути не менше мінімальної підтримуваної версії.
+Хуки версіонуються для підтримки зворотної сумісності. Коли додаються нові хуки або змінюються
+існуючі, версія API збільшується. Поле `api_version` вашого аддону має бути не менше мінімальної
+підтримуваної версії.
 
 Поточна версія API — 9. Ось що змінилося в останніх версіях:
 
-**Версія 9** додала `main_window_ready`, `register_exporters`, `register_importers` та `register_renderers`.
+**Версія 9** додала `main_window_ready`, `register_exporters`, `register_importers` та
+`register_renderers`.
 
 **Версія 8** додала `register_asset_types` для власних типів ресурсів.
 
@@ -261,10 +291,12 @@ def transformer_settings_loaded(dialog, step, transformer):
 
 **Версія 6** додала `register_transformers`.
 
-**Версія 5** замінила `register_step_widgets` на `step_settings_loaded` та `transformer_settings_loaded`.
+**Версія 5** замінила `register_step_widgets` на `step_settings_loaded` та
+`transformer_settings_loaded`.
 
 **Версія 4** видалила `register_menu_items` та консолідувала реєстрацію дій у `register_actions`.
 
 **Версія 2** додала `register_layout_strategies`.
 
-**Версія 1** була початковим релізом з базовими хуками для життєвого циклу аддону, реєстрації ресурсів та UI-інтеграції.
+**Версія 1** була початковим релізом з базовими хуками для життєвого циклу аддону, реєстрації
+ресурсів та UI-інтеграції.

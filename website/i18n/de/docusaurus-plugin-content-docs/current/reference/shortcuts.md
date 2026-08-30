@@ -6,8 +6,7 @@ Vollständige Referenz der Tastaturkürzel in Rayforge.
 
 - **Linux/Windows:** `Strg`-Taste
 - **macOS:** `⌘ (Befehl)`-Taste
-- Dokumentation verwendet `Strg` – macOS-Benutzer ersetzen durch `⌘`
-  :::
+- Dokumentation verwendet `Strg` – macOS-Benutzer ersetzen durch `⌘` :::
 
 ---
 
@@ -84,9 +83,9 @@ Vollständige Referenz der Tastaturkürzel in Rayforge.
 ## Halterungen (Tabs)
 
 | Kürzel       | Aktion                               | Beschreibung                                 |
-| ------------- | ------------------------------------ | -------------------------------------------- |
+| ------------ | ------------------------------------ | -------------------------------------------- |
 | `Strg+Alt+T` | Halterungen hinzufügen (äquidistant) | Gleichmäßig verteilte Halterungen hinzufügen |
-| `T`           | Halterungssichtbarkeit umschalten    | Halterungen-Overlay ein/ausblenden           |
+| `T`          | Halterungssichtbarkeit umschalten    | Halterungen-Overlay ein/ausblenden           |
 
 ---
 
@@ -112,8 +111,8 @@ Vollständige Referenz der Tastaturkürzel in Rayforge.
 
 ### Layout
 
-| Kürzel      | Aktion     | Beschreibung             |
-| ----------- | ---------- | ------------------------ |
+| Kürzel       | Aktion     | Beschreibung             |
+| ------------ | ---------- | ------------------------ |
 | `Strg+Alt+A` | Pixelgenau | Am Pixelraster einrasten |
 
 ---
@@ -135,9 +134,9 @@ Vollständige Referenz der Tastaturkürzel in Rayforge.
 | `Strg+<` | Maschineneinstellungen | Maschineneinstellungsdialog öffnen    |
 | `F1`     | Über                   | Über-Dialog anzeigen                  |
 
-:::note Maschinenoperationen
-Maschinensteuerungsoperationen (Referenzieren, Einrahmen, Senden usw.) haben derzeit keine Standardkürzel, können aber über Symbolleisten-Buttons oder Menüs aufgerufen werden.
-:::
+:::note Maschinenoperationen Maschinensteuerungsoperationen (Referenzieren, Einrahmen, Senden usw.)
+haben derzeit keine Standardkürzel, können aber über Symbolleisten-Buttons oder Menüs aufgerufen
+werden. :::
 
 ---
 
@@ -225,9 +224,8 @@ Beim Bearbeiten von G-Code oder Textfeldern:
 
 ## Tastaturkürzel anpassen
 
-:::note Benutzerdefinierte Kürzel
-Tastaturkürzel sind derzeit fest codiert. Eine Konfiguration benutzerdefinierter Kürzel könnte in zukünftigen Versionen hinzugefügt werden.
-:::
+:::note Benutzerdefinierte Kürzel Tastaturkürzel sind derzeit fest codiert. Eine Konfiguration
+benutzerdefinierter Kürzel könnte in zukünftigen Versionen hinzugefügt werden. :::
 
 **Aktuelle Einschränkungen:**
 
@@ -276,7 +274,8 @@ Tastaturkürzel sind derzeit fest codiert. Eine Konfiguration benutzerdefinierte
 Einige weniger bekannte Kürzel:
 
 - `Strg+,` - Schneller Zugriff auf Einstellungen (Standard auf macOS, funktioniert auch hier)
-- `Strg+Umschalt+Z` - Alternative für Wiederholen (für Benutzer, die dies gegenüber Strg+Y bevorzugen)
+- `Strg+Umschalt+Z` - Alternative für Wiederholen (für Benutzer, die dies gegenüber Strg+Y
+  bevorzugen)
 - `Strg+Alt+A` - Pixelgenaues Einrasten für präzise Platzierung
 - `Strg+Alt+T` - Schnelle äquidistante Halterungsplatzierung
 
@@ -311,7 +310,8 @@ Einige weniger bekannte Kürzel:
 
 **Häufige Probleme:**
 
-1. **Fokus auf falschem Element** – Stelle sicher, dass Canvas oder Hauptfenster den Fokus hat, nicht ein Textfeld
+1. **Fokus auf falschem Element** – Stelle sicher, dass Canvas oder Hauptfenster den Fokus hat,
+   nicht ein Textfeld
 2. **Kollision mit anderer Anwendung** – Eine andere App fängt das Kürzel möglicherweise ab
 3. **Desktop-Umgebungs-Kürzel** – Systemkürzel könnten Vorrang haben (z.B. Alt+F4)
 4. **Numpad vs. Zahlenreihe** – Verwende die Zahlenreihe für 3D-Ansicht-Kürzel, nicht das Numpad
@@ -362,7 +362,7 @@ Einige weniger bekannte Kürzel:
 |                    | T               | Halterungen            |
 |                    | Strg+Alt+C      | Kamera                 |
 |                    | F12             | 3D-Ansicht             |
-|                    | 1/2/3/4/5/7    | Ansicht-Presets        |
+|                    | 1/2/3/4/5/7     | Ansicht-Presets        |
 |                    | P               | Perspektive            |
 | **Ausrichten**     | Umschalt+←      | Links ausrichten       |
 |                    | Umschalt+→      | Rechts ausrichten      |
@@ -386,4 +386,3 @@ Einige weniger bekannte Kürzel:
 - [Hauptfenster](../ui/main-window.md) - UI-Übersicht
 - [Canvas-Werkzeuge](../ui/canvas-tools.md) - Canvas-Interaktion
 - [3D-Vorschau](../ui/3d-preview.md) - 3D-Ansicht-Steuerung
-

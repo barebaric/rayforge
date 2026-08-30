@@ -1,8 +1,8 @@
 # Arquitetura do Importador
 
-Este documento descreve a arquitetura do sistema de importação de arquivos do Rayforge,
-que lida com a conversão de vários formatos de arquivo (SVG, DXF, PNG, PDF, etc.) em
-o modelo de documento do Rayforge.
+Este documento descreve a arquitetura do sistema de importação de arquivos do Rayforge, que lida com
+a conversão de vários formatos de arquivo (SVG, DXF, PNG, PDF, etc.) em o modelo de documento do
+Rayforge.
 
 ## Índice
 
@@ -17,9 +17,9 @@ o modelo de documento do Rayforge.
 
 ## Visão Geral
 
-O sistema de importação é construído em torno de um pipeline de quatro fases que transforma dados
-de arquivo brutos em objetos de documento totalmente posicionados. Cada fase tem uma
-responsabilidade específica e produz estruturas de dados bem definidas.
+O sistema de importação é construído em torno de um pipeline de quatro fases que transforma dados de
+arquivo brutos em objetos de documento totalmente posicionados. Cada fase tem uma responsabilidade
+específica e produz estruturas de dados bem definidas.
 
 ```mermaid
 flowchart TD
@@ -52,8 +52,8 @@ flowchart TD
 
 **Método:** `Importer.parse()`
 
-Extrai fatos geométricos do arquivo incluindo limites, detalhes do sistema de
-coordenadas e informações de camadas.
+Extrai fatos geométricos do arquivo incluindo limites, detalhes do sistema de coordenadas e
+informações de camadas.
 
 **Saída:** `ParsingResult`
 
@@ -76,8 +76,7 @@ coordenadas e informações de camadas.
 
 **Método:** `Importer.vectorize()`
 
-Converte dados analisados em objetos `Geometry` vetoriais de acordo com a
-`VectorizationSpec`.
+Converte dados analisados em objetos `Geometry` vetoriais de acordo com a `VectorizationSpec`.
 
 **Saída:** `VectorizationResult`
 
@@ -93,8 +92,8 @@ Converte dados analisados em objetos `Geometry` vetoriais de acordo com a
 
 **Classe:** `NormalizationEngine`
 
-Calcula matrizes de transformação para mapear Coordenadas Nativas para Coordenadas
-Mundiais com base na intenção do usuário.
+Calcula matrizes de transformação para mapear Coordenadas Nativas para Coordenadas Mundiais com base
+na intenção do usuário.
 
 **Saída:** `List[LayoutItem]`
 
@@ -116,8 +115,7 @@ Cada `LayoutItem` contém:
 
 **Classe:** `ItemAssembler`
 
-Instancia objetos de domínio do Rayforge (`WorkPiece`, `Layer`) com base no
-plano de layout.
+Instancia objetos de domínio do Rayforge (`WorkPiece`, `Layer`) com base no plano de layout.
 
 **Saída:** `ImportPayload`
 
@@ -133,9 +131,9 @@ plano de layout.
 
 **Método:** `Importer.scan()`
 
-Um scan leve que extrai metadados sem processamento completo. Usado para
-construir a UI para um importador, incluindo lista de seleção de camadas.
-Isso NÃO é parte do pipeline principal de importação executado por `get_doc_items()`.
+Um scan leve que extrai metadados sem processamento completo. Usado para construir a UI para um
+importador, incluindo lista de seleção de camadas. Isso NÃO é parte do pipeline principal de
+importação executado por `get_doc_items()`.
 
 **Saída:** `ImportManifest`
 
@@ -186,9 +184,8 @@ cuidadosa:
 
 ### Importer (Classe Base)
 
-Classe base abstrata definindo a interface para todos os importadores. Subclasses devem
-implementar os métodos do pipeline e declarar suas capacidades via atributo
-`features`.
+Classe base abstrata definindo a interface para todos os importadores. Subclasses devem implementar
+os métodos do pipeline e declarar suas capacidades via atributo `features`.
 
 **Recursos:**
 
@@ -199,16 +196,16 @@ implementar os métodos do pipeline e declarar suas capacidades via atributo
 
 ### Estruturas de Dados
 
-| Classe                 | Fase     | Propósito                    |
-| --------------------- | --------- | -------------------------- |
-| `LayerInfo`           | Scan      | Metadados de camada leves |
-| `ImportManifest`      | Scan      | Resultado da fase de scan          |
-| `LayerGeometry`       | Parse     | Informação de camada geométrica       |
-| `ParsingResult`       | Parse     | Fatos geométricos            |
-| `VectorizationResult` | Vectorize | Geometria vetorial            |
-| `LayoutItem`          | Layout    | Configuração de transformação      |
-| `ImportPayload`       | Assemble  | Saída final               |
-| `ImportResult`        | Final     | Wrapper de resultado completo    |
+| Classe                | Fase      | Propósito                       |
+| --------------------- | --------- | ------------------------------- |
+| `LayerInfo`           | Scan      | Metadados de camada leves       |
+| `ImportManifest`      | Scan      | Resultado da fase de scan       |
+| `LayerGeometry`       | Parse     | Informação de camada geométrica |
+| `ParsingResult`       | Parse     | Fatos geométricos               |
+| `VectorizationResult` | Vectorize | Geometria vetorial              |
+| `LayoutItem`          | Layout    | Configuração de transformação   |
+| `ImportPayload`       | Assemble  | Saída final                     |
+| `ImportResult`        | Final     | Wrapper de resultado completo   |
 
 ### Componentes de Suporte
 

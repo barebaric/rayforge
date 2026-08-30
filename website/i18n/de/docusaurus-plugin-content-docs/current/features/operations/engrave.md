@@ -1,6 +1,8 @@
 # Gravur
 
-Gravur-Operationen füllen Bereiche mit Raster-Scan-Linien und unterstützen mehrere Modi für verschiedene Gravureffekte. Von glatten Graustufen-Fotos bis hin zu 3D-Relief-Effekten - wähle den Modus, der am besten zu deinem Design und Material passt.
+Gravur-Operationen füllen Bereiche mit Raster-Scan-Linien und unterstützen mehrere Modi für
+verschiedene Gravureffekte. Von glatten Graustufen-Fotos bis hin zu 3D-Relief-Effekten - wähle den
+Modus, der am besten zu deinem Design und Material passt.
 
 ## Übersicht
 
@@ -16,7 +18,8 @@ Gravur-Operationen:
 
 ### Variabler-Leistungs-Modus
 
-Der Variabler-Leistungs-Modus variiert die Laserleistung kontinuierlich basierend auf der Bildhelligkeit und erzeugt sanfte Graustufen-Gravur mit allmählichen Übergängen.
+Der Variabler-Leistungs-Modus variiert die Laserleistung kontinuierlich basierend auf der
+Bildhelligkeit und erzeugt sanfte Graustufen-Gravur mit allmählichen Übergängen.
 
 **Am besten für:**
 
@@ -34,7 +37,8 @@ Der Variabler-Leistungs-Modus variiert die Laserleistung kontinuierlich basieren
 
 ### Konstante-Leistungs-Modus
 
-Der Konstante-Leistungs-Modus graviert bei voller Leistung, wobei ein Schwellenwert bestimmt, welche Pixel graviert werden. Dies erzeugt saubere Schwarz/Weiß-Ergebnisse.
+Der Konstante-Leistungs-Modus graviert bei voller Leistung, wobei ein Schwellenwert bestimmt, welche
+Pixel graviert werden. Dies erzeugt saubere Schwarz/Weiß-Ergebnisse.
 
 **Am besten für:**
 
@@ -52,7 +56,9 @@ Der Konstante-Leistungs-Modus graviert bei voller Leistung, wobei ein Schwellenw
 
 ### Dither-Modus
 
-Der Dither-Modus konvertiert Graustufenbilder in binäre Muster unter Verwendung von Dithering-Algorithmen und ermöglicht hochwertige Fotogravur mit besserer Tonwiedergabe als einfache schwellenwertbasierte Methoden.
+Der Dither-Modus konvertiert Graustufenbilder in binäre Muster unter Verwendung von
+Dithering-Algorithmen und ermöglicht hochwertige Fotogravur mit besserer Tonwiedergabe als einfache
+schwellenwertbasierte Methoden.
 
 **Am besten für:**
 
@@ -70,7 +76,8 @@ Der Dither-Modus konvertiert Graustufenbilder in binäre Muster unter Verwendung
 
 ### Mehrfach-Tiefen-Modus
 
-Der Mehrfach-Tiefen-Modus erzeugt 3D-Relief-Effekte durch Variation der Laserleistung basierend auf der Bildhelligkeit, mit mehreren Durchgängen für tieferes Schnitzen.
+Der Mehrfach-Tiefen-Modus erzeugt 3D-Relief-Effekte durch Variation der Laserleistung basierend auf
+der Bildhelligkeit, mit mehreren Durchgängen für tieferes Schnitzen.
 
 **Am besten für:**
 
@@ -136,11 +143,14 @@ Wähle den Gravurmodus, der am besten zu deinen Bedürfnissen passt:
 
 ## Gravur-Einstellungen
 
-Die Gruppen **Gravur** und **Leistung** auf der Registerkarte *Schritt-Einstellungen* steuern das Scan-Muster, den Modus und die Leistungsmodulation in Zeilenreihenfolge. Laserleistung und -geschwindigkeit befinden sich auf der Seite **Laser** (siehe unten).
+Die Gruppen **Gravur** und **Leistung** auf der Registerkarte _Schritt-Einstellungen_ steuern das
+Scan-Muster, den Modus und die Leistungsmodulation in Zeilenreihenfolge. Laserleistung und
+-geschwindigkeit befinden sich auf der Seite **Laser** (siehe unten).
 
 ### Modus
 
-Die Zeile **Modus** wählt einen der vier Gravurmodi aus. Jeder Modus zeigt unterschiedliche Einstellungen, die unten beschrieben werden.
+Die Zeile **Modus** wählt einen der vier Gravurmodi aus. Jeder Modus zeigt unterschiedliche
+Einstellungen, die unten beschrieben werden.
 
 ### Modus-spezifische Einstellungen
 
@@ -162,10 +172,10 @@ Die Zeile **Modus** wählt einen der vier Gravurmodi aus. Jeder Modus zeigt unte
 
 **Leistungsbereich-Beispiele:**
 
-| Min | Max | Effekt                    |
-| --- | --- | ------------------------- |
-| 0%  | 40% | Subtiles, leichtes Relief |
-| 10% | 60% | Mittlere Tiefe, sicher    |
+| Min | Max | Effekt                      |
+| --- | --- | --------------------------- |
+| 0%  | 40% | Subtiles, leichtes Relief   |
+| 10% | 60% | Mittlere Tiefe, sicher      |
 | 20% | 80% | Tiefes, dramatisches Relief |
 
 **Invertieren:**
@@ -173,14 +183,20 @@ Die Zeile **Modus** wählt einen der vier Gravurmodi aus. Jeder Modus zeigt unte
 - **Aus** (Standard): Weiß = flach, Schwarz = tief
 - **Ein**: Weiß = tief, Schwarz = flach
 
-Invertieren für Lithophanen verwenden (helle Bereiche sollten dünn sein) oder Prägen (erhabene Bereiche).
+Invertieren für Lithophanen verwenden (helle Bereiche sollten dünn sein) oder Prägen (erhabene
+Bereiche).
 
 **Helligkeitsbereich:**
 
-Steuert, wie Bildhelligkeitswerte auf Laserleistung abgebildet werden. Das Histogramm zeigt die Verteilung der Helligkeitswerte in deinem Bild.
+Steuert, wie Bildhelligkeitswerte auf Laserleistung abgebildet werden. Das Histogramm zeigt die
+Verteilung der Helligkeitswerte in deinem Bild.
 
-- **Auto-Levels** (Standard): Passt die Schwarz- und Weißpunkte automatisch basierend auf dem Bildinhalt an. Werte unterhalb des Schwarzpunkts werden als Schwarz behandelt, Werte oberhalb des Weißpunkts als Weiß. Dies streckt den Kontrast des Bildes, um den vollen Leistungsbereich zu nutzen.
-- **Manueller Modus**: Auto-Levels deaktivieren, um Schwarz- und Weißpunkte manuell durch Ziehen der Markierungen auf dem Histogramm einzustellen.
+- **Auto-Levels** (Standard): Passt die Schwarz- und Weißpunkte automatisch basierend auf dem
+  Bildinhalt an. Werte unterhalb des Schwarzpunkts werden als Schwarz behandelt, Werte oberhalb des
+  Weißpunkts als Weiß. Dies streckt den Kontrast des Bildes, um den vollen Leistungsbereich zu
+  nutzen.
+- **Manueller Modus**: Auto-Levels deaktivieren, um Schwarz- und Weißpunkte manuell durch Ziehen der
+  Markierungen auf dem Histogramm einzustellen.
 
 Dies ist besonders nützlich für:
 
@@ -211,16 +227,19 @@ Dies ist besonders nützlich für:
 
 Wähle den Algorithmus, der am besten zu deinem Bild und Material passt:
 
-| Algorithmus        | Qualität | Geschwindigkeit | Am besten für                         |
-| ------------------ | -------- | --------------- | ------------------------------------ |
-| Floyd-Steinberg    | Höchste  | Langsamste      | Fotos, Porträts, sanfte Verläufe     |
-| Bayer 2x2          | Niedrig  | Schnellste      | Grober Halbton-Effekt                |
-| Bayer 4x4          | Mittel   | Schnell         | Ausgewogener Halbton                 |
-| Bayer 8x8          | Hoch     | Mittel          | Feine Details, subtile Muster        |
+| Algorithmus     | Qualität | Geschwindigkeit | Am besten für                    |
+| --------------- | -------- | --------------- | -------------------------------- |
+| Floyd-Steinberg | Höchste  | Langsamste      | Fotos, Porträts, sanfte Verläufe |
+| Bayer 2x2       | Niedrig  | Schnellste      | Grober Halbton-Effekt            |
+| Bayer 4x4       | Mittel   | Schnell         | Ausgewogener Halbton             |
+| Bayer 8x8       | Hoch     | Mittel          | Feine Details, subtile Muster    |
 
-**Floyd-Steinberg** ist Standard und empfohlen für die meisten Fotogravuren. Es verwendet Fehler-Diffusion, um Quantisierungsfehler auf benachbarte Pixel zu verteilen, was natürlich aussehende Ergebnisse erzeugt.
+**Floyd-Steinberg** ist Standard und empfohlen für die meisten Fotogravuren. Es verwendet
+Fehler-Diffusion, um Quantisierungsfehler auf benachbarte Pixel zu verteilen, was natürlich
+aussehende Ergebnisse erzeugt.
 
-**Bayer-Dithering** erzeugt regelmäßige Muster, die künstlerische Effekte erzeugen können, die traditionellem Halbton-Druck ähneln.
+**Bayer-Dithering** erzeugt regelmäßige Muster, die künstlerische Effekte erzeugen können, die
+traditionellem Halbton-Druck ähneln.
 
 #### Mehrfach-Tiefen-Modus-Einstellungen
 
@@ -249,7 +268,8 @@ Wähle den Algorithmus, der am besten zu deinem Bild und Material passt:
 - **Aktiviert:** Weiß = tief, Schwarz = flach
 - **Deaktiviert:** Schwarz = tief, Weiß = flach
 
-Invertieren für Lithophanen verwenden (helle Bereiche sollten dünn sein) oder Prägen (erhabene Bereiche).
+Invertieren für Lithophanen verwenden (helle Bereiche sollten dünn sein) oder Prägen (erhabene
+Bereiche).
 
 ### Scan-Muster
 
@@ -261,19 +281,19 @@ Invertieren für Lithophanen verwenden (helle Bereiche sollten dünn sein) oder 
 - Kleiner = höhere Qualität, längere Job-Zeit
 - Größer = schneller, sichtbare Linien
 
-| Abstand   | Qualität | Geschwindigkeit | Verwendung für              |
-| --------- | -------- | --------------- | --------------------------- |
-| 0.05mm    | Höchste  | Langsamste      | Fotos, feine Details        |
-| 0.1mm     | Hoch     | Mittel          | Text, Logos, Grafiken       |
-| 0.2mm     | Mittel   | Schnell         | Feste Füllungen, Texturen   |
-| 0.3mm+    | Niedrig  | Schnellste      | Entwurf, Testen             |
+| Abstand | Qualität | Geschwindigkeit | Verwendung für            |
+| ------- | -------- | --------------- | ------------------------- |
+| 0.05mm  | Höchste  | Langsamste      | Fotos, feine Details      |
+| 0.1mm   | Hoch     | Mittel          | Text, Logos, Grafiken     |
+| 0.2mm   | Mittel   | Schnell         | Feste Füllungen, Texturen |
+| 0.3mm+  | Niedrig  | Schnellste      | Entwurf, Testen           |
 
 **Empfohlen:** 0.1mm für allgemeine Verwendung
 
-:::tip Auflösungs-Anpassung
-:::
+:::tip Auflösungs-Anpassung :::
 
-Für Bilder sollte der Linienabstand der Bildauflösung entsprechen oder diese überschreiten. Wenn dein Bild 10 Pixel/mm (254 DPI) hat, verwende 0.1mm Linienabstand oder kleiner.
+Für Bilder sollte der Linienabstand der Bildauflösung entsprechen oder diese überschreiten. Wenn
+dein Bild 10 Pixel/mm (254 DPI) hat, verwende 0.1mm Linienabstand oder kleiner.
 
 #### Scan-Richtung
 
@@ -292,29 +312,40 @@ Für Bilder sollte der Linienabstand der Bildauflösung entsprechen oder diese �
 
 **Bidirektionales Scannen:**
 
-Rayforge scannt immer bidirektional (von links nach rechts, dann von rechts nach links), da das Feuern bei jedem Durchgang die Gravurgeschwindigkeit im Vergleich zum Zurückfahren ohne Feuern zwischen den Linien ungefähr verdoppelt.
+Rayforge scannt immer bidirektional (von links nach rechts, dann von rechts nach links), da das
+Feuern bei jedem Durchgang die Gravurgeschwindigkeit im Vergleich zum Zurückfahren ohne Feuern
+zwischen den Linien ungefähr verdoppelt.
 
-Geringfügige Unterschiede bei Mechanik oder Schaltverzögerung zwischen den beiden Richtungen können auf einigen Maschinen sichtbare Bänderung verursachen. Falls du das siehst, kalibriere den unten beschriebenen **Bidirektionalen Scan-Offset**, um es direkt zu korrigieren, anstatt den Geschwindigkeitsvorteil zu verlieren.
+Geringfügige Unterschiede bei Mechanik oder Schaltverzögerung zwischen den beiden Richtungen können
+auf einigen Maschinen sichtbare Bänderung verursachen. Falls du das siehst, kalibriere den unten
+beschriebenen **Bidirektionalen Scan-Offset**, um es direkt zu korrigieren, anstatt den
+Geschwindigkeitsvorteil zu verlieren.
 
 #### Bidirektionaler Scan-Offset
 
-Korrigiert eine feste mechanische oder schaltzeitbedingte Versetzung zwischen Links-nach-rechts- und Rechts-nach-links-Rasterdurchgängen, die ansonsten abwechselnde Scan-Zeilen verschiebt (als Bänderung sichtbar, besonders bei Fotogravuren).
+Korrigiert eine feste mechanische oder schaltzeitbedingte Versetzung zwischen Links-nach-rechts- und
+Rechts-nach-links-Rasterdurchgängen, die ansonsten abwechselnde Scan-Zeilen verschiebt (als
+Bänderung sichtbar, besonders bei Fotogravuren).
 
 - In Millimetern angeben, positiv oder negativ, je nachdem welche Richtung verschoben werden muss
-- Wendet eine konstante Verschiebung unabhängig von der Geschwindigkeit an; wenn die Versetzung mit der Geschwindigkeit variiert, kalibriere für deine typische Gravurgeschwindigkeit
+- Wendet eine konstante Verschiebung unabhängig von der Geschwindigkeit an; wenn die Versetzung mit
+  der Geschwindigkeit variiert, kalibriere für deine typische Gravurgeschwindigkeit
 - Standard ist 0 (keine Korrektur)
 
 **Offset kalibrieren:**
 
-1. Graviere ein Testmuster mit sichtbaren vertikalen Details (z. B. ein feines Gitter) mit bidirektionalem Scannen
+1. Graviere ein Testmuster mit sichtbaren vertikalen Details (z. B. ein feines Gitter) mit
+   bidirektionalem Scannen
 2. Vergleiche abwechselnde Zeilen, um Richtung und Ausmaß der Fehlausrichtung zu ermitteln
-3. Passe den Offset in kleinen Schritten an (0.01-0.05mm) und teste erneut, bis abwechselnde Zeilen ausgerichtet sind
+3. Passe den Offset in kleinen Schritten an (0.01-0.05mm) und teste erneut, bis abwechselnde Zeilen
+   ausgerichtet sind
 
 ## Laser-Einstellungen
 
 ![Laser-Einstellungen](/screenshots/step-settings-engrave-laser.webp)
 
-Leistung, Geschwindigkeit und Laser-Kopf-Auswahl befinden sich auf der Seite **Laser** des Schritt-Einstellungen-Dialogs.
+Leistung, Geschwindigkeit und Laser-Kopf-Auswahl befinden sich auf der Seite **Laser** des
+Schritt-Einstellungen-Dialogs.
 
 ### Leistung & Geschwindigkeit
 

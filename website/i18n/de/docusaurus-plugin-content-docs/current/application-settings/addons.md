@@ -34,8 +34,8 @@ Die Addonliste zeigt alle installierten Addons mit:
 
 ### Addons aktualisieren
 
-Wenn Updates verfügbar sind, erscheint ein Indikator im Addon-Registry-Dialog.
-Klicke auf **Aktualisieren**, um verfügbare Updates zu installieren.
+Wenn Updates verfügbar sind, erscheint ein Indikator im Addon-Registry-Dialog. Klicke auf
+**Aktualisieren**, um verfügbare Updates zu installieren.
 
 ### Addons entfernen
 
@@ -43,9 +43,7 @@ Klicke auf **Aktualisieren**, um verfügbare Updates zu installieren.
 2. Klicke auf die Schaltfläche **Entfernen**
 3. Bestätige das Entfernen
 
-:::warning
-Das Entfernen eines Addons kann Dokumente betreffen, die dessen Funktionen verwenden.
-:::
+:::warning Das Entfernen eines Addons kann Dokumente betreffen, die dessen Funktionen verwenden. :::
 
 ## Addonquellen
 

@@ -1,22 +1,19 @@
 # Generador de Piezas por IA
 
-Crea diseños para corte láser a partir de descripciones de texto usando
-inteligencia artificial.
+Crea diseños para corte láser a partir de descripciones de texto usando inteligencia artificial.
 
 ## Descripción General
 
-El addon Generador de Piezas por IA te permite crear diseños simplemente
-describiendo lo que quieres. Escribe una descripción como "una forma de
-estrella simple" o "un engranaje con 8 dientes" y la IA generará una pieza
-lista para tu cortadora láser.
+El addon Generador de Piezas por IA te permite crear diseños simplemente describiendo lo que
+quieres. Escribe una descripción como "una forma de estrella simple" o "un engranaje con 8 dientes"
+y la IA generará una pieza lista para tu cortadora láser.
 
 ![Diálogo del Generador de Piezas por IA](/screenshots/addon-ai-workpiece-generator.webp)
 
 ## Requisitos
 
 Antes de usar este addon, necesitas configurar un proveedor de IA. Consulta
-[Proveedor de IA](../application-settings/ai-provider.md) para instrucciones
-de configuración.
+[Proveedor de IA](../application-settings/ai-provider.md) para instrucciones de configuración.
 
 ## Usar el Generador
 
@@ -28,11 +25,10 @@ de configuración.
 
 ## Consejos para Mejores Resultados
 
-- **Sé específico**: "una estrella de 5 puntas con puntas afiladas" funciona
-  mejor que "una estrella"
+- **Sé específico**: "una estrella de 5 puntas con puntas afiladas" funciona mejor que "una
+  estrella"
 - **Mantenlo simple**: La IA funciona mejor con diseños geométricos sencillos
-- **Especifica detalles**: Incluye detalles importantes como número de dientes,
-  esquinas o simetría
+- **Especifica detalles**: Incluye detalles importantes como número de dientes, esquinas o simetría
 - **Usa descripciones físicas**: Describe la forma, no los parámetros de corte
 
 ## Ejemplos de Prompts

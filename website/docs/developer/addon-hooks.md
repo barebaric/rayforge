@@ -1,14 +1,19 @@
 ---
-description: "Add-on hooks in Rayforge - lifecycle events and extension points for integrating custom functionality into the laser cutting workflow."
+description:
+  "Add-on hooks in Rayforge - lifecycle events and extension points for integrating custom
+  functionality into the laser cutting workflow."
 ---
 
 # Addon Hooks
 
-Hooks are the connection points between your addon and Rayforge. When something happens in the application—a step is created, a dialog opens, or the window initializes—Rayforge calls any registered hooks so your addon can respond.
+Hooks are the connection points between your addon and Rayforge. When something happens in the
+application—a step is created, a dialog opens, or the window initializes—Rayforge calls any
+registered hooks so your addon can respond.
 
 ## How Hooks Work
 
-Rayforge uses [pluggy](https://pluggy.readthedocs.io/) for its hook system. To implement a hook, decorate a function with `@pluggy.HookimplMarker("rayforge")`:
+Rayforge uses [pluggy](https://pluggy.readthedocs.io/) for its hook system. To implement a hook,
+decorate a function with `@pluggy.HookimplMarker("rayforge")`:
 
 ```python
 import pluggy
@@ -29,9 +34,12 @@ These hooks handle the overall lifecycle of your addon.
 
 ### `rayforge_init(context)`
 
-This is your main entry point. Rayforge calls this hook after the application context is fully initialized, meaning all managers, configs, and hardware are ready. Use this for general setup, logging, or injecting UI elements.
+This is your main entry point. Rayforge calls this hook after the application context is fully
+initialized, meaning all managers, configs, and hardware are ready. Use this for general setup,
+logging, or injecting UI elements.
 
-The `context` parameter is a `RayforgeContext` instance that gives you access to everything in Rayforge. See [Accessing Rayforge Data](./addon-overview.md#accessing-rayforges-data) for details.
+The `context` parameter is a `RayforgeContext` instance that gives you access to everything in
+Rayforge. See [Accessing Rayforge Data](./addon-overview.md#accessing-rayforges-data) for details.
 
 ```python
 @hookimpl
@@ -44,7 +52,8 @@ def rayforge_init(context):
 
 ### `on_unload()`
 
-Rayforge calls this when your addon is being disabled or unloaded. Use it to clean up resources, close connections, or unregister handlers.
+Rayforge calls this when your addon is being disabled or unloaded. Use it to clean up resources,
+close connections, or unregister handlers.
 
 ```python
 @hookimpl
@@ -55,7 +64,8 @@ def on_unload():
 
 ### `main_window_ready(main_window)`
 
-This hook fires when the main window is fully initialized. It's useful for registering UI pages, commands, or other components that need the main window to exist first.
+This hook fires when the main window is fully initialized. It's useful for registering UI pages,
+commands, or other components that need the main window to exist first.
 
 The `main_window` parameter is the `MainWindow` instance.
 
@@ -73,7 +83,8 @@ These hooks let you register custom components with Rayforge's various registrie
 
 ### `register_machines(machine_manager)`
 
-Use this to register new machine drivers. The `machine_manager` is a `MachineManager` instance that manages all machine configurations.
+Use this to register new machine drivers. The `machine_manager` is a `MachineManager` instance that
+manages all machine configurations.
 
 ```python
 @hookimpl
@@ -84,7 +95,8 @@ def register_machines(machine_manager):
 
 ### `register_steps(step_registry)`
 
-Register custom step types that appear in the operations panel. The `step_registry` is a `StepRegistry` instance.
+Register custom step types that appear in the operations panel. The `step_registry` is a
+`StepRegistry` instance.
 
 ```python
 @hookimpl
@@ -95,7 +107,8 @@ def register_steps(step_registry):
 
 ### `register_producers(producer_registry)`
 
-Register custom ops producers that generate toolpaths. The `producer_registry` is a `ProducerRegistry` instance.
+Register custom ops producers that generate toolpaths. The `producer_registry` is a
+`ProducerRegistry` instance.
 
 ```python
 @hookimpl
@@ -106,7 +119,8 @@ def register_producers(producer_registry):
 
 ### `register_transformers(transformer_registry)`
 
-Register custom ops transformers for post-processing operations. Transformers modify operations after producers generate them. The `transformer_registry` is a `TransformerRegistry` instance.
+Register custom ops transformers for post-processing operations. Transformers modify operations
+after producers generate them. The `transformer_registry` is a `TransformerRegistry` instance.
 
 ```python
 @hookimpl
@@ -117,7 +131,8 @@ def register_transformers(transformer_registry):
 
 ### `register_commands(command_registry)`
 
-Register editor commands that extend the document editor's functionality. The `command_registry` is a `CommandRegistry` instance.
+Register editor commands that extend the document editor's functionality. The `command_registry` is
+a `CommandRegistry` instance.
 
 ```python
 @hookimpl
@@ -128,7 +143,8 @@ def register_commands(command_registry):
 
 ### `register_actions(action_registry)`
 
-Register window actions with optional menu and toolbar placement. Actions are how you add buttons, menu items, and keyboard shortcuts. The `action_registry` is an `ActionRegistry` instance.
+Register window actions with optional menu and toolbar placement. Actions are how you add buttons,
+menu items, and keyboard shortcuts. The `action_registry` is an `ActionRegistry` instance.
 
 ```python
 from gi.repository import Gio
@@ -138,7 +154,7 @@ from rayforge.ui_gtk.action_registry import MenuPlacement, ToolbarPlacement
 def register_actions(action_registry):
     action = Gio.SimpleAction.new("my-action", None)
     action.connect("activate", on_my_action_activated)
-    
+
     action_registry.register(
         action_name="my-action",
         action=action,
@@ -153,7 +169,9 @@ def register_actions(action_registry):
 
 ### `register_layout_strategies(layout_registry)`
 
-Register custom layout strategies for arranging content in the document. The `layout_registry` is a `LayoutStrategyRegistry` instance. Note that UI metadata like labels and shortcuts should be registered via `register_actions`, not here.
+Register custom layout strategies for arranging content in the document. The `layout_registry` is a
+`LayoutStrategyRegistry` instance. Note that UI metadata like labels and shortcuts should be
+registered via `register_actions`, not here.
 
 ```python
 @hookimpl
@@ -164,7 +182,8 @@ def register_layout_strategies(layout_registry):
 
 ### `register_asset_types(asset_type_registry)`
 
-Register custom asset types that can be stored in documents. This enables dynamic deserialization of addon-provided assets. The `asset_type_registry` is an `AssetTypeRegistry` instance.
+Register custom asset types that can be stored in documents. This enables dynamic deserialization of
+addon-provided assets. The `asset_type_registry` is an `AssetTypeRegistry` instance.
 
 ```python
 @hookimpl
@@ -175,7 +194,8 @@ def register_asset_types(asset_type_registry):
 
 ### `register_renderers(renderer_registry)`
 
-Register custom renderers for displaying your asset types in the UI. The `renderer_registry` is a `RendererRegistry` instance.
+Register custom renderers for displaying your asset types in the UI. The `renderer_registry` is a
+`RendererRegistry` instance.
 
 ```python
 @hookimpl
@@ -186,7 +206,8 @@ def register_renderers(renderer_registry):
 
 ### `register_exporters(exporter_registry)`
 
-Register file exporters for custom export formats. The `exporter_registry` is an `ExporterRegistry` instance.
+Register file exporters for custom export formats. The `exporter_registry` is an `ExporterRegistry`
+instance.
 
 ```python
 @hookimpl
@@ -197,7 +218,8 @@ def register_exporters(exporter_registry):
 
 ### `register_importers(importer_registry)`
 
-Register file importers for custom import formats. The `importer_registry` is an `ImporterRegistry` instance.
+Register file importers for custom import formats. The `importer_registry` is an `ImporterRegistry`
+instance.
 
 ```python
 @hookimpl
@@ -208,7 +230,8 @@ def register_importers(importer_registry):
 
 ### `register_material_libraries(library_manager)`
 
-Register additional material libraries. Call `library_manager.add_library_from_path(path)` to register directories containing material YAML files. By default, registered libraries are read-only.
+Register additional material libraries. Call `library_manager.add_library_from_path(path)` to
+register directories containing material YAML files. By default, registered libraries are read-only.
 
 ```python
 @hookimpl
@@ -224,9 +247,11 @@ These hooks let you extend existing UI components.
 
 ### `step_settings_loaded(dialog, step, producer)`
 
-Rayforge calls this when a step settings dialog is being populated. You can add custom widgets to the dialog based on the step's producer type.
+Rayforge calls this when a step settings dialog is being populated. You can add custom widgets to
+the dialog based on the step's producer type.
 
-The `dialog` is a `GeneralStepSettingsView` instance. The `step` is the `Step` being configured. The `producer` is the `OpsProducer` instance, or `None` if not available.
+The `dialog` is a `GeneralStepSettingsView` instance. The `step` is the `Step` being configured. The
+`producer` is the `OpsProducer` instance, or `None` if not available.
 
 ```python
 @hookimpl
@@ -239,9 +264,11 @@ def step_settings_loaded(dialog, step, producer):
 
 ### `transformer_settings_loaded(dialog, step, transformer)`
 
-Called when post-processing settings are being populated. Add custom widgets for your transformers here.
+Called when post-processing settings are being populated. Add custom widgets for your transformers
+here.
 
-The `dialog` is a `PostProcessingSettingsView` instance. The `step` is the `Step` being configured. The `transformer` is the `OpsTransformer` instance.
+The `dialog` is a `PostProcessingSettingsView` instance. The `step` is the `Step` being configured.
+The `transformer` is the `OpsTransformer` instance.
 
 ```python
 @hookimpl
@@ -253,11 +280,14 @@ def transformer_settings_loaded(dialog, step, transformer):
 
 ## API Version History
 
-Hooks are versioned to maintain backwards compatibility. When new hooks are added or existing ones change, the API version is incremented. Your addon's `api_version` field must be at least the minimum supported version.
+Hooks are versioned to maintain backwards compatibility. When new hooks are added or existing ones
+change, the API version is incremented. Your addon's `api_version` field must be at least the
+minimum supported version.
 
 The current API version is 9. Here's what changed in recent versions:
 
-**Version 9** added `main_window_ready`, `register_exporters`, `register_importers`, and `register_renderers`.
+**Version 9** added `main_window_ready`, `register_exporters`, `register_importers`, and
+`register_renderers`.
 
 **Version 8** added `register_asset_types` for custom asset types.
 
@@ -265,10 +295,13 @@ The current API version is 9. Here's what changed in recent versions:
 
 **Version 6** added `register_transformers`.
 
-**Version 5** replaced `register_step_widgets` with `step_settings_loaded` and `transformer_settings_loaded`.
+**Version 5** replaced `register_step_widgets` with `step_settings_loaded` and
+`transformer_settings_loaded`.
 
-**Version 4** removed `register_menu_items` and consolidated action registration into `register_actions`.
+**Version 4** removed `register_menu_items` and consolidated action registration into
+`register_actions`.
 
 **Version 2** added `register_layout_strategies`.
 
-**Version 1** was the initial release with core hooks for addon lifecycle, resource registration, and UI integration.
+**Version 1** was the initial release with core hooks for addon lifecycle, resource registration,
+and UI integration.

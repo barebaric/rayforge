@@ -1,17 +1,15 @@
 # Zonas de Restrição
 
-Zonas de restrição definem áreas restritas na superfície de trabalho que o laser
-não deve entrar. Quando habilitadas, elas são verificadas como parte das
-[verificações de sanidade do trabalho](../features/sanity-checks.md) antes de
-executar ou exportar.
+Zonas de restrição definem áreas restritas na superfície de trabalho que o laser não deve entrar.
+Quando habilitadas, elas são verificadas como parte das
+[verificações de sanidade do trabalho](../features/sanity-checks.md) antes de executar ou exportar.
 
 ![Zonas de Restrição](/screenshots/machine-settings-nogo-zones.webp)
 
 ## Adicionando uma Zona de Restrição
 
-Abra **Configurações → Máquina** e navegue até a página **Zonas de Restrição**.
-Clique no botão adicionar para criar uma nova zona, depois escolha sua forma e
-posição.
+Abra **Configurações → Máquina** e navegue até a página **Zonas de Restrição**. Clique no botão
+adicionar para criar uma nova zona, depois escolha sua forma e posição.
 
 Cada zona tem as seguintes configurações:
 
@@ -23,10 +21,9 @@ Cada zona tem as seguintes configurações:
 
 ## Visibilidade
 
-Zonas de restrição são exibidas tanto na tela 2D quanto na 3D como
-sobreposições semi-transparentes. Use o botão de alternância de zonas de
-restrição na sobreposição da tela para mostrá-las ou ocultá-las. O botão só
-é exibido quando há pelo menos uma zona de restrição configurada. A
+Zonas de restrição são exibidas tanto na tela 2D quanto na 3D como sobreposições semi-transparentes.
+Use o botão de alternância de zonas de restrição na sobreposição da tela para mostrá-las ou
+ocultá-las. O botão só é exibido quando há pelo menos uma zona de restrição configurada. A
 configuração de visibilidade é lembrada entre sessões.
 
 ---

@@ -1,22 +1,26 @@
 # Manutenção
 
-A página de Manutenção nas Configurações da Máquina ajuda você a rastrear o uso da máquina e agendar tarefas de manutenção.
+A página de Manutenção nas Configurações da Máquina ajuda você a rastrear o uso da máquina e agendar
+tarefas de manutenção.
 
 ![Configurações de Manutenção](/screenshots/machine-settings-maintenance.webp)
 
 ## Rastreamento de Uso
 
-O Rayforge rastreia quanto tempo sua máquina está em uso. Essas informações ajudam você a agendar manutenção preventiva em intervalos apropriados.
+O Rayforge rastreia quanto tempo sua máquina está em uso. Essas informações ajudam você a agendar
+manutenção preventiva em intervalos apropriados.
 
 ### Horas Totais
 
-O contador de horas totais rastreia todo o tempo gasto executando trabalhos na máquina. Este contador cumulativo não pode ser resetado e fornece um histórico completo do uso da máquina.
+O contador de horas totais rastreia todo o tempo gasto executando trabalhos na máquina. Este
+contador cumulativo não pode ser resetado e fornece um histórico completo do uso da máquina.
 
 Use isso para rastrear a idade geral da máquina e planejar intervalos de serviço principais.
 
 ## Contadores de Manutenção Personalizados
 
-Você pode criar contadores personalizados para rastrear intervalos de manutenção específicos. Cada contador tem um nome, rastreia horas e pode ser configurado com um limite de notificação.
+Você pode criar contadores personalizados para rastrear intervalos de manutenção específicos. Cada
+contador tem um nome, rastreia horas e pode ser configurado com um limite de notificação.
 
 ### Criando um Contador
 
@@ -33,9 +37,11 @@ Você pode criar contadores personalizados para rastrear intervalos de manutenç
 
 ### Exemplos de Contadores
 
-**Tubo Laser**: Rastreie horas do tubo CO2 para planejar substituição (tipicamente 1000-3000 horas). Defina uma notificação às 2500 horas para planejar com antecedência.
+**Tubo Laser**: Rastreie horas do tubo CO2 para planejar substituição (tipicamente 1000-3000 horas).
+Defina uma notificação às 2500 horas para planejar com antecedência.
 
-**Tensão de Correia**: Rastreie horas desde a última tensão de correia. Reset após realizar a manutenção.
+**Tensão de Correia**: Rastreie horas desde a última tensão de correia. Reset após realizar a
+manutenção.
 
 **Limpeza de Espelho**: Rastreie uso desde a última limpeza de espelho. Reset após limpar.
 
@@ -49,15 +55,14 @@ Após realizar manutenção, você pode resetar o contador relevante:
 2. Confirme o reset no diálogo
 3. O contador retorna para zero
 
-:::tip Cronograma de Manutenção
-Intervalos comuns de manutenção:
+:::tip Cronograma de Manutenção Intervalos comuns de manutenção:
+
 - **Diariamente**: Limpar lente, verificar alinhamento do espelho
 - **Semanalmente**: Limpar trilhos, verificar tensão das correias
 - **Mensalmente**: Lubrificar rolamentos, verificar conexões elétricas
 - **Anualmente**: Inspeção completa, substituir peças gastas
 
-Ajuste intervalos com base em seus padrões de uso e recomendações do fabricante.
-:::
+Ajuste intervalos com base em seus padrões de uso e recomendações do fabricante. :::
 
 ## Veja Também
 

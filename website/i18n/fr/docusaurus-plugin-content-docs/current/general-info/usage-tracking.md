@@ -1,10 +1,13 @@
 # Suivi d'utilisation
 
-Rayforge inclut un suivi d'utilisation anonyme facultatif pour nous aider à comprendre comment l'application est utilisée et prioriser le développement futur. Cette page explique ce que nous suivons, comment cela fonctionne et votre vie privée.
+Rayforge inclut un suivi d'utilisation anonyme facultatif pour nous aider à comprendre comment
+l'application est utilisée et prioriser le développement futur. Cette page explique ce que nous
+suivons, comment cela fonctionne et votre vie privée.
 
 ## Entièrement facultatif
 
-Le suivi d'utilisation est **entièrement facultatif**. Lors du premier démarrage de Rayforge, il vous sera demandé si vous souhaitez participer :
+Le suivi d'utilisation est **entièrement facultatif**. Lors du premier démarrage de Rayforge, il
+vous sera demandé si vous souhaitez participer :
 
 - **Oui** : Les données d'utilisation anonymes seront envoyées à notre serveur d'analyse
 - **Non** : Aucune donnée n'est jamais collectée ou transmise
@@ -13,9 +16,8 @@ Vous pouvez modifier ce choix à tout moment dans les paramètres généraux.
 
 ## Ce que nous suivons
 
-Lorsqu'il est activé, nous collectons uniquement des données anonymes de
-pages vues, similaires aux analyses de sites web. Voici ce que nous pouvons
-voir :
+Lorsqu'il est activé, nous collectons uniquement des données anonymes de pages vues, similaires aux
+analyses de sites web. Voici ce que nous pouvons voir :
 
 | Données                   | Exemple                   |
 | ------------------------- | ------------------------- |
@@ -25,23 +27,22 @@ voir :
 | Temps passé sur la page   | 6m 3s                     |
 | ID de session             | a1b2c3d4-e5f6-...         |
 
-L'ID de session est un identifiant aléatoire généré à chaque démarrage de
-Rayforge. Il nous permet de distinguer les différentes sessions
-d'utilisation tout en gardant le suivi entièrement anonyme.
+L'ID de session est un identifiant aléatoire généré à chaque démarrage de Rayforge. Il nous permet
+de distinguer les différentes sessions d'utilisation tout en gardant le suivi entièrement anonyme.
 
 ## Ce que nous voyons
 
 Voici un exemple de ce à quoi ressemble le tableau de bord d'analyse :
 
-| Chemin                      | Visiteurs | Visites | Vues | Taux de rebond | Durée de visite |
-| --------------------------- | --------- | ------- | ---- | -------------- | --------------- |
-| /                           | 1         | 1       | 5    | 0%             | 27m 35s         |
-| /machine-settings/general   | 1         | 1       | 5    | 0%             | 27m 27s         |
-| /view/3d                    | 1         | 1       | 2    | 0%             | 25m 14s         |
-| /camera-alignment-dialog    | 1         | 1       | 2    | 0%             | 6m 3s           |
-| /machine-settings/camera    | 1         | 1       | 2    | 0%             | 6m 16s          |
-| /settings/general           | 1         | 1       | 2    | 0%             | 16m 36s         |
-| /step-settings/rasterizer   | 1         | 1       | 2    | 0%             | 11s             |
+| Chemin                    | Visiteurs | Visites | Vues | Taux de rebond | Durée de visite |
+| ------------------------- | --------- | ------- | ---- | -------------- | --------------- |
+| /                         | 1         | 1       | 5    | 0%             | 27m 35s         |
+| /machine-settings/general | 1         | 1       | 5    | 0%             | 27m 27s         |
+| /view/3d                  | 1         | 1       | 2    | 0%             | 25m 14s         |
+| /camera-alignment-dialog  | 1         | 1       | 2    | 0%             | 6m 3s           |
+| /machine-settings/camera  | 1         | 1       | 2    | 0%             | 6m 16s          |
+| /settings/general         | 1         | 1       | 2    | 0%             | 16m 36s         |
+| /step-settings/rasterizer | 1         | 1       | 2    | 0%             | 11s             |
 
 ## Ce que nous ne suivons PAS
 
@@ -59,12 +60,14 @@ Les données d'utilisation nous aident à :
 
 - **Identifier les fonctionnalités populaires** – Savoir ce qui fonctionne bien
 - **Trouver les points de friction** – Voir où les utilisateurs passent du temps ou sont bloqués
-- **Prioriser le développement** – Se concentrer sur les fonctionnalités que les gens utilisent vraiment
+- **Prioriser le développement** – Se concentrer sur les fonctionnalités que les gens utilisent
+  vraiment
 - **Comprendre la diversité** – Savoir quelles langues et tailles d'écran prendre en charge
 
 ## Comment cela fonctionne
 
-Rayforge utilise [Umami](https://umami.is/), une plateforme d'analyse open source axée sur la confidentialité. Le suivi :
+Rayforge utilise [Umami](https://umami.is/), une plateforme d'analyse open source axée sur la
+confidentialité. Le suivi :
 
 - Envoie de petites requêtes HTTP en arrière-plan
 - N'affecte pas les performances de l'application

@@ -1,12 +1,15 @@
 # Compensation de Kerf
 
-Le kerf est le matériau retiré par le faisceau laser pendant la coupe. La compensation de kerf ajuste les parcours d'outil pour en tenir compte, assurant que les pièces coupées correspondent à leurs dimensions de conception.
+Le kerf est le matériau retiré par le faisceau laser pendant la coupe. La compensation de kerf
+ajuste les parcours d'outil pour en tenir compte, assurant que les pièces coupées correspondent à
+leurs dimensions de conception.
 
 ## Qu'est-ce que le Kerf ?
 
 **Kerf** = la largeur du matériau retiré par le processus de coupe.
 
 **Exemple :**
+
 - Taille du spot laser : 0.2mm
 - Interaction matéri : ajoute ~0.1mm de chaque côté
 - **Kerf total :** ~0.4mm
@@ -15,13 +18,16 @@ Le kerf est le matériau retiré par le faisceau laser pendant la coupe. La comp
 
 ## Comment Fonctionne la Compensation de Kerf
 
-La compensation de kerf **décale le parcours d'outil** vers l'intérieur ou l'extérieur pour tenir compte du retrait de matériau :
+La compensation de kerf **décale le parcours d'outil** vers l'intérieur ou l'extérieur pour tenir
+compte du retrait de matériau :
 
 **Pour les coupes extérieures (couper une pièce) :**
+
 - Décaler le parcours **vers l'extérieur** de la moitié de la largeur du kerf
 - Résultat : La pièce finale a la bonne taille
 
 **Pour les coupes intérieures (couper un trou) :**
+
 - Décaler le parcours **vers l'intérieur** de la moitié de la largeur du kerf
 - Résultat : Le trou final a la bonne taille
 
@@ -60,6 +66,7 @@ Après coupe :        La pièce mesure 50.0mm (parfait !)
 4. **Moyenne :** Utilisez la moyenne de plusieurs mesures
 
 **Variables affectant le kerf :**
+
 - Puissance laser (plus élevée = plus large)
 - Vitesse de coupe (plus lente = plus large)
 - Type et densité du matériau
@@ -70,7 +77,8 @@ Après coupe :        La pièce mesure 50.0mm (parfait !)
 
 ## Compensation de Kerf Manuelle
 
-Si la compensation de kerf automatisée n'est pas disponible, compensez dans votre logiciel de conception :
+Si la compensation de kerf automatisée n'est pas disponible, compensez dans votre logiciel de
+conception :
 
 **Inkscape :**
 

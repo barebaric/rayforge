@@ -4,7 +4,8 @@ Esta guía cubre cómo obtener el código fuente de Rayforge para desarrollo.
 
 ## Hacer Fork del Repositorio
 
-Haz fork del [repositorio Rayforge](https://github.com/barebaric/rayforge) en GitHub para crear tu propia copia donde puedas hacer cambios.
+Haz fork del [repositorio Rayforge](https://github.com/barebaric/rayforge) en GitHub para crear tu
+propia copia donde puedas hacer cambios.
 
 ## Clonar Tu Fork
 
@@ -33,4 +34,5 @@ Deberías ver tanto tu fork (origin) como el repositorio upstream.
 
 ## Siguientes Pasos
 
-Después de obtener el código, continúa con [Configuración](setup) para configurar tu entorno de desarrollo.
+Después de obtener el código, continúa con [Configuración](setup) para configurar tu entorno de
+desarrollo.

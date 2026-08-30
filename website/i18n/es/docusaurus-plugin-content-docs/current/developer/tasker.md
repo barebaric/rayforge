@@ -1,13 +1,18 @@
 # Tasker: Gestión de Tareas en Segundo Plano
 
-`tasker` es un módulo para ejecutar tareas de larga duración en segundo plano de una aplicación GTK sin congelar la UI. Proporciona una API simple y unificada para trabajo limitado por I/O (`asyncio`) y limitado por CPU (`multiprocessing`).
+`tasker` es un módulo para ejecutar tareas de larga duración en segundo plano de una aplicación GTK
+sin congelar la UI. Proporciona una API simple y unificada para trabajo limitado por I/O (`asyncio`)
+y limitado por CPU (`multiprocessing`).
 
 ## Conceptos Core
 
 1. **`task_mgr`**: El proxy singleton global que usas para iniciar y cancelar todas las tareas
-2. **`Task`**: Un objeto que representa un solo trabajo en segundo plano. Lo usas para rastrear el estado
-3. **`ExecutionContext` (`context`)**: Un objeto pasado como primer argumento a tu función en segundo plano. Tu código lo usa para reportar progreso, enviar mensajes y verificar cancelación
-4. **`TaskManagerProxy`**: Un proxy thread-safe que reenvía llamadas al TaskManager real ejecutándose en el hilo principal
+2. **`Task`**: Un objeto que representa un solo trabajo en segundo plano. Lo usas para rastrear el
+   estado
+3. **`ExecutionContext` (`context`)**: Un objeto pasado como primer argumento a tu función en
+   segundo plano. Tu código lo usa para reportar progreso, enviar mensajes y verificar cancelación
+4. **`TaskManagerProxy`**: Un proxy thread-safe que reenvía llamadas al TaskManager real
+   ejecutándose en el hilo principal
 
 ## Inicio Rápido
 
@@ -35,7 +40,8 @@ task_mgr.add_coroutine(my_io_task, "http://example.com", key="downloader")
 
 ### Ejecutar una Tarea Limitada por CPU (ej., cálculo pesado)
 
-Usa `run_process` para funciones regulares. Estas se ejecutan en un proceso separado para evitar el GIL y mantener la UI responsiva.
+Usa `run_process` para funciones regulares. Estas se ejecutan en un proceso separado para evitar el
+GIL y mantener la UI responsiva.
 
 ```python
 import time
@@ -57,7 +63,9 @@ task_mgr.run_process(my_cpu_task, 50, key="calculator")
 
 ### Ejecutar una Tarea en un Hilo
 
-Usa `run_thread` para tareas que deberían ejecutarse en un hilo pero no requieren el aislamiento completo de proceso. Esto es útil para tareas que comparten memoria pero aún no deberían bloquear la UI.
+Usa `run_thread` para tareas que deberían ejecutarse en un hilo pero no requieren el aislamiento
+completo de proceso. Esto es útil para tareas que comparten memoria pero aún no deberían bloquear la
+UI.
 
 ```python
 import time
@@ -78,7 +86,8 @@ task_mgr.run_thread(my_thread_task, 2, key="thread_worker")
 
 ### Actualizar la UI
 
-Conéctate a la señal `tasks_updated` para reaccionar a cambios. El handler será llamado de forma segura en el hilo principal de GTK.
+Conéctate a la señal `tasks_updated` para reaccionar a cambios. El handler será llamado de forma
+segura en el hilo principal de GTK.
 
 ```python
 def setup_ui(progress_bar, status_label):
@@ -98,7 +107,8 @@ def setup_ui(progress_bar, status_label):
 
 ### Cancelación
 
-Dale a tus tareas una `key` para cancelarlas más tarde. Tu función en segundo plano debería verificar periódicamente `context.is_cancelled()`.
+Dale a tus tareas una `key` para cancelarlas más tarde. Tu función en segundo plano debería
+verificar periódicamente `context.is_cancelled()`.
 
 ```python
 # En tu función en segundo plano:
@@ -130,8 +140,10 @@ task_mgr.run_process(my_cpu_task, 10, when_done=on_task_finished)
 ### `task_mgr` (El Proxy Manager)
 
 - `add_coroutine(coro, *args, key=None, when_done=None)`: Añadir una tarea basada en asyncio
-- `run_process(func, *args, key=None, when_done=None, when_event=None)`: Ejecutar una tarea limitada por CPU en un proceso separado
-- `run_thread(func, *args, key=None, when_done=None)`: Ejecutar una tarea en un hilo (comparte memoria con el proceso principal)
+- `run_process(func, *args, key=None, when_done=None, when_event=None)`: Ejecutar una tarea limitada
+  por CPU en un proceso separado
+- `run_thread(func, *args, key=None, when_done=None)`: Ejecutar una tarea en un hilo (comparte
+  memoria con el proceso principal)
 - `cancel_task(key)`: Cancelar una tarea en ejecución por su key
 - `tasks_updated` (señal para actualizaciones UI): Emitida cuando el estado de la tarea cambia
 
@@ -154,4 +166,6 @@ El tasker se usa en todo Rayforge para:
 - **Comunicación con dispositivo**: Gestionar operaciones de larga duración con cortadoras láser
 - **Procesamiento de imagen**: Realizar trazado y procesamiento de imagen intensivo en CPU
 
-Al trabajar con el tasker en Rayforge, siempre asegúrate que tus funciones en segundo plano manejen correctamente la cancelación y proporcionen actualizaciones de progreso significativas para mantener una experiencia de usuario responsiva.
+Al trabajar con el tasker en Rayforge, siempre asegúrate que tus funciones en segundo plano manejen
+correctamente la cancelación y proporcionen actualizaciones de progreso significativas para mantener
+una experiencia de usuario responsiva.

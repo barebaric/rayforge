@@ -1,16 +1,20 @@
 # Paramètres de l'Appareil
 
-La page Appareil dans les Paramètres Machine vous permet de lire et d'appliquer des paramètres directement à votre appareil connecté (contrôleur). Ce sont aussi appelés paramètres "dollar" ou paramètres `$$` dans GRBL.
+La page Appareil dans les Paramètres Machine vous permet de lire et d'appliquer des paramètres
+directement à votre appareil connecté (contrôleur). Ce sont aussi appelés paramètres "dollar" ou
+paramètres `$$` dans GRBL.
 
 ![Paramètres de l'Appareil](/screenshots/machine-settings-device.webp)
 
-:::warning Attention Lors du Changement de Paramètres
-Des paramètres de firmware incorrects peuvent faire se comporter votre machine de manière imprévisible, perdre sa position ou même endommager le matériel. Enregistrez toujours les valeurs originales avant d'effectuer des changements, et modifiez un paramètre à la fois.
-:::
+:::warning Attention Lors du Changement de Paramètres Des paramètres de firmware incorrects peuvent
+faire se comporter votre machine de manière imprévisible, perdre sa position ou même endommager le
+matériel. Enregistrez toujours les valeurs originales avant d'effectuer des changements, et modifiez
+un paramètre à la fois. :::
 
 ## Aperçu
 
-La page Appareil fournit un accès direct aux paramètres du firmware de votre contrôleur. C'est ici que vous pouvez :
+La page Appareil fournit un accès direct aux paramètres du firmware de votre contrôleur. C'est ici
+que vous pouvez :
 
 - Lire les paramètres actuels depuis l'appareil
 - Modifier des paramètres individuels
@@ -24,11 +28,13 @@ Les paramètres du firmware contrôlent :
 - **Configuration électrique** : Inversions de broches, pullups
 - **Rapport** : Format et fréquence des messages de statut
 
-Ces paramètres sont stockés sur votre contrôleur (pas dans Rayforge) et persistent après les cycles d'alimentation.
+Ces paramètres sont stockés sur votre contrôleur (pas dans Rayforge) et persistent après les cycles
+d'alimentation.
 
 ## Lire les Paramètres
 
-Cliquez sur le bouton **Lire depuis l'Appareil** pour récupérer les paramètres actuels depuis votre contrôleur connecté. Cela nécessite :
+Cliquez sur le bouton **Lire depuis l'Appareil** pour récupérer les paramètres actuels depuis votre
+contrôleur connecté. Cela nécessite :
 
 - Que la machine soit connectée
 - Que le pilote supporte la lecture des paramètres de l'appareil
@@ -46,28 +52,32 @@ Après avoir modifié les paramètres, les changements sont appliqués à l'appa
 Vous pouvez aussi voir/modifier les paramètres via la console G-code :
 
 **Voir tous les paramètres :**
+
 ```
 $$
 ```
 
 **Voir un seul paramètre :**
+
 ```
 $100
 ```
 
 **Modifier un paramètre :**
+
 ```
 $100=80.0
 ```
 
 **Restaurer les valeurs par défaut :**
+
 ```
 $RST=$
 ```
 
-:::danger Restaurer les Défauts Efface Tous les Paramètres
-La commande `$RST=$` réinitialise tous les paramètres GRBL aux valeurs d'usine par défaut. Vous perdrez toute calibration et tout réglage. Sauvegardez vos paramètres d'abord !
-:::
+:::danger Restaurer les Défauts Efface Tous les Paramètres La commande `$RST=$` réinitialise tous
+les paramètres GRBL aux valeurs d'usine par défaut. Vous perdrez toute calibration et tout réglage.
+Sauvegardez vos paramètres d'abord ! :::
 
 ---
 
@@ -82,18 +92,20 @@ Ces paramètres sont les plus importants pour le fonctionnement laser :
 **Objectif :** Active les fonctionnalités spécifiques au laser dans GRBL
 
 **Lorsqu'activé (1) :**
+
 - Le laser s'éteint automatiquement pendant les mouvements G0 (rapides)
 - La puissance s'ajuste dynamiquement pendant l'accélération/décélération
 - Empêche les brûlures accidentelles pendant le positionnement
 
 **Lorsqu'désactivé (0) :**
+
 - Le laser se comporte comme une broche (mode CNC)
 - Ne s'éteint pas pendant les rapides
 - **Dangereux pour l'utilisation laser !**
 
-:::warning Activez Toujours le Mode Laser
-$32 devrait **toujours** être défini à 1 pour les découpeuses laser. Le mode laser désactivé peut causer des brûlures involontaires et des risques d'incendie.
-:::
+:::warning Activez Toujours le Mode Laser $32 devrait **toujours** être défini à 1 pour les
+découpeuses laser. Le mode laser désactivé peut causer des brûlures involontaires et des risques
+d'incendie. :::
 
 ### $30 & $31 - Plage de Puissance Laser
 
@@ -103,12 +115,13 @@ $32 devrait **toujours** être défini à 1 pour les découpeuses laser. Le mode
 **Objectif :** Définit la plage de puissance pour les commandes S
 
 **Valeurs typiques :**
+
 - $30=1000, $31=0 (plage S0-S1000, le plus courant)
 - $30=255, $31=0 (plage S0-S255, certains contrôleurs)
 
-:::tip Correspondance avec la Configuration Rayforge
-Le paramètre "Puissance Max" dans vos [Paramètres Laser](laser) devrait correspondre à votre valeur $30. Si $30=1000, définissez la puissance max à 1000 dans Rayforge.
-:::
+:::tip Correspondance avec la Configuration Rayforge Le paramètre "Puissance Max" dans vos
+[Paramètres Laser](laser) devrait correspondre à votre valeur $30. Si $30=1000, définissez la
+puissance max à 1000 dans Rayforge. :::
 
 ### $130 & $131 - Déplacement Maximum
 
@@ -118,6 +131,7 @@ Le paramètre "Puissance Max" dans vos [Paramètres Laser](laser) devrait corres
 **Objectif :** Définit la zone de travail de votre machine
 
 **Pourquoi c'est important :**
+
 - Les limites logicielles ($20) utilisent ces valeurs pour éviter les crashes
 - Définit les limites du système de coordonnées
 - Doit correspondre à la taille physique de votre machine
@@ -130,77 +144,79 @@ Le paramètre "Puissance Max" dans vos [Paramètres Laser](laser) devrait corres
 
 Contrôle les signaux électriques et le timing des moteurs pas à pas.
 
-| Paramètre | Description | Valeur Typique |
-| --------- | ----------- | -------------- |
-| $0 | Temps d'impulsion de pas (μs) | 10 |
-| $1 | Délai d'inactivité du pas (ms) | 25 |
-| $2 | Inversion d'impulsion de pas (masque) | 0 |
-| $3 | Inversion de direction de pas (masque) | 0 |
-| $4 | Inverser la broche d'activation de pas | 0 |
-| $5 | Inverser les broches de limite | 0 |
-| $6 | Inverser la broche de sonde | 0 |
+| Paramètre | Description                            | Valeur Typique |
+| --------- | -------------------------------------- | -------------- |
+| $0        | Temps d'impulsion de pas (μs)          | 10             |
+| $1        | Délai d'inactivité du pas (ms)         | 25             |
+| $2        | Inversion d'impulsion de pas (masque)  | 0              |
+| $3        | Inversion de direction de pas (masque) | 0              |
+| $4        | Inverser la broche d'activation de pas | 0              |
+| $5        | Inverser les broches de limite         | 0              |
+| $6        | Inverser la broche de sonde            | 0              |
 
 ### Limites & Homing ($20-$27)
 
 Contrôle les contacteurs de fin de course et le comportement de homing.
 
-| Paramètre | Description | Valeur Typique |
-| --------- | ----------- | -------------- |
-| $20 | Activation des limites logicielles | 0 ou 1 |
-| $21 | Activation des limites matérielles | 0 |
-| $22 | Activation du cycle de homing | 0 ou 1 |
-| $23 | Inversion de direction de homing | 0 |
-| $24 | Vitesse de localisation de homing (mm/min) | 25 |
-| $25 | Vitesse de recherche de homing (mm/min) | 500 |
-| $26 | Délai anti-rebond de homing (ms) | 250 |
-| $27 | Distance de retrait de homing (mm) | 1.0 |
+| Paramètre | Description                                | Valeur Typique |
+| --------- | ------------------------------------------ | -------------- |
+| $20       | Activation des limites logicielles         | 0 ou 1         |
+| $21       | Activation des limites matérielles         | 0              |
+| $22       | Activation du cycle de homing              | 0 ou 1         |
+| $23       | Inversion de direction de homing           | 0              |
+| $24       | Vitesse de localisation de homing (mm/min) | 25             |
+| $25       | Vitesse de recherche de homing (mm/min)    | 500            |
+| $26       | Délai anti-rebond de homing (ms)           | 250            |
+| $27       | Distance de retrait de homing (mm)         | 1.0            |
 
 ### Broche & Laser ($30-$32)
 
-| Paramètre | Description | Valeur Laser |
-| --------- | ----------- | ------------ |
-| $30 | Vitesse maximum de la broche | 1000.0 |
-| $31 | Vitesse minimum de la broche | 0.0 |
-| $32 | Activation du mode laser | 1 |
+| Paramètre | Description                  | Valeur Laser |
+| --------- | ---------------------------- | ------------ |
+| $30       | Vitesse maximum de la broche | 1000.0       |
+| $31       | Vitesse minimum de la broche | 0.0          |
+| $32       | Activation du mode laser     | 1            |
 
 ### Calibration des Axes ($100-$102)
 
 Définit combien de pas de moteur pas à pas égalent un millimètre de mouvement.
 
-| Paramètre | Description | Notes |
-| --------- | ----------- | ----- |
-| $100 | Pas/mm X | Dépend du rapport poulie/courroie |
-| $101 | Pas/mm Y | Généralement identique à X |
-| $102 | Pas/mm Z | Non utilisé sur la plupart des lasers |
+| Paramètre | Description | Notes                                 |
+| --------- | ----------- | ------------------------------------- |
+| $100      | Pas/mm X    | Dépend du rapport poulie/courroie     |
+| $101      | Pas/mm Y    | Généralement identique à X            |
+| $102      | Pas/mm Z    | Non utilisé sur la plupart des lasers |
 
 **Calcul des pas/mm :**
+
 ```
 pas/mm = (pas_moteur_par_rev × micropas) / (dents_poulie × pas_courroie)
 ```
 
 **Exemple :** 200 pas/rev, 16 micropas, poulie 20 dents, courroie GT2 :
+
 ```
 pas/mm = (200 × 16) / (20 × 2) = 3200 / 40 = 80
 ```
 
 ### Vitesse & Accélération des Axes ($110-$122)
 
-| Paramètre | Description | Valeur Typique |
-| --------- | ----------- | -------------- |
-| $110 | Taux max X (mm/min) | 5000.0 |
-| $111 | Taux max Y (mm/min) | 5000.0 |
-| $112 | Taux max Z (mm/min) | 500.0 |
-| $120 | Accélération X (mm/s²) | 500.0 |
-| $121 | Accélération Y (mm/s²) | 500.0 |
-| $122 | Accélération Z (mm/s²) | 100.0 |
+| Paramètre | Description            | Valeur Typique |
+| --------- | ---------------------- | -------------- |
+| $110      | Taux max X (mm/min)    | 5000.0         |
+| $111      | Taux max Y (mm/min)    | 5000.0         |
+| $112      | Taux max Z (mm/min)    | 500.0          |
+| $120      | Accélération X (mm/s²) | 500.0          |
+| $121      | Accélération Y (mm/s²) | 500.0          |
+| $122      | Accélération Z (mm/s²) | 100.0          |
 
 ### Déplacement des Axes ($130-$132)
 
-| Paramètre | Description | Notes |
-| --------- | ----------- | ----- |
-| $130 | Déplacement max X (mm) | Largeur de la zone de travail |
-| $131 | Déplacement max Y (mm) | Profondeur de la zone de travail |
-| $132 | Déplacement max Z (mm) | Déplacement Z (si applicable) |
+| Paramètre | Description            | Notes                            |
+| --------- | ---------------------- | -------------------------------- |
+| $130      | Déplacement max X (mm) | Largeur de la zone de travail    |
+| $131      | Déplacement max Y (mm) | Profondeur de la zone de travail |
+| $132      | Déplacement max Z (mm) | Déplacement Z (si applicable)    |
 
 ---
 
@@ -266,9 +282,8 @@ $132=0.0       ; Déplacement max Z
 2. Envoyez chaque ligne (`$100=80.0`, etc.) via console
 3. Vérifiez avec la commande `$$`
 
-:::tip Sauvegardes Régulières
-Sauvegardez vos paramètres après toute calibration ou réglage. Stockez les sauvegardes dans un emplacement sûr.
-:::
+:::tip Sauvegardes Régulières Sauvegardez vos paramètres après toute calibration ou réglage. Stockez
+les sauvegardes dans un emplacement sûr. :::
 
 ---
 

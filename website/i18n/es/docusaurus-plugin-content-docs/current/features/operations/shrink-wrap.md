@@ -1,6 +1,8 @@
 # Envoltura Contraída
 
-La Envoltura Contraída crea una trayectoria de corte eficiente alrededor de múltiples objetos generando un límite que se "contrae" alrededor de ellos. Es útil para cortar múltiples piezas de una lámina con desperdicio mínimo.
+La Envoltura Contraída crea una trayectoria de corte eficiente alrededor de múltiples objetos
+generando un límite que se "contrae" alrededor de ellos. Es útil para cortar múltiples piezas de una
+lámina con desperdicio mínimo.
 
 ## Resumen
 
@@ -37,7 +39,8 @@ La envoltura contraída crea un límite usando un algoritmo de geometría comput
 3. **Envuelve** firmemente alrededor del grupo de objetos
 4. **Desplaza** hacia afuera por la distancia especificada
 
-El resultado es una trayectoria de corte eficiente que sigue la forma general de tus piezas mientras mantiene la holgura.
+El resultado es una trayectoria de corte eficiente que sigue la forma general de tus piezas mientras
+mantiene la holgura.
 
 ## Crear una Operación de Envoltura Contraída
 
@@ -64,11 +67,13 @@ El resultado es una trayectoria de corte eficiente que sigue la forma general de
 
 ## Ajustes Clave
 
-El diálogo de ajustes de paso tiene tres pestañas: **Ajustes de Paso**, **Láser** y **Post-Procesamiento**. Los ajustes se describen en orden de pestañas a continuación.
+El diálogo de ajustes de paso tiene tres pestañas: **Ajustes de Paso**, **Láser** y
+**Post-Procesamiento**. Los ajustes se describen en orden de pestañas a continuación.
 
 ### Envoltura Contraída
 
-El grupo **Envoltura Contraída** en la pestaña *Ajustes de Paso* controla cómo se ajusta el casco alrededor del contenido.
+El grupo **Envoltura Contraída** en la pestaña _Ajustes de Paso_ controla cómo se ajusta el casco
+alrededor del contenido.
 
 #### Suavidad
 
@@ -93,11 +98,11 @@ Controla qué tan de cerca el límite sigue las formas de los objetos:
 
 Controla dónde corta el láser en relación a la trayectoria de envoltura contraída:
 
-| Lado de Corte | Descripción                 | Usar Para                           |
-| ------------- | --------------------------- | ----------------------------------- |
-| **Línea central** | Corta directamente en la trayectoria | Corte estándar                |
-| **Exterior**  | Corta fuera del límite      | Hace el corte ligeramente más grande |
-| **Interior**  | Corta dentro del límite     | Hace el corte ligeramente más pequeño |
+| Lado de Corte     | Descripción                          | Usar Para                             |
+| ----------------- | ------------------------------------ | ------------------------------------- |
+| **Línea central** | Corta directamente en la trayectoria | Corte estándar                        |
+| **Exterior**      | Corta fuera del límite               | Hace el corte ligeramente más grande  |
+| **Interior**      | Corta dentro del límite              | Hace el corte ligeramente más pequeño |
 
 #### Distancia de Desplazamiento
 
@@ -123,7 +128,8 @@ Controla dónde corta el láser en relación a la trayectoria de envoltura contr
 
 ![Ajustes del láser](/screenshots/step-settings-shrink-wrap-laser.webp)
 
-La potencia, la velocidad y la selección del cabezal láser se encuentran en la página **Láser** del diálogo de ajustes de paso.
+La potencia, la velocidad y la selección del cabezal láser se encuentran en la página **Láser** del
+diálogo de ajustes de paso.
 
 Como otras operaciones de corte:
 
@@ -221,11 +227,13 @@ Ver [Flujo de Trabajo Multi-Capa](../multi-layer.md) para detalles.
 Las operaciones de Envoltura Contraída soportan varias opciones de post-procesamiento:
 
 - **[Suavizar Trayectoria](../smooth.md)** - Reduce bordes irregulares en la trayectoria del límite
-- **[Pestañas de Sujeción](../holding-tabs.md)** - Mantienen las piezas cortadas adjuntas al material base
+- **[Pestañas de Sujeción](../holding-tabs.md)** - Mantienen las piezas cortadas adjuntas al
+  material base
 - **[Recortar al Material](../crop-to-stock.md)** - Limita los cortes al límite del material
 - **[Optimización de Trayectoria](../path-optimization.md)** - Reduce la distancia de viaje
 - **[Multi-Pasada](../multi-pass.md)** - Repite cortes para materiales gruesos
-- **[Entrada/Salida](../lead-in-out.md)** - Añade movimientos de aproximación y salida sin potencia para extremos de corte más limpios
+- **[Entrada/Salida](../lead-in-out.md)** - Añade movimientos de aproximación y salida sin potencia
+  para extremos de corte más limpios
 
 ### Espaciado de Piezas
 
@@ -347,7 +355,8 @@ Antes de la tanda de producción:
 
 ### Las piezas se mueven durante el corte
 
-- **Añade:** Pestañas pequeñas para sostener las piezas (ver [Pestañas de Sujeción](../holding-tabs.md))
+- **Añade:** Pestañas pequeñas para sostener las piezas (ver
+  [Pestañas de Sujeción](../holding-tabs.md))
 - **Usa:** Orden de corte: de adentro hacia afuera
 - **Asegúrate:** El material está plano y asegurado
 - **Revisa:** La lámina no está alabeada

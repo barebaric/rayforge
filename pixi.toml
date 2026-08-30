@@ -196,6 +196,7 @@ libglvnd = "==1.7.0"
 [feature.website.tasks]
 site-gen-api = "python3 scripts/update_api_docs.py"
 site-install = { cmd = "npm install", cwd = "website" }
+site-format = { cmd = "npx prettier --write \"docs/**/*.md\" \"blog/**/*.md\" \"i18n/**/*.md\"", cwd = "website", depends-on = ["site-install"] }
 site-serve = { cmd = "npm start", cwd = "website", depends-on = ["update-api-docs"] }
 site-build = { cmd = "npm run build", cwd = "website", depends-on = ["site-gen-api"] }
 site-deploy = { cmd = "bash scripts/deploy_website.sh", depends-on = ["site-gen-api"] }

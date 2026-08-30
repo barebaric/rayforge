@@ -1,22 +1,20 @@
 # Générateur de Pièces IA
 
-Créez des designs pour découpe laser à partir de descriptions textuelles
-grâce à l'intelligence artificielle.
+Créez des designs pour découpe laser à partir de descriptions textuelles grâce à l'intelligence
+artificielle.
 
 ## Aperçu
 
-Le module Générateur de Pièces IA vous permet de créer des designs en
-décrivant simplement ce que vous voulez. Tapez une description comme "une
-forme d'étoile simple" ou "un engrenage à 8 dents" et l'IA générera une
-pièce prête pour votre découpeuse laser.
+Le module Générateur de Pièces IA vous permet de créer des designs en décrivant simplement ce que
+vous voulez. Tapez une description comme "une forme d'étoile simple" ou "un engrenage à 8 dents" et
+l'IA générera une pièce prête pour votre découpeuse laser.
 
 ![Dialogue du Générateur de Pièces IA](/screenshots/addon-ai-workpiece-generator.webp)
 
 ## Prérequis
 
-Avant d'utiliser ce module, vous devez configurer un fournisseur IA.
-Consultez [Fournisseur IA](../application-settings/ai-provider.md) pour
-les instructions de configuration.
+Avant d'utiliser ce module, vous devez configurer un fournisseur IA. Consultez
+[Fournisseur IA](../application-settings/ai-provider.md) pour les instructions de configuration.
 
 ## Utiliser le Générateur
 
@@ -28,14 +26,12 @@ les instructions de configuration.
 
 ## Conseils pour de Meilleurs Résultats
 
-- **Soyez précis**: "une étoile à 5 branches avec des pointes acérées"
-  fonctionne mieux que "une étoile"
-- **Restez simple**: L'IA fonctionne mieux avec des designs géométriques
-  simples
-- **Précisez les détails**: Incluez des détails importants comme le nombre
-  de dents, les coins ou la symétrie
-- **Utilisez des descriptions physiques**: Décrivez la forme, pas les
-  paramètres de découpe
+- **Soyez précis**: "une étoile à 5 branches avec des pointes acérées" fonctionne mieux que "une
+  étoile"
+- **Restez simple**: L'IA fonctionne mieux avec des designs géométriques simples
+- **Précisez les détails**: Incluez des détails importants comme le nombre de dents, les coins ou la
+  symétrie
+- **Utilisez des descriptions physiques**: Décrivez la forme, pas les paramètres de découpe
 
 ## Exemples de Prompts
 

@@ -1,7 +1,7 @@
 # 3D-Ansicht
 
-Die 3D-Ansicht ermöglicht dir, deine G-Code-Werkzeugwege zu visualisieren und
-die Auftragsausführung zu simulieren, bevor du sie an deine Maschine sendest.
+Die 3D-Ansicht ermöglicht dir, deine G-Code-Werkzeugwege zu visualisieren und die Auftragsausführung
+zu simulieren, bevor du sie an deine Maschine sendest.
 
 ![3D-Vorschau](/screenshots/main-3d.webp)
 
@@ -33,119 +33,102 @@ Schnelle Kamerawinkel:
 
 ## Werkstückkoordinatensystem-Anzeige
 
-Die 3D-Ansicht visualisiert das aktive Werkstückkoordinatensystem (WCS)
-anders als die 2D-Canvas:
+Die 3D-Ansicht visualisiert das aktive Werkstückkoordinatensystem (WCS) anders als die 2D-Canvas:
 
 ### Raster und Achsen
 
-- **Isolierte Anzeige**: Das Raster und die Achsen erscheinen so, als wäre
-  der WCS-Ursprung der Weltursprung
-- **Offset angewendet**: Das gesamte Raster ist verschoben, um mit dem
-  ausgewählten WCS-Offset ausgerichtet zu sein
-- **Beschriftungen relativ zum WCS**: Koordinatenbeschriftungen zeigen
-  Positionen relativ zum WCS-Ursprung, nicht zum Maschinenursprung
+- **Isolierte Anzeige**: Das Raster und die Achsen erscheinen so, als wäre der WCS-Ursprung der
+  Weltursprung
+- **Offset angewendet**: Das gesamte Raster ist verschoben, um mit dem ausgewählten WCS-Offset
+  ausgerichtet zu sein
+- **Beschriftungen relativ zum WCS**: Koordinatenbeschriftungen zeigen Positionen relativ zum
+  WCS-Ursprung, nicht zum Maschinenursprung
 
-Diese "in Isolation"-Anzeige erleichtert es zu verstehen, wo dein Auftrag
-relativ zum ausgewählten Werkstückkoordinatensystem laufen wird, ohne durch
-die absolute Position der Maschine verwirrt zu werden.
+Diese "in Isolation"-Anzeige erleichtert es zu verstehen, wo dein Auftrag relativ zum ausgewählten
+Werkstückkoordinatensystem laufen wird, ohne durch die absolute Position der Maschine verwirrt zu
+werden.
 
 ### WCS ändern
 
 Die 3D-Ansicht aktualisiert sich automatisch, wenn du das aktive WCS änderst:
 
 - Ein anderes WCS aus der Symbolleisten-Dropdown auswählen
-- Das Raster und die Achsen verschieben sich, um den neuen WCS-Ursprung
-  widerzuspiegeln
-- Beschriftungen aktualisieren sich, um Koordinaten relativ zum neuen WCS
-  zu zeigen
+- Das Raster und die Achsen verschieben sich, um den neuen WCS-Ursprung widerzuspiegeln
+- Beschriftungen aktualisieren sich, um Koordinaten relativ zum neuen WCS zu zeigen
 
-:::tip WCS in der 3D-Ansicht
-Die 3D-Ansicht zeigt deine Werkzeugwege relativ zum ausgewählten WCS. Wenn du
-das WCS änderst, siehst du die Werkzeugwege scheinbar wandern, weil sich der
-Referenzpunkt (das Raster) geändert hat, nicht weil sich die Werkzeugwege
-selbst bewegt haben.
-:::
+:::tip WCS in der 3D-Ansicht Die 3D-Ansicht zeigt deine Werkzeugwege relativ zum ausgewählten WCS.
+Wenn du das WCS änderst, siehst du die Werkzeugwege scheinbar wandern, weil sich der Referenzpunkt
+(das Raster) geändert hat, nicht weil sich die Werkzeugwege selbst bewegt haben. :::
 
 ## Anzeigeoptionen
 
-Sichtbarkeits-Umschaltungen befinden sich als Overlay-Schaltflächen oben rechts
-auf der 3D-Canvas. Jede Schaltfläche merkt sich ihren Zustand zwischen den
-Sitzungen:
+Sichtbarkeits-Umschaltungen befinden sich als Overlay-Schaltflächen oben rechts auf der 3D-Canvas.
+Jede Schaltfläche merkt sich ihren Zustand zwischen den Sitzungen:
 
-- **Werkstückbild**: Sichtbarkeit des Werkstück-Grundbilds auf der
-  Werkstückoberfläche umschalten — dasselbe Bild wie auf der 2D-Canvas
+- **Werkstückbild**: Sichtbarkeit des Werkstück-Grundbilds auf der Werkstückoberfläche umschalten —
+  dasselbe Bild wie auf der 2D-Canvas
 - **Material**: Sichtbarkeit der Material-Blöcke umschalten
 - **Modell**: 3D-Maschinenmodell-Sichtbarkeit umschalten
 - **Raster**: Sichtbarkeit des Koordinatenrasters umschalten
-- **Ops-Unterlage**: Sichtbarkeit der halbtransparenten Raster-Gravurvorschau
-  auf der Werkstückoberfläche umschalten
+- **Ops-Unterlage**: Sichtbarkeit der halbtransparenten Raster-Gravurvorschau auf der
+  Werkstückoberfläche umschalten
 - **Eilgänge**: Eilgang-Sichtbarkeit umschalten
-- **No-Go-Zonen**: No-Go-Zonen-Sichtbarkeit umschalten. Diese Schaltfläche
-  erscheint nur, wenn für deine Maschine mindestens eine No-Go-Zone
-  konfiguriert ist.
+- **No-Go-Zonen**: No-Go-Zonen-Sichtbarkeit umschalten. Diese Schaltfläche erscheint nur, wenn für
+  deine Maschine mindestens eine No-Go-Zone konfiguriert ist.
 
-Die perspektivische und orthografische Projektion wird mit <kbd>P</kbd> oder
-**Ansicht → Perspektive umschalten** umgeschaltet.
+Die perspektivische und orthografische Projektion wird mit <kbd>P</kbd> oder **Ansicht → Perspektive
+umschalten** umgeschaltet.
 
 ### Werkzeugweg-Visualisierung
 
 Passe an, was du siehst:
 
 - **Eilgänge anzeigen**: Positionierbewegungen anzeigen (gepunktete Linien)
-- **Arbeitsbewegungen anzeigen**: Schneid-/Gravurbewegungen anzeigen
-  (durchgezogene Linien)
+- **Arbeitsbewegungen anzeigen**: Schneid-/Gravurbewegungen anzeigen (durchgezogene Linien)
 - **Nach Operation färben**: Verschiedene Farben für jede Operation
 
-:::tip Farben pro Laser
-Bei Maschinen mit mehreren Laserköpfen kann jeder Laser eine eigene Farbe haben,
-die in den [Lasereinstellungen](../machine/laser.md)
-konfiguriert wird. Dies erleichtert die Identifizierung, welcher Laser
-welche Operation ausführt.
-:::
+:::tip Farben pro Laser Bei Maschinen mit mehreren Laserköpfen kann jeder Laser eine eigene Farbe
+haben, die in den [Lasereinstellungen](../machine/laser.md) konfiguriert wird. Dies erleichtert die
+Identifizierung, welcher Laser welche Operation ausführt. :::
 
 ### Laserkopf-Modell
 
-Die 3D-Ansicht rendert ein Modell deines Laserkopfes, das während der
-Simulation dem Werkzeugweg folgt. Du kannst jedem Laserkopf ein 3D-Modell
-auf der Seite [Lasereinstellungen](../machine/laser.md) in den
-Maschineneinstellungen zuweisen. Skalierung, Rotation und Fokusabstand des
-Modells können an dein physisches Setup angepasst werden.
+Die 3D-Ansicht rendert ein Modell deines Laserkopfes, das während der Simulation dem Werkzeugweg
+folgt. Du kannst jedem Laserkopf ein 3D-Modell auf der Seite
+[Lasereinstellungen](../machine/laser.md) in den Maschineneinstellungen zuweisen. Skalierung,
+Rotation und Fokusabstand des Modells können an dein physisches Setup angepasst werden.
 
-Während der Simulation wird ein leuchtender Laserstrahl vom Kopf nach unten
-gezeichnet, wenn der Laser aktiv ist.
+Während der Simulation wird ein leuchtender Laserstrahl vom Kopf nach unten gezeichnet, wenn der
+Laser aktiv ist.
 
 ## Physikalisches Brennmodell {#physical-burn-model}
 
-Wenn du gravierst, zeigt die 3D-Ansicht das Ergebnis nicht mehr als flache
-Überlagerung auf dem Material. Laser-Raster- und Vektoroperationen **braten
-jetzt das Material selbst** — die Vorschau zeigt einen Verbrennungseffekt, der
-von einem physikalisch motivierten Modell gesteuert wird und berücksichtigt:
+Wenn du gravierst, zeigt die 3D-Ansicht das Ergebnis nicht mehr als flache Überlagerung auf dem
+Material. Laser-Raster- und Vektoroperationen **braten jetzt das Material selbst** — die Vorschau
+zeigt einen Verbrennungseffekt, der von einem physikalisch motivierten Modell gesteuert wird und
+berücksichtigt:
 
-- Die **Wellenlänge**, **optische Wattzahl** und **Punktgröße** deines Lasers
-  (konfiguriert in den [Lasereinstellungen](../machine/laser.md)).
+- Die **Wellenlänge**, **optische Wattzahl** und **Punktgröße** deines Lasers (konfiguriert in den
+  [Lasereinstellungen](../machine/laser.md)).
 - Die **Absorption des Materials** bei dieser Wellenlänge (definiert in der
   [Materialbibliothek](../application-settings/materials.md#absorption)).
-- Die **Scangeschwindigkeit**, die die pro Flächeneinheit gelieferte Energie
-  bestimmt (Fluenz in J/cm²).
+- Die **Scangeschwindigkeit**, die die pro Flächeneinheit gelieferte Energie bestimmt (Fluenz in
+  J/cm²).
 
-Das Ergebnis ist eine leistungsabhängige Verbrennungsrampung mit einem
-Hitzehalo auf oberflächenausgerichteten Flächen. Es funktioniert auch mit
-Rotation — Gravur wird in das Rotationsmaterial eingebrannt.
+Das Ergebnis ist eine leistungsabhängige Verbrennungsrampung mit einem Hitzehalo auf
+oberflächenausgerichteten Flächen. Es funktioniert auch mit Rotation — Gravur wird in das
+Rotationsmaterial eingebrannt.
 
-:::note Kalibrierung
-Das Brennmodell ist physikalisch motiviert, aber noch nicht vollständig über
-alle Materialien und Lasertypen kalibriert. Du kannst helfen, es zu
-verbessern: Führe ein
-[Materialtestgitter](../features/operations/material-test-grid.md) durch und
-teile das Ergebnisfoto zusammen mit deinen Maschinendaten (Wellenlänge,
-optische Wattzahl, Punktgröße, Geschwindigkeit und die getesteten
-Leistungen/Tiefen).
-:::
+:::note Kalibrierung Das Brennmodell ist physikalisch motiviert, aber noch nicht vollständig über
+alle Materialien und Lasertypen kalibriert. Du kannst helfen, es zu verbessern: Führe ein
+[Materialtestgitter](../features/operations/material-test-grid.md) durch und teile das Ergebnisfoto
+zusammen mit deinen Maschinendaten (Wellenlänge, optische Wattzahl, Punktgröße, Geschwindigkeit und
+die getesteten Leistungen/Tiefen). :::
 
 ## Simulation
 
-Die 3D-Ansicht enthält einen eingebauten Simulator mit
-Wiedergabesteuerungen, die am unteren Rand der Canvas überlagert sind.
+Die 3D-Ansicht enthält einen eingebauten Simulator mit Wiedergabesteuerungen, die am unteren Rand
+der Canvas überlagert sind.
 
 ### Wiedergabesteuerung
 
@@ -156,10 +139,9 @@ Wiedergabesteuerungen, die am unteren Rand der Canvas überlagert sind.
 
 ### Synchronisierte G-Code-Ansicht
 
-Die Simulation bleibt mit dem G-Code-Viewer im unteren Panel synchronisiert.
-Das Durchgehen der Simulation hebt die entsprechende Zeile im G-Code-Viewer
-hervor, und das Klicken auf eine Zeile im G-Code-Viewer springt die Simulation
-zu diesem Punkt.
+Die Simulation bleibt mit dem G-Code-Viewer im unteren Panel synchronisiert. Das Durchgehen der
+Simulation hebt die entsprechende Zeile im G-Code-Viewer hervor, und das Klicken auf eine Zeile im
+G-Code-Viewer springt die Simulation zu diesem Punkt.
 
 ### Ebenen-Sichtbarkeit
 
@@ -177,11 +159,9 @@ Vor dem Senden an die Maschine verifizieren:
 - [ ] Auftrag beginnt an der erwarteten Position
 - [ ] Halterungen befinden sich an den korrekten Positionen
 
-Einige zusätzliche Prüfungen werden automatisch durchgeführt. Wenn du einen
-Auftrag ausführst oder exportierst, führt Rayforge
-[Plausibilitätsprüfungen](../features/sanity-checks.md) durch, die
-Maschinenausmaße, Arbeitsbereichgrenzen und No-Go-Zonen-Kollisionen
-überprüfen.
+Einige zusätzliche Prüfungen werden automatisch durchgeführt. Wenn du einen Auftrag ausführst oder
+exportierst, führt Rayforge [Plausibilitätsprüfungen](../features/sanity-checks.md) durch, die
+Maschinenausmaße, Arbeitsbereichgrenzen und No-Go-Zonen-Kollisionen überprüfen.
 
 ## Leistungstipps
 

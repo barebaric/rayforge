@@ -1,6 +1,7 @@
 # Outils du canevas
 
-Le canevas fournit un ensemble complet d'outils pour manipuler les conceptions, mesurer et préparer vos travaux laser.
+Le canevas fournit un ensemble complet d'outils pour manipuler les conceptions, mesurer et préparer
+vos travaux laser.
 
 ## Outil de sélection
 
@@ -18,15 +19,19 @@ Sélectionnez, déplacez et transformez des objets sur le canevas.
 Maintenir les touches modificatrices pendant le glissement change le comportement :
 
 - <kbd>ctrl</kbd> en **déplaçant** : Aligner l'objet sur la grille de 5mm pour un alignement précis
-- <kbd>ctrl</kbd> en **tournant** : Aligner la rotation par incréments de 5 degrés pour des angles cohérents
+- <kbd>ctrl</kbd> en **tournant** : Aligner la rotation par incréments de 5 degrés pour des angles
+  cohérents
 - <kbd>shift</kbd> en **mettant à l'échelle** : Contraindre les proportions (échelle uniforme)
-- <kbd>ctrl</kbd> en **mettant à l'échelle** : Mettre à l'échelle depuis le centre au lieu du bord opposé
+- <kbd>ctrl</kbd> en **mettant à l'échelle** : Mettre à l'échelle depuis le centre au lieu du bord
+  opposé
 
 **Poignées de transformation :**
 
-- **Poignées d'angle** : Mise à l'échelle proportionnelle (maintenez <kbd>shift</kbd> pour mise à l'échelle non proportionnelle)
+- **Poignées d'angle** : Mise à l'échelle proportionnelle (maintenez <kbd>shift</kbd> pour mise à
+  l'échelle non proportionnelle)
 - **Poignées de bord** : Mise à l'échelle dans une direction
-- **Poignée de rotation** : Cliquez une fois sur un objet sélectionné pour basculer en mode rotation, puis faites glisser pour tourner autour du point central
+- **Poignée de rotation** : Cliquez une fois sur un objet sélectionné pour basculer en mode
+  rotation, puis faites glisser pour tourner autour du point central
 
 **Raccourcis clavier :**
 
@@ -148,19 +153,20 @@ Combinez ou soustrayez des formes :
 ## Conseils pour une utilisation efficace du canevas
 
 1. **Utilisez les raccourcis clavier** : Beaucoup plus rapide que les clics sur la barre d'outils
-2. **Maîtrisez le panoramique et le zoom** : Essentiel pour les conceptions volumineuses ou détaillées
+2. **Maîtrisez le panoramique et le zoom** : Essentiel pour les conceptions volumineuses ou
+   détaillées
 3. **Aimanter à la grille** : Accélère l'alignement pour les dispositions rectangulaires
 4. **Mesurez d'abord** : Vérifiez les dimensions avant de générer le G-code
-5. **Groupez les objets connexes** : Plus facile à déplacer et organiser (<kbd>ctrl+g</kbd> pour grouper)
+5. **Groupez les objets connexes** : Plus facile à déplacer et organiser (<kbd>ctrl+g</kbd> pour
+   grouper)
 
 ## Édition vectorielle
 
-Double-cliquez sur une pièce sur le canevas pour entrer en mode d'édition
-vectorielle. Dans ce mode, vous pouvez sélectionner et supprimer des segments
-vectoriels individuels de la pièce.
+Double-cliquez sur une pièce sur le canevas pour entrer en mode d'édition vectorielle. Dans ce mode,
+vous pouvez sélectionner et supprimer des segments vectoriels individuels de la pièce.
 
-Pour quitter le mode d'édition vectorielle, cliquez en dehors de la pièce ou
-appuyez sur <kbd>Échap</kbd>.
+Pour quitter le mode d'édition vectorielle, cliquez en dehors de la pièce ou appuyez sur
+<kbd>Échap</kbd>.
 
 ---
 

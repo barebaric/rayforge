@@ -1,12 +1,15 @@
 # Overscan
 
-L'overscan étend les lignes de gravure raster au-delà de la zone de contenu réelle pour s'assurer que le laser atteint une vitesse constante pendant la gravure, éliminant les artefacts d'accélération.
+L'overscan étend les lignes de gravure raster au-delà de la zone de contenu réelle pour s'assurer
+que le laser atteint une vitesse constante pendant la gravure, éliminant les artefacts
+d'accélération.
 
 ## Le Problème : Marques d'Accélération
 
 Sans overscan, la gravure raster souffre d'**artefacts d'accélération** :
 
-- **Bords clairs** où l'accélération commence (laser se déplaçant trop vite pour le niveau de puissance)
+- **Bords clairs** où l'accélération commence (laser se déplaçant trop vite pour le niveau de
+  puissance)
 - **Bords sombres** où la décélération se produit (laser s'attardant plus longtemps)
 - **Profondeur/foncé de gravure incohérent** à travers chaque ligne
 - Bandes ou rayures visibles aux bords des lignes
@@ -44,25 +47,26 @@ L'overscan est un **transformateur** dans le pipeline de flux de travail Rayforg
 
 **Paramètres :**
 
-| Paramètre | Description | Valeur Typique |
-| --------- | ----------- | -------------- |
-| **Activé** | Basculer overscan on/off | ON (pour raster) |
-| **Distance (mm)** | Jusqu'où étendre les lignes | 2-5 mm |
+| Paramètre         | Description                 | Valeur Typique   |
+| ----------------- | --------------------------- | ---------------- |
+| **Activé**        | Basculer overscan on/off    | ON (pour raster) |
+| **Distance (mm)** | Jusqu'où étendre les lignes | 2-5 mm           |
 
 ## Choisir la Distance d'Overscan
 
-La distance d'overscan devrait permettre à la machine d'**accélérer complètement** à la vitesse cible.
+La distance d'overscan devrait permettre à la machine d'**accélérer complètement** à la vitesse
+cible.
 
 **Directives pratiques :**
 
-| Vitesse Max | Accélération | Overscan Recommandé |
-| ----------- | ------------ | ------------------- |
-| 3000 mm/min (50 mm/s) | Faible | 5 mm |
-| 3000 mm/min (50 mm/s) | Moyenne | 3 mm |
-| 3000 mm/min (50 mm/s) | Élevée | 2 mm |
-| 6000 mm/min (100 mm/s) | Faible | 10 mm |
-| 6000 mm/min (100 mm/s) | Moyenne | 6 mm |
-| 6000 mm/min (100 mm/s) | Élevée | 4 mm |
+| Vitesse Max            | Accélération | Overscan Recommandé |
+| ---------------------- | ------------ | ------------------- |
+| 3000 mm/min (50 mm/s)  | Faible       | 5 mm                |
+| 3000 mm/min (50 mm/s)  | Moyenne      | 3 mm                |
+| 3000 mm/min (50 mm/s)  | Élevée       | 2 mm                |
+| 6000 mm/min (100 mm/s) | Faible       | 10 mm               |
+| 6000 mm/min (100 mm/s) | Moyenne      | 6 mm                |
+| 6000 mm/min (100 mm/s) | Élevée       | 4 mm                |
 
 **Facteurs affectant la distance requise :**
 
@@ -126,4 +130,5 @@ La distance d'overscan devrait permettre à la machine d'**accélérer complète
 ## Sujets Connexes
 
 - [Opérations de Gravure](./operations/engrave.md) - Configurer les paramètres de gravure
-- [Grille de Test de Matériau](./operations/material-test-grid.md) - Trouver la puissance/vitesse optimales
+- [Grille de Test de Matériau](./operations/material-test-grid.md) - Trouver la puissance/vitesse
+  optimales

@@ -1,22 +1,19 @@
 # Gerador de Peças por IA
 
-Crie designs para corte a laser a partir de descrições de texto usando
-inteligência artificial.
+Crie designs para corte a laser a partir de descrições de texto usando inteligência artificial.
 
 ## Visão Geral
 
-O addon Gerador de Peças por IA permite que você crie designs simplesmente
-descrevendo o que você quer. Digite uma descrição como "uma forma de estrela
-simples" ou "uma engrenagem com 8 dentes" e a IA gerará uma peça pronta
-para sua cortadora a laser.
+O addon Gerador de Peças por IA permite que você crie designs simplesmente descrevendo o que você
+quer. Digite uma descrição como "uma forma de estrela simples" ou "uma engrenagem com 8 dentes" e a
+IA gerará uma peça pronta para sua cortadora a laser.
 
 ![Diálogo do Gerador de Peças por IA](/screenshots/addon-ai-workpiece-generator.webp)
 
 ## Requisitos
 
-Antes de usar este addon, você precisa configurar um provedor de IA.
-Consulte [Provedor de IA](../application-settings/ai-provider.md) para
-instruções de configuração.
+Antes de usar este addon, você precisa configurar um provedor de IA. Consulte
+[Provedor de IA](../application-settings/ai-provider.md) para instruções de configuração.
 
 ## Usando o Gerador
 
@@ -28,12 +25,10 @@ instruções de configuração.
 
 ## Dicas para Melhores Resultados
 
-- **Seja específico**: "uma estrela de 5 pontas com pontas afiadas" funciona
-  melhor que "uma estrela"
-- **Mantenha simples**: A IA funciona melhor com designs geométricos
-  diretos
-- **Especifique detalhes**: Inclua detalhes importantes como número de
-  dentes, cantos ou simetria
+- **Seja específico**: "uma estrela de 5 pontas com pontas afiadas" funciona melhor que "uma
+  estrela"
+- **Mantenha simples**: A IA funciona melhor com designs geométricos diretos
+- **Especifique detalhes**: Inclua detalhes importantes como número de dentes, cantos ou simetria
 - **Use descrições físicas**: Descreva a forma, não os parâmetros de corte
 
 ## Exemplos de Prompts

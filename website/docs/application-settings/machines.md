@@ -1,52 +1,49 @@
 ---
-description: "Manage machines in Rayforge - add, configure, export, import, and switch between different laser cutters and engravers for your projects."
+description:
+  "Manage machines in Rayforge - add, configure, export, import, and switch between different laser
+  cutters and engravers for your projects."
 ---
 
 # Machines
 
 ![Machines Settings](/screenshots/app-settings-machines.webp)
 
-The Machines page in Application Settings shows a list of all configured
-machines. Each entry shows the machine name and has buttons to edit or
-delete it. The currently active machine is marked with a check icon.
+The Machines page in Application Settings shows a list of all configured machines. Each entry shows
+the machine name and has buttons to edit or delete it. The currently active machine is marked with a
+check icon.
 
 ## Adding a Machine
 
 1. Click the **Add Machine** button at the bottom of the list
-2. Select a device profile from the list to use as a template — each
-   profile pre-configures the machine settings and G-code dialect
+2. Select a device profile from the list to use as a template — each profile pre-configures the
+   machine settings and G-code dialect
 
 ![Add Machine Dialog](/screenshots/app-settings-machines-add.webp)
 
-3. The [machine settings dialog](../machine/general.md) opens where you can
-   adjust the configuration
+3. The [machine settings dialog](../machine/general.md) opens where you can adjust the configuration
 
 Alternatively:
 
 - Click **Device Not Listed** to launch the
-  [Configuration Wizard](../getting-started/first-time-setup.md), which walks
-  you through configuring a machine step by step
-- Click **Import from File…** to add a machine from a previously
-  exported profile or from a LightBurn device profile (.lbdev).
-  LightBurn profiles include camera calibration and laser settings
-  that are applied to the new machine
+  [Configuration Wizard](../getting-started/first-time-setup.md), which walks you through
+  configuring a machine step by step
+- Click **Import from File…** to add a machine from a previously exported profile or from a
+  LightBurn device profile (.lbdev). LightBurn profiles include camera calibration and laser
+  settings that are applied to the new machine
 
 ## Editing a Machine
 
-Click the edit icon next to a machine to open the
-[machine settings dialog](../machine/general.md).
+Click the edit icon next to a machine to open the [machine settings dialog](../machine/general.md).
 
 ## Switching the Active Machine
 
-Use the machine dropdown in the main window header to switch between
-configured machines. The selection is remembered between sessions.
+Use the machine dropdown in the main window header to switch between configured machines. The
+selection is remembered between sessions.
 
 ## Deleting a Machine
 
 1. Click the delete icon next to the machine
 2. Confirm the deletion
 
-:::warning
-Deleting a machine cannot be undone. Export the profile first
-if you want to preserve the configuration.
-:::
+:::warning Deleting a machine cannot be undone. Export the profile first if you want to preserve the
+configuration. :::

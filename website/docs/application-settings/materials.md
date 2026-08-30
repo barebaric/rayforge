@@ -1,22 +1,20 @@
 ---
-description: "Manage materials in Rayforge. Save material profiles with recommended laser power and speed settings for consistent results."
+description:
+  "Manage materials in Rayforge. Save material profiles with recommended laser power and speed
+  settings for consistent results."
 ---
 
 # Materials
 
 ![Materials Settings](/screenshots/app-settings-materials.webp)
 
-Material libraries in Rayforge allow you to organize and manage collections
-of materials for your laser cutting and engraving projects. This guide
-explains the difference between core and user libraries, and how to create
-your own libraries and add materials to them.
+Material libraries in Rayforge allow you to organize and manage collections of materials for your
+laser cutting and engraving projects. This guide explains the difference between core and user
+libraries, and how to create your own libraries and add materials to them.
 
-:::note
-Assigning a material to a stock item affects both its visual appearance
-in the 2D and 3D canvas and which [recipes](recipes.md) apply to it:
-material-specific recipes match against the assigned material. In
-future releases, materials will be used to derive more functional
-parameters.
+:::note Assigning a material to a stock item affects both its visual appearance in the 2D and 3D
+canvas and which [recipes](recipes.md) apply to it: material-specific recipes match against the
+assigned material. In future releases, materials will be used to derive more functional parameters.
 :::
 
 ## Creating a New Library
@@ -57,48 +55,41 @@ Your new library will be created in the user data directory and will be availabl
 
 #### Texture
 
-A texture image (WebP or PNG) that is tiled across the material surface.
-When set, the material renders with the texture instead of a flat color.
-Textures can be optimized to WebP with the
-`scripts/optimize_material_textures.py` script to keep material files
-small.
+A texture image (WebP or PNG) that is tiled across the material surface. When set, the material
+renders with the texture instead of a flat color. Textures can be optimized to WebP with the
+`scripts/optimize_material_textures.py` script to keep material files small.
 
 #### Texture Scale
 
-The size (in mm) that one texture tile covers on the material. Smaller
-values repeat the texture more often across the same surface.
+The size (in mm) that one texture tile covers on the material. Smaller values repeat the texture
+more often across the same surface.
 
 #### Color
 
-An optional tint color. When set, the material's texture is tinted with
-this color; when unset, the texture is shown as-is. This lets a single
-textured material (e.g. "Acrylic") cover multiple color variants: the
-color is applied per stock item in the [Stock
-Properties](../features/stock-handling.md) dialog. The color is only
-used for visual appearance on the work surface - it does not affect the
-laser path in any way.
+An optional tint color. When set, the material's texture is tinted with this color; when unset, the
+texture is shown as-is. This lets a single textured material (e.g. "Acrylic") cover multiple color
+variants: the color is applied per stock item in the
+[Stock Properties](../features/stock-handling.md) dialog. The color is only used for visual
+appearance on the work surface - it does not affect the laser path in any way.
 
 #### Roughness
 
-A 0-1 value describing how rough or polished the surface appears in the
-3D view. Lower values look glossy, higher values look matte.
+A 0-1 value describing how rough or polished the surface appears in the 3D view. Lower values look
+glossy, higher values look matte.
 
 #### Metallic
 
-A 0-1 value describing whether the surface reflects light like a metal in
-the 3D view. Set to 1 for metallic materials, 0 for non-metallic ones.
+A 0-1 value describing whether the surface reflects light like a metal in the 3D view. Set to 1 for
+metallic materials, 0 for non-metallic ones.
 
 #### Absorption
 
-:::note New in 1.11
-Absorption data drives the [physical burn model](../ui/3d-preview.md#physical-burn-model)
-in the 3D preview.
-:::
+:::note New in 1.11 Absorption data drives the
+[physical burn model](../ui/3d-preview.md#physical-burn-model) in the 3D preview. :::
 
-Per-wavelength absorption coefficients (0–1) describe how much of the
-laser's energy a material absorbs at a given wavelength. The 3D preview
-uses these, together with your laser head's wavelength, optical wattage,
-and spot size, to compute the fluence (J/cm²) delivered and render a
+Per-wavelength absorption coefficients (0–1) describe how much of the laser's energy a material
+absorbs at a given wavelength. The 3D preview uses these, together with your laser head's
+wavelength, optical wattage, and spot size, to compute the fluence (J/cm²) delivered and render a
 physically motivated charring effect on the stock.
 
 Add an `absorption` block under `appearance` in the material's YAML:
@@ -118,10 +109,9 @@ appearance:
 | `ir`   | 1064 nm                   | Fiber lasers      |
 | `co2`  | 10600 nm                  | CO2 tube lasers   |
 
-When a band is missing, a conservative default is used. The bundled
-material library ships researched absorption values for all included
-materials; the burn model is not yet fully calibrated, so contributions
-of real-world test data are welcome.
+When a band is missing, a conservative default is used. The bundled material library ships
+researched absorption values for all included materials; the burn model is not yet fully calibrated,
+so contributions of real-world test data are welcome.
 
 ## Managing Existing Materials
 
@@ -138,6 +128,4 @@ of real-world test data are welcome.
 2. Click the **Delete** button
 3. Confirm the deletion in the dialog
 
-:::warning
-Deleting a material is permanent and cannot be undone.
-:::
+:::warning Deleting a material is permanent and cannot be undone. :::

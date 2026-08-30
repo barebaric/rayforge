@@ -1,16 +1,19 @@
 # Ajustes de Dispositivo
 
-La página de Dispositivo en Configuración de Máquina te permite leer y aplicar ajustes directamente a tu dispositivo conectado (controlador). Estos también se conocen como ajustes "dólar" o ajustes `$$` en GRBL.
+La página de Dispositivo en Configuración de Máquina te permite leer y aplicar ajustes directamente
+a tu dispositivo conectado (controlador). Estos también se conocen como ajustes "dólar" o ajustes
+`$$` en GRBL.
 
 ![Ajustes de Dispositivo](/screenshots/machine-settings-device.webp)
 
-:::warning Precaución al Cambiar Ajustes
-Los ajustes de firmware incorrectos pueden hacer que tu máquina se comporte de manera impredecible, pierda posición o incluso dañe el hardware. Siempre registra los valores originales antes de hacer cambios, y modifica un ajuste a la vez.
-:::
+:::warning Precaución al Cambiar Ajustes Los ajustes de firmware incorrectos pueden hacer que tu
+máquina se comporte de manera impredecible, pierda posición o incluso dañe el hardware. Siempre
+registra los valores originales antes de hacer cambios, y modifica un ajuste a la vez. :::
 
 ## Resumen
 
-La página de Dispositivo proporciona acceso directo a los ajustes de firmware de tu controlador. Aquí es donde puedes:
+La página de Dispositivo proporciona acceso directo a los ajustes de firmware de tu controlador.
+Aquí es donde puedes:
 
 - Leer ajustes actuales del dispositivo
 - Modificar ajustes individuales
@@ -24,11 +27,13 @@ Los ajustes de firmware controlan:
 - **Configuración eléctrica**: Inversiones de pines, pullups
 - **Reportes**: Formato y frecuencia de mensajes de estado
 
-Estos ajustes se almacenan en tu controlador (no en Rayforge) y persisten a través de ciclos de energía.
+Estos ajustes se almacenan en tu controlador (no en Rayforge) y persisten a través de ciclos de
+energía.
 
 ## Leyendo Ajustes
 
-Haz clic en el botón **Leer del Dispositivo** para obtener los ajustes actuales de tu controlador conectado. Esto requiere:
+Haz clic en el botón **Leer del Dispositivo** para obtener los ajustes actuales de tu controlador
+conectado. Esto requiere:
 
 - Que la máquina esté conectada
 - Que el controlador soporte la lectura de ajustes del dispositivo
@@ -46,28 +51,32 @@ Después de modificar los ajustes, los cambios se aplican al dispositivo. El dis
 También puedes ver/modificar ajustes vía la consola de código G:
 
 **Ver todos los ajustes:**
+
 ```
 $$
 ```
 
 **Ver un solo ajuste:**
+
 ```
 $100
 ```
 
 **Modificar ajuste:**
+
 ```
 $100=80.0
 ```
 
 **Restaurar valores predeterminados:**
+
 ```
 $RST=$
 ```
 
-:::danger Restaurar Valores Predeterminados Borra Todos los Ajustes
-El comando `$RST=$` reinicia todos los ajustes de GRBL a los valores de fábrica. ¡Perderás cualquier calibración y ajuste! ¡Haz una copia de seguridad de tus ajustes primero!
-:::
+:::danger Restaurar Valores Predeterminados Borra Todos los Ajustes El comando `$RST=$` reinicia
+todos los ajustes de GRBL a los valores de fábrica. ¡Perderás cualquier calibración y ajuste! ¡Haz
+una copia de seguridad de tus ajustes primero! :::
 
 ---
 
@@ -82,17 +91,19 @@ Estos ajustes son los más importantes para la operación láser:
 **Propósito:** Habilita funciones específicas de láser en GRBL
 
 **Cuando está habilitado (1):**
+
 - El láser se apaga automáticamente durante movimientos G0 (rápidos)
 - La potencia se ajusta dinámicamente durante la aceleración/desaceleración
 - Previene quemaduras accidentales durante el posicionamiento
 
 **Cuando está deshabilitado (0):**
+
 - El láser se comporta como un husillo (modo CNC)
 - No se apaga durante los rápidos
 - **¡Peligroso para uso láser!**
 
-:::warning Siempre Habilita el Modo Láser
-$32 debería **siempre** establecerse en 1 para cortadores láser. El modo láser deshabilitado puede causar quemaduras no intencionales y riesgos de incendio.
+:::warning Siempre Habilita el Modo Láser $32 debería **siempre** establecerse en 1 para cortadores
+láser. El modo láser deshabilitado puede causar quemaduras no intencionales y riesgos de incendio.
 :::
 
 ### $30 y $31 - Rango de Potencia del Láser
@@ -103,12 +114,13 @@ $32 debería **siempre** establecerse en 1 para cortadores láser. El modo láse
 **Propósito:** Define el rango de potencia para comandos S
 
 **Valores típicos:**
+
 - $30=1000, $31=0 (rango S0-S1000, más común)
 - $30=255, $31=0 (rango S0-S255, algunos controladores)
 
-:::tip Coincidir con la Configuración de Rayforge
-El ajuste "Potencia Máxima" en tus [Ajustes de Láser](laser) debería coincidir con tu valor $30. Si $30=1000, establece la potencia máxima en 1000 en Rayforge.
-:::
+:::tip Coincidir con la Configuración de Rayforge El ajuste "Potencia Máxima" en tus
+[Ajustes de Láser](laser) debería coincidir con tu valor $30. Si $30=1000, establece la potencia
+máxima en 1000 en Rayforge. :::
 
 ### $130 y $131 - Recorrido Máximo
 
@@ -118,6 +130,7 @@ El ajuste "Potencia Máxima" en tus [Ajustes de Láser](laser) debería coincidi
 **Propósito:** Define el área de trabajo de tu máquina
 
 **Por qué importa:**
+
 - Los límites suaves ($20) usan estos valores para prevenir choques
 - Define los límites del sistema de coordenadas
 - Debe coincidir con el tamaño físico de tu máquina
@@ -130,77 +143,79 @@ El ajuste "Potencia Máxima" en tus [Ajustes de Láser](laser) debería coincidi
 
 Controla las señales eléctricas y el tiempo de los motores paso a paso.
 
-| Ajuste | Descripción | Valor Típico |
-|--------|-------------|--------------|
-| $0 | Tiempo de pulso de paso (μs) | 10 |
-| $1 | Retraso de paso inactivo (ms) | 25 |
-| $2 | Máscara de inversión de pulso de paso | 0 |
-| $3 | Máscara de inversión de dirección de paso | 0 |
-| $4 | Invertir pin de habilitación de paso | 0 |
-| $5 | Invertir pines de límite | 0 |
-| $6 | Invertir pin de sonda | 0 |
+| Ajuste | Descripción                               | Valor Típico |
+| ------ | ----------------------------------------- | ------------ |
+| $0     | Tiempo de pulso de paso (μs)              | 10           |
+| $1     | Retraso de paso inactivo (ms)             | 25           |
+| $2     | Máscara de inversión de pulso de paso     | 0            |
+| $3     | Máscara de inversión de dirección de paso | 0            |
+| $4     | Invertir pin de habilitación de paso      | 0            |
+| $5     | Invertir pines de límite                  | 0            |
+| $6     | Invertir pin de sonda                     | 0            |
 
 ### Límites y Homing ($20-$27)
 
 Controla los interruptores de límite y el comportamiento de homing.
 
-| Ajuste | Descripción | Valor Típico |
-|--------|-------------|--------------|
-| $20 | Habilitar límites suaves | 0 o 1 |
-| $21 | Habilitar límites físicos | 0 |
-| $22 | Habilitar ciclo de homing | 0 o 1 |
-| $23 | Invertir dirección de homing | 0 |
-| $24 | Velocidad de localización de homing (mm/min) | 25 |
-| $25 | Velocidad de búsqueda de homing (mm/min) | 500 |
-| $26 | Retraso de rebote de homing (ms) | 250 |
-| $27 | Distancia de retroceso de homing (mm) | 1.0 |
+| Ajuste | Descripción                                  | Valor Típico |
+| ------ | -------------------------------------------- | ------------ |
+| $20    | Habilitar límites suaves                     | 0 o 1        |
+| $21    | Habilitar límites físicos                    | 0            |
+| $22    | Habilitar ciclo de homing                    | 0 o 1        |
+| $23    | Invertir dirección de homing                 | 0            |
+| $24    | Velocidad de localización de homing (mm/min) | 25           |
+| $25    | Velocidad de búsqueda de homing (mm/min)     | 500          |
+| $26    | Retraso de rebote de homing (ms)             | 250          |
+| $27    | Distancia de retroceso de homing (mm)        | 1.0          |
 
 ### Husillo y Láser ($30-$32)
 
-| Ajuste | Descripción | Valor Láser |
-|--------|-------------|-------------|
-| $30 | Velocidad máxima del husillo | 1000.0 |
-| $31 | Velocidad mínima del husillo | 0.0 |
-| $32 | Habilitar modo láser | 1 |
+| Ajuste | Descripción                  | Valor Láser |
+| ------ | ---------------------------- | ----------- |
+| $30    | Velocidad máxima del husillo | 1000.0      |
+| $31    | Velocidad mínima del husillo | 0.0         |
+| $32    | Habilitar modo láser         | 1           |
 
 ### Calibración de Ejes ($100-$102)
 
 Define cuántos pasos del motor paso a paso equivalen a un milímetro de movimiento.
 
-| Ajuste | Descripción | Notas |
-|--------|-------------|-------|
-| $100 | Pasos/mm X | Depende de la relación polea/correa |
-| $101 | Pasos/mm Y | Usualmente igual que X |
-| $102 | Pasos/mm Z | No se usa en la mayoría de láseres |
+| Ajuste | Descripción | Notas                               |
+| ------ | ----------- | ----------------------------------- |
+| $100   | Pasos/mm X  | Depende de la relación polea/correa |
+| $101   | Pasos/mm Y  | Usualmente igual que X              |
+| $102   | Pasos/mm Z  | No se usa en la mayoría de láseres  |
 
 **Calculando pasos/mm:**
+
 ```
 pasos/mm = (pasos_motor_por_rev × micropasos) / (dientes_polea × paso_correa)
 ```
 
 **Ejemplo:** 200 pasos/rev, 16 micropasos, polea de 20 dientes, correa GT2:
+
 ```
 pasos/mm = (200 × 16) / (20 × 2) = 3200 / 40 = 80
 ```
 
 ### Velocidad y Aceleración de Ejes ($110-$122)
 
-| Ajuste | Descripción | Valor Típico |
-|--------|-------------|--------------|
-| $110 | Tasa máxima X (mm/min) | 5000.0 |
-| $111 | Tasa máxima Y (mm/min) | 5000.0 |
-| $112 | Tasa máxima Z (mm/min) | 500.0 |
-| $120 | Aceleración X (mm/seg²) | 500.0 |
-| $121 | Aceleración Y (mm/seg²) | 500.0 |
-| $122 | Aceleración Z (mm/seg²) | 100.0 |
+| Ajuste | Descripción             | Valor Típico |
+| ------ | ----------------------- | ------------ |
+| $110   | Tasa máxima X (mm/min)  | 5000.0       |
+| $111   | Tasa máxima Y (mm/min)  | 5000.0       |
+| $112   | Tasa máxima Z (mm/min)  | 500.0        |
+| $120   | Aceleración X (mm/seg²) | 500.0        |
+| $121   | Aceleración Y (mm/seg²) | 500.0        |
+| $122   | Aceleración Z (mm/seg²) | 100.0        |
 
 ### Recorrido de Ejes ($130-$132)
 
-| Ajuste | Descripción | Notas |
-|--------|-------------|-------|
-| $130 | Recorrido máximo X (mm) | Ancho del área de trabajo |
-| $131 | Recorrido máximo Y (mm) | Profundidad del área de trabajo |
-| $132 | Recorrido máximo Z (mm) | Recorrido Z (si aplica) |
+| Ajuste | Descripción             | Notas                           |
+| ------ | ----------------------- | ------------------------------- |
+| $130   | Recorrido máximo X (mm) | Ancho del área de trabajo       |
+| $131   | Recorrido máximo Y (mm) | Profundidad del área de trabajo |
+| $132   | Recorrido máximo Z (mm) | Recorrido Z (si aplica)         |
 
 ---
 
@@ -266,9 +281,8 @@ $132=0.0       ; Recorrido máximo Z
 2. Envía cada línea (`$100=80.0`, etc.) vía consola
 3. Verifica con el comando `$$`
 
-:::tip Copias de Seguridad Regulares
-Haz copia de seguridad de tus ajustes después de cualquier calibración o ajuste. Almacena las copias de seguridad en un lugar seguro.
-:::
+:::tip Copias de Seguridad Regulares Haz copia de seguridad de tus ajustes después de cualquier
+calibración o ajuste. Almacena las copias de seguridad en un lugar seguro. :::
 
 ---
 

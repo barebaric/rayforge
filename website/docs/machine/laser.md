@@ -1,18 +1,18 @@
 ---
-description: "Configure laser settings in Rayforge — set power, speed, and mode for your laser tube or diode for optimal cutting and engraving results."
+description:
+  "Configure laser settings in Rayforge — set power, speed, and mode for your laser tube or diode
+  for optimal cutting and engraving results."
 ---
 
 # Laser Settings
 
-The Laser page in Machine Settings configures your laser head(s) and their
-properties.
+The Laser page in Machine Settings configures your laser head(s) and their properties.
 
 ![Laser Settings](/screenshots/machine-settings-laser.webp)
 
 ## Laser Heads
 
-Rayforge supports machines with multiple laser heads. Each laser head has its
-own configuration.
+Rayforge supports machines with multiple laser heads. Each laser head has its own configuration.
 
 ### Adding a Laser Head
 
@@ -27,6 +27,7 @@ Each laser head has the following settings:
 A descriptive name for this laser head.
 
 Examples:
+
 - "10W Diode"
 - "CO2 Tube"
 - "Infrared Laser"
@@ -57,25 +58,21 @@ The power level used for framing operations (outlining without cutting).
 
 #### Frame Speed
 
-The speed at which the laser head moves during framing. This is set per laser
-head, so if your machine has multiple lasers with different characteristics you
-can choose an appropriate speed for each one. Slower speeds make the frame path
-easier to follow by eye.
+The speed at which the laser head moves during framing. This is set per laser head, so if your
+machine has multiple lasers with different characteristics you can choose an appropriate speed for
+each one. Slower speeds make the frame path easier to follow by eye.
 
 #### Focus Power
 
-The power level used when focus mode is enabled. Focus mode turns on the laser
-at low power to act as a "laser pointer" for positioning.
+The power level used when focus mode is enabled. Focus mode turns on the laser at low power to act
+as a "laser pointer" for positioning.
 
 - Set to 0 to disable the focus mode feature
 - Use for visual alignment and positioning
 
-:::tip Using Focus Mode
-Click the focus button (laser icon) in the toolbar to toggle focus mode. The
-laser will turn on at this power level, helping you see exactly where the laser
-is positioned. See [Workpiece Positioning](../features/workpiece-positioning.md)
-for more information.
-:::
+:::tip Using Focus Mode Click the focus button (laser icon) in the toolbar to toggle focus mode. The
+laser will turn on at this power level, helping you see exactly where the laser is positioned. See
+[Workpiece Positioning](../features/workpiece-positioning.md) for more information. :::
 
 #### Spot Size
 
@@ -85,28 +82,25 @@ The physical size of your focused laser beam in millimeters.
 - Most lasers have a circular spot (e.g., 0.1 x 0.1)
 - Affects engraving quality calculations
 
-:::tip Measuring Spot Size
-To measure your spot size:
+:::tip Measuring Spot Size To measure your spot size:
+
 1. Fire a short pulse at low power on a test material
 2. Measure the resulting mark with calipers
-3. Use the average of multiple measurements
-:::
+3. Use the average of multiple measurements :::
 
 #### Color
 
-The color used to display this laser's operations (cuts and engraving) in the
-canvas and 3D preview. This helps you visually distinguish which laser will
-perform each operation when working with multiple laser heads.
+The color used to display this laser's operations (cuts and engraving) in the canvas and 3D preview.
+This helps you visually distinguish which laser will perform each operation when working with
+multiple laser heads.
 
 - Click the color swatch to open a color picker
 - Choose a color that contrasts well with your material preview
 - Default colors are assigned automatically
 
-:::tip Multi-Laser Workflows
-When using multiple laser heads, assigning different colors to each laser makes
-it easy to see which operations will be performed by which laser. For example,
-use red for your main cutting laser and blue for a secondary engraving laser.
-:::
+:::tip Multi-Laser Workflows When using multiple laser heads, assigning different colors to each
+laser makes it easy to see which operations will be performed by which laser. For example, use red
+for your main cutting laser and blue for a secondary engraving laser. :::
 
 #### Laser Type
 
@@ -116,30 +110,27 @@ Choose the type of laser head from the dropdown:
 - **CO2**: CO2 tube lasers
 - **Fiber**: Fiber lasers
 
-When CO2 or Fiber is selected, additional **PWM settings** become available
-(see below). For diode lasers, the PWM section is hidden since it does not
-apply.
+When CO2 or Fiber is selected, additional **PWM settings** become available (see below). For diode
+lasers, the PWM section is hidden since it does not apply.
 
-The laser type also sets a default **wavelength** (used by the physical
-burn model) when no explicit value is entered below.
+The laser type also sets a default **wavelength** (used by the physical burn model) when no explicit
+value is entered below.
 
 #### Wavelength (nm)
 
 The emission wavelength of your laser, in nanometers. This feeds the
-[physical burn model](../ui/3d-preview.md#physical-burn-model) in the 3D
-preview: together with the material's [absorption](../application-settings/materials.md#absorption)
-data, it determines how much laser energy the stock absorbs.
+[physical burn model](../ui/3d-preview.md#physical-burn-model) in the 3D preview: together with the
+material's [absorption](../application-settings/materials.md#absorption) data, it determines how
+much laser energy the stock absorbs.
 
-When set to 0, Rayforge falls back to the typical wavelength for the
-selected laser type (e.g. 445 nm for diode, 1064 nm for fiber, 10600 nm
-for CO2).
+When set to 0, Rayforge falls back to the typical wavelength for the selected laser type (e.g. 445
+nm for diode, 1064 nm for fiber, 10600 nm for CO2).
 
 #### Max Optical Power (W)
 
-The optical output power of your laser at full power, in watts. This is
-the actual light output, not the electrical input. Together with the
-spot size and scan speed, it determines the fluence (J/cm²) used by the
-[physical burn model](../ui/3d-preview.md#physical-burn-model).
+The optical output power of your laser at full power, in watts. This is the actual light output, not
+the electrical input. Together with the spot size and scan speed, it determines the fluence (J/cm²)
+used by the [physical burn model](../ui/3d-preview.md#physical-burn-model).
 
 When set to 0, a mid-range desktop default is used.
 
@@ -147,29 +138,27 @@ When set to 0, a mid-range desktop default is used.
 
 When a CO2 or Fiber laser type is selected, the following PWM controls appear:
 
-- **PWM Frequency**: The default PWM frequency in Hz for this laser head.
-  Typical values range from 500 Hz to several kHz depending on your
-  controller and power supply.
-- **Max PWM Frequency**: The upper limit for the frequency setting. This
-  prevents entering values that your hardware cannot handle.
-- **Pulse Width**: The default pulse width in microseconds. This controls
-  how long each pulse is on during a cycle.
+- **PWM Frequency**: The default PWM frequency in Hz for this laser head. Typical values range from
+  500 Hz to several kHz depending on your controller and power supply.
+- **Max PWM Frequency**: The upper limit for the frequency setting. This prevents entering values
+  that your hardware cannot handle.
+- **Pulse Width**: The default pulse width in microseconds. This controls how long each pulse is on
+  during a cycle.
 - **Min/Max Pulse Width**: Bounds for the pulse width setting.
 
-These defaults carry through to your operation steps, where they can be
-overridden per step if needed.
+These defaults carry through to your operation steps, where they can be overridden per step if
+needed.
 
 #### 3D Model
 
-Each laser head can have a 3D model assigned to it. This model is rendered in
-the [3D view](../ui/3d-preview.md) and follows the toolpath during simulation.
+Each laser head can have a 3D model assigned to it. This model is rendered in the
+[3D view](../ui/3d-preview.md) and follows the toolpath during simulation.
 
-Click the model selection row to browse available models. Once a model is
-selected, you can adjust its scale, rotation (X/Y/Z), and focal distance to
-match your physical laser head.
+Click the model selection row to browse available models. Once a model is selected, you can adjust
+its scale, rotation (X/Y/Z), and focal distance to match your physical laser head.
 
 ## See Also
 
 - [Device Settings](device) - GRBL laser mode settings
-- [Workpiece Positioning](../features/workpiece-positioning.md) - Using
-  focus mode and other positioning methods
+- [Workpiece Positioning](../features/workpiece-positioning.md) - Using focus mode and other
+  positioning methods

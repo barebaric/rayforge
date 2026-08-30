@@ -1,14 +1,19 @@
 ---
-description: "Optimize laser cutting paths to minimize travel distance. Reduce job time and improve cut quality with intelligent path ordering in Rayforge."
+description:
+  "Optimize laser cutting paths to minimize travel distance. Reduce job time and improve cut quality
+  with intelligent path ordering in Rayforge."
 ---
 
 # Path Optimization
 
-Path optimization reorders cutting segments to minimize travel distance. The laser moves efficiently between cuts instead of jumping randomly across the work area.
+Path optimization reorders cutting segments to minimize travel distance. The laser moves efficiently
+between cuts instead of jumping randomly across the work area.
 
 ## How It Works
 
-Without optimization, paths are cut in the order they appear in your design file. Optimization analyzes all path segments and rearranges them so the laser travels the shortest total distance between cuts.
+Without optimization, paths are cut in the order they appear in your design file. Optimization
+analyzes all path segments and rearranges them so the laser travels the shortest total distance
+between cuts.
 
 **Before optimization:** Laser jumps back and forth across the material  
 **After optimization:** Laser moves sequentially from cut to cut
@@ -40,11 +45,10 @@ Toggle path optimization on or off. Enabled by default for most operations.
 
 **Motion efficiency:** Less rapid movement means less wear on belts, motors, and bearings.
 
-**Heat distribution:** Optimized paths may concentrate heat in one area. For heat-sensitive materials, consider if order matters.
+**Heat distribution:** Optimized paths may concentrate heat in one area. For heat-sensitive
+materials, consider if order matters.
 
-:::tip
-Optimization runs automatically. Just enable it and the software handles the rest.
-:::
+:::tip Optimization runs automatically. Just enable it and the software handles the rest. :::
 
 ---
 

@@ -1,10 +1,13 @@
 # Addon-Hooks
 
-Hooks sind die Verbindungspunkte zwischen deinem Addon und Rayforge. Wenn in der Anwendung etwas passiert – ein Schritt wird erstellt, ein Dialog öffnet sich oder das Fenster initialisiert sich – ruft Rayforge alle registrierten Hooks auf, damit dein Addon reagieren kann.
+Hooks sind die Verbindungspunkte zwischen deinem Addon und Rayforge. Wenn in der Anwendung etwas
+passiert – ein Schritt wird erstellt, ein Dialog öffnet sich oder das Fenster initialisiert sich –
+ruft Rayforge alle registrierten Hooks auf, damit dein Addon reagieren kann.
 
 ## Wie Hooks funktionieren
 
-Rayforge verwendet [pluggy](https://pluggy.readthedocs.io/) für sein Hook-System. Um einen Hook zu implementieren, dekoriere eine Funktion mit `@pluggy.HookimplMarker("rayforge")`:
+Rayforge verwendet [pluggy](https://pluggy.readthedocs.io/) für sein Hook-System. Um einen Hook zu
+implementieren, dekoriere eine Funktion mit `@pluggy.HookimplMarker("rayforge")`:
 
 ```python
 import pluggy
@@ -25,9 +28,13 @@ Diese Hooks behandeln den gesamten Lebenszyklus deines Addons.
 
 ### `rayforge_init(context)`
 
-Dies ist dein Haupteinstiegspunkt. Rayforge ruft diesen Hook auf, nachdem der Anwendungskontext vollständig initialisiert wurde, was bedeutet, dass alle Manager, Konfigurationen und Hardware bereit sind. Verwende diesen für allgemeines Setup, Logging oder das Einfügen von UI-Elementen.
+Dies ist dein Haupteinstiegspunkt. Rayforge ruft diesen Hook auf, nachdem der Anwendungskontext
+vollständig initialisiert wurde, was bedeutet, dass alle Manager, Konfigurationen und Hardware
+bereit sind. Verwende diesen für allgemeines Setup, Logging oder das Einfügen von UI-Elementen.
 
-Der Parameter `context` ist eine `RayforgeContext`-Instanz, die dir Zugriff auf alles in Rayforge gibt. Siehe [Auf Rayforge-Daten zugreifen](./addon-overview.md#auf-rayforges-daten-zugreifen) für Details.
+Der Parameter `context` ist eine `RayforgeContext`-Instanz, die dir Zugriff auf alles in Rayforge
+gibt. Siehe [Auf Rayforge-Daten zugreifen](./addon-overview.md#auf-rayforges-daten-zugreifen) für
+Details.
 
 ```python
 @hookimpl
@@ -40,7 +47,8 @@ def rayforge_init(context):
 
 ### `on_unload()`
 
-Rayforge ruft dies auf, wenn dein Addon deaktiviert oder entladen wird. Verwende es, um Ressourcen freizugeben, Verbindungen zu schließen oder Handler abzumelden.
+Rayforge ruft dies auf, wenn dein Addon deaktiviert oder entladen wird. Verwende es, um Ressourcen
+freizugeben, Verbindungen zu schließen oder Handler abzumelden.
 
 ```python
 @hookimpl
@@ -51,7 +59,9 @@ def on_unload():
 
 ### `main_window_ready(main_window)`
 
-Dieser Hook wird ausgelöst, wenn das Hauptfenster vollständig initialisiert ist. Er ist nützlich zum Registrieren von UI-Seiten, Befehlen oder anderen Komponenten, die erfordern, dass das Hauptfenster zuerst existiert.
+Dieser Hook wird ausgelöst, wenn das Hauptfenster vollständig initialisiert ist. Er ist nützlich zum
+Registrieren von UI-Seiten, Befehlen oder anderen Komponenten, die erfordern, dass das Hauptfenster
+zuerst existiert.
 
 Der Parameter `main_window` ist die `MainWindow`-Instanz.
 
@@ -65,11 +75,13 @@ def main_window_ready(main_window):
 
 ## Registrierungs-Hooks
 
-Diese Hooks ermöglichen es dir, benutzerdefinierte Komponenten bei Rayforges verschiedenen Registrierungen zu registrieren.
+Diese Hooks ermöglichen es dir, benutzerdefinierte Komponenten bei Rayforges verschiedenen
+Registrierungen zu registrieren.
 
 ### `register_machines(machine_manager)`
 
-Verwende diesen, um neue Maschinentreiber zu registrieren. Der `machine_manager` ist eine `MachineManager`-Instanz, die alle Maschinenkonfigurationen verwaltet.
+Verwende diesen, um neue Maschinentreiber zu registrieren. Der `machine_manager` ist eine
+`MachineManager`-Instanz, die alle Maschinenkonfigurationen verwaltet.
 
 ```python
 @hookimpl
@@ -80,7 +92,8 @@ def register_machines(machine_manager):
 
 ### `register_steps(step_registry)`
 
-Registriere benutzerdefinierte Schritttypen, die im Bedienfeld für Operationen erscheinen. Der `step_registry` ist eine `StepRegistry`-Instanz.
+Registriere benutzerdefinierte Schritttypen, die im Bedienfeld für Operationen erscheinen. Der
+`step_registry` ist eine `StepRegistry`-Instanz.
 
 ```python
 @hookimpl
@@ -91,7 +104,8 @@ def register_steps(step_registry):
 
 ### `register_producers(producer_registry)`
 
-Registriere benutzerdefinierte Ops-Produzenten, die Werkzeugwege generieren. Der `producer_registry` ist eine `ProducerRegistry`-Instanz.
+Registriere benutzerdefinierte Ops-Produzenten, die Werkzeugwege generieren. Der `producer_registry`
+ist eine `ProducerRegistry`-Instanz.
 
 ```python
 @hookimpl
@@ -102,7 +116,9 @@ def register_producers(producer_registry):
 
 ### `register_transformers(transformer_registry)`
 
-Registriere benutzerdefinierte Ops-Transformatoren für Nachbearbeitungsvorgänge. Transformatoren modifizieren Operationen, nachdem Produzenten sie generiert haben. Der `transformer_registry` ist eine `TransformerRegistry`-Instanz.
+Registriere benutzerdefinierte Ops-Transformatoren für Nachbearbeitungsvorgänge. Transformatoren
+modifizieren Operationen, nachdem Produzenten sie generiert haben. Der `transformer_registry` ist
+eine `TransformerRegistry`-Instanz.
 
 ```python
 @hookimpl
@@ -113,7 +129,8 @@ def register_transformers(transformer_registry):
 
 ### `register_commands(command_registry)`
 
-Registriere Editor-Befehle, die die Funktionalität des Dokumenteditors erweitern. Der `command_registry` ist eine `CommandRegistry`-Instanz.
+Registriere Editor-Befehle, die die Funktionalität des Dokumenteditors erweitern. Der
+`command_registry` ist eine `CommandRegistry`-Instanz.
 
 ```python
 @hookimpl
@@ -124,7 +141,9 @@ def register_commands(command_registry):
 
 ### `register_actions(action_registry)`
 
-Registriere Fensteraktionen mit optionaler Menü- und Toolbar-Platzierung. Aktionen sind die Art, wie du Buttons, Menüeinträge und Tastaturkürzel hinzufügst. Der `action_registry` ist eine `ActionRegistry`-Instanz.
+Registriere Fensteraktionen mit optionaler Menü- und Toolbar-Platzierung. Aktionen sind die Art, wie
+du Buttons, Menüeinträge und Tastaturkürzel hinzufügst. Der `action_registry` ist eine
+`ActionRegistry`-Instanz.
 
 ```python
 from gi.repository import Gio
@@ -134,7 +153,7 @@ from rayforge.ui_gtk.action_registry import MenuPlacement, ToolbarPlacement
 def register_actions(action_registry):
     action = Gio.SimpleAction.new("my-action", None)
     action.connect("activate", on_my_action_activated)
-    
+
     action_registry.register(
         action_name="my-action",
         action=action,
@@ -149,7 +168,9 @@ def register_actions(action_registry):
 
 ### `register_layout_strategies(layout_registry)`
 
-Registriere benutzerdefinierte Layout-Strategien zum Anordnen von Inhalten im Dokument. Der `layout_registry` ist eine `LayoutStrategyRegistry`-Instanz. Beachte, dass UI-Metadaten wie Beschriftungen und Kürzel über `register_actions` registriert werden sollten, nicht hier.
+Registriere benutzerdefinierte Layout-Strategien zum Anordnen von Inhalten im Dokument. Der
+`layout_registry` ist eine `LayoutStrategyRegistry`-Instanz. Beachte, dass UI-Metadaten wie
+Beschriftungen und Kürzel über `register_actions` registriert werden sollten, nicht hier.
 
 ```python
 @hookimpl
@@ -160,7 +181,9 @@ def register_layout_strategies(layout_registry):
 
 ### `register_asset_types(asset_type_registry)`
 
-Registriere benutzerdefinierte Asset-Typen, die in Dokumenten gespeichert werden können. Dies ermöglicht die dynamische Deserialisierung von Addon-bereitgestellten Assets. Der `asset_type_registry` ist eine `AssetTypeRegistry`-Instanz.
+Registriere benutzerdefinierte Asset-Typen, die in Dokumenten gespeichert werden können. Dies
+ermöglicht die dynamische Deserialisierung von Addon-bereitgestellten Assets. Der
+`asset_type_registry` ist eine `AssetTypeRegistry`-Instanz.
 
 ```python
 @hookimpl
@@ -171,7 +194,8 @@ def register_asset_types(asset_type_registry):
 
 ### `register_renderers(renderer_registry)`
 
-Registriere benutzerdefinierte Renderer zum Anzeigen deiner Asset-Typen in der UI. Der `renderer_registry` ist eine `RendererRegistry`-Instanz.
+Registriere benutzerdefinierte Renderer zum Anzeigen deiner Asset-Typen in der UI. Der
+`renderer_registry` ist eine `RendererRegistry`-Instanz.
 
 ```python
 @hookimpl
@@ -182,7 +206,8 @@ def register_renderers(renderer_registry):
 
 ### `register_exporters(exporter_registry)`
 
-Registriere Datei-Exporter für benutzerdefinierte Exportformate. Der `exporter_registry` ist eine `ExporterRegistry`-Instanz.
+Registriere Datei-Exporter für benutzerdefinierte Exportformate. Der `exporter_registry` ist eine
+`ExporterRegistry`-Instanz.
 
 ```python
 @hookimpl
@@ -193,7 +218,8 @@ def register_exporters(exporter_registry):
 
 ### `register_importers(importer_registry)`
 
-Registriere Datei-Importer für benutzerdefinierte Importformate. Der `importer_registry` ist eine `ImporterRegistry`-Instanz.
+Registriere Datei-Importer für benutzerdefinierte Importformate. Der `importer_registry` ist eine
+`ImporterRegistry`-Instanz.
 
 ```python
 @hookimpl
@@ -204,7 +230,9 @@ def register_importers(importer_registry):
 
 ### `register_material_libraries(library_manager)`
 
-Registriere zusätzliche Materialbibliotheken. Rufe `library_manager.add_library_from_path(path)` auf, um Verzeichnisse mit Material-YAML-Dateien zu registrieren. Standardmäßig sind registrierte Bibliotheken schreibgeschützt.
+Registriere zusätzliche Materialbibliotheken. Rufe `library_manager.add_library_from_path(path)`
+auf, um Verzeichnisse mit Material-YAML-Dateien zu registrieren. Standardmäßig sind registrierte
+Bibliotheken schreibgeschützt.
 
 ```python
 @hookimpl
@@ -220,9 +248,11 @@ Diese Hooks ermöglichen es dir, bestehende UI-Komponenten zu erweitern.
 
 ### `step_settings_loaded(dialog, step, producer)`
 
-Rayforge ruft dies auf, wenn ein Schritteinstellungsdialog gefüllt wird. Du kannst basierend auf dem Produzententyp des Schritts benutzerdefinierte Widgets zum Dialog hinzufügen.
+Rayforge ruft dies auf, wenn ein Schritteinstellungsdialog gefüllt wird. Du kannst basierend auf dem
+Produzententyp des Schritts benutzerdefinierte Widgets zum Dialog hinzufügen.
 
-Der `dialog` ist eine `GeneralStepSettingsView`-Instanz. Der `step` ist der konfigurierte `Step`. Der `producer` ist die `OpsProducer`-Instanz oder `None`, wenn nicht verfügbar.
+Der `dialog` ist eine `GeneralStepSettingsView`-Instanz. Der `step` ist der konfigurierte `Step`.
+Der `producer` ist die `OpsProducer`-Instanz oder `None`, wenn nicht verfügbar.
 
 ```python
 @hookimpl
@@ -235,9 +265,11 @@ def step_settings_loaded(dialog, step, producer):
 
 ### `transformer_settings_loaded(dialog, step, transformer)`
 
-Wird aufgerufen, wenn Nachbearbeitungseinstellungen gefüllt werden. Füge hier benutzerdefinierte Widgets für deine Transformatoren hinzu.
+Wird aufgerufen, wenn Nachbearbeitungseinstellungen gefüllt werden. Füge hier benutzerdefinierte
+Widgets für deine Transformatoren hinzu.
 
-Der `dialog` ist eine `PostProcessingSettingsView`-Instanz. Der `step` ist der konfigurierte `Step`. Der `transformer` ist die `OpsTransformer`-Instanz.
+Der `dialog` ist eine `PostProcessingSettingsView`-Instanz. Der `step` ist der konfigurierte `Step`.
+Der `transformer` ist die `OpsTransformer`-Instanz.
 
 ```python
 @hookimpl
@@ -249,11 +281,14 @@ def transformer_settings_loaded(dialog, step, transformer):
 
 ## API-Versionshistorie
 
-Hooks sind versioniert, um die Abwärtskompatibilität zu gewährleisten. Wenn neue Hooks hinzugefügt werden oder sich bestehende ändern, wird die API-Version erhöht. Das Feld `api_version` deines Addons muss mindestens die minimal unterstützte Version sein.
+Hooks sind versioniert, um die Abwärtskompatibilität zu gewährleisten. Wenn neue Hooks hinzugefügt
+werden oder sich bestehende ändern, wird die API-Version erhöht. Das Feld `api_version` deines
+Addons muss mindestens die minimal unterstützte Version sein.
 
 Die aktuelle API-Version ist 9. Hier ist, was sich in den letzten Versionen geändert hat:
 
-**Version 9** fügte `main_window_ready`, `register_exporters`, `register_importers` und `register_renderers` hinzu.
+**Version 9** fügte `main_window_ready`, `register_exporters`, `register_importers` und
+`register_renderers` hinzu.
 
 **Version 8** fügte `register_asset_types` für benutzerdefinierte Asset-Typen hinzu.
 
@@ -261,10 +296,13 @@ Die aktuelle API-Version ist 9. Hier ist, was sich in den letzten Versionen geä
 
 **Version 6** fügte `register_transformers` hinzu.
 
-**Version 5** ersetzte `register_step_widgets` durch `step_settings_loaded` und `transformer_settings_loaded`.
+**Version 5** ersetzte `register_step_widgets` durch `step_settings_loaded` und
+`transformer_settings_loaded`.
 
-**Version 4** entfernte `register_menu_items` und konsolidierte die Aktionsregistrierung in `register_actions`.
+**Version 4** entfernte `register_menu_items` und konsolidierte die Aktionsregistrierung in
+`register_actions`.
 
 **Version 2** fügte `register_layout_strategies` hinzu.
 
-**Version 1** war die erste Veröffentlichung mit Kern-Hooks für Addon-Lebenszyklus, Ressourcenregistrierung und UI-Integration.
+**Version 1** war die erste Veröffentlichung mit Kern-Hooks für Addon-Lebenszyklus,
+Ressourcenregistrierung und UI-Integration.

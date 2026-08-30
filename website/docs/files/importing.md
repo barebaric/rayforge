@@ -1,11 +1,13 @@
 ---
-description: "Import SVG, DXF, PDF, LightBurn, Ruida, and raster image files into Rayforge. Supported formats and import options for laser cutting and engraving projects."
+description:
+  "Import SVG, DXF, PDF, LightBurn, Ruida, and raster image files into Rayforge. Supported formats
+  and import options for laser cutting and engraving projects."
 ---
 
 # Importing Files
 
-Rayforge supports importing various file formats, both vector and raster. This
-page explains how to import files and optimize them for best results.
+Rayforge supports importing various file formats, both vector and raster. This page explains how to
+import files and optimize them for best results.
 
 ## Supported File Formats
 
@@ -23,15 +25,14 @@ page explains how to import files and optimize them for best results.
 
 | Format   | Extension       | Import Method    | Best For                         |
 | -------- | --------------- | ---------------- | -------------------------------- |
-| **PNG**  | `.webp`          | Trace to vectors | Photos, images with transparency |
+| **PNG**  | `.webp`         | Trace to vectors | Photos, images with transparency |
 | **JPEG** | `.jpg`, `.jpeg` | Trace to vectors | Photos, continuous-tone images   |
 | **BMP**  | `.bmp`          | Trace to vectors | Simple graphics, screenshots     |
 
-:::note Raster Import
-:::
+:::note Raster Import :::
 
-All raster images are **traced** to create vector paths that can be used for
-laser operations. The quality depends on the tracing configuration.
+All raster images are **traced** to create vector paths that can be used for laser operations. The
+quality depends on the tracing configuration.
 
 ---
 
@@ -39,8 +40,8 @@ laser operations. The quality depends on the tracing configuration.
 
 ### The Import Dialog
 
-Rayforge features a unified import dialog that provides live preview and
-configuration options for all supported file types. The dialog allows you to:
+Rayforge features a unified import dialog that provides live preview and configuration options for
+all supported file types. The dialog allows you to:
 
 - **Preview your import** before adding it to the document
 - **Configure tracing settings** for raster images
@@ -51,18 +52,16 @@ configuration options for all supported file types. The dialog allows you to:
 
 ### Layer Import Mode
 
-When importing files that contain multiple layers (such as SVG or PDF files
-with named layers), the dialog offers three ways to handle them:
+When importing files that contain multiple layers (such as SVG or PDF files with named layers), the
+dialog offers three ways to handle them:
 
-- **Map to Existing**: Match imported layers to existing document layers.
-  The first layer from the source document is put into the first layer
-  of your project, the second to the second and so on.
-  This is the default and works well when your document already has
-  layers set up.
-- **New Layers**: Create a new layer in the document for each imported layer.
-  This keeps imported content separate from existing work.
-- **Flatten**: Merge all imported layers into a single layer. Useful when
-  you want everything on one layer regardless of the original structure.
+- **Map to Existing**: Match imported layers to existing document layers. The first layer from the
+  source document is put into the first layer of your project, the second to the second and so on.
+  This is the default and works well when your document already has layers set up.
+- **New Layers**: Create a new layer in the document for each imported layer. This keeps imported
+  content separate from existing work.
+- **Flatten**: Merge all imported layers into a single layer. Useful when you want everything on one
+  layer regardless of the original structure.
 
 ### Method 1: File Menu
 
@@ -92,8 +91,7 @@ rayforge file1.svg file2.dxf
 
 ### Auto-Resize on Import
 
-When importing files that are larger than your machine's work area, Rayforge
-will automatically:
+When importing files that are larger than your machine's work area, Rayforge will automatically:
 
 1. **Scale down** the imported content to fit within the machine boundaries
 2. **Preserve aspect ratio** during scaling
@@ -102,13 +100,12 @@ will automatically:
 
 The resize notification appears as a toast message:
 
-- ⚠️ "Imported item was larger than the work area and has been scaled down to
-  fit."
+- ⚠️ "Imported item was larger than the work area and has been scaled down to fit."
 - Includes a **"Reset"** button to undo the auto-resize
 - The toast remains visible until dismissed or the reset action is taken
 
-This ensures your designs always fit within your machine's capabilities while
-giving you the flexibility to restore the original size if needed.
+This ensures your designs always fit within your machine's capabilities while giving you the
+flexibility to restore the original size if needed.
 
 ---
 
@@ -116,17 +113,14 @@ giving you the flexibility to restore the original size if needed.
 
 SVG (Scalable Vector Graphics) is the **recommended format** for vector designs.
 
-:::tip Automate Step Assignment
-You can configure [color rules](../application-settings/color-rules.md)
-to automatically assign step types (Contour, Engrave, etc.) based on the
-colors in your SVG. When rules exist, the import dialog defaults to
-grouping shapes by color so the rules take effect.
-:::
+:::tip Automate Step Assignment You can configure
+[color rules](../application-settings/color-rules.md) to automatically assign step types (Contour,
+Engrave, etc.) based on the colors in your SVG. When rules exist, the import dialog defaults to
+grouping shapes by color so the rules take effect. :::
 
 ### Import Options in the Dialog
 
-When importing SVG, the import dialog provides a toggle switch to choose between
-two methods:
+When importing SVG, the import dialog provides a toggle switch to choose between two methods:
 
 #### 1. Use Original Vectors (Recommended)
 
@@ -278,48 +272,44 @@ PDF files can contain vector graphics, raster images, or both.
 
 ### Direct Vector Import
 
-When importing a PDF that contains vector paths, Rayforge can import them
-directly — just like SVG or DXF files. This gives you clean, scalable geometry
-without any quality loss from rasterization.
+When importing a PDF that contains vector paths, Rayforge can import them directly — just like SVG
+or DXF files. This gives you clean, scalable geometry without any quality loss from rasterization.
 
-If the PDF contains layers, Rayforge detects them and lets you pick which ones
-to import. Each layer becomes a separate workpiece in your document. This works
-the same way as SVG layer import: enable or disable individual layers in the
-import dialog before importing.
+If the PDF contains layers, Rayforge detects them and lets you pick which ones to import. Each layer
+becomes a separate workpiece in your document. This works the same way as SVG layer import: enable
+or disable individual layers in the import dialog before importing.
 
-This is especially useful for PDFs exported from design software like
-Illustrator or Inkscape where the vector paths are clean and well-organized.
+This is especially useful for PDFs exported from design software like Illustrator or Inkscape where
+the vector paths are clean and well-organized.
 
 ### Fallback: Render and Trace
 
-For PDFs that do not contain usable vector data — scanned documents, embedded
-photos, or PDFs where text has not been converted to outlines — Rayforge can
-fall back to rendering the PDF to an image and tracing it. This works the same
-way as raster image import.
+For PDFs that do not contain usable vector data — scanned documents, embedded photos, or PDFs where
+text has not been converted to outlines — Rayforge can fall back to rendering the PDF to an image
+and tracing it. This works the same way as raster image import.
 
 ### PDF Import Tips
 
 **Best results:**
 
-1. **Use vector PDFs**: PDFs created from vector software (Illustrator, Inkscape)
-   give the cleanest results with direct import.
+1. **Use vector PDFs**: PDFs created from vector software (Illustrator, Inkscape) give the cleanest
+   results with direct import.
 
-2. **Check for layers**: If your PDF has layers, you will see them listed in the
-   import dialog. Select only the layers you need.
+2. **Check for layers**: If your PDF has layers, you will see them listed in the import dialog.
+   Select only the layers you need.
 
-3. **For documents with text**: Export as SVG with fonts converted to paths for
-   the best quality, or use the render-and-trace fallback.
+3. **For documents with text**: Export as SVG with fonts converted to paths for the best quality, or
+   use the render-and-trace fallback.
 
-4. **Use the import dialog preview**: Adjust threshold and invert settings when
-   using trace mode. The preview shows exactly how the PDF will be traced.
+4. **Use the import dialog preview**: Adjust threshold and invert settings when using trace mode.
+   The preview shows exactly how the PDF will be traced.
 
 ---
 
 ## Ruida Import
 
-Ruida (.rd) files are proprietary binary job files used by Ruida controllers in
-many laser cutting machines. These files contain both vector geometry and laser
-settings organized in layers (colors).
+Ruida (.rd) files are proprietary binary job files used by Ruida controllers in many laser cutting
+machines. These files contain both vector geometry and laser settings organized in layers (colors).
 
 **After import:**
 
@@ -331,32 +321,27 @@ settings organized in layers (colors).
 
 - **Read-only import** - Ruida files can only be imported, not exported
 - **Binary format** - Direct editing of original .rd files not supported
-- **Proprietary features** - Some advanced Ruida features may not be fully
-  supported
+- **Proprietary features** - Some advanced Ruida features may not be fully supported
 
 ---
 
 ## LightBurn Import
 
-LightBurn (.lbrn / .lbrn2) files are proprietary project files used by
-LightBurn laser cutter software. They store vector geometry organized in
-color-coded layers with configurable laser settings.
+LightBurn (.lbrn / .lbrn2) files are proprietary project files used by LightBurn laser cutter
+software. They store vector geometry organized in color-coded layers with configurable laser
+settings.
 
 **After import:**
 
-- **Review layers** — LightBurn layers are mapped to document layers with
-  matching names
-- **Check laser settings** — Power, speed, and pass settings from LightBurn
-  layers are preserved
-- **Validate paths** — Confirm all cutting paths are present and correctly
-  positioned
+- **Review layers** — LightBurn layers are mapped to document layers with matching names
+- **Check laser settings** — Power, speed, and pass settings from LightBurn layers are preserved
+- **Validate paths** — Confirm all cutting paths are present and correctly positioned
 
 ### Limitations
 
 - **Read-only import** — LightBurn files can only be imported, not exported
 - **Binary format** — Direct editing of original .lbrn files is not supported
-- **Proprietary features** — Some advanced LightBurn-specific features may not
-  be fully supported
+- **Proprietary features** — Some advanced LightBurn-specific features may not be fully supported
 
 ---
 
@@ -384,9 +369,8 @@ The import dialog provides these adjustable parameters:
 | **Threshold**      | Black/white cutoff  | Lower = more detail, higher = simpler               |
 | **Invert**         | Reverse colors      | Trace light objects on dark background              |
 
-**Default settings** work well for most images. The dialog shows a live preview
-that updates as you adjust these settings, allowing you to fine-tune the trace
-before importing.
+**Default settings** work well for most images. The dialog shows a live preview that updates as you
+adjust these settings, allowing you to fine-tune the trace before importing.
 
 ### Preparing Images for Tracing
 

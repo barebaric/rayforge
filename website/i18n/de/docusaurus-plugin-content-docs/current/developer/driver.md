@@ -1,18 +1,21 @@
 # Treiber-Entwicklungsleitfaden
 
-Dieser Leitfaden bietet einen Überblick auf hoher Ebene, wie man einen Treiber in Rayforge erstellt, um Unterstützung für deinen Laserschneider oder dein Gravurgerät hinzuzufügen. Durch Erstellen eines Treibers integrierst du das einzigartige Kommunikationsprotokoll und die Befehlssprache deiner Maschine in das Rayforge-Ökosystem.
+Dieser Leitfaden bietet einen Überblick auf hoher Ebene, wie man einen Treiber in Rayforge erstellt,
+um Unterstützung für deinen Laserschneider oder dein Gravurgerät hinzuzufügen. Durch Erstellen eines
+Treibers integrierst du das einzigartige Kommunikationsprotokoll und die Befehlssprache deiner
+Maschine in das Rayforge-Ökosystem.
 
 ## Treiber-Übersicht
 
-Ein Treiber ist die Brücke zwischen Rayforge's Kernlogik und deiner physischen Hardware.
-Er ist für drei Hauptaufgaben verantwortlich:
+Ein Treiber ist die Brücke zwischen Rayforge's Kernlogik und deiner physischen Hardware. Er ist für
+drei Hauptaufgaben verantwortlich:
 
-1.  **Verbindungsverwaltung:** Behandlung des Low-Level-Kommunikationsprotokolls
-    (Seriell, WebSocket, HTTP, etc.).
-2.  **Auftragsausführung:** Senden von vorkodiertem Maschinencode (z.B. G-Code) an das
-    Gerät und Verfolgung des Ausführungsfortschritts.
-3.  **Statusberichterstattung:** Emittieren von Signalen, um die UI mit der
-    Echtzeitposition, dem Status (`IDLE`, `RUN`) und Protokollnachrichten des Lasers zu aktualisieren.
+1.  **Verbindungsverwaltung:** Behandlung des Low-Level-Kommunikationsprotokolls (Seriell,
+    WebSocket, HTTP, etc.).
+2.  **Auftragsausführung:** Senden von vorkodiertem Maschinencode (z.B. G-Code) an das Gerät und
+    Verfolgung des Ausführungsfortschritts.
+3.  **Statusberichterstattung:** Emittieren von Signalen, um die UI mit der Echtzeitposition, dem
+    Status (`IDLE`, `RUN`) und Protokollnachrichten des Lasers zu aktualisieren.
 
 Um dies zu vereinfachen, bietet Rayforge eine Architektur basierend auf zusammensetzbaren Teilen:
 
@@ -36,36 +39,37 @@ graph TD;
     class RayforgeCore,YourDriver clusterBox
 ```
 
-- **`OpsEncoder`:** Übersetzt `Ops` in eine spezifische Befehlssprache
-  (z.B. G-Code). Verwendet von sowohl der Pipeline (für Auftragskodierung) als auch dem
-  Treiber (für einzelne Befehle wie move_to, home, etc.).
+- **`OpsEncoder`:** Übersetzt `Ops` in eine spezifische Befehlssprache (z.B. G-Code). Verwendet von
+  sowohl der Pipeline (für Auftragskodierung) als auch dem Treiber (für einzelne Befehle wie
+  move_to, home, etc.).
 - **`Pipeline`:** Orchestriert Kodierung und produziert finalen Maschinencode.
 - **`Transport`:** Verwaltet die Verbindung und Datenübertragung.
-- **`Driver`:** Führt Maschinencode aus, behandelt Gerätezustand und kommuniziert
-  mit der UI.
+- **`Driver`:** Führt Maschinencode aus, behandelt Gerätezustand und kommuniziert mit der UI.
 
-Alle Treiber-Operationen sind **asynchron**, um sicherzustellen, dass die Benutzeroberfläche reaktionsfähig bleibt.
+Alle Treiber-Operationen sind **asynchron**, um sicherzustellen, dass die Benutzeroberfläche
+reaktionsfähig bleibt.
 
 ## Die `Ops`-Sprache
 
-Rayforge beschreibt einen Laserauftrag als Sequenz von High-Level-Operationen, gespeichert in
-einem `Ops`-Objekt. Dies ist die universelle Sprache innerhalb von Rayforge zur Beschreibung
-von Maschinenbewegungen, unabhängig von spezifischer Hardware.
+Rayforge beschreibt einen Laserauftrag als Sequenz von High-Level-Operationen, gespeichert in einem
+`Ops`-Objekt. Dies ist die universelle Sprache innerhalb von Rayforge zur Beschreibung von
+Maschinenbewegungen, unabhängig von spezifischer Hardware.
 
-| `Ops`-Methode        | Signatur                      | Beschreibung                           |
-| :------------------- | :---------------------------- | :------------------------------------ |
-| `move_to`            | `(x, y, z=0.0)`               | Schnelle Bewegung (kein Schneiden)    |
-| `line_to`            | `(x, y, z=0.0)`               | Schneid-/Gravurbewegung               |
-| `arc_to`             | `(x, y, i, j, cw=True, z=0.0)`| Schneid-/Gravur-Bogenbewegung         |
-| `set_power`          | `(power)`                     | Laserleistung setzen (0-100%)         |
-| `set_cut_speed`      | `(speed)`                     | Geschwindigkeit für Schnittbewegungen (mm/min) |
-| `set_travel_speed`   | `(speed)`                     | Geschwindigkeit für schnelle Bewegungen (mm/min) |
-| `enable_air_assist`  | `()`                          | Luftunterstützung einschalten         |
-| `disable_air_assist` | `()`                          | Luftunterstützung ausschalten         |
+| `Ops`-Methode        | Signatur                       | Beschreibung                                     |
+| :------------------- | :----------------------------- | :----------------------------------------------- |
+| `move_to`            | `(x, y, z=0.0)`                | Schnelle Bewegung (kein Schneiden)               |
+| `line_to`            | `(x, y, z=0.0)`                | Schneid-/Gravurbewegung                          |
+| `arc_to`             | `(x, y, i, j, cw=True, z=0.0)` | Schneid-/Gravur-Bogenbewegung                    |
+| `set_power`          | `(power)`                      | Laserleistung setzen (0-100%)                    |
+| `set_cut_speed`      | `(speed)`                      | Geschwindigkeit für Schnittbewegungen (mm/min)   |
+| `set_travel_speed`   | `(speed)`                      | Geschwindigkeit für schnelle Bewegungen (mm/min) |
+| `enable_air_assist`  | `()`                           | Luftunterstützung einschalten                    |
+| `disable_air_assist` | `()`                           | Luftunterstützung ausschalten                    |
 
-Dein Treiber empfängt vorkodierten Maschinencode (z.B. einen G-Code-String) und eine
-Operations-Map, die verfolgt, welche Maschinencode-Befehle welchen
-Operationen entsprechen. Die Pipeline kümmert sich um die Kodierung von `Ops` zu Maschinencode, bevor sie die `run()`-Methode des Treibers aufruft.
+Dein Treiber empfängt vorkodierten Maschinencode (z.B. einen G-Code-String) und eine Operations-Map,
+die verfolgt, welche Maschinencode-Befehle welchen Operationen entsprechen. Die Pipeline kümmert
+sich um die Kodierung von `Ops` zu Maschinencode, bevor sie die `run()`-Methode des Treibers
+aufruft.
 
 ```python
 # Beispiel, wie Rayforge ein Ops-Objekt erstellt
@@ -98,54 +102,56 @@ class YourDriver(Driver):
 
 - `label`: Ein menschenlesbarer Name, der in der UI angezeigt wird.
 - `subtitle`: Eine kurze Beschreibung, die unter dem Namen angezeigt wird.
-- `supports_settings`: Ein Boolean, der angibt, ob der Treiber Geräte- 
-  einstellungen (wie GRBL's `$$`) lesen/schreiben kann.
+- `supports_settings`: Ein Boolean, der angibt, ob der Treiber Geräte- einstellungen (wie GRBL's
+  `$$`) lesen/schreiben kann.
 
 ### Erforderliche Methoden
 
-Deine Treiberklasse **MUSS** die folgenden Methoden implementieren. Beachte, dass die meisten **asynchron** sind und mit `async def` definiert werden müssen.
+Deine Treiberklasse **MUSS** die folgenden Methoden implementieren. Beachte, dass die meisten
+**asynchron** sind und mit `async def` definiert werden müssen.
 
 #### Konfiguration und Lebenszyklus
 
-- `get_setup_vars() -> VarSet`: **(Klassenmethode)** Gibt ein `VarSet`-Objekt
-  zurück, das die für die Verbindung benötigten Parameter definiert (z.B. IP-Adresse, serieller Port).
-  Rayforge verwendet dies, um automatisch das Einrichtungsformular in der UI zu generieren.
+- `get_setup_vars() -> VarSet`: **(Klassenmethode)** Gibt ein `VarSet`-Objekt zurück, das die für
+  die Verbindung benötigten Parameter definiert (z.B. IP-Adresse, serieller Port). Rayforge
+  verwendet dies, um automatisch das Einrichtungsformular in der UI zu generieren.
 - `precheck(**kwargs)`: **(Klassenmethode)** Ein nicht-blockierender, statischer Check der
   Konfiguration, der vor Treiber-Instanziierung ausgeführt werden kann. Sollte bei Fehlschlag
   `DriverPrecheckError` werfen.
-- `setup(**kwargs)`: Wird einmal mit den Werten aus dem Einrichtungsformular aufgerufen. Verwende dies
-  um deine Transports und internen Zustände zu initialisieren.
-- `async def connect()`: Stellt eine persistente Verbindung zum
-  Gerät her und hält sie aufrecht. Diese Methode sollte Auto-Wiederverbindungs-Logik enthalten.
-- `async def cleanup()`: Wird beim Trennen aufgerufen. Sollte alle
-  Verbindungen schließen und Ressourcen freigeben.
+- `setup(**kwargs)`: Wird einmal mit den Werten aus dem Einrichtungsformular aufgerufen. Verwende
+  dies um deine Transports und internen Zustände zu initialisieren.
+- `async def connect()`: Stellt eine persistente Verbindung zum Gerät her und hält sie aufrecht.
+  Diese Methode sollte Auto-Wiederverbindungs-Logik enthalten.
+- `async def cleanup()`: Wird beim Trennen aufgerufen. Sollte alle Verbindungen schließen und
+  Ressourcen freigeben.
 
 #### Gerätesteuerung
 
 #### Gerätesteuerung
 
-- `async def run(machine_code: Any, op_map: MachineCodeOpMap, doc: Doc,
-  on_command_done: Optional[Callable[[int], Union[None, Awaitable[None]]]]
-  = None)`: Die Kernmethode zur Ausführung eines Auftrags. Empfängt vorkodierten Maschinen-
-  code (z.B. G-Code-String) und ein Mapping zwischen Operationsindizes und
-  Maschinencode. Der `on_command_done`-Callback wird mit dem op_index
-  aufgerufen, wenn jeder Befehl abgeschlossen ist.
+- `async def run(machine_code: Any, op_map: MachineCodeOpMap, doc: Doc, on_command_done: Optional[Callable[[int], Union[None, Awaitable[None]]]] = None)`:
+  Die Kernmethode zur Ausführung eines Auftrags. Empfängt vorkodierten Maschinen- code (z.B.
+  G-Code-String) und ein Mapping zwischen Operationsindizes und Maschinencode. Der
+  `on_command_done`-Callback wird mit dem op_index aufgerufen, wenn jeder Befehl abgeschlossen ist.
 - `async def run_raw(gcode: str)`: Führt einen rohen G-Code-String direkt aus.
-- `async def home(axes: Optional[Axis] = None)`: Referenziert die Maschine. Kann spezifische
-  Achsen oder alle Achsen referenzieren.
-- `async def move_to(pos_x: float, pos_y: float)`: Bewegt manuell den Laserkopf
-  zu einer spezifischen XY-Koordinate.
+- `async def home(axes: Optional[Axis] = None)`: Referenziert die Maschine. Kann spezifische Achsen
+  oder alle Achsen referenzieren.
+- `async def move_to(pos_x: float, pos_y: float)`: Bewegt manuell den Laserkopf zu einer
+  spezifischen XY-Koordinate.
 - `async def set_hold(hold: bool = True)`: Pausiert oder setzt den aktuellen Job fort.
 - `async def cancel()`: Stoppt den aktuellen Job.
-- `async def jog(axis: Axis, distance: float, speed: int)`: Joggt die Maschine
-  entlang einer spezifischen Achse.
-- `async def select_tool(tool_number: int)`: Wählt ein neues Werkzeug/Laserkopf nach
-  seiner Nummer aus.
+- `async def jog(axis: Axis, distance: float, speed: int)`: Joggt die Maschine entlang einer
+  spezifischen Achse.
+- `async def select_tool(tool_number: int)`: Wählt ein neues Werkzeug/Laserkopf nach seiner Nummer
+  aus.
 - `async def clear_alarm()`: Löscht jeden aktiven Alarmzustand.
-- `async def set_wcs_offset(wcs_slot, x, y, z)`: Setzt den Arbeitskoordinatensystem-Offset für einen bestimmten WCS-Slot.
+- `async def set_wcs_offset(wcs_slot, x, y, z)`: Setzt den Arbeitskoordinatensystem-Offset für einen
+  bestimmten WCS-Slot.
 - `async def read_wcs_offsets()`: Liest alle WCS-Offsets vom Gerät.
-- `async def run_probe_cycle(axis, max_travel, feed_rate)`: Initiiert eine Tastbewegung entlang der angegebenen Achse.
-- `async def set_power(head, percent)`: Setzt die Laserleistung in Prozent für einen bestimmten Kopf.
+- `async def run_probe_cycle(axis, max_travel, feed_rate)`: Initiiert eine Tastbewegung entlang der
+  angegebenen Achse.
+- `async def set_power(head, percent)`: Setzt die Laserleistung in Prozent für einen bestimmten
+  Kopf.
 - `can_jog(axis: Axis)`: Prüft, ob Jogging für die angegebene Achse unterstützt wird.
 - `can_home(axis: Axis)`: Prüft, ob Referenzieren für die angegebene Achse unterstützt wird.
 - `async def read_parser_state()`: Fragt die aktiven G-Code-Modal-Zustände vom Gerät ab.
@@ -154,7 +160,9 @@ Deine Treiberklasse **MUSS** die folgenden Methoden implementieren. Beachte, das
 
 - `machine_space_wcs`: Das Arbeitskoordinatensystem-Kennzeichen für Maschinenraumkoordinaten.
 - `machine_space_wcs_display_name`: Anzeigename für den Maschinenraum-WCS.
-- `resource_uri`: Ein eindeutiger Bezeichner für die physische Ressource, die von diesem Treiber kontroll wird. Wird zur Konflikterkennung verwendet, wenn mehrere Maschinen nicht dieselbe Hardware teilen können.
+- `resource_uri`: Ein eindeutiger Bezeichner für die physische Ressource, die von diesem Treiber
+  kontroll wird. Wird zur Konflikterkennung verwendet, wenn mehrere Maschinen nicht dieselbe
+  Hardware teilen können.
 
 #### Signale
 
@@ -165,37 +173,35 @@ Ihr Treiber kann diese Signale aussenden, um die UI über Zustandsänderungen zu
 
 #### Ausnahmen
 
-- `ResourceBusyError`: Wird ausgelöst, wenn versucht, eine Ressource zu verwenden, die derzeit von einer anderen Maschineninstanz verwendet wird.
+- `ResourceBusyError`: Wird ausgelöst, wenn versucht, eine Ressource zu verwenden, die derzeit von
+  einer anderen Maschineninstanz verwendet wird.
 
 #### Firmware-Einstellungen (wenn `supports_settings` `True` ist)
 
-- `get_setting_vars() -> List[VarSet]`: Gibt `VarSet`-Objekte zurück, die
-  die Struktur der Geräteeinstellungsseite definieren.
-- `async def read_settings()`: Liest alle Einstellungen vom Gerät und ruft
-  `_on_settings_read()` mit dem Ergebnis auf.
-- `async def write_setting(key: str, value: Any)`: Schreibt eine einzelne Einstellung auf das
-  Gerät.
+- `get_setting_vars() -> List[VarSet]`: Gibt `VarSet`-Objekte zurück, die die Struktur der
+  Geräteeinstellungsseite definieren.
+- `async def read_settings()`: Liest alle Einstellungen vom Gerät und ruft `_on_settings_read()` mit
+  dem Ergebnis auf.
+- `async def write_setting(key: str, value: Any)`: Schreibt eine einzelne Einstellung auf das Gerät.
 
 ### Signale emittieren
 
 Um mit der UI zu kommunizieren, muss dein Treiber Signale emittieren. Um ordnungsgemäße
-Protokollierung und Thread-Sicherheit zu gewährleisten, **darfst du Signale nicht direkt emittieren.** Stattdessen
-rufst du die geschützten Hilfsmethoden aus der Basis-`Driver`-Klasse auf.
+Protokollierung und Thread-Sicherheit zu gewährleisten, **darfst du Signale nicht direkt
+emittieren.** Stattdessen rufst du die geschützten Hilfsmethoden aus der Basis-`Driver`-Klasse auf.
 
 - `self._log(message)`: Sendet eine Protokollnachricht an die Konsole.
-- `self._on_state_changed()`: Rufe dies auf, wann immer du `self.state` aktualisierst, um
-  die UI über eine Status- oder Positionsänderung zu benachrichtigen.
-- `self._on_connection_status_changed(status, message)`: Informiert die UI über
-  den Verbindungsstatus (`CONNECTING`, `CONNECTED`, `ERROR`, etc.).
-- `self._on_command_status_changed(status, message)`: Meldet den Status eines
-  gesendeten Befehls.
-- `self._on_settings_read(settings)`: Sendet die gelesenen Geräteeinstellungen
-  zurück an die UI.
+- `self._on_state_changed()`: Rufe dies auf, wann immer du `self.state` aktualisierst, um die UI
+  über eine Status- oder Positionsänderung zu benachrichtigen.
+- `self._on_connection_status_changed(status, message)`: Informiert die UI über den
+  Verbindungsstatus (`CONNECTING`, `CONNECTED`, `ERROR`, etc.).
+- `self._on_command_status_changed(status, message)`: Meldet den Status eines gesendeten Befehls.
+- `self._on_settings_read(settings)`: Sendet die gelesenen Geräteeinstellungen zurück an die UI.
 
 ## Hast du Fragen?
 
-Der beste Weg zu lernen ist, sich die bestehenden Treiber in
-`rayforge/machine/driver/` anzusehen, wie:
+Der beste Weg zu lernen ist, sich die bestehenden Treiber in `rayforge/machine/driver/` anzusehen,
+wie:
 
 - `grbl/` - GRBL-basierte Maschinen (seriell, Telnet, Netzwerk)
 - `marlin/` - Marlin-Firmware-basierte Maschinen (seriell)

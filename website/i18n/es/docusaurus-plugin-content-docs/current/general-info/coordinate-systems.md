@@ -1,6 +1,8 @@
 # Sistemas de Coordenadas de Trabajo (WCS)
 
-Los Sistemas de Coordenadas de Trabajo (WCS) te permiten definir múltiples puntos de referencia en el área de trabajo de tu máquina. Esto facilita ejecutar el mismo trabajo en diferentes posiciones sin rediseñar o reposicionar tus piezas.
+Los Sistemas de Coordenadas de Trabajo (WCS) te permiten definir múltiples puntos de referencia en
+el área de trabajo de tu máquina. Esto facilita ejecutar el mismo trabajo en diferentes posiciones
+sin rediseñar o reposicionar tus piezas.
 
 ## Espacios de Coordenadas
 
@@ -12,18 +14,16 @@ Rayforge utiliza tres espacios de coordenadas que trabajan juntos:
 | **WORKAREA** | El área utilizable dentro de tu máquina, considerando los márgenes alrededor de la cama.                               |
 | **WCS**      | El sistema de coordenadas de tu trabajo. Origen configurable por el usuario para diseño y posicionamiento de trabajos. |
 
-:::note Nota para Desarrolladores
-Internamente, Rayforge utiliza un sistema de coordenadas normalizado llamado espacio WORLD.
-El espacio WORLD describe el mismo espacio físico que el espacio MACHINE, pero con una
-convención fija: Y hacia arriba con origen en la esquina inferior izquierda. Esto simplifica
-los cálculos internos y el renderizado. Los usuarios no necesitan interactuar directamente
-con el espacio WORLD.
-:::
+:::note Nota para Desarrolladores Internamente, Rayforge utiliza un sistema de coordenadas
+normalizado llamado espacio WORLD. El espacio WORLD describe el mismo espacio físico que el espacio
+MACHINE, pero con una convención fija: Y hacia arriba con origen en la esquina inferior izquierda.
+Esto simplifica los cálculos internos y el renderizado. Los usuarios no necesitan interactuar
+directamente con el espacio WORLD. :::
 
 ### Espacio MACHINE
 
-El espacio MACHINE es el sistema de coordenadas absoluto relativo a la posición de origen
-de tu máquina. El origen (0,0) está determinado por la configuración de homing de tu máquina.
+El espacio MACHINE es el sistema de coordenadas absoluto relativo a la posición de origen de tu
+máquina. El origen (0,0) está determinado por la configuración de homing de tu máquina.
 
 - **Origen**: Posición de origen de la máquina (0,0,0) - fijado por hardware
 - **Propósito**: Referencia para todos los demás sistemas de coordenadas
@@ -31,24 +31,27 @@ de tu máquina. El origen (0,0) está determinado por la configuración de homin
 
 La dirección de las coordenadas depende de la configuración de tu máquina:
 
-- **Esquina de origen**: Puede ser superior-izquierda, inferior-izquierda, superior-derecha o inferior-derecha
+- **Esquina de origen**: Puede ser superior-izquierda, inferior-izquierda, superior-derecha o
+  inferior-derecha
 - **Dirección de ejes**: Los ejes X e Y pueden invertirse según la configuración del hardware
 
 ### Espacio WORKAREA
 
-El espacio WORKAREA define el área utilizable dentro de tu máquina, considerando
-cualquier margen alrededor de los bordes de tu cama.
+El espacio WORKAREA define el área utilizable dentro de tu máquina, considerando cualquier margen
+alrededor de los bordes de tu cama.
 
 - **Origen**: Misma esquina que el origen del espacio MACHINE
 - **Propósito**: Define el área real donde pueden ejecutarse los trabajos
 - **Márgenes**: Pueden aplicarse márgenes (izquierda, superior, derecha, inferior)
 
-Por ejemplo, si tu máquina es de 400×300mm pero tiene un margen de 10mm en todos los lados,
-la WORKAREA sería de 380×280mm comenzando en la posición (10, 10) en el espacio MACHINE.
+Por ejemplo, si tu máquina es de 400×300mm pero tiene un margen de 10mm en todos los lados, la
+WORKAREA sería de 380×280mm comenzando en la posición (10, 10) en el espacio MACHINE.
 
 ## Entendiendo WCS
 
-Piensa en WCS como "puntos cero" personalizables para tu trabajo. Mientras que tu máquina tiene una posición de origen fija (determinada por los interruptores de límite), WCS te permite definir dónde quieres que comience tu trabajo.
+Piensa en WCS como "puntos cero" personalizables para tu trabajo. Mientras que tu máquina tiene una
+posición de origen fija (determinada por los interruptores de límite), WCS te permite definir dónde
+quieres que comience tu trabajo.
 
 ### ¿Por Qué Usar WCS?
 
@@ -73,7 +76,8 @@ Rayforge soporta los siguientes sistemas de coordenadas:
 
 ### Coordenadas de Máquina (G53)
 
-G53 representa la posición absoluta de tu máquina, con cero en la posición de origen de la máquina. Esto está fijado por tu hardware y no se puede cambiar.
+G53 representa la posición absoluta de tu máquina, con cero en la posición de origen de la máquina.
+Esto está fijado por tu hardware y no se puede cambiar.
 
 **Cuándo usar:**
 
@@ -83,7 +87,8 @@ G53 representa la posición absoluta de tu máquina, con cero en la posición de
 
 ### Coordenadas de Trabajo (G54-G59)
 
-Estos son sistemas de coordenadas desplazados que puedes definir. Cada uno tiene su propio punto cero que puedes establecer en cualquier lugar de tu área de trabajo.
+Estos son sistemas de coordenadas desplazados que puedes definir. Cada uno tiene su propio punto
+cero que puedes establecer en cualquier lugar de tu área de trabajo.
 
 **Cuándo usar:**
 
@@ -98,25 +103,30 @@ Estos son sistemas de coordenadas desplazados que puedes definir. Cada uno tiene
 El lienzo 2D muestra tu origen WCS con un marcador verde:
 
 - **Líneas verdes**: Indican la posición del origen WCS actual (0, 0)
-- **Alineación de cuadrícula**: Las líneas de la cuadrícula están alineadas al origen WCS, no al origen de máquina
+- **Alineación de cuadrícula**: Las líneas de la cuadrícula están alineadas al origen WCS, no al
+  origen de máquina
 
-El marcador de origen se mueve cuando cambias el WCS activo o su desplazamiento, mostrándote exactamente dónde comenzará tu trabajo.
+El marcador de origen se mueve cuando cambias el WCS activo o su desplazamiento, mostrándote
+exactamente dónde comenzará tu trabajo.
 
 ### Vista Previa 3D
 
 En la vista previa 3D, WCS se muestra diferente:
 
 - **Cuadrícula y ejes**: Toda la cuadrícula aparece como si el origen WCS fuera el origen del mundo
-- **Vista aislada**: El WCS se muestra "en aislamiento" - parece que la cuadrícula está centrada en el WCS, no en la máquina
+- **Vista aislada**: El WCS se muestra "en aislamiento" - parece que la cuadrícula está centrada en
+  el WCS, no en la máquina
 - **Etiquetas**: Las etiquetas de coordenadas son relativas al origen WCS
 
-Esto facilita visualizar dónde se ejecutará tu trabajo relativo al sistema de coordenadas de trabajo seleccionado.
+Esto facilita visualizar dónde se ejecutará tu trabajo relativo al sistema de coordenadas de trabajo
+seleccionado.
 
 ## Seleccionando y Cambiando WCS
 
 ### Vía la Barra de Herramientas
 
-1. Ubica el menú desplegable WCS en la barra de herramientas principal (etiquetado "G53" por defecto)
+1. Ubica el menú desplegable WCS en la barra de herramientas principal (etiquetado "G53" por
+   defecto)
 2. Haz clic para ver los sistemas de coordenadas disponibles
 3. Selecciona el WCS que quieres usar
 
@@ -162,20 +172,19 @@ El mismo trabajo puede ejecutarse en diferentes posiciones simplemente cambiando
 ### WCS por capa
 
 Cada capa puede tener asignado su propio Sistema de Coordenadas de Trabajo de forma independiente.
-Cuando una capa tiene un WCS asignado, las operaciones de esa capa se posicionan
-relativas al WCS de la capa en lugar del global. Esto significa que puedes:
+Cuando una capa tiene un WCS asignado, las operaciones de esa capa se posicionan relativas al WCS de
+la capa en lugar del global. Esto significa que puedes:
 
 - Ejecutar diferentes capas en diferentes posiciones de la cama en un solo trabajo
 - Configurar múltiples fijaciones y asignarlas a capas específicas
-- Combinar trabajo plano y rotativo en el mismo proyecto, cada uno con su
-  propio origen de coordenadas
+- Combinar trabajo plano y rotativo en el mismo proyecto, cada uno con su propio origen de
+  coordenadas
 
-Para asignar un WCS a una capa, abre la configuración de la capa y usa el selector
-de WCS. Un botón de edición rápida junto al selector te permite ajustar los
-desplazamientos sin salir del diálogo.
+Para asignar un WCS a una capa, abre la configuración de la capa y usa el selector de WCS. Un botón
+de edición rápida junto al selector te permite ajustar los desplazamientos sin salir del diálogo.
 
-Las capas sin una asignación explícita de WCS usan el WCS activo global
-del menú desplegable de la barra de herramientas.
+Las capas sin una asignación explícita de WCS usan el WCS activo global del menú desplegable de la
+barra de herramientas.
 
 ## Flujos de Trabajo Prácticos
 
@@ -214,15 +223,16 @@ Necesitas cortar la misma pieza 10 veces en diferentes ubicaciones:
 ### Limitaciones de WCS
 
 - **G53 no puede cambiarse**: Las coordenadas de máquina están fijadas por hardware
-- **Los desplazamientos persisten**: Los desplazamientos WCS se almacenan en el controlador de tu máquina
+- **Los desplazamientos persisten**: Los desplazamientos WCS se almacenan en el controlador de tu
+  máquina
 - **Conexión requerida**: Debes estar conectado a una máquina para establecer desplazamientos WCS
 
 ---
 
 **Páginas Relacionadas:**
 
-- [Posicionamiento de Piezas de Trabajo](../features/workpiece-positioning.md) -
-  Guía completa de posicionamiento
+- [Posicionamiento de Piezas de Trabajo](../features/workpiece-positioning.md) - Guía completa de
+  posicionamiento
 - [Panel de Control](../ui/bottom-panel.md) - Control manual y gestión de WCS
 - [Configuración de Máquina](../machine/general.md) - Configura tu máquina
 - [Vista Previa 3D](../ui/3d-preview.md) - Visualizando tus trabajos

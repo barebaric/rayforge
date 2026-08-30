@@ -1,6 +1,7 @@
 # Corte de Contorno
 
-El corte de contorno traza el contorno de formas vectoriales para cortarlas y liberarlas del material. Es la operación láser más común para crear piezas, letreros y piezas decorativas.
+El corte de contorno traza el contorno de formas vectoriales para cortarlas y liberarlas del
+material. Es la operación láser más común para crear piezas, letreros y piezas decorativas.
 
 ## Resumen
 
@@ -47,7 +48,8 @@ Usa el corte de contorno para:
 
 ## Ajustes Principales
 
-El diálogo de ajustes de paso tiene tres pestañas: **Ajustes de Paso**, **Láser** y **Post-Procesamiento**. Los ajustes se describen en orden de pestañas a continuación.
+El diálogo de ajustes de paso tiene tres pestañas: **Ajustes de Paso**, **Láser** y
+**Post-Procesamiento**. Los ajustes se describen en orden de pestañas a continuación.
 
 ### Ajustes de Contorno
 
@@ -92,15 +94,17 @@ Controla el orden en que se procesan las trayectorias anidadas:
 
 Para diseños con agujeros o recortes internos, puedes elegir trazar solo el límite más exterior:
 
-- **Eliminar Trayectorias Interiores**: Cuando está habilitado, solo se traza el contorno más exterior
+- **Eliminar Trayectorias Interiores**: Cuando está habilitado, solo se traza el contorno más
+  exterior
 - Los agujeros y recortes internos se ignoran
 
-Esto es útil cuando quieres cortar una forma pero preservar el interior, como crear un marco o un contorno sin cortar detalles internos.
+Esto es útil cuando quieres cortar una forma pero preservar el interior, como crear un marco o un
+contorno sin cortar detalles internos.
 
 #### Sobrecorte
 
-Extiende las trayectorias de corte cerradas más allá de su punto de
-inicio para que el rayo láser se superponga con el inicio del corte:
+Extiende las trayectorias de corte cerradas más allá de su punto de inicio para que el rayo láser se
+superponga con el inicio del corte:
 
 **Sobrecorte:**
 
@@ -111,10 +115,9 @@ inicio para que el rayo láser se superponga con el inicio del corte:
 
 **Por qué usar sobrecorte:**
 
-Al inicio y al final de un contorno cerrado, es posible que el láser no
-penetre completamente debido a la aceleración y desaceleración. El
-sobrecorte asegura que el haz se superponga en la unión, creando un
-corte limpio y completamente separado. Esto es especialmente útil para:
+Al inicio y al final de un contorno cerrado, es posible que el láser no penetre completamente debido
+a la aceleración y desaceleración. El sobrecorte asegura que el haz se superponga en la unión,
+creando un corte limpio y completamente separado. Esto es especialmente útil para:
 
 - Materiales gruesos donde la penetración completa es marginal
 - Cortes a alta velocidad donde los efectos de aceleración son más pronunciados
@@ -122,16 +125,15 @@ corte limpio y completamente separado. Esto es especialmente útil para:
 
 El sobrecorte se aplica tanto a contornos exteriores como a agujeros internos.
 
-:::tip Entrada/Salida vs Sobrecorte
-[Entrada/Salida](../lead-in-out.md) agrega movimientos de aproximación y
-salida con potencia cero antes y después de la trayectoria de corte. El
-sobrecorte extiende la propia trayectoria de corte más allá de la
-unión. Pueden usarse juntos para una calidad de corte óptima.
-:::
+:::tip Entrada/Salida vs Sobrecorte [Entrada/Salida](../lead-in-out.md) agrega movimientos de
+aproximación y salida con potencia cero antes y después de la trayectoria de corte. El sobrecorte
+extiende la propia trayectoria de corte más allá de la unión. Pueden usarse juntos para una calidad
+de corte óptima. :::
 
 #### Re-trazado con Umbral Personalizado
 
-Cuando trabajas con imágenes de mapa de bits convertidas a vectores, puedes controlar qué partes se trazan:
+Cuando trabajas con imágenes de mapa de bits convertidas a vectores, puedes controlar qué partes se
+trazan:
 
 - **Re-escanear Contenido**: Habilita un umbral de brillo personalizado para el trazado
 - **Umbral de Trazado (0.0-1.0)**: Valor de corte de brillo cuando el re-escaneo está habilitado
@@ -144,7 +146,8 @@ Esto es útil cuando el trazado predeterminado no captura el nivel de detalle qu
 
 ![Ajustes del láser](/screenshots/step-settings-contour-laser.webp)
 
-La potencia, la velocidad y la selección del cabezal láser se encuentran en la página **Láser** del diálogo de ajustes de paso.
+La potencia, la velocidad y la selección del cabezal láser se encuentran en la página **Láser** del
+diálogo de ajustes de paso.
 
 #### Potencia y Velocidad
 
@@ -185,11 +188,14 @@ Ver [Kerf](../kerf.md) para una guía detallada.
 Las operaciones de contorno soportan varias opciones de post-procesamiento:
 
 - **[Suavizar Trayectoria](../smooth.md)** - Reduce bordes irregulares en trayectorias de corte
-- **[Pestañas de Sujeción](../holding-tabs.md)** - Mantienen las piezas cortadas adjuntas al material base
+- **[Pestañas de Sujeción](../holding-tabs.md)** - Mantienen las piezas cortadas adjuntas al
+  material base
 - **[Recortar al Material](../crop-to-stock.md)** - Limita los cortes al límite del material
-- **[Optimización de Trayectoria](../path-optimization.md)** - Reduce la distancia de viaje entre cortes
+- **[Optimización de Trayectoria](../path-optimization.md)** - Reduce la distancia de viaje entre
+  cortes
 - **[Multi-Pasada](../multi-pass.md)** - Repite cortes para materiales gruesos
-- **[Entrada/Salida](../lead-in-out.md)** - Agrega movimientos de aproximación y salida sin potencia para extremos de corte más limpios
+- **[Entrada/Salida](../lead-in-out.md)** - Agrega movimientos de aproximación y salida sin potencia
+  para extremos de corte más limpios
 
 ### Corte Multi-Pasada
 
@@ -207,10 +213,10 @@ Para materiales más gruesos de lo que una sola pasada puede cortar:
 - Crea un corte 2.5D verdadero
 - Configura en 0 para pasadas múltiples a la misma profundidad
 
-:::warning Eje Z Requerido
-:::
+:::warning Eje Z Requerido :::
 
-La profundidad de pasada solo funciona si tu máquina tiene control de eje Z. Para máquinas sin eje Z, usa pasadas múltiples a la misma profundidad.
+La profundidad de pasada solo funciona si tu máquina tiene control de eje Z. Para máquinas sin eje
+Z, usa pasadas múltiples a la misma profundidad.
 
 ## Consejos y Mejores Prácticas
 
@@ -309,4 +315,5 @@ M5                  ; Láser apagado
 - **[Grabado](engrave)** - Rellenar áreas con patrones de grabado
 - **[Pestañas de Sujeción](../holding-tabs.md)** - Mantener piezas aseguradas durante el corte
 - **[Kerf](../kerf.md)** - Mejorar la precisión de corte
-- **[Cuadrícula de Prueba de Material](material-test-grid)** - Encontrar ajustes óptimos de potencia/velocidad
+- **[Cuadrícula de Prueba de Material](material-test-grid)** - Encontrar ajustes óptimos de
+  potencia/velocidad

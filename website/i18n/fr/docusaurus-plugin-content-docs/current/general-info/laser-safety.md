@@ -1,15 +1,17 @@
 # Sécurité laser
 
-Les équipements de découpe et de gravure laser présentent des risques de sécurité graves, notamment des incendies, des fumées toxiques et des dommages oculaires permanents.
+Les équipements de découpe et de gravure laser présentent des risques de sécurité graves, notamment
+des incendies, des fumées toxiques et des dommages oculaires permanents.
 
-:::danger Avertissement de sécurité critique
-**Suivez toujours les consignes de sécurité et les instructions d'exploitation du fabricant de votre laser.** Cette page fournit des principes de sécurité généraux mais ne remplace pas une formation appropriée et la documentation de sécurité spécifique à votre machine.
-:::
-
+:::danger Avertissement de sécurité critique **Suivez toujours les consignes de sécurité et les
+instructions d'exploitation du fabricant de votre laser.** Cette page fournit des principes de
+sécurité généraux mais ne remplace pas une formation appropriée et la documentation de sécurité
+spécifique à votre machine. :::
 
 ## Votre ressource de sécurité principale
 
-**Lisez entièrement le manuel du fabricant de votre laser** avant d'utiliser tout équipement laser. Il contient :
+**Lisez entièrement le manuel du fabricant de votre laser** avant d'utiliser tout équipement laser.
+Il contient :
 
 - Les exigences de sécurité spécifiques à votre machine
 - L'équipement de protection individuelle (EPI) requis
@@ -17,15 +19,18 @@ Les équipements de découpe et de gravure laser présentent des risques de séc
 - Les calendriers de maintenance et d'inspection
 - Les informations sur la garantie et la responsabilité
 
-Rayforge est un logiciel de contrôle - il ne peut pas remplacer les exigences de sécurité physiques de votre matériel laser.
+Rayforge est un logiciel de contrôle - il ne peut pas remplacer les exigences de sécurité physiques
+de votre matériel laser.
 
 ## Principes de sécurité essentiels
 
 ### Ne jamais laisser le laser sans surveillance
 
-**Règle la plus importante :** Ne jamais laisser un laser en fonctionnement sans surveillance, même pendant quelques secondes.
+**Règle la plus importante :** Ne jamais laisser un laser en fonctionnement sans surveillance, même
+pendant quelques secondes.
 
-**Pourquoi :** Les lasers peuvent enflammer les matériaux instantanément. Une petite flamme peut devenir un incendie grave en quelques secondes.
+**Pourquoi :** Les lasers peuvent enflammer les matériaux instantanément. Une petite flamme peut
+devenir un incendie grave en quelques secondes.
 
 **Toujours :**
 
@@ -51,7 +56,8 @@ Rayforge est un logiciel de contrôle - il ne peut pas remplacer les exigences d
 
 ### La ventilation est obligatoire
 
-**Toute découpe laser produit des fumées toxiques.** Une ventilation appropriée n'est pas optionnelle.
+**Toute découpe laser produit des fumées toxiques.** Une ventilation appropriée n'est pas
+optionnelle.
 
 **Exigences :**
 
@@ -60,25 +66,28 @@ Rayforge est un logiciel de contrôle - il ne peut pas remplacer les exigences d
 - En fonctionnement pendant toutes les opérations laser
 - Remplacement régulier des filtres (si vous utilisez une filtration)
 
-**N'utilisez jamais sans ventilation appropriée** - vous risquez de graves effets sur la santé et endommagerez l'optique de votre laser.
+**N'utilisez jamais sans ventilation appropriée** - vous risquez de graves effets sur la santé et
+endommagerez l'optique de votre laser.
 
 ### Matériaux interdits
 
 **Ne découpez ou ne gravez jamais ces matériaux :**
 
-| Matériau                              | Danger                                   |
-| ------------------------------------- | ---------------------------------------- |
-| **PVC / Vinyle**                      | Produit du gaz chlore (toxique, corrosif)|
-| **Plastique ABS**                     | Produit du gaz cyanure (mortel)          |
-| **Polycarbonate**                     | Fumées toxiques, mauvais résultats       |
+| Matériau                              | Danger                                                       |
+| ------------------------------------- | ------------------------------------------------------------ |
+| **PVC / Vinyle**                      | Produit du gaz chlore (toxique, corrosif)                    |
+| **Plastique ABS**                     | Produit du gaz cyanure (mortel)                              |
+| **Polycarbonate**                     | Fumées toxiques, mauvais résultats                           |
 | **Fibre de verre**                    | Les particules de verre endommagent les poumons et l'optique |
-| **Tout matériau contenant du chlore** | Toxique et corrosif                      |
+| **Tout matériau contenant du chlore** | Toxique et corrosif                                          |
 
-**En cas de doute :** Vérifiez la fiche de données de sécurité du matériau (FDSM) ou testez un minuscule échantillon avec une excellente ventilation.
+**En cas de doute :** Vérifiez la fiche de données de sécurité du matériau (FDSM) ou testez un
+minuscule échantillon avec une excellente ventilation.
 
 ### Protection des yeux
 
-La plupart des systèmes laser fermés ne nécessitent pas de lunettes pendant le fonctionnement normal **si l'enceinte est fermée et dispose des verrouillages appropriés.**
+La plupart des systèmes laser fermés ne nécessitent pas de lunettes pendant le fonctionnement normal
+**si l'enceinte est fermée et dispose des verrouillages appropriés.**
 
 **Protection oculaire requise quand :**
 
@@ -87,17 +96,21 @@ La plupart des systèmes laser fermés ne nécessitent pas de lunettes pendant l
 - La machine a une fenêtre d'observation sans filtrage laser-sûr
 - Le fabricant le spécifie
 
-**Vérifiez toujours les exigences de votre fabricant** - elles varient selon la conception de la machine et le type de laser.
+**Vérifiez toujours les exigences de votre fabricant** - elles varient selon la conception de la
+machine et le type de laser.
 
 ## Fonctionnalités de sécurité de Rayforge
 
 Rayforge fournit des outils pour aider à opérer en toute sécurité :
 
-- **[Aperçu 3D](../ui/3d-preview.md)** - Prévisualiser les travaux avant de les exécuter pour identifier les problèmes
-- **[Grille de test de matériau](../features/operations/material-test-grid.md)** - Trouver des paramètres sûrs pour nouveaux matériaux
+- **[Aperçu 3D](../ui/3d-preview.md)** - Prévisualiser les travaux avant de les exécuter pour
+  identifier les problèmes
+- **[Grille de test de matériau](../features/operations/material-test-grid.md)** - Trouver des
+  paramètres sûrs pour nouveaux matériaux
 - **Cadrer le travail** - Vérifier le positionnement avant la découpe
 
-**Ces fonctionnalités aident à prévenir les erreurs mais ne remplacent pas les pratiques d'exploitation sûres.**
+**Ces fonctionnalités aident à prévenir les erreurs mais ne remplacent pas les pratiques
+d'exploitation sûres.**
 
 ## Liste de contrôle pré-opération
 
@@ -123,7 +136,8 @@ Avant chaque travail :
 - Matériau se déplaçant dangereusement
 - Toute situation d'urgence
 
-**Comment :** Appuyez sur le bouton d'arrêt d'urgence rouge sur la machine. Tout mouvement et puissance laser s'arrêtent immédiatement.
+**Comment :** Appuyez sur le bouton d'arrêt d'urgence rouge sur la machine. Tout mouvement et
+puissance laser s'arrêtent immédiatement.
 
 ### Réponse aux incendies
 
@@ -173,15 +187,14 @@ Avant chaque travail :
 ## Règles de sécurité clés
 
 :::warning Règles de sécurité critiques
+
 1. **Ne jamais laisser un laser sans surveillance pendant le fonctionnement**
 2. **Ne jamais utiliser sans ventilation appropriée**
 3. **Ne jamais découper de matériaux interdits (PVC, vinyle, ABS, etc.)**
 4. **Avoir toujours un extincteur à portée de main**
 5. **Suivez toujours les consignes de sécurité du fabricant**
 6. **Sachez où se trouve l'arrêt d'urgence**
-7. **Prévisualisez les travaux en mode simulation avant de les exécuter**
-:::
-
+7. **Prévisualisez les travaux en mode simulation avant de les exécuter** :::
 
 ## Ressources supplémentaires
 
@@ -209,9 +222,12 @@ Avant chaque travail :
 ## Pages connexes
 
 - **[Aperçu 3D](../ui/3d-preview.md)** - Prévisualiser les travaux en toute sécurité
-- **[Grille de test de matériau](../features/operations/material-test-grid.md)** - Trouver des paramètres sûrs
+- **[Grille de test de matériau](../features/operations/material-test-grid.md)** - Trouver des
+  paramètres sûrs
 - **[Les bases du G-code](gcode-basics)** - Comprendre les commandes de contrôle laser
 
 ---
 
-**Rappelez-vous :** L'utilisation sûre du laser nécessite une vigilance constante, un équipement approprié et une stricte adhésion aux procédures de sécurité. En cas de doute, référez-vous à la documentation de votre fabricant et privilégiez la prudence.
+**Rappelez-vous :** L'utilisation sûre du laser nécessite une vigilance constante, un équipement
+approprié et une stricte adhésion aux procédures de sécurité. En cas de doute, référez-vous à la
+documentation de votre fabricant et privilégiez la prudence.

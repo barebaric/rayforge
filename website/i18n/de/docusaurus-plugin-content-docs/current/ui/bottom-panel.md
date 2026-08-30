@@ -1,28 +1,25 @@
 # Unteres Panel
 
-Das untere Panel am unteren Rand des Rayforge-Fensters bietet manuelle
-Kontrolle über die Position deines Laserschneiders, Echtzeit-Maschinenstatus,
-eine Protokollansicht zur Überwachung von Operationen, einen G-Code-Viewer
-und einen Asset-Browser.
+Das untere Panel am unteren Rand des Rayforge-Fensters bietet manuelle Kontrolle über die Position
+deines Laserschneiders, Echtzeit-Maschinenstatus, eine Protokollansicht zur Überwachung von
+Operationen, einen G-Code-Viewer und einen Asset-Browser.
 
 ## Übersicht
 
-Das untere Panel kombiniert mehrere Funktionen in einer praktischen
-Schnittstelle:
+Das untere Panel kombiniert mehrere Funktionen in einer praktischen Schnittstelle:
 
-1. **Andockbare Tabs**: Zwischen Konsole, G-Code-Viewer und Assets wechseln
-   über die Icon-Leiste auf der linken Seite
+1. **Andockbare Tabs**: Zwischen Konsole, G-Code-Viewer und Assets wechseln über die Icon-Leiste auf
+   der linken Seite
 2. **Jog-Steuerung**: Manuelle Bewegung und Positionierung (immer sichtbar)
 3. **Maschinenstatus**: Echtzeit-Position und Verbindungszustand
 4. **Werkstückkoordinatensystem (WCS)**: Schnelle WCS-Auswahl (immer sichtbar)
 
-Jeder Bereich des Panels hat eine Icon-Tab-Leiste auf der linken Seite, mit
-der du zwischen der **Konsole**, dem **G-Code-Viewer** und dem **Assets**-Browser
-wechseln kannst. Die Jog-Steuerung und WCS-Steuerung auf der rechten Seite
-bleiben unabhängig davon sichtbar, welcher Tab aktiv ist. Tabs können durch
-Ziehen innerhalb ihrer Leiste neu angeordnet werden, und du kannst Tabs
-zwischen Panelbereichen oder auf Trennlinien ziehen, um das Layout in mehrere
-Spalten umzuordnen. Leere Spalten werden automatisch entfernt.
+Jeder Bereich des Panels hat eine Icon-Tab-Leiste auf der linken Seite, mit der du zwischen der
+**Konsole**, dem **G-Code-Viewer** und dem **Assets**-Browser wechseln kannst. Die Jog-Steuerung und
+WCS-Steuerung auf der rechten Seite bleiben unabhängig davon sichtbar, welcher Tab aktiv ist. Tabs
+können durch Ziehen innerhalb ihrer Leiste neu angeordnet werden, und du kannst Tabs zwischen
+Panelbereichen oder auf Trennlinien ziehen, um das Layout in mehrere Spalten umzuordnen. Leere
+Spalten werden automatisch entfernt.
 
 ![Unteres Panel](/screenshots/bottom-panel-console.webp)
 
@@ -33,28 +30,24 @@ Das untere Panel kann umgeschaltet werden über:
 - **Menü**: Ansicht → Unteres Panel
 - **Tastaturkürzel**: Strg+L
 
-:::note Verbindung erforderlich
-Die Jog-Steuerung ist nur verfügbar, wenn mit einer Maschine verbunden ist, die Jogging-Operationen unterstützt.
-:::
+:::note Verbindung erforderlich Die Jog-Steuerung ist nur verfügbar, wenn mit einer Maschine
+verbunden ist, die Jogging-Operationen unterstützt. :::
 
 ## Jog-Steuerung
 
-Die Jog-Steuerung bietet manuelle Kontrolle über die Position deines
-Laserschneiders, sodass du den Laserkopf präzise für Einrichtung,
-Ausrichtung und Testzwecke bewegen kannst.
+Die Jog-Steuerung bietet manuelle Kontrolle über die Position deines Laserschneiders, sodass du den
+Laserkopf präzise für Einrichtung, Ausrichtung und Testzwecke bewegen kannst.
 
 ### Referenzfahrt-Steuerung
 
-Referenziere die Achsen deiner Maschine, um eine Referenzposition zu
-etablieren:
+Referenziere die Achsen deiner Maschine, um eine Referenzposition zu etablieren:
 
 | Schaltfläche       | Funktion                 | Beschreibung                          |
 | ------------------ | ------------------------ | ------------------------------------- |
 | Alle referenzieren | Referenziert alle Achsen | Referenziert alle Achsen gleichzeitig |
 
-:::tip Referenzfahrt-Sequenz
-Es wird empfohlen, alle Achsen zu referenzieren bevor ein Auftrag gestartet wird, um präzise Positionierung sicherzustellen.
-:::
+:::tip Referenzfahrt-Sequenz Es wird empfohlen, alle Achsen zu referenzieren bevor ein Auftrag
+gestartet wird, um präzise Positionierung sicherzustellen. :::
 
 ### Richtungssteuerung
 
@@ -79,8 +72,7 @@ Die Jog-Steuerung bietet Schaltflächen für Richtungssteuerung:
 | Z+               | Z-Achse hoch                           | Bild ↑            |
 | Z-               | Z-Achse runter                         | Bild ↓            |
 
-:::note Fokus erforderlich
-Tastaturkürzel funktionieren nur, wenn das Hauptfenster den Fokus hat.
+:::note Fokus erforderlich Tastaturkürzel funktionieren nur, wenn das Hauptfenster den Fokus hat.
 :::
 
 ### Visuelles Feedback
@@ -105,8 +97,7 @@ Konfiguriere das Verhalten von Jog-Operationen:
 
 - Niedrigere Geschwindigkeiten (100-500 mm/min) für präzise Positionierung verwenden
 - Höhere Geschwindigkeiten (1.000-3.000 mm/min) für größere Bewegungen verwenden
-- Sehr hohe Geschwindigkeiten können bei einigen Maschinen zu verpassten Schritten führen
-  :::
+- Sehr hohe Geschwindigkeiten können bei einigen Maschinen zu verpassten Schritten führen :::
 
 **Jog-Distanz:**
 
@@ -118,8 +109,7 @@ Konfiguriere das Verhalten von Jog-Operationen:
 
 - Kleine Distanzen (0,1-1,0 mm) zum Feinabstimmen verwenden
 - Mittlere Distanzen (5-20 mm) für allgemeines Positionieren verwenden
-- Große Distanzen (50-100 mm) für schnelles Umpositionieren verwenden
-  :::
+- Große Distanzen (50-100 mm) für schnelles Umpositionieren verwenden :::
 
 ## Maschinenstatus-Anzeige
 
@@ -149,8 +139,7 @@ Zeigt die Position des Laserkopfes im aktiven Koordinatensystem:
 
 ## Werkstückkoordinatensystem (WCS)
 
-Das Steuerungs-Panel bietet schnellen Zugriff auf die
-Werkstückkoordinatensystem-Verwaltung.
+Das Steuerungs-Panel bietet schnellen Zugriff auf die Werkstückkoordinatensystem-Verwaltung.
 
 ### Aktives System auswählen
 
@@ -179,8 +168,8 @@ Definiere, wo der Ursprung des aktiven WCS sein soll:
 | Y nullen           | Y=0 setzen   | Macht aktuelle Y-Position zum Y-Ursprung für aktives WCS                                     |
 | Z nullen           | Z=0 setzen   | Macht aktuelle Z-Position zum Z-Ursprung für aktives WCS                                     |
 
-:::note G53 kann nicht geändert werden
-Null-Schaltflächen sind deaktiviert wenn G53 (Maschinenkoordinaten) ausgewählt ist, da Maschinenkoordinaten durch die Hardware festgelegt sind.
+:::note G53 kann nicht geändert werden Null-Schaltflächen sind deaktiviert wenn G53
+(Maschinenkoordinaten) ausgewählt ist, da Maschinenkoordinaten durch die Hardware festgelegt sind.
 :::
 
 :::tip WCS-Einrichtungs-Workflow
@@ -189,19 +178,17 @@ Null-Schaltflächen sind deaktiviert wenn G53 (Maschinenkoordinaten) ausgewählt
 2. Das WCS auswählen, das du konfigurieren möchtest (z.B. G54)
 3. Den Laserkopf zur gewünschten Ursprungsposition jogen
 4. Auf X nullen und Y nullen klicken um diese Position als (0, 0) zu setzen
-5. Der Offset wird im Controller deiner Maschine gespeichert
-   :::
+5. Der Offset wird im Controller deiner Maschine gespeichert :::
 
 ## Konsole-Tab
 
-Die Konsole bietet eine interaktive Terminal-ähnliche Schnittstelle zum Senden
-von G-Code-Befehlen und Überwachen der Maschinenkommunikation. Klicke auf das
-Konsolen-Symbol in der Tab-Leiste, um zu dieser Ansicht zu wechseln.
+Die Konsole bietet eine interaktive Terminal-ähnliche Schnittstelle zum Senden von G-Code-Befehlen
+und Überwachen der Maschinenkommunikation. Klicke auf das Konsolen-Symbol in der Tab-Leiste, um zu
+dieser Ansicht zu wechseln.
 
 ### Befehlseingabe
 
-Das Befehlseingabefeld ermöglicht dir, rohen G-Code direkt an die Maschine zu
-senden:
+Das Befehlseingabefeld ermöglicht dir, rohen G-Code direkt an die Maschine zu senden:
 
 - **Mehrzeilen-Unterstützung**: Mehrere Befehle einfügen oder eingeben
 - **Eingabetaste**: Sendet alle Befehle
@@ -210,8 +197,8 @@ senden:
 
 ### Protokollanzeige
 
-Das Protokoll zeigt die Kommunikation zwischen Rayforge und deiner Maschine
-mit Syntaxhervorhebung zur einfachen Lesbarkeit:
+Das Protokoll zeigt die Kommunikation zwischen Rayforge und deiner Maschine mit Syntaxhervorhebung
+zur einfachen Lesbarkeit:
 
 - **Benutzerbefehle** (blau): Befehle, die du eingegeben oder während Aufträgen gesendet hast
 - **Zeitstempel** (grau): Uhrzeit jeder Nachricht
@@ -222,8 +209,8 @@ mit Syntaxhervorhebung zur einfachen Lesbarkeit:
 
 ### Ausführlicher Modus
 
-Klicke auf das Terminal-Symbol in der oberen rechten Ecke der Konsole um die
-ausführliche Ausgabe umzuschalten:
+Klicke auf das Terminal-Symbol in der oberen rechten Ecke der Konsole um die ausführliche Ausgabe
+umzuschalten:
 
 - **Aus** (Standard): Versteckt häufige Statusabfragen und "ok"-Antworten
 - **Ein**: Zeigt gesamte Maschinenkommunikation
@@ -248,87 +235,75 @@ Die Konsole ist unschätzbar wertvoll für die Diagnose von Problemen:
 
 ## G-Code-Viewer-Tab
 
-Der G-Code-Viewer zeigt den generierten G-Code für die aktuellen Operationen
-an. Klicke auf das G-Code-Symbol in der Tab-Leiste, um zu dieser Ansicht zu
-wechseln.
+Der G-Code-Viewer zeigt den generierten G-Code für die aktuellen Operationen an. Klicke auf das
+G-Code-Symbol in der Tab-Leiste, um zu dieser Ansicht zu wechseln.
 
 ### Funktionen
 
 - **Syntaxhervorhebung**: G-Code-Befehle sind farbcodiert für bessere Lesbarkeit
-- **Zeilenmarkierung**: Die aktuell ausgeführte Zeile wird während der
-  Auftragsausführung hervorgehoben
-- **Automatische Aktualisierung**: Der G-Code-Inhalt wird automatisch
-  aktualisiert wenn sich Operationen oder Dokumenteinstellungen ändern
+- **Zeilenmarkierung**: Die aktuell ausgeführte Zeile wird während der Auftragsausführung
+  hervorgehoben
+- **Automatische Aktualisierung**: Der G-Code-Inhalt wird automatisch aktualisiert wenn sich
+  Operationen oder Dokumenteinstellungen ändern
 
 ## Assets-Tab
 
-Der Assets-Tab zeigt alle Rohmaterialien und Skizzen in deinem Dokument an.
-Klicke auf das Assets-Symbol in der Tab-Leiste, um zu dieser Ansicht zu
-wechseln.
+Der Assets-Tab zeigt alle Rohmaterialien und Skizzen in deinem Dokument an. Klicke auf das
+Assets-Symbol in der Tab-Leiste, um zu dieser Ansicht zu wechseln.
 
-Wenn die Asset-Liste leer ist, werden Schaltflächen zum Hinzufügen von
-Rohmaterial oder Erstellen einer neuen Skizze angezeigt. Du kannst Assets
-aus dieser Liste auf die Canvas ziehen, um sie zu platzieren. Ein
-Doppelklick auf ein Rohmaterial-Asset öffnet dessen Eigenschaften.
+Wenn die Asset-Liste leer ist, werden Schaltflächen zum Hinzufügen von Rohmaterial oder Erstellen
+einer neuen Skizze angezeigt. Du kannst Assets aus dieser Liste auf die Canvas ziehen, um sie zu
+platzieren. Ein Doppelklick auf ein Rohmaterial-Asset öffnet dessen Eigenschaften.
 
-Ein Rechtsklick auf ein Asset öffnet ein Kontextmenü mit Optionen zum
-Erstellen eines neuen Werkstücks aus dem Asset, Duplizieren, Kopieren,
-Ausschneiden oder Löschen. Ein Rechtsklick auf eine leere Stelle in der
-Asset-Liste bietet Optionen zum Erstellen einer neuen Skizze, Hinzufügen
-von Rohmaterial, Importieren einer Datei oder Einfügen aus der
-Zwischenablage.
+Ein Rechtsklick auf ein Asset öffnet ein Kontextmenü mit Optionen zum Erstellen eines neuen
+Werkstücks aus dem Asset, Duplizieren, Kopieren, Ausschneiden oder Löschen. Ein Rechtsklick auf eine
+leere Stelle in der Asset-Liste bietet Optionen zum Erstellen einer neuen Skizze, Hinzufügen von
+Rohmaterial, Importieren einer Datei oder Einfügen aus der Zwischenablage.
 
-Wenn der Konsole- oder G-Code-Viewer-Tab aktiv ist, kannst du auch
-<kbd>Strg+F</kbd> drücken, um im Inhalt zu suchen.
+Wenn der Konsole- oder G-Code-Viewer-Tab aktiv ist, kannst du auch <kbd>Strg+F</kbd> drücken, um im
+Inhalt zu suchen.
 
 ## Laser-Steuerung
 
-Der Laser-Dock bietet manuelle Steuerung deines Lasers zum Testen,
-Ausrichten und Fokussieren. Er erscheint als Tab neben dem
-Steuerungs-Dock im unteren Panel.
+Der Laser-Dock bietet manuelle Steuerung deines Lasers zum Testen, Ausrichten und Fokussieren. Er
+erscheint als Tab neben dem Steuerungs-Dock im unteren Panel.
 
 ### Laserkopf-Auswahl
 
-Ein Dropdown-Menü listet alle konfigurierten Laserköpfe auf. Wenn deine
-Maschine mehrere Köpfe hat, wähle den aus, den du steuern möchtest. Der
-Untertitel zeigt die Werkzeugnummer und die maximale Leistung des
-ausgewählten Kopfs an.
+Ein Dropdown-Menü listet alle konfigurierten Laserköpfe auf. Wenn deine Maschine mehrere Köpfe hat,
+wähle den aus, den du steuern möchtest. Der Untertitel zeigt die Werkzeugnummer und die maximale
+Leistung des ausgewählten Kopfs an.
 
 ### Ein-/Aus-Schalter
 
-Der Umschalter neben der Kopfauswahl schaltet den Laser ein oder aus. Wenn
-der Laser aktiv ist, wird der Knopf rot als Sicherheitsanzeige. Der Laser
-kann auch über den Toolbar-Knopf in der Hauptfensterleiste umgeschaltet
-werden.
+Der Umschalter neben der Kopfauswahl schaltet den Laser ein oder aus. Wenn der Laser aktiv ist, wird
+der Knopf rot als Sicherheitsanzeige. Der Laser kann auch über den Toolbar-Knopf in der
+Hauptfensterleiste umgeschaltet werden.
 
 ### Leistung
 
-Ein Schieberegler und ein Texteingabefeld steuern die Laserleistung von 0
-bis 100 Prozent. Wenn du zu einem anderen Laserkopf wechselst, wird die
-Leistung auf die konfigurierte Fokusleistung dieses Kopfs zurückgesetzt.
+Ein Schieberegler und ein Texteingabefeld steuern die Laserleistung von 0 bis 100 Prozent. Wenn du
+zu einem anderen Laserkopf wechselst, wird die Leistung auf die konfigurierte Fokusleistung dieses
+Kopfs zurückgesetzt.
 
 ### Frequenz und Impulsbreite
 
-Diese Steuerungen erscheinen nur, wenn der ausgewählte Laserkopf vom Typ
-CO2 oder Fiber ist. Sie ermöglichen das Einstellen der PWM-Frequenz (Hz)
-und der Impulsbreite (Mikrosekunden) für den manuellen Laserbetrieb. Bei
-Diodenlasern sind diese Felder ausgeblendet.
+Diese Steuerungen erscheinen nur, wenn der ausgewählte Laserkopf vom Typ CO2 oder Fiber ist. Sie
+ermöglichen das Einstellen der PWM-Frequenz (Hz) und der Impulsbreite (Mikrosekunden) für den
+manuellen Laserbetrieb. Bei Diodenlasern sind diese Felder ausgeblendet.
 
 ### Dauer (Auto-Aus-Timer)
 
-Stelle eine Dauer in Sekunden ein, nach der sich der Laser automatisch
-ausschaltet. Stelle 0 ein für Dauerbetrieb — der Laser bleibt an, bis du
-ihn manuell ausschaltest. Ein Countdown-Label erscheint unter den
-Steuerungen, während der Timer läuft.
+Stelle eine Dauer in Sekunden ein, nach der sich der Laser automatisch ausschaltet. Stelle 0 ein für
+Dauerbetrieb — der Laser bleibt an, bis du ihn manuell ausschaltest. Ein Countdown-Label erscheint
+unter den Steuerungen, während der Timer läuft.
 
 ### Sicherheit
 
-- Alle Steuerungen sind deaktiviert, wenn keine Laserköpfe konfiguriert
-  sind
+- Alle Steuerungen sind deaktiviert, wenn keine Laserköpfe konfiguriert sind
 - Der Umschalter erfordert eine aktive Maschinenverbindung
-- Wenn die Maschine die Verbindung trennt, während der Laser an ist, wird
-  der Laser automatisch ausgeschaltet und jeder laufende Timer wird
-  abgebrochen
+- Wenn die Maschine die Verbindung trennt, während der Laser an ist, wird der Laser automatisch
+  ausgeschaltet und jeder laufende Timer wird abgebrochen
 
 ## Maschinenkompatibilität
 

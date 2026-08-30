@@ -32,7 +32,8 @@ graph TD;
     class RayforgeCore,YourDriver clusterBox
 ```
 
-- **`OpsEncoder`：** 将 `Ops` 翻译为特定的命令语言（例如 G-code）。被流水线（用于作业编码）和驱动程序（用于 move_to、home 等单个命令）使用。
+- **`OpsEncoder`：** 将 `Ops`
+  翻译为特定的命令语言（例如 G-code）。被流水线（用于作业编码）和驱动程序（用于 move_to、home 等单个命令）使用。
 - **`Pipeline`：** 编排编码并生成最终机器代码。
 - **`Transport`：** 管理连接和数据传输。
 - **`Driver`：** 执行机器代码、处理设备状态并与 UI 通信。
@@ -41,20 +42,22 @@ graph TD;
 
 ## `Ops` 语言
 
-Rayforge 将激光作业描述为存储在 `Ops` 对象中的高级操作序列。这是 Rayforge 内用于描述机器运动的通用语言，独立于任何特定硬件。
+Rayforge 将激光作业描述为存储在 `Ops`
+对象中的高级操作序列。这是 Rayforge 内用于描述机器运动的通用语言，独立于任何特定硬件。
 
-| `Ops` 方法          | 签名                            | 描述                         |
-| :------------------ | :------------------------------ | :--------------------------- |
-| `move_to`           | `(x, y, z=0.0)`                 | 快速移动（不切割）           |
-| `line_to`           | `(x, y, z=0.0)`                 | 切割/雕刻移动                |
-| `arc_to`            | `(x, y, i, j, cw=True, z=0.0)`  | 切割/雕刻弧形移动            |
-| `set_power`         | `(power)`                       | 设置激光功率（0-100%）       |
-| `set_cut_speed`     | `(speed)`                       | 设置切割移动速度（mm/min）   |
-| `set_travel_speed`  | `(speed)`                       | 设置快速移动速度（mm/min）   |
-| `enable_air_assist` | `()`                            | 开启气助                     |
-| `disable_air_assist`| `()`                            | 关闭气助                     |
+| `Ops` 方法           | 签名                           | 描述                       |
+| :------------------- | :----------------------------- | :------------------------- |
+| `move_to`            | `(x, y, z=0.0)`                | 快速移动（不切割）         |
+| `line_to`            | `(x, y, z=0.0)`                | 切割/雕刻移动              |
+| `arc_to`             | `(x, y, i, j, cw=True, z=0.0)` | 切割/雕刻弧形移动          |
+| `set_power`          | `(power)`                      | 设置激光功率（0-100%）     |
+| `set_cut_speed`      | `(speed)`                      | 设置切割移动速度（mm/min） |
+| `set_travel_speed`   | `(speed)`                      | 设置快速移动速度（mm/min） |
+| `enable_air_assist`  | `()`                           | 开启气助                   |
+| `disable_air_assist` | `()`                           | 关闭气助                   |
 
-您的驱动程序接收预编码的机器代码（例如 G-code 字符串）和一个跟踪哪些机器代码命令对应哪些操作的操作映射。流水线在调用驱动程序的 `run()` 方法之前处理将 `Ops` 编码为机器代码。
+您的驱动程序接收预编码的机器代码（例如 G-code 字符串）和一个跟踪哪些机器代码命令对应哪些操作的操作映射。流水线在调用驱动程序的
+`run()` 方法之前处理将 `Ops` 编码为机器代码。
 
 ```python
 # Rayforge 如何构建 Ops 对象的示例
@@ -95,17 +98,18 @@ class YourDriver(Driver):
 
 #### 配置和生命周期
 
-- `get_setup_vars() -> VarSet`：**(类方法)** 返回定义连接所需参数（例如 IP 地址、串口）的 `VarSet` 对象。Rayforge 使用此对象自动生成 UI 中的设置表单。
-- `precheck(**kwargs)`：**(类方法)** 配置的非阻塞静态检查，可在驱动程序实例化之前运行。失败时应引发 `DriverPrecheckError`。
+- `get_setup_vars() -> VarSet`：**(类方法)** 返回定义连接所需参数（例如 IP 地址、串口）的 `VarSet`
+  对象。Rayforge 使用此对象自动生成 UI 中的设置表单。
+- `precheck(**kwargs)`：**(类方法)** 配置的非阻塞静态检查，可在驱动程序实例化之前运行。失败时应引发
+  `DriverPrecheckError`。
 - `setup(**kwargs)`：使用设置表单中的值调用一次。用于初始化您的传输和内部状态。
 - `async def connect()`：建立并维护与设备的持久连接。此方法应包含自动重连逻辑。
 - `async def cleanup()`：断开连接时调用。应关闭所有连接并释放资源。
 
 #### 设备控制
 
-- `async def run(machine_code: Any, op_map: MachineCodeOpMap, doc: Doc,
-  on_command_done: Optional[Callable[[int], Union[None, Awaitable[None]]]]
-  = None)`：执行作业的核心方法。接收预编码的机器代码（例如 G-code 字符串）和操作索引与机器代码之间的映射。当每个命令完成时，使用 op_index 调用 `on_command_done` 回调。
+- `async def run(machine_code: Any, op_map: MachineCodeOpMap, doc: Doc, on_command_done: Optional[Callable[[int], Union[None, Awaitable[None]]]] = None)`：执行作业的核心方法。接收预编码的机器代码（例如 G-code 字符串）和操作索引与机器代码之间的映射。当每个命令完成时，使用 op_index 调用
+  `on_command_done` 回调。
 - `async def home(axes: Optional[Axis] = None)`：归位机器。可以归位特定轴或所有轴。
 - `async def move_to(pos_x: float, pos_y: float)`：手动将激光头移动到特定 XY 坐标。
 - `async def set_hold(hold: bool = True)`：暂停或恢复当前作业。
@@ -122,11 +126,13 @@ class YourDriver(Driver):
 
 ### 发出信号
 
-要与 UI 通信，您的驱动程序必须发出信号。为确保正确的日志记录和线程安全，**您不能直接发出信号。** 相反，从基 `Driver` 类调用受保护的帮助方法。
+要与 UI 通信，您的驱动程序必须发出信号。为确保正确的日志记录和线程安全，**您不能直接发出信号。**
+相反，从基 `Driver` 类调用受保护的帮助方法。
 
 - `self._log(message)`：向控制台发送日志消息。
 - `self._on_state_changed()`：每当您更新 `self.state` 时调用此方法以通知 UI 状态或位置更改。
-- `self._on_connection_status_changed(status, message)`：通知 UI 连接状态（`CONNECTING`、`CONNECTED`、`ERROR` 等）。
+- `self._on_connection_status_changed(status, message)`：通知 UI 连接状态（`CONNECTING`、`CONNECTED`、`ERROR`
+  等）。
 - `self._on_command_status_changed(status, message)`：报告已发送命令的状态。
 - `self._on_settings_read(settings)`：将您读取的设备设置发送回 UI。
 

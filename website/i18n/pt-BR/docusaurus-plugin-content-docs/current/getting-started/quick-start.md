@@ -1,10 +1,13 @@
 # Guia de Início Rápido
 
-Agora que o Rayforge está instalado e sua máquina está configurada, vamos executar seu primeiro trabalho de laser! Este guia irá orientá-lo na importação de um design, configuração de operações e envio de G-code para sua máquina.
+Agora que o Rayforge está instalado e sua máquina está configurada, vamos executar seu primeiro
+trabalho de laser! Este guia irá orientá-lo na importação de um design, configuração de operações e
+envio de G-code para sua máquina.
 
 ## Passo 1: Importar um Design
 
-O Rayforge suporta vários formatos de arquivo, incluindo SVG, DXF, PDF, Ruida (.rd) e imagens raster (JPEG, PNG, BMP).
+O Rayforge suporta vários formatos de arquivo, incluindo SVG, DXF, PDF, Ruida (.rd) e imagens raster
+(JPEG, PNG, BMP).
 
 1. **Clique** em **Arquivo → Abrir** ou pressione <kbd>ctrl+o</kbd>
 2. Navegue até o arquivo de design e selecione-o
@@ -12,10 +15,9 @@ O Rayforge suporta vários formatos de arquivo, incluindo SVG, DXF, PDF, Ruida (
 
 ![Tela com design importado](/screenshots/main-standard.webp)
 
-:::tip Não tem um design ainda?
-Você pode criar formas simples usando o esboçador ou baixar arquivos SVG gratuitos de sites como [Flaticon](https://www.flaticon.com/) ou [SVG Repo](https://www.svgrepo.com/).
-:::
-
+:::tip Não tem um design ainda? Você pode criar formas simples usando o esboçador ou baixar arquivos
+SVG gratuitos de sites como [Flaticon](https://www.flaticon.com/) ou
+[SVG Repo](https://www.svgrepo.com/). :::
 
 ## Passo 2: Posicionar Seu Design
 
@@ -47,10 +49,11 @@ As operações definem como o Rayforge processará seu design. As operações co
 
 ![Configurações de Operação](/screenshots/step-settings-contour-general.webp)
 
-:::warning Comece com Potência Baixa
-Ao trabalhar com novos materiais, sempre comece com configurações de potência mais baixas e execute cortes de teste. Aumente a potência gradualmente até atingir o resultado desejado. Use o recurso [Grade de Teste de Material](../features/operations/material-test-grid.md) para encontrar sistematicamente as configurações ideais.
-:::
-
+:::warning Comece com Potência Baixa Ao trabalhar com novos materiais, sempre comece com
+configurações de potência mais baixas e execute cortes de teste. Aumente a potência gradualmente até
+atingir o resultado desejado. Use o recurso
+[Grade de Teste de Material](../features/operations/material-test-grid.md) para encontrar
+sistematicamente as configurações ideais. :::
 
 ## Passo 4: Visualizar
 
@@ -63,25 +66,21 @@ Antes de enviar para sua máquina, visualize o caminho da ferramenta em 3D:
 
 ![Visualização 3D](/screenshots/main-3d.webp)
 
-:::tip Detecte Erros Cedo
-A visualização 3D ajuda você a identificar problemas como:
+:::tip Detecte Erros Cedo A visualização 3D ajuda você a identificar problemas como:
 
 - Caminhos faltando
 - Ordem incorreta
 - Operações aplicadas aos objetos errados
-- Caminhos que excedem sua área de trabalho
-:::
-
+- Caminhos que excedem sua área de trabalho :::
 
 ## Passo 5: Enviar para a Máquina
 
 :::danger Segurança em Primeiro Lugar
+
 - Certifique-se de que a área de trabalho está livre
 - Nunca deixe a máquina sem supervisão durante a operação
 - Tenha equipamento de segurança contra incêndio por perto
-- Use proteção ocular apropriada
-:::
-
+- Use proteção ocular apropriada :::
 
 ### Preparando Seu Material
 
@@ -92,16 +91,22 @@ A visualização 3D ajuda você a identificar problemas como:
 
 ### Iniciando o Trabalho
 
-1. **Posicione o laser**: Use os controles de jog para mover o laser para a posição inicial. Clique em **Visualizar → Painel de Controle** ou pressione <kbd>ctrl+l</kbd>, e use os botões de seta ou as setas do teclado para mover o laser.
+1. **Posicione o laser**: Use os controles de jog para mover o laser para a posição inicial. Clique
+   em **Visualizar → Painel de Controle** ou pressione <kbd>ctrl+l</kbd>, e use os botões de seta ou
+   as setas do teclado para mover o laser.
 
-2. **Enquadrar o design**: Execute a função de enquadramento para verificar o posicionamento. Clique em **Máquina → Enquadrar** e o laser traçará a caixa delimitadora do seu design com potência baixa. Verifique se cabe dentro do seu material.
+2. **Enquadrar o design**: Execute a função de enquadramento para verificar o posicionamento. Clique
+   em **Máquina → Enquadrar** e o laser traçará a caixa delimitadora do seu design com potência
+   baixa. Verifique se cabe dentro do seu material.
 
 3. **Iniciar o trabalho**: Clique em **Máquina → Iniciar Trabalho**
 4. Monitore o progresso na barra de status
 
 ### Durante o Trabalho
 
-A seção direita da barra de status mostra o progresso atual e estimativa de tempo total de execução. Use os botões Pausar e Parar no painel de controle para controlar o trabalho. Note que <kbd>esc</kbd> sai do modo de simulação, mas não para um trabalho ativo.
+A seção direita da barra de status mostra o progresso atual e estimativa de tempo total de execução.
+Use os botões Pausar e Parar no painel de controle para controlar o trabalho. Note que
+<kbd>esc</kbd> sai do modo de simulação, mas não para um trabalho ativo.
 
 ## Passo 6: Finalizando
 
@@ -111,32 +116,32 @@ Uma vez que o trabalho é concluído:
 2. Remova cuidadosamente sua peça finalizada
 3. Limpe a mesa do laser se necessário
 
-:::success Parabéns!
-Você completou seu primeiro trabalho no Rayforge! Agora você pode explorar recursos mais avançados.
-:::
-
+:::success Parabéns! Você completou seu primeiro trabalho no Rayforge! Agora você pode explorar
+recursos mais avançados. :::
 
 ## Próximos Passos
+
 Agora que você completou seu primeiro trabalho, explore estes recursos:
 
-- **[Posicionamento de Peça de Trabalho](../features/workpiece-positioning.md)**:
-  Domine todos os métodos de posicionamento (modo foco, enquadramento, WCS, câmera)
-- **[Operações Multi-Camadas](../features/multi-layer.md)**: Atribua operações
-  diferentes às camadas
-- **[Abas de Fixação](../features/holding-tabs.md)**: Mantenha peças cortadas
-  no lugar durante o corte
-- **[Integração com Câmera](../machine/camera.md)**: Use uma câmera para
-  alinhamento preciso
+- **[Posicionamento de Peça de Trabalho](../features/workpiece-positioning.md)**: Domine todos os
+  métodos de posicionamento (modo foco, enquadramento, WCS, câmera)
+- **[Operações Multi-Camadas](../features/multi-layer.md)**: Atribua operações diferentes às camadas
+- **[Abas de Fixação](../features/holding-tabs.md)**: Mantenha peças cortadas no lugar durante o
+  corte
+- **[Integração com Câmera](../machine/camera.md)**: Use uma câmera para alinhamento preciso
 - **[Hooks & Macros](../machine/hooks-macros.md)**: Automatize tarefas repetitivas
 
 ## Dicas para o Sucesso
 
 1. **Salve seu trabalho**: Use <kbd>ctrl+s</kbd> para salvar seu projeto frequentemente
 2. **Cortes de teste**: Sempre execute um corte de teste em material de sobra primeiro
-3. **Banco de dados de materiais**: Mantenha anotações de configurações de potência/velocidade bem-sucedidas para diferentes materiais
+3. **Banco de dados de materiais**: Mantenha anotações de configurações de potência/velocidade
+   bem-sucedidas para diferentes materiais
 4. **Manutenção**: Mantenha a lente do laser limpa e verifique a tensão das correias regularmente
-5. **Assistência de ar**: Se sua máquina tem assistência de ar, use-a para prevenir queima e melhorar a qualidade do corte
+5. **Assistência de ar**: Se sua máquina tem assistência de ar, use-a para prevenir queima e
+   melhorar a qualidade do corte
 
 ---
 
-**Precisa de Ajuda?** Verifique a seção [Solução de Problemas](../troubleshooting/connection.md) ou visite a página [GitHub Issues](https://github.com/barebaric/rayforge/issues).
+**Precisa de Ajuda?** Verifique a seção [Solução de Problemas](../troubleshooting/connection.md) ou
+visite a página [GitHub Issues](https://github.com/barebaric/rayforge/issues).

@@ -1,10 +1,13 @@
 # Cuadrícula de Prueba de Material
 
-El generador de Cuadrícula de Prueba de Material crea patrones de prueba paramétricos para ayudarte a encontrar los ajustes óptimos de láser para diferentes materiales.
+El generador de Cuadrícula de Prueba de Material crea patrones de prueba paramétricos para ayudarte
+a encontrar los ajustes óptimos de láser para diferentes materiales.
 
 ## Resumen
 
-Las pruebas de material son esenciales para el trabajo láser - diferentes materiales requieren diferentes ajustes de potencia y velocidad. La Cuadrícula de Prueba de Material automatiza este proceso:
+Las pruebas de material son esenciales para el trabajo láser - diferentes materiales requieren
+diferentes ajustes de potencia y velocidad. La Cuadrícula de Prueba de Material automatiza este
+proceso:
 
 - Generando cuadrículas de prueba con rangos configurables de velocidad/potencia
 - Proporcionando preajustes para tipos comunes de láser (Diodo, CO2)
@@ -24,14 +27,15 @@ Accede al generador de Cuadrícula de Prueba de Material:
 
 Rayforge incluye preajustes para escenarios comunes:
 
-| Preajuste          | Rango de Velocidad    | Rango de Potencia | Usar Para               |
-| ------------------ | --------------------- | ----------------- | ----------------------- |
-| **Grabado Diodo**  | 1000-10000 mm/min     | 10-100%           | Grabado láser diodo     |
-| **Corte Diodo**    | 100-5000 mm/min       | 50-100%           | Corte láser diodo       |
-| **Grabado CO2**    | 3000-20000 mm/min     | 10-50%            | Grabado láser CO2       |
-| **Corte CO2**      | 1000-20000 mm/min     | 30-100%           | Corte láser CO2         |
+| Preajuste         | Rango de Velocidad | Rango de Potencia | Usar Para           |
+| ----------------- | ------------------ | ----------------- | ------------------- |
+| **Grabado Diodo** | 1000-10000 mm/min  | 10-100%           | Grabado láser diodo |
+| **Corte Diodo**   | 100-5000 mm/min    | 50-100%           | Corte láser diodo   |
+| **Grabado CO2**   | 3000-20000 mm/min  | 10-50%            | Grabado láser CO2   |
+| **Corte CO2**     | 1000-20000 mm/min  | 30-100%           | Corte láser CO2     |
 
-Los preajustes son puntos de partida - puedes ajustar todos los parámetros después de seleccionar uno.
+Los preajustes son puntos de partida - puedes ajustar todos los parámetros después de seleccionar
+uno.
 
 ### Paso 3: Configurar Parámetros
 
@@ -68,22 +72,26 @@ Ajusta los parámetros de la cuadrícula de prueba en el diálogo de configuraci
 
 #### Etiquetas
 
-- **Incluir Etiquetas**: Habilitar/deshabilitar etiquetas de ejes mostrando valores de velocidad y potencia
+- **Incluir Etiquetas**: Habilitar/deshabilitar etiquetas de ejes mostrando valores de velocidad y
+  potencia
 - Las etiquetas aparecen en los bordes izquierdo y superior
 - **Potencia de Etiqueta (%)**: Ajuste de potencia para grabar etiquetas
 - **Velocidad de Etiqueta (mm/min)**: Velocidad para grabar etiquetas (por defecto: 1000 mm/min)
 
-Las etiquetas se graban primero, antes de la cuadrícula de prueba, para que no sean ocultadas por el patrón de prueba.
+Las etiquetas se graban primero, antes de la cuadrícula de prueba, para que no sean ocultadas por el
+patrón de prueba.
 
 #### Intervalo de Línea (Solo Prueba de Grabado)
 
-- **Intervalo de Línea (mm)**: Espaciado entre líneas de escaneo al usar el tipo de prueba de grabado
+- **Intervalo de Línea (mm)**: Espaciado entre líneas de escaneo al usar el tipo de prueba de
+  grabado
 - Valores menores crean rellenos más densos pero tardan más en ejecutarse
 - Valores típicos: 0.1-0.3mm
 
 ### Paso 4: Generar la Cuadrícula
 
-Haz clic en **Generar** para crear el patrón de prueba. La cuadrícula aparece en tu lienzo como una pieza de trabajo especial.
+Haz clic en **Generar** para crear el patrón de prueba. La cuadrícula aparece en tu lienzo como una
+pieza de trabajo especial.
 
 ## Entendiendo el Diseño de la Cuadrícula
 
@@ -121,9 +129,11 @@ Potencia (%)     Velocidad (mm/min) →
 
 ## Orden de Ejecución (Optimización de Riesgo)
 
-Rayforge ejecuta las celdas de prueba en un **orden optimizado por riesgo** para prevenir daño al material:
+Rayforge ejecuta las celdas de prueba en un **orden optimizado por riesgo** para prevenir daño al
+material:
 
-1. **Velocidad más alta primero**: Las velocidades rápidas son más seguras (menor acumulación de calor)
+1. **Velocidad más alta primero**: Las velocidades rápidas son más seguras (menor acumulación de
+   calor)
 2. **Menor potencia dentro de cada velocidad**: Minimiza el riesgo en cada nivel de velocidad
 
 Esto previene chamuscado o fuego al comenzar con combinaciones lentas y de alta potencia.
@@ -165,15 +175,15 @@ Documenta tus ajustes exitosos para referencia futura:
 - Número de pasadas
 - Cualquier nota especial
 
-:::tip Base de Datos de Materiales
-Considera crear un documento de referencia con tus resultados de prueba de material para consulta rápida en proyectos futuros.
-:::
+:::tip Base de Datos de Materiales Considera crear un documento de referencia con tus resultados de
+prueba de material para consulta rápida en proyectos futuros. :::
 
 ## Uso Avanzado
 
 ### Combinando con Otras Operaciones
 
-Las cuadrículas de prueba de material son piezas de trabajo normales - puedes combinarlas con otras operaciones:
+Las cuadrículas de prueba de material son piezas de trabajo normales - puedes combinarlas con otras
+operaciones:
 
 **Ejemplo de flujo de trabajo:**
 
@@ -199,30 +209,30 @@ Para ajuste fino, crea pruebas de rango estrecho:
 
 ### Diferentes Materiales, Misma Cuadrícula
 
-Ejecuta la misma configuración de cuadrícula en diferentes materiales para construir tu biblioteca de materiales más rápido.
+Ejecuta la misma configuración de cuadrícula en diferentes materiales para construir tu biblioteca
+de materiales más rápido.
 
 ## Consejos y Mejores Prácticas
 
 ### Diseño de Cuadrícula
 
-✅ **Comienza con preajustes** - Buenos puntos de partida para escenarios comunes
-✅ **Usa cuadrículas 5×5** - Buen balance entre detalle y tiempo de prueba
-✅ **Habilita etiquetas** - Esenciales para identificar resultados
-✅ **Mantén cuadrados ≥20mm** - Más fácil de ver y medir resultados
+✅ **Comienza con preajustes** - Buenos puntos de partida para escenarios comunes ✅ **Usa
+cuadrículas 5×5** - Buen balance entre detalle y tiempo de prueba ✅ **Habilita etiquetas** -
+Esenciales para identificar resultados ✅ **Mantén cuadrados ≥20mm** - Más fácil de ver y medir
+resultados
 
 ### Estrategia de Prueba
 
-✅ **Prueba primero en material de desecho** - Nunca pruebes en material final
-✅ **Una variable a la vez** - Prueba rango de velocidad O potencia, no ambos extremos
-✅ **Permite enfriamiento** - Espera entre pruebas en el mismo material
-✅ **Enfoque consistente** - Misma distancia de enfoque para todas las pruebas
+✅ **Prueba primero en material de desecho** - Nunca pruebes en material final ✅ **Una variable a
+la vez** - Prueba rango de velocidad O potencia, no ambos extremos ✅ **Permite enfriamiento** -
+Espera entre pruebas en el mismo material ✅ **Enfoque consistente** - Misma distancia de enfoque
+para todas las pruebas
 
 ### Seguridad
 
-⚠️ **Monitorea las pruebas** - Nunca dejes pruebas en ejecución sin supervisión
-⚠️ **Comienza conservador** - Comienza con rangos de potencia más bajos
-⚠️ **Verifica ventilación** - Asegura extracción de humos adecuada
-⚠️ **Vigilancia de fuego** - Ten extintor listo
+⚠️ **Monitorea las pruebas** - Nunca dejes pruebas en ejecución sin supervisión ⚠️ **Comienza
+conservador** - Comienza con rangos de potencia más bajos ⚠️ **Verifica ventilación** - Asegura
+extracción de humos adecuada ⚠️ **Vigilancia de fuego** - Ten extintor listo
 
 ## Solución de Problemas
 
@@ -241,6 +251,7 @@ Ejecuta la misma configuración de cuadrícula en diferentes materiales para con
 
 ## Temas Relacionados
 
-- **[Vista Previa 3D](../../ui/3d-preview.md)** - Previsualizar ejecución de prueba antes de ejecutar
+- **[Vista Previa 3D](../../ui/3d-preview.md)** - Previsualizar ejecución de prueba antes de
+  ejecutar
 - **[Grabado](engrave)** - Entender operaciones de grabado
 - **[Corte de Contorno](contour)** - Entender operaciones de corte

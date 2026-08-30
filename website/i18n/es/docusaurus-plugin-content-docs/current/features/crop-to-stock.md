@@ -1,12 +1,16 @@
 # Recortar al Material
 
-Recortar al Material limita las trayectorias de corte al límite de tu material. Cualquier corte que se extienda más allá del área del material se recorta, evitando que el láser corte fuera de tu material.
+Recortar al Material limita las trayectorias de corte al límite de tu material. Cualquier corte que
+se extienda más allá del área del material se recorta, evitando que el láser corte fuera de tu
+material.
 
 ## Cómo Funciona
 
-El transformador compara tus trayectorias de corte contra el límite definido del material. Los segmentos de trayectoria fuera de este límite se eliminan o recortan al borde del material.
+El transformador compara tus trayectorias de corte contra el límite definido del material. Los
+segmentos de trayectoria fuera de este límite se eliminan o recortan al borde del material.
 
-Si no hay elementos de material definidos en tu documento, el límite de recorte recurre al área de trabajo de la máquina en su lugar.
+Si no hay elementos de material definidos en tu documento, el límite de recorte recurre al área de
+trabajo de la máquina en su lugar.
 
 ## Ajustes
 
@@ -22,11 +26,13 @@ Ajusta el límite efectivo del material antes de recortar (-100 a +100 mm).
 - **Valores negativos:** Expande el límite (permite cortes más cerca del borde)
 - **0 mm:** Usa el límite exacto del material
 
-Usa el desplazamiento cuando quieres un margen de seguridad desde el borde del material, o cuando la colocación de tu material no está perfectamente alineada.
+Usa el desplazamiento cuando quieres un margen de seguridad desde el borde del material, o cuando la
+colocación de tu material no está perfectamente alineada.
 
 ## Cuándo Usar Recortar al Material
 
-**Diseños parciales:** Tu diseño es más grande que tu material, pero quieres cortar solo la porción que cabe.
+**Diseños parciales:** Tu diseño es más grande que tu material, pero quieres cortar solo la porción
+que cabe.
 
 **Margen de seguridad:** Previene cortes accidentales más allá de los bordes del material.
 

@@ -80,9 +80,8 @@ rayforge --exit --vector entrada.svg
 
 ## Scripts tempranos (`--script`)
 
-El flag `--script` ejecuta un script de Python **sincrónicamente
-durante el inicio**, antes de que se carguen los complementos y
-antes de que se cree la ventana principal. Útil para:
+El flag `--script` ejecuta un script de Python **sincrónicamente durante el inicio**, antes de que
+se carguen los complementos y antes de que se cree la ventana principal. Útil para:
 
 - Registrar complementos con el gestor de complementos `pluggy`
 - Configurar el contexto de la aplicación
@@ -123,9 +122,8 @@ en la documentación del sketcher para un tutorial completo.
 
 ## Scripts de UI (`--uiscript`)
 
-El flag `--uiscript` ejecuta un script de Python **después de
-que la ventana principal se carga completamente**, en un hilo en
-segundo plano. Útil para:
+El flag `--uiscript` ejecuta un script de Python **después de que la ventana principal se carga
+completamente**, en un hilo en segundo plano. Útil para:
 
 - Pruebas automatizadas de UI
 - Capturar pantallas de la aplicación
@@ -137,9 +135,8 @@ El script puede importar la aplicación y la ventana directamente:
 from rayforge.uiscript import app, win
 ```
 
-El script se ejecuta en un **hilo en segundo plano** — tenga en
-cuenta la seguridad de hilos al acceder a widgets GTK
-(use `GLib.idle_add` para operaciones GTK).
+El script se ejecuta en un **hilo en segundo plano** — tenga en cuenta la seguridad de hilos al
+acceder a widgets GTK (use `GLib.idle_add` para operaciones GTK).
 
 ### Ejemplo: Capturar pantalla
 
@@ -164,9 +161,8 @@ GLib.idle_add(capture)
 
 ## Usar ambos flags
 
-Ambos `--script` y `--uiscript` se pueden usar juntos.
-El `--script` se ejecuta primero (sincrónicamente), luego se
-carga la ventana, y luego se ejecuta `--uiscript`:
+Ambos `--script` y `--uiscript` se pueden usar juntos. El `--script` se ejecuta primero
+(sincrónicamente), luego se carga la ventana, y luego se ejecuta `--uiscript`:
 
 ```bash
 rayforge --script setup_temprano.py \
@@ -174,5 +170,4 @@ rayforge --script setup_temprano.py \
     miproyecto.ryp
 ```
 
-Esto es útil cuando necesita registrar complementos primero
-y luego controlar la UI más tarde.
+Esto es útil cuando necesita registrar complementos primero y luego controlar la UI más tarde.

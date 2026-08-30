@@ -1,25 +1,30 @@
 ---
-description: "Fix Snap package permission issues in Rayforge. Grant USB serial port and camera access on Linux systems."
+description:
+  "Fix Snap package permission issues in Rayforge. Grant USB serial port and camera access on Linux
+  systems."
 ---
 
 # Snap Permissions (Linux)
 
-This page explains how to configure permissions for Rayforge when installed as a Snap package on Linux.
+This page explains how to configure permissions for Rayforge when installed as a Snap package on
+Linux.
 
 ## What are Snap Permissions?
 
-Snaps are containerized applications that run in a sandbox for security. By default, they have limited access to system resources. To use certain features (like serial ports for laser controllers), you must explicitly grant permissions.
+Snaps are containerized applications that run in a sandbox for security. By default, they have
+limited access to system resources. To use certain features (like serial ports for laser
+controllers), you must explicitly grant permissions.
 
 ## Required Permissions
 
 Rayforge needs these Snap interfaces connected for full functionality:
 
-| Interface | Purpose | Required? |
-|-----------|---------|-----------|
-| `serial-port` | Access to USB serial devices (laser controllers) | **Yes** (for machine control) |
-| `home` | Read/write files in your home directory | Auto-connected |
-| `removable-media` | Access external drives and USB storage | Optional |
-| `network` | Network connectivity (for updates, etc.) | Auto-connected |
+| Interface         | Purpose                                          | Required?                     |
+| ----------------- | ------------------------------------------------ | ----------------------------- |
+| `serial-port`     | Access to USB serial devices (laser controllers) | **Yes** (for machine control) |
+| `home`            | Read/write files in your home directory          | Auto-connected                |
+| `removable-media` | Access external drives and USB storage           | Optional                      |
+| `network`         | Network connectivity (for updates, etc.)         | Auto-connected                |
 
 ---
 
@@ -29,17 +34,16 @@ Rayforge needs these Snap interfaces connected for full functionality:
 
 ### Prerequisite: dialout Group Membership
 
-On Debian-based distributions, your user must be a member of the `dialout`
-group, even when using the Snap package. Without this group membership, you
-may receive AppArmor DENIED messages when trying to access serial ports.
+On Debian-based distributions, your user must be a member of the `dialout` group, even when using
+the Snap package. Without this group membership, you may receive AppArmor DENIED messages when
+trying to access serial ports.
 
 ```bash
 # Add your user to the dialout group
 sudo usermod -a -G dialout $USER
 ```
 
-**Important:** You must log out and log back in (or reboot) for group changes
-to take effect.
+**Important:** You must log out and log back in (or reboot) for group changes to take effect.
 
 ### Check Current Permissions
 
@@ -67,6 +71,7 @@ snap connections rayforge | grep serial-port
 ```
 
 Expected output:
+
 ```
 serial-port     rayforge:serial-port     :serial-port     -
 ```
@@ -107,7 +112,7 @@ Now you can access files in `/media` and `/mnt`.
      ```
 
 3. **Check that the port appears:**
-   - Open Rayforge  Settings  Machine
+   - Open Rayforge Settings Machine
    - Look for serial ports in the dropdown
    - Should see `/dev/ttyUSB0`, `/dev/ttyACM0`, or similar
 
@@ -122,6 +127,7 @@ Now you can access files in `/media` and `/mnt`.
 This is rare but can happen if:
 
 1. **The Snap installation is broken:**
+
    ```bash
    # Reinstall the snap
    sudo snap refresh rayforge --devmode
@@ -137,6 +143,7 @@ This is rare but can happen if:
    - They might conflict with Snap's device access
 
 3. **AppArmor denials:**
+
    ```bash
    # Check for AppArmor denials
    sudo journalctl -xe | grep DENIED | grep rayforge
@@ -146,24 +153,27 @@ This is rare but can happen if:
 
 ### Can't Access Files Outside Home Directory
 
-**By design**, Snaps can't access files outside your home directory unless you grant `removable-media`.
+**By design**, Snaps can't access files outside your home directory unless you grant
+`removable-media`.
 
 **Workaround options:**
 
 1. **Move files to your home directory:**
+
    ```bash
    # Copy SVG files to ~/Documents
    cp /some/other/location/*.svg ~/Documents/
    ```
 
 2. **Grant removable-media access:**
+
    ```bash
    sudo snap connect rayforge:removable-media
    ```
 
 3. **Use Snap's file picker:**
    - The built-in file chooser has broader access
-   - Open files through File  Open rather than command-line arguments
+   - Open files through File Open rather than command-line arguments
 
 ---
 
@@ -210,19 +220,22 @@ pixi run rayforge
 ```
 
 **Benefits:**
+
 - No permission restrictions
 - Full system access
 - Easier debugging
 - Latest development version
 
 **Drawbacks:**
+
 - Manual updates (git pull)
 - More dependencies to manage
 - No automatic updates
 
 **Option 2: Use Flatpak (if available)**
 
-Flatpak has similar sandboxing but sometimes with different permission models. Check if Rayforge offers a Flatpak package.
+Flatpak has similar sandboxing but sometimes with different permission models. Check if Rayforge
+offers a Flatpak package.
 
 ---
 
@@ -246,6 +259,7 @@ snap info rayforge
 ```
 
 Look for:
+
 - Verified publisher
 - Official repository source
 - Regular updates
@@ -257,11 +271,13 @@ Look for:
 ### What Can Snaps Access by Default?
 
 **Allowed:**
+
 - Files in your home directory
 - Network connections
 - Display/audio
 
 **Not allowed without explicit permission:**
+
 - Serial ports (USB devices)
 - Removable media
 - System files
@@ -326,11 +342,13 @@ sudo journalctl -f -u snapd
 If you're still having Snap-related issues:
 
 1. **Check permissions first:**
+
    ```bash
    snap connections rayforge
    ```
 
 2. **Try a serial port test:**
+
    ```bash
    # If you have screen or minicom installed
    sudo snap connect rayforge:serial-port

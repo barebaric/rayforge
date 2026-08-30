@@ -1,13 +1,13 @@
 # Lasereinstellungen
 
-Die Laser-Seite in den Maschineneinstellungen konfiguriert deine Laserköpfe und
-deren Eigenschaften.
+Die Laser-Seite in den Maschineneinstellungen konfiguriert deine Laserköpfe und deren Eigenschaften.
 
 ![Lasereinstellungen](/screenshots/machine-settings-laser.webp)
 
 ## Laserköpfe
 
-Rayforge unterstützt Maschinen mit mehreren Laserköpfen. Jeder Laserkopf hat seine eigene Konfiguration.
+Rayforge unterstützt Maschinen mit mehreren Laserköpfen. Jeder Laserkopf hat seine eigene
+Konfiguration.
 
 ### Einen Laserkopf hinzufügen
 
@@ -46,36 +46,30 @@ Dieser Wert sollte mit der $30-Einstellung deiner Firmware übereinstimmen.
 
 #### Rahmen-Leistung
 
-Der Leistungswert, der für Rahmen-Operationen verwendet wird (Umreißen ohne
-Schneiden).
+Der Leistungswert, der für Rahmen-Operationen verwendet wird (Umreißen ohne Schneiden).
 
 - Auf 0 setzen, um Rahmen zu deaktivieren
 - Passe ihn basierend auf deinem Laser und Material an
 
 #### Rahmen-Geschwindigkeit
 
-Die Geschwindigkeit, mit der sich der Laserkopf während des Einrahmens bewegt.
-Dies wird pro Laserkopf eingestellt, sodass du bei Maschinen mit mehreren Lasern
-mit unterschiedlichen Eigenschaften eine angemessene Geschwindigkeit für jeden
-wählen kannst. Langsamere Geschwindigkeiten machen den Rahmen-Pfad leichter
-visuell verfolgbar.
+Die Geschwindigkeit, mit der sich der Laserkopf während des Einrahmens bewegt. Dies wird pro
+Laserkopf eingestellt, sodass du bei Maschinen mit mehreren Lasern mit unterschiedlichen
+Eigenschaften eine angemessene Geschwindigkeit für jeden wählen kannst. Langsamere Geschwindigkeiten
+machen den Rahmen-Pfad leichter visuell verfolgbar.
 
 #### Fokus-Leistung
 
-Die Leistungsstufe, die verwendet wird, wenn der Fokusmodus aktiviert ist.
-Der Fokusmodus schaltet den Laser mit niedriger Leistung ein, um als
-"Laserzeiger" zur Positionierung zu dienen.
+Die Leistungsstufe, die verwendet wird, wenn der Fokusmodus aktiviert ist. Der Fokusmodus schaltet
+den Laser mit niedriger Leistung ein, um als "Laserzeiger" zur Positionierung zu dienen.
 
 - Auf 0 setzen, um die Fokusmodus-Funktion zu deaktivieren
 - Verwende für visuelle Ausrichtung und Positionierung
 
-:::tip Fokusmodus verwenden
-Klicke auf die Fokus-Taste (Laser-Symbol) in der Symbolleiste, um den
-Fokusmodus umzuschalten. Der Laser wird bei dieser Leistungsstufe
-eingeschaltet und hilft dir, genau zu sehen, wo der Laser positioniert ist.
-Siehe [Werkstückpositionierung](../features/workpiece-positioning.md) für weitere
-Informationen.
-:::
+:::tip Fokusmodus verwenden Klicke auf die Fokus-Taste (Laser-Symbol) in der Symbolleiste, um den
+Fokusmodus umzuschalten. Der Laser wird bei dieser Leistungsstufe eingeschaltet und hilft dir, genau
+zu sehen, wo der Laser positioniert ist. Siehe
+[Werkstückpositionierung](../features/workpiece-positioning.md) für weitere Informationen. :::
 
 #### Punktgröße
 
@@ -85,31 +79,26 @@ Die physische Größe deines fokussierten Laserstrahls in Millimetern.
 - Die meisten Laser haben einen runden Punkt (z.B. 0.1 x 0.1)
 - Beeinflusst Gravurqualitäts-Berechnungen
 
-:::tip Punktgröße messen
-Um deine Punktgröße zu messen:
+:::tip Punktgröße messen Um deine Punktgröße zu messen:
 
 1. Feuere einen kurzen Impuls bei niedriger Leistung auf ein Testmaterial
 2. Miss die resultierende Markierung mit einer Schieblehre
-3. Verwende den Durchschnitt mehrerer Messungen
-   :::
+3. Verwende den Durchschnitt mehrerer Messungen :::
 
 #### Farbe
 
-Die Farbe, die zum Anzeigen der Operationen dieses Lasers (Schnitte und
-Gravuren) im Canvas und in der 3D-Vorschau verwendet wird. Dies hilft dir,
-visuell zu unterscheiden, welcher Laser welche Operation durchführen wird,
-wenn du mit mehreren Laserköpfen arbeitest.
+Die Farbe, die zum Anzeigen der Operationen dieses Lasers (Schnitte und Gravuren) im Canvas und in
+der 3D-Vorschau verwendet wird. Dies hilft dir, visuell zu unterscheiden, welcher Laser welche
+Operation durchführen wird, wenn du mit mehreren Laserköpfen arbeitest.
 
 - Klicke auf die Farbauswahl, um einen Farbwähler zu öffnen
 - Wähle eine Farbe, die gut mit deiner Materialvorschau kontrastiert
 - Standardfarben werden automatisch zugewiesen
 
-:::tip Multi-Laser-Workflows
-Bei der Verwendung mehrerer Laserköpfe erleichtert das Zuweisen unterschiedlicher
-Farben zu jedem Laser es, zu erkennen, welche Operationen von welchem Laser
-durchgeführt werden. Verwende beispielsweise Rot für deinen Hauptschneidelaser
-und Blau für einen sekundären Gravurlaser.
-:::
+:::tip Multi-Laser-Workflows Bei der Verwendung mehrerer Laserköpfe erleichtert das Zuweisen
+unterschiedlicher Farben zu jedem Laser es, zu erkennen, welche Operationen von welchem Laser
+durchgeführt werden. Verwende beispielsweise Rot für deinen Hauptschneidelaser und Blau für einen
+sekundären Gravurlaser. :::
 
 #### Lasertyp
 
@@ -119,64 +108,57 @@ Wähle den Typ des Laserkopfs aus dem Dropdown-Menü:
 - **CO2**: CO2-Röhrenlaser
 - **Faser**: Faserlaser
 
-Wenn CO2 oder Faser ausgewählt ist, werden zusätzliche **PWM-Einstellungen**
-sichtbar (siehe unten). Für Diodenlaser ist der PWM-Bereich ausgeblendet, da
-er nicht zutreffend ist.
+Wenn CO2 oder Faser ausgewählt ist, werden zusätzliche **PWM-Einstellungen** sichtbar (siehe unten).
+Für Diodenlaser ist der PWM-Bereich ausgeblendet, da er nicht zutreffend ist.
 
-Der Lasertyp legt auch eine Standard-**Wellenlänge** (verwendet vom
-physikalischen Brennmodell) fest, wenn kein expliziter Wert unten eingegeben
-wird.
+Der Lasertyp legt auch eine Standard-**Wellenlänge** (verwendet vom physikalischen Brennmodell)
+fest, wenn kein expliziter Wert unten eingegeben wird.
 
 #### Wellenlänge (nm)
 
 Die Emissionswellenlänge deines Lasers in Nanometern. Diese speist das
-[physikalische Brennmodell](../ui/3d-preview.md#physical-burn-model) in der
-3D-Vorschau: Zusammen mit den [Absorptions-](../application-settings/materials.md#absorption)
-daten des Materials bestimmt sie, wie viel Laserenergie das Material absorbiert.
+[physikalische Brennmodell](../ui/3d-preview.md#physical-burn-model) in der 3D-Vorschau: Zusammen
+mit den [Absorptions-](../application-settings/materials.md#absorption) daten des Materials bestimmt
+sie, wie viel Laserenergie das Material absorbiert.
 
-Wenn auf 0 gesetzt, greift Rayforge auf die typische Wellenlänge für den
-gewählten Lasertyp zurück (z.B. 445 nm für Diode, 1064 nm für Faser,
-10600 nm für CO2).
+Wenn auf 0 gesetzt, greift Rayforge auf die typische Wellenlänge für den gewählten Lasertyp zurück
+(z.B. 445 nm für Diode, 1064 nm für Faser, 10600 nm für CO2).
 
 #### Max. optische Leistung (W)
 
-Die optische Ausgangsleistung deines Lasers bei voller Leistung in Watt. Dies
-ist die tatsächliche Lichtausgabe, nicht der elektrische Eingang. Zusammen
-mit der Punktgröße und Scangeschwindigkeit bestimmt sie die Fluenz (J/cm²),
-die vom [physikalischen Brennmodell](../ui/3d-preview.md#physical-burn-model)
-verwendet wird.
+Die optische Ausgangsleistung deines Lasers bei voller Leistung in Watt. Dies ist die tatsächliche
+Lichtausgabe, nicht der elektrische Eingang. Zusammen mit der Punktgröße und Scangeschwindigkeit
+bestimmt sie die Fluenz (J/cm²), die vom
+[physikalischen Brennmodell](../ui/3d-preview.md#physical-burn-model) verwendet wird.
 
 Wenn auf 0 gesetzt, wird ein mittlerer Desktop-Standardwert verwendet.
 
 #### PWM-Einstellungen
 
-Wenn ein CO2- oder Faserlaser-Typ ausgewählt ist, erscheinen folgende
-PWM-Steuerelemente:
+Wenn ein CO2- oder Faserlaser-Typ ausgewählt ist, erscheinen folgende PWM-Steuerelemente:
 
-- **PWM-Frequenz**: Die Standard-PWM-Frequenz in Hz für diesen Laserkopf.
-  Typische Werte reichen von 500 Hz bis mehrere kHz, je nach Controller und
-  Netzteil.
-- **Max. PWM-Frequenz**: Die Obergrenze für die Frequenzeinstellung. Dies
-  verhindert die Eingabe von Werten, die deine Hardware nicht verarbeiten kann.
-- **Pulsbreite**: Die Standard-Pulsbreite in Mikrosekunden. Steuert, wie lange
-  jeder Puls während eines Zyklus eingeschaltet ist.
+- **PWM-Frequenz**: Die Standard-PWM-Frequenz in Hz für diesen Laserkopf. Typische Werte reichen von
+  500 Hz bis mehrere kHz, je nach Controller und Netzteil.
+- **Max. PWM-Frequenz**: Die Obergrenze für die Frequenzeinstellung. Dies verhindert die Eingabe von
+  Werten, die deine Hardware nicht verarbeiten kann.
+- **Pulsbreite**: Die Standard-Pulsbreite in Mikrosekunden. Steuert, wie lange jeder Puls während
+  eines Zyklus eingeschaltet ist.
 - **Min/Max Pulsbreite**: Grenzen für die Pulsbreiteneinstellung.
 
-Diese Standardwerte werden an deine Operationsschritte übergeben, wo sie bei
-Bedarf pro Schritt überschrieben werden können.
+Diese Standardwerte werden an deine Operationsschritte übergeben, wo sie bei Bedarf pro Schritt
+überschrieben werden können.
 
 #### 3D-Modell
 
-Jedem Laserkopf kann ein 3D-Modell zugewiesen werden. Dieses Modell wird in
-der [3D-Ansicht](../ui/3d-preview.md) gerendert und folgt dem Werkzeugweg
-während der Simulation.
+Jedem Laserkopf kann ein 3D-Modell zugewiesen werden. Dieses Modell wird in der
+[3D-Ansicht](../ui/3d-preview.md) gerendert und folgt dem Werkzeugweg während der Simulation.
 
-Klicke auf die Modellauswahlzeile, um verfügbare Modelle zu durchsuchen.
-Sobald ein Modell ausgewählt ist, kannst du dessen Skalierung, Rotation (X/Y/Z)
-und Fokusabstand an deinen physischen Laserkopf anpassen.
+Klicke auf die Modellauswahlzeile, um verfügbare Modelle zu durchsuchen. Sobald ein Modell
+ausgewählt ist, kannst du dessen Skalierung, Rotation (X/Y/Z) und Fokusabstand an deinen physischen
+Laserkopf anpassen.
 
 ## Siehe auch
 
 - [Geräteeinstellungen](device) - GRBL Lasermodus-Einstellungen
-- [Werkstückpositionierung](../features/workpiece-positioning.md) - Verwendung
-  von Fokusmodus und anderen Positionierungsmethoden
+- [Werkstückpositionierung](../features/workpiece-positioning.md) - Verwendung von Fokusmodus und
+  anderen Positionierungsmethoden

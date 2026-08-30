@@ -1,14 +1,18 @@
 ---
-description: "Generate a material test grid to find optimal laser power and speed settings for any material. Calibrate your laser cutter systematically."
+description:
+  "Generate a material test grid to find optimal laser power and speed settings for any material.
+  Calibrate your laser cutter systematically."
 ---
 
 # Material Test Grid
 
-The Material Test Grid generator creates parametric test patterns to help you find optimal laser settings for different materials.
+The Material Test Grid generator creates parametric test patterns to help you find optimal laser
+settings for different materials.
 
 ## Overview
 
-Material testing is essential for laser work - different materials require different power and speed settings. The Material Test Grid automates this process by:
+Material testing is essential for laser work - different materials require different power and speed
+settings. The Material Test Grid automates this process by:
 
 - Generating test grids with configurable speed/power ranges
 - Providing presets for common laser types (Diode, CO2)
@@ -87,7 +91,8 @@ Labels are engraved first, before the test grid, so they are not obscured by the
 
 ### Step 4: Generate the Grid
 
-Click **Generate** to create the test pattern. The grid appears on your canvas as a special workpiece.
+Click **Generate** to create the test pattern. The grid appears on your canvas as a special
+workpiece.
 
 ## Understanding the Grid Layout
 
@@ -169,9 +174,8 @@ Document your successful settings for future reference:
 - Number of passes
 - Any special notes
 
-:::tip Material Database
-Consider creating a reference document with your material test results for quick lookup in future projects.
-:::
+:::tip Material Database Consider creating a reference document with your material test results for
+quick lookup in future projects. :::
 
 ## Advanced Usage
 
@@ -209,24 +213,21 @@ Run the same grid configuration on different materials to build your material li
 
 ### Grid Design
 
-✅ **Start with presets** - Good starting points for common scenarios
-✅ **Use 5×5 grids** - Good balance of detail and test time
-✅ **Enable labels** - Essential for identifying results
-✅ **Keep squares ≥20mm** - Easier to see and measure results
+✅ **Start with presets** - Good starting points for common scenarios ✅ **Use 5×5 grids** - Good
+balance of detail and test time ✅ **Enable labels** - Essential for identifying results ✅ **Keep
+squares ≥20mm** - Easier to see and measure results
 
 ### Testing Strategy
 
-✅ **Test scrap first** - Never test on final material
-✅ **One variable at a time** - Test speed OR power range, not both extremes
-✅ **Allow cooldown** - Wait between tests on same material
-✅ **Consistent focus** - Same focus distance for all tests
+✅ **Test scrap first** - Never test on final material ✅ **One variable at a time** - Test speed OR
+power range, not both extremes ✅ **Allow cooldown** - Wait between tests on same material ✅
+**Consistent focus** - Same focus distance for all tests
 
 ### Safety
 
-⚠️ **Monitor tests** - Never leave running tests unattended
-⚠️ **Start conservative** - Begin with lower power ranges
-⚠️ **Check ventilation** - Ensure proper fume extraction
-⚠️ **Fire watch** - Have fire extinguisher ready
+⚠️ **Monitor tests** - Never leave running tests unattended ⚠️ **Start conservative** - Begin with
+lower power ranges ⚠️ **Check ventilation** - Ensure proper fume extraction ⚠️ **Fire watch** - Have
+fire extinguisher ready
 
 ## Troubleshooting
 

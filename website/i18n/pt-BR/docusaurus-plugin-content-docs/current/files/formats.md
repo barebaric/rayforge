@@ -1,7 +1,7 @@
 # Formatos de arquivo suportados
 
-Esta página fornece informações detalhadas sobre todos os formatos de arquivo
-suportados pelo Rayforge, incluindo capacidades, limitações e recomendações.
+Esta página fornece informações detalhadas sobre todos os formatos de arquivo suportados pelo
+Rayforge, incluindo capacidades, limitações e recomendações.
 
 ## Visão geral dos formatos
 
@@ -27,15 +27,13 @@ suportados pelo Rayforge, incluindo capacidades, limitações e recomendações.
 
 ### SVG (Gráficos Vetoriais Escaláveis)
 
-**Extensão:** `.svg`
-**Tipo MIME:** `image/svg+xml`
-**Importar:** Análise vetorial direta ou traçado de bitmap
-**Exportar:** Exportação de objeto (apenas geometria)
+**Extensão:** `.svg` **Tipo MIME:** `image/svg+xml` **Importar:** Análise vetorial direta ou traçado
+de bitmap **Exportar:** Exportação de objeto (apenas geometria)
 
 **O que é SVG?**
 
-SVG é um formato de imagem vetorial baseado em XML. É o **formato preferido**
-para importar designs no Rayforge.
+SVG é um formato de imagem vetorial baseado em XML. É o **formato preferido** para importar designs
+no Rayforge.
 
 **Recursos suportados:**
 
@@ -58,8 +56,8 @@ para importar designs no Rayforge.
 
 **Notas de exportação:**
 
-Ao exportar uma peça de trabalho para SVG, o Rayforge exporta a geometria como
-caminhos vetoriais com:
+Ao exportar uma peça de trabalho para SVG, o Rayforge exporta a geometria como caminhos vetoriais
+com:
 
 - Renderização apenas de contorno (sem preenchimento)
 - Unidades em milímetros
@@ -67,8 +65,7 @@ caminhos vetoriais com:
 
 **Melhores práticas:**
 
-1. **Use formato SVG simples** (não Inkscape SVG ou outras variantes
-   específicas de ferramenta)
+1. **Use formato SVG simples** (não Inkscape SVG ou outras variantes específicas de ferramenta)
 2. **Converta texto em caminhos** antes de exportar
 3. **Simplifique caminhos complexos** para reduzir a contagem de nós
 4. **Achate grupos** quando possível
@@ -83,10 +80,8 @@ caminhos vetoriais com:
 
 ### DXF (Drawing Exchange Format)
 
-**Extensão:** `.dxf`
-**Tipo MIME:** `application/dxf`, `image/vnd.dxf`
-**Importar:** Análise vetorial direta
-**Exportar:** Exportação de objeto (apenas geometria)
+**Extensão:** `.dxf` **Tipo MIME:** `application/dxf`, `image/vnd.dxf` **Importar:** Análise
+vetorial direta **Exportar:** Exportação de objeto (apenas geometria)
 
 **O que é DXF?**
 
@@ -130,16 +125,14 @@ Ao exportar uma peça de trabalho para DXF, o Rayforge exporta:
 
 ### RFS (Esboço Rayforge)
 
-**Extensão:** `.rfs`
-**Tipo MIME:** `application/x-rayforge-sketch`
-**Importar:** Direto (peças de trabalho baseadas em esboço)
-**Exportar:** Exportação de objeto (peças baseadas em esboço)
+**Extensão:** `.rfs` **Tipo MIME:** `application/x-rayforge-sketch` **Importar:** Direto (peças de
+trabalho baseadas em esboço) **Exportar:** Exportação de objeto (peças baseadas em esboço)
 
 **O que é RFS?**
 
-RFS é o formato nativo de esboço paramétrico do Rayforge. Ele preserva todos
-os elementos geométricos e restrições paramétricas, permitindo salvar e
-compartilhar esboços totalmente editáveis.
+RFS é o formato nativo de esboço paramétrico do Rayforge. Ele preserva todos os elementos
+geométricos e restrições paramétricas, permitindo salvar e compartilhar esboços totalmente
+editáveis.
 
 **Recursos:**
 
@@ -158,36 +151,30 @@ compartilhar esboços totalmente editáveis.
 
 ### LightBurn (.lbrn / .lbrn2)
 
-**Extensão:** `.lbrn`, `.lbrn2`
-**Tipo MIME:** `application/x-lightburn`
-**Importar:** Análise vetorial direta
-**Exportar:** Não suportado
+**Extensão:** `.lbrn`, `.lbrn2` **Tipo MIME:** `application/x-lightburn` **Importar:** Análise
+vetorial direta **Exportar:** Não suportado
 
 **O que é LightBurn?**
 
-LightBurn é um software proprietário de corte a laser. Seus arquivos `.lbrn` e
-`.lbrn2` contêm geometria vetorial organizada em camadas coloridas com
-configurações de laser. O Rayforge pode importar estes arquivos diretamente,
-fornecendo um caminho de migração para usuários que estão trocando LightBurn
-pelo Rayforge.
+LightBurn é um software proprietário de corte a laser. Seus arquivos `.lbrn` e `.lbrn2` contêm
+geometria vetorial organizada em camadas coloridas com configurações de laser. O Rayforge pode
+importar estes arquivos diretamente, fornecendo um caminho de migração para usuários que estão
+trocando LightBurn pelo Rayforge.
 
 **Recursos suportados:**
 
 - ✓ Caminhos vetoriais (linhas, curvas, arcos, texto convertido em caminhos)
 - ✓ Múltiplas camadas coloridas com nomes
-- ✓ Configurações de laser das camadas (potência, velocidade, passes, ordem de
-  corte)
+- ✓ Configurações de laser das camadas (potência, velocidade, passes, ordem de corte)
 - ✓ Visibilidade de camadas e estado de bloqueio
 - ✓ Cores das linhas das camadas mapeadas para as camadas do documento
 - ✓ Imagens raster incorporadas (vetorizadas na importação)
 
 **Limitações:**
 
-- ✗ **Importação somente leitura** — arquivos LightBurn só podem ser
-  importados, não exportados
+- ✗ **Importação somente leitura** — arquivos LightBurn só podem ser importados, não exportados
 - ✗ Imagens raster com profundidade de bits variável podem ser simplificadas
-- ✗ Alguns recursos avançados específicos do LightBurn podem não ser
-  traduzidos
+- ✗ Alguns recursos avançados específicos do LightBurn podem não ser traduzidos
 
 **Quando usar:**
 
@@ -199,20 +186,17 @@ pelo Rayforge.
 
 ### PDF (Portable Document Format)
 
-**Extensão:** `.pdf`
-**Tipo MIME:** `application/pdf`
-**Importar:** Vetores diretos (com suporte a camadas) ou renderizar e traçar
-**Exportar:** Não suportado
+**Extensão:** `.pdf` **Tipo MIME:** `application/pdf` **Importar:** Vetores diretos (com suporte a
+camadas) ou renderizar e traçar **Exportar:** Não suportado
 
 **O que é a importação de PDF?**
 
-Arquivos PDF podem conter caminhos vetoriais reais, e o Rayforge os importa
-diretamente quando disponíveis — fornecendo a mesma geometria limpa que você
-obteria de um SVG. Se o PDF tiver camadas, cada camada pode ser importada como
-uma peça de trabalho separada.
+Arquivos PDF podem conter caminhos vetoriais reais, e o Rayforge os importa diretamente quando
+disponíveis — fornecendo a mesma geometria limpa que você obteria de um SVG. Se o PDF tiver camadas,
+cada camada pode ser importada como uma peça de trabalho separada.
 
-Para PDFs sem conteúdo vetorial utilizável (documentos digitalizados, fotos),
-o Rayforge recorre à renderização e ao traçado.
+Para PDFs sem conteúdo vetorial utilizável (documentos digitalizados, fotos), o Rayforge recorre à
+renderização e ao traçado.
 
 **Capacidades:**
 
@@ -235,22 +219,19 @@ o Rayforge recorre à renderização e ao traçado.
 
 ## Formatos raster
 
-Todos os formatos raster são **importados por traçado** — convertidos
-automaticamente em caminhos vetoriais.
+Todos os formatos raster são **importados por traçado** — convertidos automaticamente em caminhos
+vetoriais.
 
 ### PNG (Portable Network Graphics)
 
-**Extensão:** `.png`
-**Tipo MIME:** `image/png`
-**Importar:** Traçar para vetores
-**Exportar:** Não suportado
+**Extensão:** `.png` **Tipo MIME:** `image/png` **Importar:** Traçar para vetores **Exportar:** Não
+suportado
 
 **Características:**
 
 - **Compressão sem perdas** - Sem perda de qualidade
 - **Suporte a transparência** - Canal alfa preservado
-- **Bom para:** Logos, arte linear, capturas de tela, qualquer coisa
-  precisando de transparência
+- **Bom para:** Logos, arte linear, capturas de tela, qualquer coisa precisando de transparência
 
 **Qualidade de traçado:** (Excelente para imagens de alto contraste)
 
@@ -264,9 +245,7 @@ automaticamente em caminhos vetoriais.
 
 ### JPEG (Joint Photographic Experts Group)
 
-**Extensão:** `.jpg`, `.jpeg`
-**Tipo MIME:** `image/jpeg`
-**Importar:** Traçar para vetores
+**Extensão:** `.jpg`, `.jpeg` **Tipo MIME:** `image/jpeg` **Importar:** Traçar para vetores
 **Exportar:** Não suportado
 
 **Características:**
@@ -288,10 +267,8 @@ automaticamente em caminhos vetoriais.
 
 ### BMP (Bitmap)
 
-**Extensão:** `.bmp`
-**Tipo MIME:** `image/bmp`
-**Importar:** Traçar para vetores
-**Exportar:** Não suportado
+**Extensão:** `.bmp` **Tipo MIME:** `image/bmp` **Importar:** Traçar para vetores **Exportar:** Não
+suportado
 
 **Características:**
 

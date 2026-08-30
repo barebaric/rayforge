@@ -1,14 +1,18 @@
 ---
-description: "Smooth post-processing reduces jagged edges on laser-cut paths. Improve curve quality and surface finish on your laser-cut parts."
+description:
+  "Smooth post-processing reduces jagged edges on laser-cut paths. Improve curve quality and surface
+  finish on your laser-cut parts."
 ---
 
 # Smooth Path
 
-Path smoothing reduces jagged edges and sharp transitions in your cutting paths, resulting in cleaner curves and smoother machine motion.
+Path smoothing reduces jagged edges and sharp transitions in your cutting paths, resulting in
+cleaner curves and smoother machine motion.
 
 ## How It Works
 
-Smoothing applies a filter to your path geometry that rounds off angular corners and smooths out rough edges. The laser follows a gentler trajectory instead of making abrupt direction changes.
+Smoothing applies a filter to your path geometry that rounds off angular corners and smooths out
+rough edges. The laser follows a gentler trajectory instead of making abrupt direction changes.
 
 ## Settings
 
@@ -18,7 +22,8 @@ Toggle smoothing on or off for this operation. Smoothing is disabled by default.
 
 ### Smoothness
 
-Controls how much the path is smoothed (0-100). Higher values produce rounder curves but may deviate more from the original path.
+Controls how much the path is smoothed (0-100). Higher values produce rounder curves but may deviate
+more from the original path.
 
 - **Low (0-30):** Minimal smoothing, preserves sharp details
 - **Medium (30-60):** Balanced smoothing for most designs
@@ -26,7 +31,8 @@ Controls how much the path is smoothed (0-100). Higher values produce rounder cu
 
 ### Corner Angle Threshold
 
-Angles sharper than this value are preserved as corners rather than smoothed (0-179 degrees). This prevents important sharp features from being rounded.
+Angles sharper than this value are preserved as corners rather than smoothed (0-179 degrees). This
+prevents important sharp features from being rounded.
 
 - **Lower values:** More corners are smoothed, rounder result
 - **Higher values:** More corners are preserved, sharper result

@@ -1,29 +1,30 @@
 ---
-description: "The bottom panel in Rayforge provides job progress, G-code preview, and machine status. Monitor your laser cutter during operation."
+description:
+  "The bottom panel in Rayforge provides job progress, G-code preview, and machine status. Monitor
+  your laser cutter during operation."
 ---
 
 # Bottom Panel
 
-The Bottom Panel at the bottom of the Rayforge window provides manual control
-over your laser cutter's position, real-time machine status, a log view
-for monitoring operations, a G-code viewer, and an asset browser.
+The Bottom Panel at the bottom of the Rayforge window provides manual control over your laser
+cutter's position, real-time machine status, a log view for monitoring operations, a G-code viewer,
+and an asset browser.
 
 ## Overview
 
 The Bottom Panel combines several functions into one convenient interface:
 
-1. **Dockable Tabs**: Switch between Console, G-code Viewer, and Assets using
-   the icon strip on the left
+1. **Dockable Tabs**: Switch between Console, G-code Viewer, and Assets using the icon strip on the
+   left
 2. **Jog Controls**: Manual movement and positioning (always visible)
 3. **Machine Status**: Real-time position and connection state
 4. **Work Coordinate System (WCS)**: Quick WCS selection (always visible)
 
-Each panel area has an icon tab strip on the left that lets you switch
-between the **Console**, the **G-code Viewer**, and the **Assets** browser.
-The jog controls and WCS controls on the right side remain visible regardless
-of which tab is active. Tabs can be reordered by dragging within their strip,
-and you can drag tabs between panel areas or onto dividers to rearrange the
-layout into multiple columns. Empty columns are removed automatically.
+Each panel area has an icon tab strip on the left that lets you switch between the **Console**, the
+**G-code Viewer**, and the **Assets** browser. The jog controls and WCS controls on the right side
+remain visible regardless of which tab is active. Tabs can be reordered by dragging within their
+strip, and you can drag tabs between panel areas or onto dividers to rearrange the layout into
+multiple columns. Empty columns are removed automatically.
 
 ![Bottom Panel](/screenshots/bottom-panel-console.webp)
 
@@ -34,16 +35,13 @@ The Bottom Panel can be toggled via:
 - **Menu**: View → Bottom Panel
 - **Keyboard Shortcut**: Ctrl+L
 
-:::note Connection Required
-The jog controls are only available when connected to a machine
-that supports jogging operations.
-:::
+:::note Connection Required The jog controls are only available when connected to a machine that
+supports jogging operations. :::
 
 ## Jog Controls
 
-The jog controls provide manual control over your laser cutter's position,
-allowing you to precisely move the laser head for setup, alignment, and
-testing purposes.
+The jog controls provide manual control over your laser cutter's position, allowing you to precisely
+move the laser head for setup, alignment, and testing purposes.
 
 ### Homing Controls
 
@@ -53,10 +51,8 @@ Home your machine's axes to establish a reference position:
 | -------- | -------------- | ----------------------------- |
 | Home All | Homes all axes | Homes all axes simultaneously |
 
-:::tip Homing Sequence
-It's recommended to home all axes before starting any job to ensure
-accurate positioning.
-:::
+:::tip Homing Sequence It's recommended to home all axes before starting any job to ensure accurate
+positioning. :::
 
 ### Directional Movement
 
@@ -81,9 +77,7 @@ The jog controls provide buttons for directional movement:
 | Z+               | Z axis up                       | Page Up           |
 | Z-               | Z axis down                     | Page Down         |
 
-:::note Focus Required
-Keyboard shortcuts only work when the main window has focus.
-:::
+:::note Focus Required Keyboard shortcuts only work when the main window has focus. :::
 
 ### Visual Feedback
 
@@ -107,8 +101,7 @@ Configure the behavior of jog operations:
 
 - Use lower speeds (100-500 mm/min) for precise positioning
 - Use higher speeds (1,000-3,000 mm/min) for larger movements
-- Very high speeds may cause missed steps on some machines
-  :::
+- Very high speeds may cause missed steps on some machines :::
 
 **Jog Distance:**
 
@@ -120,8 +113,7 @@ Configure the behavior of jog operations:
 
 - Use small distances (0.1-1.0 mm) for fine-tuning
 - Use medium distances (5-20 mm) for general positioning
-- Use large distances (50-100 mm) for quick repositioning
-  :::
+- Use large distances (50-100 mm) for quick repositioning :::
 
 ## Machine Status Display
 
@@ -180,10 +172,8 @@ Define where the origin of the active WCS should be:
 | Zero Y         | Set Y=0   | Makes current Y position the Y origin for active WCS                 |
 | Zero Z         | Set Z=0   | Makes current Z position the Z origin for active WCS                 |
 
-:::note G53 Cannot Be Changed
-Zero buttons are disabled when G53 (Machine Coordinates) is selected,
-as machine coordinates are fixed by hardware.
-:::
+:::note G53 Cannot Be Changed Zero buttons are disabled when G53 (Machine Coordinates) is selected,
+as machine coordinates are fixed by hardware. :::
 
 :::tip Setting WCS Workflow
 
@@ -191,14 +181,12 @@ as machine coordinates are fixed by hardware.
 2. Select the WCS you want to configure (e.g., G54)
 3. Jog the laser head to the desired origin position
 4. Click Zero X and Zero Y to set this position as (0, 0)
-5. The offset is stored in your machine's controller
-   :::
+5. The offset is stored in your machine's controller :::
 
 ## Console Tab
 
-The Console tab provides an interactive terminal-style interface for sending
-G-code commands and monitoring machine communication. Click the console icon
-in the tab strip to switch to this view.
+The Console tab provides an interactive terminal-style interface for sending G-code commands and
+monitoring machine communication. Click the console icon in the tab strip to switch to this view.
 
 ### Command Input
 
@@ -211,8 +199,8 @@ The command input box allows you to send raw G-code directly to the machine:
 
 ### Log Display
 
-The log shows communication between Rayforge and your machine with
-syntax highlighting for easy reading:
+The log shows communication between Rayforge and your machine with syntax highlighting for easy
+reading:
 
 - **User Commands** (blue): Commands you entered or sent during jobs
 - **Timestamps** (gray): Time of each message
@@ -223,8 +211,7 @@ syntax highlighting for easy reading:
 
 ### Verbose Mode
 
-Click the terminal icon in the top-right corner of the console to toggle
-verbose output:
+Click the terminal icon in the top-right corner of the console to toggle verbose output:
 
 - **Off** (default): Hides frequent status polls and "ok" responses
 - **On**: Shows all machine communication
@@ -249,77 +236,71 @@ The console is invaluable for diagnosing issues:
 
 ## G-code Viewer Tab
 
-The G-code Viewer tab displays the generated G-code for the current
-operations. Click the G-code icon in the tab strip to switch to this view.
+The G-code Viewer tab displays the generated G-code for the current operations. Click the G-code
+icon in the tab strip to switch to this view.
 
 ### Features
 
 - **Syntax Highlighting**: G-code commands are color-coded for readability
-- **Line Highlighting**: The currently executing line is highlighted during
-  job execution
-- **Auto-Refresh**: The G-code content updates automatically when operations
-  or document settings change
+- **Line Highlighting**: The currently executing line is highlighted during job execution
+- **Auto-Refresh**: The G-code content updates automatically when operations or document settings
+  change
 
 ## Assets Tab
 
-The Assets tab shows all stock items and sketches in your document. Click the
-assets icon in the tab strip to switch to this view.
+The Assets tab shows all stock items and sketches in your document. Click the assets icon in the tab
+strip to switch to this view.
 
-When the asset list is empty, it displays buttons to add stock or create a new
-sketch. You can drag assets from this list onto the canvas to place them.
-Double-clicking a stock asset opens its properties.
+When the asset list is empty, it displays buttons to add stock or create a new sketch. You can drag
+assets from this list onto the canvas to place them. Double-clicking a stock asset opens its
+properties.
 
-Right-clicking an asset opens a context menu with options to create a new
-workpiece from the asset, duplicate, copy, cut, or delete it. Right-clicking
-empty space in the asset list offers options to create a new sketch, add
-stock, import a file, or paste from the clipboard.
+Right-clicking an asset opens a context menu with options to create a new workpiece from the asset,
+duplicate, copy, cut, or delete it. Right-clicking empty space in the asset list offers options to
+create a new sketch, add stock, import a file, or paste from the clipboard.
 
-When the Console or G-code Viewer tab is active, you can also press
-<kbd>Ctrl+F</kbd> to search within the content.
+When the Console or G-code Viewer tab is active, you can also press <kbd>Ctrl+F</kbd> to search
+within the content.
 
 ## Laser Control
 
-The Laser dock provides manual control over your laser for testing, alignment,
-and focusing. It appears as a tab alongside the Controls dock in the bottom
-panel.
+The Laser dock provides manual control over your laser for testing, alignment, and focusing. It
+appears as a tab alongside the Controls dock in the bottom panel.
 
 ### Laser Head Selector
 
-A dropdown lists all configured laser heads. When your machine has multiple
-heads, pick the one you want to control. The subtitle shows the tool number
-and maximum power for the selected head.
+A dropdown lists all configured laser heads. When your machine has multiple heads, pick the one you
+want to control. The subtitle shows the tool number and maximum power for the selected head.
 
 ### Toggle Button
 
-The toggle button next to the head selector turns the laser on or off. When
-the laser is active, the button turns red as a safety indicator. The laser
-can also be toggled from the toolbar button in the main window header.
+The toggle button next to the head selector turns the laser on or off. When the laser is active, the
+button turns red as a safety indicator. The laser can also be toggled from the toolbar button in the
+main window header.
 
 ### Power
 
-A slider and text entry control the laser power from 0 to 100 percent. When
-you switch to a different laser head, the power resets to that head's
-configured focus power.
+A slider and text entry control the laser power from 0 to 100 percent. When you switch to a
+different laser head, the power resets to that head's configured focus power.
 
 ### Frequency and Pulse Width
 
-These controls appear only when the selected laser head is a CO2 or Fiber
-type. They let you set the PWM frequency (Hz) and pulse width (microseconds)
-for manual laser operation. For Diode lasers, these fields are hidden.
+These controls appear only when the selected laser head is a CO2 or Fiber type. They let you set the
+PWM frequency (Hz) and pulse width (microseconds) for manual laser operation. For Diode lasers,
+these fields are hidden.
 
 ### Duration (Auto-Off Timer)
 
-Set a duration in seconds after which the laser automatically turns off. Set
-to 0 for continuous operation — the laser stays on until you manually turn
-it off. A countdown label appears below the controls while the timer is
-running.
+Set a duration in seconds after which the laser automatically turns off. Set to 0 for continuous
+operation — the laser stays on until you manually turn it off. A countdown label appears below the
+controls while the timer is running.
 
 ### Safety
 
 - All controls are disabled when no laser heads are configured
 - The toggle button requires an active machine connection
-- If the machine disconnects while the laser is on, the laser is turned off
-  automatically and any running timer is cancelled
+- If the machine disconnects while the laser is on, the laser is turned off automatically and any
+  running timer is cancelled
 
 ## Machine Compatibility
 

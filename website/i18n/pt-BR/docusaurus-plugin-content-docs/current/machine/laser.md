@@ -1,19 +1,17 @@
 # Configurações do Laser
 
-A página Laser nas Configurações da Máquina configura sua(s) cabeça(s) de
-laser e suas propriedades.
+A página Laser nas Configurações da Máquina configura sua(s) cabeça(s) de laser e suas propriedades.
 
 ![Configurações do Laser](/screenshots/machine-settings-laser.webp)
 
 ## Cabeças de Laser
 
-O Rayforge suporta máquinas com múltiplas cabeças de laser. Cada cabeça de
-laser tem sua própria configuração.
+O Rayforge suporta máquinas com múltiplas cabeças de laser. Cada cabeça de laser tem sua própria
+configuração.
 
 ### Adicionando uma Cabeça de Laser
 
-Clique no botão **Adicionar Laser** para criar uma nova configuração de
-cabeça de laser.
+Clique no botão **Adicionar Laser** para criar uma nova configuração de cabeça de laser.
 
 ### Propriedades da Cabeça de Laser
 
@@ -31,8 +29,7 @@ Exemplos:
 
 #### Número da Ferramenta
 
-O índice da ferramenta para esta cabeça de laser. Usado no G-code com o
-comando T.
+O índice da ferramenta para esta cabeça de laser. Usado no G-code com o comando T.
 
 - Máquinas de cabeça única: Use 0
 - Máquinas multi-cabeça: Atribua números únicos (0, 1, 2, etc.)
@@ -49,34 +46,30 @@ Este valor deve corresponder à configuração $30 do seu firmware.
 
 #### Potência de Enquadramento
 
-O nível de potência usado para operações de enquadramento (delinear sem
-cortar).
+O nível de potência usado para operações de enquadramento (delinear sem cortar).
 
 - Defina como 0 para desabilitar enquadramento
 - Ajuste com base no seu laser e material
 
 #### Velocidade de Enquadramento
 
-A velocidade na qual a cabeça do laser se move durante o enquadramento. Isso é
-definido por cabeça de laser, portanto, se sua máquina tiver vários lasers com
-características diferentes, você poderá escolher uma velocidade apropriada para
-cada um. Velocidades mais lentas tornam o caminho do enquadramento mais fácil
-de ser seguido visualmente.
+A velocidade na qual a cabeça do laser se move durante o enquadramento. Isso é definido por cabeça
+de laser, portanto, se sua máquina tiver vários lasers com características diferentes, você poderá
+escolher uma velocidade apropriada para cada um. Velocidades mais lentas tornam o caminho do
+enquadramento mais fácil de ser seguido visualmente.
 
 #### Potência de Foco
 
-O nível de potência usado quando o modo foco está ativado. O modo foco liga o
-laser em baixa potência para atuar como "ponteiro laser" para posicionamento.
+O nível de potência usado quando o modo foco está ativado. O modo foco liga o laser em baixa
+potência para atuar como "ponteiro laser" para posicionamento.
 
 - Defina como 0 para desabilitar o recurso de modo foco
 - Use para alinhamento visual e posicionamento
 
-:::tip Usando o Modo Foco
-Clique no botão foco (ícone de laser) na barra de ferramentas para alternar o
-modo foco. O laser ligará neste nível de potência, ajudando você a ver
-exatamente onde o laser está posicionado. Consulte
-[Posicionamento de Peça de Trabalho](../features/workpiece-positioning.md) para
-mais informações.
+:::tip Usando o Modo Foco Clique no botão foco (ícone de laser) na barra de ferramentas para
+alternar o modo foco. O laser ligará neste nível de potência, ajudando você a ver exatamente onde o
+laser está posicionado. Consulte
+[Posicionamento de Peça de Trabalho](../features/workpiece-positioning.md) para mais informações.
 :::
 
 #### Tamanho do Ponto
@@ -87,30 +80,25 @@ O tamanho físico do seu feixe de laser focalizado em milímetros.
 - A maioria dos lasers tem um ponto circular (ex: 0,1 x 0,1)
 - Afeta cálculos de qualidade de gravação
 
-:::tip Medindo o Tamanho do Ponto
-Para medir o tamanho do seu ponto:
+:::tip Medindo o Tamanho do Ponto Para medir o tamanho do seu ponto:
 
 1. Dispare um pulso curto com baixa potência em um material de teste
 2. Meça a marca resultante com paquímetro
-3. Use a média de múltiplas medições
-   :::
+3. Use a média de múltiplas medições :::
 
 #### Cor
 
-A cor usada para exibir as operações deste laser (cortes e gravação) na tela e
-na visualização 3D. Isso ajuda você a distinguir visualmente qual laser
-realizará cada operação ao trabalhar com múltiplas cabeças de laser.
+A cor usada para exibir as operações deste laser (cortes e gravação) na tela e na visualização 3D.
+Isso ajuda você a distinguir visualmente qual laser realizará cada operação ao trabalhar com
+múltiplas cabeças de laser.
 
 - Clique na amostra de cor para abrir um seletor de cores
 - Escolha uma cor que contraste bem com a visualização do seu material
 - Cores padrão são atribuídas automaticamente
 
-:::tip Fluxos de Trabalho Multi-Laser
-Ao usar múltiplas cabeças de laser, atribuir cores diferentes a cada laser
-facilita ver quais operações serão realizadas por qual laser. Por exemplo, use
-vermelho para seu laser de corte principal e azul para um laser de gravação
-secundário.
-:::
+:::tip Fluxos de Trabalho Multi-Laser Ao usar múltiplas cabeças de laser, atribuir cores diferentes
+a cada laser facilita ver quais operações serão realizadas por qual laser. Por exemplo, use vermelho
+para seu laser de corte principal e azul para um laser de gravação secundário. :::
 
 #### Tipo de Laser
 
@@ -120,63 +108,56 @@ Escolha o tipo de cabeça de laser no menu suspenso:
 - **CO2**: Lasers de tubo CO2
 - **Fibra**: Lasers de fibra
 
-Quando CO2 ou Fibra é selecionado, **configurações PWM** adicionais ficam
-disponíveis (veja abaixo). Para lasers de diodo, a seção PWM fica oculta,
-pois não se aplica.
+Quando CO2 ou Fibra é selecionado, **configurações PWM** adicionais ficam disponíveis (veja abaixo).
+Para lasers de diodo, a seção PWM fica oculta, pois não se aplica.
 
-O tipo de laser também define um **comprimento de onda** padrão (usado pelo
-modelo de queimadura física) quando nenhum valor explícito é inserido abaixo.
+O tipo de laser também define um **comprimento de onda** padrão (usado pelo modelo de queimadura
+física) quando nenhum valor explícito é inserido abaixo.
 
 #### Comprimento de Onda (nm)
 
 O comprimento de onda de emissão do seu laser, em nanômetros. Alimenta o
-[modelo de queimadura física](../ui/3d-preview.md#physical-burn-model)
-na pré-visualização 3D: junto com os dados de
-[absorção](../application-settings/materials.md#absorption) do material,
-determina quanta energia do laser o material absorve.
+[modelo de queimadura física](../ui/3d-preview.md#physical-burn-model) na pré-visualização 3D: junto
+com os dados de [absorção](../application-settings/materials.md#absorption) do material, determina
+quanta energia do laser o material absorve.
 
-Quando definido como 0, o Rayforge usa o comprimento de onda típico para o
-tipo de laser selecionado (ex.: 445 nm para diodo, 1064 nm para fibra,
-10600 nm para CO2).
+Quando definido como 0, o Rayforge usa o comprimento de onda típico para o tipo de laser selecionado
+(ex.: 445 nm para diodo, 1064 nm para fibra, 10600 nm para CO2).
 
 #### Potência Óptica Máxima (W)
 
-A potência de saída óptica do seu laser na potência máxima, em watts. Esta
-é a saída de luz real, não a entrada elétrica. Junto com o tamanho do ponto
-e a velocidade de varredura, determina a fluência (J/cm²) usada pelo
-[modelo de queimadura física](../ui/3d-preview.md#physical-burn-model).
+A potência de saída óptica do seu laser na potência máxima, em watts. Esta é a saída de luz real,
+não a entrada elétrica. Junto com o tamanho do ponto e a velocidade de varredura, determina a
+fluência (J/cm²) usada pelo [modelo de queimadura física](../ui/3d-preview.md#physical-burn-model).
 
 Quando definido como 0, um padrão intermediário de mesa é usado.
 
 #### Configurações PWM
 
-Quando um tipo de laser CO2 ou Fibra é selecionado, os seguintes controles
-PWM aparecem:
+Quando um tipo de laser CO2 ou Fibra é selecionado, os seguintes controles PWM aparecem:
 
-- **Frequência PWM**: A frequência PWM padrão em Hz para esta cabeça de laser.
-  Valores típicos variam de 500 Hz a vários kHz, dependendo do seu controlador
-  e fonte de alimentação.
-- **Frequência PWM máxima**: O limite superior para a configuração de frequência.
-  Isso evita inserir valores que seu hardware não suporta.
-- **Largura de pulso**: A largura de pulso padrão em microssegundos. Controla
-  quanto tempo cada pulso fica ligado durante um ciclo.
+- **Frequência PWM**: A frequência PWM padrão em Hz para esta cabeça de laser. Valores típicos
+  variam de 500 Hz a vários kHz, dependendo do seu controlador e fonte de alimentação.
+- **Frequência PWM máxima**: O limite superior para a configuração de frequência. Isso evita inserir
+  valores que seu hardware não suporta.
+- **Largura de pulso**: A largura de pulso padrão em microssegundos. Controla quanto tempo cada
+  pulso fica ligado durante um ciclo.
 - **Largura de pulso mín/máx**: Limites para a configuração de largura de pulso.
 
-Esses padrões são repassados para suas etapas de operação, onde podem ser
-substituídos por etapa, se necessário.
+Esses padrões são repassados para suas etapas de operação, onde podem ser substituídos por etapa, se
+necessário.
 
 #### Modelo 3D
 
-Cada cabeça de laser pode ter um modelo 3D atribuído a ela. Este modelo é
-renderizado na [visualização 3D](../ui/3d-preview.md) e segue o caminho da
-ferramenta durante a simulação.
+Cada cabeça de laser pode ter um modelo 3D atribuído a ela. Este modelo é renderizado na
+[visualização 3D](../ui/3d-preview.md) e segue o caminho da ferramenta durante a simulação.
 
-Clique na linha de seleção de modelo para navegar pelos modelos disponíveis.
-Uma vez selecionado um modelo, você pode ajustar sua escala, rotação (X/Y/Z) e
-distância focal para corresponder à sua cabeça de laser física.
+Clique na linha de seleção de modelo para navegar pelos modelos disponíveis. Uma vez selecionado um
+modelo, você pode ajustar sua escala, rotação (X/Y/Z) e distância focal para corresponder à sua
+cabeça de laser física.
 
 ## Veja Também
 
 - [Configurações do Dispositivo](device) - Configurações de modo laser GRBL
-- [Posicionamento de Peça de Trabalho](../features/workpiece-positioning.md) -
-  Usando modo foco e outros métodos de posicionamento
+- [Posicionamento de Peça de Trabalho](../features/workpiece-positioning.md) - Usando modo foco e
+  outros métodos de posicionamento

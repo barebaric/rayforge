@@ -1,6 +1,7 @@
 # Tasker：后台任务管理
 
-`tasker` 是一个用于在 GTK 应用程序后台运行长时间任务而不冻结 UI 的模块。它为 I/O 密集型（`asyncio`）和 CPU 密集型（`multiprocessing`）工作提供了简单统一的 API。
+`tasker`
+是一个用于在 GTK 应用程序后台运行长时间任务而不冻结 UI 的模块。它为 I/O 密集型（`asyncio`）和 CPU 密集型（`multiprocessing`）工作提供了简单统一的 API。
 
 ## 核心概念
 
@@ -57,7 +58,8 @@ task_mgr.run_process(my_cpu_task, 50, key="calculator")
 
 ### 运行线程绑定任务
 
-对应该在线程中运行但不需要完整进程隔离的任务使用 `run_thread`。这对于共享内存但仍不应阻塞 UI 的任务很有用。
+对应该在线程中运行但不需要完整进程隔离的任务使用
+`run_thread`。这对于共享内存但仍不应阻塞 UI 的任务很有用。
 
 ```python
 import time

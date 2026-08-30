@@ -1,8 +1,7 @@
 # Dateien importieren
 
 Rayforge unterstützt das Importieren verschiedener Dateiformate, sowohl Vektor- als auch
-Rasterformate. Diese Seite erklärt, wie du Dateien importierst und für beste Ergebnisse
-optimierst.
+Rasterformate. Diese Seite erklärt, wie du Dateien importierst und für beste Ergebnisse optimierst.
 
 ## Unterstützte Dateiformate
 
@@ -20,16 +19,14 @@ optimierst.
 
 | Format   | Erweiterung     | Importmethode       | Am besten für                            |
 | -------- | --------------- | ------------------- | ---------------------------------------- |
-| **PNG**  | `.webp`          | Tracing zu Vektoren | Fotos, Bilder mit Transparenz            |
+| **PNG**  | `.webp`         | Tracing zu Vektoren | Fotos, Bilder mit Transparenz            |
 | **JPEG** | `.jpg`, `.jpeg` | Tracing zu Vektoren | Fotos, Bilder mit kontinuierlichen Tönen |
 | **BMP**  | `.bmp`          | Tracing zu Vektoren | Einfache Grafiken, Screenshots           |
 
-:::note Raster-Import
-:::
+:::note Raster-Import :::
 
-Alle Rasterbilder werden **traced**, um Vektorpfade zu erstellen, die für
-Laseroperationen verwendet werden können. Die Qualität hängt von der
-Tracing-Konfiguration ab.
+Alle Rasterbilder werden **traced**, um Vektorpfade zu erstellen, die für Laseroperationen verwendet
+werden können. Die Qualität hängt von der Tracing-Konfiguration ab.
 
 ---
 
@@ -38,8 +35,7 @@ Tracing-Konfiguration ab.
 ### Der Import-Dialog
 
 Rayforge verfügt über einen einheitlichen Import-Dialog, der Live-Vorschau und
-Konfigurationsoptionen für alle unterstützten Dateitypen bietet. Der Dialog
-ermöglicht dir:
+Konfigurationsoptionen für alle unterstützten Dateitypen bietet. Der Dialog ermöglicht dir:
 
 - **Import voranschauen**, bevor er zum Dokument hinzugefügt wird
 - **Tracing-Einstellungen konfigurieren** für Rasterbilder
@@ -50,20 +46,17 @@ ermöglicht dir:
 
 ### Ebenen-Import-Modus
 
-Beim Importieren von Dateien, die mehrere Ebenen enthalten (wie SVG- oder
-PDF-Dateien mit benannten Ebenen), bietet der Dialog drei Möglichkeiten, diese
-zu verarbeiten:
+Beim Importieren von Dateien, die mehrere Ebenen enthalten (wie SVG- oder PDF-Dateien mit benannten
+Ebenen), bietet der Dialog drei Möglichkeiten, diese zu verarbeiten:
 
-- **Bestehenden zuordnen**: Importierte Ebenen bestehenden Dokumentebenen
-  zuordnen. Die erste Ebene aus dem Quelldokument wird in die erste Ebene
-  deines Projekts eingefügt, die zweite in die zweite und so weiter.
-  Dies ist die Standardeinstellung und funktioniert gut, wenn dein Dokument
-  bereits Ebenen eingerichtet hat.
-- **Neue Ebenen**: Für jede importierte Ebene eine neue Ebene im Dokument
-  erstellen. Dies hält importierten Inhalt getrennt von bestehender Arbeit.
-- **Abflachen**: Alle importierten Ebenen in eine einzige Ebene zusammenführen.
-  Nützlich, wenn du alles auf einer Ebene haben möchtest, unabhängig von der
-  ursprünglichen Struktur.
+- **Bestehenden zuordnen**: Importierte Ebenen bestehenden Dokumentebenen zuordnen. Die erste Ebene
+  aus dem Quelldokument wird in die erste Ebene deines Projekts eingefügt, die zweite in die zweite
+  und so weiter. Dies ist die Standardeinstellung und funktioniert gut, wenn dein Dokument bereits
+  Ebenen eingerichtet hat.
+- **Neue Ebenen**: Für jede importierte Ebene eine neue Ebene im Dokument erstellen. Dies hält
+  importierten Inhalt getrennt von bestehender Arbeit.
+- **Abflachen**: Alle importierten Ebenen in eine einzige Ebene zusammenführen. Nützlich, wenn du
+  alles auf einer Ebene haben möchtest, unabhängig von der ursprünglichen Struktur.
 
 ### Methode 1: Dateimenü
 
@@ -93,8 +86,8 @@ rayforge datei1.svg datei2.dxf
 
 ### Automatische Größenanpassung beim Import
 
-Beim Importieren von Dateien, die größer als der Arbeitsbereich deiner Maschine sind,
-wird Rayforge automatisch:
+Beim Importieren von Dateien, die größer als der Arbeitsbereich deiner Maschine sind, wird Rayforge
+automatisch:
 
 1. **Herunterskalieren** des importierten Inhalts, um in die Maschinengrenzen zu passen
 2. **Seitenverhältnis beibehalten** während der Skalierung
@@ -103,12 +96,14 @@ wird Rayforge automatisch:
 
 Die Größenänderungs-Benachrichtigung erscheint als Toast-Meldung:
 
-- ⚠️ "Importiertes Element war größer als der Arbeitsbereich und wurde herunterskaliert um zu passen."
-- Enthält eine **"Zurücksetzen"-Schaltfläche** um die automatische Größenänderung rückgängig zu machen
+- ⚠️ "Importiertes Element war größer als der Arbeitsbereich und wurde herunterskaliert um zu
+  passen."
+- Enthält eine **"Zurücksetzen"-Schaltfläche** um die automatische Größenänderung rückgängig zu
+  machen
 - Der Toast bleibt sichtbar bis er geschlossen wird oder die Zurücksetzen-Aktion ausgeführt wird
 
-Dies stellt sicher, dass deine Designs immer in die Fähigkeiten deiner Maschine passen,
-während du die Flexibilität hast, die Originalgröße bei Bedarf wiederherzustellen.
+Dies stellt sicher, dass deine Designs immer in die Fähigkeiten deiner Maschine passen, während du
+die Flexibilität hast, die Originalgröße bei Bedarf wiederherzustellen.
 
 ---
 
@@ -116,17 +111,15 @@ während du die Flexibilität hast, die Originalgröße bei Bedarf wiederherzust
 
 SVG (Scalable Vector Graphics) ist das **empfohlene Format** für Vektor-Designs.
 
-:::tip Schrittzuweisung automatisieren
-Du kannst [Farbregeln](../application-settings/color-rules.md) konfigurieren,
-um Schritttypen (Kontur, Gravur usw.) automatisch basierend auf den Farben in
-deinem SVG zuzuweisen. Wenn Regeln existieren, standardmäßig der Import-Dialog
-Formen nach Farbe gruppiert, damit die Regeln greifen.
-:::
+:::tip Schrittzuweisung automatisieren Du kannst
+[Farbregeln](../application-settings/color-rules.md) konfigurieren, um Schritttypen (Kontur, Gravur
+usw.) automatisch basierend auf den Farben in deinem SVG zuzuweisen. Wenn Regeln existieren,
+standardmäßig der Import-Dialog Formen nach Farbe gruppiert, damit die Regeln greifen. :::
 
 ### Importoptionen im Dialog
 
-Beim Importieren von SVG bietet der Import-Dialog einen Umschalter, um zwischen zwei
-Methoden zu wählen:
+Beim Importieren von SVG bietet der Import-Dialog einen Umschalter, um zwischen zwei Methoden zu
+wählen:
 
 #### 1. Originalvektoren verwenden (Empfohlen)
 
@@ -278,49 +271,47 @@ PDF-Dateien können Vektorgrafiken, Rasterbilder oder beides enthalten.
 
 ### Direkter Vektorimport
 
-Beim Importieren eines PDFs, das Vektorpfade enthält, kann Rayforge diese direkt
-importieren – genau wie SVG- oder DXF-Dateien. Das liefert dir saubere, skalierbare
-Geometrie ohne Qualitätsverlust durch Rasterung.
+Beim Importieren eines PDFs, das Vektorpfade enthält, kann Rayforge diese direkt importieren – genau
+wie SVG- oder DXF-Dateien. Das liefert dir saubere, skalierbare Geometrie ohne Qualitätsverlust
+durch Rasterung.
 
-Wenn das PDF Ebenen enthält, erkennt Rayforge diese und du kannst auswählen, welche
-importiert werden sollen. Jede Ebene wird zu einem separaten Werkstück in deinem
-Dokument. Dies funktioniert genauso wie der SVG-Ebenenimport: aktiviere oder
-deaktiviere einzelne Ebenen im Import-Dialog vor dem Importieren.
+Wenn das PDF Ebenen enthält, erkennt Rayforge diese und du kannst auswählen, welche importiert
+werden sollen. Jede Ebene wird zu einem separaten Werkstück in deinem Dokument. Dies funktioniert
+genauso wie der SVG-Ebenenimport: aktiviere oder deaktiviere einzelne Ebenen im Import-Dialog vor
+dem Importieren.
 
-Dies ist besonders nützlich für PDFs, die aus Design-Software wie Illustrator oder
-Inkscape exportiert wurden, wo die Vektorpfade sauber und gut organisiert sind.
+Dies ist besonders nützlich für PDFs, die aus Design-Software wie Illustrator oder Inkscape
+exportiert wurden, wo die Vektorpfade sauber und gut organisiert sind.
 
 ### Fallback: Rendern und Tracen
 
-Für PDFs, die keine verwendbaren Vektordaten enthalten – gescannte Dokumente,
-eingebettete Fotos oder PDFs, bei denen Text nicht in Pfade umgewandelt wurde –
-kann Rayforge auf das Rendern des PDFs als Bild und dessen Tracing
-zurückgreifen. Dies funktioniert genauso wie der Rasterbild-Import.
+Für PDFs, die keine verwendbaren Vektordaten enthalten – gescannte Dokumente, eingebettete Fotos
+oder PDFs, bei denen Text nicht in Pfade umgewandelt wurde – kann Rayforge auf das Rendern des PDFs
+als Bild und dessen Tracing zurückgreifen. Dies funktioniert genauso wie der Rasterbild-Import.
 
 ### PDF-Import-Tipps
 
 **Beste Ergebnisse:**
 
-1. **Vektor-PDFs verwenden**: PDFs, die aus Vektorsoftware erstellt wurden
-   (Illustrator, Inkscape), liefern die saubersten Ergebnisse beim direkten Import.
+1. **Vektor-PDFs verwenden**: PDFs, die aus Vektorsoftware erstellt wurden (Illustrator, Inkscape),
+   liefern die saubersten Ergebnisse beim direkten Import.
 
-2. **Auf Ebenen prüfen**: Wenn dein PDF Ebenen hat, werden diese im Import-Dialog
-   aufgelistet. Wähle nur die Ebenen aus, die du benötigst.
+2. **Auf Ebenen prüfen**: Wenn dein PDF Ebenen hat, werden diese im Import-Dialog aufgelistet. Wähle
+   nur die Ebenen aus, die du benötigst.
 
-3. **Für Dokumente mit Text**: Als SVG mit in Pfade konvertierten Schriftarten
-   exportieren für beste Qualität, oder das Rendern-und-Tracing-Fallback verwenden.
+3. **Für Dokumente mit Text**: Als SVG mit in Pfade konvertierten Schriftarten exportieren für beste
+   Qualität, oder das Rendern-und-Tracing-Fallback verwenden.
 
-4. **Import-Dialog-Vorschau verwenden**: Schwellenwert- und Invertierungseinstellungen
-   im Tracing-Modus anpassen. Die Vorschau zeigt genau, wie das PDF
-   getraced wird.
+4. **Import-Dialog-Vorschau verwenden**: Schwellenwert- und Invertierungseinstellungen im
+   Tracing-Modus anpassen. Die Vorschau zeigt genau, wie das PDF getraced wird.
 
 ---
 
 ## Ruida-Import
 
-Ruida-Dateien (.rd) sind proprietäre binäre Auftragsdateien, die von Ruida-Controllern
-in vielen Laserschneidmaschinen verwendet werden. Diese Dateien enthalten sowohl
-Vektorgeometrie als auch Lasereinstellungen, organisiert in Ebenen (Farben).
+Ruida-Dateien (.rd) sind proprietäre binäre Auftragsdateien, die von Ruida-Controllern in vielen
+Laserschneidmaschinen verwendet werden. Diese Dateien enthalten sowohl Vektorgeometrie als auch
+Lasereinstellungen, organisiert in Ebenen (Farben).
 
 **Nach dem Import:**
 
@@ -332,35 +323,31 @@ Vektorgeometrie als auch Lasereinstellungen, organisiert in Ebenen (Farben).
 
 - **Nur-Lese-Import** – Ruida-Dateien können nur importiert, nicht exportiert werden
 - **Binärformat** – Direktes Bearbeiten von Original-.rd-Dateien nicht unterstützt
-- **Proprietäre Funktionen** – Einige fortgeschrittene Ruida-Funktionen werden
-  möglicherweise nicht vollständig unterstützt
+- **Proprietäre Funktionen** – Einige fortgeschrittene Ruida-Funktionen werden möglicherweise nicht
+  vollständig unterstützt
 
 ---
 
 ## LightBurn-Import
 
-LightBurn-Dateien (.lbrn / .lbrn2) sind proprietäre Projektdateien, die von
-der LightBurn-Laserschneidesoftware verwendet werden. Sie speichern
-Vektorgeometrie, die in farbcodierten Ebenen mit konfigurierbaren
-Laser-Einstellungen organisiert ist.
+LightBurn-Dateien (.lbrn / .lbrn2) sind proprietäre Projektdateien, die von der
+LightBurn-Laserschneidesoftware verwendet werden. Sie speichern Vektorgeometrie, die in
+farbcodierten Ebenen mit konfigurierbaren Laser-Einstellungen organisiert ist.
 
 **Nach dem Import:**
 
-- **Ebenen überprüfen** — LightBurn-Ebenen werden auf Dokumentebenen mit
-  entsprechenden Namen abgebildet
-- **Laser-Einstellungen prüfen** — Leistungs-, Geschwindigkeits- und
-  Durchgangseinstellungen aus LightBurn-Ebenen bleiben erhalten
-- **Pfade validieren** — Bestätigen, dass alle Schnittpfade vorhanden und
-  korrekt positioniert sind
+- **Ebenen überprüfen** — LightBurn-Ebenen werden auf Dokumentebenen mit entsprechenden Namen
+  abgebildet
+- **Laser-Einstellungen prüfen** — Leistungs-, Geschwindigkeits- und Durchgangseinstellungen aus
+  LightBurn-Ebenen bleiben erhalten
+- **Pfade validieren** — Bestätigen, dass alle Schnittpfade vorhanden und korrekt positioniert sind
 
 ### Einschränkungen
 
-- **Schreibgeschützter Import** — LightBurn-Dateien können nur importiert,
-  nicht exportiert werden
-- **Binärformat** — Direktes Bearbeiten von Original-.lbrn-Dateien nicht
-  unterstützt
-- **Proprietäre Funktionen** — Einige fortgeschrittene LightBurn-Funktionen
-  werden möglicherweise nicht vollständig unterstützt
+- **Schreibgeschützter Import** — LightBurn-Dateien können nur importiert, nicht exportiert werden
+- **Binärformat** — Direktes Bearbeiten von Original-.lbrn-Dateien nicht unterstützt
+- **Proprietäre Funktionen** — Einige fortgeschrittene LightBurn-Funktionen werden möglicherweise
+  nicht vollständig unterstützt
 
 ---
 
@@ -388,9 +375,9 @@ Der Import-Dialog bietet diese einstellbaren Parameter:
 | **Schwellenwert**      | Schwarz/Weiß-Grenze    | Niedriger = mehr Details, höher = einfacher                |
 | **Invertieren**        | Farben umkehren        | Helle Objekte auf dunklem Hintergrund tracen               |
 
-**Standardeinstellungen** funktionieren gut für die meisten Bilder. Der Dialog zeigt
-eine Live-Vorschau, die sich beim Anpassen dieser Einstellungen aktualisiert, sodass
-du das Tracing vor dem Importieren feinabstimmen kannst.
+**Standardeinstellungen** funktionieren gut für die meisten Bilder. Der Dialog zeigt eine
+Live-Vorschau, die sich beim Anpassen dieser Einstellungen aktualisiert, sodass du das Tracing vor
+dem Importieren feinabstimmen kannst.
 
 ### Bilder für Tracing vorbereiten
 
@@ -446,5 +433,5 @@ du das Tracing vor dem Importieren feinabstimmen kannst.
 - [Unterstützte Formate](formats) - Detaillierte Formatspezifikationen
 - [G-Code exportieren](exporting) - Ausgabeoptionen
 - [Schnellstart](../getting-started/quick-start.md) - Erstes Import-Tutorial
-- [Farbregeln](../application-settings/color-rules.md) - SVG-Farben
-  Schritttypen beim Import zuordnen
+- [Farbregeln](../application-settings/color-rules.md) - SVG-Farben Schritttypen beim Import
+  zuordnen

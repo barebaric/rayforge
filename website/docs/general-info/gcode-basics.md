@@ -1,5 +1,7 @@
 ---
-description: "G-code basics for laser cutting. Understand the G-code commands Rayforge generates to control your laser cutter or engraver."
+description:
+  "G-code basics for laser cutting. Understand the G-code commands Rayforge generates to control
+  your laser cutter or engraver."
 ---
 
 # G-code Basics
@@ -56,18 +58,18 @@ G0 X0 Y0 ;Return to origin
 
 **Key commands:**
 
-| Command | Description |
-| ------- | ----------- |
-| `G21` | Millimeters mode |
-| `G90` | Absolute positioning |
-| `G54` | Select work coordinate system 1 |
-| `T0` | Select tool 0 (laser head) |
-| `G0` | Rapid move (laser off) |
-| `G1` | Cut move (laser on) |
-| `M4` | Laser on (dynamic power mode) |
-| `M5` | Laser off |
-| `S500` | Set laser power to 500 (50% for 0-1000 range) |
-| `F3000` | Set feed rate to 3000 mm/min |
+| Command | Description                                   |
+| ------- | --------------------------------------------- |
+| `G21`   | Millimeters mode                              |
+| `G90`   | Absolute positioning                          |
+| `G54`   | Select work coordinate system 1               |
+| `T0`    | Select tool 0 (laser head)                    |
+| `G0`    | Rapid move (laser off)                        |
+| `G1`    | Cut move (laser on)                           |
+| `M4`    | Laser on (dynamic power mode)                 |
+| `M5`    | Laser off                                     |
+| `S500`  | Set laser power to 500 (50% for 0-1000 range) |
+| `F3000` | Set feed rate to 3000 mm/min                  |
 
 ---
 

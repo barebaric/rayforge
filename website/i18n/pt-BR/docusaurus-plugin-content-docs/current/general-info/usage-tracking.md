@@ -1,10 +1,13 @@
 # Rastreamento de uso
 
-O Rayforge inclui rastreamento de uso anônimo opcional para nos ajudar a entender como o aplicativo é usado e priorizar o desenvolvimento futuro. Esta página explica o que rastreamos, como funciona e sua privacidade.
+O Rayforge inclui rastreamento de uso anônimo opcional para nos ajudar a entender como o aplicativo
+é usado e priorizar o desenvolvimento futuro. Esta página explica o que rastreamos, como funciona e
+sua privacidade.
 
 ## Totalmente opcional
 
-O rastreamento de uso é **completamente opcional**. Ao iniciar o Rayforge pela primeira vez, você será perguntado se deseja participar:
+O rastreamento de uso é **completamente opcional**. Ao iniciar o Rayforge pela primeira vez, você
+será perguntado se deseja participar:
 
 - **Sim**: Dados de uso anônimos serão enviados ao nosso servidor de análise
 - **Não**: Nenhum dado é nunca coletado ou transmitido
@@ -13,8 +16,8 @@ Você pode alterar essa escolha a qualquer momento nas configurações gerais.
 
 ## O que rastreamos
 
-Quando ativado, coletamos apenas dados anônimos de visualizações de página -
-semelhante à análise de sites. Aqui está o que podemos ver:
+Quando ativado, coletamos apenas dados anônimos de visualizações de página - semelhante à análise de
+sites. Aqui está o que podemos ver:
 
 | Dados                         | Exemplo                   |
 | ----------------------------- | ------------------------- |
@@ -24,23 +27,22 @@ semelhante à análise de sites. Aqui está o que podemos ver:
 | Tempo na página               | 6m 3s                     |
 | ID de sessão                  | a1b2c3d4-e5f6-...         |
 
-O ID de sessão é um identificador aleatório gerado cada vez que você inicia
-o Rayforge. Ele nos permite distinguir entre diferentes sessões de uso
-mantendo o rastreamento totalmente anônimo.
+O ID de sessão é um identificador aleatório gerado cada vez que você inicia o Rayforge. Ele nos
+permite distinguir entre diferentes sessões de uso mantendo o rastreamento totalmente anônimo.
 
 ## O que vemos
 
 Aqui está um exemplo de como o painel de análise se parece:
 
-| Caminho                      | Visitantes | Visitas | Visualizações | Taxa de rejeição | Duração da visita |
-| ---------------------------- | ---------- | ------- | ------------- | ---------------- | ----------------- |
-| /                            | 1          | 1       | 5             | 0%               | 27m 35s           |
-| /machine-settings/general    | 1          | 1       | 5             | 0%               | 27m 27s           |
-| /view/3d                     | 1          | 1       | 2             | 0%               | 25m 14s           |
-| /camera-alignment-dialog     | 1          | 1       | 2             | 0%               | 6m 3s             |
-| /machine-settings/camera     | 1          | 1       | 2             | 0%               | 6m 16s            |
-| /settings/general            | 1          | 1       | 2             | 0%               | 16m 36s           |
-| /step-settings/rasterizer    | 1          | 1       | 2             | 0%               | 11s               |
+| Caminho                   | Visitantes | Visitas | Visualizações | Taxa de rejeição | Duração da visita |
+| ------------------------- | ---------- | ------- | ------------- | ---------------- | ----------------- |
+| /                         | 1          | 1       | 5             | 0%               | 27m 35s           |
+| /machine-settings/general | 1          | 1       | 5             | 0%               | 27m 27s           |
+| /view/3d                  | 1          | 1       | 2             | 0%               | 25m 14s           |
+| /camera-alignment-dialog  | 1          | 1       | 2             | 0%               | 6m 3s             |
+| /machine-settings/camera  | 1          | 1       | 2             | 0%               | 6m 16s            |
+| /settings/general         | 1          | 1       | 2             | 0%               | 16m 36s           |
+| /step-settings/rasterizer | 1          | 1       | 2             | 0%               | 11s               |
 
 ## O que NÃO rastreamos
 
@@ -63,7 +65,8 @@ Os dados de uso nos ajudam a:
 
 ## Como funciona
 
-O Rayforge usa [Umami](https://umami.is/), uma plataforma de análise de código aberto focada em privacidade. O rastreamento:
+O Rayforge usa [Umami](https://umami.is/), uma plataforma de análise de código aberto focada em
+privacidade. O rastreamento:
 
 - Envia pequenas requisições HTTP em segundo plano
 - Não afeta o desempenho do aplicativo

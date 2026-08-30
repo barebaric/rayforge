@@ -1,8 +1,7 @@
 # Importer-Architektur
 
-Dieses Dokument beschreibt die Architektur von Rayforge's Datei-Import-System,
-das die Konvertierung verschiedener Dateiformate (SVG, DXF, PNG, PDF, etc.) in
-Rayforge's Dokumentenmodell behandelt.
+Dieses Dokument beschreibt die Architektur von Rayforge's Datei-Import-System, das die Konvertierung
+verschiedener Dateiformate (SVG, DXF, PNG, PDF, etc.) in Rayforge's Dokumentenmodell behandelt.
 
 ## Inhaltsverzeichnis
 
@@ -17,8 +16,8 @@ Rayforge's Dokumentenmodell behandelt.
 
 ## Übersicht
 
-Das Import-System ist um eine vierphasige Pipeline herum aufgebaut, die Rohdatei-
-daten in vollständig positionierte Dokumentenobjekte transformiert. Jede Phase hat eine spezifische
+Das Import-System ist um eine vierphasige Pipeline herum aufgebaut, die Rohdatei- daten in
+vollständig positionierte Dokumentenobjekte transformiert. Jede Phase hat eine spezifische
 Verantwortung und produziert wohldefinierte Datenstrukturen.
 
 ```mermaid
@@ -76,8 +75,7 @@ details und Ebeneninformationen.
 
 **Methode:** `Importer.vectorize()`
 
-Konvertiert geparste Daten in Vektor-`Geometry`-Objekte gemäß der
-`VectorizationSpec`.
+Konvertiert geparste Daten in Vektor-`Geometry`-Objekte gemäß der `VectorizationSpec`.
 
 **Ausgabe:** `VectorizationResult`
 
@@ -93,8 +91,8 @@ Konvertiert geparste Daten in Vektor-`Geometry`-Objekte gemäß der
 
 **Klasse:** `NormalizationEngine`
 
-Berechnet Transformationsmatrizen, um native Koordinaten auf Welt-
-koordinaten basierend auf Benutzerabsicht abzubilden.
+Berechnet Transformationsmatrizen, um native Koordinaten auf Welt- koordinaten basierend auf
+Benutzerabsicht abzubilden.
 
 **Ausgabe:** `List[LayoutItem]`
 
@@ -116,8 +114,7 @@ Jedes `LayoutItem` enthält:
 
 **Klasse:** `ItemAssembler`
 
-Instanziiert Rayforge-Domänenobjekte (`WorkPiece`, `Layer`) basierend auf dem
-Layout-Plan.
+Instanziiert Rayforge-Domänenobjekte (`WorkPiece`, `Layer`) basierend auf dem Layout-Plan.
 
 **Ausgabe:** `ImportPayload`
 
@@ -133,9 +130,9 @@ Layout-Plan.
 
 **Methode:** `Importer.scan()`
 
-Ein leichtgewichtiger Scan, der Metadaten ohne volle Verarbeitung extrahiert. Verwendet für
-den Aufbau der UI für einen Importer, einschließlich Ebenenauswahlliste.
-Dies ist NICht Teil der Haupt-Import-Pipeline, die von `get_doc_items()` ausgeführt wird.
+Ein leichtgewichtiger Scan, der Metadaten ohne volle Verarbeitung extrahiert. Verwendet für den
+Aufbau der UI für einen Importer, einschließlich Ebenenauswahlliste. Dies ist NICht Teil der
+Haupt-Import-Pipeline, die von `get_doc_items()` ausgeführt wird.
 
 **Ausgabe:** `ImportManifest`
 
@@ -150,8 +147,7 @@ Dies ist NICht Teil der Haupt-Import-Pipeline, die von `get_doc_items()` ausgef�
 
 ## Koordinatensysteme
 
-Die Import-Pipeline behandelt mehrere Koordinatensysteme durch sorgfältige
-Transformation:
+Die Import-Pipeline behandelt mehrere Koordinatensysteme durch sorgfältige Transformation:
 
 ### Native Koordinaten (Eingabe)
 
@@ -186,9 +182,8 @@ Transformation:
 
 ### Importer (Basisklasse)
 
-Abstrakte Basisklasse, die die Schnittstelle für alle Importer definiert. Unterklassen müssen
-die Pipeline-Methoden implementieren und ihre Fähigkeiten über das
-`features`-Attribut deklarieren.
+Abstrakte Basisklasse, die die Schnittstelle für alle Importer definiert. Unterklassen müssen die
+Pipeline-Methoden implementieren und ihre Fähigkeiten über das `features`-Attribut deklarieren.
 
 **Features:**
 
@@ -199,16 +194,16 @@ die Pipeline-Methoden implementieren und ihre Fähigkeiten über das
 
 ### Datenstrukturen
 
-| Klasse                | Phase       | Zweck                      |
-| --------------------- | ----------- | -------------------------- |
-| `LayerInfo`           | Scan        | Leichtgewichtige Ebenenmetadaten |
-| `ImportManifest`      | Scan        | Scan-Phasen-Ergebnis       |
-| `LayerGeometry`       | Parse       | Geometrische Ebeneninfo    |
-| `ParsingResult`       | Parse       | Geometrische Fakten        |
-| `VectorizationResult` | Vektorisieren | Vektorgeometrie          |
-| `LayoutItem`          | Layout      | Transformationskonfiguration|
-| `ImportPayload`       | Zusammenbauen | Finale Ausgabe           |
-| `ImportResult`        | Final       | Vollständiger Ergebnis-Wrapper |
+| Klasse                | Phase         | Zweck                            |
+| --------------------- | ------------- | -------------------------------- |
+| `LayerInfo`           | Scan          | Leichtgewichtige Ebenenmetadaten |
+| `ImportManifest`      | Scan          | Scan-Phasen-Ergebnis             |
+| `LayerGeometry`       | Parse         | Geometrische Ebeneninfo          |
+| `ParsingResult`       | Parse         | Geometrische Fakten              |
+| `VectorizationResult` | Vektorisieren | Vektorgeometrie                  |
+| `LayoutItem`          | Layout        | Transformationskonfiguration     |
+| `ImportPayload`       | Zusammenbauen | Finale Ausgabe                   |
+| `ImportResult`        | Final         | Vollständiger Ergebnis-Wrapper   |
 
 ### Unterstützende Komponenten
 

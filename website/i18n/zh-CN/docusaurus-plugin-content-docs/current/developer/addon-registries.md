@@ -4,7 +4,8 @@
 
 ## 注册表的工作原理
 
-所有注册表都遵循类似的模式。它们提供 `register()` 方法来添加项目，以及各种查找方法来检索它们。大多数注册表还会跟踪哪个插件注册了每个项目，以便在插件卸载时进行清理。
+所有注册表都遵循类似的模式。它们提供 `register()`
+方法来添加项目，以及各种查找方法来检索它们。大多数注册表还会跟踪哪个插件注册了每个项目，以便在插件卸载时进行清理。
 
 以下是一般模式：
 
@@ -30,7 +31,8 @@ def register_steps(step_registry):
     step_registry.register(MyCustomStep, addon_name="my_addon")
 ```
 
-步骤的类名用作注册表键。您的步骤类应该继承自 `Step` 并定义 `TYPELABEL`、`HIDDEN` 等属性，并实现 `create()` 类方法。
+步骤的类名用作注册表键。您的步骤类应该继承自 `Step` 并定义 `TYPELABEL`、`HIDDEN` 等属性，并实现
+`create()` 类方法。
 
 ### 检索步骤
 
@@ -117,7 +119,7 @@ def register_actions(action_registry):
     # Create the action
     action = Gio.SimpleAction.new("my-action", None)
     action.connect("activate", lambda a, p: do_something())
-    
+
     # Register with optional menu and toolbar placement
     action_registry.register(
         action_name="my-action",

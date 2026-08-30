@@ -1,20 +1,24 @@
 ---
-description: "Set up your laser controller device in Rayforge. Configure serial port, baud rate, and connection settings for GRBL-based machines."
+description:
+  "Set up your laser controller device in Rayforge. Configure serial port, baud rate, and connection
+  settings for GRBL-based machines."
 ---
 
 # Device Settings
 
-The Device page in Machine Settings allows you to read and apply settings directly to your connected device (controller). These are also known as "dollar settings" or `$$` settings in GRBL.
+The Device page in Machine Settings allows you to read and apply settings directly to your connected
+device (controller). These are also known as "dollar settings" or `$$` settings in GRBL.
 
 ![Device Settings](/screenshots/machine-settings-device.webp)
 
-:::warning Caution When Changing Settings
-Incorrect firmware settings can cause your machine to behave unpredictably, lose position, or even damage hardware. Always record original values before making changes, and modify one setting at a time.
-:::
+:::warning Caution When Changing Settings Incorrect firmware settings can cause your machine to
+behave unpredictably, lose position, or even damage hardware. Always record original values before
+making changes, and modify one setting at a time. :::
 
 ## Overview
 
-The Device page provides direct access to your controller's firmware settings. This is where you can:
+The Device page provides direct access to your controller's firmware settings. This is where you
+can:
 
 - Read current settings from the device
 - Modify individual settings
@@ -32,7 +36,8 @@ These settings are stored on your controller (not in Rayforge) and persist acros
 
 ## Reading Settings
 
-Click the **Read from Device** button to fetch the current settings from your connected controller. This requires:
+Click the **Read from Device** button to fetch the current settings from your connected controller.
+This requires:
 
 - The machine to be connected
 - The driver to support reading device settings
@@ -50,28 +55,31 @@ After modifying settings, changes are applied to the device. The device may:
 You can also view/modify settings via G-code console:
 
 **View all settings:**
+
 ```
 $$
 ```
 
 **View single setting:**
+
 ```
 $100
 ```
 
 **Modify setting:**
+
 ```
 $100=80.0
 ```
 
 **Restore defaults:**
+
 ```
 $RST=$
 ```
 
-:::danger Restore Defaults Erases All Settings
-The `$RST=$` command resets all GRBL settings to factory defaults. You'll lose any calibration and tuning. Back up your settings first!
-:::
+:::danger Restore Defaults Erases All Settings The `$RST=$` command resets all GRBL settings to
+factory defaults. You'll lose any calibration and tuning. Back up your settings first! :::
 
 ---
 
@@ -86,18 +94,19 @@ These settings are most important for laser operation:
 **Purpose:** Enables laser-specific features in GRBL
 
 **When enabled (1):**
+
 - Laser automatically turns off during G0 (rapid) moves
 - Power dynamically adjusts during acceleration/deceleration
 - Prevents accidental burns during positioning
 
 **When disabled (0):**
+
 - Laser behaves like a spindle (CNC mode)
 - Doesn't turn off during rapids
 - **Dangerous for laser use!**
 
-:::warning Always Enable Laser Mode
-$32 should **always** be set to 1 for laser cutters. Disabled laser mode can cause unintended burns and fire hazards.
-:::
+:::warning Always Enable Laser Mode $32 should **always** be set to 1 for laser cutters. Disabled
+laser mode can cause unintended burns and fire hazards. :::
 
 ### $30 & $31 - Laser Power Range
 
@@ -107,12 +116,12 @@ $32 should **always** be set to 1 for laser cutters. Disabled laser mode can cau
 **Purpose:** Defines the power range for S commands
 
 **Typical values:**
+
 - $30=1000, $31=0 (S0-S1000 range, most common)
 - $30=255, $31=0 (S0-S255 range, some controllers)
 
-:::tip Matching Rayforge Configuration
-The "Max Power" setting in your [Laser Settings](laser) should match your $30 value. If $30=1000, set max power to 1000 in Rayforge.
-:::
+:::tip Matching Rayforge Configuration The "Max Power" setting in your [Laser Settings](laser)
+should match your $30 value. If $30=1000, set max power to 1000 in Rayforge. :::
 
 ### $130 & $131 - Maximum Travel
 
@@ -122,6 +131,7 @@ The "Max Power" setting in your [Laser Settings](laser) should match your $30 va
 **Purpose:** Defines your machine's working area
 
 **Why it matters:**
+
 - Soft limits ($20) use these values to prevent crashes
 - Defines the coordinate system bounds
 - Must match your physical machine size
@@ -134,77 +144,79 @@ The "Max Power" setting in your [Laser Settings](laser) should match your $30 va
 
 Controls stepper motor electrical signals and timing.
 
-| Setting | Description | Typical Value |
-|---------|-------------|---------------|
-| $0 | Step pulse time (μs) | 10 |
-| $1 | Step idle delay (ms) | 25 |
-| $2 | Step pulse invert (mask) | 0 |
-| $3 | Step direction invert (mask) | 0 |
-| $4 | Invert step enable pin | 0 |
-| $5 | Invert limit pins | 0 |
-| $6 | Invert probe pin | 0 |
+| Setting | Description                  | Typical Value |
+| ------- | ---------------------------- | ------------- |
+| $0      | Step pulse time (μs)         | 10            |
+| $1      | Step idle delay (ms)         | 25            |
+| $2      | Step pulse invert (mask)     | 0             |
+| $3      | Step direction invert (mask) | 0             |
+| $4      | Invert step enable pin       | 0             |
+| $5      | Invert limit pins            | 0             |
+| $6      | Invert probe pin             | 0             |
 
 ### Limits & Homing ($20-$27)
 
 Controls limit switches and homing behavior.
 
-| Setting | Description | Typical Value |
-|---------|-------------|---------------|
-| $20 | Soft limits enable | 0 or 1 |
-| $21 | Hard limits enable | 0 |
-| $22 | Homing cycle enable | 0 or 1 |
-| $23 | Homing direction invert | 0 |
-| $24 | Homing locate feed rate (mm/min) | 25 |
-| $25 | Homing search seek rate (mm/min) | 500 |
-| $26 | Homing debounce delay (ms) | 250 |
-| $27 | Homing pull-off distance (mm) | 1.0 |
+| Setting | Description                      | Typical Value |
+| ------- | -------------------------------- | ------------- |
+| $20     | Soft limits enable               | 0 or 1        |
+| $21     | Hard limits enable               | 0             |
+| $22     | Homing cycle enable              | 0 or 1        |
+| $23     | Homing direction invert          | 0             |
+| $24     | Homing locate feed rate (mm/min) | 25            |
+| $25     | Homing search seek rate (mm/min) | 500           |
+| $26     | Homing debounce delay (ms)       | 250           |
+| $27     | Homing pull-off distance (mm)    | 1.0           |
 
 ### Spindle & Laser ($30-$32)
 
-| Setting | Description | Laser Value |
-|---------|-------------|-------------|
-| $30 | Maximum spindle speed | 1000.0 |
-| $31 | Minimum spindle speed | 0.0 |
-| $32 | Laser mode enable | 1 |
+| Setting | Description           | Laser Value |
+| ------- | --------------------- | ----------- |
+| $30     | Maximum spindle speed | 1000.0      |
+| $31     | Minimum spindle speed | 0.0         |
+| $32     | Laser mode enable     | 1           |
 
 ### Axis Calibration ($100-$102)
 
 Defines how many stepper motor steps equal one millimeter of movement.
 
-| Setting | Description | Notes |
-|---------|-------------|-------|
-| $100 | X steps/mm | Depends on pulley/belt ratio |
-| $101 | Y steps/mm | Usually same as X |
-| $102 | Z steps/mm | Not used on most lasers |
+| Setting | Description | Notes                        |
+| ------- | ----------- | ---------------------------- |
+| $100    | X steps/mm  | Depends on pulley/belt ratio |
+| $101    | Y steps/mm  | Usually same as X            |
+| $102    | Z steps/mm  | Not used on most lasers      |
 
 **Calculating steps/mm:**
+
 ```
 steps/mm = (motor_steps_per_rev × microstepping) / (pulley_teeth × belt_pitch)
 ```
 
 **Example:** 200 steps/rev, 16 microstepping, 20 teeth pulley, GT2 belt:
+
 ```
 steps/mm = (200 × 16) / (20 × 2) = 3200 / 40 = 80
 ```
 
 ### Axis Speed & Acceleration ($110-$122)
 
-| Setting | Description | Typical Value |
-|---------|-------------|---------------|
-| $110 | X max rate (mm/min) | 5000.0 |
-| $111 | Y max rate (mm/min) | 5000.0 |
-| $112 | Z max rate (mm/min) | 500.0 |
-| $120 | X acceleration (mm/sec²) | 500.0 |
-| $121 | Y acceleration (mm/sec²) | 500.0 |
-| $122 | Z acceleration (mm/sec²) | 100.0 |
+| Setting | Description              | Typical Value |
+| ------- | ------------------------ | ------------- |
+| $110    | X max rate (mm/min)      | 5000.0        |
+| $111    | Y max rate (mm/min)      | 5000.0        |
+| $112    | Z max rate (mm/min)      | 500.0         |
+| $120    | X acceleration (mm/sec²) | 500.0         |
+| $121    | Y acceleration (mm/sec²) | 500.0         |
+| $122    | Z acceleration (mm/sec²) | 100.0         |
 
 ### Axis Travel ($130-$132)
 
-| Setting | Description | Notes |
-|---------|-------------|-------|
-| $130 | X max travel (mm) | Working area width |
-| $131 | Y max travel (mm) | Working area depth |
-| $132 | Z max travel (mm) | Z travel (if applicable) |
+| Setting | Description       | Notes                    |
+| ------- | ----------------- | ------------------------ |
+| $130    | X max travel (mm) | Working area width       |
+| $131    | Y max travel (mm) | Working area depth       |
+| $132    | Z max travel (mm) | Z travel (if applicable) |
 
 ---
 
@@ -270,9 +282,8 @@ $132=0.0       ; Z max travel
 2. Send each line (`$100=80.0`, etc.) via console
 3. Verify with `$$` command
 
-:::tip Regular Backups
-Back up your settings after any calibration or tuning. Store backups in a safe location.
-:::
+:::tip Regular Backups Back up your settings after any calibration or tuning. Store backups in a
+safe location. :::
 
 ---
 

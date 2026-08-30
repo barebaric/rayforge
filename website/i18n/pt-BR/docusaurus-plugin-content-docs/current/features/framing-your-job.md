@@ -1,19 +1,18 @@
 # Enquadramento do seu trabalho
 
-Aprenda a usar o recurso de enquadramento para visualizar os limites do seu
-trabalho e garantir o alinhamento correto antes de cortar.
+Aprenda a usar o recurso de enquadramento para visualizar os limites do seu trabalho e garantir o
+alinhamento correto antes de cortar.
 
 ## Visão geral
 
-O enquadramento permite visualizar os limites exatos do seu trabalho a laser
-traçando um contorno com o laser em baixa potência ou com o laser desligado.
-Isso ajuda a verificar o posicionamento e evitar erros custosos.
+O enquadramento permite visualizar os limites exatos do seu trabalho a laser traçando um contorno
+com o laser em baixa potência ou com o laser desligado. Isso ajuda a verificar o posicionamento e
+evitar erros custosos.
 
 ## Quando usar o enquadramento
 
 - **Primeiras configurações**: Verificar o posicionamento do material
-- **Posicionamento preciso**: Garantir que o design caiba nos limites do
-  material
+- **Posicionamento preciso**: Garantir que o design caiba nos limites do material
 - **Múltiplos trabalhos**: Confirmar o alinhamento antes de cada execução
 - **Materiais caros**: Verificar antes de realizar os cortes
 
@@ -38,27 +37,23 @@ Algumas máquinas suportam enquadramento em baixa potência com um feixe visíve
 3. **Execute a operação de enquadramento**
 4. **Observe o contorno** traçado na superfície do material
 
-:::warning Verifique sua máquina
-Nem todos os lasers suportam enquadramento em baixa potência com segurança.
-Consulte a documentação da sua máquina antes de usar este recurso.
-:::
+:::warning Verifique sua máquina Nem todos os lasers suportam enquadramento em baixa potência com
+segurança. Consulte a documentação da sua máquina antes de usar este recurso. :::
 
 ## Configurações de enquadramento
 
-Configure o comportamento do enquadramento nas configurações da cabeça do
-laser da sua máquina:
+Configure o comportamento do enquadramento nas configurações da cabeça do laser da sua máquina:
 
-- **Velocidade de enquadramento**: Quão rápido a cabeça do laser se move
-  durante o enquadramento. É definida por cabeça do laser, então se sua
-  máquina tem múltiplos lasers você pode usar velocidades diferentes para cada
-  um.
-- **Potência de enquadramento**: Potência do laser durante o enquadramento
-  (0 para desligado, % baixa para traço visível)
-- **Tempo de pausa nos cantos**: Uma breve pausa em cada canto do contorno do
-  enquadramento. Isso lhe dá um momento para ver exatamente onde cada canto
-  fica — especialmente útil em velocidades de enquadramento mais altas.
-- **Número de repetições**: Quantas vezes o contorno é traçado. Definir um
-  valor maior que um pode tornar o caminho mais fácil de seguir visualmente.
+- **Velocidade de enquadramento**: Quão rápido a cabeça do laser se move durante o enquadramento. É
+  definida por cabeça do laser, então se sua máquina tem múltiplos lasers você pode usar velocidades
+  diferentes para cada um.
+- **Potência de enquadramento**: Potência do laser durante o enquadramento (0 para desligado, %
+  baixa para traço visível)
+- **Tempo de pausa nos cantos**: Uma breve pausa em cada canto do contorno do enquadramento. Isso
+  lhe dá um momento para ver exatamente onde cada canto fica — especialmente útil em velocidades de
+  enquadramento mais altas.
+- **Número de repetições**: Quantas vezes o contorno é traçado. Definir um valor maior que um pode
+  tornar o caminho mais fácil de seguir visualmente.
 
 ## Usando os resultados do enquadramento
 
@@ -70,13 +65,11 @@ Após o enquadramento, você pode:
 
 ## Dicas para um enquadramento eficaz
 
-- **Marque os cantos**: Coloque pequenos pedaços de fita nos cantos como
-  referência
+- **Marque os cantos**: Coloque pequenos pedaços de fita nos cantos como referência
 - **Verifique o espaço**: Garanta espaço adequado ao redor do seu design
-- **Confirme a orientação**: Verifique se o material está orientado
-  corretamente
-- **Considere a folga de corte**: Lembre-se que os cortes serão ligeiramente
-  mais largos que os contornos
+- **Confirme a orientação**: Verifique se o material está orientado corretamente
+- **Considere a folga de corte**: Lembre-se que os cortes serão ligeiramente mais largos que os
+  contornos
 
 ## Enquadramento com câmera
 
@@ -91,17 +84,15 @@ Consulte [Integração com câmera](../machine/camera.md) para detalhes.
 
 ## Solução de problemas
 
-**O quadro não corresponde ao design**: Verifique a origem do trabalho e as
-configurações do sistema de coordenadas
+**O quadro não corresponde ao design**: Verifique a origem do trabalho e as configurações do sistema
+de coordenadas
 
-**O laser dispara durante o enquadramento**: Desative a potência de
-enquadramento ou verifique as configurações da máquina
+**O laser dispara durante o enquadramento**: Desative a potência de enquadramento ou verifique as
+configurações da máquina
 
-**O quadro está rápido demais para ver**: Reduza a velocidade de
-enquadramento nas configurações
+**O quadro está rápido demais para ver**: Reduza a velocidade de enquadramento nas configurações
 
-**A cabeça não alcança os cantos**: Verifique se o design está dentro da área
-de trabalho da máquina
+**A cabeça não alcança os cantos**: Verifique se o design está dentro da área de trabalho da máquina
 
 ## Notas de segurança
 
@@ -112,7 +103,6 @@ de trabalho da máquina
 
 ## Tópicos relacionados
 
-- [Posicionamento de peça](workpiece-positioning) - Guia completo de
-  posicionamento
+- [Posicionamento de peça](workpiece-positioning) - Guia completo de posicionamento
 - [Integração com câmera](../machine/camera.md)
 - [Guia de início rápido](../getting-started/quick-start.md)

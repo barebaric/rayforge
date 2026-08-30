@@ -1,10 +1,15 @@
 # Addon-Registries
 
-Registries sind die Art, wie Rayforge Erweiterbarkeit verwaltet. Jede Registry hält eine Sammlung verwandter Komponenten – Schritte, Produzenten, Aktionen und so weiter. Wenn dein Addon etwas registriert, wird es in der gesamten Anwendung verfügbar.
+Registries sind die Art, wie Rayforge Erweiterbarkeit verwaltet. Jede Registry hält eine Sammlung
+verwandter Komponenten – Schritte, Produzenten, Aktionen und so weiter. Wenn dein Addon etwas
+registriert, wird es in der gesamten Anwendung verfügbar.
 
 ## Wie Registries funktionieren
 
-Alle Registries folgen einem ähnlichen Muster. Sie stellen eine `register()`-Methode zum Hinzufügen von Elementen und verschiedene Suchmethoden zum Abrufen bereit. Die meisten Registries verfolgen auch, welches Addon jedes Element registriert hat, damit sie bereinigen können, wenn ein Addon entladen wird.
+Alle Registries folgen einem ähnlichen Muster. Sie stellen eine `register()`-Methode zum Hinzufügen
+von Elementen und verschiedene Suchmethoden zum Abrufen bereit. Die meisten Registries verfolgen
+auch, welches Addon jedes Element registriert hat, damit sie bereinigen können, wenn ein Addon
+entladen wird.
 
 Hier ist das allgemeine Muster:
 
@@ -15,11 +20,14 @@ def register_steps(step_registry):
     step_registry.register(MyCustomStep, addon_name="my_addon")
 ```
 
-Der Parameter `addon_name` ist optional, aber empfohlen. Er stellt sicher, dass deine Komponenten ordnungsgemäß entfernt werden, wenn der Benutzer dein Addon deaktiviert.
+Der Parameter `addon_name` ist optional, aber empfohlen. Er stellt sicher, dass deine Komponenten
+ordnungsgemäß entfernt werden, wenn der Benutzer dein Addon deaktiviert.
 
 ## Schritt-Registry
 
-Die Schritt-Registry (`StepRegistry`) verwaltet Schritttypen, die im Bedienfeld für Operationen erscheinen. Jeder Schritt repräsentiert einen Typ von Operation, den Benutzer zu ihrem Auftrag hinzufügen können.
+Die Schritt-Registry (`StepRegistry`) verwaltet Schritttypen, die im Bedienfeld für Operationen
+erscheinen. Jeder Schritt repräsentiert einen Typ von Operation, den Benutzer zu ihrem Auftrag
+hinzufügen können.
 
 ### Einen Schritt registrieren
 
@@ -30,7 +38,9 @@ def register_steps(step_registry):
     step_registry.register(MyCustomStep, addon_name="my_addon")
 ```
 
-Der Klassenname des Schritts wird als Registrierungsschlüssel verwendet. Deine Schrittklasse sollte von `Step` erben und Attribute wie `TYPELABEL`, `HIDDEN` definieren und die Klassenmethode `create()` implementieren.
+Der Klassenname des Schritts wird als Registrierungsschlüssel verwendet. Deine Schrittklasse sollte
+von `Step` erben und Attribute wie `TYPELABEL`, `HIDDEN` definieren und die Klassenmethode
+`create()` implementieren.
 
 ### Schritte abrufen
 
@@ -52,7 +62,9 @@ factories = step_registry.get_factories()
 
 ## Produzenten-Registry
 
-Die Produzenten-Registry (`ProducerRegistry`) verwaltet Ops-Produzenten. Produzenten generieren die Werkzeugweg-Operationen für einen Schritt – im Wesentlichen konvertieren sie dein Werkstück in Maschinenanweisungen.
+Die Produzenten-Registry (`ProducerRegistry`) verwaltet Ops-Produzenten. Produzenten generieren die
+Werkzeugweg-Operationen für einen Schritt – im Wesentlichen konvertieren sie dein Werkstück in
+Maschinenanweisungen.
 
 ### Einen Produzenten registrieren
 
@@ -63,7 +75,8 @@ def register_producers(producer_registry):
     producer_registry.register(MyCustomProducer, addon_name="my_addon")
 ```
 
-Standardmäßig wird der Klassenname zum Registrierungsschlüssel. Du kannst einen benutzerdefinierten Namen angeben:
+Standardmäßig wird der Klassenname zum Registrierungsschlüssel. Du kannst einen benutzerdefinierten
+Namen angeben:
 
 ```python
 producer_registry.register(MyCustomProducer, name="custom_name", addon_name="my_addon")
@@ -81,7 +94,9 @@ all_producers = producer_registry.all_producers()
 
 ## Transformatoren-Registry
 
-Die Transformatoren-Registry (`TransformerRegistry`) verwaltet Ops-Transformatoren. Transformatoren bearbeiten Operationen nach, nachdem Produzenten sie generiert haben – denke an Aufgaben wie Pfadoptimierung, Glättung oder Haltelaschen hinzufügen.
+Die Transformatoren-Registry (`TransformerRegistry`) verwaltet Ops-Transformatoren. Transformatoren
+bearbeiten Operationen nach, nachdem Produzenten sie generiert haben – denke an Aufgaben wie
+Pfadoptimierung, Glättung oder Haltelaschen hinzufügen.
 
 ### Einen Transformatoren registrieren
 
@@ -104,7 +119,9 @@ all_transformers = transformer_registry.all_transformers()
 
 ## Aktions-Registry
 
-Die Aktions-Registry (`ActionRegistry`) verwaltet Fensteraktionen. Aktionen sind die Art, wie du Menüeinträge, Toolbar-Buttons und Tastaturkürzel hinzufügst. Dies ist eine der funktionsreicheren Registries.
+Die Aktions-Registry (`ActionRegistry`) verwaltet Fensteraktionen. Aktionen sind die Art, wie du
+Menüeinträge, Toolbar-Buttons und Tastaturkürzel hinzufügst. Dies ist eine der funktionsreicheren
+Registries.
 
 ### Eine Aktion registrieren
 
@@ -117,7 +134,7 @@ def register_actions(action_registry):
     # Create the action
     action = Gio.SimpleAction.new("my-action", None)
     action.connect("activate", lambda a, p: do_something())
-    
+
     # Register with optional menu and toolbar placement
     action_registry.register(
         action_name="my-action",
@@ -176,7 +193,8 @@ shortcuts = action_registry.get_all_with_shortcuts()
 
 ## Befehls-Registry
 
-Die Befehls-Registry (`CommandRegistry`) verwaltet Editor-Befehle. Befehle erweitern die Funktionalität des Dokumenteditors.
+Die Befehls-Registry (`CommandRegistry`) verwaltet Editor-Befehle. Befehle erweitern die
+Funktionalität des Dokumenteditors.
 
 ### Einen Befehl registrieren
 
@@ -201,7 +219,9 @@ all_commands = command_registry.all_commands()
 
 ## Asset-Typ-Registry
 
-Die Asset-Typ-Registry (`AssetTypeRegistry`) verwaltet Asset-Typen, die in Dokumenten gespeichert werden können. Dies ermöglicht dynamische Deserialisierung – wenn Rayforge ein Dokument lädt, das dein benutzerdefiniertes Asset enthält, weiß es, wie es rekonstruiert wird.
+Die Asset-Typ-Registry (`AssetTypeRegistry`) verwaltet Asset-Typen, die in Dokumenten gespeichert
+werden können. Dies ermöglicht dynamische Deserialisierung – wenn Rayforge ein Dokument lädt, das
+dein benutzerdefiniertes Asset enthält, weiß es, wie es rekonstruiert wird.
 
 ### Einen Asset-Typ registrieren
 
@@ -216,7 +236,8 @@ def register_asset_types(asset_type_registry):
     )
 ```
 
-Der `type_name` ist die Zeichenfolge, die in serialisierten Dokumenten verwendet wird, um deinen Asset-Typ zu identifizieren.
+Der `type_name` ist die Zeichenfolge, die in serialisierten Dokumenten verwendet wird, um deinen
+Asset-Typ zu identifizieren.
 
 ### Asset-Typen abrufen
 
@@ -230,7 +251,8 @@ all_types = asset_type_registry.all_types()
 
 ## Layout-Strategie-Registry
 
-Die Layout-Strategie-Registry (`LayoutStrategyRegistry`) verwaltet Layout-Strategien zum Anordnen von Inhalten im Dokumenteditor.
+Die Layout-Strategie-Registry (`LayoutStrategyRegistry`) verwaltet Layout-Strategien zum Anordnen
+von Inhalten im Dokumenteditor.
 
 ### Eine Layout-Strategie registrieren
 
@@ -245,7 +267,8 @@ def register_layout_strategies(layout_registry):
     )
 ```
 
-Beachte, dass UI-Metadaten wie Beschriftungen und Kürzel über die Aktions-Registry registriert werden sollten, nicht hier.
+Beachte, dass UI-Metadaten wie Beschriftungen und Kürzel über die Aktions-Registry registriert
+werden sollten, nicht hier.
 
 ### Layout-Strategien abrufen
 
@@ -262,7 +285,8 @@ strategy_names = layout_registry.list_names()
 
 ## Importer-Registry
 
-Die Importer-Registry (`ImporterRegistry`) verwaltet Datei-Importer. Importer behandeln das Laden externer Dateien in Rayforge.
+Die Importer-Registry (`ImporterRegistry`) verwaltet Datei-Importer. Importer behandeln das Laden
+externer Dateien in Rayforge.
 
 ### Einen Importer registrieren
 
@@ -273,7 +297,8 @@ def register_importers(importer_registry):
     importer_registry.register(MyCustomImporter, addon_name="my_addon")
 ```
 
-Deine Importer-Klasse sollte Klassenattribute `extensions` und `mime_types` definieren, damit die Registry weiß, welche Dateien sie behandelt.
+Deine Importer-Klasse sollte Klassenattribute `extensions` und `mime_types` definieren, damit die
+Registry weiß, welche Dateien sie behandelt.
 
 ### Importer abrufen
 
@@ -302,7 +327,8 @@ importers = importer_registry.by_feature(ImporterFeature.SOME_FEATURE)
 
 ## Exporter-Registry
 
-Die Exporter-Registry (`ExporterRegistry`) verwaltet Datei-Exporter. Exporter behandeln das Speichern von Rayforge-Dokumenten oder Operationen in externe Formate.
+Die Exporter-Registry (`ExporterRegistry`) verwaltet Datei-Exporter. Exporter behandeln das
+Speichern von Rayforge-Dokumenten oder Operationen in externe Formate.
 
 ### Einen Exporter registrieren
 
@@ -330,7 +356,8 @@ filters = exporter_registry.get_all_filters()
 
 ## Renderer-Registry
 
-Die Renderer-Registry (`RendererRegistry`) verwaltet Asset-Renderer. Renderer zeigen Assets in der UI an.
+Die Renderer-Registry (`RendererRegistry`) verwaltet Asset-Renderer. Renderer zeigen Assets in der
+UI an.
 
 ### Einen Renderer registrieren
 
@@ -341,7 +368,8 @@ def register_renderers(renderer_registry):
     renderer_registry.register(MyAssetRenderer(), addon_name="my_addon")
 ```
 
-Beachte, dass du eine Renderer-Instanz registrierst, nicht eine Klasse. Der Klassenname des Renderers wird als Registrierungsschlüssel verwendet.
+Beachte, dass du eine Renderer-Instanz registrierst, nicht eine Klasse. Der Klassenname des
+Renderers wird als Registrierungsschlüssel verwendet.
 
 ### Renderer abrufen
 
@@ -358,7 +386,8 @@ all_renderers = renderer_registry.all()
 
 ## Bibliotheks-Manager
 
-Der Bibliotheks-Manager (`LibraryManager`) verwaltet Materialbibliotheken. Obwohl technisch keine Registry, folgt er ähnlichen Mustern zum Registrieren von Addon-bereitgestellten Bibliotheken.
+Der Bibliotheks-Manager (`LibraryManager`) verwaltet Materialbibliotheken. Obwohl technisch keine
+Registry, folgt er ähnlichen Mustern zum Registrieren von Addon-bereitgestellten Bibliotheken.
 
 ### Eine Materialbibliothek registrieren
 
@@ -370,4 +399,5 @@ def register_material_libraries(library_manager):
     library_manager.add_library_from_path(lib_path)
 ```
 
-Registrierte Bibliotheken sind standardmäßig schreibgeschützt. Benutzer können die Materialien ansehen und verwenden, aber sie können sie nicht über die UI ändern.
+Registrierte Bibliotheken sind standardmäßig schreibgeschützt. Benutzer können die Materialien
+ansehen und verwenden, aber sie können sie nicht über die UI ändern.

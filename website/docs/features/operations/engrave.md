@@ -1,10 +1,14 @@
 ---
-description: "Laser engraving modes in Rayforge — constant power, variable power, dithering, and 3D relief. Configure engrave operations for photos, text, and artwork."
+description:
+  "Laser engraving modes in Rayforge — constant power, variable power, dithering, and 3D relief.
+  Configure engrave operations for photos, text, and artwork."
 ---
 
 # Engrave
 
-Engrave operations fill areas with raster scanning lines, supporting multiple modes for different engraving effects. From smooth grayscale photos to 3D relief effects, choose the mode that best suits your design and material.
+Engrave operations fill areas with raster scanning lines, supporting multiple modes for different
+engraving effects. From smooth grayscale photos to 3D relief effects, choose the mode that best
+suits your design and material.
 
 ## Overview
 
@@ -20,7 +24,8 @@ Engrave operations:
 
 ### Variable Power Mode
 
-Variable Power mode varies laser power continuously based on image brightness, creating smooth grayscale engraving with gradual transitions.
+Variable Power mode varies laser power continuously based on image brightness, creating smooth
+grayscale engraving with gradual transitions.
 
 **Best For:**
 
@@ -38,7 +43,8 @@ Variable Power mode varies laser power continuously based on image brightness, c
 
 ### Constant Power Mode
 
-Constant Power mode engraves at full power, with a threshold determining which pixels are engraved. This creates clean black/white results.
+Constant Power mode engraves at full power, with a threshold determining which pixels are engraved.
+This creates clean black/white results.
 
 **Best For:**
 
@@ -56,7 +62,8 @@ Constant Power mode engraves at full power, with a threshold determining which p
 
 ### Dither Mode
 
-Dither mode converts grayscale images to binary patterns using dithering algorithms, enabling high-quality photo engraving with better tonal reproduction than simple threshold-based methods.
+Dither mode converts grayscale images to binary patterns using dithering algorithms, enabling
+high-quality photo engraving with better tonal reproduction than simple threshold-based methods.
 
 **Best For:**
 
@@ -74,7 +81,8 @@ Dither mode converts grayscale images to binary patterns using dithering algorit
 
 ### Multiple Depths Mode
 
-Multiple Depths mode creates 3D relief effects by varying laser power based on image brightness, with multiple passes for deeper carving.
+Multiple Depths mode creates 3D relief effects by varying laser power based on image brightness,
+with multiple passes for deeper carving.
 
 **Best For:**
 
@@ -140,11 +148,13 @@ Select the engraving mode that best suits your needs:
 
 ## Engrave Settings
 
-The **Engrave** and **Power** groups on the *Step Settings* tab control the scan pattern, mode, and power modulation, in row order. Laser power and speed live on the **Laser** page (see below).
+The **Engrave** and **Power** groups on the _Step Settings_ tab control the scan pattern, mode, and
+power modulation, in row order. Laser power and speed live on the **Laser** page (see below).
 
 ### Mode
 
-The **Mode** row selects one of the four engraving modes. Each mode exposes different settings, described below.
+The **Mode** row selects one of the four engraving modes. Each mode exposes different settings,
+described below.
 
 ### Mode-Specific Settings
 
@@ -181,12 +191,17 @@ Use invert for lithophanes (light areas should be thin) or embossing (raised are
 
 **Brightness Range:**
 
-Controls how image brightness values are mapped to laser power. The histogram shows the distribution of brightness values in your image.
+Controls how image brightness values are mapped to laser power. The histogram shows the distribution
+of brightness values in your image.
 
-- **Auto Levels** (default): Automatically adjusts the black and white points based on image content. Values below the black point are treated as black, values above the white point are treated as white. This stretches the image's contrast to use the full power range.
-- **Manual Mode**: Disable Auto Levels to manually set black and white points by dragging the markers on the histogram.
+- **Auto Levels** (default): Automatically adjusts the black and white points based on image
+  content. Values below the black point are treated as black, values above the white point are
+  treated as white. This stretches the image's contrast to use the full power range.
+- **Manual Mode**: Disable Auto Levels to manually set black and white points by dragging the
+  markers on the histogram.
 
 This is particularly useful for:
+
 - Low-contrast images that need contrast enhancement
 - Images with limited tonal range
 - Ensuring consistent results across different source images
@@ -221,9 +236,11 @@ Choose the algorithm that best suits your image and material:
 | Bayer 4x4       | Medium  | Fast    | Balanced halftone                   |
 | Bayer 8x8       | High    | Medium  | Fine detail, subtle patterns        |
 
-**Floyd-Steinberg** is default and recommended for most photo engravings. It uses error diffusion to distribute quantization errors to neighboring pixels, creating natural-looking results.
+**Floyd-Steinberg** is default and recommended for most photo engravings. It uses error diffusion to
+distribute quantization errors to neighboring pixels, creating natural-looking results.
 
-**Bayer dithering** creates regular patterns that can produce artistic effects resembling traditional halftone printing.
+**Bayer dithering** creates regular patterns that can produce artistic effects resembling
+traditional halftone printing.
 
 #### Multiple Depths Mode Settings
 
@@ -273,10 +290,10 @@ Use invert for lithophanes (light areas should be thin) or embossing (raised are
 
 **Recommended:** 0.1mm for general use
 
-:::tip Resolution Match
-:::
+:::tip Resolution Match :::
 
-For images, line interval should match or exceed image resolution. If your image is 10 pixels/mm (254 DPI), use 0.1mm line interval or smaller.
+For images, line interval should match or exceed image resolution. If your image is 10 pixels/mm
+(254 DPI), use 0.1mm line interval or smaller.
 
 #### Scan Direction
 
@@ -295,21 +312,28 @@ For images, line interval should match or exceed image resolution. If your image
 
 **Bidirectional Scanning:**
 
-Rayforge always scans bidirectionally (left-to-right, then right-to-left), since firing on every pass roughly doubles engraving speed compared to returning without firing between lines.
+Rayforge always scans bidirectionally (left-to-right, then right-to-left), since firing on every
+pass roughly doubles engraving speed compared to returning without firing between lines.
 
-Slight mechanical or firing delay differences between the two directions can cause visible banding on some machines. If you see this, calibrate the **Bidirectional Scan Offset** below to correct it directly, rather than losing the speed benefit.
+Slight mechanical or firing delay differences between the two directions can cause visible banding
+on some machines. If you see this, calibrate the **Bidirectional Scan Offset** below to correct it
+directly, rather than losing the speed benefit.
 
 #### Bidirectional Scan Offset
 
-Corrects a fixed mechanical or firing delay skew between left-to-right and right-to-left raster passes, which otherwise misaligns alternate scan rows (visible as banding, especially in photo engraves).
+Corrects a fixed mechanical or firing delay skew between left-to-right and right-to-left raster
+passes, which otherwise misaligns alternate scan rows (visible as banding, especially in photo
+engraves).
 
 - Set in millimeters, positive or negative depending on which direction needs to shift
-- Applies a constant shift regardless of speed; if the skew varies with speed, calibrate for your typical engraving speed
+- Applies a constant shift regardless of speed; if the skew varies with speed, calibrate for your
+  typical engraving speed
 - Defaults to 0 (no correction)
 
 **Calibrating the offset:**
 
-1. Engrave a test pattern with visible vertical detail (e.g. a fine grid) using bidirectional scanning
+1. Engrave a test pattern with visible vertical detail (e.g. a fine grid) using bidirectional
+   scanning
 2. Compare alternate rows to find the direction and amount of misalignment
 3. Adjust the offset in small increments (0.01-0.05mm) and re-test until alternating rows line up
 

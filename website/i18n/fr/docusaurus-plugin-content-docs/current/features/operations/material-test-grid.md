@@ -1,10 +1,13 @@
 # Grille de Test de Matériau
 
-Le générateur de Grille de Test de Matériau crée des motifs de test paramétriques pour t'aider à trouver les paramètres laser optimaux pour différents matériaux.
+Le générateur de Grille de Test de Matériau crée des motifs de test paramétriques pour t'aider à
+trouver les paramètres laser optimaux pour différents matériaux.
 
 ## Aperçu
 
-Les tests de matériau sont essentiels pour le travail laser - différents matériaux nécessitent différents paramètres de puissance et vitesse. La Grille de Test de Matériau automatise ce processus en :
+Les tests de matériau sont essentiels pour le travail laser - différents matériaux nécessitent
+différents paramètres de puissance et vitesse. La Grille de Test de Matériau automatise ce processus
+en :
 
 - Générant des grilles de test avec des plages de vitesse/puissance configurables
 - Fournissant des préréglages pour les types de laser courants (Diode, CO2)
@@ -31,7 +34,8 @@ Rayforge inclut des préréglages pour des scénarios courants :
 | **Gravure CO2**   | 3000-20000 mm/min | 10-50%             | Gravure laser CO2   |
 | **Coupe CO2**     | 1000-20000 mm/min | 30-100%            | Coupe laser CO2     |
 
-Les préréglages sont des points de départ - tu peux ajuster tous les paramètres après en avoir sélectionné un.
+Les préréglages sont des points de départ - tu peux ajuster tous les paramètres après en avoir
+sélectionné un.
 
 ### Étape 3 : Configurer les Paramètres
 
@@ -68,12 +72,14 @@ Ajuste les paramètres de la grille de test dans la boîte de dialogue des param
 
 #### Étiquettes
 
-- **Inclure les Étiquettes** : Activer/désactiver les étiquettes d'axe montrant les valeurs de vitesse et puissance
+- **Inclure les Étiquettes** : Activer/désactiver les étiquettes d'axe montrant les valeurs de
+  vitesse et puissance
 - Les étiquettes apparaissent sur les bords gauche et supérieur
 - **Puissance des étiquettes (%)** : Paramètre de puissance pour graver les étiquettes
 - **Vitesse des étiquettes (mm/min)** : Vitesse pour graver les étiquettes (défaut : 1000 mm/min)
 
-Les étiquettes sont gravées en premier, avant la grille de test, pour ne pas être masquées par le motif de test.
+Les étiquettes sont gravées en premier, avant la grille de test, pour ne pas être masquées par le
+motif de test.
 
 #### Intervalle de ligne (Test gravure uniquement)
 
@@ -83,7 +89,8 @@ Les étiquettes sont gravées en premier, avant la grille de test, pour ne pas �
 
 ### Étape 4 : Générer la Grille
 
-Clique sur **Générer** pour créer le motif de test. La grille apparaît sur ton canevas comme une pièce spéciale.
+Clique sur **Générer** pour créer le motif de test. La grille apparaît sur ton canevas comme une
+pièce spéciale.
 
 ## Comprendre la Disposition de la Grille
 
@@ -121,12 +128,16 @@ Puissance (%)     Vitesse (mm/min) →
 
 ## Ordre d'Exécution (Optimisation du Risque)
 
-Rayforge exécute les cellules de test dans un **ordre optimisé par risque** pour prévenir les dommages au matériau :
+Rayforge exécute les cellules de test dans un **ordre optimisé par risque** pour prévenir les
+dommages au matériau :
 
-1. **Vitesse la plus élevée d'abord** : Les vitesses rapides sont plus sûres (moins d'accumulation de chaleur)
-2. **Puissance la plus basse à l'intérieur de la vitesse** : Minimise le risque à chaque niveau de vitesse
+1. **Vitesse la plus élevée d'abord** : Les vitesses rapides sont plus sûres (moins d'accumulation
+   de chaleur)
+2. **Puissance la plus basse à l'intérieur de la vitesse** : Minimise le risque à chaque niveau de
+   vitesse
 
-Cela prévient le brunissage ou le feu de commencer avec des combinaisons lentes et à haute puissance.
+Cela prévient le brunissage ou le feu de commencer avec des combinaisons lentes et à haute
+puissance.
 
 **Exemple d'ordre d'exécution pour une grille 3×3 :**
 
@@ -165,15 +176,15 @@ Documente tes paramètres réussis pour référence future :
 - Nombre de passes
 - Toutes notes spéciales
 
-:::tip Base de Données Matériaux
-Envisage de créer un document de référence avec tes résultats de test de matériau pour une recherche rapide dans les projets futurs.
-:::
+:::tip Base de Données Matériaux Envisage de créer un document de référence avec tes résultats de
+test de matériau pour une recherche rapide dans les projets futurs. :::
 
 ## Utilisation Avancée
 
 ### Combiner avec d'Autres Opérations
 
-Les grilles de test de matériau sont des pièces régulières - tu peux les combiner avec d'autres opérations :
+Les grilles de test de matériau sont des pièces régulières - tu peux les combiner avec d'autres
+opérations :
 
 **Exemple de flux de travail :**
 
@@ -199,30 +210,31 @@ Pour un réglage fin, crée des tests à plage étroite :
 
 ### Différents Matériaux, Même Grille
 
-Exécute la même configuration de grille sur différents matériaux pour construire ta bibliothèque de matériaux plus rapidement.
+Exécute la même configuration de grille sur différents matériaux pour construire ta bibliothèque de
+matériaux plus rapidement.
 
 ## Conseils & Meilleures Pratiques
 
 ### Conception de Grille
 
-✅ **Commence avec les préréglages** - Bons points de départ pour les scénarios courants
-✅ **Utilise des grilles 5×5** - Bon équilibre entre détail et temps de test
-✅ **Active les étiquettes** - Essentiel pour identifier les résultats
-✅ **Garde les carrés ≥20mm** - Plus facile à voir et mesurer les résultats
+✅ **Commence avec les préréglages** - Bons points de départ pour les scénarios courants ✅
+**Utilise des grilles 5×5** - Bon équilibre entre détail et temps de test ✅ **Active les
+étiquettes** - Essentiel pour identifier les résultats ✅ **Garde les carrés ≥20mm** - Plus facile à
+voir et mesurer les résultats
 
 ### Stratégie de Test
 
-✅ **Teste sur du rebut d'abord** - Ne teste jamais sur le matériau final
-✅ **Une variable à la fois** - Teste la plage de vitesse OU de puissance, pas les deux extrêmes
-✅ **Permet le refroidissement** - Attends entre les tests sur le même matériau
-✅ **Mise au point cohérente** - Même distance de mise au point pour tous les tests
+✅ **Teste sur du rebut d'abord** - Ne teste jamais sur le matériau final ✅ **Une variable à la
+fois** - Teste la plage de vitesse OU de puissance, pas les deux extrêmes ✅ **Permet le
+refroidissement** - Attends entre les tests sur le même matériau ✅ **Mise au point cohérente** -
+Même distance de mise au point pour tous les tests
 
 ### Sécurité
 
-⚠️ **Surveille les tests** - Ne laisse jamais les tests en cours sans surveillance
-⚠️ **Commence de manière conservatrice** - Commence avec des plages de puissance plus basses
-⚠️ **Vérifie la ventilation** - Assure une extraction des fumées appropriée
-⚠️ **Surveille le feu** - Aie un extincteur prêt
+⚠️ **Surveille les tests** - Ne laisse jamais les tests en cours sans surveillance ⚠️ **Commence de
+manière conservatrice** - Commence avec des plages de puissance plus basses ⚠️ **Vérifie la
+ventilation** - Assure une extraction des fumées appropriée ⚠️ **Surveille le feu** - Aie un
+extincteur prêt
 
 ## Dépannage
 

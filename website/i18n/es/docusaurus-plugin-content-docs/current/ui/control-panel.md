@@ -1,47 +1,41 @@
 # Panel Inferior
 
-El Panel Inferior en la parte inferior de la ventana de Rayforge proporciona
-control manual sobre la posición de tu cortador láser, estado de la máquina en
-tiempo real, una vista de registro para monitorear operaciones y un visor de
-código G.
+El Panel Inferior en la parte inferior de la ventana de Rayforge proporciona control manual sobre la
+posición de tu cortador láser, estado de la máquina en tiempo real, una vista de registro para
+monitorear operaciones y un visor de código G.
 
 ## Resumen
 
 El Panel Inferior combina varias funciones en una interfaz conveniente:
 
-1. **Vista con Pestañas**: Alterna entre Consola y Visor de Código G usando la
-   tira de iconos a la izquierda
-2. **Controles de Desplazamiento**: Movimiento y posicionamiento manual
-   (siempre visibles)
+1. **Vista con Pestañas**: Alterna entre Consola y Visor de Código G usando la tira de iconos a la
+   izquierda
+2. **Controles de Desplazamiento**: Movimiento y posicionamiento manual (siempre visibles)
 3. **Estado de la Máquina**: Posición en tiempo real y estado de conexión
-4. **Sistema de Coordenadas de Trabajo (WCS)**: Selección rápida de WCS
-   (siempre visibles)
+4. **Sistema de Coordenadas de Trabajo (WCS)**: Selección rápida de WCS (siempre visibles)
 
-El lado izquierdo del panel contiene una tira de iconos con pestañas que te
-permite alternar entre la **Consola** y el **Visor de Código G**. Los controles
-de desplazamiento y WCS en el lado derecho permanecen visibles
-independientemente de la pestaña activa.
+El lado izquierdo del panel contiene una tira de iconos con pestañas que te permite alternar entre
+la **Consola** y el **Visor de Código G**. Los controles de desplazamiento y WCS en el lado derecho
+permanecen visibles independientemente de la pestaña activa.
 
 ![Panel Inferior](/screenshots/bottom-panel-console.webp)
 
 ## Accediendo al Panel Inferior
 
-El Panel Inferior siempre está visible en la parte inferior de la ventana
-principal. Puede alternarse vía:
+El Panel Inferior siempre está visible en la parte inferior de la ventana principal. Puede
+alternarse vía:
 
 - **Menú**: Ver → Panel Inferior
 - **Atajo de Teclado**: Ctrl+L
 
-:::note Se Requiere Conexión
-Los controles de desplazamiento solo están disponibles cuando se está conectado a una máquina
-que soporta operaciones de desplazamiento.
-:::
+:::note Se Requiere Conexión Los controles de desplazamiento solo están disponibles cuando se está
+conectado a una máquina que soporta operaciones de desplazamiento. :::
 
 ## Controles de Desplazamiento
 
 Los controles de desplazamiento proporcionan control manual sobre la posición de tu cortador láser,
-permitiéndote mover precisamente la cabeza del láser para configuración, alineación y
-propósitos de prueba.
+permitiéndote mover precisamente la cabeza del láser para configuración, alineación y propósitos de
+prueba.
 
 ### Controles de Homing
 
@@ -54,10 +48,8 @@ Lleva los ejes de tu máquina al origen para establecer una posición de referen
 | Home Z    | Origen eje Z          | Mueve el eje Z a su posición de origen         |
 | Home Todo | Origen todos los ejes | Lleva todos los ejes al origen simultáneamente |
 
-:::tip Secuencia de Homing
-Se recomienda llevar todos los ejes al origen antes de iniciar cualquier trabajo para asegurar
-posicionamiento preciso.
-:::
+:::tip Secuencia de Homing Se recomienda llevar todos los ejes al origen antes de iniciar cualquier
+trabajo para asegurar posicionamiento preciso. :::
 
 ### Movimiento Direccional
 
@@ -82,9 +74,8 @@ Los controles de desplazamiento proporcionan botones para movimiento direccional
 | Z+                     | Eje Z hacia arriba                      | Re Pág           |
 | Z-                     | Eje Z hacia abajo                       | Av Pág           |
 
-:::note Se Requiere Foco
-Los atajos de teclado solo funcionan cuando la ventana principal tiene foco.
-:::
+:::note Se Requiere Foco Los atajos de teclado solo funcionan cuando la ventana principal tiene
+foco. :::
 
 ### Retroalimentación Visual
 
@@ -108,8 +99,7 @@ Configura el comportamiento de las operaciones de desplazamiento:
 
 - Usa velocidades más bajas (100-500 mm/min) para posicionamiento preciso
 - Usa velocidades más altas (1,000-3,000 mm/min) para movimientos grandes
-- Velocidades muy altas pueden causar pasos perdidos en algunas máquinas
-  :::
+- Velocidades muy altas pueden causar pasos perdidos en algunas máquinas :::
 
 **Distancia de Desplazamiento:**
 
@@ -121,8 +111,7 @@ Configura el comportamiento de las operaciones de desplazamiento:
 
 - Usa distancias pequeñas (0.1-1.0 mm) para ajuste fino
 - Usa distancias medianas (5-20 mm) para posicionamiento general
-- Usa distancias grandes (50-100 mm) para reposicionamiento rápido
-  :::
+- Usa distancias grandes (50-100 mm) para reposicionamiento rápido :::
 
 ## Pantalla de Estado de la Máquina
 
@@ -186,10 +175,8 @@ Define dónde debería estar el origen del WCS activo:
 | Cero Y | Establecer Y=0 | Hace que la posición Y actual sea el origen Y para el WCS activo |
 | Cero Z | Establecer Z=0 | Hace que la posición Z actual sea el origen Z para el WCS activo |
 
-:::note G53 No Puede Cambiarse
-Los botones de cero están deshabilitados cuando G53 (Coordenadas de Máquina) está seleccionado,
-ya que las coordenadas de máquina están fijadas por hardware.
-:::
+:::note G53 No Puede Cambiarse Los botones de cero están deshabilitados cuando G53 (Coordenadas de
+Máquina) está seleccionado, ya que las coordenadas de máquina están fijadas por hardware. :::
 
 :::tip Flujo de Trabajo para Establecer WCS
 
@@ -197,14 +184,13 @@ ya que las coordenadas de máquina están fijadas por hardware.
 2. Selecciona el WCS que quieres configurar (ej., G54)
 3. Desplaza la cabeza del láser a la posición de origen deseada
 4. Haz clic en Cero X y Cero Y para establecer esta posición como (0, 0)
-5. El desplazamiento se almacena en el controlador de tu máquina
-   :::
+5. El desplazamiento se almacena en el controlador de tu máquina :::
 
 ## Pestaña de Consola
 
-La Pestaña de Consola proporciona una interfaz estilo terminal interactiva para
-enviar comandos de código G y monitorear la comunicación de la máquina. Haz clic
-en el icono de consola en la tira de pestañas para cambiar a esta vista:
+La Pestaña de Consola proporciona una interfaz estilo terminal interactiva para enviar comandos de
+código G y monitorear la comunicación de la máquina. Haz clic en el icono de consola en la tira de
+pestañas para cambiar a esta vista:
 
 ### Entrada de Comandos
 
@@ -217,8 +203,8 @@ La caja de entrada de comandos te permite enviar código G crudo directamente a 
 
 ### Pantalla de Registro
 
-El registro muestra la comunicación entre Rayforge y tu máquina con
-resaltado de sintaxis para fácil lectura:
+El registro muestra la comunicación entre Rayforge y tu máquina con resaltado de sintaxis para fácil
+lectura:
 
 - **Comandos de Usuario** (azul): Comandos que ingresaste o enviaste durante trabajos
 - **Marcas de Tiempo** (gris): Hora de cada mensaje
@@ -229,8 +215,8 @@ resaltado de sintaxis para fácil lectura:
 
 ### Modo Verbose
 
-Haz clic en el ícono de terminal en la esquina superior derecha de la consola para alternar
-la salida verbose:
+Haz clic en el ícono de terminal en la esquina superior derecha de la consola para alternar la
+salida verbose:
 
 - **Apagado** (por defecto): Oculta sondeos de estado frecuentes y respuestas "ok"
 - **Encendido**: Muestra toda la comunicación de la máquina
@@ -255,19 +241,17 @@ La consola es invaluable para diagnosticar problemas:
 
 ## Pestaña de Visor de Código G
 
-La pestaña del Visor de Código G muestra el código G generado para las
-operaciones actuales. Haz clic en el icono de código G en la tira de pestañas
-para cambiar a esta vista.
+La pestaña del Visor de Código G muestra el código G generado para las operaciones actuales. Haz
+clic en el icono de código G en la tira de pestañas para cambiar a esta vista.
 
 ### Características
 
-- **Resaltado de Sintaxis**: Los comandos de código G están codificados por
-  colores para facilitar la lectura
-- **Resaltado de Línea**: La línea que se está ejecutando actualmente se
-  resalta durante la ejecución del trabajo
-- **Auto-Actualización**: El contenido del código G se actualiza
-  automáticamente cuando cambian las operaciones o la configuración del
-  documento
+- **Resaltado de Sintaxis**: Los comandos de código G están codificados por colores para facilitar
+  la lectura
+- **Resaltado de Línea**: La línea que se está ejecutando actualmente se resalta durante la
+  ejecución del trabajo
+- **Auto-Actualización**: El contenido del código G se actualiza automáticamente cuando cambian las
+  operaciones o la configuración del documento
 
 ## Compatibilidad de Máquina
 
@@ -307,7 +291,8 @@ Cuando los límites suaves están habilitados en tu perfil de máquina:
 
 **Páginas Relacionadas:**
 
-- [Sistemas de Coordenadas de Trabajo (WCS)](../general-info/coordinate-systems.md) - Gestionando WCS
+- [Sistemas de Coordenadas de Trabajo (WCS)](../general-info/coordinate-systems.md) - Gestionando
+  WCS
 - [Configuración de Máquina](../machine/general.md) - Configura tu máquina
 - [Atajos de Teclado](../reference/shortcuts.md) - Referencia completa de atajos
 - [Ventana Principal](main-window) - Resumen de la interfaz principal

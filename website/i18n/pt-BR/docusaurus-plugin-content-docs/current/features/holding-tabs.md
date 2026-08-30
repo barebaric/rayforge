@@ -1,6 +1,9 @@
 # Abas de Fixação
 
-Abas de fixação (também chamadas de pontes ou abas) são pequenas seções não cortadas deixadas ao longo dos caminhos de corte que mantêm as peças anexadas ao material circundante. Isso previne que peças cortadas se movam durante o trabalho, o que poderia causar desalinhamento, dano ou riscos de incêndio.
+Abas de fixação (também chamadas de pontes ou abas) são pequenas seções não cortadas deixadas ao
+longo dos caminhos de corte que mantêm as peças anexadas ao material circundante. Isso previne que
+peças cortadas se movam durante o trabalho, o que poderia causar desalinhamento, dano ou riscos de
+incêndio.
 
 ## Por Que Usar Abas de Fixação?
 
@@ -12,7 +15,8 @@ Ao cortar através do material, a peça cortada pode:
 - **Pegar fogo** se cair em sucata quente abaixo
 - **Ser danificada** por queda ou vibração
 
-Abas de fixação resolvem esses problemas mantendo a peça anexada até você estar pronto para removê-la.
+Abas de fixação resolvem esses problemas mantendo a peça anexada até você estar pronto para
+removê-la.
 
 ---
 
@@ -62,25 +66,26 @@ A **largura** é o comprimento da seção não cortada ao longo do caminho.
 
 **Larguras recomendadas:**
 
-| Material | Espessura | Largura da Aba |
-|----------|-----------|-----------|
-| **Papelão** | 1-3mm | 2-3mm |
-| **Compensado** | 3mm | 3-4mm |
-| **Compensado** | 6mm | 4-6mm |
-| **Acrílico** | 3mm | 2-3mm |
-| **Acrílico** | 6mm | 3-5mm |
-| **MDF** | 3mm | 3-4mm |
-| **MDF** | 6mm | 5-7mm |
+| Material       | Espessura | Largura da Aba |
+| -------------- | --------- | -------------- |
+| **Papelão**    | 1-3mm     | 2-3mm          |
+| **Compensado** | 3mm       | 3-4mm          |
+| **Compensado** | 6mm       | 4-6mm          |
+| **Acrílico**   | 3mm       | 2-3mm          |
+| **Acrílico**   | 6mm       | 3-5mm          |
+| **MDF**        | 3mm       | 3-4mm          |
+| **MDF**        | 6mm       | 5-7mm          |
 
 **Diretrizes:**
+
 - **Materiais mais espessos** precisam de abas mais largas para força
 - **Peças mais pesadas** precisam de mais e/ou abas mais largas
 - **Materiais frágeis** (acrílico) podem usar abas menores (mais fáceis de quebrar)
 - **Materiais fibrosos** (madeira) podem precisar de abas mais largas
 
-:::warning Largura da Aba vs Espessura do Material
-Abas devem ser largas o suficiente para suportar a peça mas pequenas o suficiente para remover limpo. Muito estreita = peça pode quebrar livre; muito larga = difícil de remover ou dana a peça.
-:::
+:::warning Largura da Aba vs Espessura do Material Abas devem ser largas o suficiente para suportar
+a peça mas pequenas o suficiente para remover limpo. Muito estreita = peça pode quebrar livre; muito
+larga = difícil de remover ou dana a peça. :::
 
 ### Posição da Aba
 
@@ -90,6 +95,7 @@ Abas são posicionadas usando dois parâmetros:
 - **Posição (0.0 - 1.0):** Onde ao longo daquele segmento (0 = início, 1 = fim)
 
 **Dicas de colocação manual:**
+
 - Coloque abas em **seções retas** quando possível (mais fácil de remover)
 - Evite abas em **curvas fechas** (concentração de tensão)
 - Distribua abas **uniformemente** ao redor da peça
@@ -100,6 +106,7 @@ Abas são posicionadas usando dois parâmetros:
 O recurso **equidistante** coloca abas automaticamente em intervalos uniformes:
 
 **Benefícios:**
+
 - Distribuição de peso uniforme
 - Padrão de quebra previsível
 - Configuração rápida para formas regulares
@@ -111,15 +118,18 @@ O recurso **equidistante** coloca abas automaticamente em intervalos uniformes:
 ### Editando Abas
 
 **Mover uma aba:**
+
 1. Selecione a peça
 2. Arraste a alça da aba ao longo do caminho
 3. Solte para definir nova posição
 
 **Redimensionar uma aba:**
+
 - Use o painel de propriedades para ajustar a largura
 - Todas as abas em uma peça compartilham a mesma largura
 
 **Excluir uma aba:**
+
 1. Clique na alça da aba para selecioná-la
 2. Pressione Delete ou use o menu de contexto
 3. Ou limpe todas as abas e comece novamente
@@ -132,6 +142,7 @@ Alterne abas ligado/desligado sem excluí-las:
 - **Barra de ferramentas:** Ícone de alternância de visibilidade de aba
 
 **Quando desabilitado:**
+
 - Abas não são geradas no G-code
 - Alças de aba estão ocultas na tela
 - O caminho corta completamente através
@@ -143,6 +154,7 @@ Alterne abas ligado/desligado sem excluí-las:
 ## Removendo Abas Após o Corte
 
 **Ferramentas:**
+
 - Estilete ou cortador
 - Alicates de corte diagonal
 - Formão (para madeira)
@@ -156,11 +168,13 @@ Alterne abas ligado/desligado sem excluí-las:
 4. **Lixar ou arquivar** o remanescente da aba nivelado com a borda
 
 **Para materiais frágeis (acrílico):**
+
 - Use abas mínimas (elas quebram facilmente)
 - Marque profundamente antes de quebrar
 - Apoie a peça enquanto quebra abas para evitar rachaduras
 
 **Para madeira:**
+
 - Abas podem requerer corte (não quebram limpo)
 - Use uma faca afiada ou formão
 - Corte nivelado, então lixe suave
@@ -172,4 +186,3 @@ Alterne abas ligado/desligado sem excluí-las:
 - [Corte de Contorno](operations/contour) - Operação primária que usa abas
 - [Fluxo de Trabalho Multi-Camadas](multi-layer) - Gerenciando abas através de múltiplas camadas
 - [Visualização 3D](../ui/3d-preview.md) - Visualizando abas na pré-visualização
-

@@ -1,16 +1,15 @@
 # Soporte de Dialectos de Código G
 
-Rayforge soporta múltiples dialectos de código G para trabajar con diferentes
-firmware de controlador.
+Rayforge soporta múltiples dialectos de código G para trabajar con diferentes firmware de
+controlador.
 
 ## Selección Automática de Dialecto
 
-Cuando se descubre un dispositivo GRBL (a través del [asistente de configuración](../getting-started/first-time-setup.md)
-o el descubrimiento de dispositivos), Rayforge lee las flags de compilación `$I`
-del firmware y selecciona automáticamente el dialecto de código G que mejor
-coincide — generalmente no necesitas elegir uno manualmente. Aún puedes
-sobreescribir la elección después en los ajustes de dialecto de código G de la
-máquina.
+Cuando se descubre un dispositivo GRBL (a través del
+[asistente de configuración](../getting-started/first-time-setup.md) o el descubrimiento de
+dispositivos), Rayforge lee las flags de compilación `$I` del firmware y selecciona automáticamente
+el dialecto de código G que mejor coincide — generalmente no necesitas elegir uno manualmente. Aún
+puedes sobreescribir la elección después en los ajustes de dialecto de código G de la máquina.
 
 ## Dialectos Soportados
 
@@ -28,43 +27,36 @@ Rayforge actualmente soporta estos dialectos de código G:
 | **Smoothieware**                              | Smoothieware | Cortadores láser, CNC                   |
 | **Marlin**                                    | Marlin 2.0+  | Impresoras 3D con láser                 |
 
-:::note Dialectos Recomendados
-:::
+:::note Dialectos Recomendados :::
 
-**Grbl (Compat)** es el dialecto más probado y recomendado para aplicaciones
-láser estándar.
+**Grbl (Compat)** es el dialecto más probado y recomendado para aplicaciones láser estándar.
 
-**Grbl Raster** está optimizado para grabado raster en controladores GRBL. Mantiene
-el láser en modo de potencia dinámica (M4) continuamente y omite comandos de
-velocidad de avance redundantes, resultando en una salida de código G más suave
-y compacta.
+**Grbl Raster** está optimizado para grabado raster en controladores GRBL. Mantiene el láser en modo
+de potencia dinámica (M4) continuamente y omite comandos de velocidad de avance redundantes,
+resultando en una salida de código G más suave y compacta.
 
-**GRBL Dinámico (Consciente de Profundidad)** es recomendado para grabado láser
-consciente de profundidad donde la potencia varía durante los cortes (ej.,
-grabado de profundidad variable).
+**GRBL Dinámico (Consciente de Profundidad)** es recomendado para grabado láser consciente de
+profundidad donde la potencia varía durante los cortes (ej., grabado de profundidad variable).
 
-**LinuxCNC** admite curvas Bézier cúbicas nativas a través del comando G5, lo
-que produce un código G muy suave y compacto para caminos curvos. Cuando uses
-este dialecto, activa la opción «Soportar curvas Bézier» en Ajustes Avanzados
-de Máquina para aprovechar la salida G5.
+**LinuxCNC** admite curvas Bézier cúbicas nativas a través del comando G5, lo que produce un código
+G muy suave y compacto para caminos curvos. Cuando uses este dialecto, activa la opción «Soportar
+curvas Bézier» en Ajustes Avanzados de Máquina para aprovechar la salida G5.
 
 ---
 
 ## Mach4 (M67 Analog)
 
-El dialecto **Mach4 (M67 Analog)** está diseñado para grabado ráster de alta
-velocidad con controladores Mach4. Utiliza el comando M67 con salida analógica
-para un control preciso de la potencia del láser.
+El dialecto **Mach4 (M67 Analog)** está diseñado para grabado ráster de alta velocidad con
+controladores Mach4. Utiliza el comando M67 con salida analógica para un control preciso de la
+potencia del láser.
 
 ### Características Principales
 
-- **Salida Analógica M67**: Utiliza `M67 E0 Q<0-255>` para la potencia del
-  láser en lugar de comandos S en línea
-- **Presión de Búfer Reducida**: Al separar los comandos de potencia de los
-  comandos de movimiento, el búfer del controlador sufre menos estrés durante
-  operaciones de alta velocidad
-- **Ráster de Alta Velocidad**: Optimizado para operaciones de grabado ráster
-  rápidas
+- **Salida Analógica M67**: Utiliza `M67 E0 Q<0-255>` para la potencia del láser en lugar de
+  comandos S en línea
+- **Presión de Búfer Reducida**: Al separar los comandos de potencia de los comandos de movimiento,
+  el búfer del controlador sufre menos estrés durante operaciones de alta velocidad
+- **Ráster de Alta Velocidad**: Optimizado para operaciones de grabado ráster rápidas
 
 ### Cuándo Usar
 
@@ -72,8 +64,7 @@ Usa este dialecto cuando:
 
 - Tengas un controlador Mach4 con capacidad de salida analógica
 - Necesites grabado ráster de alta velocidad
-- Tu controlador experimente desbordamiento de búfer con comandos S en línea
-  estándar
+- Tu controlador experimente desbordamiento de búfer con comandos S en línea estándar
 
 ### Formato de Comando
 
@@ -92,36 +83,33 @@ M67 E0 Q0    ; Apagar láser
 Para crear un dialecto de código G personalizado basado en un dialecto integrado:
 
 1. Abre **Ajustes de Máquina** → **Dialecto de Código G**
-2. Haz clic en el icono **Copiar** en un dialecto integrado para crear un nuevo
-   dialecto personalizado
+2. Haz clic en el icono **Copiar** en un dialecto integrado para crear un nuevo dialecto
+   personalizado
 3. Edita los ajustes del dialecto según sea necesario
 4. Guarda tu dialecto personalizado
 
-Cada dialecto personalizado es una copia independiente. Cambiar un dialecto
-nunca afecta a otros, por lo que puedes experimentar libremente sin preocuparte
-por dañar una configuración existente. Los dialectos personalizados se almacenan
-en tu directorio de configuración y pueden compartirse.
+Cada dialecto personalizado es una copia independiente. Cambiar un dialecto nunca afecta a otros,
+por lo que puedes experimentar libremente sin preocuparte por dañar una configuración existente. Los
+dialectos personalizados se almacenan en tu directorio de configuración y pueden compartirse.
 
 ### Ajustes del Dialecto
 
 Al editar un dialecto personalizado, la página de Ajustes ofrece estas opciones:
 
-**Modo Láser Continuo** mantiene el láser en modo de potencia dinámica (M4) activo
-durante todo el trabajo en lugar de alternar M4/M5 entre segmentos. Esto es útil
-para grabado raster donde el láser necesita permanecer encendido continuamente
-durante las líneas de escaneo.
+**Modo Láser Continuo** mantiene el láser en modo de potencia dinámica (M4) activo durante todo el
+trabajo en lugar de alternar M4/M5 entre segmentos. Esto es útil para grabado raster donde el láser
+necesita permanecer encendido continuamente durante las líneas de escaneo.
 
-**Velocidad de Avance Modal** omite el parámetro de velocidad de avance (F) de los
-comandos de movimiento cuando no ha cambiado desde el último comando. Esto produce
-código G más compacto y reduce la cantidad de datos enviados al controlador.
+**Velocidad de Avance Modal** omite el parámetro de velocidad de avance (F) de los comandos de
+movimiento cuando no ha cambiado desde el último comando. Esto produce código G más compacto y
+reduce la cantidad de datos enviados al controlador.
 
 ### Comando Separado de Encendido del Láser para Enfoque
 
-Algunos dialectos soportan la configuración de un comando separado para encender
-el láser a baja potencia, lo cual es útil para el modo de enfoque. Esto te
-permite usar un comando diferente para el comportamiento visual de «puntero
-láser» que el utilizado durante el corte o grabado real. Revisa la página de
-ajustes de tu dialecto para esta opción.
+Algunos dialectos soportan la configuración de un comando separado para encender el láser a baja
+potencia, lo cual es útil para el modo de enfoque. Esto te permite usar un comando diferente para el
+comportamiento visual de «puntero láser» que el utilizado durante el corte o grabado real. Revisa la
+página de ajustes de tu dialecto para esta opción.
 
 ---
 
@@ -129,9 +117,8 @@ ajustes de tu dialecto para esta opción.
 
 Al crear o editar un dialecto personalizado, cada plantilla de comando utiliza
 [cadenas de formato de Python](https://docs.python.org/3/library/string.html#format-string-syntax)
-con espacios reservados para inyectar valores dinámicos. Usa la sintaxis
-`{nombre}` o `{nombre:.0f}` (ej., `{power:.0f}` para formatear como entero sin
-decimales).
+con espacios reservados para inyectar valores dinámicos. Usa la sintaxis `{nombre}` o `{nombre:.0f}`
+(ej., `{power:.0f}` para formatear como entero sin decimales).
 
 ### Espacios Reservados Disponibles por Plantilla
 
@@ -210,14 +197,13 @@ decimales).
 
 - Se admiten **especificaciones de formato**: `{power:.0f}` formatea la potencia como entero,
   `{power:.2f}` con dos decimales.
-- La configuración **«Omitir coordenadas no cambiadas»** controla si `x_cmd`, `y_cmd`
-  y `z_cmd` se dejan vacíos cuando la posición del eje no ha cambiado desde el
-  último comando. Esto reduce el tamaño del código G.
-- La configuración **«Velocidad de Avance Modal»** controla si `f_command` se omite
-  cuando la velocidad de avance no ha cambiado.
-- Deja un campo de plantilla **vacío** para omitir ese comando por completo
-  (ej., establecer `bezier_cubic` en `""` desactiva la salida Bézier nativa
-  y usa linealización como alternativa).
+- La configuración **«Omitir coordenadas no cambiadas»** controla si `x_cmd`, `y_cmd` y `z_cmd` se
+  dejan vacíos cuando la posición del eje no ha cambiado desde el último comando. Esto reduce el
+  tamaño del código G.
+- La configuración **«Velocidad de Avance Modal»** controla si `f_command` se omite cuando la
+  velocidad de avance no ha cambiado.
+- Deja un campo de plantilla **vacío** para omitir ese comando por completo (ej., establecer
+  `bezier_cubic` en `""` desactiva la salida Bézier nativa y usa linealización como alternativa).
 
 ---
 

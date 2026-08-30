@@ -1,6 +1,8 @@
 # Macros & Hooks
 
-O Rayforge fornece dois poderosos recursos de automação para personalizar seu fluxo de trabalho: **Macros** e **Hooks**. Ambos permitem injetar G-code personalizado em seus trabalhos, mas servem a propósitos diferentes.
+O Rayforge fornece dois poderosos recursos de automação para personalizar seu fluxo de trabalho:
+**Macros** e **Hooks**. Ambos permitem injetar G-code personalizado em seus trabalhos, mas servem a
+propósitos diferentes.
 
 ![Configurações de Hooks & Macros](/screenshots/machine-settings-hooks-macros.webp)
 
@@ -8,16 +10,17 @@ O Rayforge fornece dois poderosos recursos de automação para personalizar seu 
 
 ## Visão Geral
 
-| Recurso    | Propósito                    | Gatilho              | Caso de Uso                                    |
-| ---------- | ---------------------------- | -------------------- | ---------------------------------------------- |
-| **Macros** | Snippets de G-code reutilizáveis   | Execução manual     | Comandos rápidos, padrões de teste, rotinas personalizadas |
-| **Hooks**  | Injeção automática de G-code | Eventos do ciclo de vida do trabalho | Sequências de inicialização, mudanças de camada, limpeza      |
+| Recurso    | Propósito                        | Gatilho                              | Caso de Uso                                                |
+| ---------- | -------------------------------- | ------------------------------------ | ---------------------------------------------------------- |
+| **Macros** | Snippets de G-code reutilizáveis | Execução manual                      | Comandos rápidos, padrões de teste, rotinas personalizadas |
+| **Hooks**  | Injeção automática de G-code     | Eventos do ciclo de vida do trabalho | Sequências de inicialização, mudanças de camada, limpeza   |
 
 ---
 
 ## Macros
 
-Macros são **scripts de G-code nomeados e reutilizáveis** que você pode executar manualmente a qualquer momento.
+Macros são **scripts de G-code nomeados e reutilizáveis** que você pode executar manualmente a
+qualquer momento.
 
 ### Para Que Servem as Macros?
 
@@ -55,8 +58,7 @@ Casos de uso comuns de macros:
 
 #### Simples: Levar a Máquina à Origem
 
-**Nome:** Home Machine
-**Código:**
+**Nome:** Home Machine **Código:**
 
 ```gcode
 $H
@@ -69,8 +71,7 @@ $H
 
 #### Médio: Definir Deslocamento de Trabalho
 
-**Nome:** Set G54 to Current Position
-**Código:**
+**Nome:** Set G54 to Current Position **Código:**
 
 ```gcode
 G10 L20 P1 X0 Y0
@@ -83,8 +84,7 @@ G10 L20 P1 X0 Y0
 
 #### Avançado: Grade de Teste de Foco
 
-**Nome:** 9-Point Focus Test
-**Código:**
+**Nome:** 9-Point Focus Test **Código:**
 
 ```gcode
 ; Grade de 9 pontos para encontrar foco ideal
@@ -107,22 +107,23 @@ M5
 
 ## Hooks
 
-Hooks são **injeções automáticas de G-code** acionadas por eventos específicos durante a execução do trabalho.
+Hooks são **injeções automáticas de G-code** acionadas por eventos específicos durante a execução do
+trabalho.
 
 ### Gatilhos de Hook
 
 O Rayforge suporta estes gatilhos de hook:
 
-| Gatilho             | Quando Executa                     | Usos Comuns                                 |
-| ------------------- | ---------------------------------- | ------------------------------------------- |
-| **Início da Camada**     | Antes de processar cada camada     | Troca de ferramenta, ajuste de potência, comentários         |
-| **Fim da Camada**       | Após processar cada camada      | Notificação de progresso, pausa                |
-| **Início da Peça** | Antes de processar cada peça | Numeração de peças, marcas de alinhamento             |
-| **Fim da Peça**   | Após processar cada peça  | Resfriamento, pausa de inspeção                  |
+| Gatilho              | Quando Executa                 | Usos Comuns                                          |
+| -------------------- | ------------------------------ | ---------------------------------------------------- |
+| **Início da Camada** | Antes de processar cada camada | Troca de ferramenta, ajuste de potência, comentários |
+| **Fim da Camada**    | Após processar cada camada     | Notificação de progresso, pausa                      |
+| **Início da Peça**   | Antes de processar cada peça   | Numeração de peças, marcas de alinhamento            |
+| **Fim da Peça**      | Após processar cada peça       | Resfriamento, pausa de inspeção                      |
 
-:::note G-code a Nível de Trabalho
-O G-code de início e fim de trabalho é configurado através das configurações de preâmbulo e postscript do dialeto, não através de hooks. Veja [Configurações de G-code](gcode) para detalhes.
-:::
+:::note G-code a Nível de Trabalho O G-code de início e fim de trabalho é configurado através das
+configurações de preâmbulo e postscript do dialeto, não através de hooks. Veja
+[Configurações de G-code](gcode) para detalhes. :::
 
 ### Criando um Hook
 
@@ -143,8 +144,7 @@ O G-code de início e fim de trabalho é configurado através das configuraçõe
 
 #### Início da Camada: Adicionar Comentário
 
-**Gatilho:** Início da Camada
-**Código:**
+**Gatilho:** Início da Camada **Código:**
 
 ```gcode
 ; Iniciando camada: {layer_name}
@@ -157,8 +157,7 @@ O G-code de início e fim de trabalho é configurado através das configuraçõe
 
 #### Início da Peça: Numeração de Peças
 
-**Gatilho:** Início da Peça
-**Código:**
+**Gatilho:** Início da Peça **Código:**
 
 ```gcode
 ; Peça: {workpiece_name}
@@ -204,41 +203,40 @@ Variáveis usam a sintaxe `{variable_name}` e são substituídas durante a gera�
 
 **Variáveis de nível de trabalho:**
 
-| Variável     | Descrição                      | Valor de Exemplo |
-| ------------ | -------------------------------- | ------------- |
-| `{job_name}` | Nome do trabalho/documento atual | "test-job"    |
-| `{date}`     | Data atual                     | "2025-10-03"  |
-| `{time}`     | Hora atual                     | "14:30:25"    |
+| Variável     | Descrição                        | Valor de Exemplo |
+| ------------ | -------------------------------- | ---------------- |
+| `{job_name}` | Nome do trabalho/documento atual | "test-job"       |
+| `{date}`     | Data atual                       | "2025-10-03"     |
+| `{time}`     | Hora atual                       | "14:30:25"       |
 
 **Variáveis de nível de camada:**
 
-| Variável         | Descrição                       | Valor de Exemplo |
-| ---------------- | --------------------------------- | ------------- |
-| `{layer_name}`   | Nome da camada atual         | "Cut Layer"   |
-| `{layer_index}`  | Índice baseado em zero da camada atual | 0, 1, 2...    |
-| `{total_layers}` | Número total de camadas no trabalho     | 3             |
+| Variável         | Descrição                              | Valor de Exemplo |
+| ---------------- | -------------------------------------- | ---------------- |
+| `{layer_name}`   | Nome da camada atual                   | "Cut Layer"      |
+| `{layer_index}`  | Índice baseado em zero da camada atual | 0, 1, 2...       |
+| `{total_layers}` | Número total de camadas no trabalho    | 3                |
 
 **Variáveis de nível de peça:**
 
-| Variável             | Descrição                           | Valor de Exemplo |
-| -------------------- | ------------------------------------- | ------------- |
-| `{workpiece_name}`   | Nome da peça                 | "Circle 1"    |
-| `{workpiece_index}`  | Índice baseado em zero da peça atual | 0, 1, 2...    |
-| `{total_workpieces}` | Número total de peças            | 5             |
+| Variável             | Descrição                            | Valor de Exemplo |
+| -------------------- | ------------------------------------ | ---------------- |
+| `{workpiece_name}`   | Nome da peça                         | "Circle 1"       |
+| `{workpiece_index}`  | Índice baseado em zero da peça atual | 0, 1, 2...       |
+| `{total_workpieces}` | Número total de peças                | 5                |
 
 **Variáveis da máquina:**
 
-| Variável         | Descrição                    | Valor de Exemplo |
-| ---------------- | ------------------------------ | ------------- |
-| `{machine_name}` | Nome do perfil da máquina    | "My K40"      |
-| `{max_speed}`    | Velocidade máxima de corte (mm/min) | 1000          |
-| `{work_width}`   | Largura da área de trabalho (mm)           | 300           |
-| `{work_height}`  | Altura da área de trabalho (mm)          | 200           |
+| Variável         | Descrição                           | Valor de Exemplo |
+| ---------------- | ----------------------------------- | ---------------- |
+| `{machine_name}` | Nome do perfil da máquina           | "My K40"         |
+| `{max_speed}`    | Velocidade máxima de corte (mm/min) | 1000             |
+| `{work_width}`   | Largura da área de trabalho (mm)    | 300              |
+| `{work_height}`  | Altura da área de trabalho (mm)     | 200              |
 
 ### Exemplo: Notificação de Progresso
 
-**Hook:** Início da Camada
-**Código:**
+**Hook:** Início da Camada **Código:**
 
 ```gcode
 ; ========================================
@@ -266,8 +264,7 @@ Variáveis usam a sintaxe `{variable_name}` e são substituídas durante a gera�
 
 Para máquinas com múltiplos lasers ou ferramentas:
 
-**Hook:** Início da Peça
-**Código:**
+**Hook:** Início da Peça **Código:**
 
 ```gcode
 ; Selecionar ferramenta para peça {workpiece_name}
@@ -279,8 +276,7 @@ G4 P1           ; Esperar pela troca de ferramenta
 
 Adicione pausas opcionais para inspeção:
 
-**Hook:** Fim da Camada
-**Código:**
+**Hook:** Fim da Camada **Código:**
 
 ```gcode
 ; M0  ; Descomente para pausar após cada camada para inspeção
@@ -290,35 +286,31 @@ Adicione pausas opcionais para inspeção:
 
 Controle a assistência de ar em uma base por camada:
 
-**Hook:** Início da Camada (para camadas de corte)
-**Código:**
+**Hook:** Início da Camada (para camadas de corte) **Código:**
 
 ```gcode
 M8  ; Assistência de ar LIGADA
 ```
 
-**Hook:** Início da Camada (para camadas de gravação)
-**Código:**
+**Hook:** Início da Camada (para camadas de gravação) **Código:**
 
 ```gcode
 M9  ; Assistência de ar DESLIGADA (previne dispersão de poeira para gravação)
 ```
 
-:::note Hooks Específicos por Camada
-O Rayforge atualmente não suporta personalização de hooks por camada. Para conseguir isso, use G-code condicional ou perfis de máquina separados.
-:::
+:::note Hooks Específicos por Camada O Rayforge atualmente não suporta personalização de hooks por
+camada. Para conseguir isso, use G-code condicional ou perfis de máquina separados. :::
 
 ---
 
 ## Considerações de Segurança
 
-:::danger Teste Antes da Produção
-Sempre teste macros e hooks no **modo de simulação** ou com o laser **desabilitado** antes de executar em trabalhos reais. G-code configurado incorretamente pode:
+:::danger Teste Antes da Produção Sempre teste macros e hooks no **modo de simulação** ou com o
+laser **desabilitado** antes de executar em trabalhos reais. G-code configurado incorretamente pode:
 
 - Colidir a máquina contra os limites
 - Disparar o laser inesperadamente
-- Danificar materiais ou equipamentos
-  :::
+- Danificar materiais ou equipamentos :::
 
 **Checklist de segurança:**
 

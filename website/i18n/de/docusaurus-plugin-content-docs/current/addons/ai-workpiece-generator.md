@@ -1,22 +1,19 @@
 # KI-Werkstückgenerator
 
-Erstelle Laser-Cut-Designs aus Textbeschreibungen mit künstlicher
-Intelligenz.
+Erstelle Laser-Cut-Designs aus Textbeschreibungen mit künstlicher Intelligenz.
 
 ## Übersicht
 
-Das KI-Werkstückgenerator-Addon ermöglicht es dir, Designs zu erstellen,
-indem du einfach beschreibst, was du möchtest. Gib eine Beschreibung
-wie "eine einfache Sternform" oder "ein Zahnrad mit 8 Zähnen" ein, und die
-KI generiert ein Werkstück, das für deinen Lasercutter bereit ist.
+Das KI-Werkstückgenerator-Addon ermöglicht es dir, Designs zu erstellen, indem du einfach
+beschreibst, was du möchtest. Gib eine Beschreibung wie "eine einfache Sternform" oder "ein Zahnrad
+mit 8 Zähnen" ein, und die KI generiert ein Werkstück, das für deinen Lasercutter bereit ist.
 
 ![KI-Werkstückgenerator Dialog](/screenshots/addon-ai-workpiece-generator.webp)
 
 ## Voraussetzungen
 
-Bevor du dieses Addon verwendest, musst du einen KI-Anbieter konfigurieren.
-Siehe [KI-Anbieter](../application-settings/ai-provider.md) für
-Einrichtungsanweisungen.
+Bevor du dieses Addon verwendest, musst du einen KI-Anbieter konfigurieren. Siehe
+[KI-Anbieter](../application-settings/ai-provider.md) für Einrichtungsanweisungen.
 
 ## Den Generator verwenden
 
@@ -28,14 +25,10 @@ Einrichtungsanweisungen.
 
 ## Tipps für beste Ergebnisse
 
-- **Sei spezifisch**: "ein 5-zackiger Stern mit spitzen Zacken"
-  funktioniert besser als "ein Stern"
-- **Halte es einfach**: Die KI funktioniert am besten mit
-  unkomplizierten geometrischen Designs
-- **Gib Details an**: Füge wichtige Details wie Anzahl der Zähne,
-  Ecken oder Symmetrie hinzu
-- **Verwende physische Beschreibungen**: Beschreibe die Form,
-  nicht die Schnittparameter
+- **Sei spezifisch**: "ein 5-zackiger Stern mit spitzen Zacken" funktioniert besser als "ein Stern"
+- **Halte es einfach**: Die KI funktioniert am besten mit unkomplizierten geometrischen Designs
+- **Gib Details an**: Füge wichtige Details wie Anzahl der Zähne, Ecken oder Symmetrie hinzu
+- **Verwende physische Beschreibungen**: Beschreibe die Form, nicht die Schnittparameter
 
 ## Beispielprompts
 

@@ -1,18 +1,23 @@
 # Ponts de Maintien
 
-Les ponts de maintien (aussi appelés ponts ou onglets) sont de petites sections non coupées laissées le long des parcours de coupe qui maintiennent les pièces attachées au matériau environnant. Cela empêche les pièces coupées de bouger pendant le travail, ce qui pourrait causer un mauvais alignement, des dommages ou des risques d'incendie.
+Les ponts de maintien (aussi appelés ponts ou onglets) sont de petites sections non coupées laissées
+le long des parcours de coupe qui maintiennent les pièces attachées au matériau environnant. Cela
+empêche les pièces coupées de bouger pendant le travail, ce qui pourrait causer un mauvais
+alignement, des dommages ou des risques d'incendie.
 
 ## Pourquoi Utiliser des Ponts de Maintien ?
 
 Lors de la coupe à travers le matériau, la pièce coupée peut :
 
-- **Changer de position** en milieu de travail, provoquant un mauvais alignement des opérations suivantes
+- **Changer de position** en milieu de travail, provoquant un mauvais alignement des opérations
+  suivantes
 - **Tomber à travers** la grille du lit ou basculer si supportée seulement aux bords
 - **Entrer en collision avec** la tête laser lors de ses déplacements
 - **Prendre feu** si elle tombe sur des déchets chauds en dessous
 - **Être endommagée** par la chute ou les vibrations
 
-Les ponts de maintien résolvent ces problèmes en gardant la pièce attachée jusqu'à ce que vous soyez prêt à la retirer.
+Les ponts de maintien résolvent ces problèmes en gardant la pièce attachée jusqu'à ce que vous soyez
+prêt à la retirer.
 
 ---
 
@@ -31,7 +36,8 @@ Rayforge implémente les ponts en créant de **petits espaces dans le parcours d
 
 ### Ajout Rapide
 
-1. **Sélectionnez la pièce** à laquelle vous voulez ajouter des ponts (doit être une opération de coupe/contour)
+1. **Sélectionnez la pièce** à laquelle vous voulez ajouter des ponts (doit être une opération de
+   coupe/contour)
 2. **Cliquez sur l'outil pont** dans la barre d'outils ou appuyez sur le raccourci pont
 3. **Cliquez sur le parcours** où vous voulez des ponts :
    - Les ponts apparaissent comme de petites poignées sur le contour du parcours
@@ -62,25 +68,26 @@ La **largeur** est la longueur de la section non coupée le long du parcours.
 
 **Largeurs recommandées :**
 
-| Matériau | Épaisseur | Largeur du Pont |
-| -------- | --------- | --------------- |
-| **Carton** | 1-3mm | 2-3mm |
-| **Contreplaqué** | 3mm | 3-4mm |
-| **Contreplaqué** | 6mm | 4-6mm |
-| **Acrylique** | 3mm | 2-3mm |
-| **Acrylique** | 6mm | 3-5mm |
-| **MDF** | 3mm | 3-4mm |
-| **MDF** | 6mm | 5-7mm |
+| Matériau         | Épaisseur | Largeur du Pont |
+| ---------------- | --------- | --------------- |
+| **Carton**       | 1-3mm     | 2-3mm           |
+| **Contreplaqué** | 3mm       | 3-4mm           |
+| **Contreplaqué** | 6mm       | 4-6mm           |
+| **Acrylique**    | 3mm       | 2-3mm           |
+| **Acrylique**    | 6mm       | 3-5mm           |
+| **MDF**          | 3mm       | 3-4mm           |
+| **MDF**          | 6mm       | 5-7mm           |
 
 **Directives :**
+
 - **Matériaux plus épais** ont besoin de ponts plus larges pour la solidité
 - **Pièces plus lourdes** ont besoin de plus et/ou de ponts plus larges
 - **Matériaux fragiles** (acrylique) peuvent utiliser des ponts plus petits (plus faciles à casser)
 - **Matériaux fibreux** (bois) peuvent nécessiter des ponts plus larges
 
-:::warning Largeur du Pont vs Épaisseur du Matériau
-Les ponts doivent être assez larges pour supporter la pièce mais assez petits pour être retirés proprement. Trop étroit = la pièce peut se détacher ; trop large = difficile à retirer ou endommage la pièce.
-:::
+:::warning Largeur du Pont vs Épaisseur du Matériau Les ponts doivent être assez larges pour
+supporter la pièce mais assez petits pour être retirés proprement. Trop étroit = la pièce peut se
+détacher ; trop large = difficile à retirer ou endommage la pièce. :::
 
 ### Position du Pont
 
@@ -90,6 +97,7 @@ Les ponts sont positionnés en utilisant deux paramètres :
 - **Position (0.0 - 1.0) :** Où le long de ce segment (0 = début, 1 = fin)
 
 **Conseils de placement manuel :**
+
 - Placez les ponts sur des **sections droites** quand c'est possible (plus facile à retirer)
 - Évitez les ponts sur des **courbes serrées** (concentration de contrainte)
 - Répartissez les ponts **uniformément** autour de la pièce
@@ -100,6 +108,7 @@ Les ponts sont positionnés en utilisant deux paramètres :
 La fonction **équidistante** place automatiquement des ponts à intervalles égaux :
 
 **Avantages :**
+
 - Distribution uniforme du poids
 - Motif de rupture prévisible
 - Configuration rapide pour les formes régulières
@@ -111,15 +120,18 @@ La fonction **équidistante** place automatiquement des ponts à intervalles ég
 ### Éditer les Ponts
 
 **Déplacer un pont :**
+
 1. Sélectionnez la pièce
 2. Glissez la poignée du pont le long du parcours
 3. Relâchez pour définir la nouvelle position
 
 **Redimensionner un pont :**
+
 - Utilisez le panneau des propriétés pour ajuster la largeur
 - Tous les ponts sur une pièce partagent la même largeur
 
 **Supprimer un pont :**
+
 1. Cliquez sur la poignée du pont pour la sélectionner
 2. Appuyez sur Supprimer ou utilisez le menu contextuel
 3. Ou effacez tous les ponts et recommencez
@@ -132,17 +144,20 @@ Basculer les ponts on/off sans les supprimer :
 - **Barre d'outils :** Icône de basculement de visibilité des ponts
 
 **Lorsque désactivé :**
+
 - Les ponts ne sont pas générés dans le G-code
 - Les poignées de pont sont masquées dans le canevas
 - Le parcours coupe complètement à travers
 
-**Cas d'utilisation :** Désactivez temporairement les ponts pour tester la coupe, puis réactivez pour la production.
+**Cas d'utilisation :** Désactivez temporairement les ponts pour tester la coupe, puis réactivez
+pour la production.
 
 ---
 
 ## Retirer les Ponts Après la Coupe
 
 **Outils :**
+
 - Cutter ou couteau à lame rétractable
 - Pinces coupantes
 - Ciseau (pour le bois)
@@ -156,11 +171,13 @@ Basculer les ponts on/off sans les supprimer :
 4. **Poncez ou limez** le reste du pont au ras du bord
 
 **Pour les matériaux fragiles (acrylique) :**
+
 - Utilisez des ponts minimaux (ils se cassent facilement)
 - Scorez profondément avant de casser
 - Supportez la pièce pendant la rupture des ponts pour éviter les fissures
 
 **Pour le bois :**
+
 - Les ponts peuvent nécessiter une coupe (ne se cassent pas proprement)
 - Utilisez un couteau bien aiguisé ou un ciseau
 - Coupez au ras, puis poncez lisse
@@ -172,4 +189,3 @@ Basculer les ponts on/off sans les supprimer :
 - [Coupe de Contour](operations/contour) - Opération principale qui utilise des ponts
 - [Flux de Travail Multi-Couches](multi-layer) - Gérer les ponts sur plusieurs calques
 - [Aperçu 3D](../ui/3d-preview.md) - Visualiser les ponts dans l'aperçu
-

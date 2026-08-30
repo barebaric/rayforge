@@ -1,10 +1,15 @@
 # Registres d'extension
 
-Les registres sont la façon dont Rayforge gère l'extensibilité. Chaque registre contient une collection de composants apparentés — étapes, producteurs, actions, etc. Quand votre extension enregistre quelque chose, il devient disponible dans toute l'application.
+Les registres sont la façon dont Rayforge gère l'extensibilité. Chaque registre contient une
+collection de composants apparentés — étapes, producteurs, actions, etc. Quand votre extension
+enregistre quelque chose, il devient disponible dans toute l'application.
 
 ## Fonctionnement des registres
 
-Tous les registres suivent un modèle similaire. Ils fournissent une méthode `register()` pour ajouter des éléments, et diverses méthodes de recherche pour les récupérer. La plupart des registres suivent également quelle extension a enregistré chaque élément, afin de pouvoir nettoyer quand une extension est déchargée.
+Tous les registres suivent un modèle similaire. Ils fournissent une méthode `register()` pour
+ajouter des éléments, et diverses méthodes de recherche pour les récupérer. La plupart des registres
+suivent également quelle extension a enregistré chaque élément, afin de pouvoir nettoyer quand une
+extension est déchargée.
 
 Voici le modèle général :
 
@@ -15,11 +20,14 @@ def register_steps(step_registry):
     step_registry.register(MyCustomStep, addon_name="my_addon")
 ```
 
-Le paramètre `addon_name` est optionnel mais recommandé. Il garantit que vos composants sont correctement supprimés si l'utilisateur désactive votre extension.
+Le paramètre `addon_name` est optionnel mais recommandé. Il garantit que vos composants sont
+correctement supprimés si l'utilisateur désactive votre extension.
 
 ## Registre des étapes
 
-Le registre des étapes (`StepRegistry`) gère les types d'étapes qui apparaissent dans le panneau des opérations. Chaque étape représente un type d'opération que les utilisateurs peuvent ajouter à leur travail.
+Le registre des étapes (`StepRegistry`) gère les types d'étapes qui apparaissent dans le panneau des
+opérations. Chaque étape représente un type d'opération que les utilisateurs peuvent ajouter à leur
+travail.
 
 ### Enregistrer une étape
 
@@ -30,7 +38,9 @@ def register_steps(step_registry):
     step_registry.register(MyCustomStep, addon_name="my_addon")
 ```
 
-Le nom de classe de l'étape est utilisé comme clé de registre. Votre classe d'étape doit hériter de `Step` et définir des attributs comme `TYPELABEL`, `HIDDEN`, et implémenter la méthode de classe `create()`.
+Le nom de classe de l'étape est utilisé comme clé de registre. Votre classe d'étape doit hériter de
+`Step` et définir des attributs comme `TYPELABEL`, `HIDDEN`, et implémenter la méthode de classe
+`create()`.
 
 ### Récupérer des étapes
 
@@ -52,7 +62,9 @@ factories = step_registry.get_factories()
 
 ## Registre des producteurs
 
-Le registre des producteurs (`ProducerRegistry`) gère les producteurs d'ops. Les producteurs génèrent les opérations de parcours d'outils pour une étape — essentiellement, ils convertissent votre pièce en instructions machine.
+Le registre des producteurs (`ProducerRegistry`) gère les producteurs d'ops. Les producteurs
+génèrent les opérations de parcours d'outils pour une étape — essentiellement, ils convertissent
+votre pièce en instructions machine.
 
 ### Enregistrer un producteur
 
@@ -81,7 +93,9 @@ all_producers = producer_registry.all_producers()
 
 ## Registre des transformateurs
 
-Le registre des transformateurs (`TransformerRegistry`) gère les transformateurs d'ops. Les transformateurs post-traitent les opérations après que les producteurs les ont générées — pensez à des tâches comme l'optimisation de parcours, le lissage ou l'ajout de pattes de maintien.
+Le registre des transformateurs (`TransformerRegistry`) gère les transformateurs d'ops. Les
+transformateurs post-traitent les opérations après que les producteurs les ont générées — pensez à
+des tâches comme l'optimisation de parcours, le lissage ou l'ajout de pattes de maintien.
 
 ### Enregistrer un transformateur
 
@@ -104,7 +118,9 @@ all_transformers = transformer_registry.all_transformers()
 
 ## Registre des actions
 
-Le registre des actions (`ActionRegistry`) gère les actions de fenêtre. Les actions sont la façon d'ajouter des éléments de menu, des boutons de barre d'outils et des raccourcis clavier. C'est l'un des registres les plus riches en fonctionnalités.
+Le registre des actions (`ActionRegistry`) gère les actions de fenêtre. Les actions sont la façon
+d'ajouter des éléments de menu, des boutons de barre d'outils et des raccourcis clavier. C'est l'un
+des registres les plus riches en fonctionnalités.
 
 ### Enregistrer une action
 
@@ -117,7 +133,7 @@ def register_actions(action_registry):
     # Create the action
     action = Gio.SimpleAction.new("my-action", None)
     action.connect("activate", lambda a, p: do_something())
-    
+
     # Register with optional menu and toolbar placement
     action_registry.register(
         action_name="my-action",
@@ -176,7 +192,8 @@ shortcuts = action_registry.get_all_with_shortcuts()
 
 ## Registre des commandes
 
-Le registre des commandes (`CommandRegistry`) gère les commandes de l'éditeur. Les commandes étendent les fonctionnalités de l'éditeur de documents.
+Le registre des commandes (`CommandRegistry`) gère les commandes de l'éditeur. Les commandes
+étendent les fonctionnalités de l'éditeur de documents.
 
 ### Enregistrer une commande
 
@@ -201,7 +218,9 @@ all_commands = command_registry.all_commands()
 
 ## Registre des types de ressources
 
-Le registre des types de ressources (`AssetTypeRegistry`) gère les types de ressources qui peuvent être stockés dans les documents. Cela permet la désérialisation dynamique — quand Rayforge charge un document contenant votre ressource personnalisée, il sait comment la reconstruire.
+Le registre des types de ressources (`AssetTypeRegistry`) gère les types de ressources qui peuvent
+être stockés dans les documents. Cela permet la désérialisation dynamique — quand Rayforge charge un
+document contenant votre ressource personnalisée, il sait comment la reconstruire.
 
 ### Enregistrer un type de ressource
 
@@ -216,7 +235,8 @@ def register_asset_types(asset_type_registry):
     )
 ```
 
-Le `type_name` est la chaîne utilisée dans les documents sérialisés pour identifier votre type de ressource.
+Le `type_name` est la chaîne utilisée dans les documents sérialisés pour identifier votre type de
+ressource.
 
 ### Récupérer des types de ressources
 
@@ -230,7 +250,8 @@ all_types = asset_type_registry.all_types()
 
 ## Registre des stratégies de disposition
 
-Le registre des stratégies de disposition (`LayoutStrategyRegistry`) gère les stratégies de disposition pour arranger le contenu dans l'éditeur de documents.
+Le registre des stratégies de disposition (`LayoutStrategyRegistry`) gère les stratégies de
+disposition pour arranger le contenu dans l'éditeur de documents.
 
 ### Enregistrer une stratégie de disposition
 
@@ -245,7 +266,8 @@ def register_layout_strategies(layout_registry):
     )
 ```
 
-Notez que les métadonnées UI comme les labels et raccourcis doivent être enregistrées via le registre des actions, pas ici.
+Notez que les métadonnées UI comme les labels et raccourcis doivent être enregistrées via le
+registre des actions, pas ici.
 
 ### Récupérer des stratégies de disposition
 
@@ -262,7 +284,8 @@ strategy_names = layout_registry.list_names()
 
 ## Registre des importateurs
 
-Le registre des importateurs (`ImporterRegistry`) gère les importateurs de fichiers. Les importateurs gèrent le chargement de fichiers externes dans Rayforge.
+Le registre des importateurs (`ImporterRegistry`) gère les importateurs de fichiers. Les
+importateurs gèrent le chargement de fichiers externes dans Rayforge.
 
 ### Enregistrer un importateur
 
@@ -273,7 +296,8 @@ def register_importers(importer_registry):
     importer_registry.register(MyCustomImporter, addon_name="my_addon")
 ```
 
-Votre classe d'importateur doit définir les attributs de classe `extensions` et `mime_types` pour que le registre sache quels fichiers il gère.
+Votre classe d'importateur doit définir les attributs de classe `extensions` et `mime_types` pour
+que le registre sache quels fichiers il gère.
 
 ### Récupérer des importateurs
 
@@ -302,7 +326,8 @@ importers = importer_registry.by_feature(ImporterFeature.SOME_FEATURE)
 
 ## Registre des exportateurs
 
-Le registre des exportateurs (`ExporterRegistry`) gère les exportateurs de fichiers. Les exportateurs gèrent l'enregistrement des documents ou opérations Rayforge vers des formats externes.
+Le registre des exportateurs (`ExporterRegistry`) gère les exportateurs de fichiers. Les
+exportateurs gèrent l'enregistrement des documents ou opérations Rayforge vers des formats externes.
 
 ### Enregistrer un exportateur
 
@@ -330,7 +355,8 @@ filters = exporter_registry.get_all_filters()
 
 ## Registre des rendereurs
 
-Le registre des rendereurs (`RendererRegistry`) gère les rendereurs de ressources. Les rendereurs affichent les ressources dans l'interface.
+Le registre des rendereurs (`RendererRegistry`) gère les rendereurs de ressources. Les rendereurs
+affichent les ressources dans l'interface.
 
 ### Enregistrer un rendereur
 
@@ -341,7 +367,8 @@ def register_renderers(renderer_registry):
     renderer_registry.register(MyAssetRenderer(), addon_name="my_addon")
 ```
 
-Notez que vous enregistrez une instance de rendereur, pas une classe. Le nom de classe du rendereur est utilisé comme clé de registre.
+Notez que vous enregistrez une instance de rendereur, pas une classe. Le nom de classe du rendereur
+est utilisé comme clé de registre.
 
 ### Récupérer des rendereurs
 
@@ -358,7 +385,9 @@ all_renderers = renderer_registry.all()
 
 ## Gestionnaire de bibliothèques
 
-Le gestionnaire de bibliothèques (`LibraryManager`) gère les bibliothèques de matériaux. Bien que techniquement pas un registre, il suit des modèles similaires pour enregistrer les bibliothèques fournies par les extensions.
+Le gestionnaire de bibliothèques (`LibraryManager`) gère les bibliothèques de matériaux. Bien que
+techniquement pas un registre, il suit des modèles similaires pour enregistrer les bibliothèques
+fournies par les extensions.
 
 ### Enregistrer une bibliothèque de matériaux
 
@@ -370,4 +399,5 @@ def register_material_libraries(library_manager):
     library_manager.add_library_from_path(lib_path)
 ```
 
-Les bibliothèques enregistrées sont en lecture seule par défaut. Les utilisateurs peuvent voir et utiliser les matériaux mais ne peuvent pas les modifier via l'interface.
+Les bibliothèques enregistrées sont en lecture seule par défaut. Les utilisateurs peuvent voir et
+utiliser les matériaux mais ne peuvent pas les modifier via l'interface.

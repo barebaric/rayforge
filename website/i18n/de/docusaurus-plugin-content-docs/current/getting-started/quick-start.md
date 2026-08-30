@@ -1,10 +1,13 @@
 # Schnellstart-Anleitung
 
-Nachdem Rayforge installiert und deine Maschine konfiguriert ist, lass uns deinen ersten Laserjob ausführen! Diese Anleitung führt dich durch den Import eines Designs, die Konfiguration von Operationen und das Senden von G-Code an deine Maschine.
+Nachdem Rayforge installiert und deine Maschine konfiguriert ist, lass uns deinen ersten Laserjob
+ausführen! Diese Anleitung führt dich durch den Import eines Designs, die Konfiguration von
+Operationen und das Senden von G-Code an deine Maschine.
 
 ## Schritt 1: Ein Design importieren
 
-Rayforge unterstützt verschiedene Dateiformate, darunter SVG, DXF, PDF, Ruida (.rd) und Rasterbilder (JPEG, PNG, BMP).
+Rayforge unterstützt verschiedene Dateiformate, darunter SVG, DXF, PDF, Ruida (.rd) und Rasterbilder
+(JPEG, PNG, BMP).
 
 1. **Klicke** auf **Datei → Öffnen** oder drücke <kbd>ctrl+o</kbd>
 2. Navigiere zu deiner Designdatei und wähle sie aus
@@ -12,10 +15,9 @@ Rayforge unterstützt verschiedene Dateiformate, darunter SVG, DXF, PDF, Ruida (
 
 ![Arbeitsfläche mit importiertem Design](/screenshots/main-standard.webp)
 
-:::tip Noch kein Design?
-Du kannst einfache Formen mit dem Skizzierer erstellen oder kostenlose SVG-Dateien von Seiten wie [Flaticon](https://www.flaticon.com/) oder [SVG Repo](https://www.svgrepo.com/) herunterladen.
-:::
-
+:::tip Noch kein Design? Du kannst einfache Formen mit dem Skizzierer erstellen oder kostenlose
+SVG-Dateien von Seiten wie [Flaticon](https://www.flaticon.com/) oder
+[SVG Repo](https://www.svgrepo.com/) herunterladen. :::
 
 ## Schritt 2: Dein Design positionieren
 
@@ -43,14 +45,16 @@ Operationen definieren, wie Rayforge dein Design verarbeitet. Häufige Operation
 4. Konfiguriere die Operationseinstellungen:
    - **Leistung**: Laserleistung in Prozent (niedrig beginnen und testen!)
    - **Geschwindigkeit**: Bewegungsgeschwindigkeit in mm/min
-   - **Durchgänge**: Anzahl der Wiederholungen der Operation (nützlich zum Schneiden dicker Materialien)
+   - **Durchgänge**: Anzahl der Wiederholungen der Operation (nützlich zum Schneiden dicker
+     Materialien)
 
 ![Operationseinstellungen](/screenshots/step-settings-contour-general.webp)
 
-:::warning Mit niedriger Leistung beginnen
-Wenn du mit neuen Materialien arbeitest, beginne immer mit niedrigeren Leistungseinstellungen und führe Testschnitte durch. Erhöhe die Leistung schrittweise, bis du das gewünschte Ergebnis erzielst. Verwende die Funktion [Materialtest-Raster](../features/operations/material-test-grid.md), um systematisch optimale Einstellungen zu finden.
-:::
-
+:::warning Mit niedriger Leistung beginnen Wenn du mit neuen Materialien arbeitest, beginne immer
+mit niedrigeren Leistungseinstellungen und führe Testschnitte durch. Erhöhe die Leistung
+schrittweise, bis du das gewünschte Ergebnis erzielst. Verwende die Funktion
+[Materialtest-Raster](../features/operations/material-test-grid.md), um systematisch optimale
+Einstellungen zu finden. :::
 
 ## Schritt 4: Vorschau
 
@@ -63,25 +67,21 @@ Bevor du an deine Maschine sendest, zeige den Werkzeugweg in 3D an:
 
 ![3D-Vorschau](/screenshots/main-3d.webp)
 
-:::tip Fehler frühzeitig erkennen
-Die 3D-Vorschau hilft dir, Probleme zu erkennen wie:
+:::tip Fehler frühzeitig erkennen Die 3D-Vorschau hilft dir, Probleme zu erkennen wie:
 
 - Fehlende Pfade
 - Falsche Reihenfolge
 - Auf falsche Objekte angewendete Operationen
-- Pfade, die deinen Arbeitsbereich überschreiten
-:::
-
+- Pfade, die deinen Arbeitsbereich überschreiten :::
 
 ## Schritt 5: An die Maschine senden
 
 :::danger Sicherheit geht vor
+
 - Stelle sicher, dass der Arbeitsbereich frei ist
 - Verlasse die Maschine während des Betriebs niemals unbeaufsichtigt
 - Halte Feuerlöschgeräte in der Nähe
-- Trage geeigneten Augenschutz
-:::
-
+- Trage geeigneten Augenschutz :::
 
 ### Dein Material vorbereiten
 
@@ -92,16 +92,22 @@ Die 3D-Vorschau hilft dir, Probleme zu erkennen wie:
 
 ### Den Job starten
 
-1. **Laser positionieren**: Verwende die Jog-Steuerung, um den Laser an die Startposition zu bewegen. Klicke auf **Ansicht → Steuerungsfeld** oder drücke <kbd>ctrl+l</kbd>, und verwende die Pfeiltasten oder Tastaturpfeile, um den Laser zu bewegen.
+1. **Laser positionieren**: Verwende die Jog-Steuerung, um den Laser an die Startposition zu
+   bewegen. Klicke auf **Ansicht → Steuerungsfeld** oder drücke <kbd>ctrl+l</kbd>, und verwende die
+   Pfeiltasten oder Tastaturpfeile, um den Laser zu bewegen.
 
-2. **Design rahmen**: Führe die Rahm-Funktion aus, um die Platzierung zu überprüfen. Klicke auf **Maschine → Rahmen** und der Laser zeichnet den Begrenzungsrahmen deines Designs bei niedriger Leistung nach. Überprüfe, ob er in dein Material passt.
+2. **Design rahmen**: Führe die Rahm-Funktion aus, um die Platzierung zu überprüfen. Klicke auf
+   **Maschine → Rahmen** und der Laser zeichnet den Begrenzungsrahmen deines Designs bei niedriger
+   Leistung nach. Überprüfe, ob er in dein Material passt.
 
 3. **Job starten**: Klicke auf **Maschine → Job starten**
 4. Überwache den Fortschritt in der Statusleiste
 
 ### Während des Jobs
 
-Der rechte Abschnitt der Statusleiste zeigt den aktuellen Fortschritt und die geschätzte Gesamtlaufzeit. Verwende die Pause- und Stopp-Tasten im Steuerungsfeld, um den Job zu steuern. Beachte, dass <kbd>esc</kbd> den Simulationsmodus beendet, aber keinen aktiven Job stoppt.
+Der rechte Abschnitt der Statusleiste zeigt den aktuellen Fortschritt und die geschätzte
+Gesamtlaufzeit. Verwende die Pause- und Stopp-Tasten im Steuerungsfeld, um den Job zu steuern.
+Beachte, dass <kbd>esc</kbd> den Simulationsmodus beendet, aber keinen aktiven Job stoppt.
 
 ## Schritt 6: Abschluss
 
@@ -111,33 +117,33 @@ Nachdem der Job abgeschlossen ist:
 2. Entferne vorsichtig dein fertiges Teil
 3. Reinige bei Bedarf das Laserbett
 
-:::success Herzlichen Glückwunsch!
-Du hast deinen ersten Rayforge-Job abgeschlossen! Jetzt kannst du erweiterte Funktionen erkunden.
-:::
-
+:::success Herzlichen Glückwunsch! Du hast deinen ersten Rayforge-Job abgeschlossen! Jetzt kannst du
+erweiterte Funktionen erkunden. :::
 
 ## Nächste Schritte
 
 Nachdem du deinen ersten Job abgeschlossen hast, erkunde diese Funktionen:
 
-- **[Werkstückpositionierung](../features/workpiece-positioning.md)**: Meistere
-  alle Positionierungsmethoden (Fokusmodus, Einrahmen, WKS, Kamera)
-- **[Mehrschicht-Operationen](../features/multi-layer.md)**: Unterschiedliche
-  Operationen Ebenen zuweisen
+- **[Werkstückpositionierung](../features/workpiece-positioning.md)**: Meistere alle
+  Positionierungsmethoden (Fokusmodus, Einrahmen, WKS, Kamera)
+- **[Mehrschicht-Operationen](../features/multi-layer.md)**: Unterschiedliche Operationen Ebenen
+  zuweisen
 - **[Halte-Laschen](../features/holding-tabs.md)**: Geschnittene Teile während des Schneidens an Ort
   und Stelle halten
-- **[Kamera-Integration](../machine/camera.md)**: Eine Kamera zur präzisen
-  Ausrichtung verwenden
+- **[Kamera-Integration](../machine/camera.md)**: Eine Kamera zur präzisen Ausrichtung verwenden
 - **[Hooks & Makros](../machine/hooks-macros.md)**: Wiederkehrende Aufgaben automatisieren
 
 ## Tipps für den Erfolg
 
 1. **Speichere deine Arbeit**: Verwende <kbd>ctrl+s</kbd>, um dein Projekt häufig zu speichern
 2. **Testschnitte**: Führe immer zuerst einen Testschnitt auf Abfallmaterial durch
-3. **Materialdatenbank**: Notiere dir erfolgreiche Leistungs-/Geschwindigkeitseinstellungen für verschiedene Materialien
+3. **Materialdatenbank**: Notiere dir erfolgreiche Leistungs-/Geschwindigkeitseinstellungen für
+   verschiedene Materialien
 4. **Wartung**: Halte deine Laserlinse sauber und überprüfe den Riemenzug regelmäßig
-5. **Luftunterstützung**: Wenn deine Maschine über Luftunterstützung verfügt, verwende sie, um Verrußung zu verhindern und die Schnittqualität zu verbessern
+5. **Luftunterstützung**: Wenn deine Maschine über Luftunterstützung verfügt, verwende sie, um
+   Verrußung zu verhindern und die Schnittqualität zu verbessern
 
 ---
 
-**Hilfe benötigt?** Schaue im Abschnitt [Fehlerbehebung](../troubleshooting/connection.md) nach oder besuche die [GitHub-Issues](https://github.com/barebaric/rayforge/issues)-Seite.
+**Hilfe benötigt?** Schaue im Abschnitt [Fehlerbehebung](../troubleshooting/connection.md) nach oder
+besuche die [GitHub-Issues](https://github.com/barebaric/rayforge/issues)-Seite.

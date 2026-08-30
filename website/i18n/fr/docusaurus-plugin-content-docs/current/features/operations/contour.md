@@ -1,6 +1,8 @@
 # Coupe de Contour
 
-La coupe de contour trace le contour des formes vectorielles pour les couper librement du matériau. C'est l'opération laser la plus courante pour créer des pièces, des enseignes et des pièces décoratives.
+La coupe de contour trace le contour des formes vectorielles pour les couper librement du matériau.
+C'est l'opération laser la plus courante pour créer des pièces, des enseignes et des pièces
+décoratives.
 
 ## Aperçu
 
@@ -47,13 +49,15 @@ Utilisez la coupe de contour pour :
 
 ## Paramètres Clés
 
-La boîte de dialogue des paramètres d'étape comporte trois onglets : **Paramètres d'étape**, **Laser** et **Post-Traitement**. Les paramètres sont décrits ci-dessous dans l'ordre des onglets.
+La boîte de dialogue des paramètres d'étape comporte trois onglets : **Paramètres d'étape**,
+**Laser** et **Post-Traitement**. Les paramètres sont décrits ci-dessous dans l'ordre des onglets.
 
 ### Paramètres de Contour
 
 ![Paramètres d'étape de contour](/screenshots/step-settings-contour-general.webp)
 
-Le groupe **Paramètres de Contour** de l'onglet _Paramètres d'étape_ contrôle la façon dont le contour est tracé.
+Le groupe **Paramètres de Contour** de l'onglet _Paramètres d'étape_ contrôle la façon dont le
+contour est tracé.
 
 #### Côté de Coupe et Décalage de Parcours
 
@@ -90,16 +94,20 @@ Contrôle l'ordre dans lequel les parcours imbriqués sont traités :
 
 #### Supprimer les Parcours Intérieurs
 
-Pour les designs comportant des trous ou des découpes internes, vous pouvez choisir de tracer uniquement la limite la plus extérieure :
+Pour les designs comportant des trous ou des découpes internes, vous pouvez choisir de tracer
+uniquement la limite la plus extérieure :
 
-- **Supprimer les Parcours Intérieurs :** lorsqu'il est activé, seul le contour le plus extérieur est tracé
+- **Supprimer les Parcours Intérieurs :** lorsqu'il est activé, seul le contour le plus extérieur
+  est tracé
 - Les trous internes et les découpes sont ignorés
 
-Ceci est utile lorsque vous voulez découper une forme tout en préservant l'intérieur, comme pour créer un cadre ou un contour sans couper les détails internes.
+Ceci est utile lorsque vous voulez découper une forme tout en préservant l'intérieur, comme pour
+créer un cadre ou un contour sans couper les détails internes.
 
 #### Surcoupe
 
-Prolonge les parcours de coupe fermés au-delà de leur point de départ pour que le faisceau laser chevauche le début de la coupe :
+Prolonge les parcours de coupe fermés au-delà de leur point de départ pour que le faisceau laser
+chevauche le début de la coupe :
 
 **Surcoupe :**
 
@@ -110,7 +118,9 @@ Prolonge les parcours de coupe fermés au-delà de leur point de départ pour qu
 
 **Pourquoi utiliser la surcoupe :**
 
-Au début et à la fin d'un contour fermé, le laser peut ne pas pénétrer complètement en raison de l'accélération et de la décélération. La surcoupe garantit que le faisceau se chevauche à la jonction, créant une coupe nette et complètement sectionnée. Ceci est particulièrement utile pour :
+Au début et à la fin d'un contour fermé, le laser peut ne pas pénétrer complètement en raison de
+l'accélération et de la décélération. La surcoupe garantit que le faisceau se chevauche à la
+jonction, créant une coupe nette et complètement sectionnée. Ceci est particulièrement utile pour :
 
 - Les matériaux épais où la pénétration complète est marginale
 - Les coupes à grande vitesse où les effets d'accélération sont plus prononcés
@@ -118,26 +128,30 @@ Au début et à la fin d'un contour fermé, le laser peut ne pas pénétrer comp
 
 La surcoupe s'applique à la fois aux contours extérieurs et aux trous internes.
 
-:::tip Entrée/Sortie vs Surcoupe
-[L'entrée/sortie](../lead-in-out.md) ajoute des mouvements d'approche et de sortie à puissance nulle avant et après le parcours de coupe. La surcoupe prolonge le parcours de coupe lui-même au-delà de la jonction. Ils peuvent être utilisés ensemble pour une qualité de coupe optimale.
-:::
+:::tip Entrée/Sortie vs Surcoupe [L'entrée/sortie](../lead-in-out.md) ajoute des mouvements
+d'approche et de sortie à puissance nulle avant et après le parcours de coupe. La surcoupe prolonge
+le parcours de coupe lui-même au-delà de la jonction. Ils peuvent être utilisés ensemble pour une
+qualité de coupe optimale. :::
 
 #### Retraçage avec Seuil Personnalisé
 
-Lorsque vous travaillez avec des images bitmap converties en vecteurs, vous pouvez contrôler quelles parties sont tracées :
+Lorsque vous travaillez avec des images bitmap converties en vecteurs, vous pouvez contrôler quelles
+parties sont tracées :
 
 - **Rescan du contenu :** Active un seuil de luminosité personnalisé pour le traçage
 - **Seuil de traçage (0.0-1.0) :** Valeur de coupure de luminosité lorsque le rescan est activé
   - Les valeurs plus basses ne tracent que les zones plus sombres
   - Les valeurs plus élevées incluent les zones plus claires
 
-Ceci est utile lorsque le traçage par défaut ne capture pas le niveau de détail dont vous avez besoin.
+Ceci est utile lorsque le traçage par défaut ne capture pas le niveau de détail dont vous avez
+besoin.
 
 ### Paramètres Laser
 
 ![Paramètres laser](/screenshots/step-settings-contour-laser.webp)
 
-La puissance, la vitesse et la sélection de la tête laser se trouvent sur la page **Laser** de la boîte de dialogue des paramètres d'étape.
+La puissance, la vitesse et la sélection de la tête laser se trouvent sur la page **Laser** de la
+boîte de dialogue des paramètres d'étape.
 
 #### Puissance & Vitesse
 
@@ -178,11 +192,14 @@ Voir [Kerf](../kerf.md) pour un guide détaillé.
 Les opérations de contour supportent plusieurs options de post-traitement :
 
 - **[Lissage de Parcours](../smooth.md)** - Réduire les bords irréguliers dans les parcours de coupe
-- **[Ponts de Maintien](../holding-tabs.md)** - Maintenir les pièces coupées attachées au matériau de stock
+- **[Ponts de Maintien](../holding-tabs.md)** - Maintenir les pièces coupées attachées au matériau
+  de stock
 - **[Rognage au Stock](../crop-to-stock.md)** - Limiter les coupes à la limite du matériau
-- **[Optimisation de Parcours](../path-optimization.md)** - Réduire la distance de déplacement entre les coupes
+- **[Optimisation de Parcours](../path-optimization.md)** - Réduire la distance de déplacement entre
+  les coupes
 - **[Passe Multiple](../multi-pass.md)** - Répéter les coupes pour les matériaux épais
-- **[Entrée/Sortie](../lead-in-out.md)** - Ajouter des mouvements d'approche et de sortie à puissance nulle pour des extrémités de coupe plus propres
+- **[Entrée/Sortie](../lead-in-out.md)** - Ajouter des mouvements d'approche et de sortie à
+  puissance nulle pour des extrémités de coupe plus propres
 
 ### Coupe Multi-Passes
 
@@ -200,10 +217,10 @@ Pour les matériaux plus épais qu'une seule passe ne peut couper :
 - Crée une véritable coupe 2.5D
 - Définissez à 0 pour des passes multiples à la même profondeur
 
-:::warning Axe Z Requis
-:::
+:::warning Axe Z Requis :::
 
-La profondeur de passe ne fonctionne que si votre machine dispose d'un contrôle de l'axe Z. Pour les machines sans axe Z, utilisez des passes multiples à la même profondeur.
+La profondeur de passe ne fonctionne que si votre machine dispose d'un contrôle de l'axe Z. Pour les
+machines sans axe Z, utilisez des passes multiples à la même profondeur.
 
 ## Conseils & Meilleures Pratiques
 
@@ -302,4 +319,5 @@ M5                  ; Laser éteint
 - **[Gravure](engrave)** - Remplir des zones avec des motifs de gravure
 - **[Ponts de Maintien](../holding-tabs.md)** - Maintenir les pièces sécurisées pendant la coupe
 - **[Kerf](../kerf.md)** - Améliorer la précision de coupe
-- **[Grille de Test de Matériau](material-test-grid)** - Trouver les paramètres puissance/vitesse optimaux
+- **[Grille de Test de Matériau](material-test-grid)** - Trouver les paramètres puissance/vitesse
+  optimaux

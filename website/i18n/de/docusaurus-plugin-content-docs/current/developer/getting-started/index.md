@@ -4,7 +4,8 @@ Dieser Leitfaden behandelt, wie du den Rayforge-Quellcode für die Entwicklung e
 
 ## Das Repository forken
 
-Forke das [Rayforge-Repository](https://github.com/barebaric/rayforge) auf GitHub, um deine eigene Kopie zu erstellen, in der du Änderungen vornehmen kannst.
+Forke das [Rayforge-Repository](https://github.com/barebaric/rayforge) auf GitHub, um deine eigene
+Kopie zu erstellen, in der du Änderungen vornehmen kannst.
 
 ## Deinen Fork klonen
 
@@ -33,4 +34,5 @@ Du solltest sowohl deinen Fork (origin) als auch das Upstream-Repository sehen.
 
 ## Nächste Schritte
 
-Nachdem du den Code hast, fahre mit [Einrichtung](setup) fort, um deine Entwicklungsumgebung zu konfigurieren.
+Nachdem du den Code hast, fahre mit [Einrichtung](setup) fort, um deine Entwicklungsumgebung zu
+konfigurieren.

@@ -10,7 +10,8 @@ O Rayforge suporta várias opções de exportação para diferentes propósitos:
 
 ## Exportando Objetos
 
-Você pode exportar qualquer peça de trabalho para formatos vetoriais para uso em software de design, aplicações CAD ou para arquivamento.
+Você pode exportar qualquer peça de trabalho para formatos vetoriais para uso em software de design,
+aplicações CAD ou para arquivamento.
 
 ### Como Exportar
 
@@ -20,11 +21,11 @@ Você pode exportar qualquer peça de trabalho para formatos vetoriais para uso 
 
 ### Formatos Disponíveis
 
-| Formato  | Extensão | Descrição                                                                                                    |
-| ------- | --------- | -------------------------------------------------------------------------------------------------------------- |
-| **RFS** | `.rfs`    | Formato de esboço paramétrico nativo do Rayforge. Preserva todas as restrições e pode ser reimportado para edição.      |
-| **SVG** | `.svg`    | Scalable Vector Graphics. Amplamente compatível com software de design como Inkscape, Illustrator e navegadores web. |
-| **DXF** | `.dxf`    | Drawing Exchange Format. Compatível com a maioria das aplicações CAD como AutoCAD, FreeCAD e LibreCAD.            |
+| Formato | Extensão | Descrição                                                                                                            |
+| ------- | -------- | -------------------------------------------------------------------------------------------------------------------- |
+| **RFS** | `.rfs`   | Formato de esboço paramétrico nativo do Rayforge. Preserva todas as restrições e pode ser reimportado para edição.   |
+| **SVG** | `.svg`   | Scalable Vector Graphics. Amplamente compatível com software de design como Inkscape, Illustrator e navegadores web. |
+| **DXF** | `.dxf`   | Drawing Exchange Format. Compatível com a maioria das aplicações CAD como AutoCAD, FreeCAD e LibreCAD.               |
 
 ### Notas de Exportação
 
@@ -64,10 +65,10 @@ Você pode exportar todas as peças de trabalho em um documento para um único a
 
 ### Formatos Disponíveis
 
-| Formato  | Extensão | Descrição                                                                                                    |
-| ------- | --------- | -------------------------------------------------------------------------------------------------------------- |
-| **SVG** | `.svg`    | Scalable Vector Graphics. Amplamente compatível com software de design como Inkscape, Illustrator e navegadores web. |
-| **DXF** | `.dxf`    | Drawing Exchange Format. Compatível com a maioria das aplicações CAD como AutoCAD, FreeCAD e LibreCAD.            |
+| Formato | Extensão | Descrição                                                                                                            |
+| ------- | -------- | -------------------------------------------------------------------------------------------------------------------- |
+| **SVG** | `.svg`   | Scalable Vector Graphics. Amplamente compatível com software de design como Inkscape, Illustrator e navegadores web. |
+| **DXF** | `.dxf`   | Drawing Exchange Format. Compatível com a maioria das aplicações CAD como AutoCAD, FreeCAD e LibreCAD.               |
 
 ### Notas de Exportação
 
@@ -86,9 +87,9 @@ Você pode exportar todas as peças de trabalho em um documento para um único a
 
 ## Exportando G-code
 
-O G-code gerado contém tudo exatamente como seria enviado para a máquina.
-O formato exato, comandos, precisão numérica, etc. dependem das configurações da
-máquina atualmente selecionada e seu dialeto G-code.
+O G-code gerado contém tudo exatamente como seria enviado para a máquina. O formato exato, comandos,
+precisão numérica, etc. dependem das configurações da máquina atualmente selecionada e seu dialeto
+G-code.
 
 ---
 
@@ -113,9 +114,9 @@ rayforge --export saida.gcode entrada.svg
 
 ### Saída G-code
 
-O G-code gerado contém tudo exatamente como seria enviado para a máquina.
-O formato exato, comandos, precisão numérica, etc. dependem das configurações da
-máquina atualmente selecionada e seu dialeto G-code.
+O G-code gerado contém tudo exatamente como seria enviado para a máquina. O formato exato, comandos,
+precisão numérica, etc. dependem das configurações da máquina atualmente selecionada e seu dialeto
+G-code.
 
 ---
 

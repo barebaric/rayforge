@@ -1,10 +1,13 @@
 # Seguimiento de uso
 
-Rayforge incluye un seguimiento de uso anónimo opcional para ayudarnos a comprender cómo se utiliza la aplicación y priorizar el desarrollo futuro. Esta página explica qué rastreamos, cómo funciona y su privacidad.
+Rayforge incluye un seguimiento de uso anónimo opcional para ayudarnos a comprender cómo se utiliza
+la aplicación y priorizar el desarrollo futuro. Esta página explica qué rastreamos, cómo funciona y
+su privacidad.
 
 ## Completamente opcional
 
-El seguimiento de uso es **completamente opcional**. Cuando inicie Rayforge por primera vez, se le preguntará si desea participar:
+El seguimiento de uso es **completamente opcional**. Cuando inicie Rayforge por primera vez, se le
+preguntará si desea participar:
 
 - **Sí**: Se enviarán datos de uso anónimos a nuestro servidor de análisis
 - **No**: Nunca se recopilarán ni transmitirán datos
@@ -13,8 +16,8 @@ Puede cambiar esta elección en cualquier momento en la configuración general.
 
 ## Qué rastreamos
 
-Cuando está habilitado, solo recopilamos datos anónimos de vistas de página,
-similares a los análisis de sitios web. Esto es lo que podemos ver:
+Cuando está habilitado, solo recopilamos datos anónimos de vistas de página, similares a los
+análisis de sitios web. Esto es lo que podemos ver:
 
 | Datos                   | Ejemplo                   |
 | ----------------------- | ------------------------- |
@@ -24,9 +27,9 @@ similares a los análisis de sitios web. Esto es lo que podemos ver:
 | Tiempo en la página     | 6m 3s                     |
 | ID de sesión            | a1b2c3d4-e5f6-...         |
 
-El ID de sesión es un identificador aleatorio generado cada vez que inicia
-Rayforge. Nos permite distinguir entre diferentes sesiones de uso mientras
-mantenemos el seguimiento completamente anónimo.
+El ID de sesión es un identificador aleatorio generado cada vez que inicia Rayforge. Nos permite
+distinguir entre diferentes sesiones de uso mientras mantenemos el seguimiento completamente
+anónimo.
 
 ## Lo que vemos
 
@@ -63,7 +66,8 @@ Los datos de uso nos ayudan a:
 
 ## Cómo funciona
 
-Rayforge usa [Umami](https://umami.is/), una plataforma de análisis de código abierto centrada en la privacidad. El seguimiento:
+Rayforge usa [Umami](https://umami.is/), una plataforma de análisis de código abierto centrada en la
+privacidad. El seguimiento:
 
 - Envía pequeñas solicitudes HTTP en segundo plano
 - No afecta el rendimiento de la aplicación

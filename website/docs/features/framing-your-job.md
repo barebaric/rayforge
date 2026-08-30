@@ -1,17 +1,18 @@
 ---
-description: "Frame your laser job before cutting to verify positioning. Trace the job outline with the laser at low power to confirm alignment on the material."
+description:
+  "Frame your laser job before cutting to verify positioning. Trace the job outline with the laser
+  at low power to confirm alignment on the material."
 ---
 
 # Framing Your Job
 
-Learn how to use the framing feature to preview your job boundaries and ensure
-proper alignment before cutting.
+Learn how to use the framing feature to preview your job boundaries and ensure proper alignment
+before cutting.
 
 ## Overview
 
-Framing allows you to preview the exact boundaries of your laser job by tracing
-an outline with the laser at low power or with the laser off. This helps verify
-positioning and prevent costly mistakes.
+Framing allows you to preview the exact boundaries of your laser job by tracing an outline with the
+laser at low power or with the laser off. This helps verify positioning and prevent costly mistakes.
 
 ## When to Use Framing
 
@@ -41,25 +42,20 @@ Some machines support low-power framing with a visible beam:
 3. **Run frame operation**
 4. **Observe the outline** traced on material surface
 
-:::warning Check Your Machine
-Not all lasers support low-power framing safely. Consult your machine
-documentation before using this feature.
-:::
-
+:::warning Check Your Machine Not all lasers support low-power framing safely. Consult your machine
+documentation before using this feature. :::
 
 ## Frame Settings
 
 Configure framing behavior in your machine's laser head settings:
 
-- **Frame speed**: How fast the laser head moves during framing. This is set per
-  laser head, so if your machine has multiple lasers you can use different speeds
-  for each.
+- **Frame speed**: How fast the laser head moves during framing. This is set per laser head, so if
+  your machine has multiple lasers you can use different speeds for each.
 - **Frame power**: Laser power during framing (0 for off, low % for visible trace)
-- **Corner dwell time**: A brief pause at each corner of the frame outline. This
-  gives you a moment to see exactly where each corner lands — especially helpful
-  at higher frame speeds.
-- **Repeat count**: Number of times to trace the outline. Setting this higher than
-  one can make the frame path easier to follow by eye.
+- **Corner dwell time**: A brief pause at each corner of the frame outline. This gives you a moment
+  to see exactly where each corner lands — especially helpful at higher frame speeds.
+- **Repeat count**: Number of times to trace the outline. Setting this higher than one can make the
+  frame path easier to follow by eye.
 
 ## Using Frame Results
 
@@ -106,7 +102,6 @@ See [Camera Integration](../machine/camera.md) for details.
 
 ## Related Topics
 
-- [Workpiece Positioning](workpiece-positioning) - Comprehensive
-  positioning guide
+- [Workpiece Positioning](workpiece-positioning) - Comprehensive positioning guide
 - [Camera Integration](../machine/camera.md)
 - [Quick Start Guide](../getting-started/quick-start.md)

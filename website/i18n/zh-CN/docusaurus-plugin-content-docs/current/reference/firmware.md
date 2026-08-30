@@ -23,9 +23,7 @@ Rayforge 主要为**基于 GRBL 的控制器**设计，但也支持 Marlin、Smo
 
 ## GRBL 固件
 
-**状态：** 完全支持
-**版本：** 1.1+
-**驱动程序：** GRBL 串口, GRBL Serial Simple
+**状态：** 完全支持 **版本：** 1.1+ **驱动程序：** GRBL 串口, GRBL Serial Simple
 
 ### GRBL 1.1（推荐）
 
@@ -95,8 +93,7 @@ GRBL 0.9 是较旧的版本，有一些兼容性问题：
 
 ### GRBL Serial Simple 驱动程序
 
-Rayforge 包含第二个串行 GRBL 驱动程序，适用于标准缓冲计数驱动程序
-导致误报或通信错误的设备。
+Rayforge 包含第二个串行 GRBL 驱动程序，适用于标准缓冲计数驱动程序导致误报或通信错误的设备。
 
 **工作原理：**
 
@@ -114,16 +111,13 @@ Rayforge 包含第二个串行 GRBL 驱动程序，适用于标准缓冲计数�
 **何时不使用：**
 
 - 标准 GRBL Serial 驱动程序在大多数设备上可靠工作
-- Simple 驱动程序缺乏死锁恢复，因此作业可能在丢失 "ok" 响应时
-  停止而无法自动恢复
+- Simple 驱动程序缺乏死锁恢复，因此作业可能在丢失 "ok" 响应时停止而无法自动恢复
 
 ---
 
 ## grblHAL
 
-**状态：** 兼容
-**版本：** 2023+
-**驱动程序：** GRBL 串口
+**状态：** 兼容 **版本：** 2023+ **驱动程序：** GRBL 串口
 
 ### 什么是 grblHAL？
 
@@ -154,13 +148,12 @@ grblHAL 是 GRBL 的现代分支，具有增强功能：
 
 ## GRBL Telnet 驱动
 
-**状态：** 支持
-**固件：** grblHAL、ESP3D 和其他网络化 GRBL 控制器
-**驱动程序：** GRBL Telnet
+**状态：** 支持 **固件：** grblHAL、ESP3D 和其他网络化 GRBL 控制器 **驱动程序：** GRBL Telnet
 
 ### 关于 GRBL Telnet 驱动
 
-GRBL Telnet 驱动通过网络 Telnet 接口连接基于 GRBL 的控制器。适用于内置 WiFi 或以太网的板子——无需 USB 电缆。
+GRBL
+Telnet 驱动通过网络 Telnet 接口连接基于 GRBL 的控制器。适用于内置 WiFi 或以太网的板子——无需 USB 电缆。
 
 **功能：**
 
@@ -219,13 +212,12 @@ Smoothieware 使用不同的 G 代码语法：
 
 ## Marlin
 
-**版本：** 2.0+ 带激光支持
-**驱动程序：** Marlin 串口
+**版本：** 2.0+ 带激光支持 **驱动程序：** Marlin 串口
 
 ### Marlin 串口驱动程序
 
-Rayforge 包含一个专用的 MarlinSerialDriver，通过串口 (USB) 连接到 Marlin 固件。
-Marlin 2.0+ 在正确配置时可以控制激光。
+Rayforge 包含一个专用的 MarlinSerialDriver，通过串口 (USB) 连接到 Marlin 固件。Marlin
+2.0+ 在正确配置时可以控制激光。
 
 **功能：**
 
@@ -508,7 +500,8 @@ $22=1       ; 归零启用
 
 ### Ruida 控制器
 
-Rayforge 包含对基于 Ruida 的控制器的实验性支持（例如 RDC6442、RDC6445、Ruida R5）。Ruida 驱动程序通过网络连接，支持点动、位置报告、气辅控制、图层选择、自动连接和状态轮询。
+Rayforge 包含对基于 Ruida 的控制器的实验性支持（例如 RDC6442、RDC6445、Ruida
+R5）。Ruida 驱动程序通过网络连接，支持点动、位置报告、气辅控制、图层选择、自动连接和状态轮询。
 
 **功能：**
 
@@ -528,9 +521,8 @@ Rayforge 包含对基于 Ruida 的控制器的实验性支持（例如 RDC6442�
 
 ### OctoPrint
 
-Rayforge 包含一个实验性的 OctoPrint 驱动程序，可通过网络直接向 OctoPrint
-服务器提交 G 代码。如果您的激光器连接到运行 OctoPrint 的 Raspberry Pi 或其他
-计算机上，这将非常有用。
+Rayforge 包含一个实验性的 OctoPrint 驱动程序，可通过网络直接向 OctoPrint 服务器提交 G 代码。如果您的激光器连接到运行 OctoPrint 的 Raspberry
+Pi 或其他计算机上，这将非常有用。
 
 **功能：**
 

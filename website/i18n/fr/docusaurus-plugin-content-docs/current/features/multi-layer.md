@@ -1,134 +1,113 @@
 ---
-description: "Organisez les travaux laser en calques avec différents réglages. Gérez l'ordre de coupe, les opérations et les matériaux avec le système multi-calques de Rayforge."
+description:
+  "Organisez les travaux laser en calques avec différents réglages. Gérez l'ordre de coupe, les
+  opérations et les matériaux avec le système multi-calques de Rayforge."
 ---
 
 # Flux de travail multi-calques
 
 ![Panneau des calques](/screenshots/bottom-panel-layers.webp)
 
-Le système multi-calques de Rayforge vous permet d'organiser les travaux
-en étapes de traitement séparées. Chaque calque est un conteneur pour
-les pièces et possède son propre flux de travail — une séquence
-d'étapes, chacune avec des réglages laser indépendants.
+Le système multi-calques de Rayforge vous permet d'organiser les travaux en étapes de traitement
+séparées. Chaque calque est un conteneur pour les pièces et possède son propre flux de travail — une
+séquence d'étapes, chacune avec des réglages laser indépendants.
 
-:::tip Quand vous n'avez pas besoin de plusieurs calques
-Dans de nombreux cas, un seul calque suffit. Chaque étape au sein d'un
-calque dispose de ses propres réglages de laser, puissance, vitesse et
-autres paramètres, ce qui vous permet de graver et contourner dans le
-même calque. Des calques séparés ne sont nécessaires que lorsque vous
-souhaitez contourner différentes parties d'une image avec des réglages
-différents, ou lorsque vous avez besoin de configurations WCS ou
-rotatives différentes.
-:::
+:::tip Quand vous n'avez pas besoin de plusieurs calques Dans de nombreux cas, un seul calque
+suffit. Chaque étape au sein d'un calque dispose de ses propres réglages de laser, puissance,
+vitesse et autres paramètres, ce qui vous permet de graver et contourner dans le même calque. Des
+calques séparés ne sont nécessaires que lorsque vous souhaitez contourner différentes parties d'une
+image avec des réglages différents, ou lorsque vous avez besoin de configurations WCS ou rotatives
+différentes. :::
 
 ## Créer et gérer les calques
 
 ### Ajouter un calque
 
-Cliquez sur le bouton **+** dans le panneau des calques. Les nouveaux
-documents commencent avec trois calques vides.
+Cliquez sur le bouton **+** dans le panneau des calques. Les nouveaux documents commencent avec
+trois calques vides.
 
 ### Réorganiser les calques
 
-Glissez-déposez les calques dans le panneau pour modifier l'ordre
-d'exécution. Les calques sont traités de gauche à droite. Vous pouvez
-utiliser le **glisser avec le clic du milieu** pour faire défiler la
-liste des calques.
+Glissez-déposez les calques dans le panneau pour modifier l'ordre d'exécution. Les calques sont
+traités de gauche à droite. Vous pouvez utiliser le **glisser avec le clic du milieu** pour faire
+défiler la liste des calques.
 
 ### Réorganiser les pièces
 
-Les pièces au sein d'un calque peuvent être réorganisées par
-glisser-déposer pour contrôler leur ordre Z. Vous pouvez sélectionner
-plusieurs pièces avec **Ctrl+clic** pour basculer des éléments
-individuels, ou **Maj+clic** pour sélectionner une plage. Glisser une
-sélection déplace tous les éléments sélectionnés en une seule fois. Les
-pièces sélectionnées sont mises en surbrillance dans la colonne du calque
-et la sélection reste synchronisée avec le canevas.
+Les pièces au sein d'un calque peuvent être réorganisées par glisser-déposer pour contrôler leur
+ordre Z. Vous pouvez sélectionner plusieurs pièces avec **Ctrl+clic** pour basculer des éléments
+individuels, ou **Maj+clic** pour sélectionner une plage. Glisser une sélection déplace tous les
+éléments sélectionnés en une seule fois. Les pièces sélectionnées sont mises en surbrillance dans la
+colonne du calque et la sélection reste synchronisée avec le canevas.
 
 ### Supprimer un calque
 
-Sélectionnez le calque et cliquez sur le bouton de suppression. Toutes
-les pièces du calque sont supprimées. Vous pouvez annuler la suppression
-si nécessaire.
+Sélectionnez le calque et cliquez sur le bouton de suppression. Toutes les pièces du calque sont
+supprimées. Vous pouvez annuler la suppression si nécessaire.
 
 ## Propriétés du calque
 
-Chaque calque possède les réglages suivants, accessibles via l'icône
-d'engrenage dans la colonne du calque :
+Chaque calque possède les réglages suivants, accessibles via l'icône d'engrenage dans la colonne du
+calque :
 
 - **Nom** — affiché dans l'en-tête du calque
-- **Couleur** — utilisée pour le rendu des opérations du calque sur le
-  canevas
-- **Visibilité** — l'icône en forme d'œil bascule l'affichage du calque
-  sur le canevas et dans les aperçus. Les calques masqués sont
-  toujours inclus dans le G-code généré.
-- **Système de coordonnées (WCS)** — assigne un système de coordonnées
-  de travail à ce calque. Lorsqu'il est défini sur un WCS spécifique
-  (par ex. G54, G55), la machine bascule vers ce système de
-  coordonnées au début du calque. Sélectionnez **Par défaut** pour
-  utiliser le WCS global à la place.
-- **Mode rotatif** — active le mode d'accessoire rotatif pour ce calque,
-  vous permettant de mélanger le travail sur lit plat et cylindrique
-  dans le même projet. Configurez le module rotatif et le diamètre de
-  l'objet dans les réglages du calque.
+- **Couleur** — utilisée pour le rendu des opérations du calque sur le canevas
+- **Visibilité** — l'icône en forme d'œil bascule l'affichage du calque sur le canevas et dans les
+  aperçus. Les calques masqués sont toujours inclus dans le G-code généré.
+- **Système de coordonnées (WCS)** — assigne un système de coordonnées de travail à ce calque.
+  Lorsqu'il est défini sur un WCS spécifique (par ex. G54, G55), la machine bascule vers ce système
+  de coordonnées au début du calque. Sélectionnez **Par défaut** pour utiliser le WCS global à la
+  place.
+- **Mode rotatif** — active le mode d'accessoire rotatif pour ce calque, vous permettant de mélanger
+  le travail sur lit plat et cylindrique dans le même projet. Configurez le module rotatif et le
+  diamètre de l'objet dans les réglages du calque.
 
 ## Flux de travail des calques
 
-Chaque calque possède un **flux de travail** — une séquence d'étapes
-affichée comme un pipeline d'icônes dans la colonne du calque. Chaque
-étape définit une seule opération (par ex. contour, gravure raster)
-avec ses propres réglages de laser, puissance, vitesse et autres
-paramètres.
+Chaque calque possède un **flux de travail** — une séquence d'étapes affichée comme un pipeline
+d'icônes dans la colonne du calque. Chaque étape définit une seule opération (par ex. contour,
+gravure raster) avec ses propres réglages de laser, puissance, vitesse et autres paramètres.
 
-Cliquez sur une étape pour la configurer. Utilisez le bouton **+** du
-pipeline pour ajouter des étapes à un calque. Les étapes peuvent être
-réorganisées par glisser-déposer.
+Cliquez sur une étape pour la configurer. Utilisez le bouton **+** du pipeline pour ajouter des
+étapes à un calque. Les étapes peuvent être réorganisées par glisser-déposer.
 
 ## Import de fichiers vectoriels
 
-Lors de l'importation de fichiers vectoriels (SVG, DXF, PDF), le
-dialogue d'importation propose trois façons de gérer les calques du
-fichier source :
+Lors de l'importation de fichiers vectoriels (SVG, DXF, PDF), le dialogue d'importation propose
+trois façons de gérer les calques du fichier source :
 
-- **Mapper vers les calques existants** — importe chaque calque source
-  dans le calque de document correspondant par position
-- **Nouveaux calques** — crée un nouveau calque de document pour chaque
-  calque source
+- **Mapper vers les calques existants** — importe chaque calque source dans le calque de document
+  correspondant par position
+- **Nouveaux calques** — crée un nouveau calque de document pour chaque calque source
 - **Aplatir** — importe tout dans le calque actif
 
-Lors de l'utilisation de **Mapper vers les calques existants** ou
-**Nouveaux calques**, le dialogue affiche une liste des calques du
-fichier source avec des interrupteurs pour sélectionner lesquels
+Lors de l'utilisation de **Mapper vers les calques existants** ou **Nouveaux calques**, le dialogue
+affiche une liste des calques du fichier source avec des interrupteurs pour sélectionner lesquels
 importer.
 
 ## Assigner des pièces aux calques
 
-**Glisser-déposer :** Sélectionnez les pièce(s) sur le canevas ou dans
-le panneau des calques et glissez-les vers le calque cible. La
-multi-sélection avec Ctrl+clic et Maj+clic est prise en charge, et vous
-pouvez glisser des éléments entre les calques.
+**Glisser-déposer :** Sélectionnez les pièce(s) sur le canevas ou dans le panneau des calques et
+glissez-les vers le calque cible. La multi-sélection avec Ctrl+clic et Maj+clic est prise en charge,
+et vous pouvez glisser des éléments entre les calques.
 
-**Couper-coller :** Coupez une pièce du calque actuel (Ctrl+X),
-sélectionnez le calque cible et collez (Ctrl+V).
+**Couper-coller :** Coupez une pièce du calque actuel (Ctrl+X), sélectionnez le calque cible et
+collez (Ctrl+V).
 
-**Menu contextuel :** Faites un clic droit sur une pièce dans l'onglet
-des calques pour ouvrir un menu contextuel avec des options pour la
-déplacer vers un autre calque, la supprimer ou ouvrir ses propriétés.
+**Menu contextuel :** Faites un clic droit sur une pièce dans l'onglet des calques pour ouvrir un
+menu contextuel avec des options pour la déplacer vers un autre calque, la supprimer ou ouvrir ses
+propriétés.
 
 ## Ordre d'exécution
 
-Pendant un travail, les calques sont traités de gauche à droite. Au
-sein de chaque calque, toutes les pièces sont traitées avant de passer
-au calque suivant. Le flux de travail standard consiste à graver en
-premier et couper en dernier, afin que les pièces restent en place
-pendant la gravure.
+Pendant un travail, les calques sont traités de gauche à droite. Au sein de chaque calque, toutes
+les pièces sont traitées avant de passer au calque suivant. Le flux de travail standard consiste à
+graver en premier et couper en dernier, afin que les pièces restent en place pendant la gravure.
 
 ## Pages associées
 
-- [Opérations](./operations/contour.md) - Types d'opérations pour les
-  flux de travail par calque
+- [Opérations](./operations/contour.md) - Types d'opérations pour les flux de travail par calque
 
-- [Macros et Hooks](../machine/hooks-macros.md) - Hooks au niveau du
-  calque pour l'automatisation
+- [Macros et Hooks](../machine/hooks-macros.md) - Hooks au niveau du calque pour l'automatisation
 - [Navigateur d'actifs](../ui/bottom-panel.md) - Gérer les actifs avec les menus contextuels
 - [Aperçu 3D](../ui/3d-preview.md) - Visualiser la pile de calques

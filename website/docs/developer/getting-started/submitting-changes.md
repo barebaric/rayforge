@@ -1,5 +1,7 @@
 ---
-description: "How to submit changes to Rayforge. Follow the contribution workflow for pull requests, code review, and merging."
+description:
+  "How to submit changes to Rayforge. Follow the contribution workflow for pull requests, code
+  review, and merging."
 ---
 
 # Submitting Changes
@@ -48,6 +50,7 @@ git rebase upstream/main
 ## Submit a Pull Request
 
 1. Push your branch to your fork:
+
    ```bash
    git push origin feature/your-feature-name
    ```
@@ -87,13 +90,12 @@ Use clear, descriptive commit messages:
 
 ### Small, Focused Changes
 
-Keep pull requests focused on a single feature or fix. Large changes should be broken into smaller, logical pieces.
+Keep pull requests focused on a single feature or fix. Large changes should be broken into smaller,
+logical pieces.
 
-:::tip Discuss First
-For major changes, open an [issue](https://github.com/barebaric/rayforge/issues) first to discuss your approach before investing significant time.
-:::
+:::tip Discuss First For major changes, open an
+[issue](https://github.com/barebaric/rayforge/issues) first to discuss your approach before
+investing significant time. :::
 
-
-:::note Need Help?
-If you're unsure about any part of the contribution process, don't hesitate to ask for help in an issue or discussion.
-:::
+:::note Need Help? If you're unsure about any part of the contribution process, don't hesitate to
+ask for help in an issue or discussion. :::

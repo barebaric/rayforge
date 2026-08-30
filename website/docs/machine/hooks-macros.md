@@ -1,10 +1,13 @@
 ---
-description: "Custom hooks and macros in Rayforge — automate repetitive tasks with pre/post job G-code snippets and custom button actions."
+description:
+  "Custom hooks and macros in Rayforge — automate repetitive tasks with pre/post job G-code snippets
+  and custom button actions."
 ---
 
 # Macros & Hooks
 
-Rayforge provides two powerful automation features for customizing your workflow: **Macros** and **Hooks**. Both allow you to inject custom G-code into your jobs, but they serve different purposes.
+Rayforge provides two powerful automation features for customizing your workflow: **Macros** and
+**Hooks**. Both allow you to inject custom G-code into your jobs, but they serve different purposes.
 
 ![Hooks & Macros Settings](/screenshots/machine-settings-hooks-macros.webp)
 
@@ -59,8 +62,7 @@ Common macro use cases:
 
 #### Simple: Home the Machine
 
-**Name:** Home Machine
-**Code:**
+**Name:** Home Machine **Code:**
 
 ```gcode
 $H
@@ -73,8 +75,7 @@ $H
 
 #### Medium: Set Work Offset
 
-**Name:** Set G54 to Current Position
-**Code:**
+**Name:** Set G54 to Current Position **Code:**
 
 ```gcode
 G10 L20 P1 X0 Y0
@@ -87,8 +88,7 @@ G10 L20 P1 X0 Y0
 
 #### Advanced: Focus Test Grid
 
-**Name:** 9-Point Focus Test
-**Code:**
+**Name:** 9-Point Focus Test **Code:**
 
 ```gcode
 ; 9-point grid for finding optimal focus
@@ -117,16 +117,15 @@ Hooks are **automatic G-code injections** triggered by specific events during jo
 
 Rayforge supports these hook triggers:
 
-| Trigger             | When It Runs                     | Common Uses                                 |
-| ------------------- | -------------------------------- | ------------------------------------------- |
-| **Layer Start**     | Before processing each layer     | Tool change, power adjust, comments         |
-| **Layer End**       | After processing each layer      | Progress notification, pause                |
-| **Workpiece Start** | Before processing each workpiece | Part numbering, alignment marks             |
-| **Workpiece End**   | After processing each workpiece  | Cooldown, inspection pause                  |
+| Trigger             | When It Runs                     | Common Uses                         |
+| ------------------- | -------------------------------- | ----------------------------------- |
+| **Layer Start**     | Before processing each layer     | Tool change, power adjust, comments |
+| **Layer End**       | After processing each layer      | Progress notification, pause        |
+| **Workpiece Start** | Before processing each workpiece | Part numbering, alignment marks     |
+| **Workpiece End**   | After processing each workpiece  | Cooldown, inspection pause          |
 
-:::note Job-Level G-code
-Job start and end G-code is configured through the dialect's preamble and postscript settings, not hooks. See [G-code Settings](gcode) for details.
-:::
+:::note Job-Level G-code Job start and end G-code is configured through the dialect's preamble and
+postscript settings, not hooks. See [G-code Settings](gcode) for details. :::
 
 ### Creating a Hook
 
@@ -147,8 +146,7 @@ Job start and end G-code is configured through the dialect's preamble and postsc
 
 #### Layer Start: Add Comment
 
-**Trigger:** Layer Start
-**Code:**
+**Trigger:** Layer Start **Code:**
 
 ```gcode
 ; Starting layer: {layer_name}
@@ -161,8 +159,7 @@ Job start and end G-code is configured through the dialect's preamble and postsc
 
 #### Workpiece Start: Part Numbering
 
-**Trigger:** Workpiece Start
-**Code:**
+**Trigger:** Workpiece Start **Code:**
 
 ```gcode
 ; Part: {workpiece_name}
@@ -241,8 +238,7 @@ Variables use `{variable_name}` syntax and are replaced during G-code generation
 
 ### Example: Progress Notification
 
-**Hook:** Layer Start
-**Code:**
+**Hook:** Layer Start **Code:**
 
 ```gcode
 ; ========================================
@@ -270,8 +266,7 @@ Variables use `{variable_name}` syntax and are replaced during G-code generation
 
 For machines with multiple lasers or tools:
 
-**Hook:** Workpiece Start
-**Code:**
+**Hook:** Workpiece Start **Code:**
 
 ```gcode
 ; Select tool for workpiece {workpiece_name}
@@ -283,8 +278,7 @@ G4 P1           ; Wait for tool change
 
 Add optional pauses for inspection:
 
-**Hook:** Layer End
-**Code:**
+**Hook:** Layer End **Code:**
 
 ```gcode
 ; M0  ; Uncomment to pause after each layer for inspection
@@ -294,35 +288,31 @@ Add optional pauses for inspection:
 
 Control air assist on a per-layer basis:
 
-**Hook:** Layer Start (for cutting layers)
-**Code:**
+**Hook:** Layer Start (for cutting layers) **Code:**
 
 ```gcode
 M8  ; Air assist ON
 ```
 
-**Hook:** Layer Start (for engraving layers)
-**Code:**
+**Hook:** Layer Start (for engraving layers) **Code:**
 
 ```gcode
 M9  ; Air assist OFF (prevents dust scattering for engraving)
 ```
 
-:::note Layer-Specific Hooks
-Rayforge doesn't currently support per-layer hook customization. To achieve this, use conditional G-code or separate machine profiles.
-:::
+:::note Layer-Specific Hooks Rayforge doesn't currently support per-layer hook customization. To
+achieve this, use conditional G-code or separate machine profiles. :::
 
 ---
 
 ## Safety Considerations
 
-:::danger Test Before Production
-Always test macros and hooks in **simulation mode** or with the laser **disabled** before running on real jobs. Incorrectly configured G-code can:
+:::danger Test Before Production Always test macros and hooks in **simulation mode** or with the
+laser **disabled** before running on real jobs. Incorrectly configured G-code can:
 
 - Crash the machine into limits
 - Fire the laser unexpectedly
-- Damage materials or equipment
-  :::
+- Damage materials or equipment :::
 
 **Safety checklist:**
 

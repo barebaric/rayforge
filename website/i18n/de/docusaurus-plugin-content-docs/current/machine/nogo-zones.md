@@ -1,17 +1,16 @@
 # No-Go-Zonen
 
-No-Go-Zonen definieren eingeschränkte Bereiche auf der Arbeitsfläche, die der
-Laser nicht betreten sollte. Wenn aktiviert, werden sie als Teil der
-[Auftrags-Plausibilitätsprüfungen](../features/sanity-checks.md) vor dem
-Ausführen oder Exportieren geprüft.
+No-Go-Zonen definieren eingeschränkte Bereiche auf der Arbeitsfläche, die der Laser nicht betreten
+sollte. Wenn aktiviert, werden sie als Teil der
+[Auftrags-Plausibilitätsprüfungen](../features/sanity-checks.md) vor dem Ausführen oder Exportieren
+geprüft.
 
 ![No-Go-Zonen](/screenshots/machine-settings-nogo-zones.webp)
 
 ## Eine No-Go-Zone hinzufügen
 
-Öffne **Einstellungen → Maschine** und navigiere zur Seite **No-Go-Zonen**.
-Klicke auf die Hinzufügen-Schaltfläche, um eine neue Zone zu erstellen, und
-wähle dann ihre Form und Position.
+Öffne **Einstellungen → Maschine** und navigiere zur Seite **No-Go-Zonen**. Klicke auf die
+Hinzufügen-Schaltfläche, um eine neue Zone zu erstellen, und wähle dann ihre Form und Position.
 
 Jede Zone hat die folgenden Einstellungen:
 
@@ -23,10 +22,9 @@ Jede Zone hat die folgenden Einstellungen:
 
 ## Sichtbarkeit
 
-No-Go-Zonen werden sowohl auf der 2D- als auch der 3D-Canvas als
-halbdurchsichtige Overlays angezeigt. Verwende die No-Go-Zonen-Umschalttaste
-im Canvas-Overlay, um sie ein- oder auszublenden. Die Umschaltung wird nur
-angezeigt, wenn mindestens eine No-Go-Zone konfiguriert ist. Die
+No-Go-Zonen werden sowohl auf der 2D- als auch der 3D-Canvas als halbdurchsichtige Overlays
+angezeigt. Verwende die No-Go-Zonen-Umschalttaste im Canvas-Overlay, um sie ein- oder auszublenden.
+Die Umschaltung wird nur angezeigt, wenn mindestens eine No-Go-Zone konfiguriert ist. Die
 Sichtbarkeitseinstellung wird zwischen Sitzungen gespeichert.
 
 ---

@@ -1,10 +1,14 @@
 # Registros de Addons
 
-Registros são como o Rayforge gerencia a extensibilidade. Cada registro mantém uma coleção de componentes relacionados—passos, produtores, ações e assim por diante. Quando seu addon registra algo, ele se torna disponível em toda a aplicação.
+Registros são como o Rayforge gerencia a extensibilidade. Cada registro mantém uma coleção de
+componentes relacionados—passos, produtores, ações e assim por diante. Quando seu addon registra
+algo, ele se torna disponível em toda a aplicação.
 
 ## Como os Registros Funcionam
 
-Todos os registros seguem um padrão similar. Eles fornecem um método `register()` para adicionar itens, e vários métodos de busca para recuperá-los. A maioria dos registros também rastreia qual addon registrou cada item, para que possam limpar quando um addon é descarregado.
+Todos os registros seguem um padrão similar. Eles fornecem um método `register()` para adicionar
+itens, e vários métodos de busca para recuperá-los. A maioria dos registros também rastreia qual
+addon registrou cada item, para que possam limpar quando um addon é descarregado.
 
 Aqui está o padrão geral:
 
@@ -15,11 +19,13 @@ def register_steps(step_registry):
     step_registry.register(MyCustomStep, addon_name="my_addon")
 ```
 
-O parâmetro `addon_name` é opcional mas recomendado. Ele garante que seus componentes sejam removidos corretamente se o usuário desabilitar seu addon.
+O parâmetro `addon_name` é opcional mas recomendado. Ele garante que seus componentes sejam
+removidos corretamente se o usuário desabilitar seu addon.
 
 ## Registro de Passos
 
-O registro de passos (`StepRegistry`) gerencia tipos de passos que aparecem no painel de operações. Cada passo representa um tipo de operação que os usuários podem adicionar ao seu trabalho.
+O registro de passos (`StepRegistry`) gerencia tipos de passos que aparecem no painel de operações.
+Cada passo representa um tipo de operação que os usuários podem adicionar ao seu trabalho.
 
 ### Registrando um Passo
 
@@ -30,7 +36,8 @@ def register_steps(step_registry):
     step_registry.register(MyCustomStep, addon_name="my_addon")
 ```
 
-O nome da classe do passo é usado como chave do registro. Sua classe de passo deve herdar de `Step` e definir atributos como `TYPELABEL`, `HIDDEN`, e implementar o método de classe `create()`.
+O nome da classe do passo é usado como chave do registro. Sua classe de passo deve herdar de `Step`
+e definir atributos como `TYPELABEL`, `HIDDEN`, e implementar o método de classe `create()`.
 
 ### Recuperando Passos
 
@@ -52,7 +59,9 @@ factories = step_registry.get_factories()
 
 ## Registro de Produtores
 
-O registro de produtores (`ProducerRegistry`) gerencia produtores de ops. Produtores geram as operações de trajetória para um passo—essencialmente, eles convertem sua peça em instruções de máquina.
+O registro de produtores (`ProducerRegistry`) gerencia produtores de ops. Produtores geram as
+operações de trajetória para um passo—essencialmente, eles convertem sua peça em instruções de
+máquina.
 
 ### Registrando um Produtor
 
@@ -63,7 +72,8 @@ def register_producers(producer_registry):
     producer_registry.register(MyCustomProducer, addon_name="my_addon")
 ```
 
-Por padrão, o nome da classe se torna a chave do registro. Você pode especificar um nome personalizado:
+Por padrão, o nome da classe se torna a chave do registro. Você pode especificar um nome
+personalizado:
 
 ```python
 producer_registry.register(MyCustomProducer, name="custom_name", addon_name="my_addon")
@@ -81,7 +91,9 @@ all_producers = producer_registry.all_producers()
 
 ## Registro de Transformadores
 
-O registro de transformadores (`TransformerRegistry`) gerencia transformadores de ops. Transformadores fazem pós-processamento das operações depois que os produtores as geram—pense em tarefas como otimização de caminho, suavização ou adição de abas de fixação.
+O registro de transformadores (`TransformerRegistry`) gerencia transformadores de ops.
+Transformadores fazem pós-processamento das operações depois que os produtores as geram—pense em
+tarefas como otimização de caminho, suavização ou adição de abas de fixação.
 
 ### Registrando um Transformador
 
@@ -104,7 +116,9 @@ all_transformers = transformer_registry.all_transformers()
 
 ## Registro de Ações
 
-O registro de ações (`ActionRegistry`) gerencia ações de janela. Ações são como você adiciona itens de menu, botões de barra de ferramentas e atalhos de teclado. Este é um dos registros mais ricos em recursos.
+O registro de ações (`ActionRegistry`) gerencia ações de janela. Ações são como você adiciona itens
+de menu, botões de barra de ferramentas e atalhos de teclado. Este é um dos registros mais ricos em
+recursos.
 
 ### Registrando uma Ação
 
@@ -117,7 +131,7 @@ def register_actions(action_registry):
     # Cria a ação
     action = Gio.SimpleAction.new("my-action", None)
     action.connect("activate", lambda a, p: do_something())
-    
+
     # Registra com posicionamento opcional em menu e barra de ferramentas
     action_registry.register(
         action_name="my-action",
@@ -176,7 +190,8 @@ shortcuts = action_registry.get_all_with_shortcuts()
 
 ## Registro de Comandos
 
-O registro de comandos (`CommandRegistry`) gerencia comandos do editor. Comandos estendem a funcionalidade do editor de documentos.
+O registro de comandos (`CommandRegistry`) gerencia comandos do editor. Comandos estendem a
+funcionalidade do editor de documentos.
 
 ### Registrando um Comando
 
@@ -201,7 +216,9 @@ all_commands = command_registry.all_commands()
 
 ## Registro de Tipos de Asset
 
-O registro de tipos de asset (`AssetTypeRegistry`) gerencia tipos de assets que podem ser armazenados em documentos. Isso habilita desserialização dinâmica—quando o Rayforge carrega um documento contendo seu asset personalizado, ele sabe como reconstruí-lo.
+O registro de tipos de asset (`AssetTypeRegistry`) gerencia tipos de assets que podem ser
+armazenados em documentos. Isso habilita desserialização dinâmica—quando o Rayforge carrega um
+documento contendo seu asset personalizado, ele sabe como reconstruí-lo.
 
 ### Registrando um Tipo de Asset
 
@@ -230,7 +247,8 @@ all_types = asset_type_registry.all_types()
 
 ## Registro de Estratégias de Layout
 
-O registro de estratégias de layout (`LayoutStrategyRegistry`) gerencia estratégias de layout para organizar conteúdo no editor de documentos.
+O registro de estratégias de layout (`LayoutStrategyRegistry`) gerencia estratégias de layout para
+organizar conteúdo no editor de documentos.
 
 ### Registrando uma Estratégia de Layout
 
@@ -245,7 +263,8 @@ def register_layout_strategies(layout_registry):
     )
 ```
 
-Note que metadados de interface como rótulos e atalhos devem ser registrados via registro de ações, não aqui.
+Note que metadados de interface como rótulos e atalhos devem ser registrados via registro de ações,
+não aqui.
 
 ### Recuperando Estratégias de Layout
 
@@ -262,7 +281,8 @@ strategy_names = layout_registry.list_names()
 
 ## Registro de Importadores
 
-O registro de importadores (`ImporterRegistry`) gerencia importadores de arquivos. Importadores lidam com o carregamento de arquivos externos no Rayforge.
+O registro de importadores (`ImporterRegistry`) gerencia importadores de arquivos. Importadores
+lidam com o carregamento de arquivos externos no Rayforge.
 
 ### Registrando um Importador
 
@@ -273,7 +293,8 @@ def register_importers(importer_registry):
     importer_registry.register(MyCustomImporter, addon_name="my_addon")
 ```
 
-Sua classe de importador deve definir atributos de classe `extensions` e `mime_types` para que o registro saiba quais arquivos ele manipula.
+Sua classe de importador deve definir atributos de classe `extensions` e `mime_types` para que o
+registro saiba quais arquivos ele manipula.
 
 ### Recuperando Importadores
 
@@ -302,7 +323,8 @@ importers = importer_registry.by_feature(ImporterFeature.SOME_FEATURE)
 
 ## Registro de Exportadores
 
-O registro de exportadores (`ExporterRegistry`) gerencia exportadores de arquivos. Exportadores lidam com o salvamento de documentos ou operações do Rayforge para formatos externos.
+O registro de exportadores (`ExporterRegistry`) gerencia exportadores de arquivos. Exportadores
+lidam com o salvamento de documentos ou operações do Rayforge para formatos externos.
 
 ### Registrando um Exportador
 
@@ -330,7 +352,8 @@ filters = exporter_registry.get_all_filters()
 
 ## Registro de Renderizadores
 
-O registro de renderizadores (`RendererRegistry`) gerencia renderizadores de assets. Renderizadores exibem assets na interface.
+O registro de renderizadores (`RendererRegistry`) gerencia renderizadores de assets. Renderizadores
+exibem assets na interface.
 
 ### Registrando um Renderizador
 
@@ -341,7 +364,8 @@ def register_renderers(renderer_registry):
     renderer_registry.register(MyAssetRenderer(), addon_name="my_addon")
 ```
 
-Note que você registra uma instância de renderizador, não uma classe. O nome da classe do renderizador é usado como chave do registro.
+Note que você registra uma instância de renderizador, não uma classe. O nome da classe do
+renderizador é usado como chave do registro.
 
 ### Recuperando Renderizadores
 
@@ -358,7 +382,8 @@ all_renderers = renderer_registry.all()
 
 ## Gerenciador de Bibliotecas
 
-O gerenciador de bibliotecas (`LibraryManager`) gerencia bibliotecas de materiais. Embora não seja tecnicamente um registro, segue padrões similares para registrar bibliotecas fornecidas por addons.
+O gerenciador de bibliotecas (`LibraryManager`) gerencia bibliotecas de materiais. Embora não seja
+tecnicamente um registro, segue padrões similares para registrar bibliotecas fornecidas por addons.
 
 ### Registrando uma Biblioteca de Materiais
 
@@ -370,4 +395,5 @@ def register_material_libraries(library_manager):
     library_manager.add_library_from_path(lib_path)
 ```
 
-Bibliotecas registradas são somente leitura por padrão. Usuários podem visualizar e usar os materiais, mas não podem modificá-los através da interface.
+Bibliotecas registradas são somente leitura por padrão. Usuários podem visualizar e usar os
+materiais, mas não podem modificá-los através da interface.

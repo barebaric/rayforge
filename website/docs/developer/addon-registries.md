@@ -1,14 +1,20 @@
 ---
-description: "Publish and discover add-ons through Rayforge registries. Share your extensions with the laser cutting community."
+description:
+  "Publish and discover add-ons through Rayforge registries. Share your extensions with the laser
+  cutting community."
 ---
 
 # Addon Registries
 
-Registries are how Rayforge manages extensibility. Each registry holds a collection of related components—steps, producers, actions, and so on. When your addon registers something, it becomes available throughout the application.
+Registries are how Rayforge manages extensibility. Each registry holds a collection of related
+components—steps, producers, actions, and so on. When your addon registers something, it becomes
+available throughout the application.
 
 ## How Registries Work
 
-All registries follow a similar pattern. They provide a `register()` method to add items, and various lookup methods to retrieve them. Most registries also track which addon registered each item, so they can clean up when an addon is unloaded.
+All registries follow a similar pattern. They provide a `register()` method to add items, and
+various lookup methods to retrieve them. Most registries also track which addon registered each
+item, so they can clean up when an addon is unloaded.
 
 Here's the general pattern:
 
@@ -19,11 +25,13 @@ def register_steps(step_registry):
     step_registry.register(MyCustomStep, addon_name="my_addon")
 ```
 
-The `addon_name` parameter is optional but recommended. It ensures your components are properly removed if the user disables your addon.
+The `addon_name` parameter is optional but recommended. It ensures your components are properly
+removed if the user disables your addon.
 
 ## Step Registry
 
-The step registry (`StepRegistry`) manages step types that appear in the operations panel. Each step represents a type of operation users can add to their job.
+The step registry (`StepRegistry`) manages step types that appear in the operations panel. Each step
+represents a type of operation users can add to their job.
 
 ### Registering a Step
 
@@ -34,7 +42,8 @@ def register_steps(step_registry):
     step_registry.register(MyCustomStep, addon_name="my_addon")
 ```
 
-The step's class name is used as the registry key. Your step class should inherit from `Step` and define attributes like `TYPELABEL`, `HIDDEN`, and implement the `create()` class method.
+The step's class name is used as the registry key. Your step class should inherit from `Step` and
+define attributes like `TYPELABEL`, `HIDDEN`, and implement the `create()` class method.
 
 ### Retrieving Steps
 
@@ -56,7 +65,8 @@ factories = step_registry.get_factories()
 
 ## Producer Registry
 
-The producer registry (`ProducerRegistry`) manages ops producers. Producers generate the toolpath operations for a step—essentially, they convert your workpiece into machine instructions.
+The producer registry (`ProducerRegistry`) manages ops producers. Producers generate the toolpath
+operations for a step—essentially, they convert your workpiece into machine instructions.
 
 ### Registering a Producer
 
@@ -85,7 +95,9 @@ all_producers = producer_registry.all_producers()
 
 ## Transformer Registry
 
-The transformer registry (`TransformerRegistry`) manages ops transformers. Transformers post-process operations after producers generate them—think of tasks like path optimization, smoothing, or adding holding tabs.
+The transformer registry (`TransformerRegistry`) manages ops transformers. Transformers post-process
+operations after producers generate them—think of tasks like path optimization, smoothing, or adding
+holding tabs.
 
 ### Registering a Transformer
 
@@ -108,7 +120,8 @@ all_transformers = transformer_registry.all_transformers()
 
 ## Action Registry
 
-The action registry (`ActionRegistry`) manages window actions. Actions are how you add menu items, toolbar buttons, and keyboard shortcuts. This is one of the more feature-rich registries.
+The action registry (`ActionRegistry`) manages window actions. Actions are how you add menu items,
+toolbar buttons, and keyboard shortcuts. This is one of the more feature-rich registries.
 
 ### Registering an Action
 
@@ -121,7 +134,7 @@ def register_actions(action_registry):
     # Create the action
     action = Gio.SimpleAction.new("my-action", None)
     action.connect("activate", lambda a, p: do_something())
-    
+
     # Register with optional menu and toolbar placement
     action_registry.register(
         action_name="my-action",
@@ -180,7 +193,8 @@ shortcuts = action_registry.get_all_with_shortcuts()
 
 ## Command Registry
 
-The command registry (`CommandRegistry`) manages editor commands. Commands extend the document editor's functionality.
+The command registry (`CommandRegistry`) manages editor commands. Commands extend the document
+editor's functionality.
 
 ### Registering a Command
 
@@ -205,7 +219,9 @@ all_commands = command_registry.all_commands()
 
 ## Asset Type Registry
 
-The asset type registry (`AssetTypeRegistry`) manages asset types that can be stored in documents. This enables dynamic deserialization—when Rayforge loads a document containing your custom asset, it knows how to reconstruct it.
+The asset type registry (`AssetTypeRegistry`) manages asset types that can be stored in documents.
+This enables dynamic deserialization—when Rayforge loads a document containing your custom asset, it
+knows how to reconstruct it.
 
 ### Registering an Asset Type
 
@@ -234,7 +250,8 @@ all_types = asset_type_registry.all_types()
 
 ## Layout Strategy Registry
 
-The layout strategy registry (`LayoutStrategyRegistry`) manages layout strategies for arranging content in the document editor.
+The layout strategy registry (`LayoutStrategyRegistry`) manages layout strategies for arranging
+content in the document editor.
 
 ### Registering a Layout Strategy
 
@@ -249,7 +266,8 @@ def register_layout_strategies(layout_registry):
     )
 ```
 
-Note that UI metadata like labels and shortcuts should be registered via the action registry, not here.
+Note that UI metadata like labels and shortcuts should be registered via the action registry, not
+here.
 
 ### Retrieving Layout Strategies
 
@@ -266,7 +284,8 @@ strategy_names = layout_registry.list_names()
 
 ## Importer Registry
 
-The importer registry (`ImporterRegistry`) manages file importers. Importers handle loading external files into Rayforge.
+The importer registry (`ImporterRegistry`) manages file importers. Importers handle loading external
+files into Rayforge.
 
 ### Registering an Importer
 
@@ -277,7 +296,8 @@ def register_importers(importer_registry):
     importer_registry.register(MyCustomImporter, addon_name="my_addon")
 ```
 
-Your importer class should define `extensions` and `mime_types` class attributes so the registry knows which files it handles.
+Your importer class should define `extensions` and `mime_types` class attributes so the registry
+knows which files it handles.
 
 ### Retrieving Importers
 
@@ -306,7 +326,8 @@ importers = importer_registry.by_feature(ImporterFeature.SOME_FEATURE)
 
 ## Exporter Registry
 
-The exporter registry (`ExporterRegistry`) manages file exporters. Exporters handle saving Rayforge documents or operations to external formats.
+The exporter registry (`ExporterRegistry`) manages file exporters. Exporters handle saving Rayforge
+documents or operations to external formats.
 
 ### Registering an Exporter
 
@@ -334,7 +355,8 @@ filters = exporter_registry.get_all_filters()
 
 ## Renderer Registry
 
-The renderer registry (`RendererRegistry`) manages asset renderers. Renderers display assets in the UI.
+The renderer registry (`RendererRegistry`) manages asset renderers. Renderers display assets in the
+UI.
 
 ### Registering a Renderer
 
@@ -345,7 +367,8 @@ def register_renderers(renderer_registry):
     renderer_registry.register(MyAssetRenderer(), addon_name="my_addon")
 ```
 
-Note that you register a renderer instance, not a class. The renderer's class name is used as the registry key.
+Note that you register a renderer instance, not a class. The renderer's class name is used as the
+registry key.
 
 ### Retrieving Renderers
 
@@ -362,7 +385,8 @@ all_renderers = renderer_registry.all()
 
 ## Library Manager
 
-The library manager (`LibraryManager`) manages material libraries. While not technically a registry, it follows similar patterns for registering addon-provided libraries.
+The library manager (`LibraryManager`) manages material libraries. While not technically a registry,
+it follows similar patterns for registering addon-provided libraries.
 
 ### Registering a Material Library
 
@@ -374,4 +398,5 @@ def register_material_libraries(library_manager):
     library_manager.add_library_from_path(lib_path)
 ```
 
-Registered libraries are read-only by default. Users can view and use the materials but cannot modify them through the UI.
+Registered libraries are read-only by default. Users can view and use the materials but cannot
+modify them through the UI.

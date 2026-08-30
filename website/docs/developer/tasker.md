@@ -1,19 +1,28 @@
 ---
-description: "The Rayforge tasker system - background task management for long-running operations like path optimization and G-code generation."
+description:
+  "The Rayforge tasker system - background task management for long-running operations like path
+  optimization and G-code generation."
 ---
 
 # Tasker: Background Task Management
 
-`tasker` is a module for running long-running tasks in the background of a GTK application without freezing the UI. It provides a simple, unified API for both I/O-bound (`asyncio`) and CPU-bound work.
+`tasker` is a module for running long-running tasks in the background of a GTK application without
+freezing the UI. It provides a simple, unified API for both I/O-bound (`asyncio`) and CPU-bound
+work.
 
-> **Note on multiprocessing.** The subprocess pool is dormant by default — it starts lazily on the first `run_process()` call. Production pipeline work uses [raygeo](https://github.com/barebaric/raygeo)'s internal rayon thread pool instead. The `run_process` examples below remain valid as a forward-looking reference for future use.
+> **Note on multiprocessing.** The subprocess pool is dormant by default — it starts lazily on the
+> first `run_process()` call. Production pipeline work uses
+> [raygeo](https://github.com/barebaric/raygeo)'s internal rayon thread pool instead. The
+> `run_process` examples below remain valid as a forward-looking reference for future use.
 
 ## Core Concepts
 
 1. **`task_mgr`**: The global singleton proxy you use to start and cancel all tasks
 2. **`Task`**: An object representing a single background job. You use it to track status
-3. **`ExecutionContext` (`context`)**: An object passed as the first argument to your background function. Your code uses it to report progress, send messages, and check for cancellation
-4. **`TaskManagerProxy`**: A thread-safe proxy that forwards calls to the actual TaskManager running in the main thread
+3. **`ExecutionContext` (`context`)**: An object passed as the first argument to your background
+   function. Your code uses it to report progress, send messages, and check for cancellation
+4. **`TaskManagerProxy`**: A thread-safe proxy that forwards calls to the actual TaskManager running
+   in the main thread
 
 ## Quick Start
 
@@ -21,7 +30,8 @@ All background tasks are managed by the global `task_mgr`.
 
 ### Running an I/O-Bound Task (e.g., network, file access)
 
-Use `add_coroutine` for `async` functions. These are lightweight and ideal for tasks that wait for I/O.
+Use `add_coroutine` for `async` functions. These are lightweight and ideal for tasks that wait for
+I/O.
 
 ```python
 import asyncio
@@ -41,7 +51,8 @@ task_mgr.add_coroutine(my_io_task, "http://example.com", key="downloader")
 
 ### Running a CPU-Bound Task (e.g., heavy computation)
 
-Use `run_process` for regular functions. These run in a separate process to avoid the GIL and keep the UI responsive.
+Use `run_process` for regular functions. These run in a separate process to avoid the GIL and keep
+the UI responsive.
 
 ```python
 import time
@@ -63,7 +74,8 @@ task_mgr.run_process(my_cpu_task, 50, key="calculator")
 
 ### Running a Thread-Bound Task
 
-Use `run_thread` for tasks that should run in a thread but don't require the full process isolation. This is useful for tasks that share memory but still shouldn't block the UI.
+Use `run_thread` for tasks that should run in a thread but don't require the full process isolation.
+This is useful for tasks that share memory but still shouldn't block the UI.
 
 ```python
 import time
@@ -84,7 +96,8 @@ task_mgr.run_thread(my_thread_task, 2, key="thread_worker")
 
 ### Updating the UI
 
-Connect to the `tasks_updated` signal to react to changes. The handler will be safely called on the main GTK thread.
+Connect to the `tasks_updated` signal to react to changes. The handler will be safely called on the
+main GTK thread.
 
 ```python
 def setup_ui(progress_bar, status_label):
@@ -104,7 +117,8 @@ def setup_ui(progress_bar, status_label):
 
 ### Cancellation
 
-Give your tasks a `key` to cancel them later. Your background function should periodically check `context.is_cancelled()`.
+Give your tasks a `key` to cancel them later. Your background function should periodically check
+`context.is_cancelled()`.
 
 ```python
 # In your background function:
@@ -137,8 +151,11 @@ task_mgr.run_process(my_cpu_task, 10, when_done=on_task_finished)
 ### `task_mgr` (The Manager Proxy)
 
 - `add_coroutine(coro, *args, key=None, when_done=None)`: Add an asyncio-based task
-- `run_process(func, *args, key=None, when_done=None, when_event=None, visible=True)`: Run a CPU-bound task in a separate process. The `visible` parameter controls whether the task appears in progress UI. The `when_event` callback receives custom events sent via `context.send_event()`.
-- `run_thread(func, *args, key=None, when_done=None)`: Run a task in a thread (shares memory with main process)
+- `run_process(func, *args, key=None, when_done=None, when_event=None, visible=True)`: Run a
+  CPU-bound task in a separate process. The `visible` parameter controls whether the task appears in
+  progress UI. The `when_event` callback receives custom events sent via `context.send_event()`.
+- `run_thread(func, *args, key=None, when_done=None)`: Run a task in a thread (shares memory with
+  main process)
 - `cancel_task(key)`: Cancel a running task by its key
 - `tasks_updated` (signal for UI updates): Emitted when task status changes
 
@@ -161,4 +178,5 @@ The tasker is used throughout Rayforge for:
 - **Device communication**: Managing long-running operations with laser cutters
 - **Image processing**: Performing CPU-intensive image tracing and processing
 
-When working with the tasker in Rayforge, always ensure your background functions properly handle cancellation and provide meaningful progress updates to maintain a responsive user experience.
+When working with the tasker in Rayforge, always ensure your background functions properly handle
+cancellation and provide meaningful progress updates to maintain a responsive user experience.

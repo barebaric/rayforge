@@ -1,19 +1,22 @@
 ---
-description: "Essential laser safety information — fire prevention, eye protection, ventilation, and safe operating procedures for laser cutters and engravers."
+description:
+  "Essential laser safety information — fire prevention, eye protection, ventilation, and safe
+  operating procedures for laser cutters and engravers."
 ---
 
 # Laser Safety
 
-Laser cutting and engraving equipment poses serious safety risks including fire, toxic fumes, and permanent eye damage.
+Laser cutting and engraving equipment poses serious safety risks including fire, toxic fumes, and
+permanent eye damage.
 
-:::danger Critical Safety Warning
-**Always follow your laser manufacturer's safety guidelines and operating instructions.** This page provides general safety principles but is not a substitute for proper training and your machine's specific safety documentation.
-:::
-
+:::danger Critical Safety Warning **Always follow your laser manufacturer's safety guidelines and
+operating instructions.** This page provides general safety principles but is not a substitute for
+proper training and your machine's specific safety documentation. :::
 
 ## Your Primary Safety Resource
 
-**Read your laser manufacturer's manual completely** before operating any laser equipment. It contains:
+**Read your laser manufacturer's manual completely** before operating any laser equipment. It
+contains:
 
 - Specific safety requirements for your machine
 - Required personal protective equipment (PPE)
@@ -21,7 +24,8 @@ Laser cutting and engraving equipment poses serious safety risks including fire,
 - Maintenance and inspection schedules
 - Warranty and liability information
 
-Rayforge is control software - it cannot override the physical safety requirements of your laser hardware.
+Rayforge is control software - it cannot override the physical safety requirements of your laser
+hardware.
 
 ## Essential Safety Principles
 
@@ -64,7 +68,8 @@ Rayforge is control software - it cannot override the physical safety requiremen
 - Running during all laser operations
 - Regular filter replacement (if using filtration)
 
-**Never operate without proper ventilation** - you risk serious health effects and will damage your laser's optics.
+**Never operate without proper ventilation** - you risk serious health effects and will damage your
+laser's optics.
 
 ### Prohibited Materials
 
@@ -78,11 +83,13 @@ Rayforge is control software - it cannot override the physical safety requiremen
 | **Fiberglass**                       | Glass particles damage lungs and optics  |
 | **Any material containing chlorine** | Toxic and corrosive                      |
 
-**When in doubt:** Check material safety data sheet (MSDS) or test tiny sample with excellent ventilation.
+**When in doubt:** Check material safety data sheet (MSDS) or test tiny sample with excellent
+ventilation.
 
 ### Eye Protection
 
-Most enclosed laser systems don't require goggles during normal operation **if the enclosure is closed and has proper interlocks.**
+Most enclosed laser systems don't require goggles during normal operation **if the enclosure is
+closed and has proper interlocks.**
 
 **Eye protection required when:**
 
@@ -98,7 +105,8 @@ Most enclosed laser systems don't require goggles during normal operation **if t
 Rayforge provides tools to help operate safely:
 
 - **[3D Preview](../ui/3d-preview.md)** - Preview jobs before running to identify issues
-- **[Material Test Grid](../features/operations/material-test-grid.md)** - Find safe settings for new materials
+- **[Material Test Grid](../features/operations/material-test-grid.md)** - Find safe settings for
+  new materials
 - **Frame Job** - Verify positioning before cutting
 
 **These features help prevent errors but don't replace safe operating practices.**
@@ -177,15 +185,14 @@ Before every job:
 ## Key Safety Rules
 
 :::warning Critical Safety Rules
+
 1. **Never leave laser unattended during operation**
 2. **Never operate without proper ventilation**
 3. **Never cut prohibited materials (PVC, vinyl, ABS, etc.)**
 4. **Always have fire extinguisher within reach**
 5. **Always follow manufacturer's safety guidelines**
 6. **Know where emergency stop is**
-7. **Preview jobs in Simulation Mode before running**
-:::
-
+7. **Preview jobs in Simulation Mode before running** :::
 
 ## Additional Resources
 
@@ -218,4 +225,6 @@ Before every job:
 
 ---
 
-**Remember:** Safe laser operation requires constant vigilance, proper equipment, and strict adherence to safety procedures. When in doubt, refer to your manufacturer's documentation and err on the side of caution.
+**Remember:** Safe laser operation requires constant vigilance, proper equipment, and strict
+adherence to safety procedures. When in doubt, refer to your manufacturer's documentation and err on
+the side of caution.

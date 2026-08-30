@@ -80,9 +80,8 @@ rayforge --exit --vector input.svg
 
 ## Early Scripts (`--script`)
 
-The `--script` flag runs a Python script **synchronously during
-startup**, before addons are loaded and before the main window is
-created. This makes it the right place for:
+The `--script` flag runs a Python script **synchronously during startup**, before addons are loaded
+and before the main window is created. This makes it the right place for:
 
 - Registering plugins with the `pluggy` plugin manager
 - Configuring the application context
@@ -115,17 +114,15 @@ register_template_function("myid", lambda: "PART-001")
 
 Now `{myid()}` works in any text box.
 
-See
-[Custom Template Functions](../features/sketcher/expressions.md#custom-template-functions)
-in the Sketcher docs for a full tutorial.
+See [Custom Template Functions](../features/sketcher/expressions.md#custom-template-functions) in
+the Sketcher docs for a full tutorial.
 
 ---
 
 ## UI Scripts (`--uiscript`)
 
-The `--uiscript` flag runs a Python script **after the main window
-is fully mapped and loaded**, in a background thread. This makes it
-the right place for:
+The `--uiscript` flag runs a Python script **after the main window is fully mapped and loaded**, in
+a background thread. This makes it the right place for:
 
 - Automated UI testing
 - Taking screenshots of the application
@@ -137,8 +134,7 @@ The script can import the application and window directly:
 from rayforge.uiscript import app, win
 ```
 
-The script runs in a **background thread** — be mindful of thread
-safety when accessing GTK widgets
+The script runs in a **background thread** — be mindful of thread safety when accessing GTK widgets
 (use `GLib.idle_add` for GTK operations).
 
 ### Example: Take a screenshot
@@ -164,9 +160,8 @@ GLib.idle_add(capture)
 
 ## Using Both Flags
 
-Both `--script` and `--uiscript` can be used together. The
-`--script` runs first (synchronously), then the window loads,
-and then `--uiscript` runs:
+Both `--script` and `--uiscript` can be used together. The `--script` runs first (synchronously),
+then the window loads, and then `--uiscript` runs:
 
 ```bash
 rayforge --script early_setup.py \
@@ -174,5 +169,4 @@ rayforge --script early_setup.py \
     myproject.ryp
 ```
 
-This is useful when you need to register plugins early and
-then drive the UI later.
+This is useful when you need to register plugins early and then drive the UI later.

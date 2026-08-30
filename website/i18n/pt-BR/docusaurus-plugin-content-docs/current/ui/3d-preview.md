@@ -1,7 +1,7 @@
 # Visualização 3D
 
-A visualização 3D permite visualizar seus caminhos de ferramenta G-code e
-simular a execução do trabalho antes de enviá-los para sua máquina.
+A visualização 3D permite visualizar seus caminhos de ferramenta G-code e simular a execução do
+trabalho antes de enviá-los para sua máquina.
 
 ![Visualização 3D](/screenshots/main-3d.webp)
 
@@ -33,21 +33,19 @@ Acesse a visualização 3D:
 
 ## Exibição do Sistema de Coordenadas de Trabalho
 
-A visualização 3D visualiza o Sistema de Coordenadas de Trabalho (WCS) ativo
-de forma diferente da tela 2D:
+A visualização 3D visualiza o Sistema de Coordenadas de Trabalho (WCS) ativo de forma diferente da
+tela 2D:
 
 ### Grade e Eixos
 
-- **Exibição isolada**: A grade e os eixos aparecem como se a origem WCS fosse
-  a origem do mundo
-- **Deslocamento aplicado**: A grade inteira é deslocada para alinhar com o
-  deslocamento WCS selecionado
-- **Rótulos relativos ao WCS**: Rótulos de coordenadas mostram posições relativas
-  à origem WCS, não à origem da máquina
+- **Exibição isolada**: A grade e os eixos aparecem como se a origem WCS fosse a origem do mundo
+- **Deslocamento aplicado**: A grade inteira é deslocada para alinhar com o deslocamento WCS
+  selecionado
+- **Rótulos relativos ao WCS**: Rótulos de coordenadas mostram posições relativas à origem WCS, não
+  à origem da máquina
 
-Esta exibição "em isolamento" facilita entender onde seu trabalho vai rodar em
-relação ao sistema de coordenadas de trabalho selecionado, sem se confundir com
-a posição absoluta da máquina.
+Esta exibição "em isolamento" facilita entender onde seu trabalho vai rodar em relação ao sistema de
+coordenadas de trabalho selecionado, sem se confundir com a posição absoluta da máquina.
 
 ### Mudando WCS
 
@@ -57,110 +55,90 @@ A visualização 3D atualiza automaticamente quando você muda o WCS ativo:
 - A grade e os eixos se deslocam para refletir a nova origem WCS
 - Os rótulos atualizam para mostrar coordenadas relativas ao novo WCS
 
-:::tip WCS na Visualização 3D
-A visualização 3D mostra seus caminhos de ferramenta relativos ao WCS
-selecionado. Quando você muda o WCS, verá os caminhos de ferramenta parecerem
-se mover porque o ponto de referência (a grade) mudou, não porque os caminhos
-de ferramenta em si se moveram.
-:::
+:::tip WCS na Visualização 3D A visualização 3D mostra seus caminhos de ferramenta relativos ao WCS
+selecionado. Quando você muda o WCS, verá os caminhos de ferramenta parecerem se mover porque o
+ponto de referência (a grade) mudou, não porque os caminhos de ferramenta em si se moveram. :::
 
 ## Opções de Exibição
 
-Botões de alternância de visibilidade estão localizados como botões de
-sobreposição no canto superior direito da tela 3D. Cada botão lembra seu
-estado entre as sessões:
+Botões de alternância de visibilidade estão localizados como botões de sobreposição no canto
+superior direito da tela 3D. Cada botão lembra seu estado entre as sessões:
 
-- **Imagem da peça de trabalho**: Alternar a imagem base da peça de trabalho
-  na superfície do material — a mesma imagem mostrada na tela 2D
+- **Imagem da peça de trabalho**: Alternar a imagem base da peça de trabalho na superfície do
+  material — a mesma imagem mostrada na tela 2D
 - **Material**: Alternar visibilidade dos blocos de material
 - **Modelo**: Alternar visibilidade do modelo 3D da máquina
 - **Grade**: Alternar visibilidade da grade de coordenadas
-- **Subcamada de operações**: Alternar a pré-visualização semitransparente da
-  gravação rasterizada na superfície da peça de trabalho
+- **Subcamada de operações**: Alternar a pré-visualização semitransparente da gravação rasterizada
+  na superfície da peça de trabalho
 - **Movimentos de deslocamento**: Alternar visibilidade dos movimentos rápidos
-- **Zonas de restrição**: Alternar visibilidade das zonas de restrição.
-  Este botão só aparece quando sua máquina tem pelo menos uma zona de
-  restrição configurada.
+- **Zonas de restrição**: Alternar visibilidade das zonas de restrição. Este botão só aparece quando
+  sua máquina tem pelo menos uma zona de restrição configurada.
 
-A projeção em perspectiva e ortográfica é alternada com <kbd>P</kbd> ou
-**Exibir → Alternar perspectiva**.
+A projeção em perspectiva e ortográfica é alternada com <kbd>P</kbd> ou **Exibir → Alternar
+perspectiva**.
 
 ### Visualização do Caminho da Ferramenta
 
 Personalize o que você vê:
 
-- **Mostrar Movimentos Rápidos**: Exibe movimentos de deslocamento (linhas
-  tracejadas)
-- **Mostrar Movimentos de Trabalho**: Exibe movimentos de corte/gravação (linhas
-  sólidas)
+- **Mostrar Movimentos Rápidos**: Exibe movimentos de deslocamento (linhas tracejadas)
+- **Mostrar Movimentos de Trabalho**: Exibe movimentos de corte/gravação (linhas sólidas)
 - **Colorir por Operação**: Cores diferentes para cada operação
 
-:::tip Cores por Laser
-Ao usar máquinas com múltiplas cabeças de laser, cada laser pode ter sua
-própria cor configurada nas
-[Configurações do Laser](../machine/laser.md). Isso facilita identificar qual laser
-realizará cada operação.
-:::
+:::tip Cores por Laser Ao usar máquinas com múltiplas cabeças de laser, cada laser pode ter sua
+própria cor configurada nas [Configurações do Laser](../machine/laser.md). Isso facilita identificar
+qual laser realizará cada operação. :::
 
 ### Modelo da Cabeça do Laser
 
-A visualização 3D renderiza um modelo da sua cabeça de laser que se move ao
-longo do caminho da ferramenta durante a simulação. Você pode atribuir um modelo
-3D a cada cabeça de laser na página de [Configurações do
-Laser](../machine/laser.md) nas Configurações da Máquina. A escala, rotação e
-distância focal do modelo podem ser ajustadas para corresponder à sua
-configuração física.
+A visualização 3D renderiza um modelo da sua cabeça de laser que se move ao longo do caminho da
+ferramenta durante a simulação. Você pode atribuir um modelo 3D a cada cabeça de laser na página de
+[Configurações do Laser](../machine/laser.md) nas Configurações da Máquina. A escala, rotação e
+distância focal do modelo podem ser ajustadas para corresponder à sua configuração física.
 
-Durante a simulação, um feixe de laser brilhante é desenhado da cabeça para
-baixo quando o laser está ativo.
+Durante a simulação, um feixe de laser brilhante é desenhado da cabeça para baixo quando o laser
+está ativo.
 
 ## Modelo de Queimadura Física {#physical-burn-model}
 
-Quando você grava, a visualização 3D não mostra mais o resultado como uma
-sobreposição plana sobre o material. Operações raster e vetoriais do laser
-agora **queimam o próprio material** — a pré-visualização mostra a queima
-guiada por um modelo fisicamente fundamentado que considera:
+Quando você grava, a visualização 3D não mostra mais o resultado como uma sobreposição plana sobre o
+material. Operações raster e vetoriais do laser agora **queimam o próprio material** — a
+pré-visualização mostra a queima guiada por um modelo fisicamente fundamentado que considera:
 
-- O **comprimento de onda**, a **potência óptica** e o **tamanho do ponto**
-  do seu laser (configurados nas [Configurações do Laser](../machine/laser.md)).
+- O **comprimento de onda**, a **potência óptica** e o **tamanho do ponto** do seu laser
+  (configurados nas [Configurações do Laser](../machine/laser.md)).
 - A **absorção do material** naquele comprimento de onda (definida na
   [biblioteca de materiais](../application-settings/materials.md#absorption)).
-- A **velocidade de varredura**, que determina a energia entregue por unidade
-  de área (fluência, em J/cm²).
+- A **velocidade de varredura**, que determina a energia entregue por unidade de área (fluência, em
+  J/cm²).
 
-O resultado é uma rampa de marcas de queima com corona de calor nas
-superfícies voltadas para cima. Funciona também para rotativo — a gravação
-é aplicada no material rotativo.
+O resultado é uma rampa de marcas de queima com corona de calor nas superfícies voltadas para cima.
+Funciona também para rotativo — a gravação é aplicada no material rotativo.
 
-:::note Calibração
-O modelo de queimadura é fisicamente fundamentado, mas ainda não está
-totalmente calibrado para todos os materiais e tipos de laser. Você pode
-ajudar a melhorá-lo: execute um
-[teste de grade de material](../features/operations/material-test-grid.md) e
-compartilhe a foto do resultado junto com os dados da sua máquina
-(comprimento de onda, potência óptica, tamanho do ponto, velocidade e
-potências/profundidades testadas).
-:::
+:::note Calibração O modelo de queimadura é fisicamente fundamentado, mas ainda não está totalmente
+calibrado para todos os materiais e tipos de laser. Você pode ajudar a melhorá-lo: execute um
+[teste de grade de material](../features/operations/material-test-grid.md) e compartilhe a foto do
+resultado junto com os dados da sua máquina (comprimento de onda, potência óptica, tamanho do ponto,
+velocidade e potências/profundidades testadas). :::
 
 ## Simulação
 
-A visualização 3D inclui um simulador integrado com controles de reprodução
-sobrepostos na parte inferior da tela.
+A visualização 3D inclui um simulador integrado com controles de reprodução sobrepostos na parte
+inferior da tela.
 
 ### Controles de Reprodução
 
-- **Reproduzir/Pausar** (<kbd>espaço</kbd>): Anima execução do caminho da
-  ferramenta
+- **Reproduzir/Pausar** (<kbd>espaço</kbd>): Anima execução do caminho da ferramenta
 - **Avançar/Voltar**: Avança ou volta uma operação por vez
 - **Velocidade**: Alterna entre velocidades de reprodução (1x, 2x, 4x, 8x, 16x)
 - **Controle deslizante de linha do tempo**: Arraste para navegar pelo trabalho
 
 ### Visualizador G-code Sincronizado
 
-A simulação permanece sincronizada com o visualizador G-code no painel
-inferior. Percorrer a simulação destaca a linha correspondente no visualizador
-G-code, e clicar em uma linha no visualizador G-code pula a simulação para
-aquele ponto.
+A simulação permanece sincronizada com o visualizador G-code no painel inferior. Percorrer a
+simulação destaca a linha correspondente no visualizador G-code, e clicar em uma linha no
+visualizador G-code pula a simulação para aquele ponto.
 
 ### Visibilidade de Camada
 
@@ -178,10 +156,9 @@ Antes de enviar para a máquina, verifique:
 - [ ] O trabalho começa na posição esperada
 - [ ] Abas de fixação estão nos locais corretos
 
-Algumas verificações adicionais são realizadas automaticamente. Quando você
-executa ou exporta um trabalho, o Rayforge executa
-[verificações de sanidade](../features/sanity-checks.md) que verificam limites
-da máquina, fronteiras da área de trabalho e colisões com zonas de restrição.
+Algumas verificações adicionais são realizadas automaticamente. Quando você executa ou exporta um
+trabalho, o Rayforge executa [verificações de sanidade](../features/sanity-checks.md) que verificam
+limites da máquina, fronteiras da área de trabalho e colisões com zonas de restrição.
 
 ## Dicas de Desempenho
 

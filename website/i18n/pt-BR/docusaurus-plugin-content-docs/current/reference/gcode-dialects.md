@@ -1,17 +1,14 @@
 # Suporte a Dialeto G-code
 
-O Rayforge suporta múltiplos dialetos G-code para trabalhar com diferentes
-firmware de controlador.
+O Rayforge suporta múltiplos dialetos G-code para trabalhar com diferentes firmware de controlador.
 
 ## Seleção Automática de Dialeto
 
 Quando um dispositivo GRBL é descoberto (via o
-[assistente de configuração](../getting-started/first-time-setup.md)
-ou descoberta de dispositivos), o Rayforge lê as flags de compilação `$I`
-do firmware e seleciona automaticamente o dialeto G-code mais adequado —
-você normalmente não precisa escolher um manualmente. Ainda é possível
-sobrescrever a escolha depois nas configurações de dialeto G-code da
-máquina.
+[assistente de configuração](../getting-started/first-time-setup.md) ou descoberta de dispositivos),
+o Rayforge lê as flags de compilação `$I` do firmware e seleciona automaticamente o dialeto G-code
+mais adequado — você normalmente não precisa escolher um manualmente. Ainda é possível sobrescrever
+a escolha depois nas configurações de dialeto G-code da máquina.
 
 ## Dialetos Suportados
 
@@ -29,42 +26,35 @@ O Rayforge atualmente suporta estes dialetos G-code:
 | **Smoothieware**                            | Smoothieware | Cortadores a laser, CNC                  |
 | **Marlin**                                  | Marlin 2.0+  | Impressoras 3D com laser                 |
 
-:::note Dialetos Recomendados
-:::
+:::note Dialetos Recomendados :::
 
-**Grbl (Compat)** é o dialeto mais testado e recomendado para aplicações de
-laser padrão.
+**Grbl (Compat)** é o dialeto mais testado e recomendado para aplicações de laser padrão.
 
-**Grbl Raster** é otimizado para gravação raster em controladores GRBL. Ele
-mantém o laser no modo de potência dinâmica (M4) continuamente e omite comandos
-de taxa de avanço redundantes, resultando em G-code mais suave e compacto.
+**Grbl Raster** é otimizado para gravação raster em controladores GRBL. Ele mantém o laser no modo
+de potência dinâmica (M4) continuamente e omite comandos de taxa de avanço redundantes, resultando
+em G-code mais suave e compacto.
 
-**GRBL Dinâmico (Sensível à Profundidade)** é recomendado para gravação a laser
-sensível à profundidade onde a potência varia durante os cortes (ex., gravação
-de profundidade variável).
+**GRBL Dinâmico (Sensível à Profundidade)** é recomendado para gravação a laser sensível à
+profundidade onde a potência varia durante os cortes (ex., gravação de profundidade variável).
 
-**LinuxCNC** suporta curvas Bézier cúbicas nativas através do comando G5, o
-que produz G-code muito suave e compacto para caminhos curvos. Ao usar este
-dialeto, ative a opção "Suportar curvas Bézier" nas Configurações Avançadas
-de Máquina para aproveitar a saída G5.
+**LinuxCNC** suporta curvas Bézier cúbicas nativas através do comando G5, o que produz G-code muito
+suave e compacto para caminhos curvos. Ao usar este dialeto, ative a opção "Suportar curvas Bézier"
+nas Configurações Avançadas de Máquina para aproveitar a saída G5.
 
 ---
 
 ## Mach4 (M67 Analog)
 
-O dialeto **Mach4 (M67 Analog)** é projetado para gravação raster de alta
-velocidade com controladores Mach4. Ele usa o comando M67 com saída analógica
-para controle preciso de potência do laser.
+O dialeto **Mach4 (M67 Analog)** é projetado para gravação raster de alta velocidade com
+controladores Mach4. Ele usa o comando M67 com saída analógica para controle preciso de potência do
+laser.
 
 ### Recursos Principais
 
-- **Saída Analógica M67**: Usa `M67 E0 Q<0-255>` para potência do laser em vez
-  de comandos S inline
-- **Pressão de Buffer Reduzida**: Ao separar comandos de potência de comandos de
-  movimento, o buffer do controlador é menos estressado durante operações de
-  alta velocidade
-- **Raster de Alta Velocidade**: Otimizado para operações de gravação raster
-  rápidas
+- **Saída Analógica M67**: Usa `M67 E0 Q<0-255>` para potência do laser em vez de comandos S inline
+- **Pressão de Buffer Reduzida**: Ao separar comandos de potência de comandos de movimento, o buffer
+  do controlador é menos estressado durante operações de alta velocidade
+- **Raster de Alta Velocidade**: Otimizado para operações de gravação raster rápidas
 
 ### Quando Usar
 
@@ -91,37 +81,32 @@ M67 E0 Q0    ; Desligar laser
 Para criar um dialeto G-code personalizado baseado em um dialeto embutido:
 
 1. Abra **Configurações de Máquina** → **Dialeto G-code**
-2. Clique no ícone **Copiar** em um dialeto embutido para criar um novo dialeto
-   personalizado
+2. Clique no ícone **Copiar** em um dialeto embutido para criar um novo dialeto personalizado
 3. Edite as configurações do dialeto conforme necessário
 4. Salve seu dialeto personalizado
 
-Cada dialeto personalizado é uma cópia independente. Alterar um dialeto nunca
-afeta os outros, então você pode experimentar livremente sem se preocupar em
-danificar uma configuração existente. Dialetos personalizados são armazenados no
-seu diretório de configuração e podem ser compartilhados.
+Cada dialeto personalizado é uma cópia independente. Alterar um dialeto nunca afeta os outros, então
+você pode experimentar livremente sem se preocupar em danificar uma configuração existente. Dialetos
+personalizados são armazenados no seu diretório de configuração e podem ser compartilhados.
 
 ### Configurações do Dialeto
 
-Ao editar um dialeto personalizado, a página de Configurações oferece estas
-opções:
+Ao editar um dialeto personalizado, a página de Configurações oferece estas opções:
 
-**Modo Laser Contínuo** mantém o laser no modo de potência dinâmica (M4) ativo
-durante todo o trabalho em vez de alternar M4/M5 entre segmentos. Isso é útil
-para gravação raster onde o laser precisa permanecer ligado continuamente durante
-as linhas de varredura.
+**Modo Laser Contínuo** mantém o laser no modo de potência dinâmica (M4) ativo durante todo o
+trabalho em vez de alternar M4/M5 entre segmentos. Isso é útil para gravação raster onde o laser
+precisa permanecer ligado continuamente durante as linhas de varredura.
 
-**Taxa de Avanço Modal** omite o parâmetro de taxa de avanço (F) dos comandos de
-movimento quando não mudou desde o último comando. Isso produz G-code mais
-compacto e reduz a quantidade de dados enviados ao controlador.
+**Taxa de Avanço Modal** omite o parâmetro de taxa de avanço (F) dos comandos de movimento quando
+não mudou desde o último comando. Isso produz G-code mais compacto e reduz a quantidade de dados
+enviados ao controlador.
 
 ### Comando Separado de Ativação do Laser para Focagem
 
-Alguns dialetos suportam a configuração de um comando separado para ligar o
-laser em baixa potência, o que é útil para o modo de focagem. Isso permite usar
-um comando diferente para o comportamento visual de "ponteiro laser" daquele
-usado durante o corte ou gravação real. Verifique a página de configurações do
-seu dialeto para esta opção.
+Alguns dialetos suportam a configuração de um comando separado para ligar o laser em baixa potência,
+o que é útil para o modo de focagem. Isso permite usar um comando diferente para o comportamento
+visual de "ponteiro laser" daquele usado durante o corte ou gravação real. Verifique a página de
+configurações do seu dialeto para esta opção.
 
 ---
 
@@ -129,8 +114,8 @@ seu dialeto para esta opção.
 
 Ao criar ou editar um dialeto personalizado, cada modelo de comando utiliza
 [strings de formatação do Python](https://docs.python.org/3/library/string.html#format-string-syntax)
-com espaços reservados para injetar valores dinâmicos. Use a sintaxe `{nome}`
-ou `{nome:.0f}` (ex., `{power:.0f}` para formatar como inteiro sem decimais).
+com espaços reservados para injetar valores dinâmicos. Use a sintaxe `{nome}` ou `{nome:.0f}` (ex.,
+`{power:.0f}` para formatar como inteiro sem decimais).
 
 ### Espaços Reservados Disponíveis por Modelo
 
@@ -207,16 +192,14 @@ ou `{nome:.0f}` (ex., `{power:.0f}` para formatar como inteiro sem decimais).
 
 ### Dicas
 
-- **Especificações de formatação** são suportadas: `{power:.0f}` formata a potência como
-  inteiro, `{power:.2f}` com duas casas decimais.
-- A configuração **«Omitir coordenadas inalteradas»** controla se `x_cmd`, `y_cmd`
-  e `z_cmd` ficam vazios quando a posição do eixo não mudou desde o último comando.
-  Isso reduz o tamanho do G-code.
-- A configuração **«Taxa de Avanço Modal»** controla se `f_command` é omitida quando
-  a taxa de avanço não mudou.
-- Deixe um campo de modelo **vazio** para pular esse comando completamente
-  (ex., definir `bezier_cubic` como `""` desativa a saída Bézier nativa e usa
-  linearização como alternativa).
+- **Especificações de formatação** são suportadas: `{power:.0f}` formata a potência como inteiro,
+  `{power:.2f}` com duas casas decimais.
+- A configuração **«Omitir coordenadas inalteradas»** controla se `x_cmd`, `y_cmd` e `z_cmd` ficam
+  vazios quando a posição do eixo não mudou desde o último comando. Isso reduz o tamanho do G-code.
+- A configuração **«Taxa de Avanço Modal»** controla se `f_command` é omitida quando a taxa de
+  avanço não mudou.
+- Deixe um campo de modelo **vazio** para pular esse comando completamente (ex., definir
+  `bezier_cubic` como `""` desativa a saída Bézier nativa e usa linearização como alternativa).
 
 ---
 

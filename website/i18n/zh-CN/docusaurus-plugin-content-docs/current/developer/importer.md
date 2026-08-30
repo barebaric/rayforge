@@ -125,7 +125,8 @@ flowchart TD
 
 **方法：** `Importer.scan()`
 
-一种轻量级扫描，无需完整处理即可提取元数据。用于为导入器构建 UI，包括图层选择列表。这 **不是** 由 `get_doc_items()` 执行的主导入流水线的一部分。
+一种轻量级扫描，无需完整处理即可提取元数据。用于为导入器构建 UI，包括图层选择列表。这 **不是** 由
+`get_doc_items()` 执行的主导入流水线的一部分。
 
 **输出：** `ImportManifest`
 
@@ -186,16 +187,16 @@ flowchart TD
 
 ### 数据结构
 
-| 类                    | 阶段     | 目的             |
-| --------------------- | -------- | ---------------- |
-| `LayerInfo`           | Scan     | 轻量级图层元数据 |
-| `ImportManifest`      | Scan     | 扫描阶段结果     |
-| `LayerGeometry`       | Parse    | 几何图层信息     |
-| `ParsingResult`       | Parse    | 几何事实         |
-| `VectorizationResult` | Vectorize| 矢量几何         |
-| `LayoutItem`          | Layout   | 变换配置         |
-| `ImportPayload`       | Assemble | 最终输出         |
-| `ImportResult`        | Final    | 完整结果包装器   |
+| 类                    | 阶段      | 目的             |
+| --------------------- | --------- | ---------------- |
+| `LayerInfo`           | Scan      | 轻量级图层元数据 |
+| `ImportManifest`      | Scan      | 扫描阶段结果     |
+| `LayerGeometry`       | Parse     | 几何图层信息     |
+| `ParsingResult`       | Parse     | 几何事实         |
+| `VectorizationResult` | Vectorize | 矢量几何         |
+| `LayoutItem`          | Layout    | 变换配置         |
+| `ImportPayload`       | Assemble  | 最终输出         |
+| `ImportResult`        | Final     | 完整结果包装器   |
 
 ### 支持组件
 

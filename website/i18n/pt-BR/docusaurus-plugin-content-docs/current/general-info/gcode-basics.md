@@ -52,18 +52,18 @@ G0 X0 Y0 ;Retorna à origem
 
 **Comandos principais:**
 
-| Comando | Descrição |
-| ------- | ----------- |
-| `G21` | Modo milímetros |
-| `G90` | Posicionamento absoluto |
-| `G54` | Seleciona sistema de coordenadas de trabalho 1 |
-| `T0` | Seleciona ferramenta 0 (cabeça do laser) |
-| `G0` | Movimento rápido (laser desligado) |
-| `G1` | Movimento de corte (laser ligado) |
-| `M4` | Laser ligado (modo de potência dinâmica) |
-| `M5` | Laser desligado |
-| `S500` | Define potência do laser para 500 (50% para intervalo 0-1000) |
-| `F3000` | Define taxa de avanço para 3000 mm/min |
+| Comando | Descrição                                                     |
+| ------- | ------------------------------------------------------------- |
+| `G21`   | Modo milímetros                                               |
+| `G90`   | Posicionamento absoluto                                       |
+| `G54`   | Seleciona sistema de coordenadas de trabalho 1                |
+| `T0`    | Seleciona ferramenta 0 (cabeça do laser)                      |
+| `G0`    | Movimento rápido (laser desligado)                            |
+| `G1`    | Movimento de corte (laser ligado)                             |
+| `M4`    | Laser ligado (modo de potência dinâmica)                      |
+| `M5`    | Laser desligado                                               |
+| `S500`  | Define potência do laser para 500 (50% para intervalo 0-1000) |
+| `F3000` | Define taxa de avanço para 3000 mm/min                        |
 
 ---
 

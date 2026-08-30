@@ -1,6 +1,7 @@
 # 插件清单文件
 
-每个插件都需要在其根目录中有一个 `rayforge-addon.yaml` 文件。此清单文件告诉 Rayforge 关于您的插件的信息——其名称、提供的内容以及如何加载它。
+每个插件都需要在其根目录中有一个 `rayforge-addon.yaml`
+文件。此清单文件告诉 Rayforge 关于您的插件的信息——其名称、提供的内容以及如何加载它。
 
 ## 基本结构
 
@@ -118,7 +119,9 @@ version: 1.0.0
 
 ### `maturity`
 
-您的插件的成熟度级别。对于尚未完成且可能存在未解决问题风险的插件，请使用 `experimental`。实验性插件会在插件管理器中显示专用图标。默认值为 `stable`；对于稳定插件，请省略此字段。
+您的插件的成熟度级别。对于尚未完成且可能存在未解决问题风险的插件，请使用
+`experimental`。实验性插件会在插件管理器中显示专用图标。默认值为
+`stable`；对于稳定插件，请省略此字段。
 
 ```yaml
 maturity: experimental
@@ -161,7 +164,8 @@ provides:
       type: templates
 ```
 
-`path` 相对于您的插件根目录且必须存在。资源类型由 Rayforge 定义，可能包括机器配置文件、材料库或模板等内容。
+`path`
+相对于您的插件根目录且必须存在。资源类型由 Rayforge 定义，可能包括机器配置文件、材料库或模板等内容。
 
 ## 许可证信息
 
@@ -187,7 +191,8 @@ license:
   purchase_url: https://gum.co/my-addon
 ```
 
-当 `required` 为 true 时，Rayforge 将在加载您的插件之前检查有效许可证。`purchase_url` 会显示给没有许可证的用户。
+当 `required` 为 true 时，Rayforge 将在加载您的插件之前检查有效许可证。`purchase_url`
+会显示给没有许可证的用户。
 
 ### Gumroad 产品 ID
 
@@ -263,6 +268,9 @@ def rayforge_init(context):
 
 Rayforge 在加载插件时验证您的清单。以下是规则：
 
-`name` 必须是有效的 Python 标识符（字母、数字、下划线，无前导数字）。`api_version` 必须是介于 1 和当前版本之间的整数。`author.name` 不能为空或包含占位符文本如 "your-github-username"。入口点必须是有效的模块路径且模块必须存在。资源路径必须是相对的（没有 `..` 或前导 `/`）且文件必须存在。
+`name` 必须是有效的 Python 标识符（字母、数字、下划线，无前导数字）。`api_version`
+必须是介于 1 和当前版本之间的整数。`author.name`
+不能为空或包含占位符文本如 "your-github-username"。入口点必须是有效的模块路径且模块必须存在。资源路径必须是相对的（没有
+`..` 或前导 `/`）且文件必须存在。
 
 如果验证失败，Rayforge 会记录错误并跳过您的插件。在开发期间检查控制台输出以发现这些问题。

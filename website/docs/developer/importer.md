@@ -1,12 +1,13 @@
 ---
-description: "The Rayforge importer system - how file importers work and how to add support for new file formats."
+description:
+  "The Rayforge importer system - how file importers work and how to add support for new file
+  formats."
 ---
 
 # Importer Architecture
 
-This document describes the architecture of Rayforge's file import system,
-which handles converting various file formats (SVG, DXF, PNG, PDF, etc.) into
-Rayforge's document model.
+This document describes the architecture of Rayforge's file import system, which handles converting
+various file formats (SVG, DXF, PNG, PDF, etc.) into Rayforge's document model.
 
 ## Table of Contents
 
@@ -21,9 +22,9 @@ Rayforge's document model.
 
 ## Overview
 
-The import system is built around a four-phase pipeline that transforms raw file
-data into fully-positioned document objects. Each phase has a specific
-responsibility and produces well-defined data structures.
+The import system is built around a four-phase pipeline that transforms raw file data into
+fully-positioned document objects. Each phase has a specific responsibility and produces
+well-defined data structures.
 
 ```mermaid
 flowchart TD
@@ -56,8 +57,8 @@ flowchart TD
 
 **Method:** `Importer.parse()`
 
-Extracts geometric facts from the file including bounds, coordinate system
-details, and layer information.
+Extracts geometric facts from the file including bounds, coordinate system details, and layer
+information.
 
 **Output:** `ParsingResult`
 
@@ -80,8 +81,7 @@ details, and layer information.
 
 **Method:** `Importer.vectorize()`
 
-Converts parsed data into vector `Geometry` objects according to the
-`VectorizationSpec`.
+Converts parsed data into vector `Geometry` objects according to the `VectorizationSpec`.
 
 **Output:** `VectorizationResult`
 
@@ -97,8 +97,8 @@ Converts parsed data into vector `Geometry` objects according to the
 
 **Class:** `NormalizationEngine`
 
-Calculates transformation matrices to map Native Coordinates to World
-Coordinates based on user intent.
+Calculates transformation matrices to map Native Coordinates to World Coordinates based on user
+intent.
 
 **Output:** `List[LayoutItem]`
 
@@ -120,8 +120,7 @@ Each `LayoutItem` contains:
 
 **Class:** `ItemAssembler`
 
-Instantiates Rayforge domain objects (`WorkPiece`, `Layer`) based on the
-layout plan.
+Instantiates Rayforge domain objects (`WorkPiece`, `Layer`) based on the layout plan.
 
 **Output:** `ImportPayload`
 
@@ -137,9 +136,9 @@ layout plan.
 
 **Method:** `Importer.scan()`
 
-A lightweight scan that extracts metadata without full processing. Used for
-building the UI for an importer, including layer selection list.
-This is NOT part of the main import pipeline executed by `get_doc_items()`.
+A lightweight scan that extracts metadata without full processing. Used for building the UI for an
+importer, including layer selection list. This is NOT part of the main import pipeline executed by
+`get_doc_items()`.
 
 **Output:** `ImportManifest`
 
@@ -154,8 +153,7 @@ This is NOT part of the main import pipeline executed by `get_doc_items()`.
 
 ## Coordinate Systems
 
-The import pipeline handles multiple coordinate systems through careful
-transformation:
+The import pipeline handles multiple coordinate systems through careful transformation:
 
 ### Native Coordinates (Input)
 
@@ -190,9 +188,8 @@ transformation:
 
 ### Importer (Base Class)
 
-Abstract base class defining the interface for all importers. Subclasses must
-implement the pipeline methods and declare their capabilities via the
-`features` attribute.
+Abstract base class defining the interface for all importers. Subclasses must implement the pipeline
+methods and declare their capabilities via the `features` attribute.
 
 **Features:**
 

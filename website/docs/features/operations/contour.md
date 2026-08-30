@@ -1,10 +1,13 @@
 ---
-description: "Contour cutting traces vector outlines to cut shapes from material. Configure laser power, speed, passes, and kerf compensation for clean cuts."
+description:
+  "Contour cutting traces vector outlines to cut shapes from material. Configure laser power, speed,
+  passes, and kerf compensation for clean cuts."
 ---
 
 # Contour Cutting
 
-Contour cutting traces the outline of vector shapes to cut them free from material. It's the most common laser operation for creating parts, signs, and decorative pieces.
+Contour cutting traces the outline of vector shapes to cut them free from material. It's the most
+common laser operation for creating parts, signs, and decorative pieces.
 
 ## Overview
 
@@ -15,7 +18,6 @@ Contour operations:
 - Support single or multiple passes for thick materials
 - Can use inside, outside, or on-line cutting paths
 - Work with any closed or open vector shape
-
 
 ## When to Use Contour
 
@@ -52,23 +54,24 @@ Use contour cutting for:
 
 ## Key Settings
 
-The step settings dialog has three tabs: **Step Settings**, **Laser**, and **Post Processing**. Settings are described in tab order below.
+The step settings dialog has three tabs: **Step Settings**, **Laser**, and **Post Processing**.
+Settings are described in tab order below.
 
 ### Contour Settings
 
 ![Contour step settings](/screenshots/step-settings-contour-general.webp)
 
-The **Contour Settings** group on the *Step Settings* tab controls how the outline is traced.
+The **Contour Settings** group on the _Step Settings_ tab controls how the outline is traced.
 
 #### Cut Side & Path Offset
 
 Controls where the laser cuts relative to the vector path:
 
-| Offset        | Description               | Use For                        |
-| ------------- | ------------------------- | ------------------------------ |
-| **Centerline**| Cuts directly on the path | Centerline cuts, scoring       |
-| **Inside**    | Cuts inside the shape     | Parts that must fit exact size |
-| **Outside**   | Cuts outside the shape    | Holes that parts fit into      |
+| Offset         | Description               | Use For                        |
+| -------------- | ------------------------- | ------------------------------ |
+| **Centerline** | Cuts directly on the path | Centerline cuts, scoring       |
+| **Inside**     | Cuts inside the shape     | Parts that must fit exact size |
+| **Outside**    | Cuts outside the shape    | Holes that parts fit into      |
 
 **Offset Distance:**
 
@@ -100,12 +103,13 @@ For designs with holes or internal cutouts, you can choose to trace only the out
 - **Remove Inner Paths**: When enabled, only the outermost contour is traced
 - Internal holes and cutouts are ignored
 
-This is useful when you want to cut out a shape but preserve the interior, such as creating a frame or outline without cutting internal details.
+This is useful when you want to cut out a shape but preserve the interior, such as creating a frame
+or outline without cutting internal details.
 
 #### Overcut
 
-Extends closed cutting paths past their start point so the laser beam
-overlaps with the beginning of the cut:
+Extends closed cutting paths past their start point so the laser beam overlaps with the beginning of
+the cut:
 
 **Overcut:**
 
@@ -116,10 +120,9 @@ overlaps with the beginning of the cut:
 
 **Why use overcut:**
 
-At the start and end of a closed contour, the laser may not fully penetrate
-due to acceleration and deceleration. Overcut ensures the beam overlaps at
-the junction, creating a clean, fully severed cut. This is especially useful
-for:
+At the start and end of a closed contour, the laser may not fully penetrate due to acceleration and
+deceleration. Overcut ensures the beam overlaps at the junction, creating a clean, fully severed
+cut. This is especially useful for:
 
 - Thick materials where full penetration is marginal
 - High-speed cutting where acceleration effects are more pronounced
@@ -127,15 +130,14 @@ for:
 
 Overcut applies to both outer contours and internal holes.
 
-:::tip Lead-In/Out vs Overcut
-[Lead-In/Out](../lead-in-out.md) adds zero-power approach and exit moves before
-and after the cut path. Overcut extends the cut path itself past the
-junction. They can be used together for optimal cut quality.
-:::
+:::tip Lead-In/Out vs Overcut [Lead-In/Out](../lead-in-out.md) adds zero-power approach and exit
+moves before and after the cut path. Overcut extends the cut path itself past the junction. They can
+be used together for optimal cut quality. :::
 
 #### Retracing with Custom Threshold
 
-When working with bitmap images that have been converted to vectors, you can control which parts get traced:
+When working with bitmap images that have been converted to vectors, you can control which parts get
+traced:
 
 - **Rescan Content**: Enable custom brightness threshold for tracing
 - **Tracing Threshold (0.0-1.0)**: Brightness cutoff value when rescanning is enabled
@@ -211,10 +213,10 @@ For materials thicker than a single pass can cut:
 - Creates true 2.5D cutting
 - Set to 0 for same-depth multiple passes
 
-:::warning Z-Axis Required
-:::
+:::warning Z-Axis Required :::
 
-Pass depth only works if your machine has Z-axis control. For machines without Z-axis, use multiple passes at the same depth.
+Pass depth only works if your machine has Z-axis control. For machines without Z-axis, use multiple
+passes at the same depth.
 
 ## Tips & Best Practices
 

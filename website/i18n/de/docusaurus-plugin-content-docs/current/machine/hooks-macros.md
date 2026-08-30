@@ -1,6 +1,8 @@
 # Makros & Hooks
 
-Rayforge bietet zwei leistungsstarke Automatisierungsfunktionen zur Anpassung deines Workflows: **Makros** und **Hooks**. Beide ermöglichen das Einfügen von benutzerdefiniertem G-Code in deine Jobs, dienen jedoch unterschiedlichen Zwecken.
+Rayforge bietet zwei leistungsstarke Automatisierungsfunktionen zur Anpassung deines Workflows:
+**Makros** und **Hooks**. Beide ermöglichen das Einfügen von benutzerdefiniertem G-Code in deine
+Jobs, dienen jedoch unterschiedlichen Zwecken.
 
 ![Hooks & Makros Einstellungen](/screenshots/machine-settings-hooks-macros.webp)
 
@@ -8,16 +10,17 @@ Rayforge bietet zwei leistungsstarke Automatisierungsfunktionen zur Anpassung de
 
 ## Übersicht
 
-| Funktion    | Zweck                       | Auslöser               | Anwendungsfall                                |
-| ----------- | --------------------------- | ---------------------- | --------------------------------------------- |
-| **Makros**  | Wiederverwendbare G-Code-Snippets | Manuelle Ausführung    | Schnelle Befehle, Testmuster, benutzerdefinierte Routinen |
-| **Hooks**   | Automatische G-Code-Einschleusung | Job-Lebenszyklus-Ereignisse | Startsequenzen, Ebenenwechsel, Aufräumen     |
+| Funktion   | Zweck                             | Auslöser                    | Anwendungsfall                                            |
+| ---------- | --------------------------------- | --------------------------- | --------------------------------------------------------- |
+| **Makros** | Wiederverwendbare G-Code-Snippets | Manuelle Ausführung         | Schnelle Befehle, Testmuster, benutzerdefinierte Routinen |
+| **Hooks**  | Automatische G-Code-Einschleusung | Job-Lebenszyklus-Ereignisse | Startsequenzen, Ebenenwechsel, Aufräumen                  |
 
 ---
 
 ## Makros
 
-Makros sind **benannte, wiederverwendbare G-Code-Skripte**, die du jederzeit manuell ausführen kannst.
+Makros sind **benannte, wiederverwendbare G-Code-Skripte**, die du jederzeit manuell ausführen
+kannst.
 
 ### Wofür sind Makros?
 
@@ -38,7 +41,8 @@ Häufige Makro-Anwendungsfälle:
 
 2. **Ein neues Makro hinzufügen:**
    - Klicke auf die **"+"**-Taste
-   - Gib einen beschreibenden Namen ein (z.B. "Maschine referenzieren", "Luftunterstützung aktivieren")
+   - Gib einen beschreibenden Namen ein (z.B. "Maschine referenzieren", "Luftunterstützung
+     aktivieren")
 
 3. **Schreibe deinen G-Code:**
    - Jede Zeile ist ein separater G-Code-Befehl
@@ -55,8 +59,7 @@ Häufige Makro-Anwendungsfälle:
 
 #### Einfach: Maschine referenzieren
 
-**Name:** Maschine referenzieren
-**Code:**
+**Name:** Maschine referenzieren **Code:**
 
 ```gcode
 $H
@@ -69,8 +72,7 @@ $H
 
 #### Mittel: Arbeits-Offset setzen
 
-**Name:** G54 auf aktuelle Position setzen
-**Code:**
+**Name:** G54 auf aktuelle Position setzen **Code:**
 
 ```gcode
 G10 L20 P1 X0 Y0
@@ -83,8 +85,7 @@ G10 L20 P1 X0 Y0
 
 #### Erweitert: Fokus-Test-Raster
 
-**Name:** 9-Punkt-Fokustest
-**Code:**
+**Name:** 9-Punkt-Fokustest **Code:**
 
 ```gcode
 ; 9-Punkt-Raster zum Finden des optimalen Fokus
@@ -107,22 +108,23 @@ M5
 
 ## Hooks
 
-Hooks sind **automatische G-Code-Einschleusungen**, die durch bestimmte Ereignisse während der Jobausführung ausgelöst werden.
+Hooks sind **automatische G-Code-Einschleusungen**, die durch bestimmte Ereignisse während der
+Jobausführung ausgelöst werden.
 
 ### Hook-Auslöser
 
 Rayforge unterstützt diese Hook-Auslöser:
 
-| Auslöser            | Wann es ausgeführt wird            | Häufige Verwendungen                          |
-| ------------------- | ---------------------------------- | --------------------------------------------- |
-| **Ebenen-Start**    | Vor der Verarbeitung jeder Ebene   | Werkzeugwechsel, Leistung anpassen, Kommentare |
-| **Ebenen-Ende**     | Nach der Verarbeitung jeder Ebene  | Fortschrittsbenachrichtigung, Pause           |
-| **Werkstück-Start** | Vor der Verarbeitung jedes Werkstücks | Teilenummerierung, Ausrichtungsmarkierungen   |
-| **Werkstück-Ende**  | Nach der Verarbeitung jedes Werkstücks | Abkühlen, Inspektionspause                    |
+| Auslöser            | Wann es ausgeführt wird                | Häufige Verwendungen                           |
+| ------------------- | -------------------------------------- | ---------------------------------------------- |
+| **Ebenen-Start**    | Vor der Verarbeitung jeder Ebene       | Werkzeugwechsel, Leistung anpassen, Kommentare |
+| **Ebenen-Ende**     | Nach der Verarbeitung jeder Ebene      | Fortschrittsbenachrichtigung, Pause            |
+| **Werkstück-Start** | Vor der Verarbeitung jedes Werkstücks  | Teilenummerierung, Ausrichtungsmarkierungen    |
+| **Werkstück-Ende**  | Nach der Verarbeitung jedes Werkstücks | Abkühlen, Inspektionspause                     |
 
-:::note Job-Level G-Code
-Job-Start und -Ende G-Code wird über die Präambel- und Postscript-Einstellungen des Dialekts konfiguriert, nicht über Hooks. Siehe [G-Code-Einstellungen](gcode) für Details.
-:::
+:::note Job-Level G-Code Job-Start und -Ende G-Code wird über die Präambel- und
+Postscript-Einstellungen des Dialekts konfiguriert, nicht über Hooks. Siehe
+[G-Code-Einstellungen](gcode) für Details. :::
 
 ### Einen Hook erstellen
 
@@ -143,8 +145,7 @@ Job-Start und -Ende G-Code wird über die Präambel- und Postscript-Einstellunge
 
 #### Ebenen-Start: Kommentar hinzufügen
 
-**Auslöser:** Ebenen-Start
-**Code:**
+**Auslöser:** Ebenen-Start **Code:**
 
 ```gcode
 ; Starte Ebene: {layer_name}
@@ -157,8 +158,7 @@ Job-Start und -Ende G-Code wird über die Präambel- und Postscript-Einstellunge
 
 #### Werkstück-Start: Teilenummerierung
 
-**Auslöser:** Werkstück-Start
-**Code:**
+**Auslöser:** Werkstück-Start **Code:**
 
 ```gcode
 ; Teil: {workpiece_name}
@@ -204,41 +204,40 @@ Variablen verwenden die `{variable_name}`-Syntax und werden während der G-Code-
 
 **Job-Level-Variablen:**
 
-| Variable     | Beschreibung                     | Beispielwert |
-| ------------ | -------------------------------- | ------------ |
+| Variable     | Beschreibung                      | Beispielwert |
+| ------------ | --------------------------------- | ------------ |
 | `{job_name}` | Name des aktuellen Jobs/Dokuments | "test-job"   |
-| `{date}`     | Aktuelles Datum                  | "2025-10-03" |
-| `{time}`     | Aktuelle Uhrzeit                 | "14:30:25"   |
+| `{date}`     | Aktuelles Datum                   | "2025-10-03" |
+| `{time}`     | Aktuelle Uhrzeit                  | "14:30:25"   |
 
 **Ebenen-Level-Variablen:**
 
-| Variable         | Beschreibung                        | Beispielwert |
-| ---------------- | ----------------------------------- | ------------ |
-| `{layer_name}`   | Name der aktuellen Ebene            | "Schnitt-Ebene" |
-| `{layer_index}`  | Null-basierter Index der aktuellen Ebene | 0, 1, 2...   |
-| `{total_layers}` | Gesamtzahl der Ebenen im Job        | 3            |
+| Variable         | Beschreibung                             | Beispielwert    |
+| ---------------- | ---------------------------------------- | --------------- |
+| `{layer_name}`   | Name der aktuellen Ebene                 | "Schnitt-Ebene" |
+| `{layer_index}`  | Null-basierter Index der aktuellen Ebene | 0, 1, 2...      |
+| `{total_layers}` | Gesamtzahl der Ebenen im Job             | 3               |
 
 **Werkstück-Level-Variablen:**
 
-| Variable             | Beschreibung                            | Beispielwert |
-| -------------------- | --------------------------------------- | ------------ |
-| `{workpiece_name}`   | Name des Werkstücks                     | "Kreis 1"    |
+| Variable             | Beschreibung                                  | Beispielwert |
+| -------------------- | --------------------------------------------- | ------------ |
+| `{workpiece_name}`   | Name des Werkstücks                           | "Kreis 1"    |
 | `{workpiece_index}`  | Null-basierter Index des aktuellen Werkstücks | 0, 1, 2...   |
-| `{total_workpieces}` | Gesamtzahl der Werkstücke               | 5            |
+| `{total_workpieces}` | Gesamtzahl der Werkstücke                     | 5            |
 
 **Maschinen-Variablen:**
 
-| Variable         | Beschreibung                     | Beispielwert |
-| ---------------- | -------------------------------- | ------------ |
-| `{machine_name}` | Name des Maschinenprofils        | "Mein K40"   |
+| Variable         | Beschreibung                             | Beispielwert |
+| ---------------- | ---------------------------------------- | ------------ |
+| `{machine_name}` | Name des Maschinenprofils                | "Mein K40"   |
 | `{max_speed}`    | Maximale Schnittgeschwindigkeit (mm/min) | 1000         |
-| `{work_width}`   | Arbeitsbereich Breite (mm)       | 300          |
-| `{work_height}`  | Arbeitsbereich Höhe (mm)         | 200          |
+| `{work_width}`   | Arbeitsbereich Breite (mm)               | 300          |
+| `{work_height}`  | Arbeitsbereich Höhe (mm)                 | 200          |
 
 ### Beispiel: Fortschrittsbenachrichtigung
 
-**Hook:** Ebenen-Start
-**Code:**
+**Hook:** Ebenen-Start **Code:**
 
 ```gcode
 ; ========================================
@@ -266,8 +265,7 @@ Variablen verwenden die `{variable_name}`-Syntax und werden während der G-Code-
 
 Für Maschinen mit mehreren Lasern oder Werkzeugen:
 
-**Hook:** Werkstück-Start
-**Code:**
+**Hook:** Werkstück-Start **Code:**
 
 ```gcode
 ; Werkzeug für Werkstück {workpiece_name} wählen
@@ -279,8 +277,7 @@ G4 P1           ; Auf Werkzeugwechsel warten
 
 Optionale Pausen für Inspektion hinzufügen:
 
-**Hook:** Ebenen-Ende
-**Code:**
+**Hook:** Ebenen-Ende **Code:**
 
 ```gcode
 ; M0  ; Auskommentieren, um nach jeder Ebene zur Inspektion zu pausieren
@@ -290,35 +287,31 @@ Optionale Pausen für Inspektion hinzufügen:
 
 Luftunterstützung auf Ebenen-Basis steuern:
 
-**Hook:** Ebenen-Start (für Schneide-Ebenen)
-**Code:**
+**Hook:** Ebenen-Start (für Schneide-Ebenen) **Code:**
 
 ```gcode
 M8  ; Luftunterstützung EIN
 ```
 
-**Hook:** Ebenen-Start (für Gravur-Ebenen)
-**Code:**
+**Hook:** Ebenen-Start (für Gravur-Ebenen) **Code:**
 
 ```gcode
 M9  ; Luftunterstützung AUS (verhindert Staubspreizung beim Gravieren)
 ```
 
-:::note Ebenen-spezifische Hooks
-Rayforge unterstützt derzeit keine pro-Ebenen-Hook-Anpassung. Um dies zu erreichen, verwende bedingten G-Code oder separate Maschinenprofile.
-:::
+:::note Ebenen-spezifische Hooks Rayforge unterstützt derzeit keine pro-Ebenen-Hook-Anpassung. Um
+dies zu erreichen, verwende bedingten G-Code oder separate Maschinenprofile. :::
 
 ---
 
 ## Sicherheitsüberlegungen
 
-:::danger Vor Produktion testen
-Teste Makros und Hooks immer im **Simulationsmodus** oder mit **deaktiviertem Laser**, bevor du echte Jobs ausführst. Falsch konfigurierter G-Code kann:
+:::danger Vor Produktion testen Teste Makros und Hooks immer im **Simulationsmodus** oder mit
+**deaktiviertem Laser**, bevor du echte Jobs ausführst. Falsch konfigurierter G-Code kann:
 
 - Die Maschine gegen Grenzen krachen lassen
 - Den Laser unerwartet feuern
-- Material oder Ausrüstung beschädigen
-  :::
+- Material oder Ausrüstung beschädigen :::
 
 **Sicherheits-Checkliste:**
 

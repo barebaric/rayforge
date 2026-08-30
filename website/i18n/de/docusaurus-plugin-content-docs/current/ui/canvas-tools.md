@@ -1,6 +1,7 @@
 # Canvas-Werkzeuge
 
-Die Canvas bietet einen umfassenden Satz von Werkzeugen zum Bearbeiten von Designs, Messen und Vorbereiten deiner Laseraufträge.
+Die Canvas bietet einen umfassenden Satz von Werkzeugen zum Bearbeiten von Designs, Messen und
+Vorbereiten deiner Laseraufträge.
 
 ## Auswahlwerkzeug
 
@@ -17,16 +18,19 @@ Objekte auf der Canvas auswählen, bewegen und transformieren.
 
 Das Halten von Modifikatortasten während des Ziehens ändert das Verhalten:
 
-- <kbd>Strg</kbd> beim **Bewegen**: Rastet das Objekt am 5mm-Raster ein, was die präzise Ausrichtung erleichtert
+- <kbd>Strg</kbd> beim **Bewegen**: Rastet das Objekt am 5mm-Raster ein, was die präzise Ausrichtung
+  erleichtert
 - <kbd>Strg</kbd> beim **Drehen**: Rastet die Drehung in 5-Grad-Schritten ein für konsistente Winkel
 - <kbd>Umschalt</kbd> beim **Skalieren**: Beschränkt die Proportionen (gleichmäßige Skalierung)
 - <kbd>Strg</kbd> beim **Skalieren**: Skaliert vom Zentrum statt vom gegenüberliegenden Rand
 
 **Transformations-Griffpunkte:**
 
-- **Eck-Griffpunkte**: Proportional skalieren (<kbd>Umschalt</kbd> gedrückt halten für unproportionale Skalierung)
+- **Eck-Griffpunkte**: Proportional skalieren (<kbd>Umschalt</kbd> gedrückt halten für
+  unproportionale Skalierung)
 - **Kanten-Griffpunkte**: In eine Richtung skalieren
-- **Drehungs-Griffpunkt**: Einmal auf ein ausgewähltes Objekt klicken um in den Drehmodus zu wechseln, dann ziehen um um den Mittelpunkt zu drehen
+- **Drehungs-Griffpunkt**: Einmal auf ein ausgewähltes Objekt klicken um in den Drehmodus zu
+  wechseln, dann ziehen um um den Mittelpunkt zu drehen
 
 **Tastaturkürzel:**
 
@@ -151,16 +155,16 @@ Formen kombinieren oder subtrahieren:
 2. **Verschieben und Zoomen meistern**: Unverzichtbar für große oder detaillierte Designs
 3. **Am Raster einrasten**: Beschleunigt Ausrichtung für rechteckige Layouts
 4. **Zuerst messen**: Abmessungen verifizieren vor G-Code-Generierung
-5. **Verwandte Objekte gruppieren**: Leichter zu bewegen und organisieren (<kbd>Strg+g</kbd> zum Gruppieren)
+5. **Verwandte Objekte gruppieren**: Leichter zu bewegen und organisieren (<kbd>Strg+g</kbd> zum
+   Gruppieren)
 
 ## Vektorbearbeitung
 
-Doppelklicke auf ein Werkstück auf der Arbeitsfläche, um in den
-Vektorbearbeitungsmodus zu wechseln. In diesem Modus kannst du einzelne
-Vektorsegmente des Werkstücks auswählen und löschen.
+Doppelklicke auf ein Werkstück auf der Arbeitsfläche, um in den Vektorbearbeitungsmodus zu wechseln.
+In diesem Modus kannst du einzelne Vektorsegmente des Werkstücks auswählen und löschen.
 
-Um den Vektorbearbeitungsmodus zu verlassen, klicke außerhalb des Werkstücks
-oder drücke <kbd>Escape</kbd>.
+Um den Vektorbearbeitungsmodus zu verlassen, klicke außerhalb des Werkstücks oder drücke
+<kbd>Escape</kbd>.
 
 ---
 

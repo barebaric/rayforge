@@ -1,10 +1,13 @@
 ---
-description: "Frame outline operations trace a rectangle around your design. Use for positioning, test runs, and alignment before cutting."
+description:
+  "Frame outline operations trace a rectangle around your design. Use for positioning, test runs,
+  and alignment before cutting."
 ---
 
 # Frame Outline
 
-Frame Outline creates a simple rectangular cutting path around your entire design. It's the quickest way to add a clean border or cut your work free from the material sheet.
+Frame Outline creates a simple rectangular cutting path around your entire design. It's the quickest
+way to add a clean border or cut your work free from the material sheet.
 
 ## Overview
 
@@ -53,13 +56,14 @@ Configure the frame parameters:
 
 ## Key Settings
 
-The step settings dialog has three tabs: **Step Settings**, **Laser**, and **Post Processing**. Settings are described in tab order below.
+The step settings dialog has three tabs: **Step Settings**, **Laser**, and **Post Processing**.
+Settings are described in tab order below.
 
 ### Geometry
 
 ![Frame Outline step settings](/screenshots/step-settings-frame-outline-general.webp)
 
-The **Geometry** group on the *Step Settings* tab controls the frame's shape.
+The **Geometry** group on the _Step Settings_ tab controls the frame's shape.
 
 #### Cut Side
 

@@ -1,7 +1,7 @@
 # Vista 3D
 
-La vista 3D te permite visualizar tus trayectorias de código G y simular la ejecución
-del trabajo antes de enviarlas a tu máquina.
+La vista 3D te permite visualizar tus trayectorias de código G y simular la ejecución del trabajo
+antes de enviarlas a tu máquina.
 
 ![Vista Previa 3D](/screenshots/main-3d.webp)
 
@@ -33,21 +33,20 @@ Accede a la vista 3D:
 
 ## Pantalla del Sistema de Coordenadas de Trabajo
 
-La vista 3D visualiza el Sistema de Coordenadas de Trabajo (WCS) activo
-de manera diferente al lienzo 2D:
+La vista 3D visualiza el Sistema de Coordenadas de Trabajo (WCS) activo de manera diferente al
+lienzo 2D:
 
 ### Cuadrícula y Ejes
 
-- **Pantalla aislada**: La cuadrícula y los ejes aparecen como si el origen WCS fuera
-  el origen del mundo
+- **Pantalla aislada**: La cuadrícula y los ejes aparecen como si el origen WCS fuera el origen del
+  mundo
 - **Desplazamiento aplicado**: Toda la cuadrícula se desplaza para alinearse con el desplazamiento
   WCS seleccionado
 - **Etiquetas relativas al WCS**: Las etiquetas de coordenadas muestran posiciones relativas al
   origen WCS, no al origen de máquina
 
-Esta pantalla "en aislamiento" facilita entender dónde se ejecutará tu trabajo
-relativo al sistema de coordenadas de trabajo seleccionado, sin confundirse
-por la posición absoluta de la máquina.
+Esta pantalla "en aislamiento" facilita entender dónde se ejecutará tu trabajo relativo al sistema
+de coordenadas de trabajo seleccionado, sin confundirse por la posición absoluta de la máquina.
 
 ### Cambiando WCS
 
@@ -57,32 +56,28 @@ La vista 3D se actualiza automáticamente cuando cambias el WCS activo:
 - La cuadrícula y los ejes se desplazan para reflejar el nuevo origen WCS
 - Las etiquetas se actualizan para mostrar coordenadas relativas al nuevo WCS
 
-:::tip WCS en Vista 3D
-La vista 3D muestra tus trayectorias relativas al WCS seleccionado. Cuando
-cambias WCS, verás las trayectorias parecer moverse porque el punto de referencia
-(la cuadrícula) ha cambiado, no porque las trayectorias mismas se movieron.
-:::
+:::tip WCS en Vista 3D La vista 3D muestra tus trayectorias relativas al WCS seleccionado. Cuando
+cambias WCS, verás las trayectorias parecer moverse porque el punto de referencia (la cuadrícula) ha
+cambiado, no porque las trayectorias mismas se movieron. :::
 
 ## Opciones de Pantalla
 
-Los controles de visibilidad están ubicados como botones superpuestos en la esquina
-superior derecha del lienzo 3D. Cada botón recuerda su estado entre sesiones:
+Los controles de visibilidad están ubicados como botones superpuestos en la esquina superior derecha
+del lienzo 3D. Cada botón recuerda su estado entre sesiones:
 
-- **Imagen de la pieza de trabajo**: Alternar la imagen base de la pieza de
-  trabajo sobre la superficie del material — la misma imagen que se muestra
-  en el lienzo 2D
+- **Imagen de la pieza de trabajo**: Alternar la imagen base de la pieza de trabajo sobre la
+  superficie del material — la misma imagen que se muestra en el lienzo 2D
 - **Material de base**: Alternar la visibilidad de los bloques de material
 - **Modelo**: Alternar la visibilidad del modelo 3D de la máquina
 - **Cuadrícula**: Alternar la visibilidad de la cuadrícula de coordenadas
-- **Subcapa de operaciones**: Alternar la vista previa semitransparente de
-  grabado rasterizado sobre la superficie de la pieza de trabajo
+- **Subcapa de operaciones**: Alternar la vista previa semitransparente de grabado rasterizado sobre
+  la superficie de la pieza de trabajo
 - **Movimientos de desplazamiento**: Alternar la visibilidad de los movimientos rápidos
-- **Zonas prohibidas**: Alternar la visibilidad de las zonas prohibidas.
-  Este botón solo aparece cuando tu máquina tiene al menos una zona
-  prohibida configurada.
+- **Zonas prohibidas**: Alternar la visibilidad de las zonas prohibidas. Este botón solo aparece
+  cuando tu máquina tiene al menos una zona prohibida configurada.
 
-La proyección en perspectiva y ortográfica se alterna con <kbd>P</kbd> o con
-**Ver → Alternar perspectiva**.
+La proyección en perspectiva y ortográfica se alterna con <kbd>P</kbd> o con **Ver → Alternar
+perspectiva**.
 
 ### Visualización de Trayectoria
 
@@ -92,54 +87,46 @@ Personaliza lo que ves:
 - **Mostrar Movimientos de Trabajo**: Mostrar movimientos de corte/grabado (líneas sólidas)
 - **Colorear por Operación**: Diferentes colores para cada operación
 
-:::tip Colores por Láser
-Al usar máquinas con múltiples cabezales láser, cada láser puede tener su propio
-color configurado en [Ajustes de Láser](../machine/laser.md).
-Esto facilita identificar qué láser realizará cada operación.
-:::
+:::tip Colores por Láser Al usar máquinas con múltiples cabezales láser, cada láser puede tener su
+propio color configurado en [Ajustes de Láser](../machine/laser.md). Esto facilita identificar qué
+láser realizará cada operación. :::
 
 ### Modelo de Cabezal Láser
 
-La vista 3D renderiza un modelo de tu cabezal láser que se mueve a lo largo de
-la trayectoria durante la simulación. Puedes asignar un modelo 3D a cada cabezal
-láser en la página de [Ajustes de Láser](../machine/laser.md) en Configuración de
-Máquina. La escala, rotación y distancia focal del modelo se pueden ajustar para
-coincidir con tu configuración física.
+La vista 3D renderiza un modelo de tu cabezal láser que se mueve a lo largo de la trayectoria
+durante la simulación. Puedes asignar un modelo 3D a cada cabezal láser en la página de
+[Ajustes de Láser](../machine/laser.md) en Configuración de Máquina. La escala, rotación y distancia
+focal del modelo se pueden ajustar para coincidir con tu configuración física.
 
-Durante la simulación, se dibuja un rayo láser brillante desde el cabezal hacia
-abajo cuando el láser está activo.
+Durante la simulación, se dibuja un rayo láser brillante desde el cabezal hacia abajo cuando el
+láser está activo.
 
 ## Modelo de Quemado Físico {#physical-burn-model}
 
-Al grabar, la vista 3D ya no muestra el resultado como una capa plana sobre el
-material de base. Las operaciones raster y vectoriales de láser ahora
-**queman el material de base** — la vista previa muestra un quemado impulsado
-por un modelo físicamente motivado que tiene en cuenta:
+Al grabar, la vista 3D ya no muestra el resultado como una capa plana sobre el material de base. Las
+operaciones raster y vectoriales de láser ahora **queman el material de base** — la vista previa
+muestra un quemado impulsado por un modelo físicamente motivado que tiene en cuenta:
 
-- La **longitud de onda**, **potencia óptica** y **tamaño del punto** de tu
-  láser (configurados en [Ajustes de Láser](../machine/laser.md)).
+- La **longitud de onda**, **potencia óptica** y **tamaño del punto** de tu láser (configurados en
+  [Ajustes de Láser](../machine/laser.md)).
 - La **absorción del material** en esa longitud de onda (definida en la
   [biblioteca de materiales](../application-settings/materials.md#absorption)).
-- La **velocidad de escaneo**, que establece la energía entregada por unidad
-  de área (fluencia, en J/cm²).
+- La **velocidad de escaneo**, que establece la energía entregada por unidad de área (fluencia, en
+  J/cm²).
 
-El resultado es una rampa de quemado con un halo de calor en las superficies
-orientadas hacia arriba. También funciona con rotativo — el grabado se hornea
-en el material de base rotativo.
+El resultado es una rampa de quemado con un halo de calor en las superficies orientadas hacia
+arriba. También funciona con rotativo — el grabado se hornea en el material de base rotativo.
 
-:::note Calibración
-El modelo de quemado está físicamente motivado pero aún no está completamente
-calibrado para todos los materiales y tipos de láser. Puedes ayudar a mejorarlo:
-ejecuta una [cuadrícula de prueba de material](../features/operations/material-test-grid.md)
-y comparte la foto del resultado junto con los datos de tu máquina (longitud
-de onda, potencia óptica, tamaño del punto, velocidad y las potencias/profundidades
-probadas).
-:::
+:::note Calibración El modelo de quemado está físicamente motivado pero aún no está completamente
+calibrado para todos los materiales y tipos de láser. Puedes ayudar a mejorarlo: ejecuta una
+[cuadrícula de prueba de material](../features/operations/material-test-grid.md) y comparte la foto
+del resultado junto con los datos de tu máquina (longitud de onda, potencia óptica, tamaño del
+punto, velocidad y las potencias/profundidades probadas). :::
 
 ## Simulación
 
-La vista 3D incluye un simulador integrado con controles de reproducción
-superpuestos en la parte inferior del lienzo.
+La vista 3D incluye un simulador integrado con controles de reproducción superpuestos en la parte
+inferior del lienzo.
 
 ### Controles de Reproducción
 
@@ -150,9 +137,9 @@ superpuestos en la parte inferior del lienzo.
 
 ### Visor de Código G Sincronizado
 
-La simulación se mantiene sincronizada con el visor de código G en el panel inferior.
-Recorrer la simulación resalta la línea correspondiente en el visor de código G,
-y hacer clic en una línea en el visor de código G salta la simulación a ese punto.
+La simulación se mantiene sincronizada con el visor de código G en el panel inferior. Recorrer la
+simulación resalta la línea correspondiente en el visor de código G, y hacer clic en una línea en el
+visor de código G salta la simulación a ese punto.
 
 ### Visibilidad de Capas
 
@@ -170,10 +157,9 @@ Antes de enviar a la máquina, verifica:
 - [ ] El trabajo comienza en la posición esperada
 - [ ] Las pestañas de sujeción están en las ubicaciones correctas
 
-Algunas comprobaciones adicionales se realizan automáticamente. Cuando ejecutas o
-exportas un trabajo, Rayforge ejecuta [comprobaciones de sanity](../features/sanity-checks.md)
-que verifican los límites de la máquina, las fronteras del área de trabajo y las
-colisiones con zonas prohibidas.
+Algunas comprobaciones adicionales se realizan automáticamente. Cuando ejecutas o exportas un
+trabajo, Rayforge ejecuta [comprobaciones de sanity](../features/sanity-checks.md) que verifican los
+límites de la máquina, las fronteras del área de trabajo y las colisiones con zonas prohibidas.
 
 ## Consejos de Rendimiento
 

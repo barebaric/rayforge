@@ -1,12 +1,15 @@
 # Compensación de Kerf
 
-Kerf es el material removido por el haz láser durante el corte. La compensación de kerf ajusta las trayectorias de herramienta para considerar esto, asegurando que las piezas cortadas coincidan con sus dimensiones diseñadas.
+Kerf es el material removido por el haz láser durante el corte. La compensación de kerf ajusta las
+trayectorias de herramienta para considerar esto, asegurando que las piezas cortadas coincidan con
+sus dimensiones diseñadas.
 
 ## ¿Qué es Kerf?
 
 **Kerf** = el ancho de material removido por el proceso de corte.
 
 **Ejemplo:**
+
 - Tamaño de punto láser: 0.2mm
 - Interacción con material: añade ~0.1mm en cada lado
 - **Kerf total:** ~0.4mm
@@ -15,13 +18,16 @@ Kerf es el material removido por el haz láser durante el corte. La compensació
 
 ## Cómo Funciona la Compensación de Kerf
 
-La compensación de kerf **desplaza la trayectoria de herramienta** hacia adentro o hacia afuera para considerar la remoción de material:
+La compensación de kerf **desplaza la trayectoria de herramienta** hacia adentro o hacia afuera para
+considerar la remoción de material:
 
 **Para cortes exteriores (cortar una pieza):**
+
 - Desplazar trayectoria **hacia afuera** por la mitad del ancho de kerf
 - Resultado: La pieza final tiene el tamaño correcto
 
 **Para cortes interiores (cortar un agujero):**
+
 - Desplazar trayectoria **hacia adentro** por la mitad del ancho de kerf
 - Resultado: El agujero final tiene el tamaño correcto
 
@@ -60,6 +66,7 @@ Después de cortar:     La pieza mide 50.0mm (¡perfecto!)
 4. **Promedia:** Usa el promedio de múltiples mediciones
 
 **Variables que afectan el kerf:**
+
 - Potencia del láser (mayor = más ancho)
 - Velocidad de corte (más lento = más ancho)
 - Tipo y densidad del material

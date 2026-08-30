@@ -1,6 +1,7 @@
 # Corte de Contorno
 
-O corte de contorno traça o contorno de formas vetoriais para cortá-las livres do material. É a operação de laser mais comum para criar peças, sinais e peças decorativas.
+O corte de contorno traça o contorno de formas vetoriais para cortá-las livres do material. É a
+operação de laser mais comum para criar peças, sinais e peças decorativas.
 
 ## Visão Geral
 
@@ -47,13 +48,15 @@ Use corte de contorno para:
 
 ## Configurações Principais
 
-O diálogo de configurações de etapa tem três abas: **Configurações de Etapa**, **Laser** e **Pós-Processamento**. As configurações são descritas em ordem de aba abaixo.
+O diálogo de configurações de etapa tem três abas: **Configurações de Etapa**, **Laser** e
+**Pós-Processamento**. As configurações são descritas em ordem de aba abaixo.
 
 ### Configurações de Contorno
 
 ![Configurações de etapa de contorno](/screenshots/step-settings-contour-general.webp)
 
-O grupo **Configurações de Contorno** na aba _Configurações de Etapa_ controla como o contorno é traçado.
+O grupo **Configurações de Contorno** na aba _Configurações de Etapa_ controla como o contorno é
+traçado.
 
 #### Lado de Corte e Deslocamento de Caminho
 
@@ -90,17 +93,19 @@ Controla a ordem em que caminhos aninhados são processados:
 
 #### Remover Caminhos Internos
 
-Para designs com furos ou recortes internos, você pode optar por traçar apenas o limite mais externo:
+Para designs com furos ou recortes internos, você pode optar por traçar apenas o limite mais
+externo:
 
 - **Remover Caminhos Internos**: Quando habilitado, apenas o contorno mais externo é traçado
 - Furos e recortes internos são ignorados
 
-Isso é útil quando você quer cortar uma forma mas preservar o interior, como criar uma moldura ou contorno sem cortar detalhes internos.
+Isso é útil quando você quer cortar uma forma mas preservar o interior, como criar uma moldura ou
+contorno sem cortar detalhes internos.
 
 #### Recorte Excessivo (Overcut)
 
-Estende caminhos de corte fechados além do ponto inicial para que o
-feixe de laser se sobreponha ao início do corte:
+Estende caminhos de corte fechados além do ponto inicial para que o feixe de laser se sobreponha ao
+início do corte:
 
 **Recorte Excessivo:**
 
@@ -111,10 +116,9 @@ feixe de laser se sobreponha ao início do corte:
 
 **Por que usar recorte excessivo:**
 
-No início e no fim de um contorno fechado, o laser pode não penetrar
-completamente devido à aceleração e desaceleração. O recorte excessivo
-garante que o feixe se sobreponha na junção, criando um corte limpo e
-completamente separado. Isso é especialmente útil para:
+No início e no fim de um contorno fechado, o laser pode não penetrar completamente devido à
+aceleração e desaceleração. O recorte excessivo garante que o feixe se sobreponha na junção, criando
+um corte limpo e completamente separado. Isso é especialmente útil para:
 
 - Materiais espessos onde a penetração completa é marginal
 - Cortes em alta velocidade onde os efeitos de aceleração são mais pronunciados
@@ -122,16 +126,15 @@ completamente separado. Isso é especialmente útil para:
 
 O recorte excessivo se aplica tanto a contornos externos quanto a furos internos.
 
-:::tip Entrada/Saída vs Recorte Excessivo
-[Entrada/Saída](../lead-in-out.md) adiciona movimentos de aproximação e saída
-com potência zero antes e depois do trajeto de corte. O recorte
-excessivo estende o próprio trajeto de corte além da junção. Eles podem
-ser usados juntos para qualidade de corte ideal.
-:::
+:::tip Entrada/Saída vs Recorte Excessivo [Entrada/Saída](../lead-in-out.md) adiciona movimentos de
+aproximação e saída com potência zero antes e depois do trajeto de corte. O recorte excessivo
+estende o próprio trajeto de corte além da junção. Eles podem ser usados juntos para qualidade de
+corte ideal. :::
 
 #### Retraçamento com Limiar Personalizado
 
-Ao trabalhar com imagens bitmap que foram convertidas em vetores, você pode controlar quais partes são traçadas:
+Ao trabalhar com imagens bitmap que foram convertidas em vetores, você pode controlar quais partes
+são traçadas:
 
 - **Reverificar Conteúdo**: Habilita um limiar de brilho personalizado para o traçado
 - **Limiar de Traçado (0.0-1.0)**: Valor de corte de brilho quando a reverificação está habilitada
@@ -144,7 +147,8 @@ Isso é útil quando o traçado padrão não captura o nível de detalhe que voc
 
 ![Configurações do laser](/screenshots/step-settings-contour-laser.webp)
 
-Potência, velocidade e seleção da cabeça do laser ficam na página **Laser** do diálogo de configurações de etapa.
+Potência, velocidade e seleção da cabeça do laser ficam na página **Laser** do diálogo de
+configurações de etapa.
 
 #### Potência e Velocidade
 
@@ -187,9 +191,11 @@ Operações de contorno suportam várias opções de pós-processamento:
 - **[Suavização de Caminho](../smooth.md)** - Reduz bordas irregulares em caminhos de corte
 - **[Abas de Fixação](../holding-tabs.md)** - Mantém peças cortadas anexadas ao material de estoque
 - **[Cortar para Estoque](../crop-to-stock.md)** - Limita cortes ao limite do material
-- **[Otimização de Caminho](../path-optimization.md)** - Reduz distância de deslocamento entre cortes
+- **[Otimização de Caminho](../path-optimization.md)** - Reduz distância de deslocamento entre
+  cortes
 - **[Multi-Passagem](../multi-pass.md)** - Repete cortes para materiais espessos
-- **[Entrada/Saída](../lead-in-out.md)** - Adiciona movimentos de aproximação e saída sem potência para extremidades de corte mais limpas
+- **[Entrada/Saída](../lead-in-out.md)** - Adiciona movimentos de aproximação e saída sem potência
+  para extremidades de corte mais limpas
 
 ### Corte Multi-Passagem
 
@@ -207,10 +213,10 @@ Para materiais mais espessos do que uma única passagem pode cortar:
 - Cria corte verdadeiro 2.5D
 - Defina como 0 para múltiplas passagens na mesma profundidade
 
-:::warning Eixo Z Necessário
-:::
+:::warning Eixo Z Necessário :::
 
-A profundidade de passagem só funciona se sua máquina tem controle de eixo Z. Para máquinas sem eixo Z, use múltiplas passagens na mesma profundidade.
+A profundidade de passagem só funciona se sua máquina tem controle de eixo Z. Para máquinas sem eixo
+Z, use múltiplas passagens na mesma profundidade.
 
 ## Dicas e Melhores Práticas
 
@@ -309,4 +315,5 @@ M5                  ; Laser desligado
 - **[Gravação](engrave)** - Preenchendo áreas com padrões de gravação
 - **[Abas de Fixação](../holding-tabs.md)** - Mantendo peças fixadas durante o corte
 - **[Kerf](../kerf.md)** - Melhorando a precisão do corte
-- **[Grade de Teste de Material](material-test-grid)** - Encontrando configurações ideais de potência/velocidade
+- **[Grade de Teste de Material](material-test-grid)** - Encontrando configurações ideais de
+  potência/velocidade

@@ -1,6 +1,8 @@
 # Gravação
 
-As operações de gravação preenchem áreas com linhas de varredura raster, suportando múltiplos modos para diferentes efeitos de gravação. De fotos suaves em escala de cinza a efeitos de relevo 3D, escolha o modo que melhor se adapta ao seu design e material.
+As operações de gravação preenchem áreas com linhas de varredura raster, suportando múltiplos modos
+para diferentes efeitos de gravação. De fotos suaves em escala de cinza a efeitos de relevo 3D,
+escolha o modo que melhor se adapta ao seu design e material.
 
 ## Visão Geral
 
@@ -16,7 +18,8 @@ Operações de gravação:
 
 ### Modo de Potência Variável
 
-O modo de Potência Variável varia a potência do laser continuamente com base no brilho da imagem, criando gravação em escala de cinza suave com transições graduais.
+O modo de Potência Variável varia a potência do laser continuamente com base no brilho da imagem,
+criando gravação em escala de cinza suave com transições graduais.
 
 **Melhor Para:**
 
@@ -34,7 +37,8 @@ O modo de Potência Variável varia a potência do laser continuamente com base 
 
 ### Modo de Potência Constante
 
-O modo de Potência Constante grava em potência total, com um limiar determinando quais pixels são gravados. Isso cria resultados limpos em preto/branco.
+O modo de Potência Constante grava em potência total, com um limiar determinando quais pixels são
+gravados. Isso cria resultados limpos em preto/branco.
 
 **Melhor Para:**
 
@@ -52,7 +56,9 @@ O modo de Potência Constante grava em potência total, com um limiar determinan
 
 ### Modo Pontilhado
 
-O modo Pontilhado converte imagens em escala de cinza para padrões binários usando algoritmos de pontilhamento, permitindo gravação de fotos de alta qualidade com melhor reprodução tonal que métodos baseados apenas em limiar.
+O modo Pontilhado converte imagens em escala de cinza para padrões binários usando algoritmos de
+pontilhamento, permitindo gravação de fotos de alta qualidade com melhor reprodução tonal que
+métodos baseados apenas em limiar.
 
 **Melhor Para:**
 
@@ -70,7 +76,8 @@ O modo Pontilhado converte imagens em escala de cinza para padrões binários us
 
 ### Modo Múltiplas Profundidades
 
-O modo Múltiplas Profundidades cria efeitos de relevo 3D variando a potência do laser com base no brilho da imagem, com múltiplas passagens para escavação mais profunda.
+O modo Múltiplas Profundidades cria efeitos de relevo 3D variando a potência do laser com base no
+brilho da imagem, com múltiplas passagens para escavação mais profunda.
 
 **Melhor Para:**
 
@@ -136,11 +143,14 @@ Selecione o modo de gravação que melhor se adapta às suas necessidades:
 
 ## Configurações de Gravação
 
-Os grupos **Gravação** e **Potência** na aba _Configurações de Etapa_ controlam o padrão de varredura, o modo e a modulação de potência, em ordem de linha. A potência e a velocidade do laser ficam na página **Laser** (veja abaixo).
+Os grupos **Gravação** e **Potência** na aba _Configurações de Etapa_ controlam o padrão de
+varredura, o modo e a modulação de potência, em ordem de linha. A potência e a velocidade do laser
+ficam na página **Laser** (veja abaixo).
 
 ### Modo
 
-A linha **Modo** seleciona um dos quatro modos de gravação. Cada modo expõe configurações diferentes, descritas abaixo.
+A linha **Modo** seleciona um dos quatro modos de gravação. Cada modo expõe configurações
+diferentes, descritas abaixo.
 
 ### Configurações Específicas do Modo
 
@@ -177,10 +187,15 @@ Use inverter para litofanias (áreas claras devem ser finas) ou embossing (área
 
 **Faixa de Brilho:**
 
-Controla como os valores de brilho da imagem são mapeados para potência do laser. O histograma mostra a distribuição de valores de brilho na sua imagem.
+Controla como os valores de brilho da imagem são mapeados para potência do laser. O histograma
+mostra a distribuição de valores de brilho na sua imagem.
 
-- **Níveis Automáticos** (padrão): Ajusta automaticamente os pontos preto e branco com base no conteúdo da imagem. Valores abaixo do ponto preto são tratados como preto, valores acima do ponto branco são tratados como branco. Isso estica o contraste da imagem para usar a faixa completa de potência.
-- **Modo Manual**: Desabilite Níveis Automáticos para definir manualmente os pontos preto e branco arrastando os marcadores no histograma.
+- **Níveis Automáticos** (padrão): Ajusta automaticamente os pontos preto e branco com base no
+  conteúdo da imagem. Valores abaixo do ponto preto são tratados como preto, valores acima do ponto
+  branco são tratados como branco. Isso estica o contraste da imagem para usar a faixa completa de
+  potência.
+- **Modo Manual**: Desabilite Níveis Automáticos para definir manualmente os pontos preto e branco
+  arrastando os marcadores no histograma.
 
 Isso é particularmente útil para:
 
@@ -218,9 +233,12 @@ Escolha o algoritmo que melhor se adapta à sua imagem e material:
 | Bayer 4x4       | Média     | Rápido      | Meio-tom balanceado                |
 | Bayer 8x8       | Alta      | Médio       | Detalhe fino, padrões sutis        |
 
-**Floyd-Steinberg** é padrão e recomendado para a maioria das gravações de fotos. Usa difusão de erro para distribuir erros de quantização para pixels vizinhos, criando resultados de aparência natural.
+**Floyd-Steinberg** é padrão e recomendado para a maioria das gravações de fotos. Usa difusão de
+erro para distribuir erros de quantização para pixels vizinhos, criando resultados de aparência
+natural.
 
-**Pontilhamento Bayer** cria padrões regulares que podem produzir efeitos artísticos lembrando impressão tradicional de meio-tom.
+**Pontilhamento Bayer** cria padrões regulares que podem produzir efeitos artísticos lembrando
+impressão tradicional de meio-tom.
 
 #### Configurações do Modo Múltiplas Profundidades
 
@@ -270,10 +288,10 @@ Use inverter para litofanias (áreas claras devem ser finas) ou embossing (área
 
 **Recomendado:** 0.1mm para uso geral
 
-:::tip Correspondência de Resolução
-:::
+:::tip Correspondência de Resolução :::
 
-Para imagens, o intervalo de linha deve corresponder ou exceder a resolução da imagem. Se sua imagem tem 10 pixels/mm (254 DPI), use intervalo de linha de 0.1mm ou menor.
+Para imagens, o intervalo de linha deve corresponder ou exceder a resolução da imagem. Se sua imagem
+tem 10 pixels/mm (254 DPI), use intervalo de linha de 0.1mm ou menor.
 
 #### Direção de Varredura
 
@@ -292,29 +310,39 @@ Para imagens, o intervalo de linha deve corresponder ou exceder a resolução da
 
 **Varredura Bidirecional:**
 
-O Rayforge sempre varre bidirecionalmente (da esquerda para a direita, depois da direita para a esquerda), já que disparar em cada passagem aproximadamente dobra a velocidade de gravação comparado a retornar sem disparar entre as linhas.
+O Rayforge sempre varre bidirecionalmente (da esquerda para a direita, depois da direita para a
+esquerda), já que disparar em cada passagem aproximadamente dobra a velocidade de gravação comparado
+a retornar sem disparar entre as linhas.
 
-Pequenas diferenças mecânicas ou de atraso de disparo entre as duas direções podem causar faixas visíveis em algumas máquinas. Se você vir isso, calibre o **Deslocamento de Varredura Bidirecional** abaixo para corrigir diretamente, em vez de perder o benefício de velocidade.
+Pequenas diferenças mecânicas ou de atraso de disparo entre as duas direções podem causar faixas
+visíveis em algumas máquinas. Se você vir isso, calibre o **Deslocamento de Varredura Bidirecional**
+abaixo para corrigir diretamente, em vez de perder o benefício de velocidade.
 
 #### Deslocamento de Varredura Bidirecional
 
-Corrige um desalinhamento fixo mecânico ou de atraso de disparo entre passagens raster da esquerda para a direita e da direita para a esquerda, que de outra forma desalinha linhas de varredura alternadas (visível como faixas, especialmente em gravações de fotos).
+Corrige um desalinhamento fixo mecânico ou de atraso de disparo entre passagens raster da esquerda
+para a direita e da direita para a esquerda, que de outra forma desalinha linhas de varredura
+alternadas (visível como faixas, especialmente em gravações de fotos).
 
 - Defina em milímetros, positivo ou negativo dependendo de qual direção precisa ser deslocada
-- Aplica um deslocamento constante independentemente da velocidade; se o desalinhamento varia com a velocidade, calibre para sua velocidade de gravação típica
+- Aplica um deslocamento constante independentemente da velocidade; se o desalinhamento varia com a
+  velocidade, calibre para sua velocidade de gravação típica
 - Padrão é 0 (sem correção)
 
 **Calibrando o deslocamento:**
 
-1. Grave um padrão de teste com detalhe vertical visível (ex.: uma grade fina) usando varredura bidirecional
+1. Grave um padrão de teste com detalhe vertical visível (ex.: uma grade fina) usando varredura
+   bidirecional
 2. Compare linhas alternadas para encontrar a direção e a quantidade do desalinhamento
-3. Ajuste o deslocamento em pequenos incrementos (0.01-0.05mm) e teste novamente até que as linhas alternadas se alinhem
+3. Ajuste o deslocamento em pequenos incrementos (0.01-0.05mm) e teste novamente até que as linhas
+   alternadas se alinhem
 
 ## Configurações do Laser
 
 ![Configurações do laser](/screenshots/step-settings-engrave-laser.webp)
 
-Potência, velocidade e seleção da cabeça do laser ficam na página **Laser** do diálogo de configurações de etapa.
+Potência, velocidade e seleção da cabeça do laser ficam na página **Laser** do diálogo de
+configurações de etapa.
 
 ### Potência e Velocidade
 
@@ -458,4 +486,5 @@ Veja [Overscan](../overscan.md) para detalhes.
 - **[Corte de Contorno](contour)** - Cortando contornos e formas
 - **[Overscan](../overscan.md)** - Melhorando qualidade de gravação
 - **[Grade de Teste de Material](material-test-grid)** - Encontrando configurações ideais
-- **[Fluxo de Trabalho Multi-Camadas](../multi-layer.md)** - Combinando gravação com outras operações
+- **[Fluxo de Trabalho Multi-Camadas](../multi-layer.md)** - Combinando gravação com outras
+  operações

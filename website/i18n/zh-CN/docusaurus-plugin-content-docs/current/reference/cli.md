@@ -80,8 +80,7 @@ rayforge --exit --vector 输入.svg
 
 ## 早期脚本 (`--script`)
 
-`--script` 标志在**启动期间同步运行** Python 脚本，
-在加载插件之前、在创建主窗口之前。适合用于：
+`--script` 标志在**启动期间同步运行** Python 脚本，在加载插件之前、在创建主窗口之前。适合用于：
 
 - 向 `pluggy` 插件管理器注册插件
 - 配置应用上下文
@@ -112,16 +111,13 @@ register_template_function("我的id", lambda: "零件-001")
 
 现在 `{我的id()}` 在任何文本框中都有效。
 
-参见
-[自定义模板函数](../features/sketcher/expressions.md#custom-template-functions)
-了解完整教程。
+参见 [自定义模板函数](../features/sketcher/expressions.md#custom-template-functions) 了解完整教程。
 
 ---
 
 ## UI 脚本 (`--uiscript`)
 
-`--uiscript` 标志在**主窗口完全加载后**在后台线程中
-运行 Python 脚本。适合用于：
+`--uiscript` 标志在**主窗口完全加载后**在后台线程中运行 Python 脚本。适合用于：
 
 - 自动化 UI 测试
 - 截取应用程序屏幕截图
@@ -133,9 +129,7 @@ register_template_function("我的id", lambda: "零件-001")
 from rayforge.uiscript import app, win
 ```
 
-脚本在**后台线程**中运行 — 访问 GTK 小部件时
-请注意线程安全
-（使用 `GLib.idle_add` 进行 GTK 操作）。
+脚本在**后台线程**中运行 — 访问 GTK 小部件时请注意线程安全（使用 `GLib.idle_add` 进行 GTK 操作）。
 
 ### 示例：截取屏幕截图
 
@@ -160,9 +154,8 @@ GLib.idle_add(capture)
 
 ## 同时使用两个标志
 
-`--script` 和 `--uiscript` 可以一起使用。
-`--script` 先运行（同步），然后加载窗口，
-然后运行 `--uiscript`：
+`--script` 和 `--uiscript` 可以一起使用。 `--script` 先运行（同步），然后加载窗口，然后运行
+`--uiscript`：
 
 ```bash
 rayforge --script 早期设置.py \
@@ -170,5 +163,4 @@ rayforge --script 早期设置.py \
     我的项目.ryp
 ```
 
-当你需要先注册插件然后再驱动 UI 时，
-这非常有用。
+当你需要先注册插件然后再驱动 UI 时，这非常有用。

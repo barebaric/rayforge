@@ -1,10 +1,14 @@
 ---
-description: "Add holding tabs to laser-cut parts to keep them secured to the stock material during cutting. Prevent small pieces from shifting."
+description:
+  "Add holding tabs to laser-cut parts to keep them secured to the stock material during cutting.
+  Prevent small pieces from shifting."
 ---
 
 # Holding Tabs
 
-Holding tabs (also called bridges or tabs) are small uncut sections left along cut paths that keep parts attached to the surrounding material. This prevents cut pieces from moving during the job, which could cause misalignment, damage, or fire hazards.
+Holding tabs (also called bridges or tabs) are small uncut sections left along cut paths that keep
+parts attached to the surrounding material. This prevents cut pieces from moving during the job,
+which could cause misalignment, damage, or fire hazards.
 
 ## Why Use Holding Tabs?
 
@@ -66,25 +70,26 @@ The **width** is the length of the uncut section along the path.
 
 **Recommended widths:**
 
-| Material | Thickness | Tab Width |
-|----------|-----------|-----------|
-| **Cardboard** | 1-3mm | 2-3mm |
-| **Plywood** | 3mm | 3-4mm |
-| **Plywood** | 6mm | 4-6mm |
-| **Acrylic** | 3mm | 2-3mm |
-| **Acrylic** | 6mm | 3-5mm |
-| **MDF** | 3mm | 3-4mm |
-| **MDF** | 6mm | 5-7mm |
+| Material      | Thickness | Tab Width |
+| ------------- | --------- | --------- |
+| **Cardboard** | 1-3mm     | 2-3mm     |
+| **Plywood**   | 3mm       | 3-4mm     |
+| **Plywood**   | 6mm       | 4-6mm     |
+| **Acrylic**   | 3mm       | 2-3mm     |
+| **Acrylic**   | 6mm       | 3-5mm     |
+| **MDF**       | 3mm       | 3-4mm     |
+| **MDF**       | 6mm       | 5-7mm     |
 
 **Guidelines:**
+
 - **Thicker materials** need wider tabs for strength
 - **Heavier parts** need more and/or wider tabs
 - **Brittle materials** (acrylic) can use smaller tabs (easier to break)
 - **Fibrous materials** (wood) may need wider tabs
 
-:::warning Tab Width vs Material Thickness
-Tabs must be wide enough to support the part but small enough to remove cleanly. Too narrow = part may break free; too wide = difficult to remove or damages the part.
-:::
+:::warning Tab Width vs Material Thickness Tabs must be wide enough to support the part but small
+enough to remove cleanly. Too narrow = part may break free; too wide = difficult to remove or
+damages the part. :::
 
 ### Tab Position
 
@@ -94,6 +99,7 @@ Tabs are positioned using two parameters:
 - **Position (0.0 - 1.0):** Where along that segment (0 = start, 1 = end)
 
 **Manual placement tips:**
+
 - Place tabs on **straight sections** when possible (easier to remove)
 - Avoid tabs on **tight curves** (stress concentration)
 - Distribute tabs **evenly** around the part
@@ -104,6 +110,7 @@ Tabs are positioned using two parameters:
 The **equidistant** feature automatically places tabs at even intervals:
 
 **Benefits:**
+
 - Even weight distribution
 - Predictable breaking pattern
 - Quick setup for regular shapes
@@ -115,15 +122,18 @@ The **equidistant** feature automatically places tabs at even intervals:
 ### Editing Tabs
 
 **Move a tab:**
+
 1. Select the workpiece
 2. Drag the tab handle along the path
 3. Release to set new position
 
 **Resize a tab:**
+
 - Use the properties panel to adjust width
 - All tabs on a workpiece share the same width
 
 **Delete a tab:**
+
 1. Click the tab handle to select it
 2. Press Delete or use the context menu
 3. Or clear all tabs and start over
@@ -136,6 +146,7 @@ Toggle tabs on/off without deleting them:
 - **Toolbar:** Tab visibility toggle icon
 
 **When disabled:**
+
 - Tabs are not generated in G-code
 - Tab handles are hidden in the canvas
 - The path cuts completely through
@@ -147,6 +158,7 @@ Toggle tabs on/off without deleting them:
 ## Removing Tabs After Cutting
 
 **Tools:**
+
 - Craft knife or box cutter
 - Flush-cut pliers
 - Chisel (for wood)
@@ -160,11 +172,13 @@ Toggle tabs on/off without deleting them:
 4. **Sand or file** the tab remnant flush with the edge
 
 **For brittle materials (acrylic):**
+
 - Use minimal tabs (they snap easily)
 - Score deeply before snapping
 - Support the part while breaking tabs to avoid cracks
 
 **For wood:**
+
 - Tabs may require cutting (don't snap cleanly)
 - Use a sharp knife or chisel
 - Cut flush, then sand smooth
@@ -176,4 +190,3 @@ Toggle tabs on/off without deleting them:
 - [Contour Cutting](operations/contour) - Primary operation that uses tabs
 - [Multi-Layer Workflow](multi-layer) - Managing tabs across multiple layers
 - [3D Preview](../ui/3d-preview.md) - Visualizing tabs in preview
-

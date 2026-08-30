@@ -1,6 +1,8 @@
 # Rahmen-Umriss
 
-Rahmen-Umriss erzeugt einen einfachen rechteckigen Schneidepfad um dein gesamtes Design. Es ist der schnellste Weg, einen sauberen Rahmen hinzuzufügen oder deine Arbeit frei vom Materialblatt zu schneiden.
+Rahmen-Umriss erzeugt einen einfachen rechteckigen Schneidepfad um dein gesamtes Design. Es ist der
+schnellste Weg, einen sauberen Rahmen hinzuzufügen oder deine Arbeit frei vom Materialblatt zu
+schneiden.
 
 ## Übersicht
 
@@ -49,7 +51,8 @@ Konfiguriere die Rahmen-Parameter:
 
 ## Haupt-Einstellungen
 
-Der Schritt-Einstellungen-Dialog hat drei Registerkarten: **Schritt-Einstellungen**, **Laser** und **Nachbearbeitung**. Die Einstellungen werden unten in Registerkarten-Reihenfolge beschrieben.
+Der Schritt-Einstellungen-Dialog hat drei Registerkarten: **Schritt-Einstellungen**, **Laser** und
+**Nachbearbeitung**. Die Einstellungen werden unten in Registerkarten-Reihenfolge beschrieben.
 
 ### Geometrie
 
@@ -84,7 +87,8 @@ Steuert, wo der Laser relativ zum Rahmenpfad schneidet:
 
 ![Laser-Einstellungen](/screenshots/step-settings-frame-outline-laser.webp)
 
-Leistung, Geschwindigkeit und Laserkopf-Auswahl befinden sich auf der Seite **Laser** des Schritt-Einstellungen-Dialogs.
+Leistung, Geschwindigkeit und Laserkopf-Auswahl befinden sich auf der Seite **Laser** des
+Schritt-Einstellungen-Dialogs.
 
 #### Leistung & Geschwindigkeit
 
@@ -98,7 +102,8 @@ Leistung, Geschwindigkeit und Laserkopf-Auswahl befinden sich auf der Seite **La
 - Wie schnell sich der Laser bewegt
 - Langsamer für dickere Materialien
 
-Um den Rahmen mehr als einmal zu schneiden, füge einen [Mehrfach-Durchgang](../multi-pass.md)-Nachbearbeitungsprozessor hinzu.
+Um den Rahmen mehr als einmal zu schneiden, füge einen
+[Mehrfach-Durchgang](../multi-pass.md)-Nachbearbeitungsprozessor hinzu.
 
 #### Schnittbreiten-Kompensation
 
@@ -115,10 +120,12 @@ Rahmen-Umriss unterstützt Schnittbreiten-Kompensation:
 Rahmen-Umriss-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
 
 - **[Halte-Laschen](../holding-tabs.md)** - Das eingerahmte Teil am Rohmaterial befestigt halten
-- **[Auf Rohmaterial zuschneiden](../crop-to-stock.md)** - Schnitte auf die Materialgrenze beschränken
+- **[Auf Rohmaterial zuschneiden](../crop-to-stock.md)** - Schnitte auf die Materialgrenze
+  beschränken
 - **[Pfad-Optimierung](../path-optimization.md)** - Verfahrdistanz reduzieren
 - **[Mehrfach-Durchgang](../multi-pass.md)** - Schnitte für dicke Materialien wiederholen
-- **[Ein-/Auslauf](../lead-in-out.md)** - Nullleistungs-An- und Abfahrtsbewegungen für sauberere Schnittenden hinzufügen
+- **[Ein-/Auslauf](../lead-in-out.md)** - Nullleistungs-An- und Abfahrtsbewegungen für sauberere
+  Schnittenden hinzufügen
 
 ## Anwendungsfälle
 

@@ -1,16 +1,21 @@
 ---
-description: "Automatically crop designs to fit within stock material boundaries. Prevent laser operations from exceeding the work area."
+description:
+  "Automatically crop designs to fit within stock material boundaries. Prevent laser operations from
+  exceeding the work area."
 ---
 
 # Crop to Stock
 
-Crop to Stock limits cutting paths to your material boundary. Any cuts that extend beyond the stock area are trimmed, preventing the laser from cutting outside your material.
+Crop to Stock limits cutting paths to your material boundary. Any cuts that extend beyond the stock
+area are trimmed, preventing the laser from cutting outside your material.
 
 ## How It Works
 
-The transformer compares your cutting paths against the defined stock boundary. Path segments outside this boundary are removed or clipped to the stock edge.
+The transformer compares your cutting paths against the defined stock boundary. Path segments
+outside this boundary are removed or clipped to the stock edge.
 
-If no stock items are defined in your document, the crop boundary falls back to the machine's work area instead.
+If no stock items are defined in your document, the crop boundary falls back to the machine's work
+area instead.
 
 ## Settings
 
@@ -26,11 +31,13 @@ Adjust the effective stock boundary before cropping (-100 to +100 mm).
 - **Negative values:** Expand the boundary (allows cuts closer to edge)
 - **0 mm:** Use exact stock boundary
 
-Use offset when you want a safety margin from the stock edge, or when your material placement isn't perfectly aligned.
+Use offset when you want a safety margin from the stock edge, or when your material placement isn't
+perfectly aligned.
 
 ## When to Use Crop to Stock
 
-**Partial designs:** Your design is larger than your material, but you want to cut only the portion that fits.
+**Partial designs:** Your design is larger than your material, but you want to cut only the portion
+that fits.
 
 **Safety margin:** Prevent accidental cuts beyond material edges.
 

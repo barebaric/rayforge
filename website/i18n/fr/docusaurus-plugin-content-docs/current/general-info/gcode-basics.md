@@ -52,18 +52,18 @@ G0 X0 Y0 ;Retour à l'origine
 
 **Commandes clés :**
 
-| Commande | Description |
-| -------- | ----------- |
-| `G21` | Mode millimètres |
-| `G90` | Positionnement absolu |
-| `G54` | Sélectionner le système de coordonnées de travail 1 |
-| `T0` | Sélectionner l'outil 0 (tête laser) |
-| `G0` | Déplacement rapide (laser éteint) |
-| `G1` | Déplacement de coupe (laser allumé) |
-| `M4` | Laser allumé (mode puissance dynamique) |
-| `M5` | Laser éteint |
-| `S500` | Définir la puissance du laser à 500 (50% pour une plage 0-1000) |
-| `F3000` | Définir la vitesse d'avance à 3000 mm/min |
+| Commande | Description                                                     |
+| -------- | --------------------------------------------------------------- |
+| `G21`    | Mode millimètres                                                |
+| `G90`    | Positionnement absolu                                           |
+| `G54`    | Sélectionner le système de coordonnées de travail 1             |
+| `T0`     | Sélectionner l'outil 0 (tête laser)                             |
+| `G0`     | Déplacement rapide (laser éteint)                               |
+| `G1`     | Déplacement de coupe (laser allumé)                             |
+| `M4`     | Laser allumé (mode puissance dynamique)                         |
+| `M5`     | Laser éteint                                                    |
+| `S500`   | Définir la puissance du laser à 500 (50% pour une plage 0-1000) |
+| `F3000`  | Définir la vitesse d'avance à 3000 mm/min                       |
 
 ---
 

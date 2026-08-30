@@ -1,25 +1,26 @@
 ---
-description: "The Rayforge driver system - how laser controller drivers work, and how to implement custom drivers for new hardware."
+description:
+  "The Rayforge driver system - how laser controller drivers work, and how to implement custom
+  drivers for new hardware."
 ---
 
 # Driver Development Guide
 
-This guide provides a high-level overview of how to create a driver in Rayforge
-to add support for your laser cutter or engraver. By creating a driver, you
-integrate your machine's unique communication protocol and command language into
-the Rayforge ecosystem.
+This guide provides a high-level overview of how to create a driver in Rayforge to add support for
+your laser cutter or engraver. By creating a driver, you integrate your machine's unique
+communication protocol and command language into the Rayforge ecosystem.
 
 ## Driver Overview
 
-A driver is the bridge between Rayforge's core logic and your physical hardware.
-It is responsible for three main tasks:
+A driver is the bridge between Rayforge's core logic and your physical hardware. It is responsible
+for three main tasks:
 
-1.  **Managing Connectivity:** Handling the low-level communication protocol
-    (Serial, WebSocket, HTTP, etc.).
-2.  **Executing Jobs:** Sending pre-encoded machine code (e.g., G-code) to the
-    device and tracking execution progress.
-3.  **Reporting State:** Emitting signals to update the UI with the laser's
-    real-time position, status (`IDLE`, `RUN`), and log messages.
+1.  **Managing Connectivity:** Handling the low-level communication protocol (Serial, WebSocket,
+    HTTP, etc.).
+2.  **Executing Jobs:** Sending pre-encoded machine code (e.g., G-code) to the device and tracking
+    execution progress.
+3.  **Reporting State:** Emitting signals to update the UI with the laser's real-time position,
+    status (`IDLE`, `RUN`), and log messages.
 
 To simplify this, Rayforge provides an architecture based on composable parts:
 
@@ -43,21 +44,19 @@ graph TD;
     class RayforgeCore,YourDriver clusterBox
 ```
 
-- **`OpsEncoder`:** Translates `Ops` into a specific command language
-  (e.g., G-code). Used by both the Pipeline (for job encoding) and the
-  Driver (for individual commands like move_to, home, etc.).
+- **`OpsEncoder`:** Translates `Ops` into a specific command language (e.g., G-code). Used by both
+  the Pipeline (for job encoding) and the Driver (for individual commands like move_to, home, etc.).
 - **`Pipeline`:** Orchestrates encoding and produces final machine code.
 - **`Transport`:** Manages the connection and data transfer.
-- **`Driver`:** Executes machine code, handles device state, and communicates
-  with the UI.
+- **`Driver`:** Executes machine code, handles device state, and communicates with the UI.
 
 All driver operations are **asynchronous** to ensure the user interface remains responsive.
 
 ## The `Ops` Language
 
-Rayforge describes a laser job as a sequence of high-level operations, stored in
-an `Ops` object. This is the universal language within Rayforge for describing
-machine movements, independent of any specific hardware.
+Rayforge describes a laser job as a sequence of high-level operations, stored in an `Ops` object.
+This is the universal language within Rayforge for describing machine movements, independent of any
+specific hardware.
 
 | `Ops` Method         | Signature                      | Description                          |
 | :------------------- | :----------------------------- | :----------------------------------- |
@@ -70,10 +69,9 @@ machine movements, independent of any specific hardware.
 | `enable_air_assist`  | `()`                           | Turn on air assist                   |
 | `disable_air_assist` | `()`                           | Turn off air assist                  |
 
-Your driver receives pre-encoded machine code (e.g., a G-code string) and an
-operation map that tracks which machine code commands correspond to which
-operations. The pipeline handles encoding `Ops` to machine code before calling
-the driver's `run()` method.
+Your driver receives pre-encoded machine code (e.g., a G-code string) and an operation map that
+tracks which machine code commands correspond to which operations. The pipeline handles encoding
+`Ops` to machine code before calling the driver's `run()` method.
 
 ```python
 # Example of how Rayforge builds an Ops object
@@ -106,51 +104,49 @@ class YourDriver(Driver):
 
 - `label`: A human-readable name shown in the UI.
 - `subtitle`: A brief description shown below the name.
-- `supports_settings`: A boolean indicating if the driver can read/write device
-  settings (like GRBL's `$$`).
+- `supports_settings`: A boolean indicating if the driver can read/write device settings (like
+  GRBL's `$$`).
 
 ### Required Methods
 
-Your driver class **MUST** implement the following methods. Note that most are **asynchronous** and must be defined with `async def`.
+Your driver class **MUST** implement the following methods. Note that most are **asynchronous** and
+must be defined with `async def`.
 
 #### Configuration and Lifecycle
 
-- `get_setup_vars() -> VarSet`: **(Class Method)** Returns a `VarSet` object
-  defining the parameters needed for connection (e.g., IP address, serial port).
-  Rayforge uses this to automatically generate the setup form in the UI.
-- `precheck(**kwargs)`: **(Class Method)** A non-blocking, static check of the
-  configuration that can be run before driver instantiation. Should raise
-  `DriverPrecheckError` on failure.
-- `setup(**kwargs)`: Called once with the values from the setup form. Use this
-  to initialize your transports and internal state.
-- `async def connect()`: Establishes and maintains a persistent connection to
-  the device. This method should contain auto-reconnection logic.
-- `async def cleanup()`: Called when disconnecting. Should close all
-  connections and release resources.
+- `get_setup_vars() -> VarSet`: **(Class Method)** Returns a `VarSet` object defining the parameters
+  needed for connection (e.g., IP address, serial port). Rayforge uses this to automatically
+  generate the setup form in the UI.
+- `precheck(**kwargs)`: **(Class Method)** A non-blocking, static check of the configuration that
+  can be run before driver instantiation. Should raise `DriverPrecheckError` on failure.
+- `setup(**kwargs)`: Called once with the values from the setup form. Use this to initialize your
+  transports and internal state.
+- `async def connect()`: Establishes and maintains a persistent connection to the device. This
+  method should contain auto-reconnection logic.
+- `async def cleanup()`: Called when disconnecting. Should close all connections and release
+  resources.
 
 #### Device Control
 
-- `async def run(machine_code: Any, op_map: MachineCodeOpMap, doc: Doc,
-  on_command_done: Optional[Callable[[int], Union[None, Awaitable[None]]]]
-  = None)`: The core method for executing a job. Receives pre-encoded machine
-  code (e.g., G-code string) and a mapping between operation indices and
-  machine code. The `on_command_done` callback is called with the op_index
-  when each command completes.
-- `async def home(axes: Optional[Axis] = None)`: Homes the machine. Can home
-  specific axes or all axes.
-- `async def move_to(pos_x: float, pos_y: float)`: Manually moves the laser
-  head to a specific XY coordinate.
+- `async def run(machine_code: Any, op_map: MachineCodeOpMap, doc: Doc, on_command_done: Optional[Callable[[int], Union[None, Awaitable[None]]]] = None)`:
+  The core method for executing a job. Receives pre-encoded machine code (e.g., G-code string) and a
+  mapping between operation indices and machine code. The `on_command_done` callback is called with
+  the op_index when each command completes.
+- `async def home(axes: Optional[Axis] = None)`: Homes the machine. Can home specific axes or all
+  axes.
+- `async def move_to(pos_x: float, pos_y: float)`: Manually moves the laser head to a specific XY
+  coordinate.
 - `async def set_hold(hold: bool = True)`: Pauses or resumes current job.
 - `async def cancel()`: Stops the current job.
-- `async def jog(axis: Axis, distance: float, speed: int)`: Jogs the machine
-  along a specific axis.
-- `async def select_tool(tool_number: int)`: Selects a new tool/laser head by
-  its number.
+- `async def jog(axis: Axis, distance: float, speed: int)`: Jogs the machine along a specific axis.
+- `async def select_tool(tool_number: int)`: Selects a new tool/laser head by its number.
 - `async def clear_alarm()`: Clears any active alarm state.
 - `async def run_raw(gcode: str)`: Executes a raw G-code string directly on the machine.
-- `async def set_wcs_offset(wcs_slot, x, y, z)`: Sets a work coordinate system offset for the specified slot.
+- `async def set_wcs_offset(wcs_slot, x, y, z)`: Sets a work coordinate system offset for the
+  specified slot.
 - `async def read_wcs_offsets()`: Reads all work coordinate system offsets from the machine.
-- `async def run_probe_cycle(axis, max_travel, feed_rate)`: Initiates a probing move along the specified axis.
+- `async def run_probe_cycle(axis, max_travel, feed_rate)`: Initiates a probing move along the
+  specified axis.
 - `async def set_power(head, percent)`: Sets laser power percentage for a specific head.
 - `can_jog(axis) -> bool`: Returns whether jogging is supported for the given axis.
 - `can_home(axis) -> bool`: Returns whether homing is supported for the given axis.
@@ -158,28 +154,25 @@ Your driver class **MUST** implement the following methods. Note that most are *
 
 #### Firmware Settings (if `supports_settings` is `True`)
 
-- `get_setting_vars() -> List[VarSet]`: Returns `VarSet` objects that define
-  the structure of the device's settings page.
-- `async def read_settings()`: Reads all settings from the device and calls
-  `_on_settings_read()` with the result.
-- `async def write_setting(key: str, value: Any)`: Writes a single setting to
-  the device.
+- `get_setting_vars() -> List[VarSet]`: Returns `VarSet` objects that define the structure of the
+  device's settings page.
+- `async def read_settings()`: Reads all settings from the device and calls `_on_settings_read()`
+  with the result.
+- `async def write_setting(key: str, value: Any)`: Writes a single setting to the device.
 
 ### Emitting Signals
 
-To communicate with the UI, your driver must emit signals. To ensure proper
-logging and thread safety, **you must not emit signals directly.** Instead,
-call the protected helper methods from the base `Driver` class.
+To communicate with the UI, your driver must emit signals. To ensure proper logging and thread
+safety, **you must not emit signals directly.** Instead, call the protected helper methods from the
+base `Driver` class.
 
 - `self._log(message)`: Sends a log message to the console.
-- `self._on_state_changed()`: Call this whenever you update `self.state` to
-  notify the UI of a status or position change.
-- `self._on_connection_status_changed(status, message)`: Informs the UI about
-  the connection status (`CONNECTING`, `CONNECTED`, `ERROR`, etc.).
-- `self._on_command_status_changed(status, message)`: Reports the status of a
-  sent command.
-- `self._on_settings_read(settings)`: Sends the device settings you've read
-  back to the UI.
+- `self._on_state_changed()`: Call this whenever you update `self.state` to notify the UI of a
+  status or position change.
+- `self._on_connection_status_changed(status, message)`: Informs the UI about the connection status
+  (`CONNECTING`, `CONNECTED`, `ERROR`, etc.).
+- `self._on_command_status_changed(status, message)`: Reports the status of a sent command.
+- `self._on_settings_read(settings)`: Sends the device settings you've read back to the UI.
 - `self._on_probe_status_changed(status)`: Emits probe status during a probing cycle.
 - `self._on_wcs_updated()`: Emits when work coordinate system data has been updated.
 
@@ -189,16 +182,17 @@ Your driver can optionally define these properties:
 
 - `machine_space_wcs`: The work coordinate system identifier used for machine space (e.g., G53).
 - `machine_space_wcs_display_name`: Human-readable display name for the machine space WCS.
-- `resource_uri`: A unique identifier for the physical resource this driver controls, used for conflict detection when multiple machines might share hardware.
+- `resource_uri`: A unique identifier for the physical resource this driver controls, used for
+  conflict detection when multiple machines might share hardware.
 
 ### Exceptions
 
-Your driver may raise `ResourceBusyError` when attempting to use a resource that is already in use by another machine instance.
+Your driver may raise `ResourceBusyError` when attempting to use a resource that is already in use
+by another machine instance.
 
 ## Have Questions?
 
-The best way to learn is to look at the existing drivers in
-`rayforge/machine/driver/`, such as:
+The best way to learn is to look at the existing drivers in `rayforge/machine/driver/`, such as:
 
 - `grbl/` - GRBL-based machines (serial, telnet, network)
 - `marlin/` - Marlin firmware-based machines (serial)

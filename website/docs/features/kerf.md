@@ -1,16 +1,20 @@
 ---
-description: "Compensate for laser kerf width in Rayforge. Adjust cut paths inward or outward to achieve precise part dimensions after cutting."
+description:
+  "Compensate for laser kerf width in Rayforge. Adjust cut paths inward or outward to achieve
+  precise part dimensions after cutting."
 ---
 
 # Kerf Compensation
 
-Kerf is the material removed by the laser beam during cutting. Kerf compensation adjusts toolpaths to account for this, ensuring cut parts match their designed dimensions.
+Kerf is the material removed by the laser beam during cutting. Kerf compensation adjusts toolpaths
+to account for this, ensuring cut parts match their designed dimensions.
 
 ## What is Kerf?
 
 **Kerf** = the width of material removed by the cutting process.
 
 **Example:**
+
 - Laser spot size: 0.2mm
 - Material interaction: adds ~0.1mm on each side
 - **Total kerf:** ~0.4mm
@@ -22,10 +26,12 @@ Kerf is the material removed by the laser beam during cutting. Kerf compensation
 Kerf compensation **offsets the toolpath** inward or outward to account for material removal:
 
 **For outside cuts (cutting a part):**
+
 - Offset path **outward** by half the kerf width
 - Result: Final part is the correct size
 
 **For inside cuts (cutting a hole):**
+
 - Offset path **inward** by half the kerf width
 - Result: Final hole is the correct size
 
@@ -64,6 +70,7 @@ After cutting:  Part measures 50.0mm (perfect!)
 4. **Average:** Use the average of multiple measurements
 
 **Variables affecting kerf:**
+
 - Laser power (higher = wider)
 - Cutting speed (slower = wider)
 - Material type and density

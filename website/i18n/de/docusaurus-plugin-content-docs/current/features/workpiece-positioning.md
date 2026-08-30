@@ -1,15 +1,13 @@
 # Werkstückpositionierung
 
-Dieser Leitfaden behandelt alle Methoden, die in Rayforge für die genaue
-Positionierung deines Werkstücks und die Ausrichtung deiner Designs vor dem
-Schneiden oder Gravieren verfügbar sind.
+Dieser Leitfaden behandelt alle Methoden, die in Rayforge für die genaue Positionierung deines
+Werkstücks und die Ausrichtung deiner Designs vor dem Schneiden oder Gravieren verfügbar sind.
 
 ## Übersicht
 
 Genaue Werkstückpositionierung ist wichtig für:
 
-- **Abfallvermeidung**: Verhindern, dass an der falschen Stelle geschnitten
-  wird
+- **Abfallvermeidung**: Verhindern, dass an der falschen Stelle geschnitten wird
 - **Präzise Ausrichtung**: Designs auf vorgedruckten Materialien positionieren
 - **Wiederholbare Ergebnisse**: Denselben Job mehrmals konsistent ausführen
 - **Mehrteilige Jobs**: Mehrere Teile auf einem einzigen Blatt ausrichten
@@ -27,9 +25,8 @@ Rayforge bietet mehrere sich ergänzende Werkzeuge zur Positionierung:
 
 ## Fokusmodus (Laserzeiger)
 
-Der Fokusmodus schaltet den Laser mit niedriger Leistungsstufe ein und fungiert
-als "Laserzeiger", um dir zu helfen, genau zu sehen, wo der Laserkopf
-positioniert ist.
+Der Fokusmodus schaltet den Laser mit niedriger Leistungsstufe ein und fungiert als "Laserzeiger",
+um dir zu helfen, genau zu sehen, wo der Laserkopf positioniert ist.
 
 ### Fokusmodus aktivieren
 
@@ -39,11 +36,9 @@ positioniert ist.
 4. **Laserkopf bewegen** um die Strahlposition auf deinem Material zu sehen
 5. **Fokus-Taste erneut klicken** zum Ausschalten wenn fertig
 
-:::warning Sicherheit
-Selbst bei niedriger Leistung kann der Laser die Augen beschädigen. Schau
-niemals direkt in den Strahl oder richte ihn auf reflektierende
-Oberflächen. Trage geeigneten Augenschutz.
-:::
+:::warning Sicherheit Selbst bei niedriger Leistung kann der Laser die Augen beschädigen. Schau
+niemals direkt in den Strahl oder richte ihn auf reflektierende Oberflächen. Trage geeigneten
+Augenschutz. :::
 
 ### Fokus-Leistung konfigurieren
 
@@ -51,35 +46,27 @@ Die Fokus-Leistung bestimmt, wie hell der Laserpunkt erscheint:
 
 1. Gehe zu **Einstellungen → Maschine → Laser**
 2. Finde die Einstellung **Fokus-Leistung**
-3. Setze einen Wert, der den Punkt sichtbar macht, ohne dein Material zu
-   markieren
+3. Setze einen Wert, der den Punkt sichtbar macht, ohne dein Material zu markieren
    - Typische Werte: 1-5% für die meisten Materialien
    - Auf 0 setzen, um die Funktion zu deaktivieren
 
-:::tip Die richtige Leistung finden
-Beginne mit 1% und erhöhe schrittweise. Der Punkt sollte sichtbar
-sein, aber keine Marke auf deinem Material hinterlassen. Dunklere Materialien
-benötigen möglicherweise höhere Leistung, um den Punkt deutlich zu sehen.
-:::
+:::tip Die richtige Leistung finden Beginne mit 1% und erhöhe schrittweise. Der Punkt sollte
+sichtbar sein, aber keine Marke auf deinem Material hinterlassen. Dunklere Materialien benötigen
+möglicherweise höhere Leistung, um den Punkt deutlich zu sehen. :::
 
 ### Wann den Fokusmodus verwenden
 
-- **Schnelle Ausrichtungskontrollen**: Sehen, ob der Laser ungefähr dort ist,
-  wo du erwartest
-- **Materialkanten finden**: Zu Ecken bewegen, um Materialplatzierung zu
-  verifizieren
-- **WKS-Ursprung setzen**: Laser an gewünschten Nullpunkt positionieren vor
-  dem WKS-Setzen
-- **Home-Position verifizieren**: Überprüfen, dass das Referenzieren korrekt
-  funktioniert hat
+- **Schnelle Ausrichtungskontrollen**: Sehen, ob der Laser ungefähr dort ist, wo du erwartest
+- **Materialkanten finden**: Zu Ecken bewegen, um Materialplatzierung zu verifizieren
+- **WKS-Ursprung setzen**: Laser an gewünschten Nullpunkt positionieren vor dem WKS-Setzen
+- **Home-Position verifizieren**: Überprüfen, dass das Referenzieren korrekt funktioniert hat
 
 ---
 
 ## Einrahmen
 
-Einrahmen zeichnet das Begrenzungsrechteck deines Jobs bei niedriger (oder
-keiner) Leistung nach und zeigt genau, wo dein Design geschnitten oder graviert
-wird.
+Einrahmen zeichnet das Begrenzungsrechteck deines Jobs bei niedriger (oder keiner) Leistung nach und
+zeigt genau, wo dein Design geschnitten oder graviert wird.
 
 ### Wie man einrahmt
 
@@ -92,19 +79,17 @@ wird.
 
 Rahmen-Verhalten konfigurieren in **Einstellungen → Maschine → Laser**:
 
-- **Rahmen-Geschwindigkeit**: Wie schnell sich der Kopf während des Einrahmens
-  bewegt (langsamer = leichter zu sehen)
+- **Rahmen-Geschwindigkeit**: Wie schnell sich der Kopf während des Einrahmens bewegt (langsamer =
+  leichter zu sehen)
 - **Rahmen-Leistung**: Laserleistung während des Einrahmens
   - Auf 0 für Luft-Einrahmen setzen (Laser aus, nur Bewegung)
   - Auf 1-5% für eine sichtbare Spur auf dem Material setzen
 
 :::tip Luft-Einrahmen vs. Niedrigleistung
 
-- **Luft-Einrahmen (0% Leistung)**: Sicher für jedes Material, aber du siehst
-  nur die Kopfbewegung
-- **Niedrigleistung-Einrahmen**: Hinterlässt eine schwache sichtbare Marke,
-  nützlich für präzise Ausrichtung auf dunklen Materialien
-  :::
+- **Luft-Einrahmen (0% Leistung)**: Sicher für jedes Material, aber du siehst nur die Kopfbewegung
+- **Niedrigleistung-Einrahmen**: Hinterlässt eine schwache sichtbare Marke, nützlich für präzise
+  Ausrichtung auf dunklen Materialien :::
 
 ### Wann einrahmen
 
@@ -119,18 +104,15 @@ Siehe [Deinen Job einrahmen](framing-your-job) für weitere Details.
 
 ## WKS-Nullpunkt setzen (Arbeitskoordinatensystem)
 
-Arbeitskoordinatensysteme (WKS) ermöglichen es dir, benutzerdefinierte
-"Nullpunkte" für deine Jobs zu definieren. Dies erleichtert die Ausrichtung von
-Jobs an deine Materialposition.
+Arbeitskoordinatensysteme (WKS) ermöglichen es dir, benutzerdefinierte "Nullpunkte" für deine Jobs
+zu definieren. Dies erleichtert die Ausrichtung von Jobs an deine Materialposition.
 
 ### Schnelle WKS-Einrichtung
 
-1. **Laserkopf bewegen** zur Ecke deines Materials (oder gewünschter
-   Ursprungspunkt)
+1. **Laserkopf bewegen** zur Ecke deines Materials (oder gewünschter Ursprungspunkt)
 2. **Kontrollpanel öffnen** (`Strg+L`)
 3. **Ein WKS auswählen** (G54 ist das Standard-Arbeitskoordinatensystem)
-4. **Auf Null X und Null Y klicken** um aktuelle Position als Ursprung zu
-   setzen
+4. **Auf Null X und Null Y klicken** um aktuelle Position als Ursprung zu setzen
 5. Der (0,0)-Punkt deines Designs wird nun an dieser Position ausgerichtet
 
 ### Koordinatensysteme verstehen
@@ -143,14 +125,12 @@ Rayforge verwendet mehrere Koordinatensysteme:
 | **G54**     | Arbeitskoordinatensystem 1 (Standard)                   |
 | **G55-G59** | Zusätzliche Arbeitskoordinatensysteme                   |
 
-:::tip Mehrere Arbeitsbereiche
-Verwende verschiedene WKS-Slots für verschiedene Vorrichtungspositionen.
-Zum Beispiel:
+:::tip Mehrere Arbeitsbereiche Verwende verschiedene WKS-Slots für verschiedene
+Vorrichtungspositionen. Zum Beispiel:
 
 - G54 für die linke Seite deines Arbeitsbereichs
 - G55 für die rechte Seite
-- G56 für eine Rotationsvorrichtung
-  :::
+- G56 für eine Rotationsvorrichtung :::
 
 ### Wann WKS-Nullpunkt setzen
 
@@ -159,31 +139,29 @@ Zum Beispiel:
 - **Wiederholbare Jobs**: Gleicher Job, verschiedene Positionen
 - **Produktionsläufe**: Konsistente Positionierung über mehrere Stücke
 
-Siehe [Arbeitskoordinatensysteme](../general-info/coordinate-systems.md) für
-vollständige Dokumentation.
+Siehe [Arbeitskoordinatensysteme](../general-info/coordinate-systems.md) für vollständige
+Dokumentation.
 
 ---
 
 ## Kamerabasierte Positionierung
 
-Das Kamera-Overlay zeigt eine Live-Ansicht deines Materials mit deinem Design
-überlagert und ermöglicht präzise visuelle Ausrichtung.
+Das Kamera-Overlay zeigt eine Live-Ansicht deines Materials mit deinem Design überlagert und
+ermöglicht präzise visuelle Ausrichtung.
 
 ### Kamera einrichten
 
 1. **USB-Kamera anschließen** über deinem Arbeitsbereich
 2. Gehe zu **Einstellungen → Kamera** und füge dein Kameragerät hinzu
 3. **Kamera aktivieren** um das Overlay auf deiner Arbeitsfläche zu sehen
-4. **Kamera ausrichten** mit dem Ausrichtungsverfahren (erforderlich für
-   genaue Positionierung)
+4. **Kamera ausrichten** mit dem Ausrichtungsverfahren (erforderlich für genaue Positionierung)
 
 ### Kamera-Ausrichtung
 
 Die Kamera-Ausrichtung ordnet Kamerapixel den realen Koordinaten zu:
 
 1. Öffne **Kamera → Kamera ausrichten**
-2. Platziere Ausrichtungsmarkierungen an bekannten Positionen (mindestens
-   4 Punkte)
+2. Platziere Ausrichtungsmarkierungen an bekannten Positionen (mindestens 4 Punkte)
 3. Gib die realen X/Y-Koordinaten für jeden Punkt ein
 4. Klicke auf **Anwenden** um die Transformation zu berechnen
 
@@ -191,9 +169,7 @@ Die Kamera-Ausrichtung ordnet Kamerapixel den realen Koordinaten zu:
 
 - Verwende Punkte, die über deinen gesamten Arbeitsbereich verteilt sind
 - Miss Weltkoordinaten sorgfältig mit einem Lineal
-- Verwende Maschinenpositionen (zu bekannten Koordinaten bewegen) für
-  beste Genauigkeit
-  :::
+- Verwende Maschinenpositionen (zu bekannten Koordinaten bewegen) für beste Genauigkeit :::
 
 ### Positionierung mit Kamera-Overlay
 

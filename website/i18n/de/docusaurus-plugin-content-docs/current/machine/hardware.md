@@ -1,6 +1,7 @@
 # Hardware-Einstellungen
 
-Die Hardware-Seite in den Maschineneinstellungen konfiguriert die physischen Abmessungen, das Koordinatensystem und die Bewegungsgrenzen deiner Maschine.
+Die Hardware-Seite in den Maschineneinstellungen konfiguriert die physischen Abmessungen, das
+Koordinatensystem und die Bewegungsgrenzen deiner Maschine.
 
 ![Hardware-Einstellungen](/screenshots/machine-settings-hardware.webp)
 
@@ -18,10 +19,12 @@ Der vollständige Verfahrweg jeder Achse in Maschineneinheiten.
 
 ### Koordinatenursprung
 
-Wähle, wo sich der Koordinatenursprung (0,0) deiner Maschine befindet. Dies bestimmt, wie Koordinaten interpretiert werden.
+Wähle, wo sich der Koordinatenursprung (0,0) deiner Maschine befindet. Dies bestimmt, wie
+Koordinaten interpretiert werden.
 
 - **Unten links**: Am häufigsten bei GRBL-Geräten. X nimmt nach rechts zu, Y nimmt nach oben zu.
-- **Oben links**: Häufig bei einigen CNC-artigen Maschinen. X nimmt nach rechts zu, Y nimmt nach unten zu.
+- **Oben links**: Häufig bei einigen CNC-artigen Maschinen. X nimmt nach rechts zu, Y nimmt nach
+  unten zu.
 - **Oben rechts**: X nimmt nach links zu, Y nimmt nach unten zu.
 - **Unten rechts**: X nimmt nach links zu, Y nimmt nach oben zu.
 
@@ -31,9 +34,8 @@ Wähle, wo sich der Koordinatenursprung (0,0) deiner Maschine befindet. Dies bes
 2. Beobachte, wohin sich der Laserkopf bewegt
 3. Diese Position ist dein (0,0)-Ursprung
 
-:::info
-Die Einstellung des Koordinatenursprungs beeinflusst, wie G-Code generiert wird. Stelle sicher, dass sie mit der Homing-Konfiguration deiner Firmware übereinstimmt.
-:::
+:::info Die Einstellung des Koordinatenursprungs beeinflusst, wie G-Code generiert wird. Stelle
+sicher, dass sie mit der Homing-Konfiguration deiner Firmware übereinstimmt. :::
 
 ### Achsenrichtung
 
@@ -41,61 +43,61 @@ Kehre die Richtung einer beliebigen Achse um, falls erforderlich:
 
 - **X-Achsenrichtung umkehren**: Macht X-Koordinatenwerte negativ
 - **Y-Achsenrichtung umkehren**: Macht Y-Koordinatenwerte negativ
-- **Z-Achsenrichtung umkehren**: Aktivieren, wenn ein positiver Z-Befehl (z.B. G0 Z10) den Kopf nach unten bewegt
+- **Z-Achsenrichtung umkehren**: Aktivieren, wenn ein positiver Z-Befehl (z.B. G0 Z10) den Kopf nach
+  unten bewegt
 
 ### Z-Achse
 
-Nicht jeder Laser hat eine Z-Achse — viele einfache 2-Achsen-Diodenmaschinen
-haben keine. Verwende diese Einstellungen, um Rayforge mitzuteilen, ob sich
-deine Maschine in Z bewegen kann:
+Nicht jeder Laser hat eine Z-Achse — viele einfache 2-Achsen-Diodenmaschinen haben keine. Verwende
+diese Einstellungen, um Rayforge mitzuteilen, ob sich deine Maschine in Z bewegen kann:
 
-- **Hat Z-Achse**: Aktiviere, wenn diese Maschine eine Z-Achse hat
-  (Fokusmotor, verfahrbarer Tisch oder vertikal beweglicher Gantry). Wenn
-  deaktiviert, wird die Z-Achse als nicht vorhanden behandelt: Es werden
-  keine Z-Bewegungen generiert, und die 3D-Ansicht schichtet den Inhalt
-  auf der Gravurebene, statt einen sich entlang Z bewegenden Kopf zu
-  zeigen.
-- **Z-Achsenrichtung umkehren**: Wird nur angezeigt, wenn **Hat Z-Achse**
-  aktiviert ist. Aktiviere, wenn ein positiver Z-Befehl (z.B. G0 Z10) den
-  Kopf nach unten bewegt.
+- **Hat Z-Achse**: Aktiviere, wenn diese Maschine eine Z-Achse hat (Fokusmotor, verfahrbarer Tisch
+  oder vertikal beweglicher Gantry). Wenn deaktiviert, wird die Z-Achse als nicht vorhanden
+  behandelt: Es werden keine Z-Bewegungen generiert, und die 3D-Ansicht schichtet den Inhalt auf der
+  Gravurebene, statt einen sich entlang Z bewegenden Kopf zu zeigen.
+- **Z-Achsenrichtung umkehren**: Wird nur angezeigt, wenn **Hat Z-Achse** aktiviert ist. Aktiviere,
+  wenn ein positiver Z-Befehl (z.B. G0 Z10) den Kopf nach unten bewegt.
 
 ### Panel-Ausrichtung
 
-Die Panel-Ausrichtung dreht die flache Arbeitsfläche, wie sie auf dem
-Bildschirm dargestellt wird, und ordnet die Ausgabe zurück auf die Maschine
-zu. Dies ist nützlich, wenn eine physisch hochformatige Arbeitsfläche
-einfacher im Querformat zu bearbeiten ist.
+Die Panel-Ausrichtung dreht die flache Arbeitsfläche, wie sie auf dem Bildschirm dargestellt wird,
+und ordnet die Ausgabe zurück auf die Maschine zu. Dies ist nützlich, wenn eine physisch
+hochformatige Arbeitsfläche einfacher im Querformat zu bearbeiten ist.
 
-- **Native**: Die Arbeitsfläche wird genau so angezeigt, wie die Maschine
-  ausgerichtet ist
-- **Nach links drehen**: Die Arbeitsfläche wird um 90 Grad gegen den
-  Uhrzeigersinn gedreht
-- **Nach rechts drehen**: Die Arbeitsfläche wird um 90 Grad im
-  Uhrzeigersinn gedreht
+- **Native**: Die Arbeitsfläche wird genau so angezeigt, wie die Maschine ausgerichtet ist
+- **Nach links drehen**: Die Arbeitsfläche wird um 90 Grad gegen den Uhrzeigersinn gedreht
+- **Nach rechts drehen**: Die Arbeitsfläche wird um 90 Grad im Uhrzeigersinn gedreht
 
 Rotationsschichten erfordern die Ausrichtung **Native**.
 
 ## Arbeitsbereich
 
-Ränder definieren den unbenutzbaren Raum um die Kanten deiner Achsenbereiche. Dies ist nützlich, wenn deine Maschine Bereiche hat, die der Laser nicht erreichen kann (z.B. aufgrund des Laserkopf-Aufbaus, Kabelketten oder anderer Hindernisse).
+Ränder definieren den unbenutzbaren Raum um die Kanten deiner Achsenbereiche. Dies ist nützlich,
+wenn deine Maschine Bereiche hat, die der Laser nicht erreichen kann (z.B. aufgrund des
+Laserkopf-Aufbaus, Kabelketten oder anderer Hindernisse).
 
-- **Linker/Oberer/Rechter/Unterer Rand**: Der unbenutzbare Raum von jeder Kante in Maschineneinheiten
+- **Linker/Oberer/Rechter/Unterer Rand**: Der unbenutzbare Raum von jeder Kante in
+  Maschineneinheiten
 
-Wenn Ränder festgelegt sind, wird der Arbeitsbereich (nutzbarer Raum) als die Achsenbereiche abzüglich der Ränder berechnet.
+Wenn Ränder festgelegt sind, wird der Arbeitsbereich (nutzbarer Raum) als die Achsenbereiche
+abzüglich der Ränder berechnet.
 
 ## Software-Limits
 
-Konfigurierbare Sicherheitsgrenzen für das Verfahren des Maschinenkopfes. Wenn aktiviert, verhindern die Jog-Steuerungen Bewegungen außerhalb dieser Grenzen.
+Konfigurierbare Sicherheitsgrenzen für das Verfahren des Maschinenkopfes. Wenn aktiviert, verhindern
+die Jog-Steuerungen Bewegungen außerhalb dieser Grenzen.
 
-- **Benutzerdefinierte Software-Limits aktivieren**: Umschalten, um benutzerdefinierte Limits statt der Arbeitsflächen-Grenzen zu verwenden
+- **Benutzerdefinierte Software-Limits aktivieren**: Umschalten, um benutzerdefinierte Limits statt
+  der Arbeitsflächen-Grenzen zu verwenden
 - **X/Y Min**: Minimale Koordinate für jede Achse
 - **X/Y Max**: Maximale Koordinate für jede Achse
 
-Software-Limits werden automatisch eingeschränkt, um innerhalb der Achsenbereiche zu bleiben (0 bis Bereichswert).
+Software-Limits werden automatisch eingeschränkt, um innerhalb der Achsenbereiche zu bleiben (0 bis
+Bereichswert).
 
-:::tip
-Verwende Software-Limits, um Bereiche deiner Arbeitsfläche zu schützen, die während des Joggings niemals erreicht werden sollten, wie Bereiche mit Vorrichtungen oder empfindlicher Ausrüstung.
-:::
+:::tip Verwende Software-Limits, um Bereiche deiner Arbeitsfläche zu schützen, die während des
+Joggings niemals erreicht werden sollten, wie Bereiche mit Vorrichtungen oder empfindlicher
+Ausrüstung. :::
 
 ## Siehe auch
 

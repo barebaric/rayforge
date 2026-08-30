@@ -1,10 +1,13 @@
 ---
-description: "Rayforge add-on manifest reference - define your add-ons metadata, dependencies, hooks, and UI contributions."
+description:
+  "Rayforge add-on manifest reference - define your add-ons metadata, dependencies, hooks, and UI
+  contributions."
 ---
 
 # Addon Manifest
 
-Every addon needs a `rayforge-addon.yaml` file in its root directory. This manifest tells Rayforge about your addon—its name, what it provides, and how to load it.
+Every addon needs a `rayforge-addon.yaml` file in its root directory. This manifest tells Rayforge
+about your addon—its name, what it provides, and how to load it.
 
 ## Basic Structure
 
@@ -42,7 +45,8 @@ license:
 
 ### `name`
 
-A unique identifier for your addon. This must be a valid Python module name—only letters, numbers, and underscores, and it cannot start with a number.
+A unique identifier for your addon. This must be a valid Python module name—only letters, numbers,
+and underscores, and it cannot start with a number.
 
 ```yaml
 name: my_custom_addon
@@ -66,17 +70,21 @@ description: "Adds support for the XYZ laser cutter."
 
 ### `api_version`
 
-The API version your addon targets. This must be at least 1 (the minimum supported version) and at most the current version (9). Using a higher version than supported will cause your addon to fail validation.
+The API version your addon targets. This must be at least 1 (the minimum supported version) and at
+most the current version (9). Using a higher version than supported will cause your addon to fail
+validation.
 
 ```yaml
 api_version: 9
 ```
 
-See the [Hooks](./addon-hooks.md#api-version-history) documentation for what changed in each version.
+See the [Hooks](./addon-hooks.md#api-version-history) documentation for what changed in each
+version.
 
 ### `author`
 
-Information about the addon author. The `name` field is required; `email` is optional but recommended for users to contact you.
+Information about the addon author. The `name` field is required; `email` is optional but
+recommended for users to contact you.
 
 ```yaml
 author:
@@ -114,7 +122,8 @@ requires:
 
 ### `version`
 
-Your addon's version number. This is typically determined automatically from git tags, but you can specify it explicitly. Use semantic versioning (e.g., `1.0.0`).
+Your addon's version number. This is typically determined automatically from git tags, but you can
+specify it explicitly. Use semantic versioning (e.g., `1.0.0`).
 
 ```yaml
 version: 1.0.0
@@ -122,7 +131,9 @@ version: 1.0.0
 
 ### `maturity`
 
-The maturity level of your addon. Use `experimental` for addons that are not yet finished and may have unresolved issues. Experimental addons are shown with a dedicated icon in the addon manager. The default is `stable`; omit the field for stable addons.
+The maturity level of your addon. Use `experimental` for addons that are not yet finished and may
+have unresolved issues. Experimental addons are shown with a dedicated icon in the addon manager.
+The default is `stable`; omit the field for stable addons.
 
 ```yaml
 maturity: experimental
@@ -134,7 +145,8 @@ The `provides` section defines what your addon contributes to Rayforge.
 
 ### Backend
 
-The backend module loads in both the main process and worker processes. Use this for machine drivers, step types, ops producers, and any core functionality.
+The backend module loads in both the main process and worker processes. Use this for machine
+drivers, step types, ops producers, and any core functionality.
 
 ```yaml
 provides:
@@ -145,7 +157,8 @@ The value is a dotted Python module path relative to your addon directory.
 
 ### Frontend
 
-The frontend module only loads in the main process. Use this for UI components, GTK widgets, and anything that needs the main window.
+The frontend module only loads in the main process. Use this for UI components, GTK widgets, and
+anything that needs the main window.
 
 ```yaml
 provides:
@@ -165,11 +178,13 @@ provides:
       type: templates
 ```
 
-The `path` is relative to your addon root and must exist. Asset types are defined by Rayforge and may include things like machine profiles, material libraries, or templates.
+The `path` is relative to your addon root and must exist. Asset types are defined by Rayforge and
+may include things like machine profiles, material libraries, or templates.
 
 ## License Information
 
-The `license` field describes how your addon is licensed. For free addons, just specify the license name using an SPDX identifier:
+The `license` field describes how your addon is licensed. For free addons, just specify the license
+name using an SPDX identifier:
 
 ```yaml
 license:
@@ -180,7 +195,8 @@ Common SPDX identifiers include `MIT`, `Apache-2.0`, `GPL-3.0`, and `BSD-3-Claus
 
 ## Paid Addons
 
-Rayforge supports paid addons through Gumroad license validation. If you want to sell your addon, you can configure it to require a valid license before it functions.
+Rayforge supports paid addons through Gumroad license validation. If you want to sell your addon,
+you can configure it to require a valid license before it functions.
 
 ### Basic Paid Configuration
 
@@ -191,7 +207,8 @@ license:
   purchase_url: https://gum.co/my-addon
 ```
 
-When `required` is true, Rayforge will check for a valid license before loading your addon. The `purchase_url` is shown to users who don't have a license.
+When `required` is true, Rayforge will check for a valid license before loading your addon. The
+`purchase_url` is shown to users who don't have a license.
 
 ### Gumroad Product ID
 
@@ -267,6 +284,11 @@ def rayforge_init(context):
 
 Rayforge validates your manifest when loading the addon. Here are the rules:
 
-The `name` must be a valid Python identifier (letters, numbers, underscores, no leading numbers). The `api_version` must be an integer between 1 and the current version. The `author.name` cannot be empty or contain placeholder text like "your-github-username". Entry points must be valid module paths and the modules must exist. Asset paths must be relative (no `..` or leading `/`) and the files must exist.
+The `name` must be a valid Python identifier (letters, numbers, underscores, no leading numbers).
+The `api_version` must be an integer between 1 and the current version. The `author.name` cannot be
+empty or contain placeholder text like "your-github-username". Entry points must be valid module
+paths and the modules must exist. Asset paths must be relative (no `..` or leading `/`) and the
+files must exist.
 
-If validation fails, Rayforge logs an error and skips your addon. Check the console output during development to catch these issues.
+If validation fails, Rayforge logs an error and skips your addon. Check the console output during
+development to catch these issues.

@@ -1,5 +1,7 @@
 ---
-description: "Export G-code from Rayforge to run on your laser cutter. Generate output files compatible with GRBL and Smoothieware controllers."
+description:
+  "Export G-code from Rayforge to run on your laser cutter. Generate output files compatible with
+  GRBL and Smoothieware controllers."
 ---
 
 # Exporting from Rayforge
@@ -14,8 +16,8 @@ Rayforge supports several export options for different purposes:
 
 ## Exporting Objects
 
-You can export any workpiece to vector formats for use in design software, CAD
-applications, or for archiving.
+You can export any workpiece to vector formats for use in design software, CAD applications, or for
+archiving.
 
 ### How to Export
 
@@ -58,8 +60,8 @@ applications, or for archiving.
 
 ## Exporting Documents
 
-You can export all workpieces in a document to a single vector file. This is
-useful for sharing complete projects or creating backups in standard formats.
+You can export all workpieces in a document to a single vector file. This is useful for sharing
+complete projects or creating backups in standard formats.
 
 ### How to Export
 
@@ -91,9 +93,9 @@ useful for sharing complete projects or creating backups in standard formats.
 
 ## Exporting G-code
 
-Generated G-code contains everything exactly as it would be sent to the machine.
-The exact format, commands, numeric precision, etc. depends on the settings of
-the currently selected machine and its G-code dialect.
+Generated G-code contains everything exactly as it would be sent to the machine. The exact format,
+commands, numeric precision, etc. depends on the settings of the currently selected machine and its
+G-code dialect.
 
 ---
 
@@ -118,9 +120,9 @@ rayforge --export output.gcode input.svg
 
 ### G-code Output
 
-Generated G-code contains everything exactly as it would be sent to the machine.
-The exact format, commands, numeric precision, etc. depends on the settings of
-the currently selected machine and its G-code dialect.
+Generated G-code contains everything exactly as it would be sent to the machine. The exact format,
+commands, numeric precision, etc. depends on the settings of the currently selected machine and its
+G-code dialect.
 
 ---
 

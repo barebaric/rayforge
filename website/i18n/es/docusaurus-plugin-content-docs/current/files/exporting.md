@@ -21,11 +21,11 @@ CAD, o para archivar.
 
 ### Formatos Disponibles
 
-| Formato  | Extensión | Descripción                                                                                                    |
-| ------- | --------- | -------------------------------------------------------------------------------------------------------------- |
-| **RFS** | `.rfs`    | Formato de bosquejo paramétrico nativo de Rayforge. Preserva todas las restricciones y puede reimportarse para edición. |
+| Formato | Extensión | Descripción                                                                                                                  |
+| ------- | --------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| **RFS** | `.rfs`    | Formato de bosquejo paramétrico nativo de Rayforge. Preserva todas las restricciones y puede reimportarse para edición.      |
 | **SVG** | `.svg`    | Gráficos Vectoriales Escalables. Ampliamente compatible con software de diseño como Inkscape, Illustrator y navegadores web. |
-| **DXF** | `.dxf`    | Formato de Intercambio de Dibujos. Compatible con la mayoría de aplicaciones CAD como AutoCAD, FreeCAD y LibreCAD. |
+| **DXF** | `.dxf`    | Formato de Intercambio de Dibujos. Compatible con la mayoría de aplicaciones CAD como AutoCAD, FreeCAD y LibreCAD.           |
 
 ### Notas de Exportación
 
@@ -54,8 +54,8 @@ CAD, o para archivar.
 
 ## Exportando Documentos
 
-Puedes exportar todas las piezas en un documento a un solo archivo vectorial. Esto es
-útil para compartir proyectos completos o crear respaldos en formatos estándar.
+Puedes exportar todas las piezas en un documento a un solo archivo vectorial. Esto es útil para
+compartir proyectos completos o crear respaldos en formatos estándar.
 
 ### Cómo Exportar
 
@@ -65,10 +65,10 @@ Puedes exportar todas las piezas en un documento a un solo archivo vectorial. Es
 
 ### Formatos Disponibles
 
-| Formato  | Extensión | Descripción                                                                                                    |
-| ------- | --------- | -------------------------------------------------------------------------------------------------------------- |
+| Formato | Extensión | Descripción                                                                                                                  |
+| ------- | --------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | **SVG** | `.svg`    | Gráficos Vectoriales Escalables. Ampliamente compatible con software de diseño como Inkscape, Illustrator y navegadores web. |
-| **DXF** | `.dxf`    | Formato de Intercambio de Dibujos. Compatible con la mayoría de aplicaciones CAD como AutoCAD, FreeCAD y LibreCAD. |
+| **DXF** | `.dxf`    | Formato de Intercambio de Dibujos. Compatible con la mayoría de aplicaciones CAD como AutoCAD, FreeCAD y LibreCAD.           |
 
 ### Notas de Exportación
 
@@ -87,9 +87,9 @@ Puedes exportar todas las piezas en un documento a un solo archivo vectorial. Es
 
 ## Exportando Código G
 
-El código G generado contiene todo exactamente como se enviaría a la máquina.
-El formato exacto, comandos, precisión numérica, etc. dependen de los ajustes de
-la máquina actualmente seleccionada y su dialecto de código G.
+El código G generado contiene todo exactamente como se enviaría a la máquina. El formato exacto,
+comandos, precisión numérica, etc. dependen de los ajustes de la máquina actualmente seleccionada y
+su dialecto de código G.
 
 ---
 
@@ -114,9 +114,9 @@ rayforge --export output.gcode input.svg
 
 ### Salida de Código G
 
-El código G generado contiene todo exactamente como se enviaría a la máquina.
-El formato exacto, comandos, precisión numérica, etc. dependen de los ajustes de
-la máquina actualmente seleccionada y su dialecto de código G.
+El código G generado contiene todo exactamente como se enviaría a la máquina. El formato exacto,
+comandos, precisión numérica, etc. dependen de los ajustes de la máquina actualmente seleccionada y
+su dialecto de código G.
 
 ---
 

@@ -2,7 +2,10 @@
 
 ![Rezept-Einstellungen](/screenshots/app-settings-recipes.webp)
 
-Rayforge bietet ein leistungsstarkes Rezept-System, mit dem du konsistente Einstellungen über deine Laserschneideprojekte hinweg erstellen, verwalten und anwenden kannst. Diese Anleitung behandelt die komplette User Journey von der Erstellung von Rezepten in den allgemeinen Einstellungen bis zum Anwenden auf Operationen und Verwalten von Einstellungen auf Schritt-Ebene.
+Rayforge bietet ein leistungsstarkes Rezept-System, mit dem du konsistente Einstellungen über deine
+Laserschneideprojekte hinweg erstellen, verwalten und anwenden kannst. Diese Anleitung behandelt die
+komplette User Journey von der Erstellung von Rezepten in den allgemeinen Einstellungen bis zum
+Anwenden auf Operationen und Verwalten von Einstellungen auf Schritt-Ebene.
 
 ## Übersicht
 
@@ -16,7 +19,8 @@ Das Rezept-System besteht aus drei Hauptkomponenten:
 
 ### Rezepte erstellen
 
-Rezepte sind benannte Presets, die alle Einstellungen für spezifische Operationen enthalten. Du kannst Rezepte über die Haupteinstellungs-Schnittstelle erstellen:
+Rezepte sind benannte Presets, die alle Einstellungen für spezifische Operationen enthalten. Du
+kannst Rezepte über die Haupteinstellungs-Schnittstelle erstellen:
 
 #### 1. Rezept-Manager aufrufen
 
@@ -44,77 +48,67 @@ Basisinformationen ausfüllen:
 Alle Kriterien sind optional - lasse jedes Feld auf seinem Wert "Beliebig", um auf alles zu passen:
 
 - **Maschine**: Spezifische Maschine wählen oder auf "Beliebig" lassen
-- **Aufgabentyp**: Die Operationskategorie auswählen, für die dieses Rezept gilt
-  (Schnitt, Gravur, usw.), oder auf "Beliebig" lassen, um für alle Aufgabentypen zu gelten
-- **Schritt-Typ**: Das Rezept auf einen bestimmten Operationstyp einschränken
-  (z.B. "Kontur" oder "Raster"). Die Liste wird auf die Schritt-Typen gefiltert,
-  die den ausgewählten Aufgabentyp unterstützen. Auf "Beliebiger Typ" lassen, um
-  jeden Schritt-Typ innerhalb der Aufgabe abzudecken
+- **Aufgabentyp**: Die Operationskategorie auswählen, für die dieses Rezept gilt (Schnitt, Gravur,
+  usw.), oder auf "Beliebig" lassen, um für alle Aufgabentypen zu gelten
+- **Schritt-Typ**: Das Rezept auf einen bestimmten Operationstyp einschränken (z.B. "Kontur" oder
+  "Raster"). Die Liste wird auf die Schritt-Typen gefiltert, die den ausgewählten Aufgabentyp
+  unterstützen. Auf "Beliebiger Typ" lassen, um jeden Schritt-Typ innerhalb der Aufgabe abzudecken
 - **Material**: Materialtyp auswählen oder für jedes Material offen lassen
 - **Min./Max. Dicke**: Minimale und maximale Dickenwerte festlegen
 
 #### 4. Einstellungen konfigurieren
 
-**Register "Einstellungen"** - Leistung, Geschwindigkeit und andere
-Parameter anpassen. Wenn das Rezept auf einen bestimmten **Schritt-Typ**
-abzielt, zeigt der Editor zwei Einstellungsseiten: eine Seite "Laser"
-mit den gemeinsamen Prozesseinstellungen (Leistung, Air-Assist, usw.)
-und eine Seite "Schritt-Einstellungen" mit den Attributen, die für
-diesen Schritt-Typ spezifisch sind (z.B. Schnittseite, Schnittreihenfolge):
+**Register "Einstellungen"** - Leistung, Geschwindigkeit und andere Parameter anpassen. Wenn das
+Rezept auf einen bestimmten **Schritt-Typ** abzielt, zeigt der Editor zwei Einstellungsseiten: eine
+Seite "Laser" mit den gemeinsamen Prozesseinstellungen (Leistung, Air-Assist, usw.) und eine Seite
+"Schritt-Einstellungen" mit den Attributen, die für diesen Schritt-Typ spezifisch sind (z.B.
+Schnittseite, Schnittreihenfolge):
 
 ![Rezept-Editor - Register Laser](/screenshots/recipe-editor-laser.webp)
 
 ![Rezept-Editor - Register Schritt-Einstellungen](/screenshots/recipe-editor-step-settings.webp)
 
-- Bei Auswahl nur eines **Aufgabentyps** (mit "Beliebiger Typ" als Schritt-Typ)
-  wird eine einzelne Seite "Einstellungen" mit den Prozesseinstellungen für diese Aufgabe angezeigt
-- Bei "Beliebig" für beide werden nur die Basis-Bewegungseinstellungen (Schnittgeschwindigkeit
-  und Fahrgeschwindigkeit) angezeigt, die allen Schritten gemeinsam sind
+- Bei Auswahl nur eines **Aufgabentyps** (mit "Beliebiger Typ" als Schritt-Typ) wird eine einzelne
+  Seite "Einstellungen" mit den Prozesseinstellungen für diese Aufgabe angezeigt
+- Bei "Beliebig" für beide werden nur die Basis-Bewegungseinstellungen (Schnittgeschwindigkeit und
+  Fahrgeschwindigkeit) angezeigt, die allen Schritten gemeinsam sind
 
-Jede Einstellungszeile besitzt eine Anwenden-Schaltfläche (ein Häkchen
-neben der Zeile):
+Jede Einstellungszeile besitzt eine Anwenden-Schaltfläche (ein Häkchen neben der Zeile):
 
-- **Aktiviert**: Das Rezept überträgt diese Einstellung beim Anwenden
-  auf den Schritt
-- **Deaktiviert**: Das Rezept lässt diese Einstellung am Schritt
-  unverändert
+- **Aktiviert**: Das Rezept überträgt diese Einstellung beim Anwenden auf den Schritt
+- **Deaktiviert**: Das Rezept lässt diese Einstellung am Schritt unverändert
 
-**Register "Nachbearbeitung"** - Speichern Sie
-Nachbearbeitungseinstellungen (Ein-/Ausfahrwege, Mehrfachdurchgänge,
-Overscan und andere Transformationen) im Rezept, damit sie auf die
-Schritte angewendet werden, die das Rezept anvisiert:
+**Register "Nachbearbeitung"** - Speichern Sie Nachbearbeitungseinstellungen (Ein-/Ausfahrwege,
+Mehrfachdurchgänge, Overscan und andere Transformationen) im Rezept, damit sie auf die Schritte
+angewendet werden, die das Rezept anvisiert:
 
 ![Rezept-Editor - Register Nachbearbeitung](/screenshots/recipe-editor-post-processing.webp)
 
-Jede Transformation besitzt eine Anwenden-Schaltfläche (ein Häkchen
-neben der Zeile):
+Jede Transformation besitzt eine Anwenden-Schaltfläche (ein Häkchen neben der Zeile):
 
-- **Aktiviert**: Das Rezept überträgt die Parameter der Transformation
-  auf den Schritt (der eigene Aktivierungs-Schalter entscheidet, ob sie
-  ein- oder ausgeschaltet wird)
-- **Deaktiviert**: Das Rezept berührt diese Transformation bei der
-  Anwendung nicht
+- **Aktiviert**: Das Rezept überträgt die Parameter der Transformation auf den Schritt (der eigene
+  Aktivierungs-Schalter entscheidet, ob sie ein- oder ausgeschaltet wird)
+- **Deaktiviert**: Das Rezept berührt diese Transformation bei der Anwendung nicht
 
-Wenn das Rezept mehrere Schritt-Typen anvisiert, werden nur die
-Transformationen angezeigt, die allen gemeinsam sind.
+Wenn das Rezept mehrere Schritt-Typen anvisiert, werden nur die Transformationen angezeigt, die
+allen gemeinsam sind.
 
 ### Rezept-Matching-System
 
 Rayforge schlägt automatisch die am besten geeigneten Rezepte vor und wendet sie an basierend auf:
 
 - **Maschinen-Kompatibilität**: Rezepte können maschinenspezifisch sein
-- **Laserkopf-Kompatibilität**: Rezepte können einen bestimmten Kopf auf der
-  Maschine erzwingen
+- **Laserkopf-Kompatibilität**: Rezepte können einen bestimmten Kopf auf der Maschine erzwingen
 - **Material-Matching**: Rezepte können bestimmte Materialien ansprechen
 - **Dickenbereiche**: Rezepte gelten innerhalb definierter Dikengrenzen
 - **Aufgabentyp-Matching**: Rezepte sind an bestimmte Operationskategorien gebunden
-- **Schritt-Typ-Matching**: Rezepte können auf einen bestimmten Operationstyp
-  abzielen (z.B. nur "Kontur"-Schritte)
+- **Schritt-Typ-Matching**: Rezepte können auf einen bestimmten Operationstyp abzielen (z.B. nur
+  "Kontur"-Schritte)
 
-Ein Rezept passt nur dann, wenn alle seine Kriterien erfüllt sind. Wenn ein neuer
-Schritt erstellt wird, durchsucht Rayforge die Rezeptbibliothek nach passenden
-Rezepten und wendet automatisch das beste an. Das System verwendet einen
-Spezifitäts-Bewertungsalgorithmus, um die relevantesten Rezepte zu priorisieren:
+Ein Rezept passt nur dann, wenn alle seine Kriterien erfüllt sind. Wenn ein neuer Schritt erstellt
+wird, durchsucht Rayforge die Rezeptbibliothek nach passenden Rezepten und wendet automatisch das
+beste an. Das System verwendet einen Spezifitäts-Bewertungsalgorithmus, um die relevantesten Rezepte
+zu priorisieren:
 
 1. Maschinenspezifische Rezepte werden höher bewertet als generische
 2. Laserkopf-spezifische Rezepte werden höher bewertet
@@ -124,23 +118,22 @@ Spezifitäts-Bewertungsalgorithmus, um die relevantesten Rezepte zu priorisieren
 
 ### Rezepte auf Schritte anwenden
 
-Rezepte werden pro Schritt angewendet. Öffne die Einstellungen eines beliebigen Schritts und finde die Zeile "Rezept" im Abschnitt "Allgemein":
+Rezepte werden pro Schritt angewendet. Öffne die Einstellungen eines beliebigen Schritts und finde
+die Zeile "Rezept" im Abschnitt "Allgemein":
 
-- **Auswählen...**: Öffnet eine filterbare Liste von Rezepten. Nutze das Suchfeld
-  oder den Schalter "Nur kompatible Rezepte anzeigen", um die Liste einzugrenzen;
-  kompatible Rezepte passen auf den Aufgabentyp, Schritt-Typ und die Maschine des
-  Schritts sowie auf die Rohmaterialien im Dokument. Die Auswahl eines Rezepts
-  wendet alle seine Einstellungen auf den Schritt an.
-- **Speichern als...**: Öffnet den Rezept-Editor, der mit den aktuellen Einstellungen,
-  der Maschine, dem Material und der Dicke des Schritts vorausgefüllt ist. Das
-  Speichern des neuen Rezepts wendet es sofort auf den Schritt an.
-- **Aktualisieren**: Erscheint, wenn die Einstellungen des Schritts vom darauf
-  angewendeten Rezept abweichen (z.B. nachdem du einen Wert manuell geändert hast).
-  Ein Klick darauf überschreibt das gespeicherte Rezept mit den aktuellen
-  Einstellungen des Schritts.
+- **Auswählen...**: Öffnet eine filterbare Liste von Rezepten. Nutze das Suchfeld oder den Schalter
+  "Nur kompatible Rezepte anzeigen", um die Liste einzugrenzen; kompatible Rezepte passen auf den
+  Aufgabentyp, Schritt-Typ und die Maschine des Schritts sowie auf die Rohmaterialien im Dokument.
+  Die Auswahl eines Rezepts wendet alle seine Einstellungen auf den Schritt an.
+- **Speichern als...**: Öffnet den Rezept-Editor, der mit den aktuellen Einstellungen, der Maschine,
+  dem Material und der Dicke des Schritts vorausgefüllt ist. Das Speichern des neuen Rezepts wendet
+  es sofort auf den Schritt an.
+- **Aktualisieren**: Erscheint, wenn die Einstellungen des Schritts vom darauf angewendeten Rezept
+  abweichen (z.B. nachdem du einen Wert manuell geändert hast). Ein Klick darauf überschreibt das
+  gespeicherte Rezept mit den aktuellen Einstellungen des Schritts.
 
-Der Name des aktuell angewendeten Rezepts wird in der Zeile angezeigt. Schritte
-ohne angewendetes Rezept sind mit "Manuelle Einstellungen" gekennzeichnet.
+Der Name des aktuell angewendeten Rezepts wird in der Zeile angezeigt. Schritte ohne angewendetes
+Rezept sind mit "Manuelle Einstellungen" gekennzeichnet.
 
 ---
 

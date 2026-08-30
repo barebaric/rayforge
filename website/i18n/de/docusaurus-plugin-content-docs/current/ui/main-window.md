@@ -1,7 +1,7 @@
 # Hauptfenster
 
-Das Rayforge-Hauptfenster ist dein primärer Arbeitsbereich zum Erstellen und
-Verwalten von Laseraufträgen.
+Das Rayforge-Hauptfenster ist dein primärer Arbeitsbereich zum Erstellen und Verwalten von
+Laseraufträgen.
 
 ## Fensterlayout
 
@@ -22,31 +22,27 @@ Zugriff auf alle Rayforge-Funktionen durch organisierte Menüs:
 
 Schneller Zugriff auf häufig verwendete Steuerungen:
 
-- **Maschinen-Dropdown**: Wähle deine Maschine, sieh den Verbindungsstatus und
-  die geschätzte verbleibende Zeit während Aufträgen
+- **Maschinen-Dropdown**: Wähle deine Maschine, sieh den Verbindungsstatus und die geschätzte
+  verbleibende Zeit während Aufträgen
 - **WCS-Dropdown**: Das aktive Werkstückkoordinatensystem auswählen (G53-G59)
 - **Simulation umschalten**: Simulationsmodus aktivieren/deaktivieren
 - **Laser fokussieren**: Laserfokus-Modus umschalten
 - **Auftragssteuerung**: Referenzieren, Einrahmen, Senden, Halten und Abbrechen
 
-Das Maschinen-Dropdown zeigt den Verbindungsstatus und aktuellen Zustand
-(z.B. Bereit, Ausführung) deiner Maschine direkt in der Symbolleiste an.
-Während der Auftragsausführung wird zusätzlich eine geschätzte verbleibende
-Zeit angezeigt.
+Das Maschinen-Dropdown zeigt den Verbindungsstatus und aktuellen Zustand (z.B. Bereit, Ausführung)
+deiner Maschine direkt in der Symbolleiste an. Während der Auftragsausführung wird zusätzlich eine
+geschätzte verbleibende Zeit angezeigt.
 
-Das WCS-Dropdown ermöglicht dir, schnell zwischen Koordinatensystemen zu
-wechseln. Siehe [Werkstückkoordinatensysteme](../general-info/coordinate-systems.md)
-für weitere Informationen.
+Das WCS-Dropdown ermöglicht dir, schnell zwischen Koordinatensystemen zu wechseln. Siehe
+[Werkstückkoordinatensysteme](../general-info/coordinate-systems.md) für weitere Informationen.
 
-Sichtbarkeits-Umschaltungen sind als Overlay-Schaltflächen direkt auf der
-Canvas verfügbar, sodass sie immer griffbereit sind, während du arbeitest.
-Auf der 2D-Canvas schalten diese Werkstück-Grundbilder, Halterungen, den
-Kamera-Feed (sofern eine Kamera aktiviert ist), Material-Blöcke, Eilgänge
-und No-Go-Zonen um. Die [3D-Ansicht](3d-preview) hat ihre eigenen
-Umschaltungen für das Werkstückbild, das Maschinenmodell, das Raster, die
-Ops-Unterlage, das Material, Eilgänge und No-Go-Zonen.
-Die No-Go-Zonen-Umschaltung erscheint nur, wenn für deine Maschine
-mindestens eine No-Go-Zone konfiguriert ist.
+Sichtbarkeits-Umschaltungen sind als Overlay-Schaltflächen direkt auf der Canvas verfügbar, sodass
+sie immer griffbereit sind, während du arbeitest. Auf der 2D-Canvas schalten diese
+Werkstück-Grundbilder, Halterungen, den Kamera-Feed (sofern eine Kamera aktiviert ist),
+Material-Blöcke, Eilgänge und No-Go-Zonen um. Die [3D-Ansicht](3d-preview) hat ihre eigenen
+Umschaltungen für das Werkstückbild, das Maschinenmodell, das Raster, die Ops-Unterlage, das
+Material, Eilgänge und No-Go-Zonen. Die No-Go-Zonen-Umschaltung erscheint nur, wenn für deine
+Maschine mindestens eine No-Go-Zone konfiguriert ist.
 
 ### 3. Canvas
 
@@ -65,30 +61,28 @@ Der Hauptarbeitsbereich, in dem du:
 
 ### 4. Seitenpanel
 
-Das Seitenpanel ist ein schwebendes Overlay auf der rechten Seite der Canvas. Es
-zeigt den Workflow der aktiven Ebene als vertikale Liste von Schritten an. Jeder
-Schritt zeigt seinen Namen, eine Zusammenfassung (z.B. Leistung und Geschwindigkeit)
-und Schaltflächen für Sichtbarkeit, Einstellungen und Löschung. Verwende die **+**-
-Schaltfläche, um neue Schritte hinzuzufügen. Schritte können per Drag-and-Drop
-neu angeordnet werden.
+Das Seitenpanel ist ein schwebendes Overlay auf der rechten Seite der Canvas. Es zeigt den Workflow
+der aktiven Ebene als vertikale Liste von Schritten an. Jeder Schritt zeigt seinen Namen, eine
+Zusammenfassung (z.B. Leistung und Geschwindigkeit) und Schaltflächen für Sichtbarkeit,
+Einstellungen und Löschung. Verwende die **+**- Schaltfläche, um neue Schritte hinzuzufügen.
+Schritte können per Drag-and-Drop neu angeordnet werden.
 
-Ein Klick auf die Einstellungen-Schaltfläche eines Schritts öffnet einen Dialog, in dem
-du den Operationstyp, Laserleistung, Schnittgeschwindigkeit, Air Assist, Strahlbreite
-und Nachbearbeitungsoptionen konfigurierst. Schieberegler-Werte sind bearbeitbar —
-klicke auf einen Wert neben einem Schieberegler und gib die genaue Zahl ein, die du
-möchtest.
+Ein Klick auf die Einstellungen-Schaltfläche eines Schritts öffnet einen Dialog, in dem du den
+Operationstyp, Laserleistung, Schnittgeschwindigkeit, Air Assist, Strahlbreite und
+Nachbearbeitungsoptionen konfigurierst. Schieberegler-Werte sind bearbeitbar — klicke auf einen Wert
+neben einem Schieberegler und gib die genaue Zahl ein, die du möchtest.
 
 Das Panel kann beiseitegeschoben werden, wenn es nicht benötigt wird.
 
 ### 5. Unteres Panel
 
-Das untere Panel bietet andockbare Tabs, die durch Ziehen neu angeordnet und in
-mehrere Spalten aufgeteilt werden können. Die verfügbaren Tabs sind:
+Das untere Panel bietet andockbare Tabs, die durch Ziehen neu angeordnet und in mehrere Spalten
+aufgeteilt werden können. Die verfügbaren Tabs sind:
 
-- **Ebenen**: Zeigt alle Ebenen als nebeneinanderliegende Spalten an. Jede Spalte hat
-  eine Kopfzeile mit dem Ebenennamen und Steuerungen, eine kompakte horizontale
-  Pipeline von Schritt-Symbolen, die den Workflow darstellen, und eine Liste von
-  Werkstücken. Ebenen und Werkstücke können per Drag-and-Drop neu angeordnet werden.
+- **Ebenen**: Zeigt alle Ebenen als nebeneinanderliegende Spalten an. Jede Spalte hat eine Kopfzeile
+  mit dem Ebenennamen und Steuerungen, eine kompakte horizontale Pipeline von Schritt-Symbolen, die
+  den Workflow darstellen, und eine Liste von Werkstücken. Ebenen und Werkstücke können per
+  Drag-and-Drop neu angeordnet werden.
 - **Assets**: Listet Rohmaterial und Skizzen in deinem Dokument auf.
 - **Konsole**: Interaktives Terminal zum Senden von G-code und Überwachen der
   Maschinenkommunikation.

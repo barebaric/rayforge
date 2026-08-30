@@ -2,14 +2,15 @@
 
 Les zones interdites définissent des zones restreintes sur la surface de travail que le laser ne
 doit pas traverser. Lorsqu'elles sont activées, elles sont vérifiées dans le cadre des
-[vérifications de cohérence du travail](../features/sanity-checks.md) avant l'exécution ou l'exportation.
+[vérifications de cohérence du travail](../features/sanity-checks.md) avant l'exécution ou
+l'exportation.
 
 ![Zones Interdites](/screenshots/machine-settings-nogo-zones.webp)
 
 ## Ajouter une Zone Interdite
 
-Ouvre **Paramètres → Machine** et accède à la page **Zones Interdites**. Clique
-sur le bouton d'ajout pour créer une nouvelle zone, puis choisis sa forme et sa position.
+Ouvre **Paramètres → Machine** et accède à la page **Zones Interdites**. Clique sur le bouton
+d'ajout pour créer une nouvelle zone, puis choisis sa forme et sa position.
 
 Chaque zone a les paramètres suivants :
 
@@ -22,10 +23,9 @@ Chaque zone a les paramètres suivants :
 ## Visibilité
 
 Les zones interdites sont affichées sur le canevas 2D et 3D comme des superpositions
-semi-transparentes. Utilise le bouton de bascule des zones interdites dans la superposition
-du canevas pour les afficher ou les masquer. La bascule n'est affichée que
-lorsqu'au moins une zone interdite est configurée. Le paramètre de
-visibilité est mémorisé entre les sessions.
+semi-transparentes. Utilise le bouton de bascule des zones interdites dans la superposition du
+canevas pour les afficher ou les masquer. La bascule n'est affichée que lorsqu'au moins une zone
+interdite est configurée. Le paramètre de visibilité est mémorisé entre les sessions.
 
 ---
 

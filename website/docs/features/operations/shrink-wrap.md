@@ -1,10 +1,13 @@
 ---
-description: "Shrink-wrap operations automatically fit engraving to the exact shape of your design. Ideal for engraving within vector outlines."
+description:
+  "Shrink-wrap operations automatically fit engraving to the exact shape of your design. Ideal for
+  engraving within vector outlines."
 ---
 
 # Shrink Wrap
 
-Shrink Wrap creates an efficient cutting path around multiple objects by generating a boundary that "shrinks" around them. It's useful for cutting multiple parts from a sheet with minimal waste.
+Shrink Wrap creates an efficient cutting path around multiple objects by generating a boundary that
+"shrinks" around them. It's useful for cutting multiple parts from a sheet with minimal waste.
 
 ## Overview
 
@@ -41,7 +44,8 @@ Shrink wrap creates a boundary using a computational geometry algorithm:
 3. **Wrap** tightly around the object group
 4. **Offset** outward by the specified distance
 
-The result is an efficient cutting path that follows the overall shape of your parts while maintaining clearance.
+The result is an efficient cutting path that follows the overall shape of your parts while
+maintaining clearance.
 
 ## Creating a Shrink Wrap Operation
 
@@ -66,13 +70,14 @@ The result is an efficient cutting path that follows the overall shape of your p
 
 ## Key Settings
 
-The step settings dialog has three tabs: **Step Settings**, **Laser**, and **Post Processing**. Settings are described in tab order below.
+The step settings dialog has three tabs: **Step Settings**, **Laser**, and **Post Processing**.
+Settings are described in tab order below.
 
 ### Shrink Wrap
 
 ![Shrink Wrap step settings](/screenshots/step-settings-shrink-wrap-general.webp)
 
-The **Shrink Wrap** group on the *Step Settings* tab controls how the hull fits around the content.
+The **Shrink Wrap** group on the _Step Settings_ tab controls how the hull fits around the content.
 
 #### Smoothness
 
@@ -97,11 +102,11 @@ Controls how closely the boundary follows object shapes:
 
 Controls where the laser cuts relative to the shrink-wrap path:
 
-| Cut Side       | Description                 | Use For                           |
-| -------------- | --------------------------- | --------------------------------- |
-| **Centerline** | Cuts directly on the path   | Standard cutting                  |
-| **Outside**    | Cuts outside the boundary   | Making the cut slightly larger    |
-| **Inside**     | Cuts inside the boundary    | Making the cut slightly smaller   |
+| Cut Side       | Description               | Use For                         |
+| -------------- | ------------------------- | ------------------------------- |
+| **Centerline** | Cuts directly on the path | Standard cutting                |
+| **Outside**    | Cuts outside the boundary | Making the cut slightly larger  |
+| **Inside**     | Cuts inside the boundary  | Making the cut slightly smaller |
 
 #### Offset Distance
 

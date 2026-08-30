@@ -1,26 +1,32 @@
 ---
-description: "Laser cutter maintenance guide — keep your machine in top condition with regular cleaning, alignment checks, and component care."
+description:
+  "Laser cutter maintenance guide — keep your machine in top condition with regular cleaning,
+  alignment checks, and component care."
 ---
 
 # Maintenance
 
-The Maintenance page in Machine Settings helps you track machine usage and schedule maintenance tasks.
+The Maintenance page in Machine Settings helps you track machine usage and schedule maintenance
+tasks.
 
 ![Maintenance Settings](/screenshots/machine-settings-maintenance.webp)
 
 ## Usage Tracking
 
-Rayforge tracks how long your machine has been in use. This information helps you schedule preventive maintenance at appropriate intervals.
+Rayforge tracks how long your machine has been in use. This information helps you schedule
+preventive maintenance at appropriate intervals.
 
 ### Total Hours
 
-The total hours counter tracks all time spent running jobs on the machine. This cumulative counter cannot be reset and provides a complete history of machine usage.
+The total hours counter tracks all time spent running jobs on the machine. This cumulative counter
+cannot be reset and provides a complete history of machine usage.
 
 Use this to track overall machine age and plan major service intervals.
 
 ## Custom Maintenance Counters
 
-You can create custom counters for tracking specific maintenance intervals. Each counter has a name, tracks hours, and can be configured with a notification threshold.
+You can create custom counters for tracking specific maintenance intervals. Each counter has a name,
+tracks hours, and can be configured with a notification threshold.
 
 ### Creating a Counter
 
@@ -37,7 +43,8 @@ You can create custom counters for tracking specific maintenance intervals. Each
 
 ### Example Counters
 
-**Laser Tube**: Track CO2 tube hours to plan replacement (typically 1000-3000 hours). Set a notification at 2500 hours to plan ahead.
+**Laser Tube**: Track CO2 tube hours to plan replacement (typically 1000-3000 hours). Set a
+notification at 2500 hours to plan ahead.
 
 **Belt Tension**: Track hours since last belt tensioning. Reset after performing the maintenance.
 
@@ -53,15 +60,14 @@ After performing maintenance, reset the relevant counter:
 2. Confirm the reset in the dialog
 3. The counter returns to zero
 
-:::tip Maintenance Schedule
-Common maintenance intervals:
+:::tip Maintenance Schedule Common maintenance intervals:
+
 - **Daily**: Clean lens, check mirror alignment
 - **Weekly**: Clean rails, check belt tension
 - **Monthly**: Lubricate bearings, check electrical connections
 - **Yearly**: Full inspection, replace worn parts
 
-Adjust intervals based on your usage patterns and manufacturer recommendations.
-:::
+Adjust intervals based on your usage patterns and manufacturer recommendations. :::
 
 ## See Also
 

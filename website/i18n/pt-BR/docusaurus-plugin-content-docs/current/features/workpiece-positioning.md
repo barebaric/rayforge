@@ -1,8 +1,7 @@
 # Guia de Posicionamento de Peça de Trabalho
 
-Este guia cobre todos os métodos disponíveis no Rayforge para posicionar com
-precisão sua peça de trabalho e alinhar seus designs antes de cortar ou
-gravar.
+Este guia cobre todos os métodos disponíveis no Rayforge para posicionar com precisão sua peça de
+trabalho e alinhar seus designs antes de cortar ou gravar.
 
 ## Visão Geral
 
@@ -10,8 +9,7 @@ O posicionamento preciso da peça de trabalho é essencial para:
 
 - **Prevenir desperdício**: Evitar cortar no local errado
 - **Alinhamento preciso**: Posicionar designs em materiais pré-impressos
-- **Resultados repetíveis**: Executar o mesmo trabalho várias vezes de forma
-  consistente
+- **Resultados repetíveis**: Executar o mesmo trabalho várias vezes de forma consistente
 - **Trabalhos de múltiplas peças**: Alinhar múltiplas peças em uma única folha
 
 O Rayforge fornece várias ferramentas complementares para posicionamento:
@@ -27,9 +25,8 @@ O Rayforge fornece várias ferramentas complementares para posicionamento:
 
 ## Modo Foco (Ponteiro Laser)
 
-O modo foco liga o laser em um nível de potência baixo, atuando como um
-"ponteiro laser" para ajudá-lo a ver exatamente onde a cabeça do laser está
-posicionada.
+O modo foco liga o laser em um nível de potência baixo, atuando como um "ponteiro laser" para
+ajudá-lo a ver exatamente onde a cabeça do laser está posicionada.
 
 ### Ativar o Modo Foco
 
@@ -39,11 +36,8 @@ posicionada.
 4. **Mover a cabeça do laser** para ver a posição do feixe no seu material
 5. **Clicar no botão Foco novamente** para desligar quando terminar
 
-:::warning Segurança
-Mesmo em baixa potência, o laser pode danificar os olhos. Nunca olhe
-diretamente para o feixe ou aponte para superfícies reflexivas. Use proteção
-ocular adequada.
-:::
+:::warning Segurança Mesmo em baixa potência, o laser pode danificar os olhos. Nunca olhe
+diretamente para o feixe ou aponte para superfícies reflexivas. Use proteção ocular adequada. :::
 
 ### Configurar a Potência de Foco
 
@@ -55,29 +49,23 @@ A potência de foco determina o quão brilhante o ponto laser aparece:
    - Valores típicos: 1-5% para a maioria dos materiais
    - Defina como 0 para desativar o recurso
 
-:::tip Encontrando a Potência Certa
-Comece com 1% e aumente gradualmente. O ponto deve ser visível, mas não
-deixar nenhuma marca no seu material. Materiais mais escuros podem precisar
-de maior potência para ver o ponto claramente.
-:::
+:::tip Encontrando a Potência Certa Comece com 1% e aumente gradualmente. O ponto deve ser visível,
+mas não deixar nenhuma marca no seu material. Materiais mais escuros podem precisar de maior
+potência para ver o ponto claramente. :::
 
 ### Quando Usar o Modo Foco
 
-- **Verificações rápidas de alinhamento**: Ver se o laser está
-  aproximadamente onde você espera
-- **Encontrar bordas do material**: Mover para os cantos para verificar o
-  posicionamento do material
-- **Definir origem SCT**: Posicionar laser no ponto zero desejado antes de
-  definir SCT
-- **Verificar posição inicial**: Verificar se o referenciamento funcionou
-  corretamente
+- **Verificações rápidas de alinhamento**: Ver se o laser está aproximadamente onde você espera
+- **Encontrar bordas do material**: Mover para os cantos para verificar o posicionamento do material
+- **Definir origem SCT**: Posicionar laser no ponto zero desejado antes de definir SCT
+- **Verificar posição inicial**: Verificar se o referenciamento funcionou corretamente
 
 ---
 
 ## Enquadramento
 
-O enquadramento traça o retângulo delimitador do seu trabalho em potência
-baixa (ou zero), mostrando exatamente onde seu design será cortado ou gravado.
+O enquadramento traça o retângulo delimitador do seu trabalho em potência baixa (ou zero), mostrando
+exatamente onde seu design será cortado ou gravado.
 
 ### Como Enquadrar
 
@@ -88,31 +76,27 @@ baixa (ou zero), mostrando exatamente onde seu design será cortado ou gravado.
 
 ### Configurações de Enquadramento
 
-Configurar comportamento de enquadramento em **Configurações → Máquina →
-Laser**:
+Configurar comportamento de enquadramento em **Configurações → Máquina → Laser**:
 
-- **Velocidade de Enquadramento**: Quão rápido a cabeça se move durante o
-  enquadramento (mais lento = mais fácil de ver)
+- **Velocidade de Enquadramento**: Quão rápido a cabeça se move durante o enquadramento (mais lento
+  = mais fácil de ver)
 - **Potência de Enquadramento**: Potência do laser durante o enquadramento
   - Defina como 0 para enquadramento a ar (laser desligado, apenas movimento)
   - Defina como 1-5% para um rastro visível no material
 
 :::tip Enquadramento a Ar vs. Baixa Potência
 
-- **Enquadramento a ar (0% potência)**: Seguro para qualquer material, mas
-  você só vê o movimento da cabeça
-- **Enquadramento de baixa potência**: Deixa uma marca visível fraca, útil
-  para alinhamento preciso em materiais escuros
-  :::
+- **Enquadramento a ar (0% potência)**: Seguro para qualquer material, mas você só vê o movimento da
+  cabeça
+- **Enquadramento de baixa potência**: Deixa uma marca visível fraca, útil para alinhamento preciso
+  em materiais escuros :::
 
 ### Quando Enquadrar
 
 - **Antes de cada trabalho**: Verificação rápida de que o design cabe
-- **Após mudanças de posição**: Confirmar que o novo posicionamento está
-  correto
+- **Após mudanças de posição**: Confirmar que o novo posicionamento está correto
 - **Materiais caros**: Verificar duas vezes antes de se comprometer
-- **Trabalhos de múltiplas peças**: Verificar que todas as peças cabem no
-  material
+- **Trabalhos de múltiplas peças**: Verificar que todas as peças cabem no material
 
 Veja [Enquadrando Seu Trabalho](framing-your-job) para mais detalhes.
 
@@ -120,14 +104,12 @@ Veja [Enquadrando Seu Trabalho](framing-your-job) para mais detalhes.
 
 ## Definir Zero SCT (Sistema de Coordenadas de Trabalho)
 
-Os Sistemas de Coordenadas de Trabalho (SCT) permitem que você defina "pontos
-zero" personalizados para seus trabalhos. Isso facilita alinhar trabalhos à
-posição do seu material.
+Os Sistemas de Coordenadas de Trabalho (SCT) permitem que você defina "pontos zero" personalizados
+para seus trabalhos. Isso facilita alinhar trabalhos à posição do seu material.
 
 ### Configuração Rápida de SCT
 
-1. **Mover a cabeça do laser** para o canto do seu material (ou ponto de
-   origem desejado)
+1. **Mover a cabeça do laser** para o canto do seu material (ou ponto de origem desejado)
 2. **Abrir o Painel de Controle** (`Ctrl+L`)
 3. **Selecionar um SCT** (G54 é o sistema de coordenadas de trabalho padrão)
 4. **Clicar em Zero X e Zero Y** para definir a posição atual como origem
@@ -143,13 +125,12 @@ O Rayforge usa vários sistemas de coordenadas:
 | **G54**     | Sistema de coordenadas de trabalho 1 (padrão)           |
 | **G55-G59** | Sistemas de coordenadas de trabalho adicionais          |
 
-:::tip Múltiplas Áreas de Trabalho
-Use slots SCT diferentes para diferentes posições de fixação. Por exemplo:
+:::tip Múltiplas Áreas de Trabalho Use slots SCT diferentes para diferentes posições de fixação. Por
+exemplo:
 
 - G54 para o lado esquerdo da sua mesa
 - G55 para o lado direito
-- G56 para um acessório rotativo
-  :::
+- G56 para um acessório rotativo :::
 
 ### Quando Definir Zero SCT
 
@@ -158,32 +139,30 @@ Use slots SCT diferentes para diferentes posições de fixação. Por exemplo:
 - **Trabalhos repetíveis**: Mesmo trabalho, diferentes posições
 - **Lotes de produção**: Posicionamento consistente através de múltiplas peças
 
-Veja [Sistemas de Coordenadas de Trabalho](../general-info/coordinate-systems.md)
-para documentação completa.
+Veja [Sistemas de Coordenadas de Trabalho](../general-info/coordinate-systems.md) para documentação
+completa.
 
 ---
 
 ## Posicionamento Baseado em Câmera
 
-A sobreposição de câmera mostra uma visualização ao vivo do seu material com
-seu design sobreposto, permitindo alinhamento visual preciso.
+A sobreposição de câmera mostra uma visualização ao vivo do seu material com seu design sobreposto,
+permitindo alinhamento visual preciso.
 
 ### Configurar a Câmera
 
 1. **Conectar uma câmera USB** acima da sua área de trabalho
 2. Vá para **Configurações → Câmera** e adicione seu dispositivo de câmera
 3. **Ativar a câmera** para ver a sobreposição na sua tela
-4. **Alinhar a câmera** usando o procedimento de alinhamento (necessário
-   para posicionamento preciso)
+4. **Alinhar a câmera** usando o procedimento de alinhamento (necessário para posicionamento
+   preciso)
 
 ### Alinhamento da Câmera
 
-O alinhamento da câmera mapeia os pixels da câmera para coordenadas do mundo
-real:
+O alinhamento da câmera mapeia os pixels da câmera para coordenadas do mundo real:
 
 1. Abrir **Câmera → Alinhar Câmera**
-2. Colocar marcadores de alinhamento em posições conhecidas (pelo menos 4
-   pontos)
+2. Colocar marcadores de alinhamento em posições conhecidas (pelo menos 4 pontos)
 3. Inserir as coordenadas X/Y do mundo real para cada ponto
 4. Clicar em **Aplicar** para calcular a transformação
 
@@ -191,17 +170,14 @@ real:
 
 - Use pontos distribuídos por toda sua área de trabalho
 - Meça as coordenadas do mundo cuidadosamente com uma régua
-- Use posições de máquina (mover para coordenadas conhecidas) para maior
-  precisão
-  :::
+- Use posições de máquina (mover para coordenadas conhecidas) para maior precisão :::
 
 ### Posicionamento com Sobreposição de Câmera
 
 1. **Ativar a sobreposição de câmera** para ver seu material
 2. **Importar seu design**
 3. **Arrastar o design** para alinhar com características visíveis na câmera
-4. **Ajuste fino** usando as teclas de seta para posicionamento perfeito ao
-   pixel
+4. **Ajuste fino** usando as teclas de seta para posicionamento perfeito ao pixel
 5. **Enquadrar para verificar** antes de executar o trabalho
 
 ### Quando Usar Posicionamento com Câmera
@@ -279,20 +255,14 @@ Para executar o mesmo trabalho em diferentes locais:
 - **Executar alinhamento de câmera novamente** com mais pontos de referência
 - **Verificar montagem da câmera** - ela pode ter se movido
 - **Verificar se as coordenadas do mundo** foram medidas com precisão
-- **Veja solução de problemas da câmera** na documentação de Integração de
-  Câmera
+- **Veja solução de problemas da câmera** na documentação de Integração de Câmera
 
 ---
 
 ## Tópicos Relacionados
 
-- [Enquadrando Seu Trabalho](framing-your-job) - Documentação detalhada de
-  enquadramento
-- [Sistemas de Coordenadas de Trabalho](../general-info/coordinate-systems.md) -
-  Referência SCT
-- [Integração de Câmera](../machine/camera.md) - Configuração e alinhamento de
-  câmera
-- [Painel de Controle](../ui/bottom-panel.md) - Controles de movimento e gestão
-  SCT
-- [Guia de Início Rápido](../getting-started/quick-start.md) - Fluxo de trabalho
-  básico
+- [Enquadrando Seu Trabalho](framing-your-job) - Documentação detalhada de enquadramento
+- [Sistemas de Coordenadas de Trabalho](../general-info/coordinate-systems.md) - Referência SCT
+- [Integração de Câmera](../machine/camera.md) - Configuração e alinhamento de câmera
+- [Painel de Controle](../ui/bottom-panel.md) - Controles de movimento e gestão SCT
+- [Guia de Início Rápido](../getting-started/quick-start.md) - Fluxo de trabalho básico

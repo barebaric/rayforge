@@ -80,9 +80,8 @@ rayforge --exit --vector eingabe.svg
 
 ## Frühe Skripte (`--script`)
 
-Das `--script`-Flag führt ein Python-Skript **synchron beim
-Start** aus, bevor Addons geladen und bevor das Hauptfenster
-erstellt wird. Geeignet für:
+Das `--script`-Flag führt ein Python-Skript **synchron beim Start** aus, bevor Addons geladen und
+bevor das Hauptfenster erstellt wird. Geeignet für:
 
 - Plugins beim `pluggy`-Plugin-Manager registrieren
 - Anwendungskontext konfigurieren
@@ -123,9 +122,8 @@ in der Sketcher-Dokumentation für ein vollständiges Tutorial.
 
 ## UI-Skripte (`--uiscript`)
 
-Das `--uiscript`-Flag führt ein Python-Skript **nach dem
-vollständigen Laden des Hauptfensters** in einem Hintergrundthread
-aus. Geeignet für:
+Das `--uiscript`-Flag führt ein Python-Skript **nach dem vollständigen Laden des Hauptfensters** in
+einem Hintergrundthread aus. Geeignet für:
 
 - Automatisiertes UI-Testing
 - Screenshots der Anwendung
@@ -137,9 +135,8 @@ Das Skript kann die Anwendung und Fenster direkt importieren:
 from rayforge.uiscript import app, win
 ```
 
-Das Skript läuft in einem **Hintergrundthread** — achte auf
-Thread-Sicherheit beim Zugriff auf GTK-Widgets
-(verwende `GLib.idle_add` für GTK-Operationen).
+Das Skript läuft in einem **Hintergrundthread** — achte auf Thread-Sicherheit beim Zugriff auf
+GTK-Widgets (verwende `GLib.idle_add` für GTK-Operationen).
 
 ### Beispiel: Screenshot aufnehmen
 
@@ -164,9 +161,8 @@ GLib.idle_add(capture)
 
 ## Beide Flags verwenden
 
-Beide `--script` und `--uiscript` können zusammen verwendet
-werden. Das `--script` läuft zuerst (synchron), dann wird das
-Fenster geladen, und dann läuft `--uiscript`:
+Beide `--script` und `--uiscript` können zusammen verwendet werden. Das `--script` läuft zuerst
+(synchron), dann wird das Fenster geladen, und dann läuft `--uiscript`:
 
 ```bash
 rayforge --script fruehes_setup.py \
@@ -174,5 +170,4 @@ rayforge --script fruehes_setup.py \
     meinprojekt.ryp
 ```
 
-Dies ist nützlich, wenn du zuerst Plugins registrieren und
-später die UI steuern möchtest.
+Dies ist nützlich, wenn du zuerst Plugins registrieren und später die UI steuern möchtest.

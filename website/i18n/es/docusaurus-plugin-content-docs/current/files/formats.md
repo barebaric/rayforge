@@ -1,8 +1,7 @@
 # Formatos de archivo compatibles
 
-Esta página proporciona información detallada sobre todos los formatos de
-archivo compatibles con Rayforge, incluyendo capacidades, limitaciones y
-recomendaciones.
+Esta página proporciona información detallada sobre todos los formatos de archivo compatibles con
+Rayforge, incluyendo capacidades, limitaciones y recomendaciones.
 
 ## Resumen de formatos
 
@@ -28,15 +27,13 @@ recomendaciones.
 
 ### SVG (Scalable Vector Graphics)
 
-**Extensión:** `.svg`
-**Tipo MIME:** `image/svg+xml`
-**Importación:** Análisis vectorial directo o traza de mapa de bits
-**Exportación:** Exportar objeto (solo geometría)
+**Extensión:** `.svg` **Tipo MIME:** `image/svg+xml` **Importación:** Análisis vectorial directo o
+traza de mapa de bits **Exportación:** Exportar objeto (solo geometría)
 
 **¿Qué es SVG?**
 
-SVG es un formato de imagen vectorial basado en XML. Es el **formato preferido**
-para importar diseños en Rayforge.
+SVG es un formato de imagen vectorial basado en XML. Es el **formato preferido** para importar
+diseños en Rayforge.
 
 **Características compatibles:**
 
@@ -59,8 +56,7 @@ para importar diseños en Rayforge.
 
 **Notas de exportación:**
 
-Al exportar una pieza de trabajo a SVG, Rayforge exporta la geometría como
-trazados vectoriales con:
+Al exportar una pieza de trabajo a SVG, Rayforge exporta la geometría como trazados vectoriales con:
 
 - Representación solo trazo (sin relleno)
 - Unidades en milímetros
@@ -68,8 +64,7 @@ trazados vectoriales con:
 
 **Mejores prácticas:**
 
-1. **Use el formato SVG simple** (no Inkscape SVG ni otras variantes
-   específicas de herramientas)
+1. **Use el formato SVG simple** (no Inkscape SVG ni otras variantes específicas de herramientas)
 2. **Convierta el texto a trazados** antes de exportar
 3. **Simplifique los trazados complejos** para reducir la cantidad de nodos
 4. **Aplane los grupos** cuando sea posible
@@ -84,15 +79,12 @@ trazados vectoriales con:
 
 ### DXF (Drawing Exchange Format)
 
-**Extensión:** `.dxf`
-**Tipo MIME:** `application/dxf`, `image/vnd.dxf`
-**Importación:** Análisis vectorial directo
-**Exportación:** Exportar objeto (solo geometría)
+**Extensión:** `.dxf` **Tipo MIME:** `application/dxf`, `image/vnd.dxf` **Importación:** Análisis
+vectorial directo **Exportación:** Exportar objeto (solo geometría)
 
 **¿Qué es DXF?**
 
-DXF es un formato de dibujo de AutoCAD, ampliamente utilizado para el
-intercambio de datos CAD.
+DXF es un formato de dibujo de AutoCAD, ampliamente utilizado para el intercambio de datos CAD.
 
 **Versiones compatibles:**
 
@@ -132,21 +124,18 @@ Al exportar una pieza de trabajo a DXF, Rayforge exporta:
 
 ### RFS (Bosquejo de Rayforge)
 
-**Extensión:** `.rfs`
-**Tipo MIME:** `application/x-rayforge-sketch`
-**Importación:** Directo (piezas basadas en bosquejos)
-**Exportación:** Exportar objeto (piezas basadas en bosquejos)
+**Extensión:** `.rfs` **Tipo MIME:** `application/x-rayforge-sketch` **Importación:** Directo
+(piezas basadas en bosquejos) **Exportación:** Exportar objeto (piezas basadas en bosquejos)
 
 **¿Qué es RFS?**
 
-RFS es el formato nativo de bosquejo paramétrico de Rayforge. Preserva todos
-los elementos geométricos y restricciones paramétricas, permitiendo guardar y
-compartir bosquejos completamente editables.
+RFS es el formato nativo de bosquejo paramétrico de Rayforge. Preserva todos los elementos
+geométricos y restricciones paramétricas, permitiendo guardar y compartir bosquejos completamente
+editables.
 
 **Características:**
 
-- ✓ Todos los elementos geométricos (líneas, arcos, círculos, rectángulos,
-  etc.)
+- ✓ Todos los elementos geométricos (líneas, arcos, círculos, rectángulos, etc.)
 - ✓ Todas las restricciones paramétricas
 - ✓ Valores dimensionales y expresiones
 - ✓ Áreas de relleno
@@ -161,33 +150,28 @@ compartir bosquejos completamente editables.
 
 ### LightBurn (.lbrn / .lbrn2)
 
-**Extensión:** `.lbrn`, `.lbrn2`
-**Tipo MIME:** `application/x-lightburn`
-**Importación:** Análisis vectorial directo
-**Exportación:** No compatible
+**Extensión:** `.lbrn`, `.lbrn2` **Tipo MIME:** `application/x-lightburn` **Importación:** Análisis
+vectorial directo **Exportación:** No compatible
 
 **¿Qué es LightBurn?**
 
-LightBurn es un software propietario de corte láser. Sus archivos `.lbrn` y
-`.lbrn2` contienen geometría vectorial organizada en capas de colores con
-configuraciones láser. Rayforge puede importar estos archivos directamente,
-proporcionando una ruta de migración para usuarios que cambian de LightBurn a
-Rayforge.
+LightBurn es un software propietario de corte láser. Sus archivos `.lbrn` y `.lbrn2` contienen
+geometría vectorial organizada en capas de colores con configuraciones láser. Rayforge puede
+importar estos archivos directamente, proporcionando una ruta de migración para usuarios que cambian
+de LightBurn a Rayforge.
 
 **Características compatibles:**
 
 - ✓ Trazados vectoriales (líneas, curvas, arcos, texto convertido a trazados)
 - ✓ Múltiples capas de colores con nombres
-- ✓ Configuraciones láser de capas (potencia, velocidad, pasadas, orden de
-  corte)
+- ✓ Configuraciones láser de capas (potencia, velocidad, pasadas, orden de corte)
 - ✓ Visibilidad de capas y estado bloqueado
 - ✓ Colores de línea de capas mapeados a capas del documento
 - ✓ Imágenes ráster incrustadas (trazadas al importar)
 
 **Limitaciones:**
 
-- ✗ **Importación solo lectura** — los archivos LightBurn solo se pueden
-  importar, no exportar
+- ✗ **Importación solo lectura** — los archivos LightBurn solo se pueden importar, no exportar
 - ✗ Las imágenes ráster de profundidad de bits variable pueden simplificarse
 - ✗ Algunas funciones avanzadas específicas de LightBurn pueden no traducirse
 
@@ -201,20 +185,17 @@ Rayforge.
 
 ### PDF (Portable Document Format)
 
-**Extensión:** `.pdf`
-**Tipo MIME:** `application/pdf`
-**Importación:** Vectores directos (con soporte de capas) o renderizar y trazar
-**Exportación:** No compatible
+**Extensión:** `.pdf` **Tipo MIME:** `application/pdf` **Importación:** Vectores directos (con
+soporte de capas) o renderizar y trazar **Exportación:** No compatible
 
 **¿Qué es la importación PDF?**
 
-Los archivos PDF pueden contener trazados vectoriales reales, y Rayforge los
-importa directamente cuando están disponibles — proporcionando la misma
-geometría limpia que obtendría de un SVG. Si el PDF tiene capas, cada capa
-puede importarse como una pieza de trabajo separada.
+Los archivos PDF pueden contener trazados vectoriales reales, y Rayforge los importa directamente
+cuando están disponibles — proporcionando la misma geometría limpia que obtendría de un SVG. Si el
+PDF tiene capas, cada capa puede importarse como una pieza de trabajo separada.
 
-Para PDFs sin contenido vectorial utilizable (documentos escaneados, fotos),
-Rayforge recurre al renderizado y trazado.
+Para PDFs sin contenido vectorial utilizable (documentos escaneados, fotos), Rayforge recurre al
+renderizado y trazado.
 
 **Capacidades:**
 
@@ -237,22 +218,20 @@ Rayforge recurre al renderizado y trazado.
 
 ## Formatos ráster
 
-Todos los formatos ráster se **importan mediante trazado** — se convierten
-automáticamente a trazados vectoriales.
+Todos los formatos ráster se **importan mediante trazado** — se convierten automáticamente a
+trazados vectoriales.
 
 ### PNG (Portable Network Graphics)
 
-**Extensión:** `.png`
-**Tipo MIME:** `image/png`
-**Importación:** Traza a vectores
-**Exportación:** No compatible
+**Extensión:** `.png` **Tipo MIME:** `image/png` **Importación:** Traza a vectores **Exportación:**
+No compatible
 
 **Características:**
 
 - **Compresión sin pérdida** - Sin pérdida de calidad
 - **Soporte de transparencia** - Canal alfa preservado
-- **Adecuado para:** Logotipos, arte lineal, capturas de pantalla, cualquier
-  elemento que necesite transparencia
+- **Adecuado para:** Logotipos, arte lineal, capturas de pantalla, cualquier elemento que necesite
+  transparencia
 
 **Calidad de trazado:** (Excelente para imágenes de alto contraste)
 
@@ -266,9 +245,7 @@ automáticamente a trazados vectoriales.
 
 ### JPEG (Joint Photographic Experts Group)
 
-**Extensión:** `.jpg`, `.jpeg`
-**Tipo MIME:** `image/jpeg`
-**Importación:** Traza a vectores
+**Extensión:** `.jpg`, `.jpeg` **Tipo MIME:** `image/jpeg` **Importación:** Traza a vectores
 **Exportación:** No compatible
 
 **Características:**
@@ -290,10 +267,8 @@ automáticamente a trazados vectoriales.
 
 ### BMP (Mapa de bits)
 
-**Extensión:** `.bmp`
-**Tipo MIME:** `image/bmp`
-**Importación:** Traza a vectores
-**Exportación:** No compatible
+**Extensión:** `.bmp` **Tipo MIME:** `image/bmp` **Importación:** Traza a vectores **Exportación:**
+No compatible
 
 **Características:**
 

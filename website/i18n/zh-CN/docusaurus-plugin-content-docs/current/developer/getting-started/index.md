@@ -4,7 +4,8 @@
 
 ## Fork 仓库
 
-在 GitHub 上 fork [Rayforge 仓库](https://github.com/barebaric/rayforge) 以创建您自己的副本，您可以在其中进行更改。
+在 GitHub 上 fork [Rayforge 仓库](https://github.com/barebaric/rayforge)
+以创建您自己的副本，您可以在其中进行更改。
 
 ## 克隆您的 Fork
 

@@ -1,5 +1,7 @@
 ---
-description: "Supported firmware in Rayforge — GRBL, Marlin, Smoothieware, and compatible controllers. Choose the right firmware for your laser cutter."
+description:
+  "Supported firmware in Rayforge — GRBL, Marlin, Smoothieware, and compatible controllers. Choose
+  the right firmware for your laser cutter."
 ---
 
 # Firmware Compatibility
@@ -8,7 +10,8 @@ This page documents firmware compatibility for laser controllers used with Rayfo
 
 ## Overview
 
-Rayforge is designed primarily for **GRBL-based controllers** but also supports Marlin, Smoothieware, and other firmware types.
+Rayforge is designed primarily for **GRBL-based controllers** but also supports Marlin,
+Smoothieware, and other firmware types.
 
 ### Compatibility Matrix
 
@@ -27,15 +30,14 @@ Rayforge is designed primarily for **GRBL-based controllers** but also supports 
 
 ## GRBL Firmware
 
-**Status:** Fully Supported
-**Versions:** 1.1+
-**Drivers:** GRBL Serial, GRBL Serial Simple
+**Status:** Fully Supported **Versions:** 1.1+ **Drivers:** GRBL Serial, GRBL Serial Simple
 
 ### GRBL 1.1 (Recommended)
 
 **What is GRBL 1.1?**
 
-GRBL 1.1 is the most common firmware for hobby CNC and laser machines. Released in 2017, it's stable, well-documented, and widely supported.
+GRBL 1.1 is the most common firmware for hobby CNC and laser machines. Released in 2017, it's
+stable, well-documented, and widely supported.
 
 **Features supported by Rayforge:**
 
@@ -99,8 +101,8 @@ GRBL 0.9 is an older version with some compatibility issues:
 
 ### GRBL Serial Simple Driver
 
-Rayforge includes a second GRBL serial driver for devices where the
-standard buffer-counting driver causes false alarms or communication errors.
+Rayforge includes a second GRBL serial driver for devices where the standard buffer-counting driver
+causes false alarms or communication errors.
 
 **How it works:**
 
@@ -118,16 +120,14 @@ standard buffer-counting driver causes false alarms or communication errors.
 **When not to use:**
 
 - The standard GRBL Serial driver works reliably for most devices
-- The simple driver lacks deadlock recovery, so jobs may stop on a lost
-  "ok" response without automatic recovery
+- The simple driver lacks deadlock recovery, so jobs may stop on a lost "ok" response without
+  automatic recovery
 
 ---
 
 ## grblHAL
 
-**Status:** Compatible
-**Versions:** 2023+
-**Driver:** GRBL Serial
+**Status:** Compatible **Versions:** 2023+ **Driver:** GRBL Serial
 
 ### What is grblHAL?
 
@@ -158,15 +158,13 @@ grblHAL is a modern fork of GRBL with enhanced features:
 
 ## GRBL Telnet Driver
 
-**Status:** Supported
-**Firmware:** grblHAL, ESP3D, and other networked GRBL controllers
-**Driver:** GRBL Telnet
+**Status:** Supported **Firmware:** grblHAL, ESP3D, and other networked GRBL controllers **Driver:**
+GRBL Telnet
 
 ### About the GRBL Telnet Driver
 
-The GRBL Telnet driver connects to GRBL-based controllers over the network
-via a Telnet interface. This is ideal for boards with built-in WiFi or
-Ethernet — no USB cable required.
+The GRBL Telnet driver connects to GRBL-based controllers over the network via a Telnet interface.
+This is ideal for boards with built-in WiFi or Ethernet — no USB cable required.
 
 **Features:**
 
@@ -191,12 +189,12 @@ Ethernet — no USB cable required.
 
 ## Smoothieware
 
-**Versions:** All
-**Driver:** SmoothieDriver (Telnet-based)
+**Versions:** All **Driver:** SmoothieDriver (Telnet-based)
 
 ### About SmoothieDriver
 
-Rayforge includes a dedicated SmoothieDriver that connects to Smoothieware controllers via Telnet over network. This provides native support rather than relying on GRBL compatibility mode.
+Rayforge includes a dedicated SmoothieDriver that connects to Smoothieware controllers via Telnet
+over network. This provides native support rather than relying on GRBL compatibility mode.
 
 **Features:**
 
@@ -226,13 +224,12 @@ Rayforge includes a dedicated SmoothieDriver that connects to Smoothieware contr
 
 ## Marlin
 
-**Versions:** 2.0+ with laser support
-**Driver:** Marlin Serial
+**Versions:** 2.0+ with laser support **Driver:** Marlin Serial
 
 ### Marlin Serial Driver
 
-Rayforge includes a dedicated MarlinSerialDriver that connects to Marlin firmware
-via serial (USB). Marlin 2.0+ can control lasers when properly configured.
+Rayforge includes a dedicated MarlinSerialDriver that connects to Marlin firmware via serial (USB).
+Marlin 2.0+ can control lasers when properly configured.
 
 **Features:**
 
@@ -479,10 +476,9 @@ $22=1       ; Homing enabled
 
 ### Ruida Controllers
 
-Rayforge includes experimental support for Ruida-based controllers (e.g.
-RDC6442, RDC6445, Ruida R5). The Ruida driver connects over the network and
-supports jogging, position reporting, air assist control, layer selection,
-auto-connect, and status polling.
+Rayforge includes experimental support for Ruida-based controllers (e.g. RDC6442, RDC6445, Ruida
+R5). The Ruida driver connects over the network and supports jogging, position reporting, air assist
+control, layer selection, auto-connect, and status polling.
 
 **Features:**
 
@@ -502,9 +498,9 @@ auto-connect, and status polling.
 
 ### OctoPrint
 
-Rayforge includes an experimental OctoPrint driver that submits G-code directly
-to an OctoPrint server over the network. This is useful if your laser is
-connected to a Raspberry Pi or other machine running OctoPrint.
+Rayforge includes an experimental OctoPrint driver that submits G-code directly to an OctoPrint
+server over the network. This is useful if your laser is connected to a Raspberry Pi or other
+machine running OctoPrint.
 
 **Features:**
 
@@ -520,8 +516,7 @@ connected to a Raspberry Pi or other machine running OctoPrint.
 1. Select "OctoPrint" driver in machine settings
 2. Enter the hostname or IP address of your OctoPrint server
 3. Set the port (default: 80)
-4. Click "Request Access" to obtain an API key through OctoPrint's
-   application key flow
+4. Click "Request Access" to obtain an API key through OctoPrint's application key flow
 5. Connect -- Rayforge will establish a WebSocket connection
 
 **Limitations:**

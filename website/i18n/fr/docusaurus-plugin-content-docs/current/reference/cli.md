@@ -80,9 +80,8 @@ rayforge --exit --vector entree.svg
 
 ## Scripts précoces (`--script`)
 
-L'option `--script` exécute un script Python **de manière
-synchrone au démarrage**, avant le chargement des modules
-et avant la création de la fenêtre principale. Utile pour :
+L'option `--script` exécute un script Python **de manière synchrone au démarrage**, avant le
+chargement des modules et avant la création de la fenêtre principale. Utile pour :
 
 - Enregistrer des plugins avec le gestionnaire `pluggy`
 - Configurer le contexte de l'application
@@ -121,25 +120,21 @@ dans la documentation du sketcher pour un tutoriel complet.
 
 ## Scripts UI (`--uiscript`)
 
-L'option `--uiscript` exécute un script Python **après le
-chargement complet de la fenêtre principale**, dans un thread
-en arrière-plan. Utile pour :
+L'option `--uiscript` exécute un script Python **après le chargement complet de la fenêtre
+principale**, dans un thread en arrière-plan. Utile pour :
 
 - Tests UI automatisés
 - Captures d'écran de l'application
 - Flux de travail de bout en bout
 
-Le script peut importer l'application et la fenêtre
-directement :
+Le script peut importer l'application et la fenêtre directement :
 
 ```python
 from rayforge.uiscript import app, win
 ```
 
-Le script s'exécute dans un **thread en arrière-plan** —
-sois attentif à la sécurité des threads lors de l'accès
-aux widgets GTK
-(utilise `GLib.idle_add` pour les opérations GTK).
+Le script s'exécute dans un **thread en arrière-plan** — sois attentif à la sécurité des threads
+lors de l'accès aux widgets GTK (utilise `GLib.idle_add` pour les opérations GTK).
 
 ### Exemple : Capturer une capture d'écran
 
@@ -164,10 +159,8 @@ GLib.idle_add(capture)
 
 ## Utiliser les deux options
 
-`--script` et `--uiscript` peuvent être utilisés ensemble.
-Le `--script` s'exécute en premier (de manière synchrone),
-puis la fenêtre se charge, et ensuite `--uiscript`
-s'exécute :
+`--script` et `--uiscript` peuvent être utilisés ensemble. Le `--script` s'exécute en premier (de
+manière synchrone), puis la fenêtre se charge, et ensuite `--uiscript` s'exécute :
 
 ```bash
 rayforge --script setup_precoce.py \
@@ -175,5 +168,5 @@ rayforge --script setup_precoce.py \
     monprojet.ryp
 ```
 
-C'est utile quand tu dois enregistrer des plugins en premier
-et ensuite contrôler l'interface plus tard.
+C'est utile quand tu dois enregistrer des plugins en premier et ensuite contrôler l'interface plus
+tard.

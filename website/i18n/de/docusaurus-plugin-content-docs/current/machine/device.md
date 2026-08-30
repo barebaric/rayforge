@@ -1,16 +1,20 @@
 # Geräteeinstellungen
 
-Die Geräteseite in den Maschineneinstellungen ermöglicht es dir, Einstellungen direkt auf deinem verbundenen Gerät (Controller) zu lesen und anzuwenden. Diese sind auch als "Dollar-Einstellungen" oder `$$`-Einstellungen in GRBL bekannt.
+Die Geräteseite in den Maschineneinstellungen ermöglicht es dir, Einstellungen direkt auf deinem
+verbundenen Gerät (Controller) zu lesen und anzuwenden. Diese sind auch als "Dollar-Einstellungen"
+oder `$$`-Einstellungen in GRBL bekannt.
 
 ![Geräteeinstellungen](/screenshots/machine-settings-device.webp)
 
-:::warning Vorsicht beim Ändern von Einstellungen
-Falsche Firmware-Einstellungen können dazu führen, dass deine Maschine sich unvorhersehbar verhält, die Position verliert oder sogar Hardware beschädigt. Notiere dir immer die ursprünglichen Werte, bevor du Änderungen vornimmst, und ändere eine Einstellung nach der anderen.
-:::
+:::warning Vorsicht beim Ändern von Einstellungen Falsche Firmware-Einstellungen können dazu führen,
+dass deine Maschine sich unvorhersehbar verhält, die Position verliert oder sogar Hardware
+beschädigt. Notiere dir immer die ursprünglichen Werte, bevor du Änderungen vornimmst, und ändere
+eine Einstellung nach der anderen. :::
 
 ## Übersicht
 
-Die Geräteseite bietet direkten Zugriff auf die Firmware-Einstellungen deines Controllers. Hier kannst du:
+Die Geräteseite bietet direkten Zugriff auf die Firmware-Einstellungen deines Controllers. Hier
+kannst du:
 
 - Aktuelle Einstellungen vom Gerät lesen
 - Einzelne Einstellungen ändern
@@ -24,11 +28,13 @@ Firmware-Einstellungen steuern:
 - **Elektrische Konfiguration**: Pin-Inversionen, Pullups
 - **Berichterstattung**: Statusnachrichten-Format und -Häufigkeit
 
-Diese Einstellungen werden auf deinem Controller gespeichert (nicht in Rayforge) und bleiben über Stromzyklen hinweg erhalten.
+Diese Einstellungen werden auf deinem Controller gespeichert (nicht in Rayforge) und bleiben über
+Stromzyklen hinweg erhalten.
 
 ## Einstellungen lesen
 
-Klicke auf die Schaltfläche **Vom Gerät lesen**, um die aktuellen Einstellungen von deinem verbundenen Controller abzurufen. Dies erfordert:
+Klicke auf die Schaltfläche **Vom Gerät lesen**, um die aktuellen Einstellungen von deinem
+verbundenen Controller abzurufen. Dies erfordert:
 
 - Dass die Maschine verbunden ist
 - Dass der Treiber das Lesen von Geräteeinstellungen unterstützt
@@ -46,28 +52,32 @@ Nach dem Ändern von Einstellungen werden Änderungen auf das Gerät angewendet.
 Du kannst Einstellungen auch über die G-Code-Konsole anzeigen/ändern:
 
 **Alle Einstellungen anzeigen:**
+
 ```
 $$
 ```
 
 **Einzelne Einstellung anzeigen:**
+
 ```
 $100
 ```
 
 **Einstellung ändern:**
+
 ```
 $100=80.0
 ```
 
 **Standardeinstellungen wiederherstellen:**
+
 ```
 $RST=$
 ```
 
-:::danger Standardeinstellungen wiederherstellen löscht alle Einstellungen
-Der Befehl `$RST=$` setzt alle GRBL-Einstellungen auf Werkseinstellungen zurück. Du verlierst alle Kalibrierungen und Einstellungen. Sichere deine Einstellungen zuerst!
-:::
+:::danger Standardeinstellungen wiederherstellen löscht alle Einstellungen Der Befehl `$RST=$` setzt
+alle GRBL-Einstellungen auf Werkseinstellungen zurück. Du verlierst alle Kalibrierungen und
+Einstellungen. Sichere deine Einstellungen zuerst! :::
 
 ---
 
@@ -82,18 +92,19 @@ Diese Einstellungen sind am wichtigsten für den Laserbetrieb:
 **Zweck:** Aktiviert laserspezifische Funktionen in GRBL
 
 **Wenn aktiviert (1):**
+
 - Laser schaltet automatisch während G0 (Eilgang)-Bewegungen aus
 - Leistung passt sich dynamisch während Beschleunigung/Verlangsamung an
 - Verhindert versehentliche Verbrennungen während des Positionierens
 
 **Wenn deaktiviert (0):**
+
 - Laser verhält sich wie ein Spindel (CNC-Modus)
 - Schaltet während Eilgängen nicht aus
 - **Gefährlich für den Laserbetrieb!**
 
-:::warning Immer Lasermodus aktivieren
-$32 sollte **immer** auf 1 für Laserschneider gesetzt werden. Deaktivierter Lasermodus kann unbeabsichtigte Verbrennungen und Feuergefahren verursachen.
-:::
+:::warning Immer Lasermodus aktivieren $32 sollte **immer** auf 1 für Laserschneider gesetzt werden.
+Deaktivierter Lasermodus kann unbeabsichtigte Verbrennungen und Feuergefahren verursachen. :::
 
 ### $30 & $31 - Laserleistungsbereich
 
@@ -103,12 +114,13 @@ $32 sollte **immer** auf 1 für Laserschneider gesetzt werden. Deaktivierter Las
 **Zweck:** Definiert den Leistungsbereich für S-Befehle
 
 **Typische Werte:**
+
 - $30=1000, $31=0 (S0-S1000 Bereich, am häufigsten)
 - $30=255, $31=0 (S0-S255 Bereich, einige Controller)
 
-:::tip Rayforge-Konfiguration anpassen
-Die "Max. Leistung"-Einstellung in deinen [Lasereinstellungen](laser) sollte deinem $30-Wert entsprechen. Wenn $30=1000, stelle die maximale Leistung in Rayforge auf 1000 ein.
-:::
+:::tip Rayforge-Konfiguration anpassen Die "Max. Leistung"-Einstellung in deinen
+[Lasereinstellungen](laser) sollte deinem $30-Wert entsprechen. Wenn $30=1000, stelle die maximale
+Leistung in Rayforge auf 1000 ein. :::
 
 ### $130 & $131 - Maximaler Verfahrweg
 
@@ -118,6 +130,7 @@ Die "Max. Leistung"-Einstellung in deinen [Lasereinstellungen](laser) sollte dei
 **Zweck:** Definiert den Arbeitsbereich deiner Maschine
 
 **Warum es wichtig ist:**
+
 - Software-Limits ($20) verwenden diese Werte, um Abstürze zu verhindern
 - Definiert die Grenzen des Koordinatensystems
 - Muss mit deiner physischen Maschinengröße übereinstimmen
@@ -130,77 +143,79 @@ Die "Max. Leistung"-Einstellung in deinen [Lasereinstellungen](laser) sollte dei
 
 Steuert die elektrischen Signale und das Timing der Schrittmotoren.
 
-| Einstellung | Beschreibung | Typischer Wert |
-|-------------|--------------|----------------|
-| $0 | Schrittimpulszeit (μs) | 10 |
-| $1 | Schritt-Leerlaufverzögerung (ms) | 25 |
-| $2 | Schrittimpuls-Invertierung (Maske) | 0 |
-| $3 | Schrittrichtung-Invertierung (Maske) | 0 |
-| $4 | Schritt-Aktivierungs-Pin invertieren | 0 |
-| $5 | Limit-Pins invertieren | 0 |
-| $6 | Tast-Pin invertieren | 0 |
+| Einstellung | Beschreibung                         | Typischer Wert |
+| ----------- | ------------------------------------ | -------------- |
+| $0          | Schrittimpulszeit (μs)               | 10             |
+| $1          | Schritt-Leerlaufverzögerung (ms)     | 25             |
+| $2          | Schrittimpuls-Invertierung (Maske)   | 0              |
+| $3          | Schrittrichtung-Invertierung (Maske) | 0              |
+| $4          | Schritt-Aktivierungs-Pin invertieren | 0              |
+| $5          | Limit-Pins invertieren               | 0              |
+| $6          | Tast-Pin invertieren                 | 0              |
 
 ### Limits & Homing ($20-$27)
 
 Steuert Endschalter und Homing-Verhalten.
 
-| Einstellung | Beschreibung | Typischer Wert |
-|-------------|--------------|----------------|
-| $20 | Software-Limits aktivieren | 0 oder 1 |
-| $21 | Hardware-Limits aktivieren | 0 |
-| $22 | Homing-Zyklus aktivieren | 0 oder 1 |
-| $23 | Homing-Richtung invertieren | 0 |
-| $24 | Homing-Such-Vorschubrate (mm/min) | 25 |
-| $25 | Homing-Suche-Suchrate (mm/min) | 500 |
-| $26 | Homing-Entprell-Verzögerung (ms) | 250 |
-| $27 | Homing-Abzug-Distanz (mm) | 1.0 |
+| Einstellung | Beschreibung                      | Typischer Wert |
+| ----------- | --------------------------------- | -------------- |
+| $20         | Software-Limits aktivieren        | 0 oder 1       |
+| $21         | Hardware-Limits aktivieren        | 0              |
+| $22         | Homing-Zyklus aktivieren          | 0 oder 1       |
+| $23         | Homing-Richtung invertieren       | 0              |
+| $24         | Homing-Such-Vorschubrate (mm/min) | 25             |
+| $25         | Homing-Suche-Suchrate (mm/min)    | 500            |
+| $26         | Homing-Entprell-Verzögerung (ms)  | 250            |
+| $27         | Homing-Abzug-Distanz (mm)         | 1.0            |
 
 ### Spindel & Laser ($30-$32)
 
-| Einstellung | Beschreibung | Laser-Wert |
-|-------------|--------------|------------|
-| $30 | Maximale Spindeldrehzahl | 1000.0 |
-| $31 | Minimale Spindeldrehzahl | 0.0 |
-| $32 | Lasermodus aktivieren | 1 |
+| Einstellung | Beschreibung             | Laser-Wert |
+| ----------- | ------------------------ | ---------- |
+| $30         | Maximale Spindeldrehzahl | 1000.0     |
+| $31         | Minimale Spindeldrehzahl | 0.0        |
+| $32         | Lasermodus aktivieren    | 1          |
 
 ### Achsen-Kalibrierung ($100-$102)
 
 Definiert, wie viele Schrittmotor-Schritte einem Millimeter Bewegung entsprechen.
 
-| Einstellung | Beschreibung | Hinweise |
-|-------------|--------------|----------|
-| $100 | X Schritte/mm | Abhängig von Riemenscheiben/Riemen-Verhältnis |
-| $101 | Y Schritte/mm | Normalerweise gleich wie X |
-| $102 | Z Schritte/mm | Nicht bei den meisten Lasern verwendet |
+| Einstellung | Beschreibung  | Hinweise                                      |
+| ----------- | ------------- | --------------------------------------------- |
+| $100        | X Schritte/mm | Abhängig von Riemenscheiben/Riemen-Verhältnis |
+| $101        | Y Schritte/mm | Normalerweise gleich wie X                    |
+| $102        | Z Schritte/mm | Nicht bei den meisten Lasern verwendet        |
 
 **Berechnung der Schritte/mm:**
+
 ```
 Schritte/mm = (motor_steps_per_rev × microstepping) / (pulley_teeth × belt_pitch)
 ```
 
 **Beispiel:** 200 Schritte/Rev, 16 Microstepping, 20 Zähne Riemenscheibe, GT2-Riemen:
+
 ```
 Schritte/mm = (200 × 16) / (20 × 2) = 3200 / 40 = 80
 ```
 
 ### Achsen-Geschwindigkeit & Beschleunigung ($110-$122)
 
-| Einstellung | Beschreibung | Typischer Wert |
-|-------------|--------------|----------------|
-| $110 | X max. Rate (mm/min) | 5000.0 |
-| $111 | Y max. Rate (mm/min) | 5000.0 |
-| $112 | Z max. Rate (mm/min) | 500.0 |
-| $120 | X Beschleunigung (mm/s²) | 500.0 |
-| $121 | Y Beschleunigung (mm/s²) | 500.0 |
-| $122 | Z Beschleunigung (mm/s²) | 100.0 |
+| Einstellung | Beschreibung             | Typischer Wert |
+| ----------- | ------------------------ | -------------- |
+| $110        | X max. Rate (mm/min)     | 5000.0         |
+| $111        | Y max. Rate (mm/min)     | 5000.0         |
+| $112        | Z max. Rate (mm/min)     | 500.0          |
+| $120        | X Beschleunigung (mm/s²) | 500.0          |
+| $121        | Y Beschleunigung (mm/s²) | 500.0          |
+| $122        | Z Beschleunigung (mm/s²) | 100.0          |
 
 ### Achsen-Verfahrweg ($130-$132)
 
-| Einstellung | Beschreibung | Hinweise |
-|-------------|--------------|----------|
-| $130 | X max. Verfahrweg (mm) | Arbeitsbereich-Breite |
-| $131 | Y max. Verfahrweg (mm) | Arbeitsbereich-Tiefe |
-| $132 | Z max. Verfahrweg (mm) | Z-Verfahrweg (falls zutreffend) |
+| Einstellung | Beschreibung           | Hinweise                        |
+| ----------- | ---------------------- | ------------------------------- |
+| $130        | X max. Verfahrweg (mm) | Arbeitsbereich-Breite           |
+| $131        | Y max. Verfahrweg (mm) | Arbeitsbereich-Tiefe            |
+| $132        | Z max. Verfahrweg (mm) | Z-Verfahrweg (falls zutreffend) |
 
 ---
 
@@ -266,9 +281,8 @@ $132=0.0       ; Z max. Verfahrweg
 2. Jede Zeile (`$100=80.0`, etc.) über Konsole senden
 3. Mit Befehl `$$` verifizieren
 
-:::tip Regelmäßige Sicherungen
-Sichere deine Einstellungen nach jeder Kalibrierung oder Abstimmung. Speichere Sicherungen an einem sicheren Ort.
-:::
+:::tip Regelmäßige Sicherungen Sichere deine Einstellungen nach jeder Kalibrierung oder Abstimmung.
+Speichere Sicherungen an einem sicheren Ort. :::
 
 ---
 

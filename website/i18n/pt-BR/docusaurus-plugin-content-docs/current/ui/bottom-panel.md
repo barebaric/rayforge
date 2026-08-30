@@ -1,27 +1,25 @@
 # Painel Inferior
 
-O Painel Inferior na parte inferior da janela do Rayforge fornece controle
-manual sobre a posição da sua cortadora a laser, status da máquina em tempo
-real, uma visão de log para monitorar operações, um visualizador de G-code e um
-navegador de ativos.
+O Painel Inferior na parte inferior da janela do Rayforge fornece controle manual sobre a posição da
+sua cortadora a laser, status da máquina em tempo real, uma visão de log para monitorar operações,
+um visualizador de G-code e um navegador de ativos.
 
 ## Visão Geral
 
 O Painel Inferior combina várias funções em uma interface conveniente:
 
-1. **Abas Ancoráveis**: Alterne entre Console, Visualizador G-code e Ativos usando
-   a faixa de ícones à esquerda
+1. **Abas Ancoráveis**: Alterne entre Console, Visualizador G-code e Ativos usando a faixa de ícones
+   à esquerda
 2. **Controles de Jog**: Movimento e posicionamento manual (sempre visível)
 3. **Status da Máquina**: Posição e estado de conexão em tempo real
-4. **Sistema de Coordenadas de Trabalho (WCS)**: Seleção rápida de WCS (sempre
-   visível)
+4. **Sistema de Coordenadas de Trabalho (WCS)**: Seleção rápida de WCS (sempre visível)
 
-Cada área do painel possui uma faixa de ícones à esquerda que permite alternar
-entre o **Console**, o **Visualizador G-code** e o navegador de **Ativos**. Os
-controles de jog e WCS no lado direito permanecem visíveis independentemente de
-qual aba está ativa. As abas podem ser reordenadas arrastando dentro de sua faixa,
-e você pode arrastar abas entre áreas do painel ou sobre os divisores para
-reorganizar o layout em múltiplas colunas. Colunas vazias são removidas automaticamente.
+Cada área do painel possui uma faixa de ícones à esquerda que permite alternar entre o **Console**,
+o **Visualizador G-code** e o navegador de **Ativos**. Os controles de jog e WCS no lado direito
+permanecem visíveis independentemente de qual aba está ativa. As abas podem ser reordenadas
+arrastando dentro de sua faixa, e você pode arrastar abas entre áreas do painel ou sobre os
+divisores para reorganizar o layout em múltiplas colunas. Colunas vazias são removidas
+automaticamente.
 
 ![Painel Inferior](/screenshots/bottom-panel-console.webp)
 
@@ -32,30 +30,24 @@ O Painel Inferior pode ser alternado via:
 - **Menu**: Visualizar → Painel Inferior
 - **Atalho de Teclado**: Ctrl+L
 
-:::note Conexão Necessária
-Os controles de jog estão disponíveis apenas quando conectado a uma máquina
-que suporta operações de jog.
-:::
+:::note Conexão Necessária Os controles de jog estão disponíveis apenas quando conectado a uma
+máquina que suporta operações de jog. :::
 
 ## Controles de Jog
 
-Os controles de jog fornecem controle manual sobre a posição da sua cortadora a
-laser, permitindo mover a cabeça do laser precisamente para configuração,
-alinhamento e testes.
+Os controles de jog fornecem controle manual sobre a posição da sua cortadora a laser, permitindo
+mover a cabeça do laser precisamente para configuração, alinhamento e testes.
 
 ### Controles de Origem
 
-Leve os eixos da sua máquina à origem para estabelecer uma posição de
-referência:
+Leve os eixos da sua máquina à origem para estabelecer uma posição de referência:
 
 | Botão        | Função                 | Descrição                              |
 | ------------ | ---------------------- | -------------------------------------- |
 | Origem Todos | Origina todos os eixos | Origina todos os eixos simultaneamente |
 
-:::tip Sequência de Homing
-É recomendado levar todos os eixos à origem antes de iniciar qualquer trabalho
-para garantir posicionamento preciso.
-:::
+:::tip Sequência de Homing É recomendado levar todos os eixos à origem antes de iniciar qualquer
+trabalho para garantir posicionamento preciso. :::
 
 ### Movimento Direcional
 
@@ -80,9 +72,7 @@ Os controles de jog fornecem botões para movimento direcional:
 | Z+                    | Eixo Z para cima                    | Page Up            |
 | Z-                    | Eixo Z para baixo                   | Page Down          |
 
-:::note Foco Necessário
-Atalhos de teclado só funcionam quando a janela principal tem foco.
-:::
+:::note Foco Necessário Atalhos de teclado só funcionam quando a janela principal tem foco. :::
 
 ### Feedback Visual
 
@@ -106,22 +96,19 @@ Configure o comportamento das operações de jog:
 
 - Use velocidades mais baixas (100-500 mm/min) para posicionamento preciso
 - Use velocidades mais altas (1.000-3.000 mm/min) para movimentos maiores
-- Velocidades muito altas podem causar perda de passos em algumas máquinas
-  :::
+- Velocidades muito altas podem causar perda de passos em algumas máquinas :::
 
 **Distância de Jog:**
 
 - **Faixa**: 0,1-1.000 mm
 - **Padrão**: 10,0 mm
-- **Propósito**: Controla quão longe a cabeça do laser se move por pressão de
-  botão
+- **Propósito**: Controla quão longe a cabeça do laser se move por pressão de botão
 
 :::tip Seleção de Distância
 
 - Use distâncias pequenas (0,1-1,0 mm) para ajuste fino
 - Use distâncias médias (5-20 mm) para posicionamento geral
-- Use distâncias grandes (50-100 mm) para reposicionamento rápido
-  :::
+- Use distâncias grandes (50-100 mm) para reposicionamento rápido :::
 
 ## Display de Status da Máquina
 
@@ -151,8 +138,7 @@ Mostra a posição da cabeça do laser no sistema de coordenadas ativo:
 
 ## Sistema de Coordenadas de Trabalho (WCS)
 
-O Painel de Controle fornece acesso rápido ao gerenciamento do Sistema de
-Coordenadas de Trabalho.
+O Painel de Controle fornece acesso rápido ao gerenciamento do Sistema de Coordenadas de Trabalho.
 
 ### Seleção de Sistema Ativo
 
@@ -181,10 +167,8 @@ Defina onde a origem do WCS ativo deve ser:
 | Zero Y               | Define Y=0   | Torna posição Y atual a origem Y para WCS ativo                  |
 | Zero Z               | Define Z=0   | Torna posição Z atual a origem Z para WCS ativo                  |
 
-:::note G53 Não Pode Ser Alterado
-Botões de zero são desabilitados quando G53 (Coordenadas da Máquina) está
-selecionado, pois coordenadas da máquina são fixadas pelo hardware.
-:::
+:::note G53 Não Pode Ser Alterado Botões de zero são desabilitados quando G53 (Coordenadas da
+Máquina) está selecionado, pois coordenadas da máquina são fixadas pelo hardware. :::
 
 :::tip Fluxo de Trabalho de Definição de WCS
 
@@ -192,33 +176,28 @@ selecionado, pois coordenadas da máquina são fixadas pelo hardware.
 2. Selecione o WCS que deseja configurar (ex: G54)
 3. Faça jog da cabeça do laser para a posição de origem desejada
 4. Clique Zero X e Zero Y para definir esta posição como (0, 0)
-5. O deslocamento é armazenado no controlador da sua máquina
-   :::
+5. O deslocamento é armazenado no controlador da sua máquina :::
 
 ## Aba do Console
 
-A aba do Console fornece uma interface estilo terminal interativa para enviar
-comandos G-code e monitorar comunicação da máquina. Clique no ícone do console
-na faixa de abas para alternar para esta visão.
+A aba do Console fornece uma interface estilo terminal interativa para enviar comandos G-code e
+monitorar comunicação da máquina. Clique no ícone do console na faixa de abas para alternar para
+esta visão.
 
 ### Entrada de Comando
 
-A caixa de entrada de comando permite enviar G-code bruto diretamente para a
-máquina:
+A caixa de entrada de comando permite enviar G-code bruto diretamente para a máquina:
 
 - **Suporte Multi-linha**: Cole ou digite múltiplos comandos
 - **Enter**: Envia todos os comandos
 - **Shift+Enter**: Insere nova linha (para edição antes de enviar)
-- **Histórico**: Use setas Para Cima/Para Baixo para navegar comandos enviados
-  anteriormente
+- **Histórico**: Use setas Para Cima/Para Baixo para navegar comandos enviados anteriormente
 
 ### Display de Log
 
-O log mostra comunicação entre Rayforge e sua máquina com destaque de sintaxe
-para leitura fácil:
+O log mostra comunicação entre Rayforge e sua máquina com destaque de sintaxe para leitura fácil:
 
-- **Comandos do Usuário** (azul): Comandos que você digitou ou enviou durante
-  trabalhos
+- **Comandos do Usuário** (azul): Comandos que você digitou ou enviou durante trabalhos
 - **Carimbos de Tempo** (cinza): Hora de cada mensagem
 - **Erros** (vermelho): Mensagens de erro da máquina
 - **Avisos** (laranja): Mensagens de aviso
@@ -227,8 +206,7 @@ para leitura fácil:
 
 ### Modo Verboso
 
-Clique no ícone de terminal no canto superior direito do console para alternar
-saída verbosa:
+Clique no ícone de terminal no canto superior direito do console para alternar saída verbosa:
 
 - **Desligado** (padrão): Oculta polls de status frequentes e respostas "ok"
 - **Ligado**: Mostra toda comunicação da máquina
@@ -253,82 +231,74 @@ O console é inestimável para diagnosticar problemas:
 
 ## Aba do Visualizador G-code
 
-A aba do Visualizador G-code exibe o G-code gerado para as operações atuais.
-Clique no ícone de G-code na faixa de abas para alternar para esta visão.
+A aba do Visualizador G-code exibe o G-code gerado para as operações atuais. Clique no ícone de
+G-code na faixa de abas para alternar para esta visão.
 
 ### Recursos
 
 - **Destaque de Sintaxe**: Comandos G-code são coloridos para legibilidade
-- **Destaque de Linha**: A linha em execução é destacada durante a execução do
-  trabalho
-- **Atualização Automática**: O conteúdo do G-code é atualizado automaticamente
-  quando operações ou configurações do documento mudam
+- **Destaque de Linha**: A linha em execução é destacada durante a execução do trabalho
+- **Atualização Automática**: O conteúdo do G-code é atualizado automaticamente quando operações ou
+  configurações do documento mudam
 
 ## Aba de Ativos
 
-A aba de Ativos mostra todos os itens de estoque e esboços no seu documento.
-Clique no ícone de ativos na faixa de abas para alternar para esta visão.
+A aba de Ativos mostra todos os itens de estoque e esboços no seu documento. Clique no ícone de
+ativos na faixa de abas para alternar para esta visão.
 
-Quando a lista de ativos está vazia, ela exibe botões para adicionar estoque ou
-criar um novo esboço. Você pode arrastar ativos desta lista para a tela para
-posicioná-los. Clicar duas vezes em um ativo de estoque abre suas propriedades.
+Quando a lista de ativos está vazia, ela exibe botões para adicionar estoque ou criar um novo
+esboço. Você pode arrastar ativos desta lista para a tela para posicioná-los. Clicar duas vezes em
+um ativo de estoque abre suas propriedades.
 
-Clicar com o botão direito em um ativo abre um menu de contexto com opções
-para criar uma nova peça de trabalho a partir do ativo, duplicar, copiar,
-recortar ou excluí-lo. Clicar com o botão direito em um espaço vazio na lista
-de ativos oferece opções para criar um novo esboço, adicionar estoque, importar
-um arquivo ou colar da área de transferência.
+Clicar com o botão direito em um ativo abre um menu de contexto com opções para criar uma nova peça
+de trabalho a partir do ativo, duplicar, copiar, recortar ou excluí-lo. Clicar com o botão direito
+em um espaço vazio na lista de ativos oferece opções para criar um novo esboço, adicionar estoque,
+importar um arquivo ou colar da área de transferência.
 
-Quando a aba do Console ou do Visualizador G-code está ativa, você também pode
-pressionar <kbd>Ctrl+F</kbd> para pesquisar dentro do conteúdo.
+Quando a aba do Console ou do Visualizador G-code está ativa, você também pode pressionar
+<kbd>Ctrl+F</kbd> para pesquisar dentro do conteúdo.
 
 ## Controle do Laser
 
-O dock de Laser fornece controle manual sobre seu laser para teste,
-alinhamento e focagem. Ele aparece como uma aba ao lado do dock de
-Controles no painel inferior.
+O dock de Laser fornece controle manual sobre seu laser para teste, alinhamento e focagem. Ele
+aparece como uma aba ao lado do dock de Controles no painel inferior.
 
 ### Seletor de Cabeça Laser
 
-Um menu suspenso lista todas as cabeças laser configuradas. Quando sua
-máquina possui múltiplas cabeças, selecione a que deseja controlar. O
-subtítulo mostra o número da ferramenta e a potência máxima da cabeça
-selecionada.
+Um menu suspenso lista todas as cabeças laser configuradas. Quando sua máquina possui múltiplas
+cabeças, selecione a que deseja controlar. O subtítulo mostra o número da ferramenta e a potência
+máxima da cabeça selecionada.
 
 ### Botão de Ativação
 
-O botão de ativação ao lado do seletor de cabeça liga ou desliga o laser.
-Quando o laser está ativo, o botão fica vermelho como indicador de
-segurança. O laser também pode ser ativado pelo botão da barra de
-ferramentas no cabeçalho da janela principal.
+O botão de ativação ao lado do seletor de cabeça liga ou desliga o laser. Quando o laser está ativo,
+o botão fica vermelho como indicador de segurança. O laser também pode ser ativado pelo botão da
+barra de ferramentas no cabeçalho da janela principal.
 
 ### Potência
 
-Um controle deslizante e um campo de texto controlam a potência do laser de
-0 a 100 por cento. Quando você alterna para uma cabeça laser diferente, a
-potência é redefinida para a potência de foco configurada dessa cabeça.
+Um controle deslizante e um campo de texto controlam a potência do laser de 0 a 100 por cento.
+Quando você alterna para uma cabeça laser diferente, a potência é redefinida para a potência de foco
+configurada dessa cabeça.
 
 ### Frequência e Largura de Pulso
 
-Esses controles aparecem apenas quando a cabeça laser selecionada é do tipo
-CO2 ou Fibra. Eles permitem definir a frequência PWM (Hz) e a largura de
-pulso (microssegundos) para a operação manual do laser. Para lasers Diodo,
-esses campos estão ocultos.
+Esses controles aparecem apenas quando a cabeça laser selecionada é do tipo CO2 ou Fibra. Eles
+permitem definir a frequência PWM (Hz) e a largura de pulso (microssegundos) para a operação manual
+do laser. Para lasers Diodo, esses campos estão ocultos.
 
 ### Duração (Temporizador de Desligamento Automático)
 
-Defina uma duração em segundos após a qual o laser desliga automaticamente.
-Defina como 0 para operação contínua — o laser permanece aceso até você
-desligá-lo manualmente. Um rótulo de contagem regressiva aparece abaixo dos
-controles enquanto o temporizador está em execução.
+Defina uma duração em segundos após a qual o laser desliga automaticamente. Defina como 0 para
+operação contínua — o laser permanece aceso até você desligá-lo manualmente. Um rótulo de contagem
+regressiva aparece abaixo dos controles enquanto o temporizador está em execução.
 
 ### Segurança
 
-- Todos os controles estão desabilitados quando nenhuma cabeça laser está
-  configurada
+- Todos os controles estão desabilitados quando nenhuma cabeça laser está configurada
 - O botão de ativação requer uma conexão ativa com a máquina
-- Se a máquina se desconectar enquanto o laser está aceso, o laser é
-  desligado automaticamente e qualquer temporizador em execução é cancelado
+- Se a máquina se desconectar enquanto o laser está aceso, o laser é desligado automaticamente e
+  qualquer temporizador em execução é cancelado
 
 ## Compatibilidade de Máquina
 
@@ -368,7 +338,8 @@ Quando limites de software estão habilitados no seu perfil de máquina:
 
 **Páginas Relacionadas:**
 
-- [Sistemas de Coordenadas de Trabalho (WCS)](../general-info/coordinate-systems.md) - Gerenciando WCS
+- [Sistemas de Coordenadas de Trabalho (WCS)](../general-info/coordinate-systems.md) - Gerenciando
+  WCS
 - [Configuração da Máquina](../machine/general.md) - Configure sua máquina
 - [Atalhos de Teclado](../reference/shortcuts.md) - Referência completa de atalhos
 - [Janela Principal](main-window) - Visão geral da interface principal

@@ -1,21 +1,24 @@
 # Snap-Berechtigungen (Linux)
 
-Diese Seite erklärt, wie du Berechtigungen für Rayforge konfigurierst, wenn es als Snap-Paket unter Linux installiert wurde.
+Diese Seite erklärt, wie du Berechtigungen für Rayforge konfigurierst, wenn es als Snap-Paket unter
+Linux installiert wurde.
 
 ## Was sind Snap-Berechtigungen?
 
-Snaps sind containerisierte Anwendungen, die in einer Sandbox zur Sicherheit ausgeführt werden. Standardmäßig haben sie begrenzten Zugriff auf Systemressourcen. Um bestimmte Funktionen zu nutzen (wie serielle Ports für Laser-Controller), musst du explizit Berechtigungen erteilen.
+Snaps sind containerisierte Anwendungen, die in einer Sandbox zur Sicherheit ausgeführt werden.
+Standardmäßig haben sie begrenzten Zugriff auf Systemressourcen. Um bestimmte Funktionen zu nutzen
+(wie serielle Ports für Laser-Controller), musst du explizit Berechtigungen erteilen.
 
 ## Erforderliche Berechtigungen
 
 Rayforge benötigt diese Snap-Schnittstellen für volle Funktionalität:
 
-| Schnittstelle | Zweck | Erforderlich? |
-|---------------|-------|---------------|
-| `serial-port` | Zugriff auf USB-Seriell-Geräte (Laser-Controller) | **Ja** (für Maschinensteuerung) |
-| `home` | Dateien im Home-Verzeichnis lesen/schreiben | Automatisch verbunden |
-| `removable-media` | Zugriff auf externe Laufwerke und USB-Speicher | Optional |
-| `network` | Netzwerkverbindung (für Updates usw.) | Automatisch verbunden |
+| Schnittstelle     | Zweck                                             | Erforderlich?                   |
+| ----------------- | ------------------------------------------------- | ------------------------------- |
+| `serial-port`     | Zugriff auf USB-Seriell-Geräte (Laser-Controller) | **Ja** (für Maschinensteuerung) |
+| `home`            | Dateien im Home-Verzeichnis lesen/schreiben       | Automatisch verbunden           |
+| `removable-media` | Zugriff auf externe Laufwerke und USB-Speicher    | Optional                        |
+| `network`         | Netzwerkverbindung (für Updates usw.)             | Automatisch verbunden           |
 
 ---
 
@@ -25,18 +28,17 @@ Rayforge benötigt diese Snap-Schnittstellen für volle Funktionalität:
 
 ### Voraussetzung: dialout-Gruppenmitgliedschaft
 
-Auf Debian-basierten Distributionen muss dein Benutzer Mitglied der
-`dialout`-Gruppe sein, auch bei Verwendung des Snap-Pakets. Ohne diese
-Gruppenmitgliedschaft kannst du AppArmor DENIED-Meldungen erhalten, wenn du
-versuchst, auf serielle Ports zuzugreifen.
+Auf Debian-basierten Distributionen muss dein Benutzer Mitglied der `dialout`-Gruppe sein, auch bei
+Verwendung des Snap-Pakets. Ohne diese Gruppenmitgliedschaft kannst du AppArmor DENIED-Meldungen
+erhalten, wenn du versuchst, auf serielle Ports zuzugreifen.
 
 ```bash
 # Füge deinen Benutzer zur dialout-Gruppe hinzu
 sudo usermod -a -G dialout $USER
 ```
 
-**Wichtig:** Du musst dich abmelden und wieder anmelden (oder neu starten),
-damit Gruppenänderungen wirksam werden.
+**Wichtig:** Du musst dich abmelden und wieder anmelden (oder neu starten), damit Gruppenänderungen
+wirksam werden.
 
 ### Aktuelle Berechtigungen prüfen
 
@@ -45,7 +47,8 @@ damit Gruppenänderungen wirksam werden.
 snap connections rayforge
 ```
 
-Suche nach der `serial-port`-Schnittstelle. Wenn sie "disconnected" oder "-" anzeigt, musst du sie verbinden.
+Suche nach der `serial-port`-Schnittstelle. Wenn sie "disconnected" oder "-" anzeigt, musst du sie
+verbinden.
 
 ### Serielle Port-Schnittstelle verbinden
 
@@ -54,7 +57,8 @@ Suche nach der `serial-port`-Schnittstelle. Wenn sie "disconnected" oder "-" anz
 sudo snap connect rayforge:serial-port
 ```
 
-**Du musst dies nur einmal tun.** Die Berechtigung bleibt über App-Updates und Neustarts hinweg bestehen.
+**Du musst dies nur einmal tun.** Die Berechtigung bleibt über App-Updates und Neustarts hinweg
+bestehen.
 
 ### Verbindung verifizieren
 
@@ -64,6 +68,7 @@ snap connections rayforge | grep serial-port
 ```
 
 Erwartete Ausgabe:
+
 ```
 serial-port     rayforge:serial-port     :serial-port     -
 ```
@@ -119,6 +124,7 @@ Jetzt kannst du auf Dateien in `/media` und `/mnt` zugreifen.
 Dies ist selten, kann aber passieren wenn:
 
 1. **Die Snap-Installation beschädigt ist:**
+
    ```bash
    # Snap neu installieren
    sudo snap refresh rayforge --devmode
@@ -134,6 +140,7 @@ Dies ist selten, kann aber passieren wenn:
    - Diese könnten mit Snap's Gerätezugriff kollidieren
 
 3. **AppArmor-Ablehnungen:**
+
    ```bash
    # Auf AppArmor-Ablehnungen prüfen
    sudo journalctl -xe | grep DENIED | grep rayforge
@@ -143,17 +150,20 @@ Dies ist selten, kann aber passieren wenn:
 
 ### Kein Zugriff auf Dateien außerhalb des Home-Verzeichnisses
 
-**Standardmäßig** können Snaps nicht auf Dateien außerhalb deines Home-Verzeichnisses zugreifen, es sei denn, du gewährst `removable-media`.
+**Standardmäßig** können Snaps nicht auf Dateien außerhalb deines Home-Verzeichnisses zugreifen, es
+sei denn, du gewährst `removable-media`.
 
 **Behelfslösungen:**
 
 1. **Dateien in dein Home-Verzeichnis verschieben:**
+
    ```bash
    # SVG-Dateien nach ~/Dokumente kopieren
    cp /irgendein/anderer/ort/*.svg ~/Dokumente/
    ```
 
 2. **Removable-media-Zugriff gewähren:**
+
    ```bash
    sudo snap connect rayforge:removable-media
    ```
@@ -207,19 +217,22 @@ pixi run rayforge
 ```
 
 **Vorteile:**
+
 - Keine Berechtigungseinschränkungen
 - Voller Systemzugriff
 - Einfacheres Debugging
 - Neueste Entwicklungsversion
 
 **Nachteile:**
+
 - Manuelle Updates (git pull)
 - Mehr Abhängigkeiten zu verwalten
 - Keine automatischen Updates
 
 **Option 2: Flatpak verwenden (falls verfügbar)**
 
-Flatpak hat ähnliches Sandboxing, aber manchmal mit anderen Berechtigungsmodellen. Prüfe, ob Rayforge ein Flatpak-Paket anbietet.
+Flatpak hat ähnliches Sandboxing, aber manchmal mit anderen Berechtigungsmodellen. Prüfe, ob
+Rayforge ein Flatpak-Paket anbietet.
 
 ---
 
@@ -243,6 +256,7 @@ snap info rayforge
 ```
 
 Suche nach:
+
 - Verifiziertem Herausgeber
 - Offizieller Repository-Quelle
 - Regelmäßigen Updates
@@ -254,11 +268,13 @@ Suche nach:
 ### Was können Snaps standardmäßig zugreifen?
 
 **Erlaubt:**
+
 - Dateien in deinem Home-Verzeichnis
 - Netzwerkverbindungen
 - Anzeige/Audio
 
 **Nicht erlaubt ohne explizite Berechtigung:**
+
 - Serielle Ports (USB-Geräte)
 - Wechseldatenträger
 - Systemdateien
@@ -323,11 +339,13 @@ sudo journalctl -f -u snapd
 Wenn du immer noch Snap-bezogene Probleme hast:
 
 1. **Zuerst Berechtigungen prüfen:**
+
    ```bash
    snap connections rayforge
    ```
 
 2. **Einen seriellen Port-Test versuchen:**
+
    ```bash
    # Falls du screen oder minicom installiert hast
    sudo snap connect rayforge:serial-port

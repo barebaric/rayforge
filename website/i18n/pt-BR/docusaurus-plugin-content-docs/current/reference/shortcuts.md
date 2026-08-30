@@ -6,8 +6,7 @@ Referência completa de atalhos de teclado no Rayforge.
 
 - **Linux/Windows:** Tecla `Ctrl`
 - **macOS:** Tecla `Command`
-- Documentação usa `Ctrl` - usuários macOS substituam por `Command`
-  :::
+- Documentação usa `Ctrl` - usuários macOS substituam por `Command` :::
 
 ---
 
@@ -135,11 +134,9 @@ Referência completa de atalhos de teclado no Rayforge.
 | `Ctrl+&lt;` | Configurações da Máquina | Abrir diálogo de configurações da máquina |
 | `F1`        | Sobre                    | Mostrar diálogo sobre                     |
 
-:::note Operações da Máquina
-Operações de controle da máquina (Origem, Enquadrar, Enviar, etc.) atualmente
-não têm atalhos padrão mas podem ser acessadas via botões da barra de
-ferramentas ou menus.
-:::
+:::note Operações da Máquina Operações de controle da máquina (Origem, Enquadrar, Enviar, etc.)
+atualmente não têm atalhos padrão mas podem ser acessadas via botões da barra de ferramentas ou
+menus. :::
 
 ---
 
@@ -227,10 +224,8 @@ Ao editar G-code ou campos de texto:
 
 ## Personalizando Atalhos
 
-:::note Atalhos Personalizados
-Atalhos de teclado atualmente são fixos no código. Configuração de atalhos
-personalizados pode ser adicionada em versões futuras.
-:::
+:::note Atalhos Personalizados Atalhos de teclado atualmente são fixos no código. Configuração de
+atalhos personalizados pode ser adicionada em versões futuras. :::
 
 **Limitações atuais:**
 
@@ -238,8 +233,8 @@ personalizados pode ser adicionada em versões futuras.
 - Sem GUI para personalização de atalhos
 - Algumas ações podem não ter atalhos atribuídos
 
-**Solicitação de recurso:** Se você precisa de atalhos personalizados, por
-favor abra uma issue no GitHub.
+**Solicitação de recurso:** Se você precisa de atalhos personalizados, por favor abra uma issue no
+GitHub.
 
 ---
 
@@ -247,13 +242,10 @@ favor abra uma issue no GitHub.
 
 ### Dicas de Eficiência
 
-1. **Aprenda os atalhos de edição primeiro** - `Ctrl+Z/Y/C/V/D` são usados
-   constantemente
-2. **Use alternâncias de tecla única** - `H`, `T`, `P` para mudanças rápidas de
-   visualização
+1. **Aprenda os atalhos de edição primeiro** - `Ctrl+Z/Y/C/V/D` são usados constantemente
+2. **Use alternâncias de tecla única** - `H`, `T`, `P` para mudanças rápidas de visualização
 3. **Atalhos de visão 3D** - `1`, `2`, `7` para troca instantânea de visão
-4. **Atalhos de alinhamento** - `Shift+Seta` mais rápido que clicar botões de
-   alinhamento
+4. **Atalhos de alinhamento** - `Shift+Seta` mais rápido que clicar botões de alinhamento
 5. **Modo simulação** - `F11` para verificar rapidamente a execução
 
 ### Atalhos de Fluxo de Trabalho
@@ -282,10 +274,8 @@ favor abra uma issue no GitHub.
 
 Alguns atalhos menos conhecidos:
 
-- `Ctrl+,` - Acesso rápido às preferências (padrão no macOS, funciona aqui
-  também)
-- `Ctrl+Shift+Z` - Refazer alternativo (para usuários que preferem isso ao
-  Ctrl+Y)
+- `Ctrl+,` - Acesso rápido às preferências (padrão no macOS, funciona aqui também)
+- `Ctrl+Shift+Z` - Refazer alternativo (para usuários que preferem isso ao Ctrl+Y)
 - `Ctrl+Alt+A` - Encaixe pixel-perfeito para colocação precisa
 - `Ctrl+Alt+T` - Colocação rápida de abas equidistantes
 
@@ -320,13 +310,11 @@ Alguns atalhos menos conhecidos:
 
 **Problemas comuns:**
 
-1. **Foco no elemento errado** - Certifique-se de que tela ou janela principal
-   tem foco, não um campo de texto
+1. **Foco no elemento errado** - Certifique-se de que tela ou janela principal tem foco, não um
+   campo de texto
 2. **Aplicação conflitante** - Outro app pode estar interceptando o atalho
-3. **Atalho do ambiente de desktop** - Atalhos do sistema podem substituir (ex:
-   Alt+F4)
-4. **Numpad vs linha de números** - Use linha de números para atalhos de visão
-   3D, não numpad
+3. **Atalho do ambiente de desktop** - Atalhos do sistema podem substituir (ex: Alt+F4)
+4. **Numpad vs linha de números** - Use linha de números para atalhos de visão 3D, não numpad
 
 **Soluções:**
 
@@ -398,4 +386,3 @@ Alguns atalhos menos conhecidos:
 - [Janela Principal](../ui/main-window.md) - Visão geral da UI
 - [Ferramentas da Tela](../ui/canvas-tools.md) - Interação com a tela
 - [Visualização 3D](../ui/3d-preview.md) - Controles de visão 3D
-

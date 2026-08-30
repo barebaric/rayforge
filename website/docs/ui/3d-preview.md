@@ -1,11 +1,13 @@
 ---
-description: "Preview your laser job in full 3D. Visualize toolpaths, rotary axis operations, and material removal before sending G-code to your machine."
+description:
+  "Preview your laser job in full 3D. Visualize toolpaths, rotary axis operations, and material
+  removal before sending G-code to your machine."
 ---
 
 # 3D View
 
-The 3D view lets you visualize your G-code toolpaths and simulate job
-execution before sending them to your machine.
+The 3D view lets you visualize your G-code toolpaths and simulate job execution before sending them
+to your machine.
 
 ![3D Preview](/screenshots/main-3d.webp)
 
@@ -37,21 +39,17 @@ Quick camera angles:
 
 ## Work Coordinate System Display
 
-The 3D view visualizes the active Work Coordinate System (WCS)
-differently from the 2D canvas:
+The 3D view visualizes the active Work Coordinate System (WCS) differently from the 2D canvas:
 
 ### Grid and Axes
 
-- **Isolated display**: The grid and axes appear as if the WCS origin is
-  the world origin
-- **Offset applied**: The entire grid is shifted to align with the selected
-  WCS offset
-- **Labels relative to WCS**: Coordinate labels show positions relative to
-  the WCS origin, not machine origin
+- **Isolated display**: The grid and axes appear as if the WCS origin is the world origin
+- **Offset applied**: The entire grid is shifted to align with the selected WCS offset
+- **Labels relative to WCS**: Coordinate labels show positions relative to the WCS origin, not
+  machine origin
 
-This "in isolation" display makes it easy to understand where your job will
-run relative to the selected work coordinate system, without being confused
-by the machine's absolute position.
+This "in isolation" display makes it easy to understand where your job will run relative to the
+selected work coordinate system, without being confused by the machine's absolute position.
 
 ### Changing WCS
 
@@ -61,30 +59,27 @@ The 3D view automatically updates when you change the active WCS:
 - The grid and axes shift to reflect the new WCS origin
 - Labels update to show coordinates relative to the new WCS
 
-:::tip WCS in 3D View
-The 3D view shows your toolpaths relative to the selected WCS. When you
-change WCS, you'll see the toolpaths appear to move because the reference
-point (the grid) has changed, not because the toolpaths themselves moved.
-:::
+:::tip WCS in 3D View The 3D view shows your toolpaths relative to the selected WCS. When you change
+WCS, you'll see the toolpaths appear to move because the reference point (the grid) has changed, not
+because the toolpaths themselves moved. :::
 
 ## Display Options
 
-Visibility toggles are located as overlay buttons at the top-right of the
-3D canvas. Each button remembers its state between sessions:
+Visibility toggles are located as overlay buttons at the top-right of the 3D canvas. Each button
+remembers its state between sessions:
 
-- **Workpiece image**: Toggle the workpiece's base image on the stock
-  surface — the same image shown on the 2D canvas
+- **Workpiece image**: Toggle the workpiece's base image on the stock surface — the same image shown
+  on the 2D canvas
 - **Stock**: Toggle the stock material blocks
 - **Model**: Toggle the 3D machine model visibility
 - **Grid**: Toggle the coordinate grid visibility
-- **Ops underlay**: Toggle the semi-transparent raster engraving preview
-  on the workpiece surface
+- **Ops underlay**: Toggle the semi-transparent raster engraving preview on the workpiece surface
 - **Travel moves**: Toggle rapid travel move visibility
-- **No-go zones**: Toggle no-go zone visibility. This button only appears
-  when your machine has at least one no-go zone configured.
+- **No-go zones**: Toggle no-go zone visibility. This button only appears when your machine has at
+  least one no-go zone configured.
 
-Perspective and orthographic projection are toggled with <kbd>P</kbd> or
-**View → Toggle Perspective**.
+Perspective and orthographic projection are toggled with <kbd>P</kbd> or **View → Toggle
+Perspective**.
 
 ### Toolpath Visualization
 
@@ -94,53 +89,44 @@ Customize what you see:
 - **Show Work Moves**: Display cutting/engraving moves (solid lines)
 - **Color by Operation**: Different colors for each operation
 
-:::tip Per-Laser Colors
-When using machines with multiple laser heads, each laser can have its own
-color configured in [Laser Settings](../machine/laser.md).
-This makes it easy to identify which laser will perform each operation.
-:::
+:::tip Per-Laser Colors When using machines with multiple laser heads, each laser can have its own
+color configured in [Laser Settings](../machine/laser.md). This makes it easy to identify which
+laser will perform each operation. :::
 
 ### Laser Head Model
 
-The 3D view renders a model of your laser head that moves along the
-toolpath during simulation. You can assign a 3D model to each laser head
-in the [Laser Settings](../machine/laser.md) page of Machine Settings. The
-model's scale, rotation, and focal distance can be adjusted to match your
+The 3D view renders a model of your laser head that moves along the toolpath during simulation. You
+can assign a 3D model to each laser head in the [Laser Settings](../machine/laser.md) page of
+Machine Settings. The model's scale, rotation, and focal distance can be adjusted to match your
 physical setup.
 
-During simulation, a glowing laser beam is drawn from the head downward
-when the laser is active.
+During simulation, a glowing laser beam is drawn from the head downward when the laser is active.
 
 ## Physical Burn Model
 
-When you engrave, the 3D view no longer shows the result as a flat
-overlay on top of the stock. Laser raster and vector operations now
-**char the stock itself** — the preview shows burning driven by a
-physically motivated model that accounts for:
+When you engrave, the 3D view no longer shows the result as a flat overlay on top of the stock.
+Laser raster and vector operations now **char the stock itself** — the preview shows burning driven
+by a physically motivated model that accounts for:
 
-- Your laser's **wavelength**, **optical wattage**, and **spot size**
-  (configured in [Laser Settings](../machine/laser.md)).
+- Your laser's **wavelength**, **optical wattage**, and **spot size** (configured in
+  [Laser Settings](../machine/laser.md)).
 - The **material's absorption** at that wavelength (defined in the
   [material library](../application-settings/materials.md#absorption)).
-- The **scan speed**, which sets the energy delivered per unit area
-  (fluence, in J/cm²).
+- The **scan speed**, which sets the energy delivered per unit area (fluence, in J/cm²).
 
-The result is a power-keyed scorch ramp with a heat halo on top-facing
-surfaces. It works for rotary too — engraving bakes into the rotary
-stock.
+The result is a power-keyed scorch ramp with a heat halo on top-facing surfaces. It works for rotary
+too — engraving bakes into the rotary stock.
 
-:::note Calibration
-The burn model is physically motivated but not yet fully calibrated
-across all materials and laser types. You can help improve it: run a
-[material test grid](../features/operations/material-test-grid.md) and
-share the result photo along with your machine data (wavelength,
-optical wattage, spot size, speed, and the powers/depths tested).
-:::
+:::note Calibration The burn model is physically motivated but not yet fully calibrated across all
+materials and laser types. You can help improve it: run a
+[material test grid](../features/operations/material-test-grid.md) and share the result photo along
+with your machine data (wavelength, optical wattage, spot size, speed, and the powers/depths
+tested). :::
 
 ## Simulation
 
-The 3D view includes a built-in simulator with playback controls overlaid
-at the bottom of the canvas.
+The 3D view includes a built-in simulator with playback controls overlaid at the bottom of the
+canvas.
 
 ### Playback Controls
 
@@ -151,10 +137,9 @@ at the bottom of the canvas.
 
 ### Synchronized G-code View
 
-The simulation stays in sync with the G-code viewer in the bottom panel.
-Stepping through the simulation highlights the corresponding line in the
-G-code viewer, and clicking a line in the G-code viewer jumps the
-simulation to that point.
+The simulation stays in sync with the G-code viewer in the bottom panel. Stepping through the
+simulation highlights the corresponding line in the G-code viewer, and clicking a line in the G-code
+viewer jumps the simulation to that point.
 
 ### Layer Visibility
 
@@ -172,9 +157,9 @@ Before sending to machine, verify:
 - [ ] Job starts at the expected position
 - [ ] Holding tabs are in the correct locations
 
-Some additional checks are performed automatically. When you run or export
-a job, Rayforge runs [sanity checks](../features/sanity-checks.md) that verify
-machine extents, workarea boundaries, and no-go zone collisions.
+Some additional checks are performed automatically. When you run or export a job, Rayforge runs
+[sanity checks](../features/sanity-checks.md) that verify machine extents, workarea boundaries, and
+no-go zone collisions.
 
 ## Performance Tips
 

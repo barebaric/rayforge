@@ -1,6 +1,7 @@
 # Problemas de Conexão
 
-Esta página ajuda você a diagnosticar e resolver problemas ao conectar o Rayforge à sua máquina de laser via conexão serial.
+Esta página ajuda você a diagnosticar e resolver problemas ao conectar o Rayforge à sua máquina de
+laser via conexão serial.
 
 ## Diagnóstico Rápido
 
@@ -33,8 +34,8 @@ Problemas comuns de conexão incluem:
 
 **Linux:**
 
-Primeiro, adicione seu usuário ao grupo `dialout` (necessário para ambas
-instalações Snap e não-Snap na maioria das distribuições baseadas em Debian):
+Primeiro, adicione seu usuário ao grupo `dialout` (necessário para ambas instalações Snap e não-Snap
+na maioria das distribuições baseadas em Debian):
 
 ```bash
 sudo usermod -a -G dialout $USER
@@ -42,8 +43,7 @@ sudo usermod -a -G dialout $USER
 
 Então saia e entre novamente para a mudança ter efeito.
 
-Se você está usando a versão Snap, você também precisa conceder permissões de
-porta serial:
+Se você está usando a versão Snap, você também precisa conceder permissões de porta serial:
 
 ```bash
 sudo snap connect rayforge:serial-port
@@ -52,6 +52,7 @@ sudo snap connect rayforge:serial-port
 Veja [Permissões Snap](snap-permissions) para configuração detalhada do Linux.
 
 **Windows:**
+
 1. Abra Gerenciador de Dispositivos (Win+X, depois selecione Gerenciador de Dispositivos)
 2. Procure em "Portas (COM e LPT)" pelo seu dispositivo
 3. Se você vir um ícone de aviso amarelo, atualize ou reinstale o driver
@@ -59,6 +60,7 @@ Veja [Permissões Snap](snap-permissions) para configuração detalhada do Linux
 5. Se o dispositivo não está listado, o cabo USB ou driver pode estar com defeito
 
 **macOS:**
+
 1. Verifique Informação do Sistema → USB para verificar se o dispositivo é reconhecido
 2. Instale drivers CH340/CH341 se seu controlador usa este chipset
 3. Verifique dispositivos `/dev/tty.usbserial*` ou `/dev/cu.usbserial*`
@@ -69,9 +71,9 @@ Veja [Permissões Snap](snap-permissions) para configuração detalhada do Linux
 
 **No Linux:**
 
-Seu usuário precisa estar no grupo `dialout` (ou `uucp` em algumas distribuições).
-Isto é necessário para **ambas instalações Snap e não-Snap** em distribuições
-baseadas em Debian para evitar mensagens AppArmor DENIED:
+Seu usuário precisa estar no grupo `dialout` (ou `uucp` em algumas distribuições). Isto é necessário
+para **ambas instalações Snap e não-Snap** em distribuições baseadas em Debian para evitar mensagens
+AppArmor DENIED:
 
 ```bash
 # Adicione você mesmo ao grupo dialout
@@ -81,8 +83,8 @@ sudo usermod -a -G dialout $USER
 groups | grep dialout
 ```
 
-**Importante:** Você deve sair e entrar novamente (ou reiniciar) para mudanças
-de grupo terem efeito.
+**Importante:** Você deve sair e entrar novamente (ou reiniciar) para mudanças de grupo terem
+efeito.
 
 **Adicionalmente para instalações Snap**, conceda acesso à porta serial ao snap:
 
@@ -95,6 +97,7 @@ Veja o guia [Permissões Snap](snap-permissions) para mais detalhes.
 **No Windows:**
 
 Feche quaisquer outras aplicações que possam estar usando a porta serial, incluindo:
+
 - Instâncias anteriores do Rayforge
 - Ferramentas de monitor serial
 - Outro software de laser
@@ -106,7 +109,8 @@ Feche quaisquer outras aplicações que possam estar usando a porta serial, incl
 
 **Diagnóstico:**
 
-Você pode ter selecionado a porta errada, especialmente se tem múltiplos dispositivos USB conectados.
+Você pode ter selecionado a porta errada, especialmente se tem múltiplos dispositivos USB
+conectados.
 
 **Solução:**
 
@@ -120,10 +124,9 @@ Você pode ter selecionado a porta errada, especialmente se tem múltiplos dispo
 6. No Windows, anote a porta COM do Gerenciador de Dispositivos
 7. Evite portas nomeadas `/dev/ttyS*` no Linux - estas são portas seriais de hardware, não USB
 
-:::warning Portas Seriais de Hardware
-O Rayforge avisará se você selecionar portas `/dev/ttyS*` no Linux, pois estas tipicamente não são dispositivos GRBL baseados em USB. Portas seriais USB usam `/dev/ttyUSB*` ou `/dev/ttyACM*`.
-:::
-
+:::warning Portas Seriais de Hardware O Rayforge avisará se você selecionar portas `/dev/ttyS*` no
+Linux, pois estas tipicamente não são dispositivos GRBL baseados em USB. Portas seriais USB usam
+`/dev/ttyUSB*` ou `/dev/ttyACM*`. :::
 
 ### Taxa de Transmissão Incorreta
 
@@ -137,7 +140,8 @@ Controladores GRBL tipicamente usam uma destas taxas de transmissão:
 - **9600** (versões GRBL mais antigas)
 - **250000** (menos comum, alguns firmwares personalizados)
 
-Tente diferentes taxas de transmissão nas configurações de dispositivo do Rayforge. A mais comum é **115200**.
+Tente diferentes taxas de transmissão nas configurações de dispositivo do Rayforge. A mais comum é
+**115200**.
 
 ### Conexão Cai Continuamente
 
@@ -146,7 +150,8 @@ Tente diferentes taxas de transmissão nas configurações de dispositivo do Ray
 **Possíveis Causas:**
 
 1. **Cabo USB com defeito** - Substitua por cabo conhecido-bom (preferencialmente curto, <2m)
-2. **Problemas de energia USB** - Tente uma porta USB diferente, preferencialmente no próprio computador em vez de um hub
+2. **Problemas de energia USB** - Tente uma porta USB diferente, preferencialmente no próprio
+   computador em vez de um hub
 3. **EMI/Interferência** - Mantenha cabos USB longe de fios de motores e fontes de alta tensão
 4. **Problemas de firmware** - Atualize seu firmware GRBL se possível
 5. **Conflitos de porta USB** - No Windows, tente portas USB diferentes
@@ -159,6 +164,7 @@ sudo dmesg -w
 ```
 
 Procure mensagens como:
+
 - "USB disconnect" - indica problemas físicos/cabo
 - "device descriptor read error" - frequentemente problema de energia ou cabo
 
@@ -188,13 +194,13 @@ Se não há resposta, verifique novamente taxa de transmissão e seleção de po
 
 O Rayforge mostra diferentes estados de conexão:
 
-| Status | Significado | Ação |
-|--------|---------|--------|
-| **Desconectado** | Não conectado a nenhum dispositivo | Configure porta e conecte |
-| **Conectando** | Tentando estabelecer conexão | Espere, ou verifique configuração se travado |
-| **Conectado** | Conectado com sucesso e recebendo status | Pronto para usar |
-| **Erro** | Conexão falhou com um erro | Verifique mensagem de erro para detalhes |
-| **Hibernando** | Esperando antes de tentar reconexão | Conexão anterior falhou, tentando novamente em 5s |
+| Status           | Significado                              | Ação                                              |
+| ---------------- | ---------------------------------------- | ------------------------------------------------- |
+| **Desconectado** | Não conectado a nenhum dispositivo       | Configure porta e conecte                         |
+| **Conectando**   | Tentando estabelecer conexão             | Espere, ou verifique configuração se travado      |
+| **Conectado**    | Conectado com sucesso e recebendo status | Pronto para usar                                  |
+| **Erro**         | Conexão falhou com um erro               | Verifique mensagem de erro para detalhes          |
+| **Hibernando**   | Esperando antes de tentar reconexão      | Conexão anterior falhou, tentando novamente em 5s |
 
 ---
 
@@ -203,7 +209,7 @@ O Rayforge mostra diferentes estados de conexão:
 ### Teste de Conexão Passo a Passo
 
 1. **Configure a máquina:**
-   - Abra Configurações  Máquina
+   - Abra Configurações Máquina
    - Selecione ou crie um perfil de máquina
    - Escolha o driver correto (GRBL Serial)
    - Selecione a porta serial
@@ -231,6 +237,7 @@ rayforge --loglevel DEBUG
 ```
 
 Verifique os logs para:
+
 - Tentativas de conexão e falhas
 - Dados seriais transmitidos (TX) e recebidos (RX)
 - Mensagens de erro com rastreamento de pilha
@@ -242,6 +249,7 @@ Verifique os logs para:
 ### Verificando Disponibilidade de Porta Manualmente
 
 **Linux:**
+
 ```bash
 # Liste todos dispositivos seriais USB
 ls -l /dev/ttyUSB* /dev/ttyACM*
@@ -257,6 +265,7 @@ sudo minicom -D /dev/ttyUSB0 -b 115200
 ```
 
 **Windows:**
+
 ```powershell
 # Liste portas COM no PowerShell
 [System.IO.Ports.SerialPort]::getportnames()
@@ -267,7 +276,8 @@ sudo minicom -D /dev/ttyUSB0 -b 115200
 
 ### Compatibilidade de Firmware
 
-O Rayforge é projetado para firmware compatível com GRBL. Certifique-se de que seu controlador executa:
+O Rayforge é projetado para firmware compatível com GRBL. Certifique-se de que seu controlador
+executa:
 
 - **GRBL 1.1** (mais comum, recomendado)
 - **GRBL 0.9** (mais antigo, pode ter recursos limitados)
@@ -279,11 +289,11 @@ Outros tipos de firmware (Marlin, Smoothieware) não são atualmente suportados 
 
 Chipsets comuns e seus drivers:
 
-| Chipset | Linux | Windows | macOS |
-|---------|-------|---------|-------|
-| **CH340/CH341** | Driver de kernel integrado | [Driver CH341SER](http://www.wch.cn/downloads/) | Requer driver |
-| **FTDI FT232** | Driver de kernel integrado | Integrado (Windows 10+) | Integrado |
-| **CP2102 (SiLabs)** | Driver de kernel integrado | Integrado (Windows 10+) | Integrado |
+| Chipset             | Linux                      | Windows                                         | macOS         |
+| ------------------- | -------------------------- | ----------------------------------------------- | ------------- |
+| **CH340/CH341**     | Driver de kernel integrado | [Driver CH341SER](http://www.wch.cn/downloads/) | Requer driver |
+| **FTDI FT232**      | Driver de kernel integrado | Integrado (Windows 10+)                         | Integrado     |
+| **CP2102 (SiLabs)** | Driver de kernel integrado | Integrado (Windows 10+)                         | Integrado     |
 
 ---
 
@@ -298,7 +308,8 @@ Se você tentou tudo acima e ainda não consegue conectar:
    - Modelo da placa controladora e versão do firmware
    - Chipset USB (verifique Gerenciador de Dispositivos no Windows ou `lsusb` no Linux)
    - Mensagens de erro completas e logs de depuração
-3. **Teste com outra aplicação** - Tente conectar com um terminal serial (minicom, PuTTY, Monitor Serial Arduino) para verificar se o hardware funciona
+3. **Teste com outra aplicação** - Tente conectar com um terminal serial (minicom, PuTTY, Monitor
+   Serial Arduino) para verificar se o hardware funciona
 
 ---
 

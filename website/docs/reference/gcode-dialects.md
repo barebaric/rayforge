@@ -1,19 +1,19 @@
 ---
-description: "G-code dialects supported by Rayforge. Configure output for different GRBL versions and Smoothieware-compatible laser controllers."
+description:
+  "G-code dialects supported by Rayforge. Configure output for different GRBL versions and
+  Smoothieware-compatible laser controllers."
 ---
 
 # G-code Dialect Support
 
-Rayforge supports multiple G-code dialects to work with different controller
-firmware.
+Rayforge supports multiple G-code dialects to work with different controller firmware.
 
 ## Automatic Dialect Selection
 
-When a GRBL device is discovered (via the [setup wizard](../getting-started/first-time-setup.md)
-or device discovery), Rayforge reads the firmware's `$I` compile flags and
-automatically selects the best-matching G-code dialect — you usually don't
-need to pick one manually. You can still override the choice afterwards in
-the machine's G-code dialect settings.
+When a GRBL device is discovered (via the [setup wizard](../getting-started/first-time-setup.md) or
+device discovery), Rayforge reads the firmware's `$I` compile flags and automatically selects the
+best-matching G-code dialect — you usually don't need to pick one manually. You can still override
+the choice afterwards in the machine's G-code dialect settings.
 
 ## Supported Dialects
 
@@ -31,38 +31,33 @@ Rayforge currently supports these G-code dialects:
 | **Smoothieware**               | Smoothieware | Laser cutters, CNC          |
 | **Marlin**                     | Marlin 2.0+  | 3D printers with laser      |
 
-:::note Recommended Dialects
-:::
+:::note Recommended Dialects :::
 
-**Grbl (Compat)** is the most tested and recommended dialect for standard laser
-applications.
+**Grbl (Compat)** is the most tested and recommended dialect for standard laser applications.
 
-**Grbl Raster** is optimized for raster engraving on GRBL controllers. It keeps
-the laser in dynamic power mode (M4) continuously and omits redundant feedrate
-commands, resulting in smoother and more compact G-code output.
+**Grbl Raster** is optimized for raster engraving on GRBL controllers. It keeps the laser in dynamic
+power mode (M4) continuously and omits redundant feedrate commands, resulting in smoother and more
+compact G-code output.
 
-**GRBL Dynamic (Depth-Aware)** is recommended for Depth-Aware laser engraving
-where power varies during cuts (e.g., variable depth engraving).
+**GRBL Dynamic (Depth-Aware)** is recommended for Depth-Aware laser engraving where power varies
+during cuts (e.g., variable depth engraving).
 
-**LinuxCNC** supports native cubic Bézier curves through the G5 command, which
-produces very smooth and compact G-code for curved paths. When using this
-dialect, enable the "Support Bézier Curves" option in Advanced Machine Settings
-to take advantage of G5 output.
+**LinuxCNC** supports native cubic Bézier curves through the G5 command, which produces very smooth
+and compact G-code for curved paths. When using this dialect, enable the "Support Bézier Curves"
+option in Advanced Machine Settings to take advantage of G5 output.
 
 ---
 
 ## Mach4 (M67 Analog)
 
-The **Mach4 (M67 Analog)** dialect is designed for high-speed raster engraving
-with Mach4 controllers. It uses the M67 command with analog output for precise
-laser power control.
+The **Mach4 (M67 Analog)** dialect is designed for high-speed raster engraving with Mach4
+controllers. It uses the M67 command with analog output for precise laser power control.
 
 ### Key Features
 
-- **M67 Analog Output**: Uses `M67 E0 Q<0-255>` for laser power instead of
-  inline S commands
-- **Reduced Buffer Pressure**: By separating power commands from motion
-  commands, the controller buffer is less stressed during high-speed operations
+- **M67 Analog Output**: Uses `M67 E0 Q<0-255>` for laser power instead of inline S commands
+- **Reduced Buffer Pressure**: By separating power commands from motion commands, the controller
+  buffer is less stressed during high-speed operations
 - **High-Speed Raster**: Optimized for fast raster engraving operations
 
 ### When to Use
@@ -94,30 +89,28 @@ To create a custom G-code dialect based on a built-in dialect:
 3. Edit the dialect settings as needed
 4. Save your custom dialect
 
-Each custom dialect is an independent copy. Changing one dialect never affects
-others, so you can freely experiment without worrying about breaking an existing
-setup. Custom dialects are stored in your configuration directory and can be
-shared.
+Each custom dialect is an independent copy. Changing one dialect never affects others, so you can
+freely experiment without worrying about breaking an existing setup. Custom dialects are stored in
+your configuration directory and can be shared.
 
 ### Dialect Settings
 
 When editing a custom dialect, the Settings page offers these options:
 
-**Continuous Laser Mode** keeps the laser in dynamic power mode (M4) active
-throughout the entire job instead of toggling M4/M5 between segments. This is
-useful for raster engraving where the laser needs to stay on continuously
-during scan lines.
+**Continuous Laser Mode** keeps the laser in dynamic power mode (M4) active throughout the entire
+job instead of toggling M4/M5 between segments. This is useful for raster engraving where the laser
+needs to stay on continuously during scan lines.
 
-**Modal Feedrate** omits the feedrate parameter (F) from motion commands when
-it has not changed since the last command. This produces more compact G-code
-and reduces the amount of data sent to the controller.
+**Modal Feedrate** omits the feedrate parameter (F) from motion commands when it has not changed
+since the last command. This produces more compact G-code and reduces the amount of data sent to the
+controller.
 
 ### Separate Laser-On Command for Focusing
 
-Some dialects support configuring a separate command for turning the laser on at
-low power, which is useful for focus mode. This lets you use a different command
-for the visual "laser pointer" behavior than what is used during actual cutting
-or engraving. Check your dialect's settings page for this option.
+Some dialects support configuring a separate command for turning the laser on at low power, which is
+useful for focus mode. This lets you use a different command for the visual "laser pointer" behavior
+than what is used during actual cutting or engraving. Check your dialect's settings page for this
+option.
 
 ---
 
@@ -125,8 +118,8 @@ or engraving. Check your dialect's settings page for this option.
 
 When creating or editing a custom dialect, each command template uses
 [Python format string](https://docs.python.org/3/library/string.html#format-string-syntax)
-placeholders to inject dynamic values. Use `{name}` or `{name:.0f}` syntax
-(e.g., `{power:.0f}` to format as a decimal with no fractional digits).
+placeholders to inject dynamic values. Use `{name}` or `{name:.0f}` syntax (e.g., `{power:.0f}` to
+format as a decimal with no fractional digits).
 
 ### Available Placeholders by Template
 
@@ -203,16 +196,15 @@ placeholders to inject dynamic values. Use `{name}` or `{name:.0f}` syntax
 
 ### Tips
 
-- **Format specifiers** are supported: `{power:.0f}` formats power as an integer,
-  `{power:.2f}` as two decimal places.
-- The **"Omit unchanged coordinates"** setting controls whether `x_cmd`, `y_cmd`,
-  and `z_cmd` are left empty when the axis position has not changed since the
-  last command. This reduces G-code size.
-- The **"Modal Feedrate"** setting controls whether `f_command` is omitted when
-  the feedrate has not changed.
-- Leave a template field **empty** to skip that command entirely (e.g., setting
-  `bezier_cubic` to `""` disables native Bézier output and falls back to
-  linearization).
+- **Format specifiers** are supported: `{power:.0f}` formats power as an integer, `{power:.2f}` as
+  two decimal places.
+- The **"Omit unchanged coordinates"** setting controls whether `x_cmd`, `y_cmd`, and `z_cmd` are
+  left empty when the axis position has not changed since the last command. This reduces G-code
+  size.
+- The **"Modal Feedrate"** setting controls whether `f_command` is omitted when the feedrate has not
+  changed.
+- Leave a template field **empty** to skip that command entirely (e.g., setting `bezier_cubic` to
+  `""` disables native Bézier output and falls back to linearization).
 
 ---
 

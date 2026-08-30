@@ -1,6 +1,8 @@
 # Arquitectura del Importador
 
-Este documento describe la arquitectura del sistema de importación de archivos de Rayforge, que maneja la conversión de varios formatos de archivo (SVG, DXF, PNG, PDF, etc.) al modelo de documento de Rayforge.
+Este documento describe la arquitectura del sistema de importación de archivos de Rayforge, que
+maneja la conversión de varios formatos de archivo (SVG, DXF, PNG, PDF, etc.) al modelo de documento
+de Rayforge.
 
 ## Tabla de Contenidos
 
@@ -15,7 +17,9 @@ Este documento describe la arquitectura del sistema de importación de archivos 
 
 ## Resumen
 
-El sistema de importación está construido alrededor de un pipeline de cuatro fases que transforma datos de archivo crudos en objetos de documento completamente posicionados. Cada fase tiene una responsabilidad específica y produce estructuras de datos bien definidas.
+El sistema de importación está construido alrededor de un pipeline de cuatro fases que transforma
+datos de archivo crudos en objetos de documento completamente posicionados. Cada fase tiene una
+responsabilidad específica y produce estructuras de datos bien definidas.
 
 ```mermaid
 flowchart TD
@@ -48,7 +52,8 @@ flowchart TD
 
 **Método:** `Importer.parse()`
 
-Extrae hechos geométricos del archivo incluyendo límites, detalles del sistema de coordenadas e información de capas.
+Extrae hechos geométricos del archivo incluyendo límites, detalles del sistema de coordenadas e
+información de capas.
 
 **Salida:** `ParsingResult`
 
@@ -87,7 +92,8 @@ Convierte datos parseados en objetos `Geometry` vectoriales según el `Vectoriza
 
 **Clase:** `NormalizationEngine`
 
-Calcula matrices de transformación para mapear Coordenadas Nativas a Coordenadas Mundo basándose en la intención del usuario.
+Calcula matrices de transformación para mapear Coordenadas Nativas a Coordenadas Mundo basándose en
+la intención del usuario.
 
 **Salida:** `List[LayoutItem]`
 
@@ -125,7 +131,9 @@ Instancia objetos de dominio Rayforge (`WorkPiece`, `Layer`) basándose en el pl
 
 **Método:** `Importer.scan()`
 
-Un escaneo ligero que extrae metadatos sin procesamiento completo. Usado para construir la UI para un importador, incluyendo lista de selección de capas. Esto NO es parte del pipeline de importación principal ejecutado por `get_doc_items()`.
+Un escaneo ligero que extrae metadatos sin procesamiento completo. Usado para construir la UI para
+un importador, incluyendo lista de selección de capas. Esto NO es parte del pipeline de importación
+principal ejecutado por `get_doc_items()`.
 
 **Salida:** `ImportManifest`
 
@@ -140,7 +148,8 @@ Un escaneo ligero que extrae metadatos sin procesamiento completo. Usado para co
 
 ## Sistemas de Coordenadas
 
-El pipeline de importación maneja múltiples sistemas de coordenadas a través de transformación cuidadosa:
+El pipeline de importación maneja múltiples sistemas de coordenadas a través de transformación
+cuidadosa:
 
 ### Coordenadas Nativas (Entrada)
 
@@ -175,7 +184,8 @@ El pipeline de importación maneja múltiples sistemas de coordenadas a través 
 
 ### Importer (Clase Base)
 
-Clase base abstracta que define la interfaz para todos los importadores. Las subclases deben implementar los métodos del pipeline y declarar sus capacidades via el atributo `features`.
+Clase base abstracta que define la interfaz para todos los importadores. Las subclases deben
+implementar los métodos del pipeline y declarar sus capacidades via el atributo `features`.
 
 **Características:**
 
@@ -186,16 +196,16 @@ Clase base abstracta que define la interfaz para todos los importadores. Las sub
 
 ### Estructuras de Datos
 
-| Clase                 | Fase     | Propósito                    |
-| --------------------- | --------- | -------------------------- |
-| `LayerInfo`           | Scan      | Metadatos de capa ligeros   |
-| `ImportManifest`      | Scan      | Resultado de fase de escaneo |
-| `LayerGeometry`       | Parse     | Información de capa geométrica |
-| `ParsingResult`       | Parse     | Hechos geométricos          |
-| `VectorizationResult` | Vectorize | Geometría vectorial         |
+| Clase                 | Fase      | Propósito                       |
+| --------------------- | --------- | ------------------------------- |
+| `LayerInfo`           | Scan      | Metadatos de capa ligeros       |
+| `ImportManifest`      | Scan      | Resultado de fase de escaneo    |
+| `LayerGeometry`       | Parse     | Información de capa geométrica  |
+| `ParsingResult`       | Parse     | Hechos geométricos              |
+| `VectorizationResult` | Vectorize | Geometría vectorial             |
 | `LayoutItem`          | Layout    | Configuración de transformación |
-| `ImportPayload`       | Assemble  | Salida final               |
-| `ImportResult`        | Final     | Wrapper de resultado completo |
+| `ImportPayload`       | Assemble  | Salida final                    |
+| `ImportResult`        | Final     | Wrapper de resultado completo   |
 
 ### Componentes de Soporte
 

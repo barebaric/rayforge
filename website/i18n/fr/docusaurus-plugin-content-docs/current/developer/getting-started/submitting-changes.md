@@ -44,6 +44,7 @@ git rebase upstream/main
 ## Soumettre une Pull Request
 
 1. Poussez votre branche vers votre fork :
+
    ```bash
    git push origin feature/votre-nom-de-fonctionnalite
    ```
@@ -83,13 +84,12 @@ Utilisez des messages de commit clairs et descriptifs :
 
 ### Changements petits et ciblés
 
-Gardez les pull requests focalisées sur une seule fonctionnalité ou correction. Les grands changements devraient être divisés en morceaux plus petits et logiques.
+Gardez les pull requests focalisées sur une seule fonctionnalité ou correction. Les grands
+changements devraient être divisés en morceaux plus petits et logiques.
 
-:::tip Discutez d'abord
-Pour les changements majeurs, ouvrez d'abord un [ticket](https://github.com/barebaric/rayforge/issues) pour discuter de votre approche avant d'investir beaucoup de temps.
-:::
+:::tip Discutez d'abord Pour les changements majeurs, ouvrez d'abord un
+[ticket](https://github.com/barebaric/rayforge/issues) pour discuter de votre approche avant
+d'investir beaucoup de temps. :::
 
-
-:::note Besoin d'aide ?
-Si vous n'êtes sûr d'aucune partie du processus de contribution, n'hésitez pas à demander de l'aide dans un ticket ou une discussion.
-:::
+:::note Besoin d'aide ? Si vous n'êtes sûr d'aucune partie du processus de contribution, n'hésitez
+pas à demander de l'aide dans un ticket ou une discussion. :::

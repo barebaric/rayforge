@@ -1,8 +1,7 @@
 # Importando arquivos
 
-O Rayforge suporta a importação de vários formatos de arquivo, vetoriais e
-raster. Esta página explica como importar arquivos e otimizá-los para obter os
-melhores resultados.
+O Rayforge suporta a importação de vários formatos de arquivo, vetoriais e raster. Esta página
+explica como importar arquivos e otimizá-los para obter os melhores resultados.
 
 ## Formatos de arquivo suportados
 
@@ -20,16 +19,14 @@ melhores resultados.
 
 | Formato  | Extensão        | Método de importação | Ideal para                         |
 | -------- | --------------- | -------------------- | ---------------------------------- |
-| **PNG**  | `.webp`          | Vetorização          | Fotos, imagens com transparência   |
+| **PNG**  | `.webp`         | Vetorização          | Fotos, imagens com transparência   |
 | **JPEG** | `.jpg`, `.jpeg` | Vetorização          | Fotos, imagens de tom contínuo     |
 | **BMP**  | `.bmp`          | Vetorização          | Gráficos simples, capturas de tela |
 
-:::note Importação de imagens raster
-:::
+:::note Importação de imagens raster :::
 
-Todas as imagens raster são **vetorizadas** para criar caminhos vetoriais que
-podem ser usados em operações a laser. A qualidade depende da configuração da
-vetorização.
+Todas as imagens raster são **vetorizadas** para criar caminhos vetoriais que podem ser usados em
+operações a laser. A qualidade depende da configuração da vetorização.
 
 ---
 
@@ -37,31 +34,29 @@ vetorização.
 
 ### O diálogo de importação
 
-O Rayforge possui um diálogo de importação unificado que oferece visualização em
-tempo real e opções de configuração para todos os tipos de arquivo suportados. O
-diálogo permite:
+O Rayforge possui um diálogo de importação unificado que oferece visualização em tempo real e opções
+de configuração para todos os tipos de arquivo suportados. O diálogo permite:
 
 - **Visualizar a importação** antes de adicioná-la ao documento
 - **Configurar as definições de vetorização** para imagens raster
-- **Escolher o método de importação** para arquivos SVG (vetores diretos ou
-  vetorização)
+- **Escolher o método de importação** para arquivos SVG (vetores diretos ou vetorização)
 - **Ajustar parâmetros** como limiar, inverter e limiar automático
 
 ![Diálogo de importação](/screenshots/import-dialog.webp)
 
 ### Modo de Importação de Camadas
 
-Ao importar arquivos que contêm múltiplas camadas (como arquivos SVG ou PDF com
-camadas nomeadas), o diálogo oferece três formas de lidar com elas:
+Ao importar arquivos que contêm múltiplas camadas (como arquivos SVG ou PDF com camadas nomeadas), o
+diálogo oferece três formas de lidar com elas:
 
-- **Mapear para Existentes**: Corresponda as camadas importadas às camadas
-  existentes do documento. A primeira camada do documento fonte é colocada na
-  primeira camada do seu projeto, a segunda na segunda e assim por diante. Este
-  é o padrão e funciona bem quando seu documento já tem camadas configuradas.
-- **Novas Camadas**: Cria uma nova camada no documento para cada camada
-  importada. Isso mantém o conteúdo importado separado do trabalho existente.
-- **Achatar**: Mescla todas as camadas importadas em uma única camada. Útil
-  quando você quer tudo em uma camada independentemente da estrutura original.
+- **Mapear para Existentes**: Corresponda as camadas importadas às camadas existentes do documento.
+  A primeira camada do documento fonte é colocada na primeira camada do seu projeto, a segunda na
+  segunda e assim por diante. Este é o padrão e funciona bem quando seu documento já tem camadas
+  configuradas.
+- **Novas Camadas**: Cria uma nova camada no documento para cada camada importada. Isso mantém o
+  conteúdo importado separado do trabalho existente.
+- **Achatar**: Mescla todas as camadas importadas em uma única camada. Útil quando você quer tudo em
+  uma camada independentemente da estrutura original.
 
 ### Método 1: Menu Arquivo
 
@@ -91,44 +86,36 @@ rayforge file1.svg file2.dxf
 
 ### Redimensionamento automático na importação
 
-Ao importar arquivos maiores que a área de trabalho da sua máquina, o Rayforge
-automaticamente:
+Ao importar arquivos maiores que a área de trabalho da sua máquina, o Rayforge automaticamente:
 
-1. **Reduz a escala** do conteúdo importado para caber dentro dos limites da
-   máquina
+1. **Reduz a escala** do conteúdo importado para caber dentro dos limites da máquina
 2. **Preserva a proporção** durante o redimensionamento
 3. **Centraliza** o conteúdo redimensionado no espaço de trabalho
 4. **Exibe uma notificação** com a opção de desfazer o redimensionamento
 
 A notificação de redimensionamento aparece como uma mensagem toast:
 
-- ⚠️ "O item importado era maior que a área de trabalho e foi reduzido para
-  caber."
+- ⚠️ "O item importado era maior que a área de trabalho e foi reduzido para caber."
 - Inclui um botão **"Redefinir"** para desfazer o redimensionamento automático
-- O toast permanece visível até ser descartado ou a ação de redefinição ser
-  executada
+- O toast permanece visível até ser descartado ou a ação de redefinição ser executada
 
-Isso garante que seus designs sempre se ajustem às capacidades da sua máquina,
-dando-lhe a flexibilidade de restaurar o tamanho original, se necessário.
+Isso garante que seus designs sempre se ajustem às capacidades da sua máquina, dando-lhe a
+flexibilidade de restaurar o tamanho original, se necessário.
 
 ---
 
 ## Importação SVG
 
-SVG (Scalable Vector Graphics) é o **formato recomendado** para designs
-vetoriais.
+SVG (Scalable Vector Graphics) é o **formato recomendado** para designs vetoriais.
 
-:::tip Automatizar a atribuição de etapas
-Você pode configurar [Regras de Cor](../application-settings/color-rules.md)
-para atribuir automaticamente tipos de etapa (Contorno, Gravação, etc.) com
-base nas cores do seu SVG. Quando existem regras, o diálogo de importação
-agrupa formas por cor por padrão para que as regras entrem em vigor.
-:::
+:::tip Automatizar a atribuição de etapas Você pode configurar
+[Regras de Cor](../application-settings/color-rules.md) para atribuir automaticamente tipos de etapa
+(Contorno, Gravação, etc.) com base nas cores do seu SVG. Quando existem regras, o diálogo de
+importação agrupa formas por cor por padrão para que as regras entrem em vigor. :::
 
 ### Opções de importação no diálogo
 
-Ao importar SVG, o diálogo de importação oferece um interruptor para escolher
-entre dois métodos:
+Ao importar SVG, o diálogo de importação oferece um interruptor para escolher entre dois métodos:
 
 #### 1. Usar vetores originais (Recomendado)
 
@@ -187,12 +174,10 @@ Desative "Usar vetores originais" para usar este método.
 
 ### Visualização em tempo real
 
-O diálogo de importação mostra uma visualização em tempo real de como seu SVG
-será importado:
+O diálogo de importação mostra uma visualização em tempo real de como seu SVG será importado:
 
 - Os caminhos vetoriais são exibidos em sobreposição azul
-- No modo de vetorização, a imagem original é mostrada com os caminhos
-  vetorizados
+- No modo de vetorização, a imagem original é mostrada com os caminhos vetorizados
 - A visualização atualiza em tempo real conforme você altera as definições
 
 ### Boas práticas SVG
@@ -282,101 +267,90 @@ Os arquivos PDF podem conter gráficos vetoriais, imagens raster, ou ambos.
 
 ### Importação vetorial direta
 
-Ao importar um PDF que contém caminhos vetoriais, o Rayforge pode importá-los
-diretamente — assim como arquivos SVG ou DXF. Isso fornece geometria limpa e
-escalável sem perda de qualidade por rasterização.
+Ao importar um PDF que contém caminhos vetoriais, o Rayforge pode importá-los diretamente — assim
+como arquivos SVG ou DXF. Isso fornece geometria limpa e escalável sem perda de qualidade por
+rasterização.
 
-Se o PDF contiver camadas, o Rayforge as detecta e permite escolher quais
-importar. Cada camada torna-se uma peça de trabalho separada no seu documento.
-Isso funciona da mesma forma que a importação de camadas SVG: ative ou desative
-camadas individuais no diálogo de importação antes de importar.
+Se o PDF contiver camadas, o Rayforge as detecta e permite escolher quais importar. Cada camada
+torna-se uma peça de trabalho separada no seu documento. Isso funciona da mesma forma que a
+importação de camadas SVG: ative ou desative camadas individuais no diálogo de importação antes de
+importar.
 
-Isso é especialmente útil para PDFs exportados de softwares de design como
-Illustrator ou Inkscape, onde os caminhos vetoriais estão limpos e bem
-organizados.
+Isso é especialmente útil para PDFs exportados de softwares de design como Illustrator ou Inkscape,
+onde os caminhos vetoriais estão limpos e bem organizados.
 
 ### Fallback: Renderizar e vetorizar
 
-Para PDFs que não contêm dados vetoriais utilizáveis — documentos digitalizados,
-fotos incorporadas, ou PDFs onde o texto não foi convertido em contornos — o
-Rayforge pode recorrer à renderização do PDF como imagem e vetorizá-lo. Isso
-funciona da mesma forma que a importação de imagens raster.
+Para PDFs que não contêm dados vetoriais utilizáveis — documentos digitalizados, fotos incorporadas,
+ou PDFs onde o texto não foi convertido em contornos — o Rayforge pode recorrer à renderização do
+PDF como imagem e vetorizá-lo. Isso funciona da mesma forma que a importação de imagens raster.
 
 ### Dicas para importação PDF
 
 **Melhores resultados:**
 
-1. **Usar PDFs vetoriais**: PDFs criados a partir de softwares vetoriais
-   (Illustrator, Inkscape) produzem os resultados mais limpos com importação
-   direta.
+1. **Usar PDFs vetoriais**: PDFs criados a partir de softwares vetoriais (Illustrator, Inkscape)
+   produzem os resultados mais limpos com importação direta.
 
-2. **Verificar camadas**: Se o seu PDF tiver camadas, elas serão listadas no
-   diálogo de importação. Selecione apenas as camadas necessárias.
+2. **Verificar camadas**: Se o seu PDF tiver camadas, elas serão listadas no diálogo de importação.
+   Selecione apenas as camadas necessárias.
 
-3. **Para documentos com texto**: Exporte como SVG com fontes convertidas em
-   caminhos para melhor qualidade, ou use o fallback de renderizar e vetorizar.
+3. **Para documentos com texto**: Exporte como SVG com fontes convertidas em caminhos para melhor
+   qualidade, ou use o fallback de renderizar e vetorizar.
 
-4. **Usar a visualização do diálogo de importação**: Ajuste as definições de
-   limiar e inversão ao usar o modo de vetorização. A visualização mostra
-   exatamente como o PDF será vetorizado.
+4. **Usar a visualização do diálogo de importação**: Ajuste as definições de limiar e inversão ao
+   usar o modo de vetorização. A visualização mostra exatamente como o PDF será vetorizado.
 
 ---
 
 ## Importação Ruida
 
-Os arquivos Ruida (.rd) são arquivos de trabalho binários proprietários usados
-pelos controladores Ruida em muitas máquinas de corte a laser. Esses arquivos
-contêm tanto geometria vetorial quanto configurações do laser organizadas em
-camadas (cores).
+Os arquivos Ruida (.rd) são arquivos de trabalho binários proprietários usados pelos controladores
+Ruida em muitas máquinas de corte a laser. Esses arquivos contêm tanto geometria vetorial quanto
+configurações do laser organizadas em camadas (cores).
 
 **Após a importação:**
 
-- **Verificar escala** - Confirmar se as dimensões correspondem ao tamanho
-  esperado
-- **Revisar camadas** - Garantir que todas as camadas foram importadas
-  corretamente
+- **Verificar escala** - Confirmar se as dimensões correspondem ao tamanho esperado
+- **Revisar camadas** - Garantir que todas as camadas foram importadas corretamente
 - **Validar caminhos** - Confirmar se todos os caminhos de corte estão presentes
 
 ### Limitações
 
-- **Importação somente leitura** - Arquivos Ruida só podem ser importados, não
-  exportados
+- **Importação somente leitura** - Arquivos Ruida só podem ser importados, não exportados
 - **Formato binário** - Edição direta dos arquivos .rd originais não é suportada
-- **Recursos proprietários** - Alguns recursos avançados do Ruida podem não ser
-  totalmente suportados
+- **Recursos proprietários** - Alguns recursos avançados do Ruida podem não ser totalmente
+  suportados
 
 ---
 
 ## Importação LightBurn
 
-Arquivos LightBurn (.lbrn / .lbrn2) são arquivos de projeto proprietários
-usados pelo software de corte a laser LightBurn. Eles armazenam geometria
-vetorial organizada em camadas coloridas com configurações de laser ajustáveis.
+Arquivos LightBurn (.lbrn / .lbrn2) são arquivos de projeto proprietários usados pelo software de
+corte a laser LightBurn. Eles armazenam geometria vetorial organizada em camadas coloridas com
+configurações de laser ajustáveis.
 
 **Após a importação:**
 
-- **Revisar camadas** — As camadas do LightBurn são mapeadas para as camadas
-  do documento com nomes correspondentes
-- **Verificar configurações do laser** — As configurações de potência,
-  velocidade e passes das camadas do LightBurn são preservadas
-- **Validar caminhos** — Confirmar se todos os caminhos de corte estão
-  presentes e corretamente posicionados
+- **Revisar camadas** — As camadas do LightBurn são mapeadas para as camadas do documento com nomes
+  correspondentes
+- **Verificar configurações do laser** — As configurações de potência, velocidade e passes das
+  camadas do LightBurn são preservadas
+- **Validar caminhos** — Confirmar se todos os caminhos de corte estão presentes e corretamente
+  posicionados
 
 ### Limitações
 
-- **Importação somente leitura** — arquivos LightBurn só podem ser importados,
-  não exportados
-- **Formato binário** — Edição direta dos arquivos .lbrn originais não é
-  suportada
-- **Recursos proprietários** — Alguns recursos avançados do LightBurn podem
-  não ser totalmente suportados
+- **Importação somente leitura** — arquivos LightBurn só podem ser importados, não exportados
+- **Formato binário** — Edição direta dos arquivos .lbrn originais não é suportada
+- **Recursos proprietários** — Alguns recursos avançados do LightBurn podem não ser totalmente
+  suportados
 
 ---
 
 ## Importação de imagens raster (PNG, JPG, BMP)
 
-As imagens raster são **vetorizadas** para criar caminhos vetoriais usando o
-diálogo de importação.
+As imagens raster são **vetorizadas** para criar caminhos vetoriais usando o diálogo de importação.
 
 ### Processo de vetorização no diálogo
 
@@ -398,9 +372,9 @@ O diálogo de importação fornece estes parâmetros ajustáveis:
 | **Limiar**            | Corte preto/branco  | Menor = mais detalhes, maior = mais simples             |
 | **Inverter**          | Inverter cores      | Vetoriza objetos claros em fundo escuro                 |
 
-**As definições padrão** funcionam bem para a maioria das imagens. O diálogo
-mostra uma visualização em tempo real que atualiza conforme você ajusta esses
-parâmetros, permitindo refinar a vetorização antes de importar.
+**As definições padrão** funcionam bem para a maioria das imagens. O diálogo mostra uma visualização
+em tempo real que atualiza conforme você ajusta esses parâmetros, permitindo refinar a vetorização
+antes de importar.
 
 ### Preparando imagens para vetorização
 
@@ -456,4 +430,5 @@ parâmetros, permitindo refinar a vetorização antes de importar.
 - [Formatos suportados](formats) - Especificações detalhadas dos formatos
 - [Exportando G-code](exporting) - Opções de saída
 - [Início rápido](../getting-started/quick-start.md) - Tutorial de primeira importação
-- [Regras de Cor](../application-settings/color-rules.md) - Mapeia cores SVG para tipos de etapa na importação
+- [Regras de Cor](../application-settings/color-rules.md) - Mapeia cores SVG para tipos de etapa na
+  importação

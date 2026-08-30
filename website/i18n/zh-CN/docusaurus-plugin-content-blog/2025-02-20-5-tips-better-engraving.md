@@ -54,7 +54,8 @@ Rayforge 支持手动和自动标签放置：
 
 ## 4. 在运行前以 3D 预览您的作业
 
-Rayforge 最有价值的功能之一是 3D G-code 预览。跳过这一步直接将作业发送到机器很诱人，但花一点时间预览可以节省您的时间和材料。
+Rayforge 最有价值的功能之一是 3D
+G-code 预览。跳过这一步直接将作业发送到机器很诱人，但花一点时间预览可以节省您的时间和材料。
 
 **在预览中要注意什么**：
 
@@ -69,7 +70,8 @@ Rayforge 最有价值的功能之一是 3D G-code 预览。跳过这一步直接
 
 ## 5. 使用自定义 G-code 钩子实现一致的工作流程
 
-如果您发现自己在每个作业前后都运行相同的 G-code 命令——比如归零、打开气辅或运行对焦程序——您可以使用 **G-code 宏和钩子** 来自动化这些操作。
+如果您发现自己在每个作业前后都运行相同的 G-code 命令——比如归零、打开气辅或运行对焦程序——您可以使用
+**G-code 宏和钩子** 来自动化这些操作。
 
 **常见用例**：
 
@@ -97,4 +99,5 @@ G0 Z{focus_height} ; Move to focus height
 
 ---
 
-*有您自己的 Rayforge 技巧和窍门？在 [GitHub Discussions](https://github.com/barebaric/rayforge/discussions) 上与社区分享！*
+_有您自己的 Rayforge 技巧和窍门？在
+[GitHub Discussions](https://github.com/barebaric/rayforge/discussions) 上与社区分享！_

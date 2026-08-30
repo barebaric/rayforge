@@ -1,5 +1,7 @@
 ---
-description: "Getting started with Rayforge development. Overview of the codebase, development workflow, and contribution guidelines."
+description:
+  "Getting started with Rayforge development. Overview of the codebase, development workflow, and
+  contribution guidelines."
 ---
 
 # Getting the Code
@@ -8,7 +10,8 @@ This guide covers how to obtain the Rayforge source code for development.
 
 ## Fork the Repository
 
-Fork the [Rayforge repository](https://github.com/barebaric/rayforge) on GitHub to create your own copy where you can make changes.
+Fork the [Rayforge repository](https://github.com/barebaric/rayforge) on GitHub to create your own
+copy where you can make changes.
 
 ## Clone Your Fork
 

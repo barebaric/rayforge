@@ -1,6 +1,8 @@
 # Schrumpfumhüllung
 
-Schrumpfumhüllung erzeugt einen effizienten Schneidepfad um mehrere Objekte, indem sie eine Grenze erzeugt, die sich um sie "schrumpft". Sie ist nützlich, um mehrere Teile mit minimalem Abfall aus einem Blatt zu schneiden.
+Schrumpfumhüllung erzeugt einen effizienten Schneidepfad um mehrere Objekte, indem sie eine Grenze
+erzeugt, die sich um sie "schrumpft". Sie ist nützlich, um mehrere Teile mit minimalem Abfall aus
+einem Blatt zu schneiden.
 
 ## Übersicht
 
@@ -37,7 +39,8 @@ Schrumpfumhüllung erzeugt eine Grenze mithilfe eines Algorithmus der rechnerisc
 3. **Umhülle** die Objektgruppe eng
 4. **Versetzte** um die angegebene Distanz nach außen
 
-Das Ergebnis ist ein effizienter Schneidepfad, der der Gesamtform deiner Teile folgt, während ein Spielraum erhalten bleibt.
+Das Ergebnis ist ein effizienter Schneidepfad, der der Gesamtform deiner Teile folgt, während ein
+Spielraum erhalten bleibt.
 
 ## Eine Schrumpfumhüllungs-Operation erstellen
 
@@ -62,13 +65,15 @@ Das Ergebnis ist ein effizienter Schneidepfad, der der Gesamtform deiner Teile f
 
 ## Haupt-Einstellungen
 
-Der Schritt-Einstellungen-Dialog hat drei Registerkarten: **Schritt-Einstellungen**, **Laser** und **Nachbearbeitung**. Die Einstellungen werden unten in Registerkarten-Reihenfolge beschrieben.
+Der Schritt-Einstellungen-Dialog hat drei Registerkarten: **Schritt-Einstellungen**, **Laser** und
+**Nachbearbeitung**. Die Einstellungen werden unten in Registerkarten-Reihenfolge beschrieben.
 
 ### Schrumpfumhüllung
 
 ![Schrumpfumhüllungs-Schritt-Einstellungen](/screenshots/step-settings-shrink-wrap-general.webp)
 
-Die Gruppe **Schrumpfumhüllung** auf der Registerkarte _Schritt-Einstellungen_ steuert, wie die Hülle um den Inhalt passt.
+Die Gruppe **Schrumpfumhüllung** auf der Registerkarte _Schritt-Einstellungen_ steuert, wie die
+Hülle um den Inhalt passt.
 
 #### Glättung
 
@@ -123,7 +128,8 @@ Steuert, wo der Laser relativ zum Schrumpfumhüllungs-Pfad schneidet:
 
 ![Laser-Einstellungen](/screenshots/step-settings-shrink-wrap-laser.webp)
 
-Leistung, Geschwindigkeit und Laserkopf-Auswahl befinden sich auf der Seite **Laser** des Schritt-Einstellungen-Dialogs.
+Leistung, Geschwindigkeit und Laserkopf-Auswahl befinden sich auf der Seite **Laser** des
+Schritt-Einstellungen-Dialogs.
 
 Wie andere Schneideoperationen:
 
@@ -137,7 +143,8 @@ Wie andere Schneideoperationen:
 - Wie schnell sich der Laser bewegt
 - An die Schnittgeschwindigkeit deines Materials anpassen
 
-Um die Grenze mehr als einmal zu schneiden, füge einen [Mehrfach-Durchgang](../multi-pass.md)-Nachbearbeitungsprozessor hinzu.
+Um die Grenze mehr als einmal zu schneiden, füge einen
+[Mehrfach-Durchgang](../multi-pass.md)-Nachbearbeitungsprozessor hinzu.
 
 ## Anwendungsfälle
 
@@ -222,10 +229,12 @@ Schrumpfumhüllungs-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
 
 - **[Pfad-Glättung](../smooth.md)** - Gezackte Kanten im Grenzpfad reduzieren
 - **[Halte-Laschen](../holding-tabs.md)** - Geschnittene Teile am Rohmaterial befestigt halten
-- **[Auf Rohmaterial zuschneiden](../crop-to-stock.md)** - Schnitte auf die Materialgrenze beschränken
+- **[Auf Rohmaterial zuschneiden](../crop-to-stock.md)** - Schnitte auf die Materialgrenze
+  beschränken
 - **[Pfad-Optimierung](../path-optimization.md)** - Verfahrdistanz reduzieren
 - **[Mehrfach-Durchgang](../multi-pass.md)** - Schnitte für dicke Materialien wiederholen
-- **[Ein-/Auslauf](../lead-in-out.md)** - Nullleistungs-An- und Abfahrtsbewegungen für sauberere Schnittenden hinzufügen
+- **[Ein-/Auslauf](../lead-in-out.md)** - Nullleistungs-An- und Abfahrtsbewegungen für sauberere
+  Schnittenden hinzufügen
 
 ### Teilabstand
 

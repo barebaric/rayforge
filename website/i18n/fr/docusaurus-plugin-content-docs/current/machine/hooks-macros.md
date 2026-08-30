@@ -1,6 +1,8 @@
 # Macros & Hooks
 
-Rayforge fournit deux puissantes fonctionnalités d'automatisation pour personnaliser votre flux de travail : **Macros** et **Hooks**. Les deux vous permettent d'injecter du G-code personnalisé dans vos travaux, mais ils servent des objectifs différents.
+Rayforge fournit deux puissantes fonctionnalités d'automatisation pour personnaliser votre flux de
+travail : **Macros** et **Hooks**. Les deux vous permettent d'injecter du G-code personnalisé dans
+vos travaux, mais ils servent des objectifs différents.
 
 ![Paramètres Hooks & Macros](/screenshots/machine-settings-hooks-macros.webp)
 
@@ -8,16 +10,17 @@ Rayforge fournit deux puissantes fonctionnalités d'automatisation pour personna
 
 ## Aperçu
 
-| Fonctionnalité | Objectif | Déclencheur | Cas d'Utilisation |
-| -------------- | -------- | ----------- | ----------------- |
-| **Macros** | Extraits de G-code réutilisables | Exécution manuelle | Commandes rapides, motifs de test, routines personnalisées |
-| **Hooks** | Injection automatique de G-code | Événements du cycle de vie du travail | Séquences de démarrage, changements de calque, nettoyage |
+| Fonctionnalité | Objectif                         | Déclencheur                           | Cas d'Utilisation                                          |
+| -------------- | -------------------------------- | ------------------------------------- | ---------------------------------------------------------- |
+| **Macros**     | Extraits de G-code réutilisables | Exécution manuelle                    | Commandes rapides, motifs de test, routines personnalisées |
+| **Hooks**      | Injection automatique de G-code  | Événements du cycle de vie du travail | Séquences de démarrage, changements de calque, nettoyage   |
 
 ---
 
 ## Macros
 
-Les macros sont des **scripts G-code nommés et réutilisables** que vous pouvez exécuter manuellement à tout moment.
+Les macros sont des **scripts G-code nommés et réutilisables** que vous pouvez exécuter manuellement
+à tout moment.
 
 ### À quoi Servent les Macros ?
 
@@ -55,8 +58,7 @@ Cas d'utilisation courants des macros :
 
 #### Simple : Mettre la Machine à l'Origine
 
-**Nom :** Mettre Machine à l'Origine
-**Code :**
+**Nom :** Mettre Machine à l'Origine **Code :**
 
 ```gcode
 $H
@@ -69,8 +71,7 @@ $H
 
 #### Moyen : Définir le Décalage de Travail
 
-**Nom :** Définir G54 à la Position Actuelle
-**Code :**
+**Nom :** Définir G54 à la Position Actuelle **Code :**
 
 ```gcode
 G10 L20 P1 X0 Y0
@@ -83,8 +84,7 @@ G10 L20 P1 X0 Y0
 
 #### Avancé : Grille de Test de Mise au Point
 
-**Nom :** Test de Mise au Point 9 Points
-**Code :**
+**Nom :** Test de Mise au Point 9 Points **Code :**
 
 ```gcode
 ; Grille 9 points pour trouver la mise au point optimale
@@ -107,22 +107,23 @@ M5
 
 ## Hooks
 
-Les hooks sont des **injections automatiques de G-code** déclenchées par des événements spécifiques pendant l'exécution du travail.
+Les hooks sont des **injections automatiques de G-code** déclenchées par des événements spécifiques
+pendant l'exécution du travail.
 
 ### Déclencheurs de Hooks
 
 Rayforge supporte ces déclencheurs de hooks :
 
-| Déclencheur | Quand il S'exécute | Utilisations Courantes |
-| ----------- | ------------------ | ---------------------- |
+| Déclencheur         | Quand il S'exécute                   | Utilisations Courantes                                    |
+| ------------------- | ------------------------------------ | --------------------------------------------------------- |
 | **Début de Calque** | Avant le traitement de chaque calque | Changement d'outil, ajustement de puissance, commentaires |
-| **Fin de Calque** | Après le traitement de chaque calque | Notification de progression, pause |
-| **Début de Pièce** | Avant le traitement de chaque pièce | Numérotation des pièces, marques d'alignement |
-| **Fin de Pièce** | Après le traitement de chaque pièce | Refroidissement, pause d'inspection |
+| **Fin de Calque**   | Après le traitement de chaque calque | Notification de progression, pause                        |
+| **Début de Pièce**  | Avant le traitement de chaque pièce  | Numérotation des pièces, marques d'alignement             |
+| **Fin de Pièce**    | Après le traitement de chaque pièce  | Refroidissement, pause d'inspection                       |
 
-:::note G-code au Niveau du Travail
-Le G-code de début et fin de travail est configuré via les paramètres de préambule et postscript du dialecte, pas via les hooks. Voir [Paramètres G-code](gcode) pour plus de détails.
-:::
+:::note G-code au Niveau du Travail Le G-code de début et fin de travail est configuré via les
+paramètres de préambule et postscript du dialecte, pas via les hooks. Voir
+[Paramètres G-code](gcode) pour plus de détails. :::
 
 ### Créer un Hook
 
@@ -143,8 +144,7 @@ Le G-code de début et fin de travail est configuré via les paramètres de pré
 
 #### Début de Calque : Ajouter un Commentaire
 
-**Déclencheur :** Début de Calque
-**Code :**
+**Déclencheur :** Début de Calque **Code :**
 
 ```gcode
 ; Démarrage du calque : {layer_name}
@@ -157,8 +157,7 @@ Le G-code de début et fin de travail est configuré via les paramètres de pré
 
 #### Début de Pièce : Numérotation des Pièces
 
-**Déclencheur :** Début de Pièce
-**Code :**
+**Déclencheur :** Début de Pièce **Code :**
 
 ```gcode
 ; Pièce : {workpiece_name}
@@ -196,49 +195,50 @@ Pour un travail avec 2 calques, chacun avec 2 pièces :
 
 ## Substitution de Variables
 
-Les macros et hooks supportent la **substitution de variables** pour injecter des valeurs dynamiques.
+Les macros et hooks supportent la **substitution de variables** pour injecter des valeurs
+dynamiques.
 
 ### Variables Disponibles
 
-Les variables utilisent la syntaxe `{nom_variable}` et sont remplacées pendant la génération du G-code.
+Les variables utilisent la syntaxe `{nom_variable}` et sont remplacées pendant la génération du
+G-code.
 
 **Variables au niveau du travail :**
 
-| Variable | Description | Exemple de Valeur |
-| -------- | ----------- | ----------------- |
-| `{job_name}` | Nom du travail/document actuel | "test-job" |
-| `{date}` | Date actuelle | "2025-10-03" |
-| `{time}` | Heure actuelle | "14:30:25" |
+| Variable     | Description                    | Exemple de Valeur |
+| ------------ | ------------------------------ | ----------------- |
+| `{job_name}` | Nom du travail/document actuel | "test-job"        |
+| `{date}`     | Date actuelle                  | "2025-10-03"      |
+| `{time}`     | Heure actuelle                 | "14:30:25"        |
 
 **Variables au niveau du calque :**
 
-| Variable | Description | Exemple de Valeur |
-| -------- | ----------- | ----------------- |
-| `{layer_name}` | Nom du calque actuel | "Calque de Coupe" |
-| `{layer_index}` | Index base 0 du calque actuel | 0, 1, 2... |
-| `{total_layers}` | Nombre total de calques dans le travail | 3 |
+| Variable         | Description                             | Exemple de Valeur |
+| ---------------- | --------------------------------------- | ----------------- |
+| `{layer_name}`   | Nom du calque actuel                    | "Calque de Coupe" |
+| `{layer_index}`  | Index base 0 du calque actuel           | 0, 1, 2...        |
+| `{total_layers}` | Nombre total de calques dans le travail | 3                 |
 
 **Variables au niveau de la pièce :**
 
-| Variable | Description | Exemple de Valeur |
-| -------- | ----------- | ----------------- |
-| `{workpiece_name}` | Nom de la pièce | "Cercle 1" |
-| `{workpiece_index}` | Index base 0 de la pièce actuelle | 0, 1, 2... |
-| `{total_workpieces}` | Nombre total de pièces | 5 |
+| Variable             | Description                       | Exemple de Valeur |
+| -------------------- | --------------------------------- | ----------------- |
+| `{workpiece_name}`   | Nom de la pièce                   | "Cercle 1"        |
+| `{workpiece_index}`  | Index base 0 de la pièce actuelle | 0, 1, 2...        |
+| `{total_workpieces}` | Nombre total de pièces            | 5                 |
 
 **Variables machine :**
 
-| Variable | Description | Exemple de Valeur |
-| -------- | ----------- | ----------------- |
-| `{machine_name}` | Nom du profil de machine | "Ma K40" |
-| `{max_speed}` | Vitesse de coupe maximale (mm/min) | 1000 |
-| `{work_width}` | Largeur de la zone de travail (mm) | 300 |
-| `{work_height}` | Hauteur de la zone de travail (mm) | 200 |
+| Variable         | Description                        | Exemple de Valeur |
+| ---------------- | ---------------------------------- | ----------------- |
+| `{machine_name}` | Nom du profil de machine           | "Ma K40"          |
+| `{max_speed}`    | Vitesse de coupe maximale (mm/min) | 1000              |
+| `{work_width}`   | Largeur de la zone de travail (mm) | 300               |
+| `{work_height}`  | Hauteur de la zone de travail (mm) | 200               |
 
 ### Exemple : Notification de Progression
 
-**Hook :** Début de Calque
-**Code :**
+**Hook :** Début de Calque **Code :**
 
 ```gcode
 ; ========================================
@@ -266,8 +266,7 @@ Les variables utilisent la syntaxe `{nom_variable}` et sont remplacées pendant 
 
 Pour les machines avec plusieurs lasers ou outils :
 
-**Hook :** Début de Pièce
-**Code :**
+**Hook :** Début de Pièce **Code :**
 
 ```gcode
 ; Sélectionner l'outil pour la pièce {workpiece_name}
@@ -279,8 +278,7 @@ G4 P1           ; Attendre le changement d'outil
 
 Ajoutez des pauses optionnelles pour l'inspection :
 
-**Hook :** Fin de Calque
-**Code :**
+**Hook :** Fin de Calque **Code :**
 
 ```gcode
 ; M0  ; Décommenter pour暂停 après chaque calque pour inspection
@@ -290,35 +288,32 @@ Ajoutez des pauses optionnelles pour l'inspection :
 
 Contrôlez l'assistance air calque par calque :
 
-**Hook :** Début de Calque (pour calques de coupe)
-**Code :**
+**Hook :** Début de Calque (pour calques de coupe) **Code :**
 
 ```gcode
 M8  ; Assistance air ACTIVÉE
 ```
 
-**Hook :** Début de Calque (pour calques de gravure)
-**Code :**
+**Hook :** Début de Calque (pour calques de gravure) **Code :**
 
 ```gcode
 M9  ; Assistance air ÉTEINTE (empêche la dispersion de poussière pour la gravure)
 ```
 
-:::note Hooks Spécifiques au Calque
-Rayforge ne supporte actuellement pas la personnalisation de hooks par calque. Pour y parvenir, utilisez du G-code conditionnel ou des profils de machine séparés.
-:::
+:::note Hooks Spécifiques au Calque Rayforge ne supporte actuellement pas la personnalisation de
+hooks par calque. Pour y parvenir, utilisez du G-code conditionnel ou des profils de machine
+séparés. :::
 
 ---
 
 ## Considérations de Sécurité
 
-:::danger Testez Avant Production
-Testez toujours les macros et hooks en **mode simulation** ou avec le laser **désactivé** avant de les exécuter sur de vrais travaux. Un G-code mal configuré peut :
+:::danger Testez Avant Production Testez toujours les macros et hooks en **mode simulation** ou avec
+le laser **désactivé** avant de les exécuter sur de vrais travaux. Un G-code mal configuré peut :
 
 - Faire planter la machine contre les limites
 - Déclencher le laser de manière inattendue
-- Endommager les matériaux ou équipements
-  :::
+- Endommager les matériaux ou équipements :::
 
 **Liste de contrôle de sécurité :**
 

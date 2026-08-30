@@ -1,19 +1,19 @@
 ---
-description: "Configure AI provider settings in Rayforge. Connect to OpenAI-compatible services for AI-powered workpiece generation."
+description:
+  "Configure AI provider settings in Rayforge. Connect to OpenAI-compatible services for AI-powered
+  workpiece generation."
 ---
 
 # AI Provider
 
 ![AI Provider Settings](/screenshots/app-settings-ai.webp)
 
-Configure AI providers that addons can use to add intelligent features
-to Rayforge.
+Configure AI providers that addons can use to add intelligent features to Rayforge.
 
 ## How It Works
 
-Addons can leverage configured AI providers without needing their own
-API keys. This centralizes your AI configuration and lets you control
-which providers are available to addons.
+Addons can leverage configured AI providers without needing their own API keys. This centralizes
+your AI configuration and lets you control which providers are available to addons.
 
 ## Adding a Provider
 
@@ -28,11 +28,11 @@ which providers are available to addons.
 
 ### OpenAI Compatible
 
-This provider type works with any service that uses the OpenAI API
-format. This includes various cloud providers and self-hosted solutions.
+This provider type works with any service that uses the OpenAI API format. This includes various
+cloud providers and self-hosted solutions.
 
-The default base URL is set to OpenAI's API, but you can change it to
-point to any compatible service.
+The default base URL is set to OpenAI's API, but you can change it to point to any compatible
+service.
 
 ## Managing Providers
 
@@ -40,10 +40,8 @@ point to any compatible service.
 - **Set as Default**: Click the check icon to make a provider the default
 - **Delete**: Remove a provider you no longer need
 
-:::warning
-Your API keys are stored locally on your computer and are never shared
-with third parties.
-:::
+:::warning Your API keys are stored locally on your computer and are never shared with third
+parties. :::
 
 ## Related Topics
 

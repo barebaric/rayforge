@@ -1,6 +1,8 @@
 # Arbeitskoordinatensysteme (WCS)
 
-Arbeitskoordinatensysteme (WCS) ermöglichen es dir, mehrere Referenzpunkte auf dem Arbeitsbereich deiner Maschine zu definieren. Dies erleichtert es, denselben Job an verschiedenen Positionen auszuführen, ohne Werkstücke neu zu entwerfen oder neu zu positionieren.
+Arbeitskoordinatensysteme (WCS) ermöglichen es dir, mehrere Referenzpunkte auf dem Arbeitsbereich
+deiner Maschine zu definieren. Dies erleichtert es, denselben Job an verschiedenen Positionen
+auszuführen, ohne Werkstücke neu zu entwerfen oder neu zu positionieren.
 
 ## Koordinatenräume
 
@@ -12,18 +14,15 @@ Rayforge verwendet drei Koordinatenräume, die zusammenarbeiten:
 | **WORKAREA** | Der nutzbare Bereich innerhalb deiner Maschine, unter Berücksichtigung der Ränder um das Bett.                   |
 | **WCS**      | Das Koordinatensystem deines Auftrags. Benutzerkonfigurierbarer Ursprung für Design- und Auftragspositionierung. |
 
-:::note Hinweis für Entwickler
-Intern verwendet Rayforge ein normalisiertes Koordinatensystem namens WORLD-Raum.
-Der WORLD-Raum beschreibt denselben physischen Raum wie der MACHINE-Raum, aber mit einer
-festen Konvention: Y-aufwärts mit Ursprung unten-links. Dies vereinfacht interne
-Berechnungen und Rendering. Benutzer müssen nicht direkt mit dem WORLD-Raum interagieren.
-:::
+:::note Hinweis für Entwickler Intern verwendet Rayforge ein normalisiertes Koordinatensystem namens
+WORLD-Raum. Der WORLD-Raum beschreibt denselben physischen Raum wie der MACHINE-Raum, aber mit einer
+festen Konvention: Y-aufwärts mit Ursprung unten-links. Dies vereinfacht interne Berechnungen und
+Rendering. Benutzer müssen nicht direkt mit dem WORLD-Raum interagieren. :::
 
 ### MACHINE-Raum
 
-Der MACHINE-Raum ist das absolute Koordinatensystem relativ zur Home-Position
-deiner Maschine. Der Ursprung (0,0) wird durch die Referenzfahrt-Konfiguration
-deiner Maschine bestimmt.
+Der MACHINE-Raum ist das absolute Koordinatensystem relativ zur Home-Position deiner Maschine. Der
+Ursprung (0,0) wird durch die Referenzfahrt-Konfiguration deiner Maschine bestimmt.
 
 - **Ursprung**: Home-Position der Maschine (0,0,0) - durch Hardware festgelegt
 - **Zweck**: Referenz für alle anderen Koordinatensysteme
@@ -36,8 +35,8 @@ Die Koordinatenrichtung hängt von deiner Maschinenkonfiguration ab:
 
 ### WORKAREA-Raum
 
-Der WORKAREA-Raum definiert den nutzbaren Bereich innerhalb deiner Maschine,
-unter Berücksichtigung beliebiger Ränder um die Kanten deines Bettes.
+Der WORKAREA-Raum definiert den nutzbaren Bereich innerhalb deiner Maschine, unter Berücksichtigung
+beliebiger Ränder um die Kanten deines Bettes.
 
 - **Ursprung**: Gleiche Ecke wie der MACHINE-Raum-Ursprung
 - **Zweck**: Definiert den tatsächlichen Bereich, in dem Jobs ausgeführt werden können
@@ -48,11 +47,14 @@ würde die WORKAREA 380×280mm betragen, beginnend bei Position (10, 10) im MACH
 
 ## WCS verstehen
 
-Denke an WCS als anpassbare "Nullpunkte" für deine Arbeit. Während deine Maschine eine feste Home-Position hat (bestimmt durch Endschalter), ermöglicht es WCS dir zu definieren, wo deine Arbeit beginnen soll.
+Denke an WCS als anpassbare "Nullpunkte" für deine Arbeit. Während deine Maschine eine feste
+Home-Position hat (bestimmt durch Endschalter), ermöglicht es WCS dir zu definieren, wo deine Arbeit
+beginnen soll.
 
 ### Warum WCS verwenden?
 
-- **Mehrere Vorrichtungen**: Mehrere Arbeitsbereiche auf deinem Bett einrichten und zwischen ihnen wechseln
+- **Mehrere Vorrichtungen**: Mehrere Arbeitsbereiche auf deinem Bett einrichten und zwischen ihnen
+  wechseln
 - **Wiederholbare Positionierung**: Denselben Job an verschiedenen Orten ausführen
 - **Schnelle Ausrichtung**: Einen Referenzpunkt basierend auf deinem Material oder Werkstück setzen
 - **Produktions-Workflows**: Mehrere Jobs über deinen Arbeitsbereich organisieren
@@ -73,7 +75,8 @@ Rayforge unterstützt die folgenden Koordinatensysteme:
 
 ### Maschinenkoordinaten (G53)
 
-G53 repräsentiert die absolute Position deiner Maschine, mit Null an der Home-Position der Maschine. Dies ist von deiner Hardware festgelegt und kann nicht geändert werden.
+G53 repräsentiert die absolute Position deiner Maschine, mit Null an der Home-Position der Maschine.
+Dies ist von deiner Hardware festgelegt und kann nicht geändert werden.
 
 **Wann verwenden:**
 
@@ -83,7 +86,8 @@ G53 repräsentiert die absolute Position deiner Maschine, mit Null an der Home-P
 
 ### Arbeitskoordinaten (G54-G59)
 
-Dies sind Offset-Koordinatensysteme, die du definieren kannst. Jedes hat seinen eigenen Nullpunkt, den du überall auf deinem Arbeitsbereich setzen kannst.
+Dies sind Offset-Koordinatensysteme, die du definieren kannst. Jedes hat seinen eigenen Nullpunkt,
+den du überall auf deinem Arbeitsbereich setzen kannst.
 
 **Wann verwenden:**
 
@@ -100,17 +104,20 @@ Die 2D-Arbeitsfläche zeigt deinen WCS-Ursprung mit einer grünen Markierung:
 - **Grüne Linien**: Zeigen die aktuelle WCS-Ursprungs- (0, 0)-Position
 - **Raster-Ausrichtung**: Rasterlinien sind am WCS-Ursprung ausgerichtet, nicht am Maschinenursprung
 
-Die Ursprungsmarkierung bewegt sich, wenn du das aktive WCS oder seinen Offset änderst, und zeigt dir genau, wo deine Arbeit beginnen wird.
+Die Ursprungsmarkierung bewegt sich, wenn du das aktive WCS oder seinen Offset änderst, und zeigt
+dir genau, wo deine Arbeit beginnen wird.
 
 ### 3D-Vorschau
 
 In der 3D-Vorschau wird WCS anders angezeigt:
 
 - **Raster und Achsen**: Das gesamte Raster erscheint, als ob der WCS-Ursprung der Weltursprung ist
-- **Isolierte Ansicht**: Der WCS wird "isoliert" angezeigt - es sieht aus, als ob das Raster am WCS zentriert ist, nicht an der Maschine
+- **Isolierte Ansicht**: Der WCS wird "isoliert" angezeigt - es sieht aus, als ob das Raster am WCS
+  zentriert ist, nicht an der Maschine
 - **Beschriftungen**: Koordinatenbeschriftungen sind relativ zum WCS-Ursprung
 
-Dies erleichtert es zu visualisieren, wo dein Job relativ zum ausgewählten Arbeitskoordinatensystem laufen wird.
+Dies erleichtert es zu visualisieren, wo dein Job relativ zum ausgewählten Arbeitskoordinatensystem
+laufen wird.
 
 ## WCS auswählen und ändern
 
@@ -140,7 +147,8 @@ Du kannst definieren, wo sich jeder WCS-Ursprung auf deiner Maschine befindet.
    - **Y nullen**: Setzt aktuelle Y-Position als 0 für das aktive WCS
    - **Z nullen**: Setzt aktuelle Z-Position als 0 für das aktive WCS
 
-Die Offsets werden im Controller deiner Maschine gespeichert und bleiben über Sitzungen hinweg erhalten.
+Die Offsets werden im Controller deiner Maschine gespeichert und bleiben über Sitzungen hinweg
+erhalten.
 
 ### Aktuelle Offsets anzeigen
 
@@ -157,24 +165,26 @@ Wenn du einen Job ausführst, verwendet Rayforge das aktive WCS zur Positionieru
 2. Wähle das WCS, das du verwenden möchtest
 3. Führe den Job aus - er wird entsprechend dem WCS-Offset positioniert
 
-Derselbe Job kann an verschiedenen Positionen ausgeführt werden, indem einfach das aktive WCS geändert wird.
+Derselbe Job kann an verschiedenen Positionen ausgeführt werden, indem einfach das aktive WCS
+geändert wird.
 
 ### WCS pro Ebene
 
-Jede Ebene kann ihr eigenes Arbeitskoordinatensystem unabhängig zugewiesen bekommen.
-Wenn einer Ebene ein WCS zugewiesen ist, werden die Operationen dieser Ebene relativ
-zum WCS der Ebene statt zum globalen positioniert. Das bedeutet, du kannst:
+Jede Ebene kann ihr eigenes Arbeitskoordinatensystem unabhängig zugewiesen bekommen. Wenn einer
+Ebene ein WCS zugewiesen ist, werden die Operationen dieser Ebene relativ zum WCS der Ebene statt
+zum globalen positioniert. Das bedeutet, du kannst:
 
 - Verschiedene Ebenen an verschiedenen Positionen auf dem Bett in einem Auftrag ausführen
 - Mehrere Vorrichtungen einrichten und sie bestimmten Ebenen zuweisen
-- Flachbett- und Dreharbeit im selben Projekt kombinieren, jedes mit seinem eigenen Koordinatenursprung
+- Flachbett- und Dreharbeit im selben Projekt kombinieren, jedes mit seinem eigenen
+  Koordinatenursprung
 
-Um einer Ebene ein WCS zuzuweisen, öffne die Ebeneneinstellungen und verwende den
-WCS-Wähler. Eine Schnellbearbeitungs-Schaltfläche neben dem Wähler ermöglicht dir,
-Offsets anzupassen, ohne den Dialog zu verlassen.
+Um einer Ebene ein WCS zuzuweisen, öffne die Ebeneneinstellungen und verwende den WCS-Wähler. Eine
+Schnellbearbeitungs-Schaltfläche neben dem Wähler ermöglicht dir, Offsets anzupassen, ohne den
+Dialog zu verlassen.
 
-Ebenen ohne explizite WCS-Zuweisung verwenden das global aktive WCS aus dem
-Dropdown in der Symbolleiste.
+Ebenen ohne explizite WCS-Zuweisung verwenden das global aktive WCS aus dem Dropdown in der
+Symbolleiste.
 
 ## Praktische Workflows
 

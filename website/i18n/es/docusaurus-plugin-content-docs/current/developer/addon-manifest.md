@@ -1,6 +1,7 @@
 # Manifiesto del Addon
 
-Cada addon necesita un archivo `rayforge-addon.yaml` en su directorio raíz. Este manifiesto le informa a Rayforge sobre tu addon—su nombre, qué proporciona y cómo cargarlo.
+Cada addon necesita un archivo `rayforge-addon.yaml` en su directorio raíz. Este manifiesto le
+informa a Rayforge sobre tu addon—su nombre, qué proporciona y cómo cargarlo.
 
 ## Estructura Básica
 
@@ -38,7 +39,8 @@ license:
 
 ### `name`
 
-Un identificador único para tu addon. Debe ser un nombre de módulo Python válido—solo letras, números y guiones bajos, y no puede comenzar con un número.
+Un identificador único para tu addon. Debe ser un nombre de módulo Python válido—solo letras,
+números y guiones bajos, y no puede comenzar con un número.
 
 ```yaml
 name: my_custom_addon
@@ -46,7 +48,8 @@ name: my_custom_addon
 
 ### `display_name`
 
-Un nombre legible para humanos que se muestra en la interfaz de usuario. Puede contener espacios y caracteres especiales.
+Un nombre legible para humanos que se muestra en la interfaz de usuario. Puede contener espacios y
+caracteres especiales.
 
 ```yaml
 display_name: "My Custom Addon"
@@ -62,17 +65,21 @@ description: "Adds support for the XYZ laser cutter."
 
 ### `api_version`
 
-La versión de API que tu addon utiliza. Debe ser al menos 1 (la versión mínima soportada) y como máximo la versión actual (9). Usar una versión más alta de la soportada hará que tu addon falle la validación.
+La versión de API que tu addon utiliza. Debe ser al menos 1 (la versión mínima soportada) y como
+máximo la versión actual (9). Usar una versión más alta de la soportada hará que tu addon falle la
+validación.
 
 ```yaml
 api_version: 9
 ```
 
-Consulta la documentación de [Hooks](./addon-hooks.md#historial-de-versiones-de-api) para ver qué cambió en cada versión.
+Consulta la documentación de [Hooks](./addon-hooks.md#historial-de-versiones-de-api) para ver qué
+cambió en cada versión.
 
 ### `author`
 
-Información sobre el autor del addon. El campo `name` es requerido; `email` es opcional pero recomendado para que los usuarios puedan contactarte.
+Información sobre el autor del addon. El campo `name` es requerido; `email` es opcional pero
+recomendado para que los usuarios puedan contactarte.
 
 ```yaml
 author:
@@ -110,7 +117,8 @@ requires:
 
 ### `version`
 
-El número de versión de tu addon. Típicamente se determina automáticamente desde las etiquetas de git, pero puedes especificarlo explícitamente. Usa versionamiento semántico (ej., `1.0.0`).
+El número de versión de tu addon. Típicamente se determina automáticamente desde las etiquetas de
+git, pero puedes especificarlo explícitamente. Usa versionamiento semántico (ej., `1.0.0`).
 
 ```yaml
 version: 1.0.0
@@ -118,7 +126,9 @@ version: 1.0.0
 
 ### `maturity`
 
-El nivel de madurez de tu addon. Usa `experimental` para addons que aún no están terminados y pueden tener problemas sin resolver. Los addons experimentales se muestran con un icono dedicado en el administrador de addons. El valor predeterminado es `stable`; omite el campo para addons estables.
+El nivel de madurez de tu addon. Usa `experimental` para addons que aún no están terminados y pueden
+tener problemas sin resolver. Los addons experimentales se muestran con un icono dedicado en el
+administrador de addons. El valor predeterminado es `stable`; omite el campo para addons estables.
 
 ```yaml
 maturity: experimental
@@ -130,7 +140,9 @@ La sección `provides` define lo que tu addon contribuye a Rayforge.
 
 ### Backend
 
-El módulo del backend se carga tanto en el proceso principal como en los procesos de trabajo. Úsalo para controladores de máquinas, tipos de pasos, productores de ops y cualquier funcionalidad principal.
+El módulo del backend se carga tanto en el proceso principal como en los procesos de trabajo. Úsalo
+para controladores de máquinas, tipos de pasos, productores de ops y cualquier funcionalidad
+principal.
 
 ```yaml
 provides:
@@ -141,7 +153,8 @@ El valor es una ruta de módulo Python con puntos relativa al directorio de tu a
 
 ### Frontend
 
-El módulo del frontend solo se carga en el proceso principal. Úsalo para componentes de interfaz de usuario, widgets GTK y cualquier cosa que necesite la ventana principal.
+El módulo del frontend solo se carga en el proceso principal. Úsalo para componentes de interfaz de
+usuario, widgets GTK y cualquier cosa que necesite la ventana principal.
 
 ```yaml
 provides:
@@ -161,11 +174,13 @@ provides:
       type: templates
 ```
 
-La `path` es relativa a la raíz de tu addon y debe existir. Los tipos de assets son definidos por Rayforge y pueden incluir cosas como perfiles de máquinas, bibliotecas de materiales o plantillas.
+La `path` es relativa a la raíz de tu addon y debe existir. Los tipos de assets son definidos por
+Rayforge y pueden incluir cosas como perfiles de máquinas, bibliotecas de materiales o plantillas.
 
 ## Información de Licencia
 
-El campo `license` describe cómo está licenciado tu addon. Para addons gratuitos, simplemente especifica el nombre de la licencia usando un identificador SPDX:
+El campo `license` describe cómo está licenciado tu addon. Para addons gratuitos, simplemente
+especifica el nombre de la licencia usando un identificador SPDX:
 
 ```yaml
 license:
@@ -176,7 +191,8 @@ Los identificadores SPDX comunes incluyen `MIT`, `Apache-2.0`, `GPL-3.0` y `BSD-
 
 ## Addons de Pago
 
-Rayforge soporta addons de pago a través de la validación de licencias de Gumroad. Si quieres vender tu addon, puedes configurarlo para requerir una licencia válida antes de que funcione.
+Rayforge soporta addons de pago a través de la validación de licencias de Gumroad. Si quieres vender
+tu addon, puedes configurarlo para requerir una licencia válida antes de que funcione.
 
 ### Configuración Básica de Pago
 
@@ -187,7 +203,8 @@ license:
   purchase_url: https://gum.co/my-addon
 ```
 
-Cuando `required` es verdadero, Rayforge verificará una licencia válida antes de cargar tu addon. La `purchase_url` se muestra a los usuarios que no tienen una licencia.
+Cuando `required` es verdadero, Rayforge verificará una licencia válida antes de cargar tu addon. La
+`purchase_url` se muestra a los usuarios que no tienen una licencia.
 
 ### ID de Producto de Gumroad
 
@@ -263,6 +280,11 @@ def rayforge_init(context):
 
 Rayforge valida tu manifiesto al cargar el addon. Aquí están las reglas:
 
-El `name` debe ser un identificador Python válido (letras, números, guiones bajos, sin números al inicio). El `api_version` debe ser un entero entre 1 y la versión actual. El `author.name` no puede estar vacío ni contener texto de marcador como "your-github-username". Los puntos de entrada deben ser rutas de módulo válidas y los módulos deben existir. Las rutas de assets deben ser relativas (sin `..` o `/` al inicio) y los archivos deben existir.
+El `name` debe ser un identificador Python válido (letras, números, guiones bajos, sin números al
+inicio). El `api_version` debe ser un entero entre 1 y la versión actual. El `author.name` no puede
+estar vacío ni contener texto de marcador como "your-github-username". Los puntos de entrada deben
+ser rutas de módulo válidas y los módulos deben existir. Las rutas de assets deben ser relativas
+(sin `..` o `/` al inicio) y los archivos deben existir.
 
-Si la validación falla, Rayforge registra un error y omite tu addon. Revisa la salida de la consola durante el desarrollo para detectar estos problemas.
+Si la validación falla, Rayforge registra un error y omite tu addon. Revisa la salida de la consola
+durante el desarrollo para detectar estos problemas.

@@ -10,12 +10,12 @@ Snap 是出于安全考虑在沙箱中运行的容器化应用程序。默认情
 
 Rayforge 需要连接这些 Snap 接口才能完全运行：
 
-| 接口              | 用途                             | 是否必需？           |
-| ----------------- | -------------------------------- | -------------------- |
-| `serial-port`     | 访问 USB 串口设备（激光控制器）  | **是**（用于机器控制）|
-| `home`            | 读写主目录中的文件               | 自动连接             |
-| `removable-media` | 访问外部驱动器和 USB 存储        | 可选                 |
-| `network`         | 网络连接（用于更新等）           | 自动连接             |
+| 接口              | 用途                            | 是否必需？             |
+| ----------------- | ------------------------------- | ---------------------- |
+| `serial-port`     | 访问 USB 串口设备（激光控制器） | **是**（用于机器控制） |
+| `home`            | 读写主目录中的文件              | 自动连接               |
+| `removable-media` | 访问外部驱动器和 USB 存储       | 可选                   |
+| `network`         | 网络连接（用于更新等）          | 自动连接               |
 
 ---
 
@@ -25,9 +25,8 @@ Rayforge 需要连接这些 Snap 接口才能完全运行：
 
 ### 前提条件：dialout 组成员资格
 
-在基于 Debian 的发行版上，即使使用 Snap 软件包，您的用户也必须是
-`dialout` 组的成员。如果没有此组成员资格，您在尝试访问串口时可能
-会收到 AppArmor DENIED 消息。
+在基于 Debian 的发行版上，即使使用 Snap 软件包，您的用户也必须是 `dialout`
+组的成员。如果没有此组成员资格，您在尝试访问串口时可能会收到 AppArmor DENIED 消息。
 
 ```bash
 # 将您的用户添加到 dialout 组
@@ -62,6 +61,7 @@ snap connections rayforge | grep serial-port
 ```
 
 预期输出：
+
 ```
 serial-port     rayforge:serial-port     :serial-port     -
 ```
@@ -117,6 +117,7 @@ sudo snap connect rayforge:removable-media
 这种情况很少见，但可能发生在以下情况：
 
 1. **Snap 安装损坏：**
+
    ```bash
    # 重新安装 snap
    sudo snap refresh rayforge --devmode
@@ -132,6 +133,7 @@ sudo snap connect rayforge:removable-media
    - 它们可能与 Snap 的设备访问冲突
 
 3. **AppArmor 拒绝：**
+
    ```bash
    # 检查 AppArmor 拒绝
    sudo journalctl -xe | grep DENIED | grep rayforge
@@ -146,12 +148,14 @@ sudo snap connect rayforge:removable-media
 **变通方案：**
 
 1. **将文件移动到主目录：**
+
    ```bash
    # 将 SVG 文件复制到 ~/Documents
    cp /some/other/location/*.svg ~/Documents/
    ```
 
 2. **授予 removable-media 访问权限：**
+
    ```bash
    sudo snap connect rayforge:removable-media
    ```
@@ -205,12 +209,14 @@ pixi run rayforge
 ```
 
 **优点：**
+
 - 无权限限制
 - 完全系统访问
 - 更容易调试
 - 最新开发版本
 
 **缺点：**
+
 - 手动更新（git pull）
 - 更多依赖需要管理
 - 无自动更新
@@ -241,6 +247,7 @@ snap info rayforge
 ```
 
 查找：
+
 - 已验证的发布者
 - 官方仓库来源
 - 定期更新
@@ -252,11 +259,13 @@ snap info rayforge
 ### Snap 默认可以访问什么？
 
 **允许：**
+
 - 主目录中的文件
 - 网络连接
 - 显示/音频
 
 **未经明确许可不允许：**
+
 - 串口（USB 设备）
 - 可移动媒体
 - 系统文件
@@ -321,11 +330,13 @@ sudo journalctl -f -u snapd
 如果您仍有 Snap 相关问题：
 
 1. **首先检查权限：**
+
    ```bash
    snap connections rayforge
    ```
 
 2. **尝试串口测试：**
+
    ```bash
    # 如果您安装了 screen 或 minicom
    sudo snap connect rayforge:serial-port

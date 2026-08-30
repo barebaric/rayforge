@@ -1,20 +1,26 @@
 # Rohmaterial-Verwaltung
 
-Rohmaterial in Rayforge repräsentiert das physische Material, das du schneiden oder gravieren wirst. Rohmaterial ist ein **dokument-weites** Konzept—dein Dokument kann ein oder mehrere Rohmaterial-Elemente haben, die unabhängig von Ebenen existieren.
+Rohmaterial in Rayforge repräsentiert das physische Material, das du schneiden oder gravieren wirst.
+Rohmaterial ist ein **dokument-weites** Konzept—dein Dokument kann ein oder mehrere
+Rohmaterial-Elemente haben, die unabhängig von Ebenen existieren.
 
 ## Rohmaterial hinzufügen
 
-Rohmaterial repräsentiert das physische Stück Material, mit dem du arbeiten wirst. Um Rohmaterial zu deinem Dokument hinzuzufügen:
+Rohmaterial repräsentiert das physische Stück Material, mit dem du arbeiten wirst. Um Rohmaterial zu
+deinem Dokument hinzuzufügen:
 
-1. Im **Rohmaterial**-Panel in der Seitenleiste auf die Schaltfläche **Rohmaterial hinzufügen** klicken
-2. Ein neues Rohmaterial-Element wird mit Standardabmessungen erstellt (80% deines Maschinen-Arbeitsbereichs)
+1. Im **Rohmaterial**-Panel in der Seitenleiste auf die Schaltfläche **Rohmaterial hinzufügen**
+   klicken
+2. Ein neues Rohmaterial-Element wird mit Standardabmessungen erstellt (80% deines
+   Maschinen-Arbeitsbereichs)
 3. Das Rohmaterial erscheint als Rechteck im Arbeitsbereich, zentriert auf dem Maschinenbett
 
 ### Rohmaterial-Eigenschaften
 
 Jedes Rohmaterial-Element hat die folgenden Eigenschaften:
 
-- **Name**: Ein beschreibender Name zur Identifizierung (automatisch nummeriert als "Rohmaterial 1", "Rohmaterial 2", usw.)
+- **Name**: Ein beschreibender Name zur Identifizierung (automatisch nummeriert als "Rohmaterial 1",
+  "Rohmaterial 2", usw.)
 - **Abmessungen**: Breite und Höhe des Rohmaterials
 - **Dicke**: Die Materialstärke (optional, aber empfohlen für genaue 3D-Vorschau)
 - **Material**: Die Art des Materials (im nächsten Schritt zugewiesen)
@@ -23,17 +29,22 @@ Jedes Rohmaterial-Element hat die folgenden Eigenschaften:
 ### Rohmaterial-Elemente verwalten
 
 - **Umbenennen**: Den Rohmaterial-Eigenschaften-Dialog öffnen und das Namensfeld bearbeiten
-- **Größe ändern**: Rohmaterial-Element im Arbeitsbereich auswählen und die Eckgriffe zum Skalieren ziehen
+- **Größe ändern**: Rohmaterial-Element im Arbeitsbereich auswählen und die Eckgriffe zum Skalieren
+  ziehen
 - **Bewegen**: Rohmaterial-Element im Arbeitsbereich auswählen und zum Neupositionieren ziehen
-- **Löschen**: Auf die Löschen-Taste (Papierkorb-Symbol) neben dem Rohmaterial-Element im Rohmaterial-Panel klicken
-- **Eigenschaften bearbeiten**: Auf die Eigenschaften-Taste (Dokument-Symbol) klicken, um den Rohmaterial-Eigenschaften-Dialog zu öffnen
-- **Sichtbarkeit umschalten**: Auf die Sichtbarkeit-Taste (Augen-Symbol) klicken, um das Rohmaterial-Element anzuzeigen/verstecken
+- **Löschen**: Auf die Löschen-Taste (Papierkorb-Symbol) neben dem Rohmaterial-Element im
+  Rohmaterial-Panel klicken
+- **Eigenschaften bearbeiten**: Auf die Eigenschaften-Taste (Dokument-Symbol) klicken, um den
+  Rohmaterial-Eigenschaften-Dialog zu öffnen
+- **Sichtbarkeit umschalten**: Auf die Sichtbarkeit-Taste (Augen-Symbol) klicken, um das
+  Rohmaterial-Element anzuzeigen/verstecken
 
 ## Material zuweisen
 
 Nachdem du Rohmaterial definiert hast, kannst du ihm ein Material zuweisen:
 
-1. Im **Rohmaterial**-Panel auf die Eigenschaften-Taste (Dokument-Symbol) beim Rohmaterial-Element klicken
+1. Im **Rohmaterial**-Panel auf die Eigenschaften-Taste (Dokument-Symbol) beim Rohmaterial-Element
+   klicken
 2. Im Rohmaterial-Eigenschaften-Dialog auf die **Auswählen**-Taste neben dem Material-Feld klicken
 3. Durch deine Materialbibliotheken browsen und das entsprechende Material auswählen
 4. Das Rohmaterial wird aktualisiert, um das visuelle Erscheinungsbild des Materials anzuzeigen
@@ -42,35 +53,35 @@ Nachdem du Rohmaterial definiert hast, kannst du ihm ein Material zuweisen:
 
 Materialien definieren die visuellen Eigenschaften deines Rohmaterials:
 
-- **Visuelles Erscheinungsbild**: Farbe, Textur und Schattierung zur
-  Visualisierung
+- **Visuelles Erscheinungsbild**: Farbe, Textur und Schattierung zur Visualisierung
 - **Kategorie**: Gruppierung (z.B. "Holz", "Acryl", "Metall")
 - **Beschreibung**: Zusätzliche Informationen über das Material
 
-Siehe [Materialien](../application-settings/materials.md) für die vollständige
-Liste der Erscheinungsbild-Eigenschaften (Textur, Rauheit, Metallisch und
-Tönfarbe).
+Siehe [Materialien](../application-settings/materials.md) für die vollständige Liste der
+Erscheinungsbild-Eigenschaften (Textur, Rauheit, Metallisch und Tönfarbe).
 
-Hinweis: Materialeigenschaften sind in Materialbibliotheken definiert und können nicht durch den Rohmaterial-Eigenschaften-Dialog bearbeitet werden. Die Rohmaterial-Eigenschaften ermöglichen es dir nur, einem Rohmaterial-Element ein Material zuzuweisen.
+Hinweis: Materialeigenschaften sind in Materialbibliotheken definiert und können nicht durch den
+Rohmaterial-Eigenschaften-Dialog bearbeitet werden. Die Rohmaterial-Eigenschaften ermöglichen es dir
+nur, einem Rohmaterial-Element ein Material zuzuweisen.
 
 ### Farbe pro Rohmaterial-Element
 
-Jedes Rohmaterial-Element kann die Tönfarbe des Materials unabhängig
-überschreiben:
+Jedes Rohmaterial-Element kann die Tönfarbe des Materials unabhängig überschreiben:
 
 1. Öffne den **Rohmaterial-Eigenschaften**-Dialog für das Rohmaterial-Element
 2. Klicke auf die Farbtaste in der Zeile **Farbe**
 3. Wähle eine Farbe aus dem Farbwähler
 
-Die Farbe wird nur auf dieses Rohmaterial-Element angewendet — andere
-Elemente mit demselben Material behalten ihre eigenen Farben. Verwende die
-Löschen-Taste neben der Farbzeile, um zur Standardfarbe des Materials
-zurückzukehren. Wenn weder das Element noch das Material eine Farbe
+Die Farbe wird nur auf dieses Rohmaterial-Element angewendet — andere Elemente mit demselben
+Material behalten ihre eigenen Farben. Verwende die Löschen-Taste neben der Farbzeile, um zur
+Standardfarbe des Materials zurückzukehren. Wenn weder das Element noch das Material eine Farbe
 definiert, wird die Textur ungefärbt angezeigt.
 
 ## Werkstücke in Rohmaterial umwandeln
 
-Du kannst jedes Werkstück in ein Rohmaterial-Element umwandeln. Dies ist nützlich, wenn du ein unregelmäßig geformtes Materialstück hast und dessen genaue Umrisse als Rohmaterial-Grenze verwenden möchtest.
+Du kannst jedes Werkstück in ein Rohmaterial-Element umwandeln. Dies ist nützlich, wenn du ein
+unregelmäßig geformtes Materialstück hast und dessen genaue Umrisse als Rohmaterial-Grenze verwenden
+möchtest.
 
 So wandelst du ein Werkstück in Rohmaterial um:
 
@@ -86,18 +97,24 @@ Das neue Rohmaterial-Element:
 
 ## Auto-Layout
 
-Die Auto-Layout-Funktion hilft dir, deine Designelemente effizient innerhalb von Rohmaterial-Grenzen anzuordnen:
+Die Auto-Layout-Funktion hilft dir, deine Designelemente effizient innerhalb von Rohmaterial-Grenzen
+anzuordnen:
 
-1. Die Elemente auswählen, die du anordnen möchtest (oder nichts auswählen, um alle Elemente in der aktiven Ebene anzuordnen)
-2. Auf die **Anordnen**-Taste in der Symbolleiste klicken und **Auto-Layout (Werkstücke packen)** wählen
+1. Die Elemente auswählen, die du anordnen möchtest (oder nichts auswählen, um alle Elemente in der
+   aktiven Ebene anzuordnen)
+2. Auf die **Anordnen**-Taste in der Symbolleiste klicken und **Auto-Layout (Werkstücke packen)**
+   wählen
 3. Rayforge wird die Elemente automatisch anordnen, um die Materialnutzung zu optimieren
 
 ### Auto-Layout-Verhalten
 
-Der Auto-Layout-Algorithmus ordnet Elemente innerhalb der sichtbaren Rohmaterial-Elemente in deinem Dokument an:
+Der Auto-Layout-Algorithmus ordnet Elemente innerhalb der sichtbaren Rohmaterial-Elemente in deinem
+Dokument an:
 
-- **Wenn Rohmaterial-Elemente definiert sind**: Elemente werden innerhalb der Grenzen sichtbarer Rohmaterial-Elemente angeordnet
-- **Wenn kein Rohmaterial definiert ist**: Elemente werden über den gesamten Maschinen-Arbeitsbereich angeordnet
+- **Wenn Rohmaterial-Elemente definiert sind**: Elemente werden innerhalb der Grenzen sichtbarer
+  Rohmaterial-Elemente angeordnet
+- **Wenn kein Rohmaterial definiert ist**: Elemente werden über den gesamten
+  Maschinen-Arbeitsbereich angeordnet
 
 Der Algorithmus berücksichtigt:
 
@@ -116,12 +133,16 @@ Wenn du mehr Kontrolle bevorzugst, bietet Rayforge auch manuelle Layout-Werkzeug
 
 ## Tipps für effektive Rohmaterial-Verwaltung
 
-1. **Mit genauen Rohmaterial-Abmessungen beginnen** - Miss dein Material präzise für beste Ergebnisse
-2. **Beschreibende Namen verwenden** - Benenne deine Rohmaterial-Elemente klar (z.B. "Birken-Sperrholz 3mm")
+1. **Mit genauen Rohmaterial-Abmessungen beginnen** - Miss dein Material präzise für beste
+   Ergebnisse
+2. **Beschreibende Namen verwenden** - Benenne deine Rohmaterial-Elemente klar (z.B.
+   "Birken-Sperrholz 3mm")
 3. **Material-Dicke einstellen** - Dies kann für zukünftige Berechnungen und Referenz nützlich sein
 4. **Materialien früh zuweisen** - Dies stellt korrekte visuelle Darstellung von Anfang an sicher
-5. **Unregelmäßiges Rohmaterial für Reststücke verwenden** - Wandle Werkstücke in Rohmaterial um, wenn du Restmaterial mit benutzerdefinierten Formen verwendest
-6. **Passung vor dem Schneiden überprüfen** - Die 2D-Ansicht verwenden, um zu verifizieren, dass alles auf dein Rohmaterial passt
+5. **Unregelmäßiges Rohmaterial für Reststücke verwenden** - Wandle Werkstücke in Rohmaterial um,
+   wenn du Restmaterial mit benutzerdefinierten Formen verwendest
+6. **Passung vor dem Schneiden überprüfen** - Die 2D-Ansicht verwenden, um zu verifizieren, dass
+   alles auf dein Rohmaterial passt
 
 ## Fehlerbehebung
 

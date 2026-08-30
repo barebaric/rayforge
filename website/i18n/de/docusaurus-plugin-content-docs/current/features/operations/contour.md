@@ -1,6 +1,7 @@
 # Kontur-Schneiden
 
-Kontur-Schneiden zeichnet die Umrisse von Vektorformen nach, um sie aus Material zu schneiden. Es ist die häufigste Laser-Operation zum Erstellen von Teilen, Schildern und dekorativen Stücken.
+Kontur-Schneiden zeichnet die Umrisse von Vektorformen nach, um sie aus Material zu schneiden. Es
+ist die häufigste Laser-Operation zum Erstellen von Teilen, Schildern und dekorativen Stücken.
 
 ## Übersicht
 
@@ -47,23 +48,25 @@ Verwende Kontur-Schneiden für:
 
 ## Haupt-Einstellungen
 
-Der Schritt-Einstellungen-Dialog hat drei Registerkarten: **Schritt-Einstellungen**, **Laser** und **Nachbearbeitung**. Die Einstellungen werden unten in Registerkarten-Reihenfolge beschrieben.
+Der Schritt-Einstellungen-Dialog hat drei Registerkarten: **Schritt-Einstellungen**, **Laser** und
+**Nachbearbeitung**. Die Einstellungen werden unten in Registerkarten-Reihenfolge beschrieben.
 
 ### Kontur-Einstellungen
 
 ![Kontur-Schritt-Einstellungen](/screenshots/step-settings-contour-general.webp)
 
-Die Gruppe **Kontur-Einstellungen** auf der Registerkarte *Schritt-Einstellungen* steuert, wie der Umriss nachgezeichnet wird.
+Die Gruppe **Kontur-Einstellungen** auf der Registerkarte _Schritt-Einstellungen_ steuert, wie der
+Umriss nachgezeichnet wird.
 
 #### Schnittseite & Pfad-Offset
 
 Steuert, wo der Laser relativ zum Vektorpfad schneidet:
 
-| Offset      | Beschreibung                | Verwendung für                       |
-| ----------- | --------------------------- | ------------------------------------ |
-| **Auf Linie** | Schneidet direkt auf dem Pfad | Mittellinien-Schnitte, Ritzen        |
-| **Innen**   | Schneidet innerhalb der Form | Teile, die exakter Größe entsprechen müssen |
-| **Außen**   | Schneidet außerhalb der Form | Löcher, in die Teile passen          |
+| Offset        | Beschreibung                  | Verwendung für                              |
+| ------------- | ----------------------------- | ------------------------------------------- |
+| **Auf Linie** | Schneidet direkt auf dem Pfad | Mittellinien-Schnitte, Ritzen               |
+| **Innen**     | Schneidet innerhalb der Form  | Teile, die exakter Größe entsprechen müssen |
+| **Außen**     | Schneidet außerhalb der Form  | Löcher, in die Teile passen                 |
 
 **Offset-Distanz:**
 
@@ -90,32 +93,34 @@ Steuert die Reihenfolge, in der verschachtelte Pfade verarbeitet werden:
 
 #### Innere Pfade entfernen
 
-Für Designs mit Löchern oder inneren Ausschnitten kannst du wählen, nur die äußerste Begrenzung nachzuzeichnen:
+Für Designs mit Löchern oder inneren Ausschnitten kannst du wählen, nur die äußerste Begrenzung
+nachzuzeichnen:
 
 - **Innere Pfade entfernen**: Wenn aktiviert, wird nur die äußerste Kontur nachgezeichnet
 - Innere Löcher und Ausschnitte werden ignoriert
 
-Dies ist nützlich, wenn du eine Form ausschneiden, aber das Innere erhalten möchtest, zum Beispiel um einen Rahmen oder Umriss zu erstellen, ohne innere Details zu schneiden.
+Dies ist nützlich, wenn du eine Form ausschneiden, aber das Innere erhalten möchtest, zum Beispiel
+um einen Rahmen oder Umriss zu erstellen, ohne innere Details zu schneiden.
 
 #### Überlappungsschnitt
 
-Erweitert geschlossene Schnittpfade über ihren Startpunkt hinaus, sodass
-der Laserstrahl den Anfang des Schnitts überlappt:
+Erweitert geschlossene Schnittpfade über ihren Startpunkt hinaus, sodass der Laserstrahl den Anfang
+des Schnitts überlappt:
 
 **Überlappungsschnitt:**
 
-- Distanz in Maschineneinheiten, um den Schnitt über die Start-/End-Verbindungsstelle hinaus zu verlängern
+- Distanz in Maschineneinheiten, um den Schnitt über die Start-/End-Verbindungsstelle hinaus zu
+  verlängern
 - Auf **0** setzen, um die Funktion zu deaktivieren (Standard)
 - Typische Werte: 1–5 für die meisten Materialien
 - Maximum: 100
 
 **Warum Überlappungsschnitt verwenden:**
 
-Am Anfang und Ende einer geschlossenen Kontur dringt der Laser aufgrund
-von Beschleunigung und Verzögerung möglicherweise nicht vollständig ein.
-Der Überlappungsschnitt stellt sicher, dass der Strahl an der
-Verbindungsstelle überlappt und einen sauberen, vollständig durchtrennten
-Schnitt erzeugt. Dies ist besonders nützlich für:
+Am Anfang und Ende einer geschlossenen Kontur dringt der Laser aufgrund von Beschleunigung und
+Verzögerung möglicherweise nicht vollständig ein. Der Überlappungsschnitt stellt sicher, dass der
+Strahl an der Verbindungsstelle überlappt und einen sauberen, vollständig durchtrennten Schnitt
+erzeugt. Dies ist besonders nützlich für:
 
 - Dicke Materialien, bei denen der vollständige Durchtritt knapp ist
 - Hochgeschwindigkeitsschnitte, bei denen Beschleunigungseffekte stärker ausgeprägt sind
@@ -123,20 +128,20 @@ Schnitt erzeugt. Dies ist besonders nützlich für:
 
 Der Überlappungsschnitt wird sowohl auf Außenkonturen als auch auf innere Löcher angewendet.
 
-:::tip Ein-/Auslauf vs. Überlappungsschnitt
-[Ein-/Auslauf](../lead-in-out.md) fügt Nullleistungs-An- und
-Abfahrtsbewegungen vor und nach dem Schnittpfad hinzu. Der
-Überlappungsschnitt verlängert den Schnittpfad selbst über die
-Verbindungsstelle hinaus. Beide können zusammen für optimale
-Schnittqualität verwendet werden.
-:::
+:::tip Ein-/Auslauf vs. Überlappungsschnitt [Ein-/Auslauf](../lead-in-out.md) fügt Nullleistungs-An-
+und Abfahrtsbewegungen vor und nach dem Schnittpfad hinzu. Der Überlappungsschnitt verlängert den
+Schnittpfad selbst über die Verbindungsstelle hinaus. Beide können zusammen für optimale
+Schnittqualität verwendet werden. :::
 
 #### Nachzeichnen mit benutzerdefiniertem Schwellenwert
 
-Wenn du mit Bitmap-Bildern arbeitest, die in Vektoren konvertiert wurden, kannst du steuern, welche Teile nachgezeichnet werden:
+Wenn du mit Bitmap-Bildern arbeitest, die in Vektoren konvertiert wurden, kannst du steuern, welche
+Teile nachgezeichnet werden:
 
-- **Inhalt erneut scannen**: Benutzerdefinierten Helligkeitsschwellenwert für das Nachzeichnen aktivieren
-- **Nachzeichnungs-Schwellenwert (0.0-1.0)**: Helligkeits-Grenzwert, wenn das erneute Scannen aktiviert ist
+- **Inhalt erneut scannen**: Benutzerdefinierten Helligkeitsschwellenwert für das Nachzeichnen
+  aktivieren
+- **Nachzeichnungs-Schwellenwert (0.0-1.0)**: Helligkeits-Grenzwert, wenn das erneute Scannen
+  aktiviert ist
   - Niedrigere Werte zeichnen nur dunklere Bereiche nach
   - Höhere Werte schließen hellere Bereiche ein
 
@@ -146,7 +151,8 @@ Dies ist nützlich, wenn das standardmäßige Nachzeichnen nicht das gewünschte
 
 ![Laser-Einstellungen](/screenshots/step-settings-contour-laser.webp)
 
-Leistung, Geschwindigkeit und Laser-Kopf-Auswahl befinden sich auf der Seite **Laser** des Schritt-Einstellungen-Dialogs.
+Leistung, Geschwindigkeit und Laser-Kopf-Auswahl befinden sich auf der Seite **Laser** des
+Schritt-Einstellungen-Dialogs.
 
 #### Leistung & Geschwindigkeit
 
@@ -191,7 +197,8 @@ Kontur-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
 - **[Auf Rohmaterial zuschneiden](../crop-to-stock.md)** - Schnitte auf Materialgrenze beschränken
 - **[Pfad-Optimierung](../path-optimization.md)** - Verfahrdistanz zwischen Schnitten reduzieren
 - **[Mehrfach-Durchgang](../multi-pass.md)** - Schnitte für dicke Materialien wiederholen
-- **[Ein-/Auslauf](../lead-in-out.md)** - Nullleistungs-An- und Abfahrtsbewegungen für sauberere Schnittenden hinzufügen
+- **[Ein-/Auslauf](../lead-in-out.md)** - Nullleistungs-An- und Abfahrtsbewegungen für sauberere
+  Schnittenden hinzufügen
 
 ### Mehrfach-Durchgang-Schneiden
 
@@ -209,10 +216,10 @@ Für Materialien dicker als ein einzelner Durchgang schneiden kann:
 - Erzeugt echtes 2.5D-Schneiden
 - Auf 0 setzen für gleich tiefe Mehrfach-Durchgänge
 
-:::warning Z-Achse erforderlich
-:::
+:::warning Z-Achse erforderlich :::
 
-Durchgang-Tiefe funktioniert nur, wenn deine Maschine über Z-Achsen-Steuerung verfügt. Für Maschinen ohne Z-Achse verwende mehrere Durchgänge auf gleicher Tiefe.
+Durchgang-Tiefe funktioniert nur, wenn deine Maschine über Z-Achsen-Steuerung verfügt. Für Maschinen
+ohne Z-Achse verwende mehrere Durchgänge auf gleicher Tiefe.
 
 ## Tipps & Best Practices
 
@@ -311,4 +318,5 @@ M5                  ; Laser aus
 - **[Gravur](engrave)** - Bereiche mit Gravurmustern füllen
 - **[Halte-Laschen](../holding-tabs.md)** - Teile während des Schneidens sichern
 - **[Schnittbreite](../kerf.md)** - Schnittgenauigkeit verbessern
-- **[Materialtest-Raster](material-test-grid)** - Optimale Leistungs-/Geschwindigkeitseinstellungen finden
+- **[Materialtest-Raster](material-test-grid)** - Optimale Leistungs-/Geschwindigkeitseinstellungen
+  finden

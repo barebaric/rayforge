@@ -1,10 +1,13 @@
 # Suavização de Caminho
 
-A suavização de caminho reduz bordas irregulares e transições abruptas em seus caminhos de corte, resultando em curvas mais limpas e movimento mais suave da máquina.
+A suavização de caminho reduz bordas irregulares e transições abruptas em seus caminhos de corte,
+resultando em curvas mais limpas e movimento mais suave da máquina.
 
 ## Como Funciona
 
-A suavização aplica um filtro à geometria do seu caminho que arredonda cantos angulares e suaviza bordas ásperas. O laser segue uma trajetória mais suave em vez de fazer mudanças abruptas de direção.
+A suavização aplica um filtro à geometria do seu caminho que arredonda cantos angulares e suaviza
+bordas ásperas. O laser segue uma trajetória mais suave em vez de fazer mudanças abruptas de
+direção.
 
 ## Configurações
 
@@ -14,7 +17,8 @@ Ativa ou desativa a suavização para esta operação. A suavização está desa
 
 ### Suavidade
 
-Controla quanto o caminho é suavizado (0-100). Valores mais altos produzem curvas mais arredondadas, mas podem desviar mais do caminho original.
+Controla quanto o caminho é suavizado (0-100). Valores mais altos produzem curvas mais arredondadas,
+mas podem desviar mais do caminho original.
 
 - **Baixa (0-30):** Suavização mínima, preserva detalhes nítidos
 - **Média (30-60):** Suavização equilibrada para a maioria dos designs
@@ -22,7 +26,8 @@ Controla quanto o caminho é suavizado (0-100). Valores mais altos produzem curv
 
 ### Limiar de Ângulo de Canto
 
-Ângulos mais agudos que este valor são preservados como cantos em vez de suavizados (0-179 graus). Isso evita que características afiadas importantes sejam arredondadas.
+Ângulos mais agudos que este valor são preservados como cantos em vez de suavizados (0-179 graus).
+Isso evita que características afiadas importantes sejam arredondadas.
 
 - **Valores menores:** Mais cantos são suavizados, resultado mais arredondado
 - **Valores maiores:** Mais cantos são preservados, resultado mais nítido

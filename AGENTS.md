@@ -5,6 +5,7 @@
 - No setup needed. Do not run "cd", assume you are in the correct path by default.
 - Use these commands:
    o `pixi run format`: Apply automatic code formatting
+   o `pixi run site-format`: Format website markdown files (docs, blog, i18n)
    o `pixi run test`: Run backend tests
    o `pixi run uitest`: Run UI tests
    o `pixi run lint`. Performs linting and static code analysis

@@ -1,12 +1,16 @@
 # Auf Rohmaterial zuschneiden
 
-Auf Rohmaterial zuschneiden begrenzt Schneidepfade auf deine Materialgrenze. Alle Schnitte, die über den Rohmaterialbereich hinausreichen, werden abgeschnitten und verhindern, dass der Laser außerhalb deines Materials schneidet.
+Auf Rohmaterial zuschneiden begrenzt Schneidepfade auf deine Materialgrenze. Alle Schnitte, die über
+den Rohmaterialbereich hinausreichen, werden abgeschnitten und verhindern, dass der Laser außerhalb
+deines Materials schneidet.
 
 ## Funktionsweise
 
-Der Transformator vergleicht deine Schneidepfade mit der definierten Rohmaterialgrenze. Pfadsegmente außerhalb dieser Grenze werden entfernt oder auf die Materialkante beschnitten.
+Der Transformator vergleicht deine Schneidepfade mit der definierten Rohmaterialgrenze. Pfadsegmente
+außerhalb dieser Grenze werden entfernt oder auf die Materialkante beschnitten.
 
-Wenn in deinem Dokument keine Rohmaterial-Elemente definiert sind, wird stattdessen der Arbeitsbereich der Maschine als Zuschneidegrenze verwendet.
+Wenn in deinem Dokument keine Rohmaterial-Elemente definiert sind, wird stattdessen der
+Arbeitsbereich der Maschine als Zuschneidegrenze verwendet.
 
 ## Einstellungen
 
@@ -22,11 +26,13 @@ Passt die effektive Rohmaterialgrenze vor dem Zuschneiden an (-100 bis +100 mm).
 - **Negative Werte:** Grenze erweitern (erlaubt Schnitte näher an der Kante)
 - **0 mm:** Exakte Rohmaterialgrenze verwenden
 
-Verwende Versatz, wenn du einen Sicherheitsabstand zur Materialkante möchtest, oder wenn deine Materialplatzierung nicht perfekt ausgerichtet ist.
+Verwende Versatz, wenn du einen Sicherheitsabstand zur Materialkante möchtest, oder wenn deine
+Materialplatzierung nicht perfekt ausgerichtet ist.
 
 ## Wann Auf-Rohmaterial-Zuschneiden verwenden
 
-**Teilweise Designs:** Dein Design ist größer als dein Material, aber du möchtest nur den Teil schneiden, der passt.
+**Teilweise Designs:** Dein Design ist größer als dein Material, aber du möchtest nur den Teil
+schneiden, der passt.
 
 **Sicherheitsabstand:** Verhindere versehentliche Schnitte über Materialkanten hinaus.
 

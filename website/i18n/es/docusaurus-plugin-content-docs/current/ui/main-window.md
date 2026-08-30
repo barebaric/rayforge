@@ -1,7 +1,7 @@
 # Ventana Principal
 
-La ventana principal de Rayforge es tu espacio de trabajo principal para crear y gestionar
-trabajos láser.
+La ventana principal de Rayforge es tu espacio de trabajo principal para crear y gestionar trabajos
+láser.
 
 ## Diseño de la Ventana
 
@@ -22,31 +22,27 @@ Accede a todas las funciones de Rayforge a través de menús organizados:
 
 Acceso rápido a controles usados frecuentemente:
 
-- **Menú desplegable de máquina**: Selecciona tu máquina, ve el estado de conexión y
-  el tiempo estimado durante los trabajos
+- **Menú desplegable de máquina**: Selecciona tu máquina, ve el estado de conexión y el tiempo
+  estimado durante los trabajos
 - **Menú desplegable WCS**: Seleccionar el Sistema de Coordenadas de Trabajo activo (G53-G59)
 - **Alternar simulación**: Habilitar/deshabilitar el modo de simulación de trabajo
 - **Enfocar láser**: Alternar el modo de enfoque del láser
 - **Controles de trabajo**: Botones Home, Enmarcar, Enviar, Pausar y Cancelar
 
-El menú desplegable de máquina muestra el estado de conexión de tu máquina y el estado
-actual (ej. Idle, Run) directamente en la barra de herramientas. Durante la ejecución del
-trabajo, también muestra el tiempo restante estimado.
+El menú desplegable de máquina muestra el estado de conexión de tu máquina y el estado actual (ej.
+Idle, Run) directamente en la barra de herramientas. Durante la ejecución del trabajo, también
+muestra el tiempo restante estimado.
 
-El menú desplegable WCS te permite cambiar rápidamente entre sistemas de coordenadas.
-Ver [Sistemas de Coordenadas de Trabajo](../general-info/coordinate-systems.md) para
-más información.
+El menú desplegable WCS te permite cambiar rápidamente entre sistemas de coordenadas. Ver
+[Sistemas de Coordenadas de Trabajo](../general-info/coordinate-systems.md) para más información.
 
-Los controles de visibilidad se han movido a botones superpuestos en el
-lienzo mismo, para que siempre estén a mano mientras trabajas. En el lienzo
-2D estos alternan las imágenes base de las piezas de trabajo, las pestañas,
-la transmisión de cámara (cuando una cámara está activada), los bloques de
-material, los movimientos de desplazamiento y las zonas prohibidas. La
-[vista 3D](3d-preview) tiene sus propios controles para la imagen de la
-pieza de trabajo, el modelo de máquina, la cuadrícula, la subcapa de
-operaciones, el material, los movimientos de desplazamiento y las zonas
-prohibidas.
-El botón de zonas prohibidas solo aparece cuando tu máquina tiene al menos
+Los controles de visibilidad se han movido a botones superpuestos en el lienzo mismo, para que
+siempre estén a mano mientras trabajas. En el lienzo 2D estos alternan las imágenes base de las
+piezas de trabajo, las pestañas, la transmisión de cámara (cuando una cámara está activada), los
+bloques de material, los movimientos de desplazamiento y las zonas prohibidas. La
+[vista 3D](3d-preview) tiene sus propios controles para la imagen de la pieza de trabajo, el modelo
+de máquina, la cuadrícula, la subcapa de operaciones, el material, los movimientos de desplazamiento
+y las zonas prohibidas. El botón de zonas prohibidas solo aparece cuando tu máquina tiene al menos
 una zona prohibida configurada.
 
 ### 3. Lienzo
@@ -66,32 +62,29 @@ El espacio de trabajo principal donde:
 
 ### 4. Panel Lateral
 
-El panel lateral es un overlay flotante en el lado derecho del lienzo. Muestra
-el flujo de trabajo de la capa activa como una lista vertical de pasos. Cada paso
-muestra su nombre, un resumen (ej. potencia y velocidad), y botones para visibilidad,
-ajustes y eliminación. Usa el botón **+** para añadir nuevos pasos. Los pasos se
-pueden reordenar arrastrando y soltando.
+El panel lateral es un overlay flotante en el lado derecho del lienzo. Muestra el flujo de trabajo
+de la capa activa como una lista vertical de pasos. Cada paso muestra su nombre, un resumen (ej.
+potencia y velocidad), y botones para visibilidad, ajustes y eliminación. Usa el botón **+** para
+añadir nuevos pasos. Los pasos se pueden reordenar arrastrando y soltando.
 
-Al hacer clic en el botón de ajustes de un paso, se abre un diálogo donde configuras
-el tipo de operación, potencia del láser, velocidad de corte, asistencia de aire,
-ancho del haz y opciones de postprocesamiento. Los valores de los controles deslizantes
-son editables — haz clic en un valor junto a un control deslizante y escribe el
-número exacto que deseas.
+Al hacer clic en el botón de ajustes de un paso, se abre un diálogo donde configuras el tipo de
+operación, potencia del láser, velocidad de corte, asistencia de aire, ancho del haz y opciones de
+postprocesamiento. Los valores de los controles deslizantes son editables — haz clic en un valor
+junto a un control deslizante y escribe el número exacto que deseas.
 
 El panel se puede mover cuando no se necesita.
 
 ### 5. Panel Inferior
 
-El Panel Inferior proporciona pestañas acoplables que se pueden reorganizar arrastrando
-y dividir en múltiples columnas. Las pestañas disponibles son:
+El Panel Inferior proporciona pestañas acoplables que se pueden reorganizar arrastrando y dividir en
+múltiples columnas. Las pestañas disponibles son:
 
-- **Capas**: Muestra todas las capas como columnas lado a lado. Cada columna tiene un
-  encabezado con el nombre de la capa y controles, una canalización horizontal compacta
-  de iconos de pasos que representan el flujo de trabajo, y una lista de piezas de
-  trabajo. Las capas y piezas de trabajo se pueden reordenar arrastrando y soltando.
+- **Capas**: Muestra todas las capas como columnas lado a lado. Cada columna tiene un encabezado con
+  el nombre de la capa y controles, una canalización horizontal compacta de iconos de pasos que
+  representan el flujo de trabajo, y una lista de piezas de trabajo. Las capas y piezas de trabajo
+  se pueden reordenar arrastrando y soltando.
 - **Activos**: Lista elementos de material y bosquejos en tu documento.
-- **Consola**: Terminal interactiva para enviar G-code y monitorear la comunicación
-  de la máquina.
+- **Consola**: Terminal interactiva para enviar G-code y monitorear la comunicación de la máquina.
 - **Visor de G-code**: Muestra el G-code generado con resaltado de sintaxis.
 - **Controles**: Controles de desplazamiento para posicionamiento manual y gestión de WCS.
 

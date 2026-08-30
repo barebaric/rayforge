@@ -1,6 +1,7 @@
 # Problemas de Conexión
 
-Esta página te ayuda a diagnosticar y resolver problemas al conectar Rayforge a tu máquina láser vía conexión serie.
+Esta página te ayuda a diagnosticar y resolver problemas al conectar Rayforge a tu máquina láser vía
+conexión serie.
 
 ## Diagnóstico Rápido
 
@@ -33,8 +34,8 @@ Los problemas comunes de conexión incluyen:
 
 **Linux:**
 
-Primero, añade tu usuario al grupo `dialout` (requerido para instalaciones
-Snap y no Snap en la mayoría de distribuciones basadas en Debian):
+Primero, añade tu usuario al grupo `dialout` (requerido para instalaciones Snap y no Snap en la
+mayoría de distribuciones basadas en Debian):
 
 ```bash
 sudo usermod -a -G dialout $USER
@@ -42,8 +43,7 @@ sudo usermod -a -G dialout $USER
 
 Luego cierra sesión y vuelve a entrar para que el cambio surta efecto.
 
-Si estás usando la versión Snap, también necesitas otorgar permisos de puerto
-serie:
+Si estás usando la versión Snap, también necesitas otorgar permisos de puerto serie:
 
 ```bash
 sudo snap connect rayforge:serial-port
@@ -52,6 +52,7 @@ sudo snap connect rayforge:serial-port
 Ver [Permisos de Snap](snap-permissions) para configuración detallada de Linux.
 
 **Windows:**
+
 1. Abre el Administrador de Dispositivos (Win+X, luego selecciona Administrador de Dispositivos)
 2. Busca en "Puertos (COM y LPT)" tu dispositivo
 3. Si ves un ícono de advertencia amarillo, actualiza o reinstala el controlador
@@ -59,6 +60,7 @@ Ver [Permisos de Snap](snap-permissions) para configuración detallada de Linux.
 5. Si el dispositivo no está listado, el cable USB o el controlador pueden estar defectuosos
 
 **macOS:**
+
 1. Revisa Información del Sistema → USB para verificar que el dispositivo es reconocido
 2. Instala controladores CH340/CH341 si tu controlador usa este chipset
 3. Busca dispositivos `/dev/tty.usbserial*` o `/dev/cu.usbserial*`
@@ -69,9 +71,9 @@ Ver [Permisos de Snap](snap-permissions) para configuración detallada de Linux.
 
 **En Linux:**
 
-Tu usuario necesita estar en el grupo `dialout` (o `uucp` en algunas
-distribuciones). Esto es requerido para **instalaciones Snap y no Snap** en
-distribuciones basadas en Debian para evitar mensajes AppArmor DENIED:
+Tu usuario necesita estar en el grupo `dialout` (o `uucp` en algunas distribuciones). Esto es
+requerido para **instalaciones Snap y no Snap** en distribuciones basadas en Debian para evitar
+mensajes AppArmor DENIED:
 
 ```bash
 # Añádete al grupo dialout
@@ -81,11 +83,10 @@ sudo usermod -a -G dialout $USER
 groups | grep dialout
 ```
 
-**Importante:** Debes cerrar sesión y volver a entrar (o reiniciar) para que
-los cambios de grupo surtan efecto.
+**Importante:** Debes cerrar sesión y volver a entrar (o reiniciar) para que los cambios de grupo
+surtan efecto.
 
-**Adicionalmente para instalaciones Snap**, otorga acceso al puerto serie al
-snap:
+**Adicionalmente para instalaciones Snap**, otorga acceso al puerto serie al snap:
 
 ```bash
 sudo snap connect rayforge:serial-port
@@ -96,6 +97,7 @@ Ver la guía de [Permisos de Snap](snap-permissions) para más detalles.
 **En Windows:**
 
 Cierra cualquier otra aplicación que pueda estar usando el puerto serie, incluyendo:
+
 - Instancias previas de Rayforge
 - Herramientas de monitor serie
 - Otro software láser
@@ -107,7 +109,8 @@ Cierra cualquier otra aplicación que pueda estar usando el puerto serie, incluy
 
 **Diagnóstico:**
 
-Puede que hayas seleccionado el puerto incorrecto, especialmente si tienes múltiples dispositivos USB conectados.
+Puede que hayas seleccionado el puerto incorrecto, especialmente si tienes múltiples dispositivos
+USB conectados.
 
 **Solución:**
 
@@ -121,14 +124,14 @@ Puede que hayas seleccionado el puerto incorrecto, especialmente si tienes múlt
 6. En Windows, anota el puerto COM del Administrador de Dispositivos
 7. Evita puertos nombrados `/dev/ttyS*` en Linux - estos son puertos serie de hardware, no USB
 
-:::warning Puertos Serie de Hardware
-Rayforge te advertirá si seleccionas puertos `/dev/ttyS*` en Linux, ya que estos típicamente no son dispositivos GRBL basados en USB. Los puertos serie USB usan `/dev/ttyUSB*` o `/dev/ttyACM*`.
-:::
-
+:::warning Puertos Serie de Hardware Rayforge te advertirá si seleccionas puertos `/dev/ttyS*` en
+Linux, ya que estos típicamente no son dispositivos GRBL basados en USB. Los puertos serie USB usan
+`/dev/ttyUSB*` o `/dev/ttyACM*`. :::
 
 ### Velocidad de Transmisión Incorrecta
 
-**Problema:** La conexión se establece pero los comandos no funcionan o producen respuestas ilegibles.
+**Problema:** La conexión se establece pero los comandos no funcionan o producen respuestas
+ilegibles.
 
 **Solución:**
 
@@ -138,7 +141,8 @@ Los controladores GRBL típicamente usan una de estas velocidades de transmisió
 - **9600** (versiones de GRBL más antiguas)
 - **250000** (menos común, algunos firmware personalizados)
 
-Prueba diferentes velocidades de transmisión en los ajustes de dispositivo de Rayforge. La más común es **115200**.
+Prueba diferentes velocidades de transmisión en los ajustes de dispositivo de Rayforge. La más común
+es **115200**.
 
 ### La Conexión Se Caé Continuamente
 
@@ -146,9 +150,12 @@ Prueba diferentes velocidades de transmisión en los ajustes de dispositivo de R
 
 **Posibles Causas:**
 
-1. **Cable USB defectuoso** - Reemplaza con un cable conocido como bueno (preferiblemente corto, <2m)
-2. **Problemas de energía USB** - Prueba un puerto USB diferente, preferiblemente en la computadora misma en lugar de un hub
-3. **EMI/Interferencia** - Mantén los cables USB alejados de cables de motores y fuentes de alimentación de alto voltaje
+1. **Cable USB defectuoso** - Reemplaza con un cable conocido como bueno (preferiblemente corto,
+   <2m)
+2. **Problemas de energía USB** - Prueba un puerto USB diferente, preferiblemente en la computadora
+   misma en lugar de un hub
+3. **EMI/Interferencia** - Mantén los cables USB alejados de cables de motores y fuentes de
+   alimentación de alto voltaje
 4. **Problemas de firmware** - Actualiza tu firmware GRBL si es posible
 5. **Conflictos de puerto USB** - En Windows, prueba diferentes puertos USB
 
@@ -160,6 +167,7 @@ sudo dmesg -w
 ```
 
 Busca mensajes como:
+
 - "USB disconnect" - indica problemas físicos/de cable
 - "device descriptor read error" - a menudo un problema de energía o cable
 
@@ -189,13 +197,13 @@ Si no hay respuesta, verifica doblemente la velocidad de transmisión y la selec
 
 Rayforge muestra diferentes estados de conexión:
 
-| Estado          | Significado | Acción |
-| --------------- | ------------|--------|
-| **Desconectado** | No conectado a ningún dispositivo | Configurar puerto y conectar |
-| **Conectando**   | Intentando establecer conexión | Esperar, o verificar configuración si se queda atascado |
-| **Conectado**    | Conectado exitosamente y recibiendo estado | Listo para usar |
-| **Error**        | La conexión falló con un error | Revisar mensaje de error para detalles |
-| **Durmiendo**    | Esperando antes de intento de reconexión | Conexión previa fallida, reintentando en 5s |
+| Estado           | Significado                                | Acción                                                  |
+| ---------------- | ------------------------------------------ | ------------------------------------------------------- |
+| **Desconectado** | No conectado a ningún dispositivo          | Configurar puerto y conectar                            |
+| **Conectando**   | Intentando establecer conexión             | Esperar, o verificar configuración si se queda atascado |
+| **Conectado**    | Conectado exitosamente y recibiendo estado | Listo para usar                                         |
+| **Error**        | La conexión falló con un error             | Revisar mensaje de error para detalles                  |
+| **Durmiendo**    | Esperando antes de intento de reconexión   | Conexión previa fallida, reintentando en 5s             |
 
 ---
 
@@ -224,7 +232,8 @@ Rayforge muestra diferentes estados de conexión:
 
 ### Usando Registros de Depuración
 
-Rayforge incluye registro detallado para problemas de conexión. Para habilitar el registro de depuración:
+Rayforge incluye registro detallado para problemas de conexión. Para habilitar el registro de
+depuración:
 
 ```bash
 # Ejecutar Rayforge desde terminal con registro de depuración
@@ -232,6 +241,7 @@ rayforge --loglevel DEBUG
 ```
 
 Revisa los registros para:
+
 - Intentos de conexión y fallos
 - Datos serie transmitidos (TX) y recibidos (RX)
 - Mensajes de error con trazas de pila
@@ -243,6 +253,7 @@ Revisa los registros para:
 ### Verificando Disponibilidad del Puerto Manualmente
 
 **Linux:**
+
 ```bash
 # Listar todos los dispositivos serie USB
 ls -l /dev/ttyUSB* /dev/ttyACM*
@@ -258,6 +269,7 @@ sudo minicom -D /dev/ttyUSB0 -b 115200
 ```
 
 **Windows:**
+
 ```powershell
 # Listar puertos COM en PowerShell
 [System.IO.Ports.SerialPort]::getportnames()
@@ -274,17 +286,18 @@ Rayforge está diseñado para firmware compatible con GRBL. Asegúrate de que tu
 - **GRBL 0.9** (más antiguo, puede tener funciones limitadas)
 - **grblHAL** (fork moderno de GRBL, soportado)
 
-Otros tipos de firmware (Marlin, Smoothieware) no están actualmente soportados vía el controlador GRBL.
+Otros tipos de firmware (Marlin, Smoothieware) no están actualmente soportados vía el controlador
+GRBL.
 
 ### Chipsets USB a Serie
 
 Chipsets comunes y sus controladores:
 
-| Chipset          | Linux | Windows | macOS |
-| ---------------- | ----- | ------- | ----- |
-| **CH340/CH341**  | Controlador de kernel integrado | [Controlador CH341SER](http://www.wch.cn/downloads/) | Requiere controlador |
-| **FTDI FT232**   | Controlador de kernel integrado | Integrado (Windows 10+) | Integrado |
-| **CP2102 (SiLabs)** | Controlador de kernel integrado | Integrado (Windows 10+) | Integrado |
+| Chipset             | Linux                           | Windows                                              | macOS                |
+| ------------------- | ------------------------------- | ---------------------------------------------------- | -------------------- |
+| **CH340/CH341**     | Controlador de kernel integrado | [Controlador CH341SER](http://www.wch.cn/downloads/) | Requiere controlador |
+| **FTDI FT232**      | Controlador de kernel integrado | Integrado (Windows 10+)                              | Integrado            |
+| **CP2102 (SiLabs)** | Controlador de kernel integrado | Integrado (Windows 10+)                              | Integrado            |
 
 ---
 
@@ -299,7 +312,8 @@ Si has probado todo lo anterior y todavía no puedes conectar:
    - Modelo de placa controladora y versión de firmware
    - Chipset USB (revisa Administrador de Dispositivos en Windows o `lsusb` en Linux)
    - Mensajes de error completos y registros de depuración
-3. **Prueba con otra aplicación** - Prueba conectar con un terminal serie (minicom, PuTTY, Monitor Serie de Arduino) para verificar que el hardware funciona
+3. **Prueba con otra aplicación** - Prueba conectar con un terminal serie (minicom, PuTTY, Monitor
+   Serie de Arduino) para verificar que el hardware funciona
 
 ---
 

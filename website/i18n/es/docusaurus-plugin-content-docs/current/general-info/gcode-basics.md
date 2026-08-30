@@ -52,18 +52,18 @@ G0 X0 Y0 ;Volver al origen
 
 **Comandos clave:**
 
-| Comando | Descripción |
-| ------- | ----------- |
-| `G21` | Modo milímetros |
-| `G90` | Posicionamiento absoluto |
-| `G54` | Seleccionar sistema de coordenadas de trabajo 1 |
-| `T0` | Seleccionar herramienta 0 (cabezal láser) |
-| `G0` | Movimiento rápido (láser apagado) |
-| `G1` | Movimiento de corte (láser encendido) |
-| `M4` | Láser encendido (modo de potencia dinámica) |
-| `M5` | Láser apagado |
-| `S500` | Establecer potencia del láser a 500 (50% para rango 0-1000) |
-| `F3000` | Establecer velocidad de avance a 3000 mm/min |
+| Comando | Descripción                                                 |
+| ------- | ----------------------------------------------------------- |
+| `G21`   | Modo milímetros                                             |
+| `G90`   | Posicionamiento absoluto                                    |
+| `G54`   | Seleccionar sistema de coordenadas de trabajo 1             |
+| `T0`    | Seleccionar herramienta 0 (cabezal láser)                   |
+| `G0`    | Movimiento rápido (láser apagado)                           |
+| `G1`    | Movimiento de corte (láser encendido)                       |
+| `M4`    | Láser encendido (modo de potencia dinámica)                 |
+| `M5`    | Láser apagado                                               |
+| `S500`  | Establecer potencia del láser a 500 (50% para rango 0-1000) |
+| `F3000` | Establecer velocidad de avance a 3000 mm/min                |
 
 ---
 

@@ -1,13 +1,17 @@
 # Optimisation de Parcours
 
-L'optimisation de parcours réordonne les segments de coupe pour minimiser la distance de déplacement. Le laser se déplace efficacement entre les coupes au lieu de sauter aléatoirement sur la zone de travail.
+L'optimisation de parcours réordonne les segments de coupe pour minimiser la distance de
+déplacement. Le laser se déplace efficacement entre les coupes au lieu de sauter aléatoirement sur
+la zone de travail.
 
 ## Comment Ça Fonctionne
 
-Sans optimisation, les parcours sont coupés dans l'ordre où ils apparaissent dans votre fichier de design. L'optimisation analyse tous les segments de parcours et les réarrange pour que le laser parcoure la distance totale la plus courte entre les coupes.
+Sans optimisation, les parcours sont coupés dans l'ordre où ils apparaissent dans votre fichier de
+design. L'optimisation analyse tous les segments de parcours et les réarrange pour que le laser
+parcoure la distance totale la plus courte entre les coupes.
 
-**Avant optimisation :** Le laser va et vient sur le matériau
-**Après optimisation :** Le laser se déplace séquentiellement de coupe en coupe
+**Avant optimisation :** Le laser va et vient sur le matériau **Après optimisation :** Le laser se
+déplace séquentiellement de coupe en coupe
 
 ## Paramètres
 
@@ -32,14 +36,16 @@ Activez ou désactivez l'optimisation de parcours. Activée par défaut pour la 
 
 ## Comment Ça Affecte Votre Travail
 
-**Gain de temps :** Peut réduire le temps de travail de 20-50% pour les designs avec beaucoup de coupes séparées.
+**Gain de temps :** Peut réduire le temps de travail de 20-50% pour les designs avec beaucoup de
+coupes séparées.
 
-**Efficacité de mouvement :** Moins de mouvement rapide signifie moins d'usure sur les courroies, moteurs et roulements.
+**Efficacité de mouvement :** Moins de mouvement rapide signifie moins d'usure sur les courroies,
+moteurs et roulements.
 
-**Distribution de chaleur :** Les parcours optimisés peuvent concentrer la chaleur dans une zone. Pour les matériaux sensibles à la chaleur, considérez si l'ordre compte.
+**Distribution de chaleur :** Les parcours optimisés peuvent concentrer la chaleur dans une zone.
+Pour les matériaux sensibles à la chaleur, considérez si l'ordre compte.
 
-:::tip
-L'optimisation s'exécute automatiquement. Activez-la simplement et le logiciel gère le reste.
+:::tip L'optimisation s'exécute automatiquement. Activez-la simplement et le logiciel gère le reste.
 :::
 
 ---

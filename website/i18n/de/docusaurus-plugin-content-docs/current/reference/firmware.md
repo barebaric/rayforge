@@ -1,10 +1,12 @@
 # Firmware-Kompatibilität
 
-Diese Seite dokumentiert die Firmware-Kompatibilität für Laser-Controller, die mit Rayforge verwendet werden.
+Diese Seite dokumentiert die Firmware-Kompatibilität für Laser-Controller, die mit Rayforge
+verwendet werden.
 
 ## Übersicht
 
-Rayforge ist primär für **GRBL-basierte Controller** konzipiert, bietet aber auch Unterstützung für Marlin, Smoothieware und andere Firmware-Typen.
+Rayforge ist primär für **GRBL-basierte Controller** konzipiert, bietet aber auch Unterstützung für
+Marlin, Smoothieware und andere Firmware-Typen.
 
 ### Kompatibilitätsmatrix
 
@@ -23,15 +25,15 @@ Rayforge ist primär für **GRBL-basierte Controller** konzipiert, bietet aber a
 
 ## GRBL-Firmware
 
-**Status:** Vollständig unterstützt
-**Versionen:** 1.1+
-**Treiber:** GRBL Serial / GRBL Serial Simple
+**Status:** Vollständig unterstützt **Versionen:** 1.1+ **Treiber:** GRBL Serial / GRBL Serial
+Simple
 
 ### GRBL 1.1 (Empfohlen)
 
 **Was ist GRBL 1.1?**
 
-GRBL 1.1 ist die häufigste Firmware für Hobby-CNC- und Lasermaschinen. Veröffentlicht 2017, ist sie stabil, gut dokumentiert und weit verbreitet.
+GRBL 1.1 ist die häufigste Firmware für Hobby-CNC- und Lasermaschinen. Veröffentlicht 2017, ist sie
+stabil, gut dokumentiert und weit verbreitet.
 
 **Von Rayforge unterstützte Funktionen:**
 
@@ -95,9 +97,8 @@ GRBL 0.9 ist eine ältere Version mit einigen Kompatibilitätsproblemen:
 
 ### GRBL Serial Simple Treiber
 
-Rayforge enthält einen zweiten seriellen GRBL-Treiber für Geräte, bei
-denen der standardmäßige pufferzählende Treiber falsche Alarme oder
-Kommunikationsfehler verursacht.
+Rayforge enthält einen zweiten seriellen GRBL-Treiber für Geräte, bei denen der standardmäßige
+pufferzählende Treiber falsche Alarme oder Kommunikationsfehler verursacht.
 
 **Funktionsweise:**
 
@@ -115,16 +116,14 @@ Kommunikationsfehler verursacht.
 **Nicht verwenden wenn:**
 
 - Der standardmäßige GRBL Serial Treiber bei dir zuverlässig funktioniert
-- Der Simple Treiber hat keine Deadlock-Wiederherstellung und Jobs können
-  bei verlorenen "ok"-Antworten ohne automatische Wiederherstellung stoppen
+- Der Simple Treiber hat keine Deadlock-Wiederherstellung und Jobs können bei verlorenen
+  "ok"-Antworten ohne automatische Wiederherstellung stoppen
 
 ---
 
 ## grblHAL
 
-**Status:** Kompatibel
-**Versionen:** 2023+
-**Treiber:** GRBL Serial
+**Status:** Kompatibel **Versionen:** 2023+ **Treiber:** GRBL Serial
 
 ### Was ist grblHAL?
 
@@ -149,21 +148,21 @@ grblHAL ist ein moderner Fork von GRBL mit erweiterten Funktionen:
 2. Verbinde über USB-Seriell (genau wie GRBL)
 3. Alle Funktionen funktionieren wie für GRBL dokumentiert
 
-**Zukunft:** Rayforge könnte Unterstützung für grblHAL-spezifische Funktionen hinzufügen (Netzwerk usw.)
+**Zukunft:** Rayforge könnte Unterstützung für grblHAL-spezifische Funktionen hinzufügen (Netzwerk
+usw.)
 
 ---
 
 ## GRBL-Telnet-Treiber
 
-**Status:** Unterstützt
-**Firmware:** grblHAL, ESP3D und andere GRBL-Netzwerk-Controller
+**Status:** Unterstützt **Firmware:** grblHAL, ESP3D und andere GRBL-Netzwerk-Controller
 **Treiber:** GRBL Telnet
 
 ### Über den GRBL-Telnet-Treiber
 
-Der GRBL-Telnet-Treiber verbindet sich über eine Telnet-Schnittstelle über das Netzwerk
-mit GRBL-basierten Controllern. Ideal für Platinen mit integriertem WiFi oder
-Ethernet — kein USB-Kabel erforderlich.
+Der GRBL-Telnet-Treiber verbindet sich über eine Telnet-Schnittstelle über das Netzwerk mit
+GRBL-basierten Controllern. Ideal für Platinen mit integriertem WiFi oder Ethernet — kein USB-Kabel
+erforderlich.
 
 **Funktionen:**
 
@@ -211,8 +210,7 @@ Smoothieware verwendet eine andere G-Code-Syntax:
 
 **Einschränkungen:**
 
-- Statusberichte nicht vollständig kompatibel
-  Leistungsskalierung kann abweichen
+- Statusberichte nicht vollständig kompatibel Leistungsskalierung kann abweichen
 - Einstellungen ($$-Befehle) nicht unterstützt
 - Ungetestet auf echter Hardware
 
@@ -222,13 +220,12 @@ Smoothieware verwendet eine andere G-Code-Syntax:
 
 ## Marlin
 
-**Versionen:** 2.0+ mit Laser-Unterstützung
-**Treiber:** Marlin Serial
+**Versionen:** 2.0+ mit Laser-Unterstützung **Treiber:** Marlin Serial
 
 ### Marlin Serial Treiber
 
-Rayforge enthält einen dedizierten MarlinSerialDriver, der über serielle (USB) Verbindung
-mit Marlin-Firmware kommuniziert. Marlin 2.0+ kann Laser steuern, wenn richtig konfiguriert.
+Rayforge enthält einen dedizierten MarlinSerialDriver, der über serielle (USB) Verbindung mit
+Marlin-Firmware kommuniziert. Marlin 2.0+ kann Laser steuern, wenn richtig konfiguriert.
 
 **Funktionen:**
 
@@ -511,10 +508,9 @@ $22=1       ; Referenzfahrt aktiviert
 
 ### Ruida-Controller
 
-Rayforge bietet experimentelle Unterstützung für Ruida-basierte Controller (z.B.
-RDC6442, RDC6445, Ruida R5). Der Ruida-Treiber verbindet sich über das Netzwerk und
-unterstützt Jogging, Positionsreporting, Luftdrucksteuerung, Ebenenauswahl,
-Auto-Connect und Status-Polling.
+Rayforge bietet experimentelle Unterstützung für Ruida-basierte Controller (z.B. RDC6442, RDC6445,
+Ruida R5). Der Ruida-Treiber verbindet sich über das Netzwerk und unterstützt Jogging,
+Positionsreporting, Luftdrucksteuerung, Ebenenauswahl, Auto-Connect und Status-Polling.
 
 **Funktionen:**
 
@@ -534,10 +530,9 @@ Auto-Connect und Status-Polling.
 
 ### OctoPrint
 
-Rayforge enthält einen experimentellen OctoPrint-Treiber, der G-Code direkt
-an einen OctoPrint-Server über das Netzwerk sendet. Dies ist nützlich, wenn
-dein Laser mit einem Raspberry Pi oder einem anderen Rechner mit OctoPrint
-verbunden ist.
+Rayforge enthält einen experimentellen OctoPrint-Treiber, der G-Code direkt an einen
+OctoPrint-Server über das Netzwerk sendet. Dies ist nützlich, wenn dein Laser mit einem Raspberry Pi
+oder einem anderen Rechner mit OctoPrint verbunden ist.
 
 **Funktionen:**
 
@@ -553,15 +548,14 @@ verbunden ist.
 1. Wähle den Treiber „OctoPrint" in den Maschineneinstellungen
 2. Gib den Hostnamen oder die IP-Adresse deines OctoPrint-Servers ein
 3. Setze den Port (Standard: 80)
-4. Klicke auf „Zugang anfragen", um einen API-Schlüssel über das
-   Anwendungsschlüssel-System von OctoPrint zu erhalten
+4. Klicke auf „Zugang anfragen", um einen API-Schlüssel über das Anwendungsschlüssel-System von
+   OctoPrint zu erhalten
 5. Verbinde — Rayforge stellt eine WebSocket-Verbindung her
 
 **Einschränkungen:**
 
 - Experimentell und auf echter Hardware ungetestet — Feedback willkommen
-- Firmware-Einstellungen können nicht über OctoPrint gelesen oder
-  geschrieben werden
+- Firmware-Einstellungen können nicht über OctoPrint gelesen oder geschrieben werden
 - Messergebnisse werden von OctoPrint nicht gemeldet
 - WCS-Versatz-Lesezugriff wird nicht unterstützt
 

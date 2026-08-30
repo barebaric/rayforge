@@ -10,7 +10,8 @@ Rayforge unterstützt mehrere Exportoptionen für verschiedene Zwecke:
 
 ## Objekte exportieren
 
-Du kannst jedes Werkstück in Vektorformate exportieren zur Verwendung in Design-Software, CAD-Anwendungen oder zur Archivierung.
+Du kannst jedes Werkstück in Vektorformate exportieren zur Verwendung in Design-Software,
+CAD-Anwendungen oder zur Archivierung.
 
 ### Wie man exportiert
 
@@ -20,11 +21,11 @@ Du kannst jedes Werkstück in Vektorformate exportieren zur Verwendung in Design
 
 ### Verfügbare Formate
 
-| Format  | Erweiterung | Beschreibung                                                                                                  |
-| ------- | ----------- | ------------------------------------------------------------------------------------------------------------- |
+| Format  | Erweiterung | Beschreibung                                                                                                                |
+| ------- | ----------- | --------------------------------------------------------------------------------------------------------------------------- |
 | **RFS** | `.rfs`      | Rayforge's natives parametrisches Skizzenformat. Bewahrt alle Bedingungen und kann zum Bearbeiten wieder importiert werden. |
-| **SVG** | `.svg`      | Scalable Vector Graphics. Weit kompatibel mit Design-Software wie Inkscape, Illustrator und Webbrowsern.      |
-| **DXF** | `.dxf`      | Drawing Exchange Format. Kompatibel mit den meisten CAD-Anwendungen wie AutoCAD, FreeCAD und LibreCAD.        |
+| **SVG** | `.svg`      | Scalable Vector Graphics. Weit kompatibel mit Design-Software wie Inkscape, Illustrator und Webbrowsern.                    |
+| **DXF** | `.dxf`      | Drawing Exchange Format. Kompatibel mit den meisten CAD-Anwendungen wie AutoCAD, FreeCAD und LibreCAD.                      |
 
 ### Export-Hinweise
 
@@ -53,7 +54,8 @@ Du kannst jedes Werkstück in Vektorformate exportieren zur Verwendung in Design
 
 ## Dokumente exportieren
 
-Du kannst alle Werkstücke in einem Dokument in eine einzelne Vektordatei exportieren. Dies ist nützlich zum Teilen kompletter Projekte oder Erstellen von Backups in Standardformaten.
+Du kannst alle Werkstücke in einem Dokument in eine einzelne Vektordatei exportieren. Dies ist
+nützlich zum Teilen kompletter Projekte oder Erstellen von Backups in Standardformaten.
 
 ### Wie man exportiert
 
@@ -63,10 +65,10 @@ Du kannst alle Werkstücke in einem Dokument in eine einzelne Vektordatei export
 
 ### Verfügbare Formate
 
-| Format  | Erweiterung | Beschreibung                                                                                                  |
-| ------- | ----------- | ------------------------------------------------------------------------------------------------------------- |
-| **SVG** | `.svg`      | Scalable Vector Graphics. Weit kompatibel mit Design-Software wie Inkscape, Illustrator und Webbrowsern.      |
-| **DXF** | `.dxf`      | Drawing Exchange Format. Kompatibel mit den meisten CAD-Anwendungen wie AutoCAD, FreeCAD und LibreCAD.        |
+| Format  | Erweiterung | Beschreibung                                                                                             |
+| ------- | ----------- | -------------------------------------------------------------------------------------------------------- |
+| **SVG** | `.svg`      | Scalable Vector Graphics. Weit kompatibel mit Design-Software wie Inkscape, Illustrator und Webbrowsern. |
+| **DXF** | `.dxf`      | Drawing Exchange Format. Kompatibel mit den meisten CAD-Anwendungen wie AutoCAD, FreeCAD und LibreCAD.   |
 
 ### Export-Hinweise
 
@@ -85,8 +87,9 @@ Du kannst alle Werkstücke in einem Dokument in eine einzelne Vektordatei export
 
 ## G-Code exportieren
 
-Generierter G-Code enthält alles genau so, wie es an die Maschine gesendet würde.
-Das genaue Format, die Befehle, numerische Präzision usw. hängen von den Einstellungen der aktuell ausgewählten Maschine und ihres G-Code-Dialekts ab.
+Generierter G-Code enthält alles genau so, wie es an die Maschine gesendet würde. Das genaue Format,
+die Befehle, numerische Präzision usw. hängen von den Einstellungen der aktuell ausgewählten
+Maschine und ihres G-Code-Dialekts ab.
 
 ---
 
@@ -111,8 +114,9 @@ rayforge --export ausgabe.gcode eingabe.svg
 
 ### G-Code-Ausgabe
 
-Generierter G-Code enthält alles genau so, wie es an die Maschine gesendet würde.
-Das genaue Format, die Befehle, numerische Präzision usw. hängen von den Einstellungen der aktuell ausgewählten Maschine und ihres G-Code-Dialekts ab.
+Generierter G-Code enthält alles genau so, wie es an die Maschine gesendet würde. Das genaue Format,
+die Befehle, numerische Präzision usw. hängen von den Einstellungen der aktuell ausgewählten
+Maschine und ihres G-Code-Dialekts ab.
 
 ---
 

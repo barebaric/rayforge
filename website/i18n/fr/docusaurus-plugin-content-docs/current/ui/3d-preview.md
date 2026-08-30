@@ -1,7 +1,7 @@
 # Vue 3D
 
-La vue 3D te permet de visualiser tes trajets d'outil G-code et de simuler l'exécution
-du travail avant de l'envoyer à ta machine.
+La vue 3D te permet de visualiser tes trajets d'outil G-code et de simuler l'exécution du travail
+avant de l'envoyer à ta machine.
 
 ![Prévisualisation 3D](/screenshots/main-3d.webp)
 
@@ -33,21 +33,20 @@ Angles de caméra rapides :
 
 ## Affichage du système de coordonnées de travail
 
-La vue 3D visualise le système de coordonnées de travail (WCS) actif
-différemment du canevas 2D :
+La vue 3D visualise le système de coordonnées de travail (WCS) actif différemment du canevas 2D :
 
 ### Grille et axes
 
-- **Affichage isolé** : La grille et les axes apparaissent comme si l'origine du WCS était
-  l'origine monde
-- **Décalage appliqué** : Toute la grille est décalée pour s'aligner avec le décalage
-  du WCS sélectionné
-- **Étiquettes relatives au WCS** : Les étiquettes de coordonnées affichent les positions relatives à
-  l'origine du WCS, pas l'origine machine
+- **Affichage isolé** : La grille et les axes apparaissent comme si l'origine du WCS était l'origine
+  monde
+- **Décalage appliqué** : Toute la grille est décalée pour s'aligner avec le décalage du WCS
+  sélectionné
+- **Étiquettes relatives au WCS** : Les étiquettes de coordonnées affichent les positions relatives
+  à l'origine du WCS, pas l'origine machine
 
-Cet affichage « en isolation » facilite la compréhension de l'endroit où ton travail
-s'exécutera par rapport au système de coordonnées de travail sélectionné, sans être perturbé
-par la position absolue de la machine.
+Cet affichage « en isolation » facilite la compréhension de l'endroit où ton travail s'exécutera par
+rapport au système de coordonnées de travail sélectionné, sans être perturbé par la position absolue
+de la machine.
 
 ### Changer de WCS
 
@@ -57,90 +56,78 @@ La vue 3D se met à jour automatiquement lorsque tu changes le WCS actif :
 - La grille et les axes se décalent pour refléter la nouvelle origine du WCS
 - Les étiquettes se mettent à jour pour afficher les coordonnées relatives au nouveau WCS
 
-:::tip WCS dans la vue 3D
-La vue 3D affiche tes trajets d'outil par rapport au WCS sélectionné. Lorsque tu
-changes de WCS, tu verras les trajets d'outil sembler bouger parce que le point de référence
-(la grille) a changé, non pas parce que les trajets d'outil eux-mêmes ont bougé.
-:::
+:::tip WCS dans la vue 3D La vue 3D affiche tes trajets d'outil par rapport au WCS sélectionné.
+Lorsque tu changes de WCS, tu verras les trajets d'outil sembler bouger parce que le point de
+référence (la grille) a changé, non pas parce que les trajets d'outil eux-mêmes ont bougé. :::
 
 ## Options d'affichage
 
-Les bascules de visibilité se trouvent sous forme de boutons superposés en haut à droite
-du canevas 3D. Chaque bouton mémorise son état entre les sessions :
+Les bascules de visibilité se trouvent sous forme de boutons superposés en haut à droite du canevas
+3D. Chaque bouton mémorise son état entre les sessions :
 
-- **Image de la pièce** : Basculer l'image de base de la pièce sur la surface
-  du brut — la même image que celle affichée sur le canevas 2D
+- **Image de la pièce** : Basculer l'image de base de la pièce sur la surface du brut — la même
+  image que celle affichée sur le canevas 2D
 - **Brut** : Basculer la visibilité des blocs de brut
 - **Modèle** : Basculer la visibilité du modèle 3D de la machine
 - **Grille** : Basculer la visibilité de la grille de coordonnées
-- **Sous-couche d'opérations** : Basculer l'aperçu semi-transparent de la
-  gravure raster sur la surface de la pièce
+- **Sous-couche d'opérations** : Basculer l'aperçu semi-transparent de la gravure raster sur la
+  surface de la pièce
 - **Déplacements rapides** : Basculer la visibilité des déplacements rapides
-- **Zones interdites** : Basculer la visibilité des zones interdites. Ce
-  bouton n'apparaît que lorsque ta machine a au moins une zone interdite
-  configurée.
+- **Zones interdites** : Basculer la visibilité des zones interdites. Ce bouton n'apparaît que
+  lorsque ta machine a au moins une zone interdite configurée.
 
-La projection en perspective et orthographique se bascule avec <kbd>P</kbd> ou
-**Affichage → Basculer la perspective**.
+La projection en perspective et orthographique se bascule avec <kbd>P</kbd> ou **Affichage →
+Basculer la perspective**.
 
 ### Visualisation du trajet d'outil
 
 Personnalise ce que tu vois :
 
-- **Afficher les déplacements rapides** : Afficher les déplacements de déplacement (lignes pointillées)
-- **Afficher les déplacements de travail** : Afficher les déplacements de coupe/gravure (lignes pleines)
+- **Afficher les déplacements rapides** : Afficher les déplacements de déplacement (lignes
+  pointillées)
+- **Afficher les déplacements de travail** : Afficher les déplacements de coupe/gravure (lignes
+  pleines)
 - **Couleur par opération** : Différentes couleurs pour chaque opération
 
-:::tip Couleurs par Laser
-Lors de l'utilisation de machines avec plusieurs têtes laser, chaque laser peut
-avoir sa propre couleur configurée dans
-[Paramètres Laser](../machine/laser.md). Cela facilite l'identification du laser
-qui effectuera chaque opération.
-:::
+:::tip Couleurs par Laser Lors de l'utilisation de machines avec plusieurs têtes laser, chaque laser
+peut avoir sa propre couleur configurée dans [Paramètres Laser](../machine/laser.md). Cela facilite
+l'identification du laser qui effectuera chaque opération. :::
 
 ### Modèle de tête laser
 
-La vue 3D affiche un modèle de ta tête laser qui se déplace le long du trajet d'outil
-pendant la simulation. Tu peux attribuer un modèle 3D à chaque tête laser dans la page
-[Paramètres Laser](../machine/laser.md) des Paramètres Machine. L'échelle, la rotation
-et la distance focale du modèle peuvent être ajustées pour correspondre à ton
-installation physique.
+La vue 3D affiche un modèle de ta tête laser qui se déplace le long du trajet d'outil pendant la
+simulation. Tu peux attribuer un modèle 3D à chaque tête laser dans la page
+[Paramètres Laser](../machine/laser.md) des Paramètres Machine. L'échelle, la rotation et la
+distance focale du modèle peuvent être ajustées pour correspondre à ton installation physique.
 
-Pendant la simulation, un faisceau laser lumineux est tracé depuis la tête vers le bas
-lorsque le laser est actif.
+Pendant la simulation, un faisceau laser lumineux est tracé depuis la tête vers le bas lorsque le
+laser est actif.
 
 ## Modèle de brûlure physique {#physical-burn-model}
 
-Lorsque tu graves, la vue 3D ne montre plus le résultat comme un overlay plat
-sur le brut. Les opérations raster et vectorielles laser **brûlent
-maintenant le brut lui-même** — l'aperçu affiche une brûlure pilotée par un
-modèle physiquement motivé qui prend en compte :
+Lorsque tu graves, la vue 3D ne montre plus le résultat comme un overlay plat sur le brut. Les
+opérations raster et vectorielles laser **brûlent maintenant le brut lui-même** — l'aperçu affiche
+une brûlure pilotée par un modèle physiquement motivé qui prend en compte :
 
-- La **longueur d'onde**, la **puissance optique** et la **taille du spot**
-  de ton laser (configurés dans les [Paramètres Laser](../machine/laser.md)).
+- La **longueur d'onde**, la **puissance optique** et la **taille du spot** de ton laser (configurés
+  dans les [Paramètres Laser](../machine/laser.md)).
 - L'**absorption du matériau** à cette longueur d'onde (définie dans la
   [bibliothèque de matériaux](../application-settings/materials.md#absorption)).
-- La **vitesse de balayage**, qui définit l'énergie délivrée par unité de
-  surface (fluence, en J/cm²).
+- La **vitesse de balayage**, qui définit l'énergie délivrée par unité de surface (fluence, en
+  J/cm²).
 
-Le résultat est un escalier de carbonisation avec un halo de chaleur sur les
-faces orientées vers le haut. Cela fonctionne aussi pour le rotatif — la
-gravure se incorpore dans le brut rotatif.
+Le résultat est un escalier de carbonisation avec un halo de chaleur sur les faces orientées vers le
+haut. Cela fonctionne aussi pour le rotatif — la gravure se incorpore dans le brut rotatif.
 
-:::note Calibration
-Le modèle de brûlure est physiquement motivé mais pas encore entièrement
-calibré pour tous les matériaux et types de lasers. Tu peux aider à
-l'améliorer : exécute une
-[grille de test de matériau](../features/operations/material-test-grid.md)
-et partage la photo du résultat avec les données de ta machine (longueur
-d'onde, puissance optique, taille du spot, vitesse et les puissances/
-profondeurs testées).
-:::
+:::note Calibration Le modèle de brûlure est physiquement motivé mais pas encore entièrement calibré
+pour tous les matériaux et types de lasers. Tu peux aider à l'améliorer : exécute une
+[grille de test de matériau](../features/operations/material-test-grid.md) et partage la photo du
+résultat avec les données de ta machine (longueur d'onde, puissance optique, taille du spot, vitesse
+et les puissances/ profondeurs testées). :::
 
 ## Simulation
 
-La vue 3D inclut un simulateur intégré avec des contrôles de lecture superposés
-en bas du canevas.
+La vue 3D inclut un simulateur intégré avec des contrôles de lecture superposés en bas du canevas.
 
 ### Contrôles de lecture
 
@@ -151,10 +138,9 @@ en bas du canevas.
 
 ### Visualiseur G-code synchronisé
 
-La simulation reste synchronisée avec le visualiseur G-code dans le panneau inférieur.
-Avancer dans la simulation met en surbrillance la ligne correspondante dans le
-visualiseur G-code, et cliquer sur une ligne dans le visualiseur G-code fait sauter
-la simulation à ce point.
+La simulation reste synchronisée avec le visualiseur G-code dans le panneau inférieur. Avancer dans
+la simulation met en surbrillance la ligne correspondante dans le visualiseur G-code, et cliquer sur
+une ligne dans le visualiseur G-code fait sauter la simulation à ce point.
 
 ### Visibilité des calques
 
@@ -172,11 +158,10 @@ Avant d'envoyer à la machine, vérifie :
 - [ ] Le travail commence à la position attendue
 - [ ] Les onglets de maintien sont aux bons emplacements
 
-Certaines vérifications supplémentaires sont effectuées automatiquement.
-Lorsque tu exécutes ou exportes un travail, Rayforge effectue des
-[vérifications de cohérence](../features/sanity-checks.md) qui vérifient les
-limites de la machine, les contours de la zone de travail et les collisions
-avec les zones interdites.
+Certaines vérifications supplémentaires sont effectuées automatiquement. Lorsque tu exécutes ou
+exportes un travail, Rayforge effectue des
+[vérifications de cohérence](../features/sanity-checks.md) qui vérifient les limites de la machine,
+les contours de la zone de travail et les collisions avec les zones interdites.
 
 ## Conseils de performance
 

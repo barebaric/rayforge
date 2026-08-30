@@ -1,10 +1,13 @@
 ---
-description: "Troubleshoot connection issues with your laser cutter in Rayforge. Fix serial port, USB, and GRBL communication problems."
+description:
+  "Troubleshoot connection issues with your laser cutter in Rayforge. Fix serial port, USB, and GRBL
+  communication problems."
 ---
 
 # Connection Issues
 
-This page helps you diagnose and resolve problems connecting Rayforge to your laser machine via serial connection.
+This page helps you diagnose and resolve problems connecting Rayforge to your laser machine via
+serial connection.
 
 ## Quick Diagnosis
 
@@ -37,8 +40,8 @@ Common connection problems include:
 
 **Linux:**
 
-First, add your user to the `dialout` group (required for both Snap and
-non-Snap installations on most Debian-based distributions):
+First, add your user to the `dialout` group (required for both Snap and non-Snap installations on
+most Debian-based distributions):
 
 ```bash
 sudo usermod -a -G dialout $USER
@@ -46,8 +49,7 @@ sudo usermod -a -G dialout $USER
 
 Then log out and log back in for the change to take effect.
 
-If you're using the Snap version, you also need to grant serial port
-permissions:
+If you're using the Snap version, you also need to grant serial port permissions:
 
 ```bash
 sudo snap connect rayforge:serial-port
@@ -56,6 +58,7 @@ sudo snap connect rayforge:serial-port
 See [Snap Permissions](snap-permissions) for detailed Linux setup.
 
 **Windows:**
+
 1. Open Device Manager (Win+X, then select Device Manager)
 2. Look under "Ports (COM & LPT)" for your device
 3. If you see a yellow warning icon, update or reinstall the driver
@@ -63,6 +66,7 @@ See [Snap Permissions](snap-permissions) for detailed Linux setup.
 5. If the device isn't listed at all, the USB cable or driver may be faulty
 
 **macOS:**
+
 1. Check System Information → USB to verify the device is recognized
 2. Install CH340/CH341 drivers if your controller uses this chipset
 3. Check for `/dev/tty.usbserial*` or `/dev/cu.usbserial*` devices
@@ -73,9 +77,9 @@ See [Snap Permissions](snap-permissions) for detailed Linux setup.
 
 **On Linux:**
 
-Your user needs to be in the `dialout` group (or `uucp` on some distributions).
-This is required for **both Snap and non-Snap installations** on Debian-based
-distributions to avoid AppArmor DENIED messages:
+Your user needs to be in the `dialout` group (or `uucp` on some distributions). This is required for
+**both Snap and non-Snap installations** on Debian-based distributions to avoid AppArmor DENIED
+messages:
 
 ```bash
 # Add yourself to the dialout group
@@ -85,8 +89,7 @@ sudo usermod -a -G dialout $USER
 groups | grep dialout
 ```
 
-**Important:** You must log out and log back in (or reboot) for group changes
-to take effect.
+**Important:** You must log out and log back in (or reboot) for group changes to take effect.
 
 **Additionally for Snap installations**, grant serial port access to the snap:
 
@@ -99,6 +102,7 @@ See the [Snap Permissions](snap-permissions) guide for more details.
 **On Windows:**
 
 Close any other applications that might be using the serial port (including:
+
 - Previous instances of Rayforge
 - Serial monitor tools
 - Other laser software
@@ -124,10 +128,9 @@ You might have selected the wrong port, especially if you have multiple USB devi
 6. On Windows, note the COM port from Device Manager
 7. Avoid ports named `/dev/ttyS*` on Linux - these are hardware serial ports, not USB
 
-:::warning Hardware Serial Ports
-Rayforge will warn you if you select `/dev/ttyS*` ports on Linux, as these are typically not USB-based GRBL devices. USB serial ports use `/dev/ttyUSB*` or `/dev/ttyACM*`.
-:::
-
+:::warning Hardware Serial Ports Rayforge will warn you if you select `/dev/ttyS*` ports on Linux,
+as these are typically not USB-based GRBL devices. USB serial ports use `/dev/ttyUSB*` or
+`/dev/ttyACM*`. :::
 
 ### Incorrect Baud Rate
 
@@ -150,7 +153,8 @@ Try different baud rates in Rayforge's device settings. The most common is **115
 **Possible Causes:**
 
 1. **Flaky USB cable** - Replace with a known-good cable (preferably short, &lt;2m)
-2. **USB power issues** - Try a different USB port, preferably on the computer itself rather than a hub
+2. **USB power issues** - Try a different USB port, preferably on the computer itself rather than a
+   hub
 3. **EMI/Interference** - Keep USB cables away from motor wires and high-voltage power supplies
 4. **Firmware issues** - Update your GRBL firmware if possible
 5. **USB port conflicts** - On Windows, try different USB ports
@@ -163,6 +167,7 @@ sudo dmesg -w
 ```
 
 Look for messages like:
+
 - "USB disconnect" - indicates physical/cable issues
 - "device descriptor read error" - often a power or cable problem
 
@@ -192,13 +197,13 @@ If there's no response, double-check baud rate and port selection.
 
 Rayforge shows different connection states:
 
-| Status | Meaning | Action |
-|--------|---------|--------|
-| **Disconnected** | Not connected to any device | Configure port and connect |
-| **Connecting** | Attempting to establish connection | Wait, or check configuration if stuck |
-| **Connected** | Successfully connected and receiving status | Ready to use |
-| **Error** | Connection failed with an error | Check error message for details |
-| **Sleeping** | Waiting before reconnection attempt | Previous connection failed, retrying in 5s |
+| Status           | Meaning                                     | Action                                     |
+| ---------------- | ------------------------------------------- | ------------------------------------------ |
+| **Disconnected** | Not connected to any device                 | Configure port and connect                 |
+| **Connecting**   | Attempting to establish connection          | Wait, or check configuration if stuck      |
+| **Connected**    | Successfully connected and receiving status | Ready to use                               |
+| **Error**        | Connection failed with an error             | Check error message for details            |
+| **Sleeping**     | Waiting before reconnection attempt         | Previous connection failed, retrying in 5s |
 
 ---
 
@@ -207,7 +212,7 @@ Rayforge shows different connection states:
 ### Step-by-Step Connection Test
 
 1. **Configure the machine:**
-   - Open Settings  Machine
+   - Open Settings Machine
    - Select or create a machine profile
    - Choose the correct driver (GRBL Serial)
    - Select the serial port
@@ -235,6 +240,7 @@ rayforge --loglevel DEBUG
 ```
 
 Check the logs for:
+
 - Connection attempts and failures
 - Serial data transmitted (TX) and received (RX)
 - Error messages with stack traces
@@ -246,6 +252,7 @@ Check the logs for:
 ### Checking Port Availability Manually
 
 **Linux:**
+
 ```bash
 # List all USB serial devices
 ls -l /dev/ttyUSB* /dev/ttyACM*
@@ -261,6 +268,7 @@ sudo minicom -D /dev/ttyUSB0 -b 115200
 ```
 
 **Windows:**
+
 ```powershell
 # List COM ports in PowerShell
 [System.IO.Ports.SerialPort]::getportnames()
@@ -283,11 +291,11 @@ Other firmware types (Marlin, Smoothieware) are not currently supported via the 
 
 Common chipsets and their drivers:
 
-| Chipset | Linux | Windows | macOS |
-|---------|-------|---------|-------|
-| **CH340/CH341** | Built-in kernel driver | [CH341SER driver](http://www.wch.cn/downloads/) | Requires driver |
-| **FTDI FT232** | Built-in kernel driver | Built-in (Windows 10+) | Built-in |
-| **CP2102 (SiLabs)** | Built-in kernel driver | Built-in (Windows 10+) | Built-in |
+| Chipset             | Linux                  | Windows                                         | macOS           |
+| ------------------- | ---------------------- | ----------------------------------------------- | --------------- |
+| **CH340/CH341**     | Built-in kernel driver | [CH341SER driver](http://www.wch.cn/downloads/) | Requires driver |
+| **FTDI FT232**      | Built-in kernel driver | Built-in (Windows 10+)                          | Built-in        |
+| **CP2102 (SiLabs)** | Built-in kernel driver | Built-in (Windows 10+)                          | Built-in        |
 
 ---
 
@@ -302,7 +310,8 @@ If you've tried everything above and still can't connect:
    - Controller board model and firmware version
    - USB chipset (check Device Manager on Windows or `lsusb` on Linux)
    - Full error messages and debug logs
-3. **Test with another application** - Try connecting with a serial terminal (minicom, PuTTY, Arduino Serial Monitor) to verify the hardware works
+3. **Test with another application** - Try connecting with a serial terminal (minicom, PuTTY,
+   Arduino Serial Monitor) to verify the hardware works
 
 ---
 

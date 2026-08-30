@@ -1,6 +1,8 @@
 # Systèmes de Coordonnées de Travail (WCS)
 
-Les Systèmes de Coordonnées de Travail (WCS) vous permettent de définir plusieurs points de référence sur la zone de travail de votre machine. Cela facilite l'exécution du même travail à différentes positions sans reconcevoir ou repositionner vos pièces.
+Les Systèmes de Coordonnées de Travail (WCS) vous permettent de définir plusieurs points de
+référence sur la zone de travail de votre machine. Cela facilite l'exécution du même travail à
+différentes positions sans reconcevoir ou repositionner vos pièces.
 
 ## Espaces de Coordonnées
 
@@ -12,19 +14,16 @@ Rayforge utilise trois espaces de coordonnées qui travaillent ensemble :
 | **WORKAREA** | La zone utilisable dans votre machine, en tenant compte des marges autour du lit.                                                       |
 | **WCS**      | Le système de coordonnées de votre travail. Origine configurable par l'utilisateur pour la conception et le positionnement des travaux. |
 
-:::note Note pour les Développeurs
-En interne, Rayforge utilise un système de coordonnées normalisé appelé espace WORLD.
-L'espace WORLD décrit le même espace physique que l'espace MACHINE, mais avec une
-convention fixe : Y vers le haut avec origine en bas à gauche. Cela simplifie les
-calculs internes et le rendu. Les utilisateurs n'ont pas besoin d'interagir directement
-avec l'espace WORLD.
+:::note Note pour les Développeurs En interne, Rayforge utilise un système de coordonnées normalisé
+appelé espace WORLD. L'espace WORLD décrit le même espace physique que l'espace MACHINE, mais avec
+une convention fixe : Y vers le haut avec origine en bas à gauche. Cela simplifie les calculs
+internes et le rendu. Les utilisateurs n'ont pas besoin d'interagir directement avec l'espace WORLD.
 :::
 
 ### Espace MACHINE
 
-L'espace MACHINE est le système de coordonnées absolu relatif à la position d'origine
-de votre machine. L'origine (0,0) est déterminée par la configuration de prise d'origine
-de votre machine.
+L'espace MACHINE est le système de coordonnées absolu relatif à la position d'origine de votre
+machine. L'origine (0,0) est déterminée par la configuration de prise d'origine de votre machine.
 
 - **Origine** : Position d'origine de la machine (0,0,0) - fixée par le matériel
 - **Objectif** : Référence pour tous les autres systèmes de coordonnées
@@ -32,28 +31,32 @@ de votre machine.
 
 La direction des coordonnées dépend de la configuration de votre machine :
 
-- **Coin d'origine** : Peut être en haut à gauche, en bas à gauche, en haut à droite ou en bas à droite
+- **Coin d'origine** : Peut être en haut à gauche, en bas à gauche, en haut à droite ou en bas à
+  droite
 - **Direction des axes** : Les axes X et Y peuvent être inversés selon la configuration matérielle
 
 ### Espace WORKAREA
 
-L'espace WORKAREA définit la zone utilisable dans votre machine, en tenant compte
-des marges autour des bords de votre lit.
+L'espace WORKAREA définit la zone utilisable dans votre machine, en tenant compte des marges autour
+des bords de votre lit.
 
 - **Origine** : Même coin que l'origine de l'espace MACHINE
 - **Objectif** : Définit la zone réelle où les travaux peuvent être exécutés
 - **Marges** : Des marges peuvent être appliquées (gauche, haut, droite, bas)
 
-Par exemple, si votre machine fait 400×300mm mais a une marge de 10mm de tous les côtés,
-la WORKAREA serait de 380×280mm commençant à la position (10, 10) dans l'espace MACHINE.
+Par exemple, si votre machine fait 400×300mm mais a une marge de 10mm de tous les côtés, la WORKAREA
+serait de 380×280mm commençant à la position (10, 10) dans l'espace MACHINE.
 
 ## Comprendre les WCS
 
-Pensez aux WCS comme des "points zéro" personnalisables pour votre travail. Alors que votre machine a une position d'origine fixe (déterminée par les butées), les WCS vous permettent de définir où vous voulez que votre travail commence.
+Pensez aux WCS comme des "points zéro" personnalisables pour votre travail. Alors que votre machine
+a une position d'origine fixe (déterminée par les butées), les WCS vous permettent de définir où
+vous voulez que votre travail commence.
 
 ### Pourquoi Utiliser les WCS ?
 
-- **Fixations multiples** : Configurez plusieurs zones de travail sur votre lit et passez de l'une à l'autre
+- **Fixations multiples** : Configurez plusieurs zones de travail sur votre lit et passez de l'une à
+  l'autre
 - **Positionnement répétable** : Exécutez le même travail à différents endroits
 - **Alignement rapide** : Définissez un point de référence basé sur votre matériau ou pièce
 - **Flux de travail de production** : Organisez plusieurs travaux sur votre zone de travail
@@ -74,7 +77,8 @@ Rayforge prend en charge les systèmes de coordonnées suivants :
 
 ### Coordonnées Machine (G53)
 
-G53 représente la position absolue de votre machine, avec zéro à la position d'origine de la machine. Ceci est fixé par votre matériel et ne peut pas être modifié.
+G53 représente la position absolue de votre machine, avec zéro à la position d'origine de la
+machine. Ceci est fixé par votre matériel et ne peut pas être modifié.
 
 **Quand l'utiliser :**
 
@@ -84,7 +88,8 @@ G53 représente la position absolue de votre machine, avec zéro à la position 
 
 ### Coordonnées de Travail (G54-G59)
 
-Ce sont des systèmes de coordonnées avec décalage que vous pouvez définir. Chacun a son propre point zéro que vous pouvez placer n'importe où sur votre zone de travail.
+Ce sont des systèmes de coordonnées avec décalage que vous pouvez définir. Chacun a son propre point
+zéro que vous pouvez placer n'importe où sur votre zone de travail.
 
 **Quand les utiliser :**
 
@@ -99,19 +104,23 @@ Ce sont des systèmes de coordonnées avec décalage que vous pouvez définir. C
 Le canevas 2D affiche votre origine WCS avec un marqueur vert :
 
 - **Lignes vertes** : Indiquent la position de l'origine WCS actuelle (0, 0)
-- **Alignement de la grille** : Les lignes de la grille sont alignées sur l'origine WCS, pas sur l'origine machine
+- **Alignement de la grille** : Les lignes de la grille sont alignées sur l'origine WCS, pas sur
+  l'origine machine
 
-Le marqueur d'origine se déplace lorsque vous changez le WCS actif ou son décalage, vous montrant exactement où votre travail commencera.
+Le marqueur d'origine se déplace lorsque vous changez le WCS actif ou son décalage, vous montrant
+exactement où votre travail commencera.
 
 ### Aperçu 3D
 
 Dans l'aperçu 3D, les WCS sont affichés différemment :
 
 - **Grille et axes** : Toute la grille apparaît comme si l'origine WCS était l'origine du monde
-- **Vue isolée** : Le WCS est affiché "en isolation" - on dirait que la grille est centrée sur le WCS, pas sur la machine
+- **Vue isolée** : Le WCS est affiché "en isolation" - on dirait que la grille est centrée sur le
+  WCS, pas sur la machine
 - **Étiquettes** : Les étiquettes de coordonnées sont relatives à l'origine WCS
 
-Cela facilite la visualisation de l'endroit où votre travail sera exécuté par rapport au système de coordonnées de travail sélectionné.
+Cela facilite la visualisation de l'endroit où votre travail sera exécuté par rapport au système de
+coordonnées de travail sélectionné.
 
 ## Sélectionner et Changer les WCS
 
@@ -163,20 +172,19 @@ Le même travail peut être exécuté à différentes positions simplement en ch
 ### WCS par calque
 
 Chaque calque peut se voir attribuer son propre système de coordonnées de travail indépendamment.
-Lorsqu'un calque a un WCS attribué, les opérations de ce calque sont positionnées
-relativement au WCS du calque plutôt qu'au WCS global. Cela signifie que vous pouvez :
+Lorsqu'un calque a un WCS attribué, les opérations de ce calque sont positionnées relativement au
+WCS du calque plutôt qu'au WCS global. Cela signifie que vous pouvez :
 
 - Exécuter différents calques à différentes positions sur le lit en un seul travail
 - Configurer plusieurs fixations et les attribuer à des calques spécifiques
-- Combiner travail plan et rotatif dans le même projet, chacun avec sa
-  propre origine de coordonnées
+- Combiner travail plan et rotatif dans le même projet, chacun avec sa propre origine de coordonnées
 
-Pour attribuer un WCS à un calque, ouvrez les paramètres du calque et utilisez le
-sélecteur de WCS. Un bouton d'édition rapide à côté du sélecteur vous permet
-d'ajuster les décalages sans quitter la boîte de dialogue.
+Pour attribuer un WCS à un calque, ouvrez les paramètres du calque et utilisez le sélecteur de WCS.
+Un bouton d'édition rapide à côté du sélecteur vous permet d'ajuster les décalages sans quitter la
+boîte de dialogue.
 
-Les calques sans attribution explicite de WCS utilisent le WCS global actif
-du menu déroulant de la barre d'outils.
+Les calques sans attribution explicite de WCS utilisent le WCS global actif du menu déroulant de la
+barre d'outils.
 
 ## Flux de Travail Pratiques
 
@@ -222,8 +230,8 @@ Vous devez couper la même pièce 10 fois à différents endroits :
 
 **Pages Liées :**
 
-- [Positionnement de la Pièce](../features/workpiece-positioning.md) -
-  Guide complet de positionnement
+- [Positionnement de la Pièce](../features/workpiece-positioning.md) - Guide complet de
+  positionnement
 - [Panneau de Contrôle](../ui/bottom-panel.md) - Contrôle manuel et gestion des WCS
 - [Configuration Machine](../machine/general.md) - Configurez votre machine
 - [Aperçu 3D](../ui/3d-preview.md) - Visualiser vos travaux

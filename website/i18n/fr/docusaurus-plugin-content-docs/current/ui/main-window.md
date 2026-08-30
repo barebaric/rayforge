@@ -1,7 +1,7 @@
 # Fenêtre principale
 
-La fenêtre principale de Rayforge est votre espace de travail principal pour créer et gérer
-les travaux laser.
+La fenêtre principale de Rayforge est votre espace de travail principal pour créer et gérer les
+travaux laser.
 
 ## Disposition de la fenêtre
 
@@ -22,31 +22,29 @@ Accédez à toutes les fonctions Rayforge via des menus organisés :
 
 Accès rapide aux contrôles fréquemment utilisés :
 
-- **Liste déroulante Machine** : Sélectionne ta machine, affiche l'état de connexion et
-  montre le temps restant estimé pendant les travaux
+- **Liste déroulante Machine** : Sélectionne ta machine, affiche l'état de connexion et montre le
+  temps restant estimé pendant les travaux
 - **Liste déroulante WCS** : Sélectionne le système de coordonnées de travail actif (G53-G59)
 - **Basculer la simulation** : Active/désactive le mode simulation
 - **Focus laser** : Active/désactive le mode de mise au point du laser
 - **Contrôles de travail** : Boutons Origine, Cadrer, Envoyer, Pause et Annuler
 
-La liste déroulante Machine affiche l'état de connexion de ta machine et son état actuel
-(p. ex. Inactif, En cours) directement dans la barre d'outils. Pendant l'exécution d'un travail,
-elle affiche aussi une estimation du temps restant.
+La liste déroulante Machine affiche l'état de connexion de ta machine et son état actuel (p. ex.
+Inactif, En cours) directement dans la barre d'outils. Pendant l'exécution d'un travail, elle
+affiche aussi une estimation du temps restant.
 
-La liste déroulante WCS te permet de basculer rapidement entre les systèmes de coordonnées.
-Voir [Systèmes de coordonnées de travail](../general-info/coordinate-systems.md) pour
-plus d'informations.
+La liste déroulante WCS te permet de basculer rapidement entre les systèmes de coordonnées. Voir
+[Systèmes de coordonnées de travail](../general-info/coordinate-systems.md) pour plus
+d'informations.
 
-Les bascules de visibilité ont été déplacées vers des boutons superposés
-sur le canevas lui-même, pour qu'ils soient toujours à portée de main
-pendant que tu travailles. Sur le canevas 2D, elles basculent les images de
-base des pièces, les onglets, le flux caméra (lorsqu'une caméra est
-activée), les blocs de brut, les déplacements rapides et les zones
-interdites. La [vue 3D](3d-preview) possède ses propres bascules pour
-l'image de la pièce, le modèle de la machine, la grille, la sous-couche
-d'opérations, le brut, les déplacements rapides et les zones interdites.
-La bascule des zones interdites n'apparaît que lorsque ta machine a au
-moins une zone interdite configurée.
+Les bascules de visibilité ont été déplacées vers des boutons superposés sur le canevas lui-même,
+pour qu'ils soient toujours à portée de main pendant que tu travailles. Sur le canevas 2D, elles
+basculent les images de base des pièces, les onglets, le flux caméra (lorsqu'une caméra est
+activée), les blocs de brut, les déplacements rapides et les zones interdites. La
+[vue 3D](3d-preview) possède ses propres bascules pour l'image de la pièce, le modèle de la machine,
+la grille, la sous-couche d'opérations, le brut, les déplacements rapides et les zones interdites.
+La bascule des zones interdites n'apparaît que lorsque ta machine a au moins une zone interdite
+configurée.
 
 ### 3. Canevas
 
@@ -65,35 +63,33 @@ L'espace de travail principal où tu peux :
 
 ### 4. Panneau latéral
 
-Le panneau latéral est un panneau flottant sur le côté droit du canevas. Il affiche
-le flux de travail du calque actif sous forme de liste verticale d'étapes. Chaque
-étape affiche son nom, un résumé (p. ex. puissance et vitesse), et des boutons pour
-la visibilité, les paramètres et la suppression. Utilisez le bouton **+** pour ajouter
-de nouvelles étapes. Les étapes peuvent être réorganisées par glisser-déposer.
+Le panneau latéral est un panneau flottant sur le côté droit du canevas. Il affiche le flux de
+travail du calque actif sous forme de liste verticale d'étapes. Chaque étape affiche son nom, un
+résumé (p. ex. puissance et vitesse), et des boutons pour la visibilité, les paramètres et la
+suppression. Utilisez le bouton **+** pour ajouter de nouvelles étapes. Les étapes peuvent être
+réorganisées par glisser-déposer.
 
-En cliquant sur le bouton des paramètres d'une étape, une boîte de dialogue s'ouvre
-vous permettant de configurer le type d'opération, la puissance du laser, la vitesse
-de coupe, l'assistance par air, la largeur du faisceau et les options de
-post-traitement. Les valeurs des curseurs sont modifiables — cliquez sur une valeur à
-côté d'un curseur et tapez le nombre exact que vous souhaitez.
+En cliquant sur le bouton des paramètres d'une étape, une boîte de dialogue s'ouvre vous permettant
+de configurer le type d'opération, la puissance du laser, la vitesse de coupe, l'assistance par air,
+la largeur du faisceau et les options de post-traitement. Les valeurs des curseurs sont modifiables
+— cliquez sur une valeur à côté d'un curseur et tapez le nombre exact que vous souhaitez.
 
 Le panneau peut être déplacé lorsqu'il n'est pas nécessaire.
 
 ### 5. Panneau inférieur
 
-Le panneau inférieur fournit des onglets ancrables qui peuvent être réorganisés par
-glisser-déposer et divisés en plusieurs colonnes. Les onglets disponibles sont :
+Le panneau inférieur fournit des onglets ancrables qui peuvent être réorganisés par glisser-déposer
+et divisés en plusieurs colonnes. Les onglets disponibles sont :
 
-- **Calques** : Affiche tous les calques sous forme de colonnes côte à côte. Chaque
-  colonne possède un en-tête avec le nom du calque et des contrôles, un pipeline
-  horizontal compact d'icônes d'étapes représentant le flux de travail, et une liste
-  de pièces. Les calques et les pièces peuvent être réorganisés par glisser-déposer.
+- **Calques** : Affiche tous les calques sous forme de colonnes côte à côte. Chaque colonne possède
+  un en-tête avec le nom du calque et des contrôles, un pipeline horizontal compact d'icônes
+  d'étapes représentant le flux de travail, et une liste de pièces. Les calques et les pièces
+  peuvent être réorganisés par glisser-déposer.
 - **Actifs** : Liste les éléments de stock et les croquis de votre document.
-- **Console** : Terminal interactif pour envoyer du G-code et surveiller la
-  communication de la machine.
+- **Console** : Terminal interactif pour envoyer du G-code et surveiller la communication de la
+  machine.
 - **Visualiseur G-code** : Affiche le G-code généré avec coloration syntaxique.
-- **Contrôles** : Contrôles de déplacement pour le positionnement manuel et la gestion
-  du WCS.
+- **Contrôles** : Contrôles de déplacement pour le positionnement manuel et la gestion du WCS.
 
 Le temps estimé du travail est affiché dans l'en-tête de la liste des calques.
 

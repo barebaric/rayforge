@@ -1,6 +1,8 @@
 # Overscan
 
-Overscan erweitert Rastergravur-Linien über den tatsächlichen Inhaltsbereich hinaus, um sicherzustellen, dass der Laser während des Gravierens konstante Geschwindigkeit erreicht und Beschleunigungs-Artefakte eliminiert.
+Overscan erweitert Rastergravur-Linien über den tatsächlichen Inhaltsbereich hinaus, um
+sicherzustellen, dass der Laser während des Gravierens konstante Geschwindigkeit erreicht und
+Beschleunigungs-Artefakte eliminiert.
 
 ## Das Problem: Beschleunigungs-Markierungen
 
@@ -22,7 +24,8 @@ Overscan **erweitert den Werkzeugweg** vor und nach jeder Rasterlinie:
 3. **Gravieren:** Laser schaltet ein und graviert bei konstanter Geschwindigkeit
 4. **Verlangsamen:** Laser schaltet aus und verlangsamt _nach_ der Zeile endet
 
-**Ergebnis:** Der gesamte gravierte Bereich erhält konstante Leistung bei konstanter Geschwindigkeit.
+**Ergebnis:** Der gesamte gravierte Bereich erhält konstante Leistung bei konstanter
+Geschwindigkeit.
 
 **Vorteile:**
 
@@ -44,25 +47,26 @@ Overscan ist ein **Transformator** im Rayforge-Workflow-Pipeline.
 
 **Einstellungen:**
 
-| Einstellung          | Beschreibung              | Typischer Wert    |
-| -------------------- | ------------------------- | ----------------- |
-| **Aktiviert**        | Overscan ein/aus schalten | AN (für Raster)   |
-| **Distanz (mm)**     | Wie weit Linien erweitern | 2-5 mm            |
+| Einstellung      | Beschreibung              | Typischer Wert  |
+| ---------------- | ------------------------- | --------------- |
+| **Aktiviert**    | Overscan ein/aus schalten | AN (für Raster) |
+| **Distanz (mm)** | Wie weit Linien erweitern | 2-5 mm          |
 
 ## Overscan-Distanz wählen
 
-Die Overscan-Distanz sollte der Maschine ermöglichen, **vollständig auf Zielgeschwindigkeit zu beschleunigen**.
+Die Overscan-Distanz sollte der Maschine ermöglichen, **vollständig auf Zielgeschwindigkeit zu
+beschleunigen**.
 
 **Praktische Richtlinien:**
 
-| Max. Geschwindigkeit     | Beschleunigung | Empfohlener Overscan |
-| ------------------------ | -------------- | -------------------- |
-| 3000 mm/min (50 mm/s)    | Niedrig        | 5 mm                 |
-| 3000 mm/min (50 mm/s)    | Mittel         | 3 mm                 |
-| 3000 mm/min (50 mm/s)    | Hoch           | 2 mm                 |
-| 6000 mm/min (100 mm/s)   | Niedrig        | 10 mm                |
-| 6000 mm/min (100 mm/s)   | Mittel         | 6 mm                 |
-| 6000 mm/min (100 mm/s)   | Hoch           | 4 mm                 |
+| Max. Geschwindigkeit   | Beschleunigung | Empfohlener Overscan |
+| ---------------------- | -------------- | -------------------- |
+| 3000 mm/min (50 mm/s)  | Niedrig        | 5 mm                 |
+| 3000 mm/min (50 mm/s)  | Mittel         | 3 mm                 |
+| 3000 mm/min (50 mm/s)  | Hoch           | 2 mm                 |
+| 6000 mm/min (100 mm/s) | Niedrig        | 10 mm                |
+| 6000 mm/min (100 mm/s) | Mittel         | 6 mm                 |
+| 6000 mm/min (100 mm/s) | Hoch           | 4 mm                 |
 
 **Faktoren, die erforderliche Distanz beeinflussen:**
 
@@ -126,4 +130,5 @@ Die Overscan-Distanz sollte der Maschine ermöglichen, **vollständig auf Zielge
 ## Verwandte Themen
 
 - [Gravur-Operationen](./operations/engrave.md) - Gravureinstellungen konfigurieren
-- [Materialtest-Raster](./operations/material-test-grid.md) - Optimale Leistung/Geschwindigkeit finden
+- [Materialtest-Raster](./operations/material-test-grid.md) - Optimale Leistung/Geschwindigkeit
+  finden

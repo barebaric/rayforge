@@ -6,11 +6,13 @@
 
 ### Вимоги
 
-Див. [Посібник з встановлення](../../getting-started/installation.mdx#linux-pixi) для інструкцій з встановлення Pixi.
+Див. [Посібник з встановлення](../../getting-started/installation.mdx#linux-pixi) для інструкцій з
+встановлення Pixi.
 
 ### Pre-commit хуки (Опціонально)
 
-Щоб автоматично форматувати та лінтувати ваш код перед кожним комітом, ви можете встановити pre-commit хуки:
+Щоб автоматично форматувати та лінтувати ваш код перед кожним комітом, ви можете встановити
+pre-commit хуки:
 
 ```bash
 pixi run pre-commit-install
@@ -20,33 +22,37 @@ pixi run pre-commit-install
 
 Всі команди виконуються через `pixi run`:
 
--   `pixi run rayforge`: Запустити додаток.
-    -   Додайте `--loglevel=DEBUG` для більш детального виводу.
--   `pixi run test`: Запустити повний набір тестів з `pytest`.
--   `pixi run format`: Форматувати весь код використовуючи `ruff`.
--   `pixi run lint`: Запустити всі лінтери (`flake8`, `pyflakes`, `pyright`).
+- `pixi run rayforge`: Запустити додаток.
+  - Додайте `--loglevel=DEBUG` для більш детального виводу.
+- `pixi run test`: Запустити повний набір тестів з `pytest`.
+- `pixi run format`: Форматувати весь код використовуючи `ruff`.
+- `pixi run lint`: Запустити всі лінтери (`flake8`, `pyflakes`, `pyright`).
 
 ## Windows
 
 ### Вимоги
 
-Див. [Посібник з встановлення](../../getting-started/installation.mdx#windows-developer) для детальних інструкцій з налаштування розробки MSYS2.
+Див. [Посібник з встановлення](../../getting-started/installation.mdx#windows-developer) для
+детальних інструкцій з налаштування розробки MSYS2.
 
 ### Швидкий старт
 
 Завдання розробки на Windows керуються через скрипт `run.bat`, який є обгорткою для shell MSYS2.
 
-Після клонування репозиторію та завершення налаштування MSYS2 ви можете використовувати ці команди зі стандартного командного рядка Windows або PowerShell:
+Після клонування репозиторію та завершення налаштування MSYS2 ви можете використовувати ці команди
+зі стандартного командного рядка Windows або PowerShell:
 
 ```batch
 .\run.bat setup
 ```
 
-Це виконує `scripts/win/win_setup.sh` щоб встановити всі необхідні системні та Python пакети у ваше середовище MSYS2/MinGW64.
+Це виконує `scripts/win/win_setup.sh` щоб встановити всі необхідні системні та Python пакети у ваше
+середовище MSYS2/MinGW64.
 
 ### Pre-commit хуки (Опціонально)
 
-Щоб автоматично форматувати та лінтувати ваш код перед кожним комітом, виконайте це з оболонки MSYS2 MINGW64:
+Щоб автоматично форматувати та лінтувати ваш код перед кожним комітом, виконайте це з оболонки MSYS2
+MINGW64:
 
 ```bash
 bash scripts/win/win_setup_dev.sh
@@ -54,7 +60,8 @@ bash scripts/win/win_setup_dev.sh
 
 :::note
 
-Pre-commit хуки вимагають запуску команд git всередині оболонки MSYS2 MINGW64, а не з PowerShell або командного рядка.
+Pre-commit хуки вимагають запуску команд git всередині оболонки MSYS2 MINGW64, а не з PowerShell або
+командного рядка.
 
 :::
 
@@ -62,17 +69,17 @@ Pre-commit хуки вимагають запуску команд git всер�
 
 Всі команди виконуються через скрипт `run.bat`:
 
--   `run app`: Запустити додаток з вихідних кодів.
-    -   Додайте `--loglevel=DEBUG` для більш детального виводу.
--   `run test`: Запустити повний набір тестів використовуючи `pytest`.
--   `run lint`: Запустити всі лінтери (`flake8`, `pyflakes`, `pyright`).
--   `run format`: Форматувати та автоматично виправляти код використовуючи `ruff`.
--   `run build`: Зібрати фінальний виконуваний файл Windows (`.exe`).
+- `run app`: Запустити додаток з вихідних кодів.
+  - Додайте `--loglevel=DEBUG` для більш детального виводу.
+- `run test`: Запустити повний набір тестів використовуючи `pytest`.
+- `run lint`: Запустити всі лінтери (`flake8`, `pyflakes`, `pyright`).
+- `run format`: Форматувати та автоматично виправляти код використовуючи `ruff`.
+- `run build`: Зібрати фінальний виконуваний файл Windows (`.exe`).
 
 Альтернативно, ви можете запускати скрипти безпосередньо з оболонки MSYS2 MINGW64:
 
--   `bash scripts/win/win_run.sh`: Запустити додаток.
--   `bash scripts/win/win_test.sh`: Запустити набір тестів.
--   `bash scripts/win/win_lint.sh`: Запустити всі лінтери.
--   `bash scripts/win/win_format.sh`: Форматувати та автоматично виправляти код.
--   `bash scripts/win/win_build.sh`: Зібрати виконуваний файл Windows.
+- `bash scripts/win/win_run.sh`: Запустити додаток.
+- `bash scripts/win/win_test.sh`: Запустити набір тестів.
+- `bash scripts/win/win_lint.sh`: Запустити всі лінтери.
+- `bash scripts/win/win_format.sh`: Форматувати та автоматично виправляти код.
+- `bash scripts/win/win_build.sh`: Зібрати виконуваний файл Windows.

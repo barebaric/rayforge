@@ -84,4 +84,5 @@ Rayforge 最强大的功能之一是能够在单个作业中为不同操作分�
 
 ---
 
-*有多激光设置？我们很想听听您的体验！在 [GitHub](https://github.com/barebaric/rayforge) 上分享您的项目和反馈。*
+_有多激光设置？我们很想听听您的体验！在 [GitHub](https://github.com/barebaric/rayforge)
+上分享您的项目和反馈。_

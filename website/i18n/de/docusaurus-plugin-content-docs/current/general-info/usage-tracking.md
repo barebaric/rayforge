@@ -1,10 +1,13 @@
 # Nutzungsanalyse
 
-Rayforge bietet eine optionale anonyme Nutzungsanalyse, um zu verstehen, wie die Anwendung verwendet wird und die zukünftige Entwicklung zu priorisieren. Diese Seite erklärt, was wir erfassen, wie es funktioniert und Ihre Privatsphäre.
+Rayforge bietet eine optionale anonyme Nutzungsanalyse, um zu verstehen, wie die Anwendung verwendet
+wird und die zukünftige Entwicklung zu priorisieren. Diese Seite erklärt, was wir erfassen, wie es
+funktioniert und Ihre Privatsphäre.
 
 ## Rein freiwillig
 
-Die Nutzungsanalyse ist **komplett optional**. Beim ersten Start von Rayforge werden Sie gefragt, ob Sie teilnehmen möchten:
+Die Nutzungsanalyse ist **komplett optional**. Beim ersten Start von Rayforge werden Sie gefragt, ob
+Sie teilnehmen möchten:
 
 - **Ja**: Anonyme Nutzungsdaten werden an unseren Analyseserver gesendet
 - **Nein**: Es werden niemals Daten erfasst oder übertragen
@@ -13,8 +16,8 @@ Sie können diese Entscheidung jederzeit in den allgemeinen Einstellungen änder
 
 ## Was wir erfassen
 
-Wenn aktiviert, erfassen wir nur anonyme Seitenaufrufdaten – ähnlich wie
-Website-Analysen. Das können wir sehen:
+Wenn aktiviert, erfassen wir nur anonyme Seitenaufrufdaten – ähnlich wie Website-Analysen. Das
+können wir sehen:
 
 | Daten                    | Beispiel                  |
 | ------------------------ | ------------------------- |
@@ -24,10 +27,9 @@ Website-Analysen. Das können wir sehen:
 | Zeit auf Seite           | 6m 3s                     |
 | Sitzungs-ID              | a1b2c3d4-e5f6-...         |
 
-Die Sitzungs-ID ist ein zufälliger Bezeichner, der bei jedem Start von
-Rayforge generiert wird. Sie ermöglicht es uns, zwischen verschiedenen
-Nutzungssitzungen zu unterscheiden und dabei das Tracking vollständig
-anonym zu halten.
+Die Sitzungs-ID ist ein zufälliger Bezeichner, der bei jedem Start von Rayforge generiert wird. Sie
+ermöglicht es uns, zwischen verschiedenen Nutzungssitzungen zu unterscheiden und dabei das Tracking
+vollständig anonym zu halten.
 
 ## Was wir sehen
 
@@ -64,7 +66,8 @@ Nutzungsdaten helfen uns:
 
 ## Wie es funktioniert
 
-Rayforge nutzt [Umami](https://umami.is/), eine Open-Source, datenschutzfreundliche Analyseplattform. Die Analyse:
+Rayforge nutzt [Umami](https://umami.is/), eine Open-Source, datenschutzfreundliche
+Analyseplattform. Die Analyse:
 
 - Sendet kleine HTTP-Anfragen im Hintergrund
 - Beeinflusst nicht die Anwendungsleistung

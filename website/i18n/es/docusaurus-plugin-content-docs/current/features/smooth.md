@@ -1,10 +1,13 @@
 # Suavizar Trayectoria
 
-El suavizado de trayectoria reduce los bordes irregulares y las transiciones bruscas en tus trayectorias de corte, resultando en curvas más limpias y movimiento de máquina más suave.
+El suavizado de trayectoria reduce los bordes irregulares y las transiciones bruscas en tus
+trayectorias de corte, resultando en curvas más limpias y movimiento de máquina más suave.
 
 ## Cómo Funciona
 
-El suavizado aplica un filtro a la geometría de tu trayectoria que redondea las esquinas angulares y alisa los bordes ásperos. El láser sigue una trayectoria más suave en lugar de hacer cambios bruscos de dirección.
+El suavizado aplica un filtro a la geometría de tu trayectoria que redondea las esquinas angulares y
+alisa los bordes ásperos. El láser sigue una trayectoria más suave en lugar de hacer cambios bruscos
+de dirección.
 
 ## Ajustes
 
@@ -14,7 +17,8 @@ Activa o desactiva el suavizado para esta operación. El suavizado está deshabi
 
 ### Suavidad
 
-Controla cuánto se suaviza la trayectoria (0-100). Valores más altos producen curvas más redondeadas pero pueden desviarse más de la trayectoria original.
+Controla cuánto se suaviza la trayectoria (0-100). Valores más altos producen curvas más redondeadas
+pero pueden desviarse más de la trayectoria original.
 
 - **Bajo (0-30):** Suavizado mínimo, preserva detalles finos
 - **Medio (30-60):** Suavizado equilibrado para la mayoría de diseños
@@ -22,7 +26,8 @@ Controla cuánto se suaviza la trayectoria (0-100). Valores más altos producen 
 
 ### Umbral de Ángulo de Esquina
 
-Ángulos más agudos que este valor se preservan como esquinas en lugar de suavizarse (0-179 grados). Esto evita que características afiladas importantes sean redondeadas.
+Ángulos más agudos que este valor se preservan como esquinas en lugar de suavizarse (0-179 grados).
+Esto evita que características afiladas importantes sean redondeadas.
 
 - **Valores más bajos:** Más esquinas se suavizan, resultado más redondeado
 - **Valores más altos:** Más esquinas se preservan, resultado más afilado

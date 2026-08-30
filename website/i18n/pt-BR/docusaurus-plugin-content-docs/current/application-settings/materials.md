@@ -2,18 +2,14 @@
 
 ![Configurações de Materiais](/screenshots/app-settings-materials.webp)
 
-Bibliotecas de materiais no Rayforge permitem organizar e gerenciar coleções
-de materiais para seus projetos de corte e gravação a laser. Este guia
-explica a diferença entre bibliotecas do sistema e do usuário, e como criar
-suas próprias bibliotecas e adicionar materiais a elas.
+Bibliotecas de materiais no Rayforge permitem organizar e gerenciar coleções de materiais para seus
+projetos de corte e gravação a laser. Este guia explica a diferença entre bibliotecas do sistema e
+do usuário, e como criar suas próprias bibliotecas e adicionar materiais a elas.
 
-:::note
-Atribuir um material a um item de material afeta tanto sua aparência
-visual no canvas 2D e 3D quanto quais [receitas](recipes.md) se aplicam
-a ele: receitas específicas de material correspondem ao material
-atribuído. Em versões futuras, materiais serão usados para derivar mais
-parâmetros funcionais.
-:::
+:::note Atribuir um material a um item de material afeta tanto sua aparência visual no canvas 2D e
+3D quanto quais [receitas](recipes.md) se aplicam a ele: receitas específicas de material
+correspondem ao material atribuído. Em versões futuras, materiais serão usados para derivar mais
+parâmetros funcionais. :::
 
 ## Criando uma Nova Biblioteca
 
@@ -53,51 +49,43 @@ Sua nova biblioteca será criada no diretório de dados do usuário e estará di
 
 #### Textura
 
-Uma imagem de textura (WebP ou PNG) que é repetida em mosaico sobre a
-superfície do material. Quando definida, o material é renderizado com a
-textura em vez de uma cor sólida. As texturas podem ser otimizadas para
-WebP com o script `scripts/optimize_material_textures.py` para manter os
-arquivos de material pequenos.
+Uma imagem de textura (WebP ou PNG) que é repetida em mosaico sobre a superfície do material. Quando
+definida, o material é renderizado com a textura em vez de uma cor sólida. As texturas podem ser
+otimizadas para WebP com o script `scripts/optimize_material_textures.py` para manter os arquivos de
+material pequenos.
 
 #### Escala da textura
 
-O tamanho (em mm) que uma peça de textura cobre sobre o material.
-Valores menores repetem a textura com mais frequência na mesma superfície.
+O tamanho (em mm) que uma peça de textura cobre sobre o material. Valores menores repetem a textura
+com mais frequência na mesma superfície.
 
 #### Cor
 
-Uma cor de tonalidade opcional. Quando definida, a textura do material é
-tingida com essa cor; quando não, a textura é exibida como está. Isso
-permite que um único material texturizado (ex., "Acrílico") cubra
-múltiplas variantes de cor: a cor é aplicada por item de material no
-diálogo [Propriedades do Material](../features/stock-handling.md). A cor
-é usada apenas para aparência visual na superfície de trabalho - não
-afeta o caminho do laser de nenhuma forma.
+Uma cor de tonalidade opcional. Quando definida, a textura do material é tingida com essa cor;
+quando não, a textura é exibida como está. Isso permite que um único material texturizado (ex.,
+"Acrílico") cubra múltiplas variantes de cor: a cor é aplicada por item de material no diálogo
+[Propriedades do Material](../features/stock-handling.md). A cor é usada apenas para aparência
+visual na superfície de trabalho - não afeta o caminho do laser de nenhuma forma.
 
 #### Rugosidade
 
-Um valor de 0-1 que descreve quão rugosa ou polida a superfície aparece
-na visualização 3D. Valores mais baixos parecem brilhantes, valores mais
-altos parecem foscos.
+Um valor de 0-1 que descreve quão rugosa ou polida a superfície aparece na visualização 3D. Valores
+mais baixos parecem brilhantes, valores mais altos parecem foscos.
 
 #### Metálico
 
-Um valor de 0-1 que descreve se a superfície reflete luz como um metal na
-visualização 3D. Defina 1 para materiais metálicos, 0 para não metálicos.
+Um valor de 0-1 que descreve se a superfície reflete luz como um metal na visualização 3D. Defina 1
+para materiais metálicos, 0 para não metálicos.
 
 #### Absorção {#absorption}
 
-:::note Novidade na 1.11
-Dados de absorção alimentam o [modelo de queimadura física](../ui/3d-preview.md#physical-burn-model)
-na pré-visualização 3D.
-:::
+:::note Novidade na 1.11 Dados de absorção alimentam o
+[modelo de queimadura física](../ui/3d-preview.md#physical-burn-model) na pré-visualização 3D. :::
 
-Coeficientes de absorção por comprimento de onda (0–1) descrevem quanta
-energia do laser um material absorve em determinado comprimento de onda. A
-pré-visualização 3D usa esses dados, junto com o comprimento de onda, a
-potência óptica e o tamanho do ponto da cabeça de laser, para calcular a
-fluência (J/cm²) entregue e renderizar um efeito de queima fisicamente
-fundamentado no material.
+Coeficientes de absorção por comprimento de onda (0–1) descrevem quanta energia do laser um material
+absorve em determinado comprimento de onda. A pré-visualização 3D usa esses dados, junto com o
+comprimento de onda, a potência óptica e o tamanho do ponto da cabeça de laser, para calcular a
+fluência (J/cm²) entregue e renderizar um efeito de queima fisicamente fundamentado no material.
 
 Adicione um bloco `absorption` sob `appearance` no YAML do material:
 
@@ -116,10 +104,9 @@ appearance:
 | `ir`   | 1064 nm                            | Lasers de fibra      |
 | `co2`  | 10600 nm                           | Lasers de tubo CO2   |
 
-Quando uma faixa está ausente, um padrão conservador é usado. A biblioteca
-de materiais incluída possui valores de absorção pesquisados para todos os
-materiais incluídos; o modelo de queimadura ainda não está totalmente
-calibrado, então contribuições de dados de teste reais são bem-vindas.
+Quando uma faixa está ausente, um padrão conservador é usado. A biblioteca de materiais incluída
+possui valores de absorção pesquisados para todos os materiais incluídos; o modelo de queimadura
+ainda não está totalmente calibrado, então contribuições de dados de teste reais são bem-vindas.
 
 ## Gerenciando Materiais Existentes
 
@@ -136,6 +123,4 @@ calibrado, então contribuições de dados de teste reais são bem-vindas.
 2. Clique no botão **Excluir**
 3. Confirme a exclusão no diálogo
 
-:::warning
-Excluir um material é permanente e não pode ser desfeito.
-:::
+:::warning Excluir um material é permanente e não pode ser desfeito. :::
