@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-29 21:19+0200\n"
+"POT-Creation-Date: 2026-08-30 08:22+0200\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -438,7 +438,8 @@ msgstr "Ajustar à Grade"
 msgid "Sharp"
 msgstr "Afiado"
 
-#: sketcher/ui_gtk/tools/rectangle_tool.py sketcher/ui_gtk/menu.py
+#: sketcher/ui_gtk/tools/rectangle_tool.py sketcher/ui_gtk/tools/__init__.py
+#: sketcher/ui_gtk/menu.py
 msgid "Rectangle"
 msgstr "Retângulo"
 
@@ -470,6 +471,22 @@ msgstr "Digitar dimensões (L A)"
 #: sketcher/ui_gtk/tools/rounded_rect_tool.py
 msgid "Set edge point"
 msgstr "Definir ponto de borda"
+
+#: sketcher/ui_gtk/tools/__init__.py
+msgid "Array"
+msgstr "Matriz"
+
+#: sketcher/ui_gtk/tools/__init__.py
+msgid "Constrain"
+msgstr "Restringir"
+
+#: sketcher/ui_gtk/tools/__init__.py
+msgid "Dimension"
+msgstr "Dimensão"
+
+#: sketcher/ui_gtk/tools/__init__.py
+msgid "Waypoint"
+msgstr "Ponto de passagem"
 
 #: sketcher/ui_gtk/tools/aspect_ratio_constraint_tool.py
 msgid "Add Aspect Ratio Constraint"

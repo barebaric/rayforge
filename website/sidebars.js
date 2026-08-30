@@ -91,6 +91,7 @@ module.exports = {
                 'features/sketcher/rectangle',
                 'features/sketcher/chamfer-fillet',
                 'features/sketcher/fill',
+                'features/sketcher/text-box',
                 'features/sketcher/arrays',
                 'features/sketcher/grid',
                 'features/sketcher/offset',

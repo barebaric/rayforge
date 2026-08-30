@@ -96,21 +96,21 @@ Duplikate bekommen neue IDs und neu zugewiesene interne Einschränkungen; Rückg
 Jedes Zeichen- und Bearbeitungswerkzeug hat zusätzlich einen Kurzbefehl aus zwei Tasten, der auf
 seiner Seite dokumentiert ist:
 
-| Werkzeug                                                      | Kurzbefehl |
-| ------------------------------------------------------------- | ---------- |
-| [Pfad](path.md)                                               | `G+P`      |
-| [Bogen](arc-ellipse.md)                                       | `G+A`      |
-| [Ellipse](arc-ellipse.md)                                     | `G+C`      |
-| [Rechteck](rectangle.md)                                      | `G+R`      |
-| [Abgerundetes Rechteck](rectangle.md)                         | `G+O`      |
-| [Bereiche füllen](fill.md)                                    | `G+F`      |
-| [Textfeld](expressions.md#template-expressions-in-text-boxes) | `G+T`      |
-| [Kreisförmiges Array](arrays.md)                              | `G+Y`      |
-| [Array entlang Kurve](arrays.md)                              | `G+W`      |
-| [Raster](grid.md)                                             | `G+G`      |
-| [Versatz](offset.md)                                          | `O+F`      |
-| [Fase](chamfer-fillet.md)                                     | `C+H`      |
-| [Verrundung](chamfer-fillet.md)                               | `C+F`      |
+| Werkzeug                              | Kurzbefehl |
+| ------------------------------------- | ---------- |
+| [Pfad](path.md)                       | `G+P`      |
+| [Bogen](arc-ellipse.md)               | `G+A`      |
+| [Ellipse](arc-ellipse.md)             | `G+C`      |
+| [Rechteck](rectangle.md)              | `G+R`      |
+| [Abgerundetes Rechteck](rectangle.md) | `G+O`      |
+| [Bereiche füllen](fill.md)            | `G+F`      |
+| [Textfeld](text-box.md)               | `G+T`      |
+| [Kreisförmiges Array](arrays.md)      | `G+Y`      |
+| [Array entlang Kurve](arrays.md)      | `G+W`      |
+| [Raster](grid.md)                     | `G+G`      |
+| [Versatz](offset.md)                  | `O+F`      |
+| [Fase](chamfer-fillet.md)             | `C+H`      |
+| [Verrundung](chamfer-fillet.md)       | `C+F`      |
 
 Die Einschränkungs-Kurzbefehle sind auf der Seite [Einschränkungen](constraints.md) aufgelistet.
 
@@ -155,9 +155,9 @@ im Weg sind.
 
 Die Zeichenwerkzeuge sind jeweils auf ihrer eigenen Seite dokumentiert: [Pfad](path.md) (Linien und
 Bezier-Kurven), [Bogen und Ellipse](arc-ellipse.md), [Rechteck](rectangle.md) (und abgerundete
-Rechtecke), [Bereiche füllen](fill.md) und [Raster](grid.md). Modifikationen wie
-[Versatz](offset.md) und [Fase und Verrundung](chamfer-fillet.md) formen bestehende Geometrie um,
-[Arrays](arrays.md) kopiert sie entlang eines Kreises oder einer Kurve, und
+Rechtecke), [Bereiche füllen](fill.md), [Textfeld](text-box.md) und [Raster](grid.md).
+Modifikationen wie [Versatz](offset.md) und [Fase und Verrundung](chamfer-fillet.md) formen
+bestehende Geometrie um, [Arrays](arrays.md) kopiert sie entlang eines Kreises oder einer Kurve, und
 [Ausdrücke](expressions.md) erklärt Parameter, Ausdrücke und parametrische Textfelder. Skizzen
 können mit allen Einschränkungen intakt gespeichert und erneut importiert werden — siehe
 [Import und Export](import-export.md).

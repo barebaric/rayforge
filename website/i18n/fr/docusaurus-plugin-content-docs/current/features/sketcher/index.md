@@ -96,21 +96,21 @@ remappées ; l'annulation les supprime.
 Chaque outil de dessin et de modification possède de plus un raccourci à deux touches, documenté sur
 sa page :
 
-| Outil                                                              | Raccourci |
-| ------------------------------------------------------------------ | --------- |
-| [Tracé](path.md)                                                   | `G+P`     |
-| [Arc](arc-ellipse.md)                                              | `G+A`     |
-| [Ellipse](arc-ellipse.md)                                          | `G+C`     |
-| [Rectangle](rectangle.md)                                          | `G+R`     |
-| [Rectangle arrondi](rectangle.md)                                  | `G+O`     |
-| [Remplissage de zone](fill.md)                                     | `G+F`     |
-| [Zone de texte](expressions.md#template-expressions-in-text-boxes) | `G+T`     |
-| [Tableau circulaire](arrays.md)                                    | `G+Y`     |
-| [Tableau le long d'une courbe](arrays.md)                          | `G+W`     |
-| [Grille](grid.md)                                                  | `G+G`     |
-| [Décalage](offset.md)                                              | `O+F`     |
-| [Chanfrein](chamfer-fillet.md)                                     | `C+H`     |
-| [Congé](chamfer-fillet.md)                                         | `C+F`     |
+| Outil                                     | Raccourci |
+| ----------------------------------------- | --------- |
+| [Tracé](path.md)                          | `G+P`     |
+| [Arc](arc-ellipse.md)                     | `G+A`     |
+| [Ellipse](arc-ellipse.md)                 | `G+C`     |
+| [Rectangle](rectangle.md)                 | `G+R`     |
+| [Rectangle arrondi](rectangle.md)         | `G+O`     |
+| [Remplissage de zone](fill.md)            | `G+F`     |
+| [Zone de texte](text-box.md)              | `G+T`     |
+| [Tableau circulaire](arrays.md)           | `G+Y`     |
+| [Tableau le long d'une courbe](arrays.md) | `G+W`     |
+| [Grille](grid.md)                         | `G+G`     |
+| [Décalage](offset.md)                     | `O+F`     |
+| [Chanfrein](chamfer-fillet.md)            | `C+H`     |
+| [Congé](chamfer-fillet.md)                | `C+F`     |
 
 Les raccourcis de contraintes sont listés sur la page [Contraintes](constraints.md).
 
@@ -154,9 +154,9 @@ de construction dans la barre d'outils les masque quand elles gênent.
 
 Chaque outil de dessin est documenté sur sa propre page : [Tracé](path.md) (lignes et courbes de
 Bézier), [Arc et ellipse](arc-ellipse.md), [Rectangle](rectangle.md) (et rectangles arrondis),
-[Remplissage de zones](fill.md) et [Grille](grid.md). Les modifications comme [Décalage](offset.md)
-et [Chanfrein et congé](chamfer-fillet.md) transforment la géométrie existante,
-[Tableaux](arrays.md) la copie le long d'un cercle ou d'une courbe, et [Expressions](expressions.md)
-explique les paramètres, les expressions et les zones de texte paramétriques. Les esquisses peuvent
-être enregistrées puis réimportées avec toutes leurs contraintes — voir
-[Importation et exportation](import-export.md).
+[Remplissage de zones](fill.md), [Zone de texte](text-box.md) et [Grille](grid.md). Les
+modifications comme [Décalage](offset.md) et [Chanfrein et congé](chamfer-fillet.md) transforment la
+géométrie existante, [Tableaux](arrays.md) la copie le long d'un cercle ou d'une courbe, et
+[Expressions](expressions.md) explique les paramètres, les expressions et les zones de texte
+paramétriques. Les esquisses peuvent être enregistrées puis réimportées avec toutes leurs
+contraintes — voir [Importation et exportation](import-export.md).

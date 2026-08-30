@@ -1,6 +1,7 @@
 """
 Screenshot: Sketcher drawing and modification tools — path, arc and
-ellipse, rectangle, chamfer and fillet, fill, and construction grid.
+ellipse, rectangle, chamfer and fillet, fill, construction grid, and
+text boxes (including the font properties panel).
 
 Usage:
   pixi run screenshot addons:sketcher:tool:path
@@ -8,6 +9,8 @@ Usage:
   pixi run screenshot addons:sketcher:tool:rectangle
   pixi run screenshot addons:sketcher:tool:chamfer-fillet
   pixi run screenshot addons:sketcher:tool:fill
+  pixi run screenshot addons:sketcher:tool:text-box
+  pixi run screenshot addons:sketcher:tool:text-box:font-properties
   pixi run screenshot addons:sketcher:tool:grid
 """
 
@@ -25,9 +28,11 @@ from rayforge_addons.sketcher.sketcher.core.commands import (
     EllipseCommand,
     FilletCommand,
     GridCommand,
+    ModifyTextPropertyCommand,
     RectangleCommand,
     RemoveItemsCommand,
     RoundedRectCommand,
+    TextBoxCommand,
 )
 from rayforge_addons.sketcher.sketcher.core.entities import (
     Bezier,
@@ -38,6 +43,7 @@ from rayforge_addons.sketcher.sketcher.ui_gtk import (
     get_sketch_mode_cmd,
     get_sketch_studio,
 )
+from raygeo.geo.shape.text import FontConfig
 from utils import (
     DECOR_MARGIN_PX,
     DECOR_OFFSET_Y_PX,
@@ -133,9 +139,13 @@ def _get_bbox_model(element, include_construction: bool = False):
             entity.construction and not include_construction
         ):
             continue
-        for x, y in entity.to_polyline(sketch.registry, 0.5):
-            xs.append(x)
-            ys.append(y)
+        # to_polyline() only returns the first polygon, which misses
+        # every glyph of multi-glyph text boxes, so iterate all of them.
+        polygons = entity.to_geometry(sketch.registry).to_polygons(0.5)
+        for polygon in polygons:
+            for x, y in polygon:
+                xs.append(x)
+                ys.append(y)
     if not xs:
         return None
     return min(xs), min(ys), max(xs), max(ys)
@@ -461,6 +471,94 @@ def _stage_grid_scene(element):
     element.set_tool("select")
 
 
+def _make_text_box(element, origin, content, font_config=None):
+    """Creates a text box at *origin* with the given *content*, resizing
+    the box to fit the text via ModifyTextPropertyCommand."""
+    registry = element.sketch.registry
+    cmd = TextBoxCommand(element.sketch, origin=origin)
+    element.execute_command(cmd)
+    if cmd.text_box_id is None:
+        raise RuntimeError(f"Text box not created at {origin}")
+    entity = registry.get_entity(cmd.text_box_id)
+    if font_config is None:
+        font_config = entity.font_config
+    element.execute_command(
+        ModifyTextPropertyCommand(
+            element.sketch, cmd.text_box_id, content, font_config
+        )
+    )
+    return cmd.text_box_id
+
+
+def _stage_text_box_scene(element):
+    """A large wordmark above a smaller part label, the typical use for
+    engraved text."""
+    _make_text_box(element, (-32.2, -25.0), "Rayforge", FontConfig(size=40.0))
+    _make_text_box(element, (-14.7, -6.0), "Part # 001", FontConfig(size=16.0))
+    element.mark_dirty()
+    element.selection.clear()
+    element.set_tool("select")
+    return True
+
+
+def _stage_text_box_properties_scene(element):
+    """A single text box, selected so the Font Properties panel appears
+    in the sidebar. The neighboring sidebar groups are hidden so the
+    panel is the sole focus of the capture."""
+    text_box_id = _make_text_box(
+        element, (0.0, 0.0), "Rayforge", FontConfig(size=40.0)
+    )
+    element.mark_dirty()
+    entity = element.sketch.registry.get_entity(text_box_id)
+    element.selection.select_entity(entity, is_multi=False)
+    element.set_tool("select")
+
+    box = get_sketch_studio().font_properties.get_parent()
+    for child in box:
+        if child is not get_sketch_studio().font_properties:
+            child.set_visible(False)
+    return True
+
+
+def _capture_font_properties_region(target: str) -> bool:
+    """Screenshots the window and crops it to the Font Properties panel
+    in the sidebar. The margins are per-side: tight left/top so the card
+    keeps its rounded corners without grabbing the toolbar, a little room
+    on the right and below."""
+    studio = get_sketch_studio()
+    widget = studio.font_properties
+    full_path = OUTPUT_DIR / target_to_filename(target)
+    if not take_window_screenshot(win):
+        return False
+    pos = widget.translate_coordinates(win, 0, 0)
+    if pos is None:
+        logger.error("Font properties panel is not visible")
+        return False
+    x, y = pos
+    w, h = widget.get_width(), widget.get_height()
+    logger.info(f"Font properties panel at window ({x}, {y}), size {w}x{h}")
+    margin_left = 8
+    margin_top = 8
+    margin_right = 8
+    margin_bottom = 16
+    ox = DECOR_MARGIN_PX
+    oy = DECOR_MARGIN_PX + DECOR_OFFSET_Y_PX
+    img = Image.open(full_path)
+    _save_webp_deterministic(
+        img.crop(
+            (
+                max(x - margin_left + ox, 0),
+                max(y - margin_top + oy, 0),
+                x + w + margin_right + ox,
+                y + h + margin_bottom + oy,
+            )
+        ),
+        full_path,
+    )
+    logger.info(f"Font properties screenshot saved to {full_path}")
+    return True
+
+
 @restore_config
 def main():
     target = get_target("addons:sketcher:tool:path")
@@ -508,7 +606,12 @@ def main():
     run_on_main_thread(lambda: _frame_view(0.4))
     time.sleep(0.75)
     clear_window_subtitle(win)
-    _capture_geometry(target, include_construction=target.endswith(":grid"))
+    if target.endswith(":font-properties"):
+        _capture_font_properties_region(target)
+    else:
+        _capture_geometry(
+            target, include_construction=target.endswith(":grid")
+        )
     time.sleep(0.25)
     app.quit_idle()
 
@@ -528,6 +631,10 @@ def _stage_target_scene(target: str):
         _stage_chamfer_fillet_scene(element)
     elif target.endswith(":fill"):
         return _stage_fill_scene(element)
+    elif target.endswith(":text-box"):
+        return _stage_text_box_scene(element)
+    elif target.endswith(":font-properties"):
+        return _stage_text_box_properties_scene(element)
     elif target.endswith(":grid"):
         _stage_grid_scene(element)
     else:

@@ -7,23 +7,35 @@ description:
 # Ausdrücke und Parameter
 
 Eine Skizze wird wirklich parametrisch, wenn ihre Abmessungen von benannten Werten angetrieben
-werden statt von fest einprogrammierten Zahlen. Der Sketcher unterstützt das an zwei Stellen:
-Dimensionale Einschränkungen akzeptieren **Ausdrücke**, und Textfelder akzeptieren
-**Vorlagenausdrücke**. Beide werden vom Solver ausgewertet, sodass die Skizze automatisch
-aktualisiert wird, sobald sich ein Wert ändert.
+werden statt von fest einprogrammierten Zahlen. Diese Seite beschreibt den vollständigen
+Arbeitsablauf: Parameter erstellen, Geometrie über Ausdrücke antreiben und pro Instanz Werte aus dem
+Hauptfenster zuweisen. Außerdem werden Vorlagenausdrücke in Textfeldern behandelt.
 
-## Skizzen-Parameter
+## Parameter hinzufügen und bearbeiten
 
 Jede Skizze führt ihre eigene Liste von Parametern, angezeigt im Panel **Sketch-Parameter** links im
 Sketch-Editor. **Parameter hinzufügen** erstellt einen, mit der Wahl zwischen einer Ganzzahl, einer
-Gleitkommazahl, einem Schieberegler oder einer einzelnen Textzeile. Jeder Parameter hat einen Namen
-— die Spalte `key` — und dieser Name ist es, worauf sich Ausdrücke beziehen.
+Gleitkommazahl, einem Schieberegler oder einer einzelnen Textzeile.
+
+![Das Sketch-Parameter-Panel im Sketch-Editor](/screenshots/addons-sketcher-parameters-panel.webp)
+
+Jeder Parameter ist eine aufklappbare Zeile. Klicke auf die Zeile, um die Definitionsfields
+anzuzeigen:
+
+- **Label** — der lesbare Name, der in Listen angezeigt wird.
+- **Key** — der Bezeichner, auf den sich Ausdrücke beziehen (automatisch aus dem Label abgeleitet,
+  sofern nicht manuell eingegeben). Halte ihn als gültigen Python-Namen, z.B. `width` oder
+  `wall_thickness`.
+- **Description** — eine optionale Notiz unter der Zeile.
+- **Default Value** — der Anfangswert des Parameters.
+- **Minimum / Maximum Value** — optionale Grenzen (Schalter für jeden aktivieren). Ein
+  Schieberegler-Parameter hat immer einen begrenzten Bereich.
 
 Ein typisches Setup für eine Box mit variabler Wandstärke sind zwei Parameter, `width` und
 `thickness`. Nichts beschränkt die Geometrie noch; die Parameter sind nur Namen für Zahlen, bis ein
 Ausdruck sie verwendet.
 
-## Ausdrücke in Einschränkungen
+## Parameter in Ausdrücken verwenden
 
 Doppelklicke auf eine dimensionale Einschränkung (siehe [Einschränkungen](constraints.md)) und gib
 einen Ausdruck statt einer einfachen Zahl ein:
@@ -33,11 +45,16 @@ width / 2
 ```
 
 Der Wert der Einschränkung wird zum Ergebnis dieses Ausdrucks, neu berechnet bei jeder Lösung der
-Skizze. Ändere den Parameter `width`, und die eingeschränkte Geometrie folgt — eine Bearbeitung
-aktualisiert jetzt jede Bemaßung, die darauf verweist. Von einem Ausdruck angetriebene
-Einschränkungen zeichnen ihre Markierung in orange, und das Label zeigt den berechneten Wert.
+Skizze. Im folgenden Beispiel ist die linke Kante auf `width / 2` beschränkt — ihre Markierung und
+ihr Label werden in **Orange** dargestellt, um zu kennzeichnen, dass sie ausdrucksgesteuert ist —,
+während die obere Kante eine einfache numerische Bemaßung behält:
 
-Ausdrücke können Parameter mit Arithmetik und den Standard-Python- Mathematikfunktionen kombinieren:
+![Eine ausdrucksgesteuerte Maßeinschränkung](/screenshots/addons-sketcher-parameters-expression.webp)
+
+Ändere den Parameter `width`, und die eingeschränkte Geometrie folgt — eine Bearbeitung aktualisiert
+jetzt jede Bemaßung, die darauf verweist.
+
+Ausdrücke können Parameter mit Arithmetik und den Standard-Python-Mathematikfunktionen kombinieren:
 
 ```
 width - 2 * thickness
@@ -49,6 +66,25 @@ Funktionen wie `sqrt`, `sin`, `cos` und `tan` sowie Konstanten wie `pi` stammen 
 `math`-Modul — genau dieses Modul plus die Parameter ist das, worauf ein Einschränkungs-Ausdruck
 verweisen kann. Auch String-Parameter können referenziert werden, was vor allem in Textfeldern
 nützlich ist.
+
+## Werte im Hauptfenster zuweisen
+
+Parameter, die in einer Skizze definiert werden, dienen als Standardwerte für deren Grenzen. Wenn
+eine Skizze im Dokument platziert wird, trägt jedes Werkstück eine eigene Kopie jedes
+Parameterwerts, und die Gruppe **Sketch-Parameter** im rechten Eigenschaftspanel erlaubt es, sie pro
+Instanz zu überschreiben — dieselbe Skizze kann in mehreren Größen über ein Blatt verwendet werden,
+jeweils mit eigener `width` und `thickness`.
+
+Wähle das Skizzen-Werkstück im Hauptfenster, und die Gruppe erscheint im Eigenschaftspanel, eine
+Zeile pro Parameter, jeweils mit dem Wert, den diese Instanz verwendet. Gib einen neuen Wert ein
+oder verwende die Spin-Buttons; das Teil wird sofort neu generiert.
+
+![Parameterwerte im Hauptfenster zuweisen](/screenshots/addons-sketcher-parameters.webp)
+
+Die Bearbeitung der Parameter-_Definitionen_ (Parameter hinzufügen, Standardwert ändern oder Key
+umbenennen) erfolgt im Sketch-Editor, wie oben beschrieben. Das Hauptfenster-Panel passt nur die
+_Werte_ für die ausgewählte Instanz an — es spiegelt immer die Parametermenge der Skizze wider, und
+eine neue Instanz verwendet die Standardwerte der Skizze, bis du sie überschreibst.
 
 ## Vorlagenausdrücke in Textfeldern {#template-expressions-in-text-boxes}
 

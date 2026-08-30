@@ -4,25 +4,36 @@ description:
   driving geometry and labels with named values and formulas."
 ---
 
-# Expressions and Parameters
+# Parameters and Expressions
 
 A sketch becomes truly parametric when its dimensions are driven by named values instead of
-hard-coded numbers. The sketcher supports this in two places: dimensional constraints accept
-**expressions**, and text boxes accept **template expressions**. Both are evaluated by the solver,
-so the sketch updates automatically whenever a value changes.
+hard-coded numbers. This page walks through the full workflow: creating parameters, driving geometry
+with them through expressions, and assigning per-instance values from the main window. It also
+covers template expressions in text boxes.
 
-## Sketch parameters
+## Adding and editing parameters
 
 Every sketch carries its own list of parameters, shown in the **Sketch Parameters** panel on the
-left of the sketch editor. **Add Parameter** creates one, choosing between an integer, a floating
-point number, a slider, or a single line of text. Each parameter has a name — the `key` column — and
-that name is what expressions refer to.
+left of the sketch editor. Click **Add Parameter** to create a new one, choosing between an integer,
+a floating point number, a slider, or a single line of text.
+
+![The Sketch Parameters panel in the sketch editor](/screenshots/addons-sketcher-parameters-panel.webp)
+
+Each parameter is an expandable row. Click the row to reveal its definition fields:
+
+- **Label** — the human-readable name shown in lists.
+- **Key** — the identifier that expressions refer to (auto-derived from the label unless you type it
+  yourself). Keep it a valid Python name, e.g. `width` or `wall_thickness`.
+- **Description** — an optional note shown under the row.
+- **Default Value** — the value the parameter starts at.
+- **Minimum / Maximum Value** — optional bounds (enable the toggle for each). A slider parameter
+  always has a finite range.
 
 A typical setup for a box with a variable wall thickness is two parameters, `width` and `thickness`.
 Nothing constrains geometry yet; the parameters are only names for numbers until an expression uses
 them.
 
-## Expressions in constraints
+## Using parameters in expressions
 
 Double-click a dimensional constraint (see [Constraints](constraints.md)) and enter an expression
 instead of a plain number:
@@ -32,9 +43,14 @@ width / 2
 ```
 
 The constraint's value becomes the result of that expression, re-evaluated every time the sketch
-solves. Change the `width` parameter and the constrained geometry follows — one edit now updates
-every dimension that references it. Constraints driven by an expression draw their marker in orange,
-and the label shows the computed value.
+solves. In the example below the left edge is constrained to `width / 2` — its marker and label are
+drawn in **orange** to flag that it is expression-driven — while the top edge keeps a plain numeric
+dimension:
+
+![An expression-driven dimension constraint](/screenshots/addons-sketcher-parameters-expression.webp)
+
+Change the `width` parameter and the constrained geometry follows — one edit now updates every
+dimension that references it.
 
 Expressions can combine parameters with arithmetic and the standard Python math functions:
 
@@ -47,6 +63,24 @@ sqrt(area) / 2
 Functions like `sqrt`, `sin`, `cos`, and `tan`, and constants like `pi`, come from Python's `math`
 module — that module, plus the parameters, is exactly what a constraint expression can reference.
 String parameters can be referenced too, which is mostly useful in text boxes.
+
+## Assigning values in the main window
+
+Parameters defined in a sketch act as defaults for its boundary. When a sketch is placed in the
+document, each workpiece carries its own copy of every parameter value, and the **Sketch
+Parameters** group in the right-hand properties panel lets you override them per instance — the same
+sketch can be used at several sizes across a sheet, each with its own `width` and `thickness`.
+
+Select the sketch workpiece in the main window and the group appears in the property panel, one row
+per parameter, each with the value that instance uses. Type or spin a new value; the part
+regenerates immediately.
+
+![Assigning parameter values in the main window](/screenshots/addons-sketcher-parameters.webp)
+
+Editing the parameter _definitions_ (adding a parameter, changing a default, or renaming a key)
+happens inside the sketch editor, as described above. The main window panel only adjusts the
+_values_ for the selected instance — it always mirrors the sketch's set of parameters, and a new
+instance uses the sketch's defaults until you override them.
 
 ## Template expressions in text boxes
 

@@ -134,7 +134,7 @@ an expression: sketch parameters and input variables can be referenced by name, 
 are available — a radius of `width/2` tracks the width parameter wherever it goes. Once a constraint
 is driven by an expression, its marker turns orange as a reminder that the number is computed, not
 typed. The full syntax, together with the sketch parameters it can reference, is described in
-[Expressions](expressions.md).
+[Parameters and Expressions](expressions.md).
 
 Double-clicking a not-yet-dimensioned line, arc, or circle offers to create the matching dimension
 directly (distance, radius, or diameter).

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-29 21:19+0200\n"
+"POT-Creation-Date: 2026-08-30 08:22+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -438,7 +438,8 @@ msgstr "对齐网格"
 msgid "Sharp"
 msgstr "尖锐"
 
-#: sketcher/ui_gtk/tools/rectangle_tool.py sketcher/ui_gtk/menu.py
+#: sketcher/ui_gtk/tools/rectangle_tool.py sketcher/ui_gtk/tools/__init__.py
+#: sketcher/ui_gtk/menu.py
 msgid "Rectangle"
 msgstr "矩形"
 
@@ -470,6 +471,22 @@ msgstr "输入尺寸（宽 高）"
 #: sketcher/ui_gtk/tools/rounded_rect_tool.py
 msgid "Set edge point"
 msgstr "设置边缘点"
+
+#: sketcher/ui_gtk/tools/__init__.py
+msgid "Array"
+msgstr "阵列"
+
+#: sketcher/ui_gtk/tools/__init__.py
+msgid "Constrain"
+msgstr "约束"
+
+#: sketcher/ui_gtk/tools/__init__.py
+msgid "Dimension"
+msgstr "尺寸"
+
+#: sketcher/ui_gtk/tools/__init__.py
+msgid "Waypoint"
+msgstr "路点"
 
 #: sketcher/ui_gtk/tools/aspect_ratio_constraint_tool.py
 msgid "Add Aspect Ratio Constraint"
@@ -659,8 +676,7 @@ msgstr "偏移轮廓"
 msgid ""
 "Replaces the selected contours with their offset. Positive values grow "
 "closed contours; open contours become slots."
-msgstr ""
-"用偏移后的轮廓替换选中的轮廓。正值会扩大封闭轮廓；开放轮廓会变成槽口。"
+msgstr "用偏移后的轮廓替换选中的轮廓。正值会扩大封闭轮廓；开放轮廓会变成槽口。"
 
 #: sketcher/ui_gtk/tools/text_box_tool.py
 msgid "Text Box"

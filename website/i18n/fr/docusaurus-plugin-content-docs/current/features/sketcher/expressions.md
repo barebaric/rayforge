@@ -7,23 +7,35 @@ description:
 # Expressions et paramètres
 
 Une esquisse devient véritablement paramétrique lorsque ses dimensions sont pilotées par des valeurs
-nommées plutôt que par des nombres codés en dur. L'esquisseur prend cela en charge à deux endroits :
-les contraintes dimensionnelles acceptent des **expressions**, et les zones de texte acceptent des
-**expressions de modèle**. Les deux sont évaluées par le solveur, si bien que l'esquisse se met à
-jour automatiquement dès qu'une valeur change.
+nommées plutôt que par des nombres codés en dur. Cette page décrit le workflow complet : créer des
+paramètres, piloter la géométrie à l'aide d'expressions, et affecter des valeurs par instance depuis
+la fenêtre principale. Elle couvre également les expressions de modèle dans les zones de texte.
 
-## Paramètres d'esquisse
+## Ajouter et modifier des paramètres
 
 Chaque esquisse possède sa propre liste de paramètres, affichée dans le panneau **Paramètres
-d'esquisse** à gauche de l'éditeur d'esquisse. **Ajouter un paramètre** en crée un, avec le choix
-entre un entier, un nombre à virgule flottante, un curseur ou une seule ligne de texte. Chaque
-paramètre a un nom — la colonne `key` — et c'est ce nom que les expressions référencent.
+d'esquisse** à gauche de l'éditeur d'esquisse. Cliquez sur **Ajouter un paramètre** pour en créer
+un, avec le choix entre un entier, un nombre à virgule flottante, un curseur ou une seule ligne de
+texte.
+
+![Le panneau Paramètres d'esquisse dans l'éditeur d'esquisse](/screenshots/addons-sketcher-parameters-panel.webp)
+
+Chaque paramètre est une ligne extensible. Cliquez sur la ligne pour afficher ses champs de
+définition :
+
+- **Libellé** — le nom lisible affiché dans les listes.
+- **Clé** — l'identifiant référencé par les expressions (automatiquement dérivé du libellé, sauf si
+  vous le saisissez vous-même). Gardez un nom Python valide, par ex. `width` ou `wall_thickness`.
+- **Description** — une note optionnelle affichée sous la ligne.
+- **Valeur par défaut** — la valeur initiale du paramètre.
+- **Valeur minimale / maximale** — des limites optionnelles (activez le commutateur pour chacune).
+  Un paramètre de type curseur a toujours une plage finie.
 
 Une configuration typique pour une boîte d'épaisseur de paroi variable est deux paramètres, `width`
 et `thickness`. Rien ne contraint encore la géométrie ; les paramètres ne sont que des noms pour des
 nombres tant qu'une expression ne les utilise pas.
 
-## Expressions dans les contraintes
+## Utiliser des paramètres dans les expressions
 
 Double-cliquez sur une contrainte dimensionnelle (voir [Contraintes](constraints.md)) et saisissez
 une expression au lieu d'un nombre simple :
@@ -33,9 +45,14 @@ width / 2
 ```
 
 La valeur de la contrainte devient le résultat de cette expression, réévalué à chaque résolution de
-l'esquisse. Modifiez le paramètre `width` et la géométrie contrainte suit — une seule modification
-met désormais à jour chaque dimension qui y fait référence. Les contraintes pilotées par une
-expression dessinent leur marqueur en orange, et l'étiquette affiche la valeur calculée.
+l'esquisse. Dans l'exemple ci-dessous, le bord gauche est contraint à `width / 2` — son marqueur et
+son étiquette sont dessinés en **orange** pour signaler qu'il est piloté par une expression — tandis
+que le bord supérieur conserve une dimension numérique simple :
+
+![Une contrainte dimensionnelle pilotée par une expression](/screenshots/addons-sketcher-parameters-expression.webp)
+
+Modifiez le paramètre `width` et la géométrie contrainte suit — une seule modification met dès lors
+à jour chaque dimension qui y fait référence.
 
 Les expressions peuvent combiner paramètres, opérations arithmétiques et fonctions mathématiques
 standard de Python :
@@ -50,6 +67,26 @@ Des fonctions comme `sqrt`, `sin`, `cos` et `tan`, et des constantes comme `pi`,
 module `math` de Python — ce module, plus les paramètres, est exactement ce qu'une expression de
 contrainte peut référencer. Les paramètres de type chaîne peuvent aussi être référencés, ce qui est
 surtout utile dans les zones de texte.
+
+## Affecter des valeurs dans la fenêtre principale
+
+Les paramètres définis dans une esquisse agissent comme valeurs par défaut pour son contour.
+Lorsqu'une esquisse est placée dans le document, chaque pièce porte sa propre copie de chaque valeur
+de paramètre, et le groupe **Paramètres d'esquisse** dans le panneau de propriétés à droite permet
+de les remplacer par instance — la même esquisse peut être utilisée dans plusieurs tailles sur une
+même planche, chacune avec son propre `width` et `thickness`.
+
+Sélectionnez la pièce d'esquisse dans la fenêtre principale et le groupe apparaît dans le panneau de
+propriétés, une ligne par paramètre, chacune avec la valeur utilisée par cette instance. Saisissez
+ou ajustez une nouvelle valeur ; la pièce se régénère immédiatement.
+
+![Affectation des valeurs de paramètres dans la fenêtre principale](/screenshots/addons-sketcher-parameters.webp)
+
+Modifier les _définitions_ des paramètres (ajouter un paramètre, modifier une valeur par défaut ou
+renommer une clé) se fait dans l'éditeur d'esquisse, comme décrit ci-dessus. Le panneau de la
+fenêtre principale n'ajuste que les _valeurs_ de l'instance sélectionnée — il reflète toujours
+l'ensemble des paramètres de l'esquisse, et une nouvelle instance utilise les valeurs par défaut de
+l'esquisse jusqu'à ce que vous les remplaciez.
 
 ## Expressions de modèle dans les zones de texte {#template-expressions-in-text-boxes}
 

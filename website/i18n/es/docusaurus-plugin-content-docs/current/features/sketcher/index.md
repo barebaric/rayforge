@@ -94,21 +94,21 @@ las elimina.
 Además, cada herramienta de dibujo y modificación tiene un atajo de dos teclas, documentado en su
 página:
 
-| Herramienta                                                          | Atajo |
-| -------------------------------------------------------------------- | ----- |
-| [Trazado](path.md)                                                   | `G+P` |
-| [Arco](arc-ellipse.md)                                               | `G+A` |
-| [Elipse](arc-ellipse.md)                                             | `G+C` |
-| [Rectángulo](rectangle.md)                                           | `G+R` |
-| [Rectángulo redondeado](rectangle.md)                                | `G+O` |
-| [Rellenar área](fill.md)                                             | `G+F` |
-| [Cuadro de texto](expressions.md#template-expressions-in-text-boxes) | `G+T` |
-| [Arreglo Circular](arrays.md)                                        | `G+Y` |
-| [Arreglo a lo largo de curva](arrays.md)                             | `G+W` |
-| [Cuadrícula](grid.md)                                                | `G+G` |
-| [Desplazamiento](offset.md)                                          | `O+F` |
-| [Chaflán](chamfer-fillet.md)                                         | `C+H` |
-| [Redondeo](chamfer-fillet.md)                                        | `C+F` |
+| Herramienta                              | Atajo |
+| ---------------------------------------- | ----- |
+| [Trazado](path.md)                       | `G+P` |
+| [Arco](arc-ellipse.md)                   | `G+A` |
+| [Elipse](arc-ellipse.md)                 | `G+C` |
+| [Rectángulo](rectangle.md)               | `G+R` |
+| [Rectángulo redondeado](rectangle.md)    | `G+O` |
+| [Rellenar área](fill.md)                 | `G+F` |
+| [Cuadro de texto](text-box.md)           | `G+T` |
+| [Arreglo Circular](arrays.md)            | `G+Y` |
+| [Arreglo a lo largo de curva](arrays.md) | `G+W` |
+| [Cuadrícula](grid.md)                    | `G+G` |
+| [Desplazamiento](offset.md)              | `O+F` |
+| [Chaflán](chamfer-fillet.md)             | `C+H` |
+| [Redondeo](chamfer-fillet.md)            | `C+F` |
 
 Los atajos de restricciones están enumerados en la página [Restricciones](constraints.md).
 
@@ -152,9 +152,9 @@ estorban.
 
 Las herramientas de dibujo están documentadas cada una en su propia página: [Trazado](path.md)
 (líneas y curvas Bézier), [Arco y elipse](arc-ellipse.md), [Rectángulo](rectangle.md) (y rectángulos
-redondeados), [Rellenar áreas](fill.md) y [Cuadrícula](grid.md). Las modificaciones como
-[Desplazamiento](offset.md) y [Chaflán y redondeo](chamfer-fillet.md) dan nueva forma a la geometría
-existente, [Arreglos](arrays.md) la copia a lo largo de un círculo o una curva, y
-[Expresiones](expressions.md) explica los parámetros, las expresiones y los cuadros de texto
+redondeados), [Rellenar áreas](fill.md), [Cuadro de texto](text-box.md) y [Cuadrícula](grid.md). Las
+modificaciones como [Desplazamiento](offset.md) y [Chaflán y redondeo](chamfer-fillet.md) dan nueva
+forma a la geometría existente, [Arreglos](arrays.md) la copia a lo largo de un círculo o una curva,
+y [Expresiones](expressions.md) explica los parámetros, las expresiones y los cuadros de texto
 paramétricos. Los bocetos se pueden guardar y volver a importar con todas las restricciones
 intactas; consulte [Importación y exportación](import-export.md).

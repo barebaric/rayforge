@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-29 21:19+0200\n"
+"POT-Creation-Date: 2026-08-30 08:22+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -439,7 +439,8 @@ msgstr "Aligner sur la grille"
 msgid "Sharp"
 msgstr "Vif"
 
-#: sketcher/ui_gtk/tools/rectangle_tool.py sketcher/ui_gtk/menu.py
+#: sketcher/ui_gtk/tools/rectangle_tool.py sketcher/ui_gtk/tools/__init__.py
+#: sketcher/ui_gtk/menu.py
 msgid "Rectangle"
 msgstr "Rectangle"
 
@@ -471,6 +472,22 @@ msgstr "Saisir les dimensions (L H)"
 #: sketcher/ui_gtk/tools/rounded_rect_tool.py
 msgid "Set edge point"
 msgstr "Définir le point de bord"
+
+#: sketcher/ui_gtk/tools/__init__.py
+msgid "Array"
+msgstr "Tableau"
+
+#: sketcher/ui_gtk/tools/__init__.py
+msgid "Constrain"
+msgstr "Contraindre"
+
+#: sketcher/ui_gtk/tools/__init__.py
+msgid "Dimension"
+msgstr "Dimension"
+
+#: sketcher/ui_gtk/tools/__init__.py
+msgid "Waypoint"
+msgstr "Point de passage"
 
 #: sketcher/ui_gtk/tools/aspect_ratio_constraint_tool.py
 msgid "Add Aspect Ratio Constraint"
@@ -666,7 +683,8 @@ msgid ""
 "closed contours; open contours become slots."
 msgstr ""
 "Remplace les contours sélectionnés par leur décalage. Les valeurs positives "
-"agrandissent les contours fermés ; les contours ouverts deviennent des fentes."
+"agrandissent les contours fermés ; les contours ouverts deviennent des "
+"fentes."
 
 #: sketcher/ui_gtk/tools/text_box_tool.py
 msgid "Text Box"

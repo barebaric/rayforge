@@ -88,21 +88,21 @@ remapped internal constraints; undo removes them.
 
 Each drawing and modification tool additionally has a two-key shortcut, documented on its page:
 
-| Tool                                                          | Shortcut |
-| ------------------------------------------------------------- | -------- |
-| [Path](path.md)                                               | `G+P`    |
-| [Arc](arc-ellipse.md)                                         | `G+A`    |
-| [Ellipse](arc-ellipse.md)                                     | `G+C`    |
-| [Rectangle](rectangle.md)                                     | `G+R`    |
-| [Rounded Rectangle](rectangle.md)                             | `G+O`    |
-| [Fill Area](fill.md)                                          | `G+F`    |
-| [Text Box](expressions.md#template-expressions-in-text-boxes) | `G+T`    |
-| [Circular Array](arrays.md)                                   | `G+Y`    |
-| [Array Along Curve](arrays.md)                                | `G+W`    |
-| [Grid](grid.md)                                               | `G+G`    |
-| [Offset](offset.md)                                           | `O+F`    |
-| [Chamfer](chamfer-fillet.md)                                  | `C+H`    |
-| [Fillet](chamfer-fillet.md)                                   | `C+F`    |
+| Tool                              | Shortcut |
+| --------------------------------- | -------- |
+| [Path](path.md)                   | `G+P`    |
+| [Arc](arc-ellipse.md)             | `G+A`    |
+| [Ellipse](arc-ellipse.md)         | `G+C`    |
+| [Rectangle](rectangle.md)         | `G+R`    |
+| [Rounded Rectangle](rectangle.md) | `G+O`    |
+| [Fill Area](fill.md)              | `G+F`    |
+| [Text Box](text-box.md)           | `G+T`    |
+| [Circular Array](arrays.md)       | `G+Y`    |
+| [Array Along Curve](arrays.md)    | `G+W`    |
+| [Grid](grid.md)                   | `G+G`    |
+| [Offset](offset.md)               | `O+F`    |
+| [Chamfer](chamfer-fillet.md)      | `C+H`    |
+| [Fillet](chamfer-fillet.md)       | `C+F`    |
 
 The constraint shortcuts are listed on the [Constraints](constraints.md) page.
 
@@ -144,8 +144,9 @@ they get in the way.
 
 The drawing tools are each documented on their own page: [Path](path.md) (lines and bezier curves),
 [Arc and Ellipse](arc-ellipse.md), [Rectangle](rectangle.md) (and rounded rectangles),
-[Fill Areas](fill.md), and [Grid](grid.md). Modifications such as [Offset](offset.md) and
-[Chamfer and Fillet](chamfer-fillet.md) reshape existing geometry, [Arrays](arrays.md) copies it
-along a circle or a curve, and [Expressions](expressions.md) explains parameters, expressions, and
-parametric text boxes. Sketches can be saved and re-imported with all constraints intact — see
-[Import and Export](import-export.md).
+[Fill Areas](fill.md), [Text Box](text-box.md), and [Grid](grid.md). Modifications such as
+[Offset](offset.md) and [Chamfer and Fillet](chamfer-fillet.md) reshape existing geometry,
+[Arrays](arrays.md) copies it along a circle or a curve, and
+[Parameters and Expressions](expressions.md) explains how to add and edit parameters, drive geometry
+and text boxes with them, and assign values per sketch instance. Sketches can be saved and
+re-imported with all constraints intact — see [Import and Export](import-export.md).

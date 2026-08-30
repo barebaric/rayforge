@@ -92,21 +92,21 @@ recebem IDs novos e restrições internas remapeadas; desfazer as remove.
 Cada ferramenta de desenho e modificação tem, além disso, um atalho de duas teclas, documentado em
 sua página:
 
-| Ferramenta                                                          | Atalho |
-| ------------------------------------------------------------------- | ------ |
-| [Caminho](path.md)                                                  | `G+P`  |
-| [Arco](arc-ellipse.md)                                              | `G+A`  |
-| [Elipse](arc-ellipse.md)                                            | `G+C`  |
-| [Retângulo](rectangle.md)                                           | `G+R`  |
-| [Retângulo arredondado](rectangle.md)                               | `G+O`  |
-| [Preenchimento de áreas](fill.md)                                   | `G+F`  |
-| [Caixa de texto](expressions.md#template-expressions-in-text-boxes) | `G+T`  |
-| [Matriz Circular](arrays.md)                                        | `G+Y`  |
-| [Matriz ao longo de curva](arrays.md)                               | `G+W`  |
-| [Grade](grid.md)                                                    | `G+G`  |
-| [Deslocamento](offset.md)                                           | `O+F`  |
-| [Chanfro](chamfer-fillet.md)                                        | `C+H`  |
-| [Arredondamento](chamfer-fillet.md)                                 | `C+F`  |
+| Ferramenta                            | Atalho |
+| ------------------------------------- | ------ |
+| [Caminho](path.md)                    | `G+P`  |
+| [Arco](arc-ellipse.md)                | `G+A`  |
+| [Elipse](arc-ellipse.md)              | `G+C`  |
+| [Retângulo](rectangle.md)             | `G+R`  |
+| [Retângulo arredondado](rectangle.md) | `G+O`  |
+| [Preenchimento de áreas](fill.md)     | `G+F`  |
+| [Caixa de texto](text-box.md)         | `G+T`  |
+| [Matriz Circular](arrays.md)          | `G+Y`  |
+| [Matriz ao longo de curva](arrays.md) | `G+W`  |
+| [Grade](grid.md)                      | `G+G`  |
+| [Deslocamento](offset.md)             | `O+F`  |
+| [Chanfro](chamfer-fillet.md)          | `C+H`  |
+| [Arredondamento](chamfer-fillet.md)   | `C+F`  |
 
 Os atalhos de restrições estão listados na página [Restrições](constraints.md).
 
@@ -148,9 +148,9 @@ sinalizador; o alternador de construção na barra de ferramentas as oculta quan
 
 As ferramentas de desenho estão documentadas em páginas próprias: [Caminho](path.md) (linhas e
 curvas de Bézier), [Arco e Elipse](arc-ellipse.md), [Retângulo](rectangle.md) (e retângulos
-arredondados), [Preenchimento de áreas](fill.md) e [Grade](grid.md). Modificações como
-[Deslocamento](offset.md) e [Chanfro e arredondamento](chamfer-fillet.md) remodelam a geometria
-existente, [Matrizes](arrays.md) copiam a geometria ao longo de um círculo ou de uma curva, e
-[Expressões](expressions.md) explica parâmetros, expressões e caixas de texto paramétricas. Esboços
-podem ser salvos e reimportados com todas as restrições intactas — veja
+arredondados), [Preenchimento de áreas](fill.md), [Caixa de texto](text-box.md) e [Grade](grid.md).
+Modificações como [Deslocamento](offset.md) e [Chanfro e arredondamento](chamfer-fillet.md)
+remodelam a geometria existente, [Matrizes](arrays.md) copiam a geometria ao longo de um círculo ou
+de uma curva, e [Expressões](expressions.md) explica parâmetros, expressões e caixas de texto
+paramétricas. Esboços podem ser salvos e reimportados com todas as restrições intactas — veja
 [Importação e exportação](import-export.md).

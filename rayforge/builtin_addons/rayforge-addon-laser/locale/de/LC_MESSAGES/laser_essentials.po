@@ -509,7 +509,8 @@ msgstr "Anzahl der diskreten Leistungsstufen (weniger = weniger Bewegungen)"
 #: laser_essentials/steps/raster_step.py
 #, python-brace-format
 msgid "The {mode} depth mode is not supported by this machine's driver."
-msgstr "Der {mode}-Tiefenmodus wird vom Treiber dieser Maschine nicht unterstützt."
+msgstr ""
+"Der {mode}-Tiefenmodus wird vom Treiber dieser Maschine nicht unterstützt."
 
 #: laser_essentials/steps/contour_step.py
 msgid "Contour"

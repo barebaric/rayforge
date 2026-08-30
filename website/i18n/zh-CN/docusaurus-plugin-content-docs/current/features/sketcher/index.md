@@ -59,21 +59,21 @@ mm，整个零件就会随之更新。尺寸约束还接受表达式——半径
 
 每个绘图和修改工具另外还有一个双键快捷键，记录在其各自的页面上：
 
-| 工具                                                        | 快捷键 |
-| ----------------------------------------------------------- | ------ |
-| [路径](path.md)                                             | `G+P`  |
-| [弧](arc-ellipse.md)                                        | `G+A`  |
-| [椭圆](arc-ellipse.md)                                      | `G+C`  |
-| [矩形](rectangle.md)                                        | `G+R`  |
-| [圆角矩形](rectangle.md)                                    | `G+O`  |
-| [填充区域](fill.md)                                         | `G+F`  |
-| [文本框](expressions.md#template-expressions-in-text-boxes) | `G+T`  |
-| [圆形阵列](arrays.md)                                       | `G+Y`  |
-| [沿曲线阵列](arrays.md)                                     | `G+W`  |
-| [网格](grid.md)                                             | `G+G`  |
-| [偏移](offset.md)                                           | `O+F`  |
-| [倒角](chamfer-fillet.md)                                   | `C+H`  |
-| [圆角](chamfer-fillet.md)                                   | `C+F`  |
+| 工具                      | 快捷键 |
+| ------------------------- | ------ |
+| [路径](path.md)           | `G+P`  |
+| [弧](arc-ellipse.md)      | `G+A`  |
+| [椭圆](arc-ellipse.md)    | `G+C`  |
+| [矩形](rectangle.md)      | `G+R`  |
+| [圆角矩形](rectangle.md)  | `G+O`  |
+| [填充区域](fill.md)       | `G+F`  |
+| [文本框](text-box.md)     | `G+T`  |
+| [圆形阵列](arrays.md)     | `G+Y`  |
+| [沿曲线阵列](arrays.md)   | `G+W`  |
+| [网格](grid.md)           | `G+G`  |
+| [偏移](offset.md)         | `O+F`  |
+| [倒角](chamfer-fillet.md) | `C+H`  |
+| [圆角](chamfer-fillet.md) | `C+F`  |
 
 约束的快捷键列在[约束](constraints.md)页面中。
 
@@ -103,6 +103,6 @@ mm，整个零件就会随之更新。尺寸约束还接受表达式——半径
 ## 后续步骤
 
 每个绘图工具都在各自的页面上有文档说明：[路径](path.md)（直线和贝塞尔曲线）、[弧与椭圆](arc-ellipse.md)、[矩形](rectangle.md)
-（以及圆角矩形）、[填充区域](fill.md)和[网格](grid.md)。诸如
+（以及圆角矩形）、[填充区域](fill.md)、[文本框](text-box.md)和[网格](grid.md)。诸如
 [偏移](offset.md)和[倒角与圆角](chamfer-fillet.md)之类的修改操作可以重塑现有几何图形，[阵列](arrays.md)沿圆或曲线复制它，
 [表达式](expressions.md)则解释参数、表达式和参数化文本框。草图可以保存并重新导入且保留所有约束——参见[导入和导出](import-export.md)。

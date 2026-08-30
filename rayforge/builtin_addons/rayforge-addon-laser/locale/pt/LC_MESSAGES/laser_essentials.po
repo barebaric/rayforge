@@ -507,7 +507,8 @@ msgstr "Número de etapas discretas de potência (menor = menos movimentos)"
 #: laser_essentials/steps/raster_step.py
 #, python-brace-format
 msgid "The {mode} depth mode is not supported by this machine's driver."
-msgstr "O modo de profundidade {mode} não é suportado pelo controlador desta máquina."
+msgstr ""
+"O modo de profundidade {mode} não é suportado pelo controlador desta máquina."
 
 #: laser_essentials/steps/contour_step.py
 msgid "Contour"

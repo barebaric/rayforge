@@ -511,7 +511,9 @@ msgstr "Nombre de pas de puissance discrets (plus bas = moins de déplacements)"
 #: laser_essentials/steps/raster_step.py
 #, python-brace-format
 msgid "The {mode} depth mode is not supported by this machine's driver."
-msgstr "Le mode de profondeur {mode} n'est pas pris en charge par le pilote de cette machine."
+msgstr ""
+"Le mode de profondeur {mode} n'est pas pris en charge par le pilote de cette "
+"machine."
 
 #: laser_essentials/steps/contour_step.py
 msgid "Contour"

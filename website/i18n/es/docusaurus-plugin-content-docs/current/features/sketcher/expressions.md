@@ -7,23 +7,35 @@ description:
 # Expresiones y parámetros
 
 Un boceto se vuelve verdaderamente paramétrico cuando sus dimensiones están gobernadas por valores
-con nombre en lugar de números fijados en el código. El diseñador admite esto en dos lugares: las
-restricciones dimensionales aceptan **expresiones**, y los cuadros de texto aceptan **expresiones de
-plantilla**. Ambas se evalúan mediante el resolvedor, por lo que el boceto se actualiza
-automáticamente cada vez que cambia un valor.
+con nombre en lugar de números fijados en el código. Esta página describe el flujo de trabajo
+completo: creación de parámetros, geometría gobernada mediante expresiones y asignación de valores
+por instancia desde la ventana principal. También cubre las expresiones de plantilla en cuadros de
+texto.
 
-## Parámetros del boceto
+## Añadir y editar parámetros
 
 Cada boceto lleva su propia lista de parámetros, mostrada en el panel **Parámetros del boceto** a la
-izquierda del editor de bocetos. **Añadir parámetro** crea uno, con elección entre un entero, un
-número de punto flotante, un deslizador o una sola línea de texto. Cada parámetro tiene un nombre —
-la columna `key` — y ese nombre es al que se refieren las expresiones.
+izquierda del editor de bocetos. Haga clic en **Añadir parámetro** para crear uno nuevo, con
+elección entre un entero, un número de punto flotante, un deslizador o una sola línea de texto.
+
+![El panel de parámetros del boceto en el editor de bocetos](/screenshots/addons-sketcher-parameters-panel.webp)
+
+Cada parámetro es una fila expandible. Haga clic en la fila para ver sus campos de definición:
+
+- **Etiqueta** — el nombre legible que se muestra en las listas.
+- **Clave** — el identificador al que se refieren las expresiones (se deriva automáticamente de la
+  etiqueta a menos que lo escriba usted mismo). Debe ser un nombre válido de Python, por ejemplo
+  `width` o `wall_thickness`.
+- **Descripción** — una nota opcional que se muestra debajo de la fila.
+- **Valor por defecto** — el valor con el que empieza el parámetro.
+- **Valor mínimo / máximo** — límites opcionales (active el interruptor para cada uno). Un parámetro
+  de tipo deslizador siempre tiene un rango finito.
 
 Una configuración típica para una caja con grosor de pared variable son dos parámetros, `width` y
 `thickness`. Todavía nada restringe la geometría; los parámetros son solo nombres para números hasta
 que una expresión los usa.
 
-## Expresiones en restricciones
+## Usar parámetros en expresiones
 
 Haga doble clic en una restricción dimensional (vea [Restricciones](constraints.md)) e introduzca
 una expresión en lugar de un número simple:
@@ -33,9 +45,14 @@ width / 2
 ```
 
 El valor de la restricción pasa a ser el resultado de esa expresión, reevaluado cada vez que el
-boceto se resuelve. Cambie el parámetro `width` y la geometría restringida seguirá el cambio: una
-sola edición actualiza cada dimensión que haga referencia a él. Las restricciones gobernadas por una
-expresión dibujan su marcador en naranja, y la etiqueta muestra el valor calculado.
+boceto se resuelve. En el ejemplo siguiente, el borde izquierdo está restringido a `width / 2`: su
+marcador y etiqueta se dibujan en **naranja** para indicar que está gobernado por una expresión,
+mientras que el borde superior conserva una dimensión numérica simple:
+
+![Una restricción dimensional gobernada por una expresión](/screenshots/addons-sketcher-parameters-expression.webp)
+
+Cambie el parámetro `width` y la geometría restringida seguirá el cambio: una sola edición actualiza
+cada dimensión que haga referencia a él.
 
 Las expresiones pueden combinar parámetros con aritmética y las funciones matemáticas estándar de
 Python:
@@ -50,6 +67,26 @@ Funciones como `sqrt`, `sin`, `cos` y `tan`, y constantes como `pi`, provienen d
 Python; ese módulo, más los parámetros, es exactamente lo que una expresión de restricción puede
 referenciar. Los parámetros de cadena también pueden referenciarse, lo cual es sobre todo útil en
 los cuadros de texto.
+
+## Asignar valores en la ventana principal
+
+Los parámetros definidos en un boceto actúan como valores predeterminados para su límite. Cuando un
+boceto se coloca en el documento, cada pieza de trabajo lleva su propia copia de cada valor de
+parámetro, y el grupo **Parámetros del boceto** en el panel de propiedades de la derecha le permite
+sobrescribirlos por instancia: el mismo boceto puede utilizarse en varios tamaños a lo largo de una
+hoja, cada uno con su propio `width` y `thickness`.
+
+Seleccione la pieza de trabajo del boceto en la ventana principal y el grupo aparecerá en el panel
+de propiedades, una fila por parámetro, cada una con el valor que usa esa instancia. Escriba o
+ajuste un nuevo valor; la pieza se regenera inmediatamente.
+
+![Asignación de valores de parámetros en la ventana principal](/screenshots/addons-sketcher-parameters.webp)
+
+La edición de las _definiciones_ de parámetros (añadir un parámetro, cambiar un valor predeterminado
+o renombrar una clave) se realiza dentro del editor de bocetos, como se describió anteriormente. El
+panel de la ventana principal solo ajusta los _valores_ de la instancia seleccionada: siempre
+refleja el conjunto de parámetros del boceto, y una nueva instancia usa los valores predeterminados
+del boceto hasta que los sobrescriba.
 
 ## Expresiones de plantilla en cuadros de texto {#template-expressions-in-text-boxes}
 
@@ -129,9 +166,9 @@ register_template_function("next_serial", next_serial)
 ```
 
 Llame a `register_template_function(name, callable)` para cada función. La función puede hacer
-cualquier cosa que Python pueda — abrir archivos, conectarse a bases de datos, llamar APIs — y se
-ejecuta en **cada renderizado**, por lo que debe ser rápida (use caché si los datos subyacentes no
-cambian entre renderizados). Las funciones son seguras en hilos si su callable lo es.
+cualcosa que Python pueda — abrir archivos, conectarse a bases de datos, llamar APIs — y se ejecuta
+en **cada renderizado**, por lo que debe ser rápida (use caché si los datos subyacentes no cambian
+entre renderizados). Las funciones son seguras en hilos si su callable lo es.
 
 ### Ejecutar Rayforge con el script
 

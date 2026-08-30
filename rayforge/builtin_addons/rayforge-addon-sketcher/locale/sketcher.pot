@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-29 21:19+0200\n"
+"POT-Creation-Date: 2026-08-30 08:22+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -460,6 +460,7 @@ msgid "Sharp"
 msgstr ""
 
 #: sketcher/ui_gtk/tools/rectangle_tool.py
+#: sketcher/ui_gtk/tools/__init__.py
 #: sketcher/ui_gtk/menu.py
 msgid "Rectangle"
 msgstr ""
@@ -493,6 +494,22 @@ msgstr ""
 #: sketcher/ui_gtk/tools/circle_tool.py
 #: sketcher/ui_gtk/tools/rounded_rect_tool.py
 msgid "Set edge point"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/__init__.py
+msgid "Array"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/__init__.py
+msgid "Constrain"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/__init__.py
+msgid "Dimension"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/__init__.py
+msgid "Waypoint"
 msgstr ""
 
 #: sketcher/ui_gtk/tools/aspect_ratio_constraint_tool.py

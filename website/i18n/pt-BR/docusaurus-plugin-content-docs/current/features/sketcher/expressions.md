@@ -7,22 +7,34 @@ description:
 # Expressões e Parâmetros
 
 Um esboço se torna verdadeiramente paramétrico quando suas dimensões são guiadas por valores
-nomeados em vez de números fixos. O esboçador suporta isso em dois lugares: restrições dimensionais
-aceitam **expressões**, e caixas de texto aceitam **expressões de modelo**. Ambas são avaliadas pelo
-solver, de modo que o esboço se atualiza automaticamente sempre que um valor muda.
+nomeados em vez de números fixos. Esta página descreve o fluxo de trabalho completo: criar
+parâmetros, guiá-los por expressões na geometria e atribuir valores por instância na janela
+principal. Também aborda expressões de modelo em caixas de texto.
 
-## Parâmetros do esboço
+## Adicionar e editar parâmetros
 
 Cada esboço carrega sua própria lista de parâmetros, exibida no painel **Parâmetros do Esboço** à
-esquerda do editor de esboços. **Adicionar Parâmetro** cria um, com escolha entre inteiro, número de
-ponto flutuante, controle deslizante ou uma única linha de texto. Cada parâmetro tem um nome — a
-coluna `key` — e esse nome é o que as expressões referenciam.
+esquerda do editor de esboços. Clique em **Adicionar Parâmetro** para criar um novo, escolhendo
+entre um inteiro, um número de ponto flutuante, um controle deslizante ou uma única linha de texto.
+
+![O painel Parâmetros do Esboço no editor de esboços](/screenshots/addons-sketcher-parameters-panel.webp)
+
+Cada parâmetro é uma linha expansível. Clique na linha para revelar seus campos de definição:
+
+- **Rótulo** — o nome legível exibido nas listas.
+- **Chave** — o identificador que as expressões referenciam (derivado automaticamente do rótulo, a
+  menos que você o digite manualmente). Mantenha-o como um nome Python válido, por exemplo `width`
+  ou `wall_thickness`.
+- **Descrição** — uma nota opcional exibida abaixo da linha.
+- **Valor Padrão** — o valor inicial do parâmetro.
+- **Valor Mínimo / Máximo** — limites opcionais (ative a alternância para cada um). Um parâmetro do
+  tipo controle deslizante sempre possui um intervalo finito.
 
 Uma configuração típica para uma caixa com espessura de parede variável consiste em dois parâmetros,
 `width` e `thickness`. Nada restringe a geometria ainda; os parâmetros são apenas nomes para números
 até que uma expressão os use.
 
-## Expressões em restrições
+## Usar parâmetros em expressões
 
 Dê um duplo clique em uma restrição dimensional (veja [Restrições](constraints.md)) e informe uma
 expressão em vez de um número simples:
@@ -32,9 +44,14 @@ width / 2
 ```
 
 O valor da restrição se torna o resultado dessa expressão, reavaliado toda vez que o esboço é
-resolvido. Altere o parâmetro `width` e a geometria restringida acompanha — uma única edição agora
-atualiza todas as dimensões que a referenciam. Restrições guiadas por uma expressão desenham seu
-marcador em laranja, e o rótulo mostra o valor calculado.
+resolvido. No exemplo abaixo, a borda esquerda é restringida a `width / 2` — seu marcador e rótulo
+são desenhados em **laranja** para sinalizar que é guiada por expressão — enquanto a borda superior
+mantém uma dimensão numérica simples:
+
+![Uma restrição dimensional guiada por expressão](/screenshots/addons-sketcher-parameters-expression.webp)
+
+Altere o parâmetro `width` e a geometria restringida acompanha — uma única edição agora atualiza
+todas as dimensões que a referenciam.
 
 Expressões podem combinar parâmetros com aritmética e as funções matemáticas padrão do Python:
 
@@ -48,6 +65,25 @@ Funções como `sqrt`, `sin`, `cos` e `tan`, e constantes como `pi`, vêm do mó
 esse módulo, mais os parâmetros, é exatamente o que uma expressão de restrição pode referenciar.
 Parâmetros do tipo string também podem ser referenciados, o que é útil principalmente em caixas de
 texto.
+
+## Atribuir valores na janela principal
+
+Os parâmetros definidos em um esboço atuam como padrões para seus limites. Quando um esboço é
+posicionado no documento, cada peça carrega sua própria cópia de cada valor de parâmetro, e o grupo
+**Parâmetros do Esboço** no painel de propriedades à direita permite substituí-los por instância — o
+mesmo esboço pode ser usado em vários tamanhos em uma chapa, cada um com seu próprio `width` e
+`thickness`.
+
+Selecione a peça do esboço na janela principal e o grupo aparece no painel de propriedades, uma
+linha por parâmetro, cada uma com o valor que aquela instância usa. Digite ou ajuste um novo valor;
+a peça é regenerada imediatamente.
+
+![Atribuindo valores de parâmetros na janela principal](/screenshots/addons-sketcher-parameters.webp)
+
+Editar as _definições_ de parâmetros (adicionar um parâmetro, alterar um padrão ou renomear uma
+chave) acontece dentro do editor de esboços, conforme descrito acima. O painel da janela principal
+apenas ajusta os _valores_ da instância selecionada — sempre reflete o conjunto de parâmetros do
+esboço, e uma nova instância usa os padrões do esboço até que você os substitua.
 
 ## Expressões de modelo em caixas de texto {#template-expressions-in-text-boxes}
 
