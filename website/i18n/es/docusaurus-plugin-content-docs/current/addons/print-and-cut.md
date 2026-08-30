@@ -20,7 +20,7 @@ los controles a la derecha.
 
 ## Paso 1: Seleccionar puntos de diseño
 
-![Seleccionar puntos de diseño](/screenshots/addon-print-and-cut-pick.png)
+![Seleccionar puntos de diseño](/screenshots/addon-print-and-cut-pick.webp)
 
 El panel izquierdo muestra una representación de tu workpiece seleccionado.
 Haz clic directamente sobre la imagen para colocar el primer punto de
@@ -41,7 +41,7 @@ Una vez colocados ambos puntos, haz clic en **Siguiente** para continuar.
 
 ## Paso 2: Registrar posiciones físicas
 
-![Registrar posiciones físicas](/screenshots/addon-print-and-cut-jog.png)
+![Registrar posiciones físicas](/screenshots/addon-print-and-cut-jog.webp)
 
 En esta página desplazas el láser a las posiciones físicas que corresponden a
 los dos puntos de diseño que seleccionaste. El panel derecho muestra un pad
@@ -65,7 +65,7 @@ continuar.
 
 ## Paso 3: Revisar y aplicar la transformación
 
-![Revisar y aplicar la transformación](/screenshots/addon-print-and-cut-apply.png)
+![Revisar y aplicar la transformación](/screenshots/addon-print-and-cut-apply.webp)
 
 La última página muestra la alineación calculada como un desplazamiento de
 traslación y un ángulo de rotación. Estos valores se derivan de la diferencia

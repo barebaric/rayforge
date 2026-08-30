@@ -2,7 +2,7 @@
 
 La página de Dispositivo en Configuración de Máquina te permite leer y aplicar ajustes directamente a tu dispositivo conectado (controlador). Estos también se conocen como ajustes "dólar" o ajustes `$$` en GRBL.
 
-![Ajustes de Dispositivo](/screenshots/machine-settings-device.png)
+![Ajustes de Dispositivo](/screenshots/machine-settings-device.webp)
 
 :::warning Precaución al Cambiar Ajustes
 Los ajustes de firmware incorrectos pueden hacer que tu máquina se comporte de manera impredecible, pierda posición o incluso dañe el hardware. Siempre registra los valores originales antes de hacer cambios, y modifica un ajuste a la vez.

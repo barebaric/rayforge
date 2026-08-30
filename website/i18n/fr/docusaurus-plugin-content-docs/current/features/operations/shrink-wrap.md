@@ -66,7 +66,7 @@ La boîte de dialogue des paramètres d'étape comporte trois onglets : **Param�
 
 ### Shrink Wrap
 
-![Paramètres d'étape shrink wrap](/screenshots/step-settings-shrink-wrap-general.png)
+![Paramètres d'étape shrink wrap](/screenshots/step-settings-shrink-wrap-general.webp)
 
 Le groupe **Shrink Wrap** de l'onglet _Paramètres d'étape_ contrôle la façon dont l'enveloppe s'adapte au contenu.
 
@@ -121,7 +121,7 @@ Contrôle où le laser coupe par rapport au parcours shrink-wrap :
 
 ### Paramètres Laser
 
-![Paramètres laser](/screenshots/step-settings-shrink-wrap-laser.png)
+![Paramètres laser](/screenshots/step-settings-shrink-wrap-laser.webp)
 
 La puissance, la vitesse et la sélection de la tête laser se trouvent sur la page **Laser** de la boîte de dialogue des paramètres d'étape.
 
@@ -216,7 +216,7 @@ Voir [Flux de Travail Multi-Couches](../multi-layer.md) pour plus de détails.
 
 ## Post-Traitement
 
-![Paramètres de post-traitement shrink wrap](/screenshots/step-settings-shrink-wrap-post.png)
+![Paramètres de post-traitement shrink wrap](/screenshots/step-settings-shrink-wrap-post.webp)
 
 Les opérations Shrink Wrap supportent plusieurs options de post-traitement :
 

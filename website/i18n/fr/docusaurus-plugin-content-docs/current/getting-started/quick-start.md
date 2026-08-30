@@ -10,7 +10,7 @@ Rayforge prend en charge divers formats de fichiers, notamment SVG, DXF, PDF, Ru
 2. Naviguez vers votre fichier de design et sélectionnez-le
 3. Le design apparaîtra sur le canevas
 
-![Canevas avec design importé](/screenshots/main-standard.png)
+![Canevas avec design importé](/screenshots/main-standard.webp)
 
 :::tip Vous n'avez pas encore de design ?
 Vous pouvez créer des formes simples en utilisant l'esquisseur ou télécharger des fichiers SVG gratuits depuis des sites comme [Flaticon](https://www.flaticon.com/) ou [SVG Repo](https://www.svgrepo.com/).
@@ -45,7 +45,7 @@ Les opérations définissent comment Rayforge traitera votre design. Les opérat
    - **Vitesse** : Vitesse de déplacement en mm/min
    - **Passes** : Nombre de fois pour répéter l'opération (utile pour couper des matériaux épais)
 
-![Paramètres d'Opération](/screenshots/step-settings-contour-general.png)
+![Paramètres d'Opération](/screenshots/step-settings-contour-general.webp)
 
 :::warning Commencez avec une Faible Puissance
 Lorsque vous travaillez avec de nouveaux matériaux, commencez toujours avec des paramètres de puissance plus bas et effectuez des tests de coupe. Augmentez progressivement la puissance jusqu'à obtenir le résultat souhaité. Utilisez la fonction [Grille de Test de Matériau](../features/operations/material-test-grid.md) pour trouver systématiquement les paramètres optimaux.
@@ -61,7 +61,7 @@ Avant d'envoyer à votre machine, prévisualisez le parcours d'outil en 3D :
 3. Utilisez votre souris pour faire pivoter et zoomer sur l'aperçu
 4. Vérifiez que le parcours semble correct
 
-![Aperçu 3D](/screenshots/main-3d.png)
+![Aperçu 3D](/screenshots/main-3d.webp)
 
 :::tip Détectez les Erreurs Tôt
 L'aperçu 3D vous aide à repérer les problèmes comme :

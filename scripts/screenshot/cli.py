@@ -13,6 +13,8 @@ import time
 from pathlib import Path
 from xml.sax.saxutils import escape
 
+from PIL import Image
+
 SCRIPTS_DIR = Path(__file__).parent
 PROJECT_ROOT = SCRIPTS_DIR.parent.parent
 TEST_CONFIG_DIR = PROJECT_ROOT / "tests" / "config"
@@ -187,17 +189,20 @@ class XvfbSession:
     forever in frame uploads with drivers such as NVIDIA's.
     """
 
-    SCREEN = "2560x1700x24"
+    SCREEN = "2560x1800x24"
     DISPLAY_RANGE = range(99, 200)
     STARTUP_TIMEOUT = 5.0
     WM_STARTUP_TIMEOUT = 20.0
+    BUS_STARTUP_TIMEOUT = 5.0
 
     def __init__(self) -> None:
         self.process: subprocess.Popen | None = None
         self.wm_process: subprocess.Popen | None = None
+        self._bus_process: subprocess.Popen | None = None
         self._bus_address: str | None = None
-        self._bus_address_file: str | None = None
+        self._bus_socket: str | None = None
         self._font_config: str | None = None
+        self._background_file: str | None = None
 
     @staticmethod
     def is_available() -> bool:
@@ -212,13 +217,10 @@ class XvfbSession:
         }
         if self._font_config:
             env["FONTCONFIG_FILE"] = self._font_config
-        if (
-            self.wm_process is not None
-            and self.wm_process.poll() is None
-            and self._bus_address
-        ):
+        if self._bus_address:
             env["DBUS_SESSION_BUS_ADDRESS"] = self._bus_address
-            env["RAYFORGE_XVFB_WM"] = "1"
+            if self.wm_process is not None and self.wm_process.poll() is None:
+                env["RAYFORGE_XVFB_WM"] = "1"
         return env
 
     def start(self) -> bool:
@@ -229,53 +231,138 @@ class XvfbSession:
                 return True
         return False
 
+    def _write_background_file(self) -> None:
+        """Create a plain white image for the session background.
+
+        Full-screen captures flatten window shadows onto whatever the
+        composited desktop shows. GNOME falls back to its default
+        wallpaper when the background picture key is empty, so a real
+        white image is needed to make the backdrop neutral.
+        """
+        fd, path = tempfile.mkstemp(prefix="rayforge-bg-", suffix=".png")
+        os.close(fd)
+        Image.new("RGB", (512, 512), (255, 255, 255)).save(path)
+        self._background_file = path
+
     def _start_wm(self) -> None:
         """Run GNOME Shell as a window manager for the display.
 
-        Together with the private D-Bus session this turns the
-        Xvfb display into an invisible but fully functional GNOME
-        session: dialogs are placed by the WM and gnome-screenshot
-        captures window buffers with real shadows and alpha. The
-        developer's own desktop session is never touched.
+        A private D-Bus session bus is started on a socket path
+        chosen here, so the bus address is known before GNOME Shell
+        starts. The previous approach -- writing it to a file from
+        inside dbus-run-session -- raced the window-manager startup
+        check, and when it lost, the session ran without a bus
+        address and gnome-screenshot fell through to the developer's
+        real desktop shell. Together with the private bus this turns
+        the Xvfb display into an invisible but fully functional GNOME
+        session: dialogs are placed by the WM and captures never
+        touch the developer's desktop.
         """
         if (
             shutil.which("gnome-shell") is None
-            or shutil.which("dbus-run-session") is None
+            or shutil.which("dbus-daemon") is None
         ):
             return
-        fd, self._bus_address_file = tempfile.mkstemp(prefix="rayforge-bus-")
-        os.close(fd)
-        inner = (
-            "gsettings set org.gnome.desktop.interface "
-            "enable-animations false; "
-            f'printf "%s" "$DBUS_SESSION_BUS_ADDRESS" > '
-            f"{self._bus_address_file}; "
-            "exec gnome-shell --x11"
-        )
+        self._write_background_file()
+        bg_uri = f"file://{self._background_file}"
+        if not self._start_session_bus():
+            return
+        env = {**os.environ, **self.env}
+        for command in (
+            [
+                "gsettings",
+                "set",
+                "org.gnome.desktop.interface",
+                "enable-animations",
+                "false",
+            ],
+            [
+                "gsettings",
+                "set",
+                "org.gnome.desktop.wm.preferences",
+                "audible-bell",
+                "false",
+            ],
+            [
+                "gsettings",
+                "set",
+                "org.gnome.desktop.background",
+                "picture-uri",
+                bg_uri,
+            ],
+            [
+                "gsettings",
+                "set",
+                "org.gnome.desktop.background",
+                "picture-uri-dark",
+                bg_uri,
+            ],
+            [
+                "gsettings",
+                "set",
+                "org.gnome.desktop.background",
+                "picture-options",
+                "wallpaper",
+            ],
+        ):
+            try:
+                subprocess.run(
+                    command,
+                    env=env,
+                    capture_output=True,
+                    check=False,
+                    timeout=10,
+                )
+            except subprocess.TimeoutExpired:
+                print(f"Warning: {command[0]} timed out")
         self.wm_process = subprocess.Popen(
-            ["dbus-run-session", "--", "bash", "-c", inner],
-            env={**os.environ, **self.env},
+            ["gnome-shell", "--x11"],
+            env=env,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             start_new_session=True,
         )
-        if self._wait_for_wm():
-            self._read_bus_address()
+        self._wait_for_wm()
 
-    def _read_bus_address(self) -> None:
-        try:
-            address = Path(self._bus_address_file).read_text().strip()
-        except OSError:
-            address = ""
-        if address:
-            self._bus_address = address
-        else:
-            print("Warning: private session bus address not found")
+    def _start_session_bus(self) -> bool:
+        """Start a private D-Bus session bus on a socket chosen here.
+
+        The address is deterministic, so nothing can race its
+        discovery, and the bus never outlives this process.
+        """
+        fd, socket_path = tempfile.mkstemp(prefix="rayforge-bus-")
+        os.close(fd)
+        os.unlink(socket_path)
+        self._bus_process = subprocess.Popen(
+            [
+                "dbus-daemon",
+                "--session",
+                "--nopidfile",
+                "--address",
+                f"unix:path={socket_path}",
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        deadline = time.monotonic() + self.BUS_STARTUP_TIMEOUT
+        while time.monotonic() < deadline:
+            if os.path.exists(socket_path):
+                self._bus_socket = socket_path
+                self._bus_address = f"unix:path={socket_path}"
+                return True
+            if self._bus_process.poll() is not None:
+                break
+            time.sleep(0.02)
+        print("Warning: private session bus did not start")
+        return False
 
     def _wait_for_wm(self) -> bool:
+        wm_process = self.wm_process
+        if wm_process is None:
+            return False
         deadline = time.monotonic() + self.WM_STARTUP_TIMEOUT
         while time.monotonic() < deadline:
-            if self.wm_process.poll() is not None:
+            if wm_process.poll() is not None:
                 print("Warning: GNOME Shell exited during startup")
                 return False
             check = subprocess.run(
@@ -337,10 +424,13 @@ class XvfbSession:
         return lock.exists() or socket.exists()
 
     def _wait_until_ready(self, number: int) -> bool:
+        process = self.process
+        if process is None:
+            return False
         socket = Path(f"/tmp/.X11-unix/X{number}")
         deadline = time.monotonic() + self.STARTUP_TIMEOUT
         while time.monotonic() < deadline:
-            if self.process.poll() is not None:
+            if process.poll() is not None:
                 return False
             if socket.exists():
                 return True
@@ -349,23 +439,19 @@ class XvfbSession:
 
     def stop(self) -> None:
         self._stop_wm()
-        if self.process is None:
+        self._stop_session_bus()
+        process = self.process
+        if process is None:
             return
-        if self.process.poll() is None:
-            self.process.terminate()
+        if process.poll() is None:
+            process.terminate()
             try:
-                self.process.wait(timeout=5)
+                process.wait(timeout=5)
             except subprocess.TimeoutExpired:
-                self.process.kill()
-                self.process.wait()
+                process.kill()
+                process.wait()
         self.process = None
         self.number = None
-        if self._bus_address_file:
-            try:
-                os.unlink(self._bus_address_file)
-            except OSError:
-                pass
-            self._bus_address_file = None
         self._bus_address = None
         if self._font_config:
             try:
@@ -373,6 +459,12 @@ class XvfbSession:
             except OSError:
                 pass
             self._font_config = None
+        if self._background_file:
+            try:
+                os.unlink(self._background_file)
+            except OSError:
+                pass
+            self._background_file = None
 
     def _stop_wm(self) -> None:
         if self.wm_process is None:
@@ -392,6 +484,23 @@ class XvfbSession:
             except (ProcessLookupError, PermissionError):
                 pass
         self.wm_process = None
+
+    def _stop_session_bus(self) -> None:
+        if self._bus_process is not None:
+            if self._bus_process.poll() is None:
+                self._bus_process.terminate()
+                try:
+                    self._bus_process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    self._bus_process.kill()
+                    self._bus_process.wait()
+            self._bus_process = None
+        if self._bus_socket:
+            try:
+                os.unlink(self._bus_socket)
+            except OSError:
+                pass
+            self._bus_socket = None
 
 
 def get_matching_targets(target: str) -> list[str]:

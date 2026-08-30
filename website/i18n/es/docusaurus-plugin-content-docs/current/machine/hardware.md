@@ -2,7 +2,7 @@
 
 La página de Hardware en Configuración de Máquina configura las dimensiones físicas, sistema de coordenadas y límites de movimiento de tu máquina.
 
-![Ajustes de Hardware](/screenshots/machine-settings-hardware.png)
+![Ajustes de Hardware](/screenshots/machine-settings-hardware.webp)
 
 ## Ejes
 

@@ -4,7 +4,7 @@ description: "Manage materials in Rayforge. Save material profiles with recommen
 
 # Materials
 
-![Materials Settings](/screenshots/app-settings-materials.png)
+![Materials Settings](/screenshots/app-settings-materials.webp)
 
 Material libraries in Rayforge allow you to organize and manage collections
 of materials for your laser cutting and engraving projects. This guide

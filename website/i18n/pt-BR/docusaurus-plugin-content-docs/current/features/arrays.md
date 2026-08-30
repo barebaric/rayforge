@@ -26,7 +26,7 @@ ao vivo para refletir as novas posições.
 O modo Grade organiza as cópias em uma matriz retangular de linhas e
 colunas, com espaçamento horizontal e vertical configurável.
 
-![Array Grade](/screenshots/main-array-grid.png)
+![Array Grade](/screenshots/main-array-grid.webp)
 
 ### Configurações
 
@@ -46,7 +46,7 @@ O modo Rotação Pontual cria cópias girando-as no próprio centro da seleção
 Isso é útil para criar padrões circulares onde cada cópia permanece em sua
 localização original mas é girada por uma fração do ângulo total.
 
-![Array Rotação Pontual](/screenshots/main-array-point-rotation.png)
+![Array Rotação Pontual](/screenshots/main-array-point-rotation.webp)
 
 ### Configurações
 
@@ -69,7 +69,7 @@ O modo Circular posiciona cópias ao longo de um arco circular ao redor de
 um ponto central. Um marcador em cruz na tela mostra o centro, e você pode
 arrastá-lo para uma nova posição enquanto o diálogo está aberto.
 
-![Array Circular](/screenshots/main-array-circular.png)
+![Array Circular](/screenshots/main-array-circular.webp)
 
 ### Configurações
 

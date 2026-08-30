@@ -53,7 +53,7 @@ Der Schritt-Einstellungen-Dialog hat drei Registerkarten: **Schritt-Einstellunge
 
 ### Geometrie
 
-![Rahmen-Umriss Schritt-Einstellungen](/screenshots/step-settings-frame-outline-general.png)
+![Rahmen-Umriss Schritt-Einstellungen](/screenshots/step-settings-frame-outline-general.webp)
 
 Die Gruppe **Geometrie** auf der Registerkarte _Schritt-Einstellungen_ steuert die Form des Rahmens.
 
@@ -82,7 +82,7 @@ Steuert, wo der Laser relativ zum Rahmenpfad schneidet:
 
 ### Laser-Einstellungen
 
-![Laser-Einstellungen](/screenshots/step-settings-frame-outline-laser.png)
+![Laser-Einstellungen](/screenshots/step-settings-frame-outline-laser.webp)
 
 Leistung, Geschwindigkeit und Laserkopf-Auswahl befinden sich auf der Seite **Laser** des Schritt-Einstellungen-Dialogs.
 
@@ -110,7 +110,7 @@ Rahmen-Umriss unterstützt Schnittbreiten-Kompensation:
 
 ## Nachbearbeitung
 
-![Rahmen-Umriss Nachbearbeitungseinstellungen](/screenshots/step-settings-frame-outline-post.png)
+![Rahmen-Umriss Nachbearbeitungseinstellungen](/screenshots/step-settings-frame-outline-post.webp)
 
 Rahmen-Umriss-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
 

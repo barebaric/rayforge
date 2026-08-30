@@ -5,7 +5,7 @@ authors: rayforge_team
 tags: [introduction, features]
 ---
 
-![Rayforge Main Window](/screenshots/main-standard.png)
+![Rayforge Main Window](/screenshots/main-standard.webp)
 
 Wir freuen uns, Rayforge vorzustellen – eine moderne, quelloffene G-Code-Sender-
 und Steuerungssoftware, die speziell für GRBL-basierte Laserschneider

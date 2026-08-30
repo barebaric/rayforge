@@ -2,7 +2,7 @@
 
 O Rayforge fornece dois poderosos recursos de automação para personalizar seu fluxo de trabalho: **Macros** e **Hooks**. Ambos permitem injetar G-code personalizado em seus trabalhos, mas servem a propósitos diferentes.
 
-![Configurações de Hooks & Macros](/screenshots/machine-settings-hooks-macros.png)
+![Configurações de Hooks & Macros](/screenshots/machine-settings-hooks-macros.webp)
 
 ---
 

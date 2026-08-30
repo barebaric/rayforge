@@ -5,7 +5,7 @@ authors: rayforge_team
 tags: [engraving, optimization, quality, workflow]
 ---
 
-![3D Preview](/screenshots/main-3d.png)
+![3D Preview](/screenshots/main-3d.webp)
 
 Obtener resultados de grabado láser de calidad profesional requiere más que solo buen hardware—tu configuración de software y flujo de trabajo también importan. Aquí hay cinco consejos para ayudarte a aprovechar al máximo Rayforge.
 

@@ -5,7 +5,7 @@ authors: rayforge_team
 tags: [engraving, optimization, quality, workflow]
 ---
 
-![3D 预览](/screenshots/main-3d.png)
+![3D 预览](/screenshots/main-3d.webp)
 
 获得专业品质的激光雕刻效果不仅需要好的硬件——您的软件设置和工作流程也很重要。以下是帮助您充分利用 Rayforge 的五个技巧。
 

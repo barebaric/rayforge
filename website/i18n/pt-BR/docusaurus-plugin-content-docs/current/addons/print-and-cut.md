@@ -20,7 +20,7 @@ direita.
 
 ## Etapa 1: Selecionar pontos do design
 
-![Selecionar pontos do design](/screenshots/addon-print-and-cut-pick.png)
+![Selecionar pontos do design](/screenshots/addon-print-and-cut-pick.webp)
 
 O painel esquerdo mostra uma renderização do workpiece selecionado. Clique
 diretamente na imagem renderizada para colocar o primeiro ponto de alinhamento,
@@ -41,7 +41,7 @@ continuar.
 
 ## Etapa 2: Registrar posições físicas
 
-![Registrar posições físicas](/screenshots/addon-print-and-cut-jog.png)
+![Registrar posições físicas](/screenshots/addon-print-and-cut-jog.webp)
 
 Nesta página, você desloca o laser para as posições físicas que correspondem
 aos dois pontos do design que você selecionou. O painel direito mostra um
@@ -64,7 +64,7 @@ as posições estiverem registradas, clique em **Avançar** para continuar.
 
 ## Etapa 3: Revisar e aplicar a transformação
 
-![Revisar e aplicar a transformação](/screenshots/addon-print-and-cut-apply.png)
+![Revisar e aplicar a transformação](/screenshots/addon-print-and-cut-apply.webp)
 
 A última página mostra o alinhamento calculado como um deslocamento de
 translação e um ângulo de rotação. Esses valores são derivados da diferença

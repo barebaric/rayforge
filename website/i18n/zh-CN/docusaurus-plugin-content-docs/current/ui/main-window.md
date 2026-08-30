@@ -4,7 +4,7 @@ Rayforge 主窗口是您创建和管理激光作业的主要工作区。
 
 ## 窗口布局
 
-![主窗口](/screenshots/main-standard.png)
+![主窗口](/screenshots/main-standard.webp)
 
 ### 1. 菜单栏
 

@@ -4,7 +4,7 @@ description: "Organisiere Laser-Aufträge in Ebenen mit unterschiedlichen Einste
 
 # Multi-Ebenen-Workflow
 
-![Ebenen-Panel](/screenshots/bottom-panel-layers.png)
+![Ebenen-Panel](/screenshots/bottom-panel-layers.webp)
 
 Das Multi-Ebenen-System von Rayforge ermöglicht es dir, Aufträge in
 separate Verarbeitungsschritte zu organisieren. Jede Ebene ist ein

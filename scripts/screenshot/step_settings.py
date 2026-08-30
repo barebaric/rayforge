@@ -12,7 +12,6 @@ from utils import (
     run_on_main_thread,
     set_window_size,
     take_screenshot,
-    target_to_filename,
 )
 
 from rayforge.uiscript import app, win
@@ -57,7 +56,7 @@ def set_engrave_mode(dialog, mode_name: str):
 
     def find_mode_row(widget, depth=0):
         indent = "  " * depth
-        logger.info(f"{indent}Checking: {type(widget).__name__}")
+        logger.debug(f"{indent}Checking: {type(widget).__name__}")
         if hasattr(widget, "row_for"):
             row = widget.row_for("depth_mode")
             if row is not None:
@@ -115,9 +114,7 @@ def main():
             run_on_main_thread(lambda m=mode_name: set_engrave_mode(dialog, m))
             time.sleep(0.5)
 
-    output_name = target_to_filename(TARGET)
-
-    take_screenshot(output_name)
+    take_screenshot()
     time.sleep(0.25)
     app.quit_idle()
 

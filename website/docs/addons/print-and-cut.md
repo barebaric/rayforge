@@ -23,7 +23,7 @@ right.
 
 ## Step 1: Pick Design Points
 
-![Pick Design Points](/screenshots/addon-print-and-cut-pick.png)
+![Pick Design Points](/screenshots/addon-print-and-cut-pick.webp)
 
 The left panel shows a rendering of your selected workpiece. Click directly on
 the rendered image to place the first alignment point, marked in green, then
@@ -43,7 +43,7 @@ Once both points are placed, click **Next** to continue.
 
 ## Step 2: Record Physical Positions
 
-![Record Physical Positions](/screenshots/addon-print-and-cut-jog.png)
+![Record Physical Positions](/screenshots/addon-print-and-cut-jog.webp)
 
 On this page you jog the laser to the physical locations that correspond to
 the two design points you picked. The right panel shows a directional pad for
@@ -64,7 +64,7 @@ positions are recorded, click **Next** to proceed.
 
 ## Step 3: Review and Apply the Transform
 
-![Review and Apply](/screenshots/addon-print-and-cut-apply.png)
+![Review and Apply](/screenshots/addon-print-and-cut-apply.webp)
 
 The final page shows the computed alignment as a translation offset and a
 rotation angle. These values are derived from the difference between your

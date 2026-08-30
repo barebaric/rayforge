@@ -4,7 +4,7 @@ description: "Manage machines in Rayforge - add, configure, export, import, and 
 
 # Machines
 
-![Machines Settings](/screenshots/app-settings-machines.png)
+![Machines Settings](/screenshots/app-settings-machines.webp)
 
 The Machines page in Application Settings shows a list of all configured
 machines. Each entry shows the machine name and has buttons to edit or
@@ -16,7 +16,7 @@ delete it. The currently active machine is marked with a check icon.
 2. Select a device profile from the list to use as a template — each
    profile pre-configures the machine settings and G-code dialect
 
-![Add Machine Dialog](/screenshots/app-settings-machines-add.png)
+![Add Machine Dialog](/screenshots/app-settings-machines-add.webp)
 
 3. The [machine settings dialog](../machine/general.md) opens where you can
    adjust the configuration

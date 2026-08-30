@@ -64,7 +64,7 @@ Utilisez le défrichage adaptatif par front d'onde pour :
 Ajustez le pas et le décalage en fonction de votre matériau et de la
 finition souhaitée.
 
-![Résultat de l'opération front d'onde](/screenshots/operations-wavefront.png)
+![Résultat de l'opération front d'onde](/screenshots/operations-wavefront.webp)
 
 ## Paramètres Clés
 
@@ -72,7 +72,7 @@ La boîte de dialogue des paramètres d'étape comporte trois onglets : **Param�
 
 ### Paramètres de Front d'Onde
 
-![Paramètres d'étape front d'onde](/screenshots/step-settings-wavefront-general.png)
+![Paramètres d'étape front d'onde](/screenshots/step-settings-wavefront-general.webp)
 
 Le groupe **Front d'Onde** de l'onglet _Paramètres d'étape_ contrôle le motif de remplissage.
 
@@ -107,7 +107,7 @@ d'onde s'étendent jusqu'à la limite).
 
 ### Paramètres Laser
 
-![Paramètres laser](/screenshots/step-settings-wavefront-laser.png)
+![Paramètres laser](/screenshots/step-settings-wavefront-laser.webp)
 
 La puissance, la vitesse et la sélection de la tête laser se trouvent sur la page **Laser** de la boîte de dialogue des paramètres d'étape.
 
@@ -136,7 +136,7 @@ La puissance, la vitesse et la sélection de la tête laser se trouvent sur la p
 
 ## Post-Traitement
 
-![Paramètres de post-traitement du front d'onde](/screenshots/step-settings-wavefront-post.png)
+![Paramètres de post-traitement du front d'onde](/screenshots/step-settings-wavefront-post.webp)
 
 Les opérations de front d'onde supportent :
 

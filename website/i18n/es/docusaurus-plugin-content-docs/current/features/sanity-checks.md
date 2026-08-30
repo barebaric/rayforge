@@ -9,7 +9,7 @@ conjunto de comprobaciones de sanity y presenta los resultados en un diálogo
 estructurado. Esto te ayuda a detectar problemas temprano, antes de que se
 conviertan en material arruinado.
 
-![Diálogo de Comprobación de Sanity](/screenshots/sanity-check.png)
+![Diálogo de Comprobación de Sanity](/screenshots/sanity-check.webp)
 
 ## Comprobaciones Realizadas
 

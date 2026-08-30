@@ -43,7 +43,7 @@ Verwende Kontur-Schneiden für:
 
 ### Schritt 3: Einstellungen konfigurieren
 
-![Kontur-Schritt-Einstellungen](/screenshots/step-settings-contour-general.png)
+![Kontur-Schritt-Einstellungen](/screenshots/step-settings-contour-general.webp)
 
 ## Haupt-Einstellungen
 
@@ -51,7 +51,7 @@ Der Schritt-Einstellungen-Dialog hat drei Registerkarten: **Schritt-Einstellunge
 
 ### Kontur-Einstellungen
 
-![Kontur-Schritt-Einstellungen](/screenshots/step-settings-contour-general.png)
+![Kontur-Schritt-Einstellungen](/screenshots/step-settings-contour-general.webp)
 
 Die Gruppe **Kontur-Einstellungen** auf der Registerkarte *Schritt-Einstellungen* steuert, wie der Umriss nachgezeichnet wird.
 
@@ -144,7 +144,7 @@ Dies ist nützlich, wenn das standardmäßige Nachzeichnen nicht das gewünschte
 
 ### Laser-Einstellungen
 
-![Laser-Einstellungen](/screenshots/step-settings-contour-laser.png)
+![Laser-Einstellungen](/screenshots/step-settings-contour-laser.webp)
 
 Leistung, Geschwindigkeit und Laser-Kopf-Auswahl befinden sich auf der Seite **Laser** des Schritt-Einstellungen-Dialogs.
 
@@ -182,7 +182,7 @@ Siehe [Schnittbreite](../kerf.md) für detaillierte Anleitung.
 
 ## Nachbearbeitung
 
-![Kontur-Nachbearbeitungseinstellungen](/screenshots/step-settings-contour-post.png)
+![Kontur-Nachbearbeitungseinstellungen](/screenshots/step-settings-contour-post.webp)
 
 Kontur-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
 

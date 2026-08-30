@@ -3,7 +3,7 @@
 La vue 3D te permet de visualiser tes trajets d'outil G-code et de simuler l'exécution
 du travail avant de l'envoyer à ta machine.
 
-![Prévisualisation 3D](/screenshots/main-3d.png)
+![Prévisualisation 3D](/screenshots/main-3d.webp)
 
 ## Ouvrir la vue 3D
 

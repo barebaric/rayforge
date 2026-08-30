@@ -9,7 +9,7 @@ un ensemble de vérifications de cohérence et présente les résultats dans une
 boîte de dialogue structurée. Cela vous permet de détecter les problèmes tôt,
 avant qu'ils ne se traduisent par du matériel gaspillé.
 
-![Boîte de dialogue de vérification](/screenshots/sanity-check.png)
+![Boîte de dialogue de vérification](/screenshots/sanity-check.webp)
 
 ## Vérifications effectuées
 

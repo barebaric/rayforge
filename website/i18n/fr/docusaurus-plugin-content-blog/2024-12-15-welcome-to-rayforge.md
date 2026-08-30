@@ -5,7 +5,7 @@ authors: rayforge_team
 tags: [introduction, fonctionnalités]
 ---
 
-![Fenêtre principale de Rayforge](/screenshots/main-standard.png)
+![Fenêtre principale de Rayforge](/screenshots/main-standard.webp)
 
 Nous sommes ravis de vous présenter Rayforge, un émetteur de G-code moderne
 et open-source, ainsi qu'un logiciel de contrôle conçu spécifiquement pour

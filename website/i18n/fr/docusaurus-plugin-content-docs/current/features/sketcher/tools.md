@@ -16,7 +16,7 @@ fonction de votre sélection. Par exemple, en cliquant sur un espace vide, vous
 verrez les outils de dessin. En cliquant sur de la géométrie sélectionnée, vous
 verrez les contraintes applicables.
 
-![Menu radial de l'esquisseur](/screenshots/sketcher-pie-menu.png)
+![Menu radial de l'esquisseur](/screenshots/sketcher-pie-menu.webp)
 
 ## Raccourcis clavier
 

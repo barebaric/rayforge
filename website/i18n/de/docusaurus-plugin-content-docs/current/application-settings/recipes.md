@@ -1,6 +1,6 @@
 # Rezepte und Einstellungen
 
-![Rezept-Einstellungen](/screenshots/app-settings-recipes.png)
+![Rezept-Einstellungen](/screenshots/app-settings-recipes.webp)
 
 Rayforge bietet ein leistungsstarkes Rezept-System, mit dem du konsistente Einstellungen über deine Laserschneideprojekte hinweg erstellen, verwalten und anwenden kannst. Diese Anleitung behandelt die komplette User Journey von der Erstellung von Rezepten in den allgemeinen Einstellungen bis zum Anwenden auf Operationen und Verwalten von Einstellungen auf Schritt-Ebene.
 
@@ -28,7 +28,7 @@ Klicke auf "Neues Rezept hinzufügen", um den Rezept-Editor-Dialog zu öffnen.
 
 **Register "Allgemein"** - Rezeptname und Beschreibung festlegen:
 
-![Rezept-Editor - Register Allgemein](/screenshots/recipe-editor-general.png)
+![Rezept-Editor - Register Allgemein](/screenshots/recipe-editor-general.webp)
 
 Basisinformationen ausfüllen:
 
@@ -39,7 +39,7 @@ Basisinformationen ausfüllen:
 
 **Register "Anwendbarkeit"** - Definieren, wann dieses Rezept vorgeschlagen werden soll:
 
-![Rezept-Editor - Register Anwendbarkeit](/screenshots/recipe-editor-applicability.png)
+![Rezept-Editor - Register Anwendbarkeit](/screenshots/recipe-editor-applicability.webp)
 
 Alle Kriterien sind optional - lasse jedes Feld auf seinem Wert "Beliebig", um auf alles zu passen:
 
@@ -62,9 +62,9 @@ mit den gemeinsamen Prozesseinstellungen (Leistung, Air-Assist, usw.)
 und eine Seite "Schritt-Einstellungen" mit den Attributen, die für
 diesen Schritt-Typ spezifisch sind (z.B. Schnittseite, Schnittreihenfolge):
 
-![Rezept-Editor - Register Laser](/screenshots/recipe-editor-laser.png)
+![Rezept-Editor - Register Laser](/screenshots/recipe-editor-laser.webp)
 
-![Rezept-Editor - Register Schritt-Einstellungen](/screenshots/recipe-editor-step-settings.png)
+![Rezept-Editor - Register Schritt-Einstellungen](/screenshots/recipe-editor-step-settings.webp)
 
 - Bei Auswahl nur eines **Aufgabentyps** (mit "Beliebiger Typ" als Schritt-Typ)
   wird eine einzelne Seite "Einstellungen" mit den Prozesseinstellungen für diese Aufgabe angezeigt
@@ -84,7 +84,7 @@ Nachbearbeitungseinstellungen (Ein-/Ausfahrwege, Mehrfachdurchgänge,
 Overscan und andere Transformationen) im Rezept, damit sie auf die
 Schritte angewendet werden, die das Rezept anvisiert:
 
-![Rezept-Editor - Register Nachbearbeitung](/screenshots/recipe-editor-post-processing.png)
+![Rezept-Editor - Register Nachbearbeitung](/screenshots/recipe-editor-post-processing.webp)
 
 Jede Transformation besitzt eine Anwenden-Schaltfläche (ein Häkchen
 neben der Zeile):

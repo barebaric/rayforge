@@ -4,7 +4,7 @@ description: "Organize trabalhos a laser em camadas com configurações diferent
 
 # Fluxo de trabalho multicamadas
 
-![Painel de camadas](/screenshots/bottom-panel-layers.png)
+![Painel de camadas](/screenshots/bottom-panel-layers.webp)
 
 O sistema multicamadas do Rayforge permite que você organize trabalhos
 em estágios de processamento separados. Cada camada é um contêiner para

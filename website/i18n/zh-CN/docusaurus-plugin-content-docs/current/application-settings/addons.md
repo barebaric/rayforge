@@ -1,6 +1,6 @@
 # 扩展
 
-![扩展设置](/screenshots/app-settings-addons.png)
+![扩展设置](/screenshots/app-settings-addons.webp)
 
 扩展页面显示已安装的扩展并允许您管理它们。
 

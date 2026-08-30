@@ -37,7 +37,7 @@ Rayforge 包含常见场景的预设：
 
 在设置对话框中调整测试网格参数：
 
-![材料测试网格设置](/screenshots/material-test.png)
+![材料测试网格设置](/screenshots/material-test.webp)
 
 #### 测试类型
 

@@ -6,7 +6,7 @@ tags: [introduction, features]
 description: "Introducing Rayforge — a modern, open-source G-code sender and control software for GRBL-based laser cutters and engravers. Free laser cutting software for makers."
 ---
 
-![Rayforge Main Window](/screenshots/main-standard.png)
+![Rayforge Main Window](/screenshots/main-standard.webp)
 
 We're excited to introduce Rayforge, a modern, open-source G-code sender
 and control software designed specifically for GRBL-based laser cutters

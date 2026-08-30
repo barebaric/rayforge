@@ -66,7 +66,7 @@
 
 ### 收缩包裹
 
-![收缩包裹步骤设置](/screenshots/step-settings-shrink-wrap-general.png)
+![收缩包裹步骤设置](/screenshots/step-settings-shrink-wrap-general.webp)
 
 *步骤设置*选项卡上的**收缩包裹**组控制包络如何贴合内容。
 
@@ -121,7 +121,7 @@
 
 ### 激光设置
 
-![激光设置](/screenshots/step-settings-shrink-wrap-laser.png)
+![激光设置](/screenshots/step-settings-shrink-wrap-laser.webp)
 
 功率、速度和激光头选择位于步骤设置对话框的**激光**页面。
 
@@ -216,7 +216,7 @@
 
 ## 后处理
 
-![收缩包裹后处理设置](/screenshots/step-settings-shrink-wrap-post.png)
+![收缩包裹后处理设置](/screenshots/step-settings-shrink-wrap-post.webp)
 
 收缩包裹操作支持多种后处理选项：
 

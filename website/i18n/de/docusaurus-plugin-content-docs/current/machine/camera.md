@@ -9,7 +9,7 @@ Materialausrichtung und Positionierung. Die Kamera-Overlay-Funktion ermöglicht
 es dir, genau zu sehen, wo dein Laser auf dem Material schneiden oder
 gravieren wird, was Rätselraten eliminiert und Materialabfall reduziert.
 
-![Kameraeinstellungen](/screenshots/machine-settings-camera.png)
+![Kameraeinstellungen](/screenshots/machine-settings-camera.webp)
 
 ## Setup-Workflow
 
@@ -94,7 +94,7 @@ gestartet über:
 
 ### Schritt 2.1: Bildeinstellungen anpassen
 
-![Bildeinstellungen Dialog](/screenshots/machine-settings-camera-image-settings.png)
+![Bildeinstellungen Dialog](/screenshots/machine-settings-camera-image-settings.webp)
 
 Die Bildeinstellungen sind die erste Stufe des Kamera-Assistenten — er öffnet
 sich dort und ermöglicht dir, Auflösung, Weißabgleich, Helligkeit, Kontrast
@@ -141,7 +141,7 @@ Aufnehmen mehrerer Bilder einer gedruckten Kalibrierungskarte von
 verschiedenen Positionen auf dem Bett und berechnet anschließend automatisch
 ein Verzerrungsmodell.
 
-![Assistent — Karteneinstellungen](/screenshots/machine-settings-camera-lens-calibration-wizard-card.png)
+![Assistent — Karteneinstellungen](/screenshots/machine-settings-camera-lens-calibration-wizard-card.webp)
 
 1. Gib **Breite** und **Höhe** deiner gedruckten Karte ein. Die Vorschau
    aktualisiert sich in Echtzeit — die Karte sollte etwa 70% der
@@ -149,7 +149,7 @@ ein Verzerrungsmodell.
 2. Klicke auf **Save to PDF**, um die Karte zum Drucken zu exportieren,
    drucke sie dann aus und lege sie auf das Laserbett.
 
-![Assistent — Aufnahme](/screenshots/machine-settings-camera-lens-calibration-wizard-capture.png)
+![Assistent — Aufnahme](/screenshots/machine-settings-camera-lens-calibration-wizard-capture.webp)
 
 3. Positioniere die Karte in der Kameraansicht an verschiedenen Stellen und
    Winkeln und klicke für jede Position auf **Capture Frame**. Strebe
@@ -162,7 +162,7 @@ ein Verzerrungsmodell.
 
 #### Manuelle Kalibrierung
 
-![Linsenkalibrierungsdialog](/screenshots/machine-settings-camera-lens-calibration.png)
+![Linsenkalibrierungsdialog](/screenshots/machine-settings-camera-lens-calibration.webp)
 
 Für manuelle Koeffizienten oder zur Feinabstimmung des Ergebnisses nach einer
 automatischen Kalibrierung öffne den Linsenkalibrierung-Dialog, indem du in
@@ -172,7 +172,7 @@ Hier kannst du die Verzerrungskoeffizienten manuell anpassen — die radialen
 
 ### Schritt 2.3: Bildausrichtung
 
-![Bildausrichtung Dialog](/screenshots/machine-settings-camera-image-alignment.png)
+![Bildausrichtung Dialog](/screenshots/machine-settings-camera-image-alignment.webp)
 
 Die Bildausrichtung ist die letzte Stufe des Kamera-Assistenten. Die
 Kameraausrichtung kalibriert die Beziehung zwischen Kamerapixeln und realen

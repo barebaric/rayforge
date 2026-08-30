@@ -53,7 +53,7 @@
 
 ### 几何形状
 
-![框架轮廓步骤设置](/screenshots/step-settings-frame-outline-general.png)
+![框架轮廓步骤设置](/screenshots/step-settings-frame-outline-general.webp)
 
 *步骤设置*选项卡上的**几何形状**组控制框架的形状。
 
@@ -82,7 +82,7 @@
 
 ### 激光设置
 
-![激光设置](/screenshots/step-settings-frame-outline-laser.png)
+![激光设置](/screenshots/step-settings-frame-outline-laser.webp)
 
 功率、速度和激光头选择位于步骤设置对话框的**激光**页面。
 
@@ -110,7 +110,7 @@
 
 ## 后处理
 
-![框架轮廓后处理设置](/screenshots/step-settings-frame-outline-post.png)
+![框架轮廓后处理设置](/screenshots/step-settings-frame-outline-post.webp)
 
 框架轮廓操作支持多种后处理选项：
 

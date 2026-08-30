@@ -5,7 +5,7 @@ authors: rayforge_team
 tags: [introduction, features]
 ---
 
-![Головне вікно Rayforge](/screenshots/main-standard.png)
+![Головне вікно Rayforge](/screenshots/main-standard.webp)
 
 Ми раді представити Rayforge, сучасний відкритий відправник G-code та
 програмне забезпечення керування, розроблене спеціально для лазерних різаків

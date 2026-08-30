@@ -132,7 +132,7 @@
 
 ### 第 4 步：配置设置
 
-![雕刻步骤设置](/screenshots/step-settings-engrave-general-variable.png)
+![雕刻步骤设置](/screenshots/step-settings-engrave-general-variable.webp)
 
 ## 雕刻设置
 
@@ -146,7 +146,7 @@
 
 #### 可变功率模式设置
 
-![可变功率模式设置](/screenshots/step-settings-engrave-general-variable.png)
+![可变功率模式设置](/screenshots/step-settings-engrave-general-variable.webp)
 
 **最小功率（%）：**
 
@@ -190,7 +190,7 @@
 
 #### 恒定功率模式设置
 
-![恒定功率模式设置](/screenshots/step-settings-engrave-general-constant_power.png)
+![恒定功率模式设置](/screenshots/step-settings-engrave-general-constant_power.webp)
 
 **阈值（0-255）：**
 
@@ -205,7 +205,7 @@
 
 #### 抖动模式设置
 
-![抖动模式设置](/screenshots/step-settings-engrave-general-dither.png)
+![抖动模式设置](/screenshots/step-settings-engrave-general-dither.webp)
 
 **抖动算法：**
 
@@ -224,7 +224,7 @@
 
 #### 多深度模式设置
 
-![多深度模式设置](/screenshots/step-settings-engrave-general-multi_pass.png)
+![多深度模式设置](/screenshots/step-settings-engrave-general-multi_pass.webp)
 
 **深度级别数：**
 
@@ -312,7 +312,7 @@ Rayforge 始终进行双向扫描（从左到右，然后从右到左），因�
 
 ## 激光设置
 
-![激光设置](/screenshots/step-settings-engrave-laser.png)
+![激光设置](/screenshots/step-settings-engrave-laser.webp)
 
 功率、速度和激光头选择位于步骤设置对话框的**激光**页面。
 
@@ -331,7 +331,7 @@ Rayforge 始终进行双向扫描（从左到右，然后从右到左），因�
 
 ## 后处理
 
-![雕刻后处理设置](/screenshots/step-settings-engrave-post.png)
+![雕刻后处理设置](/screenshots/step-settings-engrave-post.webp)
 
 雕刻操作支持多种后处理选项：
 

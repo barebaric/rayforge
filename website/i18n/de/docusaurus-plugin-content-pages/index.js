@@ -193,7 +193,7 @@ function FeatureCardsSection() {
       title: 'Erstellen',
       subtitle:
         'Führe Laser- und CNC-Aufträge souverän aus. Schnell. Präzise. Zuverlässig.',
-      image: '/screenshots/main-3d-bee.png',
+      image: '/screenshots/main-3d-bee.webp',
     },
   ];
 

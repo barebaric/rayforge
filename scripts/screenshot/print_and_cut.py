@@ -11,7 +11,6 @@ from utils import (
     run_on_main_thread,
     set_window_size,
     take_screenshot,
-    target_to_filename,
     wait_for_settled,
 )
 
@@ -128,20 +127,19 @@ def main():
     wizard = run_on_main_thread(setup_wizard)
 
     page = TARGET.split(":")[-1] if ":" in TARGET else "pick"
-    output = target_to_filename(TARGET)
 
     if page == "pick":
         run_on_main_thread(lambda: show_pick_page(wizard))
         time.sleep(1.0)
-        take_screenshot(output)
+        take_screenshot()
     elif page == "jog":
         run_on_main_thread(lambda: show_jog_page(wizard))
         time.sleep(0.5)
-        take_screenshot(output)
+        take_screenshot()
     elif page == "apply":
         run_on_main_thread(lambda: show_apply_page(wizard))
         time.sleep(0.5)
-        take_screenshot(output)
+        take_screenshot()
     else:
         logger.error(f"Unknown page: {page}")
         app.quit_idle()

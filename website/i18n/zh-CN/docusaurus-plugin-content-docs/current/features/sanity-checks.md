@@ -6,7 +6,7 @@ description: "在运行或导出作业之前，Rayforge 会自动检查常见问
 
 在运行或导出作业之前，Rayforge 会自动执行一系列完整性检查，并将结果呈现在结构化的对话框中。这有助于您在问题导致材料浪费之前及早发现它们。
 
-![完整性检查对话框](/screenshots/sanity-check.png)
+![完整性检查对话框](/screenshots/sanity-check.webp)
 
 ## 执行的检查
 

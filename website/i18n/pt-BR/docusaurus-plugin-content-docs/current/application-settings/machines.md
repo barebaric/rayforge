@@ -4,7 +4,7 @@ description: "Gerencie máquinas no Rayforge — adicione, configure, exporte, i
 
 # Máquinas
 
-![Configurações de Máquinas](/screenshots/app-settings-machines.png)
+![Configurações de Máquinas](/screenshots/app-settings-machines.webp)
 
 A página Máquinas nas Configurações da Aplicação mostra uma lista de todas
 as máquinas configuradas. Cada entrada mostra o nome da máquina e possui
@@ -17,7 +17,7 @@ um ícone de verificação.
 2. Selecione um perfil de dispositivo da lista para usar como modelo — cada
    perfil pré-configura as definições da máquina e o dialeto de G-code
 
-![Adicionar Máquina](/screenshots/app-settings-machines-add.png)
+![Adicionar Máquina](/screenshots/app-settings-machines-add.webp)
 
 3. O [diálogo de configurações da máquina](../machine/general.md) abre onde
    você pode ajustar a configuração

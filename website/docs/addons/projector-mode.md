@@ -40,7 +40,7 @@ The opacity button in the header bar cycles through four levels: 100%, 80%,
 which can be useful on a desktop monitor to see through to windows behind it.
 Each click advances to the next opacity level and wraps back around.
 
-![Projector Mode](/screenshots/addon-projector-mode.png)
+![Projector Mode](/screenshots/addon-projector-mode.webp)
 
 ## What the Projector Shows
 

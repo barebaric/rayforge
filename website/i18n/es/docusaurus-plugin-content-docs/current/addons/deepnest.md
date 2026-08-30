@@ -5,7 +5,7 @@ tu material de stock o área de trabajo de la máquina. Utiliza un algoritmo
 genético para encontrar un empaquetado eficiente de formas, minimizando el
 desperdicio y ajustando más piezas en cada lámina.
 
-![Diálogo de configuración de Deepnest](/screenshots/addon-deepnest.png)
+![Diálogo de configuración de Deepnest](/screenshots/addon-deepnest.webp)
 
 ## Requisitos previos
 

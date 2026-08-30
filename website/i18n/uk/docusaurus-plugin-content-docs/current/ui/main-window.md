@@ -4,7 +4,7 @@
 
 ## Макет вікна
 
-![Головне вікно](/screenshots/main-standard.png)
+![Головне вікно](/screenshots/main-standard.webp)
 
 ### 1. Рядок меню
 

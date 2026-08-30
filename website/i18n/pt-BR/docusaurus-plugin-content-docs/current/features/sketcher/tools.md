@@ -16,7 +16,7 @@ no que você selecionou. Por exemplo, ao clicar em um espaço vazio, você verá
 ferramentas de desenho. Ao clicar em geometria selecionada, verá as restrições
 aplicáveis.
 
-![Menu circular do esboçador](/screenshots/sketcher-pie-menu.png)
+![Menu circular do esboçador](/screenshots/sketcher-pie-menu.webp)
 
 ## Atalhos de teclado
 

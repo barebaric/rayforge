@@ -2,7 +2,7 @@
 
 A página de Hardware nas Configurações da Máquina configura as dimensões físicas, sistema de coordenadas e limites de movimento da sua máquina.
 
-![Configurações de Hardware](/screenshots/machine-settings-hardware.png)
+![Configurações de Hardware](/screenshots/machine-settings-hardware.webp)
 
 ## Eixos
 

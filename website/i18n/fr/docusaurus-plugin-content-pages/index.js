@@ -193,7 +193,7 @@ function FeatureCardsSection() {
       title: 'Créer',
       subtitle:
         "Exécutez vos travaux laser et CNC en toute confiance. Rapide. Précis. Fiable.",
-      image: '/screenshots/main-3d-bee.png',
+      image: '/screenshots/main-3d-bee.webp',
     },
   ];
 

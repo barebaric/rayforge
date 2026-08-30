@@ -2,7 +2,7 @@
 
 La página de Código G en Configuración de Máquina configura cómo Rayforge genera código G para tu máquina.
 
-![Ajustes de Código G](/screenshots/machine-settings-gcode.png)
+![Ajustes de Código G](/screenshots/machine-settings-gcode.webp)
 
 :::info
 Esta página solo se muestra para máquinas que usan controladores basados en

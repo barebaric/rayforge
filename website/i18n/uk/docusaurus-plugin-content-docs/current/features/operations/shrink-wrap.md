@@ -66,7 +66,7 @@
 
 ### Обтікання
 
-![Налаштування кроку обтікання](/screenshots/step-settings-shrink-wrap-general.png)
+![Налаштування кроку обтікання](/screenshots/step-settings-shrink-wrap-general.webp)
 
 Група **Обтікання** на вкладці _Налаштування кроку_ контролює, як оболонка прилягає до вмісту.
 
@@ -121,7 +121,7 @@
 
 ### Налаштування лазера
 
-![Налаштування лазера](/screenshots/step-settings-shrink-wrap-laser.png)
+![Налаштування лазера](/screenshots/step-settings-shrink-wrap-laser.webp)
 
 Потужність, швидкість та вибір лазерної головки розташовані на сторінці **Лазер** діалогового вікна налаштувань кроку.
 
@@ -216,7 +216,7 @@
 
 ## Постобробка
 
-![Налаштування постобробки обтікання](/screenshots/step-settings-shrink-wrap-post.png)
+![Налаштування постобробки обтікання](/screenshots/step-settings-shrink-wrap-post.webp)
 
 Операції обтікання підтримують кілька опцій постобробки:
 

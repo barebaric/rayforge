@@ -8,7 +8,6 @@ from utils import (
     open_recipe_editor,
     restore_config,
     take_screenshot,
-    target_to_filename,
 )
 
 from rayforge.uiscript import app, win
@@ -35,7 +34,7 @@ CONFIGS = {
 
 @restore_config
 def main():
-    target = get_target("recipe-editor:step-settings")
+    target = get_target("recipe-editor:laser")
     _, subpage = target.split(":", 1)
     config = CONFIGS[subpage]
     time.sleep(0.25)
@@ -46,7 +45,7 @@ def main():
         settings_page=config.get("settings_page", 0),
     )
     time.sleep(0.25)
-    take_screenshot(target_to_filename(target))
+    take_screenshot()
     time.sleep(0.25)
     app.quit_idle()
 

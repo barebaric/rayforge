@@ -18,7 +18,7 @@ description: "使用网格、点旋转和圆形模式创建工作件副本阵列
 
 网格模式将副本排列成行和列的矩形矩阵，具有可配置的水平和垂直间距。
 
-![网格阵列](/screenshots/main-array-grid.png)
+![网格阵列](/screenshots/main-array-grid.webp)
 
 ### 设置
 
@@ -36,7 +36,7 @@ description: "使用网格、点旋转和圆形模式创建工作件副本阵列
 
 点旋转模式通过围绕选择本身的中心原地旋转来创建副本。这对于创建圆形图案很有用，其中每个副本保持在原始位置，但按总角度的一定比例旋转。
 
-![点旋转阵列](/screenshots/main-array-point-rotation.png)
+![点旋转阵列](/screenshots/main-array-point-rotation.webp)
 
 ### 设置
 
@@ -55,7 +55,7 @@ description: "使用网格、点旋转和圆形模式创建工作件副本阵列
 
 圆形模式沿圆弧放置副本，围绕一个中心点。画布上的十字标记显示中心点，您可以在对话框打开时将其拖动到新位置。
 
-![圆形阵列](/screenshots/main-array-circular.png)
+![圆形阵列](/screenshots/main-array-circular.webp)
 
 ### 设置
 

@@ -5,12 +5,10 @@ import time
 from pathlib import Path
 
 from utils import (
-    get_target,
     restore_config,
     run_on_main_thread,
     set_window_size,
     take_screenshot,
-    target_to_filename,
     wait_for_settled,
 )
 
@@ -57,7 +55,6 @@ def open_dialog():
 
 @restore_config
 def main():
-    target = get_target("addon:deepnest")
     _ensure_addon_loaded()
 
     set_window_size(win, 1400, 1000)
@@ -76,7 +73,7 @@ def main():
     dialog = run_on_main_thread(open_dialog)
     time.sleep(0.5)
 
-    take_screenshot(target_to_filename(target))
+    take_screenshot()
 
     time.sleep(0.25)
     run_on_main_thread(dialog.close)

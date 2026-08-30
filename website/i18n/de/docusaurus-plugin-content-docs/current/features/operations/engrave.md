@@ -132,7 +132,7 @@ Wähle den Gravurmodus, der am besten zu deinen Bedürfnissen passt:
 
 ### Schritt 4: Einstellungen konfigurieren
 
-![Gravur-Schritt-Einstellungen](/screenshots/step-settings-engrave-general-variable.png)
+![Gravur-Schritt-Einstellungen](/screenshots/step-settings-engrave-general-variable.webp)
 
 ## Gravur-Einstellungen
 
@@ -146,7 +146,7 @@ Die Zeile **Modus** wählt einen der vier Gravurmodi aus. Jeder Modus zeigt unte
 
 #### Variabler-Leistungs-Modus-Einstellungen
 
-![Einstellungen für Variabler-Leistungs-Modus](/screenshots/step-settings-engrave-general-variable.png)
+![Einstellungen für Variabler-Leistungs-Modus](/screenshots/step-settings-engrave-general-variable.webp)
 
 **Min. Leistung (%):**
 
@@ -190,7 +190,7 @@ Dies ist besonders nützlich für:
 
 #### Konstante-Leistungs-Modus-Einstellungen
 
-![Einstellungen für Konstante-Leistungs-Modus](/screenshots/step-settings-engrave-general-constant_power.png)
+![Einstellungen für Konstante-Leistungs-Modus](/screenshots/step-settings-engrave-general-constant_power.webp)
 
 **Schwellenwert (0-255):**
 
@@ -205,7 +205,7 @@ Dies ist besonders nützlich für:
 
 #### Dither-Modus-Einstellungen
 
-![Dither-Modus-Einstellungen](/screenshots/step-settings-engrave-general-dither.png)
+![Dither-Modus-Einstellungen](/screenshots/step-settings-engrave-general-dither.webp)
 
 **Dithering-Algorithmus:**
 
@@ -224,7 +224,7 @@ Wähle den Algorithmus, der am besten zu deinem Bild und Material passt:
 
 #### Mehrfach-Tiefen-Modus-Einstellungen
 
-![Einstellungen für Mehrfach-Tiefen-Modus](/screenshots/step-settings-engrave-general-multi_pass.png)
+![Einstellungen für Mehrfach-Tiefen-Modus](/screenshots/step-settings-engrave-general-multi_pass.webp)
 
 **Anzahl der Tiefenstufen:**
 
@@ -312,7 +312,7 @@ Korrigiert eine feste mechanische oder schaltzeitbedingte Versetzung zwischen Li
 
 ## Laser-Einstellungen
 
-![Laser-Einstellungen](/screenshots/step-settings-engrave-laser.png)
+![Laser-Einstellungen](/screenshots/step-settings-engrave-laser.webp)
 
 Leistung, Geschwindigkeit und Laser-Kopf-Auswahl befinden sich auf der Seite **Laser** des Schritt-Einstellungen-Dialogs.
 
@@ -331,7 +331,7 @@ Leistung, Geschwindigkeit und Laser-Kopf-Auswahl befinden sich auf der Seite **L
 
 ## Nachbearbeitung
 
-![Gravur-Nachbearbeitungseinstellungen](/screenshots/step-settings-engrave-post.png)
+![Gravur-Nachbearbeitungseinstellungen](/screenshots/step-settings-engrave-post.webp)
 
 Gravur-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
 

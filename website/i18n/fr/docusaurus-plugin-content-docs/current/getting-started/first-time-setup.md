@@ -23,11 +23,11 @@ Naviguez vers **Paramètres → Machines** ou appuyez sur <kbd>ctrl+comma</kbd>
 pour ouvrir la boîte de dialogue des paramètres, puis sélectionnez la page
 **Machines**.
 
-![Paramètres Machine](/screenshots/app-settings-machines.png)
+![Paramètres Machine](/screenshots/app-settings-machines.webp)
 
 Cliquez sur **Add Machine** pour ouvrir le sélecteur de machine.
 
-![Boîte de dialogue Add Machine](/screenshots/app-settings-machines-add.png)
+![Boîte de dialogue Add Machine](/screenshots/app-settings-machines-add.webp)
 
 ### Vérification des permissions
 
@@ -44,7 +44,7 @@ comment résoudre le problème sur votre plateforme :
 
 Une fois l'accès en place, l'assistant continue automatiquement.
 
-![Assistant — Vérification des permissions](/screenshots/config-wizard-permissions.png)
+![Assistant — Vérification des permissions](/screenshots/config-wizard-permissions.webp)
 
 ### Découverte automatique des appareils
 
@@ -84,7 +84,7 @@ Listed** pour tout configurer manuellement. Vous pouvez aussi **Import from
 File…** un profil précédemment exporté ou un profil d'appareil LightBurn
 (.lbdev) avec le calibrage de caméra et les paramètres laser.
 
-![Assistant — Choisir un Point de Départ](/screenshots/config-wizard-profile.png)
+![Assistant — Choisir un Point de Départ](/screenshots/config-wizard-profile.webp)
 
 ### Choisir un Contrôleur
 
@@ -95,7 +95,7 @@ le G-code vers des fichiers et ne jamais piloter de machine physique. Cette
 étape est ignorée lorsque vous partez d'un profil intégré ou d'une
 importation.
 
-![Assistant — Choisir un Contrôleur](/screenshots/config-wizard-controller.png)
+![Assistant — Choisir un Contrôleur](/screenshots/config-wizard-controller.webp)
 
 ### Connexion
 
@@ -107,7 +107,7 @@ exacts dépendent du contrôleur que vous avez choisi :
 - **Pilotes réseau** — adresse hôte et port (ex. `192.168.1.100`)
 - **OctoPrint** — URL du serveur et clé API
 
-![Assistant — Connexion](/screenshots/config-wizard-connect.png)
+![Assistant — Connexion](/screenshots/config-wizard-connect.webp)
 
 ### Découvrir l'Appareil
 
@@ -119,7 +119,7 @@ et ESP3D). Cliquez sur **Probe Now** pour détecter automatiquement ces
 valeurs, ou utilisez **Next** pour les saisir manuellement dans les étapes
 suivantes.
 
-![Assistant — Découvrir l'Appareil](/screenshots/config-wizard-probe.png)
+![Assistant — Découvrir l'Appareil](/screenshots/config-wizard-probe.webp)
 
 ### Fournisseur IA
 
@@ -129,7 +129,7 @@ l'étape suivante puisse rechercher les spécifications des machines
 commerciales connues. Ignorez cette étape pour saisir les valeurs
 manuellement.
 
-![Assistant — Fournisseur IA](/screenshots/config-wizard-ai-provider.png)
+![Assistant — Fournisseur IA](/screenshots/config-wizard-ai-provider.webp)
 
 ### Recherche de Spécifications IA
 
@@ -139,7 +139,7 @@ fabricant et le modèle, puis cliquez sur **Look Up Specs**. Les valeurs
 suggérées apparaissent sous forme de lignes à bascule et démarrent acceptées
 — désactivez ce que vous ne souhaitez pas appliquer.
 
-![Assistant — Recherche de Spécifications IA](/screenshots/config-wizard-ai-lookup.png)
+![Assistant — Recherche de Spécifications IA](/screenshots/config-wizard-ai-lookup.webp)
 
 ### Matériel
 
@@ -163,7 +163,7 @@ Configurez la configuration physique de la machine :
   accélération
 - **Comportement** — retour à l'origine au démarrage et homing mono-axe
 
-![Assistant — Matériel](/screenshots/config-wizard-hardware.png)
+![Assistant — Matériel](/screenshots/config-wizard-hardware.webp)
 
 ### Tête
 
@@ -171,7 +171,7 @@ Déclarez ce qui est fixé au portique — une tête laser ou une tête de broch
 et définissez ses paramètres. Pour un laser : puissance max (valeur S), taille
 du spot, fréquence PWM et distance focale. Pour une broche : RPM max et min.
 
-![Assistant — Tête](/screenshots/config-wizard-head.png)
+![Assistant — Tête](/screenshots/config-wizard-head.webp)
 
 ### Module Rotatif
 
@@ -180,7 +180,7 @@ axe (A/B/C), mode (vrai 4e axe vs. remplacement d'axe), géométrie et indicateu
 d'inversion de direction. Ignorez cette étape pour ajouter un module rotatif
 plus tard depuis les paramètres de la machine.
 
-![Assistant — Module Rotatif](/screenshots/config-wizard-rotary.png)
+![Assistant — Module Rotatif](/screenshots/config-wizard-rotary.webp)
 
 ### Caméras
 
@@ -192,7 +192,7 @@ guider à travers les paramètres d'image, la calibration d'objectif et
 l'alignement d'image. Vous pouvez ignorer cette étape et configurer les
 caméras plus tard depuis les paramètres caméra de la machine.
 
-![Assistant — Caméras](/screenshots/config-wizard-camera.png)
+![Assistant — Caméras](/screenshots/config-wizard-camera.webp)
 
 ### Récapitulatif et Nom
 
@@ -201,7 +201,7 @@ avez configuré — pilote, connexion, zone de travail, vitesses, têtes, module
 rotatifs et caméras. L'assistant fait également remonter tout avertissement,
 comme un pilote manquant ou une zone de travail non définie.
 
-![Assistant — Récapitulatif et Nom](/screenshots/config-wizard-review.png)
+![Assistant — Récapitulatif et Nom](/screenshots/config-wizard-review.webp)
 
 Cliquez sur **Create Machine** pour finaliser. La boîte de dialogue Paramètres
 Machine s'ouvre pour votre nouvelle machine, où vous pouvez ajuster tous les

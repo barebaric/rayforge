@@ -3,7 +3,7 @@
 Die 3D-Ansicht ermöglicht dir, deine G-Code-Werkzeugwege zu visualisieren und
 die Auftragsausführung zu simulieren, bevor du sie an deine Maschine sendest.
 
-![3D-Vorschau](/screenshots/main-3d.png)
+![3D-Vorschau](/screenshots/main-3d.webp)
 
 ## 3D-Ansicht öffnen
 

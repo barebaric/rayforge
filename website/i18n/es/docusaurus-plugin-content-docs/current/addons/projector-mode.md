@@ -40,7 +40,7 @@ semitransparente, lo que puede ser útil en un monitor de escritorio para ver
 las ventanas detrás de ella. Cada clic avanza al siguiente nivel de opacidad y
 vuelve al inicio.
 
-![Modo Proyector](/screenshots/addon-projector-mode.png)
+![Modo Proyector](/screenshots/addon-projector-mode.webp)
 
 ## Qué muestra el proyector
 

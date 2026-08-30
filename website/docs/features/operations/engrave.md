@@ -136,7 +136,7 @@ Select the engraving mode that best suits your needs:
 
 ### Step 4: Configure Settings
 
-![Engrave step settings](/screenshots/step-settings-engrave-general-variable.png)
+![Engrave step settings](/screenshots/step-settings-engrave-general-variable.webp)
 
 ## Engrave Settings
 
@@ -150,7 +150,7 @@ The **Mode** row selects one of the four engraving modes. Each mode exposes diff
 
 #### Variable Power Mode Settings
 
-![Variable Power mode settings](/screenshots/step-settings-engrave-general-variable.png)
+![Variable Power mode settings](/screenshots/step-settings-engrave-general-variable.webp)
 
 **Min Power (%):**
 
@@ -193,7 +193,7 @@ This is particularly useful for:
 
 #### Constant Power Mode Settings
 
-![Constant Power mode settings](/screenshots/step-settings-engrave-general-constant_power.png)
+![Constant Power mode settings](/screenshots/step-settings-engrave-general-constant_power.webp)
 
 **Threshold (0-255):**
 
@@ -208,7 +208,7 @@ This is particularly useful for:
 
 #### Dither Mode Settings
 
-![Dither mode settings](/screenshots/step-settings-engrave-general-dither.png)
+![Dither mode settings](/screenshots/step-settings-engrave-general-dither.webp)
 
 **Dithering Algorithm:**
 
@@ -227,7 +227,7 @@ Choose the algorithm that best suits your image and material:
 
 #### Multiple Depths Mode Settings
 
-![Multiple Depths mode settings](/screenshots/step-settings-engrave-general-multi_pass.png)
+![Multiple Depths mode settings](/screenshots/step-settings-engrave-general-multi_pass.webp)
 
 **Number of Depth Levels:**
 
@@ -315,7 +315,7 @@ Corrects a fixed mechanical or firing delay skew between left-to-right and right
 
 ## Laser settings
 
-![Laser settings](/screenshots/step-settings-engrave-laser.png)
+![Laser settings](/screenshots/step-settings-engrave-laser.webp)
 
 Power, speed, and laser head selection live on the **Laser** page of the step settings dialog.
 
@@ -334,7 +334,7 @@ Power, speed, and laser head selection live on the **Laser** page of the step se
 
 ## Post-Processing
 
-![Engrave post-processing settings](/screenshots/step-settings-engrave-post.png)
+![Engrave post-processing settings](/screenshots/step-settings-engrave-post.webp)
 
 Engrave operations support several post-processing options:
 

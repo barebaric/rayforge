@@ -20,7 +20,7 @@ les optimiser pour obtenir les meilleurs résultats.
 
 | Format   | Extension       | Méthode d'importation | Idéal pour                           |
 | -------- | --------------- | --------------------- | ------------------------------------ |
-| **PNG**  | `.png`          | Vectorisation         | Photos, images avec transparence     |
+| **PNG**  | `.webp`          | Vectorisation         | Photos, images avec transparence     |
 | **JPEG** | `.jpg`, `.jpeg` | Vectorisation         | Photos, images à tons continus       |
 | **BMP**  | `.bmp`          | Vectorisation         | Graphiques simples, captures d'écran |
 
@@ -47,7 +47,7 @@ pris en charge. La boîte de dialogue permet de :
   ou vectorisation)
 - **Ajuster les paramètres** comme le seuil, l'inversion et le seuil automatique
 
-![Boîte de dialogue d'importation](/screenshots/import-dialog.png)
+![Boîte de dialogue d'importation](/screenshots/import-dialog.webp)
 
 ### Mode d'importation des calques
 

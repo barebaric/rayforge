@@ -20,7 +20,7 @@ para obtener los mejores resultados.
 
 | Formato  | Extensión       | Método de importación | Mejor para                             |
 | -------- | --------------- | --------------------- | -------------------------------------- |
-| **PNG**  | `.png`          | Trazo a vectores      | Fotos, imágenes con transparencia      |
+| **PNG**  | `.webp`          | Trazo a vectores      | Fotos, imágenes con transparencia      |
 | **JPEG** | `.jpg`, `.jpeg` | Trazo a vectores      | Fotos, imágenes de tono continuo       |
 | **BMP**  | `.bmp`          | Trazo a vectores      | Gráficos simples, capturas de pantalla |
 
@@ -47,7 +47,7 @@ archivo admitidos. El diálogo permite:
   trazo)
 - **Ajustar parámetros** como umbral, invertir y umbral automático
 
-![Diálogo de importación](/screenshots/import-dialog.png)
+![Diálogo de importación](/screenshots/import-dialog.webp)
 
 ### Modo de importación de capas
 

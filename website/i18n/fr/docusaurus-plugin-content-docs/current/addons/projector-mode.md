@@ -40,7 +40,7 @@ semi-transparente, ce qui peut être utile sur un moniteur de bureau pour voir
 les fenêtres en arrière-plan. Chaque clic passe au niveau d'opacité suivant et
 revient au début.
 
-![Mode Projecteur](/screenshots/addon-projector-mode.png)
+![Mode Projecteur](/screenshots/addon-projector-mode.webp)
 
 ## Ce que le projecteur affiche
 

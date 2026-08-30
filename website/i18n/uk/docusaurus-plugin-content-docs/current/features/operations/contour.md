@@ -43,7 +43,7 @@
 
 ### Крок 3: Налаштуйте параметри
 
-![Налаштування кроку контуру](/screenshots/step-settings-contour-general.png)
+![Налаштування кроку контуру](/screenshots/step-settings-contour-general.webp)
 
 ## Основні налаштування
 
@@ -51,7 +51,7 @@
 
 ### Налаштування контуру
 
-![Налаштування кроку контуру](/screenshots/step-settings-contour-general.png)
+![Налаштування кроку контуру](/screenshots/step-settings-contour-general.webp)
 
 Група **Налаштування контуру** на вкладці _Налаштування кроку_ контролює, як трасується контур.
 
@@ -135,7 +135,7 @@
 
 ### Налаштування лазера
 
-![Налаштування лазера](/screenshots/step-settings-contour-laser.png)
+![Налаштування лазера](/screenshots/step-settings-contour-laser.webp)
 
 Потужність, швидкість та вибір лазерної головки розташовані на сторінці **Лазер** діалогового вікна налаштувань кроку.
 
@@ -173,7 +173,7 @@
 
 ## Постобробка
 
-![Налаштування постобробки контуру](/screenshots/step-settings-contour-post.png)
+![Налаштування постобробки контуру](/screenshots/step-settings-contour-post.webp)
 
 Операції контуру підтримують кілька опцій постобробки:
 

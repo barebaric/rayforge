@@ -51,7 +51,7 @@
 
 调整步进和偏移以匹配您的材料和所需光洁度。
 
-![波前操作结果](/screenshots/operations-wavefront.png)
+![波前操作结果](/screenshots/operations-wavefront.webp)
 
 ## 关键设置
 
@@ -59,7 +59,7 @@
 
 ### 波前设置
 
-![波前步骤设置](/screenshots/step-settings-wavefront-general.png)
+![波前步骤设置](/screenshots/step-settings-wavefront-general.webp)
 
 *步骤设置*选项卡上的**波前**组控制填充图案。
 
@@ -88,7 +88,7 @@
 
 ### 激光设置
 
-![激光设置](/screenshots/step-settings-wavefront-laser.png)
+![激光设置](/screenshots/step-settings-wavefront-laser.webp)
 
 功率、速度和激光头选择位于步骤设置对话框的**激光**页面。
 
@@ -111,7 +111,7 @@
 
 ## 后处理
 
-![波前后处理设置](/screenshots/step-settings-wavefront-post.png)
+![波前后处理设置](/screenshots/step-settings-wavefront-post.webp)
 
 波前操作支持：
 

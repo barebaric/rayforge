@@ -16,11 +16,11 @@ description: "首次配置您的激光切割机或雕刻机。使用配置向导
 
 导航到 **设置 → 机器** 或按 <kbd>ctrl+comma</kbd> 打开设置对话框，然后选择 **机器** 页面。
 
-![机器设置](/screenshots/app-settings-machines.png)
+![机器设置](/screenshots/app-settings-machines.webp)
 
 点击 **Add Machine** 打开机器选择器。
 
-![添加机器](/screenshots/app-settings-machines-add.png)
+![添加机器](/screenshots/app-settings-machines-add.webp)
 
 ### 权限检查
 
@@ -33,7 +33,7 @@ description: "首次配置您的激光切割机或雕刻机。使用配置向导
 
 一旦访问权限就位，向导将自动继续。
 
-![向导 — 权限检查](/screenshots/config-wizard-permissions.png)
+![向导 — 权限检查](/screenshots/config-wizard-permissions.webp)
 
 ### 自动发现设备
 
@@ -60,13 +60,13 @@ description: "首次配置您的激光切割机或雕刻机。使用配置向导
 
 选择一个内置设备配置文件以预填控制器、工作区域和机头设置，或点击 **Device Not Listed** 手动配置所有内容。您也可以 **Import from File…** 导入之前导出的配置文件或带有相机校准和激光设置的 LightBurn 设备配置文件 (.lbdev)。
 
-![向导 — 选择起点](/screenshots/config-wizard-profile.png)
+![向导 — 选择起点](/screenshots/config-wizard-profile.webp)
 
 ### 选择控制器
 
 选择与您机器控制器板匹配的固件或协议系列（GRBL、Marlin、Smoothie、Ruida、OctoPrint、…）。如果您只想将 G-code 导出到文件而不驱动物理机器，请选择 **None — G-code export only**。当您从内置配置文件或导入开始时，此步骤会被跳过。
 
-![向导 — 选择控制器](/screenshots/config-wizard-controller.png)
+![向导 — 选择控制器](/screenshots/config-wizard-controller.webp)
 
 ### 连接
 
@@ -76,7 +76,7 @@ description: "首次配置您的激光切割机或雕刻机。使用配置向导
 - **网络驱动程序** — 主机地址和端口（例如 `192.168.1.100`）
 - **OctoPrint** — 服务器 URL 和 API 密钥
 
-![向导 — 连接](/screenshots/config-wizard-connect.png)
+![向导 — 连接](/screenshots/config-wizard-connect.webp)
 
 ### 发现设备
 
@@ -85,19 +85,19 @@ description: "首次配置您的激光切割机或雕刻机。使用配置向导
 mDNS 发现）。点击 **Probe Now** 自动检测这些值，或使用 **Next** 在后续步骤中
 手动输入。
 
-![向导 — 发现设备](/screenshots/config-wizard-probe.png)
+![向导 — 发现设备](/screenshots/config-wizard-probe.webp)
 
 ### AI 提供方
 
 仅当尚未配置 AI 提供方时显示。输入兼容 OpenAI 的端点（基础 URL 和 API 密钥），以便下一步可以查询已知商业机器的规格。跳过此步骤可手动输入这些值。
 
-![向导 — AI 提供方](/screenshots/config-wizard-ai-provider.png)
+![向导 — AI 提供方](/screenshots/config-wizard-ai-provider.webp)
 
 ### AI 规格查询
 
 如果您的机器是已知的商业型号，AI 可以从制造商的文档中预填其规格。输入供应商和型号，然后点击 **Look Up Specs**。建议的值以开关行形式出现并默认接受——关闭您不想应用的任何内容。
 
-![向导 — AI 规格查询](/screenshots/config-wizard-ai-lookup.png)
+![向导 — AI 规格查询](/screenshots/config-wizard-ai-lookup.webp)
 
 ### 硬件
 
@@ -114,31 +114,31 @@ mDNS 发现）。点击 **Probe Now** 自动检测这些值，或使用 **Next**
 - **速度** — 最大空移速度、最大切割速度和加速度
 - **行为** — 启动时归零和单轴归零
 
-![向导 — 硬件](/screenshots/config-wizard-hardware.png)
+![向导 — 硬件](/screenshots/config-wizard-hardware.webp)
 
 ### 机头
 
 声明安装在龙门架上的部件——Laser Head 或 Spindle Head——并设置其参数。对于激光：最大功率（S 值）、光斑大小、PWM 频率和焦距。对于主轴：最大和最小 RPM。
 
-![向导 — 机头](/screenshots/config-wizard-head.png)
+![向导 — 机头](/screenshots/config-wizard-head.webp)
 
 ### 旋转模块
 
 可选地设置旋转附件：类型（卡爪或滚轮）、轴（A/B/C）、模式（真正的第 4 轴 vs. 轴替换）、几何形状和反向方向标志。跳过此步骤可稍后从机器设置中添加旋转模块。
 
-![向导 — 旋转模块](/screenshots/config-wizard-rotary.png)
+![向导 — 旋转模块](/screenshots/config-wizard-rotary.webp)
 
 ### 相机
 
 可选地启用您想用于预览和对齐的任何相机。当您启用相机并继续时，[相机向导](../machine/camera.md#第-2-步相机向导) 将打开，引导您完成图像设置、镜头校准和图像对齐。您可以跳过此步骤，稍后从机器的相机设置中设置相机。
 
-![向导 — 相机](/screenshots/config-wizard-camera.png)
+![向导 — 相机](/screenshots/config-wizard-camera.webp)
 
 ### 审核与命名
 
 为机器命名并审核您已配置的所有内容的摘要——驱动程序、连接、工作区域、速度、机头、旋转模块和相机。向导还会提示任何警告，例如缺少驱动程序或未设置工作区域。
 
-![向导 — 审核与命名](/screenshots/config-wizard-review.png)
+![向导 — 审核与命名](/screenshots/config-wizard-review.webp)
 
 点击 **Create Machine** 完成。机器设置对话框将为您的机器打开，您可以在其中调整向导预填的任何设置。有关详细信息，请参阅[机器设置](../machine/general.md)页面。
 

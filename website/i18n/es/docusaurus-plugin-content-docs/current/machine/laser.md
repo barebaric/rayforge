@@ -3,7 +3,7 @@
 La página de Láser en Configuración de Máquina configura tu(s) cabezal(es)
 láser y sus propiedades.
 
-![Ajustes de Láser](/screenshots/machine-settings-laser.png)
+![Ajustes de Láser](/screenshots/machine-settings-laser.webp)
 
 ## Cabezales Láser
 

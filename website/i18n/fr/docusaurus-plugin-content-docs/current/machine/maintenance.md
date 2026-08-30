@@ -2,7 +2,7 @@
 
 La page Maintenance dans les Paramètres Machine vous aide à suivre l'utilisation de la machine et à planifier les tâches de maintenance.
 
-![Paramètres de Maintenance](/screenshots/machine-settings-maintenance.png)
+![Paramètres de Maintenance](/screenshots/machine-settings-maintenance.webp)
 
 ## Suivi d'Utilisation
 

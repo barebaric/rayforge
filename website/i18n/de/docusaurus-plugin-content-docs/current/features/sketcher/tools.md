@@ -10,7 +10,7 @@ Der Sketcher verfügt über ein kontextsensitives Kreismenü, das schnellen Zugr
 
 Die Kreismenü-Elemente zeigen dynamisch verfügbare Optionen basierend darauf, was du ausgewählt hast. Wenn du beispielsweise auf leeren Raum klickst, siehst du Zeichenwerkzeuge. Wenn du auf ausgewählte Geometrie klickst, siehst du anwendbare Einschränkungen.
 
-![Sketcher-Kreismenü](/screenshots/sketcher-pie-menu.png)
+![Sketcher-Kreismenü](/screenshots/sketcher-pie-menu.webp)
 
 ## Tastatur-Kurzbefehle
 

@@ -20,7 +20,6 @@ from utils import (
     show_bottom_tab,
     show_panel,
     take_cropped_screenshot,
-    target_to_filename,
     wait_for_settled,
 )
 
@@ -77,7 +76,6 @@ def main():
         f"(window height={window_height}, crop_top={crop_from_top})"
     )
     take_cropped_screenshot(
-        target_to_filename(target),
         from_top=crop_from_top,
     )
 

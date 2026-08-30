@@ -10,7 +10,6 @@ import time
 from gi.repository import GLib
 from utils import (
     clear_window_subtitle,
-    get_target,
     hide_panel,
     load_project,
     restore_config,
@@ -22,7 +21,6 @@ from utils import (
     show_bottom_tab,
     show_panel,
     take_cropped_screenshot,
-    target_to_filename,
     wait_for_3d_rendered,
     wait_for_settled,
     wcs,
@@ -88,7 +86,6 @@ def set_theme(theme: str) -> None:
 
 @restore_config
 def main():
-    target = get_target("main:3d-bee")
     set_window_size(win, 2000, 1375)
 
     logger.info("Activating machine...")
@@ -137,9 +134,8 @@ def main():
         seek_3d_playback(win, 1.0)
 
         clear_window_subtitle(win)
-        logger.info("Taking screenshot: main-3d-bee.png")
+        logger.info("Taking screenshot: main-3d-bee.webp")
         take_cropped_screenshot(
-            target_to_filename(target),
             from_top=350,
             from_bottom=400,
             from_left=450,

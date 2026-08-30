@@ -60,7 +60,7 @@ El resultado es una trayectoria de corte eficiente que sigue la forma general de
 
 ### Paso 4: Configurar Ajustes
 
-![Ajustes de paso de envoltura contraída](/screenshots/step-settings-shrink-wrap-general.png)
+![Ajustes de paso de envoltura contraída](/screenshots/step-settings-shrink-wrap-general.webp)
 
 ## Ajustes Clave
 
@@ -121,7 +121,7 @@ Controla dónde corta el láser en relación a la trayectoria de envoltura contr
 
 ### Ajustes del Láser
 
-![Ajustes del láser](/screenshots/step-settings-shrink-wrap-laser.png)
+![Ajustes del láser](/screenshots/step-settings-shrink-wrap-laser.webp)
 
 La potencia, la velocidad y la selección del cabezal láser se encuentran en la página **Láser** del diálogo de ajustes de paso.
 
@@ -216,7 +216,7 @@ Ver [Flujo de Trabajo Multi-Capa](../multi-layer.md) para detalles.
 
 ## Post-Procesamiento
 
-![Ajustes de post-procesamiento de envoltura contraída](/screenshots/step-settings-shrink-wrap-post.png)
+![Ajustes de post-procesamiento de envoltura contraída](/screenshots/step-settings-shrink-wrap-post.webp)
 
 Las operaciones de Envoltura Contraída soportan varias opciones de post-procesamiento:
 

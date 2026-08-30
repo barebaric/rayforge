@@ -14,11 +14,11 @@ Inicie o Rayforge a partir do menu de aplicativos ou executando `rayforge` em um
 
 Navegue até **Configurações → Máquinas** ou pressione <kbd>ctrl+comma</kbd> para abrir o diálogo de configurações, depois selecione a página **Máquinas**.
 
-![Configurações da Máquina](/screenshots/app-settings-machines.png)
+![Configurações da Máquina](/screenshots/app-settings-machines.webp)
 
 Clique em **Add Machine** para abrir o seletor de máquinas.
 
-![Adicionar Máquina](/screenshots/app-settings-machines-add.png)
+![Adicionar Máquina](/screenshots/app-settings-machines-add.webp)
 
 ### Verificação de Permissões
 
@@ -35,7 +35,7 @@ explicando como corrigir na sua plataforma:
 
 Quando o acesso estiver disponível, o assistente continua automaticamente.
 
-![Assistente — Verificação de Permissões](/screenshots/config-wizard-permissions.png)
+![Assistente — Verificação de Permissões](/screenshots/config-wizard-permissions.webp)
 
 ### Descobrir Dispositivos Automaticamente
 
@@ -77,7 +77,7 @@ a área de trabalho e as configurações de cabeça, ou clique em
 dispositivo LightBurn (.lbdev) com calibração de câmera e configurações de
 laser.
 
-![Assistente — Escolher um Ponto de Partida](/screenshots/config-wizard-profile.png)
+![Assistente — Escolher um Ponto de Partida](/screenshots/config-wizard-profile.webp)
 
 ### Escolher um Controlador
 
@@ -87,7 +87,7 @@ Escolha **None — G-code export only** se você quiser apenas exportar G-code
 para arquivos e nunca operar uma máquina física. Esta etapa é pulada quando
 você começa a partir de um perfil integrado ou de uma importação.
 
-![Assistente — Escolher um Controlador](/screenshots/config-wizard-controller.png)
+![Assistente — Escolher um Controlador](/screenshots/config-wizard-controller.webp)
 
 ### Conexão
 
@@ -99,7 +99,7 @@ dependem do controlador que você escolheu:
 - **Drivers de rede** — endereço do host e porta (ex.: `192.168.1.100`)
 - **OctoPrint** — URL do servidor e chave de API
 
-![Assistente — Conexão](/screenshots/config-wizard-connect.png)
+![Assistente — Conexão](/screenshots/config-wizard-connect.webp)
 
 ### Descobrir o Dispositivo
 
@@ -110,7 +110,7 @@ velocidades, aceleração e recursos do firmware. Isso funciona via serial USB
 detectar automaticamente esses valores, ou use **Next** para inseri-los
 manualmente nas etapas seguintes.
 
-![Assistente — Descobrir o Dispositivo](/screenshots/config-wizard-probe.png)
+![Assistente — Descobrir o Dispositivo](/screenshots/config-wizard-probe.webp)
 
 ### Provedor de IA
 
@@ -119,7 +119,7 @@ um endpoint compatível com OpenAI (URL base e chave de API) para que a próxima
 etapa possa consultar as especificações de máquinas comerciais conhecidas.
 Pule esta etapa para inserir os valores manualmente.
 
-![Assistente — Provedor de IA](/screenshots/config-wizard-ai-provider.png)
+![Assistente — Provedor de IA](/screenshots/config-wizard-ai-provider.webp)
 
 ### Consulta de Especificações por IA
 
@@ -129,7 +129,7 @@ o modelo e clique em **Look Up Specs**. Os valores sugeridos aparecem como
 linhas de alternância e começam aceitos — desative qualquer coisa que você
 não queira aplicar.
 
-![Assistente — Consulta de Especificações por IA](/screenshots/config-wizard-ai-lookup.png)
+![Assistente — Consulta de Especificações por IA](/screenshots/config-wizard-ai-lookup.webp)
 
 ### Hardware
 
@@ -151,7 +151,7 @@ Configure a configuração física da máquina:
   corte e aceleração
 - **Comportamento** — origem (home) na inicialização e homing de eixo único
 
-![Assistente — Hardware](/screenshots/config-wizard-hardware.png)
+![Assistente — Hardware](/screenshots/config-wizard-hardware.webp)
 
 ### Cabeça
 
@@ -160,7 +160,7 @@ e defina seus parâmetros. Para um laser: potência máxima (valor S), tamanho
 do ponto, frequência PWM e distância focal. Para um spindle: RPM máximo e
 mínimo.
 
-![Assistente — Cabeça](/screenshots/config-wizard-head.png)
+![Assistente — Cabeça](/screenshots/config-wizard-head.webp)
 
 ### Módulo Rotativo
 
@@ -169,7 +169,7 @@ eixo (A/B/C), modo (4º eixo verdadeiro vs. substituição de eixo), geometria
 e sinalizador de direção reversa. Pule esta etapa para adicionar um módulo
 rotativo mais tarde nas configurações da máquina.
 
-![Assistente — Módulo Rotativo](/screenshots/config-wizard-rotary.png)
+![Assistente — Módulo Rotativo](/screenshots/config-wizard-rotary.webp)
 
 ### Câmeras
 
@@ -180,7 +180,7 @@ abre para orientá-lo nas configurações de imagem, calibração de lente e
 alinhamento de imagem. Você pode pular isso e configurar câmeras mais tarde
 nas configurações de câmera da máquina.
 
-![Assistente — Câmeras](/screenshots/config-wizard-camera.png)
+![Assistente — Câmeras](/screenshots/config-wizard-camera.webp)
 
 ### Revisar e Nomear
 
@@ -189,7 +189,7 @@ driver, conexão, área de trabalho, velocidades, cabeças, módulos rotativos e
 câmeras. O assistente também exibe quaisquer avisos, como um driver ausente
 ou uma área de trabalho não definida.
 
-![Assistente — Revisar e Nomear](/screenshots/config-wizard-review.png)
+![Assistente — Revisar e Nomear](/screenshots/config-wizard-review.webp)
 
 Clique em **Create Machine** para finalizar. O diálogo de Configurações da
 Máquina abre para sua nova máquina, onde você pode ajustar qualquer uma das

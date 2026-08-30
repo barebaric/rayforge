@@ -184,7 +184,7 @@ function FeatureCardsSection() {
     {
       title: '创作',
       subtitle: '自信地运行激光与 CNC 任务。快速。精准。可靠。',
-      image: '/screenshots/main-3d-bee.png',
+      image: '/screenshots/main-3d-bee.webp',
     },
   ];
 

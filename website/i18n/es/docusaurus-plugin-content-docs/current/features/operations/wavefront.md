@@ -60,7 +60,7 @@ Usa el despeje adaptativo por frente de onda para:
 
 Ajusta el paso y el desplazamiento según tu material y el acabado deseado.
 
-![Resultado de operación de frente de onda](/screenshots/operations-wavefront.png)
+![Resultado de operación de frente de onda](/screenshots/operations-wavefront.webp)
 
 ## Ajustes Clave
 
@@ -68,7 +68,7 @@ El diálogo de ajustes de paso tiene tres pestañas: **Ajustes de Paso**, **Lás
 
 ### Ajustes de Frente de Onda
 
-![Ajustes de paso de frente de onda](/screenshots/step-settings-wavefront-general.png)
+![Ajustes de paso de frente de onda](/screenshots/step-settings-wavefront-general.webp)
 
 El grupo **Frente de Onda** en la pestaña _Ajustes de Paso_ controla el patrón de relleno.
 
@@ -102,7 +102,7 @@ de onda se extienden hasta el límite).
 
 ### Ajustes del Láser
 
-![Ajustes del láser](/screenshots/step-settings-wavefront-laser.png)
+![Ajustes del láser](/screenshots/step-settings-wavefront-laser.webp)
 
 La potencia, la velocidad y la selección del cabezal láser se encuentran
 en la página **Láser** del diálogo de ajustes de paso.
@@ -132,7 +132,7 @@ en la página **Láser** del diálogo de ajustes de paso.
 
 ## Post-Procesamiento
 
-![Ajustes de post-procesamiento de frente de onda](/screenshots/step-settings-wavefront-post.png)
+![Ajustes de post-procesamiento de frente de onda](/screenshots/step-settings-wavefront-post.webp)
 
 Las operaciones de frente de onda soportan:
 

@@ -41,7 +41,7 @@ após selecionar uma.
 
 Ajuste os parâmetros da grade de teste no diálogo de configurações:
 
-![Configurações da Grade de Teste de Material](/screenshots/material-test.png)
+![Configurações da Grade de Teste de Material](/screenshots/material-test.webp)
 
 #### Tipo de Teste
 

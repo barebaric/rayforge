@@ -2,7 +2,7 @@
 
 Deepnest 自动将您的工作件以紧凑的布局排列在您的材料或机器工作区域上。它使用遗传算法寻找形状的高效排列方式，最大限度地减少浪费，并在每张板材上放置更多零件。
 
-![Deepnest 设置对话框](/screenshots/addon-deepnest.png)
+![Deepnest 设置对话框](/screenshots/addon-deepnest.webp)
 
 ## 前提条件
 

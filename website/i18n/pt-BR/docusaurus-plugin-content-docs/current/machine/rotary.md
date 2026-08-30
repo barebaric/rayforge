@@ -5,7 +5,7 @@ como canecas, copos, canetas e material redondo. Quando um módulo rotativo é
 conectado, o Rayforge envolve o trabalho ao redor do cilindro e mostra uma pré-
 visualização 3D do resultado.
 
-![Configurações do Módulo Rotativo](/screenshots/machine-settings-rotary-module.png)
+![Configurações do Módulo Rotativo](/screenshots/machine-settings-rotary-module.webp)
 
 ## Quando Você Precisa do Modo Rotativo
 
@@ -75,7 +75,7 @@ superfície plana. A tela 2D também se adapta automaticamente ao modo rotativo,
 e a tela 3D renderiza os caminhos de ferramenta rotativos com precisão em todas
 as configurações — incluindo durante a reprodução da simulação.
 
-![Pré-visualização 3D no modo rotativo](/screenshots/main-3d-rotary.png)
+![Pré-visualização 3D no modo rotativo](/screenshots/main-3d-rotary.webp)
 
 Isso lhe dá uma pré-visualização realista de como o desenho ficará no objeto
 real, facilitando a identificação de problemas de tamanho ou posicionamento

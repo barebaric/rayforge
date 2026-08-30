@@ -53,7 +53,7 @@ La boîte de dialogue des paramètres d'étape comporte trois onglets : **Param�
 
 ### Géométrie
 
-![Paramètres d'étape contour de cadrage](/screenshots/step-settings-frame-outline-general.png)
+![Paramètres d'étape contour de cadrage](/screenshots/step-settings-frame-outline-general.webp)
 
 Le groupe **Géométrie** de l'onglet *Paramètres d'étape* contrôle la forme du cadre.
 
@@ -82,7 +82,7 @@ Contrôle où le laser coupe par rapport au parcours du cadre :
 
 ### Paramètres Laser
 
-![Paramètres laser](/screenshots/step-settings-frame-outline-laser.png)
+![Paramètres laser](/screenshots/step-settings-frame-outline-laser.webp)
 
 La puissance, la vitesse et la sélection de la tête laser se trouvent sur la page **Laser** de la boîte de dialogue des paramètres d'étape.
 
@@ -110,7 +110,7 @@ Le contour de cadrage supporte la compensation de kerf :
 
 ## Post-Traitement
 
-![Paramètres de post-traitement du contour de cadrage](/screenshots/step-settings-frame-outline-post.png)
+![Paramètres de post-traitement du contour de cadrage](/screenshots/step-settings-frame-outline-post.webp)
 
 Les opérations de Contour de Cadrage supportent plusieurs options de post-traitement :
 

@@ -66,7 +66,7 @@ O diálogo de configurações de etapa tem três abas: **Configurações de Etap
 
 ### Shrink Wrap
 
-![Configurações de etapa Shrink Wrap](/screenshots/step-settings-shrink-wrap-general.png)
+![Configurações de etapa Shrink Wrap](/screenshots/step-settings-shrink-wrap-general.webp)
 
 O grupo **Shrink Wrap** na aba _Configurações de Etapa_ controla como o invólucro se ajusta ao redor do conteúdo.
 
@@ -121,7 +121,7 @@ Controla onde o laser corta relativo ao caminho shrink-wrap:
 
 ### Configurações do Laser
 
-![Configurações do laser](/screenshots/step-settings-shrink-wrap-laser.png)
+![Configurações do laser](/screenshots/step-settings-shrink-wrap-laser.webp)
 
 Potência, velocidade e seleção da cabeça do laser ficam na página **Laser** do diálogo de configurações de etapa.
 
@@ -216,7 +216,7 @@ Veja [Fluxo de Trabalho Multi-Camadas](../multi-layer.md) para detalhes.
 
 ## Pós-Processamento
 
-![Configurações de pós-processamento Shrink Wrap](/screenshots/step-settings-shrink-wrap-post.png)
+![Configurações de pós-processamento Shrink Wrap](/screenshots/step-settings-shrink-wrap-post.webp)
 
 Operações Shrink Wrap suportam várias opções de pós-processamento:
 

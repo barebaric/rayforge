@@ -5,7 +5,7 @@ Objekte wie Becher, Gläser, Stifte und Rundmaterial. Wenn ein Rotationsmodul
 verbunden ist, wickelt Rayforge den Auftrag um den Zylinder und zeigt eine 3D-Vorschau
 des Ergebnisses an.
 
-![Rotationsmodul-Einstellungen](/screenshots/machine-settings-rotary-module.png)
+![Rotationsmodul-Einstellungen](/screenshots/machine-settings-rotary-module.webp)
 
 ## Wann du den Rotationsmodus brauchst
 
@@ -71,7 +71,7 @@ welche Ebenen im Rotationsmodus ausgeführt werden.
 Wenn der Rotationsmodus aktiv ist, zeigt die [3D-Ansicht](../ui/3d-preview.md) deinen
 Werkzeugpfad um einen Zylinder gewickelt statt auf einer flachen Oberfläche. Die 2D-Arbeitsfläche passt sich ebenfalls automatisch dem Rotationsmodus an, und die 3D-Ansicht gibt Rotationswerkzeugpfade in jeder Konfiguration genau wieder — einschließlich während der Simulationswiedergabe.
 
-![3D-Vorschau im Rotationsmodus](/screenshots/main-3d-rotary.png)
+![3D-Vorschau im Rotationsmodus](/screenshots/main-3d-rotary.webp)
 
 Dies gibt dir eine realistische Vorschau, wie das Design auf dem tatsächlichen Objekt
 aussehen wird, und macht es einfacher, Größen- oder Platzierungsprobleme zu erkennen,

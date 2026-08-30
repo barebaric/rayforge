@@ -8,7 +8,7 @@ Before running or exporting a job, Rayforge automatically performs a set of
 sanity checks and presents the results in a structured dialog. This helps you
 catch problems early, before they become ruined material.
 
-![Sanity Check Dialog](/screenshots/sanity-check.png)
+![Sanity Check Dialog](/screenshots/sanity-check.webp)
 
 ## Performed Checks
 

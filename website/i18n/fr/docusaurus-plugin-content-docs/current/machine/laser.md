@@ -3,7 +3,7 @@
 La page Laser dans les Paramètres Machine configure tes têtes laser et leurs
 propriétés.
 
-![Paramètres Laser](/screenshots/machine-settings-laser.png)
+![Paramètres Laser](/screenshots/machine-settings-laser.webp)
 
 ## Têtes Laser
 

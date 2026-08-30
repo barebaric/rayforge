@@ -1,6 +1,6 @@
 # 设置
 
-![常规设置](/screenshots/app-settings-general.png)
+![常规设置](/screenshots/app-settings-general.webp)
 
 自定义 Rayforge 以匹配您的工作流程和偏好。通过 **编辑 → 设置** 或按
 <kbd>ctrl+comma</kbd> 打开设置对话框。

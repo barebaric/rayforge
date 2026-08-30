@@ -1,6 +1,6 @@
 # Addons
 
-![Ajustes de Addons](/screenshots/app-settings-addons.png)
+![Ajustes de Addons](/screenshots/app-settings-addons.webp)
 
 La página de Addons muestra los addons de extensión instalados y te permite
 gestionarlos.

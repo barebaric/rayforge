@@ -2,7 +2,7 @@
 
 Rayforge 提供两个强大的自动化功能来自定义您的工作流程：**宏**和**钩子**。两者都允许您将自定义 G 代码注入作业中，但它们服务于不同的目的。
 
-![钩子和宏设置](/screenshots/machine-settings-hooks-macros.png)
+![钩子和宏设置](/screenshots/machine-settings-hooks-macros.webp)
 
 ---
 

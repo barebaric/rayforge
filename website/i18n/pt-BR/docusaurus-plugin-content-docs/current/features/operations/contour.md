@@ -43,7 +43,7 @@ Use corte de contorno para:
 
 ### Passo 3: Configurar Definições
 
-![Configurações de etapa de contorno](/screenshots/step-settings-contour-general.png)
+![Configurações de etapa de contorno](/screenshots/step-settings-contour-general.webp)
 
 ## Configurações Principais
 
@@ -51,7 +51,7 @@ O diálogo de configurações de etapa tem três abas: **Configurações de Etap
 
 ### Configurações de Contorno
 
-![Configurações de etapa de contorno](/screenshots/step-settings-contour-general.png)
+![Configurações de etapa de contorno](/screenshots/step-settings-contour-general.webp)
 
 O grupo **Configurações de Contorno** na aba _Configurações de Etapa_ controla como o contorno é traçado.
 
@@ -142,7 +142,7 @@ Isso é útil quando o traçado padrão não captura o nível de detalhe que voc
 
 ### Configurações do Laser
 
-![Configurações do laser](/screenshots/step-settings-contour-laser.png)
+![Configurações do laser](/screenshots/step-settings-contour-laser.webp)
 
 Potência, velocidade e seleção da cabeça do laser ficam na página **Laser** do diálogo de configurações de etapa.
 
@@ -180,7 +180,7 @@ Veja [Kerf](../kerf.md) para um guia detalhado.
 
 ## Pós-Processamento
 
-![Configurações de pós-processamento de contorno](/screenshots/step-settings-contour-post.png)
+![Configurações de pós-processamento de contorno](/screenshots/step-settings-contour-post.webp)
 
 Operações de contorno suportam várias opções de pós-processamento:
 

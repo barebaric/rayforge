@@ -153,7 +153,7 @@ module.exports = {
           name: 'barebaric',
           url: 'https://github.com/barebaric',
         },
-        screenshot: 'https://rayforge.org/screenshots/main-standard.png',
+        screenshot: 'https://rayforge.org/screenshots/main-standard.webp',
         featureList: [
           'AI-powered design generation',
           '3D simulation and preview',

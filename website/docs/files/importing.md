@@ -23,7 +23,7 @@ page explains how to import files and optimize them for best results.
 
 | Format   | Extension       | Import Method    | Best For                         |
 | -------- | --------------- | ---------------- | -------------------------------- |
-| **PNG**  | `.png`          | Trace to vectors | Photos, images with transparency |
+| **PNG**  | `.webp`          | Trace to vectors | Photos, images with transparency |
 | **JPEG** | `.jpg`, `.jpeg` | Trace to vectors | Photos, continuous-tone images   |
 | **BMP**  | `.bmp`          | Trace to vectors | Simple graphics, screenshots     |
 
@@ -47,7 +47,7 @@ configuration options for all supported file types. The dialog allows you to:
 - **Choose import method** for SVG files (direct vectors or trace)
 - **Adjust parameters** like threshold, invert, and auto-threshold
 
-![Import Dialog](/screenshots/import-dialog.png)
+![Import Dialog](/screenshots/import-dialog.webp)
 
 ### Layer Import Mode
 

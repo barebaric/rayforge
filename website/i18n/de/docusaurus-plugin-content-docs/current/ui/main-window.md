@@ -5,7 +5,7 @@ Verwalten von Laseraufträgen.
 
 ## Fensterlayout
 
-![Hauptfenster](/screenshots/main-standard.png)
+![Hauptfenster](/screenshots/main-standard.webp)
 
 ### 1. Menüleiste
 

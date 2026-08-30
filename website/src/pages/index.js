@@ -192,7 +192,7 @@ function FeatureCardsSection() {
     {
       title: 'Create',
       subtitle: 'Run laser and CNC jobs with confidence. Fast. Precise. Reliable.',
-      image: '/screenshots/main-3d-bee.png',
+      image: '/screenshots/main-3d-bee.webp',
     },
   ];
 

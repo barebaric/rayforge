@@ -4,7 +4,7 @@ description: "在 Rayforge 中管理机器——为您的项目添加、配置�
 
 # 机器
 
-![机器设置](/screenshots/app-settings-machines.png)
+![机器设置](/screenshots/app-settings-machines.webp)
 
 应用设置中的机器页面显示所有已配置机器的列表。每个条目显示机器名称，
 并带有编辑或删除按钮。当前活动的机器用勾选图标标记。
@@ -15,7 +15,7 @@ description: "在 Rayforge 中管理机器——为您的项目添加、配置�
 2. 从列表中选择一个设备配置文件作为模板——每个配置文件会预设机器设置
    和 G-code 方言
 
-![添加机器](/screenshots/app-settings-machines-add.png)
+![添加机器](/screenshots/app-settings-machines-add.webp)
 
 3. [机器设置对话框](../machine/general.md) 将打开，您可以在其中调整配置
 

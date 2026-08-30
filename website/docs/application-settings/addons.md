@@ -4,7 +4,7 @@ description: "Install and manage add-ons in Rayforge. Extend functionality with 
 
 # Addons
 
-![Addons Settings](/screenshots/app-settings-addons.png)
+![Addons Settings](/screenshots/app-settings-addons.webp)
 
 The Addons page shows installed extension addons and allows you to
 manage them.

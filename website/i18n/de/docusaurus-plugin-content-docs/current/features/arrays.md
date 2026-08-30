@@ -27,7 +27,7 @@ live, um die neuen Positionen widerzuspiegeln.
 Der Gitter-Modus ordnet Kopien in einer rechteckigen Matrix aus Zeilen und
 Spalten an, mit konfigurierbarem horizontalen und vertikalem Abstand.
 
-![Gitter-Array](/screenshots/main-array-grid.png)
+![Gitter-Array](/screenshots/main-array-grid.webp)
 
 ### Einstellungen
 
@@ -48,7 +48,7 @@ Mittelpunkt rotiert. Dies ist nützlich für die Erstellung von
 kreisförmigen Mustern, bei denen jede Kopie an ihrem Originalort bleibt,
 aber um einen Bruchteil des Gesamtwinkels gedreht wird.
 
-![Punktrotations-Array](/screenshots/main-array-point-rotation.png)
+![Punktrotations-Array](/screenshots/main-array-point-rotation.webp)
 
 ### Einstellungen
 
@@ -72,7 +72,7 @@ Mittelpunkt. Ein Fadenkreuz-Marker auf der Leinwand zeigt den Mittelpunkt
 an, und du kannst ihn an eine neue Position ziehen, während der Dialog
 geöffnet ist.
 
-![Kreis-Array](/screenshots/main-array-circular.png)
+![Kreis-Array](/screenshots/main-array-circular.webp)
 
 ### Einstellungen
 

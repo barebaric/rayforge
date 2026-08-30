@@ -9,7 +9,7 @@ eine Reihe von Plausibilitätsprüfungen durch und zeigt die Ergebnisse in einem
 strukturierten Dialog an. Dies hilft dir, Probleme früh zu erkennen, bevor sie
 zu verdorbenem Material führen.
 
-![Plausibilitätsprüfungs-Dialog](/screenshots/sanity-check.png)
+![Plausibilitätsprüfungs-Dialog](/screenshots/sanity-check.webp)
 
 ## Durchgeführte Prüfungen
 

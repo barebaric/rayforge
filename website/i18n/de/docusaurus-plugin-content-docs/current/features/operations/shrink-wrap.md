@@ -66,7 +66,7 @@ Der Schritt-Einstellungen-Dialog hat drei Registerkarten: **Schritt-Einstellunge
 
 ### Schrumpfumhüllung
 
-![Schrumpfumhüllungs-Schritt-Einstellungen](/screenshots/step-settings-shrink-wrap-general.png)
+![Schrumpfumhüllungs-Schritt-Einstellungen](/screenshots/step-settings-shrink-wrap-general.webp)
 
 Die Gruppe **Schrumpfumhüllung** auf der Registerkarte _Schritt-Einstellungen_ steuert, wie die Hülle um den Inhalt passt.
 
@@ -121,7 +121,7 @@ Steuert, wo der Laser relativ zum Schrumpfumhüllungs-Pfad schneidet:
 
 ### Laser-Einstellungen
 
-![Laser-Einstellungen](/screenshots/step-settings-shrink-wrap-laser.png)
+![Laser-Einstellungen](/screenshots/step-settings-shrink-wrap-laser.webp)
 
 Leistung, Geschwindigkeit und Laserkopf-Auswahl befinden sich auf der Seite **Laser** des Schritt-Einstellungen-Dialogs.
 
@@ -216,7 +216,7 @@ Siehe [Mehrschicht-Workflow](../multi-layer.md) für Details.
 
 ## Nachbearbeitung
 
-![Schrumpfumhüllungs-Nachbearbeitungseinstellungen](/screenshots/step-settings-shrink-wrap-post.png)
+![Schrumpfumhüllungs-Nachbearbeitungseinstellungen](/screenshots/step-settings-shrink-wrap-post.webp)
 
 Schrumpfumhüllungs-Operationen unterstützen mehrere Nachbearbeitungsoptionen:
 

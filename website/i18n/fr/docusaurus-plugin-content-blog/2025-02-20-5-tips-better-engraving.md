@@ -5,7 +5,7 @@ authors: rayforge_team
 tags: [gravure, optimisation, qualité, flux-de-travail]
 ---
 
-![Aperçu 3D](/screenshots/main-3d.png)
+![Aperçu 3D](/screenshots/main-3d.webp)
 
 Obtenir des résultats de gravure laser de qualité professionnelle
 nécessite plus que du bon matériel — vos paramètres logiciels et votre

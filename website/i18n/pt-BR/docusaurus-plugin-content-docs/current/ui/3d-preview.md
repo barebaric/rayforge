@@ -3,7 +3,7 @@
 A visualização 3D permite visualizar seus caminhos de ferramenta G-code e
 simular a execução do trabalho antes de enviá-los para sua máquina.
 
-![Visualização 3D](/screenshots/main-3d.png)
+![Visualização 3D](/screenshots/main-3d.webp)
 
 ## Abrindo a Visualização 3D
 

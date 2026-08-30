@@ -5,7 +5,7 @@ les travaux laser.
 
 ## Disposition de la fenêtre
 
-![Fenêtre principale](/screenshots/main-standard.png)
+![Fenêtre principale](/screenshots/main-standard.webp)
 
 ### 1. Barre de menu
 

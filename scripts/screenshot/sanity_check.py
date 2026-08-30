@@ -9,13 +9,11 @@ import time
 from threading import Event
 
 from utils import (
-    get_target,
     load_project,
     restore_config,
     run_on_main_thread,
     set_window_size,
     take_screenshot,
-    target_to_filename,
     wait_for_settled,
 )
 
@@ -26,7 +24,6 @@ logger = logging.getLogger(__name__)
 
 @restore_config
 def main():
-    target = get_target("sanity-check")
     set_window_size(win, 1400, 1000)
 
     load_project(win, "rects.ryp")
@@ -114,8 +111,8 @@ def main():
 
     time.sleep(1.0)
 
-    logger.info("Taking screenshot: sanity-check.png")
-    take_screenshot(target_to_filename(target))
+    logger.info("Taking screenshot: sanity-check.webp")
+    take_screenshot()
 
     time.sleep(0.25)
 

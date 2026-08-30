@@ -53,7 +53,7 @@ O diálogo de configurações de etapa tem três abas: **Configurações de Etap
 
 ### Geometria
 
-![Configurações de etapa de Contorno de Moldura](/screenshots/step-settings-frame-outline-general.png)
+![Configurações de etapa de Contorno de Moldura](/screenshots/step-settings-frame-outline-general.webp)
 
 O grupo **Geometria** na aba _Configurações de Etapa_ controla a forma da moldura.
 
@@ -82,7 +82,7 @@ Controla onde o laser corta relativo ao caminho da moldura:
 
 ### Configurações do Laser
 
-![Configurações do laser](/screenshots/step-settings-frame-outline-laser.png)
+![Configurações do laser](/screenshots/step-settings-frame-outline-laser.webp)
 
 Potência, velocidade e seleção da cabeça do laser ficam na página **Laser** do diálogo de configurações de etapa.
 
@@ -110,7 +110,7 @@ O contorno de moldura suporta compensação de kerf:
 
 ## Pós-Processamento
 
-![Configurações de pós-processamento de Contorno de Moldura](/screenshots/step-settings-frame-outline-post.png)
+![Configurações de pós-processamento de Contorno de Moldura](/screenshots/step-settings-frame-outline-post.webp)
 
 Operações de Contorno de Moldura suportam várias opções de pós-processamento:
 

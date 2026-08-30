@@ -6,7 +6,7 @@ description: "在 Rayforge 中配置机器的常规设置 — 设置机器名称
 
 机器设置中的"常规"页面包含机器名称、驱动程序选择和连接设置，以及速度参数。
 
-![常规设置](/screenshots/machine-settings-general.png)
+![常规设置](/screenshots/machine-settings-general.webp)
 
 ## 机器名称
 

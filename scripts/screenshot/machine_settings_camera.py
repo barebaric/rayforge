@@ -13,7 +13,6 @@ from utils import (
     restore_config,
     run_on_main_thread,
     take_screenshot,
-    target_to_filename,
 )
 
 from rayforge.camera.models.camera import Camera
@@ -141,7 +140,7 @@ def setup_camera_page(dialog):
     return None, controller
 
 
-def take_wizard_screenshot(parent_dialog, wizard_page: str, output: str):
+def take_wizard_screenshot(parent_dialog, wizard_page: str):
     """Open the lens calibration wizard directly and take a screenshot."""
 
     _camera, controller = add_mock_camera(parent_dialog)
@@ -172,7 +171,8 @@ def take_wizard_screenshot(parent_dialog, wizard_page: str, output: str):
         run_on_main_thread(lambda: wizard._navigate_to("capture"))
         time.sleep(0.5)
 
-    # Activate the wizard window so gnome-screenshot -w captures it
+    # Activate the wizard window so it is the topmost window for
+    # the capture
     try:
         subprocess.run(
             [
@@ -191,7 +191,7 @@ def take_wizard_screenshot(parent_dialog, wizard_page: str, output: str):
     except (FileNotFoundError, subprocess.TimeoutExpired):
         logger.warning("xdotool not available, relying on window focus")
 
-    take_screenshot(output)
+    take_screenshot()
 
     def _cleanup():
         wizard.close()
@@ -203,7 +203,6 @@ def take_wizard_screenshot(parent_dialog, wizard_page: str, output: str):
 @restore_config
 def main():
     target_info = parse_target(TARGET)
-    output = target_to_filename(TARGET)
     time.sleep(0.25)
     dialog = open_machine_settings(win, PAGE)
     time.sleep(0.25)
@@ -211,13 +210,13 @@ def main():
     if target_info is None:
         setup_camera_page(dialog)
         time.sleep(0.25)
-        take_screenshot(output)
+        take_screenshot()
         time.sleep(0.25)
         app.quit_idle()
         return
 
     if target_info["type"] == "wizard":
-        take_wizard_screenshot(dialog, target_info["page"], output)
+        take_wizard_screenshot(dialog, target_info["page"])
         time.sleep(0.25)
         app.quit_idle()
         return
@@ -241,7 +240,7 @@ def main():
 
     camera_dialog = run_on_main_thread(_open)
     time.sleep(0.5)
-    take_screenshot(output)
+    take_screenshot()
 
     def _close():
         camera_dialog.close()

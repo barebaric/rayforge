@@ -44,7 +44,7 @@
 
 ### 第 3 步：配置设置
 
-![轮廓步骤设置](/screenshots/step-settings-contour-general.png)
+![轮廓步骤设置](/screenshots/step-settings-contour-general.webp)
 
 ## 关键设置
 
@@ -52,7 +52,7 @@
 
 ### 轮廓设置
 
-![轮廓步骤设置](/screenshots/step-settings-contour-general.png)
+![轮廓步骤设置](/screenshots/step-settings-contour-general.webp)
 
 *步骤设置*选项卡上的**轮廓设置**组控制轮廓的描迹方式。
 
@@ -136,7 +136,7 @@
 
 ### 激光设置
 
-![激光设置](/screenshots/step-settings-contour-laser.png)
+![激光设置](/screenshots/step-settings-contour-laser.webp)
 
 功率、速度和激光头选择位于步骤设置对话框的**激光**页面。
 
@@ -174,7 +174,7 @@
 
 ## 后处理
 
-![轮廓后处理设置](/screenshots/step-settings-contour-post.png)
+![轮廓后处理设置](/screenshots/step-settings-contour-post.webp)
 
 轮廓操作支持多种后处理选项：
 

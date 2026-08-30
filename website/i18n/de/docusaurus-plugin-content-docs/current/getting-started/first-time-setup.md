@@ -23,11 +23,11 @@ kannst ihn jederzeit später über **Einstellungen → Maschinen → Add Machine
 Navigiere zu **Einstellungen → Maschinen** oder drücke <kbd>ctrl+comma</kbd>,
 um den Einstellungsdialog zu öffnen, und wähle dann die Seite **Maschinen**.
 
-![Maschineneinstellungen](/screenshots/app-settings-machines.png)
+![Maschineneinstellungen](/screenshots/app-settings-machines.webp)
 
 Klicke auf **Add Machine**, um die Maschinenauswahl zu öffnen.
 
-![Maschine hinzufügen Dialog](/screenshots/app-settings-machines-add.png)
+![Maschine hinzufügen Dialog](/screenshots/app-settings-machines-add.webp)
 
 ### Berechtigungsprüfung
 
@@ -44,7 +44,7 @@ wie man das auf deiner Plattform behebt:
 
 Sobald der Zugriff gewährleistet ist, fährt der Assistent automatisch fort.
 
-![Assistent — Berechtigungsprüfung](/screenshots/config-wizard-permissions.png)
+![Assistent — Berechtigungsprüfung](/screenshots/config-wizard-permissions.webp)
 
 ### Geräte automatisch entdecken
 
@@ -83,7 +83,7 @@ manuell zu konfigurieren. Du kannst auch ein zuvor exportiertes Profil oder ein
 LightBurn-Geräteprofil (.lbdev) mit Kamerakalibrierung und Lasereinstellungen
 über **Import from File…** importieren.
 
-![Assistent — Ausgangspunkt wählen](/screenshots/config-wizard-profile.png)
+![Assistent — Ausgangspunkt wählen](/screenshots/config-wizard-profile.webp)
 
 ### Einen Controller wählen
 
@@ -93,7 +93,7 @@ Maschine passt (GRBL, Marlin, Smoothie, Ruida, OctoPrint, …). Wähle
 niemals eine physische Maschine ansteuern möchtest. Dieser Schritt wird
 übersprungen, wenn du von einem eingebauten Profil oder einem Import startest.
 
-![Assistent — Einen Controller wählen](/screenshots/config-wizard-controller.png)
+![Assistent — Einen Controller wählen](/screenshots/config-wizard-controller.webp)
 
 ### Verbindung
 
@@ -105,7 +105,7 @@ Felder hängen von dem von dir gewählten Controller ab:
 - **Netzwerktreiber** — Hostadresse und Port (z.B. `192.168.1.100`)
 - **OctoPrint** — Server-URL und API-Schlüssel
 
-![Assistent — Verbindung](/screenshots/config-wizard-connect.png)
+![Assistent — Verbindung](/screenshots/config-wizard-connect.webp)
 
 ### Gerät entdecken
 
@@ -117,7 +117,7 @@ für OctoPrint und ESP3D). Klicke auf **Probe Now**, um diese Werte automatisch
 zu erkennen, oder verwende **Next**, um sie in den folgenden Schritten von
 Hand einzugeben.
 
-![Assistent — Gerät entdecken](/screenshots/config-wizard-probe.png)
+![Assistent — Gerät entdecken](/screenshots/config-wizard-probe.webp)
 
 ### KI-Anbieter
 
@@ -127,7 +127,7 @@ nächste Schritt Spezifikationen für bekannte kommerzielle Maschinen
 nachschlagen kann. Überspringe diesen Schritt, um die Werte von Hand
 einzugeben.
 
-![Assistent — KI-Anbieter](/screenshots/config-wizard-ai-provider.png)
+![Assistent — KI-Anbieter](/screenshots/config-wizard-ai-provider.webp)
 
 ### KI-Spezifikationsabfrage
 
@@ -137,7 +137,7 @@ und Modell ein und klicke dann auf **Look Up Specs**. Vorgeschlagene Werte
 erscheinen als Schalter-Zeilen und sind zunächst aktiviert — deaktiviere
 alles, was du nicht angewendet haben möchtest.
 
-![Assistent — KI-Spezifikationsabfrage](/screenshots/config-wizard-ai-lookup.png)
+![Assistent — KI-Spezifikationsabfrage](/screenshots/config-wizard-ai-lookup.webp)
 
 ### Hardware
 
@@ -157,7 +157,7 @@ Konfiguriere das physische Setup der Maschine:
   Schnittgeschwindigkeit und Beschleunigung
 - **Verhalten** — Referenzfahrt beim Start und Einzelachsen-Homing
 
-![Assistent — Hardware](/screenshots/config-wizard-hardware.png)
+![Assistent — Hardware](/screenshots/config-wizard-hardware.webp)
 
 ### Kopf
 
@@ -166,7 +166,7 @@ stelle seine Parameter ein. Für einen Laser: maximale Leistung (S-Wert),
 Punktgröße, PWM-Frequenz und Fokusabstand. Für eine Spindel: max. und min.
 Drehzahl.
 
-![Assistent — Kopf](/screenshots/config-wizard-head.png)
+![Assistent — Kopf](/screenshots/config-wizard-head.webp)
 
 ### Rotationsmodul
 
@@ -175,7 +175,7 @@ Richte optional einen Rotationsvorsatz ein: Typ (Futter oder Rollen), Achse
 für die umgekehrte Richtung. Überspringe diesen Schritt, um ein Rotationsmodul
 später aus den Maschineneinstellungen hinzuzufügen.
 
-![Assistent — Rotationsmodul](/screenshots/config-wizard-rotary.png)
+![Assistent — Rotationsmodul](/screenshots/config-wizard-rotary.webp)
 
 ### Kameras
 
@@ -186,7 +186,7 @@ dich durch Bildeinstellungen, Linsenkalibrierung und Bildausrichtung führt.
 Du kannst dies überspringen und Kameras später über die Kamera-Einstellungen
 der Maschine einrichten.
 
-![Assistent — Kameras](/screenshots/config-wizard-camera.png)
+![Assistent — Kameras](/screenshots/config-wizard-camera.webp)
 
 ### Überprüfen & Benennen
 
@@ -195,7 +195,7 @@ du konfiguriert hast — Treiber, Verbindung, Arbeitsbereich, Geschwindigkeiten,
 Köpfe, Rotationsmodule und Kameras. Der Assistent zeigt auch Warnungen an, z.B.
 einen fehlenden Treiber oder einen nicht gesetzten Arbeitsbereich.
 
-![Assistent — Überprüfen & Benennen](/screenshots/config-wizard-review.png)
+![Assistent — Überprüfen & Benennen](/screenshots/config-wizard-review.webp)
 
 Klicke auf **Create Machine**, um abzuschließen. Der
 Maschineneinstellungen-Dialog öffnet sich für deine neue Maschine, wo du alle

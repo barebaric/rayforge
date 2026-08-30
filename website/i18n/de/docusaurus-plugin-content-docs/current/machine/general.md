@@ -7,7 +7,7 @@ description: "Allgemeine Maschineneinstellungen in Rayforge konfigurieren — Ma
 Die Seite „Allgemein" in den Maschineneinstellungen enthält den Maschinennamen,
 die Treiberauswahl und Verbindungseinstellungen sowie die Geschwindigkeitsparameter.
 
-![Allgemeine Einstellungen](/screenshots/machine-settings-general.png)
+![Allgemeine Einstellungen](/screenshots/machine-settings-general.webp)
 
 ## Maschinenname
 

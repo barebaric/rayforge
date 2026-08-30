@@ -13,7 +13,7 @@ description: "草图绘制器工具、键盘快捷键、饼形菜单、构造模
 饼形菜单项根据您选择的内容动态显示可用选项。例如，点击空白区域时，您会
 看到绘图工具。点击选中的几何图形时，您会看到适用的约束。
 
-![草图绘制器饼形菜单](/screenshots/sketcher-pie-menu.png)
+![草图绘制器饼形菜单](/screenshots/sketcher-pie-menu.webp)
 
 ## 键盘快捷键
 

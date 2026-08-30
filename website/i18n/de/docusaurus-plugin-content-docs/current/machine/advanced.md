@@ -2,7 +2,7 @@
 
 Die Erweiterte Seite in den Maschineneinstellungen enthält zusätzliche Konfigurationsoptionen für spezielle Anwendungsfälle.
 
-![Erweiterte Einstellungen](/screenshots/machine-settings-advanced.png)
+![Erweiterte Einstellungen](/screenshots/machine-settings-advanced.webp)
 
 ## Verbindungsverhalten
 

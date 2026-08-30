@@ -193,7 +193,7 @@ function FeatureCardsSection() {
       title: 'Створення',
       subtitle:
         'Запускайте лазерні та CNC-завдання впевнено. Швидко. Точно. Надійно.',
-      image: '/screenshots/main-3d-bee.png',
+      image: '/screenshots/main-3d-bee.webp',
     },
   ];
 

@@ -4,7 +4,7 @@ description: "Organisez les travaux laser en calques avec différents réglages.
 
 # Flux de travail multi-calques
 
-![Panneau des calques](/screenshots/bottom-panel-layers.png)
+![Panneau des calques](/screenshots/bottom-panel-layers.webp)
 
 Le système multi-calques de Rayforge vous permet d'organiser les travaux
 en étapes de traitement séparées. Chaque calque est un conteneur pour

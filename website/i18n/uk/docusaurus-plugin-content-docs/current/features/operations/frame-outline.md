@@ -53,7 +53,7 @@
 
 ### Геометрія
 
-![Налаштування кроку рамкового контуру](/screenshots/step-settings-frame-outline-general.png)
+![Налаштування кроку рамкового контуру](/screenshots/step-settings-frame-outline-general.webp)
 
 Група **Геометрія** на вкладці _Налаштування кроку_ контролює форму рамки.
 
@@ -82,7 +82,7 @@
 
 ### Налаштування лазера
 
-![Налаштування лазера](/screenshots/step-settings-frame-outline-laser.png)
+![Налаштування лазера](/screenshots/step-settings-frame-outline-laser.webp)
 
 Потужність, швидкість та вибір лазерної головки розташовані на сторінці **Лазер** діалогового вікна налаштувань кроку.
 
@@ -110,7 +110,7 @@
 
 ## Постобробка
 
-![Налаштування постобробки рамкового контуру](/screenshots/step-settings-frame-outline-post.png)
+![Налаштування постобробки рамкового контуру](/screenshots/step-settings-frame-outline-post.webp)
 
 Операції рамкового контуру підтримують кілька опцій постобробки:
 

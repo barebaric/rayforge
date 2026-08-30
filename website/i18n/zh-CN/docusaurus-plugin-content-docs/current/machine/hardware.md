@@ -2,7 +2,7 @@
 
 机器设置中的硬件页面配置机器的物理尺寸、坐标系统和移动限制。
 
-![硬件设置](/screenshots/machine-settings-hardware.png)
+![硬件设置](/screenshots/machine-settings-hardware.webp)
 
 ## 轴
 

@@ -9,7 +9,7 @@ stock material or machine work area. It uses a genetic algorithm to find an
 efficient packing of shapes, minimizing waste and fitting more parts onto each
 sheet.
 
-![Deepnest Settings Dialog](/screenshots/addon-deepnest.png)
+![Deepnest Settings Dialog](/screenshots/addon-deepnest.webp)
 
 ## Prerequisites
 

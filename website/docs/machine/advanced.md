@@ -6,7 +6,7 @@ description: "Advanced machine settings in Rayforge — custom G-code, homing, a
 
 The Advanced page in Machine Settings contains additional configuration options for specialized use cases.
 
-![Advanced Settings](/screenshots/machine-settings-advanced.png)
+![Advanced Settings](/screenshots/machine-settings-advanced.webp)
 
 ## Connection Behavior
 

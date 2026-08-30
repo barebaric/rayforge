@@ -5,7 +5,7 @@ authors: rayforge_team
 tags: [engraving, optimization, quality, workflow]
 ---
 
-![Visualização 3D](/screenshots/main-3d.png)
+![Visualização 3D](/screenshots/main-3d.webp)
 
 Obter resultados de gravação a laser de qualidade profissional requer mais
 do que apenas bom hardware — suas configurações de software e fluxo de

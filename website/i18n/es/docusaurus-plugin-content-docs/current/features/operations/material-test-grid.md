@@ -37,7 +37,7 @@ Los preajustes son puntos de partida - puedes ajustar todos los parámetros desp
 
 Ajusta los parámetros de la cuadrícula de prueba en el diálogo de configuración:
 
-![Configuración de Cuadrícula de Prueba de Material](/screenshots/material-test.png)
+![Configuración de Cuadrícula de Prueba de Material](/screenshots/material-test.webp)
 
 #### Tipo de Prueba
 

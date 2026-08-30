@@ -2,7 +2,7 @@
 
 3D 视图让您在将 G 代码刀具路径发送到机器之前可视化它们并仿真作业执行。
 
-![3D 预览](/screenshots/main-3d.png)
+![3D 预览](/screenshots/main-3d.webp)
 
 ## 打开 3D 视图
 

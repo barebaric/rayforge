@@ -5,7 +5,7 @@ authors: rayforge_team
 tags: [introduction, features]
 ---
 
-![Rayforge Main Window](/screenshots/main-standard.png)
+![Rayforge Main Window](/screenshots/main-standard.webp)
 
 Estamos emocionados de presentar Rayforge, un software de control y envío de G-code moderno y de código abierto, diseñado específicamente para cortadoras y grabadoras láser basadas en GRBL.
 

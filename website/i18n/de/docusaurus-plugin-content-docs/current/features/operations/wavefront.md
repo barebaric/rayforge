@@ -58,7 +58,7 @@ Verwende wellenfront-adaptives Ausräumen für:
 
 Schrittweite und Offset an dein Material und das gewünschte Finish anpassen.
 
-![Wellenfront-Operation Ergebnis](/screenshots/operations-wavefront.png)
+![Wellenfront-Operation Ergebnis](/screenshots/operations-wavefront.webp)
 
 ## Haupt-Einstellungen
 
@@ -66,7 +66,7 @@ Der Schritt-Einstellungen-Dialog hat drei Registerkarten: **Schritt-Einstellunge
 
 ### Wellenfront-Einstellungen
 
-![Wellenfront-Schritt-Einstellungen](/screenshots/step-settings-wavefront-general.png)
+![Wellenfront-Schritt-Einstellungen](/screenshots/step-settings-wavefront-general.webp)
 
 Die Gruppe **Wellenfront** auf der Registerkarte _Schritt-Einstellungen_ steuert das Füllmuster.
 
@@ -101,7 +101,7 @@ reichen bis zur Begrenzung).
 
 ### Laser-Einstellungen
 
-![Laser-Einstellungen](/screenshots/step-settings-wavefront-laser.png)
+![Laser-Einstellungen](/screenshots/step-settings-wavefront-laser.webp)
 
 Leistung, Geschwindigkeit und Laserkopf-Auswahl befinden sich auf der Seite **Laser** des Schritt-Einstellungen-Dialogs.
 
@@ -130,7 +130,7 @@ Leistung, Geschwindigkeit und Laserkopf-Auswahl befinden sich auf der Seite **La
 
 ## Nachbearbeitung
 
-![Wellenfront-Nachbearbeitungseinstellungen](/screenshots/step-settings-wavefront-post.png)
+![Wellenfront-Nachbearbeitungseinstellungen](/screenshots/step-settings-wavefront-post.webp)
 
 Wellenfront-Operationen unterstützen:
 

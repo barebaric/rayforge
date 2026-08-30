@@ -1,6 +1,6 @@
 # Recipes and Settings
 
-![Recipes Settings](/screenshots/app-settings-recipes.png)
+![Recipes Settings](/screenshots/app-settings-recipes.webp)
 
 Rayforge provides a powerful recipe system that allows you to create,
 manage, and apply consistent settings across your laser cutting projects.
@@ -33,7 +33,7 @@ Click "Add New Recipe" to open the recipe editor dialog.
 
 **General Tab** - Set the recipe name and description:
 
-![Recipe Editor - General Tab](/screenshots/recipe-editor-general.png)
+![Recipe Editor - General Tab](/screenshots/recipe-editor-general.webp)
 
 Fill in the basic information:
 
@@ -44,7 +44,7 @@ Fill in the basic information:
 
 **Applicability Tab** - Define when this recipe should be suggested:
 
-![Recipe Editor - Applicability Tab](/screenshots/recipe-editor-applicability.png)
+![Recipe Editor - Applicability Tab](/screenshots/recipe-editor-applicability.webp)
 
 All criteria are optional - leave any field at its "Any" value to match
 everything:
@@ -67,9 +67,9 @@ pages: a "Laser" page with the shared process settings (power, air
 assist, etc.) and a "Step Settings" page with the attributes specific to
 that step type (e.g. cut side, cut order):
 
-![Recipe Editor - Laser Tab](/screenshots/recipe-editor-laser.png)
+![Recipe Editor - Laser Tab](/screenshots/recipe-editor-laser.webp)
 
-![Recipe Editor - Step Settings Tab](/screenshots/recipe-editor-step-settings.png)
+![Recipe Editor - Step Settings Tab](/screenshots/recipe-editor-step-settings.webp)
 
 - Selecting only a **task type** (with "Any Type" as the step type)
   shows a single "Settings" page with the process settings for that task
@@ -87,7 +87,7 @@ row):
 multipass, overscan, and other transformers) on the recipe so they are
 applied to the steps it targets:
 
-![Recipe Editor - Post Processing Tab](/screenshots/recipe-editor-post-processing.png)
+![Recipe Editor - Post Processing Tab](/screenshots/recipe-editor-post-processing.webp)
 
 Each transformer carries an apply toggle (a check button next to its
 row):

@@ -2,7 +2,7 @@
 
 A página do Dispositivo nas Configurações da Máquina permite ler e aplicar configurações diretamente no seu dispositivo conectado (controlador). Estas também são conhecidas como configurações "dollar" ou `$$` no GRBL.
 
-![Configurações do Dispositivo](/screenshots/machine-settings-device.png)
+![Configurações do Dispositivo](/screenshots/machine-settings-device.webp)
 
 :::warning Cuidado ao Alterar Configurações
 Configurações incorretas de firmware podem fazer sua máquina se comportar de forma imprevisível, perder posição ou até danificar o hardware. Sempre anote os valores originais antes de fazer alterações e modifique uma configuração de cada vez.

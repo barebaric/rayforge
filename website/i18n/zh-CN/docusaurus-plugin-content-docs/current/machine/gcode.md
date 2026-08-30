@@ -2,7 +2,7 @@
 
 机器设置中的 G 代码页面配置 Rayforge 如何为您的机器生成 G 代码。
 
-![G 代码设置](/screenshots/machine-settings-gcode.png)
+![G 代码设置](/screenshots/machine-settings-gcode.webp)
 
 :::info
 此页面仅在使用基于 G 代码的驱动程序的机器上显示（例如 GRBL、

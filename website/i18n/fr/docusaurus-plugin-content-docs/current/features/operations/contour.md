@@ -43,7 +43,7 @@ Utilisez la coupe de contour pour :
 
 ### Étape 3 : Configurer les Paramètres
 
-![Paramètres d'étape de contour](/screenshots/step-settings-contour-general.png)
+![Paramètres d'étape de contour](/screenshots/step-settings-contour-general.webp)
 
 ## Paramètres Clés
 
@@ -51,7 +51,7 @@ La boîte de dialogue des paramètres d'étape comporte trois onglets : **Param�
 
 ### Paramètres de Contour
 
-![Paramètres d'étape de contour](/screenshots/step-settings-contour-general.png)
+![Paramètres d'étape de contour](/screenshots/step-settings-contour-general.webp)
 
 Le groupe **Paramètres de Contour** de l'onglet _Paramètres d'étape_ contrôle la façon dont le contour est tracé.
 
@@ -135,7 +135,7 @@ Ceci est utile lorsque le traçage par défaut ne capture pas le niveau de déta
 
 ### Paramètres Laser
 
-![Paramètres laser](/screenshots/step-settings-contour-laser.png)
+![Paramètres laser](/screenshots/step-settings-contour-laser.webp)
 
 La puissance, la vitesse et la sélection de la tête laser se trouvent sur la page **Laser** de la boîte de dialogue des paramètres d'étape.
 
@@ -173,7 +173,7 @@ Voir [Kerf](../kerf.md) pour un guide détaillé.
 
 ## Post-Traitement
 
-![Paramètres de post-traitement du contour](/screenshots/step-settings-contour-post.png)
+![Paramètres de post-traitement du contour](/screenshots/step-settings-contour-post.webp)
 
 Les opérations de contour supportent plusieurs options de post-traitement :
 

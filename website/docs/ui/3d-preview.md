@@ -7,7 +7,7 @@ description: "Preview your laser job in full 3D. Visualize toolpaths, rotary axi
 The 3D view lets you visualize your G-code toolpaths and simulate job
 execution before sending them to your machine.
 
-![3D Preview](/screenshots/main-3d.png)
+![3D Preview](/screenshots/main-3d.webp)
 
 ## Opening 3D View
 

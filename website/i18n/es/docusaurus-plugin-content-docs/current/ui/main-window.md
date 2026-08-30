@@ -5,7 +5,7 @@ trabajos láser.
 
 ## Diseño de la Ventana
 
-![Ventana Principal](/screenshots/main-standard.png)
+![Ventana Principal](/screenshots/main-standard.webp)
 
 ### 1. Barra de Menú
 

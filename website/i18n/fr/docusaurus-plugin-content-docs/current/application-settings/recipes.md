@@ -1,6 +1,6 @@
 # Recettes et Paramètres
 
-![Paramètres des Recettes](/screenshots/app-settings-recipes.png)
+![Paramètres des Recettes](/screenshots/app-settings-recipes.webp)
 
 Rayforge fournit un système de recettes puissant qui vous permet de créer, gérer et appliquer des paramètres cohérents à travers vos projets de découpe laser. Ce guide couvre le parcours utilisateur complet, de la création de recettes dans les paramètres généraux à leur application aux opérations et la gestion des paramètres au niveau de l'étape.
 
@@ -29,7 +29,7 @@ Cliquez sur "Ajouter une Nouvelle Recette" pour ouvrir la boîte de dialogue de 
 
 **Onglet Général** - Définir le nom et la description de la recette :
 
-![Éditeur de Recettes - Onglet Général](/screenshots/recipe-editor-general.png)
+![Éditeur de Recettes - Onglet Général](/screenshots/recipe-editor-general.webp)
 
 Remplissez les informations de base :
 
@@ -40,7 +40,7 @@ Remplissez les informations de base :
 
 **Onglet Applicabilité** - Définir quand cette recette devrait être suggérée :
 
-![Éditeur de Recettes - Onglet Applicabilité](/screenshots/recipe-editor-applicability.png)
+![Éditeur de Recettes - Onglet Applicabilité](/screenshots/recipe-editor-applicability.webp)
 
 Tous les critères sont optionnels - laissez n'importe quel champ à sa valeur "Tout" pour tout faire correspondre :
 
@@ -54,9 +54,9 @@ Tous les critères sont optionnels - laissez n'importe quel champ à sa valeur "
 
 **Onglet Paramètres** - Ajuster la puissance, vitesse et autres paramètres. Lorsque la recette cible un **type d'étape** spécifique, l'éditeur affiche deux pages de paramètres : une page "Laser" avec les paramètres de processus partagés (puissance, assistance d'air, etc.) et une page "Paramètres d'Étape" avec les attributs spécifiques à ce type d'étape (ex : côté de coupe, ordre de coupe) :
 
-![Éditeur de Recettes - Onglet Laser](/screenshots/recipe-editor-laser.png)
+![Éditeur de Recettes - Onglet Laser](/screenshots/recipe-editor-laser.webp)
 
-![Éditeur de Recettes - Onglet Paramètres d'Étape](/screenshots/recipe-editor-step-settings.png)
+![Éditeur de Recettes - Onglet Paramètres d'Étape](/screenshots/recipe-editor-step-settings.webp)
 
 - Sélectionner uniquement un **type de tâche** (avec "Tout Type" comme type d'étape) affiche une seule page "Paramètres" avec les paramètres de processus pour cette tâche
 - Laisser les deux à "Tout" affiche uniquement les paramètres de mouvement de base (vitesse de coupe et vitesse de déplacement) partagés par toutes les étapes
@@ -72,7 +72,7 @@ Chaque ligne de paramètre est accompagnée d'un bouton d'application
 (entrée/sortie, passes multiples, overscan et autres transformateurs) sur
 la recette afin qu'ils soient appliqués aux étapes ciblées :
 
-![Éditeur de Recettes - Onglet Post-Traitement](/screenshots/recipe-editor-post-processing.png)
+![Éditeur de Recettes - Onglet Post-Traitement](/screenshots/recipe-editor-post-processing.webp)
 
 Chaque transformateur est accompagné d'un bouton d'application (une case
 à cocher à côté de la ligne) :

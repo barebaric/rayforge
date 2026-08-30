@@ -20,7 +20,7 @@ melhores resultados.
 
 | Formato  | Extensão        | Método de importação | Ideal para                         |
 | -------- | --------------- | -------------------- | ---------------------------------- |
-| **PNG**  | `.png`          | Vetorização          | Fotos, imagens com transparência   |
+| **PNG**  | `.webp`          | Vetorização          | Fotos, imagens com transparência   |
 | **JPEG** | `.jpg`, `.jpeg` | Vetorização          | Fotos, imagens de tom contínuo     |
 | **BMP**  | `.bmp`          | Vetorização          | Gráficos simples, capturas de tela |
 
@@ -47,7 +47,7 @@ diálogo permite:
   vetorização)
 - **Ajustar parâmetros** como limiar, inverter e limiar automático
 
-![Diálogo de importação](/screenshots/import-dialog.png)
+![Diálogo de importação](/screenshots/import-dialog.webp)
 
 ### Modo de Importação de Camadas
 

@@ -9,7 +9,7 @@ conjunto de verificações de sanidade e apresenta os resultados em um diálogo
 estruturado. Isso ajuda você a detectar problemas cedo, antes que se tornem
 material desperdiçado.
 
-![Diálogo de Verificação de Sanidade](/screenshots/sanity-check.png)
+![Diálogo de Verificação de Sanidade](/screenshots/sanity-check.webp)
 
 ## Verificações Realizadas
 

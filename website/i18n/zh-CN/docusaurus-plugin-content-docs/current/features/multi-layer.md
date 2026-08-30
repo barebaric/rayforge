@@ -4,7 +4,7 @@ description: "将激光作业组织到具有不同设置的图层中。使用 Ra
 
 # 多图层工作流程
 
-![图层面板](/screenshots/bottom-panel-layers.png)
+![图层面板](/screenshots/bottom-panel-layers.webp)
 
 Rayforge 的多图层系统允许您将作业组织到独立的处理阶段。每个
 图层是工件的容器，并拥有自己的工作流程——一系列步骤，每个

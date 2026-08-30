@@ -132,7 +132,7 @@ Selecciona el modo de grabado que mejor se adapte a tus necesidades:
 
 ### Paso 4: Configurar Ajustes
 
-![Ajustes de paso de grabado](/screenshots/step-settings-engrave-general-variable.png)
+![Ajustes de paso de grabado](/screenshots/step-settings-engrave-general-variable.webp)
 
 ## Ajustes de Grabado
 
@@ -146,7 +146,7 @@ La fila **Modo** selecciona uno de los cuatro modos de grabado. Cada modo expone
 
 #### Ajustes del Modo Potencia Variable
 
-![Ajustes del modo Potencia Variable](/screenshots/step-settings-engrave-general-variable.png)
+![Ajustes del modo Potencia Variable](/screenshots/step-settings-engrave-general-variable.webp)
 
 **Potencia Mín (%):**
 
@@ -190,7 +190,7 @@ Esto es particularmente útil para:
 
 #### Ajustes del Modo Potencia Constante
 
-![Ajustes del modo Potencia Constante](/screenshots/step-settings-engrave-general-constant_power.png)
+![Ajustes del modo Potencia Constante](/screenshots/step-settings-engrave-general-constant_power.webp)
 
 **Umbral (0-255):**
 
@@ -205,7 +205,7 @@ Esto es particularmente útil para:
 
 #### Ajustes del Modo Trama
 
-![Ajustes del modo Trama](/screenshots/step-settings-engrave-general-dither.png)
+![Ajustes del modo Trama](/screenshots/step-settings-engrave-general-dither.webp)
 
 **Algoritmo de Tramado:**
 
@@ -224,7 +224,7 @@ Elige el algoritmo que mejor se adapte a tu imagen y material:
 
 #### Ajustes del Modo Múltiples Profundidades
 
-![Ajustes del modo Múltiples Profundidades](/screenshots/step-settings-engrave-general-multi_pass.png)
+![Ajustes del modo Múltiples Profundidades](/screenshots/step-settings-engrave-general-multi_pass.webp)
 
 **Número de Niveles de Profundidad:**
 
@@ -312,7 +312,7 @@ Corrige un sesgo fijo mecánico o de retardo de disparo entre las pasadas raster
 
 ## Ajustes del Láser
 
-![Ajustes del láser](/screenshots/step-settings-engrave-laser.png)
+![Ajustes del láser](/screenshots/step-settings-engrave-laser.webp)
 
 La potencia, la velocidad y la selección del cabezal láser se encuentran en la página **Láser** del diálogo de ajustes de paso.
 
@@ -331,7 +331,7 @@ La potencia, la velocidad y la selección del cabezal láser se encuentran en la
 
 ## Post-Procesamiento
 
-![Ajustes de post-procesamiento de grabado](/screenshots/step-settings-engrave-post.png)
+![Ajustes de post-procesamiento de grabado](/screenshots/step-settings-engrave-post.webp)
 
 Las operaciones de grabado soportan varias opciones de post-procesamiento:
 

@@ -2,7 +2,7 @@
 
 机器设置中的设备页面允许您直接读取和应用设置到连接的设备（控制器）。这些也称为"美元设置"或 GRBL 中的 `$$` 设置。
 
-![设备设置](/screenshots/machine-settings-device.png)
+![设备设置](/screenshots/machine-settings-device.webp)
 
 :::warning 更改设置时请小心
 错误的固件设置可能导致机器行为不可预测、失去位置，甚至损坏硬件。在更改之前始终记录原始值，并一次修改一个设置。

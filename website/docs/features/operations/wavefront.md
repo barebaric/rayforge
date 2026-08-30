@@ -61,7 +61,7 @@ Use wavefront adaptive clearing for:
 
 Adjust step-over and offset to match your material and desired finish.
 
-![Wavefront operation result](/screenshots/operations-wavefront.png)
+![Wavefront operation result](/screenshots/operations-wavefront.webp)
 
 ## Key Settings
 
@@ -69,7 +69,7 @@ The step settings dialog has three tabs: **Step Settings**, **Laser**, and **Pos
 
 ### Wavefront Settings
 
-![Wavefront step settings](/screenshots/step-settings-wavefront-general.png)
+![Wavefront step settings](/screenshots/step-settings-wavefront-general.webp)
 
 The **Wavefront** group on the _Step Settings_ tab controls the fill pattern.
 
@@ -102,7 +102,7 @@ boundary).
 
 ### Laser settings
 
-![Laser settings](/screenshots/step-settings-wavefront-laser.png)
+![Laser settings](/screenshots/step-settings-wavefront-laser.webp)
 
 Power, speed, and laser head selection live on the **Laser** page of the
 step settings dialog.
@@ -131,7 +131,7 @@ step settings dialog.
 
 ## Post-Processing
 
-![Wavefront post-processing settings](/screenshots/step-settings-wavefront-post.png)
+![Wavefront post-processing settings](/screenshots/step-settings-wavefront-post.webp)
 
 Wavefront operations support:
 

@@ -4,7 +4,7 @@ description: "Verwalte Maschinen in Rayforge — füge sie hinzu, konfiguriere, 
 
 # Maschinen
 
-![Maschinen-Einstellungen](/screenshots/app-settings-machines.png)
+![Maschinen-Einstellungen](/screenshots/app-settings-machines.webp)
 
 Die Maschinen-Seite in den Anwendungseinstellungen zeigt eine Liste aller
 konfigurierten Maschinen. Jeder Eintrag zeigt den Maschinennamen und hat
@@ -17,7 +17,7 @@ mit einem Häkchen markiert.
 2. Wähle ein Geräteprofil aus der Liste als Vorlage — jedes Profil
    konfiguriert die Maschineneinstellungen und den G-Code-Dialekt vor
 
-![Maschine hinzufügen](/screenshots/app-settings-machines-add.png)
+![Maschine hinzufügen](/screenshots/app-settings-machines-add.webp)
 
 3. Der [Maschineneinstellungen-Dialog](../machine/general.md) öffnet sich, in
    dem du die Konfiguration anpassen kannst

@@ -4,7 +4,7 @@ description: "Organize laser jobs into layers with different settings. Manage cu
 
 # Multi-Layer Workflow
 
-![Layers Panel](/screenshots/bottom-panel-layers.png)
+![Layers Panel](/screenshots/bottom-panel-layers.webp)
 
 Rayforge's multi-layer system lets you organize jobs into separate
 processing stages. Each layer is a container for workpieces and has its

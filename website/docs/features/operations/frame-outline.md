@@ -57,7 +57,7 @@ The step settings dialog has three tabs: **Step Settings**, **Laser**, and **Pos
 
 ### Geometry
 
-![Frame Outline step settings](/screenshots/step-settings-frame-outline-general.png)
+![Frame Outline step settings](/screenshots/step-settings-frame-outline-general.webp)
 
 The **Geometry** group on the *Step Settings* tab controls the frame's shape.
 
@@ -86,7 +86,7 @@ Controls where the laser cuts relative to the frame path:
 
 ### Laser settings
 
-![Laser settings](/screenshots/step-settings-frame-outline-laser.png)
+![Laser settings](/screenshots/step-settings-frame-outline-laser.webp)
 
 Power, speed, and laser head selection live on the **Laser** page of the step settings dialog.
 
@@ -114,7 +114,7 @@ Frame outline supports kerf compensation:
 
 ## Post-Processing
 
-![Frame Outline post-processing settings](/screenshots/step-settings-frame-outline-post.png)
+![Frame Outline post-processing settings](/screenshots/step-settings-frame-outline-post.webp)
 
 Frame Outline operations support several post-processing options:
 

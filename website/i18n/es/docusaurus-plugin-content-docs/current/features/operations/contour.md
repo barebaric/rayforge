@@ -43,7 +43,7 @@ Usa el corte de contorno para:
 
 ### Paso 3: Configurar Ajustes
 
-![Configuración de contorno](/screenshots/step-settings-contour-general.png)
+![Configuración de contorno](/screenshots/step-settings-contour-general.webp)
 
 ## Ajustes Principales
 
@@ -51,7 +51,7 @@ El diálogo de ajustes de paso tiene tres pestañas: **Ajustes de Paso**, **Lás
 
 ### Ajustes de Contorno
 
-![Configuración de contorno](/screenshots/step-settings-contour-general.png)
+![Configuración de contorno](/screenshots/step-settings-contour-general.webp)
 
 El grupo **Ajustes de Contorno** en la pestaña _Ajustes de Paso_ controla cómo se traza el contorno.
 
@@ -142,7 +142,7 @@ Esto es útil cuando el trazado predeterminado no captura el nivel de detalle qu
 
 ### Ajustes del Láser
 
-![Ajustes del láser](/screenshots/step-settings-contour-laser.png)
+![Ajustes del láser](/screenshots/step-settings-contour-laser.webp)
 
 La potencia, la velocidad y la selección del cabezal láser se encuentran en la página **Láser** del diálogo de ajustes de paso.
 
@@ -180,7 +180,7 @@ Ver [Kerf](../kerf.md) para una guía detallada.
 
 ## Post-Procesamiento
 
-![Configuración de post-procesamiento de contorno](/screenshots/step-settings-contour-post.png)
+![Configuración de post-procesamiento de contorno](/screenshots/step-settings-contour-post.webp)
 
 Las operaciones de contorno soportan varias opciones de post-procesamiento:
 

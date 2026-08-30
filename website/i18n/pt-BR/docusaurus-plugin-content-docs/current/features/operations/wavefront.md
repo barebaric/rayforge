@@ -60,7 +60,7 @@ Use limpeza adaptativa por frente de onda para:
 Ajuste o passo e o deslocamento para combinar com seu material e
 acabamento desejado.
 
-![Resultado da operação de frente de onda](/screenshots/operations-wavefront.png)
+![Resultado da operação de frente de onda](/screenshots/operations-wavefront.webp)
 
 ## Configurações Principais
 
@@ -68,7 +68,7 @@ O diálogo de configurações de etapa tem três abas: **Configurações de Etap
 
 ### Configurações de Frente de Onda
 
-![Configurações de etapa de Frente de Onda](/screenshots/step-settings-wavefront-general.png)
+![Configurações de etapa de Frente de Onda](/screenshots/step-settings-wavefront-general.webp)
 
 O grupo **Frente de Onda** na aba _Configurações de Etapa_ controla o padrão de preenchimento.
 
@@ -103,7 +103,7 @@ estendem até o limite).
 
 ### Configurações do Laser
 
-![Configurações do laser](/screenshots/step-settings-wavefront-laser.png)
+![Configurações do laser](/screenshots/step-settings-wavefront-laser.webp)
 
 Potência, velocidade e seleção da cabeça do laser ficam na página **Laser** do
 diálogo de configurações de etapa.
@@ -132,7 +132,7 @@ diálogo de configurações de etapa.
 
 ## Pós-Processamento
 
-![Configurações de pós-processamento de Frente de Onda](/screenshots/step-settings-wavefront-post.png)
+![Configurações de pós-processamento de Frente de Onda](/screenshots/step-settings-wavefront-post.webp)
 
 As operações de frente de onda suportam:
 

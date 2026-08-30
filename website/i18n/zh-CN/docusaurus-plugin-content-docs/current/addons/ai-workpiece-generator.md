@@ -8,7 +8,7 @@ AI 工件生成器插件让您只需描述想要什么就能创建设计。输�
 如"一个简单的星形"或"一个8齿齿轮"，AI 将生成一个准备好用于
 激光切割机的工件。
 
-![AI 工件生成器对话框](/screenshots/addon-ai-workpiece-generator.png)
+![AI 工件生成器对话框](/screenshots/addon-ai-workpiece-generator.webp)
 
 ## 要求
 

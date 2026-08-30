@@ -1,6 +1,6 @@
 # Fournisseur IA
 
-![Paramètres du Fournisseur IA](/screenshots/app-settings-ai.png)
+![Paramètres du Fournisseur IA](/screenshots/app-settings-ai.webp)
 
 Configurez les fournisseurs IA que les modules peuvent utiliser pour
 ajouter des fonctionnalités intelligentes à Rayforge.

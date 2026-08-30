@@ -1,6 +1,6 @@
 # Configurações
 
-![Configurações Gerais](/screenshots/app-settings-general.png)
+![Configurações Gerais](/screenshots/app-settings-general.webp)
 
 Personalize o Rayforge para corresponder ao seu fluxo de trabalho e
 preferências. Abra as configurações via **Editar → Configurações** ou

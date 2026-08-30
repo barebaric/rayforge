@@ -5,7 +5,7 @@ authors: rayforge_team
 tags: [introduction, features]
 ---
 
-![Janela Principal do Rayforge](/screenshots/main-standard.png)
+![Janela Principal do Rayforge](/screenshots/main-standard.webp)
 
 Estamos entusiasmados em apresentar o Rayforge, um enviador de G-code moderno
 e software de controle de código aberto, projetado especificamente para

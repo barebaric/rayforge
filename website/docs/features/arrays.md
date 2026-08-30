@@ -24,7 +24,7 @@ dialog is open, and the preview will update live to reflect the new positions.
 The Grid mode arranges copies in a rectangular matrix of rows and columns,
 with configurable horizontal and vertical spacing.
 
-![Grid Array](/screenshots/main-array-grid.png)
+![Grid Array](/screenshots/main-array-grid.webp)
 
 ### Settings
 
@@ -45,7 +45,7 @@ own centre. This is useful for creating circular patterns where each copy
 stays at the original location but is rotated by a fraction of the total
 angle.
 
-![Point Rotation Array](/screenshots/main-array-point-rotation.png)
+![Point Rotation Array](/screenshots/main-array-point-rotation.webp)
 
 ### Settings
 
@@ -68,7 +68,7 @@ Circular mode places copies along a circular arc around a centre point. A
 crosshair marker on the canvas shows the centre, and you can drag it to a
 new position while the dialog is open.
 
-![Circular Array](/screenshots/main-array-circular.png)
+![Circular Array](/screenshots/main-array-circular.webp)
 
 ### Settings
 

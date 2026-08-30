@@ -5,7 +5,7 @@ sur votre matériau de stock ou la zone de travail de la machine. Il utilise un
 algorithme génétique pour trouver un rangement efficace des formes, minimisant
 les pertes et plaçant davantage de pièces sur chaque feuille.
 
-![Dialogue des paramètres Deepnest](/screenshots/addon-deepnest.png)
+![Dialogue des paramètres Deepnest](/screenshots/addon-deepnest.webp)
 
 ## Prérequis
 

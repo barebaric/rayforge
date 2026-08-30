@@ -25,7 +25,7 @@ of which tab is active. Tabs can be reordered by dragging within their strip,
 and you can drag tabs between panel areas or onto dividers to rearrange the
 layout into multiple columns. Empty columns are removed automatically.
 
-![Bottom Panel](/screenshots/bottom-panel-console.png)
+![Bottom Panel](/screenshots/bottom-panel-console.webp)
 
 ## Accessing the Bottom Panel
 

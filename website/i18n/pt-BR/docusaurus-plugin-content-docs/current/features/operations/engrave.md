@@ -132,7 +132,7 @@ Selecione o modo de gravação que melhor se adapta às suas necessidades:
 
 ### Passo 4: Configurar Definições
 
-![Configurações de etapa de gravação](/screenshots/step-settings-engrave-general-variable.png)
+![Configurações de etapa de gravação](/screenshots/step-settings-engrave-general-variable.webp)
 
 ## Configurações de Gravação
 
@@ -146,7 +146,7 @@ A linha **Modo** seleciona um dos quatro modos de gravação. Cada modo expõe c
 
 #### Configurações do Modo Potência Variável
 
-![Configurações do modo Potência Variável](/screenshots/step-settings-engrave-general-variable.png)
+![Configurações do modo Potência Variável](/screenshots/step-settings-engrave-general-variable.webp)
 
 **Potência Mín (%):**
 
@@ -190,7 +190,7 @@ Isso é particularmente útil para:
 
 #### Configurações do Modo Potência Constante
 
-![Configurações do modo Potência Constante](/screenshots/step-settings-engrave-general-constant_power.png)
+![Configurações do modo Potência Constante](/screenshots/step-settings-engrave-general-constant_power.webp)
 
 **Limiar (0-255):**
 
@@ -205,7 +205,7 @@ Isso é particularmente útil para:
 
 #### Configurações do Modo Pontilhado
 
-![Configurações do modo Pontilhado](/screenshots/step-settings-engrave-general-dither.png)
+![Configurações do modo Pontilhado](/screenshots/step-settings-engrave-general-dither.webp)
 
 **Algoritmo de Pontilhamento:**
 
@@ -224,7 +224,7 @@ Escolha o algoritmo que melhor se adapta à sua imagem e material:
 
 #### Configurações do Modo Múltiplas Profundidades
 
-![Configurações do modo Múltiplas Profundidades](/screenshots/step-settings-engrave-general-multi_pass.png)
+![Configurações do modo Múltiplas Profundidades](/screenshots/step-settings-engrave-general-multi_pass.webp)
 
 **Número de Níveis de Profundidade:**
 
@@ -312,7 +312,7 @@ Corrige um desalinhamento fixo mecânico ou de atraso de disparo entre passagens
 
 ## Configurações do Laser
 
-![Configurações do laser](/screenshots/step-settings-engrave-laser.png)
+![Configurações do laser](/screenshots/step-settings-engrave-laser.webp)
 
 Potência, velocidade e seleção da cabeça do laser ficam na página **Laser** do diálogo de configurações de etapa.
 
@@ -331,7 +331,7 @@ Potência, velocidade e seleção da cabeça do laser ficam na página **Laser**
 
 ## Pós-Processamento
 
-![Configurações de pós-processamento de gravação](/screenshots/step-settings-engrave-post.png)
+![Configurações de pós-processamento de gravação](/screenshots/step-settings-engrave-post.webp)
 
 Operações de gravação suportam várias opções de pós-processamento:
 

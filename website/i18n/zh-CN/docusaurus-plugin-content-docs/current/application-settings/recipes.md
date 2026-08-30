@@ -1,6 +1,6 @@
 # 配方和设置
 
-![配方设置](/screenshots/app-settings-recipes.png)
+![配方设置](/screenshots/app-settings-recipes.webp)
 
 Rayforge 提供了一个强大的配方系统，允许您创建、管理和应用一致的设置到您的激光切割项目中。本指南涵盖了从在常规设置中创建配方到将它们应用到操作以及在步骤级别管理设置的完整用户旅程。
 
@@ -28,7 +28,7 @@ Rayforge 提供了一个强大的配方系统，允许您创建、管理和应�
 
 **常规选项卡** - 设置配方名称和描述：
 
-![配方编辑器 - 常规选项卡](/screenshots/recipe-editor-general.png)
+![配方编辑器 - 常规选项卡](/screenshots/recipe-editor-general.webp)
 
 填写基本信息：
 
@@ -39,7 +39,7 @@ Rayforge 提供了一个强大的配方系统，允许您创建、管理和应�
 
 **适用性选项卡** - 定义何时应建议此配方：
 
-![配方编辑器 - 适用性选项卡](/screenshots/recipe-editor-applicability.png)
+![配方编辑器 - 适用性选项卡](/screenshots/recipe-editor-applicability.webp)
 
 所有条件都是可选的 - 将任何字段保留为其"任意"值以匹配所有内容：
 
@@ -53,9 +53,9 @@ Rayforge 提供了一个强大的配方系统，允许您创建、管理和应�
 
 **设置选项卡** - 调整功率、速度和其他参数。当配方针对特定**步骤类型**时，编辑器会显示两个设置页面："激光"页面包含共享的工艺设置（功率、气助等），"步骤设置"页面包含该步骤类型特有的属性（例如切割侧、切割顺序）：
 
-![配方编辑器 - 激光选项卡](/screenshots/recipe-editor-laser.png)
+![配方编辑器 - 激光选项卡](/screenshots/recipe-editor-laser.webp)
 
-![配方编辑器 - 步骤设置选项卡](/screenshots/recipe-editor-step-settings.png)
+![配方编辑器 - 步骤设置选项卡](/screenshots/recipe-editor-step-settings.webp)
 
 - 仅选择**任务类型**（步骤类型为"任意类型"）时，只显示单个"设置"页面，其中包含该任务的工艺设置
 - 两者均保留为"任意"时，只显示所有步骤共享的基本运动设置（切割速度和运行速度）
@@ -67,7 +67,7 @@ Rayforge 提供了一个强大的配方系统，允许您创建、管理和应�
 
 **后处理选项卡** - 将后处理设置（引入/引出、多遍、过切量及其他变换器）存储在配方中，以便应用到其所针对的步骤：
 
-![配方编辑器 - 后处理选项卡](/screenshots/recipe-editor-post-processing.png)
+![配方编辑器 - 后处理选项卡](/screenshots/recipe-editor-post-processing.webp)
 
 每个变换器都带有一个应用开关（行旁的勾选按钮）：
 

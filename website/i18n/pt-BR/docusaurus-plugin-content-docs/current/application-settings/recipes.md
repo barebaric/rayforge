@@ -1,6 +1,6 @@
 # Receitas e Configurações
 
-![Configurações de Receitas](/screenshots/app-settings-recipes.png)
+![Configurações de Receitas](/screenshots/app-settings-recipes.webp)
 
 O Rayforge fornece um poderoso sistema de receitas que permite criar,
 gerenciar e aplicar configurações consistentes em seus projetos de corte a laser.
@@ -33,7 +33,7 @@ Clique em "Adicionar Nova Receita" para abrir o diálogo do editor de receitas.
 
 **Aba Geral** - Defina o nome e descrição da receita:
 
-![Editor de Receitas - Aba Geral](/screenshots/recipe-editor-general.png)
+![Editor de Receitas - Aba Geral](/screenshots/recipe-editor-general.webp)
 
 Preencha as informações básicas:
 
@@ -44,7 +44,7 @@ Preencha as informações básicas:
 
 **Aba Aplicabilidade** - Defina quando esta receita deve ser sugerida:
 
-![Editor de Receitas - Aba Aplicabilidade](/screenshots/recipe-editor-applicability.png)
+![Editor de Receitas - Aba Aplicabilidade](/screenshots/recipe-editor-applicability.webp)
 
 Todos os critérios são opcionais - deixe qualquer campo em seu valor "Qualquer"
 para corresponder a tudo:
@@ -69,9 +69,9 @@ configurações de processo compartilhadas (potência, assistência de ar, etc.)
 e uma página "Configurações de Etapa" com os atributos específicos daquele
 tipo de etapa (ex. lado de corte, ordem de corte):
 
-![Editor de Receitas - Aba Laser](/screenshots/recipe-editor-laser.png)
+![Editor de Receitas - Aba Laser](/screenshots/recipe-editor-laser.webp)
 
-![Editor de Receitas - Aba Configurações de Etapa](/screenshots/recipe-editor-step-settings.png)
+![Editor de Receitas - Aba Configurações de Etapa](/screenshots/recipe-editor-step-settings.webp)
 
 - Selecionar apenas um **tipo de tarefa** (com "Qualquer Tipo" como tipo de
   etapa) mostra uma única página "Configurações" com as configurações de
@@ -91,7 +91,7 @@ marcação ao lado da linha):
 (entrada/saída, multipasse, overscan e outros transformadores) na receita
 para que sejam aplicadas às etapas que ela tem como alvo:
 
-![Editor de Receitas - Aba Pós-Processamento](/screenshots/recipe-editor-post-processing.png)
+![Editor de Receitas - Aba Pós-Processamento](/screenshots/recipe-editor-post-processing.webp)
 
 Cada transformador possui um botão de aplicação (um botão de marcação ao
 lado da linha):

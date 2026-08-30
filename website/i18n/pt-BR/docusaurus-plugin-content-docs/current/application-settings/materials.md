@@ -1,6 +1,6 @@
 # Materiais
 
-![Configurações de Materiais](/screenshots/app-settings-materials.png)
+![Configurações de Materiais](/screenshots/app-settings-materials.webp)
 
 Bibliotecas de materiais no Rayforge permitem organizar e gerenciar coleções
 de materiais para seus projetos de corte e gravação a laser. Este guia

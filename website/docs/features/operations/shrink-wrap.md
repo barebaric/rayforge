@@ -70,7 +70,7 @@ The step settings dialog has three tabs: **Step Settings**, **Laser**, and **Pos
 
 ### Shrink Wrap
 
-![Shrink Wrap step settings](/screenshots/step-settings-shrink-wrap-general.png)
+![Shrink Wrap step settings](/screenshots/step-settings-shrink-wrap-general.webp)
 
 The **Shrink Wrap** group on the *Step Settings* tab controls how the hull fits around the content.
 
@@ -125,7 +125,7 @@ Controls where the laser cuts relative to the shrink-wrap path:
 
 ### Laser settings
 
-![Laser settings](/screenshots/step-settings-shrink-wrap-laser.png)
+![Laser settings](/screenshots/step-settings-shrink-wrap-laser.webp)
 
 Power, speed, and laser head selection live on the **Laser** page of the step settings dialog.
 
@@ -220,7 +220,7 @@ See [Multi-Layer Workflow](../multi-layer.md) for details.
 
 ## Post-Processing
 
-![Shrink Wrap post-processing settings](/screenshots/step-settings-shrink-wrap-post.png)
+![Shrink Wrap post-processing settings](/screenshots/step-settings-shrink-wrap-post.webp)
 
 Shrink Wrap operations support several post-processing options:
 

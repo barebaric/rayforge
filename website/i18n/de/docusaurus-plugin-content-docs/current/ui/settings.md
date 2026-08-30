@@ -1,6 +1,6 @@
 # Einstellungen
 
-![Allgemeine Einstellungen](/screenshots/app-settings-general.png)
+![Allgemeine Einstellungen](/screenshots/app-settings-general.webp)
 
 Passe Rayforge an deinen Workflow und deine Vorlieben an. Öffne die
 Einstellungen über **Bearbeiten → Einstellungen** oder drücke

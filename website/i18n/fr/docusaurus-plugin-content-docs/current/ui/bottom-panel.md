@@ -22,7 +22,7 @@ leur bande, et tu peux glisser des onglets entre les zones du panneau ou sur les
 séparateurs pour réorganiser la disposition en plusieurs colonnes. Les colonnes vides
 sont supprimées automatiquement.
 
-![Panneau inférieur](/screenshots/bottom-panel-console.png)
+![Panneau inférieur](/screenshots/bottom-panel-console.webp)
 
 ## Accéder au panneau inférieur
 

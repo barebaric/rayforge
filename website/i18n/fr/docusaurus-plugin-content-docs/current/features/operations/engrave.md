@@ -132,7 +132,7 @@ Sélectionnez le mode de gravure qui convient le mieux à vos besoins :
 
 ### Étape 4 : Configurer les Paramètres
 
-![Paramètres d'étape de gravure](/screenshots/step-settings-engrave-general-variable.png)
+![Paramètres d'étape de gravure](/screenshots/step-settings-engrave-general-variable.webp)
 
 ## Paramètres de Gravure
 
@@ -146,7 +146,7 @@ La ligne **Mode** sélectionne l'un des quatre modes de gravure. Chaque mode exp
 
 #### Paramètres du Mode Puissance Variable
 
-![Paramètres du mode Puissance Variable](/screenshots/step-settings-engrave-general-variable.png)
+![Paramètres du mode Puissance Variable](/screenshots/step-settings-engrave-general-variable.webp)
 
 **Puissance Min (%) :**
 
@@ -190,7 +190,7 @@ C'est particulièrement utile pour :
 
 #### Paramètres du Mode Puissance Constante
 
-![Paramètres du mode Puissance Constante](/screenshots/step-settings-engrave-general-constant_power.png)
+![Paramètres du mode Puissance Constante](/screenshots/step-settings-engrave-general-constant_power.webp)
 
 **Seuil (0-255) :**
 
@@ -205,7 +205,7 @@ C'est particulièrement utile pour :
 
 #### Paramètres du Mode Tramage
 
-![Paramètres du mode Tramage](/screenshots/step-settings-engrave-general-dither.png)
+![Paramètres du mode Tramage](/screenshots/step-settings-engrave-general-dither.webp)
 
 **Algorithme de Tramage :**
 
@@ -224,7 +224,7 @@ Choisissez l'algorithme qui convient le mieux à votre image et à votre matéri
 
 #### Paramètres du Mode Profondeurs Multiples
 
-![Paramètres du mode Profondeurs Multiples](/screenshots/step-settings-engrave-general-multi_pass.png)
+![Paramètres du mode Profondeurs Multiples](/screenshots/step-settings-engrave-general-multi_pass.webp)
 
 **Nombre de Niveaux de Profondeur :**
 
@@ -312,7 +312,7 @@ Corrige un décalage fixe mécanique ou de délai de tir entre les passes raster
 
 ## Paramètres Laser
 
-![Paramètres laser](/screenshots/step-settings-engrave-laser.png)
+![Paramètres laser](/screenshots/step-settings-engrave-laser.webp)
 
 La puissance, la vitesse et la sélection de la tête laser se trouvent sur la page **Laser** de la boîte de dialogue des paramètres d'étape.
 
@@ -331,7 +331,7 @@ La puissance, la vitesse et la sélection de la tête laser se trouvent sur la p
 
 ## Post-Traitement
 
-![Paramètres de post-traitement de gravure](/screenshots/step-settings-engrave-post.png)
+![Paramètres de post-traitement de gravure](/screenshots/step-settings-engrave-post.webp)
 
 Les opérations de gravure supportent plusieurs options de post-traitement :
 

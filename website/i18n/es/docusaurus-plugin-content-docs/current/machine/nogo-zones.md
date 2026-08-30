@@ -5,7 +5,7 @@ no debería ingresar. Cuando están habilitadas, se verifican como parte de las
 [comprobaciones de sanity del trabajo](../features/sanity-checks.md) antes de ejecutar o
 exportar.
 
-![Zonas Prohibidas](/screenshots/machine-settings-nogo-zones.png)
+![Zonas Prohibidas](/screenshots/machine-settings-nogo-zones.webp)
 
 ## Añadir una Zona Prohibida
 

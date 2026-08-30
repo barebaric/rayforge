@@ -10,7 +10,7 @@ Rayforge 支持多种文件格式，包括 SVG、DXF、PDF、Ruida (.rd) 和光�
 2. 导航到您的设计文件并选择它
 3. 设计将显示在画布上
 
-![导入设计的画布](/screenshots/main-standard.png)
+![导入设计的画布](/screenshots/main-standard.webp)
 
 :::tip 还没有设计？
 您可以使用绘图器创建简单的形状，或从 [Flaticon](https://www.flaticon.com/) 或 [SVG Repo](https://www.svgrepo.com/) 等网站下载免费的 SVG 文件。
@@ -45,7 +45,7 @@ Rayforge 支持多种文件格式，包括 SVG、DXF、PDF、Ruida (.rd) 和光�
    - **速度**：移动速度，单位 mm/min
    - **次数**：重复操作的次数（适用于切割厚材料）
 
-![操作设置](/screenshots/step-settings-contour-general.png)
+![操作设置](/screenshots/step-settings-contour-general.webp)
 
 :::warning 从低功率开始
 处理新材料时，始终从较低的功率设置开始并运行测试切割。逐渐增加功率，直到达到预期效果。使用[材料测试网格](../features/operations/material-test-grid.md)功能系统地找到最佳设置。
@@ -61,7 +61,7 @@ Rayforge 支持多种文件格式，包括 SVG、DXF、PDF、Ruida (.rd) 和光�
 3. 使用鼠标旋转和缩放预览
 4. 验证路径看起来正确
 
-![3D 预览](/screenshots/main-3d.png)
+![3D 预览](/screenshots/main-3d.webp)
 
 :::tip 尽早发现错误
 3D 预览可帮助您发现问题，例如：

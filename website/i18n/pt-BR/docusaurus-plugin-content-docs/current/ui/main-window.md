@@ -5,7 +5,7 @@ gerenciar trabalhos de laser.
 
 ## Layout da Janela
 
-![Janela Principal](/screenshots/main-standard.png)
+![Janela Principal](/screenshots/main-standard.webp)
 
 ### 1. Barra de Menu
 

@@ -132,7 +132,7 @@
 
 ### Крок 4: Налаштуйте параметри
 
-![Налаштування кроку гравіювання](/screenshots/step-settings-engrave-general-variable.png)
+![Налаштування кроку гравіювання](/screenshots/step-settings-engrave-general-variable.webp)
 
 ## Налаштування гравіювання
 
@@ -146,7 +146,7 @@
 
 #### Налаштування режиму змінної потужності
 
-![Налаштування режиму змінної потужності](/screenshots/step-settings-engrave-general-variable.png)
+![Налаштування режиму змінної потужності](/screenshots/step-settings-engrave-general-variable.webp)
 
 **Мін. потужність (%):**
 
@@ -190,7 +190,7 @@
 
 #### Налаштування режиму постійної потужності
 
-![Налаштування режиму постійної потужності](/screenshots/step-settings-engrave-general-constant_power.png)
+![Налаштування режиму постійної потужності](/screenshots/step-settings-engrave-general-constant_power.webp)
 
 **Поріг (0-255):**
 
@@ -205,7 +205,7 @@
 
 #### Налаштування режиму дизерингу
 
-![Налаштування режиму дизерингу](/screenshots/step-settings-engrave-general-dither.png)
+![Налаштування режиму дизерингу](/screenshots/step-settings-engrave-general-dither.webp)
 
 **Алгоритм дизерингу:**
 
@@ -224,7 +224,7 @@
 
 #### Налаштування режиму кількох глибин
 
-![Налаштування режиму кількох глибин](/screenshots/step-settings-engrave-general-multi_pass.png)
+![Налаштування режиму кількох глибин](/screenshots/step-settings-engrave-general-multi_pass.webp)
 
 **Кількість рівнів глибини:**
 
@@ -312,7 +312,7 @@ Rayforge завжди сканує двонаправлено (зліва нап
 
 ## Налаштування лазера
 
-![Налаштування лазера](/screenshots/step-settings-engrave-laser.png)
+![Налаштування лазера](/screenshots/step-settings-engrave-laser.webp)
 
 Потужність, швидкість та вибір лазерної головки розташовані на сторінці **Лазер** діалогового вікна налаштувань кроку.
 
@@ -331,7 +331,7 @@ Rayforge завжди сканує двонаправлено (зліва нап
 
 ## Постобробка
 
-![Налаштування постобробки гравіювання](/screenshots/step-settings-engrave-post.png)
+![Налаштування постобробки гравіювання](/screenshots/step-settings-engrave-post.webp)
 
 Операції гравіювання підтримують кілька опцій постобробки:
 

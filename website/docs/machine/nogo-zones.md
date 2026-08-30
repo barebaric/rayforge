@@ -8,7 +8,7 @@ No-go zones define restricted areas on the work surface that the laser should
 not enter. When enabled, they are checked as part of the
 [job sanity checks](../features/sanity-checks.md) before running or exporting.
 
-![No-Go Zones](/screenshots/machine-settings-nogo-zones.png)
+![No-Go Zones](/screenshots/machine-settings-nogo-zones.webp)
 
 ## Adding a No-Go Zone
 

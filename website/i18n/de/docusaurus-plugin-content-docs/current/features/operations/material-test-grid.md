@@ -37,7 +37,7 @@ Presets sind Startpunkte - du kannst alle Parameter nach Auswahl anpassen.
 
 Passe die Testraster-Parameter im Einstellungsdialog an:
 
-![Materialtest-Raster-Einstellungen](/screenshots/material-test.png)
+![Materialtest-Raster-Einstellungen](/screenshots/material-test.webp)
 
 #### Testtyp
 

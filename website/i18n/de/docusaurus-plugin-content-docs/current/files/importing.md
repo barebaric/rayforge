@@ -20,7 +20,7 @@ optimierst.
 
 | Format   | Erweiterung     | Importmethode       | Am besten für                            |
 | -------- | --------------- | ------------------- | ---------------------------------------- |
-| **PNG**  | `.png`          | Tracing zu Vektoren | Fotos, Bilder mit Transparenz            |
+| **PNG**  | `.webp`          | Tracing zu Vektoren | Fotos, Bilder mit Transparenz            |
 | **JPEG** | `.jpg`, `.jpeg` | Tracing zu Vektoren | Fotos, Bilder mit kontinuierlichen Tönen |
 | **BMP**  | `.bmp`          | Tracing zu Vektoren | Einfache Grafiken, Screenshots           |
 
@@ -46,7 +46,7 @@ ermöglicht dir:
 - **Importmethode wählen** für SVG-Dateien (direkte Vektoren oder Tracing)
 - **Parameter anpassen** wie Schwellenwert, Invertieren und Auto-Schwellenwert
 
-![Import-Dialog](/screenshots/import-dialog.png)
+![Import-Dialog](/screenshots/import-dialog.webp)
 
 ### Ebenen-Import-Modus
 

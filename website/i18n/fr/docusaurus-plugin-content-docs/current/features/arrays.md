@@ -27,7 +27,7 @@ se mettra à jour en direct pour refléter les nouvelles positions.
 Le mode Grille organise les copies dans une matrice rectangulaire de lignes
 et de colonnes, avec un espacement horizontal et vertical configurable.
 
-![Tableau Grille](/screenshots/main-array-grid.png)
+![Tableau Grille](/screenshots/main-array-grid.webp)
 
 ### Paramètres
 
@@ -48,7 +48,7 @@ du propre centre de la sélection. Ceci est utile pour créer des motifs
 circulaires où chaque copie reste à son emplacement d'origine mais est
 tournée d'une fraction de l'angle total.
 
-![Tableau Rotation Ponctuelle](/screenshots/main-array-point-rotation.png)
+![Tableau Rotation Ponctuelle](/screenshots/main-array-point-rotation.webp)
 
 ### Paramètres
 
@@ -72,7 +72,7 @@ point central. Un marqueur en croix sur le canevas indique le centre, et
 vous pouvez le glisser vers une nouvelle position pendant que le dialogue
 est ouvert.
 
-![Tableau Circulaire](/screenshots/main-array-circular.png)
+![Tableau Circulaire](/screenshots/main-array-circular.webp)
 
 ### Paramètres
 

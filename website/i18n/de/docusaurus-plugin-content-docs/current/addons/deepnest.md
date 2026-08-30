@@ -5,7 +5,7 @@ deinem Material oder Maschinenarbeitsbereich an. Es verwendet einen
 genetischen Algorithmus, um eine effiziente Packung der Formen zu finden,
 Abfall zu minimieren und mehr Teile auf jedes Blech zu bringen.
 
-![Deepnest-Einstellungsdialog](/screenshots/addon-deepnest.png)
+![Deepnest-Einstellungsdialog](/screenshots/addon-deepnest.webp)
 
 ## Voraussetzungen
 

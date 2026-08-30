@@ -1,6 +1,6 @@
 # KI-Anbieter
 
-![KI-Anbieter Einstellungen](/screenshots/app-settings-ai.png)
+![KI-Anbieter Einstellungen](/screenshots/app-settings-ai.webp)
 
 Konfiguriere KI-Anbieter, die Addons nutzen können, um Rayforge um
 intelligente Funktionen zu erweitern.

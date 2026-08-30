@@ -27,25 +27,29 @@ from typing import (
 )
 
 import numpy as np
-from gi.repository import Adw, GLib, Gtk
+import pyvips
+from gi.repository import Adw, GdkX11, GLib, Gtk
 from PIL import Image, ImageDraw, ImageFilter
-from PIL.PngImagePlugin import PngInfo
 
+from rayforge.config import CONFIG_DIR
+from rayforge.context import get_context
 from rayforge.core.recipe import Recipe
 from rayforge.core.step_registry import step_registry
-from rayforge.ui_gtk.doceditor.recipes import (
-    AddEditRecipeDialog,
+from rayforge.doceditor.array import ArrayMode
+from rayforge.ui_gtk.array_dialog import (
+    CircularArrayDialog,
+    GridArrayDialog,
+    PointRotationArrayDialog,
 )
-from rayforge.ui_gtk.doceditor.step_settings.dialog import (
-    StepSettingsDialog,
-)
+from rayforge.ui_gtk.doceditor.recipes import AddEditRecipeDialog
+from rayforge.ui_gtk.doceditor.step_settings.dialog import StepSettingsDialog
+from rayforge.ui_gtk.machine.settings_dialog import MachineSettingsDialog
+from rayforge.ui_gtk.settings.settings_dialog import SettingsWindow
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step
     from rayforge.ui_gtk.array_dialog import _BaseArrayDialog
-    from rayforge.ui_gtk.machine.settings_dialog import MachineSettingsDialog
     from rayforge.ui_gtk.mainwindow import MainWindow
-    from rayforge.ui_gtk.settings.settings_dialog import SettingsWindow
 
 logger = logging.getLogger(__name__)
 
@@ -54,8 +58,8 @@ OUTPUT_DIR = PROJECT_ROOT / "website" / "static" / "screenshots"
 TESTS_DIR = PROJECT_ROOT / "tests"
 
 SCREENSHOT_TOOLS = [
-    (["gnome-screenshot", "-w", "-f"], "gnome-screenshot"),
-    (["import", "-window", "root"], "ImageMagick import"),
+    (["import", "-window", "root", "-silent"], "ImageMagick import"),
+    (["gnome-screenshot", "-f"], "gnome-screenshot"),
 ]
 
 T = TypeVar("T")
@@ -75,17 +79,29 @@ def _wm_active() -> bool:
     return bool(os.environ.get("RAYFORGE_XVFB_WM"))
 
 
+def uses_synthetic_decorations() -> bool:
+    """True if window captures get synthetic decorations drawn in.
+
+    On bare Xvfb without a window manager there is nothing to draw
+    a title bar or drop shadow, so the capture pipeline paints its
+    own frame around the window content.
+    """
+    return _under_xvfb() and not _wm_active()
+
+
 def get_screenshot_tools() -> list[tuple[list[str], str]]:
     """
     Return the capture tools usable on the current display.
 
-    ``gnome-screenshot`` captures whatever the session's GNOME
-    Shell shows, over its session D-Bus. Without a window manager
-    on the display (plain Xvfb) it would reach the developer's
-    desktop shell and screenshot that, so only X11-native tools
-    may be used there.
+    ImageMagick's ``import`` is tried first: it scrapes the root
+    window directly, without GNOME Shell's flash and camera shutter
+    sound, which the Xvfb session would otherwise route to the
+    developer's desktop audio. ``gnome-screenshot`` stays as a
+    fallback. Without a window manager on the display (plain Xvfb)
+    gnome-screenshot would reach the developer's desktop shell and
+    screenshot that, so only X11-native tools may be used there.
     """
-    if _under_xvfb() and not _wm_active():
+    if uses_synthetic_decorations():
         return [t for t in SCREENSHOT_TOOLS if t[1] != "gnome-screenshot"]
     return SCREENSHOT_TOOLS
 
@@ -94,17 +110,14 @@ def capture_full_screen() -> Image.Image | None:
     """
     Capture the entire screen via the first succeeding tool.
 
-    The active-window flag is stripped from ``gnome-screenshot``,
-    so the capture always covers the whole screen: the returned
-    image's (0, 0) is the root origin and matches absolute window
-    geometries as reported by xwininfo.
+    The returned image's (0, 0) is the root origin and matches
+    absolute window geometries as reported by xwininfo.
     """
     for cmd_args, _tool_name in get_screenshot_tools():
-        args = [a for a in cmd_args if a != "-w"]
         with tempfile.TemporaryDirectory(prefix="rayforge-shot-") as tmp:
             temp_path = Path(tmp) / "capture.png"
             result = subprocess.run(
-                [*args, str(temp_path)],
+                [*cmd_args, str(temp_path)],
                 capture_output=True,
                 text=True,
                 check=False,
@@ -121,7 +134,7 @@ def capture_full_screen() -> Image.Image | None:
 
 def _get_xid_pid(xid: str) -> int | None:
     result = subprocess.run(
-        ["xprop", "-id", xid, "_NET_WM_PID"],
+        ["xprop", "-id", str(xid), "_NET_WM_PID"],
         capture_output=True,
         text=True,
         check=False,
@@ -137,7 +150,7 @@ def _get_frame_extents(xid: str) -> tuple[int, int, int, int]:
     visible content; _GTK_FRAME_EXTENTS advertises that border.
     """
     result = subprocess.run(
-        ["xprop", "-id", xid, "_GTK_FRAME_EXTENTS"],
+        ["xprop", "-id", str(xid), "_GTK_FRAME_EXTENTS"],
         capture_output=True,
         text=True,
         check=False,
@@ -200,6 +213,44 @@ def get_app_window_box() -> tuple[int, int, int, int] | None:
     return None
 
 
+def get_toplevel_window_box() -> tuple[int, int, int, int] | None:
+    """
+    Locate the app's topmost toplevel window on a managed display.
+
+    _NET_CLIENT_LIST_STACKING lists managed windows bottom to top;
+    the last entry belonging to this process is the window a
+    window-mode capture would have picked, while remaining
+    independent of the pointer position. The box encloses the
+    window content, inside the CSD shadow margins advertised via
+    _GTK_FRAME_EXTENTS. Returns (x, y, width, height).
+    """
+    result = subprocess.run(
+        ["xprop", "-root", "_NET_CLIENT_LIST_STACKING"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    own_pid = os.getpid()
+    topmost_xid = None
+    for xid in re.findall(r"0x[0-9a-f]+", result.stdout):
+        if _get_xid_pid(xid) == own_pid:
+            topmost_xid = int(xid, 16)
+    if topmost_xid is None:
+        logger.warning("No app window found in the stacking order")
+        return None
+    geometry = get_xid_geometry(topmost_xid)
+    if geometry is None:
+        return None
+    wx, wy, ww, wh = geometry
+    left, right, top, bottom = _get_frame_extents(topmost_xid)
+    w = ww - left - right
+    h = wh - top - bottom
+    if w <= 0 or h <= 0:
+        logger.warning("Invalid window geometry after frame extents")
+        return None
+    return (wx + left, wy + top, w, h)
+
+
 # Window framing applied to Xvfb captures, approximating what a
 # desktop compositor would draw around the window.
 DECOR_MARGIN_PX = 24
@@ -243,6 +294,30 @@ def _add_window_decorations(img: Image.Image) -> Image.Image:
     return canvas
 
 
+def capture_app_window() -> Image.Image | None:
+    """Capture the app's topmost toplevel window as an image.
+
+    The full screen is captured and cropped to the window's content
+    box, so neither the pointer position nor which window the
+    capture tool considers active can displace the captured
+    content, and the desktop behind the window cannot bleed into
+    the transparent CSD shadow margins. A synthetic frame with
+    rounded corners and a drop shadow is drawn around the content,
+    which also masks the corners GTK rounds off.
+    """
+    img = capture_full_screen()
+    if img is None:
+        return None
+    if uses_synthetic_decorations():
+        box = get_app_window_box()
+    else:
+        box = get_toplevel_window_box()
+    if box is None:
+        return None
+    x, y, w, h = box
+    return _add_window_decorations(img.crop((x, y, x + w, y + h)))
+
+
 # ---------------------------------------------------------------------------
 # X11 helpers (Xvfb runs without a window manager)
 # ---------------------------------------------------------------------------
@@ -267,6 +342,32 @@ def _load_x11() -> tuple["ctypes.CDLL", int] | None:
             ctypes.c_int,
         ]
         lib.XFlush.argtypes = [ctypes.c_void_p]
+        lib.XDefaultRootWindow.restype = ctypes.c_ulong
+        lib.XDefaultRootWindow.argtypes = [ctypes.c_void_p]
+        lib.XGetGeometry.restype = ctypes.c_int
+        lib.XGetGeometry.argtypes = [
+            ctypes.c_void_p,
+            ctypes.c_ulong,
+            ctypes.POINTER(ctypes.c_ulong),
+            ctypes.POINTER(ctypes.c_int),
+            ctypes.POINTER(ctypes.c_int),
+            ctypes.POINTER(ctypes.c_uint),
+            ctypes.POINTER(ctypes.c_uint),
+            ctypes.POINTER(ctypes.c_uint),
+            ctypes.POINTER(ctypes.c_uint),
+        ]
+        lib.XWarpPointer.restype = ctypes.c_int
+        lib.XWarpPointer.argtypes = [
+            ctypes.c_void_p,
+            ctypes.c_ulong,
+            ctypes.c_ulong,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_uint,
+            ctypes.c_uint,
+            ctypes.c_int,
+            ctypes.c_int,
+        ]
         _x11_lib = lib
     if _x11_display is None:
         _x11_display = _x11_lib.XOpenDisplay(None)
@@ -283,6 +384,67 @@ def move_xid(xid: int, x: int, y: int) -> None:
     lib, display = loaded
     lib.XMoveWindow(display, xid, x, y)
     lib.XFlush(display)
+
+
+def get_root_window_size() -> tuple[int, int] | None:
+    """Return the dimensions of the display's root window."""
+    loaded = _load_x11()
+    if loaded is None:
+        return None
+    lib, display = loaded
+    root = lib.XDefaultRootWindow(display)
+    root_id = ctypes.c_ulong()
+    x = ctypes.c_int()
+    y = ctypes.c_int()
+    width = ctypes.c_uint()
+    height = ctypes.c_uint()
+    border = ctypes.c_uint()
+    depth = ctypes.c_uint()
+    ok = lib.XGetGeometry(
+        display,
+        root,
+        ctypes.byref(root_id),
+        ctypes.byref(x),
+        ctypes.byref(y),
+        ctypes.byref(width),
+        ctypes.byref(height),
+        ctypes.byref(border),
+        ctypes.byref(depth),
+    )
+    if not ok:
+        return None
+    return width.value, height.value
+
+
+def park_mouse_pointer() -> None:
+    """Park the pointer in the screen's bottom-right corner.
+
+    The pointer starts out at the screen center of the headless
+    session, inside the app window, and a pointer resting on a
+    widget makes GTK pop up a tooltip after the hover timeout --
+    right around when the capture fires. The corner holds no app
+    or shell UI, and a tooltip that is already showing hides when
+    the pointer leaves. Never runs on the developer's desktop
+    display.
+    """
+    if not _under_xvfb():
+        return
+    size = get_root_window_size()
+    loaded = _load_x11()
+    if size is None or loaded is None:
+        return
+    lib, display = loaded
+    root = lib.XDefaultRootWindow(display)
+    lib.XWarpPointer(display, 0, root, 0, 0, 0, 0, size[0] - 2, size[1] - 2)
+    lib.XFlush(display)
+
+
+def _get_win_xid(win: "MainWindow") -> int | None:
+    """Return the X11 window id of the main window, if any."""
+    surface = win.get_surface()
+    if isinstance(surface, GdkX11.X11Surface):
+        return surface.get_xid()
+    return None
 
 
 def get_xid_geometry(xid: int) -> tuple[int, int, int, int] | None:
@@ -319,8 +481,6 @@ def get_xid_geometry(xid: int) -> tuple[int, int, int, int] | None:
 
 def _center_transient_on_parent(win: Gtk.Window) -> None:
     """Center a transient dialog on its parent window."""
-    from gi.repository import GdkX11
-
     parent = win.get_transient_for()
     if parent is None:
         return
@@ -409,8 +569,6 @@ def _apply_gtk_font() -> None:
 
 def _snapshot_config_dir() -> dict[str, bytes]:
     """Return a byte-exact copy of every file in the config dir."""
-    from rayforge.config import CONFIG_DIR
-
     return {
         str(path.relative_to(CONFIG_DIR)): path.read_bytes()
         for path in CONFIG_DIR.rglob("*")
@@ -420,8 +578,6 @@ def _snapshot_config_dir() -> dict[str, bytes]:
 
 def _write_config_dir(files: dict[str, bytes]) -> None:
     """Restore the config dir to the given snapshot of file contents."""
-    from rayforge.config import CONFIG_DIR
-
     for path in CONFIG_DIR.rglob("*"):
         if path.is_file():
             rel = str(path.relative_to(CONFIG_DIR))
@@ -454,8 +610,6 @@ def _suppress_config_writes() -> None:
     events, and not from the shutdown sequence.
     """
     try:
-        from rayforge.context import get_context
-
         context = get_context()
         context.config_mgr.save = _noop_save
         context.machine_mgr.save_machine = _noop_save_machine
@@ -503,46 +657,49 @@ def restore_config(func: Callable) -> Callable:
 
 
 def get_target(default: str) -> str:
-    """Return the screenshot target from the TARGET environment variable."""
-    return os.environ.get("TARGET", default)
+    """Return the screenshot target, defaulting to ``default``."""
+    return os.environ.setdefault("TARGET", default)
 
 
 def target_to_filename(target: str) -> str:
     """Map a target to its output filename (1:1).
 
     Targets use ``:`` as a separator (e.g. ``machine-settings:camera``);
-    filenames use ``-`` (e.g. ``machine-settings-camera.png``).
+    filenames use ``-`` (e.g. ``machine-settings-camera.webp``).
+
     """
-    return target.replace(":", "-") + ".png"
+    return target.replace(":", "-") + ".webp"
 
 
-def _save_png_deterministic(img: Image.Image, output_path: Path) -> bool:
+def get_output_name() -> str:
+    """Return the output filename for the current TARGET env var."""
+    target = os.environ.get("TARGET")
+    if not target:
+        raise RuntimeError(
+            "TARGET environment variable is not set; run via "
+            "'pixi run screenshot <target>'"
+        )
+    return target_to_filename(target)
+
+
+WEBP_QUALITY = 90
+WEBP_EFFORT = 6
+
+
+def _encode_webp(img: Image.Image) -> bytes:
+    """Encode a PIL image to lossless WebP.
+
+    Encoding is deterministic: identical pixels always produce
+    identical files.
     """
-    Save a PNG image deterministically, only updating if content changed.
-
-    Strips metadata and uses consistent compression to ensure identical
-    screenshots produce identical files.
-    """
-    img = img.copy()
-    img.info.clear()
-
-    if output_path.exists():
-        try:
-            existing = Image.open(output_path)
-            if (
-                existing.size == img.size
-                and existing.mode == img.mode
-                and _images_visually_equal(existing, img)
-            ):
-                logger.info(f"Screenshot unchanged: {output_path}")
-                return True
-        except (OSError, ValueError) as e:
-            logger.debug(f"Comparison failed: {e}")
-
-    pnginfo = PngInfo()
-    img.save(output_path, format="PNG", compress_level=9, pnginfo=pnginfo)
-    logger.info(f"Screenshot saved to {output_path}")
-    return True
+    with tempfile.TemporaryDirectory(prefix="rayforge-webp-") as tmp:
+        src = Path(tmp) / "input.png"
+        img.save(src, format="PNG", compress_level=9)
+        image = pyvips.Image.new_from_file(str(src))
+        image = image.colourspace("srgb")
+        return image.webpsave_buffer(
+            lossless=True, Q=WEBP_QUALITY, effort=WEBP_EFFORT
+        )
 
 
 def _images_visually_equal(
@@ -554,17 +711,23 @@ def _images_visually_equal(
     """
     Compare two images using a perceptual heuristic.
 
+    Rendered captures carry sub-perceptual pixel noise between runs
+    (anti-aliasing, composited shadows), so byte comparison would
+    rewrite visually identical screenshots on every run.
+
     Args:
         img1: First image to compare.
         img2: Second image to compare.
-        threshold: Minimum per-channel difference to count as changed (0-255).
-        max_different: Maximum fraction of pixels that can differ (0.0-1.0).
+        threshold: Minimum per-channel difference to count as changed
+            (0-255).
+        max_different: Maximum fraction of pixels that can differ
+            (0.0-1.0).
 
     Returns:
         True if images are visually equal within tolerance.
     """
-    arr1 = np.array(img1)
-    arr2 = np.array(img2)
+    arr1 = np.array(img1.convert("RGBA"))
+    arr2 = np.array(img2.convert("RGBA"))
 
     diff = np.abs(arr1.astype(int) - arr2.astype(int))
     significant_diff = np.any(diff > threshold, axis=-1)
@@ -572,6 +735,33 @@ def _images_visually_equal(
     total_pixels = arr1.shape[0] * arr1.shape[1]
 
     return different_pixels / total_pixels <= max_different
+
+
+def _save_webp_deterministic(img: Image.Image, output_path: Path) -> bool:
+    """
+    Save an image as lossless WebP, only writing if content changed.
+
+    The existing file is decoded — losslessly, so it holds the
+    previous capture's exact pixels — and compared perceptually
+    against the new capture. Only sub-perceptual render noise
+    between runs is tolerated; visually identical screenshots are
+    left untouched and identical pixels always produce identical
+    files.
+    """
+    if output_path.exists():
+        try:
+            existing = Image.open(output_path)
+            if existing.size == img.size and _images_visually_equal(
+                existing, img
+            ):
+                logger.info(f"Screenshot unchanged: {output_path}")
+                return True
+        except (OSError, ValueError) as e:
+            logger.debug(f"Comparison failed: {e}")
+
+    output_path.write_bytes(_encode_webp(img))
+    logger.info(f"Screenshot saved to {output_path}")
+    return True
 
 
 def run_on_main_thread(func: Callable[[], T], timeout: float = 10.0) -> T:
@@ -599,75 +789,60 @@ def run_on_main_thread(func: Callable[[], T], timeout: float = 10.0) -> T:
     raise TimeoutError(f"Function did not complete within {timeout}s")
 
 
-def take_screenshot(output_name: str) -> bool:
+def take_screenshot(output_name: str | None = None) -> bool:
     """
-    Take a screenshot of the active window.
+    Take a screenshot of the app's topmost toplevel window.
 
     Args:
-        output_name: Filename (saved to website/static/images/).
+        output_name: Filename (saved to OUTPUT_DIR). Defaults to the
+            filename derived from the TARGET environment variable.
 
     Returns:
         True if screenshot was saved successfully.
     """
+    if output_name is None:
+        output_name = get_output_name()
     output_path = OUTPUT_DIR / output_name
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
+    park_mouse_pointer()
     time.sleep(0.5)
 
-    temp_path = output_path.with_suffix(".temp.png")
-
-    for cmd_args, tool_name in get_screenshot_tools():
-        result = subprocess.run(
-            [*cmd_args, str(temp_path)],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if result.returncode == 0:
-            try:
-                img = Image.open(temp_path)
-                if _under_xvfb() and not _wm_active():
-                    box = get_app_window_box()
-                    if box is not None:
-                        x, y, w, h = box
-                        decorated = _add_window_decorations(
-                            img.crop((x, y, x + w, y + h))
-                        )
-                        img = decorated
-                _save_png_deterministic(img, output_path)
-                temp_path.unlink()
-                return True
-            except (OSError, ValueError, TypeError) as e:
-                logger.error(f"Failed to process screenshot: {e}")
-                if temp_path.exists():
-                    temp_path.unlink()
-                return False
-
-    logger.error("Failed to take screenshot with available tools")
-    return False
+    try:
+        img = capture_app_window()
+        if img is None:
+            logger.error("Failed to take screenshot with available tools")
+            return False
+        _save_webp_deterministic(img, output_path)
+        logger.info(f"Screenshot saved to {output_path}")
+        return True
+    except (OSError, ValueError, TypeError) as e:
+        logger.error(f"Failed to process screenshot: {e}")
+        return False
 
 
-def take_window_screenshot(win: "MainWindow", output_name: str) -> bool:
+def take_window_screenshot(
+    win: "MainWindow", output_name: str | None = None
+) -> bool:
     """
     Take a screenshot of the main window including any open non-modal
-    dialogs.  Captures the full screen via ``gnome-screenshot`` (no
-    ``-w`` flag) and crops to the main-window geometry obtained from
-    ``xwininfo``.
+    dialogs.  Captures the full screen and crops to the main-window
+    geometry obtained from ``xwininfo``.
+
+    Args:
+        win: The main window.
+        output_name: Filename (saved to OUTPUT_DIR). Defaults to the
+            filename derived from the TARGET environment variable.
     """
+    if output_name is None:
+        output_name = get_output_name()
     output_path = OUTPUT_DIR / output_name
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
+    park_mouse_pointer()
     time.sleep(0.5)
 
-    def _get_xid():
-        from gi.repository import GdkX11
-
-        surface = win.get_surface()
-        if isinstance(surface, GdkX11.X11Surface):
-            return surface.get_xid()
-        return None
-
-    xid = run_on_main_thread(_get_xid)
+    xid = run_on_main_thread(lambda: _get_win_xid(win))
     if xid is None:
         logger.error("Could not get X11 window id")
         return False
@@ -695,16 +870,31 @@ def take_window_screenshot(win: "MainWindow", output_name: str) -> bool:
         return False
 
     try:
-        crop_box = (
-            wx + shadow_x,
-            wy + shadow_y,
-            wx + shadow_x + gtk_w,
-            wy + shadow_y + gtk_h,
-        )
-        cropped = img.crop(crop_box)
-        if _under_xvfb() and not _wm_active():
-            cropped = _add_window_decorations(cropped)
-        _save_png_deterministic(cropped, output_path)
+        if uses_synthetic_decorations():
+            # No window manager: the captured geometry is the bare
+            # client area; crop to it and draw the frame ourselves.
+            shadow_x = (ww - gtk_w) // 2
+            shadow_y = (wh - gtk_h) // 2
+            crop_box = (
+                wx + shadow_x,
+                wy + shadow_y,
+                wx + shadow_x + gtk_w,
+                wy + shadow_y + gtk_h,
+            )
+        else:
+            # With a window manager the geometry spans the full
+            # client-side-decoration surface; crop to the content
+            # inside the CSD shadow margins so the desktop behind
+            # the window cannot bleed into the output.
+            left, right, top, bottom = _get_frame_extents(xid)
+            crop_box = (
+                wx + left,
+                wy + top,
+                wx + ww - right,
+                wy + wh - bottom,
+            )
+        cropped = _add_window_decorations(img.crop(crop_box))
+        _save_webp_deterministic(cropped, output_path)
         logger.info(f"Window screenshot saved to {output_path}")
         return True
     except (OSError, ValueError, TypeError) as e:
@@ -713,7 +903,7 @@ def take_window_screenshot(win: "MainWindow", output_name: str) -> bool:
 
 
 def take_cropped_screenshot(
-    output_name: str,
+    output_name: str | None = None,
     *,
     from_bottom: int | None = None,
     from_top: int | None = None,
@@ -721,10 +911,12 @@ def take_cropped_screenshot(
     from_right: int | None = None,
 ) -> bool:
     """
-    Take a screenshot of the active window and crop it.
+    Takes a screenshot of the app's topmost toplevel window and
+    crops margins off it.
 
     Args:
-        output_name: Filename (saved to OUTPUT_DIR).
+        output_name: Filename (saved to OUTPUT_DIR). Defaults to the
+            filename derived from the TARGET environment variable.
         from_bottom: Crop this many pixels from the bottom.
         from_top: Crop this many pixels from the top.
         from_left: Crop this many pixels from the left.
@@ -733,39 +925,19 @@ def take_cropped_screenshot(
     Returns:
         True if screenshot was saved successfully.
     """
+    if output_name is None:
+        output_name = get_output_name()
     output_path = OUTPUT_DIR / output_name
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
+    park_mouse_pointer()
     time.sleep(0.5)
 
-    temp_path = output_path.with_suffix(".temp.png")
-
-    success = False
-    for cmd_args, tool_name in get_screenshot_tools():
-        result = subprocess.run(
-            [*cmd_args, str(temp_path)],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if result.returncode == 0:
-            success = True
-            break
-
-    if not success:
-        logger.error("Failed to take screenshot with available tools")
-        return False
-
     try:
-        img = Image.open(temp_path)
-        if _under_xvfb() and not _wm_active():
-            box = get_app_window_box()
-            if box is not None:
-                x, y, w, h = box
-                decorated = _add_window_decorations(
-                    img.crop((x, y, x + w, y + h))
-                )
-                img = decorated
+        img = capture_app_window()
+        if img is None:
+            logger.error("Failed to take screenshot with available tools")
+            return False
         width, height = img.size
 
         left = from_left or 0
@@ -774,14 +946,11 @@ def take_cropped_screenshot(
         bottom = height - (from_bottom or 0)
 
         cropped = img.crop((left, top, right, bottom))
-        _save_png_deterministic(cropped, output_path)
-        temp_path.unlink()
+        _save_webp_deterministic(cropped, output_path)
         logger.info(f"Cropped screenshot saved to {output_path}")
         return True
     except (OSError, ValueError, TypeError) as e:
         logger.error(f"Failed to crop screenshot: {e}")
-        if temp_path.exists():
-            temp_path.unlink()
         return False
 
 
@@ -866,20 +1035,33 @@ def set_window_size(
 
     actual_width = 0
     actual_height = 0
+    applied = False
     start = time.time()
     while time.time() - start < timeout:
         actual_width = run_on_main_thread(lambda: win.get_width())
         actual_height = run_on_main_thread(lambda: win.get_height())
         if actual_width == width and actual_height == height:
-            logger.info(f"Window size set to {width}x{height}")
-            return True
+            applied = True
+            break
         time.sleep(0.1)
 
-    logger.warning(
-        f"Window size not applied (expected {width}x{height}, "
-        f"got {actual_width}x{actual_height})"
-    )
-    return False
+    if applied:
+        logger.info(f"Window size set to {width}x{height}")
+    else:
+        logger.warning(
+            f"Window size not applied (expected {width}x{height}, "
+            f"got {actual_width}x{actual_height})"
+        )
+
+    # Anchor the window near the origin so its full client-side
+    # decoration surface (shadow margins included) always sits fully
+    # on screen, at a deterministic position, no matter how the
+    # window manager placed or anchored it before.
+    xid = run_on_main_thread(lambda: _get_win_xid(win))
+    if xid is not None:
+        move_xid(xid, 16, 16)
+
+    return applied
 
 
 def show_panel(
@@ -946,8 +1128,6 @@ def open_machine_settings(
     win: "MainWindow", page: str = "general"
 ) -> "MachineSettingsDialog":
     """Open machine settings dialog on the specified page."""
-    from rayforge.context import get_context
-    from rayforge.ui_gtk.machine.settings_dialog import MachineSettingsDialog
 
     def _open() -> "MachineSettingsDialog":
         config = get_context().config
@@ -971,7 +1151,6 @@ def open_app_settings(
     win: "MainWindow", page: str = "general"
 ) -> "SettingsWindow":
     """Open app settings dialog on the specified page."""
-    from rayforge.ui_gtk.settings.settings_dialog import SettingsWindow
 
     def _open() -> "SettingsWindow":
         dialog = SettingsWindow(initial_page=page)
@@ -988,10 +1167,6 @@ def open_step_settings(
     win: "MainWindow", step_index: int = 0, page: str = "step-settings"
 ) -> "StepSettingsDialog":
     """Open step settings dialog for the step at the given index."""
-    from rayforge.ui_gtk.doceditor.step_settings.dialog import (
-        StepSettingsDialog,
-    )
-
     step = get_step_by_index(win, step_index)
     if not step:
         raise ValueError(f"Step at index {step_index} not found")
@@ -1132,8 +1307,10 @@ def open_material_test(win: "MainWindow") -> "StepSettingsDialog":
     """Open material test grid dialog."""
 
     def _open() -> "StepSettingsDialog":
+        context = win.doc_editor.context
         step_cls = step_registry.get("MaterialTestStep")
-        step = step_cls.create(win.doc_editor.context)
+        assert step_cls is not None
+        step = step_cls.create(context)
         step.name = "Material Test Grid"
         dialog = StepSettingsDialog(
             editor=win.doc_editor,
@@ -1154,12 +1331,6 @@ def open_array_dialog(
     win: "MainWindow", mode: str = "grid"
 ) -> "_BaseArrayDialog":
     """Open an array dialog for the current selection."""
-    from rayforge.doceditor.array import ArrayMode
-    from rayforge.ui_gtk.array_dialog import (
-        CircularArrayDialog,
-        GridArrayDialog,
-        PointRotationArrayDialog,
-    )
 
     mode_map = {
         "grid": (ArrayMode.GRID, GridArrayDialog),
@@ -1216,6 +1387,7 @@ def wcs(win: "MainWindow", wcs_name: str):
     Restores the original WCS on exit.
     """
     machine = win.doc_editor.context.machine
+    assert machine is not None
     original = run_on_main_thread(lambda: machine.active_wcs)
 
     def _switch():
@@ -1232,12 +1404,16 @@ def _bootstrap_xvfb_session() -> None:
     """Apply session fixes once all helpers are defined.
 
     Runs when the harness is used inside the composited Xvfb
-    session: place unmanaged dialogs ourselves when no window
-    manager is present, and publish the desktop font, since the
-    private session has no XSettings provider.
+    session: park the pointer so no widget is ever hovered (the
+    Xvfb pointer starts on top of the window, and a tooltip shown
+    under a modal grab survives even a later pointer warp), place
+    unmanaged dialogs ourselves when no window manager is present,
+    and publish the desktop font, since the private session has no
+    XSettings provider.
     """
     if not _under_xvfb():
         return
+    park_mouse_pointer()
     if not _wm_active():
         install_dialog_placement()
     run_on_main_thread(_apply_gtk_font)

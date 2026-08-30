@@ -3,7 +3,7 @@
 La vista 3D te permite visualizar tus trayectorias de código G y simular la ejecución
 del trabajo antes de enviarlas a tu máquina.
 
-![Vista Previa 3D](/screenshots/main-3d.png)
+![Vista Previa 3D](/screenshots/main-3d.webp)
 
 ## Abriendo la Vista 3D
 

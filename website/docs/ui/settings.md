@@ -4,7 +4,7 @@ description: "Application settings in Rayforge — configure UI preferences, uni
 
 # Settings
 
-![General Settings](/screenshots/app-settings-general.png)
+![General Settings](/screenshots/app-settings-general.webp)
 
 Customize Rayforge to match your workflow and preferences. Open the settings
 dialog via **Edit → Settings** or press <kbd>ctrl+comma</kbd>.

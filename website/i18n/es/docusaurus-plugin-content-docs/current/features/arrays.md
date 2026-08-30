@@ -26,7 +26,7 @@ actualizará en vivo para reflejar las nuevas posiciones.
 El modo Cuadrícula organiza las copias en una matriz rectangular de filas y
 columnas, con espaciado horizontal y vertical configurable.
 
-![Array Cuadrícula](/screenshots/main-array-grid.png)
+![Array Cuadrícula](/screenshots/main-array-grid.webp)
 
 ### Configuración
 
@@ -47,7 +47,7 @@ propio centro de la selección. Esto es útil para crear patrones circulares
 donde cada copia permanece en su ubicación original pero se rota por una
 fracción del ángulo total.
 
-![Array Rotación Puntual](/screenshots/main-array-point-rotation.png)
+![Array Rotación Puntual](/screenshots/main-array-point-rotation.webp)
 
 ### Configuración
 
@@ -70,7 +70,7 @@ El modo Circular coloca copias a lo largo de un arco circular alrededor de
 un punto central. Un marcador de cruz en el lienzo muestra el centro, y
 puedes arrastrarlo a una nueva posición mientras el diálogo está abierto.
 
-![Array Circular](/screenshots/main-array-circular.png)
+![Array Circular](/screenshots/main-array-circular.webp)
 
 ### Configuración
 

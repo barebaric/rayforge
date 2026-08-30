@@ -6,7 +6,7 @@ description: "Configure custom G-code settings in Rayforge. Adjust start, end, a
 
 The G-code page in Machine Settings configures how Rayforge generates G-code for your machine.
 
-![G-code Settings](/screenshots/machine-settings-gcode.png)
+![G-code Settings](/screenshots/machine-settings-gcode.webp)
 
 :::info
 This page is only shown for machines that use G-code-based drivers (e.g.

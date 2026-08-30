@@ -10,7 +10,7 @@ Rayforge unterstützt verschiedene Dateiformate, darunter SVG, DXF, PDF, Ruida (
 2. Navigiere zu deiner Designdatei und wähle sie aus
 3. Das Design erscheint auf der Arbeitsfläche
 
-![Arbeitsfläche mit importiertem Design](/screenshots/main-standard.png)
+![Arbeitsfläche mit importiertem Design](/screenshots/main-standard.webp)
 
 :::tip Noch kein Design?
 Du kannst einfache Formen mit dem Skizzierer erstellen oder kostenlose SVG-Dateien von Seiten wie [Flaticon](https://www.flaticon.com/) oder [SVG Repo](https://www.svgrepo.com/) herunterladen.
@@ -45,7 +45,7 @@ Operationen definieren, wie Rayforge dein Design verarbeitet. Häufige Operation
    - **Geschwindigkeit**: Bewegungsgeschwindigkeit in mm/min
    - **Durchgänge**: Anzahl der Wiederholungen der Operation (nützlich zum Schneiden dicker Materialien)
 
-![Operationseinstellungen](/screenshots/step-settings-contour-general.png)
+![Operationseinstellungen](/screenshots/step-settings-contour-general.webp)
 
 :::warning Mit niedriger Leistung beginnen
 Wenn du mit neuen Materialien arbeitest, beginne immer mit niedrigeren Leistungseinstellungen und führe Testschnitte durch. Erhöhe die Leistung schrittweise, bis du das gewünschte Ergebnis erzielst. Verwende die Funktion [Materialtest-Raster](../features/operations/material-test-grid.md), um systematisch optimale Einstellungen zu finden.
@@ -61,7 +61,7 @@ Bevor du an deine Maschine sendest, zeige den Werkzeugweg in 3D an:
 3. Verwende deine Maus, um die Vorschau zu drehen und zu zoomen
 4. Überprüfe, ob der Pfad korrekt aussieht
 
-![3D-Vorschau](/screenshots/main-3d.png)
+![3D-Vorschau](/screenshots/main-3d.webp)
 
 :::tip Fehler frühzeitig erkennen
 Die 3D-Vorschau hilft dir, Probleme zu erkennen wie:

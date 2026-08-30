@@ -5,7 +5,7 @@ authors: rayforge_team
 tags: [engraving, optimization, quality, workflow]
 ---
 
-![3D попередній перегляд](/screenshots/main-3d.png)
+![3D попередній перегляд](/screenshots/main-3d.webp)
 
 Отримання результатів лазерного гравірування професійної якості вимагає більше, ніж
 просто good hardware—ваші налаштування програмного забезпечення та робочий процес теж мають значення. Ось

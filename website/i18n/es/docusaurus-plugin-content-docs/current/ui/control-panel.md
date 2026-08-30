@@ -22,7 +22,7 @@ permite alternar entre la **Consola** y el **Visor de Código G**. Los controles
 de desplazamiento y WCS en el lado derecho permanecen visibles
 independientemente de la pestaña activa.
 
-![Panel Inferior](/screenshots/bottom-panel-console.png)
+![Panel Inferior](/screenshots/bottom-panel-console.webp)
 
 ## Accediendo al Panel Inferior
 

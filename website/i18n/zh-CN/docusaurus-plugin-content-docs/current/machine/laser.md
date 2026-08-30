@@ -2,7 +2,7 @@
 
 机器设置中的激光页面配置您的激光头及其属性。
 
-![激光设置](/screenshots/machine-settings-laser.png)
+![激光设置](/screenshots/machine-settings-laser.webp)
 
 ## 激光头
 

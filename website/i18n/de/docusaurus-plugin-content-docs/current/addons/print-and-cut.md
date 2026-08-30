@@ -20,7 +20,7 @@ den Steuerungen rechts.
 
 ## Schritt 1: Designpunkte auswählen
 
-![Designpunkte auswählen](/screenshots/addon-print-and-cut-pick.png)
+![Designpunkte auswählen](/screenshots/addon-print-and-cut-pick.webp)
 
 Das linke Panel zeigt ein gerendertes Bild deines ausgewählten Werkstücks.
 Klicke direkt auf das gerenderte Bild, um den ersten Ausrichtungspunkt zu
@@ -42,7 +42,7 @@ Sobald beide Punkte platziert sind, klicke auf **Weiter**, um fortzufahren.
 
 ## Schritt 2: Physische Positionen aufzeichnen
 
-![Physische Positionen aufzeichnen](/screenshots/addon-print-and-cut-jog.png)
+![Physische Positionen aufzeichnen](/screenshots/addon-print-and-cut-jog.webp)
 
 Auf dieser Seite bewegst du den Laser zu den physischen Positionen, die den
 beiden ausgewählten Designpunkten entsprechen. Das rechte Panel zeigt ein
@@ -65,7 +65,7 @@ Positionen aufgezeichnet sind, klicke auf **Weiter**, um fortzufahren.
 
 ## Schritt 3: Transformation überprüfen und anwenden
 
-![Transformation überprüfen und anwenden](/screenshots/addon-print-and-cut-apply.png)
+![Transformation überprüfen und anwenden](/screenshots/addon-print-and-cut-apply.webp)
 
 Die letzte Seite zeigt die berechnete Ausrichtung als Versatz und
 Drehwinkel an. Diese Werte werden aus dem Unterschied zwischen deinen

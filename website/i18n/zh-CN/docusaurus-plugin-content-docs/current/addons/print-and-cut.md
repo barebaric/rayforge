@@ -12,7 +12,7 @@
 
 ## 第一步：选择设计点
 
-![选择设计点](/screenshots/addon-print-and-cut-pick.png)
+![选择设计点](/screenshots/addon-print-and-cut-pick.webp)
 
 左侧面板显示所选工件的渲染图。直接在渲染图上点击以放置第一个对齐点（绿色标记），然后再次点击放置第二个点（蓝色标记）。一条虚线连接两个点。
 
@@ -24,7 +24,7 @@
 
 ## 第二步：记录物理位置
 
-![记录物理位置](/screenshots/addon-print-and-cut-jog.png)
+![记录物理位置](/screenshots/addon-print-and-cut-jog.webp)
 
 在此页面上，您将激光移动到与所选两个设计点对应的物理位置。右侧面板显示一个方向键盘用于移动，以及一个距离控件来设置每步激光移动的距离。
 
@@ -36,7 +36,7 @@
 
 ## 第三步：查看并应用变换
 
-![查看并应用变换](/screenshots/addon-print-and-cut-apply.png)
+![查看并应用变换](/screenshots/addon-print-and-cut-apply.webp)
 
 最后一页显示计算得出的对齐结果，包括平移偏移和旋转角度。这些值是根据您的设计点与记录的物理位置之间的差异计算得出的。
 

@@ -4,7 +4,7 @@ description: "Organiza trabajos láser en capas con diferentes ajustes. Gestiona
 
 # Flujo de trabajo multicapa
 
-![Panel de capas](/screenshots/bottom-panel-layers.png)
+![Panel de capas](/screenshots/bottom-panel-layers.webp)
 
 El sistema multicapa de Rayforge te permite organizar trabajos en etapas
 de procesamiento separadas. Cada capa es un contenedor para piezas de

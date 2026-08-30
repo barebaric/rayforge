@@ -4,7 +4,7 @@ description: "Configure AI provider settings in Rayforge. Connect to OpenAI-comp
 
 # AI Provider
 
-![AI Provider Settings](/screenshots/app-settings-ai.png)
+![AI Provider Settings](/screenshots/app-settings-ai.webp)
 
 Configure AI providers that addons can use to add intelligent features
 to Rayforge.

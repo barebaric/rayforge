@@ -5,7 +5,7 @@ authors: rayforge_team
 tags: [engraving, optimization, quality, workflow]
 ---
 
-![3D Preview](/screenshots/main-3d.png)
+![3D Preview](/screenshots/main-3d.webp)
 
 Professionelle Lasergravierergebnisse erfordern mehr als nur gute Hardware –
 auch deine Software-Einstellungen und dein Workflow sind wichtig. Hier sind fünf

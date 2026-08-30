@@ -1,6 +1,6 @@
 # Recetas y Ajustes
 
-![Ajustes de Recetas](/screenshots/app-settings-recipes.png)
+![Ajustes de Recetas](/screenshots/app-settings-recipes.webp)
 
 Rayforge proporciona un potente sistema de recetas que te permite crear,
 gestionar y aplicar ajustes consistentes en tus proyectos de corte láser.
@@ -33,7 +33,7 @@ Haz clic en "Añadir Nueva Receta" para abrir el diálogo del editor de recetas.
 
 **Pestaña General** - Establece el nombre y descripción de la receta:
 
-![Editor de Recetas - Pestaña General](/screenshots/recipe-editor-general.png)
+![Editor de Recetas - Pestaña General](/screenshots/recipe-editor-general.webp)
 
 Completa la información básica:
 
@@ -44,7 +44,7 @@ Completa la información básica:
 
 **Pestaña de Aplicabilidad** - Define cuándo se debe sugerir esta receta:
 
-![Editor de Recetas - Pestaña Aplicabilidad](/screenshots/recipe-editor-applicability.png)
+![Editor de Recetas - Pestaña Aplicabilidad](/screenshots/recipe-editor-applicability.webp)
 
 Todos los criterios son opcionales - deja cualquier campo en su valor
 "Any" para coincidir con todo:
@@ -69,9 +69,9 @@ proceso compartidos (potencia, asistencia de aire, etc.) y una página
 "Ajustes de Paso" con los atributos específicos de ese tipo de paso
 (ej., lado de corte, orden de corte):
 
-![Editor de Recetas - Pestaña Laser](/screenshots/recipe-editor-laser.png)
+![Editor de Recetas - Pestaña Laser](/screenshots/recipe-editor-laser.webp)
 
-![Editor de Recetas - Pestaña Ajustes de Paso](/screenshots/recipe-editor-step-settings.png)
+![Editor de Recetas - Pestaña Ajustes de Paso](/screenshots/recipe-editor-step-settings.webp)
 
 - Seleccionar solo un **tipo de tarea** (con "Any Type" como tipo de
   paso) muestra una única página "Ajustes" con los ajustes de proceso
@@ -89,7 +89,7 @@ verificación junto a la fila):
 (entrada/salida, multipase, overscan y otros transformadores) en la
 receta para que se apliquen a los pasos que esta tiene como objetivo:
 
-![Editor de Recetas - Pestaña Post-Procesamiento](/screenshots/recipe-editor-post-processing.png)
+![Editor de Recetas - Pestaña Post-Procesamiento](/screenshots/recipe-editor-post-processing.webp)
 
 Cada transformador tiene un conmutador de aplicación (un botón de
 verificación junto a la fila):

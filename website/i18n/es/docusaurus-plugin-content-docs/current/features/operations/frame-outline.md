@@ -53,7 +53,7 @@ El diálogo de ajustes de paso tiene tres pestañas: **Ajustes de Paso**, **Lás
 
 ### Geometría
 
-![Ajustes de paso de Perfilado de Marco](/screenshots/step-settings-frame-outline-general.png)
+![Ajustes de paso de Perfilado de Marco](/screenshots/step-settings-frame-outline-general.webp)
 
 El grupo **Geometría** en la pestaña _Ajustes de Paso_ controla la forma del marco.
 
@@ -82,7 +82,7 @@ Controla dónde corta el láser en relación a la trayectoria del marco:
 
 ### Ajustes del Láser
 
-![Ajustes del láser](/screenshots/step-settings-frame-outline-laser.png)
+![Ajustes del láser](/screenshots/step-settings-frame-outline-laser.webp)
 
 La potencia, la velocidad y la selección del cabezal láser se encuentran en la página **Láser** del diálogo de ajustes de paso.
 
@@ -110,7 +110,7 @@ El perfilado de marco soporta compensación de kerf:
 
 ## Post-Procesamiento
 
-![Ajustes de post-procesamiento de Perfilado de Marco](/screenshots/step-settings-frame-outline-post.png)
+![Ajustes de post-procesamiento de Perfilado de Marco](/screenshots/step-settings-frame-outline-post.webp)
 
 Las operaciones de Perfilado de Marco soportan varias opciones de post-procesamiento:
 

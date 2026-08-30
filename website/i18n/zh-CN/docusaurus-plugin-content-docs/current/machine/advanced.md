@@ -2,7 +2,7 @@
 
 机器设置中的高级页面包含用于专用用例的额外配置选项。
 
-![高级设置](/screenshots/machine-settings-advanced.png)
+![高级设置](/screenshots/machine-settings-advanced.webp)
 
 ## 连接行为
 

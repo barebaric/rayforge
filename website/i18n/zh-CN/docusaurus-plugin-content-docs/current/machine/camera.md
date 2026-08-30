@@ -6,7 +6,7 @@ description: "在 Rayforge 中设置相机校准，以实现精确的工件对�
 
 Rayforge 支持 USB 相机集成，用于精确的材料对齐和定位。相机叠加功能允许您准确看到激光将在材料上的何处切割或雕刻，消除猜测并减少材料浪费。
 
-![相机设置](/screenshots/machine-settings-camera.png)
+![相机设置](/screenshots/machine-settings-camera.webp)
 
 ## 设置工作流程
 
@@ -72,7 +72,7 @@ Rayforge 支持 USB 相机集成，用于精确的材料对齐和定位。相机
 
 ### 第 2.1 步：调整图像设置
 
-![图像设置对话框](/screenshots/machine-settings-camera-image-settings.png)
+![图像设置对话框](/screenshots/machine-settings-camera-image-settings.webp)
 
 图像设置是相机向导的第一阶段——向导在此打开，让您设置分辨率、白平衡、亮度、对比度和降噪。如果您没有运行向导，或想微调它设置的值，请点击相机属性中**图像设置**旁边的 **Configure** 以打开图像设置对话框。调整这些参数以获得清晰的相机视图：
 
@@ -103,25 +103,25 @@ YUYV 选项在您的相机使用默认 MJPEG 格式产生偏绿图像时很有�
 
 对于 **Automatic** 校准，向导引导您从床上的不同位置捕获几张打印校准卡的图像，然后自动计算畸变模型。
 
-![向导 — 卡片设置](/screenshots/machine-settings-camera-lens-calibration-wizard-card.png)
+![向导 — 卡片设置](/screenshots/machine-settings-camera-lens-calibration-wizard-card.webp)
 
 1. 设置打印卡的**宽度**和**高度**。预览会实时更新——卡片应覆盖相机视图约 70%。
 2. 点击 **Save to PDF** 导出卡片以进行打印，然后打印它并放在激光床上。
 
-![向导 — 捕获](/screenshots/machine-settings-camera-lens-calibration-wizard-capture.png)
+![向导 — 捕获](/screenshots/machine-settings-camera-lens-calibration-wizard-capture.webp)
 
 3. 在相机视图内将卡片移动到不同的位置和角度，并为每个位置点击 **Capture Frame**。争取至少 8 次捕获，覆盖整个画面，包括角落和边缘。进度条和状态指示器显示捕获质量。
 4. 当捕获足够的画面时，向导会计算畸变模型并应用它——相机叠加现在显示校正后的直线图像。
 
 #### 手动校准
 
-![镜头校准对话框](/screenshots/machine-settings-camera-lens-calibration.png)
+![镜头校准对话框](/screenshots/machine-settings-camera-lens-calibration.webp)
 
 如需手动系数或在自动校准后微调结果，请点击相机属性中**镜头校准**旁边的 **Configure** 打开镜头校准对话框。在这里您可以手动调整畸变系数——微调径向（k1–k3）和切向（p1–p2）参数。
 
 ### 第 2.3 步：图像对齐
 
-![图像对齐对话框](/screenshots/machine-settings-camera-image-alignment.png)
+![图像对齐对话框](/screenshots/machine-settings-camera-image-alignment.webp)
 
 图像对齐是相机向导的最后阶段。相机对齐校准相机像素与现实世界坐标之间的关系，实现精确定位。向导使用此处描述的相同过程，应用对齐后向导即完成。
 

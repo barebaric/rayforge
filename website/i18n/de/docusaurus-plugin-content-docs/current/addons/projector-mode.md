@@ -40,7 +40,7 @@ halbtransparent, was auf einem Desktop-Monitor nützlich sein kann, um dahinter
 liegende Fenster zu sehen. Jeder Klick wechselt zur nächsten Deckkraftstufe
 und kehrt zum Anfang zurück.
 
-![Projektormodus](/screenshots/addon-projector-mode.png)
+![Projektormodus](/screenshots/addon-projector-mode.webp)
 
 ## Was der Projektor anzeigt
 

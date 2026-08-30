@@ -5,7 +5,7 @@ seu material de estoque ou área de trabalho da máquina. Ele usa um algoritmo
 genético para encontrar um empacotamento eficiente de formas, minimizando o
 desperdício e encaixando mais peças em cada chapa.
 
-![Diálogo de configuração do Deepnest](/screenshots/addon-deepnest.png)
+![Diálogo de configuração do Deepnest](/screenshots/addon-deepnest.webp)
 
 ## Pré-requisitos
 

@@ -30,7 +30,6 @@ from utils import (
     run_on_main_thread,
     set_window_size,
     take_screenshot,
-    target_to_filename,
 )
 
 from rayforge.machine.device.profile import (
@@ -138,7 +137,7 @@ def main():
 
         run_on_main_thread(seed_issues)
     time.sleep(0.5)
-    take_screenshot(target_to_filename(target))
+    take_screenshot()
 
     time.sleep(0.25)
 

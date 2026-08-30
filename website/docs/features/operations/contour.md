@@ -48,7 +48,7 @@ Use contour cutting for:
 
 ### Step 3: Configure Settings
 
-![Contour step settings](/screenshots/step-settings-contour-general.png)
+![Contour step settings](/screenshots/step-settings-contour-general.webp)
 
 ## Key Settings
 
@@ -56,7 +56,7 @@ The step settings dialog has three tabs: **Step Settings**, **Laser**, and **Pos
 
 ### Contour Settings
 
-![Contour step settings](/screenshots/step-settings-contour-general.png)
+![Contour step settings](/screenshots/step-settings-contour-general.webp)
 
 The **Contour Settings** group on the *Step Settings* tab controls how the outline is traced.
 
@@ -146,7 +146,7 @@ This is useful when the default tracing doesn't capture the detail level you nee
 
 ### Laser settings
 
-![Laser settings](/screenshots/step-settings-contour-laser.png)
+![Laser settings](/screenshots/step-settings-contour-laser.webp)
 
 Power, speed, and laser head selection live on the **Laser** page of the step settings dialog.
 
@@ -184,7 +184,7 @@ See [Kerf](../kerf.md) for detailed guide.
 
 ## Post-Processing
 
-![Contour post-processing settings](/screenshots/step-settings-contour-post.png)
+![Contour post-processing settings](/screenshots/step-settings-contour-post.webp)
 
 Contour operations support several post-processing options:
 
