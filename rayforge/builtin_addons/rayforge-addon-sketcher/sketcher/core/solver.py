@@ -153,7 +153,9 @@ class Solver:
 
         # 5. Solve
         # 'trf' is robust for under-constrained problems (m < n)
-        # We pass the analytical jacobian
+        # We pass the analytical jacobian. An iteration limit protects
+        # against pathological constraint graphs that would stall the
+        # solver indefinitely.
         result = least_squares(
             objective,
             x0,
@@ -161,6 +163,7 @@ class Solver:
             method="trf",
             ftol=tolerance,
             xtol=1e-8,
+            max_nfev=5000,
         )
 
         # 6. Final Update to ensure registry matches result

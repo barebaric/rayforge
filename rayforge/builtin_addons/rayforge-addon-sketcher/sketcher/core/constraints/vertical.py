@@ -27,6 +27,9 @@ class VerticalConstraint(Constraint):
         self.p1: EntityID = p1
         self.p2: EntityID = p2
 
+    def is_world_anchored(self) -> bool:
+        return True
+
     @classmethod
     def get_type_key(cls) -> str:
         return "vert"

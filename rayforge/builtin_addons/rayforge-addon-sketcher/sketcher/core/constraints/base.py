@@ -45,6 +45,15 @@ class Constraint:
     def __init__(self, user_visible: bool = True):
         self.user_visible = user_visible
 
+    def is_world_anchored(self) -> bool:
+        """Returns True if this constraint pins geometry to global axes.
+
+        World-anchored constraints (e.g. horizontal/vertical) should be
+        stripped from array templates, since they conflict with the
+        rotations applied to array copies.
+        """
+        return False
+
     @classmethod
     def can_apply_to(
         cls, selection: SketchSelection, sketch: Sketch | None = None

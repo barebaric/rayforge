@@ -34,6 +34,28 @@ class EntityRegistry:
         self._entity_map: dict[EntityID, Entity] = {}
         self._id_counter: EntityID = 0
         self._entity_version: int = 0
+        # Tracks how many entities reference each point. O(1) is_point_used.
+        self._point_usage_count: dict[EntityID, int] = {}
+
+    def _increment_point_usage(self, pid: EntityID) -> None:
+        self._point_usage_count[pid] = self._point_usage_count.get(pid, 0) + 1
+
+    def _decrement_point_usage(self, pid: EntityID) -> None:
+        count = self._point_usage_count.get(pid, 0)
+        if count <= 1:
+            self._point_usage_count.pop(pid, None)
+        else:
+            self._point_usage_count[pid] = count - 1
+
+    def _count_entities_for(self, entity: Entity) -> None:
+        """Increment usage count for all points referenced by an entity."""
+        for pid in entity.get_point_ids():
+            self._increment_point_usage(pid)
+
+    def _decide_entities_for(self, entity: Entity) -> None:
+        """Decrement usage count for all points referenced by an entity."""
+        for pid in entity.get_point_ids():
+            self._decrement_point_usage(pid)
 
     def to_dict(self) -> dict[str, Any]:
         """Serializes the registry to a dictionary."""
@@ -61,7 +83,15 @@ class EntityRegistry:
                 new_reg._entity_map[entity.id] = entity
 
         new_reg._id_counter = data.get("id_counter", 0)
+        new_reg.rebuild_usage_counts()
         return new_reg
+
+    def rebuild_usage_counts(self) -> None:
+        """Rebuilds _point_usage_count by scanning all entities.
+        Called after deserialization so the counter is consistent."""
+        self._point_usage_count.clear()
+        for entity in self.entities:
+            self._count_entities_for(entity)
 
     def add_arc(
         self,
@@ -79,6 +109,7 @@ class EntityRegistry:
         self._entity_map[eid] = entity
         self._id_counter += 1
         self._entity_version += 1
+        self._count_entities_for(entity)
         return eid
 
     def add_bezier(
@@ -102,6 +133,7 @@ class EntityRegistry:
         self._entity_map[eid] = entity
         self._id_counter += 1
         self._entity_version += 1
+        self._count_entities_for(entity)
         return eid
 
     def add_circle(
@@ -118,6 +150,7 @@ class EntityRegistry:
         self._entity_map[eid] = entity
         self._id_counter += 1
         self._entity_version += 1
+        self._count_entities_for(entity)
         return eid
 
     def add_ellipse(
@@ -139,6 +172,7 @@ class EntityRegistry:
         self._entity_map[eid] = entity
         self._id_counter += 1
         self._entity_version += 1
+        self._count_entities_for(entity)
         return eid
 
     def add_line(
@@ -150,6 +184,7 @@ class EntityRegistry:
         self._entity_map[eid] = entity
         self._id_counter += 1
         self._entity_version += 1
+        self._count_entities_for(entity)
         return eid
 
     def add_point(self, x: float, y: float, fixed: bool = False) -> EntityID:
@@ -180,21 +215,29 @@ class EntityRegistry:
         self._entity_map[eid] = entity
         self._id_counter += 1
         self._entity_version += 1
+        self._count_entities_for(entity)
         return eid
 
     def remove_entities_by_id(self, entity_ids: list[EntityID]):
         """Removes one or more entities from the registry by their IDs."""
         ids_to_remove = set(entity_ids)
+        # Decrement usage counts *before* removing entities so we
+        # still have access to their point references.
+        for eid in ids_to_remove:
+            entity = self._entity_map.get(eid)
+            if entity is not None:
+                self._decide_entities_for(entity)
         self.entities = [e for e in self.entities if e.id not in ids_to_remove]
         self._entity_map = {e.id: e for e in self.entities}
         self._entity_version += 1
 
     def is_point_used(self, pid: EntityID) -> bool:
-        """Checks if a point is used by any entity in the sketch."""
-        for e in self.entities:
-            if pid in e.get_point_ids():
-                return True
-        return False
+        """Checks if a point is used by any entity in the sketch.
+
+        O(1) lookup via the usage-count counter maintained on every
+        entity add/remove.
+        """
+        return self._point_usage_count.get(pid, 0) > 0
 
     def get_point(self, idx: EntityID) -> Point:
         """Retrieves a point by its ID."""

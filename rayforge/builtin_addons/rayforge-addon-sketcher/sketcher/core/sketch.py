@@ -193,6 +193,11 @@ class Sketch(IAsset, IGeometryProvider):
         self._resolved_text_cache: dict[EntityID, tuple[str, str | None]] = {}
         self._solved_ctx: dict[str, Any] | None = None
 
+        # Cache for coincident-point groups. Keys are point IDs,
+        # values are frozensets of all points in the same group.
+        self._coincident_cache: dict[EntityID, frozenset[EntityID]] = {}
+        self._coincident_dirty: bool = False
+
         # Initialize the Origin Point (Fixed Anchor)
         self.origin_id: EntityID = self.registry.add_point(
             0.0, 0.0, fixed=True
@@ -207,6 +212,7 @@ class Sketch(IAsset, IGeometryProvider):
             # solves (solve/sync feedback loop with the array sync,
             # pipeline churn on every frame).
             return
+        self._coincident_dirty = True
         self._updated.send(self)
 
     def _validate_and_cleanup_fills(self):
@@ -344,6 +350,8 @@ class Sketch(IAsset, IGeometryProvider):
         clone.registry.entities = list(self.registry.entities)
         clone.registry._entity_map = dict(self.registry._entity_map)
         clone.registry._id_counter = self.registry._id_counter
+        # Rebuild point-usage counters for the clone.
+        clone.registry.rebuild_usage_counts()
 
         # ParameterContext: copy expressions so evaluate_all on the clone
         # does not disturb the original's cache.
@@ -361,6 +369,10 @@ class Sketch(IAsset, IGeometryProvider):
         clone._last_solve_values = {}
         clone._resolved_text_cache = {}
         clone._solved_ctx = None
+        # Build coincident cache so geometry generation is fast.
+        clone._coincident_cache = {}
+        clone._coincident_dirty = False
+        clone._build_coincident_cache()
         return clone
 
     @property
@@ -528,6 +540,8 @@ class Sketch(IAsset, IGeometryProvider):
         ]
 
         new_sketch._hidden = data.get("hidden", False)
+        # Build coincident cache from loaded constraints.
+        new_sketch._build_coincident_cache()
         return new_sketch
 
     def prune_arrays(self) -> None:
@@ -638,9 +652,12 @@ class Sketch(IAsset, IGeometryProvider):
 
         internal: list[Constraint] = []
         for constr in self.constraints:
-            if isinstance(constr, (HorizontalConstraint, VerticalConstraint)):
+            if constr.is_world_anchored():
                 continue
+            # Constraints pinned to the sketch origin are world-anchored.
             pids = constr.get_referenced_point_ids()
+            if pids & {self.origin_id}:
+                continue
             eids = constr.get_referenced_entity_ids()
             if not (pids & group_pids or eids & wanted):
                 continue
@@ -1242,28 +1259,43 @@ class Sketch(IAsset, IGeometryProvider):
     def get_coincident_points(self, start_pid: EntityID) -> set[EntityID]:
         """
         Finds all points transitively connected to start_pid via
-        CoincidentConstraints.
-        Returns a set including the starting point itself.
+        CoincidentConstraints. Returns a set including the starting
+        point itself.
+
+        Uses a precomputed cache that is rebuilt when constraints are
+        modified, giving O(1) lookups after the first call.
         """
-        # Build an adjacency map once (O(C)) so the traversal is
-        # O(C + group_size) instead of O(P * C).
+        if self._coincident_dirty or not self._coincident_cache:
+            self._build_coincident_cache()
+        return set(self._coincident_cache.get(start_pid, {start_pid}))
+
+    def _build_coincident_cache(self) -> None:
+        """Build the coincident-point group cache from current constraints."""
         adjacency: dict[EntityID, set[EntityID]] = defaultdict(set)
         for constr in self.constraints:
-            if not isinstance(constr, CoincidentConstraint):
+            if isinstance(constr, CoincidentConstraint):
+                adjacency[constr.p1].add(constr.p2)
+                adjacency[constr.p2].add(constr.p1)
+
+        # Build connected components so each call is O(1).
+        self._coincident_cache = {}
+        for pid in adjacency:
+            if pid in self._coincident_cache:
                 continue
-            adjacency[constr.p1].add(constr.p2)
-            adjacency[constr.p2].add(constr.p1)
-
-        coincident_group: set[EntityID] = {start_pid}
-        stack = [start_pid]
-        while stack:
-            current_pid = stack.pop()
-            for other_pid in adjacency.get(current_pid, ()):
-                if other_pid not in coincident_group:
-                    coincident_group.add(other_pid)
-                    stack.append(other_pid)
-
-        return coincident_group
+            group: set[EntityID] = set()
+            stack = [pid]
+            while stack:
+                current = stack.pop()
+                if current in group:
+                    continue
+                group.add(current)
+                for neighbor in adjacency.get(current, ()):
+                    if neighbor not in group:
+                        stack.append(neighbor)
+            frozen = frozenset(group)
+            for p in group:
+                self._coincident_cache[p] = frozen
+        self._coincident_dirty = False
 
     def constrain_distance(
         self, p1: EntityID, p2: EntityID, dist: str | float
