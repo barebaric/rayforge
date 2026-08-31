@@ -5,6 +5,35 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.11.0-beta3
+
+### Added
+
+- Sketcher: new contour offset tool replaces selected contours with their
+  offset; lone circles, arcs, and ellipses are updated in place, while
+  chains of connected segments are replaced by a new polygon entity with
+  a move/rotate/scale handle frame; open paths become closed slots with
+  round end caps, and a live-preview dialog controls the distance
+- Sketcher: grouped tools (arrays, constraints, waypoints, rectangles)
+  are now presented as pie-menu submenus that appear in a partial outer
+  ring when the inner ring runs out of space; radial corridors prevent
+  accidental submenu switches
+
+### Changed
+
+- Upgrade raygeo to 1.49.0
+
+### Fixed
+
+- Startup dialogs (consent, setup wizard, profile/schema reviews) now
+  run strictly in sequence so they no longer stack into an invisible
+  modal that steals input and leaves buttons unresponsive
+
+### Testing
+
+- UI tests now run in a virtual display with a software renderer, so
+  they no longer require a running desktop session
+
 ## 1.11.0-beta2
 
 ### Added

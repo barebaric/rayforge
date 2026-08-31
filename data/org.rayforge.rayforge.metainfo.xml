@@ -68,6 +68,36 @@
   </screenshots>
 
   <releases>
+    <release version="1.11.0~beta3" date="2026-08-31">
+      <description>
+        <p>Sketcher contour offset tool, pie menu submenus, and a startup
+        dialog fix</p>
+        <p>New Features:</p>
+        <ul>
+          <li>Sketcher: new contour offset tool replaces selected contours
+          with their offset; lone circles, arcs, and ellipses are updated
+          in place, while chains of connected segments are replaced by a
+          new polygon entity with a move/rotate/scale handle frame; open
+          paths become closed slots with round end caps, and a
+          live-preview dialog controls the distance</li>
+          <li>Sketcher: grouped tools (arrays, constraints, waypoints,
+          rectangles) are now presented as pie-menu submenus that appear
+          in a partial outer ring when the inner ring runs out of space;
+          radial corridors prevent accidental submenu switches</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>Upgrade raygeo to 1.49.0</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Startup dialogs (consent, setup wizard, profile/schema
+          reviews) now run strictly in sequence so they no longer stack
+          into an invisible modal that steals input and leaves buttons
+          unresponsive</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.11.0~beta2" date="2026-08-29">
       <description>
         <p>Sketcher arrays and constraints, dither brightness levels, and
