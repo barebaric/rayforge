@@ -27,6 +27,8 @@ Menu : **Édition → Paramètres**, puis sélectionnez **Règles de couleur** d
 
 Cliquez sur **Ajouter une règle de couleur** pour ouvrir la boîte de dialogue de l'éditeur :
 
+![Boîte de dialogue de l'éditeur de règle de couleur](/screenshots/app-settings-color-rules-add.webp)
+
 - **Couleur** — Choisissez la couleur SVG qui doit déclencher cette règle. Utilisez le sélecteur de
   couleur pour correspondre à la couleur de contour ou de remplissage de votre logiciel de
   conception.
@@ -39,8 +41,10 @@ Cliquez sur **Ajouter une règle de couleur** pour ouvrir la boîte de dialogue 
 ### 3. Enregistrer
 
 Cliquez sur **Ajouter** pour enregistrer la règle. Elle prend effet immédiatement à la prochaine
-importation. Les règles sont stockées dans votre configuration utilisateur et persistent entre les
-sessions.
+importation. La règle apparaît dans la liste ci-dessous avec un échantillon de couleur, une étiquette
+et un type d'étape.
+
+![Page des règles de couleur](/screenshots/app-settings-color-rules.webp)
 
 <!-- prettier-ignore-start -->
 :::tip[Correspondance exacte des couleurs]

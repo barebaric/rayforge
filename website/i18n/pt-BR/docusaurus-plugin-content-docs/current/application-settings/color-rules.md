@@ -26,6 +26,8 @@ Menu: **Editar → Configurações**, depois selecione **Regras de Cor** na barr
 
 Clique em **Adicionar Regra de Cor** para abrir o diálogo do editor:
 
+![Diálogo do editor de regra de cor](/screenshots/app-settings-color-rules-add.webp)
+
 - **Cor** — Escolha a cor SVG que deve acionar esta regra. Use o seletor de cores para combinar com
   a cor do traço ou do preenchimento do seu software de design.
 - **Rótulo** _(opcional)_ — Um nome amigável exibido na lista de regras (por exemplo, "Cortar
@@ -37,7 +39,9 @@ Clique em **Adicionar Regra de Cor** para abrir o diálogo do editor:
 ### 3. Salve
 
 Clique em **Adicionar** para salvar a regra. Ela entra em vigor imediatamente na próxima importação.
-As regras são armazenadas na sua configuração de usuário e persistem entre sessões.
+A regra aparece na lista abaixo com uma amostra de cor, um rótulo e um tipo de etapa.
+
+![Página de regras de cor](/screenshots/app-settings-color-rules.webp)
 
 <!-- prettier-ignore-start -->
 :::tip[Combinando Cores Exatamente]

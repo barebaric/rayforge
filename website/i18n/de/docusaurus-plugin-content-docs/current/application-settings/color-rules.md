@@ -26,6 +26,8 @@ Menü: **Bearbeiten → Einstellungen**, dann in der Seitenleiste **Farbregeln**
 
 Klicke auf **Farbregel hinzufügen**, um den Bearbeitungsdialog zu öffnen:
 
+![Farbregel-Editierdialog](/screenshots/app-settings-color-rules-add.webp)
+
 - **Farbe** — Wähle die SVG-Farbe, die diese Regel auslösen soll. Verwende die Farbauswahl, um die
   Strich- oder Füllfarbe aus deiner Design-Software zu übernehmen.
 - **Beschriftung** _(optional)_ — Ein Anzeigename, der in der Regelliste angezeigt wird (z.B. "Rot
@@ -37,8 +39,9 @@ Klicke auf **Farbregel hinzufügen**, um den Bearbeitungsdialog zu öffnen:
 ### 3. Speichern
 
 Klicke auf **Hinzufügen**, um die Regel zu speichern. Sie wird beim nächsten Import sofort wirksam.
-Regeln werden in deiner Benutzerkonfiguration gespeichert und bleiben über Sitzungen hinweg
-erhalten.
+Die Regel erscheint in der Liste unten mit einem Farbmuster, einer Beschriftung und dem Schritt-Typ.
+
+![Farbregeln-Seite](/screenshots/app-settings-color-rules.webp)
 
 <!-- prettier-ignore-start -->
 :::tip[Farben exakt abgleichen]

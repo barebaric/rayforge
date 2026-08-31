@@ -26,6 +26,8 @@ Menú: **Editar → Configuración** y luego selecciona **Reglas de color** en l
 
 Haz clic en **Añadir regla de color** para abrir el diálogo del editor:
 
+![Diálogo del editor de regla de color](/screenshots/app-settings-color-rules-add.webp)
+
 - **Color** — Elige el color SVG que debe activar esta regla. Usa el selector de color para
   coincidir con el color del trazo o del relleno de tu software de diseño.
 - **Etiqueta** _(opcional)_ — Un nombre descriptivo que se muestra en la lista de reglas (p. ej.
@@ -37,7 +39,9 @@ Haz clic en **Añadir regla de color** para abrir el diálogo del editor:
 ### 3. Guardar
 
 Haz clic en **Añadir** para guardar la regla. Surte efecto de inmediato en la siguiente importación.
-Las reglas se guardan en tu configuración de usuario y persisten entre sesiones.
+La regla aparece en la lista de abajo con una muestra de color, una etiqueta y un tipo de paso.
+
+![Página de reglas de color](/screenshots/app-settings-color-rules.webp)
 
 <!-- prettier-ignore-start -->
 :::tip[Coincidir colores exactamente]

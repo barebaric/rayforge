@@ -31,6 +31,8 @@ Menu: **Edit → Settings**, then select **Color Rules** in the sidebar.
 
 Click **Add Color Rule** to open the editor dialog:
 
+![Color Rule editor dialog](/screenshots/app-settings-color-rules-add.webp)
+
 - **Color** — Pick the SVG color that should trigger this rule. Use the color picker to match the
   stroke or fill color from your design software.
 - **Label** _(optional)_ — A friendly name shown in the rules list (e.g. "Cut Red", "Engrave Blue").
@@ -40,8 +42,10 @@ Click **Add Color Rule** to open the editor dialog:
 
 ### 3. Save
 
-Click **Add** to save the rule. It takes effect immediately on the next import. Rules are stored in
-your user configuration and persist across sessions.
+Click **Add** to save the rule. It takes effect immediately on the next import. The rule appears in
+the list below with a color swatch, label, and step type.
+
+![Color Rules page](/screenshots/app-settings-color-rules.webp)
 
 <!-- prettier-ignore-start -->
 :::tip[Matching Colors Exactly]
