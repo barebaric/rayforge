@@ -139,10 +139,14 @@ def _get_bbox_model(element, include_construction: bool = False):
             entity.construction and not include_construction
         ):
             continue
-        # to_polyline() only returns the first polygon, which misses
-        # every glyph of multi-glyph text boxes, so iterate all of them.
-        polygons = entity.to_geometry(sketch.registry).to_polygons(0.5)
-        for polygon in polygons:
+        # to_polygons() covers every glyph of multi-glyph text boxes,
+        # but raygeo's polygon conversion skips lone (unclosed) segments
+        # such as free lines. to_polyline() includes those, so collect
+        # from both for a complete bounding box.
+        for x, y in entity.to_polyline(sketch.registry, 0.5):
+            xs.append(x)
+            ys.append(y)
+        for polygon in entity.to_geometry(sketch.registry).to_polygons(0.5):
             for x, y in polygon:
                 xs.append(x)
                 ys.append(y)

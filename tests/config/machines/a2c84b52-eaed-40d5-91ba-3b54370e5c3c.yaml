@@ -80,7 +80,6 @@ machine:
     name: Laser Head
     pulse_width: 50
     pwm_frequency: 500
-    raster_color: '#000000'
     spot_size_mm:
     - 0.1
     - 0.1
@@ -121,6 +120,7 @@ machine:
   nogo_zones: []
   origin: bottom_left
   panel_orientation: native
+  placeholder: false
   reverse_x_axis: false
   reverse_y_axis: false
   reverse_z_axis: false
@@ -139,6 +139,8 @@ machine:
   supports_curves: false
   units:
     unit_system: metric
+  usb_pid: null
+  usb_vid: null
   wcs_origin_is_workarea_origin: false
   work_margins:
   - 0

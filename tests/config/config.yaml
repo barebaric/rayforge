@@ -34,7 +34,9 @@ language: null
 last_opened_project: tests/assets/rotary.ryp
 machine: 2f8f7281-9982-4473-a9b0-d72ff48630c2
 ops_color_mode: laser
+right_panel_mode: non_empty_layers
 right_panel_visible: true
+setup_completed: false
 startup_behavior: none
 startup_project_path: null
 theme: dark

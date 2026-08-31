@@ -65,6 +65,14 @@ WEBP_QUALITY = 90
 SOCIAL_SIZE = (1280, 640)
 SOCIAL_QUALITY = 85
 
+# Original g9 transform before the geometry was scaled up for the
+# Ubuntu desktop icon.  Derived assets (ICNS, website, webp, social,
+# favicon, avatar) are rendered with this transform restored so they
+# keep their original proportions.
+ORIGINAL_G9_TRANSFORM = (
+    "matrix(0.70752124,0,0,0.70752124,145.86733,-533.20785)"
+)
+
 ICNS_SIZES = [
     ("icp4", 16),
     ("icp5", 32),
@@ -196,12 +204,24 @@ def main() -> int:
         return 1
 
     svg_text = SOURCE_SVG_PATH.read_text()
-    trim = detect_trim(svg_text)
-    trimmed_svg = apply_viewbox(svg_text, trim)
+
+    # Restore the original g9 transform so derived assets keep their
+    # original proportions.  Only the raw SVG (the Ubuntu desktop
+    # icon) uses the scaled-up geometry.
+    original_svg = re.sub(
+        r'transform="matrix\([^"]+\)"',
+        f'transform="{ORIGINAL_G9_TRANSFORM}"',
+        svg_text,
+        count=1,
+    )
+    trim = detect_trim(original_svg)
+    trimmed_svg = apply_viewbox(original_svg, trim)
 
     def render(size: int) -> bytes:
         return cairosvg.svg2png(
-            bytestring=svg_text.encode(), output_width=size, output_height=size
+            bytestring=original_svg.encode(),
+            output_width=size,
+            output_height=size,
         )
 
     def render_trimmed(size: int) -> bytes:
@@ -217,9 +237,11 @@ def main() -> int:
     for path in ICNS_PATHS:
         write(path, icns_data)
     write(ASSET_PNG_PATH, render(ASSET_PNG_SIZE))
-    write(WEB_SVG_PATH, svg_text.encode())
+    write(WEB_SVG_PATH, original_svg.encode())
     avatar_viewbox = square_fit(trim)
-    write(AVATAR_SVG_PATH, apply_viewbox(svg_text, avatar_viewbox).encode())
+    write(
+        AVATAR_SVG_PATH, apply_viewbox(original_svg, avatar_viewbox).encode()
+    )
     write(WEBP_PATH, png_to_webp(render(WEBP_SIZE)))
     write(FAVICON_PNG_PATH, favicon_png)
     write(FAVICON_WEBP_PATH, png_to_webp(favicon_png))

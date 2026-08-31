@@ -1444,16 +1444,35 @@ def clear_window_subtitle(win: "MainWindow") -> None:
     run_on_main_thread(_clear)
 
 
-def seek_3d_playback(win: "MainWindow", fraction: float) -> None:
+def seek_3d_playback(
+    win: "MainWindow", fraction: float, timeout: float = 15.0
+) -> bool:
     """
-    Seek the 3D playback to the given fraction (0.0 to 1.0).
+    Wait until the 3D playback player is available, then seek the
+    3D playback to the given fraction (0.0 to 1.0).
+
+    The OpPlayer backing the 3D playback overlay is built during a
+    later pipeline stage than the one ``scene_is_ready`` reports on,
+    so seeking immediately after a rendered frame can run before the
+    player exists (a no-op that leaves the simulation at the start).
+    Returns True once the seek has been applied.
     """
+
+    def _player_ready() -> bool:
+        return win._canvas3d_playback._player is not None
 
     def _seek() -> None:
         win._canvas3d_playback.seek_to_fraction(fraction)
 
-    run_on_main_thread(_seek)
-    time.sleep(0.3)
+    start = time.time()
+    while time.time() - start < timeout:
+        if run_on_main_thread(_player_ready):
+            run_on_main_thread(_seek)
+            time.sleep(0.3)
+            return True
+        time.sleep(0.1)
+    logger.error("3D playback player never became available for seeking")
+    return False
 
 
 @contextmanager
