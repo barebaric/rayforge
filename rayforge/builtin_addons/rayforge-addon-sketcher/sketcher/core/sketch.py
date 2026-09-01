@@ -1807,12 +1807,10 @@ class Sketch(IAsset, IGeometryProvider):
 
         adj = defaultdict(list)
         for e in chainable:
-            if isinstance(e, Line):
-                u, v = e.p1_idx, e.p2_idx
-            elif isinstance(e, (Arc, Bezier)):
-                u, v = e.start_idx, e.end_idx
-            else:
+            p_ids = e.get_endpoint_ids()
+            if len(p_ids) != 2:
                 continue
+            u, v = p_ids[0], p_ids[1]
 
             root_u = find(u)
             root_v = find(v)
@@ -1824,13 +1822,10 @@ class Sketch(IAsset, IGeometryProvider):
 
         # Helper to get start/end group IDs
         def get_endpoints(ent):
-            if isinstance(ent, Line):
-                return find(ent.p1_idx), find(ent.p2_idx)
-            if isinstance(ent, Arc):
-                return find(ent.start_idx), find(ent.end_idx)
-            if isinstance(ent, Bezier):
-                return find(ent.start_idx), find(ent.end_idx)
-            return -1, -1
+            p_ids = ent.get_endpoint_ids()
+            if len(p_ids) != 2:
+                return -1, -1
+            return find(p_ids[0]), find(p_ids[1])
 
         for start_e in chainable:
             if start_e.id in visited:
@@ -1893,12 +1888,8 @@ class Sketch(IAsset, IGeometryProvider):
 
             # Generate Geometry
             first_e, first_fwd = final_chain[0]
-            if isinstance(first_e, Line):
-                s_id = first_e.p1_idx if first_fwd else first_e.p2_idx
-            elif isinstance(first_e, Arc):
-                s_id = first_e.start_idx if first_fwd else first_e.end_idx
-            else:  # Bezier
-                s_id = first_e.start_idx if first_fwd else first_e.end_idx
+            p_ids = first_e.get_endpoint_ids()
+            s_id = p_ids[0] if first_fwd else p_ids[1]
 
             start_pt = self.registry.get_point(s_id)
             geo.move_to(start_pt.x, start_pt.y)
