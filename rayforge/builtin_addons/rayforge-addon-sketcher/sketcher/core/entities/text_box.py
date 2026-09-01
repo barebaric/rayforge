@@ -55,6 +55,9 @@ class TextBoxEntity(Entity):
     def get_junction_point_ids(self) -> list[EntityID]:
         return []
 
+    def get_helper_ids(self) -> list[EntityID]:
+        return list(self.construction_line_ids)
+
     def get_frame_polygon(
         self, registry: "EntityRegistry"
     ) -> list[tuple[float, float]] | None:

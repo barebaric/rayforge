@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 from ..constraints import EqualDistanceConstraint
-from ..entities import Arc, Ellipse, TextBoxEntity
+from ..entities import Arc
 from .base import SketchChangeCommand
 
 if TYPE_CHECKING:
@@ -155,11 +155,7 @@ class RemoveItemsCommand(SketchChangeCommand):
             # A. Unity Logic for compound objects like TextBoxEntity
             all_entities = list(sketch.registry.entities)
             for e in all_entities:
-                helper_ids = None
-                if isinstance(e, TextBoxEntity):
-                    helper_ids = e.construction_line_ids
-                elif isinstance(e, Ellipse):
-                    helper_ids = e.helper_line_ids
+                helper_ids = e.get_helper_ids()
 
                 if helper_ids:
                     is_part_of_delete_set = (

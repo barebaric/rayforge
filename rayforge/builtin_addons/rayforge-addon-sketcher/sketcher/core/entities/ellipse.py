@@ -40,6 +40,9 @@ class Ellipse(Entity):
     def get_junction_point_ids(self) -> list[EntityID]:
         return [self.center_idx, self.radius_x_pt_idx, self.radius_y_pt_idx]
 
+    def get_helper_ids(self) -> list[EntityID]:
+        return list(self.helper_line_ids)
+
     def get_rigidly_connected_points(
         self, point_id: EntityID
     ) -> list[EntityID]:

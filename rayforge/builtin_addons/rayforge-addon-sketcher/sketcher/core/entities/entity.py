@@ -142,6 +142,13 @@ class Entity:
         """
         return []
 
+    def get_helper_ids(self) -> list[EntityID]:
+        """
+        Returns auxiliary/child IDs belonging to this compound entity
+        (e.g. ellipse helper lines, text box construction lines).
+        """
+        return []
+
     def get_rigidly_connected_points(
         self, point_id: EntityID
     ) -> list[EntityID]:

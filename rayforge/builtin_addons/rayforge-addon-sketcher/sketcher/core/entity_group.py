@@ -15,7 +15,7 @@ import math
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Protocol
 
-from .entities import Circle, Ellipse, TextBoxEntity
+from .entities import Circle, Ellipse
 
 if TYPE_CHECKING:
     from .entities import Entity, Point
@@ -281,10 +281,7 @@ class EntityGroup:
         """
         helper_ids: list[int] = []
         for entity in self.entities():
-            if isinstance(entity, Ellipse):
-                helper_ids.extend(entity.helper_line_ids)
-            elif isinstance(entity, TextBoxEntity):
-                helper_ids.extend(entity.construction_line_ids)
+            helper_ids.extend(entity.get_helper_ids())
         template_pids = set(self.point_ids())
         taken = set(helper_ids) | {entity.id for entity in self.entities()}
         for entity in self.registry.entities:
