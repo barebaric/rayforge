@@ -71,6 +71,20 @@ class Arc(Entity):
     ) -> list[tuple[EntityID, EntityID]]:
         return [(self.center_idx, self.start_idx)]
 
+    def tangent_at(
+        self, registry: "EntityRegistry", point_id: EntityID
+    ) -> tuple[float, float]:
+        start = registry.get_point(self.start_idx)
+        end = registry.get_point(self.end_idx)
+        center = registry.get_point(self.center_idx)
+        if not (start and end and center):
+            return (1.0, 0.0)
+        if point_id == start.id:
+            dx, dy = start.x - center.x, start.y - center.y
+            return (dy, -dx) if self.clockwise else (-dy, dx)
+        dx, dy = end.x - center.x, end.y - center.y
+        return (-dy, dx) if self.clockwise else (dy, -dx)
+
     def get_junction_point_ids(self) -> list[EntityID]:
         return [self.start_idx, self.end_idx, self.center_idx]
 

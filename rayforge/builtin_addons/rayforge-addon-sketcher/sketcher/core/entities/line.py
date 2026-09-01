@@ -40,6 +40,17 @@ class Line(Entity):
     ) -> list[tuple[EntityID, EntityID]]:
         return [(self.p1_idx, self.p2_idx)]
 
+    def tangent_at(
+        self, registry: "EntityRegistry", point_id: EntityID
+    ) -> tuple[float, float]:
+        p1 = registry.get_point(self.p1_idx)
+        p2 = registry.get_point(self.p2_idx)
+        if not (p1 and p2):
+            return (1.0, 0.0)
+        if point_id == p1.id:
+            return (p2.x - p1.x, p2.y - p1.y)
+        return (p1.x - p2.x, p1.y - p2.y)
+
     def get_junction_point_ids(self) -> list[EntityID]:
         return [self.p1_idx, self.p2_idx]
 

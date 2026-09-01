@@ -49,6 +49,12 @@ class Ellipse(Entity):
         rx, ry = self._get_radii(registry)
         return (rx + ry) / 2.0
 
+    def tangent_at(
+        self, registry: "EntityRegistry", point_id: EntityID
+    ) -> tuple[float, float]:
+        # Ellipse has no well-defined endpoints for edge traversal.
+        return (1.0, 0.0)
+
     def get_junction_point_ids(self) -> list[EntityID]:
         return [self.center_idx, self.radius_x_pt_idx, self.radius_y_pt_idx]
 

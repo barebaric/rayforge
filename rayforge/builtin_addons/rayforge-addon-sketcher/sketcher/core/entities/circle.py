@@ -44,6 +44,13 @@ class Circle(Entity):
     ) -> list[tuple[EntityID, EntityID]]:
         return [(self.center_idx, self.radius_pt_idx)]
 
+    def tangent_at(
+        self, registry: "EntityRegistry", point_id: EntityID
+    ) -> tuple[float, float]:
+        # Circle has a well-defined tangent at the radius point, but
+        # we default to no tangent for entities without endpoints.
+        return (1.0, 0.0)
+
     def get_junction_point_ids(self) -> list[EntityID]:
         return [self.center_idx, self.radius_pt_idx]
 

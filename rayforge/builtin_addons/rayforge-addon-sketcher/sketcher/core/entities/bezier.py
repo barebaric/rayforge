@@ -140,6 +140,25 @@ class Bezier(Entity):
     def get_endpoint_ids(self) -> list[EntityID]:
         return [self.start_idx, self.end_idx]
 
+    def characteristic_length_pairs(
+        self,
+    ) -> list[tuple[EntityID, EntityID]]:
+        return [(self.start_idx, self.end_idx)]
+
+    def tangent_at(
+        self, registry: "EntityRegistry", point_id: EntityID
+    ) -> tuple[float, float]:
+        start = registry.get_point(self.start_idx)
+        end = registry.get_point(self.end_idx)
+        if not (start and end):
+            return (1.0, 0.0)
+        cp1_x, cp1_y, cp2_x, cp2_y = self.get_control_points_or_endpoints(
+            registry
+        )
+        if point_id == start.id:
+            return (cp1_x - start.x, cp1_y - start.y)
+        return (end.x - cp2_x, end.y - cp2_y)
+
     def get_junction_point_ids(self) -> list[EntityID]:
         return [self.start_idx, self.end_idx]
 

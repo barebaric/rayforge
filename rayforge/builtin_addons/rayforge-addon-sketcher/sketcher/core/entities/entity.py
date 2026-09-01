@@ -358,5 +358,16 @@ class Entity:
             return math.hypot(pb.x - pa.x, pb.y - pa.y)
         return 0.0
 
+    def tangent_at(
+        self, registry: "EntityRegistry", point_id: EntityID
+    ) -> tuple[float, float]:
+        """Return the tangent vector at a specific point on this entity.
+
+        The vector points away from ``point_id`` along the entity's curve.
+        Raises ``NotImplementedError`` for entities with no directional
+        tangent (e.g. Circle).
+        """
+        raise NotImplementedError
+
     def __repr__(self) -> str:
         return f"Entity(id={self.id}, type={self.type})"

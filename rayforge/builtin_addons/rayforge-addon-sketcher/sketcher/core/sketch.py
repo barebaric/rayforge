@@ -924,48 +924,6 @@ class Sketch(IAsset, IGeometryProvider):
             return True
         return False
 
-    def _get_edge_tangent_at_start(
-        self, entity: Any, start_pid: EntityID
-    ) -> tuple[float, float]:
-        """Helper to get the tangent vector for an entity at a given point."""
-        if isinstance(entity, Line):
-            p1 = self.registry.get_point(entity.p1_idx)
-            p2 = self.registry.get_point(entity.p2_idx)
-            if start_pid == p1.id:
-                return (p2.x - p1.x, p2.y - p1.y)
-            else:
-                return (p1.x - p2.x, p1.y - p2.y)
-
-        elif isinstance(entity, Arc):
-            start = self.registry.get_point(entity.start_idx)
-            center = self.registry.get_point(entity.center_idx)
-            if start_pid == start.id:
-                # Traversing forward from the arc's start point
-                # Tangent of circle at P is perp to Radius CP.
-                # If CCW: (-dy, dx). If CW: (dy, -dx).
-                dx, dy = start.x - center.x, start.y - center.y
-                return (dy, -dx) if entity.clockwise else (-dy, dx)
-            else:
-                # Traversing backward from the arc's end point
-                end = self.registry.get_point(entity.end_idx)
-                dx, dy = end.x - center.x, end.y - center.y
-                # Tangent of curve at End is T. Traversal is -T.
-                # T_ccw = (-dy, dx). Traversal = (dy, -dx).
-                # T_cw = (dy, -dx). Traversal = (-dy, dx).
-                return (-dy, dx) if entity.clockwise else (dy, -dx)
-
-        elif isinstance(entity, Bezier):
-            start = self.registry.get_point(entity.start_idx)
-            end = self.registry.get_point(entity.end_idx)
-            cp1_x, cp1_y, cp2_x, cp2_y = (
-                entity.get_control_points_or_endpoints(self.registry)
-            )
-            if start_pid == start.id:
-                return (cp1_x - start.x, cp1_y - start.y)
-            else:
-                return (end.x - cp2_x, end.y - cp2_y)
-        return (1.0, 0.0)
-
     def _build_adjacency_list(self) -> dict[EntityID, list[dict[str, Any]]]:
         """
         Builds a map of point_id -> list of outgoing edges.
@@ -1026,7 +984,7 @@ class Sketch(IAsset, IGeometryProvider):
                 entity = self.registry.get_entity(edge["id"])
                 if not entity:
                     continue
-                tangent_vec = self._get_edge_tangent_at_start(entity, p_id)
+                tangent_vec = entity.tangent_at(self.registry, p_id)
                 angle = math.atan2(tangent_vec[1], tangent_vec[0])
                 edges_with_angle.append({"angle": angle, **edge})
 
