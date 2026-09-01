@@ -39,6 +39,11 @@ class Circle(Entity):
     def get_endpoint_ids(self) -> list[EntityID]:
         return []
 
+    def characteristic_length_pairs(
+        self,
+    ) -> list[tuple[EntityID, EntityID]]:
+        return [(self.center_idx, self.radius_pt_idx)]
+
     def get_junction_point_ids(self) -> list[EntityID]:
         return [self.center_idx, self.radius_pt_idx]
 

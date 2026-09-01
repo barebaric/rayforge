@@ -66,6 +66,11 @@ class Arc(Entity):
     def get_endpoint_ids(self) -> list[EntityID]:
         return [self.start_idx, self.end_idx]
 
+    def characteristic_length_pairs(
+        self,
+    ) -> list[tuple[EntityID, EntityID]]:
+        return [(self.center_idx, self.start_idx)]
+
     def get_junction_point_ids(self) -> list[EntityID]:
         return [self.start_idx, self.end_idx, self.center_idx]
 

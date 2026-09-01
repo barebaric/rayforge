@@ -1,3 +1,4 @@
+import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
@@ -328,6 +329,34 @@ class Entity:
         as constructor arguments."""
         self.invisible = data.get("invisible", False)
         self.array_copy = data.get("array_copy", False)
+
+    def characteristic_length_pairs(
+        self,
+    ) -> list[tuple[EntityID, EntityID]]:
+        """Return point-index pairs defining the entity's characteristic
+        length(s).
+
+        Used by equal-length constraints. Subclasses should override to
+        return the relevant point pairs (e.g. Line returns its endpoints,
+        Circle returns center+radius).
+        """
+        return []
+
+    def characteristic_length(self, registry: "EntityRegistry") -> float:
+        """Return the length/radius value used by equal-length constraints.
+
+        The default computes the length from the first pair returned by
+        ``characteristic_length_pairs``. Subclasses with custom metrics
+        (e.g. Ellipse averages its two radii) should override.
+        """
+        pairs = self.characteristic_length_pairs()
+        if not pairs:
+            return 0.0
+        pa = registry.get_point(pairs[0][0])
+        pb = registry.get_point(pairs[0][1])
+        if pa and pb:
+            return math.hypot(pb.x - pa.x, pb.y - pa.y)
+        return 0.0
 
     def __repr__(self) -> str:
         return f"Entity(id={self.id}, type={self.type})"

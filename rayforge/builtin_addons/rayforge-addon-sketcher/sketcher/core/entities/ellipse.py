@@ -37,6 +37,18 @@ class Ellipse(Entity):
     def get_endpoint_ids(self) -> list[EntityID]:
         return []
 
+    def characteristic_length_pairs(
+        self,
+    ) -> list[tuple[EntityID, EntityID]]:
+        return [
+            (self.center_idx, self.radius_x_pt_idx),
+            (self.center_idx, self.radius_y_pt_idx),
+        ]
+
+    def characteristic_length(self, registry: "EntityRegistry") -> float:
+        rx, ry = self._get_radii(registry)
+        return (rx + ry) / 2.0
+
     def get_junction_point_ids(self) -> list[EntityID]:
         return [self.center_idx, self.radius_x_pt_idx, self.radius_y_pt_idx]
 

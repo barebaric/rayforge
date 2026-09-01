@@ -35,6 +35,11 @@ class Line(Entity):
     def get_endpoint_ids(self) -> list[EntityID]:
         return [self.p1_idx, self.p2_idx]
 
+    def characteristic_length_pairs(
+        self,
+    ) -> list[tuple[EntityID, EntityID]]:
+        return [(self.p1_idx, self.p2_idx)]
+
     def get_junction_point_ids(self) -> list[EntityID]:
         return [self.p1_idx, self.p2_idx]
 

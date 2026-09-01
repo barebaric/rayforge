@@ -97,45 +97,12 @@ class EqualLengthConstraint(Constraint):
     ) -> bool:
         return entity_id in self.entity_ids
 
-    @staticmethod
-    def _get_length_pairs(entity):
-        """Returns point-index pairs defining the entity's length(s)."""
-        if isinstance(entity, Line):
-            return [(entity.p1_idx, entity.p2_idx)]
-        elif isinstance(entity, Arc):
-            return [(entity.center_idx, entity.start_idx)]
-        elif isinstance(entity, Circle):
-            return [(entity.center_idx, entity.radius_pt_idx)]
-        elif isinstance(entity, Ellipse):
-            return [
-                (entity.center_idx, entity.radius_x_pt_idx),
-                (entity.center_idx, entity.radius_y_pt_idx),
-            ]
-        return []
-
-    @staticmethod
-    def _pair_dist(pa_idx, pb_idx, reg):
+    def _pair_dist(self, pa_idx, pb_idx, reg):
         pa = reg.get_point(pa_idx)
         pb = reg.get_point(pb_idx)
+        if not (pa and pb):
+            return 0.0
         return math.hypot(pb.x - pa.x, pb.y - pa.y)
-
-    def _get_length(self, entity, reg: EntityRegistry) -> float:
-        if isinstance(entity, Line):
-            p1 = reg.get_point(entity.p1_idx)
-            p2 = reg.get_point(entity.p2_idx)
-            return math.hypot(p2.x - p1.x, p2.y - p1.y)
-        elif isinstance(entity, Arc):
-            c = reg.get_point(entity.center_idx)
-            s = reg.get_point(entity.start_idx)
-            return math.hypot(s.x - c.x, s.y - c.y)
-        elif isinstance(entity, Circle):
-            c = reg.get_point(entity.center_idx)
-            r = reg.get_point(entity.radius_pt_idx)
-            return math.hypot(r.x - c.x, r.y - c.y)
-        elif isinstance(entity, Ellipse):
-            rx, ry = entity._get_radii(reg)
-            return (rx + ry) / 2.0
-        return 0.0
 
     def error(
         self, reg: EntityRegistry, params: ParameterContext
@@ -143,18 +110,19 @@ class EqualLengthConstraint(Constraint):
         if len(self.entity_ids) < 2:
             return []
 
-        entities = [reg.get_entity(eid) for eid in self.entity_ids]
-        if any(e is None for e in entities):
+        raw_entities = [reg.get_entity(eid) for eid in self.entity_ids]
+        entities = [e for e in raw_entities if e is not None]
+        if len(entities) < 2 or len(entities) < len(raw_entities):
             return []
 
         errors = []
         base = entities[0]
-        base_pairs = self._get_length_pairs(base)
+        base_pairs = base.characteristic_length_pairs()
         base_lens = [self._pair_dist(pa, pb, reg) for pa, pb in base_pairs]
 
         for i in range(1, len(entities)):
             ent = entities[i]
-            ent_pairs = self._get_length_pairs(ent)
+            ent_pairs = ent.characteristic_length_pairs()
             ent_lens = [self._pair_dist(pa, pb, reg) for pa, pb in ent_pairs]
 
             n = max(len(base_pairs), len(ent_pairs))
@@ -177,10 +145,10 @@ class EqualLengthConstraint(Constraint):
         if any(e is None for e in entities):
             return {}
 
-        base_pairs = self._get_length_pairs(entities[0])
+        base_pairs = entities[0].characteristic_length_pairs()
         num_residuals = 0
         for i in range(1, len(entities)):
-            ent_pairs = self._get_length_pairs(entities[i])
+            ent_pairs = entities[i].characteristic_length_pairs()
             num_residuals += max(len(base_pairs), len(ent_pairs))
 
         grad = {}
@@ -196,7 +164,7 @@ class EqualLengthConstraint(Constraint):
         row = 0
         for i in range(1, len(entities)):
             ent = entities[i]
-            ent_pairs = self._get_length_pairs(ent)
+            ent_pairs = ent.characteristic_length_pairs()
             n = max(len(base_pairs), len(ent_pairs))
 
             for j in range(n):
