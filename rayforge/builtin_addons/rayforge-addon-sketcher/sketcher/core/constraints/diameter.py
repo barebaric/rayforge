@@ -79,6 +79,9 @@ class DiameterConstraint(Constraint):
                 )
         return ""
 
+    def get_edit_subtitle(self) -> str:
+        return _("Enter diameter or expression.")
+
     def targets_segment(
         self, p1: EntityID, p2: EntityID, entity_id: EntityID | None
     ) -> bool:

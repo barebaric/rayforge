@@ -75,6 +75,9 @@ class HorizontalConstraint(Constraint):
             )
         return ""
 
+    def get_edit_subtitle(self) -> str:
+        return _("Enter length or expression.")
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "type": "HorizontalConstraint",

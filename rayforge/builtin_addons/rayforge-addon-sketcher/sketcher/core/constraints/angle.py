@@ -130,6 +130,9 @@ class AngleConstraint(Constraint):
             return _("Between two lines")
         return ""
 
+    def get_edit_subtitle(self) -> str:
+        return _("Enter angle in degrees or expression.")
+
     def to_dict(self) -> dict[str, Any]:
         data = {
             "type": "AngleConstraint",

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from enum import Enum, auto
+from gettext import gettext as _
 from locale import format_string
 from typing import (
     TYPE_CHECKING,
@@ -184,6 +185,13 @@ class Constraint:
         Subclasses should override to provide meaningful descriptions.
         """
         return ""
+
+    def get_edit_subtitle(self) -> str:
+        """
+        Returns a user-facing hint string for the constraint edit dialog.
+        Subclasses should override to describe the expected input.
+        """
+        return _("Enter value or expression.")
 
     def _format_coord(self, x: float, y: float) -> str:
         """Formats coordinates respecting the user's locale."""

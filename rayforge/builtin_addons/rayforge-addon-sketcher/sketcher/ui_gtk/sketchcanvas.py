@@ -15,15 +15,7 @@ from rayforge.ui_gtk.canvas2d.elements.camera_image import CameraImageElement
 from rayforge.ui_gtk.shared.expression_entry import ExpressionEntry
 
 from ..core.commands import ModifyConstraintCommand
-from ..core.constraints import (
-    AngleConstraint,
-    Constraint,
-    DiameterConstraint,
-    DistanceConstraint,
-    HorizontalConstraint,
-    RadiusConstraint,
-    VerticalConstraint,
-)
+from ..core.constraints import Constraint
 from ..core.sketch import Sketch
 from .editor import SketchEditor
 from .sketchelement import SketchElement
@@ -288,19 +280,7 @@ class SketchCanvas(WorldSurface):
             initial_text = f"{float(getattr(constraint, 'value', 0)):g}"
 
         # Determine the user-friendly label and description based on type
-        if isinstance(constraint, RadiusConstraint):
-            row_subtitle = _("Enter radius or expression (e.g. 'width/2').")
-        elif isinstance(constraint, DiameterConstraint):
-            row_subtitle = _("Enter diameter or expression.")
-        elif isinstance(constraint, AngleConstraint):
-            row_subtitle = _("Enter angle in degrees or expression.")
-        elif isinstance(
-            constraint,
-            (DistanceConstraint, HorizontalConstraint, VerticalConstraint),
-        ):
-            row_subtitle = _("Enter length or expression.")
-        else:
-            row_subtitle = _("Enter value or expression.")
+        row_subtitle = constraint.get_edit_subtitle()
 
         # Create ExpressionContext
         var_set = self.sketch_element.sketch.input_parameters

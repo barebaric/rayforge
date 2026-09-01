@@ -78,6 +78,9 @@ class RadiusConstraint(Constraint):
                 )
         return ""
 
+    def get_edit_subtitle(self) -> str:
+        return _("Enter radius or expression (e.g. 'width/2').")
+
     def targets_segment(
         self, p1: EntityID, p2: EntityID, entity_id: EntityID | None
     ) -> bool:
