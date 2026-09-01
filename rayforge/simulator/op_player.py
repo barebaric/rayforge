@@ -141,17 +141,91 @@ class OpPlayer:
         """Cumulative simulated time (seconds) up to command *idx*."""
         return self._time_ops.get_cumulative_time_at(idx, *self._play_params)
 
+    @property
+    def sim_time(self) -> float:
+        """The current simulated playback time (seconds)."""
+        return self._sim_time
+
     def set_sim_time(self, t: float) -> None:
         """Set the simulated playback time and cache the playhead progress.
 
         The playhead is described as the command currently being
         executed plus the fraction of its duration that has elapsed.
         Once playback has run to completion the laser is turned off.
+
+        Note that time alone cannot distinguish positions inside a
+        cluster of zero-duration commands; use :meth:`set_playhead`
+        when the desired position is known as a command index.
         """
         self._sim_time = float(t)
         self._playback = self._compute_playback_progress(self._sim_time)
         if self.is_finished:
             self.state.laser_on = False
+
+    def set_playhead(self, index: int) -> None:
+        """Place the playhead on command *index* (that command executed).
+
+        Seeks the machine state to *index*, sets the simulated clock to
+        its completion time, and anchors the cached playback progress
+        to the *following* command. Anchoring by index keeps stepping
+        and external syncing exact even when many commands share the
+        same cumulative time (zero-duration state changes).
+        """
+        n = self.ops.len()
+        index = max(0, min(index, n - 1))
+        t = self.get_cumulative_time(index)
+        self._anchor_progress(index, t, index + 1)
+
+    def set_progress_anchor(self, completed: int, t: float) -> None:
+        """Anchor the playhead between *completed* and the next command.
+
+        Seeks the machine state so commands up to *completed* are
+        applied, sets the simulated clock to *t*, and caches playback
+        progress as command ``completed + 1`` in progress. Used when a
+        position is known both as an index boundary and a time (for
+        example scrubbing the time-based slider while paused).
+        """
+        n = self.ops.len()
+        completed = max(-1, min(completed, n - 1))
+        k = completed + 1
+        if completed < 0:
+            self.state = self._create_home_state()
+            self._current_index = -1
+            self._source_axis = Axis.Y
+            self._rotary_axis = None
+            self._rotary_dpm = 0.0
+            self._prev_layer_uid = None
+        elif k >= n:
+            self.seek(n - 1)
+            self._sim_time = self.get_cumulative_time(n - 1)
+            self._playback = (n - 1, 1.0)
+            return
+        else:
+            self.seek(completed)
+        self._sim_time = float(t)
+        self._playback = self._progress_at_index(float(t), k)
+        if self.is_finished:
+            self.state.laser_on = False
+
+    def _anchor_progress(self, completed: int, t: float, k: int) -> None:
+        self.seek(completed)
+        self._sim_time = float(t)
+        n = self.ops.len()
+        if k >= n:
+            self._playback = (n - 1, 1.0)
+        else:
+            self._playback = self._progress_at_index(float(t), k)
+        if self.is_finished:
+            self.state.laser_on = False
+
+    def _progress_at_index(self, t: float, k: int) -> tuple[int, float]:
+        """Playback progress anchored at command *k* for time *t*."""
+        start = self.get_cumulative_time(k - 1) if k > 0 else 0.0
+        span = self.get_cumulative_time(k) - start
+        if span <= 0.0:
+            return (k, 0.0)
+        frac = max(0.0, min(1.0, (t - start) / span))
+        return (k, frac)
 
     @property
     def is_finished(self) -> bool:
@@ -188,6 +262,80 @@ class OpPlayer:
         frac = max(0.0, min(1.0, (t - t_end) / span))
         return (idx + 1, frac)
 
+    def _interpolate_rotary_arc(
+        self,
+        p: int,
+        frac: float,
+        start_axes: dict,
+        end: tuple,
+        axes: dict,
+    ) -> bool:
+        """Interpolate along a rotary-mode arc, or fall back to linear.
+
+        Rotary mapping rewrites endpoint Y while the arc's stored
+        radius (from I/J) still describes the unwrapped surface
+        geometry, so the Cartesian angle math cannot use the mapped
+        endpoints directly. Instead the planar arc is reconstructed in
+        (X, surface) space: the Y travel comes from the rotary axis
+        itself (``delta_angle / degrees_per_mm``), which is
+        authoritative, and the circle is solved through BOTH
+        reconstructed endpoints with the stored radius - so the
+        interpolation always lands exactly on the command's target.
+
+        Returns True when the reconstruction succeeded and ``axes``
+        holds the interpolated position; False when the caller must
+        fall back to linear interpolation.
+        """
+        i, j, cw = self.ops.arc_params(p)
+        radius = math.hypot(i, j)
+        if radius <= 1e-9:
+            return False
+        ea = self.ops.extra_axes(p) or {}
+        a_end = ea.get(self._rotary_axis)
+        if a_end is None:
+            return False
+        dpm = self._rotary_dpm
+        a_start = start_axes.get(self._rotary_axis, 0.0)
+        sx = start_axes.get(Axis.X, 0.0)
+        su = a_start / dpm
+        ex = end[0]
+        eu = su + (a_end - a_start) / dpm
+
+        # Solve the circle through (sx, su) and (ex, eu) with the
+        # stored radius. The center lies on the chord's perpendicular
+        # bisector; pick the side that agrees with the stored I/J.
+        dx, dy = ex - sx, eu - su
+        chord = math.hypot(dx, dy)
+        if chord > 2.0 * radius:
+            return False
+        cx0, cu0 = sx + i, su + j
+        if chord <= 1e-9:
+            # Full turn: the stored center defines the circle.
+            cx, cu = cx0, cu0
+        else:
+            h = math.sqrt(max(radius * radius - (chord * 0.5) ** 2, 0.0))
+            mx, mu = sx + dx * 0.5, su + dy * 0.5
+            px, pu = -dy / chord, dx / chord
+            if (cx0 - mx) * px + (cu0 - mu) * pu >= 0.0:
+                cx, cu = mx + px * h, mu + pu * h
+            else:
+                cx, cu = mx - px * h, mu - pu * h
+
+        angle_start = math.atan2(su - cu, sx - cx)
+        angle_end = math.atan2(eu - cu, ex - cx)
+        sweep_ccw = (angle_end - angle_start) % (2.0 * math.pi)
+        sweep = sweep_ccw - 2.0 * math.pi if cw else sweep_ccw
+        angle = angle_start + frac * sweep
+
+        axes[Axis.X] = cx + radius * math.cos(angle)
+        u = cu + radius * math.sin(angle)
+        axes[self._rotary_axis] = a_start + (u - su) * dpm
+        if Axis.Z in axes:
+            axes[Axis.Z] = start_axes.get(Axis.Z, 0.0) + frac * (
+                end[2] - start_axes.get(Axis.Z, 0.0)
+            )
+        return True
+
     def render_state(self) -> MachineState:
         """State for rendering, with axes interpolated within the
         in-progress command during playback.
@@ -214,10 +362,21 @@ class OpPlayer:
 
         axes = dict(start_axes)
         is_arc = self.ops.command_type(p) == CommandType.ARC_TO
-
+        rotary_done = False
+        spatial_done = False
         if is_arc:
-            self._interpolate_arc(p, frac, start_axes, end, axes)
-        else:
+            if self._rotary_axis is not None and self._rotary_dpm != 0.0:
+                # Rotary arcs are reconstructed from the rotary axis
+                # travel; mapping may have detached the stored circle
+                # from the mapped endpoints.
+                rotary_done = self._interpolate_rotary_arc(
+                    p, frac, start_axes, end, axes
+                )
+                spatial_done = rotary_done
+            else:
+                self._interpolate_arc(p, frac, start_axes, end, axes)
+                spatial_done = True
+        if not spatial_done:
             for axis, value in (
                 (Axis.X, end[0]),
                 (Axis.Y, end[1]),
@@ -232,8 +391,10 @@ class OpPlayer:
         ea = self.ops.extra_axes(p)
         if ea:
             for axis, value in ea.items():
-                # The rotary axis is already handled by _interpolate_arc.
-                if is_arc and axis == self._rotary_axis:
+                # The rotary axis is already interpolated by
+                # _interpolate_rotary_arc when that path succeeded;
+                # otherwise it blends linearly like the other extras.
+                if rotary_done and axis == self._rotary_axis:
                     continue
                 axes[axis] = start_axes.get(axis, 0.0) + frac * (
                     value - start_axes.get(axis, 0.0)
@@ -408,6 +569,25 @@ class OpPlayer:
                 self._update_rotary_config(self.ops.layer_uid(i))
             self.state.apply_command(self.ops, i)
         self._current_index = index
+
+    def sync_state_to_playhead(self) -> None:
+        """Move the machine state to the command before the playhead.
+
+        Used during time-based playback, where the playhead is defined
+        by the simulated clock instead of explicit seeks. Forward
+        movement is incremental, so steady playback only pays for the
+        commands crossed since the previous tick; scrubbing backwards
+        falls back to :meth:`seek` (snapshot-accelerated).
+        """
+        p, _frac = self._playback
+        target = min(p - 1, self.ops.len() - 1)
+        if target < 0 or target == self._current_index:
+            return
+        if target > self._current_index:
+            self.advance_to(target)
+        else:
+            self.seek(target)
+        self._emit_layer_change()
 
     def seek_last_movement(self) -> int | None:
         last = None
