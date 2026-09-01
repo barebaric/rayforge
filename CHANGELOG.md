@@ -5,6 +5,26 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.11.0
+
+### Fixed
+
+- Sketcher: undoing a guide drag no longer spuriously rotates every
+  array member, which could cause overlapping rectangles and missing
+  contours in ops
+- 3D simulation playback no longer stalls on large jobs; the playhead,
+  slider, and G-code viewer now stay in sync (#370)
+- 3D simulation: rotary arcs are reconstructed correctly, fixing
+  stalls, off-cylinder X swings, and a frozen cylinder
+- Simulation: playback completion anchors the final command so trailing
+  M5s are applied and the laser turns off
+
+### Performance
+
+- Sketcher: point-usage reference counting and coincident-point
+  caching make drag operations faster
+- Sketcher: solver iterations capped at 5000 to guard against stalls
+
 ## 1.11.0-beta3
 
 ### Added
