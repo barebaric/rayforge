@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
@@ -68,6 +69,8 @@ class EditArrayCommand(SketchChangeCommand):
         self._copy_updates: list[tuple[Any, float, float]] = []
         self._updated_members: list[tuple[int, list[int]]] = []
         self._force_full_regen: bool = force_full_regen
+        self._template_standalone: list[int] = []
+        self._created_standalone: dict[int, list[int]] = {}
 
     def _do_execute(self) -> None:
         if self.add_cmd is not None or self.remove_cmd is not None:
@@ -97,6 +100,9 @@ class EditArrayCommand(SketchChangeCommand):
         self._old_array_state = self.array.snapshot()
         self._old_guide_sig = self.array._cached_guide_sig
         self._old_template_sig = self.array._cached_template_sig
+        self._template_standalone = self._resolve_template_standalone(
+            registry, template_eids
+        )
         self._full_regen = (
             self._force_full_regen
             or self.array.params_changed(self.strategy)
@@ -164,6 +170,7 @@ class EditArrayCommand(SketchChangeCommand):
             )
             kept_members = [(0, list(template_eids))]
             stale: list[int] = []
+            stale_slots: list[int] = []
             missing_slots: list[int] = []
             updatable = len(template_eids)
             for slot, eids in living[1:]:
@@ -173,12 +180,17 @@ class EditArrayCommand(SketchChangeCommand):
                     and slot - 1 < len(placements)
                 ):
                     self._update_copy_in_place(
-                        registry, template_eids, eids, placements[slot - 1]
+                        registry,
+                        template_eids,
+                        eids,
+                        placements[slot - 1],
+                        self._standalone_pairs(slot),
                     )
                     kept_members.append((slot, list(eids)))
                     self._updated_members.append((slot, list(eids)))
                 else:
                     stale.extend(eids)
+                    stale_slots.append(slot)
             missing_slots = [
                 slot
                 for slot in range(1, count)
@@ -192,7 +204,7 @@ class EditArrayCommand(SketchChangeCommand):
                 len(stale),
                 len(missing_slots),
             )
-            self._remove_entities(stale)
+            self._remove_entities(stale, stale_slots)
 
             self._create_members(missing_slots)
             self._commit_members(kept_members)
@@ -236,6 +248,12 @@ class EditArrayCommand(SketchChangeCommand):
         self.array.members = [
             (slot, list(eids)) for slot, eids in kept_members
         ] + [(slot, list(eids)) for slot, eids in self.created_groups]
+        member_slots = {slot for slot, _ in self.array.members}
+        self.array.standalone_pids = {
+            slot: pids
+            for slot, pids in self.array.standalone_pids.items()
+            if slot in member_slots
+        }
         self.array.commit(self.strategy)
         # Refresh the caches so the next solve doesn't
         # trigger a spurious re-apply of this same edit.
@@ -244,10 +262,14 @@ class EditArrayCommand(SketchChangeCommand):
     def _refresh_sync_caches(self) -> None:
         self.array.refresh_caches(self.sketch.registry, self.strategy)
 
-    def _remove_entities(self, stale_ids: list[int]) -> None:
+    def _remove_entities(
+        self, stale_ids: list[int], stale_slots: Sequence[int] = ()
+    ) -> None:
         """
         Removes entities (with dependent points/constraints) without
         triggering prune_arrays(), so the definition survives.
+        ``stale_slots`` are the member slots the entities belonged to;
+        their standalone points are array-owned and die with them.
         """
         if not stale_ids:
             return
@@ -279,10 +301,23 @@ class EditArrayCommand(SketchChangeCommand):
             for pid in entity.get_point_ids():
                 if pid in known or pid in used_by_remaining:
                     continue
-                pt = registry.get_point(pid)
-                if pt is not None and pt.fixed:
+                try:
+                    pt = registry.get_point(pid)
+                except IndexError:
+                    continue
+                if pt.fixed:
                     points.append(pt)
                     known.add(pid)
+        for slot in stale_slots:
+            for pid in self.array.standalone_pids.get(slot, []):
+                if pid in known:
+                    continue
+                try:
+                    pt = registry.get_point(pid)
+                except IndexError:
+                    continue
+                points.append(pt)
+                known.add(pid)
         self.remove_cmd = RemoveItemsCommand(
             sketch,
             "",
@@ -292,18 +327,48 @@ class EditArrayCommand(SketchChangeCommand):
         )
         self.remove_cmd.apply_direct()
 
+    def _resolve_template_standalone(
+        self, registry: EntityRegistry, template_eids: list[int]
+    ) -> list[int]:
+        """
+        The template member's standalone points. Arrays created before
+        standalone tracking existed (or loaded from old files) carry
+        no stored set; it is rediscovered through the constraint graph
+        and persisted so later edits find it.
+        """
+        stored = self.array.standalone_pids.get(0)
+        if stored is not None:
+            return stored
+        discovered = self.sketch.find_standalone_point_ids(template_eids)
+        if discovered:
+            self.array.standalone_pids[0] = discovered
+        return discovered
+
+    def _standalone_pairs(self, slot: int) -> list[tuple[int, int]]:
+        """Pairs the template's standalone points with a copy's, in
+        matching order, for ``rewrite_copy_from``."""
+        return list(
+            zip(
+                self._template_standalone,
+                self.array.standalone_pids.get(slot, []),
+            )
+        )
+
     def _update_copy_in_place(
         self,
         registry: EntityRegistry,
         template_eids: list[int],
         copy_eids: list[int],
         placement: InstancePlacement,
+        extra_point_pairs: list[tuple[int, int]] | None = None,
     ) -> None:
         """
         Rewrites an existing copy's geometry to the placement applied
         to the current template. The copy keeps its entity and point
         ids, so history entries and undo state stay valid across
-        re-derivations.
+        re-derivations. ``extra_point_pairs`` carries the member's
+        standalone points, rewritten by the same placement as the
+        entity points.
         """
         logger.debug(
             "ArrayEdit[%s]: updating copy slot entities=%r at "
@@ -315,7 +380,9 @@ class EditArrayCommand(SketchChangeCommand):
         )
         self._copy_updates.extend(
             EntityGroup(registry, template_eids).rewrite_copy_from(
-                EntityGroup(registry, copy_eids), placement
+                EntityGroup(registry, copy_eids),
+                placement,
+                extra_point_pairs or (),
             )
         )
 
@@ -332,6 +399,7 @@ class EditArrayCommand(SketchChangeCommand):
             list(self._template_group),
             center_pid=self._array_center_pid(registry),
             create_master=False,
+            extra_pids=set(self._template_standalone) or None,
         )
         if result is None:
             return
@@ -339,6 +407,7 @@ class EditArrayCommand(SketchChangeCommand):
         add_points: list[Point] = []
         add_entities: list[Entity] = []
         pending_groups: list[tuple[int, list[Entity]]] = []
+        slot_extras: dict[int, list[Point]] = {}
 
         # Placements are generated in slot order starting at slot 1;
         # the template member (slot 0) is not a placement.
@@ -352,6 +421,8 @@ class EditArrayCommand(SketchChangeCommand):
             # Entity IDs are assigned by AddItemsCommand during execute;
             # resolve them into real IDs afterwards.
             pending_groups.append((slot, instance_entities))
+            if i < len(result["instance_extra_points"]):
+                slot_extras[slot] = result["instance_extra_points"][i]
 
         self.add_cmd = AddItemsCommand(
             self.sketch,
@@ -366,6 +437,13 @@ class EditArrayCommand(SketchChangeCommand):
             for slot, entities in pending_groups
         ]
         self.created_entity_ids = [e.id for e in add_entities]
+        # Standalone points of the new members; IDs are read after
+        # AddItemsCommand executed, when they are final.
+        self._created_standalone = {
+            slot: [pt.id for pt in extras]
+            for slot, extras in slot_extras.items()
+        }
+        self.array.standalone_pids.update(self._created_standalone)
         logger.info(
             "ArrayEdit[%s]: created %d instances (%d entities)",
             self.array.uid[:8],
@@ -387,7 +465,12 @@ class EditArrayCommand(SketchChangeCommand):
         positions are snapshotted first so undo can restore them.
         """
         self._snapshot_template_points(registry, template_eids)
-        self.array.reanchor_template(self.strategy, registry, template_eids)
+        self.array.reanchor_template(
+            self.strategy,
+            registry,
+            template_eids,
+            self._template_standalone,
+        )
 
     def _array_center_pid(self, registry: EntityRegistry) -> int | None:
         circle = registry.get_entity(self.array.guide_circle_id)
@@ -400,11 +483,17 @@ class EditArrayCommand(SketchChangeCommand):
         registry: EntityRegistry,
         template_eids: list[int],
     ) -> None:
-        """Saves the current positions of all template points so undo
-        can restore them after ``_reanchor_template`` moves them."""
-        self._template_point_snapshot = EntityGroup(
-            registry, template_eids
-        ).snapshot_positions()
+        """Saves the current positions of all template points — the
+        member's entity points and its standalone points — so undo can
+        restore them after ``_reanchor_template`` moves them."""
+        snapshot = EntityGroup(registry, template_eids).snapshot_positions()
+        for pid in self._template_standalone:
+            try:
+                pt = registry.get_point(pid)
+            except IndexError:
+                continue
+            snapshot.append((pt, pt.x, pt.y))
+        self._template_point_snapshot = snapshot
 
     def _redo(self) -> None:
         if self.remove_cmd is not None:
@@ -439,6 +528,10 @@ class EditArrayCommand(SketchChangeCommand):
             ]
         else:
             kept_members = self.array.living_members(registry)
+        # Undo's array.restore() dropped the created slots' standalone
+        # points along with their members; re-track them before the
+        # commit prunes to surviving members.
+        self.array.standalone_pids.update(self._created_standalone)
         self._commit_members(kept_members)
 
     def _reexecute_remove(self) -> None:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import math
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 from ..entities import Arc, Bezier, Line
@@ -484,6 +485,7 @@ class CurveAlongArray(Array):
         strategy: ArrayStrategy,
         registry: EntityRegistry,
         template_eids: list[int],
+        standalone_pids: Sequence[int] = (),
     ) -> None:
         """
         Re-places the template member onto position 0 of the guide.
@@ -496,7 +498,8 @@ class CurveAlongArray(Array):
         onto the orbit. Template shape edits survive; position drags
         do not — so a user-drawn attachment between the template and
         the guide start (e.g. a snapped coincidence) agrees with the
-        sync instead of fighting it.
+        sync instead of fighting it. The member's standalone points
+        are carried by the same rigid motion.
         """
         group = EntityGroup(registry, template_eids)
         if not group.points():
@@ -544,6 +547,12 @@ class CurveAlongArray(Array):
             delta,
         )
         group.apply_rigid_motion(motion)
+        for pid in standalone_pids:
+            try:
+                pt = registry.get_point(pid)
+            except IndexError:
+                continue
+            pt.x, pt.y = motion.transform_point(pt.x, pt.y)
         self.template_anchor = (
             (float(target[0]), float(target[1])),
             float(placement.angle),

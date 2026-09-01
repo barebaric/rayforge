@@ -102,6 +102,7 @@ class SelectTool(SnapMixin, SketchTool):
         # positions.
         self.drag_hold_positions: dict[EntityID, GeoPoint] = {}
         self.drag_initial_entity_states: dict[EntityID, Any] = {}
+        self._drag_undo_state: dict | None = None
 
         self.drag_point_distances: dict[EntityID, int] = {}
 
@@ -373,17 +374,13 @@ class SelectTool(SnapMixin, SketchTool):
                     # Pass the full snapshot (points + entities)
                     # We must copy because self.drag_initial_* are cleared
                     # below
-                    snapshot = (
-                        self.drag_initial_positions.copy(),
-                        self.drag_initial_entity_states.copy(),
-                    )
                     cmd = MoveControlPointCommand(
                         self.element.sketch,
                         bezier_id,
                         cp_index,
                         start_offset,
                         end_offset,
-                        snapshot=snapshot,
+                        snapshot=self._drag_undo_state,
                     )
                     self.element.execute_command(cmd)
 
@@ -405,10 +402,6 @@ class SelectTool(SnapMixin, SketchTool):
                     # Pass the full snapshot (points + entities)
                     # We must copy because self.drag_initial_* are cleared
                     # below
-                    snapshot = (
-                        self.drag_initial_positions.copy(),
-                        self.drag_initial_entity_states.copy(),
-                    )
                     snap_constraints = self.build_snap_constraints(
                         self.dragged_point_id
                     )
@@ -417,7 +410,7 @@ class SelectTool(SnapMixin, SketchTool):
                         self.dragged_point_id,
                         (start_x, start_y),
                         (end_x, end_y),
-                        snapshot=snapshot,
+                        snapshot=self._drag_undo_state,
                         snap_constraints=snap_constraints,
                     )
                     self.element.execute_command(cmd)
@@ -435,16 +428,12 @@ class SelectTool(SnapMixin, SketchTool):
                     if abs(p.x - sx) > 1e-6 or abs(p.y - sy) > 1e-6:
                         moved = True
             if moved:
-                snapshot = (
-                    self.drag_initial_positions.copy(),
-                    self.drag_initial_entity_states.copy(),
-                )
                 cmd = MoveEntitiesCommand(
                     self.element.sketch,
                     list(self.element.selection.entity_ids),
                     self.drag_initial_positions,
                     end_positions,
-                    snapshot=snapshot,
+                    snapshot=self._drag_undo_state,
                 )
                 self.element.execute_command(cmd)
 
@@ -460,6 +449,7 @@ class SelectTool(SnapMixin, SketchTool):
         self.drag_scope_point_ids = None
         self.drag_start_wt_inv = None
         self.drag_start_ct_inv = None
+        self._drag_undo_state = None
 
         # Final solve, now allowing constraint status to be updated.
         # Note: The command execution will have already triggered a solve.
@@ -1054,7 +1044,8 @@ class SelectTool(SnapMixin, SketchTool):
 
     def _cache_drag_start_state(self):
         """
-        Caches transforms and ALL state (points + entities) at start of drag.
+        Caches transforms and ALL state (points, entities, array
+        definitions) at start of drag.
         """
         self.drag_start_wt_inv = self.element.get_world_transform().invert()
         self.drag_start_ct_inv = self.element.content_transform.invert()
@@ -1071,6 +1062,10 @@ class SelectTool(SnapMixin, SketchTool):
             state = e.get_state()
             if state is not None:
                 self.drag_initial_entity_states[e.id] = state
+
+        # Capture full undo state — the command will pick this up
+        # at release and use it for undo.
+        self._drag_undo_state = self.element.sketch.capture_undo_state()
 
     def _refresh_hold_positions(self, exclude: set[EntityID]) -> None:
         """Re-pins hold targets to the settled position of every held

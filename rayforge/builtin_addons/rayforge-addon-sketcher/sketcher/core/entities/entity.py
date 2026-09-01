@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from ..commands.mirror import MirrorAxis
     from ..constraints import Constraint
     from ..contour import OffsetItem
+    from ..entity_group import PlacementTransform
     from ..registry import EntityRegistry
     from ..sketch import Sketch
     from .point import Point
@@ -169,6 +170,28 @@ class Entity:
         entity-internal state such as bezier control-point deltas or arc
         chirality. The default is a no-op: entities whose geometry is fully
         defined by their control points need no special handling.
+        """
+
+    def transform_offsets(self, placement: "PlacementTransform") -> None:
+        """
+        Updates entity-internal state for a placement transform, in
+        the same spirit as ``mirror``: defining points are moved by
+        the caller (see ``EntityGroup.apply_placement``); this method
+        transforms only state relative to those points, such as
+        bezier control-point offsets. The default is a no-op for
+        entities fully defined by their defining points.
+        """
+
+    def rewrite_offsets_from(
+        self, template: "Entity", placement: "PlacementTransform"
+    ) -> None:
+        """
+        Re-derives this (copy) entity's internal state from a
+        template entity of the same kind: the template's state
+        transformed by the placement. Mirrors
+        ``EntityGroup.rewrite_copy_from``, which owns the defining
+        points; the template is the source of truth, so the copy's own
+        state is never read. The default is a no-op.
         """
 
     def as_offset_item(self, sketch: "Sketch") -> "OffsetItem | None":

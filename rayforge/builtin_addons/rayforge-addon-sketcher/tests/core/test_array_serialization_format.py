@@ -21,6 +21,7 @@ def test_circular_to_dict_format():
         "mode": "circular",
         "guide_circle_id": 7,
         "members": [[0, [1]], [1, [2, 3]]],
+        "standalone_pids": [],
         "count": 8,
         "total_angle_deg": 270.0,
         "rotate_copies": False,
@@ -45,6 +46,7 @@ def test_curve_along_to_dict_format():
         "mode": "curve_along",
         "guide_circle_id": 5,
         "members": [[0, [1]]],
+        "standalone_pids": [],
         "count": 4,
         "rotate_copies": False,
         "path_entity_id": 9,
@@ -66,6 +68,7 @@ def test_curve_along_to_dict_omits_absent_anchor_and_fills_defaults():
         "mode": "curve_along",
         "guide_circle_id": 5,
         "members": [],
+        "standalone_pids": [],
         "count": 6,
         "rotate_copies": True,
         "path_entity_id": -1,
@@ -121,6 +124,8 @@ def test_from_dict_coerces_member_ids_to_int():
             "mode": "circular",
             "guide_circle_id": 7,
             "members": [["0", ["1"]]],
+            "standalone_pids": [["0", ["2", "3"]]],
         }
     )
     assert restored.members == [(0, [1])]
+    assert restored.standalone_pids == {0: [2, 3]}

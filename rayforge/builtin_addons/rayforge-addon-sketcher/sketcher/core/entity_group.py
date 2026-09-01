@@ -15,7 +15,7 @@ import math
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Protocol
 
-from .entities import Bezier, Circle, Ellipse, TextBoxEntity
+from .entities import Circle, Ellipse, TextBoxEntity
 
 if TYPE_CHECKING:
     from .entities import Entity, Point
@@ -51,20 +51,6 @@ def remap_point_refs(obj: Any, pid_map: dict[int, int]) -> None:
             and value in pid_map
         ):
             setattr(obj, attr, pid_map[value])
-
-
-def transform_bezier_offsets(
-    bezier: Bezier, placement: PlacementTransform
-) -> None:
-    """
-    Rotates bezier control point offsets so curve orientation follows
-    rotation placements. Offsets are relative to their anchor endpoints,
-    which are already transformed.
-    """
-    if bezier.cp1 is not None:
-        bezier.cp1 = placement.transform_offset(*bezier.cp1)
-    if bezier.cp2 is not None:
-        bezier.cp2 = placement.transform_offset(*bezier.cp2)
 
 
 class EntityGroup:
@@ -173,8 +159,7 @@ class EntityGroup:
             pt = self.registry.get_point(pid)
             pt.x, pt.y = placement.transform_point(x, y)
         for entity in self.entities():
-            if isinstance(entity, Bezier):
-                transform_bezier_offsets(entity, placement)
+            entity.transform_offsets(placement)
 
     def apply_rigid_motion(self, motion: PlacementTransform) -> None:
         """
@@ -213,16 +198,23 @@ class EntityGroup:
         self.translate(vx * scale, vy * scale)
 
     def rewrite_copy_from(
-        self, copy: EntityGroup, placement: PlacementTransform
+        self,
+        copy: EntityGroup,
+        placement: PlacementTransform,
+        extra_point_pairs: Iterable[tuple[int, int]] = (),
     ) -> list[tuple[Point, float, float]]:
         """
         Rewrites an existing copy group's geometry to the placement
         applied to this (template) group: entities are paired
         positionally, points are paired positionally and moved onto
-        the transform of their template point, Bezier control-point
-        offsets are taken from the template. Returns the applied
-        copy-point positions so the caller can bookkeep them for
-        undo/redo.
+        the transform of their template point, and each entity's
+        internal state is re-derived from its template counterpart
+        (``Entity.rewrite_offsets_from``, e.g. bezier control-point
+        offsets). ``extra_point_pairs`` pairs the groups' standalone
+        points ((template pid, copy pid) in matching order); each is
+        moved onto the transform of its template point, exactly like
+        entity points. Returns the applied copy-point positions so the
+        caller can bookkeep them for undo/redo.
         """
         applied: list[tuple[Point, float, float]] = []
         for tpl_entity, copy_entity in zip(self.entities(), copy.entities()):
@@ -237,17 +229,16 @@ class EntityGroup:
                     tpl_pt.x, tpl_pt.y
                 )
                 applied.append((copy_pt, copy_pt.x, copy_pt.y))
-            if isinstance(tpl_entity, Bezier) and isinstance(
-                copy_entity, Bezier
-            ):
-                if tpl_entity.cp1 is not None:
-                    copy_entity.cp1 = placement.transform_offset(
-                        *tpl_entity.cp1
-                    )
-                if tpl_entity.cp2 is not None:
-                    copy_entity.cp2 = placement.transform_offset(
-                        *tpl_entity.cp2
-                    )
+            copy_entity.rewrite_offsets_from(tpl_entity, placement)
+        for tpl_pid, copy_pid in extra_point_pairs:
+            tpl_pt = self._get_point(tpl_pid)
+            copy_pt = copy._get_point(copy_pid)
+            if tpl_pt is None or copy_pt is None:
+                continue
+            copy_pt.x, copy_pt.y = placement.transform_point(
+                tpl_pt.x, tpl_pt.y
+            )
+            applied.append((copy_pt, copy_pt.x, copy_pt.y))
         return applied
 
     def snapshot_positions(self) -> list[tuple[Point, float, float]]:

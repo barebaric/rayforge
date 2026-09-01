@@ -16,6 +16,7 @@ from .entity import Entity, _quantize
 if TYPE_CHECKING:
     from ..commands.mirror import MirrorAxis
     from ..constraints import Constraint
+    from ..entity_group import PlacementTransform
     from ..registry import EntityRegistry
 
 
@@ -57,6 +58,28 @@ class Bezier(Entity):
             self.cp1 = axis.flip_offset(self.cp1)
         if self.cp2 is not None:
             self.cp2 = axis.flip_offset(self.cp2)
+
+    def transform_offsets(self, placement: "PlacementTransform") -> None:
+        # Control points are stored as (dx, dy) offsets relative to
+        # the start/end points; transform them with the placement so
+        # the curve follows translation and rotation placements.
+        if self.cp1 is not None:
+            self.cp1 = placement.transform_offset(*self.cp1)
+        if self.cp2 is not None:
+            self.cp2 = placement.transform_offset(*self.cp2)
+
+    def rewrite_offsets_from(
+        self, template: "Entity", placement: "PlacementTransform"
+    ) -> None:
+        # The copy's own offsets may lag behind (its endpoints moved
+        # independently); take the template's, transformed like its
+        # points.
+        if not isinstance(template, Bezier):
+            return
+        if template.cp1 is not None:
+            self.cp1 = placement.transform_offset(*template.cp1)
+        if template.cp2 is not None:
+            self.cp2 = placement.transform_offset(*template.cp2)
 
     def geometry_signature(self, registry: "EntityRegistry") -> tuple:
         """Extends the point signature with the quantized

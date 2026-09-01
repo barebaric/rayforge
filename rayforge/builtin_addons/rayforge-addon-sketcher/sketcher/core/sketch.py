@@ -215,6 +215,45 @@ class Sketch(IAsset, IGeometryProvider):
         self._coincident_dirty = True
         self._updated.send(self)
 
+    def capture_undo_state(self) -> dict[str, Any]:
+        """Captures full sketch state for undo: points, entity states
+        and array definitions.  The returned dict is opaque — callers
+        store and pass it back via ``apply_undo_state``."""
+        points = {p.id: (p.x, p.y) for p in self.registry.points}
+        entities: dict[int, Any] = {}
+        for e in self.registry.entities:
+            state = e.get_state()
+            if state is not None:
+                entities[e.id] = state
+        arrays = [(a.uid, a.snapshot()) for a in self.arrays]
+        return {"points": points, "entities": entities, "arrays": arrays}
+
+    def apply_undo_state(self, state: dict[str, Any]) -> None:
+        """Restores sketch state from a dict captured by
+        ``capture_undo_state``."""
+        points = state["points"]
+        entities = state["entities"]
+        arrays = state["arrays"]
+
+        for pid, (x, y) in points.items():
+            try:
+                p = self.registry.get_point(pid)
+                p.x = x
+                p.y = y
+            except IndexError:
+                pass
+
+        for eid, estate in entities.items():
+            entity = self.registry.get_entity(eid)
+            if entity is not None:
+                entity.set_state(estate)
+
+        by_uid = {a.uid: a for a in self.arrays}
+        for uid, astate in arrays:
+            a = by_uid.get(uid)
+            if a is not None:
+                a.restore(astate)
+
     def _validate_and_cleanup_fills(self):
         """
         Removes any Fill objects whose boundary entities no longer form a
@@ -614,8 +653,10 @@ class Sketch(IAsset, IGeometryProvider):
         """
         Returns the point ids whose position is owned by a master
         object rather than by the user: the member entities of all
-        arrays (templates and their derived copies). Hit-testing
-        deprioritizes them in favor of coinciding user geometry.
+        arrays (templates and their derived copies), including the
+        standalone points each member carries (e.g. a rectangle's
+        symmetry center). Hit-testing deprioritizes them in favor of
+        coinciding user geometry.
         """
         pids: set[int] = set()
         for array in self.arrays:
@@ -624,7 +665,47 @@ class Sketch(IAsset, IGeometryProvider):
                     entity = self.registry.get_entity(eid)
                     if entity is not None:
                         pids.update(entity.get_point_ids())
+            for standalone in array.standalone_pids.values():
+                pids.update(standalone)
         return pids
+
+    def find_standalone_point_ids(
+        self, entity_ids: set[int] | list[int]
+    ) -> list[int]:
+        """
+        Returns the standalone points that belong to the shape formed
+        by the given entities: points referenced by no entity but tied
+        to the group by constraints (e.g. a rectangle's symmetry
+        center, held between two corners).
+
+        A constraint internal to the group pulls in a point outside
+        the group's entity points when that point is its only outside
+        reference and at least two group points anchor it — a single
+        shared point does not make a point part of the shape. Discovery
+        iterates until stable so chains of standalone points converge.
+        """
+        group = set(entity_ids)
+        group_pids: set[int] = set()
+        for eid in group:
+            entity = self.registry.get_entity(eid)
+            if entity is not None:
+                group_pids.update(entity.get_point_ids())
+        extra: list[int] = []
+        changed = True
+        while changed:
+            changed = False
+            for constr in self.constraints:
+                eids = constr.get_referenced_entity_ids()
+                if not (eids <= group):
+                    continue
+                pids = constr.get_referenced_point_ids()
+                missing = pids - group_pids
+                if len(missing) == 1 and len(pids & group_pids) > 1:
+                    group_pids.update(missing)
+                    group.update(missing)
+                    extra.extend(missing)
+                    changed = True
+        return extra
 
     def get_internal_constraints(
         self, entity_ids: set[int] | list[int]
@@ -649,6 +730,14 @@ class Sketch(IAsset, IGeometryProvider):
             entity = self.registry.get_entity(eid)
             if entity is not None:
                 group_pids.update(entity.get_point_ids())
+            else:
+                # Standalone Point (e.g. rectangle center) – include
+                # its ID so its constraints count as internal.
+                try:
+                    self.registry.get_point(eid)
+                    group_pids.add(eid)
+                except IndexError:
+                    pass
 
         internal: list[Constraint] = []
         for constr in self.constraints:

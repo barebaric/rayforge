@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
-
-from raygeo.geo.types import Point
+from typing import TYPE_CHECKING
 
 from rayforge.core.undo.command import Command
 
@@ -77,8 +75,10 @@ class SketchChangeCommand(Command):
     def __init__(self, sketch: Sketch, name: str):
         super().__init__(name)
         self.sketch = sketch
-        # Stores ( {point_id: (x, y)}, {entity_id: state_dict} )
-        self._snapshot: tuple[dict[int, Point], dict[int, Any]] | None = None
+        # Opaque undo state captured by the sketch.  The tool may
+        # pre-populate this at gesture start (before the command is
+        # created); otherwise it is captured at execute time.
+        self._snapshot: dict | None = None
         self._capture_snapshot = True
 
     @staticmethod
@@ -147,44 +147,21 @@ class SketchChangeCommand(Command):
         """
         raise NotImplementedError("This command does not support preview")
 
-    def capture_snapshot(self):
-        """Captures the current coordinates of all points and entity states."""
-        points = {p.id: (p.x, p.y) for p in self.sketch.registry.points}
-        entities = {}
-        for e in self.sketch.registry.entities:
-            state = e.get_state()
-            if state is not None:
-                entities[e.id] = state
+    def capture_undo_state(self):
+        """Captures full sketch state for undo: points, entity states
+        and array definitions.  Called automatically at execute time
+        when the state has not been pre-populated by the tool."""
+        self._snapshot = self.sketch.capture_undo_state()
 
-        self._snapshot = (points, entities)
-
-    def restore_snapshot(self):
-        """Restores coordinates and entity states from the snapshot."""
-        if self._snapshot is None:
-            return
-
-        points, entities = self._snapshot
-        registry = self.sketch.registry
-
-        # Restore Points
-        for pid, (x, y) in points.items():
-            try:
-                p = registry.get_point(pid)
-                p.x = x
-                p.y = y
-            except IndexError:
-                pass
-
-        # Restore Entities
-        for eid, state in entities.items():
-            entity = registry.get_entity(eid)
-            if entity:
-                entity.set_state(state)
+    def restore_undo_state(self):
+        """Restores sketch state from the captured snapshot."""
+        if self._snapshot is not None:
+            self.sketch.apply_undo_state(self._snapshot)
 
     def execute(self) -> None:
         # If a snapshot wasn't provided during initialization, capture it now.
         if self._capture_snapshot and self._snapshot is None:
-            self.capture_snapshot()
+            self.capture_undo_state()
 
         self._do_execute()
         self.sketch.notify_update()
@@ -194,7 +171,7 @@ class SketchChangeCommand(Command):
         # Restore the exact geometric positions from before the command.
         # This prevents the solver from jumping to an alternative solution
         # (e.g., triangle flip) when constraints are reapplied.
-        self.restore_snapshot()
+        self.restore_undo_state()
         self.sketch.notify_update()
 
     def _do_execute(self) -> None:

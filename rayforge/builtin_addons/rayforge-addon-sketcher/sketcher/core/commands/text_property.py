@@ -314,7 +314,7 @@ class ModifyTextPropertyCommand(SketchChangeCommand):
         """
         self._do_undo()
         if not self._entity_was_removed:
-            self.restore_snapshot()
+            self.restore_undo_state()
         self.sketch.notify_update()
 
     def _restore_text_entity(self) -> None:

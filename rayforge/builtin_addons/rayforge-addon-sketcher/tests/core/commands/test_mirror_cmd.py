@@ -170,7 +170,7 @@ class TestMirrorExecute:
 
         cmd = MirrorCommand(s, sel, MirrorDirection.VERTICAL)
         s.notify_update = lambda: None  # avoid solver for unit test
-        cmd.capture_snapshot()
+        cmd.capture_undo_state()
         cmd._do_execute()
 
         p1 = s.registry.get_point(point_ids[0])
@@ -197,7 +197,7 @@ class TestMirrorExecute:
         sel.entity_ids = entity_ids
 
         cmd = MirrorCommand(s, sel, MirrorDirection.VERTICAL)
-        cmd.capture_snapshot()
+        cmd.capture_undo_state()
         cmd._do_execute()
 
         assert len(s.registry.points) == original_point_count
@@ -213,7 +213,7 @@ class TestMirrorExecute:
         sel.entity_ids = [arc_id]
 
         cmd = MirrorCommand(s, sel, MirrorDirection.VERTICAL)
-        cmd.capture_snapshot()
+        cmd.capture_undo_state()
         cmd._do_execute()
 
         arc = s.registry.get_entity(arc_id)
@@ -230,7 +230,7 @@ class TestMirrorExecute:
         sel.entity_ids = [bezier_id]
 
         cmd = MirrorCommand(s, sel, MirrorDirection.VERTICAL)
-        cmd.capture_snapshot()
+        cmd.capture_undo_state()
         cmd._do_execute()
 
         bezier = s.registry.get_entity(bezier_id)
@@ -254,7 +254,7 @@ class TestMirrorExecute:
         sel.entity_ids = [line_id]
 
         cmd = MirrorCommand(s, sel, MirrorDirection.VERTICAL)
-        cmd.capture_snapshot()
+        cmd.capture_undo_state()
         cmd._do_execute()
 
         assert len(s.constraints) == 0
@@ -270,7 +270,7 @@ class TestMirrorExecute:
         sel.entity_ids = [line_id]
 
         cmd = MirrorCommand(s, sel, MirrorDirection.VERTICAL)
-        cmd.capture_snapshot()
+        cmd.capture_undo_state()
         cmd._do_execute()
 
         assert len(s.constraints) == 1
@@ -289,7 +289,7 @@ class TestMirrorExecute:
         sel.entity_ids = [l1, l2]
 
         cmd = MirrorCommand(s, sel, MirrorDirection.VERTICAL)
-        cmd.capture_snapshot()
+        cmd.capture_undo_state()
         cmd._do_execute()
 
         assert len(s.constraints) == 1
@@ -424,7 +424,7 @@ class TestMirrorBarePoints:
         sel.point_ids = [p1, p2, p3]
 
         cmd = MirrorCommand(s, sel, MirrorDirection.VERTICAL)
-        cmd.capture_snapshot()
+        cmd.capture_undo_state()
         cmd._do_execute()
 
         # bbox y: [0, 100], VERTICAL flips Y, axis at y=50

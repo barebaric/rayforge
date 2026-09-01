@@ -134,7 +134,7 @@ class TextBoxTool(SketchTool):
         self._edit_cmd = ModifyTextPropertyCommand(
             self.element.sketch, entity_id, "", entity.font_config
         )
-        self._edit_cmd.capture_snapshot()
+        self._edit_cmd.capture_undo_state()
         self._edit_cmd.capture_pre_edit_state()
 
     def on_deactivate(self):

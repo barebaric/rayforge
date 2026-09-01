@@ -172,7 +172,7 @@ def test_modify_text_property_undo_restores_pre_session_geometry(
 
     # Session start: freeze pre-edit state, then simulate the live
     # resize that typing performs outside the command system.
-    cmd.capture_snapshot()
+    cmd.capture_undo_state()
     cmd.capture_pre_edit_state()
 
     p_width.x += 40.0

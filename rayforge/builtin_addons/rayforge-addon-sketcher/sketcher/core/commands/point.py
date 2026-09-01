@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point as GeoPoint
 
@@ -28,9 +28,7 @@ class MovePointCommand(SketchChangeCommand):
         point_id: EntityID,
         start_pos: GeoPoint,
         end_pos: GeoPoint,
-        # snapshot is: (points_dict, entities_dict)
-        snapshot: tuple[dict[EntityID, GeoPoint], dict[EntityID, Any]]
-        | None = None,
+        snapshot: dict | None = None,
         snap_constraints: list[Constraint] | None = None,
     ):
         super().__init__(sketch, _("Move Point"))
@@ -41,7 +39,7 @@ class MovePointCommand(SketchChangeCommand):
         self._snap_constraints: list[Constraint] = snap_constraints or []
         self._created_constraints: list[Constraint] = []
 
-        # If we are provided a snapshot (from the tool), use it.
+        # If we are provided with a snapshot (from the tool), use it.
         # This is critical because the drag operation changes coordinates
         # *before* the command is executed.
         if snapshot:
@@ -110,8 +108,7 @@ class MoveControlPointCommand(SketchChangeCommand):
         cp_index: int,
         start_offset: GeoPoint | None,
         end_offset: GeoPoint | None,
-        snapshot: tuple[dict[EntityID, GeoPoint], dict[EntityID, Any]]
-        | None = None,
+        snapshot: dict | None = None,
     ):
         label = _("Move Control Point")
         super().__init__(sketch, label)
@@ -119,7 +116,7 @@ class MoveControlPointCommand(SketchChangeCommand):
         self.cp_index = cp_index
         self.start_offset = start_offset
         self.end_offset = end_offset
-        # If we are provided a snapshot (from the tool), use it.
+        # If we are provided with a snapshot (from the tool), use it.
         # This is critical because the drag operation changes coordinates
         # *before* the command is executed.
         if snapshot:
@@ -245,11 +242,10 @@ class MoveEntitiesCommand(SketchChangeCommand):
     def __init__(
         self,
         sketch: Sketch,
-        entity_ids: list[EntityID],
+        entity_ids: list[int],
         start_positions: dict[EntityID, GeoPoint],
         end_positions: dict[EntityID, GeoPoint],
-        snapshot: tuple[dict[EntityID, GeoPoint], dict[EntityID, Any]]
-        | None = None,
+        snapshot: dict | None = None,
     ):
         super().__init__(sketch, _("Move Entities"))
         self.entity_ids = list(entity_ids)

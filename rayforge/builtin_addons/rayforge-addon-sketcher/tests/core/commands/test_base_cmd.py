@@ -40,35 +40,35 @@ def test_sketch_change_command_initialization(sketch):
     assert not cmd.undone
 
 
-def test_capture_snapshot(sketch, command):
-    """Test that capture_snapshot stores point coordinates."""
+def test_capture_undo_state(sketch, command):
+    """Test that capture_undo_state stores point coordinates."""
     p1_id = sketch.add_point(10.0, 20.0)
     p2_id = sketch.add_point(30.0, 40.0)
 
-    command.capture_snapshot()
+    command.capture_undo_state()
 
-    snapshot = command._snapshot
-    assert snapshot is not None
-    points, _entities = snapshot
+    state = command._snapshot
+    assert state is not None
+    points = state["points"]
     # Origin point (created by Sketch init) + 2 added points = 3
     assert len(points) == 3
     assert points[p1_id] == (10.0, 20.0)
     assert points[p2_id] == (30.0, 40.0)
 
 
-def test_restore_snapshot(sketch, command):
-    """Test that restore_snapshot restores point coordinates."""
+def test_restore_undo_state(sketch, command):
+    """Test that restore_undo_state restores point coordinates."""
     p1_id = sketch.add_point(10.0, 20.0)
     p2_id = sketch.add_point(30.0, 40.0)
 
-    command.capture_snapshot()
+    command.capture_undo_state()
 
     sketch.registry.get_point(p1_id).x = 100.0
     sketch.registry.get_point(p1_id).y = 200.0
     sketch.registry.get_point(p2_id).x = 300.0
     sketch.registry.get_point(p2_id).y = 400.0
 
-    command.restore_snapshot()
+    command.restore_undo_state()
 
     assert sketch.registry.get_point(p1_id).x == 10.0
     assert sketch.registry.get_point(p1_id).y == 20.0
@@ -76,44 +76,44 @@ def test_restore_snapshot(sketch, command):
     assert sketch.registry.get_point(p2_id).y == 40.0
 
 
-def test_restore_snapshot_with_missing_point(sketch, command):
-    """Test that restore_snapshot handles missing points gracefully."""
+def test_restore_undo_state_with_missing_point(sketch, command):
+    """Test that restore_undo_state handles missing points gracefully."""
     sketch.add_point(10.0, 20.0)
-    command.capture_snapshot()
+    command.capture_undo_state()
 
     sketch.registry.points = []
 
-    command.restore_snapshot()
+    command.restore_undo_state()
 
     assert not command.executed
 
 
-def test_execute_captures_snapshot_if_empty(sketch, command):
-    """Test that execute captures snapshot if not already done."""
+def test_execute_captures_undo_state(sketch, command):
+    """Test that execute captures undo state if not already done."""
     p1_id = sketch.add_point(10.0, 20.0)
 
     command.execute()
 
-    snapshot = command._snapshot
-    assert snapshot is not None
-    points, _entities = snapshot
+    state = command._snapshot
+    assert state is not None
+    points = state["points"]
     assert points[p1_id] == (10.0, 20.0)
     assert command.executed
 
 
-def test_execute_uses_existing_snapshot(sketch):
-    """Test that execute uses existing snapshot."""
+def test_execute_uses_existing_undo_state(sketch):
+    """Test that execute uses existing undo state."""
     p1_id = sketch.add_point(10.0, 20.0)
     cmd = ConcreteSketchChangeCommand(sketch, "Test Command")
 
-    cmd.capture_snapshot()
+    cmd.capture_undo_state()
     sketch.registry.get_point(p1_id).x = 100.0
 
     cmd.execute()
 
-    snapshot = cmd._snapshot
-    assert snapshot is not None
-    points, _entities = snapshot
+    state = cmd._snapshot
+    assert state is not None
+    points = state["points"]
     assert points[p1_id] == (10.0, 20.0)
     assert cmd.executed
 

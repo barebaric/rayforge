@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import math
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, ClassVar
@@ -248,7 +249,11 @@ class Array(ABC):
 
     ``self.members`` holds ``(slot, [entity_id, ...])`` pairs; slot 0
     is the template member, slots 1..N-1 correspond to the
-    placements.
+    placements. ``self.standalone_pids`` holds, per slot, the member's
+    standalone points — points referenced by no entity but belonging
+    to the shape (e.g. a rectangle's symmetry center). They are placed
+    by the same placements/motions as the member's entity points and
+    are removed along with the member.
 
     Mode-specific state lives on the concrete subclasses
     (``CircularArray``, ``CurveAlongArray``), each serialized next to
@@ -297,6 +302,7 @@ class Array(ABC):
         self.members: list[tuple[int, list[int]]] = [
             (slot, list(eids)) for slot, eids in (members or [])
         ]
+        self.standalone_pids: dict[int, list[int]] = {}
         self.count = count
         self.rotate_copies = rotate_copies
         # Transient caches for sync_arrays: store the guide's and the
@@ -316,7 +322,12 @@ class Array(ABC):
         subclass = cls._MODE_REGISTRY.get(mode)
         if subclass is None:
             raise ValueError(f"Unsupported sketch array mode: {mode}")
-        return subclass._from_dict(data)
+        array = subclass._from_dict(data)
+        array.standalone_pids = {
+            int(slot): [int(pid) for pid in pids]
+            for slot, pids in data.get("standalone_pids", [])
+        }
+        return array
 
     @classmethod
     def from_strategy(
@@ -393,6 +404,10 @@ class Array(ABC):
         """
         return {
             "members": [(slot, list(eids)) for slot, eids in self.members],
+            "standalone_pids": [
+                (slot, list(pids))
+                for slot, pids in self.standalone_pids.items()
+            ],
             "count": self.count,
         }
 
@@ -402,6 +417,9 @@ class Array(ABC):
         ``snapshot``. Called on undo/redo.
         """
         self.members = [(slot, list(eids)) for slot, eids in state["members"]]
+        self.standalone_pids = {
+            slot: list(pids) for slot, pids in state["standalone_pids"]
+        }
         self.count = state["count"]
 
     def commit(self, strategy: ArrayStrategy) -> None:
@@ -512,6 +530,10 @@ class Array(ABC):
         if registry.get_entity(self.guide_circle_id) is None:
             return False
         self.members = self.living_members(registry)
+        self.standalone_pids = {
+            slot: [pid for pid in pids if _point_exists(registry, pid)]
+            for slot, pids in self.standalone_pids.items()
+        }
         return True
 
     def is_guide_radius_point(
@@ -532,6 +554,7 @@ class Array(ABC):
         strategy: ArrayStrategy,
         registry: EntityRegistry,
         template_eids: list[int],
+        standalone_pids: Sequence[int] = (),
     ) -> None:
         """
         Re-positions the template member onto position 0 of the guide
@@ -539,8 +562,10 @@ class Array(ABC):
         (like the circular array, whose members are re-projected onto
         the orbit): its center is placed absolutely onto the guide's
         position-0 point and rotated by the tangent change. Template
-        *shape* edits survive; position drags do not. No-op by
-        default (strategies without a template placement).
+        *shape* edits survive; position drags do not. The member's
+        standalone points (``standalone_pids``) are carried by the
+        same rigid motion. No-op by default (strategies without a
+        template placement).
         """
 
     @property
@@ -586,6 +611,10 @@ class Array(ABC):
             "mode": self.mode,
             "guide_circle_id": self.guide_circle_id,
             "members": [[slot, list(eids)] for slot, eids in self.members],
+            "standalone_pids": [
+                [slot, list(pids)]
+                for slot, pids in self.standalone_pids.items()
+            ],
             "count": self.count,
             "rotate_copies": self.rotate_copies,
         }
@@ -597,3 +626,11 @@ def find_array_for_entity(arrays: list[Array], entity_id: int) -> Array | None:
         if arr.guide_entity_id == entity_id:
             return arr
     return None
+
+
+def _point_exists(registry: EntityRegistry, pid: int) -> bool:
+    try:
+        registry.get_point(pid)
+    except IndexError:
+        return False
+    return True

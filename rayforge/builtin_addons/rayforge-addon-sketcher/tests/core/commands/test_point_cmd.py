@@ -27,7 +27,7 @@ def test_move_point_command_initialization(sketch):
 def test_move_point_command_initialization_with_snapshot(sketch):
     """Test that MovePointCommand can be initialized with a snapshot."""
     p_id = sketch.add_point(10.0, 20.0)
-    snapshot = ({p_id: (10.0, 20.0)}, {})
+    snapshot = {"points": {p_id: (10.0, 20.0)}, "entities": {}, "arrays": []}
     cmd = MovePointCommand(sketch, p_id, (10.0, 20.0), (30.0, 40.0), snapshot)
 
     assert cmd._snapshot == snapshot

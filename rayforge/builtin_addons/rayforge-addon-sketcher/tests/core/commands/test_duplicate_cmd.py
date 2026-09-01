@@ -105,7 +105,7 @@ class TestDuplicateExecute:
         _, dup_point_ids, _ = result
 
         cmd = DuplicateCommand(s, sel)
-        cmd.capture_snapshot()
+        cmd.capture_undo_state()
         cmd._do_execute()
 
         assert len(s.registry.points) == num_points + len(dup_point_ids)
@@ -126,7 +126,7 @@ class TestDuplicateExecute:
         sel.entity_ids = entity_ids
 
         cmd = DuplicateCommand(s, sel)
-        cmd.capture_snapshot()
+        cmd.capture_undo_state()
         cmd._do_execute()
 
         for pid in point_ids:
@@ -146,7 +146,7 @@ class TestDuplicateExecute:
         sel.entity_ids = [line_id]
 
         cmd = DuplicateCommand(s, sel)
-        cmd.capture_snapshot()
+        cmd.capture_undo_state()
         cmd._do_execute()
 
         assert len(s.constraints) == 2
@@ -175,7 +175,7 @@ class TestDuplicateExecute:
         sel.entity_ids = [line_id]
 
         cmd = DuplicateCommand(s, sel)
-        cmd.capture_snapshot()
+        cmd.capture_undo_state()
         cmd._do_execute()
 
         assert len(s.constraints) == 1
@@ -193,7 +193,7 @@ class TestDuplicateExecute:
         sel.entity_ids = [arc_id]
 
         cmd = DuplicateCommand(s, sel)
-        cmd.capture_snapshot()
+        cmd.capture_undo_state()
         cmd._do_execute()
 
         clone = s.registry.get_entity(cmd.new_entity_ids[0])
@@ -210,7 +210,7 @@ class TestDuplicateExecute:
         sel.entity_ids = [line_id]
 
         cmd = DuplicateCommand(s, sel)
-        cmd.capture_snapshot()
+        cmd.capture_undo_state()
         cmd._do_execute()
 
         clone_line = s.registry.get_entity(cmd.new_entity_ids[0])
@@ -229,7 +229,7 @@ class TestDuplicateExecute:
         sel.point_ids = [p1, p2]
 
         cmd = DuplicateCommand(s, sel)
-        cmd.capture_snapshot()
+        cmd.capture_undo_state()
         cmd._do_execute()
 
         assert len(cmd.new_entity_ids) == 0
@@ -248,7 +248,7 @@ class TestDuplicateExecute:
         sel.entity_ids = [line_id]
 
         cmd = DuplicateCommand(s, sel)
-        cmd.capture_snapshot()
+        cmd.capture_undo_state()
         cmd._do_execute()
 
         clone = s.registry.get_entity(cmd.new_entity_ids[0])
