@@ -304,6 +304,12 @@ class TestPipelineInvalidation:
         """Rapid multiple changes should settle to a correct state."""
         self._setup_doc_with_workpiece(doc, real_workpiece)
         step = contour_step_class.create(context_initializer)
+        # Keep the rendered images small: this test exercises invalidation
+        # bookkeeping, not raster performance, and the default 50 px/mm
+        # makes the 90x70mm workpiece render at 4500x3500px. That much
+        # CPU work can exceed the settle timeout on a heavily loaded
+        # parallel test run, making the test flaky.
+        step.pixels_per_mm = (5, 5)
         doc.active_layer.workflow.add_step(step)
 
         pipeline = Pipeline(
@@ -313,12 +319,13 @@ class TestPipelineInvalidation:
             context_initializer.machine,
         )
         await self._wait_settled(pipeline)
+        assert pipeline.is_busy is False, "initial rebuild did not settle"
 
         for i in range(5):
             step.set_power(0.1 * (i + 1))
             real_workpiece.set_size(50 + i * 10, 30 + i * 10)
 
-        await self._wait_settled(pipeline, timeout=15.0)
+        await self._wait_settled(pipeline, timeout=30.0)
         assert pipeline.is_busy is False
 
         await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
