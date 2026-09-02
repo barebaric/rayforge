@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 from rayforge.core.color import ColorRGBA
 from rayforge.image.structures import FillStyle
 
-from ..entities.text_box import TextBoxEntity
 from ..sketch import DEFAULT_FILL_COLOR, Fill
 from .base import SketchChangeCommand
 
@@ -92,8 +91,8 @@ class SetTextFillCommand(SketchChangeCommand):
 
     def _do_execute(self) -> None:
         entity = self.sketch.registry.get_entity(self.entity_id)
-        if isinstance(entity, TextBoxEntity):
-            entity.fill_color = self.fill_color
+        if entity and entity.supports_fill():
+            entity.set_fill_color(self.fill_color)
 
     def _do_undo(self) -> None:
         pass

@@ -67,6 +67,24 @@ class Circle(Entity):
         dist_to_point = math.hypot(point.x - center.x, point.y - center.y)
         return dist_to_point - radius
 
+    def is_closed_loop(self) -> bool:
+        return True
+
+    def enclosed_signed_area(self, registry: "EntityRegistry") -> float:
+        # By convention, a single circle loop is CCW -> positive area
+        return math.pi * self.radius(registry) ** 2
+
+    def contains_point(
+        self, registry: "EntityRegistry", x: float, y: float
+    ) -> bool:
+        center = registry.get_point(self.center_idx)
+        radius_pt = registry.get_point(self.radius_pt_idx)
+        if not (center and radius_pt):
+            return False
+        radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+        dist_sq = (x - center.x) ** 2 + (y - center.y) ** 2
+        return dist_sq <= radius**2
+
     def get_junction_point_ids(self) -> list[EntityID]:
         return [self.center_idx, self.radius_pt_idx]
 

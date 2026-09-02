@@ -61,6 +61,38 @@ class Ellipse(Entity):
     def get_helper_ids(self) -> list[EntityID]:
         return list(self.helper_line_ids)
 
+    def is_closed_loop(self) -> bool:
+        return True
+
+    def enclosed_signed_area(self, registry: "EntityRegistry") -> float:
+        rx, ry = self._get_radii(registry)
+        return math.pi * rx * ry
+
+    def contains_point(
+        self, registry: "EntityRegistry", x: float, y: float
+    ) -> bool:
+        center = registry.get_point(self.center_idx)
+        radius_x_pt = registry.get_point(self.radius_x_pt_idx)
+        radius_y_pt = registry.get_point(self.radius_y_pt_idx)
+        if not (center and radius_x_pt and radius_y_pt):
+            return False
+
+        rx = math.hypot(radius_x_pt.x - center.x, radius_x_pt.y - center.y)
+        ry = math.hypot(radius_y_pt.x - center.x, radius_y_pt.y - center.y)
+        if rx <= 1e-9 or ry <= 1e-9:
+            return False
+
+        rotation = math.atan2(
+            radius_x_pt.y - center.y, radius_x_pt.x - center.x
+        )
+        cos_a = math.cos(-rotation)
+        sin_a = math.sin(-rotation)
+        dx = x - center.x
+        dy = y - center.y
+        local_x = dx * cos_a - dy * sin_a
+        local_y = dx * sin_a + dy * cos_a
+        return (local_x / rx) ** 2 + (local_y / ry) ** 2 <= 1.0
+
     def get_rigidly_connected_points(
         self, point_id: EntityID
     ) -> list[EntityID]:

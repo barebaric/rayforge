@@ -9,6 +9,8 @@ from raygeo.geo.types import Polygon, Rect
 from ..types import EntityID
 
 if TYPE_CHECKING:
+    from rayforge.core.color import ColorRGBA
+
     from ..commands.mirror import MirrorAxis
     from ..constraints import Constraint
     from ..contour import OffsetItem
@@ -377,6 +379,46 @@ class Entity:
         The vector points away from ``point_id`` along the entity's curve.
         Raises ``NotImplementedError`` for entities with no directional
         tangent (e.g. Circle).
+        """
+        raise NotImplementedError
+
+    def supports_fill(self) -> bool:
+        """Return whether this entity can receive a fill color."""
+        return False
+
+    def set_fill_color(self, color: "ColorRGBA | None") -> None:
+        """Set the entity's fill color.
+
+        Only valid for entities where ``supports_fill()`` is True;
+        raises ``NotImplementedError`` otherwise.
+        """
+        raise NotImplementedError
+
+    def is_edge_entity(self) -> bool:
+        """Return whether this entity participates in edge/chaining
+        adjacency for loop detection (Line, Arc, Bezier)."""
+        return False
+
+    def is_closed_loop(self) -> bool:
+        """Return whether this entity alone forms a closed loop
+        (e.g. Circle, Ellipse)."""
+        return False
+
+    def enclosed_signed_area(self, registry: "EntityRegistry") -> float:
+        """Return the signed area enclosed by this single-entity loop.
+
+        Only valid for entities where ``is_closed_loop()`` is True;
+        raises ``NotImplementedError`` otherwise.
+        """
+        raise NotImplementedError
+
+    def contains_point(
+        self, registry: "EntityRegistry", x: float, y: float
+    ) -> bool:
+        """Return whether the point (x, y) lies inside this closed loop.
+
+        Only valid for entities where ``is_closed_loop()`` is True;
+        raises ``NotImplementedError`` otherwise.
         """
         raise NotImplementedError
 

@@ -50,15 +50,7 @@ from .constraints import (
     VerticalConstraint,
 )
 from .constraints.drag import DragConstraint
-from .entities import (
-    Arc,
-    Bezier,
-    Circle,
-    Ellipse,
-    Entity,
-    Line,
-    TextBoxEntity,
-)
+from .entities import Arc, Bezier, Entity, Line, TextBoxEntity
 from .entities.point import Point, WaypointType
 from .params import ParameterContext
 from .registry import EntityRegistry
@@ -943,32 +935,28 @@ class Sketch(IAsset, IGeometryProvider):
                     point_to_group[pid] = coincident_group
 
         for e in self.registry.entities:
-            # Skip circles in graph traversal (handled separately)
-            if isinstance(e, Circle):
+            # Only edge entities participate in graph traversal; closed
+            # loops (circles, ellipses) are handled separately.
+            if not e.is_edge_entity():
                 continue
-            if isinstance(e, (Line, Arc, Bezier)):
-                p_ids = e.get_endpoint_ids()
-                p1_id, p2_id = p_ids[0], p_ids[1]
+            p_ids = e.get_endpoint_ids()
+            p1_id, p2_id = p_ids[0], p_ids[1]
 
-                # Get the coincident groups for both endpoints
-                group1 = point_to_group.get(p1_id, {p1_id})
-                group2 = point_to_group.get(p2_id, {p2_id})
+            # Get the coincident groups for both endpoints
+            group1 = point_to_group.get(p1_id, {p1_id})
+            group2 = point_to_group.get(p2_id, {p2_id})
 
-                # Add edges from all points in group1 to all points in group2
-                for src in group1:
-                    for dst in group2:
-                        if src != dst:
-                            adj[src].append(
-                                {"to": dst, "id": e.id, "fwd": True}
-                            )
+            # Add edges from all points in group1 to all points in group2
+            for src in group1:
+                for dst in group2:
+                    if src != dst:
+                        adj[src].append({"to": dst, "id": e.id, "fwd": True})
 
-                # Add edges from all points in group2 to all points in group1
-                for src in group2:
-                    for dst in group1:
-                        if src != dst:
-                            adj[src].append(
-                                {"to": dst, "id": e.id, "fwd": False}
-                            )
+            # Add edges from all points in group2 to all points in group1
+            for src in group2:
+                for dst in group1:
+                    if src != dst:
+                        adj[src].append({"to": dst, "id": e.id, "fwd": False})
         return adj
 
     def _sort_edges_by_angle(
@@ -1033,28 +1021,11 @@ class Sketch(IAsset, IGeometryProvider):
         if not loop:
             return 0.0
 
-        # Special case for circles
+        # Special case for single-entity closed loops (circle, ellipse)
         if len(loop) == 1:
             entity = self.registry.get_entity(loop[0][0])
-            if isinstance(entity, Circle):
-                center = self.registry.get_point(entity.center_idx)
-                radius_pt = self.registry.get_point(entity.radius_pt_idx)
-                radius = math.hypot(
-                    radius_pt.x - center.x, radius_pt.y - center.y
-                )
-                # By convention, a single circle loop is CCW -> positive area
-                return math.pi * radius**2
-            if isinstance(entity, Ellipse):
-                center = self.registry.get_point(entity.center_idx)
-                radius_x_pt = self.registry.get_point(entity.radius_x_pt_idx)
-                radius_y_pt = self.registry.get_point(entity.radius_y_pt_idx)
-                rx = math.hypot(
-                    radius_x_pt.x - center.x, radius_x_pt.y - center.y
-                )
-                ry = math.hypot(
-                    radius_y_pt.x - center.x, radius_y_pt.y - center.y
-                )
-                return math.pi * rx * ry
+            if entity and entity.is_closed_loop():
+                return entity.enclosed_signed_area(self.registry)
 
         points = []
         first_ent = self.registry.get_entity(loop[0][0])
@@ -1197,14 +1168,9 @@ class Sketch(IAsset, IGeometryProvider):
                     # Mark all half-edges from the valid loop as visited
                     visited_half_edges.update(loop_half_edges)
 
-        # Add circles as single-entity loops
+        # Add closed single entities (circles, ellipses) as loops
         for e in self.registry.entities:
-            if isinstance(e, Circle):
-                loops.append([(e.id, True)])
-
-        # Add ellipses as single-entity loops
-        for e in self.registry.entities:
-            if isinstance(e, Ellipse):
+            if e.is_closed_loop():
                 loops.append([(e.id, True)])
 
         return loops
@@ -1245,47 +1211,8 @@ class Sketch(IAsset, IGeometryProvider):
 
             if len(loop) == 1:
                 entity = self.registry.get_entity(loop[0][0])
-                if isinstance(entity, Circle):
-                    center = self.registry.get_point(entity.center_idx)
-                    radius_pt = self.registry.get_point(entity.radius_pt_idx)
-                    if center and radius_pt:
-                        radius = math.hypot(
-                            radius_pt.x - center.x, radius_pt.y - center.y
-                        )
-                        dist_sq = (mx - center.x) ** 2 + (my - center.y) ** 2
-                        if dist_sq <= radius**2:
-                            is_hit = True
-                elif isinstance(entity, Ellipse):
-                    center = self.registry.get_point(entity.center_idx)
-                    radius_x_pt = self.registry.get_point(
-                        entity.radius_x_pt_idx
-                    )
-                    radius_y_pt = self.registry.get_point(
-                        entity.radius_y_pt_idx
-                    )
-                    if center and radius_x_pt and radius_y_pt:
-                        rx = math.hypot(
-                            radius_x_pt.x - center.x, radius_x_pt.y - center.y
-                        )
-                        ry = math.hypot(
-                            radius_y_pt.x - center.x, radius_y_pt.y - center.y
-                        )
-                        if rx > 1e-9 and ry > 1e-9:
-                            rotation = math.atan2(
-                                radius_x_pt.y - center.y,
-                                radius_x_pt.x - center.x,
-                            )
-                            cos_a = math.cos(-rotation)
-                            sin_a = math.sin(-rotation)
-                            dx = mx - center.x
-                            dy = my - center.y
-                            local_x = dx * cos_a - dy * sin_a
-                            local_y = dx * sin_a + dy * cos_a
-                            ellipse_dist = (local_x / rx) ** 2 + (
-                                local_y / ry
-                            ) ** 2
-                            if ellipse_dist <= 1.0:
-                                is_hit = True
+                if entity and entity.is_closed_loop():
+                    is_hit = entity.contains_point(self.registry, mx, my)
             else:
                 polygon = self._loop_to_polygon(loop)
                 if polygon and is_point_inside_polygon((mx, my), polygon):

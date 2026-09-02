@@ -36,6 +36,9 @@ class Line(Entity):
     def get_endpoint_ids(self) -> list[EntityID]:
         return [self.p1_idx, self.p2_idx]
 
+    def is_edge_entity(self) -> bool:
+        return True
+
     def characteristic_length_pairs(
         self,
     ) -> list[tuple[EntityID, EntityID]]:

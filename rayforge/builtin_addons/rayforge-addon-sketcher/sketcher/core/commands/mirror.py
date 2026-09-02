@@ -6,7 +6,6 @@ from enum import Enum, auto
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
-from ..entities import Ellipse, TextBoxEntity
 from ..entity_group import EntityGroup, points_bbox_center
 from ..types import EntityID
 from .base import SketchChangeCommand
@@ -121,11 +120,7 @@ class MirrorCommand(SketchChangeCommand):
         while changed:
             changed = False
             for e in registry.entities:
-                helper_ids = None
-                if isinstance(e, TextBoxEntity):
-                    helper_ids = e.construction_line_ids
-                elif isinstance(e, Ellipse):
-                    helper_ids = e.helper_line_ids
+                helper_ids = e.get_helper_ids()
 
                 if helper_ids and (
                     e.id in entity_id_set
