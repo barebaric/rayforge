@@ -67,6 +67,9 @@ class Circle(Entity):
         dist_to_point = math.hypot(point.x - center.x, point.y - center.y)
         return dist_to_point - radius
 
+    def is_radius_entity(self) -> bool:
+        return True
+
     def is_closed_loop(self) -> bool:
         return True
 

@@ -404,6 +404,10 @@ class Entity:
         adjacency for loop detection (Line, Arc, Bezier)."""
         return False
 
+    def is_radius_entity(self) -> bool:
+        """Return whether this entity has a radius (Arc, Circle)."""
+        return False
+
     def is_closed_loop(self) -> bool:
         """Return whether this entity alone forms a closed loop
         (e.g. Circle, Ellipse)."""

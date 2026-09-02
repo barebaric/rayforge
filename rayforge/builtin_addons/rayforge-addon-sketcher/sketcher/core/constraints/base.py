@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from enum import Enum, auto
 from gettext import gettext as _
 from locale import format_string
@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     import cairo
 
     from ..commands.mirror import MirrorAxis
+    from ..entities import Entity
     from ..params import ParameterContext
     from ..registry import EntityRegistry
     from ..selection import SketchSelection
@@ -65,6 +66,19 @@ class Constraint:
         Subclasses should override this method.
         """
         return False
+
+    @classmethod
+    def applies_to_entities(cls, entities: Sequence[Entity]) -> bool:
+        """
+        Returns True if this constraint type can apply to the given
+        entities.
+
+        ``can_apply_to`` resolves the selected entities and delegates
+        the type and capability requirements here, so applicability
+        can be declared and tested without a selection or sketch.
+        Constraints that operate on points only accept an empty list.
+        """
+        return not entities
 
     @classmethod
     def get_type_key(cls) -> str | None:

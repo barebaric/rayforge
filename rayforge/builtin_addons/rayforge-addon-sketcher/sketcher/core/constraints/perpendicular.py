@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
@@ -25,6 +25,7 @@ from .base import Constraint, ConstraintStatus
 if TYPE_CHECKING:
     import cairo
 
+    from ..entities import Entity
     from ..params import ParameterContext
     from ..registry import EntityRegistry
     from ..selection import SketchSelection
@@ -56,13 +57,17 @@ class PerpendicularConstraint(Constraint):
     ) -> bool:
         if selection.point_ids or len(selection.entity_ids) != 2:
             return False
-        if sketch is None:
-            return False
-        e1 = sketch.registry.get_entity(selection.entity_ids[0])
-        e2 = sketch.registry.get_entity(selection.entity_ids[1])
-        if not isinstance(e1, (Line, Arc, Circle)):
-            return False
-        return isinstance(e2, (Line, Arc, Circle))
+        entities = selection.resolve_entities(
+            sketch.registry if sketch else None
+        )
+        return entities is not None and cls.applies_to_entities(entities)
+
+    @classmethod
+    def applies_to_entities(cls, entities: Sequence[Entity]) -> bool:
+        """Both operands must be Lines or radius-bearing entities."""
+        return len(entities) == 2 and all(
+            isinstance(e, Line) or e.is_radius_entity() for e in entities
+        )
 
     @staticmethod
     def get_type_name() -> str:

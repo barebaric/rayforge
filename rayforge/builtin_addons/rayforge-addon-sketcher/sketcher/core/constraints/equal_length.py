@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
@@ -18,6 +18,7 @@ from .base import Constraint, ConstraintStatus
 if TYPE_CHECKING:
     import cairo
 
+    from ..entities import Entity
     from ..params import ParameterContext
     from ..registry import EntityRegistry
     from ..selection import SketchSelection
@@ -46,14 +47,16 @@ class EqualLengthConstraint(Constraint):
     ) -> bool:
         if selection.point_ids or len(selection.entity_ids) < 2:
             return False
-        if sketch is None:
-            return False
-        entities = [
-            sketch.registry.get_entity(eid) for eid in selection.entity_ids
-        ]
-        return all(
-            isinstance(e, (Line, Arc, Circle, Ellipse)) and e is not None
-            for e in entities
+        entities = selection.resolve_entities(
+            sketch.registry if sketch else None
+        )
+        return entities is not None and cls.applies_to_entities(entities)
+
+    @classmethod
+    def applies_to_entities(cls, entities: Sequence[Entity]) -> bool:
+        """All operands must define a characteristic length."""
+        return len(entities) >= 2 and all(
+            e.characteristic_length_pairs() for e in entities
         )
 
     @staticmethod

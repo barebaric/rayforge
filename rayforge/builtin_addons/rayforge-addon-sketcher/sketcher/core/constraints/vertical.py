@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
@@ -13,6 +13,7 @@ from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
+    from ..entities import Entity
     from ..params import ParameterContext
     from ..registry import EntityRegistry
     from ..selection import SketchSelection
@@ -42,15 +43,15 @@ class VerticalConstraint(Constraint):
             return True
         if selection.point_ids:
             return False
-        if sketch is None:
-            return False
+        entities = selection.resolve_entities(
+            sketch.registry if sketch else None
+        )
+        return entities is not None and cls.applies_to_entities(entities)
 
-        lines = [
-            sketch.registry.get_entity(eid)
-            for eid in selection.entity_ids
-            if isinstance(sketch.registry.get_entity(eid), Line)
-        ]
-        return len(lines) > 0 and len(lines) == len(selection.entity_ids)
+    @classmethod
+    def applies_to_entities(cls, entities: Sequence[Entity]) -> bool:
+        """All operands must be Lines."""
+        return bool(entities) and all(isinstance(e, Line) for e in entities)
 
     @staticmethod
     def get_type_name() -> str:

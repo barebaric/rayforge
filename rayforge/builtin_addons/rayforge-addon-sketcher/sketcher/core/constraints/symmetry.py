@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
@@ -47,6 +47,7 @@ def draw_symmetry_arrows(
 
 
 if TYPE_CHECKING:
+    from ..entities import Entity
     from ..params import ParameterContext
     from ..registry import EntityRegistry
     from ..selection import SketchSelection
@@ -85,11 +86,16 @@ class SymmetryConstraint(Constraint):
         if len(selection.point_ids) == 3 and not selection.entity_ids:
             return True
         if len(selection.point_ids) == 2 and len(selection.entity_ids) == 1:
-            if sketch is None:
-                return False
-            entity = sketch.registry.get_entity(selection.entity_ids[0])
-            return isinstance(entity, Line)
+            entities = selection.resolve_entities(
+                sketch.registry if sketch else None
+            )
+            return entities is not None and cls.applies_to_entities(entities)
         return False
+
+    @classmethod
+    def applies_to_entities(cls, entities: Sequence[Entity]) -> bool:
+        """The operand must be a Line (the symmetry axis)."""
+        return len(entities) == 1 and isinstance(entities[0], Line)
 
     @staticmethod
     def get_type_name() -> str:

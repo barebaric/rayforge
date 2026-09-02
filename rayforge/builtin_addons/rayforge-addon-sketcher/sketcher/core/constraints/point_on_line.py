@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
@@ -13,6 +13,7 @@ from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
+    from ..entities import Entity
     from ..params import ParameterContext
     from ..registry import EntityRegistry
     from ..selection import SketchSelection
@@ -39,27 +40,21 @@ class PointOnLineConstraint(Constraint):
     ) -> bool:
         if len(selection.point_ids) != 1 or len(selection.entity_ids) != 1:
             return False
-        if sketch is None:
+        entities = selection.resolve_entities(
+            sketch.registry if sketch else None
+        )
+        if entities is None or not cls.applies_to_entities(entities):
             return False
-        entity = sketch.registry.get_entity(selection.entity_ids[0])
-        if not isinstance(entity, (Line, Arc, Circle)):
-            return False
-        pid = selection.point_ids[0]
-        control_points = set()
-        if isinstance(entity, Line):
-            control_points = {entity.p1_idx, entity.p2_idx}
-        elif isinstance(entity, Arc):
-            control_points = {
-                entity.start_idx,
-                entity.end_idx,
-                entity.center_idx,
-            }
-        elif isinstance(entity, Circle):
-            control_points = {
-                entity.center_idx,
-                entity.radius_pt_idx,
-            }
-        return pid not in control_points
+        return (
+            selection.point_ids[0] not in entities[0].get_junction_point_ids()
+        )
+
+    @classmethod
+    def applies_to_entities(cls, entities: Sequence[Entity]) -> bool:
+        """The shape must be a Line or radius-bearing entity."""
+        return len(entities) == 1 and (
+            isinstance(entities[0], Line) or entities[0].is_radius_entity()
+        )
 
     @staticmethod
     def get_type_name() -> str:

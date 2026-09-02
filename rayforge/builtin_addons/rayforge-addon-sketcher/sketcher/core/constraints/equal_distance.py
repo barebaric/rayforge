@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
@@ -16,6 +16,7 @@ from .base import Constraint, ConstraintStatus
 if TYPE_CHECKING:
     import cairo
 
+    from ..entities import Entity
     from ..params import ParameterContext
     from ..registry import EntityRegistry
     from ..selection import SketchSelection
@@ -45,13 +46,17 @@ class EqualDistanceConstraint(Constraint):
     ) -> bool:
         if selection.point_ids or len(selection.entity_ids) < 2:
             return False
-        if sketch is None:
-            return False
-        for eid in selection.entity_ids:
-            entity = sketch.registry.get_entity(eid)
-            if not isinstance(entity, (Line, Arc, Circle)):
-                return False
-        return True
+        entities = selection.resolve_entities(
+            sketch.registry if sketch else None
+        )
+        return entities is not None and cls.applies_to_entities(entities)
+
+    @classmethod
+    def applies_to_entities(cls, entities: Sequence[Entity]) -> bool:
+        """All operands must be Lines or radius-bearing entities."""
+        return len(entities) >= 2 and all(
+            isinstance(e, (Line, Arc, Circle)) for e in entities
+        )
 
     @staticmethod
     def get_type_name() -> str:

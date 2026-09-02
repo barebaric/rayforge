@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
@@ -13,6 +13,7 @@ from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
+    from ..entities import Entity
     from ..params import ParameterContext
     from ..registry import EntityRegistry
     from ..selection import SketchSelection
@@ -134,12 +135,17 @@ class PointOnCurveConstraint(Constraint):
     ) -> bool:
         if len(selection.point_ids) != 1 or len(selection.entity_ids) != 1:
             return False
-        if sketch is None:
+        entities = selection.resolve_entities(
+            sketch.registry if sketch else None
+        )
+        if entities is None or not cls.applies_to_entities(entities):
             return False
-        entity = sketch.registry.get_entity(selection.entity_ids[0])
-        if entity is None or not entity.supports_point_on_curve():
-            return False
-        return selection.point_ids[0] not in entity.get_endpoint_ids()
+        return selection.point_ids[0] not in entities[0].get_endpoint_ids()
+
+    @classmethod
+    def applies_to_entities(cls, entities: Sequence[Entity]) -> bool:
+        """The shape must support point-on-curve constraints."""
+        return len(entities) == 1 and entities[0].supports_point_on_curve()
 
     @staticmethod
     def get_type_name() -> str:

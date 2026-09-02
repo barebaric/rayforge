@@ -5,6 +5,7 @@ from blinker import Signal
 from .types import EntityID
 
 if TYPE_CHECKING:
+    from .entities import Entity
     from .registry import EntityRegistry
 
 
@@ -43,6 +44,21 @@ class SketchSelection:
             and self.constraint_idx is None
             and self.junction_pid is None
         )
+
+    def resolve_entities(
+        self, registry: "EntityRegistry | None"
+    ) -> "list[Entity] | None":
+        """Resolves the selected entities, or None if the registry is
+        unavailable or an entity cannot be found."""
+        if registry is None:
+            return None
+        entities: list[Entity] = []
+        for eid in self.entity_ids:
+            entity = registry.get_entity(eid)
+            if entity is None:
+                return None
+            entities.append(entity)
+        return entities
 
     def select_constraint(self, idx: int, is_multi: bool):
         """Selects a constraint by index."""

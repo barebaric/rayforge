@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
@@ -18,6 +18,7 @@ from .base import Constraint, ConstraintStatus
 if TYPE_CHECKING:
     import cairo
 
+    from ..entities import Entity
     from ..params import ParameterContext
     from ..registry import EntityRegistry
     from ..selection import SketchSelection
@@ -61,14 +62,17 @@ class DistanceConstraint(Constraint):
             return True
         if selection.point_ids:
             return False
-        if sketch is None:
+        entities = selection.resolve_entities(
+            sketch.registry if sketch else None
+        )
+        if entities is None or len(entities) != 1:
             return False
-        lines = [
-            sketch.registry.get_entity(eid)
-            for eid in selection.entity_ids
-            if isinstance(sketch.registry.get_entity(eid), Line)
-        ]
-        return len(lines) == 1 and len(lines) == len(selection.entity_ids)
+        return cls.applies_to_entities(entities)
+
+    @classmethod
+    def applies_to_entities(cls, entities: Sequence[Entity]) -> bool:
+        """The operand must be a Line."""
+        return len(entities) == 1 and isinstance(entities[0], Line)
 
     @staticmethod
     def get_type_name() -> str:

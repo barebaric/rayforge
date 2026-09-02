@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
@@ -13,6 +13,7 @@ from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 
 if TYPE_CHECKING:
+    from ..entities import Entity
     from ..params import ParameterContext
     from ..registry import EntityRegistry
     from ..selection import SketchSelection
@@ -52,10 +53,15 @@ class RadiusConstraint(Constraint):
     ) -> bool:
         if selection.point_ids or len(selection.entity_ids) != 1:
             return False
-        if sketch is None:
-            return False
-        entity = sketch.registry.get_entity(selection.entity_ids[0])
-        return isinstance(entity, (Arc, Circle))
+        entities = selection.resolve_entities(
+            sketch.registry if sketch else None
+        )
+        return entities is not None and cls.applies_to_entities(entities)
+
+    @classmethod
+    def applies_to_entities(cls, entities: Sequence[Entity]) -> bool:
+        """The operand must have a radius (Arc or Circle)."""
+        return len(entities) == 1 and entities[0].is_radius_entity()
 
     @staticmethod
     def get_type_name() -> str:
