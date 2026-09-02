@@ -137,7 +137,7 @@ class PointOnCurveConstraint(Constraint):
         if sketch is None:
             return False
         entity = sketch.registry.get_entity(selection.entity_ids[0])
-        if not isinstance(entity, Bezier):
+        if entity is None or not entity.supports_point_on_curve():
             return False
         return selection.point_ids[0] not in entity.get_endpoint_ids()
 
@@ -178,13 +178,11 @@ class PointOnCurveConstraint(Constraint):
         return bez if isinstance(bez, Bezier) else None
 
     def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
-        bez = self._get_bezier(reg)
-        if bez is None:
+        entity = reg.get_entity(self.shape_id)
+        if entity is None or not entity.supports_point_on_curve():
             return 0.0
-        xs, ys = _get_curve_coeffs(bez, reg)
         pt = reg.get_point(self.point_id)
-        _t, bx, by = closest_point_on_bezier(xs, ys, pt.x, pt.y)
-        return math.hypot(bx - pt.x, by - pt.y)
+        return entity.signed_distance_to(pt, reg)
 
     def gradient(
         self, reg: EntityRegistry, params: ParameterContext

@@ -386,6 +386,11 @@ class Entity:
         """Return whether this entity can receive a fill color."""
         return False
 
+    def supports_point_on_curve(self) -> bool:
+        """Return whether a point can be constrained onto this
+        entity's curve (e.g. Bezier)."""
+        return False
+
     def set_fill_color(self, color: "ColorRGBA | None") -> None:
         """Set the entity's fill color.
 

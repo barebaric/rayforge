@@ -146,6 +146,9 @@ class Bezier(Entity):
     def is_edge_entity(self) -> bool:
         return True
 
+    def supports_point_on_curve(self) -> bool:
+        return True
+
     def characteristic_length_pairs(
         self,
     ) -> list[tuple[EntityID, EntityID]]:
