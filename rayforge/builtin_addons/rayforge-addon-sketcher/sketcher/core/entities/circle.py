@@ -51,6 +51,22 @@ class Circle(Entity):
         # we default to no tangent for entities without endpoints.
         return (1.0, 0.0)
 
+    def radius(self, registry: "EntityRegistry") -> float:
+        center = registry.get_point(self.center_idx)
+        radius_pt = registry.get_point(self.radius_pt_idx)
+        if not (center and radius_pt):
+            return 0.0
+        return math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+
+    def signed_distance_to(self, point, registry):
+        center = registry.get_point(self.center_idx)
+        radius_pt = registry.get_point(self.radius_pt_idx)
+        if not (center and radius_pt):
+            return 0.0
+        radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
+        dist_to_point = math.hypot(point.x - center.x, point.y - center.y)
+        return dist_to_point - radius
+
     def get_junction_point_ids(self) -> list[EntityID]:
         return [self.center_idx, self.radius_pt_idx]
 

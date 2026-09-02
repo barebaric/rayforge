@@ -1,7 +1,9 @@
+import math
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 from raygeo.geo import Geometry
+from raygeo.geo.shape.bezier import get_bezier_closest_point
 from raygeo.geo.shape.line import (
     does_line_segment_intersect_rect,
     get_line_segment_closest_point,
@@ -11,13 +13,14 @@ from raygeo.geo.types import Point as GeoPoint
 from raygeo.geo.types import Polygon, Rect
 
 from ..types import EntityID
-from .entity import Entity, _quantize
+from .entity import Entity, quantize
 
 if TYPE_CHECKING:
     from ..commands.mirror import MirrorAxis
     from ..constraints import Constraint
     from ..entity_group import PlacementTransform
     from ..registry import EntityRegistry
+    from .point import Point
 
 
 class Bezier(Entity):
@@ -88,12 +91,12 @@ class Bezier(Entity):
         return (
             *super().geometry_signature(registry),
             (
-                (_quantize(self.cp1[0]), _quantize(self.cp1[1]))
+                (quantize(self.cp1[0]), quantize(self.cp1[1]))
                 if self.cp1 is not None
                 else None
             ),
             (
-                (_quantize(self.cp2[0]), _quantize(self.cp2[1]))
+                (quantize(self.cp2[0]), quantize(self.cp2[1]))
                 if self.cp2 is not None
                 else None
             ),
@@ -158,6 +161,57 @@ class Bezier(Entity):
         if point_id == start.id:
             return (cp1_x - start.x, cp1_y - start.y)
         return (end.x - cp2_x, end.y - cp2_y)
+
+    def signed_distance_to(
+        self, point: "Point", registry: "EntityRegistry"
+    ) -> float:
+        start = registry.get_point(self.start_idx)
+        end = registry.get_point(self.end_idx)
+        if not (start and end):
+            return 0.0
+
+        if self.is_line(registry):
+            _, _, dist_sq = get_line_segment_closest_point(
+                (start.x, start.y),
+                (end.x, end.y),
+                point.x,
+                point.y,
+            )
+            return math.sqrt(dist_sq)
+
+        cp1_x, cp1_y, cp2_x, cp2_y = self.get_control_points_or_endpoints(
+            registry
+        )
+        start_x, start_y = start.x, start.y
+        end_x, end_y = end.x, end.y
+        return self._closest_point_dist(
+            start_x, start_y, cp1_x, cp1_y, cp2_x, cp2_y, end_x, end_y, point
+        )
+
+    @staticmethod
+    def _closest_point_dist(
+        start_x: float,
+        start_y: float,
+        cp1_x: float,
+        cp1_y: float,
+        cp2_x: float,
+        cp2_y: float,
+        end_x: float,
+        end_y: float,
+        point: "Point",
+    ) -> float:
+        result = get_bezier_closest_point(
+            (start_x, start_y, 0.0),
+            (cp1_x, cp1_y, 0.0),
+            (cp2_x, cp2_y, 0.0),
+            (end_x, end_y, 0.0),
+            point.x,
+            point.y,
+        )
+        if result is None:
+            return 0.0
+        _t, _pt, dist_sq = result
+        return math.sqrt(dist_sq)
 
     def get_junction_point_ids(self) -> list[EntityID]:
         return [self.start_idx, self.end_idx]

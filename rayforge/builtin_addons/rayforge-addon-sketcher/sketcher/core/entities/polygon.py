@@ -21,7 +21,7 @@ from raygeo.geo.shape.polygon import (
 from raygeo.geo.types import Rect
 
 from ..types import EntityID
-from .entity import Entity, OffsetPlan, _quantize
+from .entity import Entity, OffsetPlan, quantize
 
 if TYPE_CHECKING:
     from ..commands.mirror import MirrorAxis
@@ -406,7 +406,7 @@ class PolygonEntity(Entity):
     def geometry_signature(self, registry: "EntityRegistry") -> tuple:
         return (
             *super().geometry_signature(registry),
-            tuple((_quantize(u), _quantize(v)) for u, v in self.vertices),
+            tuple((quantize(u), quantize(v)) for u, v in self.vertices),
             self.closed,
         )
 

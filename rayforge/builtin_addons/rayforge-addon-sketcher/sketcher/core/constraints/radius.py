@@ -116,21 +116,10 @@ class RadiusConstraint(Constraint):
         if entity is None:
             return 0.0
 
-        target = self.value
-        curr_r = 0.0
-
-        if isinstance(entity, Arc):
-            center = reg.get_point(entity.center_idx)
-            start = reg.get_point(entity.start_idx)
-            curr_r = math.hypot(start.x - center.x, start.y - center.y)
-        elif isinstance(entity, Circle):
-            center = reg.get_point(entity.center_idx)
-            radius_pt = reg.get_point(entity.radius_pt_idx)
-            curr_r = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
-        else:
+        if not isinstance(entity, (Arc, Circle)):
             return 0.0
 
-        return curr_r - target
+        return entity.radius(reg) - self.value
 
     def gradient(
         self, reg: EntityRegistry, params: ParameterContext

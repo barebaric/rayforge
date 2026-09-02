@@ -118,12 +118,7 @@ class DiameterConstraint(Constraint):
         if not isinstance(circle_entity, Circle):
             return 0.0
 
-        center = reg.get_point(circle_entity.center_idx)
-        radius_pt = reg.get_point(circle_entity.radius_pt_idx)
-        target_diameter = self.value
-
-        curr_r = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
-        return 2 * curr_r - target_diameter
+        return 2 * circle_entity.radius(reg) - self.value
 
     def gradient(
         self, reg: EntityRegistry, params: ParameterContext

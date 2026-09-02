@@ -117,37 +117,10 @@ class PointOnLineConstraint(Constraint):
         if shape is None:
             return 0.0
 
-        if isinstance(shape, Line):
-            l1 = reg.get_point(shape.p1_idx)
-            l2 = reg.get_point(shape.p2_idx)
-            dx = l2.x - l1.x
-            dy = l2.y - l1.y
-            length = math.hypot(dx, dy)
-            if length < 1e-9:
-                return math.hypot(pt.x - l1.x, pt.y - l1.y)
-
-            # Cross product (signed area) divided by length = distance
-            cross = (l2.x - l1.x) * (pt.y - l1.y) - (pt.x - l1.x) * (
-                l2.y - l1.y
-            )
-            return cross / length
-
-        elif isinstance(shape, (Arc, Circle)):
-            center = reg.get_point(shape.center_idx)
-            radius = 0.0
-            if isinstance(shape, Arc):
-                start = reg.get_point(shape.start_idx)
-                radius = math.hypot(start.x - center.x, start.y - center.y)
-            elif isinstance(shape, Circle):
-                radius_pt = reg.get_point(shape.radius_pt_idx)
-                radius = math.hypot(
-                    radius_pt.x - center.x, radius_pt.y - center.y
-                )
-
-            dist_to_point = math.hypot(pt.x - center.x, pt.y - center.y)
-            return dist_to_point - radius
-
-        return 0.0
+        try:
+            return shape.signed_distance_to(pt, reg)
+        except NotImplementedError:
+            return 0.0
 
     def gradient(
         self, reg: EntityRegistry, params: ParameterContext

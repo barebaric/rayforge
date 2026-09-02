@@ -99,29 +99,7 @@ class TangentConstraint(Constraint):
             return 0.0
 
         center = reg.get_point(shape.center_idx)
-        radius = 0.0
-        if isinstance(shape, Arc):
-            start = reg.get_point(shape.start_idx)
-            radius = math.hypot(start.x - center.x, start.y - center.y)
-        elif isinstance(shape, Circle):
-            radius_pt = reg.get_point(shape.radius_pt_idx)
-            radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
-
-        lp1 = reg.get_point(line.p1_idx)
-        lp2 = reg.get_point(line.p2_idx)
-        line_dx = lp2.x - lp1.x
-        line_dy = lp2.y - lp1.y
-        line_len = math.hypot(line_dx, line_dy)
-
-        if line_len < 1e-9:
-            dist_to_pt = math.hypot(lp1.x - center.x, lp1.y - center.y)
-            return dist_to_pt - radius
-
-        cross_product = line_dx * (center.y - lp1.y) - line_dy * (
-            center.x - lp1.x
-        )
-        dist_val = abs(cross_product) / line_len
-        return dist_val - radius
+        return abs(line.signed_distance_to(center, reg)) - shape.radius(reg)
 
     def gradient(
         self, reg: EntityRegistry, params: ParameterContext

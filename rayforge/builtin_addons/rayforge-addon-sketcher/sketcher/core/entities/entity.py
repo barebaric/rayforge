@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from .point import Point
 
 
-def _quantize(value: float) -> float:
+def quantize(value: float) -> float:
     return round(value, 6)
 
 
@@ -103,7 +103,7 @@ class Entity:
         change detection.
         """
         return tuple(
-            (_quantize(p.x), _quantize(p.y))
+            (quantize(p.x), quantize(p.y))
             for p in (registry.get_point(pid) for pid in self.get_point_ids())
             if p is not None
         )
@@ -357,6 +357,17 @@ class Entity:
         if pa and pb:
             return math.hypot(pb.x - pa.x, pb.y - pa.y)
         return 0.0
+
+    def signed_distance_to(
+        self, point: "Point", registry: "EntityRegistry"
+    ) -> float:
+        """Return the signed distance from ``point`` to this entity.
+
+        Positive means the point is outside the entity's locus.
+        Raises ``NotImplementedError`` for entities that cannot compute
+        signed distance.
+        """
+        raise NotImplementedError
 
     def tangent_at(
         self, registry: "EntityRegistry", point_id: EntityID

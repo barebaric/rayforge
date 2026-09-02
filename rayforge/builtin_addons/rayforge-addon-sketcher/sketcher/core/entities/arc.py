@@ -85,6 +85,22 @@ class Arc(Entity):
         dx, dy = end.x - center.x, end.y - center.y
         return (-dy, dx) if self.clockwise else (dy, -dx)
 
+    def radius(self, registry: "EntityRegistry") -> float:
+        start = registry.get_point(self.start_idx)
+        center = registry.get_point(self.center_idx)
+        if not (start and center):
+            return 0.0
+        return math.hypot(start.x - center.x, start.y - center.y)
+
+    def signed_distance_to(self, point, registry):
+        center = registry.get_point(self.center_idx)
+        start = registry.get_point(self.start_idx)
+        if not (center and start):
+            return 0.0
+        radius = math.hypot(start.x - center.x, start.y - center.y)
+        dist_to_point = math.hypot(point.x - center.x, point.y - center.y)
+        return dist_to_point - radius
+
     def get_junction_point_ids(self) -> list[EntityID]:
         return [self.start_idx, self.end_idx, self.center_idx]
 

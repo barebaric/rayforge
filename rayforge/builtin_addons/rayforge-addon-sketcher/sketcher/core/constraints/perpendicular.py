@@ -99,21 +99,6 @@ class PerpendicularConstraint(Constraint):
             user_visible=data.get("user_visible", True),
         )
 
-    def _get_radius_sq(
-        self, shape: Arc | Circle, reg: EntityRegistry
-    ) -> float:
-        """Helper to get squared radius of an Arc or Circle."""
-        center = reg.get_point(shape.center_idx)
-        if isinstance(shape, Arc):
-            start = reg.get_point(shape.start_idx)
-            return (start.x - center.x) ** 2 + (start.y - center.y) ** 2
-        elif isinstance(shape, Circle):
-            radius_pt = reg.get_point(shape.radius_pt_idx)
-            return (radius_pt.x - center.x) ** 2 + (
-                radius_pt.y - center.y
-            ) ** 2
-        return 0.0
-
     def error(self, reg: EntityRegistry, params: ParameterContext) -> float:
         e1 = reg.get_entity(self.e1_id)
         e2 = reg.get_entity(self.e2_id)
@@ -165,8 +150,8 @@ class PerpendicularConstraint(Constraint):
             c1 = reg.get_point(shape1.center_idx)
             c2 = reg.get_point(shape2.center_idx)
 
-            r1_sq = self._get_radius_sq(shape1, reg)
-            r2_sq = self._get_radius_sq(shape2, reg)
+            r1_sq = shape1.radius(reg) ** 2
+            r2_sq = shape2.radius(reg) ** 2
 
             dist_centers_sq = (c2.x - c1.x) ** 2 + (c2.y - c1.y) ** 2
 
