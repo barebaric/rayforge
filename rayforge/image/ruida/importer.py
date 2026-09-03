@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 class RuidaImporter(Importer):
     label = "Ruida files"
-    mime_types = ("application/x-rd-file", "application/octet-stream")
+    mime_types = ("application/x-rd-file",)
     extensions = (".rd",)
     features: ClassVar[set[ImporterFeature]] = {ImporterFeature.DIRECT_VECTOR}
 
