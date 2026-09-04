@@ -124,12 +124,15 @@ class FileCmd:
     ) -> tuple[type[Importer] | None, set[ImporterFeature]]:
         """
         Finds the importer for a file and returns its class and feature set.
+
+        A generic MIME type carries no format information, so it never
+        shadows a match by file extension.
         """
         if not mime_type:
             mime_type, _ = mimetypes.guess_type(file_path)
 
         importer_cls = None
-        if mime_type:
+        if mime_type and mime_type != "application/octet-stream":
             importer_cls = importer_registry.get_by_mime_type(mime_type)
 
         if not importer_cls and file_path.suffix:

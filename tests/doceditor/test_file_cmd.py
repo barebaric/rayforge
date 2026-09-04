@@ -32,6 +32,9 @@ from rayforge.image import (
     LayerInfo,
     ParsingResult,
 )
+from rayforge.image.dxf.importer import DxfImporter
+from rayforge.image.lightburn.importer import LightBurnImporter
+from rayforge.image.ruida.importer import RuidaImporter
 from rayforge.image.svg.renderer import SVG_RENDERER
 from rayforge.machine.models.coordspace import (
     AxisDirection,
@@ -842,6 +845,35 @@ class TestGetImporterInfo:
             )
             assert cls is None
             assert features == set()
+
+    def test_generic_mime_does_not_shadow_extension(self, file_cmd):
+        """
+        A .dxf file reported with the generic binary MIME type must be
+        routed by its extension, not by the generic match.
+
+        macOS reports files with unrecognized UTIs (e.g. .dxf, .lbrn2)
+        as application/octet-stream. If that MIME type won the lookup,
+        the file was handed to the RuidaImporter, which parsed the text
+        file as a binary Ruida job and produced garbage geometry.
+        """
+        cls, features = file_cmd.get_importer_info(
+            Path("part.dxf"), "application/octet-stream"
+        )
+        assert cls is DxfImporter
+        assert ImporterFeature.LAYER_SELECTION in features
+
+    def test_generic_mime_does_not_shadow_lightburn_extension(self, file_cmd):
+        cls, _ = file_cmd.get_importer_info(
+            Path("puzzle.lbrn2"), "application/octet-stream"
+        )
+        assert cls is LightBurnImporter
+
+    def test_ruida_resolves_by_extension_with_generic_mime(self, file_cmd):
+        cls, features = file_cmd.get_importer_info(
+            Path("job.rd"), "application/octet-stream"
+        )
+        assert cls is RuidaImporter
+        assert ImporterFeature.DIRECT_VECTOR in features
 
 
 class TestAnalyzeImportTarget:
