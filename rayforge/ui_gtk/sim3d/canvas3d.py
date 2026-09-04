@@ -206,6 +206,10 @@ class Canvas3D(Gtk.GLArea):
         self._presenter.update_scene_from_doc()
 
     def _on_key_pressed(self, controller, keyval, keycode, state):
+        key_name = Gdk.keyval_name(keyval)
+        logger.debug(
+            "Canvas3D key pressed: key='%s', state=%s", key_name, state
+        )
         overlay = self._presenter.playback_overlay
         if keyval == Gdk.KEY_space and overlay:
             overlay.handle_space()

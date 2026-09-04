@@ -156,6 +156,13 @@ class CameraController:
 
     def _on_click_focus(self, gesture, n_press, x, y):
         """Grab keyboard focus so the canvas receives key events."""
+        logger.debug(
+            "Canvas3D click: button=%d, n_press=%d, pos=(%.2f, %.2f)",
+            gesture.get_current_button(),
+            n_press,
+            x,
+            y,
+        )
         self._widget.grab_focus()
 
     def _clear_drag_state(self):
@@ -188,6 +195,7 @@ class CameraController:
         gesture.set_state(Gtk.EventSequenceState.CLAIMED)
         state = gesture.get_current_event_state()
         is_shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
+        logger.debug("Middle drag begin at (%.2f, %.2f)", x, y)
 
         if not is_shift and self.camera:
             # Orbit around the point on the object under the cursor,
@@ -205,6 +213,10 @@ class CameraController:
 
             self._last_orbit_pos = None
             self._is_orbiting = True
+            logger.debug(
+                "Middle drag orbits, pivot=%s",
+                self._rotation_pivot.tolist(),
+            )
         else:
             self._pan_anchor = self.get_world_coords_on_plane(x, y)
             self._pan_start_screen = x, y
@@ -212,9 +224,18 @@ class CameraController:
             self._is_orbiting = False
             if self._pan_anchor is not None:
                 self._pan_anchor = self._clamp_to_grid(self._pan_anchor)
+            anchor = (
+                self._pan_anchor.tolist()
+                if self._pan_anchor is not None
+                else None
+            )
+            logger.debug("Middle drag pans, anchor=%s", anchor)
 
     def on_drag_update(self, gesture, offset_x: float, offset_y: float):
         """Handles updates during a drag operation (panning or orbiting)."""
+        logger.debug(
+            "Middle drag update: offset=(%.2f, %.2f)", offset_x, offset_y
+        )
         if not self.camera:
             return
         camera = self.camera
@@ -440,6 +461,9 @@ class CameraController:
 
     def on_drag_end(self, gesture, offset_x, offset_y):
         """Handles the end of a drag operation."""
+        logger.debug(
+            "Middle drag end: offset=(%.2f, %.2f)", offset_x, offset_y
+        )
         self._clear_drag_state()
         self._request_render()
 
@@ -447,6 +471,7 @@ class CameraController:
         """
         Handles the start of a left-mouse-button drag for Z-axis rotation.
         """
+        logger.debug("Z-rotate drag begin at (%.2f, %.2f)", x, y)
         if not self.camera:
             return
         gesture.set_state(Gtk.EventSequenceState.CLAIMED)
@@ -483,6 +508,9 @@ class CameraController:
 
     def on_z_rotate_end(self, gesture, offset_x, offset_y):
         """Handles the end of a Z-axis rotation drag."""
+        logger.debug(
+            "Z-rotate drag end: offset=(%.2f, %.2f)", offset_x, offset_y
+        )
         self._clear_drag_state()
         self._request_render()
 
@@ -501,6 +529,7 @@ class CameraController:
         the camera is dollied and then translated so that the plane point
         under the cursor stays under the cursor.
         """
+        logger.debug("Scroll event: dx=%.2f, dy=%.2f", dx, dy)
         if not self.camera:
             return
 
