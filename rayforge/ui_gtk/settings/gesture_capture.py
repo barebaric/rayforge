@@ -1,8 +1,9 @@
 """Capture popover for recording a mouse gesture binding."""
 
 import logging
+from collections.abc import Callable
 from gettext import gettext as _
-from typing import Any, Callable
+from typing import Any
 
 from gi.repository import Gdk, Gtk
 
