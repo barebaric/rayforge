@@ -38,6 +38,7 @@ class TestGesturePreferencesPage:
         config = ui_context_initializer.config
         page = GesturePreferencesPage()
         button = page._buttons.get(("canvas2d", "pan"))
+        assert button is not None
         try:
             config.set_gesture_binding("canvas2d", "pan", "drag+primary")
             assert "Left" in button.get_label()

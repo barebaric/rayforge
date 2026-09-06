@@ -21,6 +21,8 @@ from rayforge.ui_gtk.gestures.model import (
 )
 from rayforge.ui_gtk.gestures.router import GestureRouter
 
+_ZERO_STATE = Gdk.ModifierType(0)
+
 
 class _FakeConfig:
     def __init__(self, bindings=None):
@@ -30,7 +32,7 @@ class _FakeConfig:
 class _FakeGesture:
     """Minimal GestureDrag/GestureClick stand-in."""
 
-    def __init__(self, button=BUTTON_MIDDLE, state=Gdk.ModifierType(0)):
+    def __init__(self, button=BUTTON_MIDDLE, state=_ZERO_STATE):
         self._button = button
         self._state = state
         self.states = []
@@ -48,7 +50,7 @@ class _FakeGesture:
 class _FakeScrollController:
     """Minimal EventControllerScroll stand-in."""
 
-    def __init__(self, state=Gdk.ModifierType(0)):
+    def __init__(self, state=_ZERO_STATE):
         self._state = state
 
     def get_current_event_state(self):
@@ -262,8 +264,7 @@ class TestRegistryIntegration:
         assert {"pan", "zoom", "context_menu", "reset_view"} <= slot_ids
 
     def test_default_bindings_resolve_for_canvas2d(self):
-        class _Cfg:
-            gesture_bindings = {}
-
-        binding = gesture_registry.resolve_binding(_Cfg(), "canvas2d", "pan")
+        binding = gesture_registry.resolve_binding(
+            _FakeConfig(), "canvas2d", "pan"
+        )
         assert binding == GestureSpec(GestureKind.DRAG, button=BUTTON_MIDDLE)

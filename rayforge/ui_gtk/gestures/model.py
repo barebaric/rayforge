@@ -40,6 +40,9 @@ class GestureKind(Enum):
     SCROLL = "scroll"
 
 
+_NO_MODIFIERS = Gdk.ModifierType(0)
+
+
 def normalize_modifiers(state) -> Gdk.ModifierType:
     """
     Reduces a raw event modifier mask to the modifiers that take part
@@ -64,12 +67,12 @@ class GestureSpec:
 
     kind: GestureKind
     button: int | None = None
-    modifiers: Gdk.ModifierType = Gdk.ModifierType(0)
+    modifiers: Gdk.ModifierType = _NO_MODIFIERS
 
     def __post_init__(self):
         if self.kind is GestureKind.SCROLL:
             object.__setattr__(self, "button", None)
-            object.__setattr__(self, "modifiers", Gdk.ModifierType(0))
+            object.__setattr__(self, "modifiers", _NO_MODIFIERS)
 
     def to_config_string(self) -> str:
         parts = [self.kind.value]
