@@ -3,6 +3,7 @@ import logging
 from gi.repository import Gdk, Graphene, Gtk
 from raygeo.geo import Matrix
 
+from ..gestures import GestureRouter
 from .axis import AxisRenderer
 from .canvas import Canvas
 
@@ -23,6 +24,10 @@ class WorldSurface(Canvas):
 
     # The maximum allowed pixel density when zooming in.
     MAX_PIXELS_PER_MM = 100.0
+
+    # The gesture context whose bindings drive navigation on this
+    # surface. Subclasses can override it to provide their own slots.
+    context_id = "canvas2d"
 
     def __init__(
         self,
@@ -66,38 +71,38 @@ class WorldSurface(Canvas):
         # Set theme colors for axis and grid.
         self._update_theme_colors()
 
-        # Add scroll event controller for zoom
-        self._scroll_controller = Gtk.EventControllerScroll.new(
-            Gtk.EventControllerScrollFlags.VERTICAL
+        # Route the navigation gestures (pan, zoom, context menu) over
+        # the configurable gesture bindings of the surface's context.
+        self._router = GestureRouter(self.context_id, self)
+        self._router.register_drag(
+            "pan",
+            begin=self.on_pan_begin,
+            update=self.on_pan_update,
+            end=self.on_pan_end,
         )
-        self._scroll_controller.connect("scroll", self.on_scroll)
-        self.add_controller(self._scroll_controller)
-
-        # Add middle click gesture for panning
-        self._pan_gesture = Gtk.GestureDrag.new()
-        self._pan_gesture.set_button(Gdk.BUTTON_MIDDLE)
-        self._pan_gesture.connect("drag-begin", self.on_pan_begin)
-        self._pan_gesture.connect("drag-update", self.on_pan_update)
-        self._pan_gesture.connect("drag-end", self.on_pan_end)
-        self.add_controller(self._pan_gesture)
+        self._router.register_scroll("zoom", scroll=self.on_scroll)
+        self._router.register_click(
+            "context_menu", invoke=self.on_right_click_pressed
+        )
+        self._router.register_click(
+            "reset_view", invoke=self._on_reset_view_gesture
+        )
         self._pan_start = (0.0, 0.0)
 
         # Track Space key for Space+drag panning
         self._space_pressed = False
-
-        # Add right-click gesture for context menu
-        self._context_menu_gesture = Gtk.GestureClick.new()
-        self._context_menu_gesture.set_button(Gdk.BUTTON_SECONDARY)
-        self._context_menu_gesture.connect(
-            "pressed", self.on_right_click_pressed
-        )
-        self.add_controller(self._context_menu_gesture)
 
         # This is hacky, but what to do: The EventControllerScroll provides
         # no access to any mouse position, and there is no easy way to
         # get the mouse position in Gtk4. So I have to store it here and
         # track the motion event...
         self._mouse_pos = (0.0, 0.0)
+
+    def _on_reset_view_gesture(
+        self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
+    ) -> None:
+        """Handler for the rebindable reset-view gesture."""
+        self.reset_view()
 
     def set_show_grid(self, show: bool):
         """Sets the visibility of the inner grid lines."""

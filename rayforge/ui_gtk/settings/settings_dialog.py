@@ -9,6 +9,7 @@ from .addon_manager_page import AddonManagerPage
 from .ai_settings_page import AISettingsPage
 from .color_presets_page import ColorPresetPage
 from .general_preferences_page import GeneralPreferencesPage
+from .gesture_preferences_page import GesturePreferencesPage
 from .license_settings_page import LicenseSettingsPage
 from .machine_settings_page import MachineSettingsPage
 from .material_manager_page import MaterialManagerPage
@@ -27,18 +28,19 @@ class SettingsWindow(PatchedDialogWindow):
     # Mapping of built-in page names to indices
     PAGE_INDICES: ClassVar[dict[str, int]] = {
         "general": 0,
-        "machines": 1,
-        "materials": 2,
-        "recipes": 3,
-        "color_presets": 4,
-        "ai": 5,
-        "addons": 6,
-        "licenses": 7,
+        "gestures": 1,
+        "machines": 2,
+        "materials": 3,
+        "recipes": 4,
+        "color_presets": 5,
+        "ai": 6,
+        "addons": 7,
+        "licenses": 8,
     }
 
     # Number of built-in (non-addon) pages, kept in sync with the
     # _add_page calls in __init__.
-    _BUILTIN_PAGE_COUNT = 8
+    _BUILTIN_PAGE_COUNT = 9
 
     def __init__(self, initial_page: str = "general", **kwargs):
         super().__init__(skip_usage_tracking=True, **kwargs)
@@ -79,6 +81,7 @@ class SettingsWindow(PatchedDialogWindow):
 
         # Populate sidebar and content
         self._add_page(GeneralPreferencesPage)
+        self._add_page(GesturePreferencesPage)
         self._add_page(MachineSettingsPage)
         self._add_page(MaterialManagerPage)
         self._add_page(RecipeManagerPage)
