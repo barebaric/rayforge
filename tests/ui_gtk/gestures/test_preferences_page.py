@@ -32,7 +32,8 @@ class TestGesturePreferencesPage:
         page = GesturePreferencesPage()
         button = page._buttons.get(("canvas2d", "pan"))
         assert button is not None
-        assert "Middle" in button.get_label()
+        label = button.get_label() or ""
+        assert "Middle" in label
 
     def test_row_reflects_config_change(self, ui_context_initializer):
         config = ui_context_initializer.config
@@ -41,9 +42,9 @@ class TestGesturePreferencesPage:
         assert button is not None
         try:
             config.set_gesture_binding("canvas2d", "pan", "drag+primary")
-            assert "Left" in button.get_label()
+            assert "Left" in (button.get_label() or "")
             config.reset_gesture_binding("canvas2d", "pan")
-            assert "Middle" in button.get_label()
+            assert "Middle" in (button.get_label() or "")
         finally:
             config.reset_gesture_binding("canvas2d", "pan")
 
