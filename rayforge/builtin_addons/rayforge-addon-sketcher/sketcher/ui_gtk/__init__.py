@@ -17,6 +17,15 @@ from rayforge.ui_gtk.canvas2d.context_menu import (
 from rayforge.ui_gtk.doceditor.property_providers import (
     property_provider_registry,
 )
+from rayforge.ui_gtk.gestures import (
+    BUTTON_MIDDLE,
+    BUTTON_SECONDARY,
+    GestureContext,
+    GestureKind,
+    GestureSlot,
+    GestureSpec,
+    gesture_registry,
+)
 from rayforge.ui_gtk.shared.keyboard import PRIMARY_ACCEL
 
 from .property_provider import SketchPropertyProvider
@@ -255,6 +264,61 @@ def register():
     action_extension_registry.register_state_update(
         _update_action_states, "sketcher"
     )
+    _register_gesture_context()
+
+
+SKETCHER_GESTURE_CONTEXT = GestureContext(
+    id="sketcher",
+    label=_("Sketch Editor"),
+    description=_("Navigation gestures in the sketch editor."),
+)
+
+
+def _sketcher_gesture_slots():
+    return [
+        GestureSlot(
+            id="pan",
+            context_id="sketcher",
+            label=_("Pan the view"),
+            description=_(
+                "Hold the mouse button down and move to pan the view."
+            ),
+            continuous=True,
+            default_binding=GestureSpec(
+                GestureKind.DRAG, button=BUTTON_MIDDLE
+            ),
+        ),
+        GestureSlot(
+            id="zoom",
+            context_id="sketcher",
+            label=_("Zoom the view"),
+            description=_("Use the mouse wheel to zoom."),
+            continuous=True,
+            default_binding=GestureSpec(GestureKind.SCROLL),
+            allow_unassign=False,
+        ),
+        GestureSlot(
+            id="pie_menu",
+            context_id="sketcher",
+            label=_("Open the tool menu"),
+            default_binding=GestureSpec(
+                GestureKind.CLICK, button=BUTTON_SECONDARY
+            ),
+        ),
+        GestureSlot(
+            id="reset_view",
+            context_id="sketcher",
+            label=_("Reset the view"),
+            description=_("Centers the view on the sketch geometry."),
+            default_binding=None,
+        ),
+    ]
+
+
+def _register_gesture_context():
+    gesture_registry.register_context(SKETCHER_GESTURE_CONTEXT, "sketcher")
+    for slot in _sketcher_gesture_slots():
+        gesture_registry.register_slot(slot, "sketcher")
 
 
 # Auto-register when module is imported
