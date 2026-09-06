@@ -127,7 +127,7 @@ class GestureRouter:
                 return slot.id
         return None
 
-    def _on_drag_begin(self, gesture: Gtk.GestureDrag, x: float, y: float):
+    def _on_drag_begin(self, gesture, x: float, y: float):
         spec = GestureSpec(
             GestureKind.DRAG,
             button=gesture.get_current_button(),
@@ -145,9 +145,7 @@ class GestureRouter:
         if handler.begin:
             handler.begin(gesture, x, y)
 
-    def _on_drag_update(
-        self, gesture: Gtk.GestureDrag, offset_x: float, offset_y: float
-    ):
+    def _on_drag_update(self, gesture, offset_x: float, offset_y: float):
         slot_id = self._active_drag_slot
         if slot_id is None:
             return
@@ -155,9 +153,7 @@ class GestureRouter:
         if handler.update:
             handler.update(gesture, offset_x, offset_y)
 
-    def _on_drag_end(
-        self, gesture: Gtk.GestureDrag, offset_x: float, offset_y: float
-    ):
+    def _on_drag_end(self, gesture, offset_x: float, offset_y: float):
         slot_id = self._active_drag_slot
         self._active_drag_slot = None
         if slot_id is None:
@@ -167,13 +163,7 @@ class GestureRouter:
         if handler.end:
             handler.end(gesture, offset_x, offset_y)
 
-    def _on_click_pressed(
-        self,
-        gesture: Gtk.GestureClick,
-        n_press: int,
-        x: float,
-        y: float,
-    ):
+    def _on_click_pressed(self, gesture, n_press: int, x: float, y: float):
         spec = GestureSpec(
             GestureKind.CLICK,
             button=gesture.get_current_button(),
@@ -187,12 +177,7 @@ class GestureRouter:
         gesture.set_state(Gtk.EventSequenceState.CLAIMED)
         self._click_handlers[slot_id](gesture, n_press, x, y)
 
-    def _on_scroll(
-        self,
-        controller: Gtk.EventControllerScroll,
-        dx: float,
-        dy: float,
-    ):
+    def _on_scroll(self, controller, dx: float, dy: float):
         spec = GestureSpec(
             GestureKind.SCROLL,
             modifiers=normalize_modifiers(

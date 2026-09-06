@@ -140,7 +140,7 @@ class GestureSpec:
             GestureKind.DRAG: _("Drag"),
             GestureKind.SCROLL: _("Scroll"),
         }
-        if self.kind is GestureKind.SCROLL:
+        if self.kind is GestureKind.SCROLL or self.button is None:
             return kind_labels[self.kind]
         button_labels = {
             BUTTON_PRIMARY: _("Left"),
