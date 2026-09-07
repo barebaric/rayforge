@@ -285,11 +285,19 @@ class PlaybackOverlay(Gtk.Box):
         extent = self._slider_extent()
         self._tick_driving_slider = True
         self._slider.set_range(0, max(extent, 1))
-        self._tick_driving_slider = False
-        # A pristine playhead (-1) keeps the slider at the beginning;
-        # an established playhead follows to its action line.
+        # Gtk clamps the stored value into the new range, which pins
+        # the slider at 100% whenever the extent shrinks below the
+        # previous position (e.g. after a job regeneration). Re-derive
+        # the value from the playhead instead; a pristine playhead, or
+        # one sitting on a command without G-code output, maps to the
+        # start of the job.
+        value = 0
         if self.current_index >= 0:
-            self._set_slider_for_op(self.current_index)
+            value = self._slider_value_for_op(self.current_index)
+            if value is None:
+                value = 0
+        self._slider.set_value(min(value, extent))
+        self._tick_driving_slider = False
 
     def _resolve_step_target(self, base: int, steps: int) -> int:
         """Resolve a step of *steps* commands from *base*.
@@ -430,7 +438,9 @@ class PlaybackOverlay(Gtk.Box):
             self._step_fwd_button.set_sensitive(True)
         else:
             self._slider.set_range(0, 1)
-            self._set_slider_for_op(0)
+            self._tick_driving_slider = True
+            self._slider.set_value(0)
+            self._tick_driving_slider = False
             self._slider.set_sensitive(False)
             self._play_button.set_sensitive(False)
             self._step_back_button.set_sensitive(False)
