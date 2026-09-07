@@ -1,4 +1,5 @@
 import logging
+import time
 from gettext import gettext as _
 from typing import Protocol
 
@@ -72,6 +73,11 @@ SPEED_OPTIONS = [1, 2, 4, 8, 16, 32, 64]
 # the interpolated playhead is redrawn continuously, not only when the
 # slider value changes.
 TICK_SECONDS = 1.0 / 60.0
+
+# Ticks between playback heartbeat log lines (~5 s at ~60 fps). The
+# heartbeat makes a stalled or racing session visible in the debug
+# log without flooding it with one line per tick.
+HEARTBEAT_INTERVAL_TICKS = 300
 
 # Wall-clock span of the step-button animation (~0.2 s). Each manual
 # step plays out over this fixed number of ticks, regardless of the
@@ -184,11 +190,15 @@ class PlaybackOverlay(Gtk.Box):
         self._step_target = -1
         self._step_consumed = 0
         self._pending_steps = 0
+        self._tick_count = 0
+        self._last_tick_target = -1
+        self._logged_tick_regression = False
+        self._playback_wall_start: float | None = None
 
         self.connect("destroy", self._on_destroy)
 
     def _on_destroy(self, widget):
-        self._stop_playback()
+        self._stop_playback("destroy")
         self._canvas = None
 
     def set_canvas(self, canvas):
@@ -209,6 +219,13 @@ class PlaybackOverlay(Gtk.Box):
         plus 8 bytes per op, already allocated for the job), so no
         additional per-job memory is created here.
         """
+        if op_map is None:
+            logger.debug("Playback op map cleared")
+        else:
+            logger.debug(
+                f"Playback op map set: ops={op_map.op_count} "
+                f"lines={op_map.line_count}"
+            )
         self._op_map = op_map
         self._refresh_slider_range()
 
@@ -283,6 +300,7 @@ class PlaybackOverlay(Gtk.Box):
     def _refresh_slider_range(self):
         """Recompute the slider range after the op map changed."""
         extent = self._slider_extent()
+        old_value = self._slider.get_value()
         self._tick_driving_slider = True
         self._slider.set_range(0, max(extent, 1))
         # Gtk clamps the stored value into the new range, which pins
@@ -296,8 +314,15 @@ class PlaybackOverlay(Gtk.Box):
             value = self._slider_value_for_op(self.current_index)
             if value is None:
                 value = 0
-        self._slider.set_value(min(value, extent))
+        value = min(value, extent)
+        self._slider.set_value(value)
         self._tick_driving_slider = False
+        if old_value > extent + 1e-6:
+            logger.debug(
+                f"Playback slider range shrunk: value {old_value:.0f} "
+                f"> extent {extent}; re-derived to {value:.0f} "
+                f"(playhead at command {self.current_index})"
+            )
 
     def _resolve_step_target(self, base: int, steps: int) -> int:
         """Resolve a step of *steps* commands from *base*.
@@ -333,6 +358,11 @@ class PlaybackOverlay(Gtk.Box):
         self._cancel_step_animation()
         self._player = player
         if player is not None:
+            logger.debug(
+                f"Playback player set: commands={len(player.ops)} "
+                f"initial_index={initial_index} "
+                f"sim_time={player.sim_time:.2f}s"
+            )
             self.update_ops_range(len(player.ops), initial_index)
             # Sync the simulated clock even when the slider does not
             # move (initial_index 0 with the slider already at 0), so
@@ -341,6 +371,7 @@ class PlaybackOverlay(Gtk.Box):
                 self._sim_time = player.get_cumulative_time(initial_index)
                 player.set_sim_time(self._sim_time)
         else:
+            logger.debug("Playback player cleared")
             self.update_ops_range(0)
 
     @property
@@ -494,7 +525,7 @@ class PlaybackOverlay(Gtk.Box):
 
     def _on_play_clicked(self, button):
         if self._playing:
-            self._stop_playback()
+            self._stop_playback("user-pause")
         else:
             self._start_playback()
 
@@ -519,6 +550,16 @@ class PlaybackOverlay(Gtk.Box):
         self._timer_id = GLib.timeout_add(
             int(TICK_SECONDS * 1000), self._on_tick
         )
+        self._tick_count = 0
+        self._last_tick_target = -1
+        self._logged_tick_regression = False
+        self._playback_wall_start = time.monotonic()
+        logger.debug(
+            f"Playback started: sim_time={self._sim_time:.2f}s "
+            f"total={self._total_time():.2f}s commands="
+            f"{self.command_count} extent={self._slider_extent()} "
+            f"speed={SPEED_OPTIONS[self._speed_index]}x"
+        )
 
     def _reached_end(self) -> bool:
         """True when the playhead sits at (or past) the job end."""
@@ -528,6 +569,7 @@ class PlaybackOverlay(Gtk.Box):
         return self._sim_time >= total - TICK_SECONDS
 
     def _restart_from_beginning(self):
+        logger.debug("Playback restarting from the beginning")
         self._sim_time = 0.0
         if self._player:
             self._player.set_progress_anchor(-1, 0.0)
@@ -535,7 +577,7 @@ class PlaybackOverlay(Gtk.Box):
         self._slider.set_value(0)
         self._tick_driving_slider = False
 
-    def _stop_playback(self):
+    def _stop_playback(self, reason: str = "user-pause"):
         self._cancel_step_animation()
         self._playing = False
         self._play_button.set_child(self._play_icon)
@@ -543,15 +585,24 @@ class PlaybackOverlay(Gtk.Box):
         if self._timer_id is not None:
             GLib.source_remove(self._timer_id)
             self._timer_id = None
+        elapsed = ""
+        if self._playback_wall_start is not None:
+            wall = time.monotonic() - self._playback_wall_start
+            elapsed = f" wall={wall:.1f}s"
+            self._playback_wall_start = None
+        logger.debug(
+            f"Playback stopped ({reason}): "
+            f"sim_time={self._sim_time:.2f}s{elapsed}"
+        )
 
     def _on_tick(self) -> bool:
         if not self._playing:
             return False
         if not self._canvas or not self._canvas.get_realized():
-            self._stop_playback()
+            self._stop_playback("canvas-unrealized")
             return False
         if not self._player or self.command_count == 0:
-            self._stop_playback()
+            self._stop_playback("player-lost")
             return False
 
         # Advance the simulated clock by real time times the speed
@@ -562,6 +613,30 @@ class PlaybackOverlay(Gtk.Box):
         self._player.sync_state_to_playhead()
         max_idx = self.command_count - 1
         target = self._player.find_index_at_sim_time(self._sim_time)
+
+        # Diagnostics: the playhead target is monotonically non-
+        # decreasing during forward playback; a regression points at a
+        # mismatched time index or player swap mid-playback. Logged at
+        # most once per playback session, plus a slow heartbeat.
+        if (
+            target < self._last_tick_target
+            and not self._logged_tick_regression
+        ):
+            self._logged_tick_regression = True
+            logger.debug(
+                f"Playback target moved backwards: "
+                f"{self._last_tick_target} -> {target} at "
+                f"sim_time={self._sim_time:.2f}s"
+            )
+        self._last_tick_target = target
+        self._tick_count += 1
+        if self._tick_count % HEARTBEAT_INTERVAL_TICKS == 0:
+            logger.debug(
+                f"Playback heartbeat: sim_time={self._sim_time:.2f}s "
+                f"target={target} "
+                f"slider={self._slider.get_value():.0f}/"
+                f"{self._slider_extent()} speed={multiplier}x"
+            )
 
         if target >= max_idx:
             # Anchor the playhead on the final command so its state
@@ -574,7 +649,7 @@ class PlaybackOverlay(Gtk.Box):
             self._slider.set_value(self._slider_extent())
             self._tick_driving_slider = False
             self._emit_step_changed(max_idx)
-            self._stop_playback()
+            self._stop_playback("finished")
             return False
 
         self._set_slider_for_op(target)
