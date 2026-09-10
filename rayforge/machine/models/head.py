@@ -12,7 +12,7 @@ from ...core.matrix import euler_rotation_matrix
 
 HEAD_TYPE_KEY = "type"
 
-_HEAD_SERIALIZED_KEYS = frozenset(
+HEAD_SERIALIZED_KEYS = frozenset(
     {HEAD_TYPE_KEY, "uid", "name", "tool_number", "model_path", "transform"}
 )
 

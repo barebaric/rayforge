@@ -2,7 +2,7 @@ from gettext import gettext as _
 from typing import Any
 
 from ...core.capability import MachineCapability
-from .head import _HEAD_SERIALIZED_KEYS, Head, head_setting
+from .head import HEAD_SERIALIZED_KEYS, Head, head_setting
 
 
 class DragKnifeHead(Head):
@@ -44,7 +44,7 @@ class DragKnifeHead(Head):
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "DragKnifeHead":
-        known_keys = _HEAD_SERIALIZED_KEYS | {"offset_mm"}
+        known_keys = HEAD_SERIALIZED_KEYS | {"offset_mm"}
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
         head = super().from_dict(data)

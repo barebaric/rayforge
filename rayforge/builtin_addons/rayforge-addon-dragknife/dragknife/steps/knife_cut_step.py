@@ -70,10 +70,7 @@ class KnifeCutStep(Step):
         return step
 
     def apply_head_defaults(self, head) -> None:
-        """Seed step settings from the selected head's defaults."""
-        offset = getattr(head, "offset_mm", None)
-        if offset is not None:
-            self.offset_mm = float(offset)
+        """Hook: seed step settings from the selected head's defaults."""
 
     @classmethod
     def _default_knife_transformer(cls):

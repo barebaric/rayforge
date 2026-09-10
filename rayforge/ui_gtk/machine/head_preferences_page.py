@@ -1155,10 +1155,11 @@ class KnifeHeadDetailWidget:
 
         self.tool_number_row.set_value(head.tool_number)
 
-        offset = getattr(head, "offset_mm", None)
-        self.offset_row.set_visible(offset is not None)
-        if offset is not None:
-            self.offset_row.set_value_in_base_units(offset)
+        if isinstance(head, DragKnifeHead):
+            self.offset_row.set_visible(True)
+            self.offset_row.set_value_in_base_units(head.offset_mm)
+        else:
+            self.offset_row.set_visible(False)
 
     def _on_name_changed(self, entry_row):
         """Update the name of the selected knife."""

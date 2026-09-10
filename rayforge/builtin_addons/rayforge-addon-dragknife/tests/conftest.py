@@ -3,16 +3,10 @@ Pytest configuration for the dragknife builtin addon tests.
 
 This conftest ensures that steps, transformers, and settings pages
 are registered before tests run, mirroring the cnc_essentials addon
-conftest. The whole suite is ignored when the installed raygeo does
-not provide the knife transforms yet.
+conftest.
 """
 
 import pytest
-from dragknife.compat import KNIFE_TRANSFORMS_AVAILABLE
-
-if not KNIFE_TRANSFORMS_AVAILABLE:
-    collect_ignore_glob = ["*"]
-
 from dragknife.frontend import register_step_settings_pages
 from dragknife.steps import DragKnifeCutStep, TangentialKnifeCutStep
 from dragknife.transformers import (
@@ -44,8 +38,5 @@ def register_dragknife():
     Automatically register the dragknife addon components for all
     tests in this addon.
     """
-    if not KNIFE_TRANSFORMS_AVAILABLE:
-        yield
-        return
     _register_addon()
     yield

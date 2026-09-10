@@ -3,6 +3,7 @@ from typing import Any, cast
 
 from rayforge.core.capability import MachineCapability
 from rayforge.core.varset import AngleVar, VarSet
+from rayforge.machine.models.knife import DragKnifeHead
 
 from ..transformers.drag_knife_transformer import DragKnifeTransformer
 from .knife_cut_step import KnifeCutStep
@@ -26,6 +27,11 @@ class DragKnifeCutStep(KnifeCutStep):
     @classmethod
     def _default_knife_transformer(cls) -> DragKnifeTransformer:
         return DragKnifeTransformer()
+
+    def apply_head_defaults(self, head) -> None:
+        """Seed step settings from the drag knife head's defaults."""
+        if isinstance(head, DragKnifeHead):
+            self.offset_mm = head.offset_mm
 
     def _knife_transformer_instance(self) -> DragKnifeTransformer:
         return DragKnifeTransformer(

@@ -3,13 +3,12 @@ from __future__ import annotations
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
+from raygeo.ops.transform.tangential_knife import TangentialKnifeSpec
+
 from rayforge.pipeline.transformer.base import OpsTransformer
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
-    from raygeo.ops.transform.tangential_knife import (  # pyright: ignore
-        TangentialKnifeSpec,
-    )
 
     from rayforge.core.workpiece import WorkPiece
 
@@ -93,10 +92,6 @@ class TangentialKnifeTransformer(OpsTransformer):
         stock_geometries: list[Geometry] | None,
         settings: dict[str, Any] | None,
     ) -> TangentialKnifeSpec:
-        from raygeo.ops.transform.tangential_knife import (  # pyright: ignore
-            TangentialKnifeSpec,
-        )
-
         return TangentialKnifeSpec(
             angle_tolerance_deg=self.angle_tolerance_deg,
             radius_tolerance_mm=self.radius_tolerance_mm,
