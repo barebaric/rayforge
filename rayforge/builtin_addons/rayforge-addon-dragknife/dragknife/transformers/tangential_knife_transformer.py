@@ -7,7 +7,7 @@ from rayforge.pipeline.transformer.base import OpsTransformer
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
-    from raygeo.ops.transform.tangential_knife import (  # pyright: ignore[reportMissingImports]
+    from raygeo.ops.transform.tangential_knife import (  # pyright: ignore
         TangentialKnifeSpec,
     )
 
@@ -93,7 +93,7 @@ class TangentialKnifeTransformer(OpsTransformer):
         stock_geometries: list[Geometry] | None,
         settings: dict[str, Any] | None,
     ) -> TangentialKnifeSpec:
-        from raygeo.ops.transform.tangential_knife import (  # pyright: ignore[reportMissingImports]
+        from raygeo.ops.transform.tangential_knife import (  # pyright: ignore
             TangentialKnifeSpec,
         )
 

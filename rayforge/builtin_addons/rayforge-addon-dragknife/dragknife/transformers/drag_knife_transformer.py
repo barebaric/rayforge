@@ -7,7 +7,7 @@ from rayforge.pipeline.transformer.base import OpsTransformer
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
-    from raygeo.ops.transform.drag_knife import (  # pyright: ignore[reportMissingImports]
+    from raygeo.ops.transform.drag_knife import (  # pyright: ignore
         DragKnifeSpec,
     )
 
@@ -79,7 +79,7 @@ class DragKnifeTransformer(OpsTransformer):
         stock_geometries: list[Geometry] | None,
         settings: dict[str, Any] | None,
     ) -> DragKnifeSpec:
-        from raygeo.ops.transform.drag_knife import (  # pyright: ignore[reportMissingImports]
+        from raygeo.ops.transform.drag_knife import (  # pyright: ignore
             DragKnifeSpec,
         )
 
