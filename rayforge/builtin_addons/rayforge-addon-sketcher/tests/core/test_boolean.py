@@ -53,11 +53,17 @@ def _ring_bbox(ring):
     return min(xs), min(ys), max(xs), max(ys)
 
 
+def _regions(sketch, entity_ids):
+    regions = build_boolean_regions(sketch, entity_ids)
+    assert regions is not None
+    return regions
+
+
 def test_regions_from_two_circles():
     sketch = Sketch()
     c1 = _circle_sketch(sketch, 0.0)
     c2 = _circle_sketch(sketch, 8.0)
-    regions = build_boolean_regions(sketch, [c1, c2])
+    regions = _regions(sketch, [c1, c2])
     assert regions is not None and len(regions) == 2
     for region in regions:
         assert len(region.rings) == 1
@@ -68,7 +74,7 @@ def test_regions_from_closed_line_chain_and_circle():
     sketch = Sketch()
     lines = _square_sketch(sketch)
     circle = _circle_sketch(sketch, 10.0)
-    regions = build_boolean_regions(sketch, lines + [circle])
+    regions = _regions(sketch, lines + [circle])
     assert regions is not None and len(regions) == 2
 
 
@@ -90,8 +96,7 @@ def test_regions_include_polygon_holes():
     sketch.registry.entities.append(polygon)
     sketch.registry._entity_map[polygon.id] = polygon
     circle = _circle_sketch(sketch, 40.0)
-    regions = build_boolean_regions(sketch, [polygon.id, circle])
-    assert regions is not None
+    regions = _regions(sketch, [polygon.id, circle])
     solid = next(r for r in regions if len(r.rings) == 2)
     assert get_polygon_signed_area(solid.rings[0]) > 0
     assert get_polygon_signed_area(solid.rings[1]) < 0
@@ -110,7 +115,9 @@ def test_regions_skip_construction_entities():
     sketch = Sketch()
     c1 = _circle_sketch(sketch, 0.0)
     c2 = _circle_sketch(sketch, 8.0)
-    sketch.registry.get_entity(c2).construction = True
+    entity = sketch.registry.get_entity(c2)
+    assert entity is not None
+    entity.construction = True
     assert build_boolean_regions(sketch, [c1, c2]) is None
 
 
@@ -124,7 +131,7 @@ def test_union_merges_overlapping_circles():
     sketch = Sketch()
     c1 = _circle_sketch(sketch, 0.0)
     c2 = _circle_sketch(sketch, 8.0)
-    regions = build_boolean_regions(sketch, [c1, c2])
+    regions = _regions(sketch, [c1, c2])
     solids = apply_boolean(BooleanOp.UNION, regions)
     assert solids is not None and len(solids) == 1
     xs = [p[0] for p in solids[0].outer]
@@ -137,7 +144,7 @@ def test_union_keeps_disjoint_pieces():
     sketch = Sketch()
     c1 = _circle_sketch(sketch, 0.0, 5.0)
     c2 = _circle_sketch(sketch, 50.0, 5.0)
-    regions = build_boolean_regions(sketch, [c1, c2])
+    regions = _regions(sketch, [c1, c2])
     solids = apply_boolean(BooleanOp.UNION, regions)
     assert solids is not None and len(solids) == 2
 
@@ -146,7 +153,7 @@ def test_difference_carries_hole_with_winding():
     sketch = Sketch()
     lines = _square_sketch(sketch)
     circle = _circle_sketch(sketch, 10.0, 10.0, 6.0)
-    regions = build_boolean_regions(sketch, lines + [circle])
+    regions = _regions(sketch, lines + [circle])
     solids = apply_boolean(BooleanOp.DIFFERENCE, regions)
     assert solids is not None and len(solids) == 1
     assert len(solids[0].holes) == 1
@@ -162,7 +169,7 @@ def test_difference_uses_stacking_order():
     sketch = Sketch()
     lines = _square_sketch(sketch)
     circle = _circle_sketch(sketch, 10.0, 10.0, 6.0)
-    regions = build_boolean_regions(sketch, lines + [circle])
+    regions = _regions(sketch, lines + [circle])
     regions.reverse()
     solids = apply_boolean(BooleanOp.DIFFERENCE, regions)
     assert solids is not None
@@ -173,7 +180,7 @@ def test_intersection_produces_lens():
     sketch = Sketch()
     c1 = _circle_sketch(sketch, 0.0)
     c2 = _circle_sketch(sketch, 8.0)
-    regions = build_boolean_regions(sketch, [c1, c2])
+    regions = _regions(sketch, [c1, c2])
     solids = apply_boolean(BooleanOp.INTERSECTION, regions)
     assert solids is not None and len(solids) == 1
     area = get_polygon_signed_area(solids[0].outer)
@@ -184,7 +191,7 @@ def test_intersection_without_overlap_is_empty():
     sketch = Sketch()
     c1 = _circle_sketch(sketch, 0.0, 5.0)
     c2 = _circle_sketch(sketch, 50.0, 5.0)
-    regions = build_boolean_regions(sketch, [c1, c2])
+    regions = _regions(sketch, [c1, c2])
     assert apply_boolean(BooleanOp.INTERSECTION, regions) is None
 
 
@@ -192,7 +199,7 @@ def test_exclude_produces_two_crescents():
     sketch = Sketch()
     c1 = _circle_sketch(sketch, 0.0)
     c2 = _circle_sketch(sketch, 8.0)
-    regions = build_boolean_regions(sketch, [c1, c2])
+    regions = _regions(sketch, [c1, c2])
     solids = apply_boolean(BooleanOp.EXCLUDE, regions)
     assert solids is not None and len(solids) == 2
     for solid in solids:
@@ -208,7 +215,7 @@ def test_entities_of_type_circle_sampled_fully():
     sketch = Sketch()
     c1 = _circle_sketch(sketch, 0.0)
     c2 = _circle_sketch(sketch, 8.0)
-    regions = build_boolean_regions(sketch, [c1, c2])
+    regions = _regions(sketch, [c1, c2])
     for region in regions:
         assert isinstance(
             sketch.registry.get_entity(region.entity_ids[0]), Circle

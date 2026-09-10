@@ -313,7 +313,7 @@ def test_multi_ring_legacy_dict_without_rings():
 def test_mirror_preserves_winding_convention():
     sketch, polygon = _build_solid_sketch()
     before = polygon.get_world_rings(sketch.registry)
-    polygon.mirror(None)
+    polygon.mirror(MirrorAxis(MirrorDirection.HORIZONTAL, 0.0))
     after = polygon.get_world_rings(sketch.registry)
     for ring_before, ring_after in zip(before, after):
         assert get_polygon_signed_area(ring_after) == pytest.approx(
@@ -374,8 +374,10 @@ def test_multi_ring_offset_shrinks_holes():
     )
     assert plan is not None and len(plan.entities) == 1
     assert plan.removed_entity_ids == [polygon.id]
+    result = plan.entities[0]
+    assert isinstance(result, PolygonEntity)
     sketch.registry.points.extend(plan.points)
-    rings = plan.entities[0].get_world_rings(sketch.registry)
+    rings = result.get_world_rings(sketch.registry)
     assert len(rings) == 2
     xs = [p[0] for p in rings[0]]
     ys = [p[1] for p in rings[0]]
@@ -392,8 +394,10 @@ def test_multi_ring_offset_vanishes_hole_first():
         sketch.registry, -4.5, itertools.count(1000).__next__
     )
     assert plan is not None and len(plan.entities) == 1
+    result = plan.entities[0]
+    assert isinstance(result, PolygonEntity)
     sketch.registry.points.extend(plan.points)
-    rings = plan.entities[0].get_world_rings(sketch.registry)
+    rings = result.get_world_rings(sketch.registry)
     assert len(rings) == 1
 
 
