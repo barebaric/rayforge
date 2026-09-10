@@ -61,9 +61,14 @@ def macro() -> Macro:
     return Macro(name="test", code=["G21", "G90"])
 
 
+@pytest.fixture
+def parent() -> Gtk.Window:
+    return Gtk.Window()
+
+
 @pytest.mark.ui
-def test_macro_editor_warns_for_number_only_line(macro):
-    dialog = GcodeEditorDialog(None, macro)
+def test_macro_editor_warns_for_number_only_line(macro, parent):
+    dialog = GcodeEditorDialog(parent, macro)
     assert dialog.warning_banner.get_revealed() is False
 
     buffer = dialog.text_view.get_buffer()
@@ -76,8 +81,8 @@ def test_macro_editor_warns_for_number_only_line(macro):
 
 
 @pytest.mark.ui
-def test_macro_editor_clears_warning(macro):
-    dialog = GcodeEditorDialog(None, macro)
+def test_macro_editor_clears_warning(macro, parent):
+    dialog = GcodeEditorDialog(parent, macro)
     buffer = dialog.text_view.get_buffer()
     buffer.set_text("6000", -1)
     assert dialog.warning_banner.get_revealed() is True
@@ -87,15 +92,15 @@ def test_macro_editor_clears_warning(macro):
 
 
 @pytest.mark.ui
-def test_macro_editor_warns_on_constructed_content():
+def test_macro_editor_warns_on_constructed_content(parent):
     macro = Macro(name="test", code=["G21", "6000"])
-    dialog = GcodeEditorDialog(None, macro)
+    dialog = GcodeEditorDialog(parent, macro)
     assert dialog.warning_banner.get_revealed() is True
 
 
 @pytest.mark.ui
-def test_macro_editor_ignores_comments_and_inline_numbers(macro):
-    dialog = GcodeEditorDialog(None, macro)
+def test_macro_editor_ignores_comments_and_inline_numbers(macro, parent):
+    dialog = GcodeEditorDialog(parent, macro)
     buffer = dialog.text_view.get_buffer()
     buffer.set_text("G21 ; set units\n;6000\nG1 X10 F6000", -1)
     assert dialog.warning_banner.get_revealed() is False
@@ -108,12 +113,14 @@ def dialect():
 
 def _get_script_text_view(dialog, key) -> Gtk.TextView:
     row, _var = dialog.scripts_widget.widget_map[key]
-    return row.core_widget
+    text_view = getattr(row, "core_widget", None)
+    assert isinstance(text_view, Gtk.TextView)
+    return text_view
 
 
 @pytest.mark.ui
-def test_dialect_editor_warns_for_number_only_script_line(dialect):
-    dialog = DialectEditorDialog(None, dialect)
+def test_dialect_editor_warns_for_number_only_script_line(dialect, parent):
+    dialog = DialectEditorDialog(parent, dialect)
     assert dialog.warning_banner.get_revealed() is False
 
     text_view = _get_script_text_view(dialog, "preamble")
@@ -125,14 +132,15 @@ def test_dialect_editor_warns_for_number_only_script_line(dialect):
 
 
 @pytest.mark.ui
-def test_dialect_editor_script_warning_row_state(dialect):
-    dialog = DialectEditorDialog(None, dialect)
+def test_dialect_editor_script_warning_row_state(dialect, parent):
+    dialog = DialectEditorDialog(parent, dialect)
     row, _var = dialog.scripts_widget.widget_map["preamble"]
-    text_view = row.core_widget
+    text_view = _get_script_text_view(dialog, "preamble")
 
     text_view.get_buffer().set_text("6000", -1)
     assert row.has_css_class("warning")
-    icon = row._warning_icon_widget
+    icon = getattr(row, "_warning_icon_widget", None)
+    assert icon is not None
     assert icon.get_visible()
     assert "6000" in icon.get_tooltip_text()
 
@@ -143,8 +151,8 @@ def test_dialect_editor_script_warning_row_state(dialect):
 
 
 @pytest.mark.ui
-def test_dialect_editor_warns_for_number_only_template(dialect):
-    dialog = DialectEditorDialog(None, dialect)
+def test_dialect_editor_warns_for_number_only_template(dialect, parent):
+    dialog = DialectEditorDialog(parent, dialect)
     row, _var = dialog.templates_widget.widget_map["laser_on"]
     assert isinstance(row, Adw.EntryRow)
 
@@ -159,9 +167,10 @@ def test_dialect_editor_warns_for_number_only_template(dialect):
 
 
 @pytest.mark.ui
-def test_dialect_editor_error_still_blocks_save(dialect):
-    dialog = DialectEditorDialog(None, dialect)
+def test_dialect_editor_error_still_blocks_save(dialect, parent):
+    dialog = DialectEditorDialog(parent, dialect)
     row, _var = dialog.templates_widget.widget_map["laser_on"]
+    assert isinstance(row, Adw.EntryRow)
     row.set_text("M4 S{unknown_var}")
 
     assert row.has_css_class("error")
