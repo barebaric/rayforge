@@ -3,12 +3,13 @@ from __future__ import annotations
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
-from raygeo.ops.transform.drag_knife import DragKnifeSpec
-
 from rayforge.pipeline.transformer.base import OpsTransformer
 
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
+    from raygeo.ops.transform.drag_knife import (  # pyright: ignore[reportMissingImports]
+        DragKnifeSpec,
+    )
 
     from rayforge.core.workpiece import WorkPiece
 
@@ -78,6 +79,10 @@ class DragKnifeTransformer(OpsTransformer):
         stock_geometries: list[Geometry] | None,
         settings: dict[str, Any] | None,
     ) -> DragKnifeSpec:
+        from raygeo.ops.transform.drag_knife import (  # pyright: ignore[reportMissingImports]
+            DragKnifeSpec,
+        )
+
         return DragKnifeSpec(
             offset_mm=self.offset_mm,
             swivel_angle_deg=self.swivel_angle_deg,
