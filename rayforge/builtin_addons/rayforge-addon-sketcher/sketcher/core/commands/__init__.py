@@ -2,6 +2,7 @@ from .angle_constraint import AngleConstraintCommand, AngleConstraintParams
 from .arc import ArcCommand, ArcPreviewState
 from .base import PreviewState, SketchChangeCommand
 from .bezier import BezierCommand, BezierPreviewState
+from .boolean import BooleanCommand
 from .chamfer import ChamferCommand
 from .circle import CircleCommand, CirclePreviewState
 from .constraint import ModifyConstraintCommand
@@ -58,6 +59,7 @@ __all__ = [
     "ArcPreviewState",
     "BezierCommand",
     "BezierPreviewState",
+    "BooleanCommand",
     "ChamferCommand",
     "CircleCommand",
     "CirclePreviewState",
