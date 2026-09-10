@@ -176,14 +176,21 @@ def _build_macro_table(machine: "Machine") -> dict:
 
 
 def _build_heads(machine: "Machine") -> list[dict]:
+    """Build the encoder heads table for all machine heads.
+
+    Non-laser heads (spindles, knives) are included so their UIDs
+    resolve in the encoder (e.g. for tool changes) even though they
+    never scale laser power.
+    """
     return [
         {
             "uid": head.uid,
             "tool_number": head.tool_number,
-            "max_power": float(head.max_power),
+            "max_power": float(
+                head.max_power if isinstance(head, LaserHead) else 1000.0
+            ),
         }
         for head in machine.heads
-        if isinstance(head, LaserHead)
     ]
 
 

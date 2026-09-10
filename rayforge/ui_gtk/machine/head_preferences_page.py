@@ -8,6 +8,7 @@ from raygeo.ops.state import CoolantMode
 from ...context import get_context
 from ...core.model import Model
 from ...machine.models.head import Head
+from ...machine.models.knife import DragKnifeHead, TangentialKnifeHead
 from ...machine.models.laser import LaserHead, LaserType
 from ...machine.models.machine import Machine
 from ...machine.models.spindle import SpindleHead
@@ -89,6 +90,15 @@ class HeadRow(Gtk.Box):
                 max_power=self.head.max_power,
                 spot_x=spot_x_str,
                 spot_y=spot_y_str,
+            )
+        if isinstance(self.head, DragKnifeHead):
+            return _("Tool {tool_number}, blade offset {offset_mm} mm").format(
+                tool_number=self.head.tool_number,
+                offset_mm=self.head.offset_mm,
+            )
+        if isinstance(self.head, TangentialKnifeHead):
+            return _("Tool {tool_number}").format(
+                tool_number=self.head.tool_number
             )
         return _("Tool {tool_number}").format(
             tool_number=self.head.tool_number
@@ -225,8 +235,12 @@ class HeadListEditor(PreferencesGroupWithButton):
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         laser_button = Gtk.Button(label=_("Laser"))
         spindle_button = Gtk.Button(label=_("Spindle"))
+        drag_knife_button = Gtk.Button(label=_("Drag Knife"))
+        tangential_knife_button = Gtk.Button(label=_("Tangential Knife"))
         laser_button.add_css_class("flat")
         spindle_button.add_css_class("flat")
+        drag_knife_button.add_css_class("flat")
+        tangential_knife_button.add_css_class("flat")
         laser_button.connect(
             "clicked",
             lambda *args: self._add_head(LaserHead(), _("New Laser")),
@@ -235,8 +249,20 @@ class HeadListEditor(PreferencesGroupWithButton):
             "clicked",
             lambda *args: self._add_head(SpindleHead(), _("New Spindle")),
         )
+        drag_knife_button.connect(
+            "clicked",
+            lambda *args: self._add_head(DragKnifeHead(), _("New Drag Knife")),
+        )
+        tangential_knife_button.connect(
+            "clicked",
+            lambda *args: self._add_head(
+                TangentialKnifeHead(), _("New Tangential Knife")
+            ),
+        )
         vbox.append(laser_button)
         vbox.append(spindle_button)
+        vbox.append(drag_knife_button)
+        vbox.append(tangential_knife_button)
         popover.set_child(vbox)
         menu_btn.set_popover(popover)
         return menu_btn
@@ -1061,6 +1087,96 @@ class SpindleHeadDetailWidget:
         self._head.set_cooling_methods(methods)
 
 
+class KnifeHeadDetailWidget:
+    """Owns the PreferencesGroups for editing knife heads."""
+
+    def __init__(self):
+        self._head: Head | None = None
+        self._handler_ids = {}
+
+        self.properties_group = Adw.PreferencesGroup(
+            title=_("Knife Properties"),
+            description=_("Configure the selected knife head."),
+        )
+        self.model_group = HeadModelGroup()
+        self.groups: list[Adw.PreferencesGroup] = [
+            self.properties_group,
+            self.model_group,
+        ]
+        self._build_ui()
+
+    def _build_ui(self):
+        """Builds the knife-specific rows."""
+        self.name_row = Adw.EntryRow(title=_("Name"))
+        self._handler_ids["name"] = self.name_row.connect(
+            "changed", self._on_name_changed
+        )
+        self.properties_group.add(self.name_row)
+
+        self.tool_number_row = SpinRow(
+            _("Tool Number"),
+            _("G-code tool number (e.g., T0, T1)"),
+            lower=-32768,
+            upper=65535,
+            page_increment=1,
+            value=0,
+        )
+        self.tool_number_row.value_changed.connect(
+            self._on_tool_number_changed
+        )
+        self.properties_group.add(self.tool_number_row)
+
+        self.offset_row = LengthSpinRow(
+            _("Blade Offset"),
+            _("Distance between the blade tip and the machine's pivot point"),
+            lower=0.0,
+            upper=20.0,
+            step_increment=0.1,
+            page_increment=0.5,
+            value_in_base=0.5,
+        )
+        self.offset_row.value_changed.connect(self._on_offset_changed)
+        self.properties_group.add(self.offset_row)
+
+    def set_head(self, head: Head | None):
+        """Syncs the knife rows with the given head."""
+        self._head = head
+        self.model_group.set_head(head)
+        if head is None:
+            for group in self.groups:
+                group.set_visible(False)
+            return
+        for group in self.groups:
+            group.set_visible(True)
+
+        self.name_row.handler_block(self._handler_ids["name"])
+        self.name_row.set_text(head.name)
+        self.name_row.handler_unblock(self._handler_ids["name"])
+
+        self.tool_number_row.set_value(head.tool_number)
+
+        if isinstance(head, DragKnifeHead):
+            self.offset_row.set_visible(True)
+            self.offset_row.set_value_in_base_units(head.offset_mm)
+        else:
+            self.offset_row.set_visible(False)
+
+    def _on_name_changed(self, entry_row):
+        """Update the name of the selected knife."""
+        if self._head:
+            self._head.set_name(entry_row.get_text())
+
+    def _on_tool_number_changed(self, spinrow):
+        """Update the tool number of the selected knife."""
+        if self._head:
+            self._head.set_tool_number(spinrow.get_int_value())
+
+    def _on_offset_changed(self, row):
+        """Update the blade offset of the selected drag knife."""
+        if isinstance(self._head, DragKnifeHead):
+            self._head.set_offset_mm(row.get_value_in_base_units())
+
+
 class HeadPreferencesPage(TrackedPreferencesPage):
     """Machine settings page for managing all heads."""
 
@@ -1093,6 +1209,10 @@ class HeadPreferencesPage(TrackedPreferencesPage):
         for group in self.spindle_widget.groups:
             self.add(group)
 
+        self.knife_widget = KnifeHeadDetailWidget()
+        for group in self.knife_widget.groups:
+            self.add(group)
+
         # Connect signals
         self.head_list_editor.list_box.connect(
             "row-selected", self._on_head_selected
@@ -1120,13 +1240,20 @@ class HeadPreferencesPage(TrackedPreferencesPage):
         head = self._get_selected_head()
         if isinstance(head, LaserHead):
             self.spindle_widget.set_head(None)
+            self.knife_widget.set_head(None)
             self.laser_widget.set_head(head)
         elif isinstance(head, SpindleHead):
             self.laser_widget.set_head(None)
+            self.knife_widget.set_head(None)
             self.spindle_widget.set_head(head)
+        elif isinstance(head, (DragKnifeHead, TangentialKnifeHead)):
+            self.laser_widget.set_head(None)
+            self.spindle_widget.set_head(None)
+            self.knife_widget.set_head(head)
         else:
             self.laser_widget.set_head(None)
             self.spindle_widget.set_head(None)
+            self.knife_widget.set_head(None)
 
     def _on_destroy(self, *args):
         """Disconnects signals to prevent memory leaks."""

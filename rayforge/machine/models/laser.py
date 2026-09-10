@@ -3,7 +3,7 @@ from gettext import gettext as _
 from typing import Any, Optional
 
 from ...core.capability import MachineCapability
-from .head import _HEAD_SERIALIZED_KEYS, Head, head_setting
+from .head import HEAD_SERIALIZED_KEYS, Head, head_setting
 
 
 class LaserType(Enum):
@@ -303,7 +303,7 @@ class LaserHead(Head):
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "LaserHead":
-        known_keys = _HEAD_SERIALIZED_KEYS | {
+        known_keys = HEAD_SERIALIZED_KEYS | {
             "max_power",
             "frame_power_percent",
             "focus_power_percent",
