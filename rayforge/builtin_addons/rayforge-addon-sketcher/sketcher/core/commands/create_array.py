@@ -13,7 +13,7 @@ from ..arrays import (
     InstancePlacement,
     resolve_template_center,
 )
-from ..entities import Bezier, Circle, Ellipse, TextBoxEntity
+from ..entities import Bezier, Circle
 from ..entities import Point as SketchPoint
 from ..entity_group import EntityGroup, remap_point_refs
 from .base import SketchChangeCommand
@@ -174,17 +174,11 @@ class CreateArrayCommand(SketchChangeCommand):
                 eid_map[tpl_entity.id] = clone.id
                 remap_point_refs(clone, pid_map)
                 clone.transform_offsets(placement)
-                # Copied Ellipses must not retain the template's
-                # helper-line IDs — those reference entities that will
-                # be deleted, causing calculate_dependencies to cascade
-                # the deletion onto the copies.
-                if isinstance(clone, Ellipse):
-                    clone.helper_line_ids = []
-                # Same for text boxes: a copy's frame is fully defined
-                # by its own three points (the fourth corner follows
-                # from the parallelogram identity).
-                if isinstance(clone, TextBoxEntity):
-                    clone.construction_line_ids = []
+                # The helpers are not cloned with the template: a copy
+                # must not retain references to another member's helper
+                # geometry (an ellipse's helper lines, a text box's
+                # construction lines).
+                clone.clear_helper_references()
                 instance_entities.append(clone)
 
             points.extend(instance_points)

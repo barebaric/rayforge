@@ -60,6 +60,9 @@ class TextBoxEntity(Entity):
     def get_helper_ids(self) -> list[EntityID]:
         return list(self.construction_line_ids)
 
+    def clear_helper_references(self) -> None:
+        self.construction_line_ids = []
+
     def supports_fill(self) -> bool:
         return True
 

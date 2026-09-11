@@ -152,6 +152,15 @@ class Entity:
         """
         return []
 
+    def clear_helper_references(self) -> None:
+        """
+        Drops this entity's references to its helper entities. Called
+        when a copy of the entity is baked as an array instance: the
+        helpers are not cloned with it, so stale IDs would resolve to
+        — and cascade-delete with — another member's helper geometry.
+        The default is a no-op for entities without helper references.
+        """
+
     def get_rigidly_connected_points(
         self, point_id: EntityID
     ) -> list[EntityID]:
