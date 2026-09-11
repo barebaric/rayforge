@@ -13,7 +13,7 @@ from ..arrays import (
     InstancePlacement,
     resolve_template_center,
 )
-from ..entities import Bezier, Circle, Ellipse
+from ..entities import Bezier, Circle, Ellipse, TextBoxEntity
 from ..entities import Point as SketchPoint
 from ..entity_group import EntityGroup, remap_point_refs
 from .base import SketchChangeCommand
@@ -180,6 +180,11 @@ class CreateArrayCommand(SketchChangeCommand):
                 # the deletion onto the copies.
                 if isinstance(clone, Ellipse):
                     clone.helper_line_ids = []
+                # Same for text boxes: a copy's frame is fully defined
+                # by its own three points (the fourth corner follows
+                # from the parallelogram identity).
+                if isinstance(clone, TextBoxEntity):
+                    clone.construction_line_ids = []
                 instance_entities.append(clone)
 
             points.extend(instance_points)

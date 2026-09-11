@@ -313,6 +313,19 @@ class Entity:
         polygons = self.to_geometry(registry).to_polygons(tolerance)
         return polygons[0] if polygons else []
 
+    def to_polylines(
+        self,
+        registry: "EntityRegistry",
+        tolerance: float = 0.1,
+    ) -> list[list[tuple[float, float]]]:
+        """
+        Samples this entity into one or more polylines in model
+        coordinates. Multi-contour entities (e.g. text glyphs)
+        return one polyline per contour; the default is the single
+        ``to_polyline`` polyline.
+        """
+        return [self.to_polyline(registry, tolerance)]
+
     def to_dict(self) -> dict[str, Any]:
         """Base serialization method for entities."""
         data = {
