@@ -7,6 +7,18 @@ from gettext import gettext as _
 
 _NUMBER_ONLY_PATTERN = re.compile(r"^[+-]?(?:\d+\.?\d*|\.\d+)$")
 
+_S_COMMAND_PATTERN = re.compile(r"\{s_command(?::[^}]+)?\}")
+
+#: Movement templates that carry laser power via the {s_command}
+#: placeholder while continuous laser mode is enabled.
+POWER_MOVE_TEMPLATE_KEYS = (
+    "travel_move",
+    "linear_move",
+    "arc_cw",
+    "arc_ccw",
+    "bezier_cubic",
+)
+
 
 def is_number_only(text: str) -> bool:
     """
@@ -31,6 +43,14 @@ def find_number_only_line(text: str) -> tuple[int, str] | None:
     return None
 
 
+def has_s_command(template: str) -> bool:
+    """
+    Returns True if the template contains an {s_command} placeholder,
+    optionally with a format specifier (e.g. "{s_command:.0f}").
+    """
+    return bool(_S_COMMAND_PATTERN.search(template))
+
+
 def format_number_only_warning(value: str, lineno: int | None = None) -> str:
     """
     Builds the user-facing warning for a G-code field (or line) that
@@ -47,3 +67,26 @@ def format_number_only_warning(value: str, lineno: int | None = None) -> str:
         "sent to the machine as-is. A G-code command must start "
         'with a letter (e.g. "M4 S{value}").'
     ).format(lineno=lineno, value=value)
+
+
+def format_continuous_mode_warning() -> str:
+    """
+    Builds the user-facing warning for a movement template that lacks
+    the {s_command} placeholder while continuous laser mode is on.
+    """
+    return _(
+        "Continuous laser mode is enabled: laser power is carried "
+        "on movement lines, but this template has no {s_command} "
+        "placeholder and the power would be silently dropped."
+    )
+
+
+def format_continuous_mode_toggle_warning(labels: list[str]) -> str:
+    """
+    Builds the warning shown on the continuous laser mode toggle when
+    power-carrying movement templates lack the {s_command} placeholder.
+    """
+    return _(
+        "In continuous laser mode these templates need the "
+        "{{s_command}} placeholder to carry laser power: {labels}."
+    ).format(labels=", ".join(labels))

@@ -12,8 +12,12 @@ from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..varset.varsetwidget import VarSetWidget
 from .template_selector import DialectTemplateSelectorDialog
 from .validation import (
+    POWER_MOVE_TEMPLATE_KEYS,
     find_number_only_line,
+    format_continuous_mode_toggle_warning,
+    format_continuous_mode_warning,
     format_number_only_warning,
+    has_s_command,
     is_number_only,
 )
 
@@ -156,8 +160,19 @@ class DialectEditorDialog(PatchedDialogWindow):
         main_vbox.append(scrolled_content)
         self.set_content(main_vbox)
 
+        self._connect_settings_validation()
         self._connect_validation_signals()
         self._validate_all_rows()  # Set initial state
+
+    def _connect_settings_validation(self):
+        """Re-validates when a settings toggle (e.g. continuous laser
+        mode) changes, since it affects template warnings."""
+        self.settings_widget.data_changed.connect(
+            self._on_settings_changed, weak=False
+        )
+
+    def _on_settings_changed(self, sender, **kwargs):
+        self._validate_all_rows()
 
     def _connect_validation_signals(self):
         """Connects `changed` signals for all relevant input widgets."""
@@ -239,8 +254,34 @@ class DialectEditorDialog(PatchedDialogWindow):
             return row.get_text()
         return None
 
+    def _is_continuous_laser_mode_enabled(self) -> bool:
+        """Returns the live state of the continuous laser mode toggle."""
+        values = self.settings_widget.get_values()
+        return bool(values.get("continuous_laser_mode", False))
+
+    def _find_missing_s_command_templates(self) -> list[str]:
+        """
+        Returns the keys of power-carrying movement templates that lack
+        the {s_command} placeholder while continuous laser mode is on.
+        """
+        if not self._is_continuous_laser_mode_enabled():
+            return []
+        missing = []
+        for key in POWER_MOVE_TEMPLATE_KEYS:
+            entry = self.templates_widget.widget_map.get(key)
+            if entry is None:
+                continue
+            content = self._get_row_content(entry[0], False)
+            if content and content.strip() and not has_s_command(content):
+                missing.append(key)
+        return missing
+
     def _get_row_state(
-        self, row: Adw.PreferencesRow, key: str, is_script: bool
+        self,
+        row: Adw.PreferencesRow,
+        key: str,
+        is_script: bool,
+        missing_s_command: frozenset[str] = frozenset(),
     ) -> tuple[str | None, str | None]:
         """Returns the (error, warning) messages for a row."""
         content = self._get_row_content(row, is_script)
@@ -270,6 +311,8 @@ class DialectEditorDialog(PatchedDialogWindow):
                 )
         elif is_number_only(content):
             warning_msg = format_number_only_warning(content.strip())
+        elif key in missing_s_command:
+            warning_msg = format_continuous_mode_warning()
 
         return error_msg, warning_msg
 
@@ -293,6 +336,7 @@ class DialectEditorDialog(PatchedDialogWindow):
             self._set_row_error(label_row, None)
 
         # Check all template and script rows
+        missing_s_command = frozenset(self._find_missing_s_command_templates())
         first_warning = None
         for group, is_script in (
             (self.templates_widget, False),
@@ -300,7 +344,7 @@ class DialectEditorDialog(PatchedDialogWindow):
         ):
             for key, (row, _var) in group.widget_map.items():
                 error_msg, warning_msg = self._get_row_state(
-                    row, key, is_script
+                    row, key, is_script, missing_s_command
                 )
                 self._set_row_error(row, error_msg)
                 self._set_row_warning(row, warning_msg)
@@ -309,8 +353,27 @@ class DialectEditorDialog(PatchedDialogWindow):
                 if warning_msg and not first_warning:
                     first_warning = warning_msg
 
+        self._update_toggle_row_warning(missing_s_command)
         self._update_warning_banner(first_warning)
         self.save_button.set_sensitive(is_valid)
+
+    def _update_toggle_row_warning(self, missing_s_command: frozenset[str]):
+        """Warns on the continuous laser mode toggle itself when
+        movement templates cannot carry the laser power."""
+        toggle_row = self.settings_widget.widget_map.get(
+            "continuous_laser_mode", (None, None)
+        )[0]
+        if toggle_row is None:
+            return
+        warning_msg = None
+        if missing_s_command:
+            labels = []
+            for key in missing_s_command:
+                entry = self.templates_widget.widget_map.get(key)
+                if entry is not None:
+                    labels.append(entry[1].label)
+            warning_msg = format_continuous_mode_toggle_warning(labels)
+        self._set_row_warning(toggle_row, warning_msg)
 
     def _update_warning_banner(self, warning: str | None):
         """Reveals the banner for a non-blocking G-code warning."""
