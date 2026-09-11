@@ -258,11 +258,15 @@ class EntityGroup:
             pt.y = y
 
     def polylines(self) -> list[list[tuple[float, float]]]:
-        """Samples every entity of the group into a polyline (in
-        model coordinates), e.g. for preview rendering. Delegates to
-        the entities' polymorphic ``to_polyline``."""
+        """Samples every entity of the group into polylines (in
+        model coordinates), e.g. for preview rendering. Multi-contour
+        entities (e.g. text glyphs) contribute one polyline per
+        contour. Delegates to the entities' polymorphic
+        ``to_polylines``."""
         return [
-            entity.to_polyline(self.registry) for entity in self.entities()
+            polyline
+            for entity in self.entities()
+            for polyline in entity.to_polylines(self.registry)
         ]
 
     # ------------------------------------------------------------------
