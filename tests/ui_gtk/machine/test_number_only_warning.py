@@ -252,6 +252,7 @@ def test_dialect_editor_clears_continuous_warning_on_s_command(
 ):
     dialog = DialectEditorDialog(parent, dialect)
     linear_row, _var = dialog.templates_widget.widget_map["linear_move"]
+    assert isinstance(linear_row, Adw.EntryRow)
     _get_continuous_toggle(dialog).set_active(True)
     assert linear_row.has_css_class("warning")
 
