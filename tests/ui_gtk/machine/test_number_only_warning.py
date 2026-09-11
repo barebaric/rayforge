@@ -5,18 +5,20 @@ import copy
 import pytest
 from gi.repository import Adw, Gtk
 
-from rayforge.machine.models.dialect import GRBL_DIALECT
+from rayforge.machine.models.dialect import (
+    GRBL_DIALECT,
+    POWER_MOVE_TEMPLATE_KEYS,
+    has_s_command,
+)
 from rayforge.machine.models.dialect.grbl_raster import GRBL_RASTER_DIALECT
 from rayforge.machine.models.macro import Macro
 from rayforge.ui_gtk.machine.dialect_editor import DialectEditorDialog
 from rayforge.ui_gtk.machine.gcode_editor import GcodeEditorDialog
 from rayforge.ui_gtk.machine.validation import (
-    POWER_MOVE_TEMPLATE_KEYS,
     find_number_only_line,
     format_continuous_mode_toggle_warning,
     format_continuous_mode_warning,
     format_number_only_warning,
-    has_s_command,
     is_number_only,
 )
 

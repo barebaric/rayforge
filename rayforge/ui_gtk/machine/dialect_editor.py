@@ -12,12 +12,10 @@ from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..varset.varsetwidget import VarSetWidget
 from .template_selector import DialectTemplateSelectorDialog
 from .validation import (
-    POWER_MOVE_TEMPLATE_KEYS,
     find_number_only_line,
     format_continuous_mode_toggle_warning,
     format_continuous_mode_warning,
     format_number_only_warning,
-    has_s_command,
     is_number_only,
 )
 
@@ -254,27 +252,15 @@ class DialectEditorDialog(PatchedDialogWindow):
             return row.get_text()
         return None
 
-    def _is_continuous_laser_mode_enabled(self) -> bool:
-        """Returns the live state of the continuous laser mode toggle."""
-        values = self.settings_widget.get_values()
-        return bool(values.get("continuous_laser_mode", False))
-
     def _find_missing_s_command_templates(self) -> list[str]:
         """
         Returns the keys of power-carrying movement templates that lack
-        the {s_command} placeholder while continuous laser mode is on.
+        the {s_command} placeholder while continuous laser mode is on,
+        based on the current values in the editor.
         """
-        if not self._is_continuous_laser_mode_enabled():
-            return []
-        missing = []
-        for key in POWER_MOVE_TEMPLATE_KEYS:
-            entry = self.templates_widget.widget_map.get(key)
-            if entry is None:
-                continue
-            content = self._get_row_content(entry[0], False)
-            if content and content.strip() and not has_s_command(content):
-                missing.append(key)
-        return missing
+        dialect = copy.deepcopy(self.dialect)
+        self._apply_ui_values(dialect)
+        return dialect.find_missing_s_command_templates()
 
     def _get_row_state(
         self,
@@ -384,8 +370,8 @@ class DialectEditorDialog(PatchedDialogWindow):
         else:
             self.warning_banner.set_revealed(False)
 
-    def _update_dialect_from_ui(self):
-        """Updates the dialect object from the values in the VarSetWidgets."""
+    def _apply_ui_values(self, target: GcodeDialect):
+        """Applies the raw values from the VarSetWidgets to a dialect."""
         all_values = {}
         all_values.update(self.info_widget.get_values())
         all_values.update(self.settings_widget.get_values())
@@ -395,9 +381,13 @@ class DialectEditorDialog(PatchedDialogWindow):
         for key, value in all_values.items():
             if key in ("preamble", "postscript"):
                 # Convert multi-line text back to list of strings
-                setattr(self.dialect, key, _text_to_list(value))
-            elif hasattr(self.dialect, key):
-                setattr(self.dialect, key, value)
+                setattr(target, key, _text_to_list(value))
+            elif hasattr(target, key):
+                setattr(target, key, value)
+
+    def _update_dialect_from_ui(self):
+        """Updates the dialect object from the values in the VarSetWidgets."""
+        self._apply_ui_values(self.dialect)
 
     def _on_save_clicked(self, button: Gtk.Button):
         # Validation is now continuous, so we can just save.
