@@ -69,7 +69,7 @@ class PolygonOutline:
         for vertices, closed in offset_outline(
             self.vertices, self.closed, offset
         ):
-            center_pt, handle_pt, entity = _outline_item(
+            center_pt, handle_pt, entity = outline_item(
                 vertices, closed, allocate_id
             )
             plan.points.extend((center_pt, handle_pt))
@@ -111,26 +111,17 @@ def group_rings_into_solids(
     rings: Sequence[Sequence[tuple[float, float]]],
 ) -> list[tuple[list[tuple[float, float]], list[list[tuple[float, float]]]]]:
     """
-    Groups a flat ring list into (outer, holes) solids using the
-    winding convention: positive (CCW) rings are solid contours,
-    negative (CW) rings are holes. Each hole is assigned to the
-    smallest outer ring that contains it; unassignable holes are
-    dropped.
+    Groups a flat ring list into (outer, holes) solids. Role
+    classification and winding canonicalization (outer CCW, holes CW)
+    are delegated to raygeo's topology; each hole is then assigned to
+    the smallest outer ring that contains it, and unassignable holes
+    are dropped.
     """
-    outers: list[list[tuple[float, float]]] = []
-    holes: list[list[tuple[float, float]]] = []
-    for ring in rings:
-        if len(ring) < 3:
-            continue
-        if get_polygon_signed_area(ring) > 0:
-            outers.append(list(ring))
-        else:
-            holes.append(list(ring))
-    if not outers:
-        if not holes:
-            return []
-        outers = [list(reversed(hole)) for hole in holes]
-        holes = []
+    geo = rings_to_geometry(rings)
+    if geo.is_empty():
+        return []
+    normalized = geo.normalize_winding_orders()
+    outers, holes = normalized.split_inner_and_outer_polygons()
     solids: list[tuple[list[tuple[float, float]], list]] = [
         (outer, []) for outer in outers
     ]
@@ -143,7 +134,7 @@ def group_rings_into_solids(
     return solids
 
 
-def _outline_item(
+def outline_item(
     vertices: list[tuple[float, float]],
     closed: bool,
     allocate_id: Callable[[], EntityID],
@@ -541,7 +532,7 @@ class PolygonEntity(Entity):
             return None
         plan = OffsetPlan(removed_entity_ids=[self.id])
         for outer, holes in solids:
-            center_pt, handle_pt, entity = _outline_item(
+            center_pt, handle_pt, entity = outline_item(
                 outer, True, allocate_id, holes
             )
             plan.points.extend((center_pt, handle_pt))

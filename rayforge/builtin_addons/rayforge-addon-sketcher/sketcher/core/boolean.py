@@ -25,7 +25,7 @@ from raygeo.geo.shape.polygon import (
     get_polygons_union,
 )
 
-from .contour import _chain_vertices, _partition_components, _walk_component
+from .contour import chain_vertices, partition_components, walk_component
 from .entities.polygon import (
     PolygonEntity,
     group_rings_into_solids,
@@ -112,7 +112,7 @@ def build_boolean_regions(
         )
 
     if chainable:
-        components = _partition_components(sketch, chainable)
+        components = partition_components(sketch, chainable)
         if components is None:
             logger.warning(
                 "Selection branches at a junction; boolean operations "
@@ -120,14 +120,14 @@ def build_boolean_regions(
             )
             return None
         for component in components:
-            edges, closed = _walk_component(sketch, component)
+            edges, closed = walk_component(sketch, component)
             if not closed:
                 logger.warning(
                     "Selection contains an open contour; boolean "
                     "operations need closed regions."
                 )
                 return None
-            vertices = _chain_vertices(registry, edges, closed)
+            vertices = chain_vertices(registry, edges, closed)
             if len(vertices) < 3:
                 logger.warning("Selection contains a degenerate contour.")
                 return None
@@ -162,13 +162,16 @@ def _standalone_rings(registry, entity) -> list | None:
 
 
 def _ensure_winding(rings: list) -> list:
-    """Normalizes region rings: outer CCW, holes CW."""
-    normalized = []
-    for idx, ring in enumerate(rings):
-        if get_polygon_signed_area(ring) * (-1 if idx else 1) < 0:
-            ring = list(reversed(ring))
-        normalized.append(ring)
-    return normalized
+    """Normalizes region rings via raygeo's topology: outer CCW,
+    holes CW, regardless of the input winding. The round-trip through
+    Geometry only re-orients the rings; the vertex data is preserved
+    at the sample tolerance."""
+    return [
+        list(ring)
+        for ring in rings_to_geometry(rings)
+        .normalize_winding_orders()
+        .to_polygons(_SAMPLE_TOLERANCE)
+    ]
 
 
 def apply_boolean(

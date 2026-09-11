@@ -57,7 +57,7 @@ def build_offset_items(
             items.append(item)
 
     if chainable:
-        components = _partition_components(sketch, chainable)
+        components = partition_components(sketch, chainable)
         if components is None:
             return None
         for component in components:
@@ -66,8 +66,8 @@ def build_offset_items(
                 if item is not None:
                     items.append(item)
                     continue
-            edges, closed = _walk_component(sketch, component)
-            vertices = _chain_vertices(registry, edges, closed)
+            edges, closed = walk_component(sketch, component)
+            vertices = chain_vertices(registry, edges, closed)
             if len(vertices) >= 2:
                 items.append(
                     PolygonOutline(
@@ -80,7 +80,7 @@ def build_offset_items(
     return items or None
 
 
-def _partition_components(
+def partition_components(
     sketch: Sketch, entities: list[Entity]
 ) -> list[list[Entity]] | None:
     """
@@ -129,7 +129,7 @@ def _partition_components(
     return components
 
 
-def _walk_component(
+def walk_component(
     sketch: Sketch, entities: list[Entity]
 ) -> tuple[list[tuple[Entity, bool]], bool]:
     """
@@ -181,7 +181,7 @@ def _node_for(sketch: Sketch, node_of: dict[int, int], pid: int) -> int:
     return node_of[pid]
 
 
-def _chain_vertices(
+def chain_vertices(
     registry,
     edges: list[tuple[Entity, bool]],
     closed: bool,

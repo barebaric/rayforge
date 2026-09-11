@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 from ..boolean import BooleanOp, apply_boolean, build_boolean_regions
 from ..entities import OffsetPlan
-from ..entities.polygon import _outline_item
+from ..entities.polygon import outline_item
 from .base import SketchChangeCommand
 from .items import AddItemsCommand, RemoveItemsCommand
 
@@ -81,7 +81,7 @@ class BooleanCommand(SketchChangeCommand):
         allocate_id = itertools.count(-1, -1).__next__
         plan = OffsetPlan()
         for solid in solids:
-            center_pt, handle_pt, entity = _outline_item(
+            center_pt, handle_pt, entity = outline_item(
                 solid.outer, True, allocate_id, solid.holes
             )
             plan.points.extend((center_pt, handle_pt))
