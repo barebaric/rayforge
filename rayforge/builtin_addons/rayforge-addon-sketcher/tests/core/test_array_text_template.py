@@ -6,7 +6,6 @@ tests pin down the array behaviour that plain line/circle templates
 exercise implicitly.
 """
 
-import copy
 import math
 
 import pytest
@@ -22,23 +21,6 @@ from sketcher.core.commands.duplicate import DuplicateCommand
 from sketcher.core.entities import TextBoxEntity
 from sketcher.core.selection import SketchSelection
 from sketcher.core.sketch import Sketch
-
-
-def _fontconfig_is_copyable() -> bool:
-    try:
-        copy.deepcopy(FontConfig())
-    except TypeError:
-        return False
-    return True
-
-
-pytestmark = pytest.mark.skipif(
-    not _fontconfig_is_copyable(),
-    reason=(
-        "requires raygeo with FontConfig copy protocol support "
-        "(barebaric/raygeo#29)"
-    ),
-)
 
 
 def ui_delete(sketch, entity_ids):
