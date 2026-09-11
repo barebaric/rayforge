@@ -6,6 +6,7 @@ tests pin down the array behaviour that plain line/circle templates
 exercise implicitly.
 """
 
+import copy
 import math
 
 import pytest
@@ -19,23 +20,33 @@ from sketcher.core.commands import (
 )
 from sketcher.core.commands.duplicate import DuplicateCommand
 from sketcher.core.entities import TextBoxEntity
+from sketcher.core.selection import SketchSelection
 from sketcher.core.sketch import Sketch
 
 
-class SimpleSelection:
-    def __init__(self, entity_ids):
-        self.entity_ids = set(entity_ids)
-        self.point_ids = set()
-        self.constraint_idx = None
+def _fontconfig_is_copyable() -> bool:
+    try:
+        copy.deepcopy(FontConfig())
+    except TypeError:
+        return False
+    return True
 
-    def copy(self):
-        return SimpleSelection(self.entity_ids)
+
+pytestmark = pytest.mark.skipif(
+    not _fontconfig_is_copyable(),
+    reason=(
+        "requires raygeo with FontConfig copy protocol support "
+        "(barebaric/raygeo#29)"
+    ),
+)
 
 
 def ui_delete(sketch, entity_ids):
     """Deletes like the DeleteTool: dependency-based removal."""
+    selection = SketchSelection()
+    selection.entity_ids = list(entity_ids)
     points, entities, constraints = RemoveItemsCommand.calculate_dependencies(
-        sketch, SimpleSelection(entity_ids)
+        sketch, selection
     )
     RemoveItemsCommand(
         sketch,
@@ -63,7 +74,9 @@ def text_array():
     sketch = Sketch()
     cmd = TextBoxCommand(sketch, (30, 0), width=20, height=10)
     cmd.execute()
+    assert cmd.text_box_id is not None
     box = sketch.registry.get_entity(cmd.text_box_id)
+    assert isinstance(box, TextBoxEntity)
     box.content = "AB"
     box.font_config = FontConfig("sans-serif", 8.0)
 
@@ -97,13 +110,13 @@ def test_copies_are_clean_text_boxes(text_array):
     registry = sketch.registry
     copies = [registry.get_entity(eid) for eid in cmd.created_entity_ids]
     assert len(copies) == 3
-    for copy in copies:
-        assert isinstance(copy, TextBoxEntity)
-        assert copy.array_copy is True
-        assert copy.content == "AB"
-        assert copy.font_config.size == 8.0
-        assert copy.construction_line_ids == []
-        assert copy.get_fourth_corner_id(registry) is None
+    for clone in copies:
+        assert isinstance(clone, TextBoxEntity)
+        assert clone.array_copy is True
+        assert clone.content == "AB"
+        assert clone.font_config.size == 8.0
+        assert clone.construction_line_ids == []
+        assert clone.get_fourth_corner_id(registry) is None
 
 
 def test_copies_are_rigid_rotations_of_the_template(text_array):
@@ -179,7 +192,9 @@ def test_duplicating_a_text_box_does_not_share_the_font(text_array):
     """Deep-copying a text box needs FontConfig copy support; the
     duplicate must own its font and helper lines."""
     sketch, _cmd, box = text_array
-    dup_cmd = DuplicateCommand(sketch, SimpleSelection([box.id]))
+    selection = SketchSelection()
+    selection.entity_ids = [box.id]
+    dup_cmd = DuplicateCommand(sketch, selection)
     dup_cmd.execute()
     registry = sketch.registry
     dupes = [
