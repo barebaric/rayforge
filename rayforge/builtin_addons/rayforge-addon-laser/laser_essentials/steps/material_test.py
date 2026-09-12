@@ -258,7 +258,7 @@ class MaterialTestStep(LaserStep):
         self.offset_range = (-0.5, 0.5)
         self.fixed_speed = 1000.0
         self.fixed_power = 50.0
-        self.grid_dimensions = (5, 5)
+        self.grid_dimensions: tuple[int, int] = (5, 5)
         self.shape_size = 10.0
         self.spacing = 2.0
         self.include_labels = True
@@ -276,8 +276,8 @@ class MaterialTestStep(LaserStep):
         )
         kwargs: dict = {}
         kwargs["size_mm"] = workpiece.size if workpiece else (0, 0)
-        kwargs["cols"] = self.grid_dimensions[0]
-        kwargs["rows"] = self.grid_dimensions[1]
+        kwargs["cols"] = int(self.grid_dimensions[0])
+        kwargs["rows"] = int(self.grid_dimensions[1])
         kwargs["min_speed"] = self.speed_range[0]
         kwargs["max_speed"] = self.speed_range[1]
         kwargs["min_power"] = self.power_range[0]
