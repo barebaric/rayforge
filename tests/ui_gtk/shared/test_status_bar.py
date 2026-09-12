@@ -5,9 +5,8 @@ import gi
 
 gi.require_version("Gtk", "4.0")
 
-from gi.repository import Gtk
-
 import pytest
+from gi.repository import Gtk
 
 from rayforge.ui_gtk.shared.status_bar import StatusBar
 
