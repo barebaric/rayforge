@@ -17,6 +17,7 @@ pypdf==6.17.0
 pyserial==3.5
 pyvips==3.2.0
 PyYAML==6.0.3
+ruida-pa>=0.20.4
 scipy==1.18.0
 semver==3.0.4
 svgelements==1.9.6

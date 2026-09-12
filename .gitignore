@@ -44,4 +44,17 @@ external/
 # macOS icon build artifacts
 Assets.car
 rayforge.icns
+
+# For ruidarpa driver
+.codesearch.db
+.opencode
+docs
+commit.txt
+rayforge/rayforge.code-workspace
+
+# For development of the Ruida PA driver
+discovery
+# rayforge/machine/driver/ruidarpa/docs
+tmp
+
 .hermes_last_pull

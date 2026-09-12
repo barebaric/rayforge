@@ -1,0 +1,11 @@
+api_version: 1
+device:
+  name: Generic Ruida RPA
+  vendor: Generic
+  description: A generic Ruida laser controller connected via the Ruida RPA.
+machine:
+  driver: RuidaRPAAdapter
+  origin: top_right
+  driver_args:
+    udp_host: ''
+    usb_device: ''

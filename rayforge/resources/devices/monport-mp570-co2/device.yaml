@@ -1,0 +1,32 @@
+api_version: 1
+device:
+  name: Monport MP-570 60W CO2
+  vendor: Monport
+  model: MP-570
+  description: 60W CO2 laser cutter with 700x500mm work area and Ruida controller
+machine:
+  driver: RuidaRPAAdapter
+  gcode_precision: 3
+  axis_extents:
+  - 700.0
+  - 500.0
+  origin: top_right
+  max_travel_speed: 60000
+  max_cut_speed: 50000
+  home_on_start: true
+  driver_args:
+    udp_host: ''
+    usb_device: ''
+  heads:
+  - max_power: 1000
+    frame_power_percent: 0.0
+    focus_power_percent: 0.0
+    spot_size_mm:
+    - 0.1
+    - 0.1
+    laser_type: co2
+    pwm_frequency: 1000
+    max_pwm_frequency: 5000
+    pulse_width: 50
+    min_pulse_width: 5
+    max_pulse_width: 500

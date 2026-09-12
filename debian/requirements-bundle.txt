@@ -1,5 +1,6 @@
 asyncudp==0.11.0
 pyvips==3.2.0
 raygeo==1.50.1
+ruida-pa==0.20.4
 trimesh==5.1.0
 vtracer==0.6.15
