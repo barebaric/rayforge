@@ -206,11 +206,11 @@ class TestDeviceProfileLoad:
             {
                 "api_version": 1,
                 "device": {"name": "Ruida Device"},
-                "machine": {"driver": "RuidaDriver"},
+                "machine": {"driver": "RuidaRPAAdapter"},
             },
         )
         pkg = DeviceProfile.from_path(device_dir)
-        assert pkg.machine_config.driver == "RuidaDriver"
+        assert pkg.machine_config.driver == "RuidaRPAAdapter"
         assert pkg.dialect_config == {}
 
     def test_dialect_optional_when_driver_absent(self, tmp_path):
@@ -661,7 +661,7 @@ class TestExportMachine:
     def _make_mock_ruida_machine(self, name):
         return self._make_mock_machine(
             name,
-            driver_name="RuidaDriver",
+            driver_name="RuidaRPAAdapter",
             dialect=None,
         )
 
@@ -738,7 +738,7 @@ device:
   usb_ids:
     - abcd:1234
 machine:
-  driver: RuidaDriver
+  driver: RuidaRPAAdapter
 """
         )
         mgr = DeviceProfileManager(source_dirs=[tmp_path])
@@ -835,7 +835,7 @@ class TestCreateMachine:
             {
                 "api_version": 1,
                 "device": {"name": "Ruida Test"},
-                "machine": {"driver": "RuidaDriver"},
+                "machine": {"driver": "RuidaRPAAdapter"},
             },
         )
         pkg = DeviceProfile.from_path(device_dir)
@@ -844,7 +844,7 @@ class TestCreateMachine:
 
         assert m.dialect_uid is None
         assert m.dialect is None
-        assert m.driver_name == "RuidaDriver"
+        assert m.driver_name == "RuidaRPAAdapter"
 
     @pytest.mark.asyncio
     async def test_co2_profile_loads_pwm_fields(

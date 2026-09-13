@@ -306,7 +306,7 @@ def test_route_connection_non_probing_driver_skips_probe(
     ui_context_initializer,
 ):
     wizard = _make_wizard(ui_context_initializer)
-    wizard.profile = _profile(driver="RuidaDriver")
+    wizard.profile = _profile(driver="RuidaRPAAdapter")
     with patch(
         "rayforge.ui_gtk.machine.unified_wizard.is_ai_configured",
         return_value=True,
@@ -412,7 +412,7 @@ def test_known_profile_skips_to_review(ui_context_initializer):
     pages)."""
     wizard = _make_wizard(ui_context_initializer)
     wizard._on_profile_source_selected(
-        None, kind="profile", profile=_profile(driver="RuidaDriver")
+        None, kind="profile", profile=_profile(driver="RuidaRPAAdapter")
     )
     assert wizard._next_step_after("connect") == "review"
 
@@ -546,14 +546,14 @@ def test_controller_page_enter_preselects_matching_driver(
     ui_context_initializer,
 ):
     wizard = _make_wizard(ui_context_initializer)
-    wizard.profile = _profile(driver="RuidaDriver")
+    wizard.profile = _profile(driver="RuidaRPAAdapter")
     wizard._navigate_to("controller")
     page = wizard._get_page("controller")
     assert page is not None
     assert page.ready is True
     profile = _profile()
     assert page.apply_to_profile(profile)
-    assert profile.machine_config.driver == "RuidaDriver"
+    assert profile.machine_config.driver == "RuidaRPAAdapter"
 
 
 @pytest.mark.ui

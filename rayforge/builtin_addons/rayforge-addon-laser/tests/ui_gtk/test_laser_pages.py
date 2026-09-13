@@ -450,7 +450,8 @@ def test_raster_page_multi_depth_disabled_on_ruida(
     editor, laser_machine, ui_context
 ):
     """Ruida machines grey out multi-depth and flag existing usage."""
-    laser_machine.driver_name = "RuidaDriver"
+    laser_machine.auto_connect = False
+    laser_machine.driver_name = "RuidaRPAAdapter"
     step_cls = step_registry.get("EngraveStep")
     assert step_cls is not None
     step = cast(EngraveStep, step_cls.create(ui_context))
@@ -473,7 +474,8 @@ def test_raster_page_multi_depth_no_warning_when_not_selected(
     editor, laser_machine, ui_context
 ):
     """A Ruida machine only warns when the step uses multi-depth."""
-    laser_machine.driver_name = "RuidaDriver"
+    laser_machine.auto_connect = False
+    laser_machine.driver_name = "RuidaRPAAdapter"
     step_cls = step_registry.get("EngraveStep")
     assert step_cls is not None
     step = cast(EngraveStep, step_cls.create(ui_context))

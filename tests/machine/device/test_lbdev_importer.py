@@ -106,7 +106,7 @@ class TestMapDriver:
         assert _map_driver("Network") == "GrblNetworkDriver"
 
     def test_ruida(self):
-        assert _map_driver("Ruida") == "RuidaDriver"
+        assert _map_driver("Ruida") == "RuidaRPAAdapter"
 
     def test_unsupported(self):
         assert _map_driver("Galvo") is None
@@ -237,8 +237,8 @@ class TestConvertToProfile:
             {"Type": "Ruida"},
         )
         profile, summary = convert_to_profile(lbdev)
-        assert profile.machine_config.driver == "RuidaDriver"
-        assert summary.driver == "RuidaDriver"
+        assert profile.machine_config.driver == "RuidaRPAAdapter"
+        assert summary.driver == "RuidaRPAAdapter"
         assert profile.machine_config.driver_args is None
 
     def test_convert_unknown_driver(self, tmp_path):
