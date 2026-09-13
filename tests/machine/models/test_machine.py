@@ -25,7 +25,7 @@ from rayforge.machine.driver.driver import DeviceState
 from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.driver.grbl.grbl_network import GrblNetworkDriver
 from rayforge.machine.driver.grbl.grbl_serial import GrblSerialDriver
-from rayforge.machine.driver.ruida import RuidaDriver
+from rayforge.machine.driver.ruidarpa import RuidaRPAAdapter
 from rayforge.machine.driver.smoothie import SmoothieDriver
 from rayforge.machine.models.dialect import (
     GRBL_DIALECT,
@@ -1238,10 +1238,10 @@ class TestMachine:
         await wait_for_tasks_to_finish(task_mgr)
         machine.set_dialect_uid(None)
         machine.auto_connect = False
-        machine.set_driver(RuidaDriver, {"host": "localhost"})
+        machine.set_driver(RuidaRPAAdapter, {"udp_host": "localhost"})
         await wait_for_tasks_to_finish(task_mgr)
 
-        assert machine.driver_name == "RuidaDriver"
+        assert machine.driver_name == "RuidaRPAAdapter"
         assert machine.dialect is None
         assert machine.supports_travel_speed()
 
@@ -1260,10 +1260,10 @@ class TestMachine:
         """Ruida cannot raster the multi-depth depth mode."""
         await wait_for_tasks_to_finish(task_mgr)
         machine.auto_connect = False
-        machine.set_driver(RuidaDriver, {"host": "localhost"})
+        machine.set_driver(RuidaRPAAdapter, {"udp_host": "localhost"})
         await wait_for_tasks_to_finish(task_mgr)
 
-        assert machine.driver_name == "RuidaDriver"
+        assert machine.driver_name == "RuidaRPAAdapter"
         assert not machine.supports_multi_depth_raster()
 
     @pytest.mark.asyncio
