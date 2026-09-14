@@ -143,12 +143,16 @@ class MachineController:
         """
         Waits for a quiet period before rebuilding the driver. Because
         re-scheduling with the same task key cancels the pending sleep,
-        only the last change of a burst reaches rebuild_driver. The
-        cancellation happens before any driver state is touched, so
-        cancelled rebuilds can never leave a half-torn-down driver
-        behind.
+        only the last change of a burst reaches rebuild_driver.
+
+        The cancellation flag is re-checked after the sleep: a cancel
+        that raced with the task starting up does not necessarily
+        propagate to the running coroutine, and a cancelled rebuild
+        must never touch driver state.
         """
         await asyncio.sleep(_REBUILD_DEBOUNCE_SECONDS)
+        if ctx is not None and ctx.is_cancelled():
+            return
         await self.rebuild_driver(ctx)
 
     def _connect_driver_signals(self):
