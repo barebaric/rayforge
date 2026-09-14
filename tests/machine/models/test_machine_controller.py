@@ -96,3 +96,54 @@ class TestDriverRebuildDebounce:
 
         assert rebuild_spy.call_count == 1
         assert machine.driver_name == "TestDriver"
+
+
+@pytest.mark.usefixtures("lite_context")
+class TestKeepLiveDriverOnArgsChange:
+    """Editing setup arguments of a connected driver must not churn the
+    connection. The edited arguments apply on the next connect."""
+
+    @staticmethod
+    async def _connect_test_driver(machine, task_mgr):
+        from rayforge.machine.driver.dummy import NoDeviceDriver
+
+        class TestDriver(NoDeviceDriver):
+            pass
+
+        await wait_until_settled(task_mgr)
+        machine.auto_connect = False
+        machine.set_driver(TestDriver, {"port": "/dev/null"})
+        await wait_until_settled(task_mgr)
+        await machine.connect()
+        await wait_until_settled(task_mgr)
+        return machine.driver
+
+    @pytest.mark.asyncio
+    async def test_args_change_while_connected_keeps_live_driver(
+        self, machine, task_mgr
+    ):
+        live_driver = await self._connect_test_driver(machine, task_mgr)
+        assert machine.is_connected()
+
+        machine.set_driver_args({"port": "/dev/other"})
+        await wait_until_settled(task_mgr)
+
+        assert machine.driver is live_driver
+        assert machine.is_connected()
+
+    @pytest.mark.asyncio
+    async def test_args_edited_while_connected_apply_after_disconnect(
+        self, machine, task_mgr
+    ):
+        live_driver = await self._connect_test_driver(machine, task_mgr)
+
+        machine.set_driver_args({"port": "/dev/other"})
+        await wait_until_settled(task_mgr)
+        assert machine.driver is live_driver
+
+        await machine.disconnect()
+        await wait_until_settled(task_mgr)
+
+        assert machine.driver is not live_driver
+        assert machine.driver_args == {"port": "/dev/other"}
+        assert not machine.is_connected()
