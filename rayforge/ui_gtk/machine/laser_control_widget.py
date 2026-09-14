@@ -172,11 +172,20 @@ class LaserControlWidget(Gtk.Box):
         laser_heads = [
             h for h in self.machine.heads if isinstance(h, LaserHead)
         ]
-        model = Gtk.StringList.new([h.name for h in laser_heads])
-        self._head_row.set_model(model)
-        if laser_heads:
-            self._head_row.set_selected(0)
-            self._sync_head_fields(laser_heads[0])
+        names = [h.name for h in laser_heads]
+        model = self._head_row.get_model()
+        current = (
+            [model.get_string(i) for i in range(model.get_n_items())]
+            if isinstance(model, Gtk.StringList)
+            else []
+        )
+        if current != names:
+            self._head_row.set_model(Gtk.StringList.new(names))
+            if laser_heads:
+                self._head_row.set_selected(0)
+        head = self._get_selected_head()
+        if head:
+            self._sync_head_fields(head)
 
     def _get_selected_head(self) -> Laser | None:
         if not self.machine:

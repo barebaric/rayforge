@@ -30,6 +30,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_REBUILD_DEBOUNCE_SECONDS = 0.3
+
 
 class MachineController:
     """
@@ -88,6 +90,7 @@ class MachineController:
     async def disconnect(self):
         """Public method to disconnect the driver."""
         task_mgr.cancel_task((self.machine.id, "driver-connect"))
+        task_mgr.cancel_task((self.machine.id, "rebuild-driver-on-change"))
         if self.driver is not None:
             await self.driver.cleanup()
             task_mgr.add_coroutine(
@@ -117,7 +120,10 @@ class MachineController:
     def _on_machine_changed(self, sender=None, **kwargs):
         """
         Callback when the machine's configuration changes.
-        Triggers driver rebuild only if the driver configuration has changed.
+        Triggers driver rebuild only if the driver configuration has
+        changed. The rebuild is debounced so that bursts of changes
+        (e.g. per-keystroke edits in the settings UI) coalesce into a
+        single driver rebuild and a single connection attempt.
         """
         current_driver_name = self.machine.driver_name
         current_driver_args = self.machine.driver_args
@@ -129,9 +135,21 @@ class MachineController:
             self._last_driver_name = current_driver_name
             self._last_driver_args = current_driver_args.copy()
             task_mgr.add_coroutine(
-                self.rebuild_driver,
+                self._debounced_rebuild,
                 key=(self.machine.id, "rebuild-driver-on-change"),
             )
+
+    async def _debounced_rebuild(self, ctx: Optional["ExecutionContext"]):
+        """
+        Waits for a quiet period before rebuilding the driver. Because
+        re-scheduling with the same task key cancels the pending sleep,
+        only the last change of a burst reaches rebuild_driver. The
+        cancellation happens before any driver state is touched, so
+        cancelled rebuilds can never leave a half-torn-down driver
+        behind.
+        """
+        await asyncio.sleep(_REBUILD_DEBOUNCE_SECONDS)
+        await self.rebuild_driver(ctx)
 
     def _connect_driver_signals(self):
         if self.driver is None:

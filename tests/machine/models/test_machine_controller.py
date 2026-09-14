@@ -9,11 +9,17 @@ This module tests the MachineController which handles:
 The MachineController is the logic layer that owns and manages the driver.
 """
 
+import asyncio
+
 import pytest
 
 from rayforge.machine.models.controller import MachineController
 from rayforge.machine.models.machine import Machine
 from rayforge.shared.tasker import task_mgr
+
+
+async def wait_until_settled(task_mgr, timeout=2000):
+    await asyncio.to_thread(task_mgr.wait_until_settled, timeout)
 
 
 @pytest.mark.usefixtures("lite_context")
@@ -49,3 +55,44 @@ class TestMachineController:
         assert hasattr(controller, "job_finished")
         assert hasattr(controller, "command_status_changed")
         assert hasattr(controller, "wcs_updated")
+
+
+@pytest.mark.usefixtures("lite_context")
+class TestDriverRebuildDebounce:
+    """Rapid driver configuration changes must coalesce into a single
+    rebuild so the transport is not torn down per keystroke."""
+
+    @pytest.mark.asyncio
+    async def test_set_driver_args_burst_rebuilds_once(
+        self, machine, mocker, task_mgr
+    ):
+        await wait_until_settled(task_mgr)
+        machine.auto_connect = False
+        rebuild_spy = mocker.spy(machine.controller, "rebuild_driver")
+
+        machine.set_driver_args({"port": "/dev/one"})
+        machine.set_driver_args({"port": "/dev/one-two"})
+        machine.set_driver_args({"port": "/dev/one-two-three"})
+        await wait_until_settled(task_mgr)
+
+        assert rebuild_spy.call_count == 1
+        assert machine.driver_args == {"port": "/dev/one-two-three"}
+
+    @pytest.mark.asyncio
+    async def test_set_driver_change_triggers_single_rebuild(
+        self, machine, mocker, task_mgr
+    ):
+        from rayforge.machine.driver.dummy import NoDeviceDriver
+
+        class TestDriver(NoDeviceDriver):
+            pass
+
+        await wait_until_settled(task_mgr)
+        machine.auto_connect = False
+        rebuild_spy = mocker.spy(machine.controller, "rebuild_driver")
+
+        machine.set_driver(TestDriver, {"port": "/dev/null"})
+        await wait_until_settled(task_mgr)
+
+        assert rebuild_spy.call_count == 1
+        assert machine.driver_name == "TestDriver"
