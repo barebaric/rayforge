@@ -576,6 +576,11 @@ class Machine:
         self.changed.send(self)
 
     def set_driver(self, driver_cls: type["Driver"], args=None):
+        """
+        Selects a new driver class and resets its arguments, then emits
+        ``changed``. The controller listens for this signal and performs
+        the (debounced) driver rebuild.
+        """
         new_driver_name = driver_cls.__name__
         new_args = args or {}
         if (
@@ -584,25 +589,31 @@ class Machine:
         ):
             return
 
+        # The controller subscribes to ``changed`` when it is created.
+        # Emitting the signal without one would silently drop the
+        # rebuild, so ensure it exists first (it is lazy).
+        self.context.machine_mgr.get_controller(self.id)
+
         self.driver_name = new_driver_name
         self.driver_args = new_args
         self.changed.send(self)
-        task_mgr.add_coroutine(
-            self.controller.rebuild_driver,
-            key=(self.id, "rebuild-driver"),
-        )
 
     def set_driver_args(self, args=None):
+        """
+        Replaces the driver's setup arguments, then emits ``changed``.
+        The controller listens for this signal and performs the
+        (debounced) driver rebuild.
+        """
         new_args = args or {}
         if self.driver_args == new_args:
             return
 
+        # See set_driver: the controller must exist to receive the
+        # ``changed`` emission below.
+        self.context.machine_mgr.get_controller(self.id)
+
         self.driver_args = new_args
         self.changed.send(self)
-        task_mgr.add_coroutine(
-            self.controller.rebuild_driver,
-            key=(self.id, "rebuild-driver"),
-        )
 
     @property
     def dialect(self) -> Optional["GcodeDialect"]:

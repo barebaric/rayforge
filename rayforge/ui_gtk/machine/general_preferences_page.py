@@ -239,7 +239,7 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         # when just a parameter value is changed.
         if self.machine.driver_name != self._current_driver_name:
             self._current_driver_name = self.machine.driver_name
-            driver_cls = self.machine.driver.__class__
+            driver_cls = get_driver_cls(self.machine.driver_name or "")
             var_set = driver_cls.get_setup_vars()
             var_set.set_values(self.machine.driver_args)
             self.driver_group.populate(var_set)
