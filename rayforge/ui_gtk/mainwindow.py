@@ -154,6 +154,7 @@ class MainWindow(Adw.ApplicationWindow):
         self._is_syncing_3d = False
         self._setup_wizard: UnifiedWizard | None = None
         self._setup_wizard_completed = True
+        self._machine_settings_dialog: MachineSettingsDialog | None = None
 
         # The ToastOverlay will wrap the main content box
         self.toast_overlay = Adw.ToastOverlay()
@@ -1353,16 +1354,8 @@ class MainWindow(Adw.ApplicationWindow):
             )
 
     def _open_machine_hours_dialog(self):
-        """Opens the machine settings dialog on the Hours page."""
-        config = get_context().config
-        if not config.machine:
-            return
-        dialog = MachineSettingsDialog(
-            machine=config.machine,
-            transient_for=self,
-            initial_page="hours",
-        )
-        dialog.present()
+        """Opens the machine settings dialog on the Maintenance page."""
+        self._present_machine_settings_dialog(initial_page="maintenance")
 
     def on_history_changed(
         self, history_manager: HistoryManager, command: Command
@@ -2163,14 +2156,7 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_machine_warning_clicked(self, sender):
         """Opens the machine settings dialog for the current machine."""
-        config = get_context().config
-        if not config.machine:
-            return
-        dialog = MachineSettingsDialog(
-            machine=config.machine,
-            transient_for=self,
-        )
-        dialog.present()
+        self._present_machine_settings_dialog()
 
     def on_status_bar_clicked(self, sender):
         action = self.action_manager.get_action("toggle_bottom_panel")
@@ -2619,16 +2605,49 @@ class MainWindow(Adw.ApplicationWindow):
         dialog.present()
         dialog.connect("close-request", self._on_settings_dialog_closed)
 
-    def show_machine_settings(self, action, param):
-        """Opens the machine settings dialog for the current machine."""
+    def _present_machine_settings_dialog(
+        self, initial_page: str | None = None
+    ):
+        """Opens the machine settings dialog for the current machine.
+
+        Only one instance is allowed; re-opening presents the existing
+        dialog instead of creating a new one.
+        """
         config = get_context().config
         if not config.machine:
             return
+        if (
+            self._machine_settings_dialog is not None
+            and self._machine_settings_dialog.machine is config.machine
+        ):
+            if initial_page:
+                self._machine_settings_dialog.select_page(initial_page)
+            self._machine_settings_dialog.present()
+            return
+        if self._machine_settings_dialog is not None:
+            # The active machine changed; drop the stale dialog so only
+            # one instance exists at a time.
+            self._machine_settings_dialog.close()
+            self._machine_settings_dialog = None
         dialog = MachineSettingsDialog(
             machine=config.machine,
             transient_for=self,
+            initial_page=initial_page,
+        )
+        self._machine_settings_dialog = dialog
+        dialog.connect(
+            "close-request", self._on_machine_settings_dialog_closed
         )
         dialog.present()
+
+    def _on_machine_settings_dialog_closed(self, dialog, *args) -> bool:
+        if self._machine_settings_dialog is dialog:
+            self._machine_settings_dialog = None
+        return False
+
+    def show_machine_settings(self, action, param):
+        """Opens the machine settings dialog for the current machine."""
+        self._present_machine_settings_dialog()
 
     def _on_settings_dialog_closed(self, dialog):
         logger.debug("Settings dialog closed")

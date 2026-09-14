@@ -280,6 +280,13 @@ class MachineSettingsDialog(PatchedDialogWindow):
         else:
             self.sidebar_list.select_row(self.sidebar_list.get_row_at_index(0))
 
+    def select_page(self, page_name: str):
+        """Selects the sidebar row for the given page name."""
+        for row, name in self._row_to_page_name.items():
+            if name == page_name:
+                self.sidebar_list.select_row(row)
+                return
+
     def _on_machine_changed(self, sender=None, **kwargs):
         self._update_gcode_page_visibility()
         self._update_maturity_banner()
