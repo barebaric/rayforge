@@ -11,9 +11,10 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 import numpy as np
-from gi.repository import Gdk, Gtk
+from gi.repository import Gtk
 from raygeo.geo.types import Point
 
+from ..gestures import GestureRouter
 from .camera import Camera, ViewDirection, rotation_matrix_from_axis_angle
 from .gl_utils import rotation_4x4
 from .picking import PickScene, camera_ray, pick_point
@@ -113,27 +114,28 @@ class CameraController:
 
     def _setup_interactions(self, on_key_pressed: Callable | None = None):
         """Connects GTK4 gesture and event controllers for interaction."""
-        # Middle mouse drag for Pan/Orbit
-        drag_middle = Gtk.GestureDrag.new()
-        drag_middle.set_button(Gdk.BUTTON_MIDDLE)
-        drag_middle.connect("drag-begin", self.on_drag_begin)
-        drag_middle.connect("drag-update", self.on_drag_update)
-        drag_middle.connect("drag-end", self.on_drag_end)
-        self._widget.add_controller(drag_middle)
-
-        # Left mouse drag for Z-axis rotation
-        drag_left = Gtk.GestureDrag.new()
-        drag_left.set_button(Gdk.BUTTON_PRIMARY)
-        drag_left.connect("drag-begin", self.on_z_rotate_begin)
-        drag_left.connect("drag-update", self.on_z_rotate_update)
-        drag_left.connect("drag-end", self.on_z_rotate_end)
-        self._widget.add_controller(drag_left)
-
-        scroll = Gtk.EventControllerScroll.new(
-            Gtk.EventControllerScrollFlags.VERTICAL
+        # Navigation drags and scrolling are routed over the
+        # configurable gesture bindings of the "canvas3d" context.
+        self._router = GestureRouter("canvas3d", self._widget)
+        self._router.register_drag(
+            "orbit",
+            begin=self.on_orbit_begin,
+            update=self.on_orbit_update,
+            end=self.on_drag_end,
         )
-        scroll.connect("scroll", self.on_scroll)
-        self._widget.add_controller(scroll)
+        self._router.register_drag(
+            "pan",
+            begin=self.on_pan_begin,
+            update=self.on_pan_update,
+            end=self.on_drag_end,
+        )
+        self._router.register_drag(
+            "z_rotate",
+            begin=self.on_z_rotate_begin,
+            update=self.on_z_rotate_update,
+            end=self.on_z_rotate_end,
+        )
+        self._router.register_scroll("zoom", scroll=self.on_scroll)
 
         # Track the pointer position for zooming towards the cursor.
         motion = Gtk.EventControllerMotion.new()
@@ -183,54 +185,53 @@ class CameraController:
         self._clear_drag_state()
         self._request_render()
 
-    def on_drag_begin(self, gesture, x: float, y: float):
-        """Handles the start of a middle-mouse-button drag."""
-        gesture.set_state(Gtk.EventSequenceState.CLAIMED)
-        state = gesture.get_current_event_state()
-        is_shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
-
-        if not is_shift and self.camera:
-            # Orbit around the point on the object under the cursor,
-            # falling back to the point on the floor plane.
-            self._rotation_pivot = self._pick_pivot(x, y)
-            if self._rotation_pivot is None:
-                # Fall back to the camera target projected onto the grid
-                # plane and clamped to the grid.  The raw target can drift
-                # far below the plane during navigation, and orbiting around
-                # such a point would sweep the camera through an enormous
-                # arc.
-                fallback = self.camera.target.copy()
-                fallback[2] = 0.0
-                self._rotation_pivot = self._clamp_to_grid(fallback)
-
-            self._last_orbit_pos = None
-            self._is_orbiting = True
-        else:
-            self._pan_anchor = self.get_world_coords_on_plane(x, y)
-            self._pan_start_screen = x, y
-            self._last_pan_offset = 0.0, 0.0
-            self._is_orbiting = False
-            if self._pan_anchor is not None:
-                self._pan_anchor = self._clamp_to_grid(self._pan_anchor)
-
-    def on_drag_update(self, gesture, offset_x: float, offset_y: float):
-        """Handles updates during a drag operation (panning or orbiting)."""
+    def on_orbit_begin(self, gesture, x: float, y: float):
+        """Handles the start of an orbit drag."""
         if not self.camera:
             return
-        camera = self.camera
+        # Orbit around the point on the object under the cursor,
+        # falling back to the point on the floor plane.
+        self._rotation_pivot = self._pick_pivot(x, y)
+        if self._rotation_pivot is None:
+            # Fall back to the camera target projected onto the grid
+            # plane and clamped to the grid.  The raw target can drift
+            # far below the plane during navigation, and orbiting around
+            # such a point would sweep the camera through an enormous
+            # arc.
+            fallback = self.camera.target.copy()
+            fallback[2] = 0.0
+            self._rotation_pivot = self._clamp_to_grid(fallback)
 
-        state = gesture.get_current_event_state()
-        is_shift = bool(state & Gdk.ModifierType.SHIFT_MASK)
+        self._last_orbit_pos = None
+        self._is_orbiting = True
 
-        if is_shift:
-            self._update_pan(camera, offset_x, offset_y)
-            self._request_render()
+    def on_pan_begin(self, gesture, x: float, y: float):
+        """Handles the start of a pan drag."""
+        if not self.camera:
+            return
+        self._pan_anchor = self.get_world_coords_on_plane(x, y)
+        self._pan_start_screen = x, y
+        self._last_pan_offset = 0.0, 0.0
+        self._is_orbiting = False
+        if self._pan_anchor is not None:
+            self._pan_anchor = self._clamp_to_grid(self._pan_anchor)
+
+    def on_orbit_update(self, gesture, offset_x: float, offset_y: float):
+        """Handles updates during an orbit drag."""
+        if not self.camera:
             return
 
         delta = self._get_orbit_delta(gesture)
         if delta is not None and self._rotation_pivot is not None:
-            self._apply_orbit(camera, self._rotation_pivot, *delta)
+            self._apply_orbit(self.camera, self._rotation_pivot, *delta)
             self._request_render()
+
+    def on_pan_update(self, gesture, offset_x: float, offset_y: float):
+        """Handles updates during a pan drag."""
+        if not self.camera:
+            return
+        self._update_pan(self.camera, offset_x, offset_y)
+        self._request_render()
 
     def _pick_pivot(self, x: float, y: float) -> np.ndarray | None:
         """Returns the point on scene geometry under the cursor.
@@ -449,7 +450,6 @@ class CameraController:
         """
         if not self.camera:
             return
-        gesture.set_state(Gtk.EventSequenceState.CLAIMED)
         self._is_z_rotating = True
         self._last_z_rotate_screen_pos = None  # Will be set on first update
 

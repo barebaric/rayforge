@@ -148,6 +148,14 @@ REGISTRY_TABLE = [
         worker_ok=False,
         needs_window=False,
     ),
+    RegistryEntry(
+        None,
+        "gesture_registry",
+        "rayforge.ui_gtk.gestures",
+        "gesture_registry",
+        worker_ok=False,
+        needs_window=False,
+    ),
 ]
 
 LAZY_MANAGERS = {
