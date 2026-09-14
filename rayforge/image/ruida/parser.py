@@ -1,7 +1,8 @@
 import struct
 from collections.abc import Callable
 
-from ...machine.driver.ruida.ruida_util import (
+from .job import RuidaGeoCommand, RuidaJob, RuidaLayer
+from .util import (
     UM_PER_MM,
     decode14,
     decode35,
@@ -9,7 +10,6 @@ from ...machine.driver.ruida.ruida_util import (
     decode_rel_coords,
     unswizzle_byte,
 )
-from .job import RuidaGeoCommand, RuidaJob, RuidaLayer
 
 # A type alias for a command handler, defined at the module level for
 # correct type checking. A handler is a tuple of:

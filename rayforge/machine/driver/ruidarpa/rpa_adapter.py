@@ -120,6 +120,7 @@ class RuidaRPAAdapter(Driver):
     maturity = DriverMaturity.KNOWN_BUGGY
     supports_probing = False
     native_overscan = True
+    supports_multi_depth_raster = False
 
     # --- Reconnect constants ---
     CONNECTION_POLL_INTERVAL = 0.5
