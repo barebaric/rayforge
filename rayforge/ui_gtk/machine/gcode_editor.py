@@ -6,6 +6,7 @@ from ...machine.models.macro import Macro
 from ...pipeline.encoder.context import GcodeContext
 from ..icons import get_icon
 from ..shared.patched_dialog_window import PatchedDialogWindow
+from .validation import find_number_only_line, format_number_only_warning
 
 # Define characters that are not allowed in macro names
 FORBIDDEN_NAME_CHARS = "();[]{}<>"
@@ -50,6 +51,10 @@ class GcodeEditorDialog(PatchedDialogWindow):
 
         header = Adw.HeaderBar()
         main_box.append(header)
+
+        self.warning_banner = Adw.Banner()
+        self.warning_banner.set_revealed(False)
+        main_box.append(self.warning_banner)
 
         cancel_button = Gtk.Button(label=_("Cancel"))
         cancel_button.connect("clicked", lambda w: self.close())
@@ -113,6 +118,7 @@ class GcodeEditorDialog(PatchedDialogWindow):
         self.text_view.add_css_class("monospace")
         buffer = self.text_view.get_buffer()
         buffer.set_text("\n".join(self.macro.code), -1)
+        buffer.connect("changed", self._validate_content)
         scrolled_window.set_child(self.text_view)
 
         # Add a key controller to listen for the Escape key
@@ -122,6 +128,7 @@ class GcodeEditorDialog(PatchedDialogWindow):
 
         # Run initial validation
         self._validate_name()
+        self._validate_content()
 
     def _on_popover_closed(self, popover: Gtk.Popover):
         """Ensure the text view regains focus when a popover is closed."""
@@ -242,6 +249,24 @@ class GcodeEditorDialog(PatchedDialogWindow):
             self.close()
             return True  # Event handled, stop propagation
         return False
+
+    def _validate_content(self, *args):
+        """Warns (non-blocking) about lines that contain only a number."""
+        buffer = self.text_view.get_buffer()
+        start, end = buffer.get_start_iter(), buffer.get_end_iter()
+        text = buffer.get_text(start, end, True)
+        match = find_number_only_line(text)
+        warning = (
+            format_number_only_warning(match[1], lineno=match[0])
+            if match
+            else None
+        )
+        if warning:
+            if self.warning_banner.get_title() != warning:
+                self.warning_banner.set_title(warning)
+                self.warning_banner.set_revealed(True)
+        else:
+            self.warning_banner.set_revealed(False)
 
     def _validate_name(self, *args):
         """Checks the validity of the macro name and updates UI feedback."""
