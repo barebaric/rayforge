@@ -545,16 +545,19 @@ class SketchRenderer:
     def _define_polygon_path(
         self, ctx: cairo.Context, polygon: PolygonEntity
     ) -> bool:
-        """Defines the path for a polygon outline without stroking."""
+        """Defines the path for a polygon outline without stroking.
+        Hole rings are added to the same path; their reversed winding
+        cancels the enclosed area under Cairo's winding fill rule."""
         registry = self.element.sketch.registry
-        vertices = polygon.get_world_vertices(registry)
-        if len(vertices) < 2:
+        rings = polygon.get_world_rings(registry)
+        if not rings or len(rings[0]) < 2:
             return False
-        ctx.move_to(vertices[0][0], vertices[0][1])
-        for x, y in vertices[1:]:
-            ctx.line_to(x, y)
-        if polygon.closed:
-            ctx.close_path()
+        for vertices in rings:
+            ctx.move_to(vertices[0][0], vertices[0][1])
+            for x, y in vertices[1:]:
+                ctx.line_to(x, y)
+            if polygon.closed:
+                ctx.close_path()
         return True
 
     def _define_bezier_path(self, ctx: cairo.Context, bezier: Bezier) -> bool:

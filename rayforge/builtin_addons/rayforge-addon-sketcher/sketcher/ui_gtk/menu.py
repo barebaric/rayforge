@@ -55,6 +55,13 @@ class SketchMenu(Gio.Menu):
         )
         tools_menu.append_section(_("Modify"), constr_group)
 
+        bool_group = Gio.Menu()
+        bool_group.append(_("Union"), "sketch.boolean_union")
+        bool_group.append(_("Difference"), "sketch.boolean_difference")
+        bool_group.append(_("Intersection"), "sketch.boolean_intersection")
+        bool_group.append(_("Exclude"), "sketch.boolean_exclude")
+        tools_menu.append_section(_("Boolean"), bool_group)
+
         array_group = Gio.Menu()
         array_group.append(_("Circular Array"), "sketch.tool_circular_array")
         array_group.append(
