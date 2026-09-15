@@ -408,9 +408,7 @@ class RuidaRPAAdapter(Driver):
         self._magic = magic
 
         tui_mode = bool(kwargs.get("tui", False))
-        if tui_mode != old_tui_mode or self.resource_uri != old_uri:
-            return False
-        return True
+        return tui_mode == old_tui_mode and self.resource_uri == old_uri
 
     async def _connect_implementation(self) -> None:
         if self._connection_task and not self._connection_task.done():

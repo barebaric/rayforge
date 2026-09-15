@@ -1618,7 +1618,10 @@ class MainWindow(Adw.ApplicationWindow):
     ):
         """Callback for when the job assembly for previews is complete."""
         if error:
-            logger.error(
+            # Preview assembly is cosmetic and regularly fails for
+            # everyday states like an empty document, so it is only
+            # logged at debug level.
+            logger.debug(
                 "Failed to aggregate ops for preview",
                 exc_info=error,
             )
