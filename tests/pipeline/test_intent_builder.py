@@ -740,36 +740,26 @@ driver_module.register_driver(_NativeGcodeDriver)
 driver_module.register_driver(_NonGcodeDriver)
 
 
-def test_encode_routes_grbl_driver_to_native_gcode_spec(
-    contour_step_class, test_machine_and_config
-):
+def test_encode_routes_grbl_driver_to_native_gcode_spec(isolated_machine):
     """A G-code driver on the Grbl dialect encodes via the native
     Rust GcodeSpec."""
-    machine, context = test_machine_and_config
-    machine.driver_name = _NativeGcodeDriver.__name__
-    step = contour_step_class.create(context, name="cut")
-    wp = WorkPiece(name="wp")
-    doc = _make_doc(step, wp)
+    isolated_machine.driver_name = _NativeGcodeDriver.__name__
+    doc = _make_doc(_TestStep(name="s1"), WorkPiece(name="wp"))
 
-    nodes = IntentBuilder(machine=machine).build(doc)
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
     ek = job_encode_key()
     spec = next(n.stage for n in nodes if n.key == ek)
     assert isinstance(spec.encoder.spec, GcodeSpec)
 
 
-def test_encode_routes_non_gcode_driver_to_driver_encoder(
-    contour_step_class, test_machine_and_config
-):
+def test_encode_routes_non_gcode_driver_to_driver_encoder(isolated_machine):
     """A non-G-code driver encodes via its own encoder even when the
     machine carries a leftover Grbl dialect (issue #420)."""
-    machine, context = test_machine_and_config
-    machine.driver_name = _NonGcodeDriver.__name__
-    assert machine.dialect is not None
-    step = contour_step_class.create(context, name="cut")
-    wp = WorkPiece(name="wp")
-    doc = _make_doc(step, wp)
+    isolated_machine.driver_name = _NonGcodeDriver.__name__
+    assert isolated_machine.dialect is not None
+    doc = _make_doc(_TestStep(name="s1"), WorkPiece(name="wp"))
 
-    nodes = IntentBuilder(machine=machine).build(doc)
+    nodes = IntentBuilder(machine=isolated_machine).build(doc)
     ek = job_encode_key()
     spec = next(n.stage for n in nodes if n.key == ek)
     assert isinstance(spec.encoder.spec, PythonEncoder)
