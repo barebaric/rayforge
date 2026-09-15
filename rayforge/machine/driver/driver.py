@@ -387,6 +387,22 @@ class Driver(ABC):
         self.did_setup = False
         self.state.error = None
 
+    def update_settings(self, **kwargs: Any) -> bool:
+        """
+        Informs a live driver that its setup arguments changed. Called
+        in place of a teardown/rebuild whenever the machine's driver
+        class is unchanged.
+
+        Drivers that can absorb the change without dropping a running
+        connection return True to stay alive; the new arguments are
+        expected to be stored on the instance and take effect for
+        subsequent operations or the next connection attempt. The
+        default requests a rebuild, which tears down and re-creates the
+        driver with the new arguments. Rebuild requests are debounced
+        by the machine controller.
+        """
+        return False
+
     @classmethod
     @abstractmethod
     def get_setup_vars(cls) -> "VarSet":
