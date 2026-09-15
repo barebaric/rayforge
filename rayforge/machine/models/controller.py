@@ -93,7 +93,6 @@ class MachineController:
         task_mgr.cancel_task((self.machine.id, "rebuild-driver-on-change"))
         if self.driver is not None:
             await self.driver.cleanup()
-            self._reset_status()
             task_mgr.add_coroutine(
                 self.rebuild_driver,
                 key=(self.machine.id, "rebuild-driver"),
@@ -195,23 +194,18 @@ class MachineController:
 
     async def rebuild_driver(self, ctx: Optional["ExecutionContext"] = None):
         """
-        Applies the machine's current driver configuration.
-
-        Instantiates and sets up the driver based on the machine's
-        current configuration, and connects if auto_connect is enabled
-        and the new driver is not NoDeviceDriver.
-
-        When the driver class is unchanged and the driver currently has
-        a live connection, the running instance is kept instead: tearing
-        it down and reconnecting on every edited setup argument churns
-        the transport (issue #415). The edited arguments are recorded
-        and applied by the rebuild that runs when the connection is
-        gone again, e.g. after an explicit disconnect or a drop.
+        Instantiates and sets up the driver based on the machine's current
+        configuration. Connects if auto_connect is enabled and the new driver
+        is not NoDeviceDriver.
         """
         logger.info(
             f"Machine '{self.machine.name}' (id:{self.machine.id}) rebuilding "
             f"driver to '{self.machine.driver_name}'"
         )
+
+        old_driver = self.driver
+        self._disconnect_driver_signals()
+        self.machine.set_precheck_error(None)
 
         if self.machine.driver_name:
             driver_cls = get_driver_cls(self.machine.driver_name)
@@ -225,21 +219,6 @@ class MachineController:
                 f"Precheck failed for driver {self.machine.driver_name}: {e}"
             )
             self.machine.set_precheck_error(str(e))
-        else:
-            self.machine.set_precheck_error(None)
-
-        if isinstance(self.driver, driver_cls) and self.machine.is_connected():
-            logger.info(
-                f"Machine '{self.machine.name}' (id:{self.machine.id}) "
-                "keeping connected driver; edited arguments apply on "
-                "the next connect"
-            )
-            self._last_driver_name = self.machine.driver_name
-            self._scheduler(self.machine.changed.send, self.machine)
-            return
-
-        old_driver = self.driver
-        self._disconnect_driver_signals()
 
         new_driver = driver_cls(self.context, self.machine)
         new_driver.setup(**self.machine.driver_args)
@@ -317,11 +296,6 @@ class MachineController:
                     lambda ctx: self.machine.sync_active_wcs_from_device(),
                     key=(self.machine.id, "sync-active-wcs"),
                 )
-            elif status == TransportStatus.DISCONNECTED:
-                # Arguments edited while the driver was connected were
-                # kept from the live instance. With the connection gone,
-                # a rebuild can apply them (issue #415).
-                self._on_machine_changed()
 
     def _on_driver_state_changed(self, driver: Driver, state: DeviceState):
         """Proxies the state changed signal from the active driver."""
