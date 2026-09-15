@@ -1138,18 +1138,24 @@ class IntentBuilder:
     def _build_encoder(self, doc: Doc) -> Any:
         """Resolve the encoder for the configured machine.
 
-        Routes Grbl machines to the native Rust ``GcodeSpec`` and
-        every other machine to a :class:`PythonEncoder` wrapping the
-        driver-specific encoder callable.  The pre-processing
-        transforms are handled by the upstream machine-transform
-        stage.
+        Routes G-code drivers on the Grbl dialect to the native Rust
+        ``GcodeSpec`` and every other machine to a
+        :class:`PythonEncoder` wrapping the driver-specific encoder
+        callable.  The pre-processing transforms are handled by the
+        upstream machine-transform stage.
+
+        The route is decided by the driver's G-code capability, never
+        by the dialect alone: a driver that does not speak G-code
+        (e.g. Ruida) must always use its own encoder, even when the
+        machine still carries a leftover Grbl dialect (issue #420).
         """
         machine = self._machine
         assert machine is not None
 
-        dialect = machine.dialect
-        if dialect is not None and _is_grbl(dialect):
-            return self._grbl_encoder_spec(doc)
+        if _driver_uses_gcode(machine):
+            dialect = machine.dialect
+            if dialect is not None and _is_grbl(dialect):
+                return self._grbl_encoder_spec(doc)
 
         return PythonEncoder(
             self._make_python_encoder_callable(machine, doc),
@@ -1447,6 +1453,22 @@ _IDENTITY_4X4: list[list[float]] = [
 def _is_grbl(dialect: GcodeDialect) -> bool:
     """Return True if *dialect* is the Grbl G-code dialect."""
     return dialect.uid == GRBL_DIALECT.uid
+
+
+def _driver_uses_gcode(machine: Machine) -> bool:
+    """Return True if the machine's driver consumes G-code.
+
+    Mirrors the driver resolution of the Python encoder callable:
+    an unset or unresolvable driver name falls back to
+    :class:`NoDeviceDriver`, which is a G-code driver.
+    """
+    if not machine.driver_name:
+        return NoDeviceDriver.uses_gcode
+    try:
+        driver_cls = get_driver_cls(machine.driver_name)
+    except (ValueError, ImportError):
+        return NoDeviceDriver.uses_gcode
+    return driver_cls.uses_gcode
 
 
 def _machine_token_payload(machine: Machine | None, doc: Doc) -> Any:
