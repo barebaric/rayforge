@@ -321,39 +321,43 @@ class RuidaRPAAdapter(Driver):
                 extra=self._log_extra("RPA"),
             )
 
-    def _setup_implementation(self, **kwargs: Any) -> None:
-        self._config = dict(kwargs)
-        self._tui_mode = bool(kwargs.get("tui", False))
-
+    @staticmethod
+    def _parse_rpc_timeout(value: Any) -> float:
         try:
-            timeout = float(kwargs.get("timeout", DEFAULT_RPC_TIMEOUT_S))
+            timeout = float(value)
         except (TypeError, ValueError):
             raise DriverSetupError("RPC timeout must be a number") from None
         if not math.isfinite(timeout) or timeout <= 0:
             raise DriverSetupError("RPC timeout must be positive")
+        return timeout
 
-        self._rpc_timeout = timeout
+    @staticmethod
+    def _parse_magic_number(raw_magic: Any) -> int | None:
+        if raw_magic is None:
+            return None
+        magic_str = str(raw_magic).strip()
+        if not magic_str:
+            return None
+        try:
+            magic = int(magic_str, 0)
+        except (TypeError, ValueError):
+            raise DriverSetupError(
+                "Magic number must be a valid hex value (e.g. 0x88 or 88)"
+            ) from None
+        if not 0x00 <= magic <= 0xFF:
+            raise DriverSetupError(
+                "Magic number must be between 0x00 and 0xFF"
+            )
+        return magic
 
-        raw_magic = kwargs.get("magic_number")
-        if raw_magic is not None:
-            magic_str = str(raw_magic).strip()
-            if not magic_str:
-                self._magic = None
-            else:
-                try:
-                    magic = int(magic_str, 0)
-                except (TypeError, ValueError):
-                    raise DriverSetupError(
-                        "Magic number must be a valid hex value "
-                        "(e.g. 0x88 or 88)"
-                    ) from None
-                if not (0x00 <= magic <= 0xFF):
-                    raise DriverSetupError(
-                        "Magic number must be between 0x00 and 0xFF"
-                    )
-                self._magic = magic
-        else:
-            self._magic = None
+    def _setup_implementation(self, **kwargs: Any) -> None:
+        self._config = dict(kwargs)
+        self._tui_mode = bool(kwargs.get("tui", False))
+
+        self._rpc_timeout = self._parse_rpc_timeout(
+            kwargs.get("timeout", DEFAULT_RPC_TIMEOUT_S)
+        )
+        self._magic = self._parse_magic_number(kwargs.get("magic_number"))
 
         self._listeners_registered = False
         self._unreachable_warned = False
@@ -376,6 +380,37 @@ class RuidaRPAAdapter(Driver):
                 "RPA adapter configured for direct mode",
                 extra=self._log_extra("RPA"),
             )
+
+    def update_settings(self, **kwargs: Any) -> bool:
+        """
+        Absorbs setup argument changes into the live adapter.
+
+        Arguments that do not affect the connection endpoint (e.g. the
+        RPC timeout) are stored on the instance and apply to subsequent
+        RPCs and reconnection attempts without dropping the connection.
+        A change of the endpoint or the operating mode requests a
+        rebuild via the False return value, so the controller reconnects
+        to the new target.
+        """
+        old_uri = self.resource_uri
+        old_tui_mode = self._tui_mode
+
+        try:
+            timeout = self._parse_rpc_timeout(
+                kwargs.get("timeout", DEFAULT_RPC_TIMEOUT_S)
+            )
+            magic = self._parse_magic_number(kwargs.get("magic_number"))
+        except DriverSetupError:
+            return False
+
+        self._config = dict(kwargs)
+        self._rpc_timeout = timeout
+        self._magic = magic
+
+        tui_mode = bool(kwargs.get("tui", False))
+        if tui_mode != old_tui_mode or self.resource_uri != old_uri:
+            return False
+        return True
 
     async def _connect_implementation(self) -> None:
         if self._connection_task and not self._connection_task.done():

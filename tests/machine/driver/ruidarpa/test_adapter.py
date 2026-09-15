@@ -2457,6 +2457,109 @@ class TestRpcTimeoutSetup:
             adapter._setup_implementation(tui=True, timeout=value)
 
 
+class TestUpdateSettings:
+    """update_settings absorbs non-endpoint changes into the live
+    adapter and requests a rebuild for endpoint or mode changes."""
+
+    def _make_adapter(self, isolated_context, isolated_machine):
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        adapter.setup(udp_host="192.168.1.10", timeout=1.0)
+        return adapter
+
+    def test_non_endpoint_change_returns_true_and_applies(
+        self, isolated_context, isolated_machine
+    ):
+        """Timeout and magic changes apply to the live adapter."""
+        adapter = self._make_adapter(isolated_context, isolated_machine)
+
+        accepted = adapter.update_settings(
+            udp_host="192.168.1.10", timeout=9.5, magic_number="0x77"
+        )
+
+        assert accepted is True
+        assert adapter._rpc_timeout == 9.5
+        assert adapter._magic == 0x77
+        assert adapter._config["udp_host"] == "192.168.1.10"
+        assert isinstance(adapter._backend, RpaDirectDriver)
+
+    def test_endpoint_change_returns_false(
+        self, isolated_context, isolated_machine
+    ):
+        """A new udp_host must request a rebuild."""
+        adapter = self._make_adapter(isolated_context, isolated_machine)
+
+        accepted = adapter.update_settings(
+            udp_host="192.168.1.99", timeout=9.5
+        )
+
+        assert accepted is False
+
+    def test_missing_endpoint_returns_false(
+        self, isolated_context, isolated_machine
+    ):
+        """Clearing the endpoint must request a rebuild."""
+        adapter = self._make_adapter(isolated_context, isolated_machine)
+
+        accepted = adapter.update_settings(timeout=9.5)
+
+        assert accepted is False
+
+    def test_usb_endpoint_change_returns_false(
+        self, isolated_context, isolated_machine
+    ):
+        """Switching from host to usb device must request a rebuild."""
+        adapter = self._make_adapter(isolated_context, isolated_machine)
+
+        accepted = adapter.update_settings(
+            usb_device="/dev/ttyUSB0", timeout=9.5
+        )
+
+        assert accepted is False
+
+    def test_tui_mode_change_returns_false(
+        self, isolated_context, isolated_machine
+    ):
+        """Toggling the operating mode must request a rebuild."""
+        adapter = self._make_adapter(isolated_context, isolated_machine)
+
+        accepted = adapter.update_settings(
+            udp_host="192.168.1.10", timeout=9.5, tui=True
+        )
+
+        assert accepted is False
+        assert adapter._tui_mode is False
+
+    def test_invalid_timeout_returns_false_and_keeps_state(
+        self, isolated_context, isolated_machine
+    ):
+        """A rejected change must not mutate the live adapter."""
+        adapter = self._make_adapter(isolated_context, isolated_machine)
+        config_before = dict(adapter._config)
+
+        accepted = adapter.update_settings(
+            udp_host="192.168.1.10", timeout="abc"
+        )
+
+        assert accepted is False
+        assert adapter._rpc_timeout == 1.0
+        assert adapter._config == config_before
+
+    def test_invalid_magic_returns_false_and_keeps_state(
+        self, isolated_context, isolated_machine
+    ):
+        """An out-of-range magic must not mutate the live adapter."""
+        adapter = self._make_adapter(isolated_context, isolated_machine)
+        config_before = dict(adapter._config)
+
+        accepted = adapter.update_settings(
+            udp_host="192.168.1.10", magic_number="0xfff"
+        )
+
+        assert accepted is False
+        assert adapter._magic is None
+        assert adapter._config == config_before
+
+
 class TestSeedMachineSpeedDefaults:
     """The adapter seeds Ruida speed defaults only while unconfigured."""
 

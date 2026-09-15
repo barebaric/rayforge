@@ -496,7 +496,7 @@ class Pipeline:
         ],
     ):
         if not self._doc:
-            when_done(None, RuntimeError("No document is loaded."))
+            when_done(None, None)
             return
 
         try:
@@ -511,13 +511,9 @@ class Pipeline:
             return
 
         if not self._can_generate_job():
-            when_done(
-                None,
-                RuntimeError(
-                    "The document has no visible steps with workpieces "
-                    "to assemble."
-                ),
-            )
+            # An empty document is a normal state, not a failure: the
+            # caller receives an empty result and clears its previews.
+            when_done(None, None)
             return
 
         def _on_finished(sender, *, handle, task_status):
