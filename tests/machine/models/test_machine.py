@@ -1236,7 +1236,6 @@ class TestMachine:
     ):
         """A Ruida machine has no dialect but can emit travel speed."""
         await wait_for_tasks_to_finish(task_mgr)
-        machine.set_dialect_uid(None)
         machine.auto_connect = False
         machine.set_driver(RuidaRPAAdapter, {"udp_host": "localhost"})
         await wait_for_tasks_to_finish(task_mgr)
@@ -1244,6 +1243,44 @@ class TestMachine:
         assert machine.driver_name == "RuidaRPAAdapter"
         assert machine.dialect is None
         assert machine.supports_travel_speed()
+
+    @pytest.mark.asyncio
+    async def test_set_driver_clears_stale_dialect_for_non_gcode_driver(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
+        """Switching to a non-G-code driver clears the leftover dialect.
+
+        A machine that previously spoke GRBL keeps its dialect_uid when
+        it is switched over to the Ruida driver; job encoding must not
+        feed that G-code dialect's output to the Ruida driver
+        (issue #420).
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+        assert machine.dialect_uid == "grbl"
+        machine.auto_connect = False
+
+        machine.set_driver(RuidaRPAAdapter, {"udp_host": "localhost"})
+        await wait_for_tasks_to_finish(task_mgr)
+
+        assert machine.driver_name == "RuidaRPAAdapter"
+        assert machine.dialect_uid is None
+        assert machine.dialect is None
+
+    @pytest.mark.asyncio
+    async def test_set_driver_restores_default_dialect_for_gcode_driver(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
+        """Switching back to a G-code driver restores the default dialect."""
+        await wait_for_tasks_to_finish(task_mgr)
+        machine.set_dialect_uid(None)
+        assert machine.dialect is None
+
+        machine.set_driver(GrblSerialDriver, {"port": "/dev/null"})
+        await wait_for_tasks_to_finish(task_mgr)
+
+        assert machine.driver_name == "GrblSerialDriver"
+        assert machine.dialect_uid == "grbl"
+        assert machine.dialect is not None
 
     @pytest.mark.asyncio
     async def test_supports_multi_depth_raster(

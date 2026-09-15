@@ -27,19 +27,21 @@ from raygeo.geo import Geometry, Matrix
 from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.contour import ContourSpec
 from raygeo.ops.axis import Axis
-from raygeo.ops.convert import Encoder, GcodeSpec
+from raygeo.ops.convert import Encoder, GcodeSpec, PythonEncoder
 from raygeo.ops.material.spec import CylinderStock, MaterialFoldSpec
 from raygeo.ops.part import Part
 from raygeo.pipeline.execute import execute_stages
 from raygeo.pipeline.request import NodeRequest
 from raygeo.pipeline.stage import StageSpec
 
+import rayforge.machine.driver as driver_module
 from rayforge.core.doc import Doc
 from rayforge.core.layer import Layer
 from rayforge.core.step import Step
 from rayforge.core.stock import StockItem
 from rayforge.core.stock_asset import StockAsset
 from rayforge.core.workpiece import WorkPiece
+from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.models.dialect.grbl import GRBL_DIALECT
 from rayforge.machine.models.laser import LaserHead
 from rayforge.machine.models.machine import Machine, Origin
@@ -722,6 +724,55 @@ def test_job_encode_node_emits_encode_spec(
     assert len(encode_nodes) == 1
     assert isinstance(encode_nodes[0].stage, EncodeSpec)
     assert encode_nodes[0].stage.source_key == job_machinexform_key()
+
+
+class _NativeGcodeDriver(NoDeviceDriver):
+    """A dummy G-code driver for encoder routing tests."""
+
+
+class _NonGcodeDriver(NoDeviceDriver):
+    """A dummy non-G-code driver for encoder routing tests."""
+
+    uses_gcode = False
+
+
+driver_module.register_driver(_NativeGcodeDriver)
+driver_module.register_driver(_NonGcodeDriver)
+
+
+def test_encode_routes_grbl_driver_to_native_gcode_spec(
+    contour_step_class, test_machine_and_config
+):
+    """A G-code driver on the Grbl dialect encodes via the native
+    Rust GcodeSpec."""
+    machine, context = test_machine_and_config
+    machine.driver_name = _NativeGcodeDriver.__name__
+    step = contour_step_class.create(context, name="cut")
+    wp = WorkPiece(name="wp")
+    doc = _make_doc(step, wp)
+
+    nodes = IntentBuilder(machine=machine).build(doc)
+    ek = job_encode_key()
+    spec = next(n.stage for n in nodes if n.key == ek)
+    assert isinstance(spec.encoder.spec, GcodeSpec)
+
+
+def test_encode_routes_non_gcode_driver_to_driver_encoder(
+    contour_step_class, test_machine_and_config
+):
+    """A non-G-code driver encodes via its own encoder even when the
+    machine carries a leftover Grbl dialect (issue #420)."""
+    machine, context = test_machine_and_config
+    machine.driver_name = _NonGcodeDriver.__name__
+    assert machine.dialect is not None
+    step = contour_step_class.create(context, name="cut")
+    wp = WorkPiece(name="wp")
+    doc = _make_doc(step, wp)
+
+    nodes = IntentBuilder(machine=machine).build(doc)
+    ek = job_encode_key()
+    spec = next(n.stage for n in nodes if n.key == ek)
+    assert isinstance(spec.encoder.spec, PythonEncoder)
 
 
 def test_job_encode_token_changes_on_machine_swap(
