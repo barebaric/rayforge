@@ -71,6 +71,51 @@ nécessiter une puissance plus élevée pour voir le point clairement.
 
 ---
 
+## Laser Pointeur avec Décalage
+
+Certaines machines ont un laser pointeur dédié (un petit laser à point rouge) monté à une distance
+fixe du faisceau de coupe. Lorsque vous alignez la pièce à l'aide du point du pointeur, le faisceau
+de coupe atterrirait en réalité décalé de ce point — sauf si Rayforge compense.
+
+Le réglage laser [Décalage du Pointeur](../machine/laser.md) vous permet de saisir cette distance et
+d'activer ou de désactiver la compensation. Lorsqu'il est activé :
+
+- **Définir l'origine à la position actuelle** (et Zéro X / Zéro Y) place l'origine de travail à la
+  position du point du pointeur.
+- Le canevas affiche un point jaune du pointeur à côté du point rouge du faisceau, indiquant où se
+  trouve le point du pointeur sur votre matériau.
+- Un interrupteur **Alignement du pointeur** apparaît dans le popover de déplacement (l'icône de
+  boussole à côté de l'affichage de la position).
+
+### Alignement du Pointeur
+
+Tant que l'**alignement du pointeur** est actif, chaque opération de visée absolue — Déplacer vers,
+les raccourcis de coin, l'aller à l'origine du SCF, Cliquer pour déplacer, Déplacer la tête ici et
+le cadrage — fait se poser le _point du pointeur_ sur la position visée, ce qui vous permet de
+positionner la pièce entièrement à l'aide du point visible. La saisie de coordonnées du popover est
+pré-remplie avec la position du point du pointeur, et le point du pointeur du canevas est dessiné
+plein lorsque l'alignement est actif et creux lorsqu'il est inactif.
+
+Le flux de travail se combine proprement avec le zérage par le point du pointeur : l'origine se
+situe là où le pointeur a marqué, la visée décale chaque cible du décalage, et la gravure n'est pas
+décalée — aligner avec le point et couper avec le faisceau restent donc cohérents.
+
+Lorsque vous appuyez sur **Envoyer** tandis que l'alignement est actif, un avertissement apparaît à
+chaque envoi (pas d'option « ne plus demander ») : le job coupe avec le faisceau aux positions du
+SCF et n'est jamais décalé. Vous pouvez choisir _Désactiver et graver_, _Graver quand même_ ou
+annuler.
+
+Les mouvements de jog et les jobs ne sont jamais décalés par l'interrupteur : le jog est relatif, et
+la sortie G-code est identique que l'alignement soit activé ou non. L'interrupteur est propre à la
+session — il n'est pas enregistré dans le profil de la machine et se réinitialise lorsque vous
+changez de machine.
+
+Le décalage du pointeur est particulièrement utile pour les pièces plus grandes que le plateau laser
+(travail en passage continu), où vous alignez à plusieurs reprises le dessin sur une marque de
+référence de la pièce en mouvement.
+
+---
+
 ## Cadrage
 
 Le cadrage trace le rectangle englobant de votre travail à faible (ou zéro) puissance, montrant
@@ -233,6 +278,22 @@ Pour un placement précis sur des matériaux pré-imprimés ou marqués :
 4. **Importer et positionner la conception** visuellement sur l'image de la caméra
 5. **Désactiver la caméra** et cadrer pour vérifier
 6. **Exécuter le travail**
+
+### Flux de Travail en Passage Continu
+
+Pour les pièces plus longues que le plateau laser (alimentées à travers la machine en segments), le
+**décalage du pointeur** supprime les calculs manuels :
+
+1. **Coupez le segment 1** de votre dessin normalement.
+2. **Faites avancer la pièce** dans le passage continu pour que le segment suivant soit sur le
+   plateau.
+3. **Déplacez la machine** jusqu'à ce que le point du pointeur marque un point de repère sur la
+   pièce (par exemple un coin d'un élément déjà coupé).
+4. **Définissez le zéro du SCF** (ou Zéro X / Zéro Y) — avec le décalage du pointeur activé,
+   l'origine tombe exactement là où le pointeur a visé.
+5. **Positionnez le segment suivant** du dessin par rapport à cette origine dans le canevas.
+6. **Cadrez pour vérifier**, puis **lancez le job**.
+7. Répétez à partir de l'étape 2 pour chaque segment restant.
 
 ### Flux de Travail de Production
 

@@ -161,6 +161,69 @@ When a CO2 or Fiber laser type is selected, the following PWM controls appear:
 These defaults carry through to your operation steps, where they can be overridden per step if
 needed.
 
+#### Pointer Offset
+
+If your machine has a separate pointer laser (a small red dot laser) mounted at a fixed distance
+from the cutting beam, you can tell Rayforge about that distance so it can compensate for it.
+
+- **Use Pointer Offset**: Enables the compensation. Off by default.
+- **Pointer Offset X / Y**: The distance from the cutting beam spot to the pointer dot, in
+  millimeters, along the machine X and Y axes.
+
+When enabled, three things change:
+
+1. **Set Work Zero at Current Position** (and the Zero X / Zero Y buttons) places the work origin
+   where the _pointer dot_ marks the stock, not where the (invisible) cutting beam is.
+2. The canvas shows a yellow pointer dot next to the red beam dot, marking where the pointer dot is
+   on your material.
+3. A **Pointer Alignment** switch becomes available in the move-to popover (see below).
+
+#### Pointer Alignment
+
+Pointer alignment is a runtime switch in the move-to popover (the compass icon next to the position
+readout). While it is on, all absolute aiming operations — Move-To, the corner shortcuts, moving to
+the WCS origin, Click-to-Move, Move-Head-Here, and framing — are shifted so the _pointer dot_ lands
+on the aimed position. The canvas pointer dot is drawn filled while alignment is on and hollow while
+it is off.
+
+The typical workflow:
+
+1. Jog the machine until the pointer dot marks your reference point on the stock.
+2. **Set Work Zero** there — with the pointer offset enabled, the origin lands exactly where the
+   pointer pointed.
+3. Turn on **Pointer Alignment** in the move-to popover.
+4. Frame and move with the pointer dot: everything you aim at is marked by the pointer.
+5. When you press **Send**, a warning reminds you that the job burns with the beam at the WCS
+   positions — you can turn alignment off and burn, burn anyway, or cancel.
+
+Two things are never shifted: **jog** (a relative move needs no compensation) and **jobs** — cutting
+always happens with the beam at the WCS positions, so your G-code output is identical whether
+alignment is on or off. Together with zeroing by the pointer dot this stays consistent: the origin
+sits at `beam + offset`, aiming shifts every target by `-offset`, and the burn is unshifted.
+
+Pointer alignment is a session-only setting: it is not saved to the machine profile and resets when
+you switch machines.
+
+<!-- prettier-ignore-start -->
+:::tip[Measuring the Offset]
+1. Jog the machine until the pointer dot marks a visible point on the stock.
+2. Turn on [focus mode](#focus-power) and jog until the *cutting beam* burns a mark on exactly the
+   same point (or carefully move the beam there at focus power).
+3. The offset is the pointer position minus the beam position. For example, if the pointer marked
+   X=100 and you had to jog the beam to X=88 to hit the same spot, enter X = 12.0 — the pointer dot
+   sits 12 mm ahead of the beam.
+
+If a test cut comes out shifted, flip the sign of the corresponding axis.
+:::
+<!-- prettier-ignore-end -->
+
+<!-- prettier-ignore-start -->
+:::note[Rotary Mode]
+When the rotary attachment is active, the Y axis is replaced by the rotary roller, so the Y
+component of the pointer offset does not apply meaningfully. Set it to 0 for rotary jobs.
+:::
+<!-- prettier-ignore-end -->
+
 #### 3D Model
 
 Each laser head can have a 3D model assigned to it. This model is rendered in the

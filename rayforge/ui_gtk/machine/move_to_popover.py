@@ -21,6 +21,10 @@ class MoveToPopover(Gtk.Popover):
     corner shortcuts and the active-WCS origin shortcut. Values are
     interpreted in the active work coordinate system, matching the
     position readout in the machine panel.
+
+    While pointer alignment is on, all absolute moves issued here are
+    shifted so the pointer dot lands on the entered position; the
+    coordinate prefill reports the pointer dot's position accordingly.
     """
 
     def __init__(self, **kwargs):
@@ -61,6 +65,19 @@ class MoveToPopover(Gtk.Popover):
         )
         self.z_row.set_visible(False)
         coords_group.add(self.z_row)
+
+        self.alignment_row = Adw.SwitchRow(title=_("Pointer Alignment"))
+        self._alignment_handler_id = self.alignment_row.connect(
+            "notify::active", self._on_alignment_toggled
+        )
+        coords_group.add(self.alignment_row)
+
+        self.travel_warning_label = Gtk.Label()
+        self.travel_warning_label.set_visible(False)
+        self.travel_warning_label.set_wrap(True)
+        self.travel_warning_label.set_xalign(0.0)
+        self.travel_warning_label.add_css_class("warning")
+        coords_group.add(self.travel_warning_label)
 
         self.move_row = Adw.ActionRow()
         coords_group.add(self.move_row)
@@ -120,6 +137,9 @@ class MoveToPopover(Gtk.Popover):
                 self._on_connection_status_changed
             )
             self.machine.changed.disconnect(self._on_machine_changed)
+            self.machine.pointer_alignment_changed.disconnect(
+                self._on_pointer_alignment_changed
+            )
 
         self.machine = machine
         self.machine_cmd = machine_cmd
@@ -130,6 +150,9 @@ class MoveToPopover(Gtk.Popover):
                 self._on_connection_status_changed
             )
             self.machine.changed.connect(self._on_machine_changed)
+            self.machine.pointer_alignment_changed.connect(
+                self._on_pointer_alignment_changed
+            )
 
         self._update_bounds_and_axes()
 
@@ -153,6 +176,12 @@ class MoveToPopover(Gtk.Popover):
     def _on_machine_changed(self, machine, **kwargs):
         self._update_bounds_and_axes()
 
+    def _on_pointer_alignment_changed(self, machine):
+        """Machine-side alignment toggles resync the switch and prefill."""
+        self._sync_alignment_row_state()
+        if self.get_visible():
+            self._prefill_from_machine()
+
     def _update_bounds_and_axes(self):
         if not self.machine:
             self.z_row.set_visible(False)
@@ -165,6 +194,7 @@ class MoveToPopover(Gtk.Popover):
                 z_cfg = self.machine.axes.get(Axis.Z)
                 z_min, z_max = z_cfg.extents if z_cfg else (-50.0, 50.0)
                 self.z_row.set_range(float(z_min), float(z_max))
+        self._update_alignment_row()
         self.update_sensitivity()
 
     def _is_machine_active(self) -> bool:
@@ -189,8 +219,58 @@ class MoveToPopover(Gtk.Popover):
         self.update_sensitivity()
         self._prefill_from_machine()
 
+    # -- Pointer alignment ------------------------------------------
+
+    def _get_pointer_shift(self) -> tuple[float, float]:
+        """The (x, y) amount to subtract from absolute aim targets
+        while pointer alignment is on, (0, 0) otherwise."""
+        if not self.machine or not self.machine.pointer_alignment_enabled:
+            return (0.0, 0.0)
+        return self.machine.get_pointer_offset()
+
+    def _update_alignment_row(self):
+        """Syncs the alignment switch sensitivity and subtitle."""
+        if not self.machine:
+            self.alignment_row.set_sensitive(False)
+            return
+        has_offset = self.machine.has_pointer_offset()
+        self.alignment_row.set_sensitive(has_offset)
+        if has_offset:
+            self.alignment_row.set_subtitle(
+                _("Aim moves at the pointer dot instead of the beam")
+            )
+        else:
+            self.alignment_row.set_subtitle(
+                _("Requires a pointer offset on the laser head")
+            )
+        self._sync_alignment_row_state()
+
+    def _sync_alignment_row_state(self):
+        """Mirrors the machine state into the switch without echo."""
+        if not self.machine:
+            return
+        self.alignment_row.handler_block(self._alignment_handler_id)
+        self.alignment_row.set_active(self.machine.pointer_alignment_enabled)
+        self.alignment_row.handler_unblock(self._alignment_handler_id)
+
+    def _on_alignment_toggled(self, row, _param):
+        if not self.machine:
+            return
+        self.machine.set_pointer_alignment(row.get_active())
+        # The machine may have refused (no offset); re-sync the switch.
+        self._sync_alignment_row_state()
+        if self.get_visible():
+            self._prefill_from_machine()
+
+    # -- Prefill and move issuance ----------------------------------
+
     def _prefill_from_machine(self):
-        """Prefill the coordinate rows with the current position."""
+        """Prefill the coordinate rows with the current position.
+
+        While pointer alignment is on, the rows show where the pointer
+        dot is, so re-issuing the prefilled values does not move the
+        head: entered values round-trip through the same shift.
+        """
         if not self.machine:
             return
         m_pos = self.machine.device_state.machine_pos
@@ -206,8 +286,9 @@ class MoveToPopover(Gtk.Popover):
                 self.machine.active_wcs
             )
             x, y, z = m_x - off_x, m_y - off_y, m_z - off_z
-        self.x_row.set_value_in_base_units(x)
-        self.y_row.set_value_in_base_units(y)
+        dx, dy = self._get_pointer_shift()
+        self.x_row.set_value_in_base_units(x + dx)
+        self.y_row.set_value_in_base_units(y + dy)
         if self.machine.has_z_axis:
             self.z_row.set_value_in_base_units(z)
 
@@ -215,6 +296,36 @@ class MoveToPopover(Gtk.Popover):
         if self._get_speed_callback is None:
             return None
         return self._get_speed_callback()
+
+    def _clamp_command_to_travel(
+        self, cmd_x: float, cmd_y: float
+    ) -> tuple[float, float]:
+        """Clamps a command-space aim target so the beam stays within
+        the machine travel, showing a warning when clamping.
+
+        The device adds the active WCS offset back to the command, so
+        the resulting beam position is what gets clamped.
+        """
+        self.travel_warning_label.set_visible(False)
+        if not self.machine:
+            return cmd_x, cmd_y
+        off_x, off_y, _off_z = self.machine.get_active_wcs_offset()
+        width, height = self.machine.axis_extents
+        x_min = -width if self.machine.reverse_x_axis else 0.0
+        x_max = 0.0 if self.machine.reverse_x_axis else width
+        y_min = -height if self.machine.reverse_y_axis else 0.0
+        y_max = 0.0 if self.machine.reverse_y_axis else height
+        beam_x = min(max(cmd_x + off_x, x_min), x_max)
+        beam_y = min(max(cmd_y + off_y, y_min), y_max)
+        if (beam_x, beam_y) != (cmd_x + off_x, cmd_y + off_y):
+            self.travel_warning_label.set_text(
+                _(
+                    "The shifted target is outside the machine travel; "
+                    "moving to the nearest reachable position instead."
+                )
+            )
+            self.travel_warning_label.set_visible(True)
+        return (beam_x - off_x, beam_y - off_y)
 
     def _on_move_clicked(self, button):
         self._issue_move()
@@ -234,6 +345,8 @@ class MoveToPopover(Gtk.Popover):
             if self.machine.has_z_axis
             else None
         )
+        dx, dy = self._get_pointer_shift()
+        x, y = self._clamp_command_to_travel(x - dx, y - dy)
         logger.info(
             "Moving to X %.2f Y %.2f%s",
             x,
@@ -284,27 +397,30 @@ class MoveToPopover(Gtk.Popover):
             return
 
         machine_x, machine_y = panel.panel_point_to_machine(panel_x, panel_y)
-        wcs_offset = self.machine.get_active_wcs_offset()
+        wcs_offset = self.machine.get_command_wcs_offset()
         x_off, y_off, _ = panel.get_command_offset(
             wcs_offset=wcs_offset,
             wcs_is_workarea_origin=self.machine.wcs_origin_is_workarea_origin,
         )
+        cmd_x, cmd_y = self._clamp_command_to_travel(
+            machine_x - x_off, machine_y - y_off
+        )
         logger.info(
             "Moving to %s at command position (%.2f, %.2f)",
             position,
-            machine_x - x_off,
-            machine_y - y_off,
+            cmd_x,
+            cmd_y,
         )
         self.machine_cmd.move_to(
             self.machine,
-            machine_x - x_off,
-            machine_y - y_off,
+            cmd_x,
+            cmd_y,
             speed=self._get_speed(),
         )
 
     def _on_move_to_wcs_zero(self, button):
         if not self.machine or not self.machine_cmd:
             return
-        self.machine_cmd.move_to(
-            self.machine, 0.0, 0.0, speed=self._get_speed()
-        )
+        dx, dy = self._get_pointer_shift()
+        x, y = self._clamp_command_to_travel(-dx, -dy)
+        self.machine_cmd.move_to(self.machine, x, y, speed=self._get_speed())

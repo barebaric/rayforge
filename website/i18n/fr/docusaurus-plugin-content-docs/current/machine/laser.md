@@ -160,6 +160,80 @@ Lorsqu'un type de laser CO2 ou Fiber est sélectionné, les contrôles PWM suiva
 Ces valeurs par défaut sont transmises à tes étapes d'opération, où elles peuvent être remplacées
 par étape si nécessaire.
 
+#### Décalage du Pointeur
+
+Si votre machine dispose d'un laser pointeur séparé (un petit laser à point rouge) monté à une
+distance fixe du faisceau de coupe, vous pouvez indiquer cette distance à Rayforge pour qu'il la
+compense.
+
+- **Utiliser le décalage du pointeur** : active la compensation. Désactivé par défaut.
+- **Décalage du pointeur X / Y** : la distance en millimètres entre le point du faisceau de coupe et
+  le point du pointeur, le long des axes X et Y de la machine.
+
+Lorsqu'il est activé, trois choses changent :
+
+1. **Définir l'origine à la position actuelle** (et les boutons Zéro X / Zéro Y) place l'origine de
+   travail à l'endroit où le _point du pointeur_ marque la pièce, pas là où se trouve le faisceau de
+   coupe (invisible).
+2. Le canevas affiche un point jaune du pointeur à côté du point rouge du faisceau, indiquant où se
+   trouve le point du pointeur sur votre matériau.
+3. Un interrupteur **Alignement du pointeur** devient disponible dans le popover de déplacement
+   (voir ci-dessous).
+
+#### Alignement du Pointeur
+
+L'alignement du pointeur est un interrupteur de session dans le popover de déplacement (l'icône de
+boussole à côté de l'affichage de la position). Lorsqu'il est actif, toutes les opérations de visée
+absolues — Déplacer vers, les raccourcis de coin, l'aller à l'origine du SCF, Cliquer pour déplacer,
+Déplacer la tête ici et le cadrage — sont décalées pour que le _point du pointeur_ se pose sur la
+position visée. Le point du pointeur sur le canevas est dessiné plein lorsque l'alignement est actif
+et creux lorsqu'il est inactif.
+
+Le flux de travail typique :
+
+1. Déplacez la machine jusqu'à ce que le point du pointeur marque votre point de repère sur la
+   pièce.
+2. **Définissez l'origine de travail** là — avec le décalage du pointeur activé, l'origine tombe
+   exactement là où le pointeur a visé.
+3. Activez **Alignement du pointeur** dans le popover de déplacement.
+4. Cadrez et déplacez avec le point du pointeur : tout ce que vous visez est marqué par le pointeur.
+5. Lorsque vous appuyez sur **Envoyer**, un avertissement vous rappelle que le job brûle avec le
+   faisceau aux positions du SCF — vous pouvez désactiver l'alignement et graver, graver quand même
+   ou annuler.
+
+Deux choses ne sont jamais décalées : le **jog** (un mouvement relatif ne nécessite aucune
+compensation) et les **jobs** — la coupe se fait toujours avec le faisceau aux positions du SCF,
+votre sortie G-code est donc identique que l'alignement soit activé ou non. Combiné au zérage par le
+point du pointeur, tout reste cohérent : l'origine se situe à `faisceau + décalage`, la visée décale
+chaque cible de `-décalage`, et la gravure n'est pas décalée.
+
+L'alignement du pointeur est un réglage de session : il n'est pas enregistré dans le profil de la
+machine et se réinitialise lorsque vous changez de machine.
+
+<!-- prettier-ignore-start -->
+:::tip[Mesurer le Décalage]
+1. Déplacez la machine jusqu'à ce que le point du pointeur marque un point
+   visible sur la pièce.
+2. Activez le mode focus et déplacez jusqu'à ce que le *faisceau de coupe* brûle
+   une marque exactement au même endroit (ou déplacez prudemment le faisceau à
+   la puissance focus).
+3. Le décalage est la position du pointeur moins celle du faisceau. Par exemple,
+   si le pointeur a marqué X=100 et que vous avez dû déplacer le faisceau à
+   X=88 pour toucher le même endroit, saisissez X = 12.0 — le point du pointeur
+   se trouve 12 mm devant le faisceau.
+
+Si une coupe de test sort décalée, inversez le signe de l'axe concerné.
+:::
+<!-- prettier-ignore-end -->
+
+<!-- prettier-ignore-start -->
+:::note[Mode Rotatif]
+Lorsque l'accessoire rotatif est actif, l'axe Y est remplacé par le rouleau
+rotatif, de sorte que la composante Y du décalage du pointeur ne s'applique pas
+de manière significative. Mettez-la à 0 pour les jobs rotatifs.
+:::
+<!-- prettier-ignore-end -->
+
 #### Modèle 3D
 
 Chaque tête laser peut avoir un modèle 3D attribué. Ce modèle est affiché dans la

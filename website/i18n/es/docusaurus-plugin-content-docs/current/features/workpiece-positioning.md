@@ -70,6 +70,49 @@ potencia para ver el punto claramente.
 
 ---
 
+## Puntero Láser con Desplazamiento
+
+Algunas máquinas tienen un láser puntero dedicado (un pequeño láser de punto rojo) montado a una
+distancia fija del haz de corte. Cuando alineas el material usando el punto del puntero, el haz de
+corte en realidad aterrizaría desplazado de ese punto — a menos que Rayforge lo compense.
+
+La opción de láser [Desplazamiento del Puntero](../machine/laser.md) te permite introducir esa
+distancia y activar o desactivar la compensación. Con ella activada:
+
+- **Establecer cero en la posición actual** (y Cero X / Cero Y) coloca el origen de trabajo en la
+  posición del punto del puntero.
+- El lienzo muestra un punto amarillo del puntero junto al punto rojo del haz, marcando dónde está
+  el punto del puntero en tu material.
+- Un interruptor de **alineación del puntero** aparece en el popover de movimiento (el icono de
+  brújula junto a la lectura de posición).
+
+### Alineación del Puntero
+
+Mientras la **alineación del puntero** está activada, cada operación absoluta de apuntado — Mover a,
+los atajos de esquina, ir al origen del SCF, Clic para mover, Mover cabeza aquí y enmarcar — hace
+aterrizar el _punto del puntero_ en la posición apuntada, de modo que puedes posicionar el material
+completamente por el punto visible. La entrada de coordenadas del popover se rellena con la posición
+del punto del puntero, y el punto del puntero del lienzo se dibuja relleno mientras la alineación
+está activada y hueco mientras está desactivada.
+
+El flujo de trabajo combina limpiamente con el zerado por el punto del puntero: el origen queda
+donde el puntero marcó, el apuntado desplaza cada objetivo por el desplazamiento, y la grabación no
+se desplaza — así alinear con el punto y cortar con el haz terminan siendo consistentes.
+
+Al pulsar **Enviar** con la alineación activada, aparece una advertencia en cada envío (no hay
+opción de "no volver a preguntar"): el trabajo corta con el haz en las posiciones del SCF y nunca se
+desplaza. Puedes elegir _Desactivar y grabar_, _Grabar de todos modos_ o cancelar.
+
+Los movimientos de jog y los trabajos nunca se desplazan con el interruptor: el jog es relativo, y
+la salida G-code es idéntica tanto si la alineación está activada como desactivada. El interruptor
+es solo de sesión — no se guarda en el perfil de la máquina y se restablece al cambiar de máquina.
+
+El desplazamiento del puntero es especialmente útil para material más grande que la cama láser
+(trabajo de paso continuo), donde alineas repetidamente el diseño con una marca de referencia en el
+material en movimiento.
+
+---
+
 ## Enmarcado
 
 El enmarcado traza el rectángulo delimitador de su trabajo a potencia baja (o cero), mostrando
@@ -230,6 +273,22 @@ Para colocación precisa en materiales preimpresos o marcados:
 4. **Importar y posicionar diseño** visualmente en la imagen de la cámara
 5. **Desactivar cámara** y enmarcar para verificar
 6. **Ejecutar el trabajo**
+
+### Flujo de Trabajo de Paso Continuo
+
+Para material más largo que la cama láser (alimentado a través de la máquina en segmentos), el
+**desplazamiento del puntero** elimina el cálculo manual:
+
+1. **Corta el segmento 1** de tu diseño normalmente.
+2. **Alimenta el material hacia adelante** a través del paso continuo para que el siguiente segmento
+   quede sobre la cama.
+3. **Mueve la máquina** hasta que el punto del puntero marque un punto de referencia en el material
+   (por ejemplo, una esquina de un elemento ya cortado).
+4. **Establece el cero del SCF** (o Cero X / Cero Y) — con el desplazamiento del puntero activado,
+   el origen queda exactamente donde apuntó el puntero.
+5. **Posiciona el siguiente segmento** del diseño relativo a ese origen en el lienzo.
+6. **Enmarca para verificar**, luego **ejecuta el trabajo**.
+7. Repite desde el paso 2 para cada segmento restante.
 
 ### Flujo de Trabajo de Producción
 
