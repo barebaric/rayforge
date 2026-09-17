@@ -161,6 +161,45 @@ When a CO2 or Fiber laser type is selected, the following PWM controls appear:
 These defaults carry through to your operation steps, where they can be overridden per step if
 needed.
 
+#### Pointer Offset
+
+If your machine has a separate pointer laser (a small red dot laser) mounted at a fixed distance
+from the cutting beam, you can tell Rayforge about that distance so it can compensate for it.
+
+- **Use Pointer Offset**: Enables the compensation. Off by default.
+- **Pointer Offset X / Y**: The distance from the cutting beam spot to the pointer dot, in
+  millimeters, along the machine X and Y axes.
+
+When enabled, two things change:
+
+1. **Set Work Zero at Current Position** (and the Zero X / Zero Y buttons) places the work origin
+   where the _pointer dot_ marks the stock, not where the (invisible) cutting beam is.
+2. The laser dot on the canvas is drawn at the pointer dot's position, so it matches what you see on
+   your material.
+
+Cutting, framing, and jog commands are never affected — they always refer to the cutting beam, so
+your G-code output is identical whether the offset is enabled or not.
+
+<!-- prettier-ignore-start -->
+:::tip[Measuring the Offset]
+1. Jog the machine until the pointer dot marks a visible point on the stock.
+2. Turn on [focus mode](#focus-power) and jog until the *cutting beam* burns a mark on exactly the
+   same point (or carefully move the beam there at focus power).
+3. The difference between the two machine positions is your offset. For example, if the beam needs
+   to move +12.0 mm in X and -3.5 mm in Y from the pointer position to hit the same spot, enter
+   X = 12.0 and Y = -3.5.
+
+If a test cut comes out shifted, flip the sign of the corresponding axis.
+:::
+<!-- prettier-ignore-end -->
+
+<!-- prettier-ignore-start -->
+:::note[Rotary Mode]
+When the rotary attachment is active, the Y axis is replaced by the rotary roller, so the Y
+component of the pointer offset does not apply meaningfully. Set it to 0 for rotary jobs.
+:::
+<!-- prettier-ignore-end -->
+
 #### 3D Model
 
 Each laser head can have a 3D model assigned to it. This model is rendered in the

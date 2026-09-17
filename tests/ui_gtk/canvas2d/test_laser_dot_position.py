@@ -253,3 +253,66 @@ class TestLaserDotWithWCSOffset:
 
         assert abs(center_x - 60.0) < 1e-5
         assert abs(center_y - 40.0) < 1e-5
+
+
+class TestLaserDotWithPointerOffset:
+    """
+    When the laser head has a pointer offset enabled, the dot is drawn
+    at the pointer dot's position (beam + offset), matching the visible
+    dot the user aligns against on the stock. Cutting coordinates are
+    never affected; this is a canvas-display-only compensation.
+    """
+
+    @pytest.mark.ui
+    def test_laser_dot_renders_pointer_offset(self, ui_context_initializer):
+        """
+        Beam at machine (30, 30) with a pointer offset of (10, 20)
+        means the pointer dot marks (40, 50); the canvas dot must
+        follow the pointer dot.
+        """
+        machine = Machine(ui_context_initializer)
+        machine.set_axis_extents(WIDTH, HEIGHT)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(10.0, 20.0)
+        head.set_pointer_offset_enabled(True)
+
+        mock_editor = MagicMock()
+        mock_editor.doc = MagicMock()
+        mock_editor.doc.active_layer.rotary_enabled = False
+        mock_window = MagicMock()
+        surface = WorkSurface(mock_editor, mock_window, machine)
+
+        surface.set_laser_dot_position(30.0, 30.0)
+
+        center_x, center_y = _get_laser_dot_center(surface)
+        assert abs(center_x - 40.0) < 1e-5
+        assert abs(center_y - 50.0) < 1e-5
+
+    @pytest.mark.ui
+    def test_laser_dot_ignores_disabled_pointer_offset(
+        self, ui_context_initializer
+    ):
+        """
+        A configured but disabled pointer offset must not move the
+        dot: the canvas shows the plain beam position.
+        """
+        machine = Machine(ui_context_initializer)
+        machine.set_axis_extents(WIDTH, HEIGHT)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(10.0, 20.0)
+
+        mock_editor = MagicMock()
+        mock_editor.doc = MagicMock()
+        mock_editor.doc.active_layer.rotary_enabled = False
+        mock_window = MagicMock()
+        surface = WorkSurface(mock_editor, mock_window, machine)
+
+        surface.set_laser_dot_position(30.0, 30.0)
+
+        center_x, center_y = _get_laser_dot_center(surface)
+        assert abs(center_x - 30.0) < 1e-5
+        assert abs(center_y - 30.0) < 1e-5

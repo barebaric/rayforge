@@ -75,6 +75,24 @@ not leave any mark on your material. Darker materials may need higher power to s
 
 ---
 
+## Pointer Laser Offset
+
+Some machines have a dedicated pointer laser (a small red dot laser) mounted at a fixed distance
+from the cutting beam. When you align the stock using the pointer dot, the cutting beam would
+actually land offset from that point — unless Rayforge compensates.
+
+The [Pointer Offset](../machine/laser.md#pointer-offset) laser setting lets you enter that distance
+and toggle the compensation on or off. With it enabled:
+
+- **Set Work Zero at Current Position** (and Zero X / Zero Y) places the work origin at the pointer
+  dot's position.
+- The laser dot on the canvas tracks the pointer dot.
+
+The pointer offset is especially useful for stock that is larger than the laser bed (pass-through
+work), where you repeatedly align the design to a reference mark on the moving stock.
+
+---
+
 ## Framing
 
 Framing traces the bounding rectangle of your job at low (or zero) power, showing exactly where your
@@ -229,6 +247,21 @@ For accurate placement on pre-printed or marked materials:
 4. **Import and position design** visually on the camera image
 5. **Disable camera** and frame to verify
 6. **Run the job**
+
+### Pass-Through Workflow
+
+For stock longer than the laser bed (fed through the machine in segments), a
+[pointer laser offset](#pointer-laser-offset) removes the manual guesswork:
+
+1. **Cut segment 1** of your design normally.
+2. **Feed the stock forward** through the pass-through so the next segment is on the bed.
+3. **Jog the machine** until the pointer dot marks a reference point on the stock (e.g. a corner of
+   an already-cut feature).
+4. **Set WCS zero** (or Zero X / Zero Y) — with the pointer offset enabled, the origin lands exactly
+   where the pointer pointed.
+5. **Position the next segment** of the design relative to that origin in the canvas.
+6. **Frame to verify**, then **run the job**.
+7. Repeat from step 2 for each remaining segment.
 
 ### Production Workflow
 

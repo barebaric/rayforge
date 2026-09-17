@@ -224,6 +224,71 @@ class TestMachine:
         set_wcs_spy.assert_called_once_with("G54", 100.0, 200.0, 0.0)
         read_wcs_spy.assert_called_once()
 
+    @pytest.mark.asyncio
+    async def test_set_work_origin_here_pointer_offset(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
+        """
+        When the laser head has a pointer offset enabled, setting the
+        work origin at the current position compensates by the offset,
+        so the origin lands where the pointer dot marks the stock
+        instead of where the cutting beam is.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+        await machine.connect()
+        await wait_for_tasks_to_finish(task_mgr)
+        machine.active_wcs = "G54"
+        machine.update_wcs_offset("G54", (10.0, 20.0, 0.0))
+        machine.device_state.machine_pos = (100.0, 200.0, 0.0)
+
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(12.0, -3.5)
+        head.set_pointer_offset_enabled(True)
+
+        set_wcs_spy = mocker.patch.object(
+            machine.driver, "set_wcs_offset", new_callable=mocker.AsyncMock
+        )
+        read_wcs_spy = mocker.patch.object(
+            machine.driver, "read_wcs_offsets", new_callable=mocker.AsyncMock
+        )
+
+        await machine.set_work_origin_here(Axis.X | Axis.Y)
+
+        # Beam at (100, 200) means the pointer marks (112, 196.5).
+        set_wcs_spy.assert_called_once_with("G54", 112.0, 196.5, 0.0)
+        read_wcs_spy.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_set_work_origin_here_pointer_offset_z_unaffected(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
+        """Zeroing only Z ignores the pointer offset entirely."""
+        await wait_for_tasks_to_finish(task_mgr)
+        await machine.connect()
+        await wait_for_tasks_to_finish(task_mgr)
+        machine.active_wcs = "G54"
+        machine.update_wcs_offset("G54", (10.0, 20.0, 5.0))
+        machine.device_state.machine_pos = (100.0, 200.0, 7.0)
+
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(12.0, -3.5)
+        head.set_pointer_offset_enabled(True)
+
+        set_wcs_spy = mocker.patch.object(
+            machine.driver, "set_wcs_offset", new_callable=mocker.AsyncMock
+        )
+        mocker.patch.object(
+            machine.driver,
+            "read_wcs_offsets",
+            new_callable=mocker.AsyncMock,
+        )
+
+        await machine.set_work_origin_here(Axis.Z)
+
+        set_wcs_spy.assert_called_once_with("G54", 10.0, 20.0, 7.0)
+
     def test_has_z_axis_default_true(self, machine: Machine):
         """A default machine has a Z axis configured."""
         assert machine.has_z_axis is True

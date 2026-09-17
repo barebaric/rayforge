@@ -276,12 +276,23 @@ class WorkSurface(WorldSurface):
         self.queue_draw()
 
     def set_laser_dot_position(self, x_mm: float, y_mm: float) -> None:
-        """Sets the laser dot position in real-world mm."""
+        """Sets the laser dot position in machine millimeters.
+
+        The coordinates describe where the cutting beam physically is.
+        When the laser head has a pointer offset enabled, the dot is
+        drawn at the pointer dot's position (beam + offset) so it
+        matches the visible dot the user aligns against on the stock.
+        """
         self._laser_dot_pos_mm = x_mm, y_mm
+        pointer_dx, pointer_dy = (0.0, 0.0)
+        if self.machine:
+            pointer_dx, pointer_dy = self.machine.get_pointer_offset()
 
         # Transform machine coordinates to canvas coordinates (similar to
         # Work Origin logic)
-        canvas_x, canvas_y = self._machine_coords_to_canvas(x_mm, y_mm)
+        canvas_x, canvas_y = self._machine_coords_to_canvas(
+            x_mm + pointer_dx, y_mm + pointer_dy
+        )
 
         # The dot is a child of self.root, so its coordinates are in the
         # world (mm) space. We want to center it on the given mm coords.
@@ -1225,6 +1236,10 @@ class WorkSurface(WorldSurface):
             self._sync_nogo_zone_elements()
             self._on_wcs_updated(machine)
             self._update_pipeline_view_context()
+
+        # Reposition the dot so pointer-offset setting changes are
+        # reflected immediately.
+        self.set_laser_dot_position(*self._laser_dot_pos_mm)
 
     def reset_view(self):
         """
