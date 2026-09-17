@@ -1183,6 +1183,22 @@ class Machine:
                 return head
         return None
 
+    def get_pointer_offset(
+        self, head: LaserHead | None = None
+    ) -> tuple[float, float]:
+        """
+        The (x, y) pointer offset in machine millimeters for the given
+        laser head, defaulting to the first laser head.
+
+        Returns ``(0.0, 0.0)`` when the head has no pointer offset or
+        it is disabled, so callers can add it unconditionally.
+        """
+        if head is None:
+            head = self.get_default_laser_head()
+        if not isinstance(head, LaserHead):
+            return (0.0, 0.0)
+        return head.pointer_offset
+
     def remove_head(self, head: Head):
         head.changed.disconnect(self._on_head_changed)
         self.heads.remove(head)
