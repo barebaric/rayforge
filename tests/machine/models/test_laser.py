@@ -640,3 +640,103 @@ def test_wavelength_and_power_missing_fields_use_defaults():
         == LaserType.DIODE.default_wavelength_nm
     )
     assert laser.effective_max_power_watts() == DEFAULT_MAX_POWER_WATTS
+
+
+# --- Pointer offset ---------------------------------------------------
+
+
+def test_pointer_offset_defaults_to_disabled():
+    """A fresh LaserHead has no pointer offset configured."""
+    laser = LaserHead()
+    assert laser.pointer_offset_enabled is False
+    assert laser.pointer_offset_x == 0.0
+    assert laser.pointer_offset_y == 0.0
+    assert laser.pointer_offset == (0.0, 0.0)
+
+
+def test_pointer_offset_property_zero_when_disabled():
+    """A configured offset is ignored while the toggle is off."""
+    laser = LaserHead()
+    laser.set_pointer_offset(12.0, -3.5)
+    assert laser.pointer_offset == (0.0, 0.0)
+
+    laser.set_pointer_offset_enabled(True)
+    assert laser.pointer_offset == (12.0, -3.5)
+
+
+def test_set_pointer_offset_signals():
+    """set_pointer_offset and set_pointer_offset_enabled send changed."""
+    laser = LaserHead()
+    signal_calls = []
+
+    def handler(sender):
+        signal_calls.append(sender)
+
+    laser.changed.connect(handler)
+    laser.set_pointer_offset(12.0, -3.5)
+    laser.set_pointer_offset_enabled(True)
+    assert len(signal_calls) == 2
+
+
+def test_set_pointer_offset_no_signal_on_same_value():
+    laser = LaserHead()
+    signal_calls = []
+
+    def handler(sender):
+        signal_calls.append(sender)
+
+    laser.changed.connect(handler)
+    laser.set_pointer_offset(1.0, 2.0)
+    laser.set_pointer_offset(1.0, 2.0)
+    assert len(signal_calls) == 1
+
+    laser.set_pointer_offset_enabled(True)
+    laser.set_pointer_offset_enabled(True)
+    assert len(signal_calls) == 2
+
+
+def test_pointer_offset_serialization_roundtrip():
+    laser = LaserHead()
+    laser.set_pointer_offset(12.0, -3.5)
+    laser.set_pointer_offset_enabled(True)
+
+    data = laser.to_dict()
+    assert data["pointer_offset_enabled"] is True
+    assert data["pointer_offset_x"] == 12.0
+    assert data["pointer_offset_y"] == -3.5
+
+    restored = Laser.from_dict(data)
+    assert restored.pointer_offset_enabled is True
+    assert restored.pointer_offset_x == 12.0
+    assert restored.pointer_offset_y == -3.5
+
+
+def test_pointer_offset_missing_fields_use_defaults():
+    """Machines saved before the field existed default to disabled."""
+    data = {
+        "uid": "test-uid",
+        "name": "Test Laser",
+        "tool_number": 0,
+        "max_power": 1000,
+    }
+    laser = Laser.from_dict(data)
+    assert laser.pointer_offset_enabled is False
+    assert laser.pointer_offset == (0.0, 0.0)
+
+
+def test_machine_get_pointer_offset(isolated_machine):
+    """Machine.get_pointer_offset resolves the default laser head."""
+    head = isolated_machine.get_default_laser_head()
+    assert isolated_machine.get_pointer_offset() == (0.0, 0.0)
+
+    head.set_pointer_offset(5.0, 6.0)
+    head.set_pointer_offset_enabled(True)
+    assert isolated_machine.get_pointer_offset() == (5.0, 6.0)
+    assert isolated_machine.get_pointer_offset(head) == (5.0, 6.0)
+
+
+def test_machine_get_pointer_offset_disabled_returns_zero(isolated_machine):
+    """A configured but disabled offset resolves to (0.0, 0.0)."""
+    head = isolated_machine.get_default_laser_head()
+    head.set_pointer_offset(5.0, 6.0)
+    assert isolated_machine.get_pointer_offset() == (0.0, 0.0)

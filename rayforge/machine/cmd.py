@@ -237,18 +237,27 @@ class MachineCmd:
         # command space: the emitted coordinates must be relative to
         # the active WCS origin because the controller adds the WCS
         # offset back (issue #362). The regular send path performs the
-        # same adjustment in the machine-transform stage.
+        # same adjustment in the machine-transform stage. While
+        # pointer alignment is on, the command WCS offset includes the
+        # pointer offset, so the frame outline is traced by the
+        # pointer dot rather than the cutting beam.
         space = MachineSpace.from_machine(machine)
         combined = space.get_world_to_machine_matrix()
         if machine.reverse_z_axis:
             z_flip = np.eye(4)
             z_flip[2, 2] = -1.0
             combined = z_flip @ combined
+        frame_with_laser.transform(combined)
+
+        _warn_if_frame_exceeds_travel(
+            self._editor, machine, frame_with_laser.rect()
+        )
+
         to_command = space.get_machine_to_command_matrix(
-            wcs_offset=machine.get_active_wcs_offset(),
+            wcs_offset=machine.get_command_wcs_offset(),
             wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
         )
-        frame_with_laser.transform(to_command @ combined)
+        frame_with_laser.transform(to_command)
 
         # AXIS_REPLACEMENT modules encode the rotary degrees into the
         # replaced machine axis after the world→machine transform.
@@ -530,6 +539,46 @@ def _create_driver_encoder(machine: Machine):
     else:
         driver_cls = NoDeviceDriver
     return driver_cls.create_encoder(machine)
+
+
+def _warn_if_frame_exceeds_travel(
+    editor: DocEditor,
+    machine: Machine,
+    frame_rect: tuple[float, float, float, float],
+):
+    """
+    Warn when the pointer-shifted frame leaves the machine travel.
+
+    While pointer alignment is on, the beam traces the frame one
+    pointer offset behind the outline, which can leave the reachable
+    area even though the outline itself is on the bed. The frame still
+    runs; the warning explains why the trace may stop short of a side.
+    """
+    if not machine.pointer_alignment_enabled:
+        return
+    dx, dy = machine.get_pointer_offset()
+    min_x, min_y, max_x, max_y = frame_rect
+    width, height = machine.axis_extents
+    x_min = -width if machine.reverse_x_axis else 0.0
+    x_max = 0.0 if machine.reverse_x_axis else width
+    y_min = -height if machine.reverse_y_axis else 0.0
+    y_max = 0.0 if machine.reverse_y_axis else height
+    corners = [
+        (min_x - dx, min_y - dy),
+        (min_x - dx, max_y - dy),
+        (max_x - dx, max_y - dy),
+        (max_x - dx, min_y - dy),
+    ]
+    if all(x_min <= x <= x_max and y_min <= y <= y_max for x, y in corners):
+        return
+    editor.notification_requested.send(
+        editor,
+        message=_(
+            "Pointer alignment shifts the frame partly outside the "
+            "machine travel; the trace may stop short of a side."
+        ),
+        persistent=True,
+    )
 
 
 def _apply_frame_rotary_mapping(

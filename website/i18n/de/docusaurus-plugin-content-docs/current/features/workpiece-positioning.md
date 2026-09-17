@@ -71,6 +71,50 @@ möglicherweise höhere Leistung, um den Punkt deutlich zu sehen.
 
 ---
 
+## Zeigerlaser-Offset
+
+Manche Maschinen haben einen dedizierten Zeigerlaser (einen kleinen Laser mit rotem Punkt), der in
+festem Abstand zum Schneidstrahl montiert ist. Wenn du das Werkstück anhand des Zeigerpunkts
+ausrichtest, würde der Schneidstrahl eigentlich versetzt zu diesem Punkt landen — es sei denn,
+Rayforge kompensiert es.
+
+Die Laser-Einstellung [Zeiger-Offset](../machine/laser.md) lässt dich diesen Abstand eingeben und
+die Kompensation ein- oder ausschalten. Bei aktiviertem Offset:
+
+- **Arbeitsnullpunkt an aktueller Position setzen** (und Nullen X / Nullen Y) legt den
+  Arbeitsursprung an die Position des Zeigerpunkts.
+- Die Leinwand zeigt einen gelben Zeigerpunkt neben dem roten Strahlpunkt, der markiert, wo sich der
+  Zeigerpunkt auf deinem Material befindet.
+- Ein **Zeigerausrichtung**-Schalter erscheint im Verschieben-Popover (das Kompass-Symbol neben der
+  Positionsanzeige).
+
+### Zeigerausrichtung
+
+Während die **Zeigerausrichtung** aktiv ist, landet bei jeder absoluten Positionierungsoperation —
+Verschieben nach, die Ecken-Kürzel, das Anfahren des WKS-Ursprungs, Klicken zum Verschieben, Kopf
+hierher bewegen und Einrahmen — der _Zeigerpunkt_ auf der anvisierten Position, sodass du das
+Werkstück vollständig am sichtbaren Punkt ausrichten kannst. Die Koordinateneingabe im Popover wird
+mit der Position des Zeigerpunkts vorbefüllt, und der Zeigerpunkt auf der Leinwand wird gefüllt
+gezeichnet, während die Ausrichtung aktiv ist, und hohl, während sie aus ist.
+
+Der Arbeitsablauf kombiniert sich sauber mit dem Nullen per Zeigerpunkt: Der Ursprung liegt dort, wo
+der Zeiger markiert hat, das Anvisieren verschiebt jedes Ziel um den Offset, und der Brennvorgang
+bleibt unverschoben — Ausrichten mit dem Punkt und Schneiden mit dem Strahl passen also zusammen.
+
+Wenn du bei aktiver Ausrichtung auf **Senden** drückst, erscheint bei jedem Senden eine Warnung (es
+gibt kein „nicht mehr fragen“): Der Job schneidet mit dem Strahl an den WKS-Positionen und wird nie
+verschoben. Du kannst zwischen _Ausschalten und Brennen_, _Trotzdem brennen_ und Abbrechen wählen.
+
+Jog-Bewegungen und Jobs werden vom Schalter nie verschoben: Jog ist relativ, und die G-Code-Ausgabe
+ist identisch, ob die Ausrichtung ein- oder ausgeschaltet ist. Der Schalter gilt nur für die Sitzung
+— er wird nicht im Maschinenprofil gespeichert und zurückgesetzt, wenn du die Maschine wechselst.
+
+Der Zeiger-Offset ist besonders nützlich für Werkstücke, die größer als das Laserbett sind
+(Durchlaufbetrieb), bei denen du das Design wiederholt an einer Referenzmarke auf dem sich
+bewegenden Werkstück ausrichtest.
+
+---
+
 ## Einrahmen
 
 Einrahmen zeichnet das Begrenzungsrechteck deines Jobs bei niedriger (oder keiner) Leistung nach und
@@ -229,6 +273,22 @@ Für genaue Platzierung auf vorgedruckten oder markierten Materialien:
 4. **Design importieren und positionieren** visuell auf dem Kamerabild
 5. **Kamera deaktivieren** und einrahmen zur Verifizierung
 6. **Job ausführen**
+
+### Durchlauf-Workflow
+
+Bei Werkstücken, die länger als das Laserbett sind (abschnittsweise durch die Maschine geführt),
+nimmt der **Zeiger-Offset** das manuelle Rechnen ab:
+
+1. **Schneide Segment 1** deines Designs normal.
+2. **Schiebe das Werkstück nach vorne** durch den Durchlauf, sodass das nächste Segment auf dem Bett
+   liegt.
+3. **Verfahre die Maschine**, bis der Zeigerpunkt eine Referenzmarke auf dem Werkstück markiert (z.
+   B. eine Ecke eines bereits geschnittenen Elements).
+4. **Setze den WKS-Nullpunkt** (oder Nullen X / Nullen Y) — bei aktiviertem Zeiger-Offset landet der
+   Ursprung genau dort, wo der Zeiger gezeigt hat.
+5. **Positioniere das nächste Segment** des Designs relativ zu diesem Ursprung in der Leinwand.
+6. **Rahme zur Kontrolle**, dann **starte den Job**.
+7. Wiederhole ab Schritt 2 für jedes verbleibende Segment.
 
 ### Produktions-Workflow
 

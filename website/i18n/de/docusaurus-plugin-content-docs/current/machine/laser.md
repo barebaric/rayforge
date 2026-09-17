@@ -160,6 +160,79 @@ Wenn ein CO2- oder Faserlaser-Typ ausgewählt ist, erscheinen folgende PWM-Steue
 Diese Standardwerte werden an deine Operationsschritte übergeben, wo sie bei Bedarf pro Schritt
 überschrieben werden können.
 
+#### Zeiger-Offset
+
+Wenn deine Maschine einen separaten Zeigerlaser (einen kleinen Laser mit rotem Punkt) in festem
+Abstand zum Schneidstrahl hat, kannst du Rayforge diesen Abstand mitteilen, damit er ihn
+kompensiert.
+
+- **Zeiger-Offset verwenden**: Aktiviert die Kompensation. Standardmäßig aus.
+- **Zeiger-Offset X / Y**: Der Abstand in Millimetern von der Position des Schneidstrahls zum
+  Zeigerpunkt entlang der X- bzw. Y-Achse der Maschine.
+
+Bei aktiviertem Offset ändert sich dreierlei:
+
+1. **Arbeitsnullpunkt an aktueller Position setzen** (und die Tasten Nullen X / Nullen Y) legt den
+   Arbeitsursprung dorthin, wo der _Zeigerpunkt_ das Werkstück markiert — nicht dorthin, wo der
+   (unsichtbare) Schneidstrahl ist.
+2. Die Leinwand zeigt einen gelben Zeigerpunkt neben dem roten Strahlpunkt, der markiert, wo sich
+   der Zeigerpunkt auf deinem Material befindet.
+3. Ein **Zeigerausrichtung**-Schalter wird im Verschieben-Popover verfügbar (siehe unten).
+
+#### Zeigerausrichtung
+
+Die Zeigerausrichtung ist ein Laufzeit-Schalter im Verschieben-Popover (das Kompass-Symbol neben der
+Positionsanzeige). Ist er aktiv, werden alle absoluten Positionierungsoperationen — Verschieben
+nach, die Ecken-Kürzel, das Anfahren des WKS-Ursprungs, Klicken zum Verschieben, Kopf hierher
+bewegen und Einrahmen — verschoben, sodass der _Zeigerpunkt_ auf der anvisierten Position landet.
+Der Zeigerpunkt auf der Leinwand wird gefüllt gezeichnet, während die Ausrichtung aktiv ist, und
+hohl, während sie aus ist.
+
+Der typische Arbeitsablauf:
+
+1. Verfahre die Maschine, bis der Zeigerpunkt deinen Referenzpunkt auf dem Werkstück markiert.
+2. **Setze dort den Arbeitsnullpunkt** — bei aktiviertem Zeiger-Offset landet der Ursprung genau
+   dort, wo der Zeiger gezeigt hat.
+3. Aktiviere **Zeigerausrichtung** im Verschieben-Popover.
+4. Rahmen und verschiebe mit dem Zeigerpunkt: Alles, was du anvisierst, wird vom Zeiger markiert.
+5. Wenn du auf **Senden** drückst, erinnert dich eine Warnung daran, dass der Job mit dem Strahl an
+   den WKS-Positionen brennt — du kannst die Ausrichtung ausschalten und brennen, trotzdem brennen
+   oder abbrechen.
+
+Zwei Dinge werden nie verschoben: **Jog** (eine relative Bewegung braucht keine Kompensation) und
+**Jobs** — Schneiden passiert immer mit dem Strahl an den WKS-Positionen, daher ist deine
+G-Code-Ausgabe identisch, ob die Ausrichtung ein- oder ausgeschaltet ist. Zusammen mit dem Nullen
+per Zeigerpunkt bleibt alles konsistent: Der Ursprung liegt bei `Strahl + Offset`, das Anvisieren
+verschiebt jedes Ziel um `-Offset`, und der Brennvorgang bleibt unverschoben.
+
+Die Zeigerausrichtung ist eine sitzungsbezogene Einstellung: Sie wird nicht im Maschinenprofil
+gespeichert und zurückgesetzt, wenn du die Maschine wechselst.
+
+<!-- prettier-ignore-start -->
+:::tip[Offset messen]
+1. Verfahre die Maschine, bis der Zeigerpunkt eine sichtbare Stelle auf dem
+   Werkstück markiert.
+2. Aktiviere den Fokusmodus und verfahre, bis der *Schneidstrahl* an genau
+   derselben Stelle eine Markierung brennt (oder bewege den Strahl vorsichtig
+   bei Fokusleistung dorthin).
+3. Der Offset ist die Zeigerposition minus der Strahlposition. Wenn der Zeiger
+   zum Beispiel X=100 markierte und du den Strahl zu X=88 verfahren musstest,
+   um dieselbe Stelle zu treffen, gib X = 12.0 ein — der Zeigerpunkt sitzt
+   12 mm vor dem Strahl.
+
+Wenn ein Testschnitt versetzt herauskommt, drehe das Vorzeichen der
+betreffenden Achse um.
+:::
+<!-- prettier-ignore-end -->
+
+<!-- prettier-ignore-start -->
+:::note[Rotationsmodus]
+Wenn der Rotationsaufsatz aktiv ist, wird die Y-Achse durch die
+Rotationswalze ersetzt, sodass die Y-Komponente des Zeiger-Offsets nicht
+sinnvoll anwendbar ist. Setze sie bei Rotationsjobs auf 0.
+:::
+<!-- prettier-ignore-end -->
+
 #### 3D-Modell
 
 Jedem Laserkopf kann ein 3D-Modell zugewiesen werden. Dieses Modell wird in der

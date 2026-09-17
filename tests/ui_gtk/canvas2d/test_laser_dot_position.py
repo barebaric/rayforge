@@ -141,6 +141,14 @@ def _get_laser_dot_center(surface):
     return center_x, center_y
 
 
+def _get_pointer_dot_center(surface):
+    """Helper to get the pointer dot's center position on the canvas."""
+    tx, ty = surface._pointer_dot.transform.get_translation()
+    center_x = tx + surface._pointer_dot.width / 2
+    center_y = ty + surface._pointer_dot.height / 2
+    return center_x, center_y
+
+
 class TestLaserDotWithWCSOffset:
     """
     Tests that the laser dot is positioned at the machine coordinates
@@ -253,3 +261,149 @@ class TestLaserDotWithWCSOffset:
 
         assert abs(center_x - 60.0) < 1e-5
         assert abs(center_y - 40.0) < 1e-5
+
+
+def _make_surface(ui_context_initializer, machine) -> WorkSurface:
+    """Builds a WorkSurface with mocked editor/window dependencies."""
+    mock_editor = MagicMock()
+    mock_editor.doc = MagicMock()
+    mock_editor.doc.active_layer.rotary_enabled = False
+    return WorkSurface(mock_editor, MagicMock(), machine)
+
+
+class TestDualDotsWithPointerOffset:
+    """
+    With a pointer offset configured, the canvas shows two dots: the
+    red dot stays truthful to the cutting beam's machine position, and
+    a yellow dot marks the pointer dot (beam + offset). The yellow dot
+    is hollow while pointer alignment is off and filled while it is on.
+    Cutting coordinates are never affected; this is display-only.
+    """
+
+    @pytest.mark.ui
+    def test_beam_dot_stays_at_machine_position(self, ui_context_initializer):
+        """
+        Beam at machine (30, 30) with a pointer offset of (10, 20):
+        the red beam dot must stay at (30, 30), not follow the pointer.
+        """
+        machine = Machine(ui_context_initializer)
+        machine.set_axis_extents(WIDTH, HEIGHT)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(10.0, 20.0)
+        head.set_pointer_offset_enabled(True)
+
+        surface = _make_surface(ui_context_initializer, machine)
+
+        surface.set_laser_dot_position(30.0, 30.0)
+
+        center_x, center_y = _get_laser_dot_center(surface)
+        assert abs(center_x - 30.0) < 1e-5
+        assert abs(center_y - 30.0) < 1e-5
+
+    @pytest.mark.ui
+    def test_pointer_dot_renders_at_beam_plus_offset(
+        self, ui_context_initializer
+    ):
+        """
+        Beam at machine (30, 30) with a pointer offset of (10, 20)
+        means the pointer dot marks (40, 50); the yellow dot must be
+        visible there.
+        """
+        machine = Machine(ui_context_initializer)
+        machine.set_axis_extents(WIDTH, HEIGHT)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(10.0, 20.0)
+        head.set_pointer_offset_enabled(True)
+
+        surface = _make_surface(ui_context_initializer, machine)
+
+        surface.set_laser_dot_position(30.0, 30.0)
+
+        assert surface._pointer_dot.visible is True
+        center_x, center_y = _get_pointer_dot_center(surface)
+        assert abs(center_x - 40.0) < 1e-5
+        assert abs(center_y - 50.0) < 1e-5
+
+    @pytest.mark.ui
+    def test_pointer_dot_hidden_without_offset(self, ui_context_initializer):
+        """No pointer offset configured: only the beam dot is shown."""
+        machine = Machine(ui_context_initializer)
+        machine.set_axis_extents(WIDTH, HEIGHT)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+
+        surface = _make_surface(ui_context_initializer, machine)
+
+        surface.set_laser_dot_position(30.0, 30.0)
+
+        assert surface._pointer_dot.visible is False
+
+    @pytest.mark.ui
+    def test_pointer_dot_hidden_while_offset_disabled(
+        self, ui_context_initializer
+    ):
+        """
+        A configured but disabled pointer offset resolves to zero, so
+        the pointer dot stays hidden.
+        """
+        machine = Machine(ui_context_initializer)
+        machine.set_axis_extents(WIDTH, HEIGHT)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(10.0, 20.0)
+
+        surface = _make_surface(ui_context_initializer, machine)
+
+        surface.set_laser_dot_position(30.0, 30.0)
+
+        assert surface._pointer_dot.visible is False
+
+    @pytest.mark.ui
+    def test_pointer_dot_style_follows_alignment(self, ui_context_initializer):
+        """
+        The pointer dot is hollow while alignment is off and filled
+        while it is on; toggling repositions it immediately.
+        """
+        machine = Machine(ui_context_initializer)
+        machine.set_axis_extents(WIDTH, HEIGHT)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+
+        surface = _make_surface(ui_context_initializer, machine)
+        surface.set_laser_dot_position(30.0, 30.0)
+
+        surface.set_pointer_dot_state((10.0, 20.0), False)
+        assert surface._pointer_dot.visible is True
+        assert surface._pointer_dot._filled is False
+        center_x, center_y = _get_pointer_dot_center(surface)
+        assert abs(center_x - 40.0) < 1e-5
+        assert abs(center_y - 50.0) < 1e-5
+
+        surface.set_pointer_dot_state((10.0, 20.0), True)
+        assert surface._pointer_dot._filled is True
+        center_x, center_y = _get_pointer_dot_center(surface)
+        assert abs(center_x - 40.0) < 1e-5
+        assert abs(center_y - 50.0) < 1e-5
+
+    @pytest.mark.ui
+    def test_pointer_dot_follows_laser_dot_visibility(
+        self, ui_context_initializer
+    ):
+        """Disconnecting hides both dots, reconnecting restores them."""
+        machine = Machine(ui_context_initializer)
+        machine.set_axis_extents(WIDTH, HEIGHT)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+
+        surface = _make_surface(ui_context_initializer, machine)
+        surface.set_pointer_dot_state((10.0, 20.0), False)
+
+        surface.set_laser_dot_visible(False)
+        assert surface._laser_dot.visible is False
+        assert surface._pointer_dot.visible is False
+
+        surface.set_laser_dot_visible(True)
+        assert surface._laser_dot.visible is True
+        assert surface._pointer_dot.visible is True

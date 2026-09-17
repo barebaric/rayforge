@@ -419,12 +419,20 @@ class LaserHeadDetailWidget(DebounceMixin):
                 "traces the job boundary."
             ),
         )
+        self.pointer_group = Adw.PreferencesGroup(
+            title=_("Pointer Offset"),
+            description=_(
+                "Compensation for a pointer laser mounted at a fixed "
+                "offset from the cutting beam."
+            ),
+        )
         self.model_group = HeadModelGroup()
         self.groups: list[Adw.PreferencesGroup] = [
             self.properties_group,
             self.optics_group,
             self.pwm_group,
             self.frame_group,
+            self.pointer_group,
             self.model_group,
         ]
         self._build_ui()
@@ -687,6 +695,54 @@ class LaserHeadDetailWidget(DebounceMixin):
         )
         self.frame_group.add(self.frame_corner_pause_row)
 
+        self.pointer_enabled_row = Adw.SwitchRow()
+        self.pointer_enabled_row.set_title(_("Use Pointer Offset"))
+        self.pointer_enabled_row.set_subtitle(
+            _(
+                "Compensate when setting the work zero at the current "
+                "position, so the origin lands where the pointer dot "
+                "marks the stock"
+            )
+        )
+        self._handler_ids["pointer_enabled"] = (
+            self.pointer_enabled_row.connect(
+                "notify::active", self._on_pointer_enabled_changed
+            )
+        )
+        self.pointer_group.add(self.pointer_enabled_row)
+
+        self.pointer_offset_x_row = LengthSpinRow(
+            _("Pointer Offset X"),
+            _(
+                "Distance from the beam spot to the pointer dot along "
+                "the machine X axis"
+            ),
+            lower=-10000.0,
+            upper=10000.0,
+            step_increment=0.1,
+            value_in_base=0.0,
+        )
+        self.pointer_offset_x_row.value_changed.connect(
+            self._on_pointer_offset_changed
+        )
+        self.pointer_group.add(self.pointer_offset_x_row)
+
+        self.pointer_offset_y_row = LengthSpinRow(
+            _("Pointer Offset Y"),
+            _(
+                "Distance from the beam spot to the pointer dot along "
+                "the machine Y axis"
+            ),
+            lower=-10000.0,
+            upper=10000.0,
+            step_increment=0.1,
+            value_in_base=0.0,
+        )
+        self.pointer_offset_y_row.value_changed.connect(
+            self._on_pointer_offset_changed
+        )
+        self.pointer_group.add(self.pointer_offset_y_row)
+
     def set_head(self, head: LaserHead | None):
         """Syncs the laser rows with the given head."""
         self._head = head
@@ -719,6 +775,21 @@ class LaserHeadDetailWidget(DebounceMixin):
         self.frame_speed_row.set_value_in_base_units(head.frame_speed)
         self.frame_repeat_row.set_value(head.frame_repeat_count)
         self.frame_corner_pause_row.set_value(head.frame_corner_pause)
+
+        self.pointer_enabled_row.handler_block(
+            self._handler_ids["pointer_enabled"]
+        )
+        self.pointer_enabled_row.set_active(head.pointer_offset_enabled)
+        self.pointer_enabled_row.handler_unblock(
+            self._handler_ids["pointer_enabled"]
+        )
+        self.pointer_offset_x_row.set_value_in_base_units(
+            head.pointer_offset_x
+        )
+        self.pointer_offset_y_row.set_value_in_base_units(
+            head.pointer_offset_y
+        )
+        self._update_pointer_rows_sensitivity()
 
         try:
             type_idx = self._laser_type_values.index(head.laser_type)
@@ -809,6 +880,27 @@ class LaserHeadDetailWidget(DebounceMixin):
         """Update the frame corner pause of the selected laser."""
         if self._head:
             self._head.set_frame_corner_pause(spinrow.get_value())
+
+    def _on_pointer_enabled_changed(self, row, _param):
+        """Update the pointer offset toggle of the selected laser."""
+        if self._head:
+            self._head.set_pointer_offset_enabled(row.get_active())
+        self._update_pointer_rows_sensitivity()
+
+    def _on_pointer_offset_changed(self, spinrow):
+        """Update the pointer offset of the selected laser."""
+        if not self._head:
+            return
+        self._head.set_pointer_offset(
+            self.pointer_offset_x_row.get_value_in_base_units(),
+            self.pointer_offset_y_row.get_value_in_base_units(),
+        )
+
+    def _update_pointer_rows_sensitivity(self):
+        """Grays out the offset fields while the pointer offset is off."""
+        enabled = self.pointer_enabled_row.get_active()
+        self.pointer_offset_x_row.set_sensitive(enabled)
+        self.pointer_offset_y_row.set_sensitive(enabled)
 
     def _on_focal_distance_changed(self, spinrow):
         if self._head:
