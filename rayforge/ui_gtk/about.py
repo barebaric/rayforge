@@ -180,6 +180,7 @@ def get_supporters() -> list[tuple[str, str | None]]:
     """
     return [
         ("starlynx.dev", None),
+        ("Dave-SYS", None),
         ("Anonymous Supporter", None),
     ]
 
