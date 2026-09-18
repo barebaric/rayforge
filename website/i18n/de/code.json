@@ -198,7 +198,7 @@
     "message": "Das Setup-Skript ausführen"
   },
   "install.msys2.shell": {
-    "message": "Öffne die MSYS2 MINGW64-Shell und führe das Setup-Skript aus:"
+    "message": "Öffne die MSYS2 UCRT64-Shell und führe das Setup-Skript aus:"
   },
   "install.msys2.setupNote": {
     "message": "Dieses Skript installiert alle erforderlichen Systemabhängigkeiten und Python-Pakete. Die Installation kann mehrere Minuten dauern."
@@ -216,7 +216,7 @@
     "message": "Git-Befehle"
   },
   "install.msys2.gitNote": {
-    "message": "Bei der Verwendung von Pre-Commit-Hooks musst du Git-Befehle innerhalb der MSYS2 MINGW64-Shell ausführen, nicht aus PowerShell oder der Eingabeaufforderung."
+    "message": "Bei der Verwendung von Pre-Commit-Hooks musst du Git-Befehle innerhalb der MSYS2 UCRT64-Shell ausführen, nicht aus PowerShell oder der Eingabeaufforderung."
   },
   "install.buildInstaller": {
     "message": "Den Windows-Installer erstellen"

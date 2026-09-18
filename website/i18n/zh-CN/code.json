@@ -198,7 +198,7 @@
     "message": "运行设置脚本"
   },
   "install.msys2.shell": {
-    "message": "打开 MSYS2 MINGW64 终端并运行设置脚本："
+    "message": "打开 MSYS2 UCRT64 终端并运行设置脚本："
   },
   "install.msys2.setupNote": {
     "message": "此脚本安装所有必需的系统依赖和 Python 包。可能需要几分钟才能完成。"
@@ -216,7 +216,7 @@
     "message": "Git 命令"
   },
   "install.msys2.gitNote": {
-    "message": "使用 pre-commit 钩子时，必须在 MSYS2 MINGW64 终端中运行 git 命令，而不是在 PowerShell 或命令提示符中。"
+    "message": "使用 pre-commit 钩子时，必须在 MSYS2 UCRT64 终端中运行 git 命令，而不是在 PowerShell 或命令提示符中。"
   },
   "install.buildInstaller": {
     "message": "构建 Windows 安装程序"
