@@ -62,7 +62,11 @@ function findReleaseAsset({ release, os, linuxMethod, windowsMethod, macosMethod
   }
 
   if (os === 'linux') {
-    if (linuxMethod === 'snap' || linuxMethod === 'flatpak') {
+    if (
+      linuxMethod === 'snap' ||
+      linuxMethod === 'flatpak' ||
+      linuxMethod === 'debian'
+    ) {
       return null;
     }
     if (linuxMethod === 'ppa') {
@@ -240,6 +244,7 @@ const osOptions = [
 
 const linuxMethods = [
   { id: 'snap', label: translate({ id: 'install.snap.recommended', message: 'Snap (Recommended)' }) },
+  { id: 'debian', label: 'Debian (apt)' },
   { id: 'ppa', label: 'Ubuntu 24.04 (PPA)' },
   { id: 'flatpak', label: 'Flathub' },
   { id: 'pixi', label: translate({ id: 'install.pixi.developers', message: 'Pixi (Developers)' }) },
@@ -301,12 +306,82 @@ function LinuxInstall({ method, onMethodChange }) {
         </div>
       </div>
 
+      {method === 'debian' && <LinuxDebianInstall />}
       {method === 'ppa' && <LinuxPpaInstall />}
       {method === 'flatpak' && <LinuxFlatpakInstall />}
       {method === 'snap' && <LinuxSnapInstall />}
       {method === 'pixi' && <LinuxPixiInstall />}
       {method === 'source' && <LinuxSourceInstall />}
     </>
+  );
+}
+
+function LinuxDebianInstall() {
+  return (
+    <div className="install-section">
+      <h4><Translate id="install.debian.title">Debian Package</Translate></h4>
+      <p>
+        <Translate id="install.debian.description">
+          Rayforge is part of the official Debian archive. If you are running
+          Debian, this is the most integrated way to install it: you receive
+          updates automatically, together with the rest of your system.
+        </Translate>
+      </p>
+
+      <Admonition type="note">
+        <Translate id="install.debian.suites">
+          The package is currently available in Debian unstable (sid) and
+          testing, and will be included in the next stable release. It cannot
+          be added to already-released Debian or Ubuntu versions — on those,
+          use Snap, Flathub, or the Ubuntu PPA instead.
+        </Translate>{' '}
+        <a
+          href="https://tracker.debian.org/pkg/rayforge"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Translate id="install.debian.trackerLink">
+            Follow the package on the Debian package tracker.
+          </Translate>
+        </a>
+      </Admonition>
+
+      <div className="install-step">
+        <div className="install-step-number">1</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.installRayforge">Install Rayforge</Translate></h5>
+          <CodeBlock language="bash">sudo apt install rayforge</CodeBlock>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">2</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.addDialoutGroup">Add User to dialout Group</Translate></h5>
+          <p><Translate id="install.requiredSerialAccess">Required for serial port access:</Translate></p>
+          <CodeBlock language="bash">
+            sudo usermod -a -G dialout $USER
+          </CodeBlock>
+          <p>
+            <strong><Translate id="install.important">Important:</Translate></strong>{' '}
+            <Translate id="install.logoutLogin">Log out and log back in for this change to take effect.</Translate>
+          </p>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">3</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.launchRayforge">Launch Rayforge</Translate></h5>
+          <p>
+            <Translate id="install.launchFromMenu">
+              Launch Rayforge from your application menu or by running:
+            </Translate>
+          </p>
+          <CodeBlock language="bash">rayforge</CodeBlock>
+        </div>
+      </div>
+    </div>
   );
 }
 

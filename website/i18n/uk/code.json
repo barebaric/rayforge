@@ -23,6 +23,18 @@
   "install.chooseMethod": {
     "message": "Виберіть метод встановлення:"
   },
+  "install.debian.title": {
+    "message": "Пакет Debian"
+  },
+  "install.debian.description": {
+    "message": "Rayforge входить до офіційного архіву Debian. Якщо ви використовуєте Debian, це найбільш інтегрований спосіб встановлення: ви отримуєте оновлення автоматично, разом з рештою вашої системи."
+  },
+  "install.debian.suites": {
+    "message": "Пакет наразі доступний у Debian unstable (sid) та testing і буде включено до наступного стабільного випуску. Його не можна додати до вже випущених версій Debian або Ubuntu — у них використовуйте натомість Snap, Flathub або PPA Ubuntu."
+  },
+  "install.debian.trackerLink": {
+    "message": "Слідкуйте за пакетом у менеджері пакетів Debian."
+  },
   "install.ppa.description": {
     "message": "Для Ubuntu 24.04 LTS ви можете використовувати наш офіційний PPA. Цей метод забезпечує автоматичні оновлення через менеджер пакетів вашої системи."
   },
