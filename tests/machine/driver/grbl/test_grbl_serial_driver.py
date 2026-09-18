@@ -1430,3 +1430,134 @@ class TestGrblSerialDriver:
         self, driver: GrblSerialDriver
     ):
         assert driver._report_in_inches is False
+
+
+class TestIssue428CancelResurrection:
+    """
+    Regression tests for issue #428: cancelling a job while the
+    streaming sender is parked waiting for buffer space must hard-abort
+    the sender. Previously, cancel() only set flags and swapped out the
+    wake-up event, stranding the sender until its stall timeout fired;
+    if any interactive command (e.g. $X) ran in between and cleared
+    _is_cancelled, the sender resumed streaming the cancelled job.
+    """
+
+    @pytest.mark.asyncio
+    async def test_cancel_while_waiting_for_buffer_space_aborts_sender(
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
+    ):
+        """The exact issue-#428 scenario: the held gcode line must
+        never reach the device after cancel()."""
+        driver = connected_driver
+        assert driver.grbl_transport is not None
+        driver.grbl_transport.set_rx_buffer_size(10)
+        job_finished_mock = MagicMock()
+        driver.job_finished.send = job_finished_mock
+
+        run_task = asyncio.create_task(driver.run_raw("G0 X0\nG0 X5\n"))
+        await asyncio.sleep(0.05)
+        # First line (6 bytes) sent, sender parked waiting for space
+        # for the second line (6 more bytes would exceed 10).
+        assert driver.grbl_transport.buffer_count == 6
+
+        await asyncio.wait_for(driver.cancel(), timeout=1.0)
+        await asyncio.wait_for(run_task, timeout=1.0)
+
+        assert driver._job_running is False
+        assert driver._stream_task is None
+        sent = [c.args[0] for c in mock_serial_transport.send.call_args_list]
+        assert b"G0 X5\n" not in sent
+        job_finished_mock.assert_called_once_with(driver)
+
+    @pytest.mark.asyncio
+    async def test_interactive_command_cannot_resurrect_cancelled_job(
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
+        mocker,
+    ):
+        """Sending $X right after cancel() must not cause the
+        cancelled job's remaining gcode to be sent."""
+        driver = connected_driver
+        assert driver.grbl_transport is not None
+        driver.grbl_transport.set_rx_buffer_size(10)
+        # Shrink the stall timeout so a stranded sender (pre-fix)
+        # would wake up quickly and expose the resurrection.
+        mocker.patch.object(driver, "STALL_TIMEOUT_DEFAULT", 0.5)
+
+        run_task = asyncio.create_task(driver.run_raw("G0 X0\nG0 X5\n"))
+        await asyncio.sleep(0.05)
+        assert driver.grbl_transport.buffer_count == 6
+
+        await asyncio.wait_for(driver.cancel(), timeout=1.0)
+        await asyncio.wait_for(run_task, timeout=1.0)
+        mock_serial_transport.send.reset_mock()
+
+        # User clicks "Clear Machine Alarm" right after cancelling.
+        cmd_task = asyncio.create_task(driver._execute_command("$X"))
+        await asyncio.sleep(0.05)
+        mock_serial_transport.send.assert_called_once_with(b"$X\n")
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
+        await asyncio.wait_for(cmd_task, timeout=1.0)
+
+        # Longest a pre-fix stranded sender could sleep before
+        # resuming the cancelled trace.
+        await asyncio.sleep(1.0)
+        sent = [c.args[0] for c in mock_serial_transport.send.call_args_list]
+        assert b"G0 X5\n" not in sent
+
+    @pytest.mark.asyncio
+    async def test_reset_flow_control_wakes_parked_waiter(
+        self,
+        mock_serial_transport,
+    ):
+        """reset_flow_control() must wake tasks parked in
+        wait_for_space() instead of orphaning them on a replaced
+        Event (the deterministic lost-wakeup of issue #428)."""
+        transport = GrblSerialTransport(mock_serial_transport)
+        transport.set_rx_buffer_size(10)
+        transport._add(8)
+
+        task = asyncio.create_task(transport.send_gcode(b"G0 X5\n"))
+        await asyncio.sleep(0.01)
+        assert not task.done()
+
+        transport.reset_flow_control()
+        # Pre-fix, the waiter stayed orphaned until its 10 s timeout;
+        # with the fix it wakes immediately and sends.
+        await asyncio.wait_for(task, timeout=1.0)
+        mock_serial_transport.send.assert_called_with(b"G0 X5\n")
+
+    @pytest.mark.asyncio
+    async def test_connection_status_recovers_after_transient_error(
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
+    ):
+        """A device that keeps answering polls after a transient
+        write error must flip the connection status back to
+        CONNECTED instead of leaving the UI stuck in ERROR."""
+        driver = connected_driver
+        statuses = []
+
+        def record(sender, **kwargs):
+            statuses.append(kwargs["status"])
+
+        driver.connection_status_changed.connect(record)
+
+        driver._update_connection_status(
+            TransportStatus.ERROR, "Write timeout"
+        )
+        assert driver._last_connection_status is TransportStatus.ERROR
+
+        # The device answers polls despite the write error.
+        driver.on_serial_data_received(
+            mock_serial_transport,
+            b"<Idle|MPos:0.000,0.000,0.000|FS:0,0>\r\n",
+        )
+        await asyncio.sleep(1.2)
+
+        assert TransportStatus.CONNECTED in statuses
+        assert driver._last_connection_status is TransportStatus.CONNECTED
