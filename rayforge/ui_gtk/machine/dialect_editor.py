@@ -11,6 +11,13 @@ from ..icons import get_icon
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..varset.varsetwidget import VarSetWidget
 from .template_selector import DialectTemplateSelectorDialog
+from .validation import (
+    find_number_only_line,
+    format_continuous_mode_toggle_warning,
+    format_continuous_mode_warning,
+    format_number_only_warning,
+    is_number_only,
+)
 
 
 def _text_to_list(text: str) -> list[str]:
@@ -143,11 +150,27 @@ class DialectEditorDialog(PatchedDialogWindow):
 
         main_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         main_vbox.append(header)
+
+        self.warning_banner = Adw.Banner()
+        self.warning_banner.set_revealed(False)
+        main_vbox.append(self.warning_banner)
+
         main_vbox.append(scrolled_content)
         self.set_content(main_vbox)
 
+        self._connect_settings_validation()
         self._connect_validation_signals()
         self._validate_all_rows()  # Set initial state
+
+    def _connect_settings_validation(self):
+        """Re-validates when a settings toggle (e.g. continuous laser
+        mode) changes, since it affects template warnings."""
+        self.settings_widget.data_changed.connect(
+            self._on_settings_changed, weak=False
+        )
+
+    def _on_settings_changed(self, sender, **kwargs):
+        self._validate_all_rows()
 
     def _connect_validation_signals(self):
         """Connects `changed` signals for all relevant input widgets."""
@@ -190,35 +213,103 @@ class DialectEditorDialog(PatchedDialogWindow):
             if error_widget:
                 error_widget.set_visible(False)
 
-    def _on_row_changed(
-        self, widget, row: Adw.PreferencesRow, key: str, is_script: bool
+    def _set_row_warning(
+        self, row: Adw.PreferencesRow, warning_msg: str | None
     ):
-        """Callback for when a template or script field changes."""
-        error_msg = None
+        """Applies or removes a non-blocking warning state from a row."""
+        warning_widget = getattr(row, "_warning_icon_widget", None)
+
+        if warning_msg:
+            if not warning_widget:
+                warning_widget = get_icon("warning-symbolic")
+                if isinstance(
+                    row, (Adw.ActionRow, Adw.ExpanderRow, Adw.EntryRow)
+                ):
+                    row.add_suffix(warning_widget)
+                row._warning_icon_widget = (  # type: ignore[attr-defined]
+                    warning_widget
+                )
+            row.add_css_class("warning")
+            warning_widget.set_tooltip_text(warning_msg)
+            warning_widget.set_visible(True)
+        else:
+            row.remove_css_class("warning")
+            if warning_widget:
+                warning_widget.set_visible(False)
+
+    def _get_row_content(
+        self, row: Adw.PreferencesRow, is_script: bool
+    ) -> str | None:
+        """Returns the editable content of a row, if it has any."""
         if is_script:
             text_view = getattr(row, "core_widget", None)
             if isinstance(text_view, Gtk.TextView):
                 buffer = text_view.get_buffer()
                 start, end = buffer.get_start_iter(), buffer.get_end_iter()
-                content = buffer.get_text(start, end, True)
-                # Find the first error in any line of the script
-                for line in content.splitlines():
-                    error_msg = _get_template_validation_error(
-                        line, self.supported_script_vars
-                    )
-                    if error_msg:
-                        break
-        elif isinstance(row, Adw.EntryRow):
-            content = row.get_text()
+                return buffer.get_text(start, end, True)
+            return None
+        if isinstance(row, Adw.EntryRow):
+            return row.get_text()
+        return None
+
+    def _find_missing_s_command_templates(self) -> list[str]:
+        """
+        Returns the keys of power-carrying movement templates that lack
+        the {s_command} placeholder while continuous laser mode is on,
+        based on the current values in the editor.
+        """
+        dialect = copy.deepcopy(self.dialect)
+        self._apply_ui_values(dialect)
+        return dialect.find_missing_s_command_templates()
+
+    def _get_row_state(
+        self,
+        row: Adw.PreferencesRow,
+        key: str,
+        is_script: bool,
+        missing_s_command: frozenset[str] = frozenset(),
+    ) -> tuple[str | None, str | None]:
+        """Returns the (error, warning) messages for a row."""
+        content = self._get_row_content(row, is_script)
+        if content is None:
+            return None, None
+
+        error_msg = None
+        if is_script:
+            # Find the first error in any line of the script
+            for line in content.splitlines():
+                error_msg = _get_template_validation_error(
+                    line, self.supported_script_vars
+                )
+                if error_msg:
+                    break
+        else:
             allowed = self.supported_template_vars.get(key)
             if allowed is not None:
                 error_msg = _get_template_validation_error(content, allowed)
 
-        self._set_row_error(row, error_msg)
+        warning_msg = None
+        if is_script:
+            match = find_number_only_line(content)
+            if match:
+                warning_msg = format_number_only_warning(
+                    match[1], lineno=match[0]
+                )
+        elif is_number_only(content):
+            warning_msg = format_number_only_warning(content.strip())
+        elif key in missing_s_command:
+            warning_msg = format_continuous_mode_warning()
+
+        return error_msg, warning_msg
+
+    def _on_row_changed(
+        self, widget, row: Adw.PreferencesRow, key: str, is_script: bool
+    ):
+        """Callback for when a template or script field changes."""
         self._validate_all_rows()
 
     def _validate_all_rows(self):
-        """Checks all rows for errors and updates Save button sensitivity."""
+        """Checks all rows for errors and warnings and updates the UI."""
         is_valid = True
         # Check label
         label_row = cast(
@@ -230,19 +321,57 @@ class DialectEditorDialog(PatchedDialogWindow):
         else:
             self._set_row_error(label_row, None)
 
-        # Check all other rows for the 'error' class
-        for group in (self.templates_widget, self.scripts_widget):
-            for row, _var in group.widget_map.values():
-                if row.has_css_class("error"):
+        # Check all template and script rows
+        missing_s_command = frozenset(self._find_missing_s_command_templates())
+        first_warning = None
+        for group, is_script in (
+            (self.templates_widget, False),
+            (self.scripts_widget, True),
+        ):
+            for key, (row, _var) in group.widget_map.items():
+                error_msg, warning_msg = self._get_row_state(
+                    row, key, is_script, missing_s_command
+                )
+                self._set_row_error(row, error_msg)
+                self._set_row_warning(row, warning_msg)
+                if error_msg:
                     is_valid = False
-                    break
-            if not is_valid:
-                break
+                if warning_msg and not first_warning:
+                    first_warning = warning_msg
 
+        self._update_toggle_row_warning(missing_s_command)
+        self._update_warning_banner(first_warning)
         self.save_button.set_sensitive(is_valid)
 
-    def _update_dialect_from_ui(self):
-        """Updates the dialect object from the values in the VarSetWidgets."""
+    def _update_toggle_row_warning(self, missing_s_command: frozenset[str]):
+        """Warns on the continuous laser mode toggle itself when
+        movement templates cannot carry the laser power."""
+        toggle_row = self.settings_widget.widget_map.get(
+            "continuous_laser_mode", (None, None)
+        )[0]
+        if toggle_row is None:
+            return
+        warning_msg = None
+        if missing_s_command:
+            labels = []
+            for key in missing_s_command:
+                entry = self.templates_widget.widget_map.get(key)
+                if entry is not None:
+                    labels.append(entry[1].label)
+            warning_msg = format_continuous_mode_toggle_warning(labels)
+        self._set_row_warning(toggle_row, warning_msg)
+
+    def _update_warning_banner(self, warning: str | None):
+        """Reveals the banner for a non-blocking G-code warning."""
+        if warning:
+            if self.warning_banner.get_title() != warning:
+                self.warning_banner.set_title(warning)
+                self.warning_banner.set_revealed(True)
+        else:
+            self.warning_banner.set_revealed(False)
+
+    def _apply_ui_values(self, target: GcodeDialect):
+        """Applies the raw values from the VarSetWidgets to a dialect."""
         all_values = {}
         all_values.update(self.info_widget.get_values())
         all_values.update(self.settings_widget.get_values())
@@ -252,9 +381,13 @@ class DialectEditorDialog(PatchedDialogWindow):
         for key, value in all_values.items():
             if key in ("preamble", "postscript"):
                 # Convert multi-line text back to list of strings
-                setattr(self.dialect, key, _text_to_list(value))
-            elif hasattr(self.dialect, key):
-                setattr(self.dialect, key, value)
+                setattr(target, key, _text_to_list(value))
+            elif hasattr(target, key):
+                setattr(target, key, value)
+
+    def _update_dialect_from_ui(self):
+        """Updates the dialect object from the values in the VarSetWidgets."""
+        self._apply_ui_values(self.dialect)
 
     def _on_save_clicked(self, button: Gtk.Button):
         # Validation is now continuous, so we can just save.

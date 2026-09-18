@@ -1,6 +1,6 @@
 from dataclasses import replace
 
-from .base import GcodeDialect
+from .base import POWER_MOVE_TEMPLATE_KEYS, GcodeDialect, has_s_command
 from .grbl import GRBL_DIALECT
 from .grbl_dynamic import GRBL_DYNAMIC_DIALECT
 from .grbl_raster import GRBL_RASTER_DIALECT
@@ -27,7 +27,9 @@ __all__ = [
     "LINUXCNC_DIALECT",
     "MACH4_M67_DIALECT",
     "MARLIN_DIALECT",
+    "POWER_MOVE_TEMPLATE_KEYS",
     "SMOOTHIEWARE_DIALECT",
     "GcodeDialect",
+    "has_s_command",
     "replace",
 ]

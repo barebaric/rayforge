@@ -1,9 +1,13 @@
 from rayforge.machine.models.dialect import (
     GRBL_DIALECT,
+    GRBL_RASTER_DIALECT,
     LINUXCNC_DIALECT,
     MARLIN_DIALECT,
+    POWER_MOVE_TEMPLATE_KEYS,
     SMOOTHIEWARE_DIALECT,
     GcodeDialect,
+    has_s_command,
+    replace,
 )
 
 
@@ -456,3 +460,61 @@ def test_get_safety_off_commands_on_default_dialects():
         "M5",
         "M9",
     ]
+
+
+def test_has_s_command():
+    assert has_s_command("G1{x_cmd}{y_cmd}{s_command}")
+    assert has_s_command("G1{f_command}{s_command:.0f}")
+    assert not has_s_command("G1{x_cmd}{y_cmd}{f_command}")
+    assert not has_s_command("G1{s_vel}")
+    assert not has_s_command("")
+    assert not has_s_command(None)
+
+
+def test_missing_s_command_templates_when_mode_disabled():
+    assert GRBL_DIALECT.find_missing_s_command_templates() == []
+
+
+def test_missing_s_command_templates_when_mode_enabled():
+    dialect = replace(GRBL_DIALECT, continuous_laser_mode=True)
+    assert dialect.find_missing_s_command_templates() == [
+        "travel_move",
+        "linear_move",
+        "arc_cw",
+        "arc_ccw",
+    ]
+
+
+def test_missing_s_command_templates_skips_empty_templates():
+    dialect = replace(GRBL_DIALECT, continuous_laser_mode=True)
+    assert "bezier_cubic" not in dialect.find_missing_s_command_templates()
+    dialect = replace(
+        dialect,
+        travel_move="",
+        linear_move="",
+        arc_cw="",
+        arc_ccw="",
+    )
+    assert dialect.find_missing_s_command_templates() == []
+
+
+def test_missing_s_command_templates_none_when_placeholder_present():
+    assert GRBL_RASTER_DIALECT.find_missing_s_command_templates() == []
+
+
+def test_missing_s_command_templates_reflects_fixed_template():
+    dialect = replace(
+        GRBL_DIALECT,
+        continuous_laser_mode=True,
+        linear_move="G1{x_cmd}{y_cmd}{f_command}{s_command}",
+    )
+    assert dialect.find_missing_s_command_templates() == [
+        "travel_move",
+        "arc_cw",
+        "arc_ccw",
+    ]
+
+
+def test_power_move_template_keys_are_dialect_fields():
+    for key in POWER_MOVE_TEMPLATE_KEYS:
+        assert hasattr(GRBL_DIALECT, key)
