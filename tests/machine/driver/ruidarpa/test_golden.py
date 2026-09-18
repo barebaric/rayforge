@@ -16,9 +16,9 @@ glibc, msvcrt, and Windows UCRT agree only up to the last ULP, and
 ``repr`` of a float leaks that noise into the transcript. The fixture
 comparison therefore quantizes float tokens to 10 decimals before
 comparing; this absorbs libm noise (order 1e-15) while still failing
-on any real encoder drift (order 1e-3 and above). See
-docs/prompts/raygeo-deterministic-transcendentals.md for the upstream
-fix that would restore full byte-exactness.
+on any real encoder drift (order 1e-3 and above). If raygeo ever
+switches to deterministic (pure-Rust libm) transcendentals, regenerate
+the fixture and restore the full byte-for-byte comparison.
 """
 
 import importlib.util
