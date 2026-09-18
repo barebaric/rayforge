@@ -198,7 +198,7 @@
     "message": "Executar o script de configuração"
   },
   "install.msys2.shell": {
-    "message": "Abra o shell MSYS2 MINGW64 e execute o script de configuração:"
+    "message": "Abra o shell MSYS2 UCRT64 e execute o script de configuração:"
   },
   "install.msys2.setupNote": {
     "message": "Este script instala todas as dependências do sistema e pacotes Python necessários. Pode levar vários minutos para ser concluído."
@@ -216,7 +216,7 @@
     "message": "Comandos Git"
   },
   "install.msys2.gitNote": {
-    "message": "Ao usar hooks pre-commit, você deve executar comandos git dentro do shell MSYS2 MINGW64, não no PowerShell ou Prompt de Comando."
+    "message": "Ao usar hooks pre-commit, você deve executar comandos git dentro do shell MSYS2 UCRT64, não no PowerShell ou Prompt de Comando."
   },
   "install.buildInstaller": {
     "message": "Compilar o instalador do Windows"

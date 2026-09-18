@@ -47,12 +47,12 @@ pixi run pre-commit-install
 ```
 
 Це виконує `scripts/win/win_setup.sh` щоб встановити всі необхідні системні та Python пакети у ваше
-середовище MSYS2/MinGW64.
+середовище MSYS2/UCRT64.
 
 ### Pre-commit хуки (Опціонально)
 
 Щоб автоматично форматувати та лінтувати ваш код перед кожним комітом, виконайте це з оболонки MSYS2
-MINGW64:
+UCRT64:
 
 ```bash
 bash scripts/win/win_setup_dev.sh
@@ -60,7 +60,7 @@ bash scripts/win/win_setup_dev.sh
 
 :::note
 
-Pre-commit хуки вимагають запуску команд git всередині оболонки MSYS2 MINGW64, а не з PowerShell або
+Pre-commit хуки вимагають запуску команд git всередині оболонки MSYS2 UCRT64, а не з PowerShell або
 командного рядка.
 
 :::
@@ -76,7 +76,7 @@ Pre-commit хуки вимагають запуску команд git всер�
 - `run format`: Форматувати та автоматично виправляти код використовуючи `ruff`.
 - `run build`: Зібрати фінальний виконуваний файл Windows (`.exe`).
 
-Альтернативно, ви можете запускати скрипти безпосередньо з оболонки MSYS2 MINGW64:
+Альтернативно, ви можете запускати скрипти безпосередньо з оболонки MSYS2 UCRT64:
 
 - `bash scripts/win/win_run.sh`: Запустити додаток.
 - `bash scripts/win/win_test.sh`: Запустити набір тестів.
