@@ -9,9 +9,20 @@ air-assist path.
 Regenerate the fixture with ``golden/regen_golden.py`` when the encoder
 or upstream GlueScript legitimately changes the transcript; do not
 weaken these tests to mask drift.
+
+One caveat to the byte-level lock: the arc coordinates are produced by
+raygeo's Rust transcendentals, which delegate to the platform libm.
+glibc, msvcrt, and Windows UCRT agree only up to the last ULP, and
+``repr`` of a float leaks that noise into the transcript. The fixture
+comparison therefore quantizes float tokens to 10 decimals before
+comparing; this absorbs libm noise (order 1e-15) while still failing
+on any real encoder drift (order 1e-3 and above). See
+docs/prompts/raygeo-deterministic-transcendentals.md for the upstream
+fix that would restore full byte-exactness.
 """
 
 import importlib.util
+import re
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +32,14 @@ from rayforge.machine.driver.ruidarpa.rpa_encoder import RuidaRPAEncoder
 
 GOLDEN_DIR = Path(__file__).parent / "golden"
 GOLDEN_FILE = GOLDEN_DIR / "transcript.cglu"
+
+FLOAT_TOKEN = re.compile(r"-?\d+\.\d+(?:[eE][+-]?\d+)?|-?\d+[eE][+-]?\d+")
+
+
+def _normalize_floats(text: str) -> str:
+    """Quantize float tokens to 10 decimals to absorb platform libm
+    ULP noise in raygeo-generated coordinates."""
+    return FLOAT_TOKEN.sub(lambda m: f"{float(m.group()):.10f}", text)
 
 
 def _load_regen_builder():
@@ -48,9 +67,12 @@ class TestGoldenFixture:
     """Byte-level lock on the committed transcript fixture."""
 
     def test_staged_output_matches_fixture(self):
-        """Encoder output must equal the fixture, byte for byte."""
-        expected = GOLDEN_FILE.read_text(encoding="utf-8")
-        assert _encode_representative_job() + "\n" == expected
+        """Encoder output must equal the fixture, modulo the 10-decimal
+        float quantization described in the module docstring."""
+        expected = _normalize_floats(GOLDEN_FILE.read_text(encoding="utf-8"))
+        assert _normalize_floats(_encode_representative_job()) + "\n" == (
+            expected
+        )
 
     def test_staged_output_is_deterministic(self):
         """Two encodes of the same job must produce identical bytes."""
