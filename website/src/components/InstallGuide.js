@@ -857,8 +857,8 @@ function WindowsDeveloperInstall() {
             <Translate id="install.msys2.defaultPath">
               Use the default installation path (C:\msys64) for best compatibility.
               After installation, MSYS2 provides several shell shortcuts in the
-              Start Menu — always use the MINGW64 shell for
-              Rayforge development. The other shells (MSYS2, UCRT64) will not work.
+              Start Menu — always use the UCRT64 shell for
+              Rayforge development. The other shells (MSYS2, MINGW64) will not work.
             </Translate>
           </Admonition>
         </div>
@@ -881,7 +881,7 @@ cd rayforge`}
           <h5><Translate id="install.runSetup">Run the Setup Script</Translate></h5>
           <p>
             <Translate id="install.msys2.shell">
-              Open the MSYS2 MINGW64 shell and run the setup script:
+              Open the MSYS2 UCRT64 shell and run the setup script:
             </Translate>
           </p>
           <CodeBlock language="bash">
@@ -950,7 +950,7 @@ cd rayforge`}
       <Admonition type="note" title={translate({ id: 'install.gitCommands', message: 'Git Commands' })}>
         <Translate id="install.msys2.gitNote">
           When using pre-commit hooks, you must run git commands from within the
-          MSYS2 MINGW64 shell, not from PowerShell or Command Prompt.
+          MSYS2 UCRT64 shell, not from PowerShell or Command Prompt.
         </Translate>
       </Admonition>
     </div>

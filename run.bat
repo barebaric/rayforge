@@ -5,7 +5,7 @@ setlocal
 :: run.bat - Development Task Runner for Windows
 ::
 :: This script provides a simple, Pixi-like interface for common development
-:: tasks. It ensures commands are run inside the MSYS2/MinGW64 environment
+:: tasks. It ensures commands are run inside the MSYS2/UCRT64 environment
 :: and will pause on error to allow reading the output.
 ::
 :: Usage:
@@ -23,7 +23,7 @@ setlocal
 :: ==========================================================================
 
 set "MSYS2_SHELL=C:\msys64\msys2_shell.cmd"
-set "MSYS2_ARGS=-mingw64 -no-start -here -c"
+set "MSYS2_ARGS=-ucrt64 -no-start -here -c"
 
 :: --- Reusable "pause on error" logic for Bash ---
 set "PAUSE_ON_ERROR= || { echo; echo '*** ERROR DETECTED ***'; read -p 'Press [Enter] to close...'; exit 1; }"
