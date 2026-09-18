@@ -460,8 +460,11 @@ class GrblSerialTransport:
         with self._lock:
             self._rx_buffer_count = 0
         self._pending = asyncio.Queue()
-        self._space_available = asyncio.Event()
-        self._space_available.set()
+        # Wake parked waiters rather than replacing the Event: a new
+        # Event object orphans tasks that are already waiting on the
+        # old one, leaving them stranded until their stall timeout
+        # fires (issue #428).
+        self.signal_space_available()
 
     def reset(self) -> None:
         """Reset all buffer state (cancel, reconnect, cleanup)."""
