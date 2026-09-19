@@ -7,7 +7,11 @@ from unittest.mock import patch
 import cv2
 import numpy as np
 
-from rayforge.camera.controller import CameraController, VideoCaptureDevice
+from rayforge.camera.controller import (
+    CameraController,
+    VideoCaptureDevice,
+    _scan_cameras_fallback,
+)
 from rayforge.camera.models.camera import Camera
 
 
@@ -182,6 +186,12 @@ def test_list_available_devices_uses_int_for_numeric_ids():
     OpenCV 5.0 treats string arguments as filenames, so probing with
     numeric strings would never find a camera (regression test for
     the "no device found" issue).
+
+    Exercises the in-process scan implementation. The default
+    ``list_available_devices()`` runs the probe in a ``spawn``
+    subprocess so a bad OpenCV backend cannot crash the app; in-process
+    mocks cannot cross that process boundary, so the shared probing /
+    int-conversion logic is verified directly here.
     """
     calls = []
 
@@ -191,6 +201,9 @@ def test_list_available_devices_uses_int_for_numeric_ids():
 
         def isOpened(self):
             return True
+
+        def read(self):
+            return True, np.zeros((4, 4, 3), dtype=np.uint8)
 
         def release(self):
             pass
@@ -209,7 +222,7 @@ def test_list_available_devices_uses_int_for_numeric_ids():
             return_value=targets,
         ),
     ):
-        devices = CameraController.list_available_devices()
+        devices = _scan_cameras_fallback()
 
     assert devices == targets
     assert calls == [0, 1, "/dev/v4l/by-id/usb-Foo_Webcam-video-index0"]
