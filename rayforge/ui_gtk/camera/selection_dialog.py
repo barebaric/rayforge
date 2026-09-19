@@ -1,8 +1,9 @@
 import logging
 import threading
 import time
+from collections.abc import Iterable
 from gettext import gettext as _
-from typing import Iterable, Literal, Optional
+from typing import Literal
 
 from gi.repository import Adw, GdkPixbuf, Gtk
 
@@ -10,8 +11,8 @@ from ...camera.controller import CameraController
 from ...camera.models.camera import Camera
 from ...camera.v4l import display_name
 from ...context import get_context
-from ..shared.gtk import apply_css
 from ...shared.util.glib import idle_add
+from ..shared.gtk import apply_css
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ class CameraSelectionDialog(Adw.MessageDialog):
         self,
         parent,
         mode: Literal["available", "configured"] = "available",
-        exclude_device_ids: Optional[Iterable[str]] = None,
+        exclude_device_ids: Iterable[str] | None = None,
         **kwargs,
     ):
         self._mode = mode
@@ -161,7 +162,7 @@ class CameraSelectionDialog(Adw.MessageDialog):
             self._update_nav_buttons()
 
     def _add_camera_page(
-        self, pixbuf: Optional[GdkPixbuf.Pixbuf], device_id: str, name: str
+        self, pixbuf: GdkPixbuf.Pixbuf | None, device_id: str, name: str
     ):
         if not pixbuf:
             label = Gtk.Label(
@@ -266,10 +267,10 @@ class CameraSelectionDialog(Adw.MessageDialog):
         camera_mgr = None
         try:
             camera_mgr = get_context().camera_mgr
-        except Exception:
+        except Exception:  # noqa: BLE001  (best-effort preview path)
             logger.debug("Camera manager not available for live previews")
 
-        pages: list[tuple[str, str, Optional[GdkPixbuf.Pixbuf]]] = []
+        pages: list[tuple[str, str, GdkPixbuf.Pixbuf | None]] = []
         for device_id in devices:
             if device_id in self._exclude_device_ids:
                 continue
@@ -305,7 +306,7 @@ class CameraSelectionDialog(Adw.MessageDialog):
             temp_controller.dispose()
 
     def _populate_from_scan(
-        self, pages: list[tuple[str, str, Optional[GdkPixbuf.Pixbuf]]]
+        self, pages: list[tuple[str, str, GdkPixbuf.Pixbuf | None]]
     ):
         if self._closed:
             return False

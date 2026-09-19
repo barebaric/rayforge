@@ -265,9 +265,8 @@ class VideoCaptureDevice:
                     f"(attempt {attempt + 1}): {e}"
                 )
 
-            if attempt < self.MAX_OPEN_RETRIES - 1:
-                if self._sleep_or_cancel():
-                    return None
+            if attempt < self.MAX_OPEN_RETRIES - 1 and self._sleep_or_cancel():
+                return None
         return None
 
     def _retry_backend(self, device_id_int, backend, name, last_error):
@@ -332,7 +331,7 @@ class CameraController:
         self._stop_event = threading.Event()
         self._thread_stuck: bool = False
         self._cap_lock = threading.Lock()
-        self._active_cap: Optional[cv2.VideoCapture] = None
+        self._active_cap: cv2.VideoCapture | None = None
         # Protects the frame buffers (_image_data/_raw_image_data/
         # _accumulator) so UI-thread readers never observe a half-updated
         # state (e.g. _image_data reset to None while a pixbuf is being
