@@ -198,10 +198,27 @@ class VideoCaptureDevice:
     MAX_OPEN_RETRIES = 3
     RETRY_DELAY = 0.5
 
-    def __init__(self, device_id):
+    def __init__(
+        self,
+        device_id,
+        cancel_event: Optional["threading.Event"] = None,
+    ):
         self.device_id = device_id
         self.cap = None
         self._backend_used = None
+        # Optional event used by an owning thread to abort the retry loop so
+        # a stop request is honored quickly instead of after every backend.
+        self.cancel_event = cancel_event
+
+    def _cancelled(self) -> bool:
+        return self.cancel_event is not None and self.cancel_event.is_set()
+
+    def _sleep_or_cancel(self) -> bool:
+        """Wait RETRY_DELAY between attempts. Returns True if cancelled."""
+        if self.cancel_event is not None:
+            return self.cancel_event.wait(self.RETRY_DELAY)
+        time.sleep(self.RETRY_DELAY)
+        return False
 
     def __enter__(self):
         device_id_int = self._parse_device_id()
@@ -211,6 +228,10 @@ class VideoCaptureDevice:
         last_error = None
 
         for backend, name in backends:
+            if self._cancelled():
+                raise OSError(
+                    f"Open aborted by cancel event for camera {self.device_id}"
+                )
             cap = self._try_backend(device_id_int, backend, name)
             if cap:
                 return cap
@@ -245,7 +266,8 @@ class VideoCaptureDevice:
                 )
 
             if attempt < self.MAX_OPEN_RETRIES - 1:
-                time.sleep(self.RETRY_DELAY)
+                if self._sleep_or_cancel():
+                    return None
         return None
 
     def _retry_backend(self, device_id_int, backend, name, last_error):
@@ -282,6 +304,7 @@ class CameraController:
     MAX_CONSECUTIVE_FAILURES = 10
     FRAME_READ_TIMEOUT = 1 / 30
     RECONNECT_DELAY = 2.0
+    STOP_JOIN_TIMEOUT = 3.0
 
     def __init__(self, config: Camera):
         self.config = config
@@ -294,6 +317,17 @@ class CameraController:
         self._running: bool = False
         self._settings_dirty: bool = True  # Flag to re-apply settings
         self._consecutive_failures: int = 0
+
+        # Stream lifecycle (Fix A): _lifecycle_lock serializes start/stop so
+        # exactly one capture thread can own the device at any time.
+        # _stop_event makes the open-retry loop and the reconnect sleeps
+        # interruptible; _active_cap lets the stopping thread force a
+        # cap.release() as a last resort to unblock a wedged cap.read().
+        self._lifecycle_lock = threading.Lock()
+        self._stop_event = threading.Event()
+        self._thread_stuck: bool = False
+        self._cap_lock = threading.Lock()
+        self._active_cap: Optional[cv2.VideoCapture] = None
 
         # We no longer probe hardware directly because V4L2 and DirectShow
         # drivers often crash or drop buffers when aggressively queried.
@@ -721,7 +755,17 @@ class CameraController:
                 )
                 return
 
-            time.sleep(self.FRAME_READ_TIMEOUT)
+            if self._stop_event.wait(self.FRAME_READ_TIMEOUT):
+                return
+
+    def _register_cap(self, cap: cv2.VideoCapture):
+        with self._cap_lock:
+            self._active_cap = cap
+
+    def _unregister_cap(self, cap: cv2.VideoCapture):
+        with self._cap_lock:
+            if self._active_cap is cap:
+                self._active_cap = None
 
     def _capture_loop(self):
         """
@@ -736,10 +780,16 @@ class CameraController:
         while self._running:
             try:
                 # Open the device ONCE
-                with VideoCaptureDevice(self.config.device_id) as cap:
+                with VideoCaptureDevice(
+                    self.config.device_id, cancel_event=self._stop_event
+                ) as cap:
                     if cap is None:
                         raise OSError("VideoCapture returned None")
-                    self._capture_frames_from_device(cap)
+                    self._register_cap(cap)
+                    try:
+                        self._capture_frames_from_device(cap)
+                    finally:
+                        self._unregister_cap(cap)
             except OSError as e:
                 logger.error(f"IO error for {self.config.name}: {e}")
             except cv2.error as e:
@@ -752,7 +802,8 @@ class CameraController:
                     f"Waiting {self.RECONNECT_DELAY}s before "
                     f"reconnecting {self.config.name}..."
                 )
-                time.sleep(self.RECONNECT_DELAY)
+                if self._stop_event.wait(self.RECONNECT_DELAY):
+                    break
 
         logger.debug(
             f"Camera capture loop stopped for camera {self.config.name}."
@@ -762,6 +813,19 @@ class CameraController:
         """
         Starts a continuous image capture stream in a separate thread.
         """
+        with self._lifecycle_lock:
+            self._start_locked()
+
+    def _start_locked(self):
+        """Start the stream. Caller must hold _lifecycle_lock."""
+        if self._thread_stuck:
+            logger.error(
+                f"Refusing to start capture stream for {self.config.name}: "
+                "a previous capture thread is still alive and may still be "
+                "holding its device. Enabling a new stream here would open "
+                "the hardware twice."
+            )
+            return
         if self._running:
             logger.debug(
                 f"Capture stream already running for camera {self.config.name}"
@@ -769,15 +833,31 @@ class CameraController:
             return
 
         logger.debug(f"Starting capture stream for camera {self.config.name}.")
+        self._stop_event.clear()
         self._running = True
-        self._capture_thread = threading.Thread(target=self._capture_loop)
+        self._capture_thread = threading.Thread(
+            target=self._capture_loop,
+            name=f"CameraCapture-{self.config.name}",
+        )
         self._capture_thread.daemon = True  # Allow the main program to exit
         self._capture_thread.start()
 
     def _stop_capture_stream(self):
         """
         Stops the continuous image capture stream.
+
+        Blocks until the capture thread has actually exited (up to two
+        STOP_JOIN_TIMEOUT windows, the second one after a forced
+        cap.release()) so that a subsequent start can never leave two
+        threads holding the same device. If the thread still refuses to
+        die, the controller marks itself stuck and refuses to start new
+        streams.
         """
+        with self._lifecycle_lock:
+            self._stop_locked()
+
+    def _stop_locked(self):
+        """Stop the stream. Caller must hold _lifecycle_lock."""
         if not self._running:
             logger.debug(
                 f"Capture stream not running for camera {self.config.name}."
@@ -786,10 +866,43 @@ class CameraController:
 
         logger.debug(f"Stopping capture stream for camera {self.config.name}.")
         self._running = False
-        if self._capture_thread and self._capture_thread.is_alive():
-            self._capture_thread.join(timeout=1.0)  # Wait for thread to finish
-            if self._capture_thread.is_alive():
-                logger.warning("Capture thread did not terminate gracefully.")
+        self._stop_event.set()
+        thread = self._capture_thread
+        if thread is None or not thread.is_alive():
+            self._capture_thread = None
+            return
+
+        thread.join(timeout=self.STOP_JOIN_TIMEOUT)
+        if thread.is_alive():
+            # Last resort: the thread is wedged inside cap.read() or an
+            # open call. Force-releasing the capture unblocks it. This
+            # races with the capture thread, but an orphan thread holding
+            # the device is worse: it double-opens the hardware on the
+            # next swap (segfault with Windows DirectShow/MediaFoundation,
+            # -EBUSY on V4L2).
+            with self._cap_lock:
+                cap = self._active_cap
+            if cap is not None:
+                logger.warning(
+                    f"Capture thread for {self.config.name} did not exit "
+                    f"within {self.STOP_JOIN_TIMEOUT}s; forcing "
+                    "cap.release() to unblock it."
+                )
+                try:
+                    cap.release()
+                except (cv2.error, OSError) as e:
+                    logger.warning(f"Error during forced cap.release(): {e}")
+            thread.join(timeout=self.STOP_JOIN_TIMEOUT)
+
+        if thread.is_alive():
+            self._thread_stuck = True
+            logger.error(
+                f"Capture thread for {self.config.name} refused to die even "
+                "after a forced release. Refusing to start any new stream "
+                "on this controller to avoid opening the device twice."
+            )
+            return
+
         self._capture_thread = None
 
     def capture_image(self):
