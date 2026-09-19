@@ -333,6 +333,11 @@ class CameraController:
         self._thread_stuck: bool = False
         self._cap_lock = threading.Lock()
         self._active_cap: Optional[cv2.VideoCapture] = None
+        # Protects the frame buffers (_image_data/_raw_image_data/
+        # _accumulator) so UI-thread readers never observe a half-updated
+        # state (e.g. _image_data reset to None while a pixbuf is being
+        # built) during a device swap or a failure streak.
+        self._frame_lock = threading.Lock()
 
         # We no longer probe hardware directly because V4L2 and DirectShow
         # drivers often crash or drop buffers when aggressively queried.
@@ -357,7 +362,8 @@ class CameraController:
             return
 
         self._settings_dirty = True
-        self._accumulator = None  # Reset smoothing if settings change
+        with self._frame_lock:
+            self._accumulator = None  # Reset smoothing if settings change
         if self.config.enabled and self._active_subscribers > 0:
             self._start_capture_stream()
         elif not self.config.enabled:
@@ -390,7 +396,8 @@ class CameraController:
             # different hardware index can legitimately try again.
             self._thread_stuck = False
             self._settings_dirty = True
-            self._accumulator = None
+            with self._frame_lock:
+                self._accumulator = None
             if self.config.enabled and self._active_subscribers > 0:
                 self._start_locked()
 
@@ -418,27 +425,34 @@ class CameraController:
 
     @property
     def image_data(self) -> np.ndarray | None:
-        return self._image_data
+        with self._frame_lock:
+            return self._image_data
 
     @property
     def raw_image_data(self) -> np.ndarray | None:
-        return self._raw_image_data
+        with self._frame_lock:
+            return self._raw_image_data
 
     @property
     def pixbuf(self) -> Optional["GdkPixbuf.Pixbuf"]:
         # Import the UI library ONLY when this method is actually called.
         from gi.repository import GdkPixbuf, GLib
 
-        if self._image_data is None:
+        # Snapshot under the lock; the capture thread always replaces the
+        # buffer with a fresh array, so the snapshot is never mutated.
+        with self._frame_lock:
+            image = self._image_data
+
+        if image is None:
             return None
 
-        height, width, channels = self._image_data.shape
+        height, width, channels = image.shape
         if channels == 3:
             # OpenCV uses BGR, GdkPixbuf expects RGB
-            np_array = cv2.cvtColor(self._image_data, cv2.COLOR_BGR2RGB)
+            np_array = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             has_alpha = False
         elif channels == 4:
-            np_array = self._image_data
+            np_array = image
             has_alpha = True
         else:
             return None
@@ -462,9 +476,11 @@ class CameraController:
 
     @property
     def resolution(self) -> tuple[int, int]:
-        if self._image_data is None:
+        with self._frame_lock:
+            image = self._image_data
+        if image is None:
             return 640, 480
-        height, width, _ = self._image_data.shape
+        height, width, _ = image.shape
         return width, height
 
     @property
@@ -564,18 +580,23 @@ class CameraController:
         Returns:
             Aligned image as a NumPy array in BGR format, or None on failure
         """
-        if self._image_data is None:
+        # Work on a snapshot so a concurrent frame update cannot change
+        # the buffer dimensions mid-transformation.
+        with self._frame_lock:
+            image = self._image_data
+
+        if image is None:
             logger.warning("No image data available.")
             return None
 
         if self.config.image_to_world is not None:
             return self._transform_with_homography(
-                self._image_data, output_size, physical_area
+                image, output_size, physical_area
             )
 
         out_width, out_height = output_size
         try:
-            return resize_linear_nd(self._image_data, (out_width, out_height))
+            return resize_linear_nd(image, (out_width, out_height))
         except cv2.error as e:
             logger.error(f"Failed to resize image: {e}")
             return None
@@ -728,19 +749,21 @@ class CameraController:
         denoise_strength = getattr(self.config, "denoise", 0.0)
 
         if denoise_strength > 0.0:
-            if (
-                self._accumulator is None
-                or self._accumulator.shape != frame.shape
-            ):
-                self._accumulator = frame.astype(np.float32)
-            else:
-                alpha = 1.0 - denoise_strength
-                cv2.accumulateWeighted(frame, self._accumulator, alpha)
+            with self._frame_lock:
+                if (
+                    self._accumulator is None
+                    or self._accumulator.shape != frame.shape
+                ):
+                    self._accumulator = frame.astype(np.float32)
+                else:
+                    alpha = 1.0 - denoise_strength
+                    cv2.accumulateWeighted(frame, self._accumulator, alpha)
 
-            # Use the denoised result for subsequent processing
-            frame_to_process = self._accumulator.astype(np.uint8)
+                # Use the denoised result for subsequent processing
+                frame_to_process = self._accumulator.astype(np.uint8)
         else:
-            self._accumulator = None
+            with self._frame_lock:
+                self._accumulator = None
             frame_to_process = frame
 
         h, w = frame_to_process.shape[:2]
@@ -763,14 +786,21 @@ class CameraController:
             ret, frame = cap.read()
             if not ret or frame is None:
                 logger.debug("Failed to capture frame from camera.")
-                self._image_data = None
-                self._raw_image_data = None
+                with self._frame_lock:
+                    self._image_data = None
+                    self._raw_image_data = None
                 return False
 
-            self._raw_image_data = frame.copy()
+            raw = frame.copy()
 
             # Apply all visual corrections
-            self._image_data = self._process_frame(frame)
+            processed = self._process_frame(frame)
+
+            # Publish both buffers atomically so readers never see a new
+            # _image_data paired with a stale _raw_image_data.
+            with self._frame_lock:
+                self._raw_image_data = raw
+                self._image_data = processed
 
             # Emit the signal in a GLib-safe way
             idle_add(self.image_captured.send, self)
@@ -782,7 +812,8 @@ class CameraController:
     def _handle_frame_failure(self):
         """Handle a failed frame read. Returns True if should reconnect."""
         self._consecutive_failures += 1
-        self._image_data = None
+        with self._frame_lock:
+            self._image_data = None
         logger.warning(
             f"Frame failure {self._consecutive_failures}/"
             f"{self.MAX_CONSECUTIVE_FAILURES} for {self.config.name}"
@@ -958,6 +989,11 @@ class CameraController:
 
         self._capture_thread = None
 
+    def _clear_image_data(self):
+        """Drop the processed frame under the frame lock."""
+        with self._frame_lock:
+            self._image_data = None
+
     def capture_image(self):
         """
         Captures a single image from this camera device.
@@ -971,17 +1007,18 @@ class CameraController:
                         f"Cannot capture: VideoCapture is None for "
                         f"{self._device_id}"
                     )
-                    self._image_data = None
+                    with self._frame_lock:
+                        self._image_data = None
                     return
                 # Apply settings before capturing the single frame
                 self._apply_settings(cap)
                 self._read_frame(cap)
         except OSError as e:
             logger.error(f"IO error capturing image: {e}")
-            self._image_data = None
+            self._clear_image_data()
         except cv2.error as e:
             logger.error(f"OpenCV error capturing image: {e}")
-            self._image_data = None
+            self._clear_image_data()
         except Exception:
             logger.exception("Unexpected error capturing image")
-            self._image_data = None
+            self._clear_image_data()
