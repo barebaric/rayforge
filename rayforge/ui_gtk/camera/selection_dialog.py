@@ -236,7 +236,7 @@ class CameraSelectionDialog(Adw.MessageDialog):
         spinner.set_size_request(48, 48)
         spinner.set_halign(Gtk.Align.CENTER)
         spinner.set_valign(Gtk.Align.END)
-        spinner.spin()
+        spinner.set_spinning(True)
         label = Gtk.Label(label=_("Searching for cameras…"))
         label.set_halign(Gtk.Align.CENTER)
         label.set_valign(Gtk.Align.START)
