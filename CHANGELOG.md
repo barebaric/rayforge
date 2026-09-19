@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the maintenance page instead of a nonexistent page (#416)
 - Preview assembly failures for everyday states such as an empty
   document are no longer logged as errors
+- Material textures are included again in wheel-based installs,
+  repairing blank material thumbnails on flatpak and deb installs
+  (#419)
 
 ### Changed
 
