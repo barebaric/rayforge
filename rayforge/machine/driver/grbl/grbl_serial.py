@@ -110,12 +110,6 @@ class GrblSerialDriver(Driver):
 
     SAFETY_SHUTDOWN_DELAY: float = 0.2
 
-    # An ack that stays outstanding for longer than this while the
-    # device demonstrably responds to polls is considered lost (e.g.
-    # swallowed by a firmware reset over a Bluetooth link), and the
-    # flow-control state is healed instead of blocking forever.
-    STALE_PENDING_ACK_TIMEOUT: float = 10.0
-
     # A device that stays silent for this many consecutive stall
     # polls (no status report, no ack) is considered dead. GRBL
     # answers '?' in every state (Run, Hold, Door, Alarm), so an
@@ -733,20 +727,25 @@ class GrblSerialDriver(Driver):
         then block every later command: each arriving 'ok' is
         mis-attributed to a stale entry, and
         execute_interactive_command() waits for the pending queue to
-        drain forever. When the oldest pending entry outlives
-        STALE_PENDING_ACK_TIMEOUT, the accounting is unsalvageable by
-        definition, so it is reset. Never runs while a job is
-        streaming: there, un-acked entries age legitimately because
-        the machine is still executing them.
+        drain forever.
+
+        An entry only counts as stale once it outlives its own ack
+        deadline, which is derived from the same per-command duration
+        estimates as the stall timeouts — so commands that
+        legitimately run for minutes (slow moves, homing) are never
+        healed. Healing also never runs while a job is streaming:
+        there, un-acked entries age because the machine is still
+        executing them, and the stall machinery owns recovery.
         """
         if self._job_running:
             return False
-        age = transport.oldest_pending_age()
-        if age is None or age < self.STALE_PENDING_ACK_TIMEOUT:
+        overdue = transport.pending_ack_overdue()
+        if overdue is None:
             return False
         logger.warning(
-            f"No ack for {age:.0f}s while the connection is idle; "
-            "assuming lost acks and resetting flow-control state."
+            f"Ack outstanding {overdue:.0f}s past its deadline while "
+            "the connection is idle; assuming a lost ack and "
+            "resetting flow-control state."
         )
         transport.reset_flow_control()
         return True
@@ -757,8 +756,8 @@ class GrblSerialDriver(Driver):
 
         Unlike a bare ``pending_queue.join()`` this cannot deadlock on
         entries whose acks were lost: once the oldest entry outlives
-        STALE_PENDING_ACK_TIMEOUT, the flow-control state is reset and
-        the wait ends (issue #428).
+        its own (estimate-derived) ack deadline, the flow-control
+        state is reset and the wait ends (issue #428).
         """
         while not transport.pending_queue.empty():
             if self._heal_stale_pending(transport):
