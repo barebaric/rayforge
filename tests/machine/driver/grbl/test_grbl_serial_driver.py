@@ -1583,6 +1583,7 @@ class TestIssue428StaleAckJam:
         """A pending entry whose ack never arrives must not block
         execute_interactive_command() forever."""
         driver = connected_driver
+        assert driver.grbl_transport is not None
         transport = driver.grbl_transport
 
         # Simulate the lost-ack situation: a safety command was sent
@@ -1618,6 +1619,7 @@ class TestIssue428StaleAckJam:
         whose acks never arrive once they outlive the staleness
         threshold."""
         driver = connected_driver
+        assert driver.grbl_transport is not None
         transport = driver.grbl_transport
         mocker.patch.object(driver, "STALE_PENDING_ACK_TIMEOUT", 0.5)
 
