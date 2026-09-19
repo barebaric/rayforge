@@ -1561,3 +1561,107 @@ class TestIssue428CancelResurrection:
 
         assert TransportStatus.CONNECTED in statuses
         assert driver._last_connection_status is TransportStatus.CONNECTED
+
+
+class TestIssue428StaleAckJam:
+    """
+    Regression tests for issue #428 (follow-up): safety commands sent
+    right after a soft reset are not reliably acknowledged by the
+    firmware. Their pending entries then jam the flow-control queue
+    forever: every later 'ok' is mis-attributed to a stale entry, and
+    execute_interactive_command() waits for the queue to drain
+    indefinitely ("Read from Device" hangs, controls inactive).
+    """
+
+    @pytest.mark.asyncio
+    async def test_interactive_command_survives_lost_ack(
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
+        mocker,
+    ):
+        """A pending entry whose ack never arrives must not block
+        execute_interactive_command() forever."""
+        driver = connected_driver
+        transport = driver.grbl_transport
+
+        # Simulate the lost-ack situation: a safety command was sent
+        # after a cancel and never acknowledged.
+        await transport.send_gcode(b"M5\n")
+        assert transport.pending_queue.qsize() == 1
+        # Pretend the entry has been un-acked for a long time.
+        mocker.patch.object(
+            transport, "_pending_since", time.monotonic() - 60.0
+        )
+
+        # The interactive command must heal the stale state instead
+        # of waiting forever (pre-fix: deadlock on pending join()).
+        cmd_task = asyncio.create_task(
+            driver.execute_interactive_command("$G")
+        )
+        await wait_for_send_call(mock_serial_transport.send, b"$G\n")
+
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
+        await asyncio.wait_for(cmd_task, timeout=2.0)
+
+        assert transport.pending_queue.empty()
+        assert transport.buffer_count == 0
+
+    @pytest.mark.asyncio
+    async def test_connection_loop_heals_stale_pending(
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
+        mocker,
+    ):
+        """While idle, the connection loop clears pending entries
+        whose acks never arrive once they outlive the staleness
+        threshold."""
+        driver = connected_driver
+        transport = driver.grbl_transport
+        mocker.patch.object(driver, "STALE_PENDING_ACK_TIMEOUT", 0.5)
+
+        await transport.send_gcode(b"M5\n")
+        assert transport.pending_queue.qsize() == 1
+        mocker.patch.object(
+            transport, "_pending_since", time.monotonic() - 60.0
+        )
+
+        # Device answers polls; the loop must heal within a couple of
+        # poll cycles.
+        driver.on_serial_data_received(
+            mock_serial_transport,
+            b"<Idle|MPos:0.000,0.000,0.000|FS:0,0>\r\n",
+        )
+        for _ in range(20):
+            await asyncio.sleep(0.1)
+            if transport.pending_queue.empty():
+                break
+
+        assert transport.pending_queue.empty()
+        assert transport.buffer_count == 0
+
+    @pytest.mark.asyncio
+    async def test_stale_ack_not_healed_during_job(
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
+        mocker,
+    ):
+        """Pending entries during a running job age legitimately
+        (the machine is still executing); they must not be healed."""
+        driver = connected_driver
+        transport = driver.grbl_transport
+        assert transport is not None
+
+        driver._start_job()
+        try:
+            await transport.send_gcode(b"G1 X10 F100\n")
+            mocker.patch.object(
+                transport, "_pending_since", time.monotonic() - 60.0
+            )
+
+            assert driver._heal_stale_pending(transport) is False
+            assert transport.pending_queue.qsize() == 1
+        finally:
+            driver._job_running = False
