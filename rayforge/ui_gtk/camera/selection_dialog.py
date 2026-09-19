@@ -1,6 +1,6 @@
 import logging
 from gettext import gettext as _
-from typing import Literal
+from typing import Iterable, Literal, Optional
 
 from gi.repository import Adw, GdkPixbuf, Gtk
 
@@ -18,9 +18,11 @@ class CameraSelectionDialog(Adw.MessageDialog):
         self,
         parent,
         mode: Literal["available", "configured"] = "available",
+        exclude_device_ids: Optional[Iterable[str]] = None,
         **kwargs,
     ):
         self._mode = mode
+        self._exclude_device_ids = set(exclude_device_ids or [])
         body = (
             _("Please select an available camera device")
             if mode == "available"
@@ -195,7 +197,11 @@ class CameraSelectionDialog(Adw.MessageDialog):
         return display_name(device_id)
 
     def list_available_cameras(self):
-        self.available_devices = CameraController.list_available_devices()
+        self.available_devices = [
+            device_id
+            for device_id in CameraController.list_available_devices()
+            if device_id not in self._exclude_device_ids
+        ]
         if not self.available_devices:
             label = Gtk.Label(label=_("No cameras found."))
             self.carousel.append(label)

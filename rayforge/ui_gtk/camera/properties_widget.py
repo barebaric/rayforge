@@ -5,10 +5,12 @@ from gi.repository import Adw, Gtk
 
 from ...camera.controller import CameraController
 from ...camera.models.camera import Camera
+from ...context import get_context
 from ..icons import get_icon
 from .alignment_dialog import CameraAlignmentDialog
 from .image_settings_dialog import CameraImageSettingsDialog
 from .lens_calibration_dialog import LensCalibrationDialog
+from .selection_dialog import CameraSelectionDialog
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +30,13 @@ class CameraProperties(Adw.PreferencesGroup):
             title=_("Device ID"),
             subtitle=_("System identifier for the camera device"),
         )
+        self.device_id_button = Gtk.Button(
+            label=_("Change"), valign=Gtk.Align.CENTER
+        )
+        self.device_id_button.connect(
+            "clicked", self.on_device_id_button_clicked
+        )
+        self.device_id_row.add_suffix(self.device_id_button)
         self.add(self.device_id_row)
 
         # Camera Name
@@ -227,6 +236,53 @@ class CameraProperties(Adw.PreferencesGroup):
             self._camera.name = entry_row.get_text()
         finally:
             self._updating_ui = False
+
+    def _get_unavailable_device_ids(self) -> set[str]:
+        machine = get_context().config.machine
+        if not machine or not self._camera:
+            return set()
+        return {
+            camera.device_id
+            for camera in machine.cameras
+            if camera is not self._camera
+        }
+
+    def on_device_id_button_clicked(self, button):
+        if not self._camera:
+            return
+
+        window = self.get_ancestor(Gtk.Window)
+        if not isinstance(window, Gtk.Window):
+            return
+
+        dialog = CameraSelectionDialog(
+            window,
+            mode="available",
+            exclude_device_ids=self._get_unavailable_device_ids(),
+        )
+        dialog.present()
+        dialog.connect("response", self.on_device_selection_dialog_response)
+
+    def on_device_selection_dialog_response(self, dialog, response_id):
+        try:
+            if response_id != "select" or not self._camera:
+                return
+
+            device_id = dialog.selected_device_id
+            if not device_id or device_id == self._camera.device_id:
+                return
+
+            unavailable_device_ids = self._get_unavailable_device_ids()
+            if device_id in unavailable_device_ids:
+                logger.warning(
+                    "Ignoring device swap to already configured camera %s",
+                    device_id,
+                )
+                return
+
+            self._camera.device_id = device_id
+        finally:
+            dialog.destroy()
 
     def on_enabled_changed(self, switch_row, _):
         if not self._camera:

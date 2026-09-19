@@ -7,5 +7,17 @@
       "envManager": "ms-python.python:system",
       "packageManager": "ms-python.python:pip"
     }
-  ]
+  ],
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true,
+    "**/flutter/ephemeral": true,
+    "**/Flutter/ephemeral": true,
+    "**/.symlinks": true,
+    "**/.plugin_symlinks": true
+  },
+  "hide-files.files": []
 }

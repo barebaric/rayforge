@@ -7,7 +7,7 @@ from unittest.mock import patch
 import cv2
 import numpy as np
 
-from rayforge.camera.controller import CameraController
+from rayforge.camera.controller import CameraController, VideoCaptureDevice
 from rayforge.camera.models.camera import Camera
 
 
@@ -57,6 +57,53 @@ def test_capture_image(mock_idle_add):
 
     finally:
         cv2.VideoCapture = original_videocapture
+
+
+def test_video_capture_device_falls_back_when_backend_has_no_frames():
+    original_videocapture = cv2.VideoCapture
+
+    try:
+
+        class MockVideoCapture:
+            def __init__(self, device, backend=None):
+                self.device = device
+                self.backend = backend
+                self.opened = True
+
+            def isOpened(self):
+                return self.opened
+
+            def read(self):
+                if self.backend == 1:
+                    return False, None
+                dummy_frame = np.zeros((480, 640, 3), dtype=np.uint8)
+                return True, dummy_frame
+
+            def release(self):
+                self.opened = False
+
+        cv2.VideoCapture = MockVideoCapture
+
+        with patch(
+            "rayforge.camera.controller.get_backends_for_platform",
+            return_value=[(1, "bad"), (2, "good")],
+        ):
+            device = VideoCaptureDevice("0")
+            with device as cap:
+                assert cap is not None
+                assert device._backend_used == "good"
+
+    finally:
+        cv2.VideoCapture = original_videocapture
+
+
+def test_list_available_devices_uses_subprocess_scan():
+    with patch(
+        "rayforge.camera.controller._scan_cameras_in_subprocess",
+        return_value=["0", "2"],
+    ) as scan_mock:
+        assert CameraController.list_available_devices() == ["0", "2"]
+        scan_mock.assert_called_once_with()
 
 
 def test_get_work_surface_image_basic():

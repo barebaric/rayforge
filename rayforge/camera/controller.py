@@ -39,6 +39,9 @@ COMMON_RESOLUTIONS = [
     (7680, 4320),
 ]
 
+OPEN_VALIDATION_ATTEMPTS = 3
+OPEN_VALIDATION_DELAY = 0.1
+
 
 def _get_linux_scan_targets() -> list[str]:
     """Get device identifiers to scan on Linux.
@@ -71,7 +74,7 @@ def _probe_camera_device(args):
     device_id, backend = args
     try:
         cap = cv2.VideoCapture(_to_videocapture_arg(device_id), backend)
-        if cap.isOpened():
+        if cap.isOpened() and _capture_has_initial_frame(cap):
             cap.release()
             return device_id
         if cap:
@@ -83,12 +86,7 @@ def _probe_camera_device(args):
 
 def _scan_cameras_in_subprocess() -> list[str]:
     """Scan for cameras in a separate process to isolate crashes."""
-    if sys.platform.startswith("linux"):
-        backends = [cv2.CAP_V4L2, cv2.CAP_ANY]
-    elif sys.platform == "win32":
-        backends = [cv2.CAP_DSHOW, cv2.CAP_MSMF, cv2.CAP_ANY]
-    else:
-        backends = [cv2.CAP_ANY]
+    backends = [backend for backend, _name in get_backends_for_platform()]
 
     if sys.platform.startswith("linux"):
         targets = _get_linux_scan_targets()
@@ -116,12 +114,7 @@ def _scan_cameras_in_subprocess() -> list[str]:
 def _scan_cameras_fallback() -> list[str]:
     """Fallback camera scan if subprocess fails."""
     devices = []
-    if sys.platform.startswith("linux"):
-        backends = [(cv2.CAP_V4L2, "V4L2"), (cv2.CAP_ANY, "default")]
-    elif sys.platform == "win32":
-        backends = [(cv2.CAP_DSHOW, "DirectShow"), (cv2.CAP_ANY, "default")]
-    else:
-        backends = [(cv2.CAP_ANY, "default")]
+    backends = get_backends_for_platform()
 
     if sys.platform.startswith("linux"):
         targets = _get_linux_scan_targets()
@@ -132,7 +125,7 @@ def _scan_cameras_fallback() -> list[str]:
         for backend, name in backends:
             try:
                 cap = cv2.VideoCapture(_to_videocapture_arg(target), backend)
-                if cap.isOpened():
+                if cap.isOpened() and _capture_has_initial_frame(cap):
                     devices.append(str(target))
                     cap.release()
                     break
@@ -155,18 +148,45 @@ def get_backends_for_platform():
         return [
             (cv2.CAP_DSHOW, "DirectShow"),
             (cv2.CAP_MSMF, "MediaFoundation"),
-            (cv2.CAP_ANY, "default"),
         ]
     return [(cv2.CAP_ANY, "default")]
+
+
+def _capture_has_initial_frame(cap: cv2.VideoCapture) -> bool:
+    """
+    Check whether an opened capture device can actually deliver frames.
+
+    Some Windows backends report opened successfully but then fail every
+    subsequent `read()`. Validate a few warm-up reads before accepting the
+    backend.
+    """
+    for attempt in range(OPEN_VALIDATION_ATTEMPTS):
+        try:
+            ret, frame = cap.read()
+        except cv2.error:
+            ret, frame = False, None
+
+        if ret and frame is not None:
+            return True
+
+        if attempt < OPEN_VALIDATION_ATTEMPTS - 1:
+            time.sleep(OPEN_VALIDATION_DELAY)
+
+    return False
 
 
 def try_open_camera(device_id: int, backend: int, backend_name: str):
     """Try to open camera with specific backend. Returns cap or None."""
     logger.debug(f"Opening camera {device_id} with {backend_name} backend")
     cap = cv2.VideoCapture(device_id, backend)
-    if cap.isOpened():
+    if cap.isOpened() and _capture_has_initial_frame(cap):
         logger.info(f"Camera {device_id} opened with {backend_name} backend")
         return cap
+    if cap.isOpened():
+        logger.warning(
+            f"Camera {device_id} opened with {backend_name} "
+            "but did not yield frames"
+        )
     if cap:
         cap.release()
     return None
@@ -305,30 +325,7 @@ class CameraController:
         On Linux, prefers persistent /dev/v4l/by-id/ paths.
         """
         logger.debug("Scanning for camera devices...")
-        devices = []
-        backends = get_backends_for_platform()
-
-        if sys.platform.startswith("linux"):
-            targets = _get_linux_scan_targets()
-        else:
-            targets = [str(i) for i in range(10)]
-
-        for target in targets:
-            for backend, name in backends:
-                try:
-                    cap = cv2.VideoCapture(
-                        _to_videocapture_arg(target), backend
-                    )
-                    if cap.isOpened():
-                        devices.append(str(target))
-                        cap.release()
-                        logger.debug(f"Found camera {target} via {name}")
-                        break
-                except cv2.error as e:
-                    logger.debug(f"OpenCV error camera {target} {name}: {e}")
-                except OSError as e:
-                    logger.debug(f"Error camera {target}: {e}")
-
+        devices = _scan_cameras_in_subprocess()
         logger.info(f"Available cameras: {devices}")
         return devices
 
@@ -678,7 +675,7 @@ class CameraController:
         try:
             ret, frame = cap.read()
             if not ret or frame is None:
-                logger.warning("Failed to capture frame from camera.")
+                logger.debug("Failed to capture frame from camera.")
                 self._image_data = None
                 self._raw_image_data = None
                 return False
