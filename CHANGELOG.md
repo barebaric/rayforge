@@ -5,6 +5,34 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.11.2
+
+### Fixed
+
+- GRBL: cancelling a job now hard-aborts the streaming sender instead
+  of waiting for the controller's RX buffer to drain, so the machine
+  stops immediately; interactive commands issued while a cancelled job
+  is winding down can no longer resume it, and a transient connection
+  error no longer grays out the machine controls for the rest of the
+  session (#428)
+- Selecting a driver that requires connection details no longer
+  crashes the app with a GTK assertion and a crash loop at startup
+  (#415)
+- Machine settings: a fast editing burst of driver setup arguments can
+  no longer leave a cancelled driver rebuild touching live driver
+  state (#416)
+- The Machine Settings dialog is now a single instance per main window
+  instead of opening duplicates, and the machine counters action opens
+  the maintenance page instead of a nonexistent page (#416)
+- Preview assembly failures for everyday states such as an empty
+  document are no longer logged as errors
+
+### Changed
+
+- Upgrade raygeo to 1.52.0
+- Windows builds now use the UCRT64 environment, following the MSYS2
+  deprecation of MINGW64
+
 ## 1.11.1
 
 ### Fixed

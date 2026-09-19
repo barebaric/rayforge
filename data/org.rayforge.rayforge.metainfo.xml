@@ -68,6 +68,29 @@
   </screenshots>
 
   <releases>
+    <release version="1.11.2" date="2026-09-19">
+      <description>
+        <p>Fixes for GRBL job cancellation, a crash when switching
+        drivers, and machine settings dialog behavior</p>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>GRBL: cancelling a job now hard-aborts the streaming
+          sender instead of waiting for the controller's RX buffer to
+          drain, so the machine stops immediately</li>
+          <li>Selecting a driver that requires connection details no
+          longer crashes the app with a GTK assertion and a crash loop
+          at startup</li>
+          <li>Machine settings: a fast editing burst of driver setup
+          arguments can no longer leave a cancelled driver rebuild
+          touching live driver state</li>
+          <li>The Machine Settings dialog is now a single instance per
+          main window instead of opening duplicates, and the machine
+          counters action opens the maintenance page</li>
+          <li>Preview assembly failures for everyday states such as an
+          empty document are no longer logged as errors</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.11.1" date="2026-09-12">
       <description>
         <p>Fixes for macOS file import, sketcher window resizing,
