@@ -308,6 +308,11 @@ class CameraController:
 
     def __init__(self, config: Camera):
         self.config = config
+        # Device this controller actually owns and opens (Fix C). Decoupled
+        # from config.device_id so that a live model mutation cannot make a
+        # running capture thread silently retarget to a different device;
+        # swaps must go through set_device_id().
+        self._device_id: str = config.device_id
         self._image_data: np.ndarray | None = None
         self._raw_image_data: np.ndarray | None = None
         # For Temporal Smoothing
@@ -343,6 +348,14 @@ class CameraController:
 
     def _on_config_changed(self, sender):
         """Reacts to changes in the data model."""
+        if self.config.device_id != self._device_id:
+            # The model now points at a different device. Swap the capture
+            # device in place (properly stopping the old thread) instead of
+            # letting a running thread pick up the new ID on its next
+            # reconnect iteration.
+            self.set_device_id(self.config.device_id)
+            return
+
         self._settings_dirty = True
         self._accumulator = None  # Reset smoothing if settings change
         if self.config.enabled and self._active_subscribers > 0:
@@ -350,6 +363,46 @@ class CameraController:
         elif not self.config.enabled:
             # Also stop if it's disabled, regardless of subscribers
             self._stop_capture_stream()
+
+    @property
+    def device_id(self) -> str:
+        """The device ID this controller currently captures from."""
+        return self._device_id
+
+    def set_device_id(self, device_id: str):
+        """Switch to a different capture device in place.
+
+        Stops the running stream (guaranteed thread termination via the
+        lifecycle lock), then restarts on the new device when subscribers
+        are still attached. Subscribers keep pointing at this controller,
+        so the UI does not churn.
+        """
+        with self._lifecycle_lock:
+            if device_id == self._device_id:
+                return
+            logger.info(
+                f"Camera {self.config.name}: switching device "
+                f"{self._device_id!r} -> {device_id!r}"
+            )
+            self._stop_locked()
+            self._device_id = device_id
+            # The stuck flag referred to the old device; a swap to a
+            # different hardware index can legitimately try again.
+            self._thread_stuck = False
+            self._settings_dirty = True
+            self._accumulator = None
+            if self.config.enabled and self._active_subscribers > 0:
+                self._start_locked()
+
+    def dispose(self):
+        """Final teardown: stop the stream and drop model signal links.
+
+        Without the disconnect a destroyed controller stays wired to
+        config.changed and can be resurrected by later model edits.
+        """
+        self._stop_capture_stream()
+        self.config.changed.disconnect(self._on_config_changed)
+        self.config.settings_changed.disconnect(self._on_config_changed)
 
     @staticmethod
     def list_available_devices() -> list[str]:
@@ -774,14 +827,14 @@ class CameraController:
         """
         logger.info(
             f"Capture loop starting for {self.config.name} "
-            f"(device: {self.config.device_id})"
+            f"(device: {self._device_id})"
         )
 
         while self._running:
             try:
                 # Open the device ONCE
                 with VideoCaptureDevice(
-                    self.config.device_id, cancel_event=self._stop_event
+                    self._device_id, cancel_event=self._stop_event
                 ) as cap:
                     if cap is None:
                         raise OSError("VideoCapture returned None")
@@ -910,11 +963,13 @@ class CameraController:
         Captures a single image from this camera device.
         """
         try:
-            with VideoCaptureDevice(self.config.device_id) as cap:
+            with VideoCaptureDevice(
+                self._device_id, cancel_event=self._stop_event
+            ) as cap:
                 if cap is None:
                     logger.error(
                         f"Cannot capture: VideoCapture is None for "
-                        f"{self.config.device_id}"
+                        f"{self._device_id}"
                     )
                     self._image_data = None
                     return

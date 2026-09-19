@@ -116,17 +116,26 @@ class CameraManager:
         self._reconcile_controllers()
 
     def _destroy_controller(self, device_id: str):
-        """Safely unsubscribes, stops, and removes a controller."""
+        """Safely unsubscribes, stops, removes and de-signals a controller."""
         if device_id in self._controllers:
             controller = self._controllers.pop(device_id)
             controller.unsubscribe()  # Stops the thread if it's the last sub
             self.controller_removed.send(self, controller=controller)
+            # After the UI subscribers dropped their refs: hard-stop the
+            # stream and disconnect from the model so the destroyed
+            # controller can never be resurrected by later config changes.
+            controller.dispose()
             logger.info(f"Destroyed controller for camera {device_id}")
 
     def _reconcile_controllers(self):
         """
         Synchronizes the set of active CameraControllers with the cameras
         defined in the currently active machine model.
+
+        A Camera whose device_id changed keeps its controller: it is
+        re-keyed and swapped in place via set_device_id(), so subscribers
+        (displays, alignment widgets, canvas surfaces) do not churn through
+        controller_removed/controller_added for what is merely a device swap.
         """
         config = self._context.config
         if not config:
@@ -142,12 +151,40 @@ class CameraManager:
         model_ids = set(camera_configs_in_model.keys())
         active_controller_ids = set(self._controllers.keys())
 
-        # Destroy controllers for cameras that were removed from the model
-        for device_id in active_controller_ids - model_ids:
+        # Detect device swaps: the same Camera instance is now filed under
+        # a different device_id key. Reuse its controller instead of
+        # destroying and rebuilding it.
+        swapped: dict[str, str] = {}  # old_key -> new_key
+        for old_key in active_controller_ids - model_ids:
+            controller = self._controllers[old_key]
+            new_key = controller.config.device_id
+            if (
+                camera_configs_in_model.get(new_key) is controller.config
+                and new_key not in self._controllers
+            ):
+                swapped[old_key] = new_key
+
+        for old_key, new_key in swapped.items():
+            controller = self._controllers.pop(old_key)
+            self._controllers[new_key] = controller
+            # Usually a no-op: the controller already reacted to the model
+            # change via config.changed and swapped itself.
+            controller.set_device_id(new_key)
+            logger.info(
+                f"Reused controller for camera "
+                f"'{controller.config.name}' after device swap "
+                f"{old_key} -> {new_key}"
+            )
+
+        # Destroy controllers for cameras that were truly removed from the
+        # model
+        for device_id in (
+            active_controller_ids - model_ids - set(swapped.keys())
+        ):
             self._destroy_controller(device_id)
 
         # Create controllers for new cameras added to the model
-        for device_id in model_ids - active_controller_ids:
+        for device_id in model_ids - set(self._controllers.keys()):
             config_model = camera_configs_in_model[device_id]
             controller = CameraController(config_model)
             self._controllers[device_id] = controller
