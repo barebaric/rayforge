@@ -1662,14 +1662,13 @@ class TestIssue428StaleAckJam:
         mocker,
     ):
         """While idle, the connection loop clears pending entries
-        whose acks never arrive once they outlive the staleness
-        threshold."""
+        whose acks never arrive once they outlive their own ack
+        deadline."""
         driver = connected_driver
         assert driver.grbl_transport is not None
         transport = driver.grbl_transport
-        mocker.patch.object(driver, "STALE_PENDING_ACK_TIMEOUT", 0.5)
 
-        await transport.send_gcode(b"M5\n")
+        await transport.send_gcode(b"M5\n", timeout=0.5)
         assert transport.pending_queue.qsize() == 1
         mocker.patch.object(
             transport, "_pending_since", time.monotonic() - 60.0
@@ -1688,6 +1687,36 @@ class TestIssue428StaleAckJam:
 
         assert transport.pending_queue.empty()
         assert transport.buffer_count == 0
+
+    @pytest.mark.asyncio
+    async def test_slow_command_not_healed_within_deadline(
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
+        mocker,
+    ):
+        """A command whose estimated duration gives it a long ack
+        deadline (like a slow move or homing) must never be healed,
+        even after ages that would exceed any fixed timeout."""
+        driver = connected_driver
+        assert driver.grbl_transport is not None
+        transport = driver.grbl_transport
+
+        # Estimate-derived timeout as used for motion lines
+        # (STALL_TIMEOUT_MAX for a long move).
+        await transport.send_gcode(
+            b"G1 X0 Y0 F10\n", timeout=driver.STALL_TIMEOUT_MAX
+        )
+        assert transport.pending_queue.qsize() == 1
+        # Long after a fixed 10s threshold, but still within the
+        # command's own deadline.
+        mocker.patch.object(
+            transport, "_pending_since", time.monotonic() - 60.0
+        )
+
+        assert transport.pending_ack_overdue() is None
+        assert driver._heal_stale_pending(transport) is False
+        assert transport.pending_queue.qsize() == 1
 
     @pytest.mark.asyncio
     async def test_stale_ack_not_healed_during_job(
