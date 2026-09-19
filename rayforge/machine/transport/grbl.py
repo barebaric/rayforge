@@ -2,6 +2,7 @@ import asyncio
 import logging
 import re
 import threading
+import time
 from collections.abc import Awaitable, Callable
 from enum import Enum, auto
 from typing import NamedTuple
@@ -71,6 +72,10 @@ class GrblSerialTransport:
         self._space_available.set()
         self._status_buffer = bytearray()
         self._loop: asyncio.AbstractEventLoop | None = None
+        # Monotonic timestamp of the oldest un-acked command, used to
+        # detect acks that were lost to a device-side reset (see
+        # oldest_pending_age()).
+        self._pending_since: float | None = None
 
     @property
     def is_connected(self) -> bool:
@@ -343,6 +348,7 @@ class GrblSerialTransport:
         self._pending.put_nowait(
             PendingCommand(command_len, op_index, cmd_text)
         )
+        self._note_pending()
         count = self._add(command_len)
         self._log_tx(data, count)
         await self._transport.send(data)
@@ -381,6 +387,7 @@ class GrblSerialTransport:
         self._pending.put_nowait(
             PendingCommand(command_len, None, data.decode("ascii", "replace"))
         )
+        self._note_pending()
         count = self._add(command_len)
         self._log_tx(data, count)
         await self._transport.send(data)
@@ -444,6 +451,8 @@ class GrblSerialTransport:
         )
         self._sub(pending.length)
         self._pending.task_done()
+        if self._pending.empty():
+            self._pending_since = None
         self.signal_space_available()
         return pending
 
@@ -460,11 +469,32 @@ class GrblSerialTransport:
         with self._lock:
             self._rx_buffer_count = 0
         self._pending = asyncio.Queue()
+        self._pending_since = None
         # Wake parked waiters rather than replacing the Event: a new
         # Event object orphans tasks that are already waiting on the
         # old one, leaving them stranded until their stall timeout
         # fires (issue #428).
         self.signal_space_available()
+
+    def _note_pending(self) -> None:
+        """Record when the oldest pending command was enqueued."""
+        if self._pending_since is None:
+            self._pending_since = time.monotonic()
+
+    def oldest_pending_age(self) -> float | None:
+        """
+        Age in seconds of the oldest un-acked command, or None when
+        nothing is pending.
+
+        Used to detect flow-control state poisoned by acks that will
+        never arrive, e.g. for commands sent right before or after a
+        soft reset that the firmware answers with silence. Without
+        this, a single lost ack blocks all interactive commands
+        forever (issue #428).
+        """
+        if self._pending_since is None:
+            return None
+        return time.monotonic() - self._pending_since
 
     def reset(self) -> None:
         """Reset all buffer state (cancel, reconnect, cleanup)."""

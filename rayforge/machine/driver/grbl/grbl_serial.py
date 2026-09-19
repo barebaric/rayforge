@@ -110,6 +110,12 @@ class GrblSerialDriver(Driver):
 
     SAFETY_SHUTDOWN_DELAY: float = 0.2
 
+    # An ack that stays outstanding for longer than this while the
+    # device demonstrably responds to polls is considered lost (e.g.
+    # swallowed by a firmware reset over a Bluetooth link), and the
+    # flow-control state is healed instead of blocking forever.
+    STALE_PENDING_ACK_TIMEOUT: float = 10.0
+
     # A device that stays silent for this many consecutive stall
     # polls (no status report, no ack) is considered dead. GRBL
     # answers '?' in every state (Run, Hold, Door, Alarm), so an
@@ -527,7 +533,6 @@ class GrblSerialDriver(Driver):
 
                     if not self.keep_running or not transport.is_connected:
                         break
-
                     # A device that answers polls after a transient
                     # write error is alive: recover the connection
                     # status instead of leaving the UI stuck in
@@ -544,6 +549,10 @@ class GrblSerialDriver(Driver):
                             TransportStatus.CONNECTED
                         )
 
+                    # While idle, heal flow-control state poisoned by
+                    # acks lost to a reset or a flaky link, so that
+                    # interactive commands cannot jam (issue #428).
+                    self._heal_stale_pending(transport)
             except (serial.serialutil.SerialException, OSError) as e:
                 logger.error(f"Connection error: {e}")
                 # Don't update status here - the transport's status_changed
@@ -713,6 +722,56 @@ class GrblSerialDriver(Driver):
         finally:
             if self._stream_task is task:
                 self._stream_task = None
+
+    def _heal_stale_pending(self, transport) -> bool:
+        """
+        Clear flow-control state poisoned by acks that never arrive.
+
+        Returns True if stale state was found and healed.
+
+        After a soft reset, some firmwares acknowledge the safety
+        shutdown commands with silence (issue #428); over Bluetooth
+        the acks can also vanish on the link. Their pending entries
+        then block every later command: each arriving 'ok' is
+        mis-attributed to a stale entry, and
+        execute_interactive_command() waits for the pending queue to
+        drain forever. When the oldest pending entry outlives
+        STALE_PENDING_ACK_TIMEOUT, the accounting is unsalvageable by
+        definition, so it is reset. Never runs while a job is
+        streaming: there, un-acked entries age legitimately because
+        the machine is still executing them.
+        """
+        if self._job_running:
+            return False
+        age = transport.oldest_pending_age()
+        if age is None or age < self.STALE_PENDING_ACK_TIMEOUT:
+            return False
+        logger.warning(
+            f"No ack for {age:.0f}s while the connection is idle; "
+            "assuming lost acks and resetting flow-control state."
+        )
+        transport.reset_flow_control()
+        return True
+
+    async def _await_pending_drained(self, transport) -> None:
+        """
+        Wait for the pending-ack queue to drain, healing stale state.
+
+        Unlike a bare ``pending_queue.join()`` this cannot deadlock on
+        entries whose acks were lost: once the oldest entry outlives
+        STALE_PENDING_ACK_TIMEOUT, the flow-control state is reset and
+        the wait ends (issue #428).
+        """
+        while not transport.pending_queue.empty():
+            if self._heal_stale_pending(transport):
+                return
+            try:
+                await asyncio.wait_for(
+                    transport.pending_queue.join(), timeout=0.5
+                )
+                return
+            except asyncio.TimeoutError:
+                continue
 
     async def _recover_from_deadlock(
         self, transport, hold_lock: bool = True
@@ -1337,7 +1396,9 @@ class GrblSerialDriver(Driver):
         request = CommandRequest(command)
 
         async with self._cmd_lock:
-            await transport.pending_queue.join()
+            # Cannot use a bare join() here: a single lost ack would
+            # block every interactive command forever (issue #428).
+            await self._await_pending_drained(transport)
 
             self._interactive_request = request
             try:
