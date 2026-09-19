@@ -525,7 +525,6 @@ class GrblSerialDriver(Driver):
 
                     if not self.keep_running or not transport.is_connected:
                         break
-
                     # A device that answers polls after a transient
                     # write error is alive: recover the connection
                     # status instead of leaving the UI stuck in
@@ -542,6 +541,10 @@ class GrblSerialDriver(Driver):
                             TransportStatus.CONNECTED
                         )
 
+                    # While idle, heal flow-control state poisoned by
+                    # acks lost to a reset or a flaky link, so that
+                    # interactive commands cannot jam (issue #428).
+                    self._heal_stale_pending(transport)
             except (serial.serialutil.SerialException, OSError) as e:
                 logger.error(f"Connection error: {e}")
                 # Don't update status here - the transport's status_changed
@@ -711,6 +714,61 @@ class GrblSerialDriver(Driver):
         finally:
             if self._stream_task is task:
                 self._stream_task = None
+
+    def _heal_stale_pending(self, transport) -> bool:
+        """
+        Clear flow-control state poisoned by acks that never arrive.
+
+        Returns True if stale state was found and healed.
+
+        After a soft reset, some firmwares acknowledge the safety
+        shutdown commands with silence (issue #428); over Bluetooth
+        the acks can also vanish on the link. Their pending entries
+        then block every later command: each arriving 'ok' is
+        mis-attributed to a stale entry, and
+        execute_interactive_command() waits for the pending queue to
+        drain forever.
+
+        An entry only counts as stale once it outlives its own ack
+        deadline, which is derived from the same per-command duration
+        estimates as the stall timeouts — so commands that
+        legitimately run for minutes (slow moves, homing) are never
+        healed. Healing also never runs while a job is streaming:
+        there, un-acked entries age because the machine is still
+        executing them, and the stall machinery owns recovery.
+        """
+        if self._job_running:
+            return False
+        overdue = transport.pending_ack_overdue()
+        if overdue is None:
+            return False
+        logger.warning(
+            f"Ack outstanding {overdue:.0f}s past its deadline while "
+            "the connection is idle; assuming a lost ack and "
+            "resetting flow-control state."
+        )
+        transport.reset_flow_control()
+        return True
+
+    async def _await_pending_drained(self, transport) -> None:
+        """
+        Wait for the pending-ack queue to drain, healing stale state.
+
+        Unlike a bare ``pending_queue.join()`` this cannot deadlock on
+        entries whose acks were lost: once the oldest entry outlives
+        its own (estimate-derived) ack deadline, the flow-control
+        state is reset and the wait ends (issue #428).
+        """
+        while not transport.pending_queue.empty():
+            if self._heal_stale_pending(transport):
+                return
+            try:
+                await asyncio.wait_for(
+                    transport.pending_queue.join(), timeout=0.5
+                )
+                return
+            except asyncio.TimeoutError:
+                continue
 
     async def _recover_from_deadlock(
         self, transport, hold_lock: bool = True
@@ -1335,7 +1393,9 @@ class GrblSerialDriver(Driver):
         request = CommandRequest(command)
 
         async with self._cmd_lock:
-            await transport.pending_queue.join()
+            # Cannot use a bare join() here: a single lost ack would
+            # block every interactive command forever (issue #428).
+            await self._await_pending_drained(transport)
 
             self._interactive_request = request
             try:
