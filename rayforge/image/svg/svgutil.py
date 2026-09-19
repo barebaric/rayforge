@@ -262,7 +262,17 @@ def get_natural_size(
     try:
         meta = extract_svg_metadata(data.decode("utf-8"))
         if meta.width is None or meta.height is None:
-            return None
+            # Unitless SVG (viewBox only, no width/height): derive the natural
+            # size from the viewBox, treating its user units as pixels at the
+            # requested ppi. Otherwise such files report no size and are not
+            # picked up correctly.
+            if meta.viewbox is None:
+                return None
+            _vb_x, _vb_y, vb_w, vb_h = meta.viewbox
+            if vb_w <= 0 or vb_h <= 0:
+                return None
+            mm_per_px = 25.4 / ppi
+            return vb_w * mm_per_px, vb_h * mm_per_px
 
         width_mm = svg_length_to_mm(f"{meta.width}{meta.width_unit}", dpi=ppi)
         height_mm = svg_length_to_mm(
