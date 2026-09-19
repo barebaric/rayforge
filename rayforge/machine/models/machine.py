@@ -580,6 +580,11 @@ class Machine:
         Selects a new driver class and resets its arguments, then emits
         ``changed``. The controller listens for this signal and performs
         the (debounced) driver rebuild.
+
+        The G-code dialect is kept in sync with the driver: drivers that
+        do not speak G-code (e.g. Ruida) get the leftover dialect
+        cleared, so no stale dialect survives a driver switch and job
+        encoding always follows the connected driver.
         """
         new_driver_name = driver_cls.__name__
         new_args = args or {}
@@ -596,7 +601,27 @@ class Machine:
 
         self.driver_name = new_driver_name
         self.driver_args = new_args
+        self._sync_dialect_with_driver(driver_cls)
         self.changed.send(self)
+
+    def _sync_dialect_with_driver(self, driver_cls: type["Driver"]):
+        """
+        Aligns the dialect with the driver's G-code capability.
+
+        Non-G-code drivers must not carry a dialect: a stale one would
+        make job encoding produce G-code for a driver that cannot
+        consume it (issue #420). Switching back to a G-code driver while
+        no dialect is set restores the framework default, mirroring the
+        deserialization fallback.
+        """
+        if not driver_cls.uses_gcode:
+            if self.dialect_uid is None and self._hydrated_dialect is None:
+                return
+            self.dialect_uid = None
+            self._hydrated_dialect = None
+        elif self.dialect_uid is None:
+            self.dialect_uid = "grbl"
+            self._hydrated_dialect = None
 
     def set_driver_args(self, args=None):
         """
