@@ -979,6 +979,48 @@ def test_local_device_source_reads_auto_white_balance_as_none():
     }
 
 
+def test_local_device_source_omits_unsupported_white_balance():
+    camera = Camera("Local Camera", "0")
+
+    class MockVideoCapture:
+        def __init__(self, device, backend=None):
+            self.opened = True
+
+        def isOpened(self):
+            return self.opened
+
+        def read(self):
+            return True, np.zeros((2, 2, 3), dtype=np.uint8)
+
+        def set(self, prop_id, value):
+            return True
+
+        def get(self, prop_id):
+            values = {
+                cv2.CAP_PROP_CONTRAST: 42.0,
+                cv2.CAP_PROP_BRIGHTNESS: 3.0,
+                cv2.CAP_PROP_AUTO_WB: 0.0,
+                cv2.CAP_PROP_WB_TEMPERATURE: 0.0,
+            }
+            return values[prop_id]
+
+        def release(self):
+            self.opened = False
+
+    with patch("rayforge.camera.source.cv2.VideoCapture", MockVideoCapture):
+        from rayforge.camera.source import LocalDeviceSource
+
+        source = LocalDeviceSource(camera)
+        source.open()
+        settings = source.read_current_settings()
+        source.close()
+
+    assert settings == {
+        "contrast": 42.0,
+        "brightness": 3.0,
+    }
+
+
 def test_start_capture_stream_refuses_when_thread_stuck():
     """Once a capture thread has been marked stuck, no new capture thread
     may be started, even if the caller retries. Starting a second thread

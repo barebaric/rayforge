@@ -465,9 +465,9 @@ class LocalDeviceSource(CameraSource):
         if auto_wb >= 0.5:
             settings["white_balance"] = None
         else:
-            settings["white_balance"] = float(
-                cap.get(cv2.CAP_PROP_WB_TEMPERATURE)
-            )
+            white_balance = float(cap.get(cv2.CAP_PROP_WB_TEMPERATURE))
+            if 2500 <= white_balance <= 10000:
+                settings["white_balance"] = white_balance
         return settings
 
 
