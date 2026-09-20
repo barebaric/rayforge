@@ -564,6 +564,7 @@ class HttpSnapshotSource(CameraSource):
     MIN_POLL_INTERVAL_SECONDS = 2.0
     OFFLINE_RETRY_INTERVAL_SECONDS = 10.0
     WARNING_LOG_INTERVAL_SECONDS = 30.0
+    MAX_SNAPSHOT_BYTES = 20 * 1024 * 1024
 
     def __init__(self, config: Camera):
         super().__init__(config)
@@ -604,6 +605,19 @@ class HttpSnapshotSource(CameraSource):
         if self._should_log_warning(now):
             logger.warning(message, *args)
 
+    def _read_snapshot_payload(self, response, now: float) -> bytes | None:
+        payload = response.read(self.MAX_SNAPSHOT_BYTES + 1)
+        if len(payload) <= self.MAX_SNAPSHOT_BYTES:
+            return payload
+        self._next_poll_interval = self.OFFLINE_RETRY_INTERVAL_SECONDS
+        self._log_warning(
+            now,
+            "Snapshot URL returned an image larger than %s bytes, "
+            "reusing last good frame if available",
+            self.MAX_SNAPSHOT_BYTES,
+        )
+        return None
+
     def _wait_until_next_poll(self, now: float) -> float | None:
         if self._last_poll_time is None:
             return now
@@ -642,7 +656,9 @@ class HttpSnapshotSource(CameraSource):
                         content_type,
                     )
                     return self._cached_frame()
-                payload = response.read()
+                payload = self._read_snapshot_payload(response, now)
+                if payload is None:
+                    return self._cached_frame()
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             self._last_poll_time = now
             self._next_poll_interval = self.OFFLINE_RETRY_INTERVAL_SECONDS

@@ -314,7 +314,7 @@ def test_http_snapshot_waits_between_successful_polls():
 
     response = SimpleNamespace(
         headers=SimpleNamespace(get_content_type=lambda: "image/jpeg"),
-        read=lambda: payload,
+        read=lambda size: payload,
     )
 
     class ResponseContext:
@@ -348,6 +348,50 @@ def test_http_snapshot_waits_between_successful_polls():
 
     assert call_count == 2
     assert wait_times == [1.5]
+
+
+def test_http_snapshot_rejects_oversized_payloads():
+    camera = Camera(
+        "HTTP Camera",
+        source_type=CameraSourceType.HTTP_SNAPSHOT,
+        source_config={"uri": "https://example.com/cam.jpg"},
+    )
+    source = HttpSnapshotSource(camera)
+    source._last_success_frame = np.zeros((4, 4, 3), dtype=np.uint8)
+    read_sizes = []
+    logged_messages = []
+
+    response = SimpleNamespace(
+        headers=SimpleNamespace(get_content_type=lambda: "image/jpeg"),
+        read=lambda size: read_sizes.append(size) or b"x" * size,
+    )
+
+    class ResponseContext:
+        def __enter__(self):
+            return response
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    def fake_warning(message, *args):
+        logged_messages.append(message % args if args else message)
+
+    with (
+        patch("rayforge.camera.source.time.monotonic", return_value=100.0),
+        patch(
+            "rayforge.camera.source.urllib.request.urlopen",
+            return_value=ResponseContext(),
+        ),
+        patch(
+            "rayforge.camera.source.logger.warning", side_effect=fake_warning
+        ),
+    ):
+        frame = source.read_frame()
+
+    assert frame is not None
+    assert read_sizes == [HttpSnapshotSource.MAX_SNAPSHOT_BYTES + 1]
+    assert source._next_poll_interval == source.OFFLINE_RETRY_INTERVAL_SECONDS
+    assert "larger than" in logged_messages[0]
 
 
 def test_http_snapshot_warning_logs_are_throttled():
