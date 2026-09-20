@@ -149,12 +149,13 @@ class TestRecipeVarsetBehavior:
         assert var.sensitive_when({"cut_side": "OUTSIDE"}) is True
 
     def test_laser_step_rows_match_dialog_order(self):
-        """The laser section order is head, power, speeds, air assist,
-        tab power, frequency, pulse width."""
+        """The laser section order is head, power, power mode, speeds,
+        air assist, tab power, frequency, pulse width."""
         keys = [var.key for var in LaserStep.recipe_varset()]
         expected = [
             "selected_head_uid",
             "power",
+            "power_mode",
             "cut_speed",
             "travel_speed",
             "air_assist",

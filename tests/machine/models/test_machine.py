@@ -662,11 +662,14 @@ class TestMachine:
 
         # Each frame cycle traces a rectangle (4 sides). With
         # frame_repeat_count=3, the laser should turn on 4*3=12 times.
-        laser_on_count = machine_code.count("M4")
+        # Framing always uses constant power (M3): on stock Grbl with
+        # laser mode enabled a stationary M4 emits no beam at all.
+        laser_on_count = machine_code.count("M3 S")
         assert laser_on_count == 12, (
             f"Expected 12 laser-on commands (4 sides × 3 cycles), "
             f"but got {laser_on_count}"
         )
+        assert "M4 S" not in machine_code
 
         # The laser must be off after framing completes. The last
         # meaningful G-code line should not be a cutting move.

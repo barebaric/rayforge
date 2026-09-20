@@ -9,12 +9,13 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, cast
 
 from raygeo.ops import Ops
-from raygeo.ops.state import AirAssistMode
+from raygeo.ops.state import AirAssistMode, PowerMode
 
 from rayforge.core.step import Step
 from rayforge.core.varset import (
     BoolVar,
     IntVar,
+    LabeledChoiceVar,
     SliderFloatVar,
     VarSet,
 )
@@ -33,6 +34,7 @@ class LaserStep(Step):
     def __init__(self, typelabel, name=None):
         self.power: float = 1.0
         self.max_power: int = 1000
+        self.power_mode: str = "DYNAMIC"
         self.air_assist: bool = False
         self.tab_power: float = 0.0
         self.frequency: int = 0
@@ -59,6 +61,22 @@ class LaserStep(Step):
                     show_value=True,
                     format_suffix="%",
                     digits=0,
+                ),
+                LabeledChoiceVar(
+                    key="power_mode",
+                    label=_("Power Mode"),
+                    description=_(
+                        "Dynamic power (M4) scales power with head "
+                        "speed; constant power (M3) keeps it fixed. "
+                        "Use constant power if corners and curves "
+                        "burn too lightly"
+                    ),
+                    choices=[
+                        (_("Dynamic (M4)"), "DYNAMIC"),
+                        (_("Constant (M3)"), "CONSTANT"),
+                    ],
+                    default="DYNAMIC",
+                    allow_none=False,
                 ),
                 *Step.recipe_varset().vars,
                 BoolVar(
@@ -124,6 +142,7 @@ class LaserStep(Step):
         """Build the initial Ops object with step-wide machine settings."""
         ops = Ops()
         ops.set_power(self.power)
+        ops.set_power_mode(self.get_raygeo_power_mode())
         ops.set_feed_rate(self.cut_speed)
         ops.set_rapid_rate(self.travel_speed)
         ops.set_air_assist(
@@ -152,6 +171,7 @@ class LaserStep(Step):
             "power": self.power,
             "cut_speed": self.cut_speed,
             "travel_speed": self.travel_speed,
+            "power_mode": self.power_mode,
             "air_assist": self.air_assist,
             "pixels_per_mm": self.pixels_per_mm,
             "tab_power": self.tab_power,
@@ -173,6 +193,7 @@ class LaserStep(Step):
             {
                 "power": self.power,
                 "max_power": self.max_power,
+                "power_mode": self.power_mode,
                 "air_assist": self.air_assist,
                 "tab_power": self.tab_power,
                 "frequency": self.frequency,
@@ -193,6 +214,19 @@ class LaserStep(Step):
             raise ValueError("Power must be between 0.0 and 1.0")
         if self.power != power:
             self.power = power
+            self.updated.send(self)
+
+    def get_raygeo_power_mode(self) -> PowerMode:
+        """The raygeo :class:`PowerMode` for the step's setting."""
+        if self.power_mode == "CONSTANT":
+            return PowerMode.CONSTANT
+        return PowerMode.DYNAMIC
+
+    def set_power_mode(self, mode: str):
+        if mode not in ("DYNAMIC", "CONSTANT"):
+            raise ValueError("Power mode must be 'DYNAMIC' or 'CONSTANT'")
+        if self.power_mode != mode:
+            self.power_mode = mode
             self.updated.send(self)
 
     def set_air_assist(self, enabled: bool):
@@ -236,6 +270,7 @@ class LaserStep(Step):
             {
                 "power": self.power,
                 "max_power": self.max_power,
+                "power_mode": self.power_mode,
                 "air_assist": self.air_assist,
                 "tab_power": self.tab_power,
                 "frequency": self.frequency,
@@ -249,6 +284,7 @@ class LaserStep(Step):
         step = cast("LaserStep", super().from_dict(data))
         step.power = data.get("power", step.power)
         step.max_power = data.get("max_power", step.max_power)
+        step.power_mode = data.get("power_mode", step.power_mode)
         step.air_assist = data.get("air_assist", step.air_assist)
         step.tab_power = data.get("tab_power", step.tab_power)
         step.frequency = data.get("frequency", step.frequency)
@@ -261,6 +297,7 @@ class LaserStep(Step):
             {
                 "power",
                 "max_power",
+                "power_mode",
                 "air_assist",
                 "tab_power",
                 "frequency",

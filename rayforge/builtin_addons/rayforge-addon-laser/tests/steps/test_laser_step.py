@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from laser_essentials.steps import ContourStep, EngraveStep, LaserStep
+from raygeo.ops.state import PowerMode
 
 from rayforge.core.step import Step
 from rayforge.machine.driver.driver import PWMParams, pwm_varset
@@ -20,6 +21,7 @@ def test_contour_defaults_preserved():
     assert s.offset_mm == 0.0, s.offset_mm
     assert s.cut_speed == 500, s.cut_speed
     assert s.air_assist is False
+    assert s.power_mode == "DYNAMIC"
     assert isinstance(s, LaserStep)
 
 
@@ -135,10 +137,94 @@ def test_laser_step_base_defaults():
     s = LaserStep(typelabel="test")
     assert s.power == 1.0
     assert s.max_power == 1000
+    assert s.power_mode == "DYNAMIC"
     assert s.air_assist is False
     assert s.tab_power == 0.0
     assert s.frequency == 0
     assert s.pulse_width == 0
+
+
+def test_set_power_mode():
+    """set_power_mode updates the value and fires the updated signal."""
+    s = ContourStep(name="t")
+    handler = MagicMock()
+    s.updated.connect(handler)
+
+    s.set_power_mode("CONSTANT")
+    assert s.power_mode == "CONSTANT"
+    handler.assert_called_once_with(s)
+    handler.reset_mock()
+
+    s.set_power_mode("DYNAMIC")
+    assert s.power_mode == "DYNAMIC"
+    handler.assert_called_once_with(s)
+
+
+def test_set_power_mode_validation():
+    s = ContourStep(name="t")
+    with pytest.raises(ValueError):
+        s.set_power_mode("M5")
+
+
+def test_set_power_mode_no_signal_on_same_value():
+    s = ContourStep(name="t")
+    handler = MagicMock()
+    s.updated.connect(handler)
+    s.set_power_mode("DYNAMIC")
+    handler.assert_not_called()
+
+
+def test_get_raygeo_power_mode():
+    s = ContourStep(name="t")
+    assert s.get_raygeo_power_mode() == PowerMode.DYNAMIC
+    s.set_power_mode("CONSTANT")
+    assert s.get_raygeo_power_mode() == PowerMode.CONSTANT
+
+
+def test_create_initial_ops_carries_power_mode():
+    s = ContourStep(name="t")
+    s.set_power_mode("CONSTANT")
+    ops = s.create_initial_ops()
+    mode_cmds = [
+        ops.power_mode(i)
+        for i in range(ops.len())
+        if ops.command_type(i).name == "SET_POWER_MODE"
+    ]
+    assert mode_cmds == [PowerMode.CONSTANT]
+
+
+def test_power_mode_serialization_roundtrip():
+    s = ContourStep(name="t")
+    s.set_power_mode("CONSTANT")
+    data = s.to_dict()
+    assert data["power_mode"] == "CONSTANT"
+
+    restored = Step.from_dict(data)
+    assert isinstance(restored, ContourStep)
+    assert restored.power_mode == "CONSTANT"
+
+
+def test_power_mode_missing_defaults_to_dynamic():
+    data = {
+        "uid": "step-min",
+        "type": "step",
+        "typelabel": "MinimalType",
+        "visible": True,
+        "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+        "per_workpiece_transformers_dicts": [],
+        "per_step_transformers_dicts": [],
+    }
+    restored = ContourStep.from_dict(data)
+    assert restored.power_mode == "DYNAMIC"
+
+
+def test_power_mode_in_recipe_varset():
+    from rayforge.core.varset import LabeledChoiceVar
+
+    vs = LaserStep.recipe_varset()
+    var = vs["power_mode"]
+    assert isinstance(var, LabeledChoiceVar)
+    assert var.default == "DYNAMIC"
 
 
 def test_set_power_validation():
