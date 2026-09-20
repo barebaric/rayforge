@@ -33,9 +33,8 @@ def test_adopt_current_local_camera_settings_disposes_temp_controller(
         "rayforge.ui_gtk.machine.settings_dialog.CameraController",
         FakeController,
     ):
-        MachineSettingsDialog._adopt_current_local_camera_settings(
-            object(), camera
-        )
+        dialog = MachineSettingsDialog.__new__(MachineSettingsDialog)
+        dialog._adopt_current_local_camera_settings(camera)
 
     assert camera.contrast == 12.5
     assert camera.brightness == -3.0
@@ -64,8 +63,7 @@ def test_adopt_current_local_camera_settings_disposes_after_error(
         "rayforge.ui_gtk.machine.settings_dialog.CameraController",
         FakeController,
     ):
-        MachineSettingsDialog._adopt_current_local_camera_settings(
-            object(), camera
-        )
+        dialog = MachineSettingsDialog.__new__(MachineSettingsDialog)
+        dialog._adopt_current_local_camera_settings(camera)
 
     assert disposed == [camera]
