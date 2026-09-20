@@ -52,16 +52,17 @@ def test_selecting_local_device_does_not_rescan_hardware(
     """
     camera = _make_camera("/dev/video0")
     controller = _FakeController(camera)
-    widget = CameraProperties(controller)
-    widget.set_controller(controller)
 
     with patch.object(
         CameraController,
         "list_available_devices",
         return_value=["/dev/video0", "/dev/video1"],
     ) as mock_scan:
-        widget._local_device_ids = ["/dev/video0", "/dev/video1"]
+        widget = CameraProperties(controller)
+        mock_scan.reset_mock()
+
         widget.source_combo.set_selected(1)
+
         assert mock_scan.call_count == 0
         assert camera.device_id == "/dev/video1"
 
