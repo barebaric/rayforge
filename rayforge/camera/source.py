@@ -594,12 +594,23 @@ class HttpSnapshotSource(CameraSource):
         if self._should_log_warning(now):
             logger.warning(message, *args)
 
+    def _wait_until_next_poll(self, now: float) -> float | None:
+        if self._last_poll_time is None:
+            return now
+        elapsed = now - self._last_poll_time
+        remaining = self._next_poll_interval - elapsed
+        if remaining <= 0:
+            return now
+        if self._wait_or_cancelled(remaining):
+            return None
+        return time.monotonic()
+
     def read_frame(self) -> np.ndarray | None:
         now = time.monotonic()
-        if self._last_poll_time is not None:
-            elapsed = now - self._last_poll_time
-            if elapsed < self._next_poll_interval:
-                return self._cached_frame()
+        next_poll = self._wait_until_next_poll(now)
+        if next_poll is None:
+            return None
+        now = next_poll
 
         request = urllib.request.Request(
             self._uri,

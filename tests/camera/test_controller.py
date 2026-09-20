@@ -264,18 +264,24 @@ def test_http_snapshot_failed_fetch_respects_offline_retry_interval():
     source = HttpSnapshotSource(camera)
     source._last_success_frame = np.zeros((4, 4, 3), dtype=np.uint8)
 
-    time_values = iter([100.0, 100.5, 111.0])
+    time_values = iter([100.0, 100.5, 110.0, 111.0, 120.0])
     call_count = 0
+    wait_times = []
 
     def fake_urlopen(request, timeout):
         nonlocal call_count
         call_count += 1
         raise ConnectionRefusedError("offline")
 
+    def fake_wait(timeout):
+        wait_times.append(timeout)
+        return False
+
     with (
         patch(
             "rayforge.camera.source.time.monotonic", side_effect=time_values
         ),
+        patch.object(source, "_wait_or_cancelled", side_effect=fake_wait),
         patch(
             "rayforge.camera.source.urllib.request.urlopen",
             side_effect=fake_urlopen,
@@ -285,7 +291,59 @@ def test_http_snapshot_failed_fetch_respects_offline_retry_interval():
         assert source.read_frame() is not None
         assert source.read_frame() is not None
 
+    assert call_count == 3
+    assert wait_times == [9.5, 9.0]
+
+
+def test_http_snapshot_waits_between_successful_polls():
+    camera = Camera(
+        "HTTP Camera",
+        source_type=CameraSourceType.HTTP_SNAPSHOT,
+        source_config={"uri": "https://example.com/cam.jpg"},
+    )
+    source = HttpSnapshotSource(camera)
+    _, encoded = cv2.imencode(".jpg", np.zeros((4, 4, 3), dtype=np.uint8))
+    payload = encoded.tobytes()
+    time_values = iter([100.0, 100.5, 102.0])
+    wait_times = []
+    call_count = 0
+
+    response = SimpleNamespace(
+        headers=SimpleNamespace(get_content_type=lambda: "image/jpeg"),
+        read=lambda: payload,
+    )
+
+    class ResponseContext:
+        def __enter__(self):
+            return response
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    def fake_urlopen(request, timeout):
+        nonlocal call_count
+        call_count += 1
+        return ResponseContext()
+
+    def fake_wait(timeout):
+        wait_times.append(timeout)
+        return False
+
+    with (
+        patch(
+            "rayforge.camera.source.time.monotonic", side_effect=time_values
+        ),
+        patch.object(source, "_wait_or_cancelled", side_effect=fake_wait),
+        patch(
+            "rayforge.camera.source.urllib.request.urlopen",
+            side_effect=fake_urlopen,
+        ),
+    ):
+        assert source.read_frame() is not None
+        assert source.read_frame() is not None
+
     assert call_count == 2
+    assert wait_times == [1.5]
 
 
 def test_http_snapshot_warning_logs_are_throttled():
