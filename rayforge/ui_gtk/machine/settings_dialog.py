@@ -434,8 +434,9 @@ class MachineSettingsDialog(PatchedDialogWindow):
         # The machine.changed signal will handle the UI update
 
     def _adopt_current_local_camera_settings(self, camera: Camera) -> None:
+        controller = CameraController(camera)
         try:
-            settings = CameraController(camera).read_current_source_settings()
+            settings = controller.read_current_source_settings()
         except OSError as exc:
             logger.warning(
                 "Could not read current settings for local camera %s: %s",
@@ -443,6 +444,8 @@ class MachineSettingsDialog(PatchedDialogWindow):
                 exc,
             )
             return
+        finally:
+            controller.dispose()
         white_balance = settings.get("white_balance")
         if white_balance is None:
             camera.white_balance = None
