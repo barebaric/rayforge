@@ -181,9 +181,10 @@ class MachineCmd:
         head = machine.get_default_laser_head()
         if head is None:
             raise ValueError("Machine has no laser heads configured.")
-        if not head.frame_power_percent:
-            logger.warning("Framing cancelled: Frame power is zero.")
-            return
+
+        # Zero frame power is valid: the frame traces the outline with
+        # the beam off (e.g. for machines with an auxiliary alignment
+        # laser). The encoder omits the laser-on command at 0% power.
 
         frame_speed = (
             head.frame_speed
