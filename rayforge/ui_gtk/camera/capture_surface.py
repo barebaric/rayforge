@@ -55,10 +55,23 @@ class CalibrationCaptureSurface(Gtk.Widget):
         self.set_vexpand(True)
         self.set_size_request(750, 500)
 
+        self._streaming = False
+        self.start()
+
+    def start(self) -> None:
+        """Subscribe to the camera stream. Idempotent."""
+        if self._streaming:
+            return
+        self._streaming = True
         self.controller.subscribe()
         self.controller.image_captured.connect(self._on_image_captured)
 
     def stop(self) -> None:
+        """Release the camera subscription. Idempotent."""
+        if not self._streaming:
+            return
+        self._streaming = False
+        self.controller.image_captured.disconnect(self._on_image_captured)
         self.controller.unsubscribe()
 
     def _on_image_captured(self, _):

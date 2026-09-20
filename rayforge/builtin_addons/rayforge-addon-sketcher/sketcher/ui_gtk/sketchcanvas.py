@@ -94,7 +94,7 @@ class SketchCanvas(WorldSurface):
 
         controllers: list[CameraController] = []
         for camera_model in machine.cameras:
-            controller = camera_mgr.get_controller(camera_model.device_id)
+            controller = camera_mgr.get_controller(camera_model.id)
             if controller:
                 controllers.append(controller)
 

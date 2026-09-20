@@ -1,7 +1,9 @@
 import json
 import logging
+import uuid
 from collections.abc import Sequence
 from datetime import datetime, timezone
+from enum import StrEnum
 from typing import Any
 
 import numpy as np
@@ -25,13 +27,32 @@ def _as_utc(dt: datetime | None) -> datetime | None:
     return dt.replace(tzinfo=timezone.utc)
 
 
+class CameraSourceType(StrEnum):
+    LOCAL_DEVICE = "local_device"
+    HTTP_SNAPSHOT = "http_snapshot"
+    HTTP_STREAM = "http_stream"
+    RTSP = "rtsp"
+
+
 class Camera:
     """A pure data model representing the configuration of a camera."""
 
-    def __init__(self, name: str, device_id: str):
+    def __init__(
+        self,
+        name: str,
+        device_id: str | None = None,
+        *,
+        camera_id: str | None = None,
+        source_type: CameraSourceType = CameraSourceType.LOCAL_DEVICE,
+        source_config: dict[str, Any] | None = None,
+    ):
+        self._id: str = camera_id or str(uuid.uuid4())
         self._name: str = name
-        self._device_id: str = device_id
         self._enabled: bool = False
+        self._source_type = CameraSourceType(source_type)
+        self._source_config: dict[str, Any] = dict(source_config or {})
+        if device_id is not None and "device_id" not in self._source_config:
+            self._source_config["device_id"] = device_id
         # None indicates auto white balance, float for manual Kelvin
         self._white_balance: float | None = None
         self._contrast: float = 50.0
@@ -76,6 +97,10 @@ class Camera:
         self.extra: dict[str, Any] = {}
 
     @property
+    def id(self) -> str:
+        return self._id
+
+    @property
     def name(self) -> str:
         return self._name
 
@@ -88,18 +113,74 @@ class Camera:
         self.changed.send(self)
 
     @property
+    def source_type(self) -> CameraSourceType:
+        return self._source_type
+
+    @source_type.setter
+    def source_type(self, value: CameraSourceType | str):
+        normalized = CameraSourceType(value)
+        if self._source_type == normalized:
+            return
+        logger.debug(
+            "Camera source_type changed from '%s' to '%s'",
+            self._source_type,
+            normalized,
+        )
+        self._source_type = normalized
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    @property
+    def source_config(self) -> dict[str, Any]:
+        return dict(self._source_config)
+
+    @source_config.setter
+    def source_config(self, value: dict[str, Any]):
+        if not isinstance(value, dict):
+            raise TypeError("source_config must be a dict.")
+        if self._source_config == value:
+            return
+        self._source_config = dict(value)
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    def update_source_config(self, **kwargs: Any) -> None:
+        updated = dict(self._source_config)
+        updated.update(kwargs)
+        self.source_config = updated
+
+    @property
     def device_id(self) -> str:
-        return self._device_id
+        return str(self._source_config.get("device_id", ""))
 
     @device_id.setter
     def device_id(self, value: str):
-        if self._device_id == value:
+        if self.device_id == value:
             return
         logger.debug(
-            f"Camera device_id changed from '{self._device_id}' to '{value}'"
+            "Camera device_id changed from '%s' to '%s'",
+            self.device_id,
+            value,
         )
-        self._device_id = value
+        updated = dict(self._source_config)
+        updated["device_id"] = value
+        self._source_config = updated
         self.changed.send(self)
+        self.settings_changed.send(self)
+
+    @property
+    def source_uri(self) -> str:
+        return str(self._source_config.get("uri", ""))
+
+    @source_uri.setter
+    def source_uri(self, value: str):
+        if self.source_uri == value:
+            return
+        updated = dict(self._source_config)
+        updated["uri"] = value
+        self._source_config = updated
+        self.changed.send(self)
+        self.settings_changed.send(self)
 
     @property
     def enabled(self) -> bool:
@@ -278,7 +359,10 @@ class Camera:
 
     @distortion_k1.setter
     def distortion_k1(self, value: float):
-        self._distortion_k1 = float(value)
+        value = float(value)
+        if self._distortion_k1 == value:
+            return
+        self._distortion_k1 = value
         self._calibration_date = datetime.now(tz=timezone.utc)
         self.changed.send(self)
         self.settings_changed.send(self)
@@ -289,7 +373,10 @@ class Camera:
 
     @distortion_k2.setter
     def distortion_k2(self, value: float):
-        self._distortion_k2 = float(value)
+        value = float(value)
+        if self._distortion_k2 == value:
+            return
+        self._distortion_k2 = value
         self._calibration_date = datetime.now(tz=timezone.utc)
         self.changed.send(self)
         self.settings_changed.send(self)
@@ -300,7 +387,10 @@ class Camera:
 
     @distortion_p1.setter
     def distortion_p1(self, value: float):
-        self._distortion_p1 = float(value)
+        value = float(value)
+        if self._distortion_p1 == value:
+            return
+        self._distortion_p1 = value
         self._calibration_date = datetime.now(tz=timezone.utc)
         self.changed.send(self)
         self.settings_changed.send(self)
@@ -311,7 +401,10 @@ class Camera:
 
     @distortion_p2.setter
     def distortion_p2(self, value: float):
-        self._distortion_p2 = float(value)
+        value = float(value)
+        if self._distortion_p2 == value:
+            return
+        self._distortion_p2 = value
         self._calibration_date = datetime.now(tz=timezone.utc)
         self.changed.send(self)
         self.settings_changed.send(self)
@@ -322,7 +415,10 @@ class Camera:
 
     @distortion_k3.setter
     def distortion_k3(self, value: float):
-        self._distortion_k3 = float(value)
+        value = float(value)
+        if self._distortion_k3 == value:
+            return
+        self._distortion_k3 = value
         self._calibration_date = datetime.now(tz=timezone.utc)
         self.changed.send(self)
         self.settings_changed.send(self)
@@ -541,11 +637,22 @@ class Camera:
             return False
         return alignment >= calibration
 
+    @property
+    def supports_hardware_controls(self) -> bool:
+        return self.source_type is CameraSourceType.LOCAL_DEVICE
+
+    def source_display_value(self) -> str:
+        if self.source_type is CameraSourceType.LOCAL_DEVICE:
+            return self.device_id
+        return self.source_uri
+
     def to_dict(self) -> dict[str, Any]:
         data = {
+            "id": self.id,
             "name": self.name,
-            "device_id": self.device_id,
             "enabled": self.enabled,
+            "source_type": self.source_type.value,
+            "source_config": self.source_config,
             "white_balance": self.white_balance,
             "contrast": self.contrast,
             "brightness": self.brightness,
@@ -561,6 +668,12 @@ class Camera:
                 list(self.resolution) if self.resolution is not None else None
             ),
         }
+        if self.source_type is CameraSourceType.LOCAL_DEVICE:
+            # Keep the legacy field for a temporary compatibility window so
+            # users can return to an older Rayforge version after trying this
+            # schema. Remove it after the migration has been established for
+            # a few months.
+            data["device_id"] = self.device_id
         if self.image_to_world is not None:
             image_points, world_points = self.image_to_world
             data["image_to_world"] = [
@@ -603,9 +716,12 @@ class Camera:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Camera":
         known_keys = {
+            "id",
             "name",
             "device_id",
             "enabled",
+            "source_type",
+            "source_config",
             "white_balance",
             "contrast",
             "brightness",
@@ -630,8 +746,18 @@ class Camera:
             "alignment_date",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
-
-        camera = cls(data["name"], data["device_id"])
+        source_config = dict(data.get("source_config") or {})
+        legacy_device_id = data.get("device_id")
+        if legacy_device_id and "device_id" not in source_config:
+            source_config["device_id"] = legacy_device_id
+        source_type = data.get("source_type", CameraSourceType.LOCAL_DEVICE)
+        camera = cls(
+            data["name"],
+            legacy_device_id,
+            camera_id=data.get("id"),
+            source_type=source_type,
+            source_config=source_config,
+        )
         camera.enabled = data.get("enabled", camera.enabled)
         camera.white_balance = data.get("white_balance", None)
         camera.contrast = data.get("contrast", camera.contrast)

@@ -22,6 +22,10 @@ class ImageSettingsPage(CameraWizardPage):
         self.root.append(self._widget)
         return self.root
 
+    def enter(self) -> None:
+        if self._widget is not None:
+            self._widget.start()
+
     def leave(self) -> None:
         if self._widget is not None:
             self._widget.stop()

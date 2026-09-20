@@ -278,6 +278,14 @@ class CameraWizard(PatchedDialogWindow):
     def _on_next_clicked(self, _btn) -> None:
         if self._current is None:
             return
+        if not self._pages[self._current].on_next_requested():
+            return
+        self.advance()
+
+    def advance(self) -> None:
+        """Move to the next page, bypassing any page-level veto."""
+        if self._current is None:
+            return
         idx = self._page_order.index(self._current)
         if idx + 1 >= len(self._page_order):
             return
@@ -299,11 +307,16 @@ class CameraWizard(PatchedDialogWindow):
         self.toast_overlay.add_toast(Adw.Toast.new(message))
 
     def close(self):
+        """Release every page's resources before closing.
+
+        ``leave()`` is idempotent on all pages (the camera widgets guard
+        their subscribe/unsubscribe), so pages that were already left
+        during navigation cannot release a camera subscription they no
+        longer own -- which used to kill the live feed for the rest of
+        the application.
+        """
         for page in self._pages.values():
-            if isinstance(page, CapturePage):
-                page.stop()
-            elif isinstance(page, (ImageSettingsPage, AlignmentPage)):
-                page.leave()
+            page.leave()
         super().close()
 
 

@@ -6,7 +6,9 @@ from pathlib import Path
 from gi.repository import Adw, Gdk, GLib, Gtk
 
 from ... import const
+from ...camera.controller import CameraController
 from ...camera.models import Camera
+from ...camera.models.camera import CameraSourceType
 from ...camera.v4l import display_name
 from ...context import get_context
 from ...machine.driver import (
@@ -392,18 +394,66 @@ class MachineSettingsDialog(PatchedDialogWindow):
         """
         self.toast_overlay.add_toast(Adw.Toast(title=message, timeout=5))
 
-    def _on_camera_add_requested(self, sender, *, device_id: str):
+    def _on_camera_add_requested(
+        self,
+        sender,
+        *,
+        name: str,
+        source_type: str,
+        source_config: dict,
+    ):
         """Handles the request to add a new camera to the machine."""
-        if any(c.device_id == device_id for c in self.machine.cameras):
-            return  # Safety check
+        if any(
+            c.source_type.value == source_type
+            and c.source_config == source_config
+            for c in self.machine.cameras
+        ):
+            self.toast_overlay.add_toast(
+                Adw.Toast(
+                    title=_("This camera source is already configured."),
+                    timeout=5,
+                )
+            )
+            return
 
         new_camera = Camera(
-            display_name(device_id),
-            device_id,
+            name
+            or (
+                display_name(source_config.get("device_id", ""))
+                if source_type == CameraSourceType.LOCAL_DEVICE.value
+                else source_config.get("uri", "")
+            ),
+            source_type=CameraSourceType(source_type),
+            source_config=source_config,
         )
+        if new_camera.source_type is CameraSourceType.LOCAL_DEVICE:
+            self._adopt_current_local_camera_settings(new_camera)
         new_camera.enabled = True
+        self.camera_page.select_camera_by_id(new_camera.id)
         self.machine.add_camera(new_camera)
         # The machine.changed signal will handle the UI update
+
+    def _adopt_current_local_camera_settings(self, camera: Camera) -> None:
+        try:
+            settings = CameraController(camera).read_current_source_settings()
+        except OSError as exc:
+            logger.warning(
+                "Could not read current settings for local camera %s: %s",
+                camera.device_id,
+                exc,
+            )
+            return
+        white_balance = settings.get("white_balance")
+        if white_balance is None:
+            camera.white_balance = None
+        elif isinstance(white_balance, (int, float)):
+            camera.white_balance = float(white_balance)
+        contrast = settings.get("contrast")
+        if isinstance(contrast, (int, float)):
+            camera.contrast = float(contrast)
+        brightness = settings.get("brightness")
+        if isinstance(brightness, (int, float)):
+            camera.brightness = float(brightness)
 
     def _on_camera_remove_requested(self, sender, *, camera: Camera):
         """Handles the request to remove a camera from the machine."""
@@ -417,11 +467,9 @@ class MachineSettingsDialog(PatchedDialogWindow):
         # Get all live controllers and filter them for this specific
         # machine
         all_controllers = camera_mgr.controllers
-        machine_camera_device_ids = {c.device_id for c in self.machine.cameras}
+        machine_camera_ids = {c.id for c in self.machine.cameras}
         relevant_controllers = [
-            c
-            for c in all_controllers
-            if c.config.device_id in machine_camera_device_ids
+            c for c in all_controllers if c.config.id in machine_camera_ids
         ]
         self.camera_page.set_controllers(relevant_controllers)
 

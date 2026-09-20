@@ -92,6 +92,9 @@ class LensCalibrationWidget(Gtk.Box):
             return
         setattr(self.camera, config_key, spin_row.get_value())
 
+    def start(self) -> None:
+        self.camera.settings_changed.connect(self._on_camera_settings_changed)
+
     def stop(self) -> None:
         self.camera.settings_changed.disconnect(
             self._on_camera_settings_changed

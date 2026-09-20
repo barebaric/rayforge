@@ -1,265 +1,344 @@
 import logging
+import threading
 from gettext import gettext as _
-from typing import Literal
 
-from gi.repository import Adw, GdkPixbuf, Gtk
+from gi.repository import Adw, Gtk
 
 from ...camera.controller import CameraController
-from ...camera.models.camera import Camera
+from ...camera.models.camera import Camera, CameraSourceType
+from ...camera.source import list_local_device_ids, validate_source_uri
 from ...camera.v4l import display_name
-from ...context import get_context
-from ..shared.gtk import apply_css
+from ...shared.util.glib import idle_add
+from .capture_surface import numpy_to_pixbuf
 
 logger = logging.getLogger(__name__)
+
+_SCANNING_PLACEHOLDER = _("Scanning for devices\u2026")
 
 
 class CameraSelectionDialog(Adw.MessageDialog):
     def __init__(
         self,
         parent,
-        mode: Literal["available", "configured"] = "available",
+        active_controllers: list[CameraController] | None = None,
         **kwargs,
     ):
-        self._mode = mode
-        body = (
-            _("Please select an available camera device")
-            if mode == "available"
-            else _("Please select a configured camera")
-        )
         super().__init__(
             transient_for=parent,
             modal=True,
-            heading=_("Select Camera"),
-            body=body,
+            heading=_("Add Camera"),
+            body=_("Choose a camera source type and enter its details."),
             close_response="cancel",
             **kwargs,
         )
-        self.set_size_request(450, 350)
-        self.selected_device_id: str | None = None
-
-        apply_css("""
-            .rounded-image {
-                border-radius: 8px;
-            }
-            .nav-button {
-                padding: 12px;
-            }
-        """)
-
-        self.carousel = Adw.Carousel()
-        self.carousel.set_vexpand(True)
-        self.carousel.set_hexpand(True)
-        self.carousel.set_allow_scroll_wheel(True)
-        self.carousel.set_allow_long_swipes(True)
-        self.carousel.set_interactive(True)
-
-        self.prev_button = Gtk.Button(icon_name="go-previous-symbolic")
-        self.prev_button.add_css_class("nav-button")
-        self.prev_button.add_css_class("flat")
-        self.prev_button.set_sensitive(False)
-        self.prev_button.set_valign(Gtk.Align.CENTER)
-        self.prev_button.connect("clicked", self.on_prev_clicked)
-
-        self.next_button = Gtk.Button(icon_name="go-next-symbolic")
-        self.next_button.add_css_class("nav-button")
-        self.next_button.add_css_class("flat")
-        self.next_button.set_sensitive(False)
-        self.next_button.set_valign(Gtk.Align.CENTER)
-        self.next_button.connect("clicked", self.on_next_clicked)
-
-        carousel_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        carousel_box.append(self.prev_button)
-        carousel_box.append(self.carousel)
-        carousel_box.append(self.next_button)
-
-        self.indicator = Adw.CarouselIndicatorDots()
-        self.indicator.set_carousel(self.carousel)
-        self.indicator.set_margin_bottom(6)
-
-        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        content_box.append(carousel_box)
-        content_box.append(self.indicator)
-        content_box.set_margin_start(12)
-        content_box.set_margin_end(12)
-        content_box.set_margin_top(12)
-        content_box.set_margin_bottom(6)
-
-        self.set_extra_child(content_box)
-
+        self.set_size_request(720, 420)
+        self.camera_payload: dict | None = None
+        # Controllers already active elsewhere in the app (e.g. a camera
+        # already configured on the machine). Their frames are reused for
+        # the preview instead of opening the device a second time, which
+        # can crash the underlying V4L2/DirectShow driver.
+        self._active_controllers: list[CameraController] = (
+            list(active_controllers) if active_controllers else []
+        )
+        # Guards against async scan/preview callbacks touching widgets
+        # after the dialog has been closed/destroyed.
+        self._closed = False
+        # Discards stale preview results from a superseded selection.
+        self._preview_generation = 0
+        self._available_devices: list[str] = []
+        self._preview_pixbuf = None
+        self._build_ui()
         self.add_response("cancel", _("Cancel"))
-        self.set_response_enabled("cancel", True)
-        self.set_default_response("cancel")
+        self.add_response("select", _("Add"))
+        self.set_response_enabled("select", False)
+        self.type_row.connect("notify::selected", self._on_type_changed)
+        self.name_entry.connect("changed", self._on_form_changed)
+        self.device_row.connect("notify::selected", self._on_form_changed)
+        self.uri_entry.connect("changed", self._on_form_changed)
+        self.connect("response", self._on_response)
+        self.connect("destroy", self._on_destroy)
+        # The device dropdown opens instantly with a placeholder; probing
+        # hardware happens on a worker thread so showing this dialog never
+        # blocks the UI, however many (or slow) devices are attached.
+        self._start_device_scan()
 
-        self.available_devices: list[str] = []
-        self._controllers: list[CameraController] = []
-        if mode == "available":
-            self.list_available_cameras()
-        else:
-            self.list_configured_cameras()
-
-        self.carousel.connect("page-changed", self.on_page_changed)
-
-        key_controller = Gtk.EventControllerKey()
-        key_controller.connect("key-pressed", self.on_key_pressed)
-        self.add_controller(key_controller)
-
-    def list_configured_cameras(self):
-        camera_mgr = get_context().camera_mgr
-        controllers = camera_mgr.controllers
-
-        if not controllers:
-            label = Gtk.Label(label=_("No cameras configured."))
-            self.carousel.append(label)
-            return
-
-        for ctrl in controllers:
-            device_id = ctrl.config.device_id
-            self.available_devices.append(device_id)
-            self._controllers.append(ctrl)
-            self._add_camera_page(ctrl, device_id, ctrl.config.name)
-
-        if self.available_devices:
-            first_child = self.carousel.get_nth_page(0)
-            self.carousel.scroll_to(first_child, True)
-            self.selected_device_id = self.available_devices[0]
-            self._update_nav_buttons()
-
-    def _add_camera_page(
-        self, controller: CameraController, device_id: str, name: str
-    ):
-        pixbuf = controller.pixbuf
-
-        if not pixbuf:
-            label = Gtk.Label(
-                label=_(
-                    "Failed to load image for Device ID: {device_id}"
-                ).format(device_id=device_id)
-            )
-            self.carousel.append(label)
-            return
-
-        max_height = 250
-        width = pixbuf.get_width()
-        height = pixbuf.get_height()
-        if height > max_height:
-            scale_factor = max_height / height
-            width = int(width * scale_factor)
-            height = max_height
-            pixbuf = pixbuf.scale_simple(
-                width, height, GdkPixbuf.InterpType.BILINEAR
-            )
-
-        image_widget = Gtk.Picture.new_for_pixbuf(pixbuf)
-        image_widget.set_halign(Gtk.Align.CENTER)
-        image_widget.set_valign(Gtk.Align.CENTER)
-        image_widget.set_size_request(200, 200)
-        image_widget.add_css_class("rounded-image")
-        image_widget.set_margin_start(10)
-        image_widget.set_margin_end(10)
-        image_widget.set_margin_top(10)
-        image_widget.set_margin_bottom(5)
-
-        label_text = name
-        dev_name = display_name(device_id)
-        if dev_name == device_id:
-            label_text = _("Camera {device_id}").format(device_id=device_id)
-
-        label = Gtk.Label(label=label_text)
-        label.set_halign(Gtk.Align.CENTER)
-        label.set_valign(Gtk.Align.CENTER)
-        label.set_margin_bottom(12)
-
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        box.append(image_widget)
-        box.append(label)
-        box.set_halign(Gtk.Align.CENTER)
-        box.set_valign(Gtk.Align.CENTER)
-
-        gesture = Gtk.GestureClick.new()
-        gesture.connect("released", self.on_carousel_item_clicked, device_id)
-        box.add_controller(gesture)
-
-        motion_controller = Gtk.EventControllerMotion.new()
-        motion_controller.connect(
-            "enter", self.on_carousel_item_hover_enter, box
+    def _build_ui(self) -> None:
+        box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=12,
+            margin_top=12,
+            margin_bottom=12,
+            margin_start=12,
+            margin_end=12,
         )
-        motion_controller.connect(
-            "leave", self.on_carousel_item_hover_leave, box
+        self.set_extra_child(box)
+
+        source_group = Adw.PreferencesGroup()
+        box.append(source_group)
+
+        self.type_values = [
+            None,
+            CameraSourceType.LOCAL_DEVICE,
+            CameraSourceType.HTTP_SNAPSHOT,
+            CameraSourceType.HTTP_STREAM,
+            CameraSourceType.RTSP,
+        ]
+        self.type_row = Adw.ComboRow(
+            title=_("Source Type"),
+            model=Gtk.StringList.new(
+                [
+                    _("Choose source type"),
+                    _("Local camera"),
+                    _("HTTP snapshot URL"),
+                    _("HTTP stream URL"),
+                    _("RTSP stream"),
+                ]
+            ),
         )
-        box.add_controller(motion_controller)
+        source_group.add(self.type_row)
 
-        self.carousel.append(box)
+        name_row = Adw.ActionRow(
+            title=_("Name"),
+            subtitle=_("Display name for this camera"),
+        )
+        self.name_entry = Gtk.Entry()
+        self.name_entry.set_valign(Gtk.Align.CENTER)
+        name_row.add_suffix(self.name_entry)
+        source_group.add(name_row)
 
-    @staticmethod
-    def _get_display_name(device_id: str) -> str:
-        return display_name(device_id)
+        self.device_row = Adw.ComboRow(
+            title=_("Device"),
+            subtitle=_("Choose an attached local camera"),
+            # Populated once the background scan in _start_device_scan()
+            # completes, so opening this dialog never blocks on hardware
+            # probing.
+            model=Gtk.StringList.new([_SCANNING_PLACEHOLDER]),
+        )
+        self.device_row.set_sensitive(False)
+        source_group.add(self.device_row)
 
-    def list_available_cameras(self):
-        self.available_devices = CameraController.list_available_devices()
-        if not self.available_devices:
-            label = Gtk.Label(label=_("No cameras found."))
-            self.carousel.append(label)
+        preview_group = Adw.PreferencesGroup(
+            title=_("Preview"),
+            description=_("Capture one frame from the selected local camera"),
+        )
+        preview_frame = Gtk.Frame(hexpand=True)
+        preview_frame.add_css_class("card")
+        self.preview_image = Gtk.Picture(
+            halign=Gtk.Align.CENTER,
+            valign=Gtk.Align.CENTER,
+        )
+        self.preview_image.set_content_fit(Gtk.ContentFit.CONTAIN)
+        self.preview_image.set_size_request(360, 220)
+        preview_frame.set_child(self.preview_image)
+        preview_group.add(preview_frame)
+        self.preview_group = preview_group
+        box.append(preview_group)
+
+        uri_row = Adw.ActionRow(
+            title=_("URL"),
+            subtitle=_("Enter the snapshot or stream URL"),
+        )
+        self.uri_entry = Gtk.Entry()
+        self.uri_entry.set_valign(Gtk.Align.CENTER)
+        self.uri_entry.set_width_chars(40)
+        self.uri_entry.set_hexpand(True)
+        uri_row.add_suffix(self.uri_entry)
+        self.uri_row = uri_row
+        source_group.add(uri_row)
+        self._update_visibility()
+
+    def _selected_source_type(self):
+        idx = self.type_row.get_selected()
+        if 0 <= idx < len(self.type_values):
+            return self.type_values[idx]
+        return None
+
+    def _update_visibility(self) -> None:
+        source_type = self._selected_source_type()
+        is_local = source_type is CameraSourceType.LOCAL_DEVICE
+        self.device_row.set_visible(is_local)
+        self.preview_group.set_visible(is_local)
+        self.uri_row.set_visible(
+            source_type
+            in {
+                CameraSourceType.HTTP_SNAPSHOT,
+                CameraSourceType.HTTP_STREAM,
+                CameraSourceType.RTSP,
+            }
+        )
+        if not is_local:
+            self.preview_image.set_pixbuf(None)
+            self._preview_pixbuf = None
+
+    def _build_payload(self) -> dict | None:
+        source_type = self._selected_source_type()
+        if source_type is None:
+            return None
+        name = self.name_entry.get_text().strip()
+        if source_type is CameraSourceType.LOCAL_DEVICE:
+            idx = self.device_row.get_selected()
+            if idx <= 0:
+                return None
+            device_id = self._available_devices[idx - 1]
+            return {
+                "name": name or display_name(device_id),
+                "source_type": source_type.value,
+                "source_config": {"device_id": device_id},
+            }
+        uri = self.uri_entry.get_text().strip()
+        if not uri or validate_source_uri(source_type, uri):
+            return None
+        return {
+            "name": name or uri,
+            "source_type": source_type.value,
+            "source_config": {"uri": uri},
+        }
+
+    def _on_type_changed(self, *args) -> None:
+        self._update_visibility()
+        self._on_form_changed()
+
+    def _on_form_changed(self, *args) -> None:
+        source_type = self._selected_source_type()
+        if source_type is not None and source_type is not (
+            CameraSourceType.LOCAL_DEVICE
+        ):
+            error = validate_source_uri(source_type, self.uri_entry.get_text())
+            self.uri_entry.set_css_classes(["error"] if error else [])
+            self.uri_entry.set_tooltip_text(error)
+        payload = self._build_payload()
+        self.camera_payload = payload
+        self.set_response_enabled("select", payload is not None)
+        self._update_preview()
+
+    def _update_preview(self) -> None:
+        source_type = self._selected_source_type()
+        if source_type is not CameraSourceType.LOCAL_DEVICE:
             return
 
-        for device_id in self.available_devices:
-            name = display_name(device_id)
-            temp_config = Camera(
-                name=name,
-                device_id=device_id,
+        idx = self.device_row.get_selected()
+        if idx <= 0 or idx - 1 >= len(self._available_devices):
+            self.preview_image.set_pixbuf(None)
+            self._preview_pixbuf = None
+            return
+        device_id = self._available_devices[idx - 1]
+
+        # Any in-flight preview capture for a previously selected device
+        # becomes stale as soon as the selection changes again; bump the
+        # generation so its result is discarded when it eventually
+        # arrives instead of clobbering the newer selection's preview.
+        self._preview_generation += 1
+        generation = self._preview_generation
+
+        active_controller = self._find_active_local_controller(device_id)
+        if active_controller is not None:
+            # Reuse the already-open stream's latest frame instead of
+            # opening the same device a second time, which can crash the
+            # underlying V4L2/DirectShow driver.
+            self._show_preview_frame(active_controller.raw_image_data)
+            return
+
+        self.preview_image.set_pixbuf(None)
+        self._preview_pixbuf = None
+        self._capture_preview_async(device_id, generation)
+
+    def _find_active_local_controller(
+        self, device_id: str
+    ) -> CameraController | None:
+        for controller in self._active_controllers:
+            config = controller.config
+            if (
+                config.source_type is CameraSourceType.LOCAL_DEVICE
+                and config.device_id == device_id
+                and controller.has_active_source
+            ):
+                return controller
+        return None
+
+    def _capture_preview_async(self, device_id: str, generation: int) -> None:
+        """Captures one preview frame off the UI thread.
+
+        Opening a device (especially over USB/V4L2) can block for a
+        noticeable amount of time; doing this synchronously would freeze
+        the whole dialog (and app) while the user is just browsing
+        devices in the dropdown.
+        """
+
+        def worker() -> None:
+            image = self._capture_preview_frame(device_id)
+            idle_add(self._on_preview_captured, generation, image)
+
+        threading.Thread(
+            target=worker, name="CameraPreviewCapture", daemon=True
+        ).start()
+
+    def _capture_preview_frame(self, device_id: str):
+        camera = Camera(
+            name=display_name(device_id),
+            source_type=CameraSourceType.LOCAL_DEVICE,
+            source_config={"device_id": device_id},
+        )
+        controller = CameraController(camera)
+        try:
+            controller.capture_image(apply_settings=False)
+            return controller.raw_image_data
+        finally:
+            # This is a throwaway, one-shot controller: dispose it so it
+            # is fully detached from its (equally throwaway) Camera model
+            # instead of leaking a dangling signal connection.
+            controller.dispose()
+
+    def _on_preview_captured(self, generation: int, image) -> None:
+        if self._closed or generation != self._preview_generation:
+            # The dialog closed, or the user picked a different device
+            # while this capture was in flight; drop the stale result.
+            return
+        self._show_preview_frame(image)
+
+    def _show_preview_frame(self, image) -> None:
+        if image is None:
+            self.preview_image.set_pixbuf(None)
+            self._preview_pixbuf = None
+            return
+        self._preview_pixbuf = numpy_to_pixbuf(image)
+        self.preview_image.set_pixbuf(self._preview_pixbuf)
+
+    def _start_device_scan(self) -> None:
+        """Scans for local camera devices on a worker thread.
+
+        Probing hardware (potentially several devices, each with several
+        backend/retry attempts) can take long enough to be noticeable, so
+        this must never run on the UI thread.
+        """
+
+        def worker() -> None:
+            try:
+                devices = list_local_device_ids()
+            except Exception:
+                logger.exception("Error scanning for local camera devices")
+                devices = []
+            idle_add(self._on_devices_scanned, devices)
+
+        threading.Thread(
+            target=worker, name="CameraDeviceScan", daemon=True
+        ).start()
+
+    def _on_devices_scanned(self, devices: list[str]) -> None:
+        if self._closed:
+            return
+        self._available_devices = devices
+        self.device_row.set_model(
+            Gtk.StringList.new(
+                [_("Choose device")]
+                + [display_name(device_id) for device_id in devices]
             )
-            temp_controller = CameraController(temp_config)
-            temp_controller.capture_image()
-            self._add_camera_page(temp_controller, device_id, temp_config.name)
+        )
+        self.device_row.set_sensitive(True)
 
-        if self.available_devices:
-            first_child = self.carousel.get_nth_page(0)
-            self.carousel.scroll_to(first_child, True)
-            self.selected_device_id = self.available_devices[0]
-            self._update_nav_buttons()
+    def _on_response(self, dialog, response_id) -> None:
+        self._closed = True
+        self.preview_image.set_pixbuf(None)
+        self._preview_pixbuf = None
 
-    def on_page_changed(self, carousel, page_number):
-        if 0 <= page_number < len(self.available_devices):
-            self.selected_device_id = self.available_devices[page_number]
-        else:
-            self.selected_device_id = None
-        self._update_nav_buttons()
-
-    def on_carousel_item_clicked(self, gesture, n_press, x, y, device_id):
-        self.selected_device_id = device_id
-        self.response("select")
-        self.close()
-
-    def on_carousel_item_hover_enter(self, motion_controller, x, y, box):
-        # Add a "card" style class for a subtle shadow effect
-        box.add_css_class("card")
-
-    def on_carousel_item_hover_leave(self, motion_controller, box):
-        box.remove_css_class("card")
-
-    def on_prev_clicked(self, button):
-        current = self.carousel.get_position()
-        if current > 0:
-            page = self.carousel.get_nth_page(int(current) - 1)
-            self.carousel.scroll_to(page, True)
-
-    def on_next_clicked(self, button):
-        n_pages = self.carousel.get_n_pages()
-        current = self.carousel.get_position()
-        if current < n_pages - 1:
-            page = self.carousel.get_nth_page(int(current) + 1)
-            self.carousel.scroll_to(page, True)
-
-    def on_key_pressed(self, controller, keyval, keycode, state):
-        if keyval == 65361:
-            self.on_prev_clicked(None)
-            return True
-        elif keyval == 65363:
-            self.on_next_clicked(None)
-            return True
-        return False
-
-    def _update_nav_buttons(self):
-        n_pages = self.carousel.get_n_pages()
-        current = int(self.carousel.get_position())
-        self.prev_button.set_sensitive(current > 0)
-        self.next_button.set_sensitive(current < n_pages - 1)
+    def _on_destroy(self, *args) -> None:
+        self._closed = True

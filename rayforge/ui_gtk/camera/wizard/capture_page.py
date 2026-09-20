@@ -25,6 +25,7 @@ class CapturePage(CameraWizardPage):
         self._board: CharucoBoard | None = None
         self.calibrator: CameraCalibrator | None = None
         self._calibration_result: CalibrationResult | None = None
+        self._calibration_applied = False
         self._capture_surface: CalibrationCaptureSurface | None = None
 
     @property
@@ -136,10 +137,14 @@ class CapturePage(CameraWizardPage):
         return self.root
 
     def enter(self) -> None:
+        if self._capture_surface is not None:
+            self._capture_surface.start()
+        self._calibration_applied = False
         self._init_calibrator()
 
     def leave(self) -> None:
-        pass
+        if self._capture_surface is not None:
+            self._capture_surface.stop()
 
     def footer_buttons(self) -> list:
         return [self._clear_btn, self._capture_btn, self._calibrate_btn]
@@ -248,19 +253,54 @@ class CapturePage(CameraWizardPage):
 
     def _on_result_dialog_response(self, dialog, response_id) -> None:
         dialog.destroy()
-        if response_id == "save":
-            self._apply_calibration()
-        self.wizard.close()
+        if response_id != "save":
+            return
+        self._apply_calibration()
+        self.show_toast(_("Lens calibration saved."))
+        self.wizard.advance()
 
     def _apply_calibration(self) -> None:
         if self._calibration_result is None:
             return
         self.controller.config.set_calibration_result(self._calibration_result)
+        self._calibration_applied = True
         logger.info("Calibration applied to camera configuration")
 
-    def stop(self) -> None:
-        if self._capture_surface is not None:
-            self._capture_surface.stop()
+    def on_next_requested(self) -> bool:
+        """Warn before leaving captured frames uncalibrated.
+
+        Capturing frames only fills the calibrator's buffer; the lens
+        model is solved by the Calibrate button. Advancing without it
+        silently discards the captures, so confirm the user means it.
+        """
+        if self._calibration_applied or self.calibrator is None:
+            return True
+        if self.calibrator.frame_count == 0:
+            return True
+        dialog = Adw.MessageDialog(
+            transient_for=self.wizard,
+            modal=True,
+            heading=_("Skip Lens Calibration?"),
+            body=_(
+                "You captured {frames} frame(s) but have not run "
+                "Calibrate yet. Continuing discards them and leaves "
+                "the lens uncorrected."
+            ).format(frames=self.calibrator.frame_count),
+        )
+        dialog.add_response("skip", _("Skip Anyway"))
+        dialog.add_response("stay", _("Stay Here"))
+        dialog.set_response_appearance(
+            "skip", Adw.ResponseAppearance.DESTRUCTIVE
+        )
+        dialog.set_default_response("stay")
+        dialog.connect("response", self._on_skip_dialog_response)
+        dialog.present()
+        return False
+
+    def _on_skip_dialog_response(self, dialog, response_id) -> None:
+        dialog.destroy()
+        if response_id == "skip":
+            self.wizard.advance()
 
 
 __all__ = ["CapturePage"]
