@@ -157,6 +157,7 @@ class LaserStep(Step):
     def populate_payload(self, payload, machine: "Machine"):
         super().populate_payload(payload, machine)
         payload.power = self.power
+        payload.power_mode = self.get_raygeo_power_mode()
         payload.air_assist = (
             AirAssistMode.ON if self.air_assist else AirAssistMode.OFF
         )
