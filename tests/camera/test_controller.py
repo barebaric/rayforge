@@ -12,7 +12,11 @@ import pytest
 
 from rayforge.camera.controller import CameraController
 from rayforge.camera.models.camera import Camera, CameraSourceType
-from rayforge.camera.source import CameraSource, HttpSnapshotSource
+from rayforge.camera.source import (
+    CameraSource,
+    HttpSnapshotSource,
+    HttpStreamSource,
+)
 
 
 def test_controller_initialization():
@@ -426,6 +430,78 @@ def test_network_streams_use_slower_reconnect_delay():
         controller._capture_loop()
 
     assert wait_calls == [10.0]
+
+
+def test_http_stream_source_reconnects_after_repeated_read_failures():
+    camera = Camera(
+        "HTTP Stream",
+        source_type=CameraSourceType.HTTP_STREAM,
+        source_config={"uri": "https://example.com/stream.mjpeg"},
+    )
+
+    class MockVideoCapture:
+        def __init__(self, uri, backend=None):
+            self.opened = True
+
+        def isOpened(self):
+            return self.opened
+
+        def read(self):
+            return False, None
+
+        def release(self):
+            self.opened = False
+
+    with patch("rayforge.camera.source.cv2.VideoCapture", MockVideoCapture):
+        source = HttpStreamSource(camera)
+        source.open()
+
+        assert source.read_frame() is None
+        assert source.read_frame() is None
+        with pytest.raises(OSError, match="stopped returning frames"):
+            source.read_frame()
+        source.close()
+
+
+def test_http_stream_source_resets_read_failures_after_success():
+    camera = Camera(
+        "HTTP Stream",
+        source_type=CameraSourceType.HTTP_STREAM,
+        source_config={"uri": "https://example.com/stream.mjpeg"},
+    )
+    reads = iter(
+        [
+            (False, None),
+            (False, None),
+            (True, np.zeros((2, 2, 3), dtype=np.uint8)),
+            (False, None),
+            (False, None),
+        ]
+    )
+
+    class MockVideoCapture:
+        def __init__(self, uri, backend=None):
+            self.opened = True
+
+        def isOpened(self):
+            return self.opened
+
+        def read(self):
+            return next(reads)
+
+        def release(self):
+            self.opened = False
+
+    with patch("rayforge.camera.source.cv2.VideoCapture", MockVideoCapture):
+        source = HttpStreamSource(camera)
+        source.open()
+
+        assert source.read_frame() is None
+        assert source.read_frame() is None
+        assert source.read_frame() is not None
+        assert source.read_frame() is None
+        assert source.read_frame() is None
+        source.close()
 
 
 def test_network_stream_frame_failure_logs_are_throttled():

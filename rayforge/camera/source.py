@@ -480,6 +480,7 @@ class OpenCvUrlSource(CameraSource):
 
     reconnect_delay_seconds = 10.0
     warning_log_interval_seconds = 30.0
+    MAX_CONSECUTIVE_READ_FAILURES = 3
 
     def __init__(self, config: Camera):
         super().__init__(config)
@@ -488,12 +489,14 @@ class OpenCvUrlSource(CameraSource):
         # comment on LocalDeviceSource.__init__.
         self._uri: str = config.source_uri
         self.cap = None
+        self._read_failures = 0
 
     def open(self) -> None:
         self.cap = cv2.VideoCapture(self._uri, cv2.CAP_ANY)
         if not self.cap.isOpened():
             self.close()
             raise OSError(f"Cannot open stream {self._uri}")
+        self._read_failures = 0
 
     def close(self) -> None:
         if self.cap is None:
@@ -509,7 +512,14 @@ class OpenCvUrlSource(CameraSource):
             raise OSError("Camera source is not open")
         ret, frame = self.cap.read()
         if not ret or frame is None:
+            self._read_failures += 1
+            if self._read_failures >= self.MAX_CONSECUTIVE_READ_FAILURES:
+                raise OSError(
+                    "Network camera stream stopped returning frames; "
+                    "reconnecting"
+                )
             return None
+        self._read_failures = 0
         return frame
 
 
