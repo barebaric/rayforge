@@ -41,6 +41,7 @@ class LaserSettingsPage(StepSettingsPage):
         laser_keys = {
             "selected_head_uid",
             "power",
+            "power_mode",
             "cut_speed",
             "travel_speed",
             "air_assist",

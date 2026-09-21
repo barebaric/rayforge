@@ -41,6 +41,7 @@ def dialect_to_spec(
     return GcodeDialectSpec(
         laser_on=dialect.laser_on,
         laser_off=dialect.laser_off,
+        focus_laser_on=dialect.focus_laser_on,
         tool_change=dialect.tool_change,
         set_speed=dialect.set_speed,
         travel_move=dialect.travel_move,

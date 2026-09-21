@@ -57,6 +57,7 @@ def test_contour_page_composes_step_and_laser_rows(
     for key in (
         "selected_head_uid",
         "power",
+        "power_mode",
         "cut_speed",
         "travel_speed",
         "air_assist",

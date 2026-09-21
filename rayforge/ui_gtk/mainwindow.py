@@ -2000,7 +2000,7 @@ class MainWindow(Adw.ApplicationWindow):
             am.get_action("machine-frame").set_enabled(can_frame)
             if not active_machine.can_frame():
                 self.toolbar.frame_button.set_tooltip_text(
-                    _("Configure frame power to enable")
+                    _("Add a laser head to enable")
                 )
             else:
                 self.toolbar.frame_button.set_tooltip_text(

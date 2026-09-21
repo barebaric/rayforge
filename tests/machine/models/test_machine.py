@@ -662,11 +662,14 @@ class TestMachine:
 
         # Each frame cycle traces a rectangle (4 sides). With
         # frame_repeat_count=3, the laser should turn on 4*3=12 times.
-        laser_on_count = machine_code.count("M4")
+        # Framing always uses constant power (M3): on stock Grbl with
+        # laser mode enabled a stationary M4 emits no beam at all.
+        laser_on_count = machine_code.count("M3 S")
         assert laser_on_count == 12, (
             f"Expected 12 laser-on commands (4 sides × 3 cycles), "
             f"but got {laser_on_count}"
         )
+        assert "M4 S" not in machine_code
 
         # The laser must be off after framing completes. The last
         # meaningful G-code line should not be a cutting move.
@@ -679,6 +682,57 @@ class TestMachine:
         assert not last_line.startswith(("G1", "G2", "G3")), (
             f"Laser left on after framing. Last G-code line: '{last_line}'"
         )
+
+    @pytest.mark.asyncio
+    async def test_frame_job_zero_power_traces_without_beam(
+        self,
+        doc: Doc,
+        machine: Machine,
+        doc_editor: DocEditor,
+        mocker,
+        lite_context,
+        task_mgr: TaskManager,
+        contour_step_class,
+    ):
+        """
+        Zero frame power is valid: framing must trace the outline
+        with the beam off (e.g. for machines with an auxiliary
+        alignment laser) instead of being cancelled.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_frame_power(0)
+        assert machine.can_frame() is True
+
+        step = contour_step_class.create(lite_context)
+        workflow = doc.active_layer.workflow
+        assert workflow is not None
+        workflow.add_step(step)
+
+        workpiece, source = create_test_workpiece_and_source()
+        doc.add_asset(source)
+        doc.active_layer.add_child(workpiece)
+
+        await doc_editor.wait_until_settled()
+        await wait_for_tasks_to_finish(task_mgr)
+
+        run_spy = mocker.spy(machine.driver, "run")
+        machine_cmd = MachineCmd(doc_editor)
+
+        await machine_cmd.frame_job(machine)
+        await wait_for_tasks_to_finish(task_mgr)
+
+        run_spy.assert_called_once()
+        encoded = run_spy.call_args.args[0]
+        machine_code = encoded.text
+
+        assert "G0" in machine_code or "G1" in machine_code, (
+            "Expected the frame outline to be traced at 0% power"
+        )
+        assert "M3 S" not in machine_code
+        assert "M4 S" not in machine_code
 
     @pytest.mark.asyncio
     async def test_frame_job_subtracts_wcs_offset(

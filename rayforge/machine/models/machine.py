@@ -1361,11 +1361,10 @@ class Machine:
         self.changed.send(self)
 
     def can_frame(self):
-        return any(
-            h.frame_power_percent
-            for h in self.heads
-            if isinstance(h, LaserHead)
-        )
+        """Framing works at any frame power, including 0% (tracing
+        the outline with the beam off, e.g. for machines with an
+        auxiliary alignment laser), so any laser head qualifies."""
+        return any(isinstance(h, LaserHead) for h in self.heads)
 
     def can_focus(self):
         return any(
