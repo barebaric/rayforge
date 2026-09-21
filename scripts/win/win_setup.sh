@@ -153,6 +153,15 @@ if [[ "$1" == "pacman" || -z "$1" ]]; then
     echo "Refreshing MSYS2 database..."
     pacman -Sy --noconfirm
 
+    # The current UCRT64 db offers two providers for the fc-libs virtual, and
+    # pacman's default pick (gcc-libgfortran 16.2.0-3) is currently
+    # unresolvable, which makes pacman silently skip python-opencv and friends
+    # under --noconfirm. Installing libgfortran up front pins the provider.
+    # This workaround can be dropped once gcc-libgfortran is removed from the
+    # repositories (see https://github.com/msys2/MINGW-packages/issues/31811).
+    echo "Pre-installing libgfortran to pin the fc-libs provider..."
+    pacman -S --needed --noconfirm mingw-w64-ucrt-x86_64-libgfortran
+
     echo "Installing required system packages..."
     pacman -S --needed --noconfirm "${PACKAGES[@]}"
 
