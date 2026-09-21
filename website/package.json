@@ -19,7 +19,7 @@
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
-    "prettier": "^3.5.3"
+    "prettier": "^3.9.8"
   },
   "overrides": {
     "qs": "^6.16.0",
