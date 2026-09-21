@@ -3,10 +3,21 @@
 from unittest.mock import MagicMock
 
 import pytest
+import raygeo.ops.transform.optimize as optimize_mod
 from laser_essentials.steps import ContourStep, EngraveStep, LaserStep
+from raygeo.cnc.execution.specs import ComputePayload
+from raygeo.geo import Geometry
+from raygeo.ops.assembly import Assembler
+from raygeo.ops.assembly.contour import ContourSpec
+from raygeo.ops.part import Part
 from raygeo.ops.state import PowerMode
+from raygeo.ops.types import CommandType
+from raygeo.pipeline.execute import execute_stages
+from raygeo.pipeline.request import NodeRequest
+from raygeo.pipeline.stage import StageSpec
 
 from rayforge.core.step import Step
+from rayforge.core.varset import LabeledChoiceVar
 from rayforge.machine.driver.driver import PWMParams, pwm_varset
 from rayforge.machine.models.laser import (
     MIN_SPOT_SIZE_MM,
@@ -21,7 +32,7 @@ def test_contour_defaults_preserved():
     assert s.offset_mm == 0.0, s.offset_mm
     assert s.cut_speed == 500, s.cut_speed
     assert s.air_assist is False
-    assert s.power_mode == "DYNAMIC"
+    assert s.power_mode == PowerMode.DYNAMIC
     assert isinstance(s, LaserStep)
 
 
@@ -137,7 +148,7 @@ def test_laser_step_base_defaults():
     s = LaserStep(typelabel="test")
     assert s.power == 1.0
     assert s.max_power == 1000
-    assert s.power_mode == "DYNAMIC"
+    assert s.power_mode == PowerMode.DYNAMIC
     assert s.air_assist is False
     assert s.tab_power == 0.0
     assert s.frequency == 0
@@ -151,19 +162,22 @@ def test_set_power_mode():
     s.updated.connect(handler)
 
     s.set_power_mode("CONSTANT")
-    assert s.power_mode == "CONSTANT"
+    assert s.power_mode == PowerMode.CONSTANT
     handler.assert_called_once_with(s)
     handler.reset_mock()
 
     s.set_power_mode("DYNAMIC")
-    assert s.power_mode == "DYNAMIC"
+    assert s.power_mode == PowerMode.DYNAMIC
     handler.assert_called_once_with(s)
 
 
 def test_set_power_mode_validation():
+    """Any name outside PowerMode is rejected with ValueError."""
     s = ContourStep(name="t")
-    with pytest.raises(ValueError):
-        s.set_power_mode("M5")
+    for bad in ("M5", "constant", "", "CONSTANT "):
+        with pytest.raises(ValueError):
+            s.set_power_mode(bad)
+    assert s.power_mode == PowerMode.DYNAMIC
 
 
 def test_set_power_mode_no_signal_on_same_value():
@@ -174,11 +188,11 @@ def test_set_power_mode_no_signal_on_same_value():
     handler.assert_not_called()
 
 
-def test_get_raygeo_power_mode():
+def test_set_power_mode_accepts_enum_member():
+    """set_power_mode accepts a PowerMode member directly."""
     s = ContourStep(name="t")
-    assert s.get_raygeo_power_mode() == PowerMode.DYNAMIC
-    s.set_power_mode("CONSTANT")
-    assert s.get_raygeo_power_mode() == PowerMode.CONSTANT
+    s.set_power_mode(PowerMode.CONSTANT)
+    assert s.power_mode is PowerMode.CONSTANT
 
 
 def test_create_initial_ops_carries_power_mode():
@@ -203,10 +217,6 @@ def test_populate_payload_carries_power_mode():
     """The step's power mode must land on the assembler payload —
     the real job path (unlike create_initial_ops, which the assembler
     pipeline does not consume)."""
-    from raygeo.cnc.execution.specs import ComputePayload
-    from raygeo.ops.assembly import Assembler
-    from raygeo.ops.assembly.contour import ContourSpec
-
     s = ContourStep(name="t")
     s.set_power_mode("CONSTANT")
     payload = ComputePayload(assembler=Assembler(ContourSpec()))
@@ -219,16 +229,6 @@ def test_power_mode_survives_pipeline_execution():
 
     Regression test for the wiring gap where the dropdown changed the
     step attribute but jobs still emitted dynamic power."""
-    from raygeo.cnc.execution.specs import ComputePayload
-    from raygeo.geo import Geometry
-    from raygeo.ops.assembly import Assembler
-    from raygeo.ops.assembly.contour import ContourSpec
-    from raygeo.ops.part import Part
-    from raygeo.ops.types import CommandType
-    from raygeo.pipeline.execute import execute_stages
-    from raygeo.pipeline.request import NodeRequest
-    from raygeo.pipeline.stage import StageSpec
-
     s = ContourStep(name="t")
     s.set_power_mode("CONSTANT")
 
@@ -271,17 +271,6 @@ def test_power_mode_survives_transformers():
     transformer rebuilds the op stream from state snapshots and used
     to drop the SetPowerMode command, so optimized jobs fell back to
     dynamic power."""
-    import raygeo.ops.transform.optimize as optimize_mod
-    from raygeo.cnc.execution.specs import ComputePayload
-    from raygeo.geo import Geometry
-    from raygeo.ops.assembly import Assembler
-    from raygeo.ops.assembly.contour import ContourSpec
-    from raygeo.ops.part import Part
-    from raygeo.ops.types import CommandType
-    from raygeo.pipeline.execute import execute_stages
-    from raygeo.pipeline.request import NodeRequest
-    from raygeo.pipeline.stage import StageSpec
-
     s = ContourStep(name="t")
     s.set_power_mode("CONSTANT")
 
@@ -332,7 +321,7 @@ def test_power_mode_serialization_roundtrip():
 
     restored = Step.from_dict(data)
     assert isinstance(restored, ContourStep)
-    assert restored.power_mode == "CONSTANT"
+    assert restored.power_mode == PowerMode.CONSTANT
 
 
 def test_power_mode_missing_defaults_to_dynamic():
@@ -346,16 +335,18 @@ def test_power_mode_missing_defaults_to_dynamic():
         "per_step_transformers_dicts": [],
     }
     restored = ContourStep.from_dict(data)
-    assert restored.power_mode == "DYNAMIC"
+    assert restored.power_mode == PowerMode.DYNAMIC
 
 
 def test_power_mode_in_recipe_varset():
-    from rayforge.core.varset import LabeledChoiceVar
-
     vs = LaserStep.recipe_varset()
     var = vs["power_mode"]
     assert isinstance(var, LabeledChoiceVar)
-    assert var.default == "DYNAMIC"
+    assert var.default == PowerMode.DYNAMIC.name
+    assert var.choices == ["Dynamic (M4)", "Constant (M3)"]
+    assert (
+        var.get_value_for_display("Constant (M3)") == PowerMode.CONSTANT.name
+    )
 
 
 def test_set_power_validation():
