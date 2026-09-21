@@ -266,6 +266,64 @@ def test_power_mode_survives_pipeline_execution():
     assert mode_cmds == [PowerMode.CONSTANT]
 
 
+def test_power_mode_survives_transformers():
+    """End-to-end incl. the contour transformer chain: the Optimize
+    transformer rebuilds the op stream from state snapshots and used
+    to drop the SetPowerMode command, so optimized jobs fell back to
+    dynamic power."""
+    import raygeo.ops.transform.optimize as optimize_mod
+    from raygeo.cnc.execution.specs import ComputePayload
+    from raygeo.geo import Geometry
+    from raygeo.ops.assembly import Assembler
+    from raygeo.ops.assembly.contour import ContourSpec
+    from raygeo.ops.part import Part
+    from raygeo.ops.types import CommandType
+    from raygeo.pipeline.execute import execute_stages
+    from raygeo.pipeline.request import NodeRequest
+    from raygeo.pipeline.stage import StageSpec
+
+    s = ContourStep(name="t")
+    s.set_power_mode("CONSTANT")
+
+    geometry = Geometry()
+    geometry.move_to(0, 0)
+    geometry.line_to(10, 0)
+    geometry.line_to(10, 10)
+    geometry.line_to(0, 10)
+    geometry.line_to(0, 0)
+    part = Part(geometry=geometry, size_mm=(10.0, 10.0))
+
+    payload = ComputePayload(
+        assembler=Assembler(ContourSpec()), power=0.8, cut_speed=1000
+    )
+    s.populate_payload(payload, _machine_with_head())
+    payload.transformers = [
+        optimize_mod.OptimizeSpec(
+            allow_flip=True, preserve_first=True, preserve_order=[]
+        )
+    ]
+
+    completed: list = []
+    execute_stages(
+        [
+            NodeRequest(
+                key="k",
+                generation_id=1,
+                stage=StageSpec.Compute(part=part, params=payload),
+            )
+        ],
+        completed.append,
+        None,
+    )
+    ops = completed[0].output.ops
+    mode_cmds = [
+        ops.power_mode(i)
+        for i in range(ops.len())
+        if ops.command_type(i) == CommandType.SET_POWER_MODE
+    ]
+    assert mode_cmds == [PowerMode.CONSTANT]
+
+
 def test_power_mode_serialization_roundtrip():
     s = ContourStep(name="t")
     s.set_power_mode("CONSTANT")
