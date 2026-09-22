@@ -130,6 +130,9 @@ class DialectEditorDialog(PatchedDialogWindow):
         self.templates_widget = VarSetWidget()
         self.scripts_widget = VarSetWidget()
 
+        self._error_icons: dict[Adw.PreferencesRow, Gtk.Image] = {}
+        self._warning_icons: dict[Adw.PreferencesRow, Gtk.Image] = {}
+
         self.info_widget.populate(varsets["info"])
         self.settings_widget.populate(varsets["settings"])
         self.templates_widget.populate(varsets["templates"])
@@ -150,11 +153,6 @@ class DialectEditorDialog(PatchedDialogWindow):
 
         main_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         main_vbox.append(header)
-
-        self.warning_banner = Adw.Banner()
-        self.warning_banner.set_revealed(False)
-        main_vbox.append(self.warning_banner)
-
         main_vbox.append(scrolled_content)
         self.set_content(main_vbox)
 
@@ -193,49 +191,45 @@ class DialectEditorDialog(PatchedDialogWindow):
 
     def _set_row_error(self, row: Adw.PreferencesRow, error_msg: str | None):
         """Applies or removes an error state from a row."""
-        error_widget = getattr(row, "_error_icon_widget", None)
+        icon = self._error_icons.get(row)
 
         if error_msg:
-            if not error_widget:
-                error_widget = get_icon("error-symbolic")
+            if icon is None:
+                icon = get_icon("error-symbolic")
                 if isinstance(
                     row, (Adw.ActionRow, Adw.ExpanderRow, Adw.EntryRow)
                 ):
-                    row.add_suffix(error_widget)
-                row._error_icon_widget = (  # type: ignore[attr-defined]
-                    error_widget
-                )
+                    row.add_suffix(icon)
+                self._error_icons[row] = icon
             row.add_css_class("error")
-            error_widget.set_tooltip_text(error_msg)
-            error_widget.set_visible(True)
+            icon.set_tooltip_text(error_msg)
+            icon.set_visible(True)
         else:
             row.remove_css_class("error")
-            if error_widget:
-                error_widget.set_visible(False)
+            if icon is not None:
+                icon.set_visible(False)
 
     def _set_row_warning(
         self, row: Adw.PreferencesRow, warning_msg: str | None
     ):
         """Applies or removes a non-blocking warning state from a row."""
-        warning_widget = getattr(row, "_warning_icon_widget", None)
+        icon = self._warning_icons.get(row)
 
         if warning_msg:
-            if not warning_widget:
-                warning_widget = get_icon("warning-symbolic")
+            if icon is None:
+                icon = get_icon("warning-symbolic")
                 if isinstance(
                     row, (Adw.ActionRow, Adw.ExpanderRow, Adw.EntryRow)
                 ):
-                    row.add_suffix(warning_widget)
-                row._warning_icon_widget = (  # type: ignore[attr-defined]
-                    warning_widget
-                )
+                    row.add_suffix(icon)
+                self._warning_icons[row] = icon
             row.add_css_class("warning")
-            warning_widget.set_tooltip_text(warning_msg)
-            warning_widget.set_visible(True)
+            icon.set_tooltip_text(warning_msg)
+            icon.set_visible(True)
         else:
             row.remove_css_class("warning")
-            if warning_widget:
-                warning_widget.set_visible(False)
+            if icon is not None:
+                icon.set_visible(False)
 
     def _get_row_content(
         self, row: Adw.PreferencesRow, is_script: bool
@@ -323,7 +317,6 @@ class DialectEditorDialog(PatchedDialogWindow):
 
         # Check all template and script rows
         missing_s_command = frozenset(self._find_missing_s_command_templates())
-        first_warning = None
         for group, is_script in (
             (self.templates_widget, False),
             (self.scripts_widget, True),
@@ -336,11 +329,8 @@ class DialectEditorDialog(PatchedDialogWindow):
                 self._set_row_warning(row, warning_msg)
                 if error_msg:
                     is_valid = False
-                if warning_msg and not first_warning:
-                    first_warning = warning_msg
 
         self._update_toggle_row_warning(missing_s_command)
-        self._update_warning_banner(first_warning)
         self.save_button.set_sensitive(is_valid)
 
     def _update_toggle_row_warning(self, missing_s_command: frozenset[str]):
@@ -360,15 +350,6 @@ class DialectEditorDialog(PatchedDialogWindow):
                     labels.append(entry[1].label)
             warning_msg = format_continuous_mode_toggle_warning(labels)
         self._set_row_warning(toggle_row, warning_msg)
-
-    def _update_warning_banner(self, warning: str | None):
-        """Reveals the banner for a non-blocking G-code warning."""
-        if warning:
-            if self.warning_banner.get_title() != warning:
-                self.warning_banner.set_title(warning)
-                self.warning_banner.set_revealed(True)
-        else:
-            self.warning_banner.set_revealed(False)
 
     def _apply_ui_values(self, target: GcodeDialect):
         """Applies the raw values from the VarSetWidgets to a dialect."""

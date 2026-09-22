@@ -100,14 +100,14 @@ def parent() -> Gtk.Window:
 @pytest.mark.ui
 def test_macro_editor_warns_for_number_only_line(macro, parent):
     dialog = GcodeEditorDialog(parent, macro)
-    assert dialog.warning_banner.get_revealed() is False
+    assert dialog.warning_box.get_visible() is False
 
     buffer = dialog.text_view.get_buffer()
     buffer.set_text("G21\n6000\nG90", -1)
 
-    assert dialog.warning_banner.get_revealed() is True
-    assert "6000" in dialog.warning_banner.get_title()
-    assert "Line 2" in dialog.warning_banner.get_title()
+    assert dialog.warning_box.get_visible() is True
+    assert "6000" in dialog.warning_label.get_label()
+    assert "Line 2" in dialog.warning_label.get_label()
     assert dialog.save_button.get_sensitive() is True
 
 
@@ -116,17 +116,17 @@ def test_macro_editor_clears_warning(macro, parent):
     dialog = GcodeEditorDialog(parent, macro)
     buffer = dialog.text_view.get_buffer()
     buffer.set_text("6000", -1)
-    assert dialog.warning_banner.get_revealed() is True
+    assert dialog.warning_box.get_visible() is True
 
     buffer.set_text("M4 S6000", -1)
-    assert dialog.warning_banner.get_revealed() is False
+    assert dialog.warning_box.get_visible() is False
 
 
 @pytest.mark.ui
 def test_macro_editor_warns_on_constructed_content(parent):
     macro = Macro(name="test", code=["G21", "6000"])
     dialog = GcodeEditorDialog(parent, macro)
-    assert dialog.warning_banner.get_revealed() is True
+    assert dialog.warning_box.get_visible() is True
 
 
 @pytest.mark.ui
@@ -134,7 +134,19 @@ def test_macro_editor_ignores_comments_and_inline_numbers(macro, parent):
     dialog = GcodeEditorDialog(parent, macro)
     buffer = dialog.text_view.get_buffer()
     buffer.set_text("G21 ; set units\n;6000\nG1 X10 F6000", -1)
-    assert dialog.warning_banner.get_revealed() is False
+    assert dialog.warning_box.get_visible() is False
+
+
+@pytest.mark.ui
+def test_macro_editor_warning_box_style(macro, parent):
+    dialog = GcodeEditorDialog(parent, macro)
+    box = dialog.warning_box
+    assert box.get_margin_top() == 6
+    assert box.get_margin_bottom() == 6
+    assert box.get_margin_start() == 6
+    assert box.get_margin_end() == 6
+    assert dialog.warning_icon.has_css_class("warning")
+    assert dialog.warning_label.has_css_class("warning-label")
 
 
 @pytest.fixture
@@ -152,13 +164,17 @@ def _get_script_text_view(dialog, key) -> Gtk.TextView:
 @pytest.mark.ui
 def test_dialect_editor_warns_for_number_only_script_line(dialect, parent):
     dialog = DialectEditorDialog(parent, dialect)
-    assert dialog.warning_banner.get_revealed() is False
+    row, _var = dialog.scripts_widget.widget_map["preamble"]
+    assert not row.has_css_class("warning")
 
     text_view = _get_script_text_view(dialog, "preamble")
     text_view.get_buffer().set_text("G21\n6000\nG90", -1)
 
-    assert dialog.warning_banner.get_revealed() is True
-    assert "6000" in dialog.warning_banner.get_title()
+    assert row.has_css_class("warning")
+    icon = dialog._warning_icons.get(row)
+    assert icon is not None
+    assert icon.get_visible()
+    assert "6000" in (icon.get_tooltip_text() or "")
     assert dialog.save_button.get_sensitive() is True
 
 
@@ -170,15 +186,14 @@ def test_dialect_editor_script_warning_row_state(dialect, parent):
 
     text_view.get_buffer().set_text("6000", -1)
     assert row.has_css_class("warning")
-    icon = getattr(row, "_warning_icon_widget", None)
+    icon = dialog._warning_icons.get(row)
     assert icon is not None
     assert icon.get_visible()
-    assert "6000" in icon.get_tooltip_text()
+    assert "6000" in (icon.get_tooltip_text() or "")
 
     text_view.get_buffer().set_text("G21", -1)
     assert not row.has_css_class("warning")
     assert not icon.get_visible()
-    assert dialog.warning_banner.get_revealed() is False
 
 
 @pytest.mark.ui
@@ -189,12 +204,10 @@ def test_dialect_editor_warns_for_number_only_template(dialect, parent):
 
     row.set_text("6000")
     assert row.has_css_class("warning")
-    assert dialog.warning_banner.get_revealed() is True
     assert dialog.save_button.get_sensitive() is True
 
     row.set_text("M4 S{power}")
     assert not row.has_css_class("warning")
-    assert dialog.warning_banner.get_revealed() is False
 
 
 @pytest.mark.ui
@@ -219,17 +232,16 @@ def test_dialect_editor_warns_continuous_mode_without_s_command(
     dialect, parent
 ):
     dialog = DialectEditorDialog(parent, dialect)
-    assert dialog.warning_banner.get_revealed() is False
 
     toggle_row = _get_continuous_toggle(dialog)
     toggle_row.set_active(True)
 
     linear_row, _var = dialog.templates_widget.widget_map["linear_move"]
     assert linear_row.has_css_class("warning")
-    icon = getattr(linear_row, "_warning_icon_widget", None)
+    icon = dialog._warning_icons.get(linear_row)
     assert icon is not None
     assert icon.get_visible()
-    assert "{s_command}" in icon.get_tooltip_text()
+    assert "{s_command}" in (icon.get_tooltip_text() or "")
 
     travel_row, _var = dialog.templates_widget.widget_map["travel_move"]
     assert travel_row.has_css_class("warning")
@@ -239,12 +251,10 @@ def test_dialect_editor_warns_continuous_mode_without_s_command(
             assert row.has_css_class("warning"), key
 
     assert toggle_row.has_css_class("warning")
-    toggle_icon = getattr(toggle_row, "_warning_icon_widget", None)
+    toggle_icon = dialog._warning_icons.get(toggle_row)
     assert toggle_icon is not None
-    assert "Linear Move" in toggle_icon.get_tooltip_text()
+    assert "Linear Move" in (toggle_icon.get_tooltip_text() or "")
 
-    assert dialog.warning_banner.get_revealed() is True
-    assert "{s_command}" in dialog.warning_banner.get_title()
     assert dialog.save_button.get_sensitive() is True
 
 
@@ -272,18 +282,15 @@ def test_dialect_editor_clears_continuous_warning_when_toggled_off(
 
     toggle_row.set_active(True)
     assert linear_row.has_css_class("warning")
-    assert dialog.warning_banner.get_revealed() is True
 
     toggle_row.set_active(False)
     assert not linear_row.has_css_class("warning")
     assert not toggle_row.has_css_class("warning")
-    assert dialog.warning_banner.get_revealed() is False
 
 
 @pytest.mark.ui
 def test_dialect_editor_continuous_mode_with_s_command_is_quiet(parent):
     dialog = DialectEditorDialog(parent, copy.deepcopy(GRBL_RASTER_DIALECT))
-    assert dialog.warning_banner.get_revealed() is False
     for key in POWER_MOVE_TEMPLATE_KEYS:
         row, _var = dialog.templates_widget.widget_map[key]
         assert not row.has_css_class("warning"), key

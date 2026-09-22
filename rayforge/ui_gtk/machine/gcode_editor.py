@@ -52,9 +52,26 @@ class GcodeEditorDialog(PatchedDialogWindow):
         header = Adw.HeaderBar()
         main_box.append(header)
 
-        self.warning_banner = Adw.Banner()
-        self.warning_banner.set_revealed(False)
-        main_box.append(self.warning_banner)
+        self.warning_box = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            spacing=12,
+            visible=False,
+        )
+        self.warning_box.set_margin_top(12)
+        self.warning_box.set_margin_bottom(6)
+        self.warning_box.set_margin_start(16)
+        self.warning_box.set_margin_end(16)
+
+        self.warning_icon = get_icon("warning-symbolic")
+        self.warning_icon.add_css_class("warning")
+        self.warning_icon.set_valign(Gtk.Align.CENTER)
+        self.warning_box.append(self.warning_icon)
+
+        self.warning_label = Gtk.Label(xalign=0, wrap=True, hexpand=True)
+        self.warning_label.add_css_class("warning-label")
+        self.warning_box.append(self.warning_label)
+
+        main_box.append(self.warning_box)
 
         cancel_button = Gtk.Button(label=_("Cancel"))
         cancel_button.connect("clicked", lambda w: self.close())
@@ -256,17 +273,13 @@ class GcodeEditorDialog(PatchedDialogWindow):
         start, end = buffer.get_start_iter(), buffer.get_end_iter()
         text = buffer.get_text(start, end, True)
         match = find_number_only_line(text)
-        warning = (
-            format_number_only_warning(match[1], lineno=match[0])
-            if match
-            else None
-        )
-        if warning:
-            if self.warning_banner.get_title() != warning:
-                self.warning_banner.set_title(warning)
-                self.warning_banner.set_revealed(True)
+        if match:
+            self.warning_label.set_label(
+                format_number_only_warning(match[1], lineno=match[0])
+            )
+            self.warning_box.set_visible(True)
         else:
-            self.warning_banner.set_revealed(False)
+            self.warning_box.set_visible(False)
 
     def _validate_name(self, *args):
         """Checks the validity of the macro name and updates UI feedback."""
