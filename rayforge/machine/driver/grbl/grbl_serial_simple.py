@@ -47,6 +47,7 @@ from ..driver import (
 from .grbl_probe import probe_grbl_device
 from .grbl_util import (
     alarm_code_to_device_error,
+    apply_setting_to_varset,
     detect_unit_system_from_settings,
     gcode_to_p_number,
     get_grbl_setting_varsets,
@@ -768,7 +769,7 @@ class GrblSerialSimpleDriver(Driver):
                 key, value_str = match.groups()
                 target_varset = key_to_varset_map.get(key)
                 if target_varset:
-                    target_varset[key] = value_str
+                    apply_setting_to_varset(target_varset, key, value_str)
                 else:
                     unknown_vars.add(
                         Var(

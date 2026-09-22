@@ -3,9 +3,21 @@
 from unittest.mock import MagicMock
 
 import pytest
+import raygeo.ops.transform.optimize as optimize_mod
 from laser_essentials.steps import ContourStep, EngraveStep, LaserStep
+from raygeo.cnc.execution.specs import ComputePayload
+from raygeo.geo import Geometry
+from raygeo.ops.assembly import Assembler
+from raygeo.ops.assembly.contour import ContourSpec
+from raygeo.ops.part import Part
+from raygeo.ops.state import PowerMode
+from raygeo.ops.types import CommandType
+from raygeo.pipeline.execute import execute_stages
+from raygeo.pipeline.request import NodeRequest
+from raygeo.pipeline.stage import StageSpec
 
 from rayforge.core.step import Step
+from rayforge.core.varset import LabeledChoiceVar
 from rayforge.machine.driver.driver import PWMParams, pwm_varset
 from rayforge.machine.models.laser import (
     MIN_SPOT_SIZE_MM,
@@ -20,6 +32,7 @@ def test_contour_defaults_preserved():
     assert s.offset_mm == 0.0, s.offset_mm
     assert s.cut_speed == 500, s.cut_speed
     assert s.air_assist is False
+    assert s.power_mode == PowerMode.DYNAMIC
     assert isinstance(s, LaserStep)
 
 
@@ -135,10 +148,205 @@ def test_laser_step_base_defaults():
     s = LaserStep(typelabel="test")
     assert s.power == 1.0
     assert s.max_power == 1000
+    assert s.power_mode == PowerMode.DYNAMIC
     assert s.air_assist is False
     assert s.tab_power == 0.0
     assert s.frequency == 0
     assert s.pulse_width == 0
+
+
+def test_set_power_mode():
+    """set_power_mode updates the value and fires the updated signal."""
+    s = ContourStep(name="t")
+    handler = MagicMock()
+    s.updated.connect(handler)
+
+    s.set_power_mode("CONSTANT")
+    assert s.power_mode == PowerMode.CONSTANT
+    handler.assert_called_once_with(s)
+    handler.reset_mock()
+
+    s.set_power_mode("DYNAMIC")
+    assert s.power_mode == PowerMode.DYNAMIC
+    handler.assert_called_once_with(s)
+
+
+def test_set_power_mode_validation():
+    """Any name outside PowerMode is rejected with ValueError."""
+    s = ContourStep(name="t")
+    for bad in ("M5", "constant", "", "CONSTANT "):
+        with pytest.raises(ValueError):
+            s.set_power_mode(bad)
+    assert s.power_mode == PowerMode.DYNAMIC
+
+
+def test_set_power_mode_no_signal_on_same_value():
+    s = ContourStep(name="t")
+    handler = MagicMock()
+    s.updated.connect(handler)
+    s.set_power_mode("DYNAMIC")
+    handler.assert_not_called()
+
+
+def test_set_power_mode_accepts_enum_member():
+    """set_power_mode accepts a PowerMode member directly."""
+    s = ContourStep(name="t")
+    s.set_power_mode(PowerMode.CONSTANT)
+    assert s.power_mode is PowerMode.CONSTANT
+
+
+def test_create_initial_ops_carries_power_mode():
+    s = ContourStep(name="t")
+    s.set_power_mode("CONSTANT")
+    ops = s.create_initial_ops()
+    mode_cmds = [
+        ops.power_mode(i)
+        for i in range(ops.len())
+        if ops.command_type(i).name == "SET_POWER_MODE"
+    ]
+    assert mode_cmds == [PowerMode.CONSTANT]
+
+
+def _machine_with_head() -> MagicMock:
+    machine = MagicMock()
+    machine.heads = [LaserHead()]
+    return machine
+
+
+def test_populate_payload_carries_power_mode():
+    """The step's power mode must land on the assembler payload —
+    the real job path (unlike create_initial_ops, which the assembler
+    pipeline does not consume)."""
+    s = ContourStep(name="t")
+    s.set_power_mode("CONSTANT")
+    payload = ComputePayload(assembler=Assembler(ContourSpec()))
+    s.populate_payload(payload, _machine_with_head())
+    assert payload.power_mode == PowerMode.CONSTANT
+
+
+def test_power_mode_survives_pipeline_execution():
+    """End-to-end: step setting -> payload -> executed ops.
+
+    Regression test for the wiring gap where the dropdown changed the
+    step attribute but jobs still emitted dynamic power."""
+    s = ContourStep(name="t")
+    s.set_power_mode("CONSTANT")
+
+    geometry = Geometry()
+    geometry.move_to(0, 0)
+    geometry.line_to(10, 0)
+    geometry.line_to(10, 10)
+    geometry.line_to(0, 10)
+    geometry.line_to(0, 0)
+    part = Part(geometry=geometry, size_mm=(10.0, 10.0))
+
+    payload = ComputePayload(
+        assembler=Assembler(ContourSpec()), power=0.8, cut_speed=1000
+    )
+    s.populate_payload(payload, _machine_with_head())
+
+    completed: list = []
+    execute_stages(
+        [
+            NodeRequest(
+                key="k",
+                generation_id=1,
+                stage=StageSpec.Compute(part=part, params=payload),
+            )
+        ],
+        completed.append,
+        None,
+    )
+    ops = completed[0].output.ops
+    mode_cmds = [
+        ops.power_mode(i)
+        for i in range(ops.len())
+        if ops.command_type(i) == CommandType.SET_POWER_MODE
+    ]
+    assert mode_cmds == [PowerMode.CONSTANT]
+
+
+def test_power_mode_survives_transformers():
+    """End-to-end incl. the contour transformer chain: the Optimize
+    transformer rebuilds the op stream from state snapshots and used
+    to drop the SetPowerMode command, so optimized jobs fell back to
+    dynamic power."""
+    s = ContourStep(name="t")
+    s.set_power_mode("CONSTANT")
+
+    geometry = Geometry()
+    geometry.move_to(0, 0)
+    geometry.line_to(10, 0)
+    geometry.line_to(10, 10)
+    geometry.line_to(0, 10)
+    geometry.line_to(0, 0)
+    part = Part(geometry=geometry, size_mm=(10.0, 10.0))
+
+    payload = ComputePayload(
+        assembler=Assembler(ContourSpec()), power=0.8, cut_speed=1000
+    )
+    s.populate_payload(payload, _machine_with_head())
+    payload.transformers = [
+        optimize_mod.OptimizeSpec(
+            allow_flip=True, preserve_first=True, preserve_order=[]
+        )
+    ]
+
+    completed: list = []
+    execute_stages(
+        [
+            NodeRequest(
+                key="k",
+                generation_id=1,
+                stage=StageSpec.Compute(part=part, params=payload),
+            )
+        ],
+        completed.append,
+        None,
+    )
+    ops = completed[0].output.ops
+    mode_cmds = [
+        ops.power_mode(i)
+        for i in range(ops.len())
+        if ops.command_type(i) == CommandType.SET_POWER_MODE
+    ]
+    assert mode_cmds == [PowerMode.CONSTANT]
+
+
+def test_power_mode_serialization_roundtrip():
+    s = ContourStep(name="t")
+    s.set_power_mode("CONSTANT")
+    data = s.to_dict()
+    assert data["power_mode"] == "CONSTANT"
+
+    restored = Step.from_dict(data)
+    assert isinstance(restored, ContourStep)
+    assert restored.power_mode == PowerMode.CONSTANT
+
+
+def test_power_mode_missing_defaults_to_dynamic():
+    data = {
+        "uid": "step-min",
+        "type": "step",
+        "typelabel": "MinimalType",
+        "visible": True,
+        "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+        "per_workpiece_transformers_dicts": [],
+        "per_step_transformers_dicts": [],
+    }
+    restored = ContourStep.from_dict(data)
+    assert restored.power_mode == PowerMode.DYNAMIC
+
+
+def test_power_mode_in_recipe_varset():
+    vs = LaserStep.recipe_varset()
+    var = vs["power_mode"]
+    assert isinstance(var, LabeledChoiceVar)
+    assert var.default == PowerMode.DYNAMIC.name
+    assert var.choices == ["Dynamic (M4)", "Constant (M3)"]
+    assert (
+        var.get_value_for_display("Constant (M3)") == PowerMode.CONSTANT.name
+    )
 
 
 def test_set_power_validation():

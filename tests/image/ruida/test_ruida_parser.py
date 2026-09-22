@@ -5,7 +5,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from rayforge.image.ruida.parser import RuidaParser
-from rayforge.machine.driver.ruida.ruida_util import encode35
+from rayforge.image.ruida.util import encode35
 
 
 def _scramble(byte_val: int) -> int:

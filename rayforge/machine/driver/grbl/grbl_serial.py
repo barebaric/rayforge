@@ -1,7 +1,7 @@
 import asyncio
 import inspect
 import logging
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Coroutine
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
@@ -49,6 +49,7 @@ from .grbl_probe import probe_grbl_device
 from .grbl_util import (
     CommandRequest,
     alarm_code_to_device_error,
+    apply_setting_to_varset,
     detect_unit_system_from_settings,
     error_code_to_device_error,
     extract_device_name_from_output,
@@ -140,6 +141,8 @@ class GrblSerialDriver(Driver):
         self._cmd_lock = asyncio.Lock()
         self._command_queue: asyncio.Queue[CommandRequest] = asyncio.Queue()
         self._command_task: asyncio.Task | None = None
+        self._stream_task: asyncio.Task | None = None
+        self._last_connection_status: TransportStatus = TransportStatus.UNKNOWN
         self._is_cancelled = False
         self._raw_grbl_status: DeviceStatus = DeviceStatus.UNKNOWN
         self._job_running = False
@@ -316,9 +319,13 @@ class GrblSerialDriver(Driver):
     async def cleanup(self):
         logger.debug("Cleanup initiated.")
         self.keep_running = False
-        self._is_cancelled = False
         self._job_running = False
         self._on_command_done = None
+        # Abort the streaming task while _is_cancelled is set, so its
+        # interrupt handler does not call cancel() from within.
+        self._is_cancelled = True
+        await self._abort_stream_task()
+        self._is_cancelled = False
         if self.grbl_transport:
             self.grbl_transport.reset()
         self._job_exception = None
@@ -505,6 +512,7 @@ class GrblSerialDriver(Driver):
                     # commands sent via _send_realtime). Blocking on
                     # the lock here would starve status polling, so
                     # the driver state would go stale.
+                    responses_before = self._device_response_count
                     try:
                         payload = b"?"
                         await transport.send_poll(payload)
@@ -517,6 +525,22 @@ class GrblSerialDriver(Driver):
 
                     if not self.keep_running or not transport.is_connected:
                         break
+
+                    # A device that answers polls after a transient
+                    # write error is alive: recover the connection
+                    # status instead of leaving the UI stuck in
+                    # ERROR (issue #428).
+                    if (
+                        self._last_connection_status is TransportStatus.ERROR
+                        and self._device_response_count > responses_before
+                    ):
+                        logger.info(
+                            "Device responded after connection error; "
+                            "recovering connection status."
+                        )
+                        self._update_connection_status(
+                            TransportStatus.CONNECTED
+                        )
 
             except (serial.serialutil.SerialException, OSError) as e:
                 logger.error(f"Connection error: {e}")
@@ -631,6 +655,62 @@ class GrblSerialDriver(Driver):
         if self.state.status not in (DeviceStatus.RUN, DeviceStatus.ALARM):
             self.state.status = DeviceStatus.RUN
             self.state_changed.send(self, state=self.state)
+
+    async def _abort_stream_task(self) -> None:
+        """
+        Cancel and reap the streaming task, if one is still alive.
+
+        Cancelling the task is the only reliable way to stop a sender
+        that is parked waiting for buffer space: wake-up signals can
+        be missed or arrive before the buffer accounting is reset,
+        and the ``_is_cancelled`` flag can be cleared again by
+        unrelated code paths. A surviving sender would later wake up
+        from its stall timeout and resume streaming a job that was
+        cancelled long before (issue #428).
+        """
+        task = self._stream_task
+        self._stream_task = None
+        if task is None or task.done():
+            return
+        if task is asyncio.current_task():
+            # Self-interruption: the streaming task is already
+            # unwinding through its own exception handler. Cancelling
+            # the current task here would cut the ongoing cancel()
+            # (including the safety shutdown) short.
+            return
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:  # noqa: BLE001 - reaping aborted task
+            logger.warning(f"Ignored exception while aborting job: {e}")
+
+    async def _run_streaming_job(self, coro: Coroutine) -> None:
+        """
+        Run a ``_stream_gcode()`` coroutine as a tracked task.
+
+        The task is stored so that ``cancel()`` can hard-abort it.
+        Never allows two streaming jobs to overlap.
+        """
+        # Reap a leftover task from a previous job first.
+        await self._abort_stream_task()
+        task = asyncio.create_task(coro)
+        self._stream_task = task
+        try:
+            await task
+        except asyncio.CancelledError:
+            if task.cancelled():
+                # Hard-aborted by cancel(): intentional, do not
+                # propagate into the caller's task.
+                return
+            # This (outer) task itself was cancelled: forward the
+            # cancellation to the streaming task and propagate.
+            task.cancel()
+            raise
+        finally:
+            if self._stream_task is task:
+                self._stream_task = None
 
     async def _recover_from_deadlock(
         self, transport, hold_lock: bool = True
@@ -1078,7 +1158,9 @@ class GrblSerialDriver(Driver):
         )
 
         try:
-            await self._stream_gcode(gcode_lines, mapping, command_times)
+            await self._run_streaming_job(
+                self._stream_gcode(gcode_lines, mapping, command_times)
+            )
         except DeviceConnectionError as e:
             # Catch the device error here to prevent it from propagating
             # up and tearing down the connection task. The error has
@@ -1114,7 +1196,7 @@ class GrblSerialDriver(Driver):
             return
         self._start_job()
         try:
-            await self._stream_gcode(gcode_lines)
+            await self._run_streaming_job(self._stream_gcode(gcode_lines))
         except DeviceConnectionError as e:
             logger.warning(
                 f"Raw G-code terminated due to device error: {e}. "
@@ -1137,6 +1219,13 @@ class GrblSerialDriver(Driver):
             logger.info("Sending Soft Reset (Ctrl-X) to device.")
             payload = b"\x18"
             await self.grbl_transport.send_control(payload)
+
+            # Hard-abort the streaming sender before resetting the
+            # flow-control state, so a sender parked waiting for
+            # buffer space can never wake up later and resume a job
+            # that was cancelled (issue #428).
+            await self._abort_stream_task()
+
             while not self._command_queue.empty():
                 try:
                     request = self._command_queue.get_nowait()
@@ -1188,7 +1277,14 @@ class GrblSerialDriver(Driver):
                 logger.warning(f"Safety command '{command}' failed: {e}")
 
     async def _execute_command(self, command: str) -> list[str]:
-        self._is_cancelled = False
+        # Only clear the cancellation flag once the cancelled job's
+        # sender has fully terminated. Clearing it while the sender
+        # is still winding down allowed stall recovery to resume
+        # streaming a cancelled job (issue #428).
+        if not self._job_running and (
+            self._stream_task is None or self._stream_task.done()
+        ):
+            self._is_cancelled = False
         request = CommandRequest(command)
         await self._command_queue.put(request)
         try:
@@ -1262,7 +1358,12 @@ class GrblSerialDriver(Driver):
 
     async def set_hold(self, hold: bool = True) -> None:
         self._is_holding = hold
-        self._is_cancelled = False
+        # Do not un-cancel a job that is still winding down (see
+        # _execute_command; issue #428).
+        if not self._job_running and (
+            self._stream_task is None or self._stream_task.done()
+        ):
+            self._is_cancelled = False
         await self._send_realtime("!" if hold else "~", add_newline=False)
         desired = (
             DeviceStatus.HOLD
@@ -1462,7 +1563,7 @@ class GrblSerialDriver(Driver):
                 target_varset = key_to_varset_map.get(key)
                 if target_varset:
                     # Update the value in the correct VarSet
-                    target_varset[key] = value_str
+                    apply_setting_to_varset(target_varset, key, value_str)
                 else:
                     # This setting is not defined in our known VarSets
                     unknown_vars.add(
@@ -1869,6 +1970,7 @@ class GrblSerialDriver(Driver):
     def _update_connection_status(
         self, status: TransportStatus, message: str | None = None
     ):
+        self._last_connection_status = status
         log_data = f"Connection status: {status.name}"
         if message:
             log_data += f" - {message}"

@@ -377,6 +377,19 @@ class SvgImporterBase(Importer):
         ppi = self._get_ppi()
         w_px = meta.width_px(ppi)
         h_px = meta.height_px(ppi)
+
+        # A "unitless" SVG that only carries a viewBox (no width/height
+        # attributes) yields no pixel dimensions from raygeo. Fall back to the
+        # viewBox size, interpreting its user units as pixels. Without this,
+        # such files fail to import with "Could not determine valid SVG
+        # dimensions."
+        if (w_px is None or h_px is None) and meta.viewbox is not None:
+            _vb_x, _vb_y, vb_w, vb_h = meta.viewbox
+            if w_px is None:
+                w_px = float(vb_w)
+            if h_px is None:
+                h_px = float(vb_h)
+
         if w_px is None or h_px is None:
             return None
         if w_px <= 1e-9 or h_px <= 1e-9:

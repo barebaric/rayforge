@@ -285,15 +285,45 @@ class BottomPanel(Gtk.Box):
 
         task_mgr.add_coroutine(send_command)
 
+    def _get_wcs_model_state(self):
+        """
+        Snapshots everything the WCS dropdown displays: the system
+        names plus their labels and offsets. Used to detect real
+        content changes without poking the model.
+        """
+        machine = self.machine
+        if machine is None:
+            return ()
+        return tuple(
+            (wcs, machine.get_wcs_label(wcs), machine.get_wcs_offset(wcs))
+            for wcs in machine.supported_wcs
+        )
+
+    def _sync_wcs_model(self):
+        """
+        Updates the dropdown model via a real splice, but only when the
+        displayed content actually changed. Emitting items_changed on an
+        unchanged model violates the list model contract and crashes GTK
+        with an assertion while it is setting up factory widgets
+        (issue #415).
+        """
+        state = self._get_wcs_model_state()
+        if state == self._wcs_model_state:
+            return
+        self._wcs_model_state = state
+        self.wcs_list = [entry[0] for entry in state]
+        self._wcs_model.splice(0, self._wcs_model.get_n_items(), self.wcs_list)
+
     def _setup_wcs_controls(self):
         self.wcs_group = Adw.PreferencesGroup()
         self.wcs_group.add_css_class("compact")
 
         if self.machine:
-            self.wcs_list = self.machine.supported_wcs
+            self.wcs_list = list(self.machine.supported_wcs)
         else:
             self.wcs_list = []
         self._wcs_model = Gtk.StringList.new(self.wcs_list)
+        self._wcs_model_state = self._get_wcs_model_state()
 
         factory = Gtk.SignalListItemFactory()
         factory.connect("setup", self._on_wcs_factory_setup)
@@ -653,6 +683,8 @@ class BottomPanel(Gtk.Box):
         if not self.machine:
             return
 
+        self._sync_wcs_model()
+
         hide_wcs_controls = self.machine.wcs_origin_is_workarea_origin
         self.wcs_row.set_visible(not hide_wcs_controls)
         self.zero_row.set_visible(not hide_wcs_controls)
@@ -691,10 +723,6 @@ class BottomPanel(Gtk.Box):
         if self.machine.has_z_axis:
             offset_parts.append(f"Z: {off_z:.2f}")
         self.wcs_row.set_subtitle("   ".join(offset_parts))
-
-        n = self._wcs_model.get_n_items()
-        for i in range(n):
-            self._wcs_model.items_changed(i, 1, 1)
 
         is_dummy = isinstance(self.machine.driver, NoDeviceDriver)
         is_connected = self.machine.is_connected()

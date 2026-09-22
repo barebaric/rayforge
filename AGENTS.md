@@ -61,3 +61,6 @@ wrapper (or any other pixi command).
 - Do not make changes unrelated to the current task
 - Never remove logging or debugging unless asked by the user
 - Do not repeat files unless they have changes
+
+## Addendums
+- When working on the Ruida driver, read the AGENTS.md located in the ruidarpa driver directory at rayforge/machine/driver/ruidarpa.

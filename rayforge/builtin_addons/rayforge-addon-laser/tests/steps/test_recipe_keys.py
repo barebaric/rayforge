@@ -58,7 +58,12 @@ class TestRecipeKeys:
         assert set(LaserStep.recipe_keys()).issubset(
             set(FrameStep.recipe_keys())
         )
-        for key in ("cut_side", "offset_mm"):
+        for key in (
+            "cut_side",
+            "offset_mm",
+            "round_corners",
+            "corner_radius_mm",
+        ):
             assert key in FrameStep.recipe_keys()
 
     def test_shrinkwrap_step_extends_laser(self):
@@ -149,12 +154,13 @@ class TestRecipeVarsetBehavior:
         assert var.sensitive_when({"cut_side": "OUTSIDE"}) is True
 
     def test_laser_step_rows_match_dialog_order(self):
-        """The laser section order is head, power, speeds, air assist,
-        tab power, frequency, pulse width."""
+        """The laser section order is head, power, power mode, speeds,
+        air assist, tab power, frequency, pulse width."""
         keys = [var.key for var in LaserStep.recipe_varset()]
         expected = [
             "selected_head_uid",
             "power",
+            "power_mode",
             "cut_speed",
             "travel_speed",
             "air_assist",

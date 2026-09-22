@@ -68,6 +68,30 @@
   </screenshots>
 
   <releases>
+    <release version="1.11.1" date="2026-09-12">
+      <description>
+        <p>Fixes for macOS file import, sketcher window resizing,
+        print-and-cut on rotary machines, grblHAL settings, and the
+        material test grid</p>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Importing DXF or LBRN2 files on macOS no longer produces
+          a garbled, wrongly scaled result caused by the generic binary
+          MIME type routing files to the Ruida importer</li>
+          <li>Sketcher: dragging elements no longer resizes the main
+          window because the status bar's width changed while a drag
+          was in progress</li>
+          <li>Print and cut: the wizard now launches on machines whose
+          position reports include an extra rotary axis instead of
+          failing with an unpack error</li>
+          <li>GRBL: reading device settings no longer aborts on grblHAL
+          bitmask values, so the settings dialog refreshes correctly</li>
+          <li>Material test: grid dimensions are truncated to whole
+          numbers before the test grid is generated, repairing broken
+          grids</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.11.0" date="2026-09-01">
       <description>
         <p>Array undo fix, simulation playback improvements, and

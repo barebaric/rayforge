@@ -4,21 +4,20 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-    
+
         {
-            "name": "Python Debugger: Remote Attach",
+            "name": "Python Debugger: Rayforge app with Arguments",
             "type": "debugpy",
-            "request": "attach",
-            "connect": {
-                "host": "localhost",
-                "port": 5678
-            },
-            "pathMappings": [
-                {
-                    "localRoot": "${workspaceFolder}",
-                    "remoteRoot": "."
-                }
-            ]
+            "request": "launch",
+            "module": "rayforge.app",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            // "args": "${command:pickArgs}",
+            "env": {
+                // Customize if needed. This works for Fedora 41.
+                "GI_TYPELIB_PATH": "/usr/lib64/girepository-1.0"
+            }
         }
     ]
 }

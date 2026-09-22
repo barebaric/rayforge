@@ -30,6 +30,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_REBUILD_DEBOUNCE_SECONDS = 0.3
+
 
 class MachineController:
     """
@@ -88,6 +90,7 @@ class MachineController:
     async def disconnect(self):
         """Public method to disconnect the driver."""
         task_mgr.cancel_task((self.machine.id, "driver-connect"))
+        task_mgr.cancel_task((self.machine.id, "rebuild-driver-on-change"))
         if self.driver is not None:
             await self.driver.cleanup()
             task_mgr.add_coroutine(
@@ -117,7 +120,10 @@ class MachineController:
     def _on_machine_changed(self, sender=None, **kwargs):
         """
         Callback when the machine's configuration changes.
-        Triggers driver rebuild only if the driver configuration has changed.
+        Triggers driver rebuild only if the driver configuration has
+        changed. The rebuild is debounced so that bursts of changes
+        (e.g. per-keystroke edits in the settings UI) coalesce into a
+        single driver rebuild and a single connection attempt.
         """
         current_driver_name = self.machine.driver_name
         current_driver_args = self.machine.driver_args
@@ -129,9 +135,25 @@ class MachineController:
             self._last_driver_name = current_driver_name
             self._last_driver_args = current_driver_args.copy()
             task_mgr.add_coroutine(
-                self.rebuild_driver,
+                self._debounced_rebuild,
                 key=(self.machine.id, "rebuild-driver-on-change"),
             )
+
+    async def _debounced_rebuild(self, ctx: Optional["ExecutionContext"]):
+        """
+        Waits for a quiet period before rebuilding the driver. Because
+        re-scheduling with the same task key cancels the pending sleep,
+        only the last change of a burst reaches rebuild_driver.
+
+        The cancellation flag is re-checked after the sleep: a cancel
+        that raced with the task starting up does not necessarily
+        propagate to the running coroutine, and a cancelled rebuild
+        must never touch driver state.
+        """
+        await asyncio.sleep(_REBUILD_DEBOUNCE_SECONDS)
+        if ctx is not None and ctx.is_cancelled():
+            return
+        await self.rebuild_driver(ctx)
 
     def _connect_driver_signals(self):
         if self.driver is None:
@@ -172,18 +194,19 @@ class MachineController:
 
     async def rebuild_driver(self, ctx: Optional["ExecutionContext"] = None):
         """
-        Instantiates and sets up the driver based on the machine's current
-        configuration. Connects if auto_connect is enabled and the new driver
-        is not NoDeviceDriver.
+        Applies the machine's current driver configuration.
+
+        If the driver class is unchanged, the live driver is asked via
+        update_settings() to absorb the new arguments. Drivers that opt
+        in keep running without interruption; everything else falls
+        through to a full rebuild, which instantiates the driver, and
+        connects if auto_connect is enabled and the new driver is not
+        NoDeviceDriver.
         """
         logger.info(
             f"Machine '{self.machine.name}' (id:{self.machine.id}) rebuilding "
             f"driver to '{self.machine.driver_name}'"
         )
-
-        old_driver = self.driver
-        self._disconnect_driver_signals()
-        self.machine.set_precheck_error(None)
 
         if self.machine.driver_name:
             driver_cls = get_driver_cls(self.machine.driver_name)
@@ -197,6 +220,23 @@ class MachineController:
                 f"Precheck failed for driver {self.machine.driver_name}: {e}"
             )
             self.machine.set_precheck_error(str(e))
+        else:
+            self.machine.set_precheck_error(None)
+
+        if isinstance(self.driver, driver_cls) and self.driver.update_settings(
+            **self.machine.driver_args
+        ):
+            logger.info(
+                f"Machine '{self.machine.name}' (id:{self.machine.id}) "
+                "driver accepted updated settings"
+            )
+            self._last_driver_name = self.machine.driver_name
+            self._last_driver_args = self.machine.driver_args.copy()
+            self._scheduler(self.machine.changed.send, self.machine)
+            return
+
+        old_driver = self.driver
+        self._disconnect_driver_signals()
 
         new_driver = driver_cls(self.context, self.machine)
         new_driver.setup(**self.machine.driver_args)

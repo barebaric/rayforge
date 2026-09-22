@@ -768,6 +768,120 @@ html[data-theme='dark'] .featureVisual img {
   margin: 0 0 1.75rem;
 }
 
+/* --- References Section --- */
+.refsSection {
+  padding: 2.5rem 2rem 4.5rem;
+  border-top: 1px solid var(--rf-line);
+  background: var(--rf-surface);
+}
+
+.refsInner {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.refsHeader {
+  text-align: center;
+  margin-bottom: 1.75rem;
+}
+
+.refsTitle {
+  font-family: var(--rf-font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+  color: var(--rf-ink);
+  letter-spacing: -0.01em;
+}
+
+.refsSubtitle {
+  font-size: 1.05rem;
+  color: var(--rf-ink-soft);
+  margin: 0 auto;
+  max-width: 520px;
+}
+
+.refsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 380px));
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.refCard {
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  border-radius: 16px;
+  border: 1px solid var(--rf-line);
+  background: var(--rf-surface-alt);
+  text-decoration: none !important;
+  color: inherit !important;
+  transition: border-color 0.15s ease;
+}
+
+.refCard:hover {
+  border-color: var(--rf-muted);
+}
+
+.refLogo {
+  height: 56px;
+  border-radius: 10px;
+  background: #1a1a2e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.refLogo img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.refName {
+  font-family: var(--rf-font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0 0 0.15rem;
+  color: var(--rf-ink);
+}
+
+.refMeta {
+  font-size: 0.85rem;
+  color: var(--rf-muted);
+  margin-bottom: 0.85rem;
+}
+
+.refQuote {
+  margin: 0 0 1.25rem;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--rf-ink-soft);
+}
+
+.refLink {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--rf-ink);
+}
+
+.refLink svg {
+  opacity: 0.6;
+  transition: transform 0.15s ease;
+}
+
+.refCard:hover .refLink svg {
+  opacity: 1;
+  transform: translateX(2px);
+}
+
 /* --- Mobile Responsiveness --- */
 @media (max-width: 996px) {
   .hero {
@@ -889,6 +1003,10 @@ html[data-theme='dark'] .featureVisual img {
 
   .communitySection {
     padding: 1.625rem 1.25rem 4rem;
+  }
+
+  .refsSection {
+    padding: 1.625rem 1.25rem 3.25rem;
   }
 }
 

@@ -23,7 +23,7 @@ from .grbl import (
 )
 from .marlin import MarlinSerialDriver
 from .octoprint import OctoPrintDriver
-from .ruida import RuidaDriver
+from .ruidarpa import RuidaRPAAdapter
 from .smoothie import SmoothieDriver
 
 
@@ -63,7 +63,7 @@ __all__ = [
     "NoDeviceDriver",
     "OctoPrintDriver",
     "PWMParams",
-    "RuidaDriver",
+    "RuidaRPAAdapter",
     "SmoothieDriver",
     "find_all_devices",
     "find_network_devices",

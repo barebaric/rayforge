@@ -24,7 +24,7 @@ from . import WizardPage, _makePreferencesGroup
 _DRIVER_ICONS: dict[str, str] = {
     "GrblNetworkDriver": "network-wired-symbolic",
     "GrblTelnetDriver": "network-wired-symbolic",
-    "RuidaDriver": "network-wired-symbolic",
+    "RuidaRPAAdapter": "network-wired-symbolic",
     "GrblSerialDriver": "drive-removable-media-symbolic",
     "GrblSerialSimpleDriver": "drive-removable-media-symbolic",
     "MarlinSerialDriver": "drive-removable-media-symbolic",

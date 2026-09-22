@@ -116,6 +116,23 @@ class TestMaterialTestStep:
         assert kwargs["speed_label_factor"] == pytest.approx(25.4)
         assert kwargs["speed_label_precision"] == 1
 
+    def test_get_assembler_kwargs_casts_grid_dimensions_to_int(self, machine):
+        """Grid dimensions are counts, so non-integer values are truncated
+        before they reach the material-test assembler."""
+        step = MaterialTestStep(name="Test")
+        step.grid_dimensions = cast(tuple[int, int], (5.9, 3.1))
+        workpiece = MagicMock(spec=["size"])
+        workpiece.size = (100, 100)
+
+        with patch(
+            "rayforge.shared.units.formatter.get_context",
+            return_value=_mock_speed_preference(),
+        ):
+            kwargs = step.get_assembler_kwargs(machine, workpiece)
+
+        assert kwargs["cols"] == 5
+        assert kwargs["rows"] == 3
+
     def test_roundtrip_serialization(self):
         step = MaterialTestStep(name="Test")
         step.test_type = "Engrave"

@@ -9,6 +9,7 @@ from typing import Any
 
 import pytest
 
+from rayforge.context import get_context
 from rayforge.core.workpiece import WorkPiece
 
 # Platform-Specific Setup
@@ -153,3 +154,60 @@ def test_rename_shortcut_reveals_layer_tab(app_and_window, assets_path):
     widget = row_widget()
     assert widget is not None
     assert widget._rename_entry is not None
+
+
+@pytest.mark.ui
+def test_machine_settings_dialog_is_single_instance(app_and_window):
+    """Machine settings opens as a single reusable dialog instance."""
+    _app, win = app_and_window
+    get_context().machine_mgr.create_default_machine()
+
+    win.show_machine_settings(None, None)
+    process_events_for_duration(0.3)
+    assert win._machine_settings_dialog is not None
+    first = win._machine_settings_dialog
+
+    win.show_machine_settings(None, None)
+    process_events_for_duration(0.3)
+    assert win._machine_settings_dialog is first
+
+    first.close()
+    process_events_for_duration(0.3)
+    assert win._machine_settings_dialog is None
+
+    win.show_machine_settings(None, None)
+    process_events_for_duration(0.3)
+    assert win._machine_settings_dialog is not None
+    assert win._machine_settings_dialog is not first
+
+
+@pytest.mark.ui
+def test_machine_settings_dialog_recreated_after_machine_switch(
+    app_and_window,
+):
+    """Switching the active machine invalidates the open dialog."""
+    _app, win = app_and_window
+    mgr = get_context().machine_mgr
+    machine_a = mgr.create_default_machine()
+    get_context().config.set_machine(machine_a)
+
+    win.show_machine_settings(None, None)
+    process_events_for_duration(0.3)
+    first = win._machine_settings_dialog
+    assert first is not None
+    assert first.machine is machine_a
+
+    machine_b = mgr.create_default_machine()
+    get_context().config.set_machine(machine_b)
+
+    win.show_machine_settings(None, None)
+    process_events_for_duration(0.3)
+    assert win._machine_settings_dialog is not first
+    assert win._machine_settings_dialog.machine is machine_b
+    # The stale dialog for the old machine was closed automatically.
+    assert not first.get_visible()
+
+    # Closing the new dialog still resets the tracked reference.
+    win._machine_settings_dialog.close()
+    process_events_for_duration(0.3)
+    assert win._machine_settings_dialog is None

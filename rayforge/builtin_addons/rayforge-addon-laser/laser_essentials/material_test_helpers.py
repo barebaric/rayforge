@@ -107,8 +107,8 @@ def draw_preview(
     img = generate_material_test_grid_preview(
         size_mm=size_mm,
         dpi=dpi,
-        cols=params.get("grid_dimensions", (5, 5))[0],
-        rows=params.get("grid_dimensions", (5, 5))[1],
+        cols=int(params.get("grid_dimensions", (5, 5))[0]),
+        rows=int(params.get("grid_dimensions", (5, 5))[1]),
         min_speed=params.get("speed_range", (100.0, 500.0))[0],
         max_speed=params.get("speed_range", (100.0, 500.0))[1],
         min_power=params.get("power_range", (10.0, 100.0))[0],

@@ -20,6 +20,7 @@ import {
   mdiMapOutline,
 } from '@mdi/js';
 import { tutorials } from '../data/tutorials';
+import { references } from '../data/references';
 
 function detectOs() {
   if (typeof window === 'undefined') {
@@ -307,6 +308,45 @@ function CommunitySection() {
   );
 }
 
+function ReferencesSection() {
+  return (
+    <section className={styles.refsSection}>
+      <div className={styles.refsInner}>
+        <div className={styles.refsHeader}>
+          <p className={styles.kicker}>References</p>
+          <h2 className={styles.refsTitle}>Trusted by real workshops</h2>
+          <p className={styles.refsSubtitle}>
+            Businesses that rely on Rayforge for their daily work.
+          </p>
+        </div>
+
+        <div className={styles.refsGrid}>
+          {references.map((ref) => (
+            <a
+              key={ref.id}
+              href={ref.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.refCard}
+            >
+              <div className={styles.refLogo}>
+                <img src={ref.logo} alt={`${ref.name} logo`} loading="lazy" />
+              </div>
+              <h3 className={styles.refName}>{ref.name}</h3>
+              <span className={styles.refMeta}>{ref.tagline}</span>
+              <p className={styles.refQuote}>&ldquo;{ref.quote}&rdquo;</p>
+              <span className={styles.refLink}>
+                <span>{ref.linkLabel}</span>
+                <Icon path={mdiArrowRight} size={0.65} />
+              </span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Home() {
   return (
     <Layout
@@ -326,6 +366,8 @@ export default function Home() {
         <TutorialSpotlight />
 
         <CommunitySection />
+
+        <ReferencesSection />
 
       </main>
     </Layout>

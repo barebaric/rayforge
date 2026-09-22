@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import re
 from collections.abc import Callable
 from copy import copy, deepcopy
@@ -9,6 +10,8 @@ from typing import cast
 from ....core.varset import Var, VarSet
 from ....shared.units.system import UnitSystem, inches_to_mm
 from ..driver import DeviceError, DeviceState, DeviceStatus, Pos
+
+logger = logging.getLogger(__name__)
 
 # GRBL $13 setting key: "Report in inches" (boolean).
 GRBL_REPORT_INCHES_KEY = "13"
@@ -1137,14 +1140,14 @@ _STEPPER_CONFIG_VARS = [
     Var(
         key="4",
         label="$4",
-        var_type=bool,
-        description="Invert step enable pin, boolean",
+        var_type=int,
+        description="Invert step enable pins, mask",
     ),
     Var(
         key="5",
         label="$5",
-        var_type=bool,
-        description="Invert limit pins, boolean",
+        var_type=int,
+        description="Invert limit pins, mask",
     ),
     Var(
         key="6",
@@ -1411,3 +1414,27 @@ def get_grbl_setting_varsets() -> list["VarSet"]:
             ),
         ),
     ]
+
+
+def apply_setting_to_varset(varset: "VarSet", key: str, value_str: str):
+    """
+    Assigns a raw device value to the Var with *key* in *varset*.
+
+    If the value cannot be coerced to the Var's declared type (e.g. a
+    GrblHAL bitmask reported for a setting that classic Grbl defines
+    as a boolean), the Var is widened to a string type so the value
+    is still displayed instead of aborting the whole settings read.
+    """
+    var = varset[key]
+    try:
+        var.value = value_str
+    except (TypeError, ValueError) as e:
+        logger.warning(
+            "Setting $%s cannot be coerced to %s (%s); "
+            "displaying raw value instead.",
+            key,
+            var.var_type.__name__,
+            e,
+        )
+        var.var_type = str
+        var.value = value_str

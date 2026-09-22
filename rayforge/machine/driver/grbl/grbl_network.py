@@ -33,6 +33,7 @@ from .grbl_fingerprint import fingerprint_grbl_http
 from .grbl_probe import probe_grbl_device
 from .grbl_util import (
     CommandRequest,
+    apply_setting_to_varset,
     command_url,
     detect_unit_system_from_settings,
     eeprom_info_url,
@@ -760,7 +761,7 @@ class GrblNetworkDriver(Driver):
                 target_varset = key_to_varset_map.get(key)
                 if target_varset:
                     # Update the value in the correct VarSet
-                    target_varset[key] = value_str
+                    apply_setting_to_varset(target_varset, key, value_str)
                 else:
                     # This setting is not defined in our known VarSets
                     if unknown_vars.get(key) is None:

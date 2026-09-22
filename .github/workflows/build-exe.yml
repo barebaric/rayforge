@@ -48,7 +48,7 @@ jobs:
         id: msys2
         uses: msys2/setup-msys2@v2
         with:
-          msystem: MINGW64
+          msystem: UCRT64
           #update: true
           # Minimal packages required to run the setup script itself
           install: base-devel git unzip wget zip
@@ -63,7 +63,7 @@ jobs:
           echo "MSYS2_PATH=$MSYS2_PATH_VAR" >> $GITHUB_ENV
 
           # Add necessary binaries to the system PATH for subsequent steps
-          echo "$MSYS2_PATH_VAR/mingw64/bin" >> $GITHUB_PATH
+          echo "$MSYS2_PATH_VAR/ucrt64/bin" >> $GITHUB_PATH
           echo "$MSYS2_PATH_VAR/usr/bin" >> $GITHUB_PATH
 
       - name: Install Dependencies (win_setup.sh)
@@ -94,10 +94,10 @@ jobs:
         if: false
         run: |
           source $GITHUB_WORKSPACE/.msys2_env
-          $MSYS2_PATH/mingw64/bin/ntldd -R $MSYS2_PATH/mingw64/bin/libcairo-2.dll
-          $MSYS2_PATH/mingw64/bin/ntldd -R $MSYS2_PATH/mingw64/bin/libcairo-gobject-2.dll
-          $MSYS2_PATH/mingw64/bin/objdump -p $MSYS2_PATH/mingw64/bin/libcairo-2.dll | grep "DLL Name"
-          $MSYS2_PATH/mingw64/bin/objdump -p $MSYS2_PATH/mingw64/bin/libcairo-gobject-2.dll | grep "DLL Name"
+          $MSYS2_PATH/ucrt64/bin/ntldd -R $MSYS2_PATH/ucrt64/bin/libcairo-2.dll
+          $MSYS2_PATH/ucrt64/bin/ntldd -R $MSYS2_PATH/ucrt64/bin/libcairo-gobject-2.dll
+          $MSYS2_PATH/ucrt64/bin/objdump -p $MSYS2_PATH/ucrt64/bin/libcairo-2.dll | grep "DLL Name"
+          $MSYS2_PATH/ucrt64/bin/objdump -p $MSYS2_PATH/ucrt64/bin/libcairo-gobject-2.dll | grep "DLL Name"
 
       - name: Run Test Suite (win_test.sh)
         shell: msys2 {0}

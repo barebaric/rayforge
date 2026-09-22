@@ -260,7 +260,11 @@ export default function Sponsor() {
               })}
             </p>
             <div className={styles.sponsorsGrid}>
-              {['starlynx.dev', 'old-man-and-the-seam'].map((name) => (
+              {[
+                'starlynx.dev',
+                'old-man-and-the-seam',
+                'Dave-SYS',
+              ].map((name) => (
                 <div className={styles.sponsorCard} key={name}>
                   <Icon
                     path={mdiPatreon}
