@@ -165,6 +165,15 @@ if [[ "$1" == "pacman" || -z "$1" ]]; then
     echo "Installing required system packages..."
     pacman -S --needed --noconfirm "${PACKAGES[@]}"
 
+    # cairo 1.18.6-1 aborts inside Pango's glyph rendering on Windows: its
+    # DirectWrite A8 mask changes crash pango_cairo_show_layout() when
+    # building the text atlas, killing the UI test suite. Hold the last
+    # known-good version until the regression is fixed upstream. The pixi
+    # environment pins the same 1.18.4 release.
+    echo "Downgrading cairo to the last known-good 1.18.4-4..."
+    pacman -U --noconfirm \
+      "https://repo.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-cairo-1.18.4-4-any.pkg.tar.zst"
+
     echo "✅ Pacman setup complete."
 fi
 
