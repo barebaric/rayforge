@@ -6,7 +6,7 @@ from gettext import gettext as _
 from gi.repository import Adw
 
 
-class ExperimentalAddonDialog(Adw.MessageDialog):
+class ExperimentalAddonDialog(Adw.AlertDialog):
     """
     Confirmation dialog shown before enabling an experimental addon.
 

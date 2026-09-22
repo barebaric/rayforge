@@ -7,7 +7,7 @@ from pathlib import Path
 import cairo
 import numpy as np
 import pyvips
-from gi.repository import Gdk, GdkPixbuf, GLib, Gtk
+from gi.repository import Gdk, GLib, Gtk
 
 from ...core.color import colorize_rgb
 from ...core.material import Material
@@ -25,16 +25,13 @@ def _rgba_bytes_to_texture(
     data: bytes, width: int, height: int
 ) -> Gdk.Texture:
     """Convert RGBA byte data into a Gdk.Texture."""
-    pixbuf = GdkPixbuf.Pixbuf.new_from_bytes(
-        GLib.Bytes.new(data),
-        GdkPixbuf.Colorspace.RGB,
-        True,
-        8,
+    return Gdk.MemoryTexture.new(
         width,
         height,
+        Gdk.MemoryFormat.R8G8B8A8,
+        GLib.Bytes.new(data),
         width * 4,
     )
-    return Gdk.Texture.new_for_pixbuf(pixbuf)
 
 
 def _rounded_rect_mask(width: int, height: int, radius: int) -> np.ndarray:

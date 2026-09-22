@@ -110,7 +110,7 @@ class DialectEditorDialog(PatchedDialogWindow):
         header.pack_start(cancel_button)
 
         self.save_button = Gtk.Button(label=_("Save"))
-        self.save_button.get_style_context().add_class("suggested-action")
+        self.save_button.add_css_class("suggested-action")
         self.save_button.connect("clicked", self._on_save_clicked)
         header.pack_end(self.save_button)
 

@@ -210,10 +210,8 @@ class MaterialListWidget(PreferencesGroupWithButton):
             return
 
         root = self.get_root()
-        dialog = AddMaterialDialog(
-            material=material,
-            transient_for=cast(Gtk.Window, root) if root else None,
-        )
+        parent = cast(Gtk.Window, root) if root else None
+        dialog = AddMaterialDialog(material=material)
 
         def on_response(d, response_id):
             if response_id in ("add", "save"):
@@ -222,10 +220,10 @@ class MaterialListWidget(PreferencesGroupWithButton):
                     self._update_material(
                         data, material, self._current_library
                     )
-            d.destroy()
+            d.close()
 
         dialog.connect("response", on_response)
-        dialog.present()
+        dialog.present(parent)
 
     def _update_material(
         self, data: dict, material: Material, library: MaterialLibrary
@@ -279,19 +277,18 @@ class MaterialListWidget(PreferencesGroupWithButton):
             return
 
         root = self.get_root()
-        dialog = AddMaterialDialog(
-            transient_for=cast(Gtk.Window, root) if root else None
-        )
+        parent = cast(Gtk.Window, root) if root else None
+        dialog = AddMaterialDialog()
 
         def on_response(d, response_id):
             if response_id == "add":
                 data = d.get_material_data()
                 if data["name"] and self._current_library is not None:
                     self._add_material(data, self._current_library)
-            d.destroy()
+            d.close()
 
         dialog.connect("response", on_response)
-        dialog.present()
+        dialog.present(parent)
 
     def _add_material(self, data: dict, library: MaterialLibrary):
         """Add a new material to the current library."""

@@ -547,7 +547,7 @@ class LaserHeadDetailWidget(DebounceMixin):
         self.spot_size_y_row.value_changed.connect(self._on_spot_size_changed)
         self.optics_group.add(self.spot_size_y_row)
 
-        self.cut_color_button = Gtk.ColorButton()
+        self.cut_color_button = Gtk.ColorDialogButton(dialog=Gtk.ColorDialog())
         self.cut_color_button.set_size_request(32, 32)
         self.cut_color_row = Adw.ActionRow(
             title=_("Color"),
@@ -556,7 +556,7 @@ class LaserHeadDetailWidget(DebounceMixin):
         )
         self.cut_color_row.add_suffix(self.cut_color_button)
         self._handler_ids["cut_color"] = self.cut_color_button.connect(
-            "color-set", self._on_cut_color_changed
+            "notify::rgba", self._on_cut_color_changed
         )
         self.properties_group.add(self.cut_color_row)
 
@@ -773,14 +773,14 @@ class LaserHeadDetailWidget(DebounceMixin):
         y = self.spot_size_y_row.get_value_in_base_units()
         self._head.set_spot_size(x, y)
 
-    def _set_color_button(self, button: Gtk.ColorButton, hex_color: str):
+    def _set_color_button(self, button: Gtk.ColorDialogButton, hex_color: str):
         """Set the color button from a hex color string."""
         rgba = Gdk.RGBA()
         if not rgba.parse(hex_color):
             rgba.parse("#ff00ff")
         button.set_rgba(rgba)
 
-    def _get_hex_color(self, button: Gtk.ColorButton) -> str:
+    def _get_hex_color(self, button: Gtk.ColorDialogButton) -> str:
         """Get the hex color string from a color button."""
         rgba = button.get_rgba()
         r = int(rgba.red * 255)
@@ -788,7 +788,7 @@ class LaserHeadDetailWidget(DebounceMixin):
         b = int(rgba.blue * 255)
         return f"#{r:02x}{g:02x}{b:02x}"
 
-    def _on_cut_color_changed(self, button: Gtk.ColorButton):
+    def _on_cut_color_changed(self, button: Gtk.ColorDialogButton):
         """Update the color of the selected laser."""
         if self._head:
             self._head.set_cut_color(self._get_hex_color(button))

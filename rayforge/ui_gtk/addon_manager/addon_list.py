@@ -384,9 +384,7 @@ class AddonListWidget(PreferencesGroupWithButton):
             on_cancel=self.populate_addons,
         )
         root = cast(Gtk.Window, self.get_root())
-        if root:
-            dialog.set_transient_for(root)
-        dialog.present()
+        dialog.present(root)
 
     def _enable_addon(self, addon_name: str):
         """Enable an addon, prompting for missing dependencies."""
