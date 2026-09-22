@@ -63,7 +63,6 @@ class AdvancedPreferencesPage(TrackedPreferencesPage):
             value_in_base=self.machine.arc_tolerance,
         )
         self.arc_tolerance_row.set_width_chars(5)
-        self.arc_tolerance_row.set_sensitive(self.machine.supports_arcs)
         self.arc_tolerance_row.value_changed.connect(
             self.on_arc_tolerance_changed
         )
@@ -117,7 +116,6 @@ class AdvancedPreferencesPage(TrackedPreferencesPage):
     def on_arcs_changed(self, switch_row, _param):
         """Update the machine's arcs support when the value changes."""
         self.machine.set_supports_arcs(switch_row.get_active())
-        self.arc_tolerance_row.set_sensitive(self.machine.supports_arcs)
 
     def on_arc_tolerance_changed(self, spinrow):
         """Update to machine's arc tolerance when value changes."""
