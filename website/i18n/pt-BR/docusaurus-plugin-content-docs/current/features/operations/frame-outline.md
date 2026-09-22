@@ -82,6 +82,19 @@ Controla onde o laser corta relativo ao caminho da moldura:
 - **2-5mm:** Pequena margem para aparência limpa
 - **10mm+:** Borda grande para montagem ou manuseio
 
+#### Cantos Arredondados
+
+Ative **Cantos Arredondados** para substituir os cantos afiados de 90° da moldura por arcos
+arredondados e, em seguida, defina o **Raio do Canto** em mm. O raio é reduzido automaticamente
+quando é grande demais para caber na moldura.
+
+- **0mm:** Cantos afiados (padrão)
+- **3-10mm:** Cantos mais suaves e fáceis de manusear
+- **Maior:** Moldura muito arredondada, limitada à metade do lado mais curto da moldura
+
+Cantos arredondados são úteis para materiais que lascam ou racham em ângulos agudos, e evitam a
+necessidade de pós-processar a moldura ou desenhar à mão um contorno arredondado.
+
 ### Configurações do Laser
 
 ![Configurações do laser](/screenshots/step-settings-frame-outline-laser.webp)

@@ -83,6 +83,19 @@ Controla dónde corta el láser en relación a la trayectoria del marco:
 - **2-5mm:** Pequeño margen para una apariencia limpia
 - **10mm+:** Borde grande para montaje o manipulación
 
+#### Esquinas Redondeadas
+
+Activa **Esquinas Redondeadas** para reemplazar las esquinas afiladas de 90° del marco por arcos
+redondeados, y luego define el **Radio de Esquina** en mm. El radio se reduce automáticamente cuando
+es demasiado grande para caber en el marco.
+
+- **0mm:** Esquinas afiladas (predeterminado)
+- **3-10mm:** Esquinas más suaves y fáciles de manejar
+- **Mayor:** Marco muy redondeado, limitado a la mitad del lado más corto del marco
+
+Las esquinas redondeadas son útiles para materiales que se astillan o desportillan en ángulos
+agudos, y evitan tener que post-procesar el marco o dibujar a mano un contorno redondeado.
+
 ### Ajustes del Láser
 
 ![Ajustes del láser](/screenshots/step-settings-frame-outline-laser.webp)
