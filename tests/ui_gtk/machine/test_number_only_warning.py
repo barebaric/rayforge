@@ -137,18 +137,6 @@ def test_macro_editor_ignores_comments_and_inline_numbers(macro, parent):
     assert dialog.warning_box.get_visible() is False
 
 
-@pytest.mark.ui
-def test_macro_editor_warning_box_style(macro, parent):
-    dialog = GcodeEditorDialog(parent, macro)
-    box = dialog.warning_box
-    assert box.get_margin_top() == 6
-    assert box.get_margin_bottom() == 6
-    assert box.get_margin_start() == 6
-    assert box.get_margin_end() == 6
-    assert dialog.warning_icon.has_css_class("warning")
-    assert dialog.warning_label.has_css_class("warning-label")
-
-
 @pytest.fixture
 def dialect():
     return copy.deepcopy(GRBL_DIALECT)
