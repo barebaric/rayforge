@@ -88,6 +88,18 @@ Controls where the laser cuts relative to the frame path:
 - **2-5mm:** Small margin for clean appearance
 - **10mm+:** Large border for mounting or handling
 
+#### Round Corners
+
+Enable **Round Corners** to replace the frame's sharp 90° corners with rounded arcs, then set the
+**Corner Radius** in mm. The radius is automatically reduced when it is too large to fit the frame.
+
+- **0mm:** Sharp corners (default)
+- **3-10mm:** Softer corners that are easier to handle
+- **Larger:** Heavily rounded frame, clamped to half the frame's shorter side
+
+Rounded corners are useful for materials that chip or splinter at sharp angles, and avoid the need
+to post-process the frame or hand-draw a rounded outline.
+
 ### Laser settings
 
 ![Laser settings](/screenshots/step-settings-frame-outline-laser.webp)

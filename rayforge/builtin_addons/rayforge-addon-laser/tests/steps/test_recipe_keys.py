@@ -58,7 +58,12 @@ class TestRecipeKeys:
         assert set(LaserStep.recipe_keys()).issubset(
             set(FrameStep.recipe_keys())
         )
-        for key in ("cut_side", "offset_mm"):
+        for key in (
+            "cut_side",
+            "offset_mm",
+            "round_corners",
+            "corner_radius_mm",
+        ):
             assert key in FrameStep.recipe_keys()
 
     def test_shrinkwrap_step_extends_laser(self):
