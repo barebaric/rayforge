@@ -10,7 +10,7 @@ fi
 
 source .msys2_env
 
-PYTHON_BIN_PATH="$MSYS2_PATH/mingw64/bin/python"
+PYTHON_BIN_PATH="$MSYS2_PATH/ucrt64/bin/python"
 
 echo "--- Installing Development Tools ---"
 

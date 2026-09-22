@@ -23,6 +23,18 @@
   "install.chooseMethod": {
     "message": "选择安装方式："
   },
+  "install.debian.title": {
+    "message": "Debian 包"
+  },
+  "install.debian.description": {
+    "message": "Rayforge 已进入 Debian 官方软件仓库。如果您使用 Debian，这是集成度最高的安装方式：更新会随系统其余部分自动提供。"
+  },
+  "install.debian.suites": {
+    "message": "该软件包目前可在 Debian unstable（sid）和 testing 中使用，并将包含在下一个稳定版本中。已发布的 Debian 或 Ubuntu 版本无法添加该软件包——在这些版本上，请改用 Snap、Flathub 或 Ubuntu PPA。"
+  },
+  "install.debian.trackerLink": {
+    "message": "在 Debian 软件包跟踪器上关注该软件包。"
+  },
   "install.ppa.description": {
     "message": "对于 Ubuntu 24.04 LTS，您可以使用我们的官方 PPA。此方法通过系统包管理器提供自动更新。"
   },
@@ -186,7 +198,7 @@
     "message": "运行设置脚本"
   },
   "install.msys2.shell": {
-    "message": "打开 MSYS2 MINGW64 终端并运行设置脚本："
+    "message": "打开 MSYS2 UCRT64 终端并运行设置脚本："
   },
   "install.msys2.setupNote": {
     "message": "此脚本安装所有必需的系统依赖和 Python 包。可能需要几分钟才能完成。"
@@ -204,7 +216,7 @@
     "message": "Git 命令"
   },
   "install.msys2.gitNote": {
-    "message": "使用 pre-commit 钩子时，必须在 MSYS2 MINGW64 终端中运行 git 命令，而不是在 PowerShell 或命令提示符中。"
+    "message": "使用 pre-commit 钩子时，必须在 MSYS2 UCRT64 终端中运行 git 命令，而不是在 PowerShell 或命令提示符中。"
   },
   "install.buildInstaller": {
     "message": "构建 Windows 安装程序"

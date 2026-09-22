@@ -630,7 +630,10 @@ class LaserHeadDetailWidget(DebounceMixin):
 
         self.frame_power_row = SpinRow(
             _("Frame Power"),
-            _("Power value in percent to use when framing. 0 to disable"),
+            _(
+                "Power value in percent to use when framing. "
+                "0 traces the outline with the beam off"
+            ),
             upper=100,
             step_increment=0.1,
             digits=2,

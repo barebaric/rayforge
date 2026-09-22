@@ -2,9 +2,10 @@ from unittest.mock import MagicMock
 
 from raygeo.ops import Ops
 from raygeo.ops.convert import GcodeDialectSpec
-from raygeo.ops.state import AirAssistMode
+from raygeo.ops.state import AirAssistMode, PowerMode
 
 from rayforge.machine.models.dialect.grbl import GRBL_DIALECT
+from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.encoder.gcode import GcodeEncoder
 from rayforge.shared.units.system import UnitSystem
 
@@ -23,13 +24,12 @@ def _make_machine_mock(dialect=GRBL_DIALECT):
     machine.get_wcs_offset.return_value = (0.0, 0.0, 0.0)
     machine.hookmacros = {}
     machine.macros = {}
-    machine.heads = [MagicMock(uid="head0", max_power=100.0, tool_number=1)]
-    machine.get_default_head.return_value = MagicMock(
-        uid="head0", max_power=100.0, tool_number=1
-    )
-    machine.get_head_by_uid.return_value = MagicMock(
-        uid="head0", max_power=100.0, tool_number=1
-    )
+    head = LaserHead()
+    head.uid = "head0"
+    head.tool_number = 1
+    machine.heads = [head]
+    machine.get_default_head.return_value = head
+    machine.get_head_by_uid.return_value = head
     machine.has_z_axis = True
     return machine
 
@@ -400,3 +400,41 @@ def test_rust_encode_macro_path_vars():
     )
     result = ops.to_gcode(dialect, context)
     assert "text" in result
+
+
+# ── Power mode (constant vs dynamic) ────────────────────────────
+
+
+def test_encode_dynamic_power_uses_laser_on_template():
+    machine = _make_machine_mock()
+    doc = _make_doc_mock()
+
+    ops = Ops()
+    ops.job_start()
+    ops.set_power(1.0)
+    ops.set_feed_rate(1000)
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 0.0, 0.0)
+    ops.job_end()
+
+    result = GcodeEncoder(GRBL_DIALECT).encode(ops, machine, doc)
+    assert "M4 S1000" in result.text
+    assert "M3 S1000" not in result.text
+
+
+def test_encode_constant_power_uses_focus_template():
+    machine = _make_machine_mock()
+    doc = _make_doc_mock()
+
+    ops = Ops()
+    ops.job_start()
+    ops.set_power(1.0)
+    ops.set_power_mode(PowerMode.CONSTANT)
+    ops.set_feed_rate(1000)
+    ops.move_to(0.0, 0.0, 0.0)
+    ops.line_to(10.0, 0.0, 0.0)
+    ops.job_end()
+
+    result = GcodeEncoder(GRBL_DIALECT).encode(ops, machine, doc)
+    assert "M3 S1000" in result.text
+    assert "M4 S1000" not in result.text

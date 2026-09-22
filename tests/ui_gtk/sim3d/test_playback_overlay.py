@@ -894,3 +894,74 @@ def test_playback_completion_anchors_last_command(ui_context_initializer):
     assert not overlay._playing
     # The final command (a no-output M5 stand-in) is applied.
     assert player.current_index == len(durations) - 1
+
+
+@pytest.mark.ui
+def test_map_shrink_rederives_slider_from_playhead(
+    ui_context_initializer,
+):
+    """Regression test for the issue-370 follow-up report.
+
+    When a regenerated job produces a smaller slider range while the
+    playhead sits far into the old job, GTK clamps the stored slider
+    value into the new range, pinning the slider at 100% while the
+    3D reveal is elsewhere. The overlay must re-derive the slider
+    value from the playhead whenever the range changes; when the
+    current command has no G-code output in the new map, the slider
+    falls back to the start instead of staying clamped.
+    """
+    overlay = PlaybackOverlay()
+    overlay.set_canvas(FakeCanvas())
+    big_map = FakeOpMap([(i, 1) for i in range(48)])
+    player = FakePlayer(n_ops=12)
+    overlay.set_op_map(big_map)
+    overlay.set_player(player, 0)
+    overlay.seek(9)
+    assert overlay._slider.get_value() < overlay._slider_extent()
+
+    # The job regenerates with far fewer ops and lines; the old
+    # playhead index (9) is out of range in the new map.
+    overlay.set_op_map(FakeOpMap([(i, 1) for i in range(4)]))
+    assert overlay._slider_extent() == 3
+    assert int(overlay._slider.get_value()) == 0
+
+
+@pytest.mark.ui
+def test_map_shrink_skips_output_less_current_command(
+    ui_context_initializer,
+):
+    """Same scenario, but the playhead's command exists in the new map
+    yet produces no G-code lines (e.g. the first LAYER_START). The
+    slider must not stay pinned at the clamped upper bound."""
+    overlay = PlaybackOverlay()
+    overlay.set_canvas(FakeCanvas())
+    big_map = FakeOpMap([(0, 3), (3, 4), (7, 4), (11, 4)])
+    player = FakePlayer(n_ops=4)
+    overlay.set_op_map(big_map)
+    overlay.set_player(player, 0)
+    overlay.seek(3)
+    assert overlay._slider.get_value() > 0
+
+    # New map: op 3 (the current playhead) has no output lines.
+    overlay.set_op_map(FakeOpMap([(0, 3), (3, 4), (7, 4), (0, 0)]))
+    assert int(overlay._slider.get_value()) == 0
+
+
+@pytest.mark.ui
+def test_cleared_player_pins_slider_at_zero_not_100(
+    ui_context_initializer,
+):
+    """Clearing the player while an op map is still set shrinks the
+    slider range to [0, 1]; the stale value must end up at 0 (pristine
+    playhead), never clamped to 1 (which renders as 100%)."""
+    overlay = PlaybackOverlay()
+    overlay.set_canvas(FakeCanvas())
+    op_map = FakeOpMap([(i * 4, 4) for i in range(12)])
+    player = FakePlayer(n_ops=12)
+    overlay.set_op_map(op_map)
+    overlay.set_player(player, 0)
+    overlay.seek(9)
+    assert overlay._slider.get_value() > 0
+
+    overlay.set_player(None)
+    assert int(overlay._slider.get_value()) == 0

@@ -9,6 +9,7 @@ import numpy as np
 from blinker import Signal
 from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
+from raygeo.ops.state import PowerMode
 
 from ..context import get_context
 from ..pipeline.artifact import JobArtifact
@@ -180,9 +181,10 @@ class MachineCmd:
         head = machine.get_default_laser_head()
         if head is None:
             raise ValueError("Machine has no laser heads configured.")
-        if not head.frame_power_percent:
-            logger.warning("Framing cancelled: Frame power is zero.")
-            return
+
+        # Zero frame power is valid: the frame traces the outline with
+        # the beam off (e.g. for machines with an auxiliary alignment
+        # laser). The encoder omits the laser-on command at 0% power.
 
         frame_speed = (
             head.frame_speed
@@ -195,6 +197,10 @@ class MachineCmd:
         frame_ops = Ops()
         frame_ops.set_head(head.uid)
         frame_ops.set_power(head.frame_power_percent)
+        # Framing traces at fixed speed steps and on some controllers
+        # a stationary M4 emits no beam at all, so always frame with
+        # constant power (M3).
+        frame_ops.set_power_mode(PowerMode.CONSTANT)
         frame_ops.set_feed_rate(frame_speed)
 
         corners = [

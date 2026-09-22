@@ -12,7 +12,7 @@ fi
 source .msys2_env
 
 # Define the Python executable for convenience
-PYTHON_EXEC="$MSYS2_PATH/mingw64/bin/python"
+PYTHON_EXEC="$MSYS2_PATH/ucrt64/bin/python"
 
 echo "--- Running ruff format ---"
 $PYTHON_EXEC -m ruff format rayforge tests scripts "$@"

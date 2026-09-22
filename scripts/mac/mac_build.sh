@@ -104,8 +104,8 @@ echo ""
 
 VENV_PATH=${VENV_PATH:-.venv}
 PYTHON_BOOTSTRAP=python3
-if command -v python3.11 >/dev/null 2>&1; then
-    PYTHON_BOOTSTRAP=python3.11
+if command -v python3.12 >/dev/null 2>&1; then
+    PYTHON_BOOTSTRAP=python3.12
 fi
 if [ ! -d "$VENV_PATH" ]; then
     "$PYTHON_BOOTSTRAP" -m venv "$VENV_PATH"

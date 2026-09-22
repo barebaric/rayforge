@@ -23,6 +23,18 @@
   "install.chooseMethod": {
     "message": "Choisissez la méthode d'installation :"
   },
+  "install.debian.title": {
+    "message": "Paquet Debian"
+  },
+  "install.debian.description": {
+    "message": "Rayforge fait partie des archives officielles de Debian. Si vous utilisez Debian, c'est la méthode d'installation la plus intégrée : vous recevez automatiquement les mises à jour, avec le reste de votre système."
+  },
+  "install.debian.suites": {
+    "message": "Le paquet est actuellement disponible dans Debian unstable (sid) et testing, et sera inclus dans la prochaine version stable. Il ne peut pas être ajouté aux versions de Debian ou Ubuntu déjà publiées — sur celles-ci, utilisez plutôt Snap, Flathub ou le PPA Ubuntu."
+  },
+  "install.debian.trackerLink": {
+    "message": "Suivez le paquet sur le gestionnaire de paquets Debian."
+  },
   "install.ppa.description": {
     "message": "Pour Ubuntu 24.04 LTS, vous pouvez utiliser notre PPA officiel. Cette méthode fournit des mises à jour automatiques via le gestionnaire de paquets de votre système."
   },
@@ -186,7 +198,7 @@
     "message": "Exécuter le script de configuration"
   },
   "install.msys2.shell": {
-    "message": "Ouvrez le shell MSYS2 MINGW64 et exécutez le script de configuration :"
+    "message": "Ouvrez le shell MSYS2 UCRT64 et exécutez le script de configuration :"
   },
   "install.msys2.setupNote": {
     "message": "Ce script installe toutes les dépendances système et les paquets Python nécessaires. L'installation peut prendre plusieurs minutes."
@@ -204,7 +216,7 @@
     "message": "Commandes Git"
   },
   "install.msys2.gitNote": {
-    "message": "Lors de l'utilisation de hooks pre-commit, vous devez exécuter les commandes git dans le shell MSYS2 MINGW64, et non depuis PowerShell ou l'invite de commande."
+    "message": "Lors de l'utilisation de hooks pre-commit, vous devez exécuter les commandes git dans le shell MSYS2 UCRT64, et non depuis PowerShell ou l'invite de commande."
   },
   "install.buildInstaller": {
     "message": "Construire l'installateur Windows"

@@ -48,12 +48,12 @@ partir de um Prompt de Comando do Windows padrão ou PowerShell:
 ```
 
 Isso executa `scripts/win/win_setup.sh` para instalar todos os pacotes de sistema e Python
-necessários no seu ambiente MSYS2/MinGW64.
+necessários no seu ambiente MSYS2/UCRT64.
 
 ### Hooks Pre-commit (Opcional)
 
 Para formatar e verificar automaticamente seu código antes de cada commit, execute isso do shell
-MSYS2 MINGW64:
+MSYS2 UCRT64:
 
 ```bash
 bash scripts/win/win_setup_dev.sh
@@ -61,7 +61,7 @@ bash scripts/win/win_setup_dev.sh
 
 :::note
 
-Hooks pre-commit requerem executar comandos git dentro do shell MSYS2 MINGW64, não do PowerShell ou
+Hooks pre-commit requerem executar comandos git dentro do shell MSYS2 UCRT64, não do PowerShell ou
 Prompt de Comando.
 
 :::
@@ -77,7 +77,7 @@ Todos os comandos são executados via script `run.bat`:
 - `run format`: Formata e corrige código automaticamente usando `ruff`.
 - `run build`: Compila o executável final do Windows (`.exe`).
 
-Alternativamente, você pode executar os scripts diretamente do shell MSYS2 MINGW64:
+Alternativamente, você pode executar os scripts diretamente do shell MSYS2 UCRT64:
 
 - `bash scripts/win/win_run.sh`: Executa a aplicação.
 - `bash scripts/win/win_test.sh`: Executa a suíte de testes.

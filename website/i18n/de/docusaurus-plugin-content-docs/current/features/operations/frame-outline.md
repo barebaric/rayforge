@@ -83,6 +83,19 @@ Steuert, wo der Laser relativ zum Rahmenpfad schneidet:
 - **2-5mm:** Kleiner Rand für ein sauberes Aussehen
 - **10mm+:** Großer Rand für Montage oder Handhabung
 
+#### Abgerundete Ecken
+
+Aktiviere **Abgerundete Ecken**, um die scharfen 90°-Ecken des Rahmens durch abgerundete Bögen zu
+ersetzen, und lege den **Eckenradius** in mm fest. Der Radius wird automatisch verringert, wenn er
+zu groß ist, um in den Rahmen zu passen.
+
+- **0mm:** Scharfe Ecken (Standard)
+- **3-10mm:** Weichere Ecken, die leichter zu handhaben sind
+- **Größer:** Stark abgerundeter Rahmen, begrenzt auf die Hälfte der kürzeren Rahmenseite
+
+Abgerundete Ecken sind nützlich für Materialien, die bei scharfen Winkeln splittern oder ausbrechen,
+und ersparen das Nachbearbeiten des Rahmens oder das manuelle Zeichnen eines abgerundeten Umrisses.
+
 ### Laser-Einstellungen
 
 ![Laser-Einstellungen](/screenshots/step-settings-frame-outline-laser.webp)

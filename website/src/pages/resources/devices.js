@@ -19,7 +19,7 @@ const SECTION_GROUP = {
   GrblNetworkDriver: 'Grbl',
   SmoothieDriver: 'Smoothieware',
   MarlinSerialDriver: 'Marlin',
-  RuidaDriver: 'Ruida',
+  RuidaRPAAdapter: 'Ruida',
   OctoPrintDriver: 'OctoPrint',
 };
 

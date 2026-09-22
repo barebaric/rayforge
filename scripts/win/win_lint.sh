@@ -12,7 +12,7 @@ fi
 source .msys2_env
 
 # Define the Python executable for convenience
-PYTHON_EXEC="$MSYS2_PATH/mingw64/bin/python"
+PYTHON_EXEC="$MSYS2_PATH/ucrt64/bin/python"
 
 echo "--- Running flake8 ---"
 $PYTHON_EXEC -m flake8 --ignore=E127,E128,E121,E123,E126,E203,E226,E24,E704,W503,W504 --builtins=_ rayforge tests "$@"

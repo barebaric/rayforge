@@ -23,6 +23,18 @@
   "install.chooseMethod": {
     "message": "Elija el método de instalación:"
   },
+  "install.debian.title": {
+    "message": "Paquete de Debian"
+  },
+  "install.debian.description": {
+    "message": "Rayforge forma parte del archivo oficial de Debian. Si utiliza Debian, esta es la forma más integrada de instalarlo: recibe las actualizaciones automáticamente, junto con el resto de su sistema."
+  },
+  "install.debian.suites": {
+    "message": "El paquete está disponible actualmente en Debian unstable (sid) y testing, y se incluirá en la próxima versión estable. No se puede añadir a versiones de Debian o Ubuntu ya publicadas — en ellas, use Snap, Flathub o el PPA de Ubuntu en su lugar."
+  },
+  "install.debian.trackerLink": {
+    "message": "Siga el paquete en el gestor de paquetes de Debian."
+  },
   "install.ppa.description": {
     "message": "Para Ubuntu 24.04 LTS, puede usar nuestro PPA oficial. Este método proporciona actualizaciones automáticas a través del gestor de paquetes de su sistema."
   },
@@ -186,7 +198,7 @@
     "message": "Ejecutar el script de configuración"
   },
   "install.msys2.shell": {
-    "message": "Abra el shell MSYS2 MINGW64 y ejecute el script de configuración:"
+    "message": "Abra el shell MSYS2 UCRT64 y ejecute el script de configuración:"
   },
   "install.msys2.setupNote": {
     "message": "Este script instala todas las dependencias del sistema y paquetes Python necesarios. Puede tardar varios minutos en completarse."
@@ -204,7 +216,7 @@
     "message": "Comandos de Git"
   },
   "install.msys2.gitNote": {
-    "message": "Al usar hooks pre-commit, debe ejecutar comandos git dentro del shell MSYS2 MINGW64, no desde PowerShell o Símbolo del sistema."
+    "message": "Al usar hooks pre-commit, debe ejecutar comandos git dentro del shell MSYS2 UCRT64, no desde PowerShell o Símbolo del sistema."
   },
   "install.buildInstaller": {
     "message": "Compilar el instalador de Windows"

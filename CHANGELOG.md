@@ -5,6 +5,24 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.11.1
+
+### Fixed
+
+- Importing DXF or LBRN2 files on macOS no longer produces a garbled,
+  wrongly scaled result caused by the generic binary MIME type routing
+  files to the Ruida importer (#384)
+- Sketcher: dragging elements no longer resizes the main window
+  because the status bar's width changed while a drag was in progress
+  (#385)
+- Print and cut: the wizard now launches on machines whose position
+  reports include an extra rotary axis instead of failing with an
+  unpack error (#394)
+- GRBL: reading device settings no longer aborts on grblHAL bitmask
+  values, so the settings dialog refreshes correctly (#401)
+- Material test: grid dimensions are truncated to whole numbers before
+  the test grid is generated, repairing broken grids (#405)
+
 ## 1.11.0
 
 ### Fixed

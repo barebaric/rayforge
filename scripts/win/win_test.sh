@@ -12,7 +12,7 @@ fi
 source .msys2_env
 
 # Define the Python executable for convenience
-PYTHON_EXEC="$MSYS2_PATH/mingw64/bin/python"
+PYTHON_EXEC="$MSYS2_PATH/ucrt64/bin/python"
 
 echo "--- Running Backend Tests ---"
 $PYTHON_EXEC -m pytest -v -ra -m "not ui" --log-cli-level=DEBUG --log-cli-format='%(asctime)s [%(levelname)8s] %(message)s' --log-cli-date-format='%Y-%m-%d %H:%M:%S' "$@"

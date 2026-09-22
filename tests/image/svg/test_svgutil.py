@@ -53,6 +53,14 @@ def empty_svg_data() -> bytes:
     return b"<svg/>"
 
 
+@pytest.fixture
+def svg_viewbox_only_data() -> bytes:
+    """Unitless SVG carrying only a viewBox, no width/height attributes."""
+    return b"""<svg viewBox="0 0 475 475">
+                 <rect width="475" height="475" fill="red"/>
+               </svg>"""
+
+
 # --- Tests for get_natural_size ---
 
 
@@ -82,6 +90,15 @@ class TestGetNaturalSize:
     def test_get_size_empty_svg(self, empty_svg_data: bytes):
         # No width/height attributes
         assert get_natural_size(empty_svg_data) is None
+
+    def test_get_size_viewbox_only(self, svg_viewbox_only_data: bytes):
+        # SVG with only a viewBox (no width/height) should fall back to the
+        # viewBox size, treating user units as pixels at the requested ppi.
+        size = get_natural_size(svg_viewbox_only_data)
+        assert size is not None
+        width, height = size
+        assert width == pytest.approx(475.0 * MM_PER_PX)
+        assert height == pytest.approx(475.0 * MM_PER_PX)
 
     def test_get_size_invalid_data(self):
         assert get_natural_size(b"not valid xml") is None

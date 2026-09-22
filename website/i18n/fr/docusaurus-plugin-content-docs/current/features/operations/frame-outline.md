@@ -83,6 +83,19 @@ Contrôle où le laser coupe par rapport au parcours du cadre :
 - **2-5mm :** Petite marge pour une apparence propre
 - **10mm+ :** Grande bordure pour le montage ou la manipulation
 
+#### Coins Arrondis
+
+Activez **Coins Arrondis** pour remplacer les coins à 90° du cadre par des arcs arrondis, puis
+définissez le **Rayon des Coins** en mm. Le rayon est automatiquement réduit lorsqu'il est trop
+grand pour tenir dans le cadre.
+
+- **0mm :** Coins nets (par défaut)
+- **3-10mm :** Coins plus doux, plus faciles à manipuler
+- **Plus grand :** Cadre fortement arrondi, limité à la moitié du côté le plus court du cadre
+
+Les coins arrondis sont utiles pour les matériaux qui s'écaillent ou se fendent aux angles vifs, et
+évitent de devoir post-traiter le cadre ou dessiner à la main un contour arrondi.
+
 ### Paramètres Laser
 
 ![Paramètres laser](/screenshots/step-settings-frame-outline-laser.webp)
