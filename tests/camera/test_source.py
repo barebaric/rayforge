@@ -6,9 +6,12 @@ import pytest
 from rayforge.camera.models.camera import Camera, CameraSourceType
 from rayforge.camera.source import (
     LocalDeviceSource,
+    validate_source_uri,
+)
+from rayforge.camera.source.base import (
+    _capture_has_initial_frame,
     _open_local_devices,
     _open_local_devices_lock,
-    validate_source_uri,
 )
 
 
@@ -80,9 +83,11 @@ def test_list_available_sources_skips_devices_already_open():
         _open_local_devices.add(in_use_device)
 
     with (
-        patch("rayforge.camera.source.cv2.VideoCapture", MockVideoCapture),
         patch(
-            "rayforge.camera.source.get_backends_for_platform",
+            "rayforge.camera.source.local.cv2.VideoCapture", MockVideoCapture
+        ),
+        patch(
+            "rayforge.camera.source.local.get_backends_for_platform",
             return_value=[(cv2.CAP_V4L2, "V4L2")],
         ),
         patch.object(
@@ -134,9 +139,11 @@ def test_open_registers_device_before_probing_and_close_unregisters():
     source = LocalDeviceSource(camera)
 
     with (
-        patch("rayforge.camera.source.cv2.VideoCapture", MockVideoCapture),
         patch(
-            "rayforge.camera.source.get_backends_for_platform",
+            "rayforge.camera.source.local.cv2.VideoCapture", MockVideoCapture
+        ),
+        patch(
+            "rayforge.camera.source.local.get_backends_for_platform",
             return_value=[(cv2.CAP_V4L2, "V4L2")],
         ),
     ):
@@ -158,7 +165,6 @@ def test_capture_has_initial_frame_rejects_never_reading_device():
     that looks connected but is permanently frozen, so validation must
     reject it.
     """
-    from rayforge.camera.source import _capture_has_initial_frame
 
     class NeverReadsCapture:
         def read(self):
@@ -175,8 +181,6 @@ def test_capture_has_initial_frame_accepts_device_that_eventually_reads():
     budget, not rejected on the first failed attempt.
     """
     import numpy as np
-
-    from rayforge.camera.source import _capture_has_initial_frame
 
     class SlowStartCapture:
         def __init__(self):
@@ -219,14 +223,14 @@ def test_open_raises_when_device_never_delivers_initial_frame():
 
     with (
         patch(
-            "rayforge.camera.source.cv2.VideoCapture",
+            "rayforge.camera.source.local.cv2.VideoCapture",
             OpensButNeverReadsCapture,
         ),
         patch(
-            "rayforge.camera.source.get_backends_for_platform",
+            "rayforge.camera.source.local.get_backends_for_platform",
             return_value=[(cv2.CAP_V4L2, "V4L2")],
         ),
-        patch("rayforge.camera.source.time.sleep"),
+        patch("rayforge.camera.source.base.time.sleep"),
         pytest.raises(OSError),
     ):
         source.open()
@@ -256,9 +260,11 @@ def test_open_aborts_promptly_when_cancel_event_is_set():
     cancel_event.set()
 
     with (
-        patch("rayforge.camera.source.cv2.VideoCapture", NeverOpensCapture),
         patch(
-            "rayforge.camera.source.get_backends_for_platform",
+            "rayforge.camera.source.local.cv2.VideoCapture", NeverOpensCapture
+        ),
+        patch(
+            "rayforge.camera.source.local.get_backends_for_platform",
             return_value=[(cv2.CAP_V4L2, "V4L2")],
         ),
         pytest.raises(OSError),

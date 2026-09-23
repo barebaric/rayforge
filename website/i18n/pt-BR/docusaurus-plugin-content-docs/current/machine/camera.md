@@ -6,7 +6,8 @@ description:
 
 # Integração com Câmera
 
-O Rayforge suporta integração com câmera USB para alinhamento e posicionamento preciso de materiais.
+O Rayforge é compatível com integração de câmeras para alinhamento e posicionamento preciso, usando
+câmeras USB locais ou câmeras de rede (instantâneo HTTP, fluxo HTTP/MJPEG ou RTSP).
 O recurso de sobreposição de câmera permite ver exatamente onde seu laser vai cortar ou gravar no
 material, eliminando suposições e reduzindo o desperdício de material.
 
@@ -40,7 +41,7 @@ rapidamente:
 
 ### Requisitos de Hardware
 
-**Câmeras compatíveis:**
+**Câmeras locais compatíveis:**
 
 - Webcams USB (mais comum)
 - Câmeras integradas de laptop (se executar Rayforge em laptop perto da máquina)
@@ -53,20 +54,18 @@ rapidamente:
 - Câmera posicionada para capturar a área de trabalho do laser
 - Montagem segura para prevenir movimento da câmera
 
-### Adicionando uma Câmera
+### Adicionando uma câmera local
 
 1. **Conecte sua câmera** ao computador via USB
 
 2. **Abra Configurações da Câmera:**
-   - Navegue até **Configurações → Preferências → Câmera**
-   - Ou use o botão da câmera na barra de ferramentas
+   - Navegue até **Máquina → Configurações da Máquina → Câmera**
 
 3. **Adicione uma nova câmera:**
    - Clique no botão "+" para adicionar uma câmera
+   - Escolha **Local camera** como tipo de fonte
    - Digite um nome descritivo (ex: "Câmera Superior", "Câmera da Área de Trabalho")
    - Selecione o dispositivo no menu suspenso
-     - No Linux: `/dev/video0`, `/dev/video1`, etc.
-     - No Windows: Camera 0, Camera 1, etc.
 
 4. **Habilite a câmera:**
    - Ative o interruptor de habilitação da câmera
@@ -359,6 +358,34 @@ sudo lsof /dev/video0
 - Reduza a resolução da câmera nas configurações do dispositivo (se acessível)
 - Feche outras aplicações que usam CPU/GPU
 - Atualize drivers gráficos
+
+---
+
+## Câmeras de rede
+
+O Rayforge é compatível com câmeras locais e câmeras de rede por meio de instantâneos HTTP, fluxos
+HTTP/MJPEG e RTSP. Câmeras locais são detectadas automaticamente; câmeras de rede são adicionadas
+informando diretamente a URL.
+
+### Adicionar uma câmera de rede
+
+1. Abra **Máquina → Configurações da Máquina → Câmera**.
+2. Clique em **+** e escolha **HTTP snapshot URL**, **HTTP stream URL** ou **RTSP stream**.
+3. Informe um nome e a URL, por exemplo:
+   - Instantâneo HTTP: `http://192.168.1.50:8080/media/getCapturePhoto`
+   - Fluxo HTTP/MJPEG: `http://192.168.1.50/mjpeg`
+   - RTSP: `rtsp://192.168.1.50/stream`
+4. Ative a câmera. O vídeo deverá aparecer na tela.
+
+Depois, você pode editar o campo **Source** sem perder a calibração ou o alinhamento. O Rayforge
+verifica se o esquema da URL corresponde ao tipo de fonte (`http://`, `https://`, `rtsp://` ou
+`rtsps://`).
+
+### Problemas de conexão
+
+Se nenhuma imagem aparecer, verifique o endereço IP, o esquema da URL e se a câmera e o computador
+conseguem se comunicar na mesma rede. Para instantâneos HTTP, o Rayforge mantém a última imagem
+válida e tenta novamente em uma frequência reduzida.
 
 ---
 

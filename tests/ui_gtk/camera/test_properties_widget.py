@@ -9,6 +9,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
 import pytest
+from gi.repository import Adw
 
 from rayforge.camera.controller import CameraController
 from rayforge.camera.models.camera import Camera, CameraSourceType
@@ -59,6 +60,7 @@ def test_selecting_local_device_does_not_rescan_hardware(
         return_value=["/dev/video0", "/dev/video1"],
     ) as mock_scan:
         widget = CameraProperties(controller)
+        assert isinstance(widget.source_combo, Adw.ComboRow)
         mock_scan.reset_mock()
 
         widget.source_combo.set_selected(1)

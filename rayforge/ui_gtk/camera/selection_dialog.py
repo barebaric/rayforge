@@ -2,7 +2,7 @@ import logging
 import threading
 from gettext import gettext as _
 
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, Gdk, Gtk
 
 from ...camera.controller import CameraController
 from ...camera.models.camera import Camera, CameraSourceType
@@ -21,18 +21,23 @@ class CameraSelectionDialog(Adw.MessageDialog):
         self,
         parent,
         active_controllers: list[CameraController] | None = None,
+        mode: str = "new",
         **kwargs,
     ):
         super().__init__(
             transient_for=parent,
             modal=True,
             heading=_("Add Camera"),
-            body=_("Choose a camera source type and enter its details."),
+            body=_("Choose a camera source."),
             close_response="cancel",
             **kwargs,
         )
-        self.set_size_request(720, 420)
+        self.set_size_request(720, 560)
+        self.mode = mode
+        if mode == "configured":
+            self.set_heading(_("Select Camera"))
         self.camera_payload: dict | None = None
+        self.selected_device_id: str | None = None
         # Controllers already active elsewhere in the app (e.g. a camera
         # already configured on the machine). Their frames are reused for
         # the preview instead of opening the device a second time, which
@@ -49,10 +54,11 @@ class CameraSelectionDialog(Adw.MessageDialog):
         self._preview_pixbuf = None
         self._build_ui()
         self.add_response("cancel", _("Cancel"))
-        self.add_response("select", _("Add"))
+        self.add_response(
+            "select", _("Select") if mode == "configured" else _("Add")
+        )
         self.set_response_enabled("select", False)
         self.type_row.connect("notify::selected", self._on_type_changed)
-        self.name_entry.connect("changed", self._on_form_changed)
         self.device_row.connect("notify::selected", self._on_form_changed)
         self.uri_entry.connect("changed", self._on_form_changed)
         self.connect("response", self._on_response)
@@ -60,7 +66,10 @@ class CameraSelectionDialog(Adw.MessageDialog):
         # The device dropdown opens instantly with a placeholder; probing
         # hardware happens on a worker thread so showing this dialog never
         # blocks the UI, however many (or slow) devices are attached.
-        self._start_device_scan()
+        if self.mode == "configured":
+            self._load_configured_cameras()
+        else:
+            self._start_device_scan()
 
     def _build_ui(self) -> None:
         box = Gtk.Box(
@@ -72,6 +81,7 @@ class CameraSelectionDialog(Adw.MessageDialog):
             margin_end=12,
         )
         self.set_extra_child(box)
+        box.set_size_request(-1, 500)
 
         source_group = Adw.PreferencesGroup()
         box.append(source_group)
@@ -96,15 +106,6 @@ class CameraSelectionDialog(Adw.MessageDialog):
             ),
         )
         source_group.add(self.type_row)
-
-        name_row = Adw.ActionRow(
-            title=_("Name"),
-            subtitle=_("Display name for this camera"),
-        )
-        self.name_entry = Gtk.Entry()
-        self.name_entry.set_valign(Gtk.Align.CENTER)
-        name_row.add_suffix(self.name_entry)
-        source_group.add(name_row)
 
         self.device_row = Adw.ComboRow(
             title=_("Device"),
@@ -146,6 +147,29 @@ class CameraSelectionDialog(Adw.MessageDialog):
         self.uri_row = uri_row
         source_group.add(uri_row)
         self._update_visibility()
+        self.type_row.set_selected(1)
+        self.device_row.set_visible(True)
+        self.preview_group.set_visible(True)
+
+    def _load_configured_cameras(self) -> None:
+        from ...context import get_context
+
+        controllers = get_context().camera_mgr.controllers
+        self._active_controllers = list(controllers)
+        self._available_devices = [
+            controller.config.id for controller in controllers
+        ]
+        self.type_row.set_visible(False)
+        self.device_row.set_model(
+            Gtk.StringList.new(
+                [controller.config.name for controller in controllers]
+            )
+        )
+        self.device_row.set_sensitive(bool(controllers))
+        self.device_row.set_selected(0 if controllers else -1)
+        self.preview_group.set_visible(False)
+        self.uri_row.set_visible(False)
+        self._on_form_changed()
 
     def _selected_source_type(self):
         idx = self.type_row.get_selected()
@@ -167,21 +191,26 @@ class CameraSelectionDialog(Adw.MessageDialog):
             }
         )
         if not is_local:
-            self.preview_image.set_pixbuf(None)
+            self.preview_image.set_paintable(None)
             self._preview_pixbuf = None
 
     def _build_payload(self) -> dict | None:
         source_type = self._selected_source_type()
         if source_type is None:
             return None
-        name = self.name_entry.get_text().strip()
+        if self.mode == "configured":
+            idx = self.device_row.get_selected()
+            if idx < 0 or idx >= len(self._available_devices):
+                return None
+            self.selected_device_id = self._available_devices[idx]
+            return {"camera_id": self.selected_device_id}
         if source_type is CameraSourceType.LOCAL_DEVICE:
             idx = self.device_row.get_selected()
             if idx <= 0:
                 return None
             device_id = self._available_devices[idx - 1]
             return {
-                "name": name or display_name(device_id),
+                "name": display_name(device_id),
                 "source_type": source_type.value,
                 "source_config": {"device_id": device_id},
             }
@@ -189,7 +218,7 @@ class CameraSelectionDialog(Adw.MessageDialog):
         if not uri or validate_source_uri(source_type, uri):
             return None
         return {
-            "name": name or uri,
+            "name": uri,
             "source_type": source_type.value,
             "source_config": {"uri": uri},
         }
@@ -199,6 +228,11 @@ class CameraSelectionDialog(Adw.MessageDialog):
         self._on_form_changed()
 
     def _on_form_changed(self, *args) -> None:
+        if self.mode == "configured":
+            payload = self._build_payload()
+            self.camera_payload = payload
+            self.set_response_enabled("select", payload is not None)
+            return
         source_type = self._selected_source_type()
         if source_type is not None and source_type is not (
             CameraSourceType.LOCAL_DEVICE
@@ -218,7 +252,7 @@ class CameraSelectionDialog(Adw.MessageDialog):
 
         idx = self.device_row.get_selected()
         if idx <= 0 or idx - 1 >= len(self._available_devices):
-            self.preview_image.set_pixbuf(None)
+            self.preview_image.set_paintable(None)
             self._preview_pixbuf = None
             return
         device_id = self._available_devices[idx - 1]
@@ -238,7 +272,7 @@ class CameraSelectionDialog(Adw.MessageDialog):
             self._show_preview_frame(active_controller.raw_image_data)
             return
 
-        self.preview_image.set_pixbuf(None)
+        self.preview_image.set_paintable(None)
         self._preview_pixbuf = None
         self._capture_preview_async(device_id, generation)
 
@@ -297,11 +331,15 @@ class CameraSelectionDialog(Adw.MessageDialog):
 
     def _show_preview_frame(self, image) -> None:
         if image is None:
-            self.preview_image.set_pixbuf(None)
+            self.preview_image.set_paintable(None)
             self._preview_pixbuf = None
             return
-        self._preview_pixbuf = numpy_to_pixbuf(image)
-        self.preview_image.set_pixbuf(self._preview_pixbuf)
+        pixbuf = numpy_to_pixbuf(image)
+        self._preview_pixbuf = pixbuf
+        paintable = (
+            Gdk.Texture.new_for_pixbuf(pixbuf) if pixbuf is not None else None
+        )
+        self.preview_image.set_paintable(paintable)
 
     def _start_device_scan(self) -> None:
         """Scans for local camera devices on a worker thread.
@@ -334,10 +372,13 @@ class CameraSelectionDialog(Adw.MessageDialog):
             )
         )
         self.device_row.set_sensitive(True)
+        if devices:
+            self.type_row.set_selected(1)
+            self.device_row.set_selected(1)
 
     def _on_response(self, dialog, response_id) -> None:
         self._closed = True
-        self.preview_image.set_pixbuf(None)
+        self.preview_image.set_paintable(None)
         self._preview_pixbuf = None
 
     def _on_destroy(self, *args) -> None:

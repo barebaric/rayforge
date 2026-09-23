@@ -6,8 +6,9 @@ description:
 
 # Intégration Caméra
 
-Rayforge supporte l'intégration de caméra USB pour l'alignement et le positionnement précis des
-matériaux. La fonctionnalité de superposition caméra te permet de voir exactement où ton laser va
+Rayforge prend en charge l'intégration de caméras pour l'alignement et le positionnement précis,
+avec des caméras USB locales ou des caméras réseau (instantané HTTP, flux HTTP/MJPEG ou RTSP). La
+fonctionnalité de superposition caméra te permet de voir exactement où ton laser va
 couper ou graver sur le matériau, éliminant les suppositions et réduisant le gaspillage de matériau.
 
 ![Paramètres Caméra](/screenshots/machine-settings-camera.webp)
@@ -42,7 +43,7 @@ en un coup d'œil :
 
 ### Prérequis Matériels
 
-**Caméras compatibles :**
+**Caméras locales compatibles :**
 
 - Webcams USB (les plus courantes)
 - Caméras intégrées d'ordinateur portable (si tu exécutes Rayforge sur un ordinateur portable près
@@ -56,20 +57,18 @@ en un coup d'œil :
 - Caméra positionnée pour capturer la zone de travail laser
 - Montage sécurisé pour éviter le mouvement de la caméra
 
-### Ajouter une Caméra
+### Ajouter une caméra locale
 
 1. **Connecte ta caméra** à ton ordinateur via USB
 
 2. **Ouvre les Paramètres Caméra :**
-   - Navigue vers **Paramètres → Préférences → Caméra**
-   - Ou utilise le bouton de la barre d'outils caméra
+   - Navigue vers **Machine → Paramètres de la machine → Caméra**
 
 3. **Ajoute une nouvelle caméra :**
    - Clique sur le bouton "+" pour ajouter une caméra
+   - Choisis **Local camera** comme type de source
    - Entre un nom descriptif (ex : "Caméra Supérieure", "Caméra Zone de Travail")
    - Sélectionne l'appareil dans le menu déroulant
-     - Sur Linux : `/dev/video0`, `/dev/video1`, etc.
-     - Sur Windows : Caméra 0, Caméra 1, etc.
 
 4. **Active la caméra :**
    - Bascule l'interrupteur d'activation de la caméra
@@ -367,6 +366,34 @@ sudo lsof /dev/video0
 - Réduis la résolution caméra dans les paramètres de l'appareil (si accessible)
 - Ferme les autres applications utilisant CPU/GPU
 - Mets à jour les pilotes graphiques
+
+---
+
+## Caméras réseau
+
+Rayforge prend en charge les caméras locales et les caméras réseau via des instantanés HTTP, des
+flux HTTP/MJPEG et RTSP. Les caméras locales sont détectées automatiquement ; les caméras réseau
+sont ajoutées en saisissant directement leur URL.
+
+### Ajouter une caméra réseau
+
+1. Ouvre **Machine → Paramètres de la machine → Caméra**.
+2. Clique sur **+** et choisis **HTTP snapshot URL**, **HTTP stream URL** ou **RTSP stream**.
+3. Saisis un nom et l'URL, par exemple :
+   - Instantané HTTP : `http://192.168.1.50:8080/media/getCapturePhoto`
+   - Flux HTTP/MJPEG : `http://192.168.1.50/mjpeg`
+   - RTSP : `rtsp://192.168.1.50/stream`
+4. Active la caméra. Le flux devrait apparaître sur le canevas.
+
+Tu peux ensuite modifier le champ **Source** sans perdre le calibrage ni l'alignement. Rayforge
+vérifie que le schéma de l'URL correspond au type de source (`http://`, `https://`, `rtsp://` ou
+`rtsps://`).
+
+### Problèmes de connexion
+
+Si aucune image n'apparaît, vérifie l'adresse IP, le schéma de l'URL et que la caméra et
+l'ordinateur peuvent communiquer sur le même réseau. Pour les instantanés HTTP, Rayforge conserve la
+dernière image valide et réessaie à une fréquence réduite.
 
 ---
 

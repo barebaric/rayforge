@@ -38,6 +38,7 @@ class LensCalibrationWidget(Gtk.Box):
         self.camera = camera
         self._distortion_rows = {}
         self._updating_ui = False
+        self._camera_settings_connected = False
 
         group = Adw.PreferencesGroup(
             title=_("Lens Calibration"),
@@ -55,7 +56,7 @@ class LensCalibrationWidget(Gtk.Box):
             self._distortion_rows[key] = row
             group.add(row)
 
-        self.camera.settings_changed.connect(self._on_camera_settings_changed)
+        self.start()
 
     def _create_spin_row(
         self, title: str, subtitle: str, value: float, config_key: str
@@ -93,12 +94,18 @@ class LensCalibrationWidget(Gtk.Box):
         setattr(self.camera, config_key, spin_row.get_value())
 
     def start(self) -> None:
+        if self._camera_settings_connected:
+            return
         self.camera.settings_changed.connect(self._on_camera_settings_changed)
+        self._camera_settings_connected = True
 
     def stop(self) -> None:
+        if not self._camera_settings_connected:
+            return
         self.camera.settings_changed.disconnect(
             self._on_camera_settings_changed
         )
+        self._camera_settings_connected = False
 
 
 __all__ = ["LensCalibrationWidget"]

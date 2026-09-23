@@ -165,3 +165,53 @@ def test_preview_reuses_active_controller_frame_without_reopening_device(
 
     dialog.destroy()
     _pump(time.monotonic() + 0.2)
+
+
+@pytest.mark.ui
+def test_new_camera_defaults_to_local_and_selects_first_device(
+    ui_context_initializer,
+):
+    device_id = "/dev/video0"
+
+    with patch(
+        "rayforge.ui_gtk.camera.selection_dialog.list_local_device_ids",
+        return_value=[device_id],
+    ):
+        dialog = CameraSelectionDialog(None)
+        assert _pump_until(lambda: dialog.camera_payload is not None)
+
+        assert dialog.type_row.get_selected() == 1
+        assert dialog.device_row.get_selected() == 1
+        payload = dialog.camera_payload
+        assert payload is not None
+        assert payload["source_config"] == {"device_id": device_id}
+        assert not hasattr(dialog, "name_entry")
+
+    dialog.destroy()
+    _pump(time.monotonic() + 0.2)
+
+
+@pytest.mark.ui
+def test_configured_mode_selects_existing_camera(
+    ui_context_initializer,
+):
+    camera = Camera(
+        name="Configured camera",
+        source_type=CameraSourceType.LOCAL_DEVICE,
+        source_config={"device_id": "/dev/video0"},
+    )
+    controller = _FakeActiveController(camera, None)
+    manager = type("CameraManager", (), {"controllers": [controller]})()
+    context = type("Context", (), {"camera_mgr": manager})()
+
+    with patch("rayforge.context.get_context", return_value=context):
+        dialog = CameraSelectionDialog(None, mode="configured")
+
+        assert dialog.type_row.get_visible() is False
+        assert dialog.device_row.get_selected() == 0
+        assert dialog.selected_device_id == camera.id
+        assert dialog.camera_payload == {"camera_id": camera.id}
+        assert dialog.get_response_enabled("select") is True
+
+    dialog.destroy()
+    _pump(time.monotonic() + 0.2)

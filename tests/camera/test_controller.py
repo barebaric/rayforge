@@ -171,7 +171,7 @@ def test_get_work_surface_image_no_image_data():
 
 
 def test_to_videocapture_arg():
-    from rayforge.camera.controller import _to_videocapture_arg
+    from rayforge.camera.source import _to_videocapture_arg
 
     assert _to_videocapture_arg("0") == 0
     assert _to_videocapture_arg("12") == 12
@@ -383,7 +383,8 @@ def test_http_snapshot_rejects_oversized_payloads():
             return_value=ResponseContext(),
         ),
         patch(
-            "rayforge.camera.source.logger.warning", side_effect=fake_warning
+            "rayforge.camera.source.network.logger.warning",
+            side_effect=fake_warning,
         ),
     ):
         frame = source.read_frame()
@@ -429,7 +430,8 @@ def test_http_snapshot_warning_logs_are_throttled():
             return_value=ResponseContext(),
         ),
         patch(
-            "rayforge.camera.source.logger.warning", side_effect=fake_warning
+            "rayforge.camera.source.network.logger.warning",
+            side_effect=fake_warning,
         ),
     ):
         assert source.read_frame() is not None

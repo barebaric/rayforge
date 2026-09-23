@@ -647,12 +647,16 @@ class Camera:
         return self.source_uri
 
     def to_dict(self) -> dict[str, Any]:
+        from ..source import source_config_to_dict
+
         data = {
             "id": self.id,
             "name": self.name,
             "enabled": self.enabled,
             "source_type": self.source_type.value,
-            "source_config": self.source_config,
+            "source_config": source_config_to_dict(
+                self.source_type, self.source_config
+            ),
             "white_balance": self.white_balance,
             "contrast": self.contrast,
             "brightness": self.brightness,
@@ -750,6 +754,14 @@ class Camera:
         legacy_device_id = data.get("device_id")
         if legacy_device_id and "device_id" not in source_config:
             source_config["device_id"] = legacy_device_id
+        from ..source import source_config_to_dict
+
+        source_config = source_config_to_dict(
+            CameraSourceType(
+                data.get("source_type", CameraSourceType.LOCAL_DEVICE)
+            ),
+            source_config,
+        )
         source_type = data.get("source_type", CameraSourceType.LOCAL_DEVICE)
         camera = cls(
             data["name"],

@@ -23,14 +23,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def __getattr__(name: str):
-    if name == "_to_videocapture_arg":
-        from .source import _to_videocapture_arg as func
-
-        return func
-    raise AttributeError(name)
-
-
 # A comprehensive list of standard resolutions to populate the UI dropdown.
 COMMON_RESOLUTIONS = [
     (320, 240),

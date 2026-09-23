@@ -375,6 +375,22 @@ def test_source_uri_and_type_roundtrip():
     assert restored.source_uri == "https://camera.local/mjpeg"
 
 
+def test_source_config_preserves_unknown_attributes():
+    camera = Camera(
+        "Network Camera",
+        source_type=CameraSourceType.HTTP_SNAPSHOT,
+        source_config={
+            "uri": "https://camera.local/image.jpg",
+            "timeout_seconds": 7,
+            "future_option": {"enabled": True},
+        },
+    )
+
+    restored = Camera.from_dict(camera.to_dict())
+
+    assert restored.source_config == camera.source_config
+
+
 def test_network_camera_does_not_write_legacy_device_id():
     camera = Camera(
         "Network Camera",

@@ -40,9 +40,19 @@ class CameraProperties(Adw.PreferencesGroup):
         self.set_title(_("Camera Properties"))
         self.set_description(_("Configure the selected camera."))
 
-        self.source_row = Adw.ActionRow(
+        self.source_row = Adw.ComboRow(
             title=_("Source"),
-            subtitle=_("Camera source identifier or URL"),
+            subtitle=_("Choose a connected local camera"),
+            model=Gtk.StringList.new([]),
+        )
+        self.source_row.connect(
+            "notify::selected", self._on_local_source_selected
+        )
+        self.add(self.source_row)
+
+        self.source_entry_row = Adw.ActionRow(
+            title=_("Source"),
+            subtitle=_("Camera source URL"),
         )
         self.source_entry = Gtk.Entry()
         self.source_entry.set_valign(Gtk.Align.CENTER)
@@ -53,16 +63,9 @@ class CameraProperties(Adw.PreferencesGroup):
         focus_controller = Gtk.EventControllerFocus()
         focus_controller.connect("leave", self._commit_source_uri)
         self.source_entry.add_controller(focus_controller)
-        self.source_row.add_suffix(self.source_entry)
-
-        self.source_combo = Gtk.DropDown(model=Gtk.StringList.new([]))
-        self.source_combo.set_hexpand(False)
-        self.source_combo.set_size_request(280, -1)
-        self.source_combo.connect(
-            "notify::selected", self._on_local_source_selected
-        )
-        self.source_row.add_suffix(self.source_combo)
-        self.add(self.source_row)
+        self.source_entry_row.add_suffix(self.source_entry)
+        self.add(self.source_entry_row)
+        self.source_combo = self.source_row
         self._local_device_ids: list[str] = []
 
         # Camera Name
@@ -198,16 +201,18 @@ class CameraProperties(Adw.PreferencesGroup):
         self._updating_ui = True
         try:
             if self._camera.source_type is CameraSourceType.LOCAL_DEVICE:
-                self.source_row.set_subtitle(
+                self.source_combo.set_subtitle(
                     _("Choose a connected local camera")
                 )
                 if rescan_local_devices:
                     self._update_local_device_choices()
                 self.source_entry.set_visible(False)
+                self.source_entry_row.set_visible(False)
                 self.source_combo.set_visible(True)
             else:
-                self.source_row.set_subtitle(_("Camera source URL"))
+                self.source_entry_row.set_subtitle(_("Camera source URL"))
                 self.source_entry.set_visible(True)
+                self.source_entry_row.set_visible(True)
                 self.source_combo.set_visible(False)
                 self.source_entry.set_text(self._camera.source_uri)
                 self._validate_source_uri()
@@ -304,9 +309,10 @@ class CameraProperties(Adw.PreferencesGroup):
             )
 
     def clear_ui(self):
-        self.source_row.set_subtitle("")
+        self.source_combo.set_subtitle("")
         self.source_entry.set_text("")
         self.source_entry.set_visible(False)
+        self.source_entry_row.set_visible(False)
         self.source_entry.remove_css_class("error")
         self.source_entry.set_tooltip_text(None)
         self.source_combo.set_model(Gtk.StringList.new([]))

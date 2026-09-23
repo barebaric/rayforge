@@ -6,8 +6,9 @@ description:
 
 # Integración de Cámara
 
-Rayforge soporta la integración de cámara USB para la alineación y posicionamiento preciso del
-material. La función de superposición de cámara te permite ver exactamente dónde tu láser va a
+Rayforge admite la integración de cámaras para una alineación y posicionamiento precisos, usando
+cámaras USB locales o cámaras de red (instantánea HTTP, transmisión HTTP/MJPEG o RTSP). La
+función de superposición de cámara te permite ver exactamente dónde tu láser va a
 cortar o grabar en el material, eliminando las conjeturas y reduciendo el desperdicio de material.
 
 ![Ajustes de Cámara](/screenshots/machine-settings-camera.webp)
@@ -42,7 +43,7 @@ vistazo:
 
 ### Requisitos de Hardware
 
-**Cámaras compatibles:**
+**Cámaras locales compatibles:**
 
 - Cámaras web USB (más común)
 - Cámaras integradas de laptop (si ejecutas Rayforge en una laptop cerca de la máquina)
@@ -55,20 +56,18 @@ vistazo:
 - Cámara posicionada para capturar el área de trabajo del láser
 - Montaje seguro para prevenir el movimiento de la cámara
 
-### Añadir una Cámara
+### Añadir una cámara local
 
 1. **Conecta tu cámara** a tu computadora vía USB
 
 2. **Abre Ajustes de Cámara:**
-   - Navega a **Configuración → Preferencias → Cámara**
-   - O usa el botón de la barra de herramientas de cámara
+   - Navega a **Máquina → Ajustes de Máquina → Cámara**
 
 3. **Añade una nueva cámara:**
    - Haz clic en el botón "+" para añadir una cámara
+   - Elige **Local camera** como tipo de fuente
    - Ingresa un nombre descriptivo (ej., "Cámara Superior", "Cámara Área de Trabajo")
    - Selecciona el dispositivo del menú desplegable
-     - En Linux: `/dev/video0`, `/dev/video1`, etc.
-     - En Windows: Cámara 0, Cámara 1, etc.
 
 4. **Habilita la cámara:**
    - Activa el interruptor de habilitación de cámara
@@ -363,6 +362,34 @@ sudo lsof /dev/video0
 - Reduce la resolución de la cámara en ajustes del dispositivo (si es accesible)
 - Cierra otras aplicaciones que usen CPU/GPU
 - Actualiza los controladores de gráficos
+
+---
+
+## Cámaras de red
+
+Rayforge admite cámaras locales y cámaras de red mediante instantáneas HTTP, transmisiones
+HTTP/MJPEG y RTSP. Las cámaras locales se detectan automáticamente; las cámaras de red se añaden
+introduciendo directamente su URL.
+
+### Añadir una cámara de red
+
+1. Abre **Máquina → Ajustes de Máquina → Cámara**.
+2. Haz clic en **+** y elige **HTTP snapshot URL**, **HTTP stream URL** o **RTSP stream**.
+3. Introduce un nombre y la URL, por ejemplo:
+   - Instantánea HTTP: `http://192.168.1.50:8080/media/getCapturePhoto`
+   - Transmisión HTTP/MJPEG: `http://192.168.1.50/mjpeg`
+   - RTSP: `rtsp://192.168.1.50/stream`
+4. Activa la cámara. La transmisión debería aparecer en el lienzo.
+
+Más adelante puedes editar el campo **Source** sin perder la calibración ni la alineación. Rayforge
+comprueba que el esquema de la URL coincida con el tipo de fuente (`http://`, `https://`, `rtsp://`
+o `rtsps://`).
+
+### Problemas de conexión
+
+Si no aparece ninguna imagen, comprueba la dirección IP, el esquema de la URL y que la cámara y el
+ordenador puedan comunicarse en la misma red. Para instantáneas HTTP, Rayforge conserva la última
+imagen válida y vuelve a intentarlo con una frecuencia reducida.
 
 ---
 
