@@ -1,4 +1,6 @@
-from ..models.camera import Camera, CameraSourceType
+from typing import TYPE_CHECKING
+
+from ..models.source_type import CameraSourceType
 from .base import CameraSource
 from .local import LocalDeviceConfig, LocalDeviceSource
 from .network import (
@@ -9,8 +11,11 @@ from .network import (
     UrlSourceConfig,
 )
 
+if TYPE_CHECKING:
+    from ..models.camera import Camera
 
-def create_camera_source(config: Camera) -> CameraSource:
+
+def create_camera_source(config: "Camera") -> CameraSource:
     """Create the runtime source implementation for a camera config."""
     source_type = config.source_type
     if source_type is CameraSourceType.LOCAL_DEVICE:

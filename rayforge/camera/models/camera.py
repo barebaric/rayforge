@@ -3,11 +3,13 @@ import logging
 import uuid
 from collections.abc import Sequence
 from datetime import datetime, timezone
-from enum import StrEnum
 from typing import Any
 
 import numpy as np
 from blinker import Signal
+
+from ..source import source_config_to_dict
+from .source_type import CameraSourceType
 
 logger = logging.getLogger(__name__)
 Pos = tuple[float, float]
@@ -25,13 +27,6 @@ def _as_utc(dt: datetime | None) -> datetime | None:
     if dt is None or dt.tzinfo is not None:
         return dt
     return dt.replace(tzinfo=timezone.utc)
-
-
-class CameraSourceType(StrEnum):
-    LOCAL_DEVICE = "local_device"
-    HTTP_SNAPSHOT = "http_snapshot"
-    HTTP_STREAM = "http_stream"
-    RTSP = "rtsp"
 
 
 class Camera:
@@ -647,8 +642,6 @@ class Camera:
         return self.source_uri
 
     def to_dict(self) -> dict[str, Any]:
-        from ..source import source_config_to_dict
-
         data = {
             "id": self.id,
             "name": self.name,
@@ -754,8 +747,6 @@ class Camera:
         legacy_device_id = data.get("device_id")
         if legacy_device_id and "device_id" not in source_config:
             source_config["device_id"] = legacy_device_id
-        from ..source import source_config_to_dict
-
         source_config = source_config_to_dict(
             CameraSourceType(
                 data.get("source_type", CameraSourceType.LOCAL_DEVICE)

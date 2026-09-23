@@ -8,6 +8,7 @@ from ...camera.controller import CameraController
 from ...camera.models.camera import Camera, CameraSourceType
 from ...camera.source import list_local_device_ids, validate_source_uri
 from ...camera.v4l import display_name
+from ...context import get_context
 from ...shared.util.glib import idle_add
 from .capture_surface import numpy_to_pixbuf
 
@@ -152,8 +153,6 @@ class CameraSelectionDialog(Adw.MessageDialog):
         self.preview_group.set_visible(True)
 
     def _load_configured_cameras(self) -> None:
-        from ...context import get_context
-
         controllers = get_context().camera_mgr.controllers
         self._active_controllers = list(controllers)
         self._available_devices = [

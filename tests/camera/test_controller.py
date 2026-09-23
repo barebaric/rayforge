@@ -17,6 +17,7 @@ from rayforge.camera.source import (
     HttpSnapshotSource,
     HttpStreamSource,
 )
+from rayforge.camera.source.local import _to_videocapture_arg
 
 
 def test_controller_initialization():
@@ -171,8 +172,6 @@ def test_get_work_surface_image_no_image_data():
 
 
 def test_to_videocapture_arg():
-    from rayforge.camera.source import _to_videocapture_arg
-
     assert _to_videocapture_arg("0") == 0
     assert _to_videocapture_arg("12") == 12
     assert (

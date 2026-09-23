@@ -7,8 +7,7 @@ from gi.repository import Adw, Gdk, GLib, Gtk
 
 from ... import const
 from ...camera.controller import CameraController
-from ...camera.models import Camera
-from ...camera.models.camera import CameraSourceType
+from ...camera.models.camera import Camera, CameraSourceType
 from ...camera.v4l import display_name
 from ...context import get_context
 from ...machine.driver import (

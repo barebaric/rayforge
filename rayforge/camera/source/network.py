@@ -3,13 +3,16 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import cv2
 import numpy as np
 
-from ..models.camera import Camera, CameraSourceType
+from ..models.source_type import CameraSourceType
 from .base import CameraSource, SourceConfig, validate_source_uri
+
+if TYPE_CHECKING:
+    from ..models.camera import Camera
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +68,7 @@ class OpenCvUrlSource(CameraSource):
     MAX_CONSECUTIVE_READ_FAILURES = 3
     config_class = UrlSourceConfig
 
-    def __init__(self, config: Camera):
+    def __init__(self, config: "Camera"):
         super().__init__(config)
         self.source_config = self.from_dict(config.source_config)
         assert isinstance(self.source_config, UrlSourceConfig)
@@ -152,7 +155,7 @@ class HttpSnapshotSource(CameraSource):
     MAX_SNAPSHOT_BYTES = 20 * 1024 * 1024
     config_class = HttpSnapshotConfig
 
-    def __init__(self, config: Camera):
+    def __init__(self, config: "Camera"):
         super().__init__(config)
         self.source_config = self.from_dict(config.source_config)
         assert isinstance(self.source_config, HttpSnapshotConfig)

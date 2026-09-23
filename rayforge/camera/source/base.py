@@ -3,34 +3,18 @@ import threading
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 from urllib.parse import urlsplit
 
 import cv2
 import numpy as np
 
-from ..models.camera import Camera, CameraSourceType
+from ..models.source_type import CameraSourceType
+
+if TYPE_CHECKING:
+    from ..models.camera import Camera
 
 logger = logging.getLogger(__name__)
-
-# Devices currently held open by a LocalDeviceSource in this process.
-# Probing (e.g. to populate a device picker) must skip these targets:
-# opening a second cv2.VideoCapture on a device that is already open by
-# another thread can crash the underlying V4L2/DirectShow driver.
-_open_local_devices_lock = threading.Lock()
-_open_local_devices: set[str] = set()
-
-
-def _to_videocapture_arg(target: str) -> int | str:
-    """Convert a scan target for cv2.VideoCapture.
-
-    OpenCV 5.0 treats string arguments as filenames, so numeric
-    device IDs like "0" must be passed as integers. Device paths
-    (e.g. /dev/v4l/by-id/...) are passed as strings.
-    """
-    if target.isdigit():
-        return int(target)
-    return target
 
 
 @dataclass(frozen=True)
@@ -62,7 +46,7 @@ class CameraSource(ABC):
     warning_log_interval_seconds: float | None = None
     config_class: ClassVar[type[SourceConfig]] = SourceConfig
 
-    def __init__(self, config: Camera):
+    def __init__(self, config: "Camera"):
         self.config = config
         # Set by the owning CameraController via bind_cancel_event() so
         # that open-retry loops and reconnect/frame-pacing waits inside
@@ -128,44 +112,6 @@ class CameraSource(ABC):
         return []
 
 
-# Number of warm-up reads attempted right after a device reports
-# isOpened() == True before its backend is trusted, and the delay
-# between attempts. Some Windows backends (DirectShow/MediaFoundation
-# in particular) report a successful open immediately but then fail
-# every subsequent read() for a device that is not really usable (e.g.
-# a resolution/format negotiation failure, or exclusive access denied).
-# Validating a few reads up front avoids treating such a device as
-# working only to have the capture loop immediately fail over anyway.
-OPEN_VALIDATION_ATTEMPTS = 3
-OPEN_VALIDATION_DELAY = 0.1
-
-
-def _capture_has_initial_frame(
-    cap: cv2.VideoCapture,
-    attempts: int = OPEN_VALIDATION_ATTEMPTS,
-    delay: float = OPEN_VALIDATION_DELAY,
-    cancel_event: "threading.Event | None" = None,
-) -> bool:
-    """Check whether an opened capture device actually delivers frames."""
-    for attempt in range(attempts):
-        try:
-            ret, frame = cap.read()
-        except cv2.error:
-            ret, frame = False, None
-
-        if ret and frame is not None:
-            return True
-
-        if attempt < attempts - 1:
-            if cancel_event is not None:
-                if cancel_event.wait(delay):
-                    return False
-            else:
-                time.sleep(delay)
-
-    return False
-
-
 def validate_source_uri(source_type: CameraSourceType, uri: str) -> str | None:
     """Return an error for an invalid network source URI, or None."""
     allowed_schemes = {
@@ -204,17 +150,3 @@ def get_backends_for_platform():
             (cv2.CAP_ANY, "default"),
         ]
     return [(cv2.CAP_ANY, "default")]
-
-
-def _get_linux_scan_targets() -> list[str]:
-    """Get device identifiers to scan on Linux.
-
-    Prefers persistent /dev/v4l/by-id/ paths. Falls back to
-    numeric indices if by-id is not available.
-    """
-    from ..v4l import get_sorted_by_id_paths
-
-    by_id_paths = get_sorted_by_id_paths()
-    if by_id_paths:
-        return by_id_paths
-    return [str(i) for i in range(10)]

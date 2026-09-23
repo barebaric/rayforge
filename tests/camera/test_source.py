@@ -8,7 +8,7 @@ from rayforge.camera.source import (
     LocalDeviceSource,
     validate_source_uri,
 )
-from rayforge.camera.source.base import (
+from rayforge.camera.source.local import (
     _capture_has_initial_frame,
     _open_local_devices,
     _open_local_devices_lock,

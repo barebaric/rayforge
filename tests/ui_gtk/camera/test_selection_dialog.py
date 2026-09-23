@@ -204,7 +204,10 @@ def test_configured_mode_selects_existing_camera(
     manager = type("CameraManager", (), {"controllers": [controller]})()
     context = type("Context", (), {"camera_mgr": manager})()
 
-    with patch("rayforge.context.get_context", return_value=context):
+    with patch(
+        "rayforge.ui_gtk.camera.selection_dialog.get_context",
+        return_value=context,
+    ):
         dialog = CameraSelectionDialog(None, mode="configured")
 
         assert dialog.type_row.get_visible() is False

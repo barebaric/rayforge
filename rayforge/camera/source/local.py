@@ -1,23 +1,88 @@
 import logging
+import threading
+import time
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import cv2
 import numpy as np
 
-from ..models.camera import Camera
-from .base import (
-    CameraSource,
-    SourceConfig,
-    SourceDescriptor,
-    _capture_has_initial_frame,
-    _get_linux_scan_targets,
-    _open_local_devices,
-    _open_local_devices_lock,
-    _to_videocapture_arg,
-)
+from .base import CameraSource, SourceConfig, SourceDescriptor
+
+if TYPE_CHECKING:
+    from ..models.camera import Camera
 
 logger = logging.getLogger(__name__)
+
+# Devices currently held open by a LocalDeviceSource in this process.
+# Probing (e.g. to populate a device picker) must skip these targets:
+# opening a second cv2.VideoCapture on a device that is already open by
+# another thread can crash the underlying V4L2/DirectShow driver.
+_open_local_devices_lock = threading.Lock()
+_open_local_devices: set[str] = set()
+
+# Number of warm-up reads attempted right after a device reports
+# isOpened() == True before its backend is trusted, and the delay
+# between attempts. Some Windows backends (DirectShow/MediaFoundation
+# in particular) report a successful open immediately but then fail
+# every subsequent read() for a device that is not really usable (e.g.
+# a resolution/format negotiation failure, or exclusive access denied).
+# Validating a few reads up front avoids treating such a device as
+# working only to have the capture loop immediately fail over anyway.
+_OPEN_VALIDATION_ATTEMPTS = 3
+_OPEN_VALIDATION_DELAY = 0.1
+
+
+def _to_videocapture_arg(target: str) -> int | str:
+    """Convert a scan target for cv2.VideoCapture.
+
+    OpenCV 5.0 treats string arguments as filenames, so numeric
+    device IDs like "0" must be passed as integers. Device paths
+    (e.g. /dev/v4l/by-id/...) are passed as strings.
+    """
+    if target.isdigit():
+        return int(target)
+    return target
+
+
+def _capture_has_initial_frame(
+    cap: cv2.VideoCapture,
+    attempts: int = _OPEN_VALIDATION_ATTEMPTS,
+    delay: float = _OPEN_VALIDATION_DELAY,
+    cancel_event: "threading.Event | None" = None,
+) -> bool:
+    """Check whether an opened capture device actually delivers frames."""
+    for attempt in range(attempts):
+        try:
+            ret, frame = cap.read()
+        except cv2.error:
+            ret, frame = False, None
+
+        if ret and frame is not None:
+            return True
+
+        if attempt < attempts - 1:
+            if cancel_event is not None:
+                if cancel_event.wait(delay):
+                    return False
+            else:
+                time.sleep(delay)
+
+    return False
+
+
+def _get_linux_scan_targets() -> list[str]:
+    """Get device identifiers to scan on Linux.
+
+    Prefers persistent /dev/v4l/by-id/ paths. Falls back to
+    numeric indices if by-id is not available.
+    """
+    from ..v4l import get_sorted_by_id_paths
+
+    by_id_paths = get_sorted_by_id_paths()
+    if by_id_paths:
+        return by_id_paths
+    return [str(i) for i in range(10)]
 
 
 @dataclass
@@ -55,18 +120,19 @@ class LocalDeviceSource(CameraSource):
     MJPG_FOURCC = cv2.VideoWriter_fourcc(*"MJPG")  # type: ignore
     YUYV_FOURCC = cv2.VideoWriter_fourcc(*"YUYV")  # type: ignore
 
-    def __init__(self, config: Camera):
+    def __init__(self, config: "Camera"):
         super().__init__(config)
         self.source_config = self.from_dict(config.source_config)
         assert isinstance(self.source_config, LocalDeviceConfig)
-        # The device this source instance owns. Captured once at
-        # construction time rather than read live from `config.device_id`
-        # on every use, so a model mutation that happens while this
-        # source is mid-open/mid-read cannot make it silently retarget to
-        # a different device. Switching devices always goes through the
-        # controller creating a *new* source (see CameraController's
-        # source-change restart logic in `_on_config_changed`).
-        self._device_id = self.source_config.device_id
+        # The device this source instance owns, frozen once at
+        # construction rather than read live from `config.device_id` or
+        # `self.source_config.device_id` on every use, so a model
+        # mutation that happens while this source is mid-open/mid-read
+        # cannot make it silently retarget to a different device.
+        # Switching devices always goes through the controller creating
+        # a *new* source (see CameraController's source-change restart
+        # logic in `_on_config_changed`).
+        self._owned_device_id = self.source_config.device_id
         self.cap = None
         self._backend_used = None
         self._read_failures = 0
@@ -152,7 +218,7 @@ class LocalDeviceSource(CameraSource):
         # Use the device this source instance owns (frozen at
         # construction), not a live re-read of `self.config.device_id`:
         # see the comment in __init__.
-        device_id = self._device_id
+        device_id = self._owned_device_id
         # Register the device as in-use before attempting to open it, not
         # just after success. Otherwise a concurrent scan (e.g. to
         # populate a device picker) can race with this open() call and
