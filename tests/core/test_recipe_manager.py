@@ -94,6 +94,50 @@ class TestRecipeManager:
         manager = RecipeManager(recipes_dir)
         assert len(manager.recipes) == 0
 
+    def test_load_recovers_recipe_from_backup(self, recipes_dir: Path):
+        """A corrupt recipe file falls back to its .bak copy."""
+        with open(recipes_dir / "recipe1.yaml", "w") as f:
+            f.write("{truncated: [")
+        with open(recipes_dir / "recipe1.yaml.bak", "w") as f:
+            yaml.dump({"uid": "recipe1", "name": "Recipe 1"}, f)
+
+        manager = RecipeManager(recipes_dir)
+        recipe = manager.get_recipe_by_id("recipe1")
+        assert recipe is not None
+        assert recipe.name == "Recipe 1"
+
+    def test_save_recipe_does_not_truncate_on_serialize_error(
+        self, recipes_dir: Path
+    ):
+        """An error mid-save leaves the previously saved file intact."""
+
+        class Unserializable:
+            pass
+
+        recipe = Recipe(uid="recipe1", name="Recipe 1")
+        recipe.extra["payload"] = Unserializable()
+        manager = RecipeManager(recipes_dir)
+        manager.add_recipe(Recipe(uid="recipe1", name="Old"))
+        recipe_file = recipes_dir / "recipe1.yaml"
+
+        manager.save_recipe(recipe)
+
+        assert recipe_file.exists()
+        data = yaml.safe_load(recipe_file.read_text())
+        assert data["name"] == "Old"
+
+    def test_save_recipe_writes_backup_of_previous_version(
+        self, recipes_dir: Path
+    ):
+        manager = RecipeManager(recipes_dir)
+        manager.add_recipe(Recipe(uid="recipe1", name="Old"))
+        recipe = Recipe(uid="recipe1", name="New")
+        manager.add_recipe(recipe)
+
+        backup = recipes_dir / "recipe1.yaml.bak"
+        assert backup.exists()
+        assert yaml.safe_load(backup.read_text())["name"] == "Old"
+
     def test_save_recipe(self, recipes_dir: Path):
         """Test saving a new recipe to a file."""
         manager = RecipeManager(recipes_dir)
