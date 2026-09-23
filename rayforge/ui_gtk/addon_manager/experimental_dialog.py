@@ -49,4 +49,5 @@ class ExperimentalAddonDialog(Adw.AlertDialog):
                 self._on_enable()
         elif self._on_cancel:
             self._on_cancel()
-        self.close()
+        if self.get_root() is not None:
+            self.close()

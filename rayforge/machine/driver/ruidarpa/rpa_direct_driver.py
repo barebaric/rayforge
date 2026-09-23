@@ -70,7 +70,15 @@ class RpaDirectDriver:
                 usb_device,
             )
         else:
-            _logger.warning("RPA direct driver failed to connect")
+            # The adapter owns the user-facing warning and reports a
+            # failed connection once per unreachable episode, so a
+            # per-attempt warning here would only spam the log during
+            # the reconnect backoff.
+            _logger.debug(
+                "RPA direct driver failed to connect; udp=%s, usb=%s",
+                udp_host,
+                usb_device,
+            )
         return result
 
     def stop(self) -> None:

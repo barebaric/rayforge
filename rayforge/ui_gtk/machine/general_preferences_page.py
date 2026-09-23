@@ -7,6 +7,7 @@ from ...machine.driver import drivers, get_driver_cls
 from ...machine.models.machine import Machine
 from ...shared.units.system import UnitSystem
 from ..icons import get_icon
+from ..shared.gtk import apply_css
 from ..shared.pref_rows.acceleration_spin_row import AccelerationSpinRow
 from ..shared.pref_rows.speed_spin_row import SpeedSpinRow
 from ..shared.preferences_page import TrackedPreferencesPage
@@ -19,6 +20,20 @@ UNIT_SYSTEM_LABELS = {
     UnitSystem.IMPERIAL: _("Imperial (inches)"),
 }
 UNIT_SYSTEM_ORDER = [UnitSystem.METRIC, UnitSystem.IMPERIAL]
+
+# The driver dropdown lists Adw.ActionRows. Adwaita gives each row a
+# 50px minimum height (box.header) plus 6px top/bottom margins around
+# the title box, which is more vertical padding than a compact selector
+# needs. Drop both so the entries are tighter while keeping the same
+# title/subtitle layout.
+_DRIVER_COMBO_CSS = """
+.driver-combo popover listview.view > row > row > box.header {
+    min-height: 0;
+}
+.driver-combo popover listview.view > row > row > box.header > box.title {
+    margin: 0;
+}
+"""
 
 
 class GeneralPreferencesPage(TrackedPreferencesPage):
@@ -80,8 +95,10 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
             title=_("Select driver"),
             model=self.driver_store,
         )
+        self.combo_row.add_css_class("driver-combo")
         self.combo_row.set_use_subtitle(True)
         self.driver_group.add(self.combo_row)
+        apply_css(_DRIVER_COMBO_CSS)
 
         # Set up a custom factory to display both title and subtitle in the
         # dropdown
@@ -298,7 +315,14 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         self.machine.set_driver_args(values)
 
     def on_factory_setup(self, factory, list_item):
+        # Adw.ActionRow renders the title/subtitle pair the way Adwaita
+        # intends. It is a Gtk.ListBoxRow though, and here it lives in a
+        # Gtk.ListItem's child slot (the combo's Gtk.ListView), so GTK
+        # would assert in gtk_list_box_row_grab_focus when the dropdown
+        # focuses it. Keeping it non-focusable avoids that: the
+        # Gtk.ListView owns keyboard focus, not the item child.
         row = Adw.ActionRow()
+        row.set_can_focus(False)
         list_item.set_child(row)
 
     def on_factory_bind(self, factory, list_item):
