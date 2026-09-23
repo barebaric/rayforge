@@ -488,7 +488,11 @@ class CreateArrayCommand(SketchChangeCommand):
             registry, self.template_entity_ids, pts
         )
         placement = strategy.template_placement(template_center, registry)
-        self._pre_place_snapshot = template_group.snapshot_positions()
+        # The helper geometry is placed with the member: a helper's
+        # points complete the member's shape (a text box's fourth
+        # frame corner lives only on its construction lines).
+        placement_group = template_group.with_helpers()
+        self._pre_place_snapshot = placement_group.snapshot_positions()
         for pid in self._extra_template_pids:
             try:
                 pt = registry.get_point(pid)
@@ -498,11 +502,11 @@ class CreateArrayCommand(SketchChangeCommand):
             pt.x, pt.y = placement.transform_point(pt.x, pt.y)
         self._pre_place_cp_snapshot = [
             (entity, entity.cp1, entity.cp2)
-            for entity in template_group.entities()
+            for entity in placement_group.entities()
             if isinstance(entity, Bezier)
         ]
         self._template_placement = placement
-        template_group.apply_placement(placement)
+        placement_group.apply_placement(placement)
 
     def _do_undo(self) -> None:
         if self.add_cmd:
@@ -525,9 +529,10 @@ class CreateArrayCommand(SketchChangeCommand):
         self._reapply_extraction()
         if self._template_placement is not None:
             registry = self.sketch.registry
-            EntityGroup(registry, self.template_entity_ids).apply_placement(
-                self._template_placement
-            )
+            placement_group = EntityGroup(
+                registry, self.template_entity_ids
+            ).with_helpers()
+            placement_group.apply_placement(self._template_placement)
             for pid in self._extra_template_pids:
                 try:
                     pt = registry.get_point(pid)

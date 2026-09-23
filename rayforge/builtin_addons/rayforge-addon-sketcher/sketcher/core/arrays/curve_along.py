@@ -546,7 +546,10 @@ class CurveAlongArray(Array):
             target,
             delta,
         )
-        group.apply_rigid_motion(motion)
+        # Helper geometry rides along (a text box's fourth frame
+        # corner lives only on its construction lines); leaving it
+        # behind would tear the member and violate its constraints.
+        group.with_helpers().apply_rigid_motion(motion)
         for pid in standalone_pids:
             try:
                 pt = registry.get_point(pid)

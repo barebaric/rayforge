@@ -10,7 +10,7 @@ import math
 
 import pytest
 from raygeo.geo.shape.text import FontConfig
-from sketcher.core.arrays import CircularArrayStrategy
+from sketcher.core.arrays import CircularArrayStrategy, CurveAlongArrayStrategy
 from sketcher.core.commands import (
     CreateArrayCommand,
     EditArrayCommand,
@@ -18,7 +18,9 @@ from sketcher.core.commands import (
     TextBoxCommand,
 )
 from sketcher.core.commands.duplicate import DuplicateCommand
-from sketcher.core.entities import TextBoxEntity
+from sketcher.core.constraints import ParallelogramConstraint
+from sketcher.core.entities import Circle, Line, TextBoxEntity
+from sketcher.core.params import ParameterContext
 from sketcher.core.selection import SketchSelection
 from sketcher.core.sketch import Sketch
 
@@ -202,3 +204,151 @@ def test_serialization_round_trip_keeps_text_arrays(text_array):
     ]
     assert len(text_boxes) == 4
     assert all(e.content == "AB" for e in text_boxes)
+
+
+# ----------------------------------------------------------------------
+# Guide drags: the template's fourth frame corner is referenced only by
+# its construction lines (helper geometry), so every rigid motion of a
+# member must carry the helpers along. If one is left behind, the
+# template's ParallelogramConstraint is violated until a global solve
+# repairs it — the corner visibly lags during the drag and snaps
+# (rotating the box) when it ends.
+# ----------------------------------------------------------------------
+
+
+def corner_residual(sketch, box):
+    """How far the fourth corner is from the parallelogram identity
+    p4 = p_width + p_height - p_origin."""
+    registry = sketch.registry
+    o = registry.get_point(box.origin_id)
+    w = registry.get_point(box.width_id)
+    h = registry.get_point(box.height_id)
+    p4 = registry.get_point(box.get_fourth_corner_id(registry))
+    return math.hypot(p4.x - (w.x + h.x - o.x), p4.y - (w.y + h.y - o.y))
+
+
+def parallelogram_residual(sketch):
+    ctx = ParameterContext()
+    worst = 0.0
+    for constr in sketch.constraints:
+        if not isinstance(constr, ParallelogramConstraint):
+            continue
+        err = constr.error(sketch.registry, ctx)
+        worst = max(worst, max(abs(v) for v in err))
+    return worst
+
+
+def frame_angle(sketch, box):
+    """Orientation of the template frame, in degrees."""
+    registry = sketch.registry
+    o = registry.get_point(box.origin_id)
+    w = registry.get_point(box.width_id)
+    return math.degrees(math.atan2(w.y - o.y, w.x - o.x))
+
+
+@pytest.fixture
+def text_curve_array():
+    """Sketch with a text box arrayed along a bezier guide, built
+    through the full create flow."""
+    sketch = Sketch()
+    cmd = TextBoxCommand(sketch, (30, 0), width=20, height=10)
+    cmd.execute()
+    assert cmd.text_box_id is not None
+    box = sketch.registry.get_entity(cmd.text_box_id)
+    assert isinstance(box, TextBoxEntity)
+    box.content = "AB"
+    box.font_config = FontConfig("sans-serif", 8.0)
+
+    g0 = sketch.registry.add_point(0.0, 0.0)
+    g1 = sketch.registry.add_point(40.0, 0.0)
+    guide = sketch.registry.add_bezier(
+        g0, g1, cp1=(0.0, 15.0), cp2=(40.0, -15.0)
+    )
+    strategy = CurveAlongArrayStrategy(
+        count=4, path_entity_id=guide, align_to_tangent=True
+    )
+    create_cmd = CreateArrayCommand(sketch, strategy, [box.id])
+    create_cmd.execute()
+    sketch.solve()
+    return sketch, guide, create_cmd, box
+
+
+def test_corner_follows_the_frame_while_the_guide_is_dragged(
+    text_curve_array,
+):
+    """Dragging the guide re-anchors the template every frame; the
+    fourth corner must move with it instead of lagging behind."""
+    sketch, guide, _cmd, box = text_curve_array
+    bezier = sketch.registry.get_entity(guide)
+
+    for frame in range(4):
+        bezier.cp1 = (bezier.cp1[0], bezier.cp1[1] - 4.0)
+        sketch.solve()
+        assert corner_residual(sketch, box) < 1e-6, f"frame {frame}"
+        assert parallelogram_residual(sketch) < 1e-6, f"frame {frame}"
+
+
+def test_settling_solve_after_a_drag_does_not_rotate_the_template(
+    text_curve_array,
+):
+    """The drag-end global solve finds every template constraint
+    already satisfied: the orientation the re-anchor chose must
+    survive it unchanged."""
+    sketch, guide, _cmd, box = text_curve_array
+    bezier = sketch.registry.get_entity(guide)
+
+    for _frame in range(3):
+        bezier.cp1 = (bezier.cp1[0], bezier.cp1[1] - 4.0)
+        sketch.solve()
+
+    angle_before = frame_angle(sketch, box)
+    sketch.solve()
+    assert frame_angle(sketch, box) == pytest.approx(angle_before, abs=1e-6)
+    assert corner_residual(sketch, box) < 1e-6
+
+
+def test_guide_center_drag_keeps_corner_on_circular_members():
+    """Circular arrays move members by translation and radial
+    re-projection (apply_frame); the construction lines must ride
+    along there too."""
+    sketch = Sketch()
+    cmd = TextBoxCommand(sketch, (30, 0), width=20, height=10)
+    cmd.execute()
+    assert cmd.text_box_id is not None
+    box = sketch.registry.get_entity(cmd.text_box_id)
+    assert isinstance(box, TextBoxEntity)
+    box.content = "AB"
+    box.font_config = FontConfig("sans-serif", 8.0)
+
+    create_cmd = CreateArrayCommand(sketch, make_strategy(), [box.id])
+    create_cmd.execute()
+    sketch.solve()
+    array = create_cmd.array
+    assert array is not None
+    circle = sketch.registry.get_entity(array.guide_circle_id)
+    assert isinstance(circle, Circle)
+    center_pt = sketch.registry.get_point(circle.center_idx)
+
+    for _frame in range(3):
+        center_pt.x += 3.0
+        center_pt.y -= 2.0
+        sketch.solve()
+        assert corner_residual(sketch, box) < 1e-6
+        assert parallelogram_residual(sketch) < 1e-6
+
+    # The construction lines must still connect the frame corners
+    # after the move: the helpers were carried, not left behind.
+    registry = sketch.registry
+    corners = {
+        (
+            round(registry.get_point(pid).x, 6),
+            round(registry.get_point(pid).y, 6),
+        )
+        for pid in box.get_all_frame_point_ids(registry)
+    }
+    for eid in box.construction_line_ids:
+        line = registry.get_entity(eid)
+        assert isinstance(line, Line)
+        for pid in line.get_point_ids():
+            pt = registry.get_point(pid)
+            assert (round(pt.x, 6), round(pt.y, 6)) in corners
