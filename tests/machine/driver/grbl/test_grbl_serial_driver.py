@@ -642,6 +642,87 @@ class TestGrblSerialDriver:
         _assert_only_safety_commands_pending(driver)
 
     @pytest.mark.asyncio
+    async def test_stopped_responding_recycles_transport(
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
+    ):
+        """When the device is declared dead mid-job, the transport
+        must be disconnected so the connection loop re-establishes a
+        fresh link, instead of polling a corpse until the app
+        quits."""
+        driver = connected_driver
+
+        line1 = b"G1 X10 Y10 " + b"A" * 110 + b"\n"
+        line2 = b"G1 X20 Y20\n"
+
+        driver.STALL_TIMEOUT_DEFAULT = 0.05
+        driver.POLL_RESPONSE_ATTEMPTS = 2
+        driver.POLL_RESPONSE_INTERVAL = 0.01
+
+        run_task = asyncio.create_task(
+            driver.run_raw(line1.decode() + line2.decode())
+        )
+
+        try:
+            await asyncio.wait_for(run_task, timeout=10.0)
+        except (asyncio.CancelledError, DeviceConnectionError):
+            pass
+
+        assert driver._job_running is False
+        assert driver._job_exception is not None
+        assert mock_serial_transport.disconnect.await_count >= 1
+
+    @pytest.mark.asyncio
+    async def test_recycle_transport_disconnects_when_dead(
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
+    ):
+        """_recycle_transport_if_dead() must disconnect the transport
+        and reset the unanswered-poll counter once the poll limit is
+        reached."""
+        driver = connected_driver
+        driver._consecutive_unanswered_polls = driver.UNANSWERED_POLL_LIMIT
+
+        await driver._recycle_transport_if_dead()
+
+        assert mock_serial_transport.disconnect.await_count == 1
+        assert driver._consecutive_unanswered_polls == 0
+
+    @pytest.mark.asyncio
+    async def test_recycle_transport_noop_when_device_responded(
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
+    ):
+        """Below the poll limit the recycle must leave the transport
+        untouched."""
+        driver = connected_driver
+        driver._consecutive_unanswered_polls = driver.UNANSWERED_POLL_LIMIT - 1
+
+        await driver._recycle_transport_if_dead()
+
+        assert mock_serial_transport.disconnect.await_count == 0
+
+    @pytest.mark.asyncio
+    async def test_connection_loop_recycles_when_idle_polls_unanswered(
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
+    ):
+        """Idle status polls that go completely unanswered must
+        recycle the connection once the poll limit is reached, so
+        the reconnect path re-establishes a fresh link."""
+        deadline = time.monotonic() + 10.0
+        while time.monotonic() < deadline:
+            if mock_serial_transport.disconnect.await_count >= 1:
+                break
+            await asyncio.sleep(0.1)
+
+        assert mock_serial_transport.disconnect.await_count >= 1
+
+    @pytest.mark.asyncio
     async def test_run_handles_mid_job_error(
         self,
         connected_driver: GrblSerialDriver,
