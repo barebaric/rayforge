@@ -3,6 +3,32 @@ set -e
 
 REQUIREMENTS_FILE="requirements.txt"
 
+# Retry helper: attempts a command up to MAX_RETRIES times with
+# exponential back-off (5s, 10s, 20s).  Returns the exit code of
+# the last attempt.
+MAX_RETRIES=3
+retry() {
+    local attempt=1
+    local delay=5
+    local rc
+    while true; do
+        "$@"
+        rc=$?
+        if [ "$rc" -eq 0 ]; then
+            return 0
+        fi
+        if [ "$attempt" -ge "$MAX_RETRIES" ]; then
+            echo "❌ Command failed after $MAX_RETRIES attempts: $*"
+            return "$rc"
+        fi
+        echo "⚠️  Attempt $attempt/$MAX_RETRIES failed (exit $rc), " \
+             "retrying in ${delay}s..."
+        sleep "$delay"
+        attempt=$((attempt + 1))
+        delay=$((delay * 2))
+    done
+}
+
 # Read the version spec for a package from requirements.txt.
 # Handles "pkg==ver", "pkg>=ver", "pkg~=ver", and bare "pkg".
 # Usage:  pkg_ver=$(req_version raygeo)
@@ -151,7 +177,7 @@ if [[ "$1" == "pacman" || -z "$1" ]]; then
     )
 
     echo "Refreshing MSYS2 database..."
-    pacman -Sy --noconfirm
+    retry pacman -Sy --noconfirm
 
     # The current UCRT64 db offers two providers for the fc-libs virtual, and
     # pacman's default pick (gcc-libgfortran 16.2.0-3) is currently
@@ -160,10 +186,10 @@ if [[ "$1" == "pacman" || -z "$1" ]]; then
     # This workaround can be dropped once gcc-libgfortran is removed from the
     # repositories (see https://github.com/msys2/MINGW-packages/issues/31811).
     echo "Pre-installing libgfortran to pin the fc-libs provider..."
-    pacman -S --needed --noconfirm mingw-w64-ucrt-x86_64-libgfortran
+    retry pacman -S --needed --noconfirm mingw-w64-ucrt-x86_64-libgfortran
 
     echo "Installing required system packages..."
-    pacman -S --needed --noconfirm "${PACKAGES[@]}"
+    retry pacman -S --needed --noconfirm "${PACKAGES[@]}"
 
     # cairo 1.18.6-1 aborts inside Pango's glyph rendering on Windows: its
     # DirectWrite A8 mask changes crash pango_cairo_show_layout() when
@@ -171,7 +197,7 @@ if [[ "$1" == "pacman" || -z "$1" ]]; then
     # known-good version until the regression is fixed upstream. The pixi
     # environment pins the same 1.18.4 release.
     echo "Downgrading cairo to the last known-good 1.18.4-4..."
-    pacman -U --noconfirm \
+    retry pacman -U --noconfirm \
       "https://repo.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-cairo-1.18.4-4-any.pkg.tar.zst"
 
     echo "✅ Pacman setup complete."
@@ -196,21 +222,21 @@ if [[ "$1" == "pip" || -z "$1" ]]; then
         export CARGO_BUILD_TARGET=x86_64-pc-windows-gnu
 
     echo "Installing/updating pip packages..."
-    $PYTHON_BIN_PATH -m pip install --upgrade pip --break-system-packages
+    retry $PYTHON_BIN_PATH -m pip install --upgrade pip --break-system-packages
 
-    $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation \
+    retry $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation \
         "asyncudp$(req_version asyncudp)" \
         "semver$(req_version semver)" \
         "vtracer$(req_version vtracer)" \
         "GitPython$(req_version GitPython)" \
         --break-system-packages
 
-    $PYTHON_BIN_PATH -m pip install --no-cache-dir pygobject-stubs --break-system-packages
-    $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation --no-deps \
+    retry $PYTHON_BIN_PATH -m pip install --no-cache-dir pygobject-stubs --break-system-packages
+    retry $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation --no-deps \
         "pyvips$(req_version pyvips)" \
         --break-system-packages
 
-    $PYTHON_BIN_PATH -m pip install --no-cache-dir \
+    retry $PYTHON_BIN_PATH -m pip install --no-cache-dir \
         "pyserial$(req_version pyserial)" \
         "raygeo$(req_version raygeo)" \
         "ezdxf$(req_version ezdxf)" \
