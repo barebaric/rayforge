@@ -33,6 +33,14 @@ FAST_CONFIG = {
 }
 
 
+def _parser_module():
+    """The raydriver.grbl.parser module, resolved through the runtime
+    package so pyright sees the Rust stubs."""
+    import raydriver.grbl.parser
+
+    return raydriver.grbl.parser
+
+
 async def wait_until(predicate, timeout: float = 5.0, interval=0.01):
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -179,13 +187,15 @@ class TestRegistry:
         assert encoder.dialect.uid == machine.dialect.uid
 
     def test_convert_state(self):
-        import raydriver.grbl.parser as rd_parser
         from raydriver.grbl.types import DeviceState as RDState
 
-        state = rd_parser.parse_state("<Alarm:1|FS:500,0>", RDState(), False)
+        state = _parser_module().parse_state(
+            "<Alarm:1|FS:500,0>", RDState(), False
+        )
         converted = GrblSerialNextDriver._convert_state(state)
         assert converted.status == DeviceStatus.ALARM
         assert converted.feed_rate == 500
+        assert converted.error is not None
         assert converted.error.code == 1
 
 
@@ -286,12 +296,14 @@ class TestDeviceOperations:
         receiver = SettingsReceiver(drv)
         await drv.read_settings()
         assert receiver.collected
-        values: dict[str, object] = {}
+        values: dict[str, float] = {}
         for varset in receiver.collected[0]:
             for key in varset.keys():  # noqa: SIM118
-                values[varset[key].label] = varset[key].value
+                value = varset[key].value
+                if isinstance(value, (int, float)):
+                    values[varset[key].label] = float(value)
         assert "$110" in values
-        assert float(values["$110"]) != 0.0
+        assert values["$110"] != 0.0
 
     async def test_detect_unit_system(self, connected_driver):
         drv, _mock, _emulator, _recorder = connected_driver
@@ -309,6 +321,7 @@ class TestDeviceOperations:
     def test_get_error(self):
         drv = GrblSerialNextDriver.__new__(GrblSerialNextDriver)
         error = drv.get_error("20")
+        assert error is not None
         assert error.code == 20
 
 
