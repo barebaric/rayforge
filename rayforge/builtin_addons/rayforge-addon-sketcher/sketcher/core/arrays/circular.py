@@ -183,10 +183,12 @@ class CircularArrayStrategy(ArrayStrategy):
             # helper lines are built on the ellipse's own points), so
             # the group translates unique points only: translating per
             # reference would move shared points once per referencing
-            # entity and tear the members apart.
+            # entity and tear the members apart. Helper geometry moves
+            # with its member (a text box's fourth frame corner lives
+            # only on its construction lines).
             whole = EntityGroup(
                 registry, array_def.living_entity_ids(registry)
-            )
+            ).with_helpers()
             whole.translate(dx, dy)
 
         # The template center always sits on the guide circle (the
@@ -207,10 +209,17 @@ class CircularArrayStrategy(ArrayStrategy):
         radius: float,
     ) -> None:
         """Translates every living member radially so its center sits
-        on the circle of the given radius, shape and angle preserved."""
+        on the circle of the given radius, shape and angle preserved.
+        Helper geometry moves with its member; the projection pins the
+        member's own center, not the helper-widened bounding box."""
         ccx, ccy = center
         for _slot, eids in array_def.living_members(registry):
-            EntityGroup(registry, eids).radial_project((ccx, ccy), radius)
+            group = EntityGroup(registry, eids)
+            if not group.points():
+                continue
+            group.with_helpers().radial_project(
+                (ccx, ccy), radius, group.center()
+            )
 
     def _pin_guide_circle(
         self,

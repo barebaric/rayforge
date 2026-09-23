@@ -179,17 +179,27 @@ class EntityGroup:
             pt.y += dy
 
     def radial_project(
-        self, center: tuple[float, float], radius: float
+        self,
+        center: tuple[float, float],
+        radius: float,
+        pin: tuple[float, float] | None = None,
     ) -> None:
         """
-        Translates the group radially so its center sits on the
-        circle of ``radius`` around ``center``, shape and angular
-        position preserved. No-op when the group's center already
-        sits there.
+        Translates the group radially so its center sits on the circle
+        of ``radius`` around ``center``, shape and angular position
+        preserved. No-op when the group's center already sits there.
+
+        ``pin`` overrides the projected point. Callers that move a
+        group extended with helper geometry (``with_helpers``) pass
+        the plain group's center, so the projection matches the array
+        placement math instead of the helper-widened bounding box.
         """
-        if not self.points():
-            return
-        mcx, mcy = self.center()
+        if pin is None:
+            if not self.points():
+                return
+            mcx, mcy = self.center()
+        else:
+            mcx, mcy = pin
         vx, vy = mcx - center[0], mcy - center[1]
         d = math.hypot(vx, vy)
         if d < 1e-9:
@@ -258,11 +268,15 @@ class EntityGroup:
             pt.y = y
 
     def polylines(self) -> list[list[tuple[float, float]]]:
-        """Samples every entity of the group into a polyline (in
-        model coordinates), e.g. for preview rendering. Delegates to
-        the entities' polymorphic ``to_polyline``."""
+        """Samples every entity of the group into polylines (in
+        model coordinates), e.g. for preview rendering. Multi-contour
+        entities (e.g. text glyphs) contribute one polyline per
+        contour. Delegates to the entities' polymorphic
+        ``to_polylines``."""
         return [
-            entity.to_polyline(self.registry) for entity in self.entities()
+            polyline
+            for entity in self.entities()
+            for polyline in entity.to_polylines(self.registry)
         ]
 
     # ------------------------------------------------------------------
@@ -293,6 +307,18 @@ class EntityGroup:
             if point_ids and set(point_ids) <= template_pids:
                 helper_ids.append(entity.id)
         return helper_ids
+
+    def with_helpers(self) -> EntityGroup:
+        """
+        Returns a view extended with this group's helper entities (see
+        ``helper_ids``). Rigid motions must be applied to the extended
+        view: a helper's points complete the member's shape (a text
+        box's fourth frame corner is referenced only by its
+        construction lines), so leaving them behind tears the member
+        apart and leaves its constraints violated. The returned group
+        is ephemeral like the group itself.
+        """
+        return EntityGroup(self.registry, self.entity_ids + self.helper_ids())
 
     def remap_point_refs(self, pid_map: dict[int, int]) -> None:
         """Rewrites the group's entities' point ID references by the

@@ -1,3 +1,4 @@
+import copy
 import logging
 import math
 from collections.abc import Sequence
@@ -17,6 +18,7 @@ from .line import Line
 
 if TYPE_CHECKING:
     from ..constraints import Constraint
+    from ..entity_group import PlacementTransform
     from ..registry import EntityRegistry
 
 logger = logging.getLogger(__name__)
@@ -57,6 +59,9 @@ class TextBoxEntity(Entity):
 
     def get_helper_ids(self) -> list[EntityID]:
         return list(self.construction_line_ids)
+
+    def clear_helper_references(self) -> None:
+        self.construction_line_ids = []
 
     def supports_fill(self) -> bool:
         return True
@@ -190,6 +195,38 @@ class TextBoxEntity(Entity):
             and p_width.constrained
             and p_height.constrained
         )
+
+    def geometry_signature(self, registry: "EntityRegistry") -> tuple:
+        """Extends the point signature with the content and font,
+        which shape the rendered glyphs without moving the frame."""
+        font = self.font_config
+        return super().geometry_signature(registry) + (
+            self.content,
+            font.family,
+            font.size,
+            font.bold,
+            font.italic,
+        )
+
+    def rewrite_offsets_from(
+        self, template: "Entity", placement: "PlacementTransform"
+    ) -> None:
+        """Re-derives the copy's content, font and fill from the
+        template so template edits propagate to every member."""
+        if not isinstance(template, TextBoxEntity):
+            return
+        self.content = template.content
+        self.font_config = copy.deepcopy(template.font_config)
+        self.fill_color = template.fill_color
+
+    def to_polylines(
+        self,
+        registry: "EntityRegistry",
+        tolerance: float = 0.1,
+    ) -> list[list[tuple[float, float]]]:
+        """Samples every glyph contour into its own polyline, so
+        previews show the full text instead of a single contour."""
+        return self.to_geometry(registry).to_polygons(tolerance)
 
     def is_contained_by(
         self,
