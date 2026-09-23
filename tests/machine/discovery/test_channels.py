@@ -386,6 +386,7 @@ def test_builtin_discovery_drivers():
     discoverable = [d for d in drivers if d.DISCOVERY is not None]
     assert {d.__name__ for d in discoverable} == {
         "GrblSerialDriver",
+        "GrblSerialNextDriver",
         "GrblNetworkDriver",
         "MarlinSerialDriver",
         "OctoPrintDriver",

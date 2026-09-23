@@ -19,8 +19,6 @@ from rayforge.machine.driver.driver import (
 from rayforge.machine.driver.grbl import GrblSerialNextDriver
 from rayforge.pipeline.encoder.gcode import GcodeEncoder
 
-pytestmark = pytest.mark.asyncio
-
 FAST_CONFIG = {
     "handshake_timeout": 2.0,
     "handshake_poll_interval": 0.02,
@@ -113,18 +111,6 @@ class SignalRecorder:
         )
 
 
-@pytest_asyncio.fixture
-async def next_driver():
-    """A GrblSerialNextDriver wired to an in-process Grbl emulator.
-
-    Yields (driver, mock, emulator). The driver is set up but not
-    connected; tests call ``await drv.connect()`` themselves.
-    """
-    from tests.conftest import context_initializer, machine  # noqa: F401
-
-    yield
-
-
 def sent_text(mock) -> bytes:
     return b"".join(mock.sent())
 
@@ -203,6 +189,7 @@ class TestRegistry:
         assert converted.error.code == 1
 
 
+@pytest.mark.asyncio
 class TestConnection:
     async def test_connect_reports_connected(
         self, context_initializer, machine
@@ -230,6 +217,7 @@ class TestConnection:
         assert drv.resource_uri is None
 
 
+@pytest.mark.asyncio
 class TestDeviceOperations:
     async def test_move_to_uses_dialect_template(self, connected_driver):
         drv, mock, _emulator, _recorder = connected_driver
@@ -324,6 +312,7 @@ class TestDeviceOperations:
         assert error.code == 20
 
 
+@pytest.mark.asyncio
 class TestStreaming:
     async def test_run_raw_completes(self, connected_driver):
         drv, _mock, _emulator, recorder = connected_driver
