@@ -8,6 +8,7 @@ from blinker import Signal
 
 from ...context import get_context
 from ...shared.tasker import task_mgr
+from ...shared.util.atomic import atomic_write_yaml, load_yaml_with_backup
 from ..device.profile import DeviceProfile
 from ..device.profile_diff import (
     SettingDiff,
@@ -235,23 +236,25 @@ class MachineManager:
         machine_file = self.filename_from_id(machine.id)
         try:
             data = machine.to_dict(include_frozen_dialect=False)
-            content = yaml.safe_dump(data)
         except Exception as e:
             logger.error(f"Failed to serialize machine {machine.id}: {e}")
             raise
-        with open(machine_file, "w") as f:
-            f.write(content)
+        atomic_write_yaml(machine_file, data)
 
     def load_machine(self, machine_id: str) -> Optional["Machine"]:
         machine_file = self.filename_from_id(machine_id)
         if not machine_file.exists():
             raise FileNotFoundError(f"Machine file {machine_file} not found")
-        with open(machine_file, "r") as f:
-            data = yaml.safe_load(f)
-            if not data:
-                msg = f"skipping invalid machine file {f.name}"
-                logger.warning(msg)
-                return None
+        try:
+            data, _ = load_yaml_with_backup(machine_file)
+        except (OSError, yaml.YAMLError) as e:
+            msg = f"skipping unreadable machine file {machine_file.name}"
+            logger.error(f"{msg}: {e}")
+            return None
+        if not data:
+            msg = f"skipping invalid machine file {machine_file.name}"
+            logger.warning(msg)
+            return None
         machine = Machine.from_dict(data, context=get_context())
         machine.id = machine_id
         self.machines[machine.id] = machine

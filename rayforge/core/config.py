@@ -1,4 +1,5 @@
 import logging
+import os
 from dataclasses import dataclass, fields
 from datetime import datetime, timezone
 from enum import Enum
@@ -10,6 +11,7 @@ import yaml
 from blinker import Signal
 
 from ..machine.models.machine import Machine
+from ..shared.util.atomic import atomic_write_yaml, load_yaml_with_backup
 
 logger = logging.getLogger(__name__)
 
@@ -457,8 +459,7 @@ class ConfigManager:
         if not self.config:
             return
         self.filepath.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.filepath, "w") as f:
-            yaml.safe_dump(self.config.to_dict(), f)
+        atomic_write_yaml(self.filepath, self.config.to_dict())
 
     def load(self) -> "Config":
         if not self.filepath.exists():
@@ -467,29 +468,26 @@ class ConfigManager:
             return self.config
 
         try:
-            with open(self.filepath, "r") as f:
-                data = yaml.safe_load(f)
-                if not data:
+            data, recovered = load_yaml_with_backup(self.filepath)
+            if not data:
+                logger.info("Config file is empty, creating default config.")
+                self.config = Config()
+            else:
+                if recovered:
+                    self._repair_corrupted()
+                machine_id = data.get("machine")
+                logger.info(f"Loading config with machine_id: {machine_id}")
+                self.config = Config.from_dict(
+                    data, self.machine_mgr.get_machine_by_id
+                )
+                if self.config.machine:
                     logger.info(
-                        "Config file is empty, creating default config."
+                        f"Config loaded with machine: "
+                        f"{self.config.machine.id} "
+                        f"({self.config.machine.name})"
                     )
-                    self.config = Config()
                 else:
-                    machine_id = data.get("machine")
-                    logger.info(
-                        f"Loading config with machine_id: {machine_id}"
-                    )
-                    self.config = Config.from_dict(
-                        data, self.machine_mgr.get_machine_by_id
-                    )
-                    if self.config.machine:
-                        logger.info(
-                            f"Config loaded with machine: "
-                            f"{self.config.machine.id} "
-                            f"({self.config.machine.name})"
-                        )
-                    else:
-                        logger.info("Config loaded but no machine set.")
+                    logger.info("Config loaded but no machine set.")
         except (OSError, yaml.YAMLError) as e:
             logger.error(
                 f"Failed to load config file: {e}. Creating a default config."
@@ -497,3 +495,22 @@ class ConfigManager:
             self.config = Config()
 
         return self.config
+
+    def _repair_corrupted(self) -> None:
+        """Moves a primary file that failed to parse out of the way.
+
+        Called only after a successful backup recovery so the damaged
+        file no longer shadows the good backup on future starts. The
+        recovered settings are written back on the next save.
+        """
+        corrupt_path = self.filepath.with_name(self.filepath.name + ".corrupt")
+        try:
+            os.replace(self.filepath, corrupt_path)
+            logger.warning(
+                "Moved unreadable %s to %s; the recovered settings "
+                "will be written back on the next save.",
+                self.filepath,
+                corrupt_path,
+            )
+        except OSError as e:
+            logger.warning("Could not quarantine %s: %s", self.filepath, e)
