@@ -20,6 +20,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from the keyboard
 - Drivers: `move_to` accepts an optional absolute Z target; machines
   with a Z axis receive it in the same move
+- New GRBL driver `GRBL (Rust)` (`GrblSerialNextDriver`): the complete
+  GRBL serial protocol stack (character-counting flow control, job
+  streaming, stall detection, deadlock recovery, cancel/safety
+  shutdown, settings, WCS and probing) now runs in Rust through the
+  `raydriver` package. Dialects and settings remain Rayforge data;
+  this driver is experimental and can be selected per machine as a
+  drop-in alternative to `GRBL (Serial)`
+
 
 ## 1.11.1
 
