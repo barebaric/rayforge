@@ -32,8 +32,8 @@ class CameraAlignmentSurface(WorldSurface):
         self.owner = owner
         self.controller = controller
 
-        self.controller.subscribe()
-        self.controller.image_captured.connect(self._on_image_captured)
+        self._streaming = False
+        self.start()
 
         self.dragging_point_index = -1
         self.drag_offset_x = 0.0
@@ -51,7 +51,20 @@ class CameraAlignmentSurface(WorldSurface):
         drag.connect("drag-end", self.on_drag_end)
         self.add_controller(drag)
 
+    def start(self):
+        """Subscribe to the camera stream. Idempotent."""
+        if self._streaming:
+            return
+        self._streaming = True
+        self.controller.subscribe()
+        self.controller.image_captured.connect(self._on_image_captured)
+
     def stop(self):
+        """Release the camera subscription. Idempotent."""
+        if not self._streaming:
+            return
+        self._streaming = False
+        self.controller.image_captured.disconnect(self._on_image_captured)
         self.controller.unsubscribe()
 
     def _on_image_captured(self, _):
@@ -532,6 +545,9 @@ class CameraAlignment(Gtk.Box):
     def footer_buttons(self) -> list:
         """Reset / Clear / Apply buttons for the host's footer bar."""
         return [self.reset_button, self.clear_button, self.apply_button]
+
+    def start(self) -> None:
+        self.camera_display.start()
 
     def stop(self) -> None:
         self.camera_display.stop()

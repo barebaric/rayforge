@@ -1451,13 +1451,13 @@ class WorkSurface(WorldSurface):
         # Get the controller for each camera model in the current machine
         machine_camera_controllers = []
         for camera_model in self.machine.cameras:
-            controller = camera_mgr.get_controller(camera_model.device_id)
+            controller = camera_mgr.get_controller(camera_model.id)
             if controller:
                 machine_camera_controllers.append(controller)
             else:
                 logger.warning(
                     "Could not find a live controller for camera "
-                    f"with device ID '{camera_model.device_id}'."
+                    f"with camera ID '{camera_model.id}'."
                 )
 
         self.set_camera_controllers(machine_camera_controllers)

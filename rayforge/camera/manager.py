@@ -62,7 +62,7 @@ class CameraManager:
             self._active_machine = None
 
         for controller in list(self._controllers.values()):
-            self._destroy_controller(controller.config.device_id)
+            self._destroy_controller(controller.config.id)
         logger.info("All camera controllers shut down.")
 
     @property
@@ -70,9 +70,9 @@ class CameraManager:
         """Returns a list of all active CameraController instances."""
         return list(self._controllers.values())
 
-    def get_controller(self, device_id: str) -> CameraController | None:
-        """Gets a specific controller by its device ID."""
-        return self._controllers.get(device_id)
+    def get_controller(self, camera_id: str) -> CameraController | None:
+        """Gets a specific controller by its stable camera ID."""
+        return self._controllers.get(camera_id)
 
     def _on_config_changed(self, sender, **kwargs):
         """
@@ -115,13 +115,17 @@ class CameraManager:
         )
         self._reconcile_controllers()
 
-    def _destroy_controller(self, device_id: str):
-        """Safely unsubscribes, stops, and removes a controller."""
-        if device_id in self._controllers:
-            controller = self._controllers.pop(device_id)
+    def _destroy_controller(self, camera_id: str):
+        """Safely unsubscribes, stops, removes and de-signals a controller."""
+        if camera_id in self._controllers:
+            controller = self._controllers.pop(camera_id)
             controller.unsubscribe()  # Stops the thread if it's the last sub
             self.controller_removed.send(self, controller=controller)
-            logger.info(f"Destroyed controller for camera {device_id}")
+            # Hard-stop the stream and disconnect it from the model so a
+            # destroyed controller can never be resurrected by a later,
+            # unrelated config change still reaching it.
+            controller.dispose()
+            logger.info(f"Destroyed controller for camera {camera_id}")
 
     def _reconcile_controllers(self):
         """
@@ -135,21 +139,19 @@ class CameraManager:
         active_machine = config.machine
         camera_configs_in_model: dict[str, Camera] = {}
         if active_machine:
-            camera_configs_in_model = {
-                c.device_id: c for c in active_machine.cameras
-            }
+            camera_configs_in_model = {c.id: c for c in active_machine.cameras}
 
         model_ids = set(camera_configs_in_model.keys())
         active_controller_ids = set(self._controllers.keys())
 
         # Destroy controllers for cameras that were removed from the model
-        for device_id in active_controller_ids - model_ids:
-            self._destroy_controller(device_id)
+        for camera_id in active_controller_ids - model_ids:
+            self._destroy_controller(camera_id)
 
         # Create controllers for new cameras added to the model
-        for device_id in model_ids - active_controller_ids:
-            config_model = camera_configs_in_model[device_id]
+        for camera_id in model_ids - active_controller_ids:
+            config_model = camera_configs_in_model[camera_id]
             controller = CameraController(config_model)
-            self._controllers[device_id] = controller
+            self._controllers[camera_id] = controller
             self.controller_added.send(self, controller=controller)
-            logger.info(f"Created controller for camera {device_id}")
+            logger.info(f"Created controller for camera {camera_id}")

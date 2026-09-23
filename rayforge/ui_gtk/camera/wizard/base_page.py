@@ -47,6 +47,15 @@ class CameraWizardPage:
     def can_proceed(self) -> bool:
         return True
 
+    def on_next_requested(self) -> bool:
+        """Veto or allow the wizard's Next button.
+
+        Returning ``False`` suppresses navigation, leaving the page
+        responsible for advancing later (e.g. after a confirmation
+        dialog) via :meth:`CameraWizard.advance`.
+        """
+        return True
+
     def footer_buttons(self) -> list[Gtk.Button]:
         return []
 

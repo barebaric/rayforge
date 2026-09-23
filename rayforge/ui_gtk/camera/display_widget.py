@@ -17,6 +17,7 @@ class CameraDisplay(Gtk.DrawingArea):
         self.set_size_request(640, 480)
         self.marked_points = []
         self.active_point_index = -1
+        self._streaming = False
         self.start()
         self.connect("destroy", self.on_destroy)
 
@@ -24,7 +25,13 @@ class CameraDisplay(Gtk.DrawingArea):
         """
         Starts the camera display by connecting to the image_captured signal
         and subscribing to the controller.
+
+        Idempotent: repeated calls without an intervening stop() are
+        ignored, so the controller's subscriber count stays balanced.
         """
+        if self._streaming:
+            return
+        self._streaming = True
         logger.debug(
             "CameraDisplay.start called for camera %s (instance: %s)",
             self.camera.name,
@@ -39,7 +46,14 @@ class CameraDisplay(Gtk.DrawingArea):
         """
         Stops the camera display by disconnecting the image_captured signal
         and unsubscribing from the controller.
+
+        Idempotent: calls made while not streaming are ignored, so a
+        stop() from both an owner and the destroy handler cannot drop
+        another subscriber's reference.
         """
+        if not self._streaming:
+            return
+        self._streaming = False
         logger.debug(
             "CameraDisplay.stop called for camera %s (instance: %s)",
             self.camera.name,

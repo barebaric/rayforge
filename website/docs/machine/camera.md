@@ -6,9 +6,10 @@ description:
 
 # Camera Integration
 
-Rayforge supports USB camera integration for precise material alignment and positioning. The camera
-overlay feature allows you to see exactly where your laser will cut or engrave on the material,
-eliminating guesswork and reducing material waste.
+Rayforge supports camera integration for precise material alignment and positioning, using either a
+local USB camera or a network camera (HTTP snapshot, HTTP/MJPEG stream, or RTSP). The camera overlay
+feature allows you to see exactly where your laser will cut or engrave on the material, eliminating
+guesswork and reducing material waste.
 
 ![Camera Settings](/screenshots/machine-settings-camera.webp)
 
@@ -34,13 +35,33 @@ The camera properties panel shows status icons for calibration and alignment at 
 
 ## Step 1: Add a Camera
 
+### Camera Source Types
+
+Rayforge supports four kinds of camera sources:
+
+| Source Type       | Use For                                                          |
+| ----------------- | ---------------------------------------------------------------- |
+| **Local camera**  | USB webcams, laptop built-in cameras, any V4L2/DirectShow device |
+| **HTTP snapshot** | Endpoints that return one still image per request                |
+| **HTTP stream**   | Continuous HTTP/HTTPS video, e.g. MJPEG-over-HTTP                |
+| **RTSP**          | RTSP network cameras                                             |
+
+Local cameras are auto-detected and selected from a list. Network cameras (HTTP snapshot, HTTP
+stream, RTSP) are added by entering the camera's URL directly.
+
 ### Hardware Requirements
 
-**Compatible cameras:**
+**Compatible local cameras:**
 
 - USB webcams (most common)
 - Laptop built-in cameras (if running Rayforge on laptop near machine)
 - Any camera supported by Video4Linux2 (V4L2) on Linux or DirectShow on Windows
+
+**Compatible network cameras:**
+
+- Any camera or device exposing an HTTP snapshot endpoint, HTTP/MJPEG stream, or RTSP stream
+  reachable on your network
+- See [Adding a Network Camera](#adding-a-network-camera) below for an example
 
 **Recommended setup:**
 
@@ -49,24 +70,68 @@ The camera properties panel shows status icons for calibration and alignment at 
 - Camera positioned to capture the laser work area
 - Secure mounting to prevent camera movement
 
-### Adding a Camera
+### Adding a Local Camera
 
 1. **Connect your camera** to your computer via USB
 
 2. **Open Camera Settings:**
-   - Navigate to **Settings → Preferences → Camera**
-   - Or use the camera toolbar button
+   - Navigate to **Machine → Machine Settings → Camera**
 
 3. **Add a new camera:**
    - Click the **+** button to add a camera
+   - Choose **Local camera** as the source type
    - Enter a descriptive name (e.g., "Top Camera", "Work Area Cam")
    - Select the device from the dropdown
-     - On Linux: `/dev/video0`, `/dev/video1`, etc.
-     - On Windows: Camera 0, Camera 1, etc.
 
 4. **Enable the camera:**
    - Toggle the camera enable switch
    - The live feed should appear on your canvas
+
+### Adding a Network Camera
+
+1. **Open Camera Settings:**
+   - Navigate to **Machine → Machine Settings → Camera**
+
+2. **Add a new camera:**
+   - Click the **+** button to add a camera
+   - Choose **HTTP snapshot URL**, **HTTP stream URL**, or **RTSP stream** as the source type
+   - Enter a descriptive name
+   - Enter the camera's URL, for example:
+     - HTTP snapshot: `http://192.168.1.50:8080/media/getCapturePhoto` (Creality Falcon A1 Pro — see
+       below)
+     - HTTP stream (MJPEG): `http://192.168.1.50/mjpeg`
+     - RTSP: `rtsp://192.168.1.50/stream`
+
+3. **Enable the camera:**
+   - Toggle the camera enable switch
+   - The live feed should appear on your canvas
+
+<!-- prettier-ignore-start -->
+:::info[Creality Falcon A1 Pro]
+When connected via USB, the Falcon A1 Pro shares a network interface over the USB connection and
+exposes a still-image snapshot endpoint at `http://<camera-ip>:8080/media/getCapturePhoto`. Find
+`<camera-ip>` (e.g. by checking your USB network adapter or the machine's touchscreen network info),
+add it as an **HTTP snapshot URL** source, and use that address. Using the camera over the Falcon's
+WiFi connection instead of USB has not been verified yet — if you've tried it, please share your
+findings on [GitHub](https://github.com/barebaric/rayforge) or [Discord](https://discord.gg/sTHNdTtpQJ).
+:::
+<!-- prettier-ignore-end -->
+
+If your camera's IP address changes later (for example after a reconnect or router reboot), you
+don't need to re-add the camera or redo calibration — see
+[Updating a Network Camera's URL](#updating-a-network-cameras-url) below.
+
+### Updating a Network Camera's URL
+
+Network camera URLs can be edited in place without losing calibration or alignment:
+
+1. Select the camera in **Camera Settings**
+2. Edit the **Source** field with the new URL
+3. Press **Enter** or click elsewhere to apply
+
+Rayforge validates the URL against the camera's source type (for example, an RTSP source must start
+with `rtsp://` or `rtsps://`) and shows an error if it doesn't match. Calibration, alignment, and
+all other settings are preserved — only the source endpoint changes.
 
 ---
 
@@ -304,6 +369,23 @@ sudo killall cheese  # or other camera apps
 # Check which process is using the camera
 sudo lsof /dev/video0
 ```
+
+### Network Camera Not Connecting
+
+**Problem:** HTTP snapshot, HTTP stream, or RTSP source shows no image or repeatedly reconnects.
+
+**Possible causes:**
+
+1. **Wrong or outdated IP address** — Network cameras can get a new IP after a reconnect or router
+   reboot; update the **Source** URL in the camera properties (see
+   [Updating a Network Camera's URL](#updating-a-network-cameras-url))
+2. **URL doesn't match the source type** — an HTTP snapshot/stream URL must start with `http://` or
+   `https://`; an RTSP URL must start with `rtsp://` or `rtsps://`
+3. **Camera and computer on different networks** — ensure both can reach each other (same LAN/WiFi,
+   no client isolation)
+4. **Endpoint temporarily unavailable** — for HTTP snapshot sources, Rayforge keeps showing the last
+   good frame and retries at a reduced rate; check the endpoint is reachable in a browser or with
+   `curl`
 
 ### Alignment Not Accurate
 

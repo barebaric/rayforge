@@ -115,6 +115,9 @@ class CameraImageSettings(Gtk.Box):
         image_group.add(self.custom_height_row)
 
         self._sync_resolution_selection()
+        self.resolution_row.set_sensitive(
+            self.camera.supports_hardware_controls
+        )
 
         self.yuyv_row = Adw.ActionRow(
             title=_("Prefer YUYV Format"),
@@ -131,6 +134,7 @@ class CameraImageSettings(Gtk.Box):
         self.yuyv_row.add_suffix(self.yuyv_switch)
         self.yuyv_row.set_activatable_widget(self.yuyv_switch)
         image_group.add(self.yuyv_row)
+        self.yuyv_row.set_sensitive(self.camera.supports_hardware_controls)
 
         self.auto_white_balance_row = Adw.ActionRow(
             title=_("Auto White Balance"),
@@ -149,6 +153,9 @@ class CameraImageSettings(Gtk.Box):
             self.auto_white_balance_switch
         )
         image_group.add(self.auto_white_balance_row)
+        self.auto_white_balance_row.set_sensitive(
+            self.camera.supports_hardware_controls
+        )
 
         initial_wb = (
             self.camera.white_balance
@@ -171,7 +178,8 @@ class CameraImageSettings(Gtk.Box):
         )
         image_group.add(wb_row)
         self.white_balance_scale.set_sensitive(
-            self.camera.white_balance is not None
+            self.camera.supports_hardware_controls
+            and self.camera.white_balance is not None
         )
 
         row, self.contrast_scale = self._create_slider_row(
@@ -199,6 +207,12 @@ class CameraImageSettings(Gtk.Box):
             digits=2,
         )
         image_group.add(row)
+        self.contrast_scale.set_sensitive(
+            self.camera.supports_hardware_controls
+        )
+        self.brightness_scale.set_sensitive(
+            self.camera.supports_hardware_controls
+        )
 
         row, self.denoise_scale = self._create_slider_row(
             title=_("Noise Reduction"),
@@ -225,6 +239,9 @@ class CameraImageSettings(Gtk.Box):
             digits=2,
         )
         image_group.add(row)
+
+    def start(self) -> None:
+        self.camera_display.start()
 
     def stop(self) -> None:
         self.camera_display.stop()

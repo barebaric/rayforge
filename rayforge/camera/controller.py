@@ -1,6 +1,4 @@
 import logging
-import multiprocessing as mp
-import sys
 import threading
 import time
 from typing import TYPE_CHECKING, Optional
@@ -11,12 +9,19 @@ from blinker import Signal
 
 from ..image.util.srgb import resize_linear_nd
 from ..shared.util.glib import idle_add
-from .models.camera import Camera, Pos
+from .models.camera import Camera
+from .source import (
+    create_camera_source,
+    list_local_device_ids,
+)
 
 if TYPE_CHECKING:
     from gi.repository import GdkPixbuf
 
+    from .source import CameraSource
+
 logger = logging.getLogger(__name__)
+
 
 # A comprehensive list of standard resolutions to populate the UI dropdown.
 COMMON_RESOLUTIONS = [
@@ -38,222 +43,7 @@ COMMON_RESOLUTIONS = [
     (6144, 3456),
     (7680, 4320),
 ]
-
-
-def _get_linux_scan_targets() -> list[str]:
-    """Get device identifiers to scan on Linux.
-
-    Prefers persistent /dev/v4l/by-id/ paths. Falls back to
-    numeric indices if by-id is not available.
-    """
-    from .v4l import get_sorted_by_id_paths
-
-    by_id_paths = get_sorted_by_id_paths()
-    if by_id_paths:
-        return by_id_paths
-    return [str(i) for i in range(10)]
-
-
-def _to_videocapture_arg(target: str) -> int | str:
-    """Convert a scan target for cv2.VideoCapture.
-
-    OpenCV 5.0 treats string arguments as filenames, so numeric
-    device IDs like "0" must be passed as integers. Device paths
-    (e.g. /dev/v4l/by-id/...) are passed as strings.
-    """
-    if target.isdigit():
-        return int(target)
-    return target
-
-
-def _probe_camera_device(args):
-    """Probe a single camera device. Runs in subprocess."""
-    device_id, backend = args
-    try:
-        cap = cv2.VideoCapture(_to_videocapture_arg(device_id), backend)
-        if cap.isOpened():
-            cap.release()
-            return device_id
-        if cap:
-            cap.release()
-    except cv2.error:
-        pass
-    return None
-
-
-def _scan_cameras_in_subprocess() -> list[str]:
-    """Scan for cameras in a separate process to isolate crashes."""
-    if sys.platform.startswith("linux"):
-        backends = [cv2.CAP_V4L2, cv2.CAP_ANY]
-    elif sys.platform == "win32":
-        backends = [cv2.CAP_DSHOW, cv2.CAP_MSMF, cv2.CAP_ANY]
-    else:
-        backends = [cv2.CAP_ANY]
-
-    if sys.platform.startswith("linux"):
-        targets = _get_linux_scan_targets()
-    else:
-        targets = [str(i) for i in range(10)]
-
-    devices = []
-    work = [(t, b) for t in targets for b in backends]
-
-    try:
-        ctx = mp.get_context("spawn")
-        with ctx.Pool(processes=1) as pool:
-            async_result = pool.map_async(_probe_camera_device, work)
-            results = async_result.get(timeout=30)
-            for r in results:
-                if r is not None and str(r) not in devices:
-                    devices.append(str(r))
-    except (mp.ProcessError, mp.TimeoutError, OSError) as e:
-        logger.warning(f"Subprocess camera scan failed: {e}")
-        return _scan_cameras_fallback()
-
-    return devices
-
-
-def _scan_cameras_fallback() -> list[str]:
-    """Fallback camera scan if subprocess fails."""
-    devices = []
-    if sys.platform.startswith("linux"):
-        backends = [(cv2.CAP_V4L2, "V4L2"), (cv2.CAP_ANY, "default")]
-    elif sys.platform == "win32":
-        backends = [(cv2.CAP_DSHOW, "DirectShow"), (cv2.CAP_ANY, "default")]
-    else:
-        backends = [(cv2.CAP_ANY, "default")]
-
-    if sys.platform.startswith("linux"):
-        targets = _get_linux_scan_targets()
-    else:
-        targets = [str(i) for i in range(10)]
-
-    for target in targets:
-        for backend, name in backends:
-            try:
-                cap = cv2.VideoCapture(_to_videocapture_arg(target), backend)
-                if cap.isOpened():
-                    devices.append(str(target))
-                    cap.release()
-                    break
-                if cap:
-                    cap.release()
-            except (cv2.error, OSError) as e:
-                logger.debug(f"Error probing camera {target}: {e}")
-
-    return devices
-
-
-def get_backends_for_platform():
-    """Return list of (backend_constant, name) tuples for current platform."""
-    if sys.platform.startswith("linux"):
-        return [
-            (cv2.CAP_V4L2, "V4L2"),
-            (cv2.CAP_ANY, "default"),
-        ]
-    if sys.platform == "win32":
-        return [
-            (cv2.CAP_DSHOW, "DirectShow"),
-            (cv2.CAP_MSMF, "MediaFoundation"),
-            (cv2.CAP_ANY, "default"),
-        ]
-    return [(cv2.CAP_ANY, "default")]
-
-
-def try_open_camera(device_id: int, backend: int, backend_name: str):
-    """Try to open camera with specific backend. Returns cap or None."""
-    logger.debug(f"Opening camera {device_id} with {backend_name} backend")
-    cap = cv2.VideoCapture(device_id, backend)
-    if cap.isOpened():
-        logger.info(f"Camera {device_id} opened with {backend_name} backend")
-        return cap
-    if cap:
-        cap.release()
-    return None
-
-
-class VideoCaptureDevice:
-    """Context manager for safely opening and releasing camera devices."""
-
-    MAX_OPEN_RETRIES = 3
-    RETRY_DELAY = 0.5
-
-    def __init__(self, device_id):
-        self.device_id = device_id
-        self.cap = None
-        self._backend_used = None
-
-    def __enter__(self):
-        device_id_int = self._parse_device_id()
-        logger.debug(f"Opening camera {device_id_int} on {sys.platform}")
-
-        backends = get_backends_for_platform()
-        last_error = None
-
-        for backend, name in backends:
-            cap = self._try_backend(device_id_int, backend, name)
-            if cap:
-                return cap
-            last_error = self._retry_backend(
-                device_id_int, backend, name, last_error
-            )
-
-        self._raise_open_error(backends, last_error)
-
-    def _parse_device_id(self):
-        if isinstance(self.device_id, str) and self.device_id.isdigit():
-            return int(self.device_id)
-        return self.device_id
-
-    def _try_backend(self, device_id_int, backend, name):
-        for attempt in range(self.MAX_OPEN_RETRIES):
-            try:
-                cap = try_open_camera(device_id_int, backend, name)
-                if cap:
-                    self._backend_used = name
-                    self.cap = cap
-                    return cap
-            except cv2.error as e:
-                logger.warning(
-                    f"OpenCV error camera {device_id_int} {name} "
-                    f"(attempt {attempt + 1}): {e}"
-                )
-            except OSError as e:
-                logger.warning(
-                    f"Error camera {device_id_int} {name} "
-                    f"(attempt {attempt + 1}): {e}"
-                )
-
-            if attempt < self.MAX_OPEN_RETRIES - 1:
-                time.sleep(self.RETRY_DELAY)
-        return None
-
-    def _retry_backend(self, device_id_int, backend, name, last_error):
-        return last_error
-
-    def _raise_open_error(self, backends, last_error):
-        names = [b[1] for b in backends]
-        msg = (
-            f"Cannot open camera {self.device_id}. "
-            f"Tried: {names}. Last error: {last_error}"
-        )
-        logger.error(msg)
-        raise OSError(msg)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if self.cap is None:
-            return
-        try:
-            if self.cap.isOpened():
-                logger.debug(
-                    f"Releasing camera {self.device_id} "
-                    f"(backend: {self._backend_used})"
-                )
-                self.cap.release()
-        except (cv2.error, OSError) as e:
-            logger.warning(f"Error releasing camera {self.device_id}: {e}")
-        finally:
-            self.cap = None
+Pos = tuple[float, float]
 
 
 class CameraController:
@@ -262,6 +52,7 @@ class CameraController:
     MAX_CONSECUTIVE_FAILURES = 10
     FRAME_READ_TIMEOUT = 1 / 30
     RECONNECT_DELAY = 2.0
+    STOP_JOIN_TIMEOUT = 2.0
 
     def __init__(self, config: Camera):
         self.config = config
@@ -274,6 +65,33 @@ class CameraController:
         self._running: bool = False
         self._settings_dirty: bool = True  # Flag to re-apply settings
         self._consecutive_failures: int = 0
+        self._last_frame_warning_log_time: float | None = None
+        self._last_reconnect_warning_log_time: float | None = None
+        self._active_source: CameraSource | None = None
+        self._last_source_key = self._source_key()
+        self._disposed: bool = False
+
+        # Stream lifecycle: _lifecycle_lock serializes start/stop so that
+        # at most one capture thread can ever own the device at a time
+        # (concurrent start/stop calls -- e.g. a config-change signal
+        # racing with an explicit subscribe/unsubscribe -- is what caused
+        # the historic double-open crash on device swap). _stop_event
+        # makes the open-retry loop and the inter-frame/reconnect sleeps
+        # interruptible so a stop request is honored promptly instead of
+        # after a multi-second timeout. _thread_stuck is set if a capture
+        # thread ever refuses to terminate; once set, this controller
+        # permanently refuses to start a new stream rather than risk
+        # opening the same device twice.
+        self._lifecycle_lock = threading.Lock()
+        self._stop_event = threading.Event()
+        self._thread_stuck: bool = False
+
+        # Protects the frame buffers (_image_data/_raw_image_data/
+        # _accumulator), which are written by the capture thread and read
+        # from the UI thread, so readers never observe a torn state (e.g.
+        # a fresh _image_data paired with a stale _raw_image_data) during
+        # a reconnect or source swap.
+        self._frame_lock = threading.Lock()
 
         # We no longer probe hardware directly because V4L2 and DirectShow
         # drivers often crash or drop buffers when aggressively queried.
@@ -287,11 +105,32 @@ class CameraController:
         self.config.changed.connect(self._on_config_changed)
         self.config.settings_changed.connect(self._on_config_changed)
 
+    def _source_key(self) -> tuple:
+        """A tuple identifying which physical source is being captured.
+
+        Used to detect when the camera's source (e.g. its local device
+        ID) changed underneath a running capture stream, which requires
+        closing the old device and opening the new one rather than just
+        continuing to read from the already-open capture.
+        """
+        return (self.config.source_type, self.config.device_id)
+
     def _on_config_changed(self, sender):
         """Reacts to changes in the data model."""
+        if self._disposed:
+            return
         self._settings_dirty = True
-        self._accumulator = None  # Reset smoothing if settings change
+        with self._frame_lock:
+            self._accumulator = None  # Reset smoothing if settings change
+        new_source_key = self._source_key()
+        source_changed = new_source_key != self._last_source_key
+        self._last_source_key = new_source_key
         if self.config.enabled and self._active_subscribers > 0:
+            if source_changed and self._running:
+                # The physical source changed (e.g. a different local
+                # camera was selected). Close the old device before
+                # opening the new one instead of leaving it running.
+                self._stop_capture_stream()
             self._start_capture_stream()
         elif not self.config.enabled:
             # Also stop if it's disabled, regardless of subscribers
@@ -304,57 +143,46 @@ class CameraController:
         Returns a list of strings, where each string is a device ID.
         On Linux, prefers persistent /dev/v4l/by-id/ paths.
         """
-        logger.debug("Scanning for camera devices...")
-        devices = []
-        backends = get_backends_for_platform()
-
-        if sys.platform.startswith("linux"):
-            targets = _get_linux_scan_targets()
-        else:
-            targets = [str(i) for i in range(10)]
-
-        for target in targets:
-            for backend, name in backends:
-                try:
-                    cap = cv2.VideoCapture(
-                        _to_videocapture_arg(target), backend
-                    )
-                    if cap.isOpened():
-                        devices.append(str(target))
-                        cap.release()
-                        logger.debug(f"Found camera {target} via {name}")
-                        break
-                except cv2.error as e:
-                    logger.debug(f"OpenCV error camera {target} {name}: {e}")
-                except OSError as e:
-                    logger.debug(f"Error camera {target}: {e}")
-
-        logger.info(f"Available cameras: {devices}")
+        logger.debug("Scanning for local camera devices...")
+        devices = list_local_device_ids()
+        logger.info("Available cameras: %s", devices)
         return devices
 
     @property
     def image_data(self) -> np.ndarray | None:
-        return self._image_data
+        with self._frame_lock:
+            return self._image_data
+
+    @property
+    def has_active_source(self) -> bool:
+        return self._active_source is not None
 
     @property
     def raw_image_data(self) -> np.ndarray | None:
-        return self._raw_image_data
+        with self._frame_lock:
+            return self._raw_image_data
 
     @property
     def pixbuf(self) -> Optional["GdkPixbuf.Pixbuf"]:
         # Import the UI library ONLY when this method is actually called.
         from gi.repository import GdkPixbuf, GLib
 
-        if self._image_data is None:
+        # Snapshot under the lock; the capture thread always replaces the
+        # buffer with a fresh array rather than mutating it in place, so
+        # the snapshot itself is safe to use without the lock held.
+        with self._frame_lock:
+            image = self._image_data
+
+        if image is None:
             return None
 
-        height, width, channels = self._image_data.shape
+        height, width, channels = image.shape
         if channels == 3:
             # OpenCV uses BGR, GdkPixbuf expects RGB
-            np_array = cv2.cvtColor(self._image_data, cv2.COLOR_BGR2RGB)
+            np_array = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             has_alpha = False
         elif channels == 4:
-            np_array = self._image_data
+            np_array = image
             has_alpha = True
         else:
             return None
@@ -378,9 +206,11 @@ class CameraController:
 
     @property
     def resolution(self) -> tuple[int, int]:
-        if self._image_data is None:
+        with self._frame_lock:
+            image = self._image_data
+        if image is None:
             return 640, 480
-        height, width, _ = self._image_data.shape
+        height, width, _ = image.shape
         return width, height
 
     @property
@@ -398,6 +228,12 @@ class CameraController:
         The stream will start if this is the first subscriber and the camera
         is enabled.
         """
+        if self._disposed:
+            logger.warning(
+                f"Ignoring subscribe() on disposed controller for "
+                f"{self.config.name}"
+            )
+            return
         self._active_subscribers += 1
         logger.debug(
             f"Camera {self.config.name} subscribed "
@@ -414,12 +250,33 @@ class CameraController:
         """
         if self._active_subscribers > 0:
             self._active_subscribers -= 1
+        else:
+            logger.warning(
+                f"Unbalanced unsubscribe() for camera {self.config.name}: "
+                f"subscriber count is already zero"
+            )
         logger.debug(
             f"Camera {self.config.name} unsubscribed "
             f"(count: {self._active_subscribers})"
         )
         if self._active_subscribers == 0:
             self._stop_capture_stream()
+
+    def dispose(self) -> None:
+        """Final teardown: stop the stream and drop model signal links.
+
+        Must be called exactly once, when this controller is permanently
+        retired (e.g. its camera was removed from the machine). Without
+        disconnecting from config.changed/settings_changed, a destroyed
+        controller stays wired to the model and a later, unrelated edit
+        reaching it could resurrect its capture thread.
+        """
+        if self._disposed:
+            return
+        self._disposed = True
+        self._stop_capture_stream()
+        self.config.changed.disconnect(self._on_config_changed)
+        self.config.settings_changed.disconnect(self._on_config_changed)
 
     def _compute_homography(self, image_height: int) -> np.ndarray:
         """
@@ -480,18 +337,23 @@ class CameraController:
         Returns:
             Aligned image as a NumPy array in BGR format, or None on failure
         """
-        if self._image_data is None:
+        # Snapshot under the lock so a concurrent frame update cannot
+        # change the buffer (or its dimensions) mid-transformation.
+        with self._frame_lock:
+            image = self._image_data
+
+        if image is None:
             logger.warning("No image data available.")
             return None
 
         if self.config.image_to_world is not None:
             return self._transform_with_homography(
-                self._image_data, output_size, physical_area
+                image, output_size, physical_area
             )
 
         out_width, out_height = output_size
         try:
-            return resize_linear_nd(self._image_data, (out_width, out_height))
+            return resize_linear_nd(image, (out_width, out_height))
         except cv2.error as e:
             logger.error(f"Failed to resize image: {e}")
             return None
@@ -551,51 +413,15 @@ class CameraController:
         M = H @ T
 
         try:
-            aligned_image = cv2.warpPerspective(
-                image, np.linalg.inv(M), output_size
-            )
-            return aligned_image
+            return cv2.warpPerspective(image, np.linalg.inv(M), output_size)
         except cv2.error as e:
             logger.error(f"Failed to apply perspective warp: {e}")
             return None
 
-    def _apply_settings(self, cap: cv2.VideoCapture):
+    def _apply_settings(self, source) -> None:
         """Applies the current settings to the VideoCapture object."""
         try:
-            if self.config.resolution is not None:
-                w, h = self.config.resolution
-                # Applying it once here is perfectly safe and natively clamped
-                # by drivers
-                cap.set(cv2.CAP_PROP_FRAME_WIDTH, w)
-                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, h)
-                actual_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                actual_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                if actual_w != w or actual_h != h:
-                    logger.debug(
-                        f"Camera driver accepted nearest hardware resolution: "
-                        f"requested {w}x{h}, got {actual_w}x{actual_h}"
-                    )
-
-            if self.config.prefer_yuyv:
-                yuyv = cv2.VideoWriter_fourcc(*"YUYV")  # type: ignore
-                if not cap.set(cv2.CAP_PROP_FOURCC, yuyv):
-                    logger.info(
-                        "YUYV not accepted by camera, leaving default format"
-                    )
-                else:
-                    try:
-                        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-                    except cv2.error:
-                        pass
-
-            if self.config.white_balance is None:
-                cap.set(cv2.CAP_PROP_AUTO_WB, 1)  # Enable auto white balance
-            else:
-                cap.set(cv2.CAP_PROP_AUTO_WB, 0)  # Disable auto white balance
-                cap.set(cv2.CAP_PROP_WB_TEMPERATURE, self.config.white_balance)
-            cap.set(cv2.CAP_PROP_CONTRAST, self.config.contrast)
-            cap.set(cv2.CAP_PROP_BRIGHTNESS, self.config.brightness)
-
+            source.apply_settings()
             self._settings_dirty = False
             logger.debug("Applied camera hardware settings.")
         except (cv2.error, OSError, ValueError) as e:
@@ -644,19 +470,21 @@ class CameraController:
         denoise_strength = getattr(self.config, "denoise", 0.0)
 
         if denoise_strength > 0.0:
-            if (
-                self._accumulator is None
-                or self._accumulator.shape != frame.shape
-            ):
-                self._accumulator = frame.astype(np.float32)
-            else:
-                alpha = 1.0 - denoise_strength
-                cv2.accumulateWeighted(frame, self._accumulator, alpha)
+            with self._frame_lock:
+                if (
+                    self._accumulator is None
+                    or self._accumulator.shape != frame.shape
+                ):
+                    self._accumulator = frame.astype(np.float32)
+                else:
+                    alpha = 1.0 - denoise_strength
+                    cv2.accumulateWeighted(frame, self._accumulator, alpha)
 
-            # Use the denoised result for subsequent processing
-            frame_to_process = self._accumulator.astype(np.uint8)
+                # Use the denoised result for subsequent processing
+                frame_to_process = self._accumulator.astype(np.uint8)
         else:
-            self._accumulator = None
+            with self._frame_lock:
+                self._accumulator = None
             frame_to_process = frame
 
         h, w = frame_to_process.shape[:2]
@@ -673,20 +501,29 @@ class CameraController:
 
         return frame_to_process
 
-    def _read_frame(self, cap) -> bool:
+    def _read_frame(self, source) -> bool:
         """Read frame from cap. Returns True on success."""
         try:
-            ret, frame = cap.read()
-            if not ret or frame is None:
-                logger.warning("Failed to capture frame from camera.")
-                self._image_data = None
-                self._raw_image_data = None
+            frame = source.read_frame()
+            if frame is None:
+                with self._frame_lock:
+                    self._image_data = None
+                    self._raw_image_data = None
                 return False
 
-            self._raw_image_data = frame.copy()
+            raw = frame.copy()
+            self._last_frame_warning_log_time = None
+            self._last_reconnect_warning_log_time = None
 
             # Apply all visual corrections
-            self._image_data = self._process_frame(frame)
+            processed = self._process_frame(frame)
+
+            # Publish both buffers atomically so a reader never observes a
+            # fresh _image_data paired with a stale _raw_image_data (or
+            # vice versa).
+            with self._frame_lock:
+                self._raw_image_data = raw
+                self._image_data = processed
 
             # Emit the signal in a GLib-safe way
             idle_add(self.image_captured.send, self)
@@ -695,27 +532,62 @@ class CameraController:
             logger.error(f"Error reading frame: {e}")
             return False
 
+    def _should_log_warning(
+        self, last_log_time: float | None, interval: float | None
+    ) -> bool:
+        if interval is None:
+            return True
+        now = time.monotonic()
+        return last_log_time is None or now - last_log_time >= interval
+
     def _handle_frame_failure(self):
         """Handle a failed frame read. Returns True if should reconnect."""
         self._consecutive_failures += 1
-        self._image_data = None
-        logger.warning(
-            f"Frame failure {self._consecutive_failures}/"
-            f"{self.MAX_CONSECUTIVE_FAILURES} for {self.config.name}"
-        )
+        with self._frame_lock:
+            self._image_data = None
         return self._consecutive_failures >= self.MAX_CONSECUTIVE_FAILURES
 
-    def _capture_frames_from_device(self, cap):
+    def _log_frame_failure(self, source) -> None:
+        interval = getattr(source, "warning_log_interval_seconds", None)
+        if not self._should_log_warning(
+            self._last_frame_warning_log_time, interval
+        ):
+            return
+        self._last_frame_warning_log_time = time.monotonic()
+        logger.warning(
+            "Frame failure %s/%s for %s",
+            self._consecutive_failures,
+            self.MAX_CONSECUTIVE_FAILURES,
+            self.config.name,
+        )
+
+    def _log_reconnect(self, source) -> None:
+        delay = getattr(
+            source, "reconnect_delay_seconds", self.RECONNECT_DELAY
+        )
+        interval = getattr(source, "warning_log_interval_seconds", None)
+        if self._should_log_warning(
+            self._last_reconnect_warning_log_time, interval
+        ):
+            self._last_reconnect_warning_log_time = time.monotonic()
+            logger.info(
+                "Waiting %ss before reconnecting %s...",
+                delay,
+                self.config.name,
+            )
+
+    def _capture_frames_from_source(self, source):
         """Capture frames from an opened device. Returns when should stop."""
         self._settings_dirty = True
         self._consecutive_failures = 0
-        self._accumulator = None
+        with self._frame_lock:
+            self._accumulator = None
 
-        while self._running and cap is not None:
+        while self._running:
             if self._settings_dirty:
-                self._apply_settings(cap)
+                self._apply_settings(source)
 
-            if self._read_frame(cap):
+            if self._read_frame(source):
                 self._consecutive_failures = 0
             elif self._handle_frame_failure():
                 logger.error(
@@ -723,8 +595,13 @@ class CameraController:
                     "reconnecting..."
                 )
                 return
+            else:
+                self._log_frame_failure(source)
 
-            time.sleep(self.FRAME_READ_TIMEOUT)
+            # Interruptible pacing wait: a stop() request wakes this up
+            # immediately instead of after the full frame interval.
+            if self._stop_event.wait(self.FRAME_READ_TIMEOUT):
+                return
 
     def _capture_loop(self):
         """
@@ -732,30 +609,43 @@ class CameraController:
         Runs in a separate thread.
         """
         logger.info(
-            f"Capture loop starting for {self.config.name} "
-            f"(device: {self.config.device_id})"
+            "Capture loop starting for %s (source: %s)",
+            self.config.name,
+            self.config.source_display_value(),
         )
 
         while self._running:
+            source = create_camera_source(self.config)
+            # Not all test doubles implement the full CameraSource
+            # interface; binding the cancel event is best-effort so a
+            # source that omits it still behaves like an ordinary,
+            # non-interruptible source.
+            bind_cancel_event = getattr(source, "bind_cancel_event", None)
+            if bind_cancel_event is not None:
+                bind_cancel_event(self._stop_event)
+            self._active_source = source
             try:
                 # Open the device ONCE
-                with VideoCaptureDevice(self.config.device_id) as cap:
-                    if cap is None:
-                        raise OSError("VideoCapture returned None")
-                    self._capture_frames_from_device(cap)
-            except OSError as e:
-                logger.error(f"IO error for {self.config.name}: {e}")
-            except cv2.error as e:
-                logger.error(f"OpenCV error for {self.config.name}: {e}")
+                source.open()
+                self._capture_frames_from_source(source)
+            except OSError as exc:
+                logger.error("IO error for %s: %s", self.config.name, exc)
+            except cv2.error as exc:
+                logger.error("OpenCV error for %s: %s", self.config.name, exc)
             except Exception:
-                logger.exception(f"Unexpected error for {self.config.name}")
+                logger.exception("Unexpected error for %s", self.config.name)
+            finally:
+                source.close()
+                if self._active_source is source:
+                    self._active_source = None
 
             if self._running:
-                logger.info(
-                    f"Waiting {self.RECONNECT_DELAY}s before "
-                    f"reconnecting {self.config.name}..."
+                reconnect_delay = getattr(
+                    source, "reconnect_delay_seconds", self.RECONNECT_DELAY
                 )
-                time.sleep(self.RECONNECT_DELAY)
+                self._log_reconnect(source)
+                if self._stop_event.wait(reconnect_delay):
+                    break
 
         logger.debug(
             f"Camera capture loop stopped for camera {self.config.name}."
@@ -764,7 +654,24 @@ class CameraController:
     def _start_capture_stream(self):
         """
         Starts a continuous image capture stream in a separate thread.
+
+        Serialized with `_stop_capture_stream` via `_lifecycle_lock` so
+        that a start racing a stop can never leave two capture threads
+        alive for the same controller.
         """
+        with self._lifecycle_lock:
+            self._start_locked()
+
+    def _start_locked(self):
+        """Starts the capture thread. Caller must hold `_lifecycle_lock`."""
+        if self._thread_stuck:
+            logger.error(
+                f"Refusing to start capture stream for {self.config.name}: "
+                "a previous capture thread never terminated and may "
+                "still hold the device open. Starting a new one here "
+                "could open the hardware twice."
+            )
+            return
         if self._running:
             logger.debug(
                 f"Capture stream already running for camera {self.config.name}"
@@ -772,14 +679,32 @@ class CameraController:
             return
 
         logger.debug(f"Starting capture stream for camera {self.config.name}.")
+        self._stop_event.clear()
         self._running = True
-        self._capture_thread = threading.Thread(target=self._capture_loop)
+        self._capture_thread = threading.Thread(
+            target=self._capture_loop,
+            name=f"CameraCapture-{self.config.name}",
+        )
         self._capture_thread.daemon = True  # Allow the main program to exit
         self._capture_thread.start()
 
     def _stop_capture_stream(self):
         """
         Stops the continuous image capture stream.
+
+        Serialized with `_start_capture_stream` via `_lifecycle_lock`.
+        """
+        with self._lifecycle_lock:
+            self._stop_locked()
+
+    def _stop_locked(self):
+        """Stops the capture thread. Caller must hold `_lifecycle_lock`.
+
+        Blocks until the capture thread has actually exited (or forces
+        its source closed and gives it one more chance to exit), so a
+        subsequent start can never leave two threads holding the same
+        device. If the thread still refuses to die, the controller marks
+        itself stuck and permanently refuses to start a new stream.
         """
         if not self._running:
             logger.debug(
@@ -789,34 +714,81 @@ class CameraController:
 
         logger.debug(f"Stopping capture stream for camera {self.config.name}.")
         self._running = False
-        if self._capture_thread and self._capture_thread.is_alive():
-            self._capture_thread.join(timeout=1.0)  # Wait for thread to finish
-            if self._capture_thread.is_alive():
-                logger.warning("Capture thread did not terminate gracefully.")
+        self._stop_event.set()
+        if self._active_source is not None:
+            # Interrupt a potentially blocking read/open before waiting
+            # on the thread.
+            self._active_source.stop()
+
+        thread = self._capture_thread
+        if thread is None or not thread.is_alive():
+            self._capture_thread = None
+            return
+
+        thread.join(timeout=self.STOP_JOIN_TIMEOUT)
+        if thread.is_alive():
+            logger.warning(
+                f"Capture thread for {self.config.name} did not exit "
+                f"within {self.STOP_JOIN_TIMEOUT}s; forcing its source "
+                "closed to try to unblock it."
+            )
+            if self._active_source is not None:
+                try:
+                    self._active_source.close()
+                except Exception:
+                    logger.exception(
+                        f"Error force-closing source for {self.config.name}"
+                    )
+            thread.join(timeout=self.STOP_JOIN_TIMEOUT)
+
+        if thread.is_alive():
+            self._thread_stuck = True
+            logger.error(
+                f"Capture thread for {self.config.name} refused to "
+                "terminate even after a forced close. Refusing to start "
+                "any new stream on this controller to avoid opening the "
+                "device twice."
+            )
+            return
+
         self._capture_thread = None
 
-    def capture_image(self):
+    def _clear_image_data(self) -> None:
+        """Drops the processed frame under the frame lock."""
+        with self._frame_lock:
+            self._image_data = None
+
+    def capture_image(self, *, apply_settings: bool = True):
         """
         Captures a single image from this camera device.
         """
+        source = create_camera_source(self.config)
         try:
-            with VideoCaptureDevice(self.config.device_id) as cap:
-                if cap is None:
-                    logger.error(
-                        f"Cannot capture: VideoCapture is None for "
-                        f"{self.config.device_id}"
-                    )
-                    self._image_data = None
-                    return
-                # Apply settings before capturing the single frame
-                self._apply_settings(cap)
-                self._read_frame(cap)
-        except OSError as e:
-            logger.error(f"IO error capturing image: {e}")
-            self._image_data = None
-        except cv2.error as e:
-            logger.error(f"OpenCV error capturing image: {e}")
-            self._image_data = None
+            if not apply_settings and hasattr(source, "open_for_preview"):
+                source.open_for_preview()
+            else:
+                source.open()
+            if apply_settings:
+                self._apply_settings(source)
+            elif hasattr(source, "apply_preview_settings"):
+                source.apply_preview_settings()
+            self._read_frame(source)
+        except OSError as exc:
+            logger.error("IO error capturing image: %s", exc)
+            self._clear_image_data()
+        except cv2.error as exc:
+            logger.error("OpenCV error capturing image: %s", exc)
+            self._clear_image_data()
         except Exception:
             logger.exception("Unexpected error capturing image")
-            self._image_data = None
+            self._clear_image_data()
+        finally:
+            source.close()
+
+    def read_current_source_settings(self) -> dict[str, object]:
+        source = create_camera_source(self.config)
+        try:
+            source.open()
+            return source.read_current_settings()
+        finally:
+            source.close()

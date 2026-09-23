@@ -142,12 +142,14 @@ class TestMigrateCameraData:
             data = {"name": "cam", "device_id": "0"}
             result = migrate_camera_data(data)
             assert result["device_id"] == "0"
+            assert result["source_config"]["device_id"] == "0"
 
     def test_by_id_path_returns_unchanged(self):
         path = "/dev/v4l/by-id/usb-Vendor_Product-video-index0"
         data = {"name": "cam", "device_id": path}
         result = migrate_camera_data(data)
         assert result["device_id"] == path
+        assert result["source_config"]["device_id"] == path
 
     def test_does_not_mutate_input(self):
         data = {"name": "cam", "device_id": "0"}
