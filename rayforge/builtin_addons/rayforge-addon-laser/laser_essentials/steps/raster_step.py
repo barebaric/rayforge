@@ -96,7 +96,7 @@ class EngraveStep(LaserStep):
                     key="threshold",
                     label=_("Threshold"),
                     description=_("Brightness cutoff for black/white (0-255)"),
-                    default=128,
+                    default=254,
                     min_val=0,
                     max_val=255,
                     visible_when=is_constant,
@@ -290,7 +290,7 @@ class EngraveStep(LaserStep):
         self.auto_levels = True
         self.black_point = 0
         self.white_point = 255
-        self.threshold = 128
+        self.threshold = 254
         self.line_interval_mm = None
         self.sample_interval_mm = None
         self.dot_width_correction_mm = None
@@ -539,7 +539,7 @@ class EngraveStep(LaserStep):
         step.white_point = data.get(
             "white_point", legacy.get("white_point", 255)
         )
-        step.threshold = data.get("threshold", legacy.get("threshold", 128))
+        step.threshold = data.get("threshold", legacy.get("threshold", 254))
         step.line_interval_mm = data.get(
             "line_interval_mm", legacy.get("line_interval_mm", None)
         )
