@@ -1,71 +1,104 @@
 """
-Tests for the Move-tab jog shortcuts honouring the PANEL presentation.
+Tests for the BottomPanel click-to-move mode state.
 
-The selection bounds arrive in WORLD coordinates, but the "Move to
-Lower-Left / Center / Upper-Right" buttons refer to the presented
-(PANEL) corners, so the target must be projected through the panel
-rotation before being converted to machine coordinates.
+The panel coordinate shortcuts (lower-left / center / upper-right /
+origin) moved into the MoveToPopover and are covered by
+tests/ui_gtk/machine/test_move_to_popover.py.
 """
 
 from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
-
-from rayforge.machine.models.machine_panel import PanelOrientation
+from blinker import Signal
 
 
 @pytest.fixture
-def bottom_panel(lite_context, sync_machine):
-    """A BottomPanel instance with Gtk initialization bypassed, wired to
-    a real 400x300 machine."""
+def bottom_panel_modes(sync_machine):
+    """A BottomPanel with mode state and signals wired, Gtk bypassed."""
     from rayforge.ui_gtk.doceditor.bottom_panel import BottomPanel
-
-    sync_machine.set_axis_extents(400, 300)
-    lite_context.config.set_machine(sync_machine)
 
     bottom: Any = BottomPanel.__new__(BottomPanel)
     bottom.machine = sync_machine
     bottom.machine_cmd = MagicMock()
-    # Selection bounds in WORLD coordinates.
-    bottom._get_bounds_callback = MagicMock(
-        return_value=(100.0, 50.0, 120.0, 60.0)
-    )
+    bottom._click_to_zero_mode = False
+    bottom._move_to_mode = False
+    bottom.click_to_zero_mode_changed = Signal()
+    bottom.move_to_mode_changed = Signal()
+    bottom._update_wcs_ui = MagicMock()
     return bottom
 
 
-@pytest.mark.parametrize(
-    "orientation, position, expected",
-    [
-        (PanelOrientation.NATIVE, "ll", (100.0, 50.0)),
-        (PanelOrientation.NATIVE, "center", (110.0, 55.0)),
-        (PanelOrientation.NATIVE, "ur", (120.0, 60.0)),
-        (PanelOrientation.ROTATED_RIGHT, "ll", (120.0, 50.0)),
-        (PanelOrientation.ROTATED_RIGHT, "center", (110.0, 55.0)),
-        (PanelOrientation.ROTATED_RIGHT, "ur", (100.0, 60.0)),
-        (PanelOrientation.ROTATED_LEFT, "ll", (100.0, 60.0)),
-        (PanelOrientation.ROTATED_LEFT, "center", (110.0, 55.0)),
-        (PanelOrientation.ROTATED_LEFT, "ur", (120.0, 50.0)),
-    ],
-)
 @pytest.mark.ui
-def test_move_to_position_honors_panel(
-    bottom_panel, orientation, position, expected
-):
-    """The jog shortcuts target the presented corners of the selection."""
-    bottom_panel.machine.panel.set_orientation(orientation)
+def test_set_move_to_mode_emits_signal(bottom_panel_modes):
+    emissions = []
 
-    bottom_panel._on_move_to_position(None, position)
+    def on_move_to_mode_changed(sender, **kw):
+        emissions.append(kw["active"])
 
-    bottom_panel.machine_cmd.move_to.assert_called_once_with(
-        bottom_panel.machine, *expected
+    bottom_panel_modes.move_to_mode_changed.connect(on_move_to_mode_changed)
+
+    bottom_panel_modes.set_move_to_mode(True)
+
+    assert bottom_panel_modes._move_to_mode is True
+    assert emissions == [True]
+
+
+@pytest.mark.ui
+def test_set_move_to_mode_idempotent(bottom_panel_modes):
+    emissions = []
+
+    def on_move_to_mode_changed(sender, **kw):
+        emissions.append(kw["active"])
+
+    bottom_panel_modes.move_to_mode_changed.connect(on_move_to_mode_changed)
+
+    bottom_panel_modes.set_move_to_mode(True)
+    bottom_panel_modes.set_move_to_mode(True)
+
+    assert emissions == [True]
+
+
+@pytest.mark.ui
+def test_click_to_move_toggled_flips_mode(bottom_panel_modes):
+    emissions = []
+
+    def on_move_to_mode_changed(sender, **kw):
+        emissions.append(kw["active"])
+
+    bottom_panel_modes.move_to_mode_changed.connect(on_move_to_mode_changed)
+
+    bottom_panel_modes._on_click_to_move_toggled(None)
+
+    assert bottom_panel_modes._move_to_mode is True
+    assert emissions == [True]
+
+
+@pytest.mark.ui
+def test_move_to_mode_deactivates_click_to_zero(bottom_panel_modes):
+    zero_emissions = []
+
+    def on_click_to_zero_changed(sender, **kw):
+        zero_emissions.append(kw["active"])
+
+    bottom_panel_modes.click_to_zero_mode_changed.connect(
+        on_click_to_zero_changed
     )
+    bottom_panel_modes.set_click_to_zero_mode(True)
+    zero_emissions.clear()
+
+    bottom_panel_modes.set_move_to_mode(True)
+
+    assert bottom_panel_modes._move_to_mode is True
+    assert bottom_panel_modes._click_to_zero_mode is False
+    assert zero_emissions == [False]
 
 
 @pytest.mark.ui
-def test_move_to_position_no_bounds_returns(bottom_panel):
-    bottom_panel._get_bounds_callback = MagicMock(return_value=None)
+def test_click_to_zero_mode_deactivates_move_to_mode(bottom_panel_modes):
+    bottom_panel_modes.set_move_to_mode(True)
 
-    bottom_panel._on_move_to_position(None, "ll")
+    bottom_panel_modes.set_click_to_zero_mode(True)
 
-    bottom_panel.machine_cmd.move_to.assert_not_called()
+    assert bottom_panel_modes._click_to_zero_mode is True
+    assert bottom_panel_modes._move_to_mode is False

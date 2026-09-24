@@ -47,7 +47,7 @@ GRBL_DIALECT_YAML = {
     "air_assist_off": "M9",
     "home_all": "$H",
     "home_axis": "$H{axis_letter}",
-    "move_to": "$J=G90 G21 F{speed} X{x} Y{y}",
+    "move_to": "$J=G90 G21 F{speed} X{x} Y{y}{z_cmd}",
     "jog": "$J=G91 G21 F{speed}",
     "clear_alarm": "$X",
     "set_wcs_offset": "G10 L2 P{p_num} X{x} Y{y} Z{z}",

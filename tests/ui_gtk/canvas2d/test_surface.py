@@ -254,3 +254,118 @@ def test_set_stock_visible_noop_when_unchanged(surface):
 
     surface.set_stock_visible(False)
     surface.find_by_type.assert_not_called()
+
+
+def _wire_move_head_mode(surface):
+    """Attach the move-head mode state to a bare WorkSurface."""
+    surface._click_to_zero_mode = False
+    surface._move_head_mode = False
+    surface.right_click_context = None
+    surface.machine = None
+    surface.edit_context = None
+    surface.move_head_requested = Signal()
+    surface.move_head_cancelled = Signal()
+    surface._get_world_coords = MagicMock(return_value=(10.0, 20.0))
+    surface.set_cursor = MagicMock()
+    return surface
+
+
+def _wire_machine(surface):
+    machine = MagicMock()
+    machine.panel.panel_point_to_machine.return_value = (5.0, 6.0)
+    surface.machine = machine
+    return machine
+
+
+def _collect_coords(signal):
+    """Connects a receiver and returns the collected (x, y) list."""
+    emissions = []
+
+    def on_requested(sender, **kw):
+        emissions.append((kw["x"], kw["y"]))
+
+    signal.connect(on_requested, weak=False)
+    return emissions
+
+
+@pytest.mark.ui
+def test_click_in_move_head_mode_emits_machine_coords(surface):
+    from gi.repository import Gdk
+
+    _wire_move_head_mode(surface)
+    machine = _wire_machine(surface)
+    surface._move_head_mode = True
+
+    emissions = _collect_coords(surface.move_head_requested)
+
+    gesture = MagicMock()
+    gesture.get_button.return_value = Gdk.BUTTON_PRIMARY
+    surface.on_button_press(gesture, 1, 100.0, 100.0)
+
+    assert emissions == [(5.0, 6.0)]
+    machine.panel.panel_point_to_machine.assert_called_once_with(10.0, 20.0)
+
+
+@pytest.mark.ui
+def test_click_in_move_head_mode_without_machine_emits_world_coords(
+    surface,
+):
+    from gi.repository import Gdk
+
+    _wire_move_head_mode(surface)
+    surface._move_head_mode = True
+
+    emissions = _collect_coords(surface.move_head_requested)
+
+    gesture = MagicMock()
+    gesture.get_button.return_value = Gdk.BUTTON_PRIMARY
+    surface.on_button_press(gesture, 1, 100.0, 100.0)
+
+    assert emissions == [(10.0, 20.0)]
+
+
+@pytest.mark.ui
+def test_click_not_emitted_when_move_head_mode_inactive(surface, mocker):
+    from gi.repository import Gdk
+
+    from rayforge.ui_gtk.canvas.worldsurface import WorldSurface
+
+    _wire_move_head_mode(surface)
+    mocker.patch.object(WorldSurface, "on_button_press", return_value=None)
+
+    emissions = _collect_coords(surface.move_head_requested)
+
+    gesture = MagicMock()
+    gesture.get_button.return_value = Gdk.BUTTON_PRIMARY
+    surface.on_button_press(gesture, 1, 100.0, 100.0)
+
+    assert emissions == []
+
+
+@pytest.mark.ui
+def test_right_click_cancels_move_head_mode(surface):
+    _wire_move_head_mode(surface)
+    surface._move_head_mode = True
+
+    emissions = []
+
+    def on_cancelled(sender):
+        emissions.append(sender)
+
+    surface.move_head_cancelled.connect(on_cancelled)
+
+    surface.on_right_click_pressed(MagicMock(), 1, 5.0, 5.0)
+
+    assert len(emissions) == 1
+
+
+@pytest.mark.ui
+def test_set_move_head_mode_resets_cursor(surface):
+    _wire_move_head_mode(surface)
+
+    surface.set_move_head_mode(True)
+    assert surface._move_head_mode is True
+
+    surface.set_move_head_mode(False)
+    assert surface._move_head_mode is False
+    surface.set_cursor.assert_called_with(None)

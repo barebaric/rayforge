@@ -92,6 +92,12 @@ class WorkSurface(WorldSurface):
         # Click-to-zero mode state
         self._click_to_zero_mode = False
 
+        # Click-to-move-head mode state
+        self._move_head_mode = False
+
+        # Machine-frame position of the last right-click (background)
+        self.right_click_machine_pos: tuple[float, float] | None = None
+
         # Ops rendering suppression for lazy ops rendering (Idea 5).
         # During pan/zoom/drag, ops drawing and pipeline context updates
         # are suppressed. They are restored after ~200ms of idle time.
@@ -167,6 +173,13 @@ class WorkSurface(WorldSurface):
 
         # Signal to cancel click-to-zero mode
         self.click_to_zero_cancelled = Signal()
+
+        # Signal to move the laser head to the clicked position
+        # Sends: (x, y) in machine coordinates
+        self.move_head_requested = Signal()
+
+        # Signal to cancel click-to-move-head mode
+        self.move_head_cancelled = Signal()
 
         # Signal for context menu extension - addons can connect to add items
         # Sends: (item, gesture, menu)
@@ -338,8 +351,18 @@ class WorkSurface(WorldSurface):
             self.click_to_zero_cancelled.send(self)
             return
 
+        if self._move_head_mode and n_press == 1:
+            self.move_head_cancelled.send(self)
+            return
+
         self.right_click_context = None  # Reset context on each click
         world_x, world_y = self._get_world_coords(x, y)
+        if self.machine:
+            self.right_click_machine_pos = (
+                self.machine.panel.panel_point_to_machine(world_x, world_y)
+            )
+        else:
+            self.right_click_machine_pos = (world_x, world_y)
         hit_elem = self.root.get_elem_hit(world_x, world_y, selectable=True)
 
         if not hit_elem or hit_elem is self.root:
@@ -600,6 +623,22 @@ class WorkSurface(WorldSurface):
             self.work_zero_requested.send(self, x=machine_x, y=machine_y)
             return
 
+        # Handle click-to-move-head mode
+        if (
+            self._move_head_mode
+            and gesture.get_button() == Gdk.BUTTON_PRIMARY
+            and n_press == 1
+        ):
+            world_x, world_y = self._get_world_coords(x, y)
+            if self.machine:
+                machine_x, machine_y = (
+                    self.machine.panel.panel_point_to_machine(world_x, world_y)
+                )
+            else:
+                machine_x, machine_y = world_x, world_y
+            self.move_head_requested.send(self, x=machine_x, y=machine_y)
+            return
+
         # A left-click should clear any lingering right-click context.
         if (
             gesture.get_button() == Gdk.BUTTON_PRIMARY
@@ -654,13 +693,13 @@ class WorkSurface(WorldSurface):
                 self.editor.layer.set_active_layer(active_layer)
 
     def on_motion(self, gesture: Gtk.Gesture, x: float, y: float) -> None:
-        if self._click_to_zero_mode:
+        if self._click_to_zero_mode or self._move_head_mode:
             self.set_cursor(Gdk.Cursor.new_from_name("crosshair"))
             return
         super().on_motion(gesture, x, y)
 
     def on_motion_leave(self, controller: Gtk.EventControllerMotion) -> None:
-        if self._click_to_zero_mode:
+        if self._click_to_zero_mode or self._move_head_mode:
             self.set_cursor(None)
         super().on_motion_leave(controller)
 
@@ -896,6 +935,12 @@ class WorkSurface(WorldSurface):
     def set_click_to_zero_mode(self, active: bool):
         """Sets whether click-to-zero mode is active."""
         self._click_to_zero_mode = active
+        if not active:
+            self.set_cursor(None)
+
+    def set_move_head_mode(self, active: bool):
+        """Sets whether click-to-move-head mode is active."""
+        self._move_head_mode = active
         if not active:
             self.set_cursor(None)
 

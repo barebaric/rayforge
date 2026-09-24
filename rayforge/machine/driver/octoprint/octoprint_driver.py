@@ -823,16 +823,21 @@ class OctoPrintDriver(Driver):
             json={"command": "home", "axes": axis_list},
         )
 
-    async def move_to(self, pos_x: float, pos_y: float) -> None:
+    async def move_to(
+        self, pos_x: float, pos_y: float, pos_z: float | None = None
+    ) -> None:
+        params: dict[str, Any] = {
+            "command": "jog",
+            "x": self._to_machine_length(pos_x),
+            "y": self._to_machine_length(pos_y),
+            "absolute": True,
+        }
+        if pos_z is not None:
+            params["z"] = self._to_machine_length(pos_z)
         await self._api_request(
             "POST",
             "/api/printer/printhead",
-            json={
-                "command": "jog",
-                "x": self._to_machine_length(pos_x),
-                "y": self._to_machine_length(pos_y),
-                "absolute": True,
-            },
+            json=params,
         )
 
     def can_jog(self, axis: Axis | None = None) -> bool:

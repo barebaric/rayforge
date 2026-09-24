@@ -1272,6 +1272,37 @@ class TestGrblSerialDriver:
         await cmd_task
 
     @pytest.mark.asyncio
+    async def test_move_to_with_z_appends_z_target(
+        self, connected_driver: GrblSerialDriver, mock_serial_transport
+    ):
+        """A Z target is appended to the move_to command."""
+        driver = connected_driver
+
+        cmd_task = asyncio.create_task(driver.move_to(10.5, 20.0, 5.0))
+        await asyncio.sleep(0.01)
+        mock_serial_transport.send.assert_called_once_with(
+            b"$J=G90 G21 F1500 X10.5 Y20.0 Z5.0\n"
+        )
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
+        await cmd_task
+
+    @pytest.mark.asyncio
+    async def test_move_to_with_z_imperial_converts(
+        self, connected_driver: GrblSerialDriver, mock_serial_transport
+    ):
+        """Imperial machine: the Z move converts mm values to inches."""
+        driver = connected_driver
+        driver._machine.unit_system = UnitSystem.IMPERIAL
+
+        cmd_task = asyncio.create_task(driver.move_to(25.4, 50.8, 12.7))
+        await asyncio.sleep(0.01)
+        mock_serial_transport.send.assert_called_once_with(
+            b"$J=G90 G21 F59.0551 X1.0 Y2.0 Z0.5\n"
+        )
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
+        await cmd_task
+
+    @pytest.mark.asyncio
     async def test_jog_imperial_converts(
         self, connected_driver: GrblSerialDriver, mock_serial_transport
     ):
