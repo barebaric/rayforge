@@ -102,7 +102,13 @@ class TestMachineCmdJobMonitoring:
 
     @pytest.mark.asyncio
     async def test_send_job_granular_progress(
-        self, machine_cmd, machine, simple_ops, job_artifact, mocker
+        self,
+        machine_cmd,
+        doc_editor,
+        machine,
+        simple_ops,
+        job_artifact,
+        mocker,
     ):
         """
         Tests the full monitoring flow for a driver that reports
@@ -136,6 +142,11 @@ class TestMachineCmdJobMonitoring:
         # to run before we proceed with assertions.
         await asyncio.sleep(0)
 
+        # The job's machine hours update re-emits machine.changed via
+        # the scheduler, which arms a debounced rebuild. Settle the
+        # editor so no rebuild task lingers into teardown.
+        await doc_editor.wait_until_settled()
+
         # --- Assert ---
         # 1. Verify job lifecycle signals
         job_started_spy.assert_called_once()
@@ -151,7 +162,13 @@ class TestMachineCmdJobMonitoring:
 
     @pytest.mark.asyncio
     async def test_send_job_non_granular_progress(
-        self, machine_cmd, machine, simple_ops, job_artifact, mocker
+        self,
+        machine_cmd,
+        doc_editor,
+        machine,
+        simple_ops,
+        job_artifact,
+        mocker,
     ):
         """
         Tests the monitoring flow for a driver that does not report
@@ -191,6 +208,11 @@ class TestMachineCmdJobMonitoring:
         # Explicitly wait for the job_finished signal
         # handler to run. This eliminates the race condition.
         await asyncio.wait_for(job_finished_event.wait(), timeout=1)
+
+        # The job's machine hours update re-emits machine.changed via
+        # the scheduler, which arms a debounced rebuild. Settle the
+        # editor so no rebuild task lingers into teardown.
+        await doc_editor.wait_until_settled()
 
         # --- Assert ---
         # 1. Verify driver was called correctly
