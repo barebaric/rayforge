@@ -5,6 +5,19 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## UNRELEASED
+
+### Added
+
+- Machine control: the laser head can now be moved to an arbitrary
+  position. A "Move to Position" popover in the Current Position area
+  offers direct X/Y (and Z, when available) coordinate entry and hosts
+  the selection/workarea corner and WCS origin shortcuts, a "Click
+  Canvas to Move Head" mode mirrors Click to Zero, and the canvas
+  background context menu gains a "Move Head Here" action (#452)
+- Drivers: `move_to` accepts an optional absolute Z target; machines
+  with a Z axis receive it in the same move
+
 ## 1.11.1
 
 ### Fixed

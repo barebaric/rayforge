@@ -302,6 +302,32 @@ class TestMachineCmdJog:
         jog_mock.assert_called_once_with(deltas, 1500)
 
 
+class TestMachineCmdMoveTo:
+    """Test suite for the absolute move_to command in MachineCmd."""
+
+    @pytest.mark.asyncio
+    async def test_move_to_xy(self, machine_cmd, machine, mocker, task_mgr):
+        move_mock = mocker.patch.object(
+            machine.driver, "move_to", new_callable=mocker.AsyncMock
+        )
+
+        machine_cmd.move_to(machine, 10.0, 20.0)
+
+        await wait_for_tasks_to_finish(task_mgr)
+        move_mock.assert_called_once_with(10.0, 20.0, None)
+
+    @pytest.mark.asyncio
+    async def test_move_to_xyz(self, machine_cmd, machine, mocker, task_mgr):
+        move_mock = mocker.patch.object(
+            machine.driver, "move_to", new_callable=mocker.AsyncMock
+        )
+
+        machine_cmd.move_to(machine, 10.0, 20.0, 5.0)
+
+        await wait_for_tasks_to_finish(task_mgr)
+        move_mock.assert_called_once_with(10.0, 20.0, 5.0)
+
+
 class TestMachineCmdLaserPower:
     """Test suite for manual laser power commands."""
 

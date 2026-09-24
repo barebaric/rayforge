@@ -150,7 +150,7 @@ class GcodeContext:
             "air_assist_off": set(),
             "home_all": set(),
             "home_axis": {"axis_letter"},
-            "move_to": {"speed", "x", "y", "z"},
+            "move_to": move_vars | {"s_command", "speed"},
             "jog": {"speed"},
             "clear_alarm": set(),
             "set_wcs_offset": {"p_num", "x", "y", "z"},

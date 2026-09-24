@@ -137,6 +137,8 @@ class DeviceError:
 
 Pos = tuple[float | None, ...]  # x, y, z[, a] in mm
 
+MOVE_TO_SPEED_MM_MIN = 1500  # Fixed speed for absolute move commands
+
 
 @dataclass
 class DeviceState:
@@ -326,6 +328,24 @@ class Driver(ABC):
         if scale == 1.0:
             return mm_per_min
         return round(mm_per_min * scale, 4)
+
+    def _format_move_to(
+        self, pos_x: float, pos_y: float, pos_z: float | None = None
+    ) -> str:
+        """
+        Format an absolute positioning move for emission.
+
+        Values are given in mm and converted to the machine's unit
+        system. When a Z target is given it is carried in the same
+        move via the dialect's travel_move template.
+        """
+        z = self._to_machine_length(pos_z) if pos_z is not None else None
+        return self.dialect.format_move_to(
+            x=self._to_machine_length(pos_x),
+            y=self._to_machine_length(pos_y),
+            speed=self._to_machine_speed(MOVE_TO_SPEED_MM_MIN),
+            z=z,
+        )
 
     def _from_machine_length(self, value: float) -> float:
         """
@@ -581,9 +601,15 @@ class Driver(ABC):
         """
 
     @abstractmethod
-    async def move_to(self, pos_x: float, pos_y: float) -> None:
+    async def move_to(
+        self,
+        pos_x: float,
+        pos_y: float,
+        pos_z: float | None = None,
+    ) -> None:
         """
-        Moves to the given position. Values are given mm.
+        Moves to the given position. Values are given mm. When pos_z is
+        given, it is targeted as an absolute Z position in the same move.
         """
 
     @abstractmethod

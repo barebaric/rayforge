@@ -1417,13 +1417,8 @@ class GrblSerialDriver(Driver):
         self.state.error = None
         self.state_changed.send(self, state=self.state)
 
-    async def move_to(self, pos_x, pos_y) -> None:
-        dialect = self.dialect
-        cmd = dialect.move_to.format(
-            speed=self._to_machine_speed(1500),
-            x=self._to_machine_length(float(pos_x)),
-            y=self._to_machine_length(float(pos_y)),
-        )
+    async def move_to(self, pos_x, pos_y, pos_z=None) -> None:
+        cmd = self._format_move_to(float(pos_x), float(pos_y), pos_z)
         await self._execute_command(cmd)
 
     async def select_tool(self, tool_number: int) -> None:

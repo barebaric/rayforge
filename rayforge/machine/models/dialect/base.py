@@ -309,6 +309,35 @@ class GcodeDialect:
             return template.format(p_num=p_num, x=x, y=y)
         return self.set_wcs_offset.format(p_num=p_num, x=x, y=y, z=z)
 
+    def format_move_to(
+        self,
+        x: float | str,
+        y: float | str,
+        speed: float | str | None = None,
+        z: float | str | None = None,
+    ) -> str:
+        """Format an absolute positioning move for emission.
+
+        Both the raw axis values and the axis-fragment variables of
+        the G-code encoder are supplied, so templates may use either
+        convention; a template that wants a removable Z word uses the
+        ``{z_cmd}`` fragment, which is empty when no Z target is
+        given. Values are pre-converted strings or floats; the caller
+        is responsible for converting to the machine's unit system
+        before calling this.
+        """
+        return self.move_to.format(
+            x=x,
+            y=y,
+            speed=speed,
+            x_cmd=f" X{x}",
+            y_cmd=f" Y{y}",
+            z_cmd=f" Z{z}" if z is not None else "",
+            extra_cmd="",
+            f_command="",
+            s_command="",
+        )
+
     def to_dict(self) -> dict[str, Any]:
         """Serializes the dialect to a dictionary."""
         result = asdict(self)

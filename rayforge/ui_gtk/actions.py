@@ -491,6 +491,7 @@ class ActionManager:
             self.win.on_zero_here_clicked,
             GLib.VariantType.new("s"),
         )
+        self._add_action("move-head-here", self.win.on_move_head_here_clicked)
 
         action_extension_registry.invoke_setup_handlers(self)
 

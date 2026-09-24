@@ -942,17 +942,21 @@ class RuidaRPAAdapter(Driver):
         if axes is not None and (axes & Axis.Z):
             await loop.run_in_executor(None, self._backend.home_z)
 
-    async def move_to(self, pos_x: float, pos_y: float) -> None:
+    async def move_to(
+        self, pos_x: float, pos_y: float, pos_z: float | None = None
+    ) -> None:
         """Move to an absolute position in machine-frame mm.
 
         Coordinates are machine-frame (same frame as POSITION_* status
         reporting: +X left of home, +Y down from home) and are passed
-        through unchanged to the backend jog_xy_to.
+        through unchanged to the backend jog_xy_to. Absolute Z moves
+        are not supported by the backend and are ignored.
         """
         logger.info(
-            "move_to x=%.3f y=%.3f",
+            "move_to x=%.3f y=%.3f z=%s",
             pos_x,
             pos_y,
+            pos_z,
             extra=self._log_extra("TUI_RPC" if self._tui_mode else "RPA"),
         )
         if self._backend is None:

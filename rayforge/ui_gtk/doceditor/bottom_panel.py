@@ -18,6 +18,7 @@ from ..icons import get_icon
 from ..machine.console import Console
 from ..machine.jog_widget import JogWidget
 from ..machine.laser_control_widget import LaserControlWidget
+from ..machine.move_to_popover import MoveToPopover
 from ..machine.wcs_dialog import WcsDialog
 from ..shared.dock_item import DockItem
 from ..shared.dock_layout import DockLayout
@@ -54,6 +55,7 @@ class BottomPanel(Gtk.Box):
 
         self.notification_requested = Signal()
         self.click_to_zero_mode_changed = Signal()
+        self.move_to_mode_changed = Signal()
         self.tab_changed = Signal()
         self.layout_changed = Signal()
         self.edit_item_requested = Signal()
@@ -63,6 +65,7 @@ class BottomPanel(Gtk.Box):
         self.doc = None
         self._edit_dialog = None
         self._click_to_zero_mode = False
+        self._move_to_mode = False
         self._updating_wcs_ui = False
         self._active_layer = None
         self._get_bounds_callback: (
@@ -355,45 +358,15 @@ class BottomPanel(Gtk.Box):
         position_button_box.set_spacing(6)
         self.position_row.add_suffix(position_button_box)
 
-        self.move_ll_btn = Gtk.Button(child=get_icon("bottom-left-symbolic"))
-        self.move_ll_btn.add_css_class("flat")
-        self.move_ll_btn.set_size_request(40, -1)
-        self.move_ll_btn.connect("clicked", self._on_move_to_position, "ll")
-        self.move_ll_btn.set_tooltip_text(
-            _("Move to Lower-Left of Selection or Workarea")
-        )
-        position_button_box.append(self.move_ll_btn)
-
-        self.move_center_btn = Gtk.Button(child=get_icon("center-symbolic"))
-        self.move_center_btn.add_css_class("flat")
-        self.move_center_btn.set_size_request(40, -1)
-        self.move_center_btn.connect(
-            "clicked", self._on_move_to_position, "center"
-        )
-        self.move_center_btn.set_tooltip_text(
-            _("Move to Center of Selection or Workarea")
-        )
-        position_button_box.append(self.move_center_btn)
-
-        self.move_ur_btn = Gtk.Button(child=get_icon("top-right-symbolic"))
-        self.move_ur_btn.add_css_class("flat")
-        self.move_ur_btn.set_size_request(40, -1)
-        self.move_ur_btn.connect("clicked", self._on_move_to_position, "ur")
-        self.move_ur_btn.set_tooltip_text(
-            _("Move to Upper-Right of Selection or Workarea")
-        )
-        position_button_box.append(self.move_ur_btn)
-
-        self.move_origin_btn = Gtk.Button(
-            child=get_icon("goto-origin-symbolic")
-        )
-        self.move_origin_btn.add_css_class("flat")
-        self.move_origin_btn.set_size_request(40, -1)
-        self.move_origin_btn.connect("clicked", self._on_move_to_wcs_zero)
-        self.move_origin_btn.set_tooltip_text(
-            _("Move to Origin of Active WCS")
-        )
-        position_button_box.append(self.move_origin_btn)
+        self.move_to_popover = MoveToPopover()
+        if self.machine and self.machine_cmd:
+            self.move_to_popover.set_machine(self.machine, self.machine_cmd)
+        self.move_to_btn = Gtk.MenuButton(popover=self.move_to_popover)
+        self.move_to_btn.set_child(get_icon("compass-symbolic"))
+        self.move_to_btn.add_css_class("flat")
+        self.move_to_btn.set_size_request(40, -1)
+        self.move_to_btn.set_tooltip_text(_("Move to Coordinates"))
+        position_button_box.append(self.move_to_btn)
 
         self.zero_row = Adw.ActionRow(title=_("Zero Axes"))
         self.wcs_group.add(self.zero_row)
@@ -452,6 +425,15 @@ class BottomPanel(Gtk.Box):
         self.click_to_zero_btn.set_tooltip_text(
             _("Click on canvas to set work zero")
         )
+
+        self.click_to_move_btn = Gtk.Button(child=get_icon("move-symbolic"))
+        self.click_to_move_btn.set_tooltip_text(_("Click Canvas to Move Head"))
+        self.click_to_move_btn.add_css_class("flat")
+        self.click_to_move_btn.set_size_request(40, -1)
+        self.click_to_move_btn.connect(
+            "clicked", self._on_click_to_move_toggled
+        )
+        zero_button_box.append(self.click_to_move_btn)
 
         self.speed_row = SpeedSpinRow(
             _("Jog Speed"),
@@ -517,6 +499,7 @@ class BottomPanel(Gtk.Box):
         if self.machine and self.machine_cmd:
             self.jog_widget.set_machine(self.machine, self.machine_cmd)
             self.laser_control.set_machine(self.machine, self.machine_cmd)
+            self.move_to_popover.set_machine(self.machine, self.machine_cmd)
 
     def _on_wcs_selection_changed(self, combo_row, _pspec):
         if self._updating_wcs_ui:
@@ -550,8 +533,18 @@ class BottomPanel(Gtk.Box):
     def set_click_to_zero_mode(self, active: bool):
         if self._click_to_zero_mode != active:
             self._click_to_zero_mode = active
+            if active:
+                self.set_move_to_mode(False)
             self._update_wcs_ui()
             self.click_to_zero_mode_changed.send(self, active=active)
+
+    def set_move_to_mode(self, active: bool):
+        if self._move_to_mode != active:
+            self._move_to_mode = active
+            if active:
+                self.set_click_to_zero_mode(False)
+            self._update_wcs_ui()
+            self.move_to_mode_changed.send(self, active=active)
 
     def set_get_bounds_callback(
         self,
@@ -559,6 +552,7 @@ class BottomPanel(Gtk.Box):
         | None,
     ):
         self._get_bounds_callback = callback
+        self.move_to_popover.set_get_bounds_callback(callback)
 
     def update_position_menu_sensitivity(self):
         if not self.machine:
@@ -567,64 +561,15 @@ class BottomPanel(Gtk.Box):
         is_connected = self.machine.is_connected()
         is_active = is_connected or is_dummy
 
-        has_bounds = (
-            self._get_bounds_callback is not None
-            and self._get_bounds_callback() is not None
-        )
-        self.move_ll_btn.set_sensitive(has_bounds and is_active)
-        self.move_center_btn.set_sensitive(has_bounds and is_active)
-        self.move_ur_btn.set_sensitive(has_bounds and is_active)
-        self.move_origin_btn.set_sensitive(is_active)
-
-    def _on_move_to_position(self, button, position: str):
-        if not self.machine or not self.machine_cmd:
-            return
-        if not self._get_bounds_callback:
-            return
-
-        bounds = self._get_bounds_callback()
-        if not bounds:
-            return
-
-        min_x, min_y, max_x, max_y = bounds
-
-        # The bounds are in WORLD coordinates while the buttons refer to
-        # the presented (PANEL) corners, so project the selection into
-        # PANEL space before picking the corner.
-        panel = self.machine.panel
-        panel_min_x, panel_min_y, panel_max_x, panel_max_y = (
-            panel.world_bbox_to_panel((min_x, min_y, max_x, max_y))
-        )
-
-        if position == "ll":
-            panel_x, panel_y = panel_min_x, panel_min_y
-        elif position == "center":
-            panel_x, panel_y = (
-                (panel_min_x + panel_max_x) / 2,
-                (panel_min_y + panel_max_y) / 2,
-            )
-        elif position == "ur":
-            panel_x, panel_y = panel_max_x, panel_max_y
-        else:
-            return
-
-        machine_x, machine_y = panel.panel_point_to_machine(panel_x, panel_y)
-        wcs_offset = self.machine.get_active_wcs_offset()
-        x_off, y_off, _ = panel.get_command_offset(
-            wcs_offset=wcs_offset,
-            wcs_is_workarea_origin=self.machine.wcs_origin_is_workarea_origin,
-        )
-        self.machine_cmd.move_to(
-            self.machine, machine_x - x_off, machine_y - y_off
-        )
-
-    def _on_move_to_wcs_zero(self, button):
-        if not self.machine or not self.machine_cmd:
-            return
-        self.machine_cmd.move_to(self.machine, 0.0, 0.0)
+        self.move_to_btn.set_sensitive(is_active)
+        self.click_to_move_btn.set_sensitive(is_active)
+        self.move_to_popover.update_sensitivity()
 
     def _on_click_to_zero_toggled(self, button):
         self.set_click_to_zero_mode(not self._click_to_zero_mode)
+
+    def _on_click_to_move_toggled(self, button):
+        self.set_move_to_mode(not self._move_to_mode)
 
     def _on_edit_offsets_clicked(self, button):
         if not self.machine:
@@ -635,10 +580,11 @@ class BottomPanel(Gtk.Box):
             machine=self.machine,
             transient_for=root if isinstance(root, Gtk.Window) else None,
         )
-        self._edit_dialog.connect(
-            "destroy", lambda *_: setattr(self, "_edit_dialog", None)
-        )
+        self._edit_dialog.connect("destroy", self._on_edit_dialog_destroy)
         self._edit_dialog.present()
+
+    def _on_edit_dialog_destroy(self, *_):
+        self._edit_dialog = None
 
     def _on_wcs_updated(self, machine):
         self._update_wcs_ui()

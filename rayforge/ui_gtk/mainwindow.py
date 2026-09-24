@@ -467,6 +467,8 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.click_to_zero_cancelled.connect(
             self._on_click_to_zero_cancelled
         )
+        self.surface.move_head_requested.connect(self._on_move_head_requested)
+        self.surface.move_head_cancelled.connect(self._on_move_head_cancelled)
 
         # Connect new signal from WorkSurface for edit item requests
         self.surface.edit_item_requested.connect(self._on_edit_item_requested)
@@ -503,6 +505,9 @@ class MainWindow(Adw.ApplicationWindow):
 
         self.bottom_panel.click_to_zero_mode_changed.connect(
             self._on_click_to_zero_mode_changed
+        )
+        self.bottom_panel.move_to_mode_changed.connect(
+            self._on_move_to_mode_changed
         )
 
         self.bottom_panel.asset_browser.add_asset_requested.connect(
@@ -777,6 +782,30 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_click_to_zero_cancelled(self, sender):
         """Handle click-to-zero mode cancellation."""
         self.bottom_panel.set_click_to_zero_mode(False)
+
+    def _on_move_to_mode_changed(self, sender, *, active: bool):
+        """Handle click-to-move-head mode toggle from control panel."""
+        self.surface.set_move_head_mode(active)
+
+    def _on_move_head_requested(self, sender, *, x: float, y: float):
+        """Move the laser head to the clicked canvas position."""
+        config = get_context().config
+        machine = config.machine
+        if not machine:
+            return
+
+        panel = machine.panel
+        wcs_offset = machine.get_active_wcs_offset()
+        x_off, y_off, _ = panel.get_command_offset(
+            wcs_offset=wcs_offset,
+            wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
+        )
+        self.machine_cmd.move_to(machine, x - x_off, y - y_off)
+        self.bottom_panel.set_move_to_mode(False)
+
+    def _on_move_head_cancelled(self, sender):
+        """Handle click-to-move-head mode cancellation."""
+        self.bottom_panel.set_move_to_mode(False)
 
     def _apply_saved_visibility_state(self):
         """
@@ -1927,6 +1956,7 @@ class MainWindow(Adw.ApplicationWindow):
             am.get_action("machine-clear-alarm").set_enabled(False)
             am.get_action("execute-macro").set_enabled(False)
             am.get_action("zero-here").set_enabled(False)
+            am.get_action("move-head-here").set_enabled(False)
 
             self.toolbar.export_button.set_tooltip_text(
                 _("Select a machine to enable G-code export")
@@ -2094,6 +2124,11 @@ class MainWindow(Adw.ApplicationWindow):
                 and not is_job_or_task_active
             )
             am.get_action("zero-here").set_enabled(can_zero)
+
+            can_move_head = (
+                connected or is_dummy
+            ) and not is_job_or_task_active
+            am.get_action("move-head-here").set_enabled(can_move_head)
 
         # Update actions that don't depend on the machine state
         selected_elements = self.surface.get_selected_elements()
@@ -2384,6 +2419,22 @@ class MainWindow(Adw.ApplicationWindow):
             focus_action.change_state(GLib.Variant.new_boolean(False))
 
         self.machine_cmd.home(config.machine)
+
+    def on_move_head_here_clicked(self, action, param):
+        config = get_context().config
+        machine = config.machine
+        pos = self.surface.right_click_machine_pos
+        if not machine or not pos:
+            return
+
+        machine_x, machine_y = pos
+        panel = machine.panel
+        wcs_offset = machine.get_active_wcs_offset()
+        x_off, y_off, _ = panel.get_command_offset(
+            wcs_offset=wcs_offset,
+            wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
+        )
+        self.machine_cmd.move_to(machine, machine_x - x_off, machine_y - y_off)
 
     def _run_machine_job(self, job_coroutine: Coroutine):
         """

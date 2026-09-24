@@ -518,3 +518,27 @@ def test_missing_s_command_templates_reflects_fixed_template():
 def test_power_move_template_keys_are_dialect_fields():
     for key in POWER_MOVE_TEMPLATE_KEYS:
         assert hasattr(GRBL_DIALECT, key)
+
+
+def test_format_move_to_uses_move_to_template_without_z():
+    cmd = GRBL_DIALECT.format_move_to(x=10.5, y=20.0, speed=1500)
+    assert cmd == "$J=G90 G21 F1500 X10.5 Y20.0"
+
+
+def test_format_move_to_appends_z_target():
+    cmd = GRBL_DIALECT.format_move_to(x=10.5, y=20.0, speed=1500, z=5.0)
+    assert cmd == "$J=G90 G21 F1500 X10.5 Y20.0 Z5.0"
+
+
+def test_format_move_to_with_z_ignores_unused_speed_template():
+    cmd = SMOOTHIEWARE_DIALECT.format_move_to(x=1.0, y=2.0, z=3.0)
+    assert cmd == "G90 G0 X1.0 Y2.0 Z3.0"
+
+
+def test_format_move_to_move_to_template_with_removable_z_fragment():
+    dialect = replace(
+        GRBL_DIALECT,
+        move_to="G90 G0{x_cmd}{y_cmd}{z_cmd} F{speed}",
+    )
+    without_z = dialect.format_move_to(x=1.0, y=2.0, speed=1500)
+    assert without_z == "G90 G0 X1.0 Y2.0 F1500"
