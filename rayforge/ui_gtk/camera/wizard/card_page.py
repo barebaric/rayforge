@@ -10,7 +10,7 @@ try:
     import pymupdf
 except ImportError:
     import fitz as pymupdf
-from gi.repository import Adw, GdkPixbuf, GLib, Gtk
+from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gtk
 
 from ....camera.calibration.charuco import CharucoBoard
 from ....context import get_context
@@ -181,8 +181,12 @@ class CardPage(CameraWizardPage):
         image = self._board.generate_image(output_size=(img_w, img_h))
 
         if image is not None:
-            self._preview_pixbuf = numpy_to_pixbuf(image)
-            self.preview_image.set_pixbuf(self._preview_pixbuf)
+            pixbuf = numpy_to_pixbuf(image)
+            if pixbuf is None:
+                return
+            self._preview_pixbuf = pixbuf
+            texture = Gdk.Texture.new_for_pixbuf(pixbuf)
+            self.preview_image.set_paintable(texture)
 
     def _on_save_pdf(self, button) -> None:
         dialog = Gtk.FileDialog()
