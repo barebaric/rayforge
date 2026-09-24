@@ -321,6 +321,17 @@ def test_returns_immediately_when_not_processing(doc_editor):
     assert result is True
 
 
+@pytest.mark.asyncio
+async def test_settled_flushes_pending_rebuild(doc_editor):
+    """A model change arms a debounced rebuild. Settling must flush
+    and wait for it so no rebuild can start afterwards."""
+    machine = doc_editor.context.machine
+    machine.set_max_cut_speed(1234)
+
+    await doc_editor.wait_until_settled()
+    assert not doc_editor.pipeline.is_busy
+
+
 def test_returns_true_when_processing_finishes(doc_editor):
     """Test that wait_until_settled_sync returns True when
     processing finishes within timeout."""

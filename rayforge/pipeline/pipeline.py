@@ -215,6 +215,24 @@ class Pipeline:
             or self._task_manager.has_tasks()
         )
 
+    def flush_pending_rebuild(self) -> None:
+        """Runs a pending debounced rebuild immediately.
+
+        Used by code that needs a guaranteed-idle pipeline: without
+        this, a rebuild armed by a recent model change could still
+        start after the caller observed an idle pipeline.
+        """
+        self._intent_ctl.flush_pending_debounce()
+
+    async def wait_until_idle(self, timeout: float = 10.0) -> None:
+        """Waits until no pipeline rebuild is pending or running.
+
+        Debounced rebuilds are flushed and one debounce period is
+        waited out, so a rebuild armed by a late callback cannot start
+        after this coroutine returns.
+        """
+        await self._intent_ctl.wait_until_idle(timeout)
+
     # ------------------------------------------------------------------
     # Pause / resume
     # ------------------------------------------------------------------

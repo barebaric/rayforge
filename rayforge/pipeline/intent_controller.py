@@ -26,6 +26,7 @@ On each debounced rebuild:
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import Callable
 from gettext import gettext as _
@@ -301,6 +302,45 @@ class IntentController:
                 self._intent.cancel()
             return
         self._rebuild()
+
+    def has_pending_debounce(self) -> bool:
+        """True if a debounced rebuild is armed but not yet started."""
+        return self._rebuild_timer is not None and not self._rebuilding
+
+    def flush_pending_debounce(self) -> None:
+        """Immediately runs a pending debounced rebuild, if any.
+
+        Waiting for the debounce timer to expire is not enough for
+        callers that need a guaranteed-idle pipeline: the timer lives
+        on the task manager loop and its rebuild may otherwise start
+        after the caller has already observed an idle state.
+        """
+        if self.has_pending_debounce():
+            self.force_rebuild()
+
+    async def wait_until_idle(self, timeout: float = 10.0) -> None:
+        """Waits until no rebuild is pending, armed, or running.
+
+        Main-thread callbacks queued by a finishing rebuild may still
+        arm a new debounce timer, so after the pipeline goes quiet one
+        debounce period is waited out and the check repeated before
+        returning. When this coroutine returns, no rebuild will start
+        on its own.
+        """
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + timeout
+        debounce = REBUILD_DEBOUNCE_MS / 1000.0
+        while True:
+            self.flush_pending_debounce()
+            while self.is_rebuild_pending:
+                if loop.time() >= deadline:
+                    raise TimeoutError("Pipeline did not become idle in time.")
+                await asyncio.sleep(0.005)
+            if loop.time() >= deadline:
+                raise TimeoutError("Pipeline did not become idle in time.")
+            await asyncio.sleep(debounce)
+            if not self.is_rebuild_pending:
+                return
 
     def _schedule_rebuild(self) -> None:
         if self._rebuild_timer is not None:
