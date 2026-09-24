@@ -358,6 +358,15 @@ class BottomPanel(Gtk.Box):
         position_button_box.set_spacing(6)
         self.position_row.add_suffix(position_button_box)
 
+        self.click_to_move_btn = Gtk.Button(child=get_icon("move-symbolic"))
+        self.click_to_move_btn.set_tooltip_text(_("Click Canvas to Move Head"))
+        self.click_to_move_btn.add_css_class("flat")
+        self.click_to_move_btn.set_size_request(40, -1)
+        self.click_to_move_btn.connect(
+            "clicked", self._on_click_to_move_toggled
+        )
+        position_button_box.append(self.click_to_move_btn)
+
         self.move_to_popover = MoveToPopover()
         if self.machine and self.machine_cmd:
             self.move_to_popover.set_machine(self.machine, self.machine_cmd)
@@ -422,18 +431,6 @@ class BottomPanel(Gtk.Box):
             "clicked", self._on_click_to_zero_toggled
         )
         zero_button_box.append(self.click_to_zero_btn)
-        self.click_to_zero_btn.set_tooltip_text(
-            _("Click on canvas to set work zero")
-        )
-
-        self.click_to_move_btn = Gtk.Button(child=get_icon("move-symbolic"))
-        self.click_to_move_btn.set_tooltip_text(_("Click Canvas to Move Head"))
-        self.click_to_move_btn.add_css_class("flat")
-        self.click_to_move_btn.set_size_request(40, -1)
-        self.click_to_move_btn.connect(
-            "clicked", self._on_click_to_move_toggled
-        )
-        zero_button_box.append(self.click_to_move_btn)
 
         self.speed_row = SpeedSpinRow(
             _("Jog Speed"),
