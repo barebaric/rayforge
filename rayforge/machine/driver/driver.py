@@ -330,20 +330,27 @@ class Driver(ABC):
         return round(mm_per_min * scale, 4)
 
     def _format_move_to(
-        self, pos_x: float, pos_y: float, pos_z: float | None = None
+        self,
+        pos_x: float,
+        pos_y: float,
+        pos_z: float | None = None,
+        speed: float | None = None,
     ) -> str:
         """
         Format an absolute positioning move for emission.
 
         Values are given in mm and converted to the machine's unit
         system. When a Z target is given it is carried in the same
-        move via the dialect's travel_move template.
+        move via the dialect's travel_move template. The speed is
+        given in mm/min and falls back to MOVE_TO_SPEED_MM_MIN.
         """
+        if speed is None:
+            speed = MOVE_TO_SPEED_MM_MIN
         z = self._to_machine_length(pos_z) if pos_z is not None else None
         return self.dialect.format_move_to(
             x=self._to_machine_length(pos_x),
             y=self._to_machine_length(pos_y),
-            speed=self._to_machine_speed(MOVE_TO_SPEED_MM_MIN),
+            speed=self._to_machine_speed(speed),
             z=z,
         )
 
@@ -606,10 +613,13 @@ class Driver(ABC):
         pos_x: float,
         pos_y: float,
         pos_z: float | None = None,
+        speed: float | None = None,
     ) -> None:
         """
         Moves to the given position. Values are given mm. When pos_z is
         given, it is targeted as an absolute Z position in the same move.
+        The speed is given in mm/min and falls back to a driver default
+        when None.
         """
 
     @abstractmethod

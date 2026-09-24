@@ -727,6 +727,24 @@ class TestJogMove:
         )
 
     @pytest.mark.asyncio
+    async def test_move_to_with_speed(self, setup_driver, mocker):
+        mocker.patch.object(
+            setup_driver, "_api_request", new_callable=AsyncMock
+        )
+        await setup_driver.move_to(10.5, 20.3, speed=6000)
+        setup_driver._api_request.assert_called_once_with(
+            "POST",
+            "/api/printer/printhead",
+            json={
+                "command": "jog",
+                "x": 10.5,
+                "y": 20.3,
+                "absolute": True,
+                "speed": 6000,
+            },
+        )
+
+    @pytest.mark.asyncio
     async def test_jog(self, setup_driver, mocker):
         mocker.patch.object(
             setup_driver, "_api_request", new_callable=AsyncMock

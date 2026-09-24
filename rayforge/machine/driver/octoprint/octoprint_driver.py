@@ -824,7 +824,11 @@ class OctoPrintDriver(Driver):
         )
 
     async def move_to(
-        self, pos_x: float, pos_y: float, pos_z: float | None = None
+        self,
+        pos_x: float,
+        pos_y: float,
+        pos_z: float | None = None,
+        speed: float | None = None,
     ) -> None:
         params: dict[str, Any] = {
             "command": "jog",
@@ -834,6 +838,8 @@ class OctoPrintDriver(Driver):
         }
         if pos_z is not None:
             params["z"] = self._to_machine_length(pos_z)
+        if speed is not None:
+            params["speed"] = self._to_machine_speed(speed)
         await self._api_request(
             "POST",
             "/api/printer/printhead",

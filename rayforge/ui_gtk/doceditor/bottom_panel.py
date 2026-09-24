@@ -441,6 +441,7 @@ class BottomPanel(Gtk.Box):
         )
         self.speed_row.value_changed.connect(self._on_speed_changed)
         self.wcs_group.add(self.speed_row)
+        self.move_to_popover.set_speed_getter(self._get_jog_speed)
 
         self.distance_row = LengthSpinRow(
             _("Jog Distance"),
@@ -453,6 +454,15 @@ class BottomPanel(Gtk.Box):
         self.wcs_group.add(self.distance_row)
 
         self._update_wcs_ui()
+
+    def _get_jog_speed(self) -> float:
+        """Returns the current jog speed in mm/min."""
+        return self.speed_row.get_value_in_base_units()
+
+    @property
+    def jog_speed(self) -> float:
+        """The current jog speed in mm/min, shared with move commands."""
+        return self._get_jog_speed()
 
     def _on_speed_changed(self, row):
         speed_mm_min = int(self.speed_row.get_value_in_base_units())

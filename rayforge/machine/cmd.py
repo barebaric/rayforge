@@ -500,13 +500,23 @@ class MachineCmd:
         self._editor.task_manager.add_coroutine(lambda ctx: machine.home(axis))
 
     def move_to(
-        self, machine: Machine, x: float, y: float, z: float | None = None
+        self,
+        machine: Machine,
+        x: float,
+        y: float,
+        z: float | None = None,
+        speed: float | None = None,
     ):
-        """Adds a task to move to an absolute position."""
+        """
+        Adds a task to move to an absolute position.
+
+        The speed is given in mm/min; when None the driver applies its
+        default move speed.
+        """
         driver = machine.driver
         if driver:
             self._editor.task_manager.add_coroutine(
-                lambda ctx: driver.move_to(x, y, z), key="move-to"
+                lambda ctx: driver.move_to(x, y, z, speed), key="move-to"
             )
 
 

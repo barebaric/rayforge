@@ -21,6 +21,7 @@ def make_popover(machine, machine_cmd) -> Any:
     popover.machine = machine
     popover.machine_cmd = machine_cmd
     popover._get_bounds_callback = None
+    popover._get_speed_callback = None
 
     popover.x_row = MagicMock()
     popover.x_row.get_value_in_base_units.return_value = 10.0
@@ -66,6 +67,7 @@ def move_popover(sync_machine):
     popover._get_bounds_callback = MagicMock(
         return_value=(100.0, 50.0, 120.0, 60.0)
     )
+    popover._get_speed_callback = None
     return popover
 
 
@@ -75,7 +77,9 @@ def test_move_clicked_passes_xyz(machine, machine_cmd):
 
     popover._issue_move()
 
-    machine_cmd.move_to.assert_called_once_with(machine, 10.0, 20.0, 5.0)
+    machine_cmd.move_to.assert_called_once_with(
+        machine, 10.0, 20.0, 5.0, speed=None
+    )
 
 
 @pytest.mark.ui
@@ -85,7 +89,21 @@ def test_move_clicked_without_z_axis_passes_none(machine, machine_cmd):
 
     popover._issue_move()
 
-    machine_cmd.move_to.assert_called_once_with(machine, 10.0, 20.0, None)
+    machine_cmd.move_to.assert_called_once_with(
+        machine, 10.0, 20.0, None, speed=None
+    )
+
+
+@pytest.mark.ui
+def test_move_clicked_passes_speed_getter_value(machine, machine_cmd):
+    popover = make_popover(machine, machine_cmd)
+    popover.set_speed_getter(lambda: 6000)
+
+    popover._issue_move()
+
+    machine_cmd.move_to.assert_called_once_with(
+        machine, 10.0, 20.0, 5.0, speed=6000
+    )
 
 
 @pytest.mark.ui
@@ -237,7 +255,7 @@ def test_move_to_position_honors_panel(
     move_popover._on_move_to_position(None, position)
 
     move_popover.machine_cmd.move_to.assert_called_once_with(
-        move_popover.machine, *expected
+        move_popover.machine, *expected, speed=None
     )
 
 
@@ -255,7 +273,18 @@ def test_move_to_wcs_zero(move_popover):
     move_popover._on_move_to_wcs_zero(None)
 
     move_popover.machine_cmd.move_to.assert_called_once_with(
-        move_popover.machine, 0.0, 0.0
+        move_popover.machine, 0.0, 0.0, speed=None
+    )
+
+
+@pytest.mark.ui
+def test_move_to_wcs_zero_uses_speed_getter(move_popover):
+    move_popover.set_speed_getter(lambda: 4500)
+
+    move_popover._on_move_to_wcs_zero(None)
+
+    move_popover.machine_cmd.move_to.assert_called_once_with(
+        move_popover.machine, 0.0, 0.0, speed=4500
     )
 
 

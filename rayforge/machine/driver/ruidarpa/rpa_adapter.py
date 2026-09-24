@@ -943,14 +943,20 @@ class RuidaRPAAdapter(Driver):
             await loop.run_in_executor(None, self._backend.home_z)
 
     async def move_to(
-        self, pos_x: float, pos_y: float, pos_z: float | None = None
+        self,
+        pos_x: float,
+        pos_y: float,
+        pos_z: float | None = None,
+        speed: float | None = None,
     ) -> None:
         """Move to an absolute position in machine-frame mm.
 
         Coordinates are machine-frame (same frame as POSITION_* status
         reporting: +X left of home, +Y down from home) and are passed
         through unchanged to the backend jog_xy_to. Absolute Z moves
-        are not supported by the backend and are ignored.
+        are not supported by the backend and are ignored. The optional
+        speed is given in mm/min and overrides the jog speed for this
+        move only.
         """
         logger.info(
             "move_to x=%.3f y=%.3f z=%s",
@@ -962,11 +968,14 @@ class RuidaRPAAdapter(Driver):
         if self._backend is None:
             raise DriverSetupError("Backend not initialized")
         loop = asyncio.get_running_loop()
-        speed_mm_s = (
-            self._jog_speed_mm_s
-            if self._jog_speed_mm_s is not None
-            else DEFAULT_MOVE_TO_JOG_SPEED_MM_S
-        )
+        if speed is not None:
+            speed_mm_s = speed / 60.0
+        else:
+            speed_mm_s = (
+                self._jog_speed_mm_s
+                if self._jog_speed_mm_s is not None
+                else DEFAULT_MOVE_TO_JOG_SPEED_MM_S
+            )
         await loop.run_in_executor(
             None, self._backend.jog_set_xy_speed, speed_mm_s
         )

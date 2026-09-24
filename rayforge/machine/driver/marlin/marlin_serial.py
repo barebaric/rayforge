@@ -537,8 +537,8 @@ class MarlinSerialDriver(Driver):
         self.state.error = None
         self.state_changed.send(self, state=self.state)
 
-    async def move_to(self, pos_x, pos_y, pos_z=None) -> None:
-        cmd = self._format_move_to(float(pos_x), float(pos_y), pos_z)
+    async def move_to(self, pos_x, pos_y, pos_z=None, speed=None) -> None:
+        cmd = self._format_move_to(float(pos_x), float(pos_y), pos_z, speed)
         await self._send_and_wait(cmd)
 
     async def jog(self, speed: int, **deltas: float) -> None:

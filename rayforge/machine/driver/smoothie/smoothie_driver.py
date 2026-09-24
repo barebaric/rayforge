@@ -396,8 +396,8 @@ class SmoothieDriver(Driver):
             cmd = dialect.home_axis.format(axis_letter=axis.name)
             await self._send_and_wait(cmd.encode())
 
-    async def move_to(self, pos_x, pos_y, pos_z=None) -> None:
-        cmd = self._format_move_to(float(pos_x), float(pos_y), pos_z)
+    async def move_to(self, pos_x, pos_y, pos_z=None, speed=None) -> None:
+        cmd = self._format_move_to(float(pos_x), float(pos_y), pos_z, speed)
         await self._send_and_wait(cmd.encode())
 
     def can_jog(self, axis: Axis | None = None) -> bool:

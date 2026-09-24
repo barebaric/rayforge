@@ -800,7 +800,12 @@ class MainWindow(Adw.ApplicationWindow):
             wcs_offset=wcs_offset,
             wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
         )
-        self.machine_cmd.move_to(machine, x - x_off, y - y_off)
+        self.machine_cmd.move_to(
+            machine,
+            x - x_off,
+            y - y_off,
+            speed=self.bottom_panel.jog_speed,
+        )
         self.bottom_panel.set_move_to_mode(False)
 
     def _on_move_head_cancelled(self, sender):
@@ -2434,7 +2439,12 @@ class MainWindow(Adw.ApplicationWindow):
             wcs_offset=wcs_offset,
             wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
         )
-        self.machine_cmd.move_to(machine, machine_x - x_off, machine_y - y_off)
+        self.machine_cmd.move_to(
+            machine,
+            machine_x - x_off,
+            machine_y - y_off,
+            speed=self.bottom_panel.jog_speed,
+        )
 
     def _run_machine_job(self, job_coroutine: Coroutine):
         """

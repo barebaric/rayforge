@@ -1272,6 +1272,21 @@ class TestGrblSerialDriver:
         await cmd_task
 
     @pytest.mark.asyncio
+    async def test_move_to_with_speed_overrides_default(
+        self, connected_driver: GrblSerialDriver, mock_serial_transport
+    ):
+        """An explicit speed replaces the default F word."""
+        driver = connected_driver
+
+        cmd_task = asyncio.create_task(driver.move_to(10.5, 20.0, speed=6000))
+        await asyncio.sleep(0.01)
+        mock_serial_transport.send.assert_called_once_with(
+            b"$J=G90 G21 F6000 X10.5 Y20.0\n"
+        )
+        driver.on_serial_data_received(mock_serial_transport, b"ok\r\n")
+        await cmd_task
+
+    @pytest.mark.asyncio
     async def test_move_to_with_z_appends_z_target(
         self, connected_driver: GrblSerialDriver, mock_serial_transport
     ):

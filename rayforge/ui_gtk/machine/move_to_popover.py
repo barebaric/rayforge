@@ -29,6 +29,7 @@ class MoveToPopover(Gtk.Popover):
         self.machine: Machine | None = None
         self.machine_cmd: MachineCmd | None = None
         self._get_bounds_callback = None
+        self._get_speed_callback: Callable[[], float | None] | None = None
 
         coords_group = Adw.PreferencesGroup(title=_("Move to Position"))
         self.set_child(coords_group)
@@ -139,6 +140,10 @@ class MoveToPopover(Gtk.Popover):
     ):
         self._get_bounds_callback = callback
 
+    def set_speed_getter(self, callback: Callable[[], float | None] | None):
+        """Registers a callback supplying the move speed in mm/min."""
+        self._get_speed_callback = callback
+
     def _on_machine_state_changed(self, machine, state):
         self.update_sensitivity()
 
@@ -206,6 +211,11 @@ class MoveToPopover(Gtk.Popover):
         if self.machine.has_z_axis:
             self.z_row.set_value_in_base_units(z)
 
+    def _get_speed(self) -> float | None:
+        if self._get_speed_callback is None:
+            return None
+        return self._get_speed_callback()
+
     def _on_move_clicked(self, button):
         self._issue_move()
 
@@ -230,7 +240,9 @@ class MoveToPopover(Gtk.Popover):
             y,
             f" Z {z:.2f}" if z is not None else "",
         )
-        self.machine_cmd.move_to(self.machine, x, y, z)
+        self.machine_cmd.move_to(
+            self.machine, x, y, z, speed=self._get_speed()
+        )
         return True
 
     def _on_move_to_position(self, button, position: str):
@@ -284,10 +296,15 @@ class MoveToPopover(Gtk.Popover):
             machine_y - y_off,
         )
         self.machine_cmd.move_to(
-            self.machine, machine_x - x_off, machine_y - y_off
+            self.machine,
+            machine_x - x_off,
+            machine_y - y_off,
+            speed=self._get_speed(),
         )
 
     def _on_move_to_wcs_zero(self, button):
         if not self.machine or not self.machine_cmd:
             return
-        self.machine_cmd.move_to(self.machine, 0.0, 0.0)
+        self.machine_cmd.move_to(
+            self.machine, 0.0, 0.0, speed=self._get_speed()
+        )

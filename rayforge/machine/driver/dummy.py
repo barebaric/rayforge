@@ -170,7 +170,7 @@ class NoDeviceDriver(Driver):
     async def home(self, axes: Axis | None = None) -> None:
         pass
 
-    async def move_to(self, pos_x, pos_y, pos_z=None) -> None:
+    async def move_to(self, pos_x, pos_y, pos_z=None, speed=None) -> None:
         pass
 
     async def select_tool(self, tool_number: int) -> None:
