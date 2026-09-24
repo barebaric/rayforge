@@ -615,8 +615,19 @@ if (( DO_DMG == 1 )); then
     fi
     DMG_PATH="dist/Rayforge_${VERSION}.dmg"
     rm -f "$DMG_PATH"
-    hdiutil create -volname "Rayforge" -srcfolder "dist/Rayforge.app" \
+    tries=0
+    max_tries=10
+    until hdiutil create -volname "Rayforge" -srcfolder "dist/Rayforge.app" \
         -ov -format UDZO "$DMG_PATH"
+    do
+        tries=$((tries + 1))
+        if [ "$tries" -ge "$max_tries" ]; then
+            echo "Error: hdiutil failed after ${max_tries} attempts" >&2
+            exit 1
+        fi
+        echo "hdiutil failed (attempt ${tries}), retrying..." >&2
+        sleep $((tries * 2))
+    done
 fi
 
 if (( DO_BUILD == 1 )) && (( DO_BUNDLE == 1 )) && (( DO_DMG == 1 )); then
