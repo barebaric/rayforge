@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-26 17:18+0200\n"
+"POT-Creation-Date: 2026-09-24 22:18+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Chinese (Simplified)\n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
@@ -338,7 +338,7 @@ msgstr "核心"
 msgid "Stock Material"
 msgstr "原材料"
 
-#: rayforge/core/source_asset.py
+#: rayforge/core/source_asset.py rayforge/ui_gtk/camera/properties_widget.py
 msgid "Source"
 msgstr "来源"
 
@@ -357,6 +357,122 @@ msgstr "未知的变量或函数：'{name}'"
 msgid "Cannot use operator '{op}' between types '{left}' and '{right}'"
 msgstr "不能在类型 '{left}' 和 '{right}' 之间使用运算符 '{op}'"
 
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Ruida RPA"
+msgstr "Ruida RPA"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Connect via Ruida Protocol Analyzer"
+msgstr "通过 Ruida 协议分析器连接"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Ruida Coordinates"
+msgstr "Ruida 坐标"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "At least one of 'Hostname' or 'USB device' must be configured."
+msgstr "必须至少配置“主机名”或“USB 设备”之一。"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+#: rayforge/machine/driver/smoothie/smoothie_driver.py
+msgid "Hostname"
+msgstr "主机名"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "The IP address or hostname of the Ruida controller"
+msgstr "Ruida控制器的IP地址或主机名"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "USB"
+msgstr "USB"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "USB device path (e.g., /dev/ttyUSB0, 0403:6001, or COM3)"
+msgstr "USB 设备路径（例如 /dev/ttyUSB0、0403:6001 或 COM3）"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Magic"
+msgstr "魔数"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Controller magic number in hex (e.g., 0x88). Leave empty for default."
+msgstr "控制器的十六进制魔数（例如 0x88）。留空使用默认值。"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "TUI RPC"
+msgstr "TUI RPC"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Enable TUI RPC connection to a remote RPA TUI service"
+msgstr "启用到远程 RPA TUI 服务的 TUI RPC 连接"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "RPC timeout (s)"
+msgstr "RPC 超时（秒）"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"Maximum seconds to wait for each synchronous RPC. Raise for large jobs with "
+"many layers."
+msgstr "每个同步 RPC 的最长等待秒数。对于包含大量图层的作业可适当增大。"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "VECTOR power floor"
+msgstr "VECTOR 功率下限"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Minimum power percentage for VECTOR cut compensation (e.g. 8 = 8%)."
+msgstr "VECTOR 切割补偿的最小功率百分比（例如 8 = 8%）。"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "IMAGE power bias"
+msgstr "IMAGE 功率偏置"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"Power bias added to IMAGE/raster scan-line power (SET_POWER), % of max (e.g. "
+"8 = 8%)."
+msgstr ""
+"添加到 IMAGE/光栅扫描线功率（SET_POWER）的功率偏置，以最大值的百分比表示（例"
+"如 8 = 8%）。"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"set_power is not supported outside of a job with a Ruida controller — the "
+"correct handling is to be determined; no command was sent."
+msgstr ""
+"在带有 Ruida 控制器的作业之外不支持 set_power——正确的处理方式尚待确定；未发送"
+"任何命令。"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"set_focus_power is not supported outside of a job with a Ruida controller — "
+"the correct handling is to be determined; no command was sent."
+msgstr ""
+"在带有 Ruida 控制器的作业之外不支持 set_focus_power——正确的处理方式尚待确定；"
+"未发送任何命令。"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"set_wcs_offset is not supported: protect mode blocks SET_SETTING, and the "
+"feature was dropped by user decision. Use select_wcs to pick a reference "
+"point."
+msgstr ""
+"不支持 set_wcs_offset：保护模式会阻止 SET_SETTING，且该功能已按用户决定移除。"
+"请使用 select_wcs 选择参考点。"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+#: rayforge/machine/driver/dummy.py
+msgid "No settings"
+msgstr "无设置"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Probe not supported by RPA driver"
+msgstr "RPA 驱动不支持探测"
+
 #: rayforge/machine/driver/dummy.py rayforge/ui_gtk/machine/machine_dropdown.py
 #: rayforge/ui_gtk/machine/status_widget.py
 msgid "No driver"
@@ -367,15 +483,9 @@ msgid "No connection"
 msgstr "无连接"
 
 #: rayforge/machine/driver/dummy.py
-#: rayforge/machine/driver/ruida/ruida_driver.py
 #: rayforge/machine/driver/marlin/marlin_serial.py
 msgid "Machine Coordinates"
 msgstr "机器坐标"
-
-#: rayforge/machine/driver/dummy.py
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "No settings"
-msgstr "无设置"
 
 #: rayforge/machine/driver/driver.py
 #, python-brace-format
@@ -495,63 +605,6 @@ msgstr "脉冲宽度（微秒）"
 msgid "Error during setup. You may need to edit device settings."
 msgstr "设置期间出错。您可能需要编辑设备设置。"
 
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "Ruida (UDP)"
-msgstr "Ruida (UDP)"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "Connect to a Ruida laser controller over UDP"
-msgstr "通过UDP连接到Ruida激光控制器"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#: rayforge/machine/driver/grbl/grbl_telnet.py
-#: rayforge/machine/driver/grbl/grbl_network.py
-#: rayforge/machine/driver/smoothie/smoothie_driver.py
-#, python-brace-format
-msgid "Invalid hostname or IP address: '{host}'"
-msgstr "无效的主机名或IP地址：'{host}'"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#: rayforge/machine/driver/grbl/grbl_telnet.py
-#: rayforge/machine/driver/grbl/grbl_network.py
-#: rayforge/machine/driver/smoothie/smoothie_driver.py
-msgid "Hostname"
-msgstr "主机名"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "The IP address or hostname of the Ruida controller"
-msgstr "Ruida控制器的IP地址或主机名"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "Main Port"
-msgstr "主端口"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "The UDP port for main commands (default: 50200)"
-msgstr "主命令的UDP端口（默认：50200）"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "Jog Port"
-msgstr "点动端口"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "The UDP port for jog commands (default: 50207)"
-msgstr "点动命令的UDP端口（默认：50207）"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#: rayforge/machine/driver/grbl/grbl_telnet.py
-#: rayforge/machine/driver/grbl/grbl_network.py
-#: rayforge/machine/driver/smoothie/smoothie_driver.py
-msgid "Hostname must be configured."
-msgstr "必须配置主机名。"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "No response from controller"
-msgstr "控制器无响应"
-
 #: rayforge/machine/driver/octoprint/octoprint_util.py
 msgid "Could not read the OctoPrint server version."
 msgstr "无法读取OctoPrint服务器版本。"
@@ -578,6 +631,14 @@ msgstr "将G代码提交到OctoPrint服务器"
 #: rayforge/machine/driver/smoothie/smoothie_driver.py
 msgid "Machine Coordinates (G53)"
 msgstr "机器坐标（G53）"
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+#: rayforge/machine/driver/smoothie/smoothie_driver.py
+#, python-brace-format
+msgid "Invalid hostname or IP address: '{host}'"
+msgstr "无效的主机名或IP地址：'{host}'"
 
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 msgid "IP address or hostname of the OctoPrint server"
@@ -619,6 +680,13 @@ msgid ""
 "OctoPrint's Application Keys plugin."
 msgstr ""
 "手动输入API密钥，或点击\"请求访问\"通过OctoPrint的Application Keys插件获取。"
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+#: rayforge/machine/driver/smoothie/smoothie_driver.py
+msgid "Hostname must be configured."
+msgstr "必须配置主机名。"
 
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 msgid ""
@@ -2551,6 +2619,7 @@ msgid "Map a color to a step type for SVG imports."
 msgstr "为 SVG 导入将颜色映射到步骤类型。"
 
 #: rayforge/ui_gtk/settings/color_presets_page.py
+#: rayforge/ui_gtk/camera/selection_dialog.py
 #: rayforge/ui_gtk/doceditor/recipes/edit_recipe_dialog.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
@@ -3016,6 +3085,10 @@ msgstr "导入文件…"
 msgid "Paste"
 msgstr "粘贴"
 
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+msgid "Move Head Here"
+msgstr "将激光头移动到此处"
+
 #: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py rayforge/doceditor/edit_cmd.py
 msgid "Add {} Instance"
 msgstr "添加 {} 实例"
@@ -3149,34 +3222,80 @@ msgid "Transparency on the worksurface"
 msgstr "工作台上的透明度"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-msgid "Please select an available camera device"
-msgstr "请选择可用的摄像头设备"
+msgid "Scanning for devices…"
+msgstr "正在扫描设备…"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-msgid "Please select a configured camera"
-msgstr "请选择已配置的摄像头"
+msgid "Add Camera"
+msgstr "添加摄像头"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Choose a camera source."
+msgstr "选择摄像头来源。"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
 msgid "Select Camera"
 msgstr "选择摄像头"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-msgid "No cameras configured."
-msgstr "未配置任何摄像头。"
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+#: rayforge/ui_gtk/shared/model_selection_dialog.py
+msgid "Select"
+msgstr "选择"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-#, python-brace-format
-msgid "Failed to load image for Device ID: {device_id}"
-msgstr "无法加载设备ID的图像：{device_id}"
+msgid "Source Type"
+msgstr "来源类型"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-#, python-brace-format
-msgid "Camera {device_id}"
-msgstr "摄像头 {device_id}"
+msgid "Choose source type"
+msgstr "选择来源类型"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-msgid "No cameras found."
-msgstr "未找到摄像头。"
+msgid "Local camera"
+msgstr "本地摄像头"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "HTTP snapshot URL"
+msgstr "HTTP 快照 URL"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "HTTP stream URL"
+msgstr "HTTP 流 URL"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "RTSP stream"
+msgstr "RTSP 流"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+#: rayforge/ui_gtk/machine/device_settings_page.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "Device"
+msgstr "设备"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Choose an attached local camera"
+msgstr "选择已连接的本地摄像头"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Preview"
+msgstr "预览"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Capture one frame from the selected local camera"
+msgstr "从选定的本地摄像头捕获一帧"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "URL"
+msgstr "URL"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Enter the snapshot or stream URL"
+msgstr "输入快照或流的 URL"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Choose device"
+msgstr "选择设备"
 
 #: rayforge/ui_gtk/camera/point_bubble_widget.py
 #, python-brace-format
@@ -3200,12 +3319,12 @@ msgid "Configure the selected camera."
 msgstr "配置选定的摄像头。"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
-msgid "Device ID"
-msgstr "设备ID"
+msgid "Choose a connected local camera"
+msgstr "选择已连接的本地摄像头"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
-msgid "System identifier for the camera device"
-msgstr "摄像头设备的系统标识符"
+msgid "Camera source URL"
+msgstr "摄像头来源 URL"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Display name for this camera"
@@ -3264,6 +3383,11 @@ msgstr "图像对齐"
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Calibrate camera position and perspective"
 msgstr "校准摄像头位置和透视"
+
+#: rayforge/ui_gtk/camera/properties_widget.py
+#, python-brace-format
+msgid "Unavailable: {device_id}"
+msgstr "不可用：{device_id}"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Lens calibration completed"
@@ -3503,6 +3627,30 @@ msgstr "放弃"
 msgid "Save Calibration"
 msgstr "保存校准"
 
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+msgid "Lens calibration saved."
+msgstr "镜头校准已保存。"
+
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+msgid "Skip Lens Calibration?"
+msgstr "跳过镜头校准？"
+
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+#, python-brace-format
+msgid ""
+"You captured {frames} frame(s) but have not run Calibrate yet. Continuing "
+"discards them and leaves the lens uncorrected."
+msgstr ""
+"您已捕获 {frames} 帧，但尚未运行“校准”。继续将丢弃这些帧，且镜头仍未经校正。"
+
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+msgid "Skip Anyway"
+msgstr "仍要跳过"
+
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+msgid "Stay Here"
+msgstr "留在此处"
+
 #: rayforge/ui_gtk/camera/wizard/wizard.py
 #, python-brace-format
 msgid "{camera} - Camera Wizard"
@@ -3610,6 +3758,11 @@ msgid "Device ID: {device_id}"
 msgstr "设备ID：{device_id}"
 
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
+#, python-brace-format
+msgid "Source: {source}"
+msgstr "来源：{source}"
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
 msgid "Add New Camera"
 msgstr "添加新摄像头"
 
@@ -3677,6 +3830,43 @@ msgstr "清除所有点"
 #: rayforge/ui_gtk/doceditor/step_type_selection_dialog.py
 msgid "Apply"
 msgstr "应用"
+
+#: rayforge/ui_gtk/machine/validation.py
+#, python-brace-format
+msgid ""
+"\"{value}\" is only a number and would be sent to the machine as-is. A G-"
+"code command must start with a letter (e.g. \"M4 S{value}\")."
+msgstr ""
+"“{value}”只是一个数字，会被原样发送到机器。G代码命令必须以字母开头（例如“M4 "
+"S{value}”）。"
+
+#: rayforge/ui_gtk/machine/validation.py
+#, python-brace-format
+msgid ""
+"Line {lineno} is only the number \"{value}\" and would be sent to the "
+"machine as-is. A G-code command must start with a letter (e.g. \"M4 S{value}"
+"\")."
+msgstr ""
+"第 {lineno} 行只是数字“{value}”，会被原样发送到机器。G代码命令必须以字母开头"
+"（例如“M4 S{value}”）。"
+
+#: rayforge/ui_gtk/machine/validation.py
+#, python-brace-format
+msgid ""
+"Continuous laser mode is enabled: laser power is carried on movement lines, "
+"but this template has no {s_command} placeholder and the power would be "
+"silently dropped."
+msgstr ""
+"连续激光模式已启用：激光功率由运动行携带，但此模板没有 {s_command} 占位符，功"
+"率将被静默丢弃。"
+
+#: rayforge/ui_gtk/machine/validation.py
+#, python-brace-format
+msgid ""
+"In continuous laser mode these templates need the {{s_command}} placeholder "
+"to carry laser power: {labels}."
+msgstr ""
+"在连续激光模式下，这些模板需要 {{s_command}} 占位符来承载激光功率：{labels}。"
 
 #: rayforge/ui_gtk/machine/macro_list.py
 msgid "Add New Macro"
@@ -3904,8 +4094,10 @@ msgid "Maximum pulse width in µs"
 msgstr "最大脉冲宽度（µs）"
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
-msgid "Power value in percent to use when framing. 0 to disable"
-msgstr "边框时使用的功率百分比。0表示禁用"
+msgid ""
+"Power value in percent to use when framing. 0 traces the outline with the "
+"beam off"
+msgstr "走边框时使用的功率百分比。0 表示关闭光束描画轮廓"
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 msgid ""
@@ -4055,6 +4247,7 @@ msgid "Zone geometry shape"
 msgstr "区域几何形状"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
+#: rayforge/ui_gtk/machine/move_to_popover.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "X"
 msgstr "X"
@@ -4065,6 +4258,7 @@ msgid "X position in {wcs}"
 msgstr "X 位置 ({wcs})"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
+#: rayforge/ui_gtk/machine/move_to_popover.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Y"
 msgstr "Y"
@@ -4075,6 +4269,7 @@ msgid "Y position in {wcs}"
 msgstr "Y 位置 ({wcs})"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
+#: rayforge/ui_gtk/machine/move_to_popover.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Z"
 msgstr "Z"
@@ -4200,6 +4395,30 @@ msgstr "所有文件"
 #: rayforge/ui_gtk/machine/profile_importer.py
 msgid "Import Device Profile"
 msgstr "导入设备配置文件"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Move to Position"
+msgstr "移动到位置"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Move to Lower-Left of Selection or Workarea"
+msgstr "移动到选择或工作区域的左下角"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Move to Center of Selection or Workarea"
+msgstr "移动到选择或工作区域的中心"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Move to Upper-Right of Selection or Workarea"
+msgstr "移动到选择或工作区域的右上角"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Move to Origin of Active WCS"
+msgstr "移动到活动WCS原点"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Move"
+msgstr "移动"
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "Edit Macro"
@@ -4359,11 +4578,6 @@ msgid ""
 "This will reset the total cumulative operating hours to zero. Maintenance "
 "counters will not be affected."
 msgstr "这将把总累计运行工时重置为零。维护计数器将不受影响。"
-
-#: rayforge/ui_gtk/machine/device_settings_page.py
-#: rayforge/ui_gtk/machine/settings_dialog.py
-msgid "Device"
-msgstr "设备"
 
 #: rayforge/ui_gtk/machine/device_settings_page.py
 msgid "Device Settings"
@@ -5138,11 +5352,6 @@ msgid "Configured"
 msgstr "已配置"
 
 #: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
-#: rayforge/ui_gtk/shared/model_selection_dialog.py
-msgid "Select"
-msgstr "选择"
-
-#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
 msgid ""
 "Connect your machine via USB or network — we will find it automatically."
 msgstr "通过USB或网络连接您的机器 — 我们将自动找到它。"
@@ -5887,6 +6096,10 @@ msgstr "已导出到 {path}"
 #, python-brace-format
 msgid "Export failed: {error}"
 msgstr "导出失败：{error}"
+
+#: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "This camera source is already configured."
+msgstr "此摄像头来源已配置。"
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #: rayforge/ui_gtk/doceditor/recipes/pages/applicability.py
@@ -6806,8 +7019,8 @@ msgid "Add or enable a processing step to enable export"
 msgstr "添加或启用处理步骤以启用导出"
 
 #: rayforge/ui_gtk/mainwindow.py
-msgid "Configure frame power to enable"
-msgstr "配置边框功率以启用"
+msgid "Add a laser head to enable"
+msgstr "添加激光头以启用"
 
 #: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/toolbar.py
 msgid "Cycle laser head around the occupied area"
@@ -7589,20 +7802,12 @@ msgid "Current Position"
 msgstr "当前位置"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Move to Lower-Left of Selection or Workarea"
-msgstr "移动到选择或工作区域的左下角"
+msgid "Click Canvas to Move Head"
+msgstr "点击画布移动激光头"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Move to Center of Selection or Workarea"
-msgstr "移动到选择或工作区域的中心"
-
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Move to Upper-Right of Selection or Workarea"
-msgstr "移动到选择或工作区域的右上角"
-
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Move to Origin of Active WCS"
-msgstr "移动到活动WCS原点"
+msgid "Move to Coordinates"
+msgstr "移动到坐标"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Zero Axes"
@@ -7626,10 +7831,6 @@ msgstr "在当前位置设置工件零点"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Click Canvas to Set Work Zero"
-msgstr "点击画布设置工作零点"
-
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Click on canvas to set work zero"
 msgstr "点击画布设置工作零点"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py

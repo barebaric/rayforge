@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-29 16:07+0200\n"
+"POT-Creation-Date: 2026-09-24 21:41+0200\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -273,6 +273,27 @@ msgid "Laser power as a percentage"
 msgstr "Potencia del láser como porcentaje"
 
 #: laser_essentials/steps/laser_step.py
+msgid "Power Mode"
+msgstr "Modo de potencia"
+
+#: laser_essentials/steps/laser_step.py
+msgid ""
+"Dynamic power (M4) scales power with head speed; constant power (M3) keeps "
+"it fixed. Use constant power if corners and curves burn too lightly"
+msgstr ""
+"La potencia dinámica (M4) escala la potencia según la velocidad de la "
+"cabeza; la potencia constante (M3) la mantiene fija. Use potencia constante "
+"si las esquinas y las curvas se queman demasiado poco"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Dynamic (M4)"
+msgstr "Dinámica (M4)"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Constant (M3)"
+msgstr "Constante (M3)"
+
+#: laser_essentials/steps/laser_step.py
 msgid "Air Assist"
 msgstr "Asistencia de aire"
 
@@ -366,6 +387,22 @@ msgid ""
 msgstr ""
 "Desplaza el marco hacia dentro/fuera según el lado de corte (ninguno en la "
 "línea central). Se predetermina a la compensación de kerf del cabezal"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Round Corners"
+msgstr "Esquinas redondeadas"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Round the frame's corners instead of cutting right angles"
+msgstr "Redondea las esquinas del marco en lugar de cortar ángulos rectos"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Corner Radius"
+msgstr "Radio de las esquinas"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Radius used to round the frame's corners"
+msgstr "Radio usado para redondear las esquinas del marco"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Mode"

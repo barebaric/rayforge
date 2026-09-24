@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-30 08:22+0200\n"
+"POT-Creation-Date: 2026-09-23 23:33+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Chinese (Simplified)\n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
@@ -91,6 +91,11 @@ msgstr "距离"
 msgid "From {} to {}"
 msgstr "从 {} 到 {}"
 
+#: sketcher/core/constraints/distance.py sketcher/core/constraints/vertical.py
+#: sketcher/core/constraints/horizontal.py
+msgid "Enter length or expression."
+msgstr "输入长度或表达式。"
+
 #: sketcher/core/constraints/vertical.py
 #: sketcher/ui_gtk/tools/vertical_constraint_tool.py
 msgid "Vertical"
@@ -123,6 +128,10 @@ msgstr "对称"
 msgid "Horizontal"
 msgstr "水平"
 
+#: sketcher/core/constraints/base.py
+msgid "Enter value or expression."
+msgstr "输入值或表达式。"
+
 #: sketcher/core/constraints/angle.py
 #: sketcher/ui_gtk/tools/angle_constraint_tool.py
 msgid "Angle"
@@ -132,6 +141,10 @@ msgstr "角度"
 msgid "Between two lines"
 msgstr "在两条直线之间"
 
+#: sketcher/core/constraints/angle.py
+msgid "Enter angle in degrees or expression."
+msgstr "输入角度（度）或表达式。"
+
 #: sketcher/core/constraints/diameter.py
 #: sketcher/ui_gtk/tools/diameter_constraint_tool.py
 msgid "Diameter"
@@ -140,6 +153,10 @@ msgstr "直径"
 #: sketcher/core/constraints/diameter.py
 msgid "Circle at {}"
 msgstr "圆在 {}"
+
+#: sketcher/core/constraints/diameter.py
+msgid "Enter diameter or expression."
+msgstr "输入直径或表达式。"
 
 #: sketcher/core/constraints/coincident.py
 #: sketcher/ui_gtk/tools/coincident_constraint_tool.py
@@ -159,6 +176,10 @@ msgstr "半径"
 #: sketcher/core/constraints/radius.py
 msgid "{} at {}"
 msgstr "{} 在 {}"
+
+#: sketcher/core/constraints/radius.py
+msgid "Enter radius or expression (e.g. 'width/2')."
+msgstr "输入半径或表达式（例如 'width/2'）。"
 
 #: sketcher/core/constraints/aspect_ratio.py
 #: sketcher/ui_gtk/tools/aspect_ratio_constraint_tool.py
@@ -837,26 +858,6 @@ msgstr "斜体"
 #: sketcher/ui_gtk/font_properties.py
 msgid "Select Font"
 msgstr "选择字体"
-
-#: sketcher/ui_gtk/sketchcanvas.py
-msgid "Enter radius or expression (e.g. 'width/2')."
-msgstr "输入半径或表达式（例如 'width/2'）。"
-
-#: sketcher/ui_gtk/sketchcanvas.py
-msgid "Enter diameter or expression."
-msgstr "输入直径或表达式。"
-
-#: sketcher/ui_gtk/sketchcanvas.py
-msgid "Enter angle in degrees or expression."
-msgstr "输入角度（度）或表达式。"
-
-#: sketcher/ui_gtk/sketchcanvas.py
-msgid "Enter length or expression."
-msgstr "输入长度或表达式。"
-
-#: sketcher/ui_gtk/sketchcanvas.py
-msgid "Enter value or expression."
-msgstr "输入值或表达式。"
 
 #: sketcher/ui_gtk/sketchcanvas.py
 msgid "OK"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-26 17:18+0200\n"
+"POT-Creation-Date: 2026-09-24 22:18+0200\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -339,7 +339,7 @@ msgstr "Núcleo"
 msgid "Stock Material"
 msgstr "Material Bruto"
 
-#: rayforge/core/source_asset.py
+#: rayforge/core/source_asset.py rayforge/ui_gtk/camera/properties_widget.py
 msgid "Source"
 msgstr "Fonte"
 
@@ -359,6 +359,131 @@ msgid "Cannot use operator '{op}' between types '{left}' and '{right}'"
 msgstr ""
 "Não é possível usar o operador '{op}' entre os tipos '{left}' e '{right}'"
 
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Ruida RPA"
+msgstr "Ruida RPA"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Connect via Ruida Protocol Analyzer"
+msgstr "Conectar via analisador de protocolo Ruida"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Ruida Coordinates"
+msgstr "Coordenadas Ruida"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "At least one of 'Hostname' or 'USB device' must be configured."
+msgstr ""
+"Pelo menos um de \"Nome do Host\" ou \"Dispositivo USB\" deve ser "
+"configurado."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+#: rayforge/machine/driver/smoothie/smoothie_driver.py
+msgid "Hostname"
+msgstr "Nome do Host"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "The IP address or hostname of the Ruida controller"
+msgstr "O endereço IP ou nome do host do controlador Ruida"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "USB"
+msgstr "USB"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "USB device path (e.g., /dev/ttyUSB0, 0403:6001, or COM3)"
+msgstr "Caminho do dispositivo USB (ex.: /dev/ttyUSB0, 0403:6001 ou COM3)"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Magic"
+msgstr "Número mágico"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Controller magic number in hex (e.g., 0x88). Leave empty for default."
+msgstr ""
+"Número mágico do controlador em hexadecimal (ex.: 0x88). Deixe vazio para o "
+"valor padrão."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "TUI RPC"
+msgstr "TUI RPC"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Enable TUI RPC connection to a remote RPA TUI service"
+msgstr "Ativar conexão TUI RPC a um serviço TUI de RPA remoto"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "RPC timeout (s)"
+msgstr "Tempo limite de RPC (s)"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"Maximum seconds to wait for each synchronous RPC. Raise for large jobs with "
+"many layers."
+msgstr ""
+"Máximo de segundos de espera para cada RPC síncrono. Aumente para trabalhos "
+"grandes com muitas camadas."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "VECTOR power floor"
+msgstr "Potência mínima de VECTOR"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Minimum power percentage for VECTOR cut compensation (e.g. 8 = 8%)."
+msgstr ""
+"Porcentagem mínima de potência para a compensação de corte VECTOR (ex.: 8 = "
+"8 %)."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "IMAGE power bias"
+msgstr "Viés de potência de IMAGE"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"Power bias added to IMAGE/raster scan-line power (SET_POWER), % of max (e.g. "
+"8 = 8%)."
+msgstr ""
+"Viés de potência adicionado à potência das linhas de varredura IMAGE/raster "
+"(SET_POWER), em % do máximo (ex.: 8 = 8 %)."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"set_power is not supported outside of a job with a Ruida controller — the "
+"correct handling is to be determined; no command was sent."
+msgstr ""
+"set_power não é suportado fora de um trabalho com um controlador Ruida — o "
+"tratamento correto ainda está por determinar; nenhum comando foi enviado."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"set_focus_power is not supported outside of a job with a Ruida controller — "
+"the correct handling is to be determined; no command was sent."
+msgstr ""
+"set_focus_power não é suportado fora de um trabalho com um controlador Ruida "
+"— o tratamento correto ainda está por determinar; nenhum comando foi enviado."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"set_wcs_offset is not supported: protect mode blocks SET_SETTING, and the "
+"feature was dropped by user decision. Use select_wcs to pick a reference "
+"point."
+msgstr ""
+"set_wcs_offset não é suportado: o modo de proteção bloqueia SET_SETTING e o "
+"recurso foi descartado por decisão do usuário. Use select_wcs para escolher "
+"um ponto de referência."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+#: rayforge/machine/driver/dummy.py
+msgid "No settings"
+msgstr "Nenhuma configuração"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Probe not supported by RPA driver"
+msgstr "Sondagem não suportada pelo driver RPA"
+
 #: rayforge/machine/driver/dummy.py rayforge/ui_gtk/machine/machine_dropdown.py
 #: rayforge/ui_gtk/machine/status_widget.py
 msgid "No driver"
@@ -369,15 +494,9 @@ msgid "No connection"
 msgstr "Sem conexão"
 
 #: rayforge/machine/driver/dummy.py
-#: rayforge/machine/driver/ruida/ruida_driver.py
 #: rayforge/machine/driver/marlin/marlin_serial.py
 msgid "Machine Coordinates"
 msgstr "Coordenadas de máquina"
-
-#: rayforge/machine/driver/dummy.py
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "No settings"
-msgstr "Nenhuma configuração"
 
 #: rayforge/machine/driver/driver.py
 #, python-brace-format
@@ -504,63 +623,6 @@ msgstr ""
 "Erro durante a configuração. Pode precisar de editar as configurações do "
 "dispositivo."
 
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "Ruida (UDP)"
-msgstr "Ruida (UDP)"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "Connect to a Ruida laser controller over UDP"
-msgstr "Conectar a um controlador de laser Ruida via UDP"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#: rayforge/machine/driver/grbl/grbl_telnet.py
-#: rayforge/machine/driver/grbl/grbl_network.py
-#: rayforge/machine/driver/smoothie/smoothie_driver.py
-#, python-brace-format
-msgid "Invalid hostname or IP address: '{host}'"
-msgstr "Nome de host ou endereço IP inválido: '{host}'"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#: rayforge/machine/driver/grbl/grbl_telnet.py
-#: rayforge/machine/driver/grbl/grbl_network.py
-#: rayforge/machine/driver/smoothie/smoothie_driver.py
-msgid "Hostname"
-msgstr "Nome do Host"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "The IP address or hostname of the Ruida controller"
-msgstr "O endereço IP ou nome do host do controlador Ruida"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "Main Port"
-msgstr "Porta principal"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "The UDP port for main commands (default: 50200)"
-msgstr "A porta UDP para comandos principais (padrão: 50200)"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "Jog Port"
-msgstr "Porta de jog"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "The UDP port for jog commands (default: 50207)"
-msgstr "A porta UDP para comandos de jog (padrão: 50207)"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#: rayforge/machine/driver/grbl/grbl_telnet.py
-#: rayforge/machine/driver/grbl/grbl_network.py
-#: rayforge/machine/driver/smoothie/smoothie_driver.py
-msgid "Hostname must be configured."
-msgstr "O Nome do host deve ser configurado."
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "No response from controller"
-msgstr "Sem resposta do controlador"
-
 #: rayforge/machine/driver/octoprint/octoprint_util.py
 msgid "Could not read the OctoPrint server version."
 msgstr "Não foi possível ler a versão do servidor OctoPrint."
@@ -587,6 +649,14 @@ msgstr "Enviar G-code para um servidor OctoPrint"
 #: rayforge/machine/driver/smoothie/smoothie_driver.py
 msgid "Machine Coordinates (G53)"
 msgstr "Coordenadas de máquina (G53)"
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+#: rayforge/machine/driver/smoothie/smoothie_driver.py
+#, python-brace-format
+msgid "Invalid hostname or IP address: '{host}'"
+msgstr "Nome de host ou endereço IP inválido: '{host}'"
 
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 msgid "IP address or hostname of the OctoPrint server"
@@ -631,6 +701,13 @@ msgid ""
 msgstr ""
 "Insira uma chave API manualmente ou clique em 'Solicitar acesso' para obter "
 "uma através do plugin Application Keys do OctoPrint."
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+#: rayforge/machine/driver/smoothie/smoothie_driver.py
+msgid "Hostname must be configured."
+msgstr "O Nome do host deve ser configurado."
 
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 msgid ""
@@ -2714,6 +2791,7 @@ msgid "Map a color to a step type for SVG imports."
 msgstr "Mapeie uma cor para um tipo de etapa nas importações SVG."
 
 #: rayforge/ui_gtk/settings/color_presets_page.py
+#: rayforge/ui_gtk/camera/selection_dialog.py
 #: rayforge/ui_gtk/doceditor/recipes/edit_recipe_dialog.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
@@ -3194,6 +3272,10 @@ msgstr "Importar arquivo…"
 msgid "Paste"
 msgstr "Colar"
 
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+msgid "Move Head Here"
+msgstr "Mover o cabeçote para cá"
+
 #: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py rayforge/doceditor/edit_cmd.py
 msgid "Add {} Instance"
 msgstr "Adicionar instância {}"
@@ -3329,34 +3411,80 @@ msgid "Transparency on the worksurface"
 msgstr "Transparência na superfície de trabalho"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-msgid "Please select an available camera device"
-msgstr "Por favor, selecione um dispositivo de câmera disponível"
+msgid "Scanning for devices…"
+msgstr "Procurando dispositivos…"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-msgid "Please select a configured camera"
-msgstr "Por favor, selecione uma câmera configurada"
+msgid "Add Camera"
+msgstr "Adicionar câmera"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Choose a camera source."
+msgstr "Escolha uma fonte de câmera."
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
 msgid "Select Camera"
 msgstr "Selecionar Câmera"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-msgid "No cameras configured."
-msgstr "Nenhuma câmera configurada."
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+#: rayforge/ui_gtk/shared/model_selection_dialog.py
+msgid "Select"
+msgstr "Selecionar"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-#, python-brace-format
-msgid "Failed to load image for Device ID: {device_id}"
-msgstr "Falha ao carregar imagem para o ID do Dispositivo: {device_id}"
+msgid "Source Type"
+msgstr "Tipo de fonte"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-#, python-brace-format
-msgid "Camera {device_id}"
-msgstr "Câmera {device_id}"
+msgid "Choose source type"
+msgstr "Escolha o tipo de fonte"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-msgid "No cameras found."
-msgstr "Nenhuma câmera encontrada."
+msgid "Local camera"
+msgstr "Câmera local"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "HTTP snapshot URL"
+msgstr "URL de instantâneo HTTP"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "HTTP stream URL"
+msgstr "URL de transmissão HTTP"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "RTSP stream"
+msgstr "Transmissão RTSP"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+#: rayforge/ui_gtk/machine/device_settings_page.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "Device"
+msgstr "Dispositivo"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Choose an attached local camera"
+msgstr "Escolha uma câmera local conectada"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Preview"
+msgstr "Pré-visualização"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Capture one frame from the selected local camera"
+msgstr "Capturar um quadro da câmera local selecionada"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "URL"
+msgstr "URL"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Enter the snapshot or stream URL"
+msgstr "Insira a URL do instantâneo ou da transmissão"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Choose device"
+msgstr "Escolha o dispositivo"
 
 #: rayforge/ui_gtk/camera/point_bubble_widget.py
 #, python-brace-format
@@ -3380,12 +3508,12 @@ msgid "Configure the selected camera."
 msgstr "Configurar a câmera selecionada."
 
 #: rayforge/ui_gtk/camera/properties_widget.py
-msgid "Device ID"
-msgstr "ID do Dispositivo"
+msgid "Choose a connected local camera"
+msgstr "Escolha uma câmera local conectada"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
-msgid "System identifier for the camera device"
-msgstr "Identificador do sistema para o dispositivo de câmera"
+msgid "Camera source URL"
+msgstr "URL da fonte da câmera"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Display name for this camera"
@@ -3445,6 +3573,11 @@ msgstr "Alinhamento da Imagem"
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Calibrate camera position and perspective"
 msgstr "Calibrar posição e perspectiva da câmera"
+
+#: rayforge/ui_gtk/camera/properties_widget.py
+#, python-brace-format
+msgid "Unavailable: {device_id}"
+msgstr "Indisponível: {device_id}"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Lens calibration completed"
@@ -3692,6 +3825,31 @@ msgstr "Descartar"
 msgid "Save Calibration"
 msgstr "Salvar calibração"
 
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+msgid "Lens calibration saved."
+msgstr "Calibração de lente salva."
+
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+msgid "Skip Lens Calibration?"
+msgstr "Pular a calibração de lente?"
+
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+#, python-brace-format
+msgid ""
+"You captured {frames} frame(s) but have not run Calibrate yet. Continuing "
+"discards them and leaves the lens uncorrected."
+msgstr ""
+"Você capturou {frames} quadro(s), mas ainda não executou \"Calibrar\". "
+"Continuar os descartará e deixará a lente sem correção."
+
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+msgid "Skip Anyway"
+msgstr "Pular mesmo assim"
+
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+msgid "Stay Here"
+msgstr "Ficar aqui"
+
 #: rayforge/ui_gtk/camera/wizard/wizard.py
 #, python-brace-format
 msgid "{camera} - Camera Wizard"
@@ -3801,6 +3959,11 @@ msgid "Device ID: {device_id}"
 msgstr "ID do Dispositivo: {device_id}"
 
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
+#, python-brace-format
+msgid "Source: {source}"
+msgstr "Fonte: {source}"
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
 msgid "Add New Camera"
 msgstr "Adicionar Nova Câmera"
 
@@ -3871,6 +4034,46 @@ msgstr "Limpar Todos os Pontos"
 #: rayforge/ui_gtk/doceditor/step_type_selection_dialog.py
 msgid "Apply"
 msgstr "Aplicar"
+
+#: rayforge/ui_gtk/machine/validation.py
+#, python-brace-format
+msgid ""
+"\"{value}\" is only a number and would be sent to the machine as-is. A G-"
+"code command must start with a letter (e.g. \"M4 S{value}\")."
+msgstr ""
+"\"{value}\" é apenas um número e seria enviado à máquina como está. Um "
+"comando de G-code deve começar com uma letra (ex.: \"M4 S{value}\")."
+
+#: rayforge/ui_gtk/machine/validation.py
+#, python-brace-format
+msgid ""
+"Line {lineno} is only the number \"{value}\" and would be sent to the "
+"machine as-is. A G-code command must start with a letter (e.g. \"M4 S{value}"
+"\")."
+msgstr ""
+"A linha {lineno} é apenas o número \"{value}\" e seria enviada à máquina "
+"como está. Um comando de G-code deve começar com uma letra (ex.: \"M4 "
+"S{value}\")."
+
+#: rayforge/ui_gtk/machine/validation.py
+#, python-brace-format
+msgid ""
+"Continuous laser mode is enabled: laser power is carried on movement lines, "
+"but this template has no {s_command} placeholder and the power would be "
+"silently dropped."
+msgstr ""
+"O modo laser contínuo está ativado: a potência do laser é transportada nas "
+"linhas de movimento, mas este modelo não tem o marcador {s_command} e a "
+"potência seria silenciosamente descartada."
+
+#: rayforge/ui_gtk/machine/validation.py
+#, python-brace-format
+msgid ""
+"In continuous laser mode these templates need the {{s_command}} placeholder "
+"to carry laser power: {labels}."
+msgstr ""
+"No modo laser contínuo, estes modelos precisam do marcador {{s_command}} "
+"para transportar a potência do laser: {labels}."
 
 #: rayforge/ui_gtk/machine/macro_list.py
 msgid "Add New Macro"
@@ -4108,9 +4311,12 @@ msgid "Maximum pulse width in µs"
 msgstr "Largura de pulso máxima em µs"
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
-msgid "Power value in percent to use when framing. 0 to disable"
+msgid ""
+"Power value in percent to use when framing. 0 traces the outline with the "
+"beam off"
 msgstr ""
-"Valor de potência em percentagem a usar ao enquadrar. 0 para desativar."
+"Valor de potência em porcentagem a usar ao enquadrar. 0 traça o contorno com "
+"o feixe desligado"
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 msgid ""
@@ -4265,6 +4471,7 @@ msgid "Zone geometry shape"
 msgstr "Forma da geometria da zona"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
+#: rayforge/ui_gtk/machine/move_to_popover.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "X"
 msgstr "X"
@@ -4275,6 +4482,7 @@ msgid "X position in {wcs}"
 msgstr "Posição X em {wcs}"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
+#: rayforge/ui_gtk/machine/move_to_popover.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Y"
 msgstr "Y"
@@ -4285,6 +4493,7 @@ msgid "Y position in {wcs}"
 msgstr "Posição Y em {wcs}"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
+#: rayforge/ui_gtk/machine/move_to_popover.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Z"
 msgstr "Z"
@@ -4415,6 +4624,30 @@ msgstr "Todos os arquivos"
 #: rayforge/ui_gtk/machine/profile_importer.py
 msgid "Import Device Profile"
 msgstr "Importar perfil de dispositivo"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Move to Position"
+msgstr "Mover para a posição"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Move to Lower-Left of Selection or Workarea"
+msgstr "Mover para o canto inferior esquerdo da seleção ou área de trabalho"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Move to Center of Selection or Workarea"
+msgstr "Mover para o centro da seleção ou área de trabalho"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Move to Upper-Right of Selection or Workarea"
+msgstr "Mover para o canto superior direito da seleção ou área de trabalho"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Move to Origin of Active WCS"
+msgstr "Mover para origem do WCS ativo"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Move"
+msgstr "Mover"
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "Edit Macro"
@@ -4584,11 +4817,6 @@ msgid ""
 msgstr ""
 "Isso redefinirá o total de horas de operação acumuladas para zero. Os "
 "contadores de manutenção não serão afetados."
-
-#: rayforge/ui_gtk/machine/device_settings_page.py
-#: rayforge/ui_gtk/machine/settings_dialog.py
-msgid "Device"
-msgstr "Dispositivo"
 
 #: rayforge/ui_gtk/machine/device_settings_page.py
 msgid "Device Settings"
@@ -5398,11 +5626,6 @@ msgid "Configured"
 msgstr "Configurado"
 
 #: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
-#: rayforge/ui_gtk/shared/model_selection_dialog.py
-msgid "Select"
-msgstr "Selecionar"
-
-#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
 msgid ""
 "Connect your machine via USB or network — we will find it automatically."
 msgstr "Conecte sua máquina via USB ou rede — a encontraremos automaticamente."
@@ -6182,6 +6405,10 @@ msgstr "Exportado para {path}"
 #, python-brace-format
 msgid "Export failed: {error}"
 msgstr "Exportação falhou: {error}"
+
+#: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "This camera source is already configured."
+msgstr "Esta fonte de câmera já está configurada."
 
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #: rayforge/ui_gtk/doceditor/recipes/pages/applicability.py
@@ -7121,8 +7348,8 @@ msgstr ""
 "Adicione ou ative uma etapa de processamento para habilitar a exportação"
 
 #: rayforge/ui_gtk/mainwindow.py
-msgid "Configure frame power to enable"
-msgstr "Configure a potência de enquadramento para habilitar"
+msgid "Add a laser head to enable"
+msgstr "Adicione um cabeçote de laser para ativar"
 
 #: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/toolbar.py
 msgid "Cycle laser head around the occupied area"
@@ -7927,20 +8154,12 @@ msgid "Current Position"
 msgstr "Posição Atual"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Move to Lower-Left of Selection or Workarea"
-msgstr "Mover para o canto inferior esquerdo da seleção ou área de trabalho"
+msgid "Click Canvas to Move Head"
+msgstr "Clicar na tela para mover o cabeçote"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Move to Center of Selection or Workarea"
-msgstr "Mover para o centro da seleção ou área de trabalho"
-
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Move to Upper-Right of Selection or Workarea"
-msgstr "Mover para o canto superior direito da seleção ou área de trabalho"
-
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Move to Origin of Active WCS"
-msgstr "Mover para origem do WCS ativo"
+msgid "Move to Coordinates"
+msgstr "Mover para coordenadas"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Zero Axes"
@@ -7964,10 +8183,6 @@ msgstr "Definir Zero de Trabalho na Posição Atual"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Click Canvas to Set Work Zero"
-msgstr "Clicar na área de trabalho para definir zero de trabalho"
-
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Click on canvas to set work zero"
 msgstr "Clicar na área de trabalho para definir zero de trabalho"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py

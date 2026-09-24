@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-29 16:07+0200\n"
+"POT-Creation-Date: 2026-09-24 21:41+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -266,6 +266,24 @@ msgid "Laser power as a percentage"
 msgstr ""
 
 #: laser_essentials/steps/laser_step.py
+msgid "Power Mode"
+msgstr ""
+
+#: laser_essentials/steps/laser_step.py
+msgid ""
+"Dynamic power (M4) scales power with head speed; constant power (M3) keeps "
+"it fixed. Use constant power if corners and curves burn too lightly"
+msgstr ""
+
+#: laser_essentials/steps/laser_step.py
+msgid "Dynamic (M4)"
+msgstr ""
+
+#: laser_essentials/steps/laser_step.py
+msgid "Constant (M3)"
+msgstr ""
+
+#: laser_essentials/steps/laser_step.py
 msgid "Air Assist"
 msgstr ""
 
@@ -353,6 +371,22 @@ msgstr ""
 msgid ""
 "Shifts the frame inward/outward per Cut Side (none on Centerline). Defaults "
 "to kerf compensation for the head"
+msgstr ""
+
+#: laser_essentials/steps/frame_step.py
+msgid "Round Corners"
+msgstr ""
+
+#: laser_essentials/steps/frame_step.py
+msgid "Round the frame's corners instead of cutting right angles"
+msgstr ""
+
+#: laser_essentials/steps/frame_step.py
+msgid "Corner Radius"
+msgstr ""
+
+#: laser_essentials/steps/frame_step.py
+msgid "Radius used to round the frame's corners"
 msgstr ""
 
 #: laser_essentials/steps/raster_step.py

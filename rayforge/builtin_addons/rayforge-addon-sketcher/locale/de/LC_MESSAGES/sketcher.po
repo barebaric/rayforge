@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-30 08:22+0200\n"
+"POT-Creation-Date: 2026-09-23 23:33+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -91,6 +91,11 @@ msgstr "Abstand"
 msgid "From {} to {}"
 msgstr "Von {} bis {}"
 
+#: sketcher/core/constraints/distance.py sketcher/core/constraints/vertical.py
+#: sketcher/core/constraints/horizontal.py
+msgid "Enter length or expression."
+msgstr "Länge oder Ausdruck eingeben."
+
 #: sketcher/core/constraints/vertical.py
 #: sketcher/ui_gtk/tools/vertical_constraint_tool.py
 msgid "Vertical"
@@ -123,6 +128,10 @@ msgstr "Symmetrie"
 msgid "Horizontal"
 msgstr "Horizontal"
 
+#: sketcher/core/constraints/base.py
+msgid "Enter value or expression."
+msgstr "Wert oder Ausdruck eingeben."
+
 #: sketcher/core/constraints/angle.py
 #: sketcher/ui_gtk/tools/angle_constraint_tool.py
 msgid "Angle"
@@ -132,6 +141,10 @@ msgstr "Winkel"
 msgid "Between two lines"
 msgstr "Zwischen zwei Linien"
 
+#: sketcher/core/constraints/angle.py
+msgid "Enter angle in degrees or expression."
+msgstr "Winkel in Grad oder Ausdruck eingeben."
+
 #: sketcher/core/constraints/diameter.py
 #: sketcher/ui_gtk/tools/diameter_constraint_tool.py
 msgid "Diameter"
@@ -140,6 +153,10 @@ msgstr "Durchmesser"
 #: sketcher/core/constraints/diameter.py
 msgid "Circle at {}"
 msgstr "Kreis bei {}"
+
+#: sketcher/core/constraints/diameter.py
+msgid "Enter diameter or expression."
+msgstr "Durchmesser oder Ausdruck eingeben."
 
 #: sketcher/core/constraints/coincident.py
 #: sketcher/ui_gtk/tools/coincident_constraint_tool.py
@@ -159,6 +176,10 @@ msgstr "Radius"
 #: sketcher/core/constraints/radius.py
 msgid "{} at {}"
 msgstr "{} bei {}"
+
+#: sketcher/core/constraints/radius.py
+msgid "Enter radius or expression (e.g. 'width/2')."
+msgstr "Radius oder Ausdruck eingeben (z. B. 'Breite/2')."
 
 #: sketcher/core/constraints/aspect_ratio.py
 #: sketcher/ui_gtk/tools/aspect_ratio_constraint_tool.py
@@ -842,26 +863,6 @@ msgstr "Kursiv"
 #: sketcher/ui_gtk/font_properties.py
 msgid "Select Font"
 msgstr "Schriftart auswählen"
-
-#: sketcher/ui_gtk/sketchcanvas.py
-msgid "Enter radius or expression (e.g. 'width/2')."
-msgstr "Radius oder Ausdruck eingeben (z. B. 'Breite/2')."
-
-#: sketcher/ui_gtk/sketchcanvas.py
-msgid "Enter diameter or expression."
-msgstr "Durchmesser oder Ausdruck eingeben."
-
-#: sketcher/ui_gtk/sketchcanvas.py
-msgid "Enter angle in degrees or expression."
-msgstr "Winkel in Grad oder Ausdruck eingeben."
-
-#: sketcher/ui_gtk/sketchcanvas.py
-msgid "Enter length or expression."
-msgstr "Länge oder Ausdruck eingeben."
-
-#: sketcher/ui_gtk/sketchcanvas.py
-msgid "Enter value or expression."
-msgstr "Wert oder Ausdruck eingeben."
 
 #: sketcher/ui_gtk/sketchcanvas.py
 msgid "OK"

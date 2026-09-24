@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-29 16:07+0200\n"
+"POT-Creation-Date: 2026-09-24 21:41+0200\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -271,6 +271,27 @@ msgid "Laser power as a percentage"
 msgstr "Potência do laser em percentagem"
 
 #: laser_essentials/steps/laser_step.py
+msgid "Power Mode"
+msgstr "Modo de potência"
+
+#: laser_essentials/steps/laser_step.py
+msgid ""
+"Dynamic power (M4) scales power with head speed; constant power (M3) keeps "
+"it fixed. Use constant power if corners and curves burn too lightly"
+msgstr ""
+"A potência dinâmica (M4) dimensiona a potência conforme a velocidade do "
+"cabeçote; a potência constante (M3) a mantém fixa. Use potência constante se "
+"cantos e curvas queimarem pouco demais"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Dynamic (M4)"
+msgstr "Dinâmica (M4)"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Constant (M3)"
+msgstr "Constante (M3)"
+
+#: laser_essentials/steps/laser_step.py
 msgid "Air Assist"
 msgstr "Assistência de Ar"
 
@@ -361,6 +382,22 @@ msgid ""
 msgstr ""
 "Desloca o quadro para dentro/fora conforme o Lado de Corte (nenhum na Linha "
 "Central). Por predefinição, compensação de kerf para a cabeça"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Round Corners"
+msgstr "Cantos arredondados"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Round the frame's corners instead of cutting right angles"
+msgstr "Arredonda os cantos da moldura em vez de cortar ângulos retos"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Corner Radius"
+msgstr "Raio dos cantos"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Radius used to round the frame's corners"
+msgstr "Raio usado para arredondar os cantos da moldura"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Mode"
