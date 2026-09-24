@@ -139,6 +139,7 @@ Complete reference of keyboard shortcuts in Rayforge.
 | Shortcut    | Action           | Description                    |
 | ----------- | ---------------- | ------------------------------ |
 | `Ctrl+L`    | Bottom Panel     | Toggle bottom panel visibility |
+| `Ctrl+M`    | Move Head Mode   | Arm click-canvas-to-move-head  |
 | `Ctrl+&lt;` | Machine Settings | Open machine settings dialog   |
 | `F1`        | About            | Show about dialog              |
 
@@ -389,6 +390,7 @@ Some lesser-known shortcuts:
 |               | Ctrl+G       | Group            |
 |               | Ctrl+U       | Ungroup          |
 | **Machine**   | Ctrl+L       | Bottom Panel     |
+|               | Ctrl+M       | Move Head Mode   |
 |               | Ctrl+&lt;    | Machine Settings |
 |               | F1           | About            |
 

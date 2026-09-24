@@ -5,9 +5,7 @@ description:
 
 # 相机集成
 
-Rayforge 支持相机集成，用于精确的材料对齐和定位，可使用本地 USB 相机或网络相机（HTTP
-快照、HTTP/MJPEG 流或 RTSP）。相机叠加功能允许您准确看到激光将在材料上的何处切割或雕刻，
-消除猜测并减少材料浪费。
+Rayforge 支持相机集成，用于精确的材料对齐和定位，可使用本地 USB 相机或网络相机（HTTP 快照、HTTP/MJPEG 流或 RTSP）。相机叠加功能允许您准确看到激光将在材料上的何处切割或雕刻，消除猜测并减少材料浪费。
 
 ![相机设置](/screenshots/machine-settings-camera.webp)
 

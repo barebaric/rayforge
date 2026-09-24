@@ -8,8 +8,8 @@ description:
 
 Rayforge prend en charge l'intégration de caméras pour l'alignement et le positionnement précis,
 avec des caméras USB locales ou des caméras réseau (instantané HTTP, flux HTTP/MJPEG ou RTSP). La
-fonctionnalité de superposition caméra te permet de voir exactement où ton laser va
-couper ou graver sur le matériau, éliminant les suppositions et réduisant le gaspillage de matériau.
+fonctionnalité de superposition caméra te permet de voir exactement où ton laser va couper ou graver
+sur le matériau, éliminant les suppositions et réduisant le gaspillage de matériau.
 
 ![Paramètres Caméra](/screenshots/machine-settings-camera.webp)
 

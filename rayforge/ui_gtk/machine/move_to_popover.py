@@ -147,7 +147,7 @@ class MoveToPopover(Gtk.Popover):
     def _on_machine_state_changed(self, machine, state):
         self.update_sensitivity()
 
-    def _on_connection_status_changed(self, machine, status):
+    def _on_connection_status_changed(self, machine, status, **kwargs):
         self.update_sensitivity()
 
     def _on_machine_changed(self, machine, **kwargs):

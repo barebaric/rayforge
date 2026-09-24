@@ -75,6 +75,22 @@ def test_click_to_move_toggled_flips_mode(bottom_panel_modes):
 
 
 @pytest.mark.ui
+def test_toggle_move_to_mode_flips_state(bottom_panel_modes):
+    emissions = []
+
+    def on_move_to_mode_changed(sender, **kw):
+        emissions.append(kw["active"])
+
+    bottom_panel_modes.move_to_mode_changed.connect(on_move_to_mode_changed)
+
+    bottom_panel_modes.toggle_move_to_mode()
+    bottom_panel_modes.toggle_move_to_mode()
+
+    assert bottom_panel_modes._move_to_mode is False
+    assert emissions == [True, False]
+
+
+@pytest.mark.ui
 def test_move_to_mode_deactivates_click_to_zero(bottom_panel_modes):
     zero_emissions = []
 

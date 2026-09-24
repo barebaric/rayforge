@@ -7,9 +7,9 @@ description:
 # Integração com Câmera
 
 O Rayforge é compatível com integração de câmeras para alinhamento e posicionamento preciso, usando
-câmeras USB locais ou câmeras de rede (instantâneo HTTP, fluxo HTTP/MJPEG ou RTSP).
-O recurso de sobreposição de câmera permite ver exatamente onde seu laser vai cortar ou gravar no
-material, eliminando suposições e reduzindo o desperdício de material.
+câmeras USB locais ou câmeras de rede (instantâneo HTTP, fluxo HTTP/MJPEG ou RTSP). O recurso de
+sobreposição de câmera permite ver exatamente onde seu laser vai cortar ou gravar no material,
+eliminando suposições e reduzindo o desperdício de material.
 
 ![Configurações da Câmera](/screenshots/machine-settings-camera.webp)
 

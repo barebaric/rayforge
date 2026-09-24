@@ -7,9 +7,9 @@ description:
 # Integración de Cámara
 
 Rayforge admite la integración de cámaras para una alineación y posicionamiento precisos, usando
-cámaras USB locales o cámaras de red (instantánea HTTP, transmisión HTTP/MJPEG o RTSP). La
-función de superposición de cámara te permite ver exactamente dónde tu láser va a
-cortar o grabar en el material, eliminando las conjeturas y reduciendo el desperdicio de material.
+cámaras USB locales o cámaras de red (instantánea HTTP, transmisión HTTP/MJPEG o RTSP). La función
+de superposición de cámara te permite ver exactamente dónde tu láser va a cortar o grabar en el
+material, eliminando las conjeturas y reduciendo el desperdicio de material.
 
 ![Ajustes de Cámara](/screenshots/machine-settings-camera.webp)
 

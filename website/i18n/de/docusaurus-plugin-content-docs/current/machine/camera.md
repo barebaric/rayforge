@@ -6,10 +6,10 @@ description:
 
 # Kamera-Integration
 
-Rayforge unterstützt die Kamera-Integration für präzise Materialausrichtung und Positionierung,
-mit lokalen USB-Kameras oder Netzwerkkameras (HTTP-Schnappschuss, HTTP/MJPEG-Stream oder RTSP).
-Die Kamera-Overlay-Funktion ermöglicht es dir, genau zu sehen, wo dein Laser auf dem Material
-schneiden oder gravieren wird, was Rätselraten eliminiert und Materialabfall reduziert.
+Rayforge unterstützt die Kamera-Integration für präzise Materialausrichtung und Positionierung, mit
+lokalen USB-Kameras oder Netzwerkkameras (HTTP-Schnappschuss, HTTP/MJPEG-Stream oder RTSP). Die
+Kamera-Overlay-Funktion ermöglicht es dir, genau zu sehen, wo dein Laser auf dem Material schneiden
+oder gravieren wird, was Rätselraten eliminiert und Materialabfall reduziert.
 
 ![Kameraeinstellungen](/screenshots/machine-settings-camera.webp)
 

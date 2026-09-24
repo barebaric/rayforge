@@ -14,7 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   offers direct X/Y (and Z, when available) coordinate entry and hosts
   the selection/workarea corner and WCS origin shortcuts, a "Click
   Canvas to Move Head" mode mirrors Click to Zero, and the canvas
-  background context menu gains a "Move Head Here" action (#452)
+  background context menu gains a "Move Head Here" action. These moves
+  run at the configured Jog Speed (#452, #458)
+- Machine control: Ctrl+M arms the "Click Canvas to Move Head" mode
+  from the keyboard
 - Drivers: `move_to` accepts an optional absolute Z target; machines
   with a Z axis receive it in the same move
 

@@ -133,6 +133,7 @@ Referência completa de atalhos de teclado no Rayforge.
 | Atalho      | Ação                     | Descrição                                 |
 | ----------- | ------------------------ | ----------------------------------------- |
 | `Ctrl+L`    | Painel Inferior          | Alternar visibilidade do painel inferior  |
+| `Ctrl+M`    | Modo Mover Cabeça        | Ativar clicar na tela para mover a cabeça |
 | `Ctrl+&lt;` | Configurações da Máquina | Abrir diálogo de configurações da máquina |
 | `F1`        | Sobre                    | Mostrar diálogo sobre                     |
 
@@ -386,6 +387,7 @@ Alguns atalhos menos conhecidos:
 |                 | Ctrl+G       | Agrupar                  |
 |                 | Ctrl+U       | Desagrupar               |
 | **Máquina**     | Ctrl+L       | Painel Inferior          |
+|                 | Ctrl+M       | Modo Mover Cabeça        |
 |                 | Ctrl+&lt;    | Configurações da Máquina |
 |                 | F1           | Sobre                    |
 

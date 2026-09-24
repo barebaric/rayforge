@@ -130,11 +130,12 @@ Référence complète des raccourcis clavier dans Rayforge.
 
 ## Contrôle de la machine
 
-| Raccourci   | Action             | Description                                        |
-| ----------- | ------------------ | -------------------------------------------------- |
-| `Ctrl+L`    | Panneau inférieur  | Basculer la visibilité du panneau inférieur        |
-| `Ctrl+&lt;` | Paramètres machine | Ouvrir la boîte de dialogue des paramètres machine |
-| `F1`        | À propos           | Afficher la boîte de dialogue À propos             |
+| Raccourci   | Action             | Description                                           |
+| ----------- | ------------------ | ----------------------------------------------------- |
+| `Ctrl+L`    | Panneau inférieur  | Basculer la visibilité du panneau inférieur           |
+| `Ctrl+M`    | Mode déplacer tête | Activer « Clic sur le canevas pour déplacer la tête » |
+| `Ctrl+&lt;` | Paramètres machine | Ouvrir la boîte de dialogue des paramètres machine    |
+| `F1`        | À propos           | Afficher la boîte de dialogue À propos                |
 
 <!-- prettier-ignore-start -->
 :::note[Opérations machine]
@@ -389,6 +390,7 @@ Certains raccourcis moins connus :
 |                 | Ctrl+G       | Grouper              |
 |                 | Ctrl+U       | Dissocier            |
 | **Machine**     | Ctrl+L       | Panneau inférieur    |
+|                 | Ctrl+M       | Mode déplacer tête   |
 |                 | Ctrl+&lt;    | Paramètres machine   |
 |                 | F1           | À propos             |
 

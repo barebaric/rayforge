@@ -545,6 +545,10 @@ class BottomPanel(Gtk.Box):
             self._update_wcs_ui()
             self.click_to_zero_mode_changed.send(self, active=active)
 
+    def toggle_move_to_mode(self):
+        """Toggles click-canvas-to-move-head mode."""
+        self.set_move_to_mode(not self._move_to_mode)
+
     def set_move_to_mode(self, active: bool):
         if self._move_to_mode != active:
             self._move_to_mode = active
@@ -576,7 +580,7 @@ class BottomPanel(Gtk.Box):
         self.set_click_to_zero_mode(not self._click_to_zero_mode)
 
     def _on_click_to_move_toggled(self, button):
-        self.set_move_to_mode(not self._move_to_mode)
+        self.toggle_move_to_mode()
 
     def _on_edit_offsets_clicked(self, button):
         if not self.machine:

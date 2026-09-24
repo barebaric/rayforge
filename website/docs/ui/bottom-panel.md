@@ -131,6 +131,40 @@ Configure the behavior of jog operations:
 :::
 <!-- prettier-ignore-end -->
 
+## Moving the Laser Head
+
+In addition to jogging, the laser head can be moved to an exact position. All of these moves use the
+**Jog Speed** setting described above.
+
+### Move to Position Popover
+
+Click the compass icon in the Current Position row to open the Move to Position popover. It is
+prefilled with the current position, and coordinates are entered in the active work coordinate
+system, matching the position readout:
+
+| Control            | Function                                                  |
+| ------------------ | --------------------------------------------------------- |
+| X / Y / Z          | Target coordinates (Z only on machines with a Z axis)     |
+| Move               | Moves the head to the entered coordinates                 |
+| Lower-Left         | Move to lower-left of the selection, or workarea if none  |
+| Center             | Move to center of the selection, or workarea if none      |
+| Upper-Right        | Move to upper-right of the selection, or workarea if none |
+| Move to WCS Origin | Move to X0 Y0 of the active WCS                           |
+
+The popover and its shortcuts are disabled while the machine is offline.
+
+### Click Canvas to Move Head
+
+Click the move icon in the Current Position row (or press <kbd>Ctrl+M</kbd>) to arm the mode. The
+next left-click on empty canvas space moves the head to that point, and the mode then deactivates
+automatically. Right-clicking cancels the mode without moving the head. Arming this mode deactivates
+Click to Zero, and vice versa.
+
+### Move Head Here
+
+Right-clicking empty canvas space offers a **Move Head Here** entry that moves the head directly to
+the clicked point.
+
 ## Machine Status Display
 
 The Control Panel displays real-time information about your machine:

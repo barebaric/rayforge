@@ -130,11 +130,12 @@ Vollständige Referenz der Tastaturkürzel in Rayforge.
 
 ## Maschinensteuerung
 
-| Kürzel   | Aktion                 | Beschreibung                          |
-| -------- | ---------------------- | ------------------------------------- |
-| `Strg+L` | Unteres Panel          | Unteres Panel-Sichtbarkeit umschalten |
-| `Strg+<` | Maschineneinstellungen | Maschineneinstellungsdialog öffnen    |
-| `F1`     | Über                   | Über-Dialog anzeigen                  |
+| Kürzel   | Aktion                 | Beschreibung                                            |
+| -------- | ---------------------- | ------------------------------------------------------- |
+| `Strg+L` | Unteres Panel          | Unteres Panel-Sichtbarkeit umschalten                   |
+| `Strg+M` | Kopf-Bewegungsmodus    | „Auf Canvas klicken, um den Kopf zu bewegen" aktivieren |
+| `Strg+<` | Maschineneinstellungen | Maschineneinstellungsdialog öffnen                      |
+| `F1`     | Über                   | Über-Dialog anzeigen                                    |
 
 <!-- prettier-ignore-start -->
 :::note[Maschinenoperationen]
@@ -386,6 +387,7 @@ Einige weniger bekannte Kürzel:
 |                    | Strg+G          | Gruppieren             |
 |                    | Strg+U          | Gruppierung aufheben   |
 | **Maschine**       | Strg+L          | Unteres Panel          |
+|                    | Strg+M          | Kopf-Bewegungsmodus    |
 |                    | Strg+<          | Maschineneinstellungen |
 |                    | F1              | Über                   |
 

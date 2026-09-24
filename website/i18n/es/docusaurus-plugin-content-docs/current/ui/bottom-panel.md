@@ -131,6 +131,41 @@ Configura el comportamiento de las operaciones de desplazamiento:
 :::
 <!-- prettier-ignore-end -->
 
+## Moviendo la Cabeza del Láser
+
+Además de las operaciones de desplazamiento, la cabeza del láser puede moverse a una posición
+exacta. Todos estos movimientos usan la configuración de **Velocidad de Desplazamiento** descrita
+arriba.
+
+### Popover de Mover a Posición
+
+Haz clic en el icono de brújula en la fila de Posición Actual para abrir el popover de Mover a
+Posición. Está prellenado con la posición actual, y las coordenadas se ingresan en el sistema de
+coordenadas de trabajo activo, coincidiendo con la lectura de posición:
+
+| Control             | Función                                                                                |
+| ------------------- | -------------------------------------------------------------------------------------- |
+| X / Y / Z           | Coordenadas de destino (Z solo en máquinas con eje Z)                                  |
+| Mover               | Mueve la cabeza a las coordenadas ingresadas                                           |
+| Inferior-Izquierda  | Mover a la esquina inferior-izquierda de la selección, o del área de trabajo si no hay |
+| Centro              | Mover al centro de la selección, o del área de trabajo si no hay                       |
+| Superior-Derecha    | Mover a la esquina superior-derecha de la selección, o del área de trabajo si no hay   |
+| Mover al Origen WCS | Mover a X0 Y0 del WCS activo                                                           |
+
+El popover y sus atajos están deshabilitados mientras la máquina está fuera de línea.
+
+### Clic en el Lienzo para Mover la Cabeza
+
+Haz clic en el icono de mover en la fila de Posición Actual (o presiona <kbd>Ctrl+M</kbd>) para
+armar el modo. El siguiente clic izquierdo en un espacio vacío del lienzo mueve la cabeza a ese
+punto, y el modo se desactiva automáticamente después. Hacer clic derecho cancela el modo sin mover
+la cabeza. Armar este modo desactiva Clic para Cero, y viceversa.
+
+### Mover la Cabeza Aquí
+
+Hacer clic derecho en un espacio vacío del lienzo ofrece una entrada **Mover la Cabeza Aquí** que
+mueve la cabeza directamente al punto donde se hizo clic.
+
 ## Pantalla de Estado de la Máquina
 
 El Panel de Control muestra información en tiempo real sobre tu máquina:
