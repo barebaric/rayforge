@@ -5,7 +5,9 @@ from collections.abc import Callable
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Optional
 
-from gi.repository import Gio, Gtk
+from gi.repository import Gio, GLib, Gtk
+
+from ..shared.keyboard import PRIMARY_ACCEL
 
 if TYPE_CHECKING:
     from ...core.item import DocItem
@@ -167,7 +169,14 @@ def _show_popover(
     if ok:
         popover.set_pointing_to(rect)
 
+    popover.connect("closed", _on_context_menu_closed, surface)
     popover.popup()
+
+
+def _on_context_menu_closed(_popover: Gtk.Popover, surface: WorkSurface):
+    """Drop the stored right-click position so a later keyboard
+    invocation of win.move-head-here cannot act on a stale point."""
+    surface.right_click_machine_pos = None
 
 
 def show_item_context_menu(
@@ -216,7 +225,9 @@ def show_background_context_menu(surface: WorkSurface, gesture: Gtk.Gesture):
     menu.append_section(None, Gio.Menu.new())
     menu.append_item(Gio.MenuItem.new(_("Paste"), "win.paste"))
     menu.append_section(None, Gio.Menu.new())
-    menu.append_item(
-        Gio.MenuItem.new(_("Move Head Here"), "win.move-head-here")
+    move_item = Gio.MenuItem.new(_("Move Head Here"), "win.move-head-here")
+    move_item.set_attribute_value(
+        "accel", GLib.Variant.new_string(f"{PRIMARY_ACCEL}m")
     )
+    menu.append_item(move_item)
     _show_popover(surface, gesture, menu)

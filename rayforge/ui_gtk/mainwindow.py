@@ -2134,7 +2134,6 @@ class MainWindow(Adw.ApplicationWindow):
                 connected or is_dummy
             ) and not is_job_or_task_active
             am.get_action("move-head-here").set_enabled(can_move_head)
-            am.get_action("toggle-move-head").set_enabled(can_move_head)
 
         # Update actions that don't depend on the machine state
         selected_elements = self.surface.get_selected_elements()
@@ -2426,15 +2425,16 @@ class MainWindow(Adw.ApplicationWindow):
 
         self.machine_cmd.home(config.machine)
 
-    def on_toggle_move_head_clicked(self, action, param):
-        """Toggle the click-canvas-to-move-head mode."""
-        self.bottom_panel.toggle_move_to_mode()
-
     def on_move_head_here_clicked(self, action, param):
         config = get_context().config
         machine = config.machine
+        if not machine:
+            return
+
         pos = self.surface.right_click_machine_pos
-        if not machine or not pos:
+        self.surface.right_click_machine_pos = None
+        if not pos:
+            self.bottom_panel.toggle_move_to_mode()
             return
 
         machine_x, machine_y = pos
