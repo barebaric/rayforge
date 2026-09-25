@@ -426,13 +426,16 @@ class GrblSerialNextDriver(Driver):
             names = [axis.name for axis in axes]
         await self._session.home(names, self._machine.active_wcs)
 
-    async def move_to(self, pos_x: float, pos_y: float) -> None:
+    async def move_to(
+        self,
+        pos_x: float,
+        pos_y: float,
+        pos_z: float | None = None,
+        speed: float | None = None,
+    ) -> None:
         assert self._session is not None
-        await self._session.move_to(
-            self._to_machine_speed(1500),
-            self._to_machine_length(float(pos_x)),
-            self._to_machine_length(float(pos_y)),
-        )
+        cmd = self._format_move_to(float(pos_x), float(pos_y), pos_z, speed)
+        await self._session.execute_command(cmd)
 
     async def select_tool(self, tool_number: int) -> None:
         """Sends a tool change command for the given tool number."""
