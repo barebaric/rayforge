@@ -38,7 +38,7 @@ class TestMigrateBuiltinDialectToCopy:
 
         dialect = mgr.get(new_uid)
         assert dialect.is_custom is True
-        assert dialect.parent_uid is None
+        assert dialect.parent_uid == "grbl"
         assert "grbl" in dialect.label.lower()
         assert "Test Machine" in dialect.label
 
@@ -92,13 +92,30 @@ class TestMigrateBuiltinDialectToCopy:
         assert migrated_dialect.is_custom is True
         assert original_dialect.is_custom is False
 
-    def test_no_parent_uid_in_migrated_dialect(self, mgr):
+    def test_parent_uid_kept_in_migrated_dialect(self, mgr):
         new_uid, _ = mgr.migrate_builtin_dialect_to_copy(
             "smoothieware", "Test Machine"
         )
 
         dialect = mgr.get(new_uid)
-        assert dialect.parent_uid is None
+        assert dialect.parent_uid == "smoothieware"
+
+    def test_copy_inherits_fields_missing_from_storage(
+        self, mgr, temp_dialect_dir
+    ):
+        """A stored copy predating a new built-in field picks it up
+        from the parent on load, while stored fields stay untouched."""
+        new_uid, _ = mgr.migrate_builtin_dialect_to_copy(
+            "grbl", "Test Machine"
+        )
+        yaml_file = temp_dialect_dir / f"{new_uid}.yaml"
+        data = yaml.safe_load(yaml_file.read_text())
+        del data["move_to"]
+        yaml.safe_dump(data, yaml_file.open("w"))
+
+        mgr.load_all()
+
+        assert mgr.get(new_uid).move_to == mgr.get("grbl").move_to
 
     def test_multiple_migrations_create_distinct_copies(self, mgr):
         initial_count = len(mgr._registry)
@@ -186,7 +203,7 @@ class TestLegacyConfigMigration:
 
         dialect = lite_context.dialect_mgr.get(machine.dialect_uid)
         assert dialect.is_custom is True
-        assert dialect.parent_uid is None
+        assert dialect.parent_uid == "marlin"
         assert "marlin" in dialect.label.lower()
         assert "Legacy Dialect UID Machine" in dialect.label
 
@@ -216,7 +233,7 @@ class TestLegacyConfigMigration:
 
         dialect = lite_context.dialect_mgr.get(machine.dialect_uid)
         assert dialect.is_custom is True
-        assert dialect.parent_uid is None
+        assert dialect.parent_uid == "grbl"
         assert "Default Machine" in dialect.label
 
     def test_migration_is_idempotent_from_config(self, lite_context):
