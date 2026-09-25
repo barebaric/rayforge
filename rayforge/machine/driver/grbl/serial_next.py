@@ -107,6 +107,15 @@ class GrblSerialNextDriver(Driver):
             return None
         return self._session.resource_uri
 
+    def _require_session(self) -> GrblSession:
+        """Returns the session, raising a descriptive error when the
+        driver was never set up (e.g. no port configured)."""
+        if self._session is None:
+            raise DeviceConnectionError(
+                _("Driver is not set up. Check the port settings.")
+            )
+        return self._session
+
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
         """Checks for systemic serial port issues before setup."""
@@ -222,21 +231,25 @@ class GrblSerialNextDriver(Driver):
                 f"unlikely for USB-based GRBL devices."
             )
 
+        config = {
+            "port": port,
+            "baudrate": int(baudrate),
+            "poll_status_while_running": bool(
+                kwargs.get("poll_status_while_running", False)
+            ),
+            "deadlock_detection": bool(
+                kwargs.get("deadlock_detection", False)
+            ),
+            "rx_buffer_size_override": int(
+                kwargs.get("rx_buffer_size_override", 0) or 0
+            ),
+        }
+        cached_rx_buffer_size = self.config.get("rx_buffer_size")
+        if cached_rx_buffer_size is not None:
+            config["cached_rx_buffer_size"] = int(cached_rx_buffer_size)
+
         self._session = GrblSession(
-            config={
-                "port": port,
-                "baudrate": int(baudrate),
-                "poll_status_while_running": bool(
-                    kwargs.get("poll_status_while_running", False)
-                ),
-                "deadlock_detection": bool(
-                    kwargs.get("deadlock_detection", False)
-                ),
-                "rx_buffer_size_override": int(
-                    kwargs.get("rx_buffer_size_override", 0) or 0
-                ),
-                "cached_rx_buffer_size": self.config.get("rx_buffer_size"),
-            },
+            config=config,
             dialect=self._dialect_templates(),
             event_callback=self._on_session_event,
         )
@@ -338,8 +351,9 @@ class GrblSerialNextDriver(Driver):
     async def execute_interactive_command(self, command: str) -> list[str]:
         """Send a command and await its full response, blocking other
         commands from interleaving; used by device probing."""
-        assert self._session is not None
-        return await self._session.execute_interactive_command(command)
+        return await self._require_session().execute_interactive_command(
+            command
+        )
 
     def get_setting_vars(self) -> list["VarSet"]:
         return get_grbl_setting_varsets()
@@ -362,7 +376,7 @@ class GrblSerialNextDriver(Driver):
         ops: "Ops",
         on_command_done: Callable[[int], None | Awaitable[None]] | None = None,
     ) -> None:
-        assert self._session is not None
+        session = self._require_session()
         self._update_session_dialect()
         command_times = ops.estimate_command_times(
             default_feed_rate=self._machine.max_cut_speed,
@@ -380,7 +394,7 @@ class GrblSerialNextDriver(Driver):
                 asyncio.ensure_future(result)
 
         try:
-            await self._session.run(
+            await session.run(
                 encoded.text,
                 line_map,
                 estimates,
@@ -395,9 +409,9 @@ class GrblSerialNextDriver(Driver):
             logger.exception("Job terminated with unexpected error")
 
     async def run_raw(self, machine_code: str) -> None:
-        assert self._session is not None
+        session = self._require_session()
         try:
-            await self._session.run_raw(machine_code)
+            await session.run_raw(machine_code)
         except DeviceConnectionError as e:
             logger.warning(
                 f"Raw G-code terminated due to device error: {e}. "
@@ -412,19 +426,18 @@ class GrblSerialNextDriver(Driver):
         await self._session.cancel(emergency)
 
     async def set_hold(self, hold: bool = True) -> None:
-        assert self._session is not None
-        await self._session.set_hold(hold)
+        await self._require_session().set_hold(hold)
 
     def can_home(self, axis: Axis | None = None) -> bool:
         """GRBL supports homing for all axes."""
         return True
 
     async def home(self, axes: Axis | None = None) -> None:
-        assert self._session is not None
+        session = self._require_session()
         names = None
         if axes is not None:
             names = [axis.name for axis in axes]
-        await self._session.home(names, self._machine.active_wcs)
+        await session.home(names, self._machine.active_wcs)
 
     async def move_to(
         self,
@@ -433,19 +446,17 @@ class GrblSerialNextDriver(Driver):
         pos_z: float | None = None,
         speed: float | None = None,
     ) -> None:
-        assert self._session is not None
         cmd = self._format_move_to(float(pos_x), float(pos_y), pos_z, speed)
-        await self._session.execute_command(cmd)
+        await self._require_session().execute_command(cmd)
 
     async def select_tool(self, tool_number: int) -> None:
         """Sends a tool change command for the given tool number."""
-        assert self._session is not None
-        await self._session.select_tool(tool_number)
+        await self._require_session().select_tool(tool_number)
 
     async def clear_alarm(self) -> None:
-        assert self._session is not None
+        session = self._require_session()
         dialect = self.dialect
-        response = await self._session.execute_command(dialect.clear_alarm)
+        response = await session.execute_command(dialect.clear_alarm)
         has_error = any(line.startswith("error:") for line in response)
         if not has_error:
             self.state.error = None
@@ -453,33 +464,30 @@ class GrblSerialNextDriver(Driver):
 
     async def set_power(self, head: "Laser", percent: float) -> None:
         """Sets the laser power (0.0-1.0 of max power)."""
-        assert self._session is not None
         power = percent * head.max_power if percent > 0 else None
-        await self._session.set_power(power)
+        await self._require_session().set_power(power)
 
     async def set_focus_power(self, head: "Laser", percent: float) -> None:
         """Sets the laser power for focus mode."""
-        assert self._session is not None
         power = percent * head.max_power if percent > 0 else None
-        await self._session.set_focus_power(power)
+        await self._require_session().set_focus_power(power)
 
     def can_jog(self, axis: Axis | None = None) -> bool:
         """GRBL supports jogging for all axes."""
         return True
 
     async def jog(self, speed: int, **deltas: float) -> None:
-        assert self._session is not None
+        session = self._require_session()
         converted = [
             (name, self._to_machine_length(distance))
             for name, distance in deltas.items()
         ]
-        await self._session.jog(self._to_machine_speed(speed), converted)
+        await session.jog(self._to_machine_speed(speed), converted)
 
     async def detect_unit_system(self) -> UnitSystem | None:
         """Queries the device's ``$$`` settings and infers the unit
         system from the ``$13`` (Report in inches) flag."""
-        assert self._session is not None
-        result = await self._session.detect_unit_system()
+        result = await self._require_session().detect_unit_system()
         if result == "metric":
             return UnitSystem.METRIC
         if result == "imperial":
@@ -487,8 +495,7 @@ class GrblSerialNextDriver(Driver):
         return None
 
     async def read_settings(self) -> None:
-        assert self._session is not None
-        pairs = await self._session.read_settings()
+        pairs = await self._require_session().read_settings()
 
         known_varsets = self.get_setting_vars()
         key_to_varset_map = {
@@ -528,16 +535,15 @@ class GrblSerialNextDriver(Driver):
         self.settings_read.send(self, settings=result)
 
     async def write_setting(self, key: str, value: Any) -> None:
-        assert self._session is not None
         if isinstance(value, bool):
             value = 1 if value else 0
-        await self._session.write_setting(key, str(value))
+        await self._require_session().write_setting(key, str(value))
 
     async def set_wcs_offset(
         self, wcs_slot: str, x: float, y: float, z: float | None
     ) -> None:
-        assert self._session is not None
-        await self._session.set_wcs_offset(
+        session = self._require_session()
+        await session.set_wcs_offset(
             wcs_slot,
             self._to_machine_length(x),
             self._to_machine_length(y),
@@ -545,15 +551,13 @@ class GrblSerialNextDriver(Driver):
         )
 
     async def read_wcs_offsets(self) -> dict[str, Pos]:
-        assert self._session is not None
-        offsets = await self._session.read_wcs_offsets()
+        offsets = await self._require_session().read_wcs_offsets()
         return {slot: tuple(pos) for slot, pos in offsets.items()}
 
     async def read_parser_state(self) -> str | None:
         """Reads the $G parser state to determine the active WCS."""
-        assert self._session is not None
         try:
-            return await self._session.read_parser_state()
+            return await self._require_session().read_parser_state()
         except DeviceConnectionError as e:
             logger.warning(f"Could not read parser state: {e}")
             return None
@@ -561,9 +565,9 @@ class GrblSerialNextDriver(Driver):
     async def run_probe_cycle(
         self, axis: Axis, max_travel: float, feed_rate: int
     ) -> Pos | None:
-        assert self._session is not None
+        session = self._require_session()
         assert axis.name, "Probing requires a single, named axis."
-        return await self._session.run_probe_cycle(
+        return await session.run_probe_cycle(
             axis.name.upper(),
             self._to_machine_length(max_travel),
             self._to_machine_speed(feed_rate),

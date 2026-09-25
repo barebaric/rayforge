@@ -1,9 +1,11 @@
 import logging
 from gettext import gettext as _
+from typing import Any
 
 from gi.repository import Adw, Gtk
 
 from ...machine.driver import drivers, get_driver_cls
+from ...machine.driver.driver import Driver
 from ...machine.models.machine import Machine
 from ...shared.units.system import UnitSystem
 from ..icons import get_icon
@@ -352,7 +354,25 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         # The `machine.changed` signal will then trigger _on_machine_changed
         # to update the UI, including the driver settings widgets.
         if self.machine.driver_name != driver_cls.__name__:
-            self.machine.set_driver(driver_cls, {})
+            self.machine.set_driver(
+                driver_cls, self._compatible_driver_args(driver_cls)
+            )
+
+    def _compatible_driver_args(
+        self, driver_cls: type["Driver"]
+    ) -> dict[str, Any]:
+        """
+        Returns the current driver arguments that the selected driver
+        also understands. Serial drivers share keys like ``port`` and
+        ``baudrate``, so switching between them keeps the connection
+        settings instead of silently resetting them.
+        """
+        keys = set(driver_cls.get_setup_vars().keys())
+        return {
+            key: value
+            for key, value in self.machine.driver_args.items()
+            if key in keys
+        }
 
     def on_name_changed(self, entry_row, _):
         """Update the machine name when the text changes."""

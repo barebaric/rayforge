@@ -239,8 +239,8 @@ class MachineController:
         self._disconnect_driver_signals()
 
         new_driver = driver_cls(self.context, self.machine)
-        new_driver.setup(**self.machine.driver_args)
         new_driver.config = self.machine.driver_config.copy()
+        new_driver.setup(**self.machine.driver_args)
 
         self.driver = new_driver
         self._connect_driver_signals()

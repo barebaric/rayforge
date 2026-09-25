@@ -198,6 +198,33 @@ class TestRegistry:
         assert converted.error is not None
         assert converted.error.code == 1
 
+    def test_setup_with_cached_rx_buffer(self, context_initializer, machine):
+        drv = GrblSerialNextDriver(context_initializer, machine)
+        drv.config["rx_buffer_size"] = 511
+        drv.setup(port="/dev/ttyUSB0", baudrate=115200)
+        assert drv.did_setup
+        assert drv.state.error is None
+        assert drv._session is not None
+
+    def test_setup_without_cached_rx_buffer(
+        self, context_initializer, machine
+    ):
+        drv = GrblSerialNextDriver(context_initializer, machine)
+        drv.setup(port="/dev/ttyUSB0", baudrate=115200)
+        assert drv.did_setup
+        assert drv.state.error is None
+        assert drv._session is not None
+
+    @pytest.mark.asyncio
+    async def test_commands_without_session_raise(
+        self, context_initializer, machine
+    ):
+        from rayforge.machine.driver.driver import DeviceConnectionError
+
+        drv = GrblSerialNextDriver(context_initializer, machine)
+        with pytest.raises(DeviceConnectionError):
+            await drv.home(None)
+
 
 @pytest.mark.asyncio
 class TestConnection:

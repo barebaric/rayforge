@@ -408,6 +408,16 @@ class Driver(ABC):
                 str(e),
                 _("Error during setup. You may need to edit device settings."),
             )
+        except Exception as e:
+            logger.exception("Unexpected error during driver setup")
+            self.state.error = DeviceError(
+                -999,
+                str(e),
+                _(
+                    "Unexpected error during setup. You may need to edit "
+                    "device settings."
+                ),
+            )
         self.did_setup = True
 
     async def cleanup(self):
