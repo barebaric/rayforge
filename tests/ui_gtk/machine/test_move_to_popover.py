@@ -203,6 +203,16 @@ def test_bounds_use_machine_extents(machine, machine_cmd):
 
 
 @pytest.mark.ui
+def test_bounds_use_negative_z_extents(machine, machine_cmd):
+    machine.axes.get.return_value.extents = (-50.0, 50.0)
+    popover = make_popover(machine, machine_cmd)
+
+    popover._update_bounds_and_axes()
+
+    popover.z_row.set_range.assert_called_once_with(-50.0, 50.0)
+
+
+@pytest.mark.ui
 def test_prefill_subtracts_active_wcs_offset(machine, machine_cmd):
     machine.device_state.machine_pos = (110.0, 120.0, 8.0)
     machine.machine_space_wcs = "G53"

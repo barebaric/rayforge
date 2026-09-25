@@ -2159,6 +2159,15 @@ class TestJogDelegation:
             # Position unknown for the axis
             (True, False, False, (None, 150, 0), Axis.X, 9999, False),
             (True, False, False, (100, None, 0), Axis.Y, 9999, False),
+            # --- Z-Axis (Extents Z:-50-50), Soft Limits ON ---
+            (True, False, False, (100, 150, 0), Axis.Z, 40.0, False),
+            (True, False, False, (100, 150, 0), Axis.Z, 60.0, True),
+            (True, False, False, (100, 150, -40), Axis.Z, -20.0, True),
+            (True, False, False, (100, 150, -40), Axis.Z, -5.0, False),
+            # Soft limits disabled
+            (False, False, False, (100, 150, 0), Axis.Z, 9999, False),
+            # Position unknown for the axis
+            (True, False, False, (100, 150, None), Axis.Z, 9999, False),
         ],
     )
     def test_would_jog_exceed_limits(
@@ -2186,3 +2195,46 @@ class TestJogDelegation:
             isolated_machine.would_jog_exceed_limits(axis, distance)
             is expected
         )
+
+    def test_adjust_jog_distance_clamps_z_to_extents(
+        self, isolated_machine: Machine
+    ):
+        isolated_machine.set_axis_extents(200, 300)
+        isolated_machine.device_state.machine_pos = (0, 0, -45)
+
+        assert (
+            isolated_machine._adjust_jog_distance_for_limits(Axis.Z, 100.0)
+            == 95.0
+        )
+
+    def test_adjust_jog_distance_clamps_z_to_negative_extent(
+        self, isolated_machine: Machine
+    ):
+        isolated_machine.set_axis_extents(200, 300)
+        isolated_machine.device_state.machine_pos = (0, 0, 45)
+
+        assert (
+            isolated_machine._adjust_jog_distance_for_limits(Axis.Z, -100.0)
+            == -95.0
+        )
+
+    def test_set_z_extents_updates_travel_range(
+        self, isolated_machine: Machine
+    ):
+        isolated_machine.set_z_extents(-100.0, 20.0)
+
+        assert isolated_machine.z_extents == (-100.0, 20.0)
+
+    def test_set_z_extents_orders_min_and_max(self, isolated_machine: Machine):
+        isolated_machine.set_z_extents(30.0, -10.0)
+
+        assert isolated_machine.z_extents == (-10.0, 30.0)
+
+    def test_set_z_extents_ignored_without_z_axis(
+        self, isolated_machine: Machine
+    ):
+        isolated_machine.set_has_z_axis(False)
+
+        isolated_machine.set_z_extents(-100.0, 100.0)
+
+        assert isolated_machine.z_extents is None

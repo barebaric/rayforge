@@ -978,6 +978,28 @@ class Machine:
             )
         self.changed.send(self)
 
+    @property
+    def z_extents(self) -> tuple[float, float] | None:
+        """The Z axis travel range (min, max) in machine coordinates.
+
+        None when the machine has no Z axis.
+        """
+        cfg = self.axes.get(Axis.Z)
+        if cfg is None:
+            return None
+        return (float(cfg.extents[0]), float(cfg.extents[1]))
+
+    def set_z_extents(self, z_min: float, z_max: float) -> None:
+        """Sets the Z axis travel range (min, max) in machine coordinates."""
+        cfg = self.axes.get(Axis.Z)
+        if cfg is None:
+            return
+        extents = (min(z_min, z_max), max(z_min, z_max))
+        if cfg.extents == extents:
+            return
+        cfg.extents = extents
+        self.changed.send(self)
+
     def set_rotary_enabled_default(self, enabled: bool):
         if self.rotary_enabled_default == enabled:
             return
@@ -1114,9 +1136,21 @@ class Machine:
             if new_y < y_min or new_y > y_max:
                 return True
 
-        # Note: Z-axis soft limits are not currently implemented
+        # Check Z axis against the configured Z travel range
+        return bool(axis & Axis.Z) and self._would_z_move_exceed_extents(
+            distance
+        )
 
-        return False
+    def _would_z_move_exceed_extents(self, distance: float) -> bool:
+        """Whether a Z move by *distance* would leave the Z travel range."""
+        z_extents = self.z_extents
+        if z_extents is None:
+            return False
+        z_pos = self.device_state.machine_pos[2]
+        if z_pos is None:
+            return False  # Cannot check limits if position is unknown
+        new_z = z_pos + distance
+        return new_z < z_extents[0] or new_z > z_extents[1]
 
     def _adjust_jog_distance_for_limits(
         self, axis: Axis, distance: float
@@ -1149,6 +1183,19 @@ class Machine:
                 adjusted_distance = y_min - y_pos
             elif new_y > y_max:
                 adjusted_distance = y_max - y_pos
+
+        # Adjust the Z axis against the configured Z travel range
+        if axis & Axis.Z:
+            z_extents = self.z_extents
+            if z_extents is not None:
+                z_pos = self.device_state.machine_pos[2]
+                if z_pos is not None:
+                    z_min, z_max = z_extents
+                    new_z = z_pos + adjusted_distance
+                    if new_z < z_min:
+                        adjusted_distance = z_min - z_pos
+                    elif new_z > z_max:
+                        adjusted_distance = z_max - z_pos
 
         return adjusted_distance
 

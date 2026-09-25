@@ -163,8 +163,8 @@ class MoveToPopover(Gtk.Popover):
             self.z_row.set_visible(self.machine.has_z_axis)
             if self.machine.has_z_axis:
                 z_cfg = self.machine.axes.get(Axis.Z)
-                z_ext = z_cfg.extents[1] if z_cfg else 100.0
-                self.z_row.set_range(0.0, z_ext)
+                z_min, z_max = z_cfg.extents if z_cfg else (-50.0, 50.0)
+                self.z_row.set_range(float(z_min), float(z_max))
         self.update_sensitivity()
 
     def _is_machine_active(self) -> bool:
