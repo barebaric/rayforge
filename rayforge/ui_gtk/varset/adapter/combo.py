@@ -1,4 +1,5 @@
-from typing import Any
+from gettext import gettext as _
+from typing import Any, cast
 
 from gi.repository import Adw, Gtk
 
@@ -7,6 +8,8 @@ from ....core.varset import (
     ChoiceVar,
     SerialPortVar,
     Var,
+    format_vidpid,
+    parse_vidpid,
 )
 from ....machine.transport.serial import (
     SerialPortInfo,
@@ -21,6 +24,8 @@ from .base import (
     escape_title,
     register_adapter,
 )
+
+VIDPID_ENTRY_LABEL = _("Match by USB VID:PID…")
 
 
 @register_adapter(ChoiceVar)
@@ -170,11 +175,19 @@ class SerialPortAdapter(ComboAdapter):
     path on the first line and the USB description (if known) as a
     dimmed second line. The model holds raw device paths, so value
     mapping is handled by ComboAdapter directly.
+
+    Besides the scanned ports, the list offers an entry that binds
+    the machine to a USB VID:PID pair instead of a device path, so the
+    connection survives the OS reassigning port numbers.
     """
 
     def __init__(self, row: Adw.ComboRow, var: Var) -> None:
         super().__init__(row, var)
         self._descriptions: dict[str, str] = {}
+        self._value: str | None = None
+        self._row.connect(
+            "notify::selected-item", self._on_selected_item_changed
+        )
 
     @classmethod
     def create(
@@ -253,29 +266,57 @@ class SerialPortAdapter(ComboAdapter):
             )
         )
         if extra_value and extra_value not in seen:
-            ports.insert(0, SerialPortInfo(extra_value))
+            description = None
+            if parse_vidpid(extra_value):
+                description = _("First USB device with this VID:PID")
+            ports.insert(0, SerialPortInfo(extra_value, description))
         return ports
 
     def _refresh(self, current_value: Any | None) -> None:
         """Re-scans ports and rebuilds the dropdown contents."""
         value_str = str(current_value) if current_value else None
+        self._value = value_str
         ports = self._scan_ports(value_str)
         self._descriptions = {
             p.device: p.description for p in ports if p.description
         }
         devices = [p.device for p in ports]
-        model = Gtk.StringList.new([NULL_CHOICE_LABEL] + devices)
+        # Hardware (non-USB) ports go last; the VID:PID entry belongs
+        # with the USB group, not buried below them.
+        usb_devices = [d for d in devices if is_usb_serial_port(d)]
+        other_devices = [d for d in devices if not is_usb_serial_port(d)]
+        items = (
+            [NULL_CHOICE_LABEL]
+            + usb_devices
+            + [VIDPID_ENTRY_LABEL]
+            + other_devices
+        )
+        model = Gtk.StringList.new(items)
         self._row.set_model(model)
         selected = 0
-        if value_str and value_str in devices:
-            selected = devices.index(value_str) + 1
+        if value_str and value_str in items:
+            selected = items.index(value_str)
         self._row.set_selected(selected)
+
+    def get_value(self) -> Any | None:
+        selected = self._row.get_selected_item()
+        if (
+            isinstance(selected, Gtk.StringObject)
+            and selected.get_string() == VIDPID_ENTRY_LABEL
+        ):
+            return self._value
+        value = super().get_value()
+        if value is not None:
+            self._value = str(value)
+        return value
 
     def set_value(self, value: Any) -> None:
         if value is None:
+            self._value = None
             super().set_value(None)
             return
         value_str = str(value)
+        self._value = value_str
         model = self._row.get_model()
         strings: list[str | None] = []
         if isinstance(model, Gtk.StringList):
@@ -286,3 +327,59 @@ class SerialPortAdapter(ComboAdapter):
             self._refresh(value_str)
             return
         super().set_value(value_str)
+
+    def _on_selected_item_changed(
+        self, row: Adw.ComboRow, _pspec: Any
+    ) -> None:
+        selected = row.get_selected_item()
+        if not isinstance(selected, Gtk.StringObject):
+            return
+        if selected.get_string() != VIDPID_ENTRY_LABEL:
+            return
+        self._prompt_vidpid()
+        self.set_value(self._value)
+
+    def _prompt_vidpid(self) -> None:
+        """Asks for a 'vid:pid' pair and binds the machine to it."""
+        entry = Adw.EntryRow(title=_("USB VID:PID (e.g. 0403:6001)"))
+        if self._value and parse_vidpid(self._value):
+            entry.set_text(self._value)
+        dialog = Adw.MessageDialog(
+            transient_for=cast(Gtk.Window, self._row.get_root()),
+            modal=True,
+            heading=_("Match by USB VID:PID"),
+            body=_(
+                "Always use the first USB serial device with this "
+                "vendor and product ID. This keeps the connection "
+                "working when the operating system reassigns port "
+                "numbers. If several identical devices are connected, "
+                "the first one on the bus is used."
+            ),
+        )
+        dialog.set_extra_child(entry)
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("apply", _("Apply"))
+        dialog.set_response_appearance(
+            "apply", Adw.ResponseAppearance.SUGGESTED
+        )
+        dialog.set_default_response("apply")
+        dialog.set_close_response("cancel")
+
+        def on_validate(_entry: Adw.EntryRow, _pspec: Any) -> None:
+            if parse_vidpid(entry.get_text()):
+                entry.remove_css_class("error")
+            else:
+                entry.add_css_class("error")
+
+        entry.connect("notify::text", on_validate)
+
+        def on_response(d: Adw.MessageDialog, response: str) -> None:
+            if response != "apply":
+                return
+            vidpid = parse_vidpid(entry.get_text())
+            if vidpid is None:
+                return
+            self.set_value(format_vidpid(*vidpid))
+
+        dialog.connect("response", on_response)
+        dialog.present()

@@ -8,6 +8,7 @@ from typing import (
     cast,
 )
 
+import serial
 from raydriver.grbl import GrblSession
 
 from ....context import RayforgeContext
@@ -29,6 +30,7 @@ from ...transport import TransportStatus
 from ...transport.serial import (
     SerialPortPermissionError,
     SerialTransport,
+    resolve_serial_port,
 )
 from ..driver import (
     Axis,
@@ -131,7 +133,9 @@ class GrblSerialNextDriver(Driver):
                 SerialPortVar(
                     key="port",
                     label=_("Port"),
-                    description=_("Serial port for the device"),
+                    description=(
+                        _("Serial port or USB VID:PID (e.g. 0403:6001)")
+                    ),
                 ),
                 BaudrateVar(
                     "baudrate",
@@ -230,6 +234,13 @@ class GrblSerialNextDriver(Driver):
                 f"Port {port} is a hardware serial port, which is "
                 f"unlikely for USB-based GRBL devices."
             )
+
+        # The Rust session retries its fixed port internally, so a
+        # 'vid:pid' spec can only be resolved once, here at setup.
+        try:
+            port = resolve_serial_port(port)
+        except serial.SerialException as e:
+            raise DriverSetupError(str(e)) from e
 
         config = {
             "port": port,

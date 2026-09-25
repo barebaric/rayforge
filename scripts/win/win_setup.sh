@@ -12,8 +12,8 @@ retry() {
     local delay=5
     local rc
     while true; do
-        "$@"
-        rc=$?
+        rc=0
+        "$@" || rc=$?
         if [ "$rc" -eq 0 ]; then
             return 0
         fi
