@@ -3,13 +3,16 @@ import queue
 from types import SimpleNamespace
 
 import pytest
+import serial
 
 from rayforge.machine.transport import TransportStatus
 from rayforge.machine.transport.serial import (
     SerialPort,
+    SerialPortInfo,
     SerialPortPermissionError,
     SerialTransport,
     is_usb_serial_port,
+    resolve_serial_port,
     safe_list_ports_linux,
     sort_ports,
 )
@@ -276,6 +279,53 @@ class TestSerialTransportIntegration:
         ]
 
     @pytest.mark.asyncio
+    async def test_connect_resolves_vidpid_spec(self, mock_serial, mocker):
+        """
+        A 'vid:pid' port is resolved to a device path on every connect,
+        so reconnects follow the device when the OS reassigns paths.
+        """
+        mock_cls, _mock_ser = mock_serial
+        infos = [
+            SerialPortInfo("/dev/ttyUSB0", "CH340", vid=0x1A86, pid=0x7523),
+            SerialPortInfo("/dev/ttyUSB1", "FTDI", vid=0x0403, pid=0x6001),
+        ]
+        mocker.patch.object(
+            SerialTransport, "list_port_info", return_value=infos
+        )
+        transport = SerialTransport(port="0403:6001", baudrate=115200)
+
+        await transport.connect()
+        try:
+            mock_cls.assert_called_once_with(
+                port="/dev/ttyUSB1",
+                baudrate=115200,
+                timeout=0,
+                exclusive=True,
+            )
+        finally:
+            await transport.disconnect()
+
+    @pytest.mark.asyncio
+    async def test_connect_vidpid_spec_without_match(self, mocker):
+        """
+        A 'vid:pid' port with no matching device fails the connect
+        attempt with a descriptive error, like a missing path does.
+        """
+        mocker.patch.object(SerialTransport, "list_port_info", return_value=[])
+        transport = SerialTransport(port="0403:6001", baudrate=115200)
+        status_tracker = SignalTracker(transport.status_changed)
+
+        with pytest.raises(serial.SerialException, match="0403:6001"):
+            await transport.connect()
+
+        assert not transport.is_connected
+        statuses = [call["kwargs"]["status"] for call in status_tracker.calls]
+        assert statuses == [
+            TransportStatus.CONNECTING,
+            TransportStatus.ERROR,
+        ]
+
+    @pytest.mark.asyncio
     async def test_connection_failure(self, mocker):
         """Test that connection failures are handled gracefully."""
         mocker.patch(
@@ -370,6 +420,33 @@ class TestSerialTransportIntegration:
 
         # Should not raise any errors
         await transport.purge()
+
+
+def test_resolve_serial_port_passes_through_device_paths():
+    """Values that are not 'vid:pid' specs are returned unchanged."""
+    assert resolve_serial_port("/dev/ttyUSB0") == "/dev/ttyUSB0"
+    assert resolve_serial_port("/dev/serial/by-id/usb-foo") == (
+        "/dev/serial/by-id/usb-foo"
+    )
+    assert resolve_serial_port("COM3") == "COM3"
+
+
+def test_resolve_serial_port_by_vidpid(mocker):
+    """A 'vid:pid' spec resolves to the matching device path."""
+    infos = [
+        SerialPortInfo("/dev/ttyUSB0", "CH340", vid=0x1A86, pid=0x7523),
+        SerialPortInfo("/dev/ttyUSB1", "FTDI", vid=0x0403, pid=0x6001),
+    ]
+    mocker.patch.object(SerialTransport, "list_port_info", return_value=infos)
+    assert resolve_serial_port("0403:6001") == "/dev/ttyUSB1"
+    assert resolve_serial_port("0403:6001".upper()) == "/dev/ttyUSB1"
+
+
+def test_resolve_serial_port_by_vidpid_not_found(mocker):
+    """A 'vid:pid' spec without a matching device raises clearly."""
+    mocker.patch.object(SerialTransport, "list_port_info", return_value=[])
+    with pytest.raises(serial.SerialException, match="0403:6001"):
+        resolve_serial_port("0403:6001")
 
 
 def test_is_usb_serial_port(mocker):
