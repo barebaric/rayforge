@@ -968,6 +968,9 @@
   "page.devices.device.creality-falcon-a1.description": {
     "message": "Grabador láser de diodo con área de trabajo de 381x305mm y soporte rotatorio"
   },
+  "page.devices.device.creality-falcon-a1-pro.description": {
+    "message": "Grabador láser de diodo de 20W con área de trabajo de 363x273mm, soporte rotatorio y soporte opcional para un módulo láser infrarrojo de 2W"
+  },
   "page.devices.device.creality-falcon-10w.description": {
     "message": "Grabador láser de diodo de 10W con área de trabajo de 400x415mm"
   },

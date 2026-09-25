@@ -119,6 +119,13 @@ const devices = [
     },
   },
   {
+    id: 'creality-falcon-a1-pro',
+    name: 'Creality Falcon A1 Pro',
+    description: '20W diode laser engraver with 363x273mm work area and rotary support, optional support for a 2W infrared laser module',
+    driver: 'GrblSerialDriver',
+    image: 'https://eu.crealityfalcon.com/cdn/shop/files/1_3_2ee4765c-464e-4fab-b8b0-3977d8846bee.png?v=1772696386&width=1800',
+  },
+  {
     id: 'elidor-z6',
     name: 'Elidor Z6',
     description: 'Diode laser engraver with 300x300mm work area',
@@ -301,8 +308,8 @@ const sections = SECTION_ORDER.map((groupName) => {
   return {
     groupName,
     label: SECTION_LABELS[groupName],
-    cards: groupDevices.filter((d) => d.affiliate),
-    list: groupDevices.filter((d) => !d.affiliate && !isGeneric(d)),
+    cards: groupDevices.filter((d) => d.affiliate || d.image),
+    list: groupDevices.filter((d) => !d.affiliate && !d.image && !isGeneric(d)),
   };
 });
 
@@ -392,42 +399,53 @@ export default function Devices() {
                 <div className={styles.cardGrid}>
                   {section.cards.map((device) => {
                     const affiliate = device.affiliate;
+                    const image = device.image || affiliate?.img;
                     return (
                       <div key={device.id} className={styles.card}>
-                        <a
-                          href={affiliate.href}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={styles.cardImageLink}
-                        >
+                        {affiliate ? (
+                          <a
+                            href={affiliate.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.cardImageLink}
+                          >
+                            <img
+                              src={image}
+                              alt={device.name}
+                              className={styles.cardImage}
+                            />
+                          </a>
+                        ) : (
                           <img
-                            src={affiliate.img}
+                            src={image}
                             alt={device.name}
                             className={styles.cardImage}
                           />
-                        </a>
+                        )}
                         <div className={styles.cardBody}>
                           <h3 className={styles.cardTitle}>{device.name}</h3>
                           <p className={styles.cardDescription}>
                             {translate({id: `page.devices.device.${device.id}.description`, message: device.description})}
                           </p>
                         </div>
-                        <a
-                          href={affiliate.href}
-                          className={styles.cardAffiliate}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <Icon path={mdiCartOutline} size={0.8} />
-                          <span>
-                            <Translate
-                              id="page.devices.card.shop"
-                              values={{ shop: affiliate.shop }}
-                            >
-                              {'Shop on {shop}'}
-                            </Translate>
-                          </span>
-                        </a>
+                        {affiliate && (
+                          <a
+                            href={affiliate.href}
+                            className={styles.cardAffiliate}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Icon path={mdiCartOutline} size={0.8} />
+                            <span>
+                              <Translate
+                                id="page.devices.card.shop"
+                                values={{ shop: affiliate.shop }}
+                              >
+                                {'Shop on {shop}'}
+                              </Translate>
+                            </span>
+                          </a>
+                        )}
                       </div>
                     );
                   })}

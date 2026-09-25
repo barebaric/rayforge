@@ -968,6 +968,9 @@
   "page.devices.device.creality-falcon-a1.description": {
     "message": "Diodenlasergravierer mit 381x305mm Arbeitsbereich und Rotationsunterstützung"
   },
+  "page.devices.device.creality-falcon-a1-pro.description": {
+    "message": "20W Diodenlasergravierer mit 363x273mm Arbeitsbereich, Rotationsunterstützung und optionaler Unterstützung für ein 2W-Infrarotlasermodul"
+  },
   "page.devices.device.creality-falcon-10w.description": {
     "message": "10W Diodenlasergravierer mit 400x415mm Arbeitsbereich"
   },
