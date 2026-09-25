@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Drivers: a new "Ruida RPA" driver connects Rayforge to Ruida-based
+  controllers over USB or UDP directly, or via TUI RPC through the
+  Ruida Protocol Analyzer. It ships with all installs, and new
+  Generic Ruida RPA and Monport MP-570 60W CO2 device profiles are
+  included (thanks to @StevenIsaacs, #404)
+- Camera: network cameras are supported as stream sources alongside
+  USB cameras, with automatic reconnection after read failures
+  (thanks to @atkaper, #438)
+- Drivers: a new GRBL driver `GRBL (Rust)` (`GrblSerialNextDriver`):
+  the complete GRBL serial protocol stack (character-counting flow
+  control, job streaming, stall detection, deadlock recovery,
+  cancel/safety shutdown, settings, WCS and probing) now runs in Rust
+  through the `raydriver` package. Dialects and settings remain
+  Rayforge data; this driver is experimental and can be selected per
+  machine as a drop-in alternative to `GRBL (Serial)`
 - Machine control: the laser head can now be moved to an arbitrary
   position. A "Move to Position" popover in the Current Position area
   offers direct X/Y (and Z, when available) coordinate entry and hosts
@@ -18,16 +33,93 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   run at the configured Jog Speed (#452, #458)
 - Machine control: Ctrl+M arms the "Click Canvas to Move Head" mode
   from the keyboard
+- Laser: each step gains a Power Mode setting, Dynamic (M4) or
+  Constant (M3). Constant power avoids power sags at corners during
+  vector cuts, while raster engraving keeps dynamic power (#437)
+- Laser: the Frame operation gains a Round Corners toggle and a
+  corner radius setting, avoiding sharp, fragile corners without
+  hand-drawing a rounded outline (#447, #448)
+- Laser: framing at 0% power is now allowed and traces the outline
+  with the beam off, so machines with an auxiliary alignment laser
+  can frame without firing the main laser
+- Sketcher: array tools now also lay out text boxes (#399)
+- Machine: the dialect editor warns when "Continuous laser mode" is
+  enabled on a dialect whose movement templates have no {s_command}
+  placeholder, a combination that previously dropped all laser
+  power (#403)
+- Machine: G-code fields that contain only a number show a warning,
+  since the value is most likely a mistake (#393, #396)
 - Drivers: `move_to` accepts an optional absolute Z target; machines
   with a Z axis receive it in the same move
-- New GRBL driver `GRBL (Rust)` (`GrblSerialNextDriver`): the complete
-  GRBL serial protocol stack (character-counting flow control, job
-  streaming, stall detection, deadlock recovery, cancel/safety
-  shutdown, settings, WCS and probing) now runs in Rust through the
-  `raydriver` package. Dialects and settings remain Rayforge data;
-  this driver is experimental and can be selected per machine as a
-  drop-in alternative to `GRBL (Serial)`
+- Drivers: drivers may opt into live reconfiguration via
+  `update_settings` instead of a teardown/rebuild when their setup
+  arguments are edited
 
+### Changed
+
+- The prototype Ruida (UDP) driver has been removed; the RuidaRPA
+  driver supersedes it, and affected device profiles were migrated
+- Raster: the default threshold is now 254, so only pure white stays
+  unengraved
+- Upgrade raygeo to 1.54.2. This brings power-mode-aware laser
+  commands, so the G-code encoder can emit constant-power (M3)
+  output; frame corner radius support; and a fix for the contour
+  nesting classification, which previously used a single probe point
+  per contour and could misclassify a solid shape as a hole when
+  imported vector figures overlapped slightly, corrupting the
+  generated Contour toolpath (#456)
+
+### Fixed
+
+- Ruida: job encoding is routed by driver capability instead of a
+  stale dialect, fixing garbled output after switching drivers (#420)
+- Configuration, machine profiles, and recipes are persisted
+  atomically with backups, so an interrupted save can no longer
+  destroy them (#455)
+- macOS: the full-screen main window stays visible when a dialog
+  closes on top of it (#453)
+- Material test: the test speed is capped at the machine's live
+  speed limit (#439, #440)
+- SVG: files that define a viewBox but no width/height attributes
+  now import at the correct scale (thanks to @MausRundung, #434)
+- Laser: rounded Frame corners are rendered with arc tolerance, so
+  they come out smooth instead of segmented
+- Sketcher: helper geometry now moves together with the array
+  members it belongs to
+- 3D simulation: the playback slider position is re-derived when the
+  playback range shrinks
+
+## 1.11.2
+
+### Fixed
+
+- GRBL: cancelling a job now hard-aborts the streaming sender instead
+  of waiting for the controller's RX buffer to drain, so the machine
+  stops immediately; interactive commands issued while a cancelled job
+  is winding down can no longer resume it, and a transient connection
+  error no longer grays out the machine controls for the rest of the
+  session (#428)
+- Selecting a driver that requires connection details no longer
+  crashes the app with a GTK assertion and a crash loop at startup
+  (#415)
+- Machine settings: a fast editing burst of driver setup arguments can
+  no longer leave a cancelled driver rebuild touching live driver
+  state (#416)
+- The Machine Settings dialog is now a single instance per main window
+  instead of opening duplicates, and the machine counters action opens
+  the maintenance page instead of a nonexistent page (thanks to
+  @StevenIsaacs, #416)
+- Preview assembly failures for everyday states such as an empty
+  document are no longer logged as errors
+- Material textures are included again in wheel-based installs,
+  repairing blank material thumbnails on flatpak and deb installs
+  (#419)
+
+### Changed
+
+- Upgrade raygeo to 1.52.0
+- Windows builds now use the UCRT64 environment, following the MSYS2
+  deprecation of MINGW64
 
 ## 1.11.1
 
