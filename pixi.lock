@@ -438,7 +438,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/17/fe/77f4a24264e728fd95542e53f026a91249b51d1611087b8c82d3a033ea97/asyncudp-0.11.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/1a/41/d83af9879a7b6e8bf5fe16b1da0b134049d2f5d3afac12defb0897cb84bd/ruff-0.16.8-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/27/1a/1f68f9ba0c207934b35b86a8ca3aad8395a3d6dd7921c0686e23853ff5a9/mccabe-0.7.0-py2.py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/2d/a7/a74447412551036374642c296e47a2f6c4df71d27e2f25ea060b143fdbe9/raydriver-0.1.3.tar.gz
+      - pypi: https://files.pythonhosted.org/packages/38/bb/bf21968beb0b71f26b67577a92ee5e5f0be41d4f71e7eb55a1f755c69424/raydriver-0.1.4.tar.gz
       - pypi: https://files.pythonhosted.org/packages/38/bb/d215ee7c73b61497b28a5503f9f53523f294fcc936762b7caf90e0c1c2b5/pyparsing-3.3.3-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/39/be/3ae887e84c38c4dd1c549cd5825adc93f48069a94fe1cb8ac52a9da16f15/platformdirs-4.11.11-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/3c/2c/c43c03eaf630435f023f1dc61ec4a4a78951ad5530a62c71cc89bde307b7/pypdf-6.19.0-py3-none-any.whl
@@ -688,7 +688,6 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/03/e2/08a497ef684b88559c9cc5f4ad53a37e7b99e727094a86d6ea32536d5d3c/pytest_asyncio-1.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/07/6c/aa3f2f849e01cb6a001cd8554a88d4c77c5c1a31c95bdf1cf9301e6d9ef4/defusedxml-0.7.1-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/07/bc/587a445451b253b285629263eb51c2d8e9bcea4fc97826266d186f96f558/pyserial-3.5-py2.py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/0b/37/a018e149c440c18ce878fcc2785aaa4a901a46352378be8b97efcfdeeb77/raydriver-0.1.3-cp311-abi3-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/0c/36/e453e5106e4e2416f008ac222837c2f1637a063b08008afcd1088889b631/websockets-17.1-cp314-cp314-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/0c/c3/44f3fbbfa403ea2a7c779186dc20772604442dde72947e7d01069cbe98e3/pycparser-3.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/10/cb/f2ad4230dc2eb1a74edf38f1a38b9b52277f75bef262d8908e60d957e13c/blinker-1.9.0-py3-none-any.whl
@@ -759,6 +758,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/ef/e2/633469076a2dbbea036cc15a268a3a5d6b2c7dd5d9a9567b2553dfc5ad61/coverage-7.16.1-cp314-cp314-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/f5/c8/5ede3b786ef58e0076e9ca748b2c1787183f85e5ad8133373715c31248f9/trimesh-5.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/fa/01/3591f781b417b382a8487a2356e927acfe858b1043bab0ec47f6805bb109/pymupdf-1.28.2-cp310-abi3-macosx_11_0_arm64.whl
+      - pypi: https://files.pythonhosted.org/packages/fb/1f/4c2dadb68b945b830253ad917d46b97d853ed4f71c5e278f21190bd88094/raydriver-0.1.4-cp311-abi3-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/fb/76/641ae371508676492379f16e2fa48f4e2c11741bd63c48be4b12a6b09cba/aiosignal-1.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/fb/be/35261223d9416a0751cdff1c7b4a6f881387218a12d439fe22fefebc8c04/textual-8.2.8-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/fe/1f/e6a712e3b47cad4a40600134105ed193cb773f618a42eb7ba323cb812cc0/ruff-0.16.8-py3-none-macosx_11_0_arm64.whl
@@ -9133,7 +9133,7 @@ packages:
 - pypi: ./
   name: rayforge
   requires_dist:
-  - raydriver==0.1.3
+  - raydriver==0.1.4
   - raygeo==1.54.2
   - aiohttp==3.14.3
   - asyncudp==0.11.0
@@ -9196,15 +9196,6 @@ packages:
   sha256: c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0
   requires_dist:
   - hidapi ; extra == 'cp2110'
-- pypi: https://files.pythonhosted.org/packages/0b/37/a018e149c440c18ce878fcc2785aaa4a901a46352378be8b97efcfdeeb77/raydriver-0.1.3-cp311-abi3-macosx_11_0_arm64.whl
-  name: raydriver
-  version: 0.1.3
-  sha256: a908524927b3ec18df50a1772e886d297d6e7f04d3ffe96f1856cf3e8301c51a
-  requires_dist:
-  - pytest ; extra == 'test'
-  - pytest-asyncio ; extra == 'test'
-  - pytest-timeout ; extra == 'test'
-  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/0c/36/e453e5106e4e2416f008ac222837c2f1637a063b08008afcd1088889b631/websockets-17.1-cp314-cp314-macosx_11_0_arm64.whl
   name: websockets
   version: '17.1'
@@ -9286,10 +9277,10 @@ packages:
   version: 0.7.0
   sha256: 6c2d30ab6be0e4a46919781807b4f0d834ebdd6c6e3dca0bda5a15f863427b6e
   requires_python: '>=3.6'
-- pypi: https://files.pythonhosted.org/packages/2d/a7/a74447412551036374642c296e47a2f6c4df71d27e2f25ea060b143fdbe9/raydriver-0.1.3.tar.gz
+- pypi: https://files.pythonhosted.org/packages/38/bb/bf21968beb0b71f26b67577a92ee5e5f0be41d4f71e7eb55a1f755c69424/raydriver-0.1.4.tar.gz
   name: raydriver
-  version: 0.1.3
-  sha256: 1bf7a1512e4a13462d7b0057580f73c54f458c7d67ea6cfbef3394aa0220d0c4
+  version: 0.1.4
+  sha256: e7cda419c3aa1df8ccc9d9316cac8c9f3adb249fe4893b34fc41c3c7ae2b0c23
   requires_dist:
   - pytest ; extra == 'test'
   - pytest-asyncio ; extra == 'test'
@@ -10247,6 +10238,15 @@ packages:
   version: '17.1'
   sha256: 0c863507ada5805517ca6dff1c524dcd42942efe6304dacf06700878398d21a6
   requires_python: '>=3.11'
+- pypi: https://files.pythonhosted.org/packages/fb/1f/4c2dadb68b945b830253ad917d46b97d853ed4f71c5e278f21190bd88094/raydriver-0.1.4-cp311-abi3-macosx_11_0_arm64.whl
+  name: raydriver
+  version: 0.1.4
+  sha256: 1f91ba51becc1886ff88567e6e6b1e7a8f853878076e64913871cbf4dcb495d3
+  requires_dist:
+  - pytest ; extra == 'test'
+  - pytest-asyncio ; extra == 'test'
+  - pytest-timeout ; extra == 'test'
+  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/fb/76/641ae371508676492379f16e2fa48f4e2c11741bd63c48be4b12a6b09cba/aiosignal-1.4.0-py3-none-any.whl
   name: aiosignal
   version: 1.4.0
