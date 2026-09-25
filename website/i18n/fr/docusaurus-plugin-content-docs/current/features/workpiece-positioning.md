@@ -93,17 +93,23 @@ Tant que l'**alignement du pointeur** est actif, chaque opération de visée abs
 les raccourcis de coin, l'aller à l'origine du SCF, Cliquer pour déplacer, Déplacer la tête ici et
 le cadrage — fait se poser le _point du pointeur_ sur la position visée, ce qui vous permet de
 positionner la pièce entièrement à l'aide du point visible. La saisie de coordonnées du popover est
-pré-remplie avec la position du point du pointeur, et le point du pointeur du canevas est dessiné
-plein lorsque l'alignement est actif et creux lorsqu'il est inactif.
+pré-remplie avec la position du point du pointeur. Sur le canevas, un seul point est jamais plein :
+le point du pointeur est dessiné plein lorsque l'alignement est actif (le point du faisceau est
+alors un anneau creux), et creux lorsqu'il est inactif (le point du faisceau est plein).
 
 Le flux de travail se combine proprement avec le zérage par le point du pointeur : l'origine se
 situe là où le pointeur a marqué, la visée décale chaque cible du décalage, et la gravure n'est pas
 décalée — aligner avec le point et couper avec le faisceau restent donc cohérents.
 
 Lorsque vous appuyez sur **Envoyer** tandis que l'alignement est actif, un avertissement apparaît à
-chaque envoi (pas d'option « ne plus demander ») : le job coupe avec le faisceau aux positions du
-SCF et n'est jamais décalé. Vous pouvez choisir _Désactiver et graver_, _Graver quand même_ ou
-annuler.
+chaque envoi (pas d'option « ne plus demander »). Vous pouvez choisir :
+
+- **Simulation avec pointeur** : le job s'exécute avec le décalage du pointeur appliqué, si bien que
+  le point du pointeur trace le parcours tandis que le faisceau court décalé. Le laser tire toujours
+  à la puissance du job — assurez-vous que le faisceau décalé ne peut rien toucher d'interdit.
+- **Désactiver et graver** : l'alignement est désactivé et le job grave normalement avec le faisceau
+  aux positions du SCF.
+- **Annuler**.
 
 Les mouvements de jog et les jobs ne sont jamais décalés par l'interrupteur : le jog est relatif, et
 la sortie G-code est identique que l'alignement soit activé ou non. L'interrupteur est propre à la

@@ -301,6 +301,7 @@ class MachineCmd:
         machine: Machine,
         final_job_action: Callable[..., Coroutine],
         on_progress: Callable[[dict], None] | None = None,
+        pointer_dry_run: bool = False,
     ):
         """
         Generic, awaitable job executor that orchestrates artifact
@@ -308,10 +309,24 @@ class MachineCmd:
         """
         handle: BaseArtifactHandle | None = None
         artifact_store = self._editor.pipeline.artifact_store
+        pipeline = self._editor.pipeline
+        shift_used = False
 
         try:
-            # 1. Await the job artifact generation from the pipeline
-            handle = await self._editor.pipeline.generate_job_artifact_async()
+            if pointer_dry_run and machine.has_pointer_offset():
+                # Generate the job once with the pointer offset folded
+                # into the WCS offsets so the pointer dot traces the
+                # toolpath. The flag is only visible during generation;
+                # the shifted artifact is discarded afterwards so the
+                # next regular send burns unshifted.
+                machine.pointer_job_shift_enabled = True
+                shift_used = True
+                pipeline.invalidate_job_output()
+            try:
+                # 1. Await the job artifact generation from the pipeline
+                handle = await pipeline.generate_job_artifact_async()
+            finally:
+                machine.pointer_job_shift_enabled = False
 
             if not handle:
                 logger.warning("Job has no operations.")
@@ -324,6 +339,10 @@ class MachineCmd:
                     raise ValueError(
                         "Failed to retrieve artifact from handle."
                     )
+                if shift_used:
+                    # The cached output is shifted; drop it while our
+                    # checkout keeps the artifact alive.
+                    pipeline.invalidate_job_output()
 
                 await final_job_action(artifact, machine, on_progress)
 
@@ -370,16 +389,23 @@ class MachineCmd:
         self,
         machine: Machine,
         on_progress: Callable[[dict], None] | None = None,
+        pointer_dry_run: bool = False,
     ):
         """
         Asynchronously generates ops and sends the job to the machine.
         This is an awaitable coroutine.
+
+        With pointer_dry_run, the job is generated with the pointer
+        offset folded into the WCS offsets, so the pointer dot traces
+        the toolpath while the beam runs displaced by the offset. The
+        laser still fires at job power; the beam is not disabled.
         """
         try:
             await self._start_job(
                 machine,
                 final_job_action=self._run_send_action,
                 on_progress=on_progress,
+                pointer_dry_run=pointer_dry_run,
             )
         except JobAlreadyRunningError as e:
             # An expected refusal, not a failure: the guard's message

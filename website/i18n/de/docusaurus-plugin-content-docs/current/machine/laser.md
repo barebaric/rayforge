@@ -185,8 +185,9 @@ Die Zeigerausrichtung ist ein Laufzeit-Schalter im Verschieben-Popover (das Komp
 Positionsanzeige). Ist er aktiv, werden alle absoluten Positionierungsoperationen — Verschieben
 nach, die Ecken-Kürzel, das Anfahren des WKS-Ursprungs, Klicken zum Verschieben, Kopf hierher
 bewegen und Einrahmen — verschoben, sodass der _Zeigerpunkt_ auf der anvisierten Position landet.
-Der Zeigerpunkt auf der Leinwand wird gefüllt gezeichnet, während die Ausrichtung aktiv ist, und
-hohl, während sie aus ist.
+Auf der Leinwand ist stets genau ein Punkt gefüllt: Der Zeigerpunkt wird gefüllt gezeichnet, während
+die Ausrichtung aktiv ist (der Strahlpunkt ist dann ein hollower Ring), und hohl, während sie aus
+ist (der Strahlpunkt ist gefüllt).
 
 Der typische Arbeitsablauf:
 
@@ -195,14 +196,17 @@ Der typische Arbeitsablauf:
    dort, wo der Zeiger gezeigt hat.
 3. Aktiviere **Zeigerausrichtung** im Verschieben-Popover.
 4. Rahmen und verschiebe mit dem Zeigerpunkt: Alles, was du anvisierst, wird vom Zeiger markiert.
-5. Wenn du auf **Senden** drückst, erinnert dich eine Warnung daran, dass der Job mit dem Strahl an
-   den WKS-Positionen brennt — du kannst die Ausrichtung ausschalten und brennen, trotzdem brennen
-   oder abbrechen.
+5. Wenn du auf **Senden** drückst, erscheint eine Warnung: Ein normaler Job brennt mit dem Strahl an
+   den WKS-Positionen. Du kannst einen **Probelauf mit Zeiger** ausführen (der Job läuft mit
+   angewendetem Zeiger-Offset, sodass der Zeigerpunkt den Werkzeugpfad nachzeichnet, während der
+   Strahl verschoben läuft — er brennt weiterhin mit Job-Leistung), die Ausrichtung ausschalten und
+   brennen oder abbrechen.
 
-Zwei Dinge werden nie verschoben: **Jog** (eine relative Bewegung braucht keine Kompensation) und
-**Jobs** — Schneiden passiert immer mit dem Strahl an den WKS-Positionen, daher ist deine
-G-Code-Ausgabe identisch, ob die Ausrichtung ein- oder ausgeschaltet ist. Zusammen mit dem Nullen
-per Zeigerpunkt bleibt alles konsistent: Der Ursprung liegt bei `Strahl + Offset`, das Anvisieren
+Zwei Dinge werden bei einem normalen Senden nie verschoben: **Jog** (eine relative Bewegung braucht
+keine Kompensation) und **Jobs** — Schneiden passiert immer mit dem Strahl an den WKS-Positionen,
+daher ist deine G-Code-Ausgabe identisch, ob die Ausrichtung ein- oder ausgeschaltet ist. Nur der
+ausdrückliche Probelauf mit Zeiger wendet den Offset auf einen Job an. Zusammen mit dem Nullen per
+Zeigerpunkt bleibt alles konsistent: Der Ursprung liegt bei `Strahl + Offset`, das Anvisieren
 verschiebt jedes Ziel um `-Offset`, und der Brennvorgang bleibt unverschoben.
 
 Die Zeigerausrichtung ist eine sitzungsbezogene Einstellung: Sie wird nicht im Maschinenprofil

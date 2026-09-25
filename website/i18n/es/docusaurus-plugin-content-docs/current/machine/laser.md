@@ -183,9 +183,10 @@ Al activarlo cambian tres cosas:
 La alineación del puntero es un interruptor de sesión en el popover de movimiento (el icono de
 brújula junto a la lectura de posición). Mientras está activada, todas las operaciones absolutas de
 apuntado — Mover a, los atajos de esquina, ir al origen del SCF, Clic para mover, Mover cabeza aquí
-y enmarcar — se desplazan para que el _punto del puntero_ aterrice en la posición apuntada. El punto
-del puntero en el lienzo se dibuja relleno mientras la alineación está activada y hueco mientras
-está desactivada.
+y enmarcar — se desplazan para que el _punto del puntero_ aterrice en la posición apuntada. En el
+lienzo siempre hay exactamente un punto relleno: el punto del puntero se dibuja relleno mientras la
+alineación está activada (el punto del haz es entonces un anillo hueco), y hueco mientras está
+desactivada (el punto del haz está relleno).
 
 El flujo de trabajo típico:
 
@@ -194,8 +195,11 @@ El flujo de trabajo típico:
    queda exactamente donde apuntó el puntero.
 3. Activa la **alineación del puntero** en el popover de movimiento.
 4. Enmarca y mueve con el punto del puntero: todo lo que apuntes queda marcado por el puntero.
-5. Al pulsar **Enviar**, una advertencia te recuerda que el trabajo graba con el haz en las
-   posiciones del SCF — puedes desactivar la alineación y grabar, grabar de todos modos o cancelar.
+5. Al pulsar **Enviar**, aparece una advertencia: un trabajo normal graba con el haz en las
+   posiciones del SCF. Puedes ejecutar una **Simulación con puntero** (el trabajo se ejecuta con el
+   desplazamiento del puntero aplicado, de modo que el punto del puntero traza la trayectoria
+   mientras el haz corre desplazado — sigue disparando a potencia de trabajo), desactivar la
+   alineación y grabar, o cancelar.
 
 Dos cosas nunca se desplazan: el **jog** (un movimiento relativo no necesita compensación) y los
 **trabajos** — el corte siempre ocurre con el haz en las posiciones del SCF, por lo que tu salida

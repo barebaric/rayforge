@@ -272,6 +272,128 @@ class TestMachineCmdJobMonitoring:
         assert "Sending failed" not in message
 
 
+class TestMachineCmdPointerDryRun:
+    """Tests for pointer dry-run generation in _start_job."""
+
+    @pytest.fixture
+    def pipeline_mocks(self, machine_cmd, mocker):
+        pipeline = machine_cmd._editor.pipeline
+        invalidate_spy = MagicMock()
+        mocker.patch.object(
+            pipeline, "invalidate_job_output", side_effect=invalidate_spy
+        )
+        return pipeline, invalidate_spy
+
+    @pytest.mark.asyncio
+    async def test_dry_run_shifts_only_during_generation(
+        self,
+        machine_cmd,
+        machine,
+        job_artifact,
+        pipeline_mocks,
+        mocker,
+    ):
+        """The shift flag is set for job generation and cleared right
+        after; the shifted output is invalidated before and after so a
+        regular send regenerates unshifted G-code."""
+        self._enable_pointer_offset(machine)
+        pipeline, invalidate_spy = pipeline_mocks
+        handle = pipeline.artifact_store.put(job_artifact, creator_tag="test")
+        flags_during_generation = []
+
+        async def fake_generate():
+            flags_during_generation.append(machine.pointer_job_shift_enabled)
+            return handle
+
+        mocker.patch.object(
+            pipeline,
+            "generate_job_artifact_async",
+            side_effect=fake_generate,
+        )
+        actions = []
+
+        async def final_job_action(artifact, machine, on_progress):
+            actions.append(artifact)
+
+        await machine_cmd._start_job(
+            machine,
+            final_job_action=final_job_action,
+            pointer_dry_run=True,
+        )
+
+        assert flags_during_generation == [True]
+        assert machine.pointer_job_shift_enabled is False
+        assert invalidate_spy.call_count == 2
+        assert actions == [job_artifact]
+
+    @pytest.mark.asyncio
+    async def test_dry_run_ignored_without_pointer_offset(
+        self, machine_cmd, machine, job_artifact, pipeline_mocks, mocker
+    ):
+        """Without an enabled pointer offset, a dry-run send behaves
+        like a regular send."""
+        pipeline, invalidate_spy = pipeline_mocks
+        handle = pipeline.artifact_store.put(job_artifact, creator_tag="test")
+
+        async def fake_generate():
+            return handle
+
+        mocker.patch.object(
+            pipeline,
+            "generate_job_artifact_async",
+            side_effect=fake_generate,
+        )
+        actions = []
+
+        async def final_job_action(artifact, machine, on_progress):
+            actions.append(artifact)
+
+        await machine_cmd._start_job(
+            machine,
+            final_job_action=final_job_action,
+            pointer_dry_run=True,
+        )
+
+        assert machine.pointer_job_shift_enabled is False
+        assert invalidate_spy.call_count == 0
+        assert actions == [job_artifact]
+
+    @pytest.mark.asyncio
+    async def test_regular_send_never_shifts(
+        self, machine_cmd, machine, job_artifact, pipeline_mocks, mocker
+    ):
+        self._enable_pointer_offset(machine)
+        pipeline, invalidate_spy = pipeline_mocks
+        handle = pipeline.artifact_store.put(job_artifact, creator_tag="test")
+
+        async def fake_generate():
+            return handle
+
+        mocker.patch.object(
+            pipeline,
+            "generate_job_artifact_async",
+            side_effect=fake_generate,
+        )
+
+        async def final_job_action(artifact, machine, on_progress):
+            pass
+
+        await machine_cmd._start_job(
+            machine, final_job_action=final_job_action
+        )
+
+        assert machine.pointer_job_shift_enabled is False
+        assert invalidate_spy.call_count == 0
+
+    @staticmethod
+    def _enable_pointer_offset(machine):
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(10.0, 20.0)
+        head.set_pointer_offset_enabled(True)
+        return machine
+
+
 class TestMachineCmdJog:
     """Test suite for the jogging functionality in MachineCmd."""
 

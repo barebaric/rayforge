@@ -2489,7 +2489,7 @@ class MainWindow(Adw.ApplicationWindow):
         if not machine:
             return
 
-        def _proceed():
+        def _proceed(pointer_dry_run: bool = False):
             focus_action = self.action_manager.get_action("toggle-focus")
             focus_state = focus_action.get_state()
             if focus_state and focus_state.get_boolean():
@@ -2498,6 +2498,7 @@ class MainWindow(Adw.ApplicationWindow):
             job_coro = self.machine_cmd.send_job(
                 machine,
                 on_progress=self._on_job_progress_updated,
+                pointer_dry_run=pointer_dry_run,
             )
             self._run_machine_job(job_coro)
 

@@ -182,8 +182,9 @@ Ao ativá-lo, três coisas mudam:
 O alinhamento do ponteiro é uma chave de sessão no popover de movimentação (o ícone de bússola ao
 lado da leitura de posição). Enquanto ativado, todas as operações absolutas de mira — Mover para, os
 atalhos de canto, ir à origem do SCT, Clicar para mover, Mover cabeça para cá e enquadrar — são
-deslocadas para que o _ponto do ponteiro_ fique na posição mirada. O ponto do ponteiro na tela é
-desenhado preenchido enquanto o alinhamento está ativado e oco enquanto desativado.
+deslocadas para que o _ponto do ponteiro_ fique na posição mirada. Na tela, sempre há exatamente um
+ponto preenchido: o ponto do ponteiro é desenhado preenchido enquanto o alinhamento está ativado (o
+ponto do feixe é então um anel oco), e oco enquanto desativado (o ponto do feixe é preenchido).
 
 O fluxo de trabalho típico:
 
@@ -192,8 +193,11 @@ O fluxo de trabalho típico:
    exatamente onde o ponteiro apontou.
 3. Ative o **alinhamento do ponteiro** no popover de movimentação.
 4. Enquadre e mova com o ponto do ponteiro: tudo o que você mirar é marcado pelo ponteiro.
-5. Ao pressionar **Enviar**, um aviso lembra que o trabalho grava com o feixe nas posições do SCT —
-   você pode desativar o alinhamento e gravar, gravar mesmo assim ou cancelar.
+5. Ao pressionar **Enviar**, aparece um aviso: um trabalho normal grava com o feixe nas posições do
+   SCT. Você pode executar uma **Simulação com ponteiro** (o trabalho é executado com o deslocamento
+   do ponteiro aplicado, de modo que o ponto do ponteiro traga o trajeto enquanto o feixe corre
+   deslocado — ele continua disparando na potência do trabalho), desativar o alinhamento e gravar,
+   ou cancelar.
 
 Duas coisas nunca são deslocadas: o **jog** (um movimento relativo não precisa de compensação) e os
 **trabalhos** — o corte sempre acontece com o feixe nas posições do SCT, então sua saída G-code é

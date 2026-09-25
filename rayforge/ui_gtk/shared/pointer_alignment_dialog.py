@@ -7,18 +7,22 @@ from ...machine.models.machine import Machine
 
 
 class PointerAlignmentDialog(Adw.MessageDialog):
-    """Confirmation shown before burning while pointer alignment is on.
+    """Confirmation shown before sending while pointer alignment is on.
 
-    Jobs are never shifted by pointer alignment: they always burn with
-    the beam at the WCS positions. Because that is easy to forget while
-    aiming with the pointer dot, the user confirms on every send.
+    Jobs are never shifted by pointer alignment: by default they burn
+    with the beam at the WCS positions. Because that is easy to forget
+    while aiming with the pointer dot, the user confirms on every send
+    and can instead run a pointer dry-run: the job is generated with
+    the pointer offset folded in, so the pointer dot traces the
+    toolpath while the beam runs displaced by the offset. The laser
+    still fires at job power.
     """
 
     def __init__(
         self,
         parent,
         machine: Machine,
-        on_proceed: Callable[[], None] | None = None,
+        on_proceed: Callable[[bool], None] | None = None,
         **kwargs,
     ):
         super().__init__(transient_for=parent, **kwargs)
@@ -28,13 +32,16 @@ class PointerAlignmentDialog(Adw.MessageDialog):
         self.set_heading(_("Pointer alignment is on"))
         self.set_body(
             _(
-                "The job cuts with the beam at the WCS positions and is "
-                "never shifted by the pointer offset."
+                "Dry-Run with Pointer traces the toolpath with the "
+                "pointer dot: the job runs with the pointer offset "
+                "applied and the beam is displaced by it, still firing "
+                "at job power. Turning alignment off burns the job "
+                "normally with the beam at the WCS positions."
             )
         )
 
         self.add_response("cancel", _("_Cancel"))
-        self.add_response("burn", _("Burn _Anyway"))
+        self.add_response("dry-run", _("Dry-Run with _Pointer"))
         self.add_response("turn-off-burn", _("_Turn Off and Burn"))
         self.set_default_response("turn-off-burn")
         self.set_close_response("cancel")
@@ -48,5 +55,5 @@ class PointerAlignmentDialog(Adw.MessageDialog):
         self.destroy()
         if response_id == "turn-off-burn":
             self._machine.set_pointer_alignment(False)
-        if response_id in ("burn", "turn-off-burn") and self._on_proceed:
-            self._on_proceed()
+        if response_id in ("dry-run", "turn-off-burn") and self._on_proceed:
+            self._on_proceed(response_id == "dry-run")

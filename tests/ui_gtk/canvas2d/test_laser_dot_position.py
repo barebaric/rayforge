@@ -389,6 +389,29 @@ class TestDualDotsWithPointerOffset:
         assert abs(center_y - 50.0) < 1e-5
 
     @pytest.mark.ui
+    def test_laser_dot_mirrors_pointer_style(self, ui_context_initializer):
+        """
+        Exactly one dot is filled at a time: the beam dot is hollow
+        while alignment is on (the pointer dot is filled) and filled
+        again while alignment is off.
+        """
+        machine = Machine(ui_context_initializer)
+        machine.set_axis_extents(WIDTH, HEIGHT)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+
+        surface = _make_surface(ui_context_initializer, machine)
+        surface.set_laser_dot_position(30.0, 30.0)
+
+        surface.set_pointer_dot_state((10.0, 20.0), False)
+        assert surface._laser_dot._filled is True
+
+        surface.set_pointer_dot_state((10.0, 20.0), True)
+        assert surface._laser_dot._filled is False
+
+        surface.set_pointer_dot_state((10.0, 20.0), False)
+        assert surface._laser_dot._filled is True
+
+    @pytest.mark.ui
     def test_pointer_dot_follows_laser_dot_visibility(
         self, ui_context_initializer
     ):

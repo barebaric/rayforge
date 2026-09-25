@@ -186,8 +186,9 @@ L'alignement du pointeur est un interrupteur de session dans le popover de dépl
 boussole à côté de l'affichage de la position). Lorsqu'il est actif, toutes les opérations de visée
 absolues — Déplacer vers, les raccourcis de coin, l'aller à l'origine du SCF, Cliquer pour déplacer,
 Déplacer la tête ici et le cadrage — sont décalées pour que le _point du pointeur_ se pose sur la
-position visée. Le point du pointeur sur le canevas est dessiné plein lorsque l'alignement est actif
-et creux lorsqu'il est inactif.
+position visée. Sur le canevas, un seul point est jamais plein : le point du pointeur est dessiné
+plein lorsque l'alignement est actif (le point du faisceau est alors un anneau creux), et creux
+lorsqu'il est inactif (le point du faisceau est plein).
 
 Le flux de travail typique :
 
@@ -197,9 +198,11 @@ Le flux de travail typique :
    exactement là où le pointeur a visé.
 3. Activez **Alignement du pointeur** dans le popover de déplacement.
 4. Cadrez et déplacez avec le point du pointeur : tout ce que vous visez est marqué par le pointeur.
-5. Lorsque vous appuyez sur **Envoyer**, un avertissement vous rappelle que le job brûle avec le
-   faisceau aux positions du SCF — vous pouvez désactiver l'alignement et graver, graver quand même
-   ou annuler.
+5. Lorsque vous appuyez sur **Envoyer**, un avertissement apparaît : un job normal brûle avec le
+   faisceau aux positions du SCF. Vous pouvez exécuter une **Simulation avec pointeur** (le job
+   s'exécute avec le décalage du pointeur appliqué, si bien que le point du pointeur trace le
+   parcours tandis que le faisceau court décalé — il tire toujours à la puissance du job),
+   désactiver l'alignement et graver, ou annuler.
 
 Deux choses ne sont jamais décalées : le **jog** (un mouvement relatif ne nécessite aucune
 compensation) et les **jobs** — la coupe se fait toujours avec le faisceau aux positions du SCF,

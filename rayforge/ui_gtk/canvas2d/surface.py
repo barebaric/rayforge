@@ -310,8 +310,10 @@ class WorkSurface(WorldSurface):
         The offset is the (x, y) distance from the beam spot to the
         pointer dot in machine millimeters; the pointer dot is shown
         whenever it is non-zero. The alignment flag reflects runtime
-        pointer alignment: the dot is drawn filled while on and as a
-        hollow ring while off.
+        pointer alignment: the pointer dot is drawn filled while on
+        and as a hollow ring while off, and the beam dot mirrors that
+        (hollow while alignment is on) so exactly one dot is ever
+        filled.
         """
         if (
             self._pointer_offset_mm == offset_mm
@@ -321,6 +323,7 @@ class WorkSurface(WorldSurface):
         self._pointer_offset_mm = offset_mm
         self._pointer_alignment_on = alignment_enabled
         self._pointer_dot.set_filled(alignment_enabled)
+        self._laser_dot.set_filled(not alignment_enabled)
         self._update_pointer_dot_visibility()
         self.set_laser_dot_position(*self._laser_dot_pos_mm)
 

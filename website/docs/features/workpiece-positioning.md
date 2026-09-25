@@ -96,20 +96,27 @@ and toggle the compensation on or off. With it enabled:
 While **Pointer Alignment** is on, every absolute aiming operation — Move-To, the corner shortcuts,
 moving to the WCS origin, Click-to-Move, Move-Head-Here, and framing — lands the _pointer dot_ on
 the aimed position, so you can position the stock entirely by the visible dot. The coordinate entry
-in the popover pre-fills with the pointer dot's position, and the canvas pointer dot is drawn filled
-while alignment is on and hollow while it is off.
+in the popover pre-fills with the pointer dot's position. On the canvas, exactly one dot is ever
+filled: the pointer dot is filled while alignment is on (the beam dot is a hollow ring then), and
+hollow while it is off (the beam dot is filled).
 
 The workflow composes cleanly with zeroing by the pointer dot: the origin sits where the pointer
 marked, aiming shifts every target by the offset, and the burn is unshifted — so aligning with the
 dot and cutting with the beam end up consistent.
 
 When you press **Send** while alignment is on, a warning appears on every send (there is no "don't
-ask again"): the job cuts with the beam at the WCS positions and is never shifted. You can choose
-_Turn Off and Burn_, _Burn Anyway_, or cancel.
+ask again"). You can choose:
 
-Jog moves and jobs are never shifted by the toggle: jog is relative, and G-code output is identical
-whether alignment is on or off. The switch is session-only — it is not saved to the machine profile
-and resets when you switch machines.
+- **Dry-Run with Pointer**: the job runs with the pointer offset applied, so the pointer dot traces
+  the toolpath while the beam runs displaced by the offset. The laser still fires at job power —
+  make sure the displaced beam cannot hit anything it should not.
+- **Turn Off and Burn**: alignment is switched off and the job burns normally with the beam at the
+  WCS positions.
+- **Cancel**.
+
+Jog moves and jobs are never shifted by the toggle: jog is relative, and regular G-code output is
+identical whether alignment is on or off. The switch is session-only — it is not saved to the
+machine profile and resets when you switch machines.
 
 The pointer offset is especially useful for stock that is larger than the laser bed (pass-through
 work), where you repeatedly align the design to a reference mark on the moving stock.
