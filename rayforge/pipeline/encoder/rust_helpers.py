@@ -74,7 +74,7 @@ def dialect_to_spec(
 
 def _build_machine_path_vars(machine: "Machine") -> dict[str, str]:
     """Static path variables that never change during encoding."""
-    wcs_offset = machine.get_active_wcs_offset()
+    wcs_offset = machine.get_job_wcs_offset(machine.get_active_wcs_offset())
     ax_w, ax_h = machine.axis_extents
     return {
         "machine.name": machine.name,
@@ -107,7 +107,7 @@ def _build_layer_path_vars_for_doc(
         return result
     for layer in doc.layers:
         wcs = layer.get_effective_wcs(machine)
-        wcs_offset = machine.get_wcs_offset(wcs)
+        wcs_offset = machine.get_job_wcs_offset(machine.get_wcs_offset(wcs))
         result[layer.uid] = {
             "layer.name": layer.name,
             "wcs_offset[0]": _repr_val(wcs_offset[0]),

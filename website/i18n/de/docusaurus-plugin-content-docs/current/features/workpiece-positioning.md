@@ -94,16 +94,24 @@ Während die **Zeigerausrichtung** aktiv ist, landet bei jeder absoluten Positio
 Verschieben nach, die Ecken-Kürzel, das Anfahren des WKS-Ursprungs, Klicken zum Verschieben, Kopf
 hierher bewegen und Einrahmen — der _Zeigerpunkt_ auf der anvisierten Position, sodass du das
 Werkstück vollständig am sichtbaren Punkt ausrichten kannst. Die Koordinateneingabe im Popover wird
-mit der Position des Zeigerpunkts vorbefüllt, und der Zeigerpunkt auf der Leinwand wird gefüllt
-gezeichnet, während die Ausrichtung aktiv ist, und hohl, während sie aus ist.
+mit der Position des Zeigerpunkts vorbefüllt. Auf der Leinwand ist stets genau ein Punkt gefüllt:
+Der Zeigerpunkt ist gefüllt, während die Ausrichtung aktiv ist (der Strahlpunkt ist dann ein
+hollower Ring), und hohl, während sie aus ist (der Strahlpunkt ist gefüllt).
 
 Der Arbeitsablauf kombiniert sich sauber mit dem Nullen per Zeigerpunkt: Der Ursprung liegt dort, wo
 der Zeiger markiert hat, das Anvisieren verschiebt jedes Ziel um den Offset, und der Brennvorgang
 bleibt unverschoben — Ausrichten mit dem Punkt und Schneiden mit dem Strahl passen also zusammen.
 
 Wenn du bei aktiver Ausrichtung auf **Senden** drückst, erscheint bei jedem Senden eine Warnung (es
-gibt kein „nicht mehr fragen“): Der Job schneidet mit dem Strahl an den WKS-Positionen und wird nie
-verschoben. Du kannst zwischen _Ausschalten und Brennen_, _Trotzdem brennen_ und Abbrechen wählen.
+gibt kein „nicht mehr fragen“). Du kannst wählen:
+
+- **Probelauf mit Zeiger**: Der Job läuft mit angewendetem Zeiger-Offset, sodass der Zeigerpunkt den
+  Werkzeugpfad nachzeichnet, während der Strahl um den Offset verschoben läuft. Der Laser brennt
+  weiterhin mit Job-Leistung — stelle sicher, dass der verschobene Strahl nichts treffen kann, was
+  er nicht soll.
+- **Ausschalten und Brennen**: Die Ausrichtung wird ausgeschaltet und der Job brennt normal mit dem
+  Strahl an den WKS-Positionen.
+- **Abbrechen**.
 
 Jog-Bewegungen und Jobs werden vom Schalter nie verschoben: Jog ist relativ, und die G-Code-Ausgabe
 ist identisch, ob die Ausrichtung ein- oder ausgeschaltet ist. Der Schalter gilt nur für die Sitzung

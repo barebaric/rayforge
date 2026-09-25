@@ -1204,10 +1204,14 @@ class IntentBuilder:
         # concern and never reaches the encoder).
         w2m = space.get_world_to_machine_matrix()
 
-        # Default WCS command offset.
+        # Default WCS command offset. While a pointer dry-run is
+        # requested, the pointer offset is included so the pointer dot
+        # traces the toolpath instead of the beam.
         default_wcs_offset = list(
             space.get_command_offset(
-                wcs_offset=machine.get_active_wcs_offset(),
+                wcs_offset=machine.get_job_wcs_offset(
+                    machine.get_active_wcs_offset()
+                ),
                 wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
             )
         )
@@ -1216,7 +1220,9 @@ class IntentBuilder:
         layer_wcs_offsets: list[tuple[str, list[float]]] = []
         for layer in doc.layers:
             effective_wcs = layer.get_effective_wcs(machine)
-            wcs_off = machine.get_wcs_offset(effective_wcs)
+            wcs_off = machine.get_job_wcs_offset(
+                machine.get_wcs_offset(effective_wcs)
+            )
             cmd_offset = space.get_command_offset(
                 wcs_offset=wcs_off,
                 wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
@@ -1508,6 +1514,12 @@ def _machine_token_payload(machine: Machine | None, doc: Doc) -> Any:
             )
             for layer in doc.layers
         },
+        "pointer_job_shift": machine.pointer_job_shift_enabled,
+        "pointer_job_offset": (
+            list(machine.get_pointer_offset())
+            if machine.pointer_job_shift_enabled
+            else [0.0, 0.0]
+        ),
     }
 
 

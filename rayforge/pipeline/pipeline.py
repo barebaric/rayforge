@@ -314,7 +314,7 @@ class Pipeline:
         message: str | None = None,
     ) -> None:
         if message is not None:
-            self._clear_last_job_output()
+            self.invalidate_job_output()
         elif error_kind == ErrorKind.CACHE_BUDGET_EXCEEDED:
             message = (
                 "Scene too complex for the current cache budget. "
@@ -326,9 +326,17 @@ class Pipeline:
         logger.error("Pipeline execution error: %s", message)
         self.pipeline_error.send(self, message=message)
 
-    def _clear_last_job_output(self) -> None:
-        """Discard machine output that no longer matches the
-        configuration."""
+    def invalidate_job_output(self) -> None:
+        """Discards the cached job artifact so the next job generation
+        rebuilds it.
+
+        This covers both output that no longer matches the
+        configuration and output a caller deliberately invalidates to
+        have the next send produce a different variant. Callers that
+        checkout the current handle first may safely call this while
+        still using the artifact: the checkout's retain keeps it
+        alive.
+        """
         if self._last_job_handle is not None:
             self._store.release(self._last_job_handle)
             self._last_job_handle = None
@@ -520,7 +528,7 @@ class Pipeline:
         try:
             validate_panel_configuration(self._machine, self._doc)
         except UnsupportedRotaryPanelOrientationError as exc:
-            self._clear_last_job_output()
+            self.invalidate_job_output()
             when_done(None, exc)
             return
 

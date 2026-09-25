@@ -1,7 +1,7 @@
 """
 Tests for the PointerAlignmentDialog response handling: jobs burn with
-the unshifted beam, so the user picks between turning alignment off,
-burning anyway, or cancelling.
+the unshifted beam, so the user picks between a pointer dry-run,
+turning alignment off and burning, or cancelling.
 """
 
 from unittest.mock import MagicMock
@@ -40,17 +40,17 @@ def test_turn_off_and_burn(alignment_dialog):
     dialog._on_response(dialog, "turn-off-burn")
 
     assert machine.pointer_alignment_enabled is False
-    on_proceed.assert_called_once()
+    on_proceed.assert_called_once_with(False)
 
 
 @pytest.mark.ui
-def test_burn_anyway(alignment_dialog):
+def test_dry_run_with_pointer(alignment_dialog):
     dialog, machine, on_proceed = alignment_dialog
 
-    dialog._on_response(dialog, "burn")
+    dialog._on_response(dialog, "dry-run")
 
     assert machine.pointer_alignment_enabled is True
-    on_proceed.assert_called_once()
+    on_proceed.assert_called_once_with(True)
 
 
 @pytest.mark.ui

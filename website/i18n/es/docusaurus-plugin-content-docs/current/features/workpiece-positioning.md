@@ -92,16 +92,24 @@ Mientras la **alineación del puntero** está activada, cada operación absoluta
 los atajos de esquina, ir al origen del SCF, Clic para mover, Mover cabeza aquí y enmarcar — hace
 aterrizar el _punto del puntero_ en la posición apuntada, de modo que puedes posicionar el material
 completamente por el punto visible. La entrada de coordenadas del popover se rellena con la posición
-del punto del puntero, y el punto del puntero del lienzo se dibuja relleno mientras la alineación
-está activada y hueco mientras está desactivada.
+del punto del puntero. En el lienzo siempre hay exactamente un punto relleno: el punto del puntero
+se dibuja relleno mientras la alineación está activada (el punto del haz es entonces un anillo
+hueco), y hueco mientras está desactivada (el punto del haz está relleno).
 
 El flujo de trabajo combina limpiamente con el zerado por el punto del puntero: el origen queda
 donde el puntero marcó, el apuntado desplaza cada objetivo por el desplazamiento, y la grabación no
 se desplaza — así alinear con el punto y cortar con el haz terminan siendo consistentes.
 
 Al pulsar **Enviar** con la alineación activada, aparece una advertencia en cada envío (no hay
-opción de "no volver a preguntar"): el trabajo corta con el haz en las posiciones del SCF y nunca se
-desplaza. Puedes elegir _Desactivar y grabar_, _Grabar de todos modos_ o cancelar.
+opción de "no volver a preguntar"). Puedes elegir:
+
+- **Simulación con puntero**: el trabajo se ejecuta con el desplazamiento del puntero aplicado, de
+  modo que el punto del puntero traza la trayectoria mientras el haz corre desplazado. El láser
+  sigue disparando a potencia de trabajo — asegúrate de que el haz desplazado no pueda tocar nada
+  que no deba.
+- **Desactivar y grabar**: la alineación se desactiva y el trabajo se graba normalmente con el haz
+  en las posiciones del SCF.
+- **Cancelar**.
 
 Los movimientos de jog y los trabajos nunca se desplazan con el interruptor: el jog es relativo, y
 la salida G-code es idéntica tanto si la alineación está activada como desactivada. El interruptor

@@ -183,8 +183,9 @@ When enabled, three things change:
 Pointer alignment is a runtime switch in the move-to popover (the compass icon next to the position
 readout). While it is on, all absolute aiming operations — Move-To, the corner shortcuts, moving to
 the WCS origin, Click-to-Move, Move-Head-Here, and framing — are shifted so the _pointer dot_ lands
-on the aimed position. The canvas pointer dot is drawn filled while alignment is on and hollow while
-it is off.
+on the aimed position. Exactly one canvas dot is ever filled: the pointer dot is filled while
+alignment is on (the beam dot is a hollow ring then), and hollow while it is off (the beam dot is
+filled).
 
 The typical workflow:
 
@@ -193,13 +194,16 @@ The typical workflow:
    pointer pointed.
 3. Turn on **Pointer Alignment** in the move-to popover.
 4. Frame and move with the pointer dot: everything you aim at is marked by the pointer.
-5. When you press **Send**, a warning reminds you that the job burns with the beam at the WCS
-   positions — you can turn alignment off and burn, burn anyway, or cancel.
+5. When you press **Send**, a warning appears: a regular job burns with the beam at the WCS
+   positions. You can run a **Dry-Run with Pointer** (the job runs with the pointer offset applied,
+   so the pointer dot traces the toolpath while the beam is displaced — it still fires at job
+   power), turn alignment off and burn, or cancel.
 
-Two things are never shifted: **jog** (a relative move needs no compensation) and **jobs** — cutting
-always happens with the beam at the WCS positions, so your G-code output is identical whether
-alignment is on or off. Together with zeroing by the pointer dot this stays consistent: the origin
-sits at `beam + offset`, aiming shifts every target by `-offset`, and the burn is unshifted.
+Two things are never shifted by an ordinary send: **jog** (a relative move needs no compensation)
+and **jobs** — cutting always happens with the beam at the WCS positions, so your G-code output is
+identical whether alignment is on or off. Only the explicit Dry-Run with Pointer applies the offset
+to a job. Together with zeroing by the pointer dot this stays consistent: the origin sits at
+`beam + offset`, aiming shifts every target by `-offset`, and the burn is unshifted.
 
 Pointer alignment is a session-only setting: it is not saved to the machine profile and resets when
 you switch machines.

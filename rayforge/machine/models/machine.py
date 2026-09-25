@@ -224,6 +224,13 @@ class Machine:
         # resets naturally when the active machine is switched.
         self.pointer_alignment_enabled: bool = False
 
+        # Transient companion to pointer_alignment_enabled: while on,
+        # job output is generated with the pointer offset added (see
+        # get_job_wcs_offset()), making the pointer dot trace the
+        # toolpath. Only set for the duration of a pointer dry-run
+        # send; never serialized.
+        self.pointer_job_shift_enabled: bool = False
+
         self.machine_hours: MachineHours = MachineHours()
         self.machine_hours.changed.connect(self._on_machine_hours_changed)
 
@@ -1328,6 +1335,20 @@ class Machine:
             off_x += dx
             off_y += dy
         return (off_x, off_y, off_z)
+
+    def get_job_wcs_offset(self, wcs_offset: Point3D) -> Point3D:
+        """
+        The WCS offset to use when generating job output.
+
+        Normally the given offset unchanged. While a pointer dry-run is
+        requested (pointer_job_shift_enabled), the pointer offset of
+        the default laser head is added so the pointer dot traces the
+        toolpath while the beam runs displaced by the offset.
+        """
+        if not self.pointer_job_shift_enabled:
+            return wcs_offset
+        dx, dy = self.get_pointer_offset()
+        return (wcs_offset[0] + dx, wcs_offset[1] + dy, wcs_offset[2])
 
     def remove_head(self, head: Head):
         head.changed.disconnect(self._on_head_changed)

@@ -2638,3 +2638,59 @@ class TestPointerAlignment:
         head.set_pointer_offset_enabled(False)
 
         assert machine.get_command_wcs_offset() == (10.0, 20.0, 5.0)
+
+    def test_get_job_wcs_offset_unchanged_by_default(
+        self, isolated_machine: Machine
+    ):
+        machine = isolated_machine
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(12.0, -3.5)
+        head.set_pointer_offset_enabled(True)
+
+        assert machine.get_job_wcs_offset((10.0, 20.0, 5.0)) == (
+            10.0,
+            20.0,
+            5.0,
+        )
+
+    def test_get_job_wcs_offset_adds_pointer_offset_while_shifting(
+        self, isolated_machine: Machine
+    ):
+        """While a pointer dry-run shifts job output, the pointer
+        offset is added to the given WCS offset."""
+        machine = isolated_machine
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(12.0, -3.5)
+        head.set_pointer_offset_enabled(True)
+        machine.pointer_job_shift_enabled = True
+
+        assert machine.get_job_wcs_offset((10.0, 20.0, 5.0)) == (
+            22.0,
+            16.5,
+            5.0,
+        )
+
+    def test_get_job_wcs_offset_ignores_disabled_offset(
+        self, isolated_machine: Machine
+    ):
+        machine = isolated_machine
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(12.0, -3.5)
+        head.set_pointer_offset_enabled(False)
+        machine.pointer_job_shift_enabled = True
+
+        assert machine.get_job_wcs_offset((10.0, 20.0, 5.0)) == (
+            10.0,
+            20.0,
+            5.0,
+        )
+
+    def test_pointer_job_shift_not_serialized(self, isolated_machine: Machine):
+        machine = isolated_machine
+        machine.pointer_job_shift_enabled = True
+
+        data = machine.to_dict()
+        assert "pointer_job_shift_enabled" not in data["machine"]
