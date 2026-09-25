@@ -27,7 +27,10 @@ from gi.repository import Adw, Gtk
 from rayforge.core.varset import SerialPortVar
 from rayforge.machine.transport.serial import SerialPortInfo, SerialTransport
 from rayforge.ui_gtk.varset.adapter import create_row_for_var
-from rayforge.ui_gtk.varset.adapter.combo import SerialPortAdapter
+from rayforge.ui_gtk.varset.adapter.combo import (
+    VIDPID_ENTRY_LABEL,
+    SerialPortAdapter,
+)
 
 pytestmark = pytest.mark.ui
 
@@ -78,6 +81,7 @@ def test_usb_ports_come_first(ui_context_initializer):
             NULL_LABEL,
             "/dev/ttyACM0",
             "/dev/ttyUSB0",
+            VIDPID_ENTRY_LABEL,
             "/dev/ttyS0",
             "/dev/ttyS3",
         ]
@@ -122,7 +126,7 @@ def test_configured_port_pinned_when_not_plugged_in(ui_context_initializer):
             stack.enter_context(p)
         row, adapter = _create_row(var)
         strings = _model_strings(row)
-        assert strings == [NULL_LABEL, "/dev/ttyUSB0"]
+        assert strings == [NULL_LABEL, "/dev/ttyUSB0", VIDPID_ENTRY_LABEL]
         assert row.get_selected() == 1
         assert adapter.get_value() == "/dev/ttyUSB0"
 
@@ -148,3 +152,35 @@ def test_rescan_preserves_configured_value(ui_context_initializer):
             stack.enter_context(p)
         adapter._refresh(adapter.get_value())
         assert adapter.get_value() == "/dev/ttyUSB0"
+
+
+def test_vidpid_value_round_trip(ui_context_initializer):
+    """
+    A configured 'vid:pid' spec survives set/get and stays pinned to
+    the top of the list while no matching device is plugged in.
+    """
+    var = SerialPortVar(key="port", label="Port", value="0403:6001")
+    with ExitStack() as stack:
+        for p in _scan_patches([]):
+            stack.enter_context(p)
+        row, adapter = _create_row(var)
+        strings = _model_strings(row)
+        assert strings == [NULL_LABEL, VIDPID_ENTRY_LABEL, "0403:6001"]
+        assert row.get_selected() == 2
+        assert adapter.get_value() == "0403:6001"
+
+        adapter.set_value("0403:6001")
+        assert adapter.get_value() == "0403:6001"
+
+        adapter.set_value(None)
+        assert adapter.get_value() is None
+
+
+def test_vidpid_pinned_with_description(ui_context_initializer):
+    """The pinned 'vid:pid' entry carries an explanatory description."""
+    var = SerialPortVar(key="port", label="Port", value="0403:6001")
+    with ExitStack() as stack:
+        for p in _scan_patches([]):
+            stack.enter_context(p)
+        _row, adapter = _create_row(var)
+        assert adapter._descriptions.get("0403:6001")

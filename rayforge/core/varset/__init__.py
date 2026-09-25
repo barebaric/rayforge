@@ -10,7 +10,7 @@ from .labeledchoicevar import LabeledChoiceVar
 from .lengthvar import LengthVar
 from .oauthvar import OAuthFlowVar
 from .portvar import PortVar
-from .serialportvar import SerialPortVar
+from .serialportvar import SerialPortVar, format_vidpid, parse_vidpid
 from .speedvar import SpeedVar
 from .textareavar import TextAreaVar
 from .tuplevar import TupleVar
@@ -42,6 +42,8 @@ __all__ = [
     "Var",
     "VarSet",
     "WebsocketUrlVar",
+    "format_vidpid",
     "get_editable_var_types",
     "merge_varsets",
+    "parse_vidpid",
 ]
