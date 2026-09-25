@@ -239,6 +239,7 @@ if [[ "$1" == "pip" || -z "$1" ]]; then
     retry $PYTHON_BIN_PATH -m pip install --no-cache-dir \
         "pyserial$(req_version pyserial)" \
         "raygeo$(req_version raygeo)" \
+        "raydriver$(req_version raydriver)" \
         "ezdxf$(req_version ezdxf)" \
         "pypdf$(req_version pypdf)" \
         "trimesh$(req_version trimesh)" \

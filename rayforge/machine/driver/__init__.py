@@ -18,6 +18,7 @@ from .dummy import NoDeviceDriver
 from .grbl import (
     GrblNetworkDriver,
     GrblSerialDriver,
+    GrblSerialNextDriver,
     GrblSerialSimpleDriver,
     GrblTelnetDriver,
 )
@@ -57,6 +58,7 @@ __all__ = [
     "DriverMaturity",
     "GrblNetworkDriver",
     "GrblSerialDriver",
+    "GrblSerialNextDriver",
     "GrblSerialSimpleDriver",
     "GrblTelnetDriver",
     "MarlinSerialDriver",
