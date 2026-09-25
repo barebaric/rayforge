@@ -233,7 +233,8 @@ class TestDeviceOperations:
         drv, mock, _emulator, _recorder = connected_driver
         await drv.move_to(10, -20.5)
         expected = (
-            drv.dialect.move_to.format(speed=1500, x=10.0, y=-20.5) + "\n"
+            drv.dialect.format_move_to(x=10.0, y=-20.5, speed=1500, z=None)
+            + "\n"
         ).encode()
         assert expected in sent_text(mock)
 
