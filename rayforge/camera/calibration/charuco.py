@@ -49,6 +49,14 @@ class CharucoTarget(CalibrationTarget):
     MIN_MARKER_PIXELS = 10
 
     def __init__(self, config: CharucoConfig):
+        if config.marker_length_mm >= config.square_length_mm:
+            raise ValueError(
+                "Marker length "
+                f"({config.marker_length_mm}) must be smaller than "
+                f"square length ({config.square_length_mm})"
+            )
+        if config.square_length_mm <= 0 or config.marker_length_mm <= 0:
+            raise ValueError("Square and marker lengths must be positive")
         self.config = config
         self._board = None
         self._detector = None

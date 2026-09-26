@@ -112,10 +112,25 @@ class DotGridTarget(CalibrationTarget):
     # How many shortlisted orientations get the full homography check.
     MAX_FINALISTS = 8
     # Mean pixel residual above which no orientation is accepted. A
-    # correct reading on a printed sheet lands well under a pixel.
-    MAX_HOMOGRAPHY_ERROR = 4.0
+    # correct reading on a flat render lands well under a pixel, but a
+    # real lens bends straight lines, which a homography cannot model.
+    # The threshold therefore tolerates a few pixels of distortion
+    # while still rejecting mislabelled lattices, whose residuals are
+    # typically tens of pixels.
+    MAX_HOMOGRAPHY_ERROR = 8.0
 
     def __init__(self, config: DotGridConfig):
+        if config.spacing_mm <= 0:
+            raise ValueError("Dot spacing must be positive")
+        if config.dot_diameter_mm <= 0:
+            raise ValueError("Dot diameter must be positive")
+        if config.dot_diameter_mm >= config.spacing_mm:
+            raise ValueError(
+                "Dot diameter "
+                f"({config.dot_diameter_mm}) must be smaller than "
+                f"spacing ({config.spacing_mm}) or neighbouring "
+                "dots merge into one blob"
+            )
         self.config = config
         self._angle_hint: float | None = None
 
@@ -257,18 +272,27 @@ class DotGridTarget(CalibrationTarget):
         radius_px = max(1, round(self.config.dot_diameter_mm * scale / 2))
 
         # Keep a clear white border so the outermost dots survive
-        # thresholding as separate blobs.
+        # thresholding as separate blobs. A single scale in both axes
+        # preserves the configured pitches even when the requested
+        # output aspect does not match the card; the lattice is
+        # centred in the surplus direction.
         origin_x = margin_px + radius_px
         origin_y = margin_px + radius_px
         span_x, span_y = self._lattice_span_mm()
         usable_w = max(1.0, width_px - 2 * origin_x)
         usable_h = max(1.0, height_px - 2 * origin_y)
-        step_x = usable_w / span_x if span_x > 0 else 0.0
-        step_y = usable_h / span_y if span_y > 0 else 0.0
+        step = min(
+            usable_w / span_x if span_x > 0 else float("inf"),
+            usable_h / span_y if span_y > 0 else float("inf"),
+        )
+        if step == float("inf"):
+            step = 0.0
+        offset_x = origin_x + (usable_w - span_x * step) / 2
+        offset_y = origin_y + (usable_h - span_y * step) / 2
 
         for x_mm, y_mm, _ in self.object_points():
-            pixel_x = round(origin_x + x_mm * step_x)
-            pixel_y = round(origin_y + y_mm * step_y)
+            pixel_x = round(offset_x + x_mm * step)
+            pixel_y = round(offset_y + y_mm * step)
             cv2.circle(image, (pixel_x, pixel_y), radius_px, 0, -1)
 
         return image
@@ -280,7 +304,9 @@ class DotGridTarget(CalibrationTarget):
         if cols < 2 or rows < 2:
             return None
 
-        centers = self._find_dot_centers(to_gray(image))
+        centers = self._find_dot_centers(
+            to_gray(image), expected_count=cols * rows
+        )
         if centers is None:
             return None
 
@@ -291,20 +317,52 @@ class DotGridTarget(CalibrationTarget):
         ids = list(range(cols * rows))
         return normalize_detection(ordered, ids)
 
-    def _find_dot_centers(self, gray: np.ndarray) -> np.ndarray | None:
+    def _find_dot_centers(
+        self, gray: np.ndarray, expected_count: int | None = None
+    ) -> np.ndarray | None:
         """Return the sub-pixel centre of every dot, or None.
 
-        The printed sheet is black ink on white paper, so the dots are
-        the minority intensity class. Working from the minority class
-        keeps this working on a dark bed as well as a light one.
+        The sheet almost never fills the frame: usually it is a small
+        patch of paper on a much larger bed. Thresholding is therefore
+        tried in both polarities. Dark ink on light paper makes the
+        dots the dark class, but when the bed itself is dark the paper
+        can end up as the minority class instead. The polarity whose
+        dot-shaped component count matches the configured sheet wins;
+        otherwise the minority-class result is kept.
         """
         blurred = cv2.GaussianBlur(gray, (3, 3), 0)
-        _binary, mask = cv2.threshold(
+        _binary, dark_mask = cv2.threshold(
             blurred, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU
         )
-        if np.count_nonzero(mask == 0) < np.count_nonzero(mask):
-            mask = cv2.bitwise_not(mask)
+        light_mask = cv2.bitwise_not(dark_mask)
+        if np.count_nonzero(light_mask) <= np.count_nonzero(dark_mask):
+            ordered_masks = (light_mask, dark_mask)
+        else:
+            ordered_masks = (dark_mask, light_mask)
 
+        first = self._extract_centers(ordered_masks[0], blurred)
+        if expected_count is not None:
+            if first is not None and len(first) == expected_count:
+                return first
+            second = self._extract_centers(ordered_masks[1], blurred)
+            if second is not None and len(second) == expected_count:
+                return second
+            # Neither polarity yields a whole sheet. Reading part of a
+            # sheet would poison the solve, so refuse it.
+            logger.debug(
+                "Found %s/%s dots, expected %d",
+                None if first is None else len(first),
+                None if second is None else len(second),
+                expected_count,
+            )
+            return None
+        return first
+
+    def _extract_centers(
+        self, mask: np.ndarray, blurred: np.ndarray
+    ) -> np.ndarray | None:
+        """Collect dot centres from one threshold polarity."""
+        height_px, width_px = mask.shape[:2]
         count, labels, stats, _centroids = cv2.connectedComponentsWithStats(
             mask, 8
         )
@@ -320,6 +378,16 @@ class DotGridTarget(CalibrationTarget):
             top = stats[index, cv2.CC_STAT_TOP]
             width = stats[index, cv2.CC_STAT_WIDTH]
             height = stats[index, cv2.CC_STAT_HEIGHT]
+            if (
+                left <= 0
+                or top <= 0
+                or left + width >= width_px
+                or top + height >= height_px
+            ):
+                # The bed, the paper edge, or a shadow: a real dot is
+                # fully surrounded by paper and never touches the
+                # frame border.
+                continue
             # Work inside the component's own bounding box. Slicing the
             # whole label image once per dot would make detection cost
             # grow with the frame area times the dot count, which is far

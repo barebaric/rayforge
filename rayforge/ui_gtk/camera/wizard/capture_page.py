@@ -63,7 +63,7 @@ class CapturePage(CameraWizardPage):
         left_box.append(preview_frame)
 
         self._capture_surface = CalibrationCaptureSurface(
-            self.controller, self._board
+            self.controller, self._target
         )
         preview_frame.set_child(self._capture_surface)
 

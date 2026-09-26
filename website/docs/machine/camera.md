@@ -193,7 +193,7 @@ First choose a **Pattern Type**:
 | Pattern               | Notes                                                                            |
 | --------------------- | -------------------------------------------------------------------------------- |
 | **ChArUco Board**     | Chessboard carrying markers. Most accurate; needs a good printer.                  |
-| **ArUco Marker Grid** | Standalone markers. Tolerates partial views and clutter on the bed.                 |
+| **Marker Grid**       | Standalone ArUco or AprilTag markers. Tolerates partial views and clutter.          |
 | **Dot Grid**          | Black dots, in rows or in staggered rows. Cheapest to print, lowest accuracy.       |
 
 1. Set the **Width** and **Height** of your printed sheet. The preview updates in real-time — the
@@ -220,6 +220,17 @@ Measure the sheet after printing, and enter the printed dimensions rather than t
 printers scale, and a few percent of scale error shows up directly in the calibration result. If you
 change a geometry field, the **Card Size** suggestion is ignored, because your measurements now
 decide the pattern.
+
+For a **Marker Grid**, the **Marker Dictionary** must match the family the sheet was printed
+with (ArUco or AprilTag — Rayforge refines the corners accordingly). If the printed ids do not
+start at 0, for example one tile of a larger set, put the first id on the sheet in **Marker ID
+Offset**; markers outside the described range are ignored.
+
+The numbering follows the **ID Origin** corner, which holds the offset id, and the **ID Order**:
+consecutive ids run along rows first, or along columns first. The default — top-left corner, rows
+first — matches OpenCV's own boards. To describe your sheet, find the marker with the lowest id
+and pick the corner it sits in; then check whether the next id sits beside it (rows) or below it
+(columns).
 
 Dot sheets come in two arrangements, and the **Row Spacing** and **Row Offset** fields tell Rayforge
 which one you have:

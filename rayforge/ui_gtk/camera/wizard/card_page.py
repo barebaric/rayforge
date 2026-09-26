@@ -15,7 +15,12 @@ from gi.repository import Adw, Gdk, GdkPixbuf, GLib, Gtk
 from ....camera.calibration import (
     available_target_types,
     create_target,
-    recommend_target,
+    get_target_class,
+)
+from ....camera.calibration.aruco import (
+    ID_ORDERS,
+    ID_ORIGINS,
+    ArucoGridConfig,
 )
 from ....camera.calibration.target import (
     CalibrationTarget,
@@ -34,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 TARGET_TYPE_LABELS: dict[CalibrationTargetType, str] = {
     CalibrationTargetType.CHARUCO: _("ChArUco Board"),
-    CalibrationTargetType.ARUCO_GRID: _("ArUco Marker Grid"),
+    CalibrationTargetType.ARUCO_GRID: _("Marker Grid"),
     CalibrationTargetType.DOT_GRID: _("Dot Grid"),
 }
 
@@ -51,6 +56,7 @@ FIELD_LABELS: dict[str, str] = {
     "square_length_mm": _("Square Size"),
     "marker_length_mm": _("Marker Size"),
     "marker_separation_mm": _("Marker Gap"),
+    "marker_id_offset": _("Marker ID Offset"),
     "spacing_mm": _("Dot Spacing"),
     "row_spacing_mm": _("Row Spacing"),
     "row_offset_mm": _("Row Offset"),
@@ -62,6 +68,7 @@ SUMMARY_LABELS: dict[str, str] = {
     "square_size": _("Square Size"),
     "marker_size": _("Marker Size"),
     "marker_gap": _("Marker Gap"),
+    "marker_id_offset": _("Marker ID Offset"),
     "dot_spacing": _("Dot Spacing"),
     "row_spacing": _("Row Spacing"),
     "dot_diameter": _("Dot Diameter"),
@@ -69,16 +76,57 @@ SUMMARY_LABELS: dict[str, str] = {
 }
 
 TARGET_TYPE_DESCRIPTIONS: dict[CalibrationTargetType, str] = {
-    CalibrationTargetType.CHARUCO: (
+    CalibrationTargetType.CHARUCO: _(
         "Chessboard with markers. Most accurate, needs a good printer."
     ),
-    CalibrationTargetType.ARUCO_GRID: (
-        "Standalone markers. Tolerates partial views and clutter."
+    CalibrationTargetType.ARUCO_GRID: _(
+        "ArUco or AprilTag markers. Tolerates partial views."
     ),
-    CalibrationTargetType.DOT_GRID: (
+    CalibrationTargetType.DOT_GRID: _(
         "Plain black dots. Cheapest to print, lowest accuracy."
     ),
 }
+
+
+ID_ORIGIN_LABELS: dict[str, str] = {
+    "top_left": _("Top-Left"),
+    "top_right": _("Top-Right"),
+    "bottom_left": _("Bottom-Left"),
+    "bottom_right": _("Bottom-Right"),
+}
+
+ID_ORDER_LABELS: dict[str, str] = {
+    "rows": _("Along rows"),
+    "columns": _("Along columns"),
+}
+
+
+def _dictionary_options() -> list[tuple[str, int]]:
+    """Return selectable ArUco dictionaries as (label, id) pairs."""
+    candidates = (
+        "DICT_4X4_50",
+        "DICT_4X4_100",
+        "DICT_5X5_100",
+        "DICT_5X5_250",
+        "DICT_6X6_250",
+        "DICT_7X7_100",
+        "DICT_ARUCO_ORIGINAL",
+        "DICT_APRILTAG_16h5",
+        "DICT_APRILTAG_25h9",
+        "DICT_APRILTAG_36h10",
+        "DICT_APRILTAG_36h11",
+    )
+    options = []
+    for name in candidates:
+        value = getattr(cv2.aruco, name, None)
+        if value is None:
+            continue
+        label = name.replace("DICT_", "").replace("_", " ")
+        options.append((label, int(value)))
+    return options
+
+
+DICTIONARY_OPTIONS = _dictionary_options()
 
 
 class CardPage(CameraWizardPage):
@@ -97,6 +145,16 @@ class CardPage(CameraWizardPage):
         self._field_rows: dict[str, object] = {}
         self._summary_rows: dict[str, Adw.ActionRow] = {}
         self._customized = False
+        self._dictionary_id: int | None = None
+        self._dict_row: Adw.ComboRow | None = None
+        self._dict_labels: list[str] = []
+        self._dict_ids: list[int] = []
+        self._updating_dict_row = False
+        self._id_origin: str | None = None
+        self._id_order: str | None = None
+        self._origin_row: Adw.ComboRow | None = None
+        self._order_row: Adw.ComboRow | None = None
+        self._updating_id_rows = False
         self._preview_pixbuf: GdkPixbuf.Pixbuf | None = None
 
         machine = get_context().machine
@@ -167,7 +225,7 @@ class CardPage(CameraWizardPage):
 
         self._type_row = Adw.ComboRow(
             title=_("Pattern Type"),
-            subtitle=_("ChArUco Board"),
+            subtitle=TARGET_TYPE_LABELS[available_target_types()[0]],
         )
         model = Gtk.StringList()
         for target_type in available_target_types():
@@ -175,12 +233,29 @@ class CardPage(CameraWizardPage):
         self._type_row.set_model(model)
         self._type_row.set_selected(0)
         self._type_row.connect("notify::selected", self._on_type_changed)
-        type_group = Adw.PreferencesGroup(
+        self._type_group = Adw.PreferencesGroup(
             title=_("Pattern"),
             description=_("Choose the printed pattern to calibrate against."),
         )
-        type_group.add(self._type_row)
-        settings_box.append(type_group)
+        self._type_group.add(self._type_row)
+        self._dict_row = Adw.ComboRow(title=_("Marker Dictionary"))
+        self._dict_row.connect("notify::selected", self._on_dict_changed)
+        self._type_group.add(self._dict_row)
+        self._origin_row = Adw.ComboRow(title=_("ID Origin"))
+        origin_model = Gtk.StringList()
+        for origin in ID_ORIGINS:
+            origin_model.append(ID_ORIGIN_LABELS[origin])
+        self._origin_row.set_model(origin_model)
+        self._origin_row.connect("notify::selected", self._on_origin_changed)
+        self._type_group.add(self._origin_row)
+        self._order_row = Adw.ComboRow(title=_("ID Order"))
+        order_model = Gtk.StringList()
+        for order in ID_ORDERS:
+            order_model.append(ID_ORDER_LABELS[order])
+        self._order_row.set_model(order_model)
+        self._order_row.connect("notify::selected", self._on_order_changed)
+        self._type_group.add(self._order_row)
+        settings_box.append(self._type_group)
 
         self._geometry_group = Adw.PreferencesGroup(
             title=_("Pattern Geometry"),
@@ -257,7 +332,53 @@ class CardPage(CameraWizardPage):
             return
         self._target_type = types[index]
         self._customized = False
+        # A new pattern type gets its own defaults.
+        self._dictionary_id = None
+        self._id_origin = None
+        self._id_order = None
         self._rebuild_from_card_size()
+
+    def _on_dict_changed(self, row, _pspec) -> None:
+        if self._updating_dict_row:
+            return
+        config = self._config
+        if not isinstance(config, ArucoGridConfig):
+            return
+        index = row.get_selected()
+        if index < 0 or index >= len(self._dict_ids):
+            return
+        dictionary_id = self._dict_ids[index]
+        self._dictionary_id = dictionary_id
+        config.dictionary_id = dictionary_id
+        self._rebuild_target()
+
+    def _on_origin_changed(self, row, _pspec) -> None:
+        if self._updating_id_rows:
+            return
+        config = self._config
+        if not isinstance(config, ArucoGridConfig):
+            return
+        index = row.get_selected()
+        if index < 0 or index >= len(ID_ORIGINS):
+            return
+        origin = ID_ORIGINS[index]
+        self._id_origin = origin
+        config.id_origin = origin
+        self._rebuild_target()
+
+    def _on_order_changed(self, row, _pspec) -> None:
+        if self._updating_id_rows:
+            return
+        config = self._config
+        if not isinstance(config, ArucoGridConfig):
+            return
+        index = row.get_selected()
+        if index < 0 or index >= len(ID_ORDERS):
+            return
+        order = ID_ORDERS[index]
+        self._id_order = order
+        config.id_order = order
+        self._rebuild_target()
 
     def _on_size_changed(self, _row) -> None:
         self._card_width = self._width_row.get_value_in_base_units()
@@ -272,18 +393,92 @@ class CardPage(CameraWizardPage):
 
     def _rebuild_from_card_size(self) -> None:
         """Derive a pattern that fits the requested card size."""
-        self._config = recommend_target(
-            self._target_type,
+        target_class = get_target_class(self._target_type)
+        self._config = target_class.recommend_config(
             card_width_mm=self._card_width,
             card_height_mm=self._card_height,
-        ).config
+        )
+        config = self._config
+        if isinstance(config, ArucoGridConfig):
+            if self._dictionary_id is not None:
+                config.dictionary_id = self._dictionary_id
+            else:
+                self._dictionary_id = config.dictionary_id
+            if self._id_origin is not None:
+                config.id_origin = self._id_origin
+            else:
+                self._id_origin = config.id_origin
+            if self._id_order is not None:
+                config.id_order = self._id_order
+            else:
+                self._id_order = config.id_order
         self._rebuild_geometry_rows()
+        self._refresh_type_row()
         self._rebuild_target()
+
+    def _refresh_type_row(self) -> None:
+        """Show the selected pattern label and selectors, if any."""
+        self._type_row.set_subtitle(TARGET_TYPE_LABELS[self._target_type])
+        description = TARGET_TYPE_DESCRIPTIONS.get(self._target_type)
+        if description:
+            self._type_group.set_description(description)
+        self._refresh_dict_row()
+        self._refresh_id_layout_rows()
+
+    def _refresh_id_layout_rows(self) -> None:
+        """Sync the ID origin/order rows with the current config."""
+        if self._origin_row is None or self._order_row is None:
+            return
+        has_layout = isinstance(self._config, ArucoGridConfig)
+        self._origin_row.set_visible(has_layout)
+        self._order_row.set_visible(has_layout)
+        if not has_layout:
+            return
+        self._updating_id_rows = True
+        try:
+            origin = self._id_origin or ID_ORIGINS[0]
+            order = self._id_order or ID_ORDERS[0]
+            self._origin_row.set_selected(ID_ORIGINS.index(origin))
+            self._order_row.set_selected(ID_ORDERS.index(order))
+        finally:
+            self._updating_id_rows = False
+
+    def _refresh_dict_row(self) -> None:
+        if self._dict_row is None:
+            return
+        config = self._config
+        if not isinstance(config, ArucoGridConfig):
+            self._dict_row.set_visible(False)
+            return
+        self._updating_dict_row = True
+        try:
+            self._dict_row.set_visible(True)
+            current = config.dictionary_id
+            self._dict_labels = [label for label, _id in DICTIONARY_OPTIONS]
+            self._dict_ids = [_id for _label, _id in DICTIONARY_OPTIONS]
+            model = Gtk.StringList()
+            for label in self._dict_labels:
+                model.append(label)
+            self._dict_row.set_model(model)
+            if current not in self._dict_ids:
+                # A stored sheet may use a dictionary outside the
+                # shortlist; keep calibrating with it and list it
+                # explicitly rather than silently switching.
+                self._dict_labels.append(f"Custom ({current})")
+                self._dict_ids.append(current)
+                model.append(f"Custom ({current})")
+                selected = len(self._dict_ids) - 1
+            else:
+                selected = self._dict_ids.index(current)
+            self._dict_row.set_selected(selected)
+        finally:
+            self._updating_dict_row = False
 
     def _rebuild_geometry_rows(self) -> None:
         if self._config is None:
             return
-        self._clear_group(self._geometry_group)
+        for row in self._field_rows.values():
+            self._geometry_group.remove(row)
         self._field_rows.clear()
 
         for field in type(self._config).FIELDS:
@@ -326,7 +521,8 @@ class CardPage(CameraWizardPage):
             if isinstance(row, LengthSpinRow):
                 values[key] = row.get_value_in_base_units()
             else:
-                values[key] = float(row.get_value())  # type: ignore[attr-defined]
+                row_value = row.get_value()  # type: ignore[attr-defined]
+                values[key] = float(row_value)
         return values
 
     def _rebuild_target(self) -> None:
@@ -343,7 +539,7 @@ class CardPage(CameraWizardPage):
             self._target = create_target(
                 self._target_type, self._config.to_dict()
             )
-        except (ValueError, TypeError) as error:
+        except (ValueError, TypeError, cv2.error) as error:
             logger.warning("Could not build calibration target: %s", error)
             return
 
@@ -394,13 +590,6 @@ class CardPage(CameraWizardPage):
         self._preview_pixbuf = pixbuf
         texture = Gdk.Texture.new_for_pixbuf(pixbuf)
         self.preview_image.set_paintable(texture)
-
-    def _clear_group(self, group: Adw.PreferencesGroup) -> None:
-        child = group.get_first_child()
-        while child is not None:
-            nxt = child.get_next_sibling()
-            group.remove(child)
-            child = nxt
 
     def _on_save_pdf(self, button) -> None:
         dialog = Gtk.FileDialog()

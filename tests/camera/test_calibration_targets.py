@@ -17,7 +17,11 @@ from rayforge.camera.calibration import (
     available_target_types,
     create_target,
 )
-from rayforge.camera.calibration.aruco import ArucoGridConfig, ArucoGridTarget
+from rayforge.camera.calibration.aruco import (
+    ArucoGridConfig,
+    ArucoGridTarget,
+    dictionary_marker_count,
+)
 from rayforge.camera.calibration.calibrator import CameraCalibrator
 from rayforge.camera.calibration.charuco import CharucoConfig, CharucoTarget
 from rayforge.camera.calibration.dotgrid import DotGridConfig, DotGridTarget
@@ -149,6 +153,164 @@ def test_aruco_drops_markers_outside_the_board():
     assert result is not None
     assert max(result[1]) < target.point_count
     assert outside is None
+
+
+def test_marker_id_offset_shifts_detected_ids():
+    """A grid need not start at dictionary id 0."""
+    target = ArucoGridTarget(
+        ArucoGridConfig(
+            markers_x=3,
+            markers_y=3,
+            marker_length_mm=30.0,
+            marker_separation_mm=15.0,
+            marker_id_offset=10,
+        )
+    )
+
+    detection = target.detect(target.generate_image())
+
+    assert detection is not None
+    _corners, ids = detection
+    assert sorted(ids) == list(range(target.point_count))
+
+
+def test_marker_id_offset_drops_ids_outside_the_board():
+    target = ArucoGridTarget(
+        ArucoGridConfig(markers_x=2, markers_y=2, marker_id_offset=5)
+    )
+    corners = np.array(
+        [[[0.0, 0.0], [10.0, 0.0], [10.0, 10.0], [0.0, 10.0]]],
+        dtype=np.float32,
+    )
+
+    # Dictionary id 5 is the first board marker, id 8 the last.
+    first = target._flatten_markers(corners, np.array([[5]]))
+    last = target._flatten_markers(corners, np.array([[8]]))
+    # Id 4 belongs to the sheet before this one, id 9 to the next.
+    before = target._flatten_markers(corners, np.array([[4]]))
+    after = target._flatten_markers(corners, np.array([[9]]))
+
+    assert first is not None
+    assert first[1] == [0, 1, 2, 3]
+    assert last is not None
+    assert last[1] == [12, 13, 14, 15]
+    assert before is None
+    assert after is None
+
+
+def test_marker_id_offset_rejects_negative_and_overflow():
+    # A 2x2 board in DICT_4X4_50 (50 markers): 46 is the last
+    # offset that still fits.
+    with pytest.raises(ValueError):
+        ArucoGridTarget(ArucoGridConfig(marker_id_offset=-1))
+    ArucoGridTarget(
+        ArucoGridConfig(markers_x=2, markers_y=2, marker_id_offset=46)
+    )
+    with pytest.raises(ValueError):
+        ArucoGridTarget(
+            ArucoGridConfig(markers_x=2, markers_y=2, marker_id_offset=47)
+        )
+
+
+@pytest.mark.parametrize(
+    "origin", ["top_left", "top_right", "bottom_left", "bottom_right"]
+)
+@pytest.mark.parametrize("order", ["rows", "columns"])
+def test_marker_id_layouts_are_bijections(origin, order):
+    """Every layout must pair each dictionary id with one position."""
+    target = ArucoGridTarget(
+        ArucoGridConfig(
+            markers_x=3,
+            markers_y=4,
+            marker_id_offset=7,
+            id_origin=origin,
+            id_order=order,
+        )
+    )
+
+    board_ids = [target._board_index(7 + rank) for rank in range(12)]
+    assert sorted(
+        board_id for board_id in board_ids if board_id is not None
+    ) == list(range(12))
+    for col in range(3):
+        for row in range(4):
+            board_index = row * 3 + col
+            assert (
+                target._board_index(target._grid_id(col, row)) == board_index
+            )
+
+    # The origin corner always holds the offset id.
+    corners = {
+        "top_left": (0, 0),
+        "top_right": (2, 0),
+        "bottom_left": (0, 3),
+        "bottom_right": (2, 3),
+    }
+    assert target._grid_id(*corners[origin]) == 7
+
+    # Consecutive ids step along the fast axis away from the origin.
+    if order == "rows":
+        step = -1 if "right" in origin else 1
+        assert target._grid_id(1, 0) - target._grid_id(0, 0) == step
+    else:
+        step = -1 if "bottom" in origin else 1
+        assert target._grid_id(0, 1) - target._grid_id(0, 0) == step
+
+
+def test_marker_id_origin_bottom_left_detects_render():
+    """A sheet numbered from the bottom-left must still calibrate."""
+    target = ArucoGridTarget(
+        ArucoGridConfig(
+            markers_x=3,
+            markers_y=3,
+            marker_length_mm=30.0,
+            marker_separation_mm=15.0,
+            id_origin="bottom_left",
+        )
+    )
+    image = target.generate_image()
+
+    detection = target.detect(image)
+
+    assert detection is not None
+    corners, ids = detection
+    assert sorted(ids) == list(range(target.point_count))
+    # Dictionary id 0 is printed at the bottom-left of the sheet.
+    # Detections carry point ids, and board b owns points b * 4
+    # through b * 4 + 3.
+    board_id = target._board_index(0)
+    assert board_id is not None
+    height, width = image.shape[:2]
+    x, y = corners[ids.index(board_id * 4)]
+    assert x < width / 2
+    assert y > height / 2
+
+    restored = create_target(
+        CalibrationTargetType.ARUCO_GRID, target.config.to_dict()
+    )
+    assert isinstance(restored, ArucoGridTarget)
+    assert restored.config.id_origin == "bottom_left"
+    assert restored.config.id_order == "rows"
+
+
+def test_marker_id_layout_rejects_unknown_values():
+    with pytest.raises(ValueError):
+        ArucoGridTarget(ArucoGridConfig(id_origin="centre"))
+    with pytest.raises(ValueError):
+        ArucoGridTarget(ArucoGridConfig(id_order="diagonal"))
+
+
+def test_apriltag_dictionary_uses_tag_refinement():
+    target = ArucoGridTarget(
+        ArucoGridConfig(
+            dictionary_id=cv2.aruco.DICT_APRILTAG_36h11,
+        )
+    )
+
+    detection = target.detect(target.generate_image())
+
+    assert detection is not None
+    assert len(detection[0]) == target.point_count
 
 
 def test_dot_grid_ids_are_a_row_major_lattice():
@@ -285,6 +447,7 @@ def test_recommended_dot_grid_is_staggered():
         card_height_mm=140.0,
     )
 
+    assert isinstance(target, DotGridTarget)
     assert target.is_staggered
     assert target.row_offset_mm == pytest.approx(
         target.config.spacing_mm / 2, rel=0.01
@@ -326,6 +489,9 @@ def test_config_round_trips_through_a_dict():
         original = make_target(target_type)
         restored = create_target(target_type, original.config.to_dict())
 
+        assert isinstance(
+            restored, (CharucoTarget, ArucoGridTarget, DotGridTarget)
+        )
         assert restored.config.to_dict() == original.config.to_dict()
 
 
@@ -338,7 +504,7 @@ def test_create_target_fills_in_missing_keys():
 
 def test_create_target_rejects_an_unknown_type():
     with pytest.raises(ValueError):
-        create_target("not-a-target", {})
+        create_target("not-a-target", {})  # type: ignore[arg-type]
 
 
 @pytest.mark.parametrize("target_type", ALL_TYPES)
@@ -358,6 +524,26 @@ def test_editable_fields_round_trip_through_the_config(target_type):
     # inside the square, so do not compare two independent midpoints.
     if "marker_length_mm" in overrides and "square_length_mm" in overrides:
         overrides["marker_length_mm"] = overrides["square_length_mm"] * 0.75
+    if "marker_id_offset" in overrides and isinstance(config, ArucoGridConfig):
+        # The board must fit inside its marker dictionary: shrink the
+        # grid first, then clamp the offset to what remains.
+        size = dictionary_marker_count(config.dictionary_id)
+        if size is None:
+            overrides["marker_id_offset"] = 0
+        else:
+            markers_x = max(2, int(overrides.get("markers_x", 2)))
+            markers_y = max(2, int(overrides.get("markers_y", 2)))
+            while markers_x * markers_y > size:
+                if markers_x >= markers_y:
+                    markers_x -= 1
+                else:
+                    markers_y -= 1
+            overrides["markers_x"] = markers_x
+            overrides["markers_y"] = markers_y
+            middle = int(overrides["marker_id_offset"])
+            overrides["marker_id_offset"] = max(
+                0, min(middle, size - markers_x * markers_y)
+            )
     config.apply_field_values(overrides)
 
     read_back = config.to_field_values()
@@ -370,6 +556,9 @@ def test_editable_fields_round_trip_through_the_config(target_type):
         assert read_back[field.key] == pytest.approx(expected)
 
     restored = create_target(target_type, config.to_dict())
+    assert isinstance(
+        restored, (CharucoTarget, ArucoGridTarget, DotGridTarget)
+    )
     assert restored.config.to_dict() == config.to_dict()
 
 
@@ -458,7 +647,7 @@ def _solve_with_projected_views(target, intrinsics, image_size, poses):
     blank = np.full((image_size[1], image_size[0]), 255, dtype=np.uint8)
 
     holder = _ViewHolder(object_points)
-    calibrator = CameraCalibrator(holder)
+    calibrator = CameraCalibrator(holder)  # type: ignore[arg-type]
     for rvec_values, distance in poses:
         rvec = np.array(rvec_values, dtype=np.float64)
         rotation, _ = cv2.Rodrigues(rvec)

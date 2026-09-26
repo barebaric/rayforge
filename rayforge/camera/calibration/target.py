@@ -20,6 +20,8 @@ class CalibrationTargetType(StrEnum):
     """Identifies the kind of printed pattern used for calibration."""
 
     CHARUCO = "charuco"
+    # The marker grid covers both ArUco and AprilTag dictionaries; the
+    # value stays historic so stored configurations keep loading.
     ARUCO_GRID = "aruco_grid"
     DOT_GRID = "dot_grid"
 
@@ -146,6 +148,17 @@ class CalibrationTarget(ABC):
 
     target_type: ClassVar[CalibrationTargetType]
     config_class: ClassVar[type[TargetConfig]]
+
+    @classmethod
+    @abstractmethod
+    def recommend_config(
+        cls,
+        card_width_mm: float,
+        card_height_mm: float,
+        camera_resolution: tuple[int, int] = (640, 480),
+        surface_size_mm: tuple[float, float] | None = None,
+    ) -> TargetConfig:
+        """Return a configuration sized to fill a printable card."""
 
     @abstractmethod
     def detect(
