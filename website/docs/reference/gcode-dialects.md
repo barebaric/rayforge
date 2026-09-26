@@ -196,6 +196,28 @@ format as a decimal with no fractional digits).
 | `seconds`      | Dwell duration in seconds as a float (e.g., `1.5`)          |
 | `milliseconds` | Dwell duration in milliseconds as an integer (e.g., `1500`) |
 
+#### Preamble and Postscript
+
+The **Preamble** and **Postscript** scripts support a separate set of placeholders describing the
+machine and the current job:
+
+| Placeholder                         | Description                                                  |
+| ----------------------------------- | ------------------------------------------------------------ |
+| `machine.name`                      | Name of the machine                                          |
+| `machine.active_wcs`                | Currently active work coordinate system (e.g., `G54`)        |
+| `machine.axis_extents[0]`           | Work area width (mm)                                         |
+| `machine.axis_extents[1]`           | Work area height (mm)                                        |
+| `wcs_offset[0]` … `wcs_offset[2]`   | X/Y/Z offset of the active work coordinate system            |
+| `doc.name`                          | Name of the document being exported                          |
+| `job.extents[0]` … `job.extents[3]` | Job bounding box: minimum X, minimum Y, maximum X, maximum Y |
+
+For example, some machines frame the job on their own — even when running a G-code file offline — by
+reading the job bounds from a preamble comment:
+
+```gcode
+; Bounds: X{job.extents[0]} Y{job.extents[1]} to X{job.extents[2]} Y{job.extents[3]}
+```
+
 ### Tips
 
 - **Format specifiers** are supported: `{power:.0f}` formats power as an integer, `{power:.2f}` as

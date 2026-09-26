@@ -60,6 +60,15 @@ Configurez le comportement du cadrage dans les paramètres de la tête laser de 
 - **Nombre de répétitions** : Nombre de fois que le contour est tracé. Une valeur supérieure à un
   rend le trajet plus facile à suivre visuellement.
 
+<!-- prettier-ignore-start -->
+:::note[Cadrage contrôlé par la machine]
+Certaines machines peuvent cadrer le travail même en fonctionnement hors ligne (p. ex. depuis un
+fichier G-code sur une carte mémoire). Rayforge peut inclure dans le G-code les dimensions du
+travail nécessaires pour cela. Voir [Dialectes G-code](../reference/gcode-dialects) pour les
+espaces réservés disponibles.
+:::
+<!-- prettier-ignore-end -->
+
 ## Utilisation des résultats du cadrage
 
 Après le cadrage, vous pouvez :

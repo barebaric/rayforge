@@ -199,6 +199,28 @@ avec des espaces réservés pour injecter des valeurs dynamiques. Utilise la syn
 | `seconds`      | Durée de temporisation en secondes en virgule flottante (par ex. `1.5`)   |
 | `milliseconds` | Durée de temporisation en millisecondes en nombre entier (par ex. `1500`) |
 
+#### Préambule et Postscript
+
+Les scripts **Préambule** et **Postscript** prennent en charge un ensemble distinct d'espaces
+réservés décrivant la machine et le travail en cours :
+
+| Espace réservé                      | Description                                               |
+| ----------------------------------- | --------------------------------------------------------- |
+| `machine.name`                      | Nom de la machine                                         |
+| `machine.active_wcs`                | Système de coordonnées de travail actif (par ex. `G54`)   |
+| `machine.axis_extents[0]`           | Largeur de la zone de travail (mm)                        |
+| `machine.axis_extents[1]`           | Hauteur de la zone de travail (mm)                        |
+| `wcs_offset[0]` … `wcs_offset[2]`   | Décalage X/Y/Z du système de coordonnées de travail actif |
+| `doc.name`                          | Nom du document exporté                                   |
+| `job.extents[0]` … `job.extents[3]` | Boîte englobante du travail : X min, Y min, X max, Y max  |
+
+Par exemple, certaines machines cadrent le travail par elles-mêmes — même lors de l'exécution hors
+ligne d'un fichier G-code — en lisant les limites du travail depuis un commentaire du préambule :
+
+```gcode
+; Bounds: X{job.extents[0]} Y{job.extents[1]} to X{job.extents[2]} Y{job.extents[3]}
+```
+
 ### Conseils
 
 - Les **spécifications de formatage** sont prises en charge : `{power:.0f}` formate la puissance en

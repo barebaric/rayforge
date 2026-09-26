@@ -192,6 +192,28 @@ com espaços reservados para injetar valores dinâmicos. Use a sintaxe `{nome}` 
 | `seconds`        | Duração da espera em segundos como float (ex., `1.5`)         |
 | `milliseconds`   | Duração da espera em milissegundos como inteiro (ex., `1500`) |
 
+#### Preâmbulo e Postscript
+
+Os scripts de **Preâmbulo** e **Postscript** suportam um conjunto separado de espaços reservados que
+descrevem a máquina e o trabalho atual:
+
+| Espaço Reservado                    | Descrição                                                                 |
+| ----------------------------------- | ------------------------------------------------------------------------- |
+| `machine.name`                      | Nome da máquina                                                           |
+| `machine.active_wcs`                | Sistema de coordenadas de trabalho ativo (ex., `G54`)                     |
+| `machine.axis_extents[0]`           | Largura da área de trabalho (mm)                                          |
+| `machine.axis_extents[1]`           | Altura da área de trabalho (mm)                                           |
+| `wcs_offset[0]` … `wcs_offset[2]`   | Deslocamento X/Y/Z do sistema de coordenadas de trabalho ativo            |
+| `doc.name`                          | Nome do documento sendo exportado                                         |
+| `job.extents[0]` … `job.extents[3]` | Retângulo delimitador do trabalho: X mínimo, Y mínimo, X máximo, Y máximo |
+
+Por exemplo, algumas máquinas enquadram o trabalho por si mesmas — mesmo ao executar um arquivo
+G-code offline — lendo os limites do trabalho a partir de um comentário do preâmbulo:
+
+```gcode
+; Bounds: X{job.extents[0]} Y{job.extents[1]} to X{job.extents[2]} Y{job.extents[3]}
+```
+
 ### Dicas
 
 - **Especificações de formatação** são suportadas: `{power:.0f}` formata a potência como inteiro,
