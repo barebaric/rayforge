@@ -30,7 +30,14 @@ from rpalib.rpyc_client import RpcRdDriver
 from ruidadriver.rd_status import RdStatusEvent
 
 from rayforge.context import RayforgeContext
-from rayforge.core.varset import BoolVar, FloatVar, HostnameVar, Var, VarSet
+from rayforge.core.varset import (
+    BoolVar,
+    FloatVar,
+    HostnameVar,
+    SerialPortVar,
+    Var,
+    VarSet,
+)
 from rayforge.machine.driver.driver import (
     Axis,
     DeviceStatus,
@@ -100,20 +107,44 @@ def _unwrap_mm(value: object) -> float | None:
     return None
 
 
+class RuidaUsbDeviceVar(SerialPortVar):
+    """SerialPortVar whose value is optional (UDP mode needs no USB)."""
+
+    def __init__(
+        self,
+        key: str,
+        label: str,
+        description: str | None = None,
+        default: str | None = None,
+        value: str | None = None,
+        *,
+        visible_when: Callable[[dict[str, Any]], bool] | None = None,
+    ):
+        super().__init__(
+            key=key,
+            label=label,
+            description=description,
+            default=default,
+            value=value,
+            visible_when=visible_when,
+        )
+        self.validator = None
+
+
 class RuidaRPAAdapter(Driver):
     """
     Main driver class for connecting to Ruida laser controllers via the
-    Ruida Protocol Analyzer (RPA) library.
+    ruida-pa (RPA) library.
 
     Supports two connection modes:
-    * **Direct mode** — wraps ``RdDriver`` from ``ruida-protocol-analyzer``
+    * **Direct mode** — wraps ``RdDriver`` from ``ruida-pa``
       in-process over USB or UDP.
     * **TUI RPC mode** — connects to a remote RPyC service running the
       RPA TUI adapter.
     """
 
-    label = _("Ruida RPA")
-    subtitle = _("Connect via Ruida Protocol Analyzer")
+    label = _("Ruida")
+    subtitle = _("Connect via Ruida Protocol")
     supports_settings = False
     reports_granular_progress = False
     uses_gcode = False
@@ -214,15 +245,11 @@ class RuidaRPAAdapter(Driver):
                         "The IP address or hostname of the Ruida controller"
                     ),
                 ),
-                Var(
+                RuidaUsbDeviceVar(
                     key="usb_device",
                     label=_("USB"),
-                    var_type=str,
                     description=_(
-                        "USB device path "
-                        "(e.g., /dev/ttyUSB0, "
-                        "0403:6001, "
-                        "or COM3)"
+                        "USB device path or VID:PID (e.g. 0403:6001)"
                     ),
                 ),
                 Var(
@@ -239,7 +266,8 @@ class RuidaRPAAdapter(Driver):
                     key="tui",
                     label=_("TUI RPC"),
                     description=_(
-                        "Enable TUI RPC connection to a remote RPA TUI service"
+                        "Enable RPC connection to a remote RPA TUI service."
+                        "Useful for problem diagnosis and experimentation."
                     ),
                     default=False,
                 ),
@@ -265,7 +293,7 @@ class RuidaRPAAdapter(Driver):
                     default=DEFAULT_POWER_FLOOR,
                     min_val=0.0,
                     max_val=100.0,
-                    digits=3,
+                    digits=1,
                 ),
                 FloatVar(
                     key="image_power_bias",

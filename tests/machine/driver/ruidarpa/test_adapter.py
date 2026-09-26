@@ -38,7 +38,7 @@ from rpalib.rpyc_client import RpcRdDriver
 from ruidadriver.rd_gluescript import GlueScript
 
 from rayforge.core.doc import Doc
-from rayforge.core.varset import FloatVar
+from rayforge.core.varset import FloatVar, SerialPortVar
 from rayforge.machine.driver.driver import (
     Axis,
     DeviceStatus,
@@ -2455,6 +2455,49 @@ class TestRpcTimeoutSetup:
         adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
         with pytest.raises(DriverSetupError, match=match):
             adapter._setup_implementation(tui=True, timeout=value)
+
+
+class TestSetupVars:
+    """The setup 'usb_device' var is an optional SerialPortVar."""
+
+    def test_usb_device_var_is_serial_port_var(
+        self, isolated_context, isolated_machine
+    ):
+        """get_setup_vars must expose usb_device as a SerialPortVar."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        varset = adapter.get_setup_vars()
+        usb_var = varset.get("usb_device")
+        assert usb_var is not None
+        assert isinstance(usb_var, SerialPortVar)
+
+    def test_empty_usb_device_validates_ok(
+        self, isolated_context, isolated_machine
+    ):
+        """UDP-only mode: an empty usb_device must validate."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        varset = adapter.get_setup_vars()
+        varset.set_values({"udp_host": "192.168.1.10", "usb_device": None})
+        varset.validate()
+
+    def test_device_path_validates_ok(
+        self, isolated_context, isolated_machine
+    ):
+        """A device path value must validate."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        varset = adapter.get_setup_vars()
+        varset.set_values(
+            {"udp_host": "192.168.1.10", "usb_device": "/dev/ttyUSB0"}
+        )
+        varset.validate()
+
+    def test_vidpid_validates_ok(self, isolated_context, isolated_machine):
+        """A VID:PID value must validate."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        varset = adapter.get_setup_vars()
+        varset.set_values(
+            {"udp_host": "192.168.1.10", "usb_device": "0403:6001"}
+        )
+        varset.validate()
 
 
 class TestUpdateSettings:
