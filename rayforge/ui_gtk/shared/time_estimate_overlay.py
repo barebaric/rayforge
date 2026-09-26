@@ -9,6 +9,10 @@ css = """
     border-radius: 6px;
     padding: 3px 8px;
 }
+
+.time-estimate-overlay label {
+    font-weight: bold;
+}
 """
 
 
