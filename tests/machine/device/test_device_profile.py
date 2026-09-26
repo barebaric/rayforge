@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+import rayforge
 from rayforge.machine.device.manager import DeviceProfileManager
 from rayforge.machine.device.profile import (
     CURRENT_API_VERSION,
@@ -616,6 +617,27 @@ class TestExportToZip:
 
         assert pkg2.meta.name == "Roundtrip"
         assert pkg2.machine_config.axis_extents == (400, 300)
+
+
+FALCON_BOUNDS_LINE = (
+    "; Bounds: X{job.extents[0]} Y{job.extents[1]} "
+    "to X{job.extents[2]} Y{job.extents[3]}"
+)
+
+
+def test_falcon_profiles_emit_framing_bounds_comment():
+    devices_dir = Path(rayforge.__file__).parent / "resources" / "devices"
+    falcon_dirs = sorted(
+        p
+        for p in devices_dir.iterdir()
+        if p.is_dir() and p.name.startswith("creality-falcon")
+    )
+    assert len(falcon_dirs) >= 4
+    for profile_dir in falcon_dirs:
+        profile = DeviceProfile.from_path(profile_dir)
+        assert FALCON_BOUNDS_LINE in profile.dialect_config["preamble"], (
+            profile_dir.name
+        )
 
 
 class TestExportMachine:

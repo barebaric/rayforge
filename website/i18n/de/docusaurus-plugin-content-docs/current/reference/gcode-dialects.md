@@ -193,6 +193,28 @@ mit Platzhaltern, um dynamische Werte einzufügen. Verwende die Syntax `{name}` 
 | `seconds`      | Verweildauer in Sekunden als Float (z.B. `1.5`)          |
 | `milliseconds` | Verweildauer in Millisekunden als Ganzzahl (z.B. `1500`) |
 
+#### Präambel und Postscript
+
+Die Skripte **Präambel** und **Postscript** unterstützen einen eigenen Satz von Platzhaltern, die
+die Maschine und den aktuellen Job beschreiben:
+
+| Platzhalter                         | Beschreibung                                                              |
+| ----------------------------------- | ------------------------------------------------------------------------- |
+| `machine.name`                      | Name der Maschine                                                         |
+| `machine.active_wcs`                | Aktuell aktives Arbeitskoordinatensystem (z. B. `G54`)                    |
+| `machine.axis_extents[0]`           | Breite des Arbeitsbereichs (mm)                                           |
+| `machine.axis_extents[1]`           | Höhe des Arbeitsbereichs (mm)                                             |
+| `wcs_offset[0]` … `wcs_offset[2]`   | X/Y/Z-Versatz des aktiven Arbeitskoordinatensystems                       |
+| `doc.name`                          | Name des exportierten Dokuments                                           |
+| `job.extents[0]` … `job.extents[3]` | Job-Begrenzungsrahmen: minimales X, minimales Y, maximales X, maximales Y |
+
+Beispielsweise rahmen manche Maschinen den Job selbst ein — sogar bei offline ausgeführten
+G-code-Dateien —, indem sie die Job-Grenzen aus einem Präambel-Kommentar lesen:
+
+```gcode
+; Bounds: X{job.extents[0]} Y{job.extents[1]} to X{job.extents[2]} Y{job.extents[3]}
+```
+
 ### Tipps
 
 - **Formatierungsspezifikationen** werden unterstützt: `{power:.0f}` formatiert Leistung als
