@@ -400,79 +400,43 @@ class TestMachineCmdPointerDryRun:
         return machine
 
 
-class TestMachineCmdDryRunPower:
-    """The pointer dry-run caps all laser power at framing power."""
+class TestMachineCmdJobPowerCap:
+    """The pointer dry-run caps encoded power at the framing power."""
 
-    @pytest.fixture
-    def powered_artifact(self, machine):
-        ops = Ops()
-        ops.set_power(0.8)
-        ops.move_to(0, 0, 0)
-        ops.line_to(10, 0, 0)
-        ops.scan_to(10, 5, 0, power_values=[255, 128, 0])
-        encoded = machine.driver.get_encoder().encode(ops, machine, None)
-        return JobArtifact(
-            ops=ops,
-            distance=ops.distance(),
-            generation_id=1,
-            encoded_output=encoded,
-        )
+    def test_power_cap_none_without_dry_run(self, machine):
+        assert machine.get_job_power_cap() is None
 
-    @pytest.fixture
-    def executed(self, machine_cmd, mocker):
-        record = {}
-
-        async def fake_execute(ops, machine, on_progress=None, encoded=None):
-            record["ops"] = ops
-            record["encoded"] = encoded
-
-        mocker.patch.object(
-            machine_cmd, "_execute_monitored_job", side_effect=fake_execute
-        )
-        return record
-
-    @pytest.mark.asyncio
-    async def test_dry_run_caps_power_at_framing_power(
-        self, machine_cmd, machine, powered_artifact, executed
-    ):
+    def test_power_cap_is_framing_power_during_dry_run(self, machine):
         head = machine.get_default_laser_head()
         assert head is not None
         head.set_frame_power(0.1)
 
-        await machine_cmd._run_send_action(
-            powered_artifact, machine, None, dry_run=True
-        )
+        machine.pointer_job_shift_enabled = True
+        try:
+            assert machine.get_job_power_cap() == pytest.approx(0.1)
+        finally:
+            machine.pointer_job_shift_enabled = False
 
-        run_ops = executed["ops"]
-        assert run_ops is powered_artifact.ops
-        assert run_ops.power(0) == pytest.approx(0.1)
-        assert list(run_ops.scanline_data(3)) == [26, 26, 0]
-        assert executed["encoded"] is not powered_artifact.encoded_output
+        assert machine.get_job_power_cap() is None
 
-    @pytest.mark.asyncio
-    async def test_dry_run_with_zero_framing_power_disables_beam(
-        self, machine_cmd, machine, powered_artifact, executed
-    ):
+    def test_power_cap_zero_disables_beam(self, machine):
         head = machine.get_default_laser_head()
         assert head is not None
         head.set_frame_power(0.0)
 
-        await machine_cmd._run_send_action(
-            powered_artifact, machine, None, dry_run=True
-        )
+        machine.pointer_job_shift_enabled = True
+        try:
+            assert machine.get_job_power_cap() == 0.0
+        finally:
+            machine.pointer_job_shift_enabled = False
 
-        run_ops = executed["ops"]
-        assert run_ops.power(0) == 0.0
-        assert list(run_ops.scanline_data(3)) == [0, 0, 0]
-
-    @pytest.mark.asyncio
-    async def test_regular_send_keeps_job_power(
-        self, machine_cmd, machine, powered_artifact, executed
-    ):
-        await machine_cmd._run_send_action(powered_artifact, machine, None)
-
-        assert executed["ops"] is powered_artifact.ops
-        assert executed["encoded"] is powered_artifact.encoded_output
+    def test_power_cap_none_without_head(self, machine):
+        machine.heads.clear()
+        machine.pointer_job_shift_enabled = True
+        try:
+            assert machine.get_job_power_cap() is None
+        finally:
+            machine.pointer_job_shift_enabled = False
 
 
 class TestMachineCmdJog:

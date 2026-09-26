@@ -1350,6 +1350,24 @@ class Machine:
         dx, dy = self.get_pointer_offset()
         return (wcs_offset[0] + dx, wcs_offset[1] + dy, wcs_offset[2])
 
+    def get_job_power_cap(self) -> float | None:
+        """
+        The laser power fraction (0-1) encoded jobs must not exceed
+        while a pointer dry-run is requested, None otherwise.
+
+        While pointer_job_shift_enabled is set, jobs are generated for
+        the pointer dry-run, and the default head's framing power is
+        reported as the cap so the encoded trace cannot burn the
+        material. The cap is consumed by the G-code encoder via the
+        encode context.
+        """
+        if not self.pointer_job_shift_enabled:
+            return None
+        head = self.get_default_laser_head()
+        if head is None:
+            return None
+        return head.frame_power_percent
+
     def remove_head(self, head: Head):
         head.changed.disconnect(self._on_head_changed)
         self.heads.remove(head)

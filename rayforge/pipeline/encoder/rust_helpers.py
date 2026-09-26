@@ -223,4 +223,5 @@ def build_encode_context(ops: Ops, machine: "Machine", doc: "Doc") -> dict:
         "layer_path_vars": _build_layer_path_vars_for_doc(doc, machine),
         "workpiece_path_vars": _build_workpiece_path_vars_for_doc(doc),
         "has_z_axis": machine.has_z_axis,
+        "power_cap": machine.get_job_power_cap(),
     }

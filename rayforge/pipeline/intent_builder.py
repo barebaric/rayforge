@@ -1520,6 +1520,7 @@ def _machine_token_payload(machine: Machine | None, doc: Doc) -> Any:
             if machine.pointer_job_shift_enabled
             else [0.0, 0.0]
         ),
+        "pointer_job_power_cap": machine.get_job_power_cap(),
     }
 
 

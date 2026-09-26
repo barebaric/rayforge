@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable, Coroutine
-from functools import partial
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
@@ -285,31 +284,22 @@ class MachineCmd:
         artifact: JobArtifact,
         machine: Machine,
         on_progress: Callable[[dict], None] | None,
-        dry_run: bool = False,
     ):
         """The specific machine action for a send job.
 
-        With dry_run, all laser power in the job is capped at the
-        head's framing power so tracing the toolpath cannot burn the
-        material.
+        While a pointer dry-run was requested, the pipeline encoded
+        this artifact with all laser power capped at the head's
+        framing power and the pointer offset folded into the WCS
+        offsets, so the pointer dot traces an unburnable toolpath.
         """
         if not isinstance(artifact, JobArtifact):
             raise TypeError("_run_send_action received a non-JobArtifact")
 
-        ops = artifact.ops
-        encoded = artifact.encoded_output
-        if dry_run:
-            head = machine.get_default_laser_head()
-            if head is not None:
-                ops.cap_power(head.frame_power_percent)
-                encoder = _create_driver_encoder(machine)
-                encoded = encoder.encode(ops, machine, self._editor.doc)
-
         await self._execute_monitored_job(
-            ops,
+            artifact.ops,
             machine,
             on_progress=on_progress,
-            encoded=encoded,
+            encoded=artifact.encoded_output,
         )
 
     async def _start_job(
@@ -332,9 +322,12 @@ class MachineCmd:
             if pointer_dry_run and machine.has_pointer_offset():
                 # Generate the job once with the pointer offset folded
                 # into the WCS offsets so the pointer dot traces the
-                # toolpath. The flag is only visible during generation;
-                # the shifted artifact is discarded afterwards so the
-                # next regular send burns unshifted.
+                # toolpath, and with all laser power capped at the
+                # head's framing power (via get_job_power_cap in the
+                # encode context) so the trace cannot burn. The flags
+                # are only visible during generation; the shifted
+                # artifact is discarded afterwards so the next regular
+                # send burns unshifted at job power.
                 machine.pointer_job_shift_enabled = True
                 shift_used = True
                 pipeline.invalidate_job_output()
@@ -413,16 +406,14 @@ class MachineCmd:
 
         With pointer_dry_run, the job is generated with the pointer
         offset folded into the WCS offsets, so the pointer dot traces
-        the toolpath while the beam runs displaced by the offset. All
-        laser power is capped at the head's framing power, so the
+        the toolpath while the beam runs displaced by the offset, and
+        all laser power is capped at the head's framing power so the
         trace does not burn the material.
         """
         try:
             await self._start_job(
                 machine,
-                final_job_action=partial(
-                    self._run_send_action, dry_run=pointer_dry_run
-                ),
+                final_job_action=self._run_send_action,
                 on_progress=on_progress,
                 pointer_dry_run=pointer_dry_run,
             )
