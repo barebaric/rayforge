@@ -82,13 +82,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   driver supersedes it, and affected device profiles were migrated
 - Raster: the default threshold is now 254, so only pure white stays
   unengraved
-- Upgrade raygeo to 1.55.0. This brings power-mode-aware laser
-  commands, so the G-code encoder can emit constant-power (M3)
-  output; frame corner radius support; and a fix for the contour
-  nesting classification, which previously used a single probe point
-  per contour and could misclassify a solid shape as a hole when
-  imported vector figures overlapped slightly, corrupting the
-  generated Contour toolpath (#456)
+- Upgrade raygeo to 1.56.1, which omits zero-length travel moves from
+  generated G-code; this builds on 1.55.0's power-mode-aware laser
+  commands (constant-power M3 output), frame corner radius support, and
+  the contour nesting classification fix (#456)
 
 ### Fixed
 
@@ -125,6 +122,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   members it belongs to
 - 3D simulation: the playback slider position is re-derived when the
   playback range shrinks
+- Right panel: the estimated job time now stays fully visible in the
+  status bar; its container's bottom margin was increased so it is no
+  longer clipped behind adjacent widgets
 
 ## 1.11.2
 
