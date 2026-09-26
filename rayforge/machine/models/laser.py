@@ -101,6 +101,9 @@ class LaserHead(Head):
     pulse_width = head_setting(_("Pulse Width"))
     min_pulse_width = head_setting(_("Min Pulse Width"))
     max_pulse_width = head_setting(_("Max Pulse Width"))
+    pointer_offset_enabled = head_setting(_("Pointer Offset Enabled"))
+    pointer_offset_x = head_setting(_("Pointer Offset X"))
+    pointer_offset_y = head_setting(_("Pointer Offset Y"))
 
     def __init__(self):
         super().__init__()
@@ -122,6 +125,9 @@ class LaserHead(Head):
         self.pulse_width = 50
         self.min_pulse_width = 5
         self.max_pulse_width = 500
+        self.pointer_offset_enabled = False
+        self.pointer_offset_x = 0.0
+        self.pointer_offset_y = 0.0
 
     @property
     def machine_capability(self) -> MachineCapability:
@@ -211,6 +217,33 @@ class LaserHead(Head):
         self.laser_type = laser_type
         self.changed.send(self)
 
+    def set_pointer_offset_enabled(self, enabled: bool):
+        if self.pointer_offset_enabled == enabled:
+            return
+        self.pointer_offset_enabled = enabled
+        self.changed.send(self)
+
+    def set_pointer_offset(self, x_mm: float, y_mm: float):
+        if self.pointer_offset_x == x_mm and self.pointer_offset_y == y_mm:
+            return
+        self.pointer_offset_x = x_mm
+        self.pointer_offset_y = y_mm
+        self.changed.send(self)
+
+    @property
+    def pointer_offset(self) -> tuple[float, float]:
+        """The (x, y) distance from the beam spot to the pointer dot,
+        in machine millimeters.
+
+        A pointer laser mounted beside the beam marks the stock at a
+        fixed displacement from the cutting spot; this offset describes
+        that displacement. Returns ``(0.0, 0.0)`` when the pointer
+        offset is disabled (the default).
+        """
+        if not self.pointer_offset_enabled:
+            return (0.0, 0.0)
+        return (self.pointer_offset_x, self.pointer_offset_y)
+
     def effective_wavelength_nm(self) -> float:
         """The emission wavelength in nm, falling back to the laser
         type's default when no explicit value is configured."""
@@ -296,6 +329,9 @@ class LaserHead(Head):
                 "pulse_width": self.pulse_width,
                 "min_pulse_width": self.min_pulse_width,
                 "max_pulse_width": self.max_pulse_width,
+                "pointer_offset_enabled": self.pointer_offset_enabled,
+                "pointer_offset_x": self.pointer_offset_x,
+                "pointer_offset_y": self.pointer_offset_y,
             }
         )
         result.update(self.extra)
@@ -324,6 +360,9 @@ class LaserHead(Head):
             "pulse_width",
             "min_pulse_width",
             "max_pulse_width",
+            "pointer_offset_enabled",
+            "pointer_offset_x",
+            "pointer_offset_y",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
@@ -368,6 +407,11 @@ class LaserHead(Head):
         lh.pulse_width = data.get("pulse_width", lh.pulse_width)
         lh.min_pulse_width = data.get("min_pulse_width", lh.min_pulse_width)
         lh.max_pulse_width = data.get("max_pulse_width", lh.max_pulse_width)
+        lh.pointer_offset_enabled = bool(
+            data.get("pointer_offset_enabled", lh.pointer_offset_enabled)
+        )
+        lh.pointer_offset_x = data.get("pointer_offset_x", lh.pointer_offset_x)
+        lh.pointer_offset_y = data.get("pointer_offset_y", lh.pointer_offset_y)
         lh.extra = extra
         return lh
 

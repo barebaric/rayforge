@@ -61,6 +61,7 @@ from .main_menu import MainMenu
 from .project_cmd import ProjectCmd
 from .settings.settings_dialog import SettingsWindow
 from .shared.gtk import get_monitor_geometry
+from .shared.pointer_alignment_dialog import PointerAlignmentDialog
 from .shared.progress_bar import ProgressBar
 from .shared.sanity_check_dialog import SanityCheckDialog
 from .shared.time_estimate_overlay import TimeEstimateOverlay
@@ -795,7 +796,7 @@ class MainWindow(Adw.ApplicationWindow):
             return
 
         panel = machine.panel
-        wcs_offset = machine.get_active_wcs_offset()
+        wcs_offset = machine.get_command_wcs_offset()
         x_off, y_off, _ = panel.get_command_offset(
             wcs_offset=wcs_offset,
             wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
@@ -2107,6 +2108,10 @@ class MainWindow(Adw.ApplicationWindow):
             am.get_action("toggle-focus").set_enabled(can_focus)
 
             connected = conn_status == TransportStatus.CONNECTED
+            self.surface.set_pointer_dot_state(
+                active_machine.get_pointer_offset(),
+                active_machine.pointer_alignment_enabled,
+            )
             self.surface.set_laser_dot_visible(connected)
             if state and connected:
                 x, y = state.machine_pos[:2]
@@ -2439,7 +2444,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         machine_x, machine_y = pos
         panel = machine.panel
-        wcs_offset = machine.get_active_wcs_offset()
+        wcs_offset = machine.get_command_wcs_offset()
         x_off, y_off, _ = panel.get_command_offset(
             wcs_offset=wcs_offset,
             wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
@@ -2484,7 +2489,7 @@ class MainWindow(Adw.ApplicationWindow):
         if not machine:
             return
 
-        def _proceed():
+        def _proceed(pointer_dry_run: bool = False):
             focus_action = self.action_manager.get_action("toggle-focus")
             focus_state = focus_action.get_state()
             if focus_state and focus_state.get_boolean():
@@ -2493,10 +2498,24 @@ class MainWindow(Adw.ApplicationWindow):
             job_coro = self.machine_cmd.send_job(
                 machine,
                 on_progress=self._on_job_progress_updated,
+                pointer_dry_run=pointer_dry_run,
             )
             self._run_machine_job(job_coro)
 
-        self._run_sanity_check_and_proceed(_proceed)
+        def _confirm_pointer_alignment():
+            # Jobs burn with the unshifted beam, so ask every time
+            # while the user is aiming with the pointer dot.
+            if machine.pointer_alignment_enabled:
+                dialog = PointerAlignmentDialog(
+                    parent=self,
+                    machine=machine,
+                    on_proceed=_proceed,
+                )
+                dialog.present()
+            else:
+                _proceed()
+
+        self._run_sanity_check_and_proceed(_confirm_pointer_alignment)
 
     def on_hold_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant

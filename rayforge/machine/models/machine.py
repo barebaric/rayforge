@@ -131,6 +131,7 @@ class Machine:
         self.job_finished = Signal()
         self.command_status_changed = Signal()
         self.wcs_updated = Signal()
+        self.pointer_alignment_changed = Signal()
 
         self.connection_status: TransportStatus = TransportStatus.DISCONNECTED
         self.device_state: DeviceState = DeviceState()
@@ -215,6 +216,20 @@ class Machine:
         self.coordinate_systems: dict[str, CoordinateSystem] = (
             CoordinateSystem.defaults()
         )
+
+        # Runtime "pointer alignment" state: while on, absolute aim
+        # commands are shifted so the pointer dot lands on the aimed
+        # position (see get_command_wcs_offset()). Session-only by
+        # design: never serialized into the machine profile, and it
+        # resets naturally when the active machine is switched.
+        self.pointer_alignment_enabled: bool = False
+
+        # Transient companion to pointer_alignment_enabled: while on,
+        # job output is generated with the pointer offset added (see
+        # get_job_wcs_offset()), making the pointer dot trace the
+        # toolpath. Only set for the duration of a pointer dry-run
+        # send; never serialized.
+        self.pointer_job_shift_enabled: bool = False
 
         self.machine_hours: MachineHours = MachineHours()
         self.machine_hours.changed.connect(self._on_machine_hours_changed)
@@ -1255,6 +1270,86 @@ class Machine:
                 return head
         return None
 
+    def get_pointer_offset(
+        self, head: LaserHead | None = None
+    ) -> tuple[float, float]:
+        """
+        The (x, y) pointer offset in machine millimeters for the given
+        laser head, defaulting to the first laser head.
+
+        Returns ``(0.0, 0.0)`` when the head has no pointer offset or
+        it is disabled, so callers can add it unconditionally.
+        """
+        if head is None:
+            head = self.get_default_laser_head()
+        if not isinstance(head, LaserHead):
+            return (0.0, 0.0)
+        return head.pointer_offset
+
+    def has_pointer_offset(self, head: LaserHead | None = None) -> bool:
+        """True while the given (or default) laser head has an enabled,
+        non-zero pointer offset."""
+        return self.get_pointer_offset(head) != (0.0, 0.0)
+
+    def set_pointer_alignment(self, enabled: bool):
+        """
+        Enables or disables runtime pointer alignment.
+
+        While enabled, absolute aim commands (Move-To, Frame,
+        Click-to-Move, Move-Head-Here, the WCS-origin shortcut) are
+        shifted so the pointer dot lands on the aimed position; jobs
+        always burn with the unshifted beam. The state is session-only
+        and requires an enabled pointer offset on the laser head.
+        """
+        if enabled and not self.has_pointer_offset():
+            logger.warning(
+                "Pointer alignment requires an enabled pointer offset "
+                "on the laser head."
+            )
+            return
+        if self.pointer_alignment_enabled == enabled:
+            return
+        self.pointer_alignment_enabled = enabled
+        self.pointer_alignment_changed.send(self)
+        self.changed.send(self)
+
+    def get_command_wcs_offset(self, head: LaserHead | None = None) -> Point3D:
+        """
+        The WCS offset for converting absolute aim targets from MACHINE
+        coordinates into COMMAND (G-code) coordinates.
+
+        This is the plain active WCS offset while pointer alignment is
+        off. While it is on, the pointer offset of the given (or
+        default) laser head is added, so that subtracting the result
+        from a machine-space aim target shifts the issued command by
+        -offset: the pointer dot lands on the target while the beam
+        ends up offset behind it.
+
+        Display-only paths (DRO position, grid origin labels) must keep
+        using get_active_wcs_offset() so they stay truthful. Jog (a
+        relative move) and jobs are never affected.
+        """
+        off_x, off_y, off_z = self.get_active_wcs_offset()
+        if self.pointer_alignment_enabled:
+            dx, dy = self.get_pointer_offset(head)
+            off_x += dx
+            off_y += dy
+        return (off_x, off_y, off_z)
+
+    def get_job_wcs_offset(self, wcs_offset: Point3D) -> Point3D:
+        """
+        The WCS offset to use when generating job output.
+
+        Normally the given offset unchanged. While a pointer dry-run is
+        requested (pointer_job_shift_enabled), the pointer offset of
+        the default laser head is added so the pointer dot traces the
+        toolpath while the beam runs displaced by the offset.
+        """
+        if not self.pointer_job_shift_enabled:
+            return wcs_offset
+        dx, dy = self.get_pointer_offset()
+        return (wcs_offset[0] + dx, wcs_offset[1] + dy, wcs_offset[2])
+
     def remove_head(self, head: Head):
         head.changed.disconnect(self._on_head_changed)
         self.heads.remove(head)
@@ -1263,6 +1358,10 @@ class Machine:
 
     def _on_head_changed(self, head, *args):
         self.invalidate_assembly()
+        if self.pointer_alignment_enabled and not self.has_pointer_offset():
+            # The pointer offset backing runtime alignment is gone, so
+            # alignment can no longer stay on.
+            self.set_pointer_alignment(False)
         self.changed.send(self)
 
     def add_camera(self, camera: Camera):

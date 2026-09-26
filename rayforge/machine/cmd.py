@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable, Coroutine
+from functools import partial
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
@@ -237,18 +238,27 @@ class MachineCmd:
         # command space: the emitted coordinates must be relative to
         # the active WCS origin because the controller adds the WCS
         # offset back (issue #362). The regular send path performs the
-        # same adjustment in the machine-transform stage.
+        # same adjustment in the machine-transform stage. While
+        # pointer alignment is on, the command WCS offset includes the
+        # pointer offset, so the frame outline is traced by the
+        # pointer dot rather than the cutting beam.
         space = MachineSpace.from_machine(machine)
         combined = space.get_world_to_machine_matrix()
         if machine.reverse_z_axis:
             z_flip = np.eye(4)
             z_flip[2, 2] = -1.0
             combined = z_flip @ combined
+        frame_with_laser.transform(combined)
+
+        _warn_if_frame_exceeds_travel(
+            self._editor, machine, frame_with_laser.rect()
+        )
+
         to_command = space.get_machine_to_command_matrix(
-            wcs_offset=machine.get_active_wcs_offset(),
+            wcs_offset=machine.get_command_wcs_offset(),
             wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
         )
-        frame_with_laser.transform(to_command @ combined)
+        frame_with_laser.transform(to_command)
 
         # AXIS_REPLACEMENT modules encode the rotary degrees into the
         # replaced machine axis after the world→machine transform.
@@ -275,16 +285,31 @@ class MachineCmd:
         artifact: JobArtifact,
         machine: Machine,
         on_progress: Callable[[dict], None] | None,
+        dry_run: bool = False,
     ):
-        """The specific machine action for a send job."""
+        """The specific machine action for a send job.
+
+        With dry_run, all laser power in the job is capped at the
+        head's framing power so tracing the toolpath cannot burn the
+        material.
+        """
         if not isinstance(artifact, JobArtifact):
             raise TypeError("_run_send_action received a non-JobArtifact")
 
+        ops = artifact.ops
+        encoded = artifact.encoded_output
+        if dry_run:
+            head = machine.get_default_laser_head()
+            if head is not None:
+                ops.cap_power(head.frame_power_percent)
+                encoder = _create_driver_encoder(machine)
+                encoded = encoder.encode(ops, machine, self._editor.doc)
+
         await self._execute_monitored_job(
-            artifact.ops,
+            ops,
             machine,
             on_progress=on_progress,
-            encoded=artifact.encoded_output,
+            encoded=encoded,
         )
 
     async def _start_job(
@@ -292,6 +317,7 @@ class MachineCmd:
         machine: Machine,
         final_job_action: Callable[..., Coroutine],
         on_progress: Callable[[dict], None] | None = None,
+        pointer_dry_run: bool = False,
     ):
         """
         Generic, awaitable job executor that orchestrates artifact
@@ -299,10 +325,24 @@ class MachineCmd:
         """
         handle: BaseArtifactHandle | None = None
         artifact_store = self._editor.pipeline.artifact_store
+        pipeline = self._editor.pipeline
+        shift_used = False
 
         try:
-            # 1. Await the job artifact generation from the pipeline
-            handle = await self._editor.pipeline.generate_job_artifact_async()
+            if pointer_dry_run and machine.has_pointer_offset():
+                # Generate the job once with the pointer offset folded
+                # into the WCS offsets so the pointer dot traces the
+                # toolpath. The flag is only visible during generation;
+                # the shifted artifact is discarded afterwards so the
+                # next regular send burns unshifted.
+                machine.pointer_job_shift_enabled = True
+                shift_used = True
+                pipeline.invalidate_job_output()
+            try:
+                # 1. Await the job artifact generation from the pipeline
+                handle = await pipeline.generate_job_artifact_async()
+            finally:
+                machine.pointer_job_shift_enabled = False
 
             if not handle:
                 logger.warning("Job has no operations.")
@@ -315,6 +355,10 @@ class MachineCmd:
                     raise ValueError(
                         "Failed to retrieve artifact from handle."
                     )
+                if shift_used:
+                    # The cached output is shifted; drop it while our
+                    # checkout keeps the artifact alive.
+                    pipeline.invalidate_job_output()
 
                 await final_job_action(artifact, machine, on_progress)
 
@@ -361,16 +405,26 @@ class MachineCmd:
         self,
         machine: Machine,
         on_progress: Callable[[dict], None] | None = None,
+        pointer_dry_run: bool = False,
     ):
         """
         Asynchronously generates ops and sends the job to the machine.
         This is an awaitable coroutine.
+
+        With pointer_dry_run, the job is generated with the pointer
+        offset folded into the WCS offsets, so the pointer dot traces
+        the toolpath while the beam runs displaced by the offset. All
+        laser power is capped at the head's framing power, so the
+        trace does not burn the material.
         """
         try:
             await self._start_job(
                 machine,
-                final_job_action=self._run_send_action,
+                final_job_action=partial(
+                    self._run_send_action, dry_run=pointer_dry_run
+                ),
                 on_progress=on_progress,
+                pointer_dry_run=pointer_dry_run,
             )
         except JobAlreadyRunningError as e:
             # An expected refusal, not a failure: the guard's message
@@ -530,6 +584,46 @@ def _create_driver_encoder(machine: Machine):
     else:
         driver_cls = NoDeviceDriver
     return driver_cls.create_encoder(machine)
+
+
+def _warn_if_frame_exceeds_travel(
+    editor: DocEditor,
+    machine: Machine,
+    frame_rect: tuple[float, float, float, float],
+):
+    """
+    Warn when the pointer-shifted frame leaves the machine travel.
+
+    While pointer alignment is on, the beam traces the frame one
+    pointer offset behind the outline, which can leave the reachable
+    area even though the outline itself is on the bed. The frame still
+    runs; the warning explains why the trace may stop short of a side.
+    """
+    if not machine.pointer_alignment_enabled:
+        return
+    dx, dy = machine.get_pointer_offset()
+    min_x, min_y, max_x, max_y = frame_rect
+    width, height = machine.axis_extents
+    x_min = -width if machine.reverse_x_axis else 0.0
+    x_max = 0.0 if machine.reverse_x_axis else width
+    y_min = -height if machine.reverse_y_axis else 0.0
+    y_max = 0.0 if machine.reverse_y_axis else height
+    corners = [
+        (min_x - dx, min_y - dy),
+        (min_x - dx, max_y - dy),
+        (max_x - dx, max_y - dy),
+        (max_x - dx, min_y - dy),
+    ]
+    if all(x_min <= x <= x_max and y_min <= y <= y_max for x, y in corners):
+        return
+    editor.notification_requested.send(
+        editor,
+        message=_(
+            "Pointer alignment shifts the frame partly outside the "
+            "machine travel; the trace may stop short of a side."
+        ),
+        persistent=True,
+    )
 
 
 def _apply_frame_rotary_mapping(

@@ -75,6 +75,54 @@ not leave any mark on your material. Darker materials may need higher power to s
 
 ---
 
+## Pointer Laser Offset
+
+Some machines have a dedicated pointer laser (a small red dot laser) mounted at a fixed distance
+from the cutting beam. When you align the stock using the pointer dot, the cutting beam would
+actually land offset from that point — unless Rayforge compensates.
+
+The [Pointer Offset](../machine/laser.md#pointer-offset) laser setting lets you enter that distance
+and toggle the compensation on or off. With it enabled:
+
+- **Set Work Zero at Current Position** (and Zero X / Zero Y) places the work origin at the pointer
+  dot's position.
+- The canvas shows a yellow pointer dot next to the red beam dot, marking where the pointer dot is
+  on your material.
+- A **Pointer Alignment** switch appears in the move-to popover (the compass icon next to the
+  position readout).
+
+### Pointer Alignment
+
+While **Pointer Alignment** is on, every absolute aiming operation — Move-To, the corner shortcuts,
+moving to the WCS origin, Click-to-Move, Move-Head-Here, and framing — lands the _pointer dot_ on
+the aimed position, so you can position the stock entirely by the visible dot. The coordinate entry
+in the popover pre-fills with the pointer dot's position. On the canvas, exactly one dot is ever
+filled: the pointer dot is filled while alignment is on (the beam dot is a hollow ring then), and
+hollow while it is off (the beam dot is filled).
+
+The workflow composes cleanly with zeroing by the pointer dot: the origin sits where the pointer
+marked, aiming shifts every target by the offset, and the burn is unshifted — so aligning with the
+dot and cutting with the beam end up consistent.
+
+When you press **Send** while alignment is on, a warning appears on every send (there is no "don't
+ask again"). You can choose:
+
+- **Dry-Run with Pointer**: the job runs with the pointer offset applied, so the pointer dot traces
+  the toolpath while the beam runs displaced by the offset. The laser still fires at job power —
+  make sure the displaced beam cannot hit anything it should not.
+- **Turn Off and Burn**: alignment is switched off and the job burns normally with the beam at the
+  WCS positions.
+- **Cancel**.
+
+Jog moves and jobs are never shifted by the toggle: jog is relative, and regular G-code output is
+identical whether alignment is on or off. The switch is session-only — it is not saved to the
+machine profile and resets when you switch machines.
+
+The pointer offset is especially useful for stock that is larger than the laser bed (pass-through
+work), where you repeatedly align the design to a reference mark on the moving stock.
+
+---
+
 ## Framing
 
 Framing traces the bounding rectangle of your job at low (or zero) power, showing exactly where your
@@ -229,6 +277,21 @@ For accurate placement on pre-printed or marked materials:
 4. **Import and position design** visually on the camera image
 5. **Disable camera** and frame to verify
 6. **Run the job**
+
+### Pass-Through Workflow
+
+For stock longer than the laser bed (fed through the machine in segments), a
+[pointer laser offset](#pointer-laser-offset) removes the manual guesswork:
+
+1. **Cut segment 1** of your design normally.
+2. **Feed the stock forward** through the pass-through so the next segment is on the bed.
+3. **Jog the machine** until the pointer dot marks a reference point on the stock (e.g. a corner of
+   an already-cut feature).
+4. **Set WCS zero** (or Zero X / Zero Y) — with the pointer offset enabled, the origin lands exactly
+   where the pointer pointed.
+5. **Position the next segment** of the design relative to that origin in the canvas.
+6. **Frame to verify**, then **run the job**.
+7. Repeat from step 2 for each remaining segment.
 
 ### Production Workflow
 

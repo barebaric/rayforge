@@ -121,7 +121,9 @@ class JogWidget(Gtk.Widget):
         # Action column (separate grid for extra gap)
         self.send_btn = create_button("send-symbolic", _("Send to machine"))
         self.send_btn.add_css_class("suggested-action")
-        self.send_btn.connect("clicked", self._on_send_clicked)
+        # Route through the same action as the toolbar's send button so
+        # sanity checks and the pointer alignment dialog always apply.
+        self.send_btn.set_action_name("win.machine-send")
         self._action_grid.attach(self.send_btn, 0, 0, 1, 1)
 
         self.z_plus_btn = create_button(
@@ -467,11 +469,6 @@ class JogWidget(Gtk.Widget):
         """Handle Home Z button click."""
         if self.machine and self.machine_cmd:
             self.machine_cmd.home(self.machine, Axis.Z)
-
-    def _on_send_clicked(self, button):
-        """Handle Send button click."""
-        if self.machine and self.machine_cmd:
-            self.machine_cmd.run_send_job(self.machine)
 
     def _on_cancel_clicked(self, button):
         """Handle Cancel button click."""
