@@ -86,7 +86,7 @@ css = """
 .right-panel-overlay {
     background-color: transparent;
     border-radius: 8px;
-    margin: 6px 12px 12px 6px;
+    margin: 6px 12px 40px 6px;
 }
 
 .status-message-overlay {
