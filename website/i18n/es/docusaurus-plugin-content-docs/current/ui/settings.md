@@ -41,6 +41,28 @@ información personal. Puedes activar o desactivar **Informar uso anónimo** en 
 Visita la página de [seguimiento de uso](https://rayforge.org/docs/general-info/usage-tracking) para
 obtener más información sobre qué datos se recopilan y cómo se usan.
 
+## Gestos del ratón
+
+La página de gestos del ratón te permite reasignar los gestos de navegación del lienzo 2D, del
+lienzo 3D y del editor de bocetos. Cada entrada muestra la combinación de botones del ratón asignada
+actualmente. Haz clic en una entrada para capturar una nueva asignación: presiona el botón del ratón
+deseado (con o sin teclas modificadoras) o usa la rueda del ratón, y la asignación se aplica de
+inmediato.
+
+- **Desplazar la vista** — mantén presionado el botón del ratón asignado y mueve para desplazar.
+- **Zoom de la vista** — usa la rueda del ratón para hacer zoom.
+- **Órbita / rotación (lienzo 3D)** — arrastra para orbitar alrededor de la escena o rotar alrededor
+  del eje Z.
+- **Abrir el menú contextual** — el menú contextual del lienzo 2D o el menú de herramientas del
+  editor de bocetos.
+- **Restablecer la vista** — ajusta la vista de nuevo. Sin asignar por defecto.
+
+Una asignación se puede eliminar con **Desasignar** o restaurar con **Restablecer los valores
+predeterminados**. Se rechaza la asignación de un gesto que ya se usa para otra acción en la misma
+vista, de modo que una combinación de botones del ratón nunca active dos acciones a la vez. Los
+addons pueden aportar configuraciones de gestos adicionales, que aparecen como secciones extra en
+esta página.
+
 ## Otros ajustes
 
 El diálogo de ajustes también incluye páginas para gestionar otras partes de la aplicación. Cada una
