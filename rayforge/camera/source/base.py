@@ -5,6 +5,7 @@ import threading
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from gettext import gettext as _
 from typing import TYPE_CHECKING, Any, ClassVar
 from urllib.parse import urlsplit
 
@@ -126,33 +127,34 @@ def validate_source_uri(source_type: CameraSourceType, uri: str) -> str | None:
 
     placeholder = re.search(r"<([^<>]+)>", uri)
     if placeholder:
-        return (
-            f"URL contains placeholder <{placeholder.group(1)}>; "
-            "replace it with a valid value"
-        )
+        return _(
+            "URL contains placeholder <{placeholder}>; replace it with a valid value"
+        ).format(placeholder=placeholder.group(1))
 
     try:
         parsed = urlsplit(uri.strip())
     except ValueError:
-        return "URL is malformed"
+        return _("URL is malformed")
     if parsed.scheme.lower() not in allowed_schemes:
         schemes = ", ".join(f"{scheme}://" for scheme in allowed_schemes)
-        return f"URL must start with one of: {schemes}"
+        return _("URL must start with one of: {schemes}").format(
+            schemes=schemes
+        )
     if not parsed.netloc:
-        return "URL must include a host"
+        return _("URL must include a host")
     if parsed.netloc.rsplit("@", 1)[-1].endswith(":"):
-        return "URL contains an invalid host or port"
+        return _("URL contains an invalid host or port")
     try:
         hostname = parsed.hostname
         port = parsed.port
     except ValueError:
-        return "URL contains an invalid host or port"
+        return _("URL contains an invalid host or port")
     if (
         not hostname
         or (port is not None and not 0 <= port <= 65535)
         or not _is_valid_uri_hostname(hostname)
     ):
-        return "URL must include a valid hostname or IP address"
+        return _("URL must include a valid hostname or IP address")
     return None
 
 

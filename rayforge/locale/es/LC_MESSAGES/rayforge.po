@@ -275,6 +275,32 @@ msgstr "El esquema de URL debe ser uno de: {schemes}."
 msgid "Invalid URL: {error}"
 msgstr "URL inválida: {error}"
 
+#: rayforge/camera/source/base.py
+#, python-brace-format
+msgid "URL contains placeholder <{placeholder}>; replace it with a valid value"
+msgstr "La URL contiene el marcador <{placeholder}>; sustitúyelo por un valor válido."
+
+#: rayforge/camera/source/base.py
+msgid "URL is malformed"
+msgstr "La URL no está bien formada."
+
+#: rayforge/camera/source/base.py
+#, python-brace-format
+msgid "URL must start with one of: {schemes}"
+msgstr "La URL debe comenzar con uno de estos esquemas: {schemes}"
+
+#: rayforge/camera/source/base.py
+msgid "URL must include a host"
+msgstr "La URL debe incluir un host."
+
+#: rayforge/camera/source/base.py
+msgid "URL contains an invalid host or port"
+msgstr "La URL contiene un host o puerto no válido."
+
+#: rayforge/camera/source/base.py
+msgid "URL must include a valid hostname or IP address"
+msgstr "La URL debe incluir un nombre de host o una dirección IP válidos."
+
 #: rayforge/core/varset/serialportvar.py
 msgid "Serial port cannot be empty."
 msgstr "El puerto serie no puede estar vacío."
