@@ -1,0 +1,58 @@
+api_version: 1
+device:
+  name: Creality Falcon 2 Pro 22W
+  vendor: Creality
+  model: Falcon 2 Pro 22W
+  description: Enclosed 22W diode laser engraver with 400x415mm work area
+machine:
+  driver: GrblSerialDriver
+  driver_args:
+    baudrate: '115200'
+    poll_status_while_running: true
+    deadlock_detection: true
+    rx_buffer_size_override: 127
+  driver_config:
+    arc_tolerance: 0.002
+    firmware_version: 1.1f
+  gcode_precision: 3
+  supports_arcs: true
+  axis_extents:
+  - 400.0
+  - 415.0
+  origin: bottom_left
+  max_travel_speed: 8000
+  max_cut_speed: 8000
+  acceleration: 500
+  home_on_start: false
+  has_z: false
+  heads:
+  - max_power: 1000
+    wavelength_nm: 455
+    max_power_watts: 22.0
+    frame_power_percent: 0.1
+    frame_speed: 2000
+    frame_repeat_count: 3
+    spot_size_mm:
+    - 0.1
+    - 0.1
+  cameras:
+  - name: Creality Falcon Camera
+    enabled: true
+    contrast: 50.0
+    brightness: 100.0
+    transparency: 1.0
+    denoise: 0.4914772727272727
+    distortion_k1: -1.2
+    distortion_k2: 0.1
+    distortion_p1: 0.0
+    distortion_p2: -0.07
+    distortion_k3: -0.5
+    image_to_world:
+    - image: 204.25035597660997, 117.83610362241798
+      world: 100.0, 100.0
+    - image: 202.6828438259417, 302.9675456124696
+      world: 100.0, 300.0
+    - image: 389.8010375531592, 303.1717290495899
+      world: 300.0, 300.0
+    - image: 386.68730539945324, 116.59060316676792
+      world: 300.0, 100.0
