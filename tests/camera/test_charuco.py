@@ -1,5 +1,6 @@
 from unittest.mock import Mock
 
+import cv2
 import numpy as np
 import pytest
 
@@ -76,3 +77,40 @@ def test_detect_generated_board_with_installed_opencv():
     corners, ids = result
     assert len(corners) >= 4
     assert len(corners) == len(ids)
+
+
+def degrade_image(image, scale, blur, contrast, gamma):
+    h, w = image.shape[:2]
+    size = (int(w * scale), int(h * scale))
+    small = cv2.resize(image, size, interpolation=cv2.INTER_AREA)
+    small = cv2.GaussianBlur(small, (0, 0), blur)
+    small = small.astype(np.float32) * contrast + 128 * (1 - contrast)
+    lut = ((np.arange(256) / 255.0) ** gamma * 255).astype(np.uint8)
+    return cv2.LUT(np.clip(small, 0, 255).astype(np.uint8), lut)
+
+
+def test_detect_recovers_corners_from_degraded_image():
+    board = CharucoBoard(CharucoConfig())
+    degraded = degrade_image(
+        board.generate_image(),
+        scale=1 / 6,
+        blur=1.5,
+        contrast=0.55,
+        gamma=2.0,
+    )
+
+    result = board.detect(degraded)
+
+    assert result is not None
+    corners, ids = result
+    assert len(corners) >= 4
+    assert len(corners) == len(ids)
+
+
+def test_detect_returns_no_corners_for_noise():
+    board = CharucoBoard(CharucoConfig())
+    noise = np.random.default_rng(42).integers(
+        0, 256, size=(480, 640), dtype=np.uint8
+    )
+
+    assert board.detect(noise) is None
