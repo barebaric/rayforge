@@ -283,6 +283,17 @@ class RuidaRPAAdapter(Driver):
                     digits=1,
                     visible_when=lambda v: v.get("tui", False),
                 ),
+                BoolVar(
+                    key="power_scaling_enabled",
+                    label=_("Power scaling"),
+                    description=_(
+                        "When enabled, power_range() raises the emitted "
+                        "minimum as the layer's cut speed decreases "
+                        "(effective-min power scaling); when disabled, the "
+                        "resolved minimum is emitted unchanged."
+                    ),
+                    default=True,
+                ),
                 FloatVar(
                     key="power_floor",
                     label=_("VECTOR power floor"),
@@ -879,6 +890,9 @@ class RuidaRPAAdapter(Driver):
                     await result
 
         backend = self._backend_gluescript()
+        backend.set_power_scaling_enabled(
+            bool(self._machine.driver_args.get("power_scaling_enabled", True))
+        )
         loop = asyncio.get_running_loop()
 
         # The encoded text IS the GlueScript transcript (the source);

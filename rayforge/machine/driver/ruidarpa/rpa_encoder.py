@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from raygeo.geo.types import Point3D
 from raygeo.ops import Ops
-from raygeo.ops.state import AirAssistMode, CoolantMode
+from raygeo.ops.state import AirAssistMode, CoolantMode, PowerMode
 from raygeo.ops.types import CommandType, RasterMode, SectionType
 from ruidadriver.rd_gluescript import GlueScript
 
@@ -216,6 +216,8 @@ class RuidaRPAEncoder(OpsEncoder):
         ct = ops.command_type(idx)
         if ct == CommandType.SET_POWER:
             self._handle_set_power(ops, idx)
+        elif ct == CommandType.SET_POWER_MODE:
+            self._handle_set_power_mode(ops, idx)
         elif ct == CommandType.SET_FEED_RATE:
             self._handle_set_cut_speed(ops, idx)
         elif ct == CommandType.SET_RAPID_RATE:
@@ -547,6 +549,18 @@ class RuidaRPAEncoder(OpsEncoder):
     def _handle_set_power(self, ops: Ops, idx: int) -> None:
         """Set laser power for the remaining cuts on this layer."""
         self._emit_power(ops.power(idx))
+
+    def _handle_set_power_mode(self, ops: Ops, idx: int) -> None:
+        """Enable/disable effective-min power scaling from PowerMode.
+
+        DYNAMIC (speed-proportional) enables Ruida power scaling so the
+        emitted minimum rises as the layer's cut speed decreases;
+        CONSTANT (fixed power) disables it so the resolved minimum is
+        emitted unchanged.
+        """
+        self._gluescript.set_power_scaling_enabled(
+            ops.power_mode(idx) == PowerMode.DYNAMIC
+        )
 
     def _handle_set_cut_speed(self, ops: Ops, idx: int) -> None:
         """Set cutting speed in mm/s."""

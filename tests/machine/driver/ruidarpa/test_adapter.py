@@ -38,7 +38,7 @@ from rpalib.rpyc_client import RpcRdDriver
 from ruidadriver.rd_gluescript import GlueScript
 
 from rayforge.core.doc import Doc
-from rayforge.core.varset import FloatVar, SerialPortVar
+from rayforge.core.varset import BoolVar, FloatVar, SerialPortVar
 from rayforge.machine.driver.driver import (
     Axis,
     DeviceStatus,
@@ -636,6 +636,69 @@ class TestRunRouting:
             await adapter.select_wcs(wcs)
         assert adapter._selected_wcs == "MACHINE"
         backend.run.assert_not_called()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "tui_mode", [DIRECT_MODE, RPC_MODE], ids=["direct", "rpc"]
+    )
+    async def test_run_applies_power_scaling_enabled_before_stage(
+        self, isolated_context, isolated_machine, tui_mode
+    ):
+        """run() must apply the power_scaling_enabled flag to the backend
+        before staging the transcript."""
+        machine = isolated_machine
+        machine.driver_args = {"power_scaling_enabled": False}
+        gs, _real = self._gluescript_backend()
+        adapter = self._make_adapter(isolated_context, machine, tui_mode, gs)
+        doc = Doc()
+        ops = self._job_ops(doc)
+        transcript = (
+            "declare_job('Rayforge Job', 'MACHINE', [0.0, 0.0], "
+            "1, 1, 0.0, 0.0)\n"
+            "move_xy_to(5.0, 5.0)\n"
+            "cut_xy_to(10.0, 8.0)\n"
+            "end_job()"
+        )
+        encoded = EncodedOutput(text=transcript, op_map=MachineCodeOpMap())
+
+        await adapter.run(encoded, doc, ops)
+
+        gs.set_power_scaling_enabled.assert_called_once_with(False)
+        stage_call = call.stage_gluescript(transcript.splitlines())
+        assert gs.mock_calls.index(call.set_power_scaling_enabled(False)) < (
+            gs.mock_calls.index(stage_call)
+        )
+
+        await adapter.cleanup()
+        await machine.shutdown()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "tui_mode", [DIRECT_MODE, RPC_MODE], ids=["direct", "rpc"]
+    )
+    async def test_run_power_scaling_enabled_defaults_to_true(
+        self, isolated_context, isolated_machine, tui_mode
+    ):
+        """run() must enable power scaling when driver_args omit the key."""
+        machine = isolated_machine
+        machine.driver_args = {}
+        gs, _real = self._gluescript_backend()
+        adapter = self._make_adapter(isolated_context, machine, tui_mode, gs)
+        doc = Doc()
+        ops = self._job_ops(doc)
+        transcript = (
+            "declare_job('Rayforge Job', 'MACHINE', [0.0, 0.0], "
+            "1, 1, 0.0, 0.0)\n"
+            "end_job()"
+        )
+        encoded = EncodedOutput(text=transcript, op_map=MachineCodeOpMap())
+
+        await adapter.run(encoded, doc, ops)
+
+        gs.set_power_scaling_enabled.assert_called_once_with(True)
+
+        await adapter.cleanup()
+        await machine.shutdown()
 
 
 class TestWcsHandling:
@@ -2656,3 +2719,17 @@ class TestPowerFloorSetup:
         assert ipb_var.default == DEFAULT_IMAGE_POWER_BIAS
         assert ipb_var.min_val == 0.0
         assert ipb_var.max_val == 100.0
+
+    def test_power_scaling_enabled_var_present_with_driver_defaults(
+        self, isolated_context, isolated_machine
+    ):
+        """get_setup_vars must expose a power_scaling_enabled var."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        varset = adapter.get_setup_vars()
+        pse_var = varset.get("power_scaling_enabled")
+        assert pse_var is not None
+        assert isinstance(pse_var, BoolVar)
+        assert pse_var.default is True
+
+        keys = [var.key for var in varset]
+        assert keys.index("power_scaling_enabled") < keys.index("power_floor")

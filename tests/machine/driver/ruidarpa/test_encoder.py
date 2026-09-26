@@ -15,12 +15,12 @@ stage_gluescript when the job runs. Tests cover:
 
 import ast
 import logging
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 import pytest
 from raygeo.geo import Matrix
 from raygeo.ops import Ops
-from raygeo.ops.state import AirAssistMode, CoolantMode
+from raygeo.ops.state import AirAssistMode, CoolantMode, PowerMode
 from raygeo.ops.types import RasterMode, SectionType
 from ruidadriver.rd_gluescript import GlueScript
 
@@ -629,6 +629,37 @@ class TestSettingsCommands:
         assert "air_assist_on()" in lines
         assert "air_assist_off()" in lines
         assert lines.index("air_assist_on()") < lines.index("air_assist_off()")
+
+    @pytest.mark.parametrize(
+        ("mode", "expected"),
+        [
+            (PowerMode.DYNAMIC, True),
+            (PowerMode.CONSTANT, False),
+        ],
+        ids=["dynamic", "constant"],
+    )
+    def test_set_power_mode_toggles_power_scaling(
+        self, mock_machine, doc, mode, expected
+    ):
+        """SET_POWER_MODE must enable scaling for DYNAMIC and disable for
+        CONSTANT by calling set_power_scaling_enabled on the backend."""
+        ops = Ops()
+        ops.job_start()
+        ops.layer_start(layer_uid=doc.layers[0].uid)
+        ops.workpiece_start("wp-0")
+        ops.set_power_mode(mode)
+        ops.workpiece_end("wp-0")
+        ops.layer_end(layer_uid=doc.layers[0].uid)
+        ops.job_end()
+
+        mock_gluescript = Mock(spec=GlueScript)
+        mock_gluescript.gluescript = []
+        encoder = RuidaRPAEncoder(gluescript=mock_gluescript)
+        encoder.encode(ops, mock_machine, doc)
+
+        assert mock_gluescript.set_power_scaling_enabled.call_args_list == [
+            call(expected)
+        ]
 
     def test_set_head_selects_laser_device(
         self, encoder, mock_machine, doc, caplog
