@@ -419,7 +419,10 @@ def test_configure_machine_uses_first_layer(doc_editor):
     mock_cfg.assert_called_with(first_layer)
 
 
-def test_configure_machine_mounts_rotary_for_first_layer(doc_editor):
+@pytest.mark.asyncio
+async def test_configure_machine_mounts_rotary_for_first_layer(
+    doc_editor,
+):
     editor = doc_editor
     machine = editor.context.machine
     rm = RotaryModule()
@@ -430,6 +433,7 @@ def test_configure_machine_mounts_rotary_for_first_layer(doc_editor):
     first_layer.set_rotary_module_uid(rm.uid)
 
     editor.configure_machine()
+    await editor.wait_until_settled()
     assert machine.assembly.has_rotary
 
 
