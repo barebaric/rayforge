@@ -44,6 +44,29 @@ ausschalten. Siehe die
 [Nutzungsverfolgung](https://rayforge.org/docs/general-info/usage-tracking)-Seite, um mehr darüber
 zu erfahren, welche Daten gesammelt und wie sie verwendet werden.
 
+## Mausgesten
+
+Die Seite Mausgesten erlaubt es dir, die Navigationsgesten der 2D-Arbeitsfläche, der
+3D-Arbeitsfläche und des Skizzen-Editors neu zuzuweisen. Jeder Eintrag zeigt die aktuell zugewiesene
+Maustastenkombination. Klicke auf einen Eintrag, um eine neue Zuweisung aufzunehmen: Drücke die
+gewünschte Maustaste (mit oder ohne gedrückte Zusatztasten) oder benutze das Mausrad, und die
+Zuweisung wird sofort übernommen.
+
+- **Ansicht schwenken** — halte die zugewiesene Maustaste gedrückt und bewege die Maus, um zu
+  schwenken.
+- **Ansicht zoomen** — benutze das Mausrad zum Zoomen.
+- **Orbit / Drehung (3D-Arbeitsfläche)** — ziehe, um um die Szene zu kreisen oder um die Z-Achse zu
+  drehen.
+- **Kontextmenü öffnen** — das Kontextmenü der 2D-Arbeitsfläche oder das Werkzeugmenü des
+  Skizzen-Editors.
+- **Ansicht zurücksetzen** — passt die Ansicht wieder an. Standardmäßig nicht zugewiesen.
+
+Eine Zuweisung kann mit **Aufheben** entfernt oder mit **Auf Standard zurücksetzen**
+wiederhergestellt werden. Das Zuweisen einer Geste, die in derselben Ansicht bereits für eine andere
+Aktion verwendet wird, wird abgelehnt, sodass eine Maustastenkombination nie zwei Aktionen
+gleichzeitig auslöst. Addons können zusätzliche Gestenkonfigurationen bereitstellen, die als
+zusätzliche Abschnitte auf dieser Seite erscheinen.
+
 ## Weitere Einstellungen
 
 Der Einstellungsdialog enthält weitere Seiten zur Verwaltung anderer Teile der Anwendung. Jede

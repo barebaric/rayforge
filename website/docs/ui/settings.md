@@ -40,7 +40,7 @@ You can also configure **Startup behavior** — start with an empty workspace, r
 project, or always open a specific project file. Note that files specified on the command line will
 always override these settings.
 
- ### Privacy
+### Privacy
 
 Rayforge can send anonymous usage data to help improve the application. No personal information is
 collected. You can toggle **Report Anonymous Usage** on or off at any time. See the
@@ -49,10 +49,10 @@ what data is collected and how it is used.
 
 ## Mouse Gestures
 
-The Mouse Gestures page lets you rebind the navigation gestures of the 2D canvas, the 3D canvas,
-and the sketch editor. Each entry shows the currently assigned mouse button combination. Click an
-entry to capture a new binding: press the desired mouse button (with or without modifier keys held)
-or use the scroll wheel, and the binding is applied immediately.
+The Mouse Gestures page lets you rebind the navigation gestures of the 2D canvas, the 3D canvas, and
+the sketch editor. Each entry shows the currently assigned mouse button combination. Click an entry
+to capture a new binding: press the desired mouse button (with or without modifier keys held) or use
+the scroll wheel, and the binding is applied immediately.
 
 - **Pan the view** — hold the bound mouse button and move to pan.
 - **Zoom the view** — use the mouse wheel to zoom.
