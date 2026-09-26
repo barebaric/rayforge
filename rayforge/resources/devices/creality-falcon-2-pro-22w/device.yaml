@@ -4,6 +4,8 @@ device:
   vendor: Creality
   model: Falcon 2 Pro 22W
   description: Enclosed 22W diode laser engraver with 400x415mm work area
+  usb_ids:
+  - 303a:4001
 machine:
   driver: GrblSerialDriver
   driver_args:
