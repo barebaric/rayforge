@@ -312,7 +312,9 @@ class TestMachineCmdPointerDryRun:
         )
         actions = []
 
-        async def final_job_action(artifact, machine, on_progress):
+        async def final_job_action(
+            artifact, machine, on_progress, dry_run=False
+        ):
             actions.append(artifact)
 
         await machine_cmd._start_job(
@@ -345,7 +347,9 @@ class TestMachineCmdPointerDryRun:
         )
         actions = []
 
-        async def final_job_action(artifact, machine, on_progress):
+        async def final_job_action(
+            artifact, machine, on_progress, dry_run=False
+        ):
             actions.append(artifact)
 
         await machine_cmd._start_job(
@@ -375,7 +379,9 @@ class TestMachineCmdPointerDryRun:
             side_effect=fake_generate,
         )
 
-        async def final_job_action(artifact, machine, on_progress):
+        async def final_job_action(
+            artifact, machine, on_progress, dry_run=False
+        ):
             pass
 
         await machine_cmd._start_job(
@@ -392,6 +398,81 @@ class TestMachineCmdPointerDryRun:
         head.set_pointer_offset(10.0, 20.0)
         head.set_pointer_offset_enabled(True)
         return machine
+
+
+class TestMachineCmdDryRunPower:
+    """The pointer dry-run caps all laser power at framing power."""
+
+    @pytest.fixture
+    def powered_artifact(self, machine):
+        ops = Ops()
+        ops.set_power(0.8)
+        ops.move_to(0, 0, 0)
+        ops.line_to(10, 0, 0)
+        ops.scan_to(10, 5, 0, power_values=[255, 128, 0])
+        encoded = machine.driver.get_encoder().encode(ops, machine, None)
+        return JobArtifact(
+            ops=ops,
+            distance=ops.distance(),
+            generation_id=1,
+            encoded_output=encoded,
+        )
+
+    @pytest.fixture
+    def executed(self, machine_cmd, mocker):
+        record = {}
+
+        async def fake_execute(ops, machine, on_progress=None, encoded=None):
+            record["ops"] = ops
+            record["encoded"] = encoded
+
+        mocker.patch.object(
+            machine_cmd, "_execute_monitored_job", side_effect=fake_execute
+        )
+        return record
+
+    @pytest.mark.asyncio
+    async def test_dry_run_caps_power_at_framing_power(
+        self, machine_cmd, machine, powered_artifact, executed
+    ):
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_frame_power(0.1)
+
+        await machine_cmd._run_send_action(
+            powered_artifact, machine, None, dry_run=True
+        )
+
+        run_ops = executed["ops"]
+        assert run_ops is powered_artifact.ops
+        assert run_ops.power(0) == pytest.approx(0.1)
+        assert list(run_ops.scanline_data(3)) == [26, 26, 0]
+        assert executed["encoded"] is not powered_artifact.encoded_output
+
+    @pytest.mark.asyncio
+    async def test_dry_run_with_zero_framing_power_disables_beam(
+        self, machine_cmd, machine, powered_artifact, executed
+    ):
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_frame_power(0.0)
+
+        await machine_cmd._run_send_action(
+            powered_artifact, machine, None, dry_run=True
+        )
+
+        run_ops = executed["ops"]
+        assert run_ops.power(0) == 0.0
+        assert list(run_ops.scanline_data(3)) == [0, 0, 0]
+
+    @pytest.mark.asyncio
+    async def test_regular_send_keeps_job_power(
+        self, machine_cmd, machine, powered_artifact, executed
+    ):
+        await machine_cmd._run_send_action(powered_artifact, machine, None)
+
+        assert executed["ops"] is powered_artifact.ops
+        assert executed["encoded"] is powered_artifact.encoded_output
 
 
 class TestMachineCmdJog:

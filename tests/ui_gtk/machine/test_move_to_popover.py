@@ -578,6 +578,25 @@ class TestPointerAlignmentSwitch:
         assert popover.alignment_row.get_active() is True
 
     @pytest.mark.ui
+    def test_toggle_keeps_entered_values(self, real_alignment_popover):
+        """Toggling alignment must not touch the coordinate rows, so
+        the user can move back to a previously entered position."""
+        popover, _ = real_alignment_popover
+        head = popover.machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(10.0, 20.0)
+        head.set_pointer_offset_enabled(True)
+        popover.machine.device_state.machine_pos = (100.0, 100.0, 0.0)
+
+        popover.x_row.set_value_in_base_units(50.0)
+        popover.y_row.set_value_in_base_units(60.0)
+
+        popover.machine.set_pointer_alignment(True)
+
+        assert popover.x_row.get_value_in_base_units() == 50.0
+        assert popover.y_row.get_value_in_base_units() == 60.0
+
+    @pytest.mark.ui
     def test_alignment_resets_when_offset_removed(
         self, real_alignment_popover
     ):

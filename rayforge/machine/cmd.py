@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable, Coroutine
+from functools import partial
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
@@ -284,16 +285,31 @@ class MachineCmd:
         artifact: JobArtifact,
         machine: Machine,
         on_progress: Callable[[dict], None] | None,
+        dry_run: bool = False,
     ):
-        """The specific machine action for a send job."""
+        """The specific machine action for a send job.
+
+        With dry_run, all laser power in the job is capped at the
+        head's framing power so tracing the toolpath cannot burn the
+        material.
+        """
         if not isinstance(artifact, JobArtifact):
             raise TypeError("_run_send_action received a non-JobArtifact")
 
+        ops = artifact.ops
+        encoded = artifact.encoded_output
+        if dry_run:
+            head = machine.get_default_laser_head()
+            if head is not None:
+                ops.cap_power(head.frame_power_percent)
+                encoder = _create_driver_encoder(machine)
+                encoded = encoder.encode(ops, machine, self._editor.doc)
+
         await self._execute_monitored_job(
-            artifact.ops,
+            ops,
             machine,
             on_progress=on_progress,
-            encoded=artifact.encoded_output,
+            encoded=encoded,
         )
 
     async def _start_job(
@@ -397,13 +413,16 @@ class MachineCmd:
 
         With pointer_dry_run, the job is generated with the pointer
         offset folded into the WCS offsets, so the pointer dot traces
-        the toolpath while the beam runs displaced by the offset. The
-        laser still fires at job power; the beam is not disabled.
+        the toolpath while the beam runs displaced by the offset. All
+        laser power is capped at the head's framing power, so the
+        trace does not burn the material.
         """
         try:
             await self._start_job(
                 machine,
-                final_job_action=self._run_send_action,
+                final_job_action=partial(
+                    self._run_send_action, dry_run=pointer_dry_run
+                ),
                 on_progress=on_progress,
                 pointer_dry_run=pointer_dry_run,
             )
