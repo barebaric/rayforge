@@ -64,7 +64,7 @@ Konfiguriere das Rahmen-Verhalten in den Laserkopf-Einstellungen deiner Maschine
 :::note[Maschinengesteuertes Einrahmen]
 Manche Maschinen können den Job auch dann selbst einrahmen, wenn sie offline laufen (z. B. aus
 einer G-code-Datei auf einer Speicherkarte). Rayforge kann die dafür benötigten Job-Maße in den
-G-code einbetten. Siehe [G-code-Dialekte](../reference/gcode-dialects) für die verfügbaren
+G-code einbetten. Siehe [G-code-Dialekte](../reference/gcode-dialects.md) für die verfügbaren
 Platzhalter.
 :::
 <!-- prettier-ignore-end -->

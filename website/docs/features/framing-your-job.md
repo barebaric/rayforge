@@ -65,7 +65,7 @@ Configure framing behavior in your machine's laser head settings:
 :::note[Machine-Controlled Framing]
 Some machines can frame the job even when running offline (e.g., from a G-code file on a memory
 card). Rayforge can include the required job dimensions in the G-code to support this. See
-[G-code Dialect Support](../reference/gcode-dialects) for the available placeholders.
+[G-code Dialect Support](../reference/gcode-dialects.md) for the available placeholders.
 :::
 <!-- prettier-ignore-end -->
 

@@ -64,7 +64,7 @@ Configurez le comportement du cadrage dans les paramètres de la tête laser de 
 :::note[Cadrage contrôlé par la machine]
 Certaines machines peuvent cadrer le travail même en fonctionnement hors ligne (p. ex. depuis un
 fichier G-code sur une carte mémoire). Rayforge peut inclure dans le G-code les dimensions du
-travail nécessaires pour cela. Voir [Dialectes G-code](../reference/gcode-dialects) pour les
+travail nécessaires pour cela. Voir [Dialectes G-code](../reference/gcode-dialects.md) pour les
 espaces réservés disponibles.
 :::
 <!-- prettier-ignore-end -->

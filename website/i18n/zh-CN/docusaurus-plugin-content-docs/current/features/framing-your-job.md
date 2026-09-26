@@ -52,7 +52,7 @@
 <!-- prettier-ignore-start -->
 :::note[机器控制的框定]
 有些机器即使离线运行（例如运行存储卡上的 G-code 文件）也能自行框定作业。Rayforge 可以在 G-code
-中包含所需的作业尺寸来支持此功能。可用占位符请参见 [G-code 方言](../reference/gcode-dialects)。
+中包含所需的作业尺寸来支持此功能。可用占位符请参见 [G-code 方言](../reference/gcode-dialects.md)。
 :::
 <!-- prettier-ignore-end -->
 

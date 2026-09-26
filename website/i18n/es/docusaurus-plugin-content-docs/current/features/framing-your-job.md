@@ -63,7 +63,7 @@ Configure el comportamiento del enmarcado en los ajustes de la cabeza láser de 
 :::note[Enmarcado controlado por la máquina]
 Algunas máquinas pueden enmarcar el trabajo incluso al ejecutarse sin conexión (p. ej., desde un
 archivo G-code en una tarjeta de memoria). Rayforge puede incluir las dimensiones necesarias del
-trabajo en el G-code para permitirlo. Consulte [Dialectos de G-code](../reference/gcode-dialects)
+trabajo en el G-code para permitirlo. Consulte [Dialectos de G-code](../reference/gcode-dialects.md)
 para ver los espacios reservados disponibles.
 :::
 <!-- prettier-ignore-end -->
