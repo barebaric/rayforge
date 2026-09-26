@@ -272,6 +272,32 @@ msgstr "Схема URL має бути однією з: {schemes}."
 msgid "Invalid URL: {error}"
 msgstr "Неправильний URL: {error}"
 
+#: rayforge/camera/source/base.py
+#, python-brace-format
+msgid "URL contains placeholder <{placeholder}>; replace it with a valid value"
+msgstr "URL містить заповнювач <{placeholder}>; замініть його на коректне значення."
+
+#: rayforge/camera/source/base.py
+msgid "URL is malformed"
+msgstr "URL має неправильний формат."
+
+#: rayforge/camera/source/base.py
+#, python-brace-format
+msgid "URL must start with one of: {schemes}"
+msgstr "URL має починатися з однієї з таких схем: {schemes}"
+
+#: rayforge/camera/source/base.py
+msgid "URL must include a host"
+msgstr "URL має містити хост."
+
+#: rayforge/camera/source/base.py
+msgid "URL contains an invalid host or port"
+msgstr "URL містить некоректний хост або порт."
+
+#: rayforge/camera/source/base.py
+msgid "URL must include a valid hostname or IP address"
+msgstr "URL має містити коректне ім’я хоста або IP-адресу."
+
 #: rayforge/core/varset/serialportvar.py
 msgid "Serial port cannot be empty."
 msgstr "Послідовний порт не може бути порожнім."

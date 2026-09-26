@@ -97,8 +97,8 @@ stream, RTSP) are added by entering the camera's URL directly.
    - Choose **HTTP snapshot URL**, **HTTP stream URL**, or **RTSP stream** as the source type
    - Enter a descriptive name
    - Enter the camera's URL, for example:
-     - HTTP snapshot: `http://192.168.1.50:8080/media/getCapturePhoto` (Creality Falcon A1 Pro — see
-       below)
+     - HTTP snapshot: `http://192.168.1.50:8080/media/getCapturePhoto` (also used by the Creality
+       Falcon A1 Pro — see below)
      - HTTP stream (MJPEG): `http://192.168.1.50/mjpeg`
      - RTSP: `rtsp://192.168.1.50/stream`
 
@@ -108,12 +108,13 @@ stream, RTSP) are added by entering the camera's URL directly.
 
 <!-- prettier-ignore-start -->
 :::info[Creality Falcon A1 Pro]
-When connected via USB, the Falcon A1 Pro shares a network interface over the USB connection and
-exposes a still-image snapshot endpoint at `http://<camera-ip>:8080/media/getCapturePhoto`. Find
-`<camera-ip>` (e.g. by checking your USB network adapter or the machine's touchscreen network info),
-add it as an **HTTP snapshot URL** source, and use that address. Using the camera over the Falcon's
-WiFi connection instead of USB has not been verified yet — if you've tried it, please share your
-findings on [GitHub](https://github.com/barebaric/rayforge) or [Discord](https://discord.gg/sTHNdTtpQJ).
+The Falcon A1 Pro device profile includes a preconfigured, disabled HTTP snapshot camera. In
+**Machine → Machine Settings → Camera**, select **Falcon A1 Pro Camera** and replace `<laser-ip>` in
+the **Source** URL with the machine's reachable IP address. The camera exposes a still-image
+endpoint at `http://<laser-ip>:8080/media/getCapturePhoto`. When connected via USB, the Falcon
+shares a network interface over USB; find the address from your USB network adapter or the machine's
+touchscreen network info. You can also use the IP address assigned to the Falcon on your Wi-Fi
+network. Commit the valid URL with **Enter** or by leaving the field, then enable the camera.
 :::
 <!-- prettier-ignore-end -->
 
@@ -129,9 +130,11 @@ Network camera URLs can be edited in place without losing calibration or alignme
 2. Edit the **Source** field with the new URL
 3. Press **Enter** or click elsewhere to apply
 
-Rayforge validates the URL against the camera's source type (for example, an RTSP source must start
-with `rtsp://` or `rtsps://`) and shows an error if it doesn't match. Calibration, alignment, and
-all other settings are preserved — only the source endpoint changes.
+Editing the URL immediately turns the camera off. The enable switch stays unavailable while the URL
+is invalid or has not yet been applied. Rayforge validates the URL against the camera's source type
+(for example, an RTSP source must start with `rtsp://` or `rtsps://`) and shows an error below the
+field if it doesn't match. After applying a valid URL, enable the camera again manually.
+Calibration, alignment, and all other settings are preserved — only the source endpoint changes.
 
 ---
 

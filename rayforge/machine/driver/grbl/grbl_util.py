@@ -665,13 +665,21 @@ def parse_msg(line: str) -> tuple[str, str] | None:
     return (key.strip(), value.strip())
 
 
+def parse_board(line: str) -> str | None:
+    """Parse grblHAL's ``[BOARD:...]`` build-info line."""
+    if not line.startswith("[BOARD:"):
+        return None
+    board = line[7:].rstrip("]").strip()
+    return board or None
+
+
 def extract_device_name(build_info: list[str]) -> str:
     """
     Extract a human-readable device name from build info lines.
 
     Checks ``[MSG:machine:...]`` / ``[MSG:mechine:...]`` lines first,
-    then falls back to the VER line's build-info field (e.g.
-    ``[VER:1.1h.ORTUR:]`` → ``"ORTUR"``).
+    then grblHAL's ``[BOARD:...]`` line, and finally the VER line's
+    build-info field (e.g. ``[VER:1.1h.ORTUR:]`` → ``"ORTUR"``).
     """
     for line in build_info:
         msg = parse_msg(line)
@@ -679,6 +687,10 @@ def extract_device_name(build_info: list[str]) -> str:
             key, value = msg
             if key.lower() in ("machine", "mechine"):
                 return value
+    for line in build_info:
+        board = parse_board(line)
+        if board is not None:
+            return board
     for line in build_info:
         ver = parse_ver(line)
         if ver is not None:
@@ -694,9 +706,10 @@ def extract_device_name_from_output(data: bytes) -> str | None:
     captured during device discovery.
 
     Returns the machine name when the output carries one (e.g. Grbl's
-    ``[MSG:machine:...]`` line or a ``[VER:...]`` build name). When no
-    name is present (e.g. a stock Grbl whose banner only states its
-    version), falls back to the first informative banner line — a
+    ``[MSG:machine:...]`` or grblHAL's ``[BOARD:...]`` line, or a
+    ``[VER:...]`` build name). When no name is present (e.g. a stock
+    Grbl whose banner only states its version), falls back to the first
+    informative banner line — a
     ``Grbl``/``GrblHAL`` version line, a build-info ``[VER:...]`` /
     ``[OPT:...]`` / ``[MSG:...]`` line, or a status report — skipping
     bare ``ok``/``error:`` acks that are merely responses to the

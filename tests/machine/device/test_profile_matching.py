@@ -479,3 +479,56 @@ def test_machine_name_matches_builtin_profile():
     assert matches
     assert matches[0].profile.name == "Sculpfun iCube 3W"
     assert certain_match(matches) is not None
+
+
+def test_board_name_matches_creality_falcon_a1_pro_profile():
+    """USB metadata and grblHAL's BOARD field suggest the A1 Pro."""
+    devices_dir = Path(rayforge.__file__).parent / "resources" / "devices"
+    mgr = DeviceProfileManager(source_dirs=[devices_dir])
+    mgr.discover()
+
+    identity = _identity_for(
+        "Creality Falcon",
+        "A1 Pro Laser Master",
+    )
+    matches = mgr.match_device(identity)
+
+    assert matches
+    assert {
+        match.profile.name
+        for match in matches
+        if match.confidence == CONFIDENCE_CERTAIN
+    } == {
+        "Creality Falcon A1",
+        "Creality Falcon A1 Pro",
+    }
+    assert certain_match(matches) is None
+
+
+def test_creality_falcon_a1_pro_heads():
+    devices_dir = Path(rayforge.__file__).parent / "resources" / "devices"
+    mgr = DeviceProfileManager(source_dirs=[devices_dir])
+    mgr.discover()
+
+    profile = mgr.get("Creality Falcon A1 Pro")
+    assert profile is not None
+    assert profile.machine_config.heads == [
+        {
+            "name": "20W Blue Diode Laser",
+            "tool_number": 0,
+            "max_power": 1000,
+            "wavelength_nm": 455,
+            "max_power_watts": 20,
+            "frame_power_percent": 0.1,
+            "spot_size_mm": [0.08, 0.1],
+        },
+        {
+            "name": "2W Infrared Laser",
+            "tool_number": 1,
+            "max_power": 1000,
+            "wavelength_nm": 1064,
+            "max_power_watts": 2,
+            "frame_power_percent": 0.1,
+            "spot_size_mm": [0.03, 0.03],
+        },
+    ]

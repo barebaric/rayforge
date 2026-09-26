@@ -271,6 +271,32 @@ msgstr "URL协议必须是以下之一：{schemes}。"
 msgid "Invalid URL: {error}"
 msgstr "无效的URL：{error}"
 
+#: rayforge/camera/source/base.py
+#, python-brace-format
+msgid "URL contains placeholder <{placeholder}>; replace it with a valid value"
+msgstr "URL 中包含占位符 <{placeholder}>；请将其替换为有效值。"
+
+#: rayforge/camera/source/base.py
+msgid "URL is malformed"
+msgstr "URL 格式错误。"
+
+#: rayforge/camera/source/base.py
+#, python-brace-format
+msgid "URL must start with one of: {schemes}"
+msgstr "URL 必须以以下某种协议开头：{schemes}"
+
+#: rayforge/camera/source/base.py
+msgid "URL must include a host"
+msgstr "URL 必须包含主机名。"
+
+#: rayforge/camera/source/base.py
+msgid "URL contains an invalid host or port"
+msgstr "URL 中的主机名或端口无效。"
+
+#: rayforge/camera/source/base.py
+msgid "URL must include a valid hostname or IP address"
+msgstr "URL 必须包含有效的主机名或 IP 地址。"
+
 #: rayforge/core/varset/serialportvar.py
 msgid "Serial port cannot be empty."
 msgstr "串口不能为空。"

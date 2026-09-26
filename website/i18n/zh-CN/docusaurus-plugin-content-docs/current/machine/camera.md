@@ -335,8 +335,13 @@ Rayforge 支持本地摄像头，以及通过 HTTP 快照、HTTP/MJPEG 流和 RT
    - RTSP：`rtsp://192.168.1.50/stream`
 4. 启用摄像头，实时画面应显示在画布上。
 
+Creality Falcon A1 Pro 设备配置文件已包含一个预配置但默认禁用的 HTTP 快照摄像头。在
+**机器 → 机器设置 → 摄像头**中选择 **Falcon A1 Pro Camera**，并将 **Source** URL 中的 `<laser-ip>`
+替换为机器可访问的 IP 地址。按 **Enter**
+或移开输入焦点以应用有效 URL，然后手动启用摄像头。也可以使用 Falcon 在 Wi-Fi 网络中获得的 IP 地址。
+
 之后可以直接编辑 **Source**
-字段，而不会丢失校准或对齐数据。Rayforge 会检查 URL 方案是否与来源类型匹配（`http://`、`https://`、`rtsp://`
+字段，而不会丢失校准或对齐数据。编辑 URL 会立即关闭摄像头；在有效 URL 应用之前，启用开关不可用。应用有效 URL 后，需要手动重新启用摄像头。Rayforge 会检查 URL 方案是否与来源类型匹配（`http://`、`https://`、`rtsp://`
 或 `rtsps://`）。
 
 ### 连接问题

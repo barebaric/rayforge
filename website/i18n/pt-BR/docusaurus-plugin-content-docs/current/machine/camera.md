@@ -377,9 +377,16 @@ informando diretamente a URL.
    - RTSP: `rtsp://192.168.1.50/stream`
 4. Ative a câmera. O vídeo deverá aparecer na tela.
 
-Depois, você pode editar o campo **Source** sem perder a calibração ou o alinhamento. O Rayforge
-verifica se o esquema da URL corresponde ao tipo de fonte (`http://`, `https://`, `rtsp://` ou
-`rtsps://`).
+O perfil do dispositivo Creality Falcon A1 Pro já inclui uma câmera de instantâneo HTTP
+pré-configurada e desativada. Em **Máquina → Configurações da Máquina → Câmera**, selecione **Falcon
+A1 Pro Camera** e substitua `<laser-ip>` na URL do campo **Source** pelo endereço IP acessível da
+máquina. Confirme a URL válida com **Enter** ou clicando fora do campo e, em seguida, ative a câmera
+manualmente. Você também pode usar o endereço IP atribuído ao Falcon na sua rede Wi-Fi.
+
+Depois, você pode editar o campo **Source** sem perder a calibração ou o alinhamento. Ao editar a
+URL, a câmera é desativada imediatamente. O botão de ativação permanece indisponível até que uma URL
+válida seja aplicada; depois, ative a câmera novamente manualmente. O Rayforge verifica se o esquema
+da URL corresponde ao tipo de fonte (`http://`, `https://`, `rtsp://` ou `rtsps://`).
 
 ### Problemas de conexão
 

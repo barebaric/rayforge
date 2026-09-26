@@ -968,6 +968,9 @@
   "page.devices.device.creality-falcon-a1.description": {
     "message": "Діодний лазерний гравер з робочою областю 381x305mm та ротаційною підтримкою"
   },
+  "page.devices.device.creality-falcon-a1-pro.description": {
+    "message": "20W діодний лазерний гравер з робочою областю 363x273mm, ротаційною підтримкою та додатковою підтримкою 2W інфрачервоного лазерного модуля"
+  },
   "page.devices.device.creality-falcon-10w.description": {
     "message": "10W діодний лазерний гравер з робочою областю 400x415mm"
   },
