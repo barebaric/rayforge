@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-24 22:18+0200\n"
+"POT-Creation-Date: 2026-09-26 21:08+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -631,6 +631,10 @@ msgstr "脉冲宽度（微秒）"
 msgid "Error during setup. You may need to edit device settings."
 msgstr "设置期间出错。您可能需要编辑设备设置。"
 
+#: rayforge/machine/driver/driver.py
+msgid "Unexpected error during setup. You may need to edit device settings."
+msgstr "设置时发生意外错误。您可能需要编辑设备设置。"
+
 #: rayforge/machine/driver/octoprint/octoprint_util.py
 msgid "Could not read the OctoPrint server version."
 msgstr "无法读取OctoPrint服务器版本。"
@@ -653,6 +657,7 @@ msgstr "将G代码提交到OctoPrint服务器"
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 #: rayforge/machine/driver/smoothie/smoothie_driver.py
 msgid "Machine Coordinates (G53)"
@@ -675,6 +680,7 @@ msgstr "OctoPrint服务器的IP地址或主机名"
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/smoothie/smoothie_driver.py
 msgid "Port"
 msgstr "端口"
@@ -810,23 +816,27 @@ msgstr "Marlin设备"
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
-msgid "Serial port for the device"
-msgstr "设备的串口"
+#: rayforge/machine/driver/grbl/serial_next.py
+msgid "Serial port or USB VID:PID (e.g. 0403:6001)"
+msgstr "串口或 USB VID:PID（例如 0403:6001）"
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Port must be configured."
 msgstr "必须配置端口。"
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Baud rate must be configured."
 msgstr "必须配置波特率。"
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Port not configured"
 msgstr "端口未配置"
 
@@ -855,11 +865,13 @@ msgstr "raw/telnet服务的TCP端口"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Poll device status during jobs"
 msgstr "轮询设备作业状态"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid ""
 "Periodically query the device for position and status while a job is "
 "running. Warning: Some devices have trouble maintaining a stable connection "
@@ -870,11 +882,13 @@ msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Deadlock detection"
 msgstr "死锁检测"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid ""
 "Detect and recover from serial communication deadlocks during jobs. If "
 "disabled, the driver will simply wait for the machine to respond. Disable if "
@@ -1431,14 +1445,17 @@ msgid "GRBL-compatible serial connection"
 msgstr "GRBL兼容的串口连接"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "GRBL device"
 msgstr "GRBL设备"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "RX Buffer Size Override"
 msgstr "RX缓冲区大小覆盖"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid ""
 "Force a specific RX buffer size in bytes. Set to 0 to auto-detect from the "
 "device."
@@ -1446,18 +1463,21 @@ msgstr "强制指定RX缓冲区大小（字节）。设置为0以从设备自动
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Unknown Settings"
 msgstr "未知设置"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Settings reported by the device not in the standard list."
 msgstr "设备报告的设置不在标准列表中。"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Unknown setting from device"
 msgstr "来自设备的未知设置"
@@ -1485,6 +1505,18 @@ msgstr "采用简单乒乓协议的GRBL串口（无缓冲计数）"
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
 msgid "Baudrate must be configured."
 msgstr "必须配置波特率。"
+
+#: rayforge/machine/driver/grbl/serial_next.py
+msgid "GRBL (Rust)"
+msgstr "GRBL（Rust）"
+
+#: rayforge/machine/driver/grbl/serial_next.py
+msgid "GRBL-compatible serial connection (Rust driver)"
+msgstr "兼容 GRBL 的串口连接（Rust 驱动）"
+
+#: rayforge/machine/driver/grbl/serial_next.py
+msgid "Driver is not set up. Check the port settings."
+msgstr "驱动未设置。请检查端口设置。"
 
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "GRBL (Network)"
@@ -1882,6 +1914,20 @@ msgid "Max Pulse Width"
 msgstr "最大脉冲宽度"
 
 #: rayforge/machine/models/laser.py
+msgid "Pointer Offset Enabled"
+msgstr "光点偏移已启用"
+
+#: rayforge/machine/models/laser.py
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Pointer Offset X"
+msgstr "光点偏移 X"
+
+#: rayforge/machine/models/laser.py
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Pointer Offset Y"
+msgstr "光点偏移 Y"
+
+#: rayforge/machine/models/laser.py
 #: rayforge/ui_gtk/machine/laser_control_widget.py
 #: rayforge/ui_gtk/machine/wizard_pages/head_page.py
 #: rayforge/ui_gtk/machine/capabilities_page.py
@@ -2271,6 +2317,19 @@ msgstr "取景失败：{error}"
 msgid "Sending failed: {error}"
 msgstr "发送失败：{error}"
 
+#: rayforge/machine/cmd.py
+msgid ""
+"Pointer alignment shifts the frame partly outside the machine travel; the "
+"trace may stop short of a side."
+msgstr "光点对齐会使边框部分超出机器行程；描边可能会在某一边提前停止。"
+
+#: rayforge/machine/transport/serial.py
+#, python-brace-format
+msgid ""
+"No USB serial device with VID:PID {spec} found. Is the device connected and "
+"powered on?"
+msgstr "未找到 VID:PID 为 {spec} 的 USB 串口设备。设备是否已连接并通电？"
+
 #: rayforge/machine/transport/serial.py
 #, python-brace-format
 msgid ""
@@ -2374,6 +2433,7 @@ msgstr "此机器配置文件及其所有设置将被永久删除。此操作无
 #: rayforge/ui_gtk/machine/lbdev_import_dialog.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/machine/template_selector.py
+#: rayforge/ui_gtk/varset/adapter/combo.py
 #: rayforge/ui_gtk/addon_manager/addon_dialog.py
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
@@ -2954,6 +3014,7 @@ msgid ""
 msgstr "语言将在重启 Rayforge 后生效。是否现在重启？"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py rayforge/ui_gtk/project_cmd.py
 msgid "_Cancel"
 msgstr "取消(_C)"
@@ -3853,6 +3914,7 @@ msgid "Clear All Points"
 msgstr "清除所有点"
 
 #: rayforge/ui_gtk/camera/alignment_widget.py
+#: rayforge/ui_gtk/varset/adapter/combo.py
 #: rayforge/ui_gtk/doceditor/step_type_selection_dialog.py
 msgid "Apply"
 msgstr "应用"
@@ -4037,6 +4099,16 @@ msgid "Settings for the frame outline operation that traces the job boundary."
 msgstr "追踪作业边界的边框轮廓操作设置。"
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Pointer Offset"
+msgstr "光点偏移"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid ""
+"Compensation for a pointer laser mounted at a fixed offset from the cutting "
+"beam."
+msgstr "补偿安装在切割光束固定偏移位置的定位激光笔。"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
 msgid "G-code tool number (e.g., T0, T1)"
 msgstr "G代码工具编号（例如：T0、T1）"
 
@@ -4146,6 +4218,24 @@ msgstr "角落暂停"
 msgid ""
 "Pause duration in seconds at each corner of the frame outline. 0 to disable"
 msgstr "边框轮廓每个角落的暂停时间（秒）。0 表示禁用"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Use Pointer Offset"
+msgstr "使用光点偏移"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid ""
+"Compensate when setting the work zero at the current position, so the origin "
+"lands where the pointer dot marks the stock"
+msgstr "在当前位置设置工作原点时进行补偿，使原点落在光点标记材料的位置"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Distance from the beam spot to the pointer dot along the machine X axis"
+msgstr "沿机床 X 轴方向从光束落点到光点的距离"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Distance from the beam spot to the pointer dot along the machine Y axis"
+msgstr "沿机床 Y 轴方向从光束落点到光点的距离"
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 msgid "Spindle Properties"
@@ -4427,6 +4517,10 @@ msgid "Move to Position"
 msgstr "移动到位置"
 
 #: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Pointer Alignment"
+msgstr "光点对齐"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
 msgid "Move to Lower-Left of Selection or Workarea"
 msgstr "移动到选择或工作区域的左下角"
 
@@ -4445,6 +4539,20 @@ msgstr "移动到活动WCS原点"
 #: rayforge/ui_gtk/machine/move_to_popover.py
 msgid "Move"
 msgstr "移动"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Aim moves at the pointer dot instead of the beam"
+msgstr "以光点而非光束为移动目标"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Requires a pointer offset on the laser head"
+msgstr "需要在激光头上设置光点偏移"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid ""
+"The shifted target is outside the machine travel; moving to the nearest "
+"reachable position instead."
+msgstr "偏移后的目标超出机器行程；将移动到最近的可到达位置。"
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "Edit Macro"
@@ -5116,6 +5224,22 @@ msgstr "反转Z轴方向"
 #: rayforge/ui_gtk/machine/hardware_page.py
 msgid "Enable if a positive Z command (e.g., G0 Z10) moves the head down"
 msgstr "如果正Z命令（例如 G0 Z10）使激光头向下移动，请启用此项"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Z Min"
+msgstr "Z 最小值"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Lowest Z coordinate (machine frame)"
+msgstr "最低 Z 坐标（机床坐标系）"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Z Max"
+msgstr "Z 最大值"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Highest Z coordinate (machine frame)"
+msgstr "最高 Z 坐标（机床坐标系）"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
@@ -6247,6 +6371,32 @@ msgstr "添加参数"
 msgid "New Parameter"
 msgstr "新参数"
 
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Match by USB VID:PID…"
+msgstr "按 USB VID:PID 匹配…"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "First USB device with this VID:PID"
+msgstr "第一个具有此 VID:PID 的 USB 设备"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "USB VID:PID (e.g. 0403:6001)"
+msgstr "USB VID:PID（例如 0403:6001）"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Match by USB VID:PID"
+msgstr "按 USB VID:PID 匹配"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid ""
+"Always use the first USB serial device with this vendor and product ID. This "
+"keeps the connection working when the operating system reassigns port "
+"numbers. If several identical devices are connected, the first one on the "
+"bus is used."
+msgstr ""
+"始终使用第一个具有此供应商和产品 ID 的 USB 串口设备。这样即使操作系统重新分配"
+"端口号，连接仍能保持正常。如果连接了多个相同的设备，将使用总线上的第一个。"
+
 #: rayforge/ui_gtk/varset/adapter/appkey.py
 msgid "Request Access"
 msgstr "请求访问"
@@ -6689,6 +6839,29 @@ msgstr "切换移动路径可见性"
 #: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle no-go zone visibility"
 msgstr "切换禁入区域可见性"
+
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
+msgid "Pointer alignment is on"
+msgstr "光点对齐已开启"
+
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
+msgid ""
+"Dry-Run with Pointer traces the toolpath with the pointer dot: the job runs "
+"with the pointer offset applied and the beam is displaced by it, with all "
+"laser power capped at the framing power so the trace does not burn. Turning "
+"alignment off burns the job normally with the beam at the WCS positions."
+msgstr ""
+"光点空走描边会沿刀路用光点描边：任务在应用光点偏移的情况下运行，光束因此偏"
+"移，且所有激光功率被限制在边框功率以下，以免描边烧灼材料。关闭对齐后，任务将"
+"正常烧灼，光束位于 WCS 坐标位置。"
+
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
+msgid "Dry-Run with _Pointer"
+msgstr "光点空走(_P)"
+
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
+msgid "_Turn Off and Burn"
+msgstr "_关闭并烧灼"
 
 #: rayforge/ui_gtk/shared/preferences_group.py
 msgid "No parameters"
@@ -7826,6 +7999,12 @@ msgstr "手动编辑偏移"
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Current Position"
 msgstr "当前位置"
+
+#: rayforge/ui_gtk/doceditor/bottom_panel.py
+msgid ""
+"Pointer Alignment: aim moves and zeroing at the pointer dot instead of the "
+"cutting beam"
+msgstr "光点对齐：以光点而非切割光束为移动和原点目标"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Click Canvas to Move Head"

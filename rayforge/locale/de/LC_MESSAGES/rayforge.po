@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-24 22:18+0200\n"
+"POT-Creation-Date: 2026-09-26 21:08+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -656,6 +656,12 @@ msgstr ""
 "Fehler beim Einrichten. Möglicherweise müssen die Geräteeinstellungen "
 "bearbeitet werden."
 
+#: rayforge/machine/driver/driver.py
+msgid "Unexpected error during setup. You may need to edit device settings."
+msgstr ""
+"Unerwarteter Fehler beim Einrichten. Möglicherweise müssen Sie die Geräte-"
+"Einstellungen bearbeiten."
+
 #: rayforge/machine/driver/octoprint/octoprint_util.py
 msgid "Could not read the OctoPrint server version."
 msgstr "OctoPrint-Serverversion konnte nicht gelesen werden."
@@ -678,6 +684,7 @@ msgstr "G-Code an einen OctoPrint-Server senden"
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 #: rayforge/machine/driver/smoothie/smoothie_driver.py
 msgid "Machine Coordinates (G53)"
@@ -700,6 +707,7 @@ msgstr "IP-Adresse oder Hostname des OctoPrint-Servers"
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/smoothie/smoothie_driver.py
 msgid "Port"
 msgstr "Port"
@@ -857,23 +865,27 @@ msgstr "Marlin-Gerät"
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
-msgid "Serial port for the device"
-msgstr "Serieller Port für das Gerät"
+#: rayforge/machine/driver/grbl/serial_next.py
+msgid "Serial port or USB VID:PID (e.g. 0403:6001)"
+msgstr "Serieller Port oder USB VID:PID (z. B. 0403:6001)"
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Port must be configured."
 msgstr "Port muss konfiguriert werden."
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Baud rate must be configured."
 msgstr "Baudrate muss konfiguriert werden."
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Port not configured"
 msgstr "Port nicht konfiguriert."
 
@@ -902,11 +914,13 @@ msgstr "TCP-Port für den Raw/Telnet-Dienst"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Poll device status during jobs"
 msgstr "Gerätestatus während Aufträgen abfragen"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid ""
 "Periodically query the device for position and status while a job is "
 "running. Warning: Some devices have trouble maintaining a stable connection "
@@ -918,11 +932,13 @@ msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Deadlock detection"
 msgstr "Deadlock-Erkennung"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid ""
 "Detect and recover from serial communication deadlocks during jobs. If "
 "disabled, the driver will simply wait for the machine to respond. Disable if "
@@ -1580,14 +1596,17 @@ msgid "GRBL-compatible serial connection"
 msgstr "GRBL-kompatible serielle Verbindung"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "GRBL device"
 msgstr "GRBL-Gerät"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "RX Buffer Size Override"
 msgstr "RX-Puffergröße überschreiben"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid ""
 "Force a specific RX buffer size in bytes. Set to 0 to auto-detect from the "
 "device."
@@ -1597,12 +1616,14 @@ msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Unknown Settings"
 msgstr "Unbekannte Einstellungen"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Settings reported by the device not in the standard list."
 msgstr ""
@@ -1611,6 +1632,7 @@ msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Unknown setting from device"
 msgstr "Unbekannte Einstellung vom Gerät"
@@ -1642,6 +1664,18 @@ msgstr "GRBL-Seriell mit einfachem Ping-Pong-Protokoll (ohne Pufferzählung)"
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
 msgid "Baudrate must be configured."
 msgstr "Baudrate muss konfiguriert werden."
+
+#: rayforge/machine/driver/grbl/serial_next.py
+msgid "GRBL (Rust)"
+msgstr "GRBL (Rust)"
+
+#: rayforge/machine/driver/grbl/serial_next.py
+msgid "GRBL-compatible serial connection (Rust driver)"
+msgstr "GRBL-kompatible serielle Verbindung (Rust-Treiber)"
+
+#: rayforge/machine/driver/grbl/serial_next.py
+msgid "Driver is not set up. Check the port settings."
+msgstr "Treiber ist nicht eingerichtet. Überprüfen Sie die Port-Einstellungen."
 
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "GRBL (Network)"
@@ -2043,6 +2077,20 @@ msgstr "Min. Pulsbreite"
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 msgid "Max Pulse Width"
 msgstr "Max. Pulsbreite"
+
+#: rayforge/machine/models/laser.py
+msgid "Pointer Offset Enabled"
+msgstr "Pointer-Versatz aktiviert"
+
+#: rayforge/machine/models/laser.py
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Pointer Offset X"
+msgstr "Pointer-Versatz X"
+
+#: rayforge/machine/models/laser.py
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Pointer Offset Y"
+msgstr "Pointer-Versatz Y"
 
 #: rayforge/machine/models/laser.py
 #: rayforge/ui_gtk/machine/laser_control_widget.py
@@ -2450,6 +2498,23 @@ msgstr "Rahmung fehlgeschlagen: {error}"
 msgid "Sending failed: {error}"
 msgstr "Senden fehlgeschlagen: {error}"
 
+#: rayforge/machine/cmd.py
+msgid ""
+"Pointer alignment shifts the frame partly outside the machine travel; the "
+"trace may stop short of a side."
+msgstr ""
+"Die Pointer-Ausrichtung verschiebt den Rahmen teilweise außerhalb des "
+"Maschinenfahrbereichs; der Umriss kann an einer Seite vorzeitig enden."
+
+#: rayforge/machine/transport/serial.py
+#, python-brace-format
+msgid ""
+"No USB serial device with VID:PID {spec} found. Is the device connected and "
+"powered on?"
+msgstr ""
+"Kein USB-Seriell-Gerät mit VID:PID {spec} gefunden. Ist das Gerät "
+"angeschlossen und eingeschaltet?"
+
 #: rayforge/machine/transport/serial.py
 #, python-brace-format
 msgid ""
@@ -2559,6 +2624,7 @@ msgstr ""
 #: rayforge/ui_gtk/machine/lbdev_import_dialog.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/machine/template_selector.py
+#: rayforge/ui_gtk/varset/adapter/combo.py
 #: rayforge/ui_gtk/addon_manager/addon_dialog.py
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
@@ -3169,6 +3235,7 @@ msgstr ""
 "jetzt neu starten?"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py rayforge/ui_gtk/project_cmd.py
 msgid "_Cancel"
 msgstr "_Abbrechen"
@@ -4089,6 +4156,7 @@ msgid "Clear All Points"
 msgstr "Alle Punkte löschen"
 
 #: rayforge/ui_gtk/camera/alignment_widget.py
+#: rayforge/ui_gtk/varset/adapter/combo.py
 #: rayforge/ui_gtk/doceditor/step_type_selection_dialog.py
 msgid "Apply"
 msgstr "Anwenden"
@@ -4283,6 +4351,18 @@ msgstr ""
 "nachfährt."
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Pointer Offset"
+msgstr "Pointer-Versatz"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid ""
+"Compensation for a pointer laser mounted at a fixed offset from the cutting "
+"beam."
+msgstr ""
+"Kompensierung für einen Laser-Pointer, der mit festem Versatz zum "
+"Schneidstrahl montiert ist."
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
 msgid "G-code tool number (e.g., T0, T1)"
 msgstr "G-Code-Werkzeugnummer (z. B. T0, T1)"
 
@@ -4400,6 +4480,28 @@ msgstr "Pause an Ecken"
 msgid ""
 "Pause duration in seconds at each corner of the frame outline. 0 to disable"
 msgstr "Pausendauer in Sekunden an jeder Ecke des Rahmens. 0 zum Deaktivieren"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Use Pointer Offset"
+msgstr "Pointer-Versatz verwenden"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid ""
+"Compensate when setting the work zero at the current position, so the origin "
+"lands where the pointer dot marks the stock"
+msgstr ""
+"Beim Setzen des Arbeitsnullpunkts auf die aktuelle Position kompensieren, "
+"sodass der Ursprung dort landet, wo der Pointer-Punkt das Material markiert"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Distance from the beam spot to the pointer dot along the machine X axis"
+msgstr ""
+"Abstand vom Brennpunkt zum Pointer-Punkt entlang der X-Achse der Maschine"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Distance from the beam spot to the pointer dot along the machine Y axis"
+msgstr ""
+"Abstand vom Brennpunkt zum Pointer-Punkt entlang der Y-Achse der Maschine"
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 msgid "Spindle Properties"
@@ -4690,6 +4792,10 @@ msgid "Move to Position"
 msgstr "Zur Position fahren"
 
 #: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Pointer Alignment"
+msgstr "Pointer-Ausrichtung"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
 msgid "Move to Lower-Left of Selection or Workarea"
 msgstr "Zur unteren linken Ecke der Auswahl oder des Arbeitsbereichs bewegen"
 
@@ -4708,6 +4814,22 @@ msgstr "Zum Ursprung des aktiven WCS bewegen"
 #: rayforge/ui_gtk/machine/move_to_popover.py
 msgid "Move"
 msgstr "Bewegen"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Aim moves at the pointer dot instead of the beam"
+msgstr "Bewegungen am Pointer-Punkt statt am Strahl ausrichten"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Requires a pointer offset on the laser head"
+msgstr "Erfordert einen Pointer-Versatz am Laserkopf"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid ""
+"The shifted target is outside the machine travel; moving to the nearest "
+"reachable position instead."
+msgstr ""
+"Das verschobene Ziel liegt außerhalb des Maschinenfahrbereichs; stattdessen "
+"wird die nächstgelegene erreichbare Position angefahren."
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "Edit Macro"
@@ -5422,6 +5544,22 @@ msgid "Enable if a positive Z command (e.g., G0 Z10) moves the head down"
 msgstr ""
 "Aktivieren, wenn ein positiver Z-Befehl (z. B. G0 Z10) den Kopf nach unten "
 "bewegt"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Z Min"
+msgstr "Z Min"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Lowest Z coordinate (machine frame)"
+msgstr "Niedrigste Z-Koordinate (Maschinenbezug)"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Z Max"
+msgstr "Z Max"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Highest Z coordinate (machine frame)"
+msgstr "Höchste Z-Koordinate (Maschinenbezug)"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
@@ -6607,6 +6745,34 @@ msgstr "Parameter hinzufügen"
 msgid "New Parameter"
 msgstr "Neuer Parameter"
 
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Match by USB VID:PID…"
+msgstr "Übereinstimmung per USB VID:PID…"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "First USB device with this VID:PID"
+msgstr "Erstes USB-Gerät mit dieser VID:PID"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "USB VID:PID (e.g. 0403:6001)"
+msgstr "USB VID:PID (z. B. 0403:6001)"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Match by USB VID:PID"
+msgstr "Übereinstimmung per USB VID:PID"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid ""
+"Always use the first USB serial device with this vendor and product ID. This "
+"keeps the connection working when the operating system reassigns port "
+"numbers. If several identical devices are connected, the first one on the "
+"bus is used."
+msgstr ""
+"Immer das erste USB-Seriell-Gerät mit dieser Hersteller- und Produkt-ID "
+"verwenden. So bleibt die Verbindung bestehen, auch wenn das Betriebssystem "
+"die Port-Nummern neu zuweist. Bei mehreren identischen Geräten wird das "
+"erste am Bus verwendet."
+
 #: rayforge/ui_gtk/varset/adapter/appkey.py
 msgid "Request Access"
 msgstr "Zugang anfordern"
@@ -7066,6 +7232,31 @@ msgstr "Sichtbarkeit der Verfahrwege umschalten"
 #: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle no-go zone visibility"
 msgstr "Sperrzonensichtbarkeit umschalten"
+
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
+msgid "Pointer alignment is on"
+msgstr "Pointer-Ausrichtung ist aktiv"
+
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
+msgid ""
+"Dry-Run with Pointer traces the toolpath with the pointer dot: the job runs "
+"with the pointer offset applied and the beam is displaced by it, with all "
+"laser power capped at the framing power so the trace does not burn. Turning "
+"alignment off burns the job normally with the beam at the WCS positions."
+msgstr ""
+"Probelauf mit Pointer zeichnet den Werkzeugweg mit dem Pointer-Punkt nach: "
+"Der Auftrag läuft mit angewendetem Pointer-Versatz und der Strahl wird "
+"entsprechend verschoben, wobei alle Laserleistungen auf die Rahmenleistung "
+"begrenzt werden, damit der Umriss nicht brennt. Wird die Ausrichtung "
+"deaktiviert, brennt der Auftrag normal mit dem Strahl an den WCS-Positionen."
+
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
+msgid "Dry-Run with _Pointer"
+msgstr "Probelauf mit _Pointer"
+
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
+msgid "_Turn Off and Burn"
+msgstr "_Ausschalten und Brennen"
 
 #: rayforge/ui_gtk/shared/preferences_group.py
 msgid "No parameters"
@@ -8240,6 +8431,14 @@ msgstr "Offsets manuell bearbeiten"
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Current Position"
 msgstr "Aktuelle Position"
+
+#: rayforge/ui_gtk/doceditor/bottom_panel.py
+msgid ""
+"Pointer Alignment: aim moves and zeroing at the pointer dot instead of the "
+"cutting beam"
+msgstr ""
+"Pointer-Ausrichtung: Bewegungen und Nullpunkt am Pointer-Punkt statt am "
+"Schneidstrahl ausrichten"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Click Canvas to Move Head"

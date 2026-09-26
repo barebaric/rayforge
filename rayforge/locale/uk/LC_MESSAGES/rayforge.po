@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-24 22:18+0200\n"
+"POT-Creation-Date: 2026-09-26 21:08+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Ukrainian\n"
@@ -646,6 +646,12 @@ msgstr ""
 "Помилка під час налаштування. Можливо, потрібно редагувати налаштування "
 "пристрою."
 
+#: rayforge/machine/driver/driver.py
+msgid "Unexpected error during setup. You may need to edit device settings."
+msgstr ""
+"Неочікувана помилка під час налаштування. Можливо, потрібно змінити "
+"параметри пристрою."
+
 #: rayforge/machine/driver/octoprint/octoprint_util.py
 msgid "Could not read the OctoPrint server version."
 msgstr "Не вдалося прочитати версію сервера OctoPrint."
@@ -668,6 +674,7 @@ msgstr "Надіслати G-код на сервер OctoPrint"
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 #: rayforge/machine/driver/smoothie/smoothie_driver.py
 msgid "Machine Coordinates (G53)"
@@ -690,6 +697,7 @@ msgstr "IP-адреса або ім'я хоста сервера OctoPrint"
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/smoothie/smoothie_driver.py
 msgid "Port"
 msgstr "Порт"
@@ -841,23 +849,27 @@ msgstr "Пристрій Marlin"
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
-msgid "Serial port for the device"
-msgstr "Послідовний порт для пристрою"
+#: rayforge/machine/driver/grbl/serial_next.py
+msgid "Serial port or USB VID:PID (e.g. 0403:6001)"
+msgstr "Послідовний порт або USB VID:PID (напр. 0403:6001)"
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Port must be configured."
 msgstr "Порт має бути налаштований."
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Baud rate must be configured."
 msgstr "Швидкість передачі має бути налаштована."
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Port not configured"
 msgstr "Порт не налаштовано"
 
@@ -886,11 +898,13 @@ msgstr "TCP-порт для служби raw/telnet"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Poll device status during jobs"
 msgstr "Опитувати статус пристрою під час завдань"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid ""
 "Periodically query the device for position and status while a job is "
 "running. Warning: Some devices have trouble maintaining a stable connection "
@@ -902,11 +916,13 @@ msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Deadlock detection"
 msgstr "Виявлення взаємоблокування"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid ""
 "Detect and recover from serial communication deadlocks during jobs. If "
 "disabled, the driver will simply wait for the machine to respond. Disable if "
@@ -1549,14 +1565,17 @@ msgid "GRBL-compatible serial connection"
 msgstr "Сумісний з GRBL послідовний зв'язок"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "GRBL device"
 msgstr "Пристрій GRBL"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "RX Buffer Size Override"
 msgstr "Перевизначення розміру буфера RX"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid ""
 "Force a specific RX buffer size in bytes. Set to 0 to auto-detect from the "
 "device."
@@ -1566,18 +1585,21 @@ msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Unknown Settings"
 msgstr "Невідомі налаштування"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Settings reported by the device not in the standard list."
 msgstr "Налаштування, повідомлені пристроєм, відсутні в стандартному списку."
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Unknown setting from device"
 msgstr "Невідоме налаштування від пристрою"
@@ -1610,6 +1632,18 @@ msgstr ""
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
 msgid "Baudrate must be configured."
 msgstr "Швидкість передачі має бути налаштована."
+
+#: rayforge/machine/driver/grbl/serial_next.py
+msgid "GRBL (Rust)"
+msgstr "GRBL (Rust)"
+
+#: rayforge/machine/driver/grbl/serial_next.py
+msgid "GRBL-compatible serial connection (Rust driver)"
+msgstr "Послідовне з'єднання, сумісне з GRBL (драйвер Rust)"
+
+#: rayforge/machine/driver/grbl/serial_next.py
+msgid "Driver is not set up. Check the port settings."
+msgstr "Драйвер не налаштовано. Перевірте параметри порту."
 
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "GRBL (Network)"
@@ -2012,6 +2046,20 @@ msgid "Max Pulse Width"
 msgstr "Макс. ширина імпульсу"
 
 #: rayforge/machine/models/laser.py
+msgid "Pointer Offset Enabled"
+msgstr "Зміщення вказівника увімкнено"
+
+#: rayforge/machine/models/laser.py
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Pointer Offset X"
+msgstr "Зміщення вказівника X"
+
+#: rayforge/machine/models/laser.py
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Pointer Offset Y"
+msgstr "Зміщення вказівника Y"
+
+#: rayforge/machine/models/laser.py
 #: rayforge/ui_gtk/machine/laser_control_widget.py
 #: rayforge/ui_gtk/machine/wizard_pages/head_page.py
 #: rayforge/ui_gtk/machine/capabilities_page.py
@@ -2412,6 +2460,23 @@ msgstr "Не вдалося виконати обрамлення: {error}"
 msgid "Sending failed: {error}"
 msgstr "Не вдалося надіслати: {error}"
 
+#: rayforge/machine/cmd.py
+msgid ""
+"Pointer alignment shifts the frame partly outside the machine travel; the "
+"trace may stop short of a side."
+msgstr ""
+"Вирівнювання за вказівником частково зміщує рамку за межі ходу верстата; "
+"обведення може зупинитися, не дійшовши до однієї зі сторін."
+
+#: rayforge/machine/transport/serial.py
+#, python-brace-format
+msgid ""
+"No USB serial device with VID:PID {spec} found. Is the device connected and "
+"powered on?"
+msgstr ""
+"Не знайдено жодного USB-послідовного пристрою з VID:PID {spec}. Чи "
+"підключено та чи увімкнено пристрій?"
+
 #: rayforge/machine/transport/serial.py
 #, python-brace-format
 msgid ""
@@ -2519,6 +2584,7 @@ msgstr ""
 #: rayforge/ui_gtk/machine/lbdev_import_dialog.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/machine/template_selector.py
+#: rayforge/ui_gtk/varset/adapter/combo.py
 #: rayforge/ui_gtk/addon_manager/addon_dialog.py
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
@@ -3118,6 +3184,7 @@ msgstr ""
 "Мова набуде чинності після перезапуску Rayforge. Бажаєте перезапустити зараз?"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py rayforge/ui_gtk/project_cmd.py
 msgid "_Cancel"
 msgstr "_Скасувати"
@@ -4037,6 +4104,7 @@ msgid "Clear All Points"
 msgstr "Очистити всі точки"
 
 #: rayforge/ui_gtk/camera/alignment_widget.py
+#: rayforge/ui_gtk/varset/adapter/combo.py
 #: rayforge/ui_gtk/doceditor/step_type_selection_dialog.py
 msgid "Apply"
 msgstr "Застосувати"
@@ -4229,6 +4297,18 @@ msgid "Settings for the frame outline operation that traces the job boundary."
 msgstr "Налаштування операції обведення контуру меж завдання."
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Pointer Offset"
+msgstr "Зміщення вказівника"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid ""
+"Compensation for a pointer laser mounted at a fixed offset from the cutting "
+"beam."
+msgstr ""
+"Компенсація для вказівного лазера, встановленого з фіксованим зміщенням від "
+"ріжучого променя."
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
 msgid "G-code tool number (e.g., T0, T1)"
 msgstr "Номер інструменту G-коду (наприклад, T0, T1)"
 
@@ -4346,6 +4426,26 @@ msgstr "Пауза на кутах"
 msgid ""
 "Pause duration in seconds at each corner of the frame outline. 0 to disable"
 msgstr "Тривалість паузи в секундах на кожному куті контуру. 0 для вимкнення"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Use Pointer Offset"
+msgstr "Використовувати зміщення вказівника"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid ""
+"Compensate when setting the work zero at the current position, so the origin "
+"lands where the pointer dot marks the stock"
+msgstr ""
+"Компенсувати під час встановлення робочого нуля в поточній позиції, щоб "
+"початок координат опинився там, де точка вказівника позначає заготовку"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Distance from the beam spot to the pointer dot along the machine X axis"
+msgstr "Відстань від точки променя до точки вказівника вздовж осі X верстата"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Distance from the beam spot to the pointer dot along the machine Y axis"
+msgstr "Відстань від точки променя до точки вказівника вздовж осі Y верстата"
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 msgid "Spindle Properties"
@@ -4634,6 +4734,10 @@ msgid "Move to Position"
 msgstr "Перемістити до позиції"
 
 #: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Pointer Alignment"
+msgstr "Вирівнювання за вказівником"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
 msgid "Move to Lower-Left of Selection or Workarea"
 msgstr "Перемістити в нижній лівий кут вибраного або робочої області"
 
@@ -4652,6 +4756,22 @@ msgstr "Перемістити до початку активного WCS"
 #: rayforge/ui_gtk/machine/move_to_popover.py
 msgid "Move"
 msgstr "Перемістити"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Aim moves at the pointer dot instead of the beam"
+msgstr "Наводити переміщення на точку вказівника замість променя"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Requires a pointer offset on the laser head"
+msgstr "Потребує зміщення вказівника на лазерній головці"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid ""
+"The shifted target is outside the machine travel; moving to the nearest "
+"reachable position instead."
+msgstr ""
+"Зміщена ціль поза межами ходу верстата; натомість рух до найближчої досяжної "
+"позиції."
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "Edit Macro"
@@ -5354,6 +5474,22 @@ msgid "Enable if a positive Z command (e.g., G0 Z10) moves the head down"
 msgstr ""
 "Увімкніть, якщо позитивна команда Z (наприклад, G0 Z10) переміщує головку "
 "вниз"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Z Min"
+msgstr "Z мін."
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Lowest Z coordinate (machine frame)"
+msgstr "Найнижча координата Z (система координат верстата)"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Z Max"
+msgstr "Z макс."
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Highest Z coordinate (machine frame)"
+msgstr "Найвища координата Z (система координат верстата)"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
@@ -6536,6 +6672,34 @@ msgstr "Додати параметр"
 msgid "New Parameter"
 msgstr "Новий параметр"
 
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Match by USB VID:PID…"
+msgstr "Збіг за USB VID:PID…"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "First USB device with this VID:PID"
+msgstr "Перший USB-пристрій із цим VID:PID"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "USB VID:PID (e.g. 0403:6001)"
+msgstr "USB VID:PID (напр. 0403:6001)"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Match by USB VID:PID"
+msgstr "Збіг за USB VID:PID"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid ""
+"Always use the first USB serial device with this vendor and product ID. This "
+"keeps the connection working when the operating system reassigns port "
+"numbers. If several identical devices are connected, the first one on the "
+"bus is used."
+msgstr ""
+"Завжди використовувати перший USB-послідовний пристрій із цим "
+"ідентифікатором виробника та продукту. Це забезпечує роботу з'єднання, коли "
+"операційна система перепризначає номери портів. Якщо підключено кілька "
+"однакових пристроїв, використовується перший на шині."
+
 #: rayforge/ui_gtk/varset/adapter/appkey.py
 msgid "Request Access"
 msgstr "Запитати доступ"
@@ -6986,6 +7150,32 @@ msgstr "Перемкнути видимість холостих переміщ�
 #: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle no-go zone visibility"
 msgstr "Перемкнути видимість забороненої зони"
+
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
+msgid "Pointer alignment is on"
+msgstr "Вирівнювання за вказівником увімкнено"
+
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
+msgid ""
+"Dry-Run with Pointer traces the toolpath with the pointer dot: the job runs "
+"with the pointer offset applied and the beam is displaced by it, with all "
+"laser power capped at the framing power so the trace does not burn. Turning "
+"alignment off burns the job normally with the beam at the WCS positions."
+msgstr ""
+"Пробний запуск із вказівником обводить траєкторію інструменту точкою "
+"вказівника: завдання виконується із застосованим зміщенням вказівника, і "
+"промінь зміщується на нього, причому вся потужність лазера обмежена "
+"потужністю обведення рамки, щоб обведення не пропалювало матеріал. Якщо "
+"вимкнути вирівнювання, завдання пропалюється як завжди, з променем у "
+"позиціях WCS."
+
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
+msgid "Dry-Run with _Pointer"
+msgstr "Пробний запуск із _вказівником"
+
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
+msgid "_Turn Off and Burn"
+msgstr "_Вимкнути й пропалити"
 
 #: rayforge/ui_gtk/shared/preferences_group.py
 msgid "No parameters"
@@ -8147,6 +8337,14 @@ msgstr "Редагувати зміщення вручну"
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Current Position"
 msgstr "Поточна позиція"
+
+#: rayforge/ui_gtk/doceditor/bottom_panel.py
+msgid ""
+"Pointer Alignment: aim moves and zeroing at the pointer dot instead of the "
+"cutting beam"
+msgstr ""
+"Вирівнювання за вказівником: наводити переміщення та нуль на точку "
+"вказівника замість ріжучого променя"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Click Canvas to Move Head"
