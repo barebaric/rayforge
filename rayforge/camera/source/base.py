@@ -128,7 +128,8 @@ def validate_source_uri(source_type: CameraSourceType, uri: str) -> str | None:
     placeholder = re.search(r"<([^<>]+)>", uri)
     if placeholder:
         return _(
-            "URL contains placeholder <{placeholder}>; replace it with a valid value"
+            "URL contains placeholder <{placeholder}>; "
+            "replace it with a valid value"
         ).format(placeholder=placeholder.group(1))
 
     try:
