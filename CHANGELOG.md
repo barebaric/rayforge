@@ -33,6 +33,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   run at the configured Jog Speed (#452, #458)
 - Machine control: Ctrl+M arms the "Click Canvas to Move Head" mode
   from the keyboard
+- Machine control: a per-head pointer offset makes an alignment
+  laser's dot a first-class aiming reference. While "Pointer
+  Alignment" is on, aiming moves (Move to Position, the corner and
+  WCS origin shortcuts, Click Canvas to Move Head, Move Head Here,
+  and framing) are shifted so the pointer dot lands on the aimed
+  position, zeroing accounts for the offset, and the canvas shows
+  the pointer dot next to the beam dot. Starting a job asks whether
+  to turn alignment off first, since jobs always burn with the
+  unshifted beam (#423)
+- Drivers: serial ports can be bound by USB VID:PID instead of a
+  device path, so auto-reconnect follows the machine to its new
+  port after the OS re-enumerates USB devices (#459)
 - Laser: each step gains a Power Mode setting, Dynamic (M4) or
   Constant (M3). Constant power avoids power sags at corners during
   vector cuts, while raster engraving keeps dynamic power (#437)
@@ -49,6 +61,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   power (#403)
 - Machine: G-code fields that contain only a number show a warning,
   since the value is most likely a mistake (#393, #396)
+- Devices: a built-in profile for the Creality Falcon A1 Pro
+  (thanks to @atkaper, #461)
+- Devices: a built-in profile for the Creality Falcon 2 Pro 22W,
+  shipping camera lens calibration and image settings as a starting
+  default; the 40W profile's work area is corrected to the official
+  400 x 415 mm spec (#463)
+- Devices: the Falcon A1 and Falcon 10W profiles emit a bounds
+  comment in the G-code preamble so their firmware can trace the
+  job outline before running it
 - Drivers: `move_to` accepts an optional absolute Z target; machines
   with a Z axis receive it in the same move
 - Drivers: drivers may opt into live reconfiguration via
@@ -61,7 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   driver supersedes it, and affected device profiles were migrated
 - Raster: the default threshold is now 254, so only pure white stays
   unengraved
-- Upgrade raygeo to 1.54.2. This brings power-mode-aware laser
+- Upgrade raygeo to 1.55.0. This brings power-mode-aware laser
   commands, so the G-code encoder can emit constant-power (M3)
   output; frame corner radius support; and a fix for the contour
   nesting classification, which previously used a single probe point
@@ -71,6 +92,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- GRBL: flow-control state jammed by lost acknowledgements is
+  detected and healed, so a firmware that stays silent after a
+  cancel (e.g. the Sculpfun iCube over Bluetooth) no longer leaves
+  "Read from Device" hanging and the machine controls dead (#428)
+- GRBL: the work coordinate offset is refreshed from the WCS
+  read-back, so zeroing again right after setting a zero no longer
+  reads a stale position and writes the old offset back
+- Machine: Z jog moves are clamped to the configured Z axis
+  extents, the Move to Position popover accepts the full Z range,
+  and the hardware settings page gains Z Min/Z Max rows (#459)
+- Camera: the ChArUco card is detected again on blurry, unevenly
+  lit frames by falling back through progressively more tolerant
+  detection passes (#443, #465)
+- Machine: dialect copies on existing machines stay linked to the
+  built-in dialect they came from, so fixes to built-in dialects
+  reach machines while user edits remain preserved
 - Ruida: job encoding is routed by driver capability instead of a
   stale dialect, fixing garbled output after switching drivers (#420)
 - Configuration, machine profiles, and recipes are persisted
