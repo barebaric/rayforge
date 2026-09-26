@@ -245,6 +245,7 @@ class TestMachine:
         assert head is not None
         head.set_pointer_offset(12.0, -3.5)
         head.set_pointer_offset_enabled(True)
+        machine.set_pointer_alignment(True)
 
         set_wcs_spy = mocker.patch.object(
             machine.driver, "set_wcs_offset", new_callable=mocker.AsyncMock
@@ -258,6 +259,40 @@ class TestMachine:
         # Beam at (100, 200) means the pointer marks (112, 196.5).
         set_wcs_spy.assert_called_once_with("G54", 112.0, 196.5, 0.0)
         read_wcs_spy.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_set_work_origin_here_ignores_offset_when_alignment_off(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
+        """
+        With pointer alignment off, zeroing sets the origin at the
+        cutting beam position, without the pointer compensation.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+        await machine.connect()
+        await wait_for_tasks_to_finish(task_mgr)
+        machine.active_wcs = "G54"
+        machine.update_wcs_offset("G54", (10.0, 20.0, 0.0))
+        machine.device_state.machine_pos = (100.0, 200.0, 0.0)
+
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(12.0, -3.5)
+        head.set_pointer_offset_enabled(True)
+        assert machine.pointer_alignment_enabled is False
+
+        set_wcs_spy = mocker.patch.object(
+            machine.driver, "set_wcs_offset", new_callable=mocker.AsyncMock
+        )
+        mocker.patch.object(
+            machine.driver,
+            "read_wcs_offsets",
+            new_callable=mocker.AsyncMock,
+        )
+
+        await machine.set_work_origin_here(Axis.X | Axis.Y)
+
+        set_wcs_spy.assert_called_once_with("G54", 100.0, 200.0, 0.0)
 
     @pytest.mark.asyncio
     async def test_set_work_origin_here_pointer_offset_z_unaffected(
@@ -275,6 +310,7 @@ class TestMachine:
         assert head is not None
         head.set_pointer_offset(12.0, -3.5)
         head.set_pointer_offset_enabled(True)
+        machine.set_pointer_alignment(True)
 
         set_wcs_spy = mocker.patch.object(
             machine.driver, "set_wcs_offset", new_callable=mocker.AsyncMock

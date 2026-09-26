@@ -566,10 +566,14 @@ class MachineController:
         new_x, new_y, new_z = current_offsets
 
         # A pointer laser mounted beside the beam marks the stock at a
-        # fixed displacement from the cutting spot. Compensate so the
-        # work origin lands where the pointer was pointing, not where
-        # the (hidden) beam is. Zero offset when disabled.
-        pointer_dx, pointer_dy = self.machine.get_pointer_offset()
+        # fixed displacement from the cutting spot. While pointer
+        # alignment is on, compensate so the work origin lands where
+        # the pointer was pointing, not where the (hidden) beam is.
+        # With alignment off, zero at the beam position.
+        if self.machine.pointer_alignment_enabled:
+            pointer_dx, pointer_dy = self.machine.get_pointer_offset()
+        else:
+            pointer_dx = pointer_dy = 0.0
 
         # Mask out axes the machine does not have (e.g. Z on a 2-axis
         # laser) so we never set a Z origin for a no-Z machine.
