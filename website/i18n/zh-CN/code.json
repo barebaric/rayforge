@@ -968,6 +968,9 @@
   "page.devices.device.creality-falcon-a1.description": {
     "message": "二极管激光雕刻机，工作区域381x305mm，带旋转轴"
   },
+  "page.devices.device.creality-falcon-a1-pro.description": {
+    "message": "20W二极管激光雕刻机，工作区域363x273mm，带旋转轴，并可选配2W红外激光模块"
+  },
   "page.devices.device.creality-falcon-10w.description": {
     "message": "10W二极管激光雕刻机，工作区域400x415mm"
   },

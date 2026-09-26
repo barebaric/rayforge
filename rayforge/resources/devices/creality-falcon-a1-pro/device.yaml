@@ -1,0 +1,51 @@
+api_version: 1
+device:
+  name: Creality Falcon A1 Pro
+  vendor: Creality
+  model: Falcon A1 Pro
+  description: Diode laser engraver with 363x273mm work area and rotary support
+machine:
+  driver: GrblSerialDriver
+  driver_args:
+    baudrate: '115200'
+    poll_status_while_running: false
+  gcode_precision: 3
+  supports_arcs: true
+  axis_extents:
+  - 363.0
+  - 273.0
+  origin: bottom_left
+  max_travel_speed: 36000
+  max_cut_speed: 36000
+  acceleration: 1000
+  home_on_start: true
+  single_axis_homing_enabled: true
+  has_z: true
+  rotary_enabled_default: false
+  rotary_modules:
+  - name: Creality Roller Rotary
+    axis: A
+    mode: axis_replacement
+    rotary_type: rollers
+    roller_diameter: 36.0
+    max_workpiece_length: 300.0
+    model_path: creality-roller.glb
+  heads:
+  - name: 20W Blue Diode Laser
+    tool_number: 0
+    max_power: 1000
+    wavelength_nm: 455
+    max_power_watts: 20
+    frame_power_percent: 0.1
+    spot_size_mm:
+    - 0.08
+    - 0.1
+  - name: 2W Infrared Laser
+    tool_number: 1
+    max_power: 1000
+    wavelength_nm: 1064
+    max_power_watts: 2
+    frame_power_percent: 0.1
+    spot_size_mm:
+    - 0.03
+    - 0.03
