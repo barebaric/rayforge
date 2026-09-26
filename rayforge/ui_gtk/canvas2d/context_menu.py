@@ -174,9 +174,21 @@ def _show_popover(
 
 
 def _on_context_menu_closed(_popover: Gtk.Popover, surface: WorkSurface):
-    """Drop the stored right-click position so a later keyboard
-    invocation of win.move-head-here cannot act on a stale point."""
+    """Drop the stored right-click position after the menu closes, so a
+    later keyboard invocation of win.move-head-here cannot act on a
+    stale point.
+
+    GTK pops a popover menu down before activating the chosen item's
+    action, so the clearing is deferred to an idle callback: a menu
+    invocation consumes the position first, while closing the menu
+    without a choice still clears it.
+    """
+    GLib.idle_add(_clear_click_position, surface)
+
+
+def _clear_click_position(surface: WorkSurface) -> bool:
     surface.right_click_machine_pos = None
+    return GLib.SOURCE_REMOVE
 
 
 def show_item_context_menu(

@@ -9,8 +9,16 @@ one it enters the click-canvas-to-move-head mode.
 from unittest.mock import MagicMock
 
 import pytest
+from gi.repository import GLib
 
 from rayforge.ui_gtk.canvas2d import context_menu
+
+
+def _process_events():
+    """Runs pending GLib main context events, including idle callbacks."""
+    ctx = GLib.MainContext.default()
+    while ctx.pending():
+        ctx.iteration(False)
 
 
 @pytest.fixture
@@ -75,5 +83,26 @@ def test_context_menu_close_clears_click_position():
     surface.right_click_machine_pos = (30.0, 40.0)
 
     context_menu._on_context_menu_closed(MagicMock(), surface)
+    assert surface.right_click_machine_pos == (30.0, 40.0)
 
+    _process_events()
     assert surface.right_click_machine_pos is None
+
+
+@pytest.mark.ui
+def test_menu_invocation_moves_when_close_fires_first(
+    move_head_window, sync_machine
+):
+    """GTK pops the menu down (emitting 'closed') before activating the
+    item's action, so the close-time clearing must not eat the fresh
+    click position before the action reads it."""
+    move_head_window.surface.right_click_machine_pos = (30.0, 40.0)
+
+    context_menu._on_context_menu_closed(MagicMock(), move_head_window.surface)
+    move_head_window.on_move_head_here_clicked(None, None)
+    _process_events()
+
+    move_head_window.machine_cmd.move_to.assert_called_once_with(
+        sync_machine, 30.0, 40.0, speed=1000
+    )
+    move_head_window.bottom_panel.toggle_move_to_mode.assert_not_called()
