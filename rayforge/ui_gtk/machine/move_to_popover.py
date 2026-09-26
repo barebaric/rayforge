@@ -177,10 +177,13 @@ class MoveToPopover(Gtk.Popover):
         self._update_bounds_and_axes()
 
     def _on_pointer_alignment_changed(self, machine):
-        """Machine-side alignment toggles resync the switch and prefill."""
+        """Machine-side alignment toggles resync the switch.
+
+        The coordinate rows are deliberately left untouched: their
+        values stay frozen while the popover is open so the user can
+        move back to a position that was entered before the toggle.
+        """
         self._sync_alignment_row_state()
-        if self.get_visible():
-            self._prefill_from_machine()
 
     def _update_bounds_and_axes(self):
         if not self.machine:
@@ -259,8 +262,6 @@ class MoveToPopover(Gtk.Popover):
         self.machine.set_pointer_alignment(row.get_active())
         # The machine may have refused (no offset); re-sync the switch.
         self._sync_alignment_row_state()
-        if self.get_visible():
-            self._prefill_from_machine()
 
     # -- Prefill and move issuance ----------------------------------
 

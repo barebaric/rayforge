@@ -14,8 +14,8 @@ class PointerAlignmentDialog(Adw.MessageDialog):
     while aiming with the pointer dot, the user confirms on every send
     and can instead run a pointer dry-run: the job is generated with
     the pointer offset folded in, so the pointer dot traces the
-    toolpath while the beam runs displaced by the offset. The laser
-    still fires at job power.
+    toolpath while the beam runs displaced by the offset. All laser
+    power is capped at the framing power, so the trace does not burn.
     """
 
     def __init__(
@@ -34,8 +34,9 @@ class PointerAlignmentDialog(Adw.MessageDialog):
             _(
                 "Dry-Run with Pointer traces the toolpath with the "
                 "pointer dot: the job runs with the pointer offset "
-                "applied and the beam is displaced by it, still firing "
-                "at job power. Turning alignment off burns the job "
+                "applied and the beam is displaced by it, with all "
+                "laser power capped at the framing power so the trace "
+                "does not burn. Turning alignment off burns the job "
                 "normally with the beam at the WCS positions."
             )
         )
