@@ -41,6 +41,26 @@ pessoal é coletada. Você pode ativar ou desativar **Relatar uso anônimo** a q
 página de [rastreamento de uso](https://rayforge.org/docs/general-info/usage-tracking) para saber
 mais sobre quais dados são coletados e como são usados.
 
+## Gestos do mouse
+
+A página de gestos do mouse permite reatribuir os gestos de navegação da tela 2D, da tela 3D e do
+editor de esboços. Cada entrada mostra a combinação de botões do mouse atribuída atualmente. Clique
+em uma entrada para capturar uma nova atribuição: pressione o botão do mouse desejado (com ou sem
+teclas modificadoras pressionadas) ou use a roda do mouse, e a atribuição é aplicada imediatamente.
+
+- **Deslocar a visão** — mantenha o botão do mouse atribuído pressionado e mova para deslocar.
+- **Zoom da visão** — use a roda do mouse para dar zoom.
+- **Órbita / rotação (tela 3D)** — arraste para orbitar ao redor da cena ou girar ao redor do eixo
+  Z.
+- **Abrir o menu de contexto** — o menu de contexto da tela 2D ou o menu de ferramentas do editor de
+  esboços.
+- **Redefinir a visão** — ajusta a visão novamente. Sem atribuição por padrão.
+
+Uma atribuição pode ser removida com **Remover atribuição** ou restaurada com **Restaurar padrão**.
+A atribuição de um gesto que já é usado por outra ação na mesma tela é rejeitada, de modo que uma
+combinação de botões do mouse nunca acione duas ações ao mesmo tempo. Addons podem contribuir com
+configurações de gestos adicionais, que aparecem como seções extras nesta página.
+
 ## Outras configurações
 
 O diálogo de configurações também inclui páginas para gerenciar outras partes do aplicativo. Cada
