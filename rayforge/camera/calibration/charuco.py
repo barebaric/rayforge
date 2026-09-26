@@ -47,6 +47,10 @@ class CharucoTarget(CalibrationTarget):
     MIN_SQUARES_X = 4
     MIN_SQUARES_Y = 5
     MIN_MARKER_PIXELS = 10
+    UPSCALE_FACTOR = 2
+    UNSHARP_AMOUNT = 1.5
+    UNSHARP_SIGMA = 2
+    GAMMA = 2.0
 
     def __init__(self, config: CharucoConfig):
         if config.marker_length_mm >= config.square_length_mm:
@@ -60,6 +64,7 @@ class CharucoTarget(CalibrationTarget):
         self.config = config
         self._board = None
         self._detector = None
+        self._relaxed_detector = None
         self._create_board()
 
     def _create_board(self):
@@ -73,15 +78,33 @@ class CharucoTarget(CalibrationTarget):
             dictionary=dictionary,
         )
         charuco_params = cv2.aruco.CharucoParameters()
+        refine_params = cv2.aruco.RefineParameters()
+        self._detector = cv2.aruco.CharucoDetector(
+            self._board,
+            charuco_params,
+            self._create_detector_params(),
+            refine_params,
+        )
+        self._relaxed_detector = cv2.aruco.CharucoDetector(
+            self._board,
+            charuco_params,
+            self._create_detector_params(relaxed=True),
+            refine_params,
+        )
+
+    def _create_detector_params(self, relaxed: bool = False):
         detector_params = cv2.aruco.DetectorParameters()
         detector_params.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
         detector_params.cornerRefinementWinSize = 5
         detector_params.cornerRefinementMaxIterations = 30
         detector_params.cornerRefinementMinAccuracy = 0.1
-        refine_params = cv2.aruco.RefineParameters()
-        self._detector = cv2.aruco.CharucoDetector(
-            self._board, charuco_params, detector_params, refine_params
-        )
+        if relaxed:
+            detector_params.minMarkerPerimeterRate = 0.01
+            detector_params.adaptiveThreshWinSizeMin = 3
+            detector_params.adaptiveThreshWinSizeMax = 53
+            detector_params.adaptiveThreshWinSizeStep = 10
+            detector_params.minMarkerDistanceRate = 0.01
+        return detector_params
 
     @property
     def board(self):
@@ -181,13 +204,55 @@ class CharucoTarget(CalibrationTarget):
     ) -> tuple[list[tuple[float, float]], list[int]] | None:
         gray = to_gray(image)
 
-        assert self._detector is not None
+        target = self._good_enough_corners()
+        best = None
+        for variant, detector in self._detection_stages(gray):
+            result = self._detect_pass(variant, detector)
+            if result is None:
+                continue
+            if best is None or len(result[0]) > len(best[0]):
+                best = result
+            if len(best[0]) >= target:
+                break
+
+        return best
+
+    def _good_enough_corners(self) -> int:
+        return max(4, self.point_count // 2)
+
+    def _detection_stages(self, gray: np.ndarray):
+        yield gray, self._detector
+        yield gray, self._relaxed_detector
+        enhanced = self._enhance(gray)
+        yield enhanced, self._relaxed_detector
+        yield enhanced, self._detector
+
+    def _enhance(self, gray: np.ndarray) -> np.ndarray:
+        h, w = gray.shape[:2]
+        size = (
+            w * self.UPSCALE_FACTOR,
+            h * self.UPSCALE_FACTOR,
+        )
+        upscaled = cv2.resize(gray, size, interpolation=cv2.INTER_CUBIC)
+        blurred = cv2.GaussianBlur(upscaled, (0, 0), self.UNSHARP_SIGMA)
+        amount = self.UNSHARP_AMOUNT
+        sharpened = cv2.addWeighted(
+            upscaled, 1.0 + amount, blurred, -amount, 0
+        )
+        lut = (
+            (np.arange(256, dtype=np.float32) / 255.0) ** self.GAMMA * 255.0
+        ).astype(np.uint8)
+        return cv2.LUT(sharpened, lut)
+
+    def _detect_pass(self, gray, detector):
+        assert detector is not None
         try:
-            charuco_corners, charuco_ids, _, _ = self._detector.detectBoard(
-                gray
-            )
-        except cv2.error as error:
-            logger.debug("ChArUco detection error: %s", error)
+            charuco_corners, charuco_ids, _, _ = detector.detectBoard(gray)
+        except cv2.error as e:
+            logger.debug(f"ChArUco detection error: {e}")
+            return None
+
+        if charuco_corners is None or charuco_ids is None:
             return None
 
         return normalize_detection(charuco_corners, charuco_ids)
