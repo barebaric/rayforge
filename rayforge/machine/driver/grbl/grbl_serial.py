@@ -65,6 +65,7 @@ from .grbl_util import (
     prb_re,
     split_realtime_commands,
     strip_gcode_comments,
+    sync_state_wco,
     wcs_re,
 )
 
@@ -1738,6 +1739,12 @@ class GrblSerialDriver(Driver):
                     if self._report_in_inches
                     else parsed
                 )
+        sync_state_wco(
+            self.state,
+            offsets,
+            self._machine.active_wcs if self._machine else None,
+        )
+        self.state_changed.send(self, state=self.state)
         self.wcs_updated.send(self, offsets=offsets)
         return offsets
 

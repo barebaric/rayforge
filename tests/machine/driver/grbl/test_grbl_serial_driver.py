@@ -956,6 +956,62 @@ class TestGrblSerialDriver:
         assert offsets["G55"] == (4.0, 5.0, 0.0)
 
     @pytest.mark.asyncio
+    async def test_read_wcs_offsets_refreshes_state_wco(
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
+    ):
+        """The $# read-back must refresh the cached WCO and derived
+        machine position: GRBL omits WCO from status reports until it
+        changes, so a stale WCO would make a directly following zero
+        operation read a wrong machine position."""
+        driver = connected_driver
+        assert driver._machine is not None
+        driver._machine.active_wcs = "G54"
+
+        # WPos-only reporting with a stale cached WCO: the machine
+        # position is derived and currently wrong.
+        driver.state.work_pos = (0.0, 0.0, 0.0)
+        driver.state.machine_pos = (None, None, None)
+        driver.state.wco = (5.0, 5.0, 0.0)
+
+        response_data = b"[G54:10.000,20.000,0.000]\r\nok\r\n"
+        cmd_task = asyncio.create_task(driver.read_wcs_offsets())
+        await asyncio.sleep(0.01)
+        driver.on_serial_data_received(mock_serial_transport, response_data)
+        await cmd_task
+
+        assert driver.state.wco == (10.0, 20.0, 0.0)
+        assert driver.state.machine_pos == (10.0, 20.0, 0.0)
+        assert driver.state.work_pos == (0.0, 0.0, 0.0)
+
+    @pytest.mark.asyncio
+    async def test_read_wcs_offsets_keeps_reported_machine_pos(
+        self,
+        connected_driver: GrblSerialDriver,
+        mock_serial_transport,
+    ):
+        """With MPos present in the state, the read-back updates WCO
+        and the derived work position but never machine position."""
+        driver = connected_driver
+        assert driver._machine is not None
+        driver._machine.active_wcs = "G54"
+
+        driver.state.machine_pos = (100.0, 200.0, 0.0)
+        driver.state.work_pos = (95.0, 195.0, 0.0)
+        driver.state.wco = (5.0, 5.0, 0.0)
+
+        response_data = b"[G54:10.000,20.000,0.000]\r\nok\r\n"
+        cmd_task = asyncio.create_task(driver.read_wcs_offsets())
+        await asyncio.sleep(0.01)
+        driver.on_serial_data_received(mock_serial_transport, response_data)
+        await cmd_task
+
+        assert driver.state.wco == (10.0, 20.0, 0.0)
+        assert driver.state.machine_pos == (100.0, 200.0, 0.0)
+        assert driver.state.work_pos == (90.0, 180.0, 0.0)
+
+    @pytest.mark.asyncio
     async def test_probe_cycle_success(
         self,
         connected_driver: GrblSerialDriver,

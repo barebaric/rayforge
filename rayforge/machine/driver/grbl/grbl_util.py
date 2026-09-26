@@ -1019,6 +1019,37 @@ def _recalculate_positions(
     return machine_pos, work_pos, wco
 
 
+def sync_state_wco(
+    state: DeviceState,
+    offsets: dict[str, Pos],
+    active_wcs: str | None,
+) -> None:
+    """
+    Refresh *state*'s work coordinate offset from authoritative
+    ``$#`` data.
+
+    GRBL includes WCO in status reports only when it changes, so
+    right after a WCS write the cached WCO can be stale and
+    ``machine_pos``, when derived from WPos + WCO, is wrong until
+    the next report carries the new WCO. Zeroing again in that
+    window would read a wrong machine position and write the old
+    offset back. The ``$#`` read-back reports every slot, so the
+    active slot's offset is authoritative and positions are
+    recomputed from it immediately.
+    """
+    if not active_wcs or active_wcs not in offsets:
+        return
+    state.wco = offsets[active_wcs]
+    state.machine_pos, state.work_pos, _ = _recalculate_positions(
+        state.machine_pos,
+        state.work_pos,
+        state.wco,
+        state.machine_pos[0] is not None,
+        state.work_pos[0] is not None,
+        True,
+    )
+
+
 def parse_state(
     state_str: str,
     default: DeviceState,
