@@ -8,7 +8,12 @@ from raygeo.geo import Matrix
 from rayforge.ui_gtk.canvas import CanvasElement
 
 from ..core.arrays import find_array_for_entity
-from ..core.commands import DuplicateCommand, MoveEntitiesCommand
+from ..core.boolean import BooleanOp
+from ..core.commands import (
+    BooleanCommand,
+    DuplicateCommand,
+    MoveEntitiesCommand,
+)
 from ..core.entities import Entity, Line, Point
 from ..core.selection import SketchSelection
 from ..core.sketch import Sketch
@@ -356,6 +361,34 @@ class SketchElement(CanvasElement):
         sel.clear()
         sel.entity_ids = list(cmd.new_entity_ids)
         sel.point_ids = list(cmd.new_point_ids)
+        sel.changed.send(sel)
+        self.mark_dirty()
+        return True
+
+    def apply_boolean(self, op_name: str) -> bool:
+        """
+        Applies a boolean operation (a BooleanOp value) to the
+        selected entities. The sources are replaced by the baked
+        result, which is selected afterwards. Returns False when the
+        selection cannot be combined.
+        """
+        try:
+            op = BooleanOp(op_name)
+        except ValueError:
+            return False
+        entity_ids = list(self.selection.entity_ids)
+        if len(entity_ids) < 2:
+            logger.warning("Select at least two shapes for a boolean op.")
+            return False
+        if BooleanCommand.prepare_solids(self.sketch, entity_ids, op) is None:
+            return False
+
+        cmd = BooleanCommand(self.sketch, entity_ids, op)
+        self.execute_command(cmd)
+
+        sel = self.selection
+        sel.clear()
+        sel.entity_ids = list(cmd.new_entity_ids)
         sel.changed.send(sel)
         self.mark_dirty()
         return True
