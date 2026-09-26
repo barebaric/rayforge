@@ -49,3 +49,10 @@ machine:
     spot_size_mm:
     - 0.03
     - 0.03
+  cameras:
+  - name: Falcon A1 Pro Camera
+    enabled: false
+    source_type: http_snapshot
+    source_config:
+      uri: "http://<laser-ip>:8080/media/getCapturePhoto"
+      timeout_seconds: 5.0

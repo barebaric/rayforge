@@ -1,4 +1,6 @@
+import ipaddress
 import logging
+import re
 import threading
 import time
 from abc import ABC, abstractmethod
@@ -122,6 +124,13 @@ def validate_source_uri(source_type: CameraSourceType, uri: str) -> str | None:
     if allowed_schemes is None:
         return None
 
+    placeholder = re.search(r"<([^<>]+)>", uri)
+    if placeholder:
+        return (
+            f"URL contains placeholder <{placeholder.group(1)}>; "
+            "replace it with a valid value"
+        )
+
     try:
         parsed = urlsplit(uri.strip())
     except ValueError:
@@ -131,7 +140,52 @@ def validate_source_uri(source_type: CameraSourceType, uri: str) -> str | None:
         return f"URL must start with one of: {schemes}"
     if not parsed.netloc:
         return "URL must include a host"
+    if parsed.netloc.rsplit("@", 1)[-1].endswith(":"):
+        return "URL contains an invalid host or port"
+    try:
+        hostname = parsed.hostname
+        port = parsed.port
+    except ValueError:
+        return "URL contains an invalid host or port"
+    if (
+        not hostname
+        or (port is not None and not 0 <= port <= 65535)
+        or not _is_valid_uri_hostname(hostname)
+    ):
+        return "URL must include a valid hostname or IP address"
     return None
+
+
+def _is_valid_uri_hostname(hostname: str) -> bool:
+    try:
+        ipaddress.ip_address(hostname)
+        return True
+    except ValueError:
+        pass
+
+    if re.fullmatch(r"[0-9.]+", hostname) and hostname.count(".") == 3:
+        return False
+
+    normalized = hostname.removesuffix(".")
+    if not normalized or len(normalized) > 253:
+        return False
+
+    for label in normalized.split("."):
+        if not label:
+            return False
+        if "_" in label:
+            ascii_label = label
+        else:
+            try:
+                ascii_label = label.encode("idna").decode("ascii")
+            except UnicodeError:
+                return False
+        if len(ascii_label) > 63 or not re.fullmatch(
+            r"[A-Za-z0-9_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?",
+            ascii_label,
+        ):
+            return False
+    return True
 
 
 def get_backends_for_platform():
