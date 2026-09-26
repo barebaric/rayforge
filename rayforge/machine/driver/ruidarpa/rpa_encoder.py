@@ -132,6 +132,7 @@ class RuidaRPAEncoder(OpsEncoder):
         self._power_fraction: float = 0.0
         self._power_min_fraction: float = 0.0
         self._emitted_min_fraction: float = 0.0
+        self._job_power_cap: float | None = None
         self._power_floor: float = DEFAULT_POWER_FLOOR / 100.0
         self._image_power_bias: float = DEFAULT_IMAGE_POWER_BIAS / 100.0
         self._snapshot_len: int = 0
@@ -177,6 +178,9 @@ class RuidaRPAEncoder(OpsEncoder):
 
         self.doc = doc
         self.machine = machine
+        self._job_power_cap = (
+            machine.get_job_power_cap() if machine is not None else None
+        )
         driver_args = machine.driver_args if machine is not None else {}
         raw_floor = driver_args.get("power_floor", DEFAULT_POWER_FLOOR)
         self._power_floor = min(max(float(raw_floor), 0.0), 100.0) / 100.0
@@ -308,6 +312,8 @@ class RuidaRPAEncoder(OpsEncoder):
         """
         self._require_active_layer()
         section_type = self._section_type
+        if self._job_power_cap is not None:
+            power_fraction = min(power_fraction, self._job_power_cap)
         if power_fraction == 0.0:
             return
         if section_type is not None and self._layer_mode in (

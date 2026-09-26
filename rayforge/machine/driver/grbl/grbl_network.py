@@ -48,6 +48,7 @@ from .grbl_util import (
     parse_state,
     prb_re,
     status_url,
+    sync_state_wco,
     upload_url,
     wcs_re,
 )
@@ -818,6 +819,12 @@ class GrblNetworkDriver(Driver):
                     if self._report_in_inches
                     else parsed
                 )
+        sync_state_wco(
+            self.state,
+            offsets,
+            self._machine.active_wcs if self._machine else None,
+        )
+        self.state_changed.send(self, state=self.state)
         self.wcs_updated.send(self, offsets=offsets)
         return offsets
 

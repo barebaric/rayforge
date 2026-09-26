@@ -158,6 +158,80 @@ Quando um tipo de laser CO2 ou Fibra é selecionado, os seguintes controles PWM 
 Esses padrões são repassados para suas etapas de operação, onde podem ser substituídos por etapa, se
 necessário.
 
+#### Deslocamento do Ponteiro
+
+Se a sua máquina tem um ponteiro laser separado (um pequeno laser de ponto vermelho) montado a uma
+distância fixa do feixe de corte, você pode informar essa distância ao Rayforge para que ele a
+compense.
+
+- **Usar deslocamento do ponteiro**: ativa a compensação. Desativado por padrão.
+- **Deslocamento do ponteiro X / Y**: a distância em milímetros do ponto do feixe de corte ao ponto
+  do ponteiro, ao longo dos eixos X e Y da máquina.
+
+Ao ativá-lo, três coisas mudam:
+
+1. **Definir zero na posição atual** (e os botões Zerar X / Zerar Y) coloca a origem de trabalho
+   onde o _ponto do ponteiro_ marca o material, não onde está o feixe de corte (invisível).
+2. A tela mostra um ponto amarelo do ponteiro ao lado do ponto vermelho do feixe, marcando onde o
+   ponto do ponteiro está no seu material.
+3. Uma chave de **alinhamento do ponteiro** fica disponível no popover de movimentação (veja
+   abaixo).
+
+#### Alinhamento do Ponteiro
+
+O alinhamento do ponteiro é uma chave de sessão no popover de movimentação (o ícone de bússola ao
+lado da leitura de posição). Enquanto ativado, todas as operações absolutas de mira — Mover para, os
+atalhos de canto, ir à origem do SCT, Clicar para mover, Mover cabeça para cá e enquadrar — são
+deslocadas para que o _ponto do ponteiro_ fique na posição mirada. Na tela, sempre há exatamente um
+ponto preenchido: o ponto do ponteiro é desenhado preenchido enquanto o alinhamento está ativado (o
+ponto do feixe é então um anel oco), e oco enquanto desativado (o ponto do feixe é preenchido).
+
+O fluxo de trabalho típico:
+
+1. Movimente a máquina até o ponto do ponteiro marcar seu ponto de referência no material.
+2. **Defina o zero de trabalho** ali — com o deslocamento do ponteiro ativado, a origem fica
+   exatamente onde o ponteiro apontou.
+3. Ative o **alinhamento do ponteiro** no popover de movimentação.
+4. Enquadre e mova com o ponto do ponteiro: tudo o que você mirar é marcado pelo ponteiro.
+5. Ao pressionar **Enviar**, aparece um aviso: um trabalho normal grava com o feixe nas posições do
+   SCT. Você pode executar uma **Simulação com ponteiro** (o trabalho é executado com o deslocamento
+   do ponteiro aplicado, de modo que o ponto do ponteiro traga o trajeto enquanto o feixe corre
+   deslocado — ele continua disparando na potência do trabalho), desativar o alinhamento e gravar,
+   ou cancelar.
+
+Duas coisas nunca são deslocadas: o **jog** (um movimento relativo não precisa de compensação) e os
+**trabalhos** — o corte sempre acontece com o feixe nas posições do SCT, então sua saída G-code é
+idêntica com o alinhamento ativado ou não. Junto com o zeramento pelo ponto do ponteiro, tudo fica
+consistente: a origem fica em `feixe + deslocamento`, a mira desloca cada alvo em `-deslocamento` e
+a gravação não é deslocada.
+
+O alinhamento do ponteiro é uma configuração de sessão: não é salvo no perfil da máquina e é
+redefinido ao trocar de máquina.
+
+<!-- prettier-ignore-start -->
+:::tip[Medir o Deslocamento]
+1. Movimente a máquina até o ponto do ponteiro marcar um ponto visível no
+   material.
+2. Ative o modo foco e movimente até o *feixe de corte* queimar uma marca
+   exatamente no mesmo ponto (ou mova cuidadosamente o feixe até lá com a
+   potência de foco).
+3. O deslocamento é a posição do ponteiro menos a do feixe. Por exemplo, se o
+   ponteiro marcou X=100 e você precisou movimentar o feixe até X=88 para
+   acertar o mesmo ponto, informe X = 12.0 — o ponto do ponteiro fica 12 mm à
+   frente do feixe.
+
+Se um corte de teste sair deslocado, inverta o sinal do eixo correspondente.
+:::
+<!-- prettier-ignore-end -->
+
+<!-- prettier-ignore-start -->
+:::note[Modo Rotativo]
+Quando o acessório rotativo está ativo, o eixo Y é substituído pelo rolo
+rotativo, de modo que a componente Y do deslocamento do ponteiro não se aplica
+de forma significativa. Defina-a como 0 para trabalhos rotativos.
+:::
+<!-- prettier-ignore-end -->
+
 #### Modelo 3D
 
 Cada cabeça de laser pode ter um modelo 3D atribuído a ela. Este modelo é renderizado na

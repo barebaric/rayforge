@@ -34,6 +34,9 @@ def make_popover(machine, machine_cmd) -> Any:
     popover.center_btn = MagicMock()
     popover.ur_btn = MagicMock()
     popover.origin_btn = MagicMock()
+    popover.alignment_row = MagicMock()
+    popover._alignment_handler_id = 0
+    popover.travel_warning_label = MagicMock()
     return popover
 
 
@@ -43,6 +46,13 @@ def machine():
     m.has_z_axis = True
     m.is_connected.return_value = True
     m.axis_extents = (400.0, 300.0)
+    m.reverse_x_axis = False
+    m.reverse_y_axis = False
+    m.pointer_alignment_enabled = False
+    m.get_pointer_offset.return_value = (0.0, 0.0)
+    m.get_command_wcs_offset.return_value = (0.0, 0.0, 0.0)
+    m.get_active_wcs_offset.return_value = (0.0, 0.0, 0.0)
+    m.has_pointer_offset.return_value = False
     z_cfg = MagicMock()
     z_cfg.extents = (0.0, 100.0)
     m.axes.get.return_value = z_cfg
@@ -68,7 +78,19 @@ def move_popover(sync_machine):
         return_value=(100.0, 50.0, 120.0, 60.0)
     )
     popover._get_speed_callback = None
+    popover.alignment_row = MagicMock()
+    popover._alignment_handler_id = 0
+    popover.travel_warning_label = MagicMock()
     return popover
+
+
+def enable_pointer_alignment(machine, x=10.0, y=20.0):
+    """Configures an enabled pointer offset and turns alignment on."""
+    head = machine.get_default_laser_head()
+    assert head is not None
+    head.set_pointer_offset(x, y)
+    head.set_pointer_offset_enabled(True)
+    machine.set_pointer_alignment(True)
 
 
 @pytest.mark.ui
@@ -343,3 +365,248 @@ def test_real_popover_show_refreshes_sensitivity(real_popover):
     assert popover.move_btn.get_sensitive() is True
     assert popover.center_btn.get_sensitive() is False
     popover.popdown()
+
+
+class TestPointerAlignmentShifts:
+    """While pointer alignment is on, popover aims are shifted so the
+    pointer dot lands on the entered/target position."""
+
+    def _set_rows(self, popover, x, y, z=5.0):
+        popover.x_row = MagicMock()
+        popover.x_row.get_value_in_base_units.return_value = x
+        popover.y_row = MagicMock()
+        popover.y_row.get_value_in_base_units.return_value = y
+        popover.z_row = MagicMock()
+        popover.z_row.get_value_in_base_units.return_value = z
+
+    @pytest.mark.ui
+    def test_issue_move_shifted_by_offset(self, move_popover):
+        enable_pointer_alignment(move_popover.machine, 10.0, 20.0)
+        self._set_rows(move_popover, 50.0, 60.0)
+
+        move_popover._issue_move()
+
+        # The beam is commanded one offset behind the entered value so
+        # the pointer dot lands at (50, 60).
+        move_popover.machine_cmd.move_to.assert_called_once_with(
+            move_popover.machine, 40.0, 40.0, 5.0, speed=None
+        )
+
+    @pytest.mark.ui
+    def test_issue_move_unshifted_while_off(self, move_popover):
+        head = move_popover.machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(10.0, 20.0)
+        head.set_pointer_offset_enabled(True)
+        self._set_rows(move_popover, 50.0, 60.0)
+
+        move_popover._issue_move()
+
+        move_popover.machine_cmd.move_to.assert_called_once_with(
+            move_popover.machine, 50.0, 60.0, 5.0, speed=None
+        )
+
+    @pytest.mark.ui
+    def test_prefill_reports_pointer_position(self, move_popover):
+        enable_pointer_alignment(move_popover.machine, 10.0, 20.0)
+        move_popover.machine.device_state.machine_pos = (
+            100.0,
+            120.0,
+            8.0,
+        )
+        self._set_rows(move_popover, 0.0, 0.0, 0.0)
+
+        move_popover._prefill_from_machine()
+
+        # Beam at (100, 120) means the pointer dot is at (110, 140).
+        move_popover.x_row.set_value_in_base_units.assert_called_once_with(
+            110.0
+        )
+        move_popover.y_row.set_value_in_base_units.assert_called_once_with(
+            140.0
+        )
+        move_popover.z_row.set_value_in_base_units.assert_called_once_with(8.0)
+
+    @pytest.mark.ui
+    def test_prefill_round_trip_does_not_move(self, move_popover):
+        """Prefill then issuing the prefilled values is a no-move."""
+        enable_pointer_alignment(move_popover.machine, 10.0, 20.0)
+        move_popover.machine.device_state.machine_pos = (
+            100.0,
+            120.0,
+            8.0,
+        )
+        self._set_rows(move_popover, 110.0, 140.0)
+
+        move_popover._issue_move()
+
+        move_popover.machine_cmd.move_to.assert_called_once_with(
+            move_popover.machine, 100.0, 120.0, 5.0, speed=None
+        )
+
+    @pytest.mark.ui
+    def test_prefill_shifts_by_wcs_and_offset(self, move_popover):
+        enable_pointer_alignment(move_popover.machine, 5.0, 5.0)
+        machine = move_popover.machine
+        machine.update_wcs_offset("G54", (10.0, 20.0, 3.0))
+        machine.active_wcs = "G54"
+        machine.device_state.machine_pos = (110.0, 120.0, 8.0)
+        self._set_rows(move_popover, 0.0, 0.0, 0.0)
+
+        move_popover._prefill_from_machine()
+
+        # Plain WCS reading is (100, 100); the pointer adds the offset.
+        move_popover.x_row.set_value_in_base_units.assert_called_once_with(
+            105.0
+        )
+        move_popover.y_row.set_value_in_base_units.assert_called_once_with(
+            105.0
+        )
+
+    @pytest.mark.ui
+    def test_corner_shortcut_shifted(self, move_popover):
+        enable_pointer_alignment(move_popover.machine, 10.0, 20.0)
+
+        move_popover._on_move_to_position(None, "ll")
+
+        # Unshifted the ll corner commands (100, 50); the shift moves
+        # the beam one offset behind so the pointer marks the corner.
+        move_popover.machine_cmd.move_to.assert_called_once_with(
+            move_popover.machine, 90.0, 30.0, speed=None
+        )
+
+    @pytest.mark.ui
+    def test_wcs_zero_shifted(self, move_popover):
+        enable_pointer_alignment(move_popover.machine, 10.0, 20.0)
+        move_popover.machine.update_wcs_offset("G54", (50.0, 50.0, 0.0))
+
+        move_popover._on_move_to_wcs_zero(None)
+
+        # The pointer lands on the origin, so the beam goes to
+        # (0, 0) - offset in WCS terms.
+        move_popover.machine_cmd.move_to.assert_called_once_with(
+            move_popover.machine, -10.0, -20.0, speed=None
+        )
+
+    @pytest.mark.ui
+    def test_move_clamps_and_warns_out_of_travel(self, move_popover):
+        enable_pointer_alignment(move_popover.machine, 10.0, 20.0)
+        self._set_rows(move_popover, 5.0, 5.0)
+
+        move_popover._issue_move()
+
+        # Shifted target (-5, -15) is off the bed; the beam is clamped
+        # to (0, 0).
+        move_popover.machine_cmd.move_to.assert_called_once_with(
+            move_popover.machine, 0.0, 0.0, 5.0, speed=None
+        )
+        move_popover.travel_warning_label.set_visible.assert_called_with(True)
+
+    @pytest.mark.ui
+    def test_move_no_warning_within_travel(self, move_popover):
+        enable_pointer_alignment(move_popover.machine, 10.0, 20.0)
+        self._set_rows(move_popover, 50.0, 60.0)
+
+        move_popover._issue_move()
+
+        move_popover.travel_warning_label.set_visible.assert_called_once_with(
+            False
+        )
+
+
+@pytest.fixture
+def real_alignment_popover(lite_context, sync_machine):
+    """A fully constructed MoveToPopover with real widgets."""
+    from rayforge.ui_gtk.machine.move_to_popover import MoveToPopover
+
+    sync_machine.set_axis_extents(400, 300)
+    popover = MoveToPopover()
+    machine_cmd = MagicMock()
+    popover.set_machine(sync_machine, machine_cmd)
+    return popover, machine_cmd
+
+
+class TestPointerAlignmentSwitch:
+    """The alignment switch syncs bidirectionally with the machine."""
+
+    @pytest.mark.ui
+    def test_switch_insensitive_without_offset(self, real_alignment_popover):
+        popover, _ = real_alignment_popover
+
+        assert popover.alignment_row.get_sensitive() is False
+        assert popover.alignment_row.get_active() is False
+        assert popover.alignment_row.get_subtitle() == (
+            "Requires a pointer offset on the laser head"
+        )
+
+    @pytest.mark.ui
+    def test_switch_enables_with_offset(self, real_alignment_popover):
+        popover, _ = real_alignment_popover
+        head = popover.machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(10.0, 20.0)
+        head.set_pointer_offset_enabled(True)
+
+        popover._update_bounds_and_axes()
+
+        assert popover.alignment_row.get_sensitive() is True
+
+    @pytest.mark.ui
+    def test_switch_toggles_machine_state(self, real_alignment_popover):
+        popover, _ = real_alignment_popover
+        enable_pointer_alignment(popover.machine)
+
+        popover.alignment_row.set_active(True)
+
+        assert popover.machine.pointer_alignment_enabled is True
+
+        popover.alignment_row.set_active(False)
+
+        assert popover.machine.pointer_alignment_enabled is False
+
+    @pytest.mark.ui
+    def test_switch_syncs_from_machine(self, real_alignment_popover):
+        popover, _ = real_alignment_popover
+        enable_pointer_alignment(popover.machine)
+
+        popover.machine.set_pointer_alignment(False)
+
+        assert popover.alignment_row.get_active() is False
+
+        popover.machine.set_pointer_alignment(True)
+
+        assert popover.alignment_row.get_active() is True
+
+    @pytest.mark.ui
+    def test_toggle_keeps_entered_values(self, real_alignment_popover):
+        """Toggling alignment must not touch the coordinate rows, so
+        the user can move back to a previously entered position."""
+        popover, _ = real_alignment_popover
+        head = popover.machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(10.0, 20.0)
+        head.set_pointer_offset_enabled(True)
+        popover.machine.device_state.machine_pos = (100.0, 100.0, 0.0)
+
+        popover.x_row.set_value_in_base_units(50.0)
+        popover.y_row.set_value_in_base_units(60.0)
+
+        popover.machine.set_pointer_alignment(True)
+
+        assert popover.x_row.get_value_in_base_units() == 50.0
+        assert popover.y_row.get_value_in_base_units() == 60.0
+
+    @pytest.mark.ui
+    def test_alignment_resets_when_offset_removed(
+        self, real_alignment_popover
+    ):
+        popover, _ = real_alignment_popover
+        head = popover.machine.get_default_laser_head()
+        assert head is not None
+        enable_pointer_alignment(popover.machine)
+
+        head.set_pointer_offset_enabled(False)
+
+        assert popover.machine.pointer_alignment_enabled is False
+        assert popover.alignment_row.get_active() is False
+        assert popover.alignment_row.get_sensitive() is False

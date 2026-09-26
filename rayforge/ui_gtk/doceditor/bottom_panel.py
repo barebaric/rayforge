@@ -358,6 +358,25 @@ class BottomPanel(Gtk.Box):
         position_button_box.set_spacing(6)
         self.position_row.add_suffix(position_button_box)
 
+        self.pointer_alignment_btn = Gtk.ToggleButton(
+            child=get_icon("pointer-alignment-symbolic")
+        )
+        self.pointer_alignment_btn.set_tooltip_text(
+            _(
+                "Pointer Alignment: aim moves and zeroing at the pointer "
+                "dot instead of the cutting beam"
+            )
+        )
+        self.pointer_alignment_btn.add_css_class("flat")
+        self.pointer_alignment_btn.set_size_request(40, -1)
+        self.pointer_alignment_btn.set_sensitive(False)
+        self._pointer_alignment_handler_id = (
+            self.pointer_alignment_btn.connect(
+                "toggled", self._on_pointer_alignment_toggled
+            )
+        )
+        position_button_box.append(self.pointer_alignment_btn)
+
         self.click_to_move_btn = Gtk.Button(child=get_icon("move-symbolic"))
         self.click_to_move_btn.set_tooltip_text(_("Click Canvas to Move Head"))
         self.click_to_move_btn.add_css_class("flat")
@@ -478,6 +497,9 @@ class BottomPanel(Gtk.Box):
             self.machine.wcs_updated.connect(self._on_wcs_updated)
             self.machine.state_changed.connect(self._on_machine_state_changed)
             self.machine.changed.connect(self._on_wcs_updated)
+            self.machine.pointer_alignment_changed.connect(
+                self._on_pointer_alignment_changed
+            )
 
     def _disconnect_machine_signals(self):
         if self.machine:
@@ -486,6 +508,9 @@ class BottomPanel(Gtk.Box):
                 self._on_machine_state_changed
             )
             self.machine.changed.disconnect(self._on_wcs_updated)
+            self.machine.pointer_alignment_changed.disconnect(
+                self._on_pointer_alignment_changed
+            )
 
     def set_machine(
         self,
@@ -636,10 +661,34 @@ class BottomPanel(Gtk.Box):
             name_label.set_label(wcs_name)
             subtitle_label.set_visible(False)
 
+    def _on_pointer_alignment_toggled(self, button):
+        if self.machine:
+            self.machine.set_pointer_alignment(button.get_active())
+        self._sync_pointer_alignment_btn()
+
+    def _on_pointer_alignment_changed(self, machine):
+        self._sync_pointer_alignment_btn()
+
+    def _sync_pointer_alignment_btn(self):
+        """Mirrors the machine alignment state into the toggle button
+        without re-echoing the change back to the machine."""
+        button = getattr(self, "pointer_alignment_btn", None)
+        if button is None:
+            return
+        button.handler_block(self._pointer_alignment_handler_id)
+        if self.machine and self.machine.has_pointer_offset():
+            button.set_sensitive(True)
+            button.set_active(self.machine.pointer_alignment_enabled)
+        else:
+            button.set_sensitive(False)
+            button.set_active(False)
+        button.handler_unblock(self._pointer_alignment_handler_id)
+
     def _update_wcs_ui(self):
         if not self.machine:
             return
 
+        self._sync_pointer_alignment_btn()
         self._sync_wcs_model()
 
         hide_wcs_controls = self.machine.wcs_origin_is_workarea_origin
