@@ -1,41 +1,49 @@
 import logging
 from dataclasses import dataclass
+from typing import ClassVar
 
 import cv2
 import numpy as np
+
+from .target import (
+    CalibrationTarget,
+    CalibrationTargetType,
+    ConfigField,
+    SummaryRow,
+    TargetConfig,
+    normalize_detection,
+    to_gray,
+)
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class CharucoConfig:
+class CharucoConfig(TargetConfig):
     squares_x: int = 5
     squares_y: int = 7
     square_length_mm: float = 20.0
     marker_length_mm: float = 15.0
     dictionary_id: int = cv2.aruco.DICT_6X6_250
 
-    def to_dict(self) -> dict:
-        return {
-            "squares_x": self.squares_x,
-            "squares_y": self.squares_y,
-            "square_length_mm": self.square_length_mm,
-            "marker_length_mm": self.marker_length_mm,
-            "dictionary_id": self.dictionary_id,
-        }
-
-    @classmethod
-    def from_dict(cls, data: dict) -> "CharucoConfig":
-        return cls(
-            squares_x=data.get("squares_x", 5),
-            squares_y=data.get("squares_y", 7),
-            square_length_mm=data.get("square_length_mm", 20.0),
-            marker_length_mm=data.get("marker_length_mm", 15.0),
-            dictionary_id=data.get("dictionary_id", cv2.aruco.DICT_6X6_250),
-        )
+    FIELDS: ClassVar[tuple[ConfigField, ...]] = (
+        ConfigField(key="squares_x", lower=3, upper=12, integer=True),
+        ConfigField(key="squares_y", lower=3, upper=14, integer=True),
+        ConfigField(key="square_length_mm", lower=1.0, upper=300.0, step=0.5),
+        ConfigField(key="marker_length_mm", lower=1.0, upper=300.0, step=0.5),
+    )
 
 
-class CharucoBoard:
+class CharucoTarget(CalibrationTarget):
+    """ChArUco board: a chessboard carrying ArUco markers in its squares.
+
+    Detection yields the chessboard corner intersections rather than the
+    marker corners, which is what gives a ChArUco board its higher
+    angular accuracy compared to a plain marker grid.
+    """
+
+    target_type = CalibrationTargetType.CHARUCO
+    config_class = CharucoConfig
     MIN_SQUARES_X = 4
     MIN_SQUARES_Y = 5
     MIN_MARKER_PIXELS = 10
@@ -45,6 +53,14 @@ class CharucoBoard:
     GAMMA = 2.0
 
     def __init__(self, config: CharucoConfig):
+        if config.marker_length_mm >= config.square_length_mm:
+            raise ValueError(
+                "Marker length "
+                f"({config.marker_length_mm}) must be smaller than "
+                f"square length ({config.square_length_mm})"
+            )
+        if config.square_length_mm <= 0 or config.marker_length_mm <= 0:
+            raise ValueError("Square and marker lengths must be positive")
         self.config = config
         self._board = None
         self._detector = None
@@ -95,7 +111,7 @@ class CharucoBoard:
         return self._board
 
     @property
-    def chessboard_corners(self) -> int:
+    def point_count(self) -> int:
         return (self.config.squares_x - 1) * (self.config.squares_y - 1)
 
     @property
@@ -104,6 +120,10 @@ class CharucoBoard:
             self.config.squares_x * self.config.square_length_mm,
             self.config.squares_y * self.config.square_length_mm,
         )
+
+    def object_points(self) -> np.ndarray:
+        assert self._board is not None
+        return self._board.getChessboardCorners()
 
     @classmethod
     def recommend_config(
@@ -182,10 +202,7 @@ class CharucoBoard:
     def detect(
         self, image: np.ndarray
     ) -> tuple[list[tuple[float, float]], list[int]] | None:
-        if len(image.shape) == 3:
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        else:
-            gray = image
+        gray = to_gray(image)
 
         target = self._good_enough_corners()
         best = None
@@ -201,7 +218,7 @@ class CharucoBoard:
         return best
 
     def _good_enough_corners(self) -> int:
-        return max(4, self.chessboard_corners // 2)
+        return max(4, self.point_count // 2)
 
     def _detection_stages(self, gray: np.ndarray):
         yield gray, self._detector
@@ -238,26 +255,22 @@ class CharucoBoard:
         if charuco_corners is None or charuco_ids is None:
             return None
 
-        try:
-            corners_array = np.asarray(
-                charuco_corners, dtype=np.float32
-            ).reshape(-1, 2)
-            ids_array = np.asarray(charuco_ids).reshape(-1)
-        except (TypeError, ValueError) as error:
-            logger.debug("Invalid ChArUco detection result: %s", error)
-            return None
+        return normalize_detection(charuco_corners, charuco_ids)
 
-        if len(corners_array) < 4 or len(corners_array) != len(ids_array):
-            return None
-
-        try:
-            corners = [(float(x), float(y)) for x, y in corners_array]
-            ids = [int(value) for value in ids_array]
-        except (TypeError, ValueError, OverflowError) as error:
-            logger.debug("Invalid ChArUco detection result: %s", error)
-            return None
-
-        return corners, ids
+    def summary(self) -> list[SummaryRow]:
+        return [
+            SummaryRow(
+                key="grid_size",
+                value=(
+                    f"{self.config.squares_x} x {self.config.squares_y}"
+                    " squares"
+                ),
+            ),
+            SummaryRow(
+                key="square_size",
+                measurement_mm=self.config.square_length_mm,
+            ),
+        ]
 
     def draw_detection(
         self,
@@ -278,3 +291,6 @@ class CharucoBoard:
         )
 
         return result
+
+
+__all__ = ["CharucoConfig", "CharucoTarget"]

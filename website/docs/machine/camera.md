@@ -175,7 +175,7 @@ distortion, and it can throw off alignment even if your alignment points are car
 Lens calibration is the camera wizard's second stage. It lets you choose how to correct the
 distortion:
 
-- **Automatic** — capture frames of a printed calibration card; the wizard computes the distortion
+- **Automatic** — capture frames of a printed calibration pattern; the wizard computes the distortion
   model for you
 - **Manual** — enter the radial (k1–k3) and tangential (p1–p2) coefficients by hand
 - **Skip** — leave the distortion uncorrected; you can calibrate later
@@ -183,23 +183,76 @@ distortion:
 #### Automatic Calibration
 
 For **Automatic** calibration, the wizard walks you through capturing several images of a printed
-calibration card from different positions on the bed, then computes a distortion model
+calibration pattern from different positions on the bed, then computes a distortion model
 automatically.
 
 ![Wizard — Card Settings](/screenshots/machine-settings-camera-lens-calibration-wizard-card.webp)
 
-1. Set the **Width** and **Height** of your printed card. The preview updates in real-time — the
-   card should cover about 70% of the camera view.
-2. Click **Save to PDF** to export the card for printing, then print it and place it on the laser
+First choose a **Pattern Type**:
+
+| Pattern               | Notes                                                                            |
+| --------------------- | -------------------------------------------------------------------------------- |
+| **ChArUco Board**     | Chessboard carrying markers. Most accurate; needs a good printer.                  |
+| **Marker Grid**       | Standalone ArUco or AprilTag markers. Tolerates partial views and clutter.          |
+| **Dot Grid**          | Black dots, in rows or in staggered rows. Cheapest to print, lowest accuracy.       |
+
+1. Set the **Width** and **Height** of your printed sheet. The preview updates in real-time — the
+   pattern should cover about 70% of the camera view.
+2. Click **Save to PDF** to export the pattern for printing, then print it and place it on the laser
    bed.
 
 ![Wizard — Capture](/screenshots/machine-settings-camera-lens-calibration-wizard-capture.webp)
 
-3. Move the card to different positions and angles within the camera view and click **Capture
+3. Move the pattern to different positions and angles within the camera view and click **Capture
    Frame** for each position. Aim for at least 8 captures covering the entire frame, including
    corners and edges. The progress bar and status indicators show capture quality.
 4. When enough frames are captured, the wizard computes the distortion model and applies it — the
    camera overlay now shows a corrected, straight image.
+
+#### Using a Pattern You Already Printed
+
+The **Pattern Geometry** fields describe the sheet in physical units — grid counts, feature sizes,
+and the distances between them. Editing them switches the wizard to measuring an existing sheet
+rather than suggesting a new one, so you can calibrate against a pattern you printed earlier, or one
+that came with your machine.
+
+Measure the sheet after printing, and enter the printed dimensions rather than the nominal ones:
+printers scale, and a few percent of scale error shows up directly in the calibration result. If you
+change a geometry field, the **Card Size** suggestion is ignored, because your measurements now
+decide the pattern.
+
+For a **Marker Grid**, the **Marker Dictionary** must match the family the sheet was printed
+with (ArUco or AprilTag — Rayforge refines the corners accordingly). If the printed ids do not
+start at 0, for example one tile of a larger set, put the first id on the sheet in **Marker ID
+Offset**; markers outside the described range are ignored.
+
+The numbering follows the **ID Origin** corner, which holds the offset id, and the **ID Order**:
+consecutive ids run along rows first, or along columns first. The default — top-left corner, rows
+first — matches OpenCV's own boards. To describe your sheet, find the marker with the lowest id
+and pick the corner it sits in; then check whether the next id sits beside it (rows) or below it
+(columns).
+
+Dot sheets come in two arrangements, and the **Row Spacing** and **Row Offset** fields tell Rayforge
+which one you have:
+
+- **Rows in a rectangle** — every row lines up. Leave **Row Offset** at 0.
+- **Rows staggered** — every second row is shifted sideways, often by half a pitch, which gives a
+  hexagonal arrangement. Put the distance between rows in **Row Spacing** and the sideways shift in
+  **Row Offset**.
+
+Rayforge suggests a staggered sheet by default, so if your sheet is a plain rectangle, set **Row
+Offset** back to 0.
+
+:::tip
+
+A dot sheet has no cue for which way is up, so Rayforge reads its orientation from the view and from
+the pattern's own geometry. That holds as long as the sheet keeps roughly the same orientation
+between captures — so when using **Dot Grid**, do not rotate the sheet by a quarter turn between
+shots. Staggered rows help, because the shift breaks the symmetry a plain rectangle has. ChArUco and
+ArUco patterns carry their own orientation and have no such constraint; prefer them when you have
+the choice.
+
+:::
 
 #### Manual Calibration
 

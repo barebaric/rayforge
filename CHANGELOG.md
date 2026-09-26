@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Camera: network cameras are supported as stream sources alongside
   USB cameras, with automatic reconnection after read failures
   (thanks to @atkaper, #438)
+- Camera: lens calibration now supports ArUco/AprilTag marker grids
+  and printable dot grids alongside ChArUco boards. Marker grids
+  tolerate partial views, and their dictionary, ID offset, origin
+  corner and numbering order are all editable, so factory-printed
+  patterns can be calibrated against directly instead of printing
+  a new card
 - Drivers: a new GRBL driver `GRBL (Rust)` (`GrblSerialNextDriver`):
   the complete GRBL serial protocol stack (character-counting flow
   control, job streaming, stall detection, deadlock recovery,
