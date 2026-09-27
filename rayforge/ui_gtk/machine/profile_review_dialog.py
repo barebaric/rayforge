@@ -21,13 +21,11 @@ from gi.repository import Adw, Gtk
 
 from ...machine.device.profile import DeviceProfile
 from ...machine.device.profile_diff import (
-    DEVICE_NOTES_SECTION,
     DIALECT_SECTION,
     HEADS_SECTION,
     MACHINE_SECTION,
     SettingDiff,
     apply_diffs,
-    diff_device_notes_with_profile,
     diff_dialect_with_profile,
     diff_heads_with_profile,
     diff_machine_with_profile,
@@ -109,7 +107,6 @@ class _ReviewDialogBase(PatchedDialogWindow):
             MACHINE_SECTION,
             HEADS_SECTION,
             DIALECT_SECTION,
-            DEVICE_NOTES_SECTION,
         ):
             section_diffs = [d for d in diffs if d.section == section]
             if not section_diffs:
@@ -136,12 +133,16 @@ class _ReviewDialogBase(PatchedDialogWindow):
     ) -> Adw.PreferencesGroup:
         group = Adw.PreferencesGroup(title=title)
         for diff in diffs:
+            # Setting values may contain angle brackets (for example a
+            # camera URL placeholder), which Pango would reject as
+            # broken markup and render as an empty subtitle.
             row = Adw.SwitchRow(
                 title=diff.path,
                 subtitle=_("{current}  →  {profile}").format(
                     current=format_value(diff.current_value),
                     profile=format_value(diff.profile_value),
                 ),
+                use_markup=False,
                 active=True,
             )
             group.add(row)
@@ -188,7 +189,6 @@ class ProfileReviewDialog(_ReviewDialogBase):
         self.profile = profile
         diffs = (
             diff_machine_with_profile(machine, profile)
-            + diff_device_notes_with_profile(machine, profile)
             + diff_heads_with_profile(machine, profile)
             + diff_dialect_with_profile(machine, profile)
         )

@@ -8,16 +8,19 @@ from gi.repository import Adw
 from rayforge.config import BUILTIN_DEVICES_DIR
 from rayforge.machine.device.profile import DeviceProfile
 from rayforge.machine.device.profile_diff import (
-    DEVICE_NOTES_SECTION,
     HEADS_SECTION,
-    diff_device_notes_with_profile,
+    MACHINE_SECTION,
+    SettingDiff,
     diff_dialect_with_profile,
     diff_heads_with_profile,
     diff_machine_with_profile,
 )
 from rayforge.machine.models.machine import Machine
 from rayforge.shared import tasker
-from rayforge.ui_gtk.machine.profile_review_dialog import ProfileReviewDialog
+from rayforge.ui_gtk.machine.profile_review_dialog import (
+    ProfileReviewDialog,
+    SchemaReviewDialog,
+)
 
 
 @pytest.fixture
@@ -110,7 +113,7 @@ def test_dialog_ignore_marks_reviewed_without_applying(machine):
 
 
 @pytest.mark.ui
-def test_dialog_offers_profile_notes_as_separately_selectable_diff(machine):
+def test_dialog_never_offers_profile_notes_for_review(machine):
     base = DeviceProfile.from_path(BUILTIN_DEVICES_DIR / "sculpfun-icube-3w")
     profile = dc_replace(
         base, meta=dc_replace(base.meta, notes="New camera guidance.")
@@ -119,19 +122,23 @@ def test_dialog_offers_profile_notes_as_separately_selectable_diff(machine):
 
     dialog = ProfileReviewDialog(machine, profile)
 
-    notes_rows = [
-        (diff, row)
-        for diff, row in dialog._rows
-        if diff.section == DEVICE_NOTES_SECTION
-    ]
-    assert len(notes_rows) == len(
-        diff_device_notes_with_profile(machine, profile)
-    )
-    diff, row = notes_rows[0]
-    assert diff.profile_value == "New camera guidance."
-    assert row.get_active()
-
-    row.set_active(False)
-    dialog._apply(dialog._selected_diffs())
-    assert machine.device_notes is None
+    assert dialog._rows == []
     assert machine.user_notes == "Private alignment notes."
+
+
+@pytest.mark.ui
+def test_row_subtitle_survives_angle_brackets_in_values(machine):
+    diff = SettingDiff(
+        section=MACHINE_SECTION,
+        key="camera.uri",
+        path="Source URL",
+        current_value=None,
+        profile_value="http://<laser-ip>:8080/photo",
+    )
+
+    dialog = SchemaReviewDialog(machine, [diff])
+
+    _, row = dialog._rows[0]
+    subtitle = row.get_subtitle() or ""
+    assert "<laser-ip>" in subtitle
+    assert not row.get_use_markup()

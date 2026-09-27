@@ -29,7 +29,6 @@ logger = logging.getLogger(__name__)
 MACHINE_SECTION = _("Machine Settings")
 HEADS_SECTION = _("Heads")
 DIALECT_SECTION = _("G-code Dialect")
-DEVICE_NOTES_SECTION = _("Device Notes")
 
 DIALECT_KEY_PREFIX = "dialect."
 HEAD_KEY_PREFIX = "head."
@@ -83,21 +82,22 @@ def diff_machine_with_profile(
     return diffs
 
 
-def diff_device_notes_with_profile(
+def sync_device_notes_from_profile(
     machine: "Machine", profile: "DeviceProfile"
-) -> list[SettingDiff]:
-    """Returns a reviewable diff when profile-maintained notes change."""
+) -> bool:
+    """Copies profile-maintained notes onto the machine, returning
+    whether anything changed.
+
+    Device notes are documentation the profile owns and the user
+    cannot edit, so they are never offered for review: declining them
+    would strand the machine on outdated guidance with no way back.
+    The user's own notes live in ``Machine.user_notes`` and are left
+    untouched.
+    """
     if machine.device_notes == profile.meta.notes:
-        return []
-    return [
-        SettingDiff(
-            section=DEVICE_NOTES_SECTION,
-            key="device.notes",
-            path=DEVICE_NOTES_SECTION,
-            current_value=machine.device_notes,
-            profile_value=profile.meta.notes,
-        )
-    ]
+        return False
+    machine.device_notes = profile.meta.notes
+    return True
 
 
 def diff_heads_with_profile(
@@ -181,9 +181,6 @@ def apply_diffs(
     bindings = dict(_iter_setting_bindings())
     dialect_values: dict[str, Any] = {}
     for diff in diffs:
-        if diff.key == "device.notes":
-            machine.device_notes = diff.profile_value
-            continue
         if diff.section == DIALECT_SECTION:
             dialect_key = diff.key.removeprefix(DIALECT_KEY_PREFIX)
             dialect_values[dialect_key] = diff.profile_value
@@ -259,7 +256,6 @@ def split_reviewable(machines_profiles):
     for machine, profile in machines_profiles:
         if (
             diff_machine_with_profile(machine, profile)
-            or diff_device_notes_with_profile(machine, profile)
             or diff_heads_with_profile(machine, profile)
             or diff_dialect_with_profile(machine, profile)
         ):

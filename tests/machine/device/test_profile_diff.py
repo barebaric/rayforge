@@ -9,12 +9,12 @@ from rayforge.machine.device.profile_diff import (
     DIALECT_SECTION,
     MACHINE_SECTION,
     apply_diffs,
-    diff_device_notes_with_profile,
     diff_dialect_with_profile,
     diff_heads_with_profile,
     diff_machine_with_profile,
     find_outdated_profiles,
     split_reviewable,
+    sync_device_notes_from_profile,
 )
 from rayforge.machine.models.dialect import GcodeDialect
 from rayforge.machine.models.laser import LaserHead
@@ -76,7 +76,7 @@ def test_provenance_survives_roundtrip(
     assert restored.reviewed_profile_hash == machine.reviewed_profile_hash
 
 
-def test_device_notes_are_reviewable_without_replacing_user_notes(
+def test_device_notes_sync_without_replacing_user_notes(
     profile: DeviceProfile, machine: "Machine"
 ):
     machine.device_notes = "Old profile notes"
@@ -85,31 +85,31 @@ def test_device_notes_are_reviewable_without_replacing_user_notes(
         profile, meta=dc_replace(profile.meta, notes="Updated profile notes")
     )
 
-    diffs = diff_device_notes_with_profile(machine, changed)
-    assert len(diffs) == 1
-    assert diffs[0].key == "device.notes"
-    assert diffs[0].current_value == "Old profile notes"
-    assert diffs[0].profile_value == "Updated profile notes"
-
-    apply_diffs(machine, changed, diffs)
+    assert sync_device_notes_from_profile(machine, changed) is True
 
     assert machine.device_notes == "Updated profile notes"
     assert machine.user_notes == "My alignment notes"
 
 
-def test_device_notes_can_be_removed_by_profile_review(
+def test_device_notes_sync_reports_no_change_when_equal(
+    profile: DeviceProfile, machine: "Machine"
+):
+    machine.device_notes = profile.meta.notes
+
+    assert sync_device_notes_from_profile(machine, profile) is False
+
+
+def test_device_notes_can_be_removed_by_profile_sync(
     profile: DeviceProfile, machine: "Machine"
 ):
     machine.device_notes = "Old profile notes"
     changed = dc_replace(profile, meta=dc_replace(profile.meta, notes=None))
 
-    diffs = diff_device_notes_with_profile(machine, changed)
-    assert diffs[0].profile_value is None
-    apply_diffs(machine, changed, diffs)
+    assert sync_device_notes_from_profile(machine, changed) is True
     assert machine.device_notes is None
 
 
-def test_profile_note_only_change_remains_reviewable(
+def test_profile_note_only_change_is_not_reviewable(
     profile: DeviceProfile, machine: "Machine"
 ):
     changed = dc_replace(
@@ -118,8 +118,8 @@ def test_profile_note_only_change_remains_reviewable(
 
     reviewable, nothing_to_do = split_reviewable([(machine, changed)])
 
-    assert reviewable == [(machine, changed)]
-    assert nothing_to_do == []
+    assert reviewable == []
+    assert nothing_to_do == [(machine, changed)]
 
 
 def test_no_diffs_right_after_creation(

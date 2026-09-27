@@ -9986,7 +9986,6 @@ msgstr "Bayer 4"
 msgid "Bayer 8"
 msgstr "Bayer 8"
 
-#: rayforge/machine/device/profile_diff.py
 #: rayforge/ui_gtk/machine/notes_page.py
 msgid "Device Notes"
 msgstr "Gerätehinweise"
