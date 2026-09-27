@@ -364,7 +364,7 @@ class DotGridTarget(CalibrationTarget):
         """Collect dot centres from one threshold polarity."""
         height_px, width_px = mask.shape[:2]
         count, labels, stats, _centroids = cv2.connectedComponentsWithStats(
-            mask, 8
+            mask, None, 8
         )
         if count <= 1:
             return None

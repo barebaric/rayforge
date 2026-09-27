@@ -123,7 +123,7 @@ class CharucoTarget(CalibrationTarget):
 
     def object_points(self) -> np.ndarray:
         assert self._board is not None
-        return self._board.getChessboardCorners()
+        return np.asarray(self._board.getChessboardCorners(), dtype=np.float32)
 
     @classmethod
     def recommend_config(
