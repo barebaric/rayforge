@@ -51,9 +51,9 @@ This value should match your firmware's $30 setting.
 
 #### Frame Power
 
-The power level used for framing operations (outlining without cutting).
+The power level used for framing operations (outlining the job boundary without cutting).
 
-- Set to 0 to disable framing
+- Set to 0 to trace the outline with the beam off, for machines with an auxiliary alignment laser
 - Adjust based on your laser and material
 
 #### Frame Speed

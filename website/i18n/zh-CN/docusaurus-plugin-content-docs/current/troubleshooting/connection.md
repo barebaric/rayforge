@@ -129,6 +129,15 @@ sudo snap connect rayforge:serial-port
 :::
 <!-- prettier-ignore-end -->
 
+<!-- prettier-ignore-start -->
+:::tip[机器在重新连接后更换端口]
+如果您的机器的端口在重启或重新连接后发生变化（例如从
+`/dev/ttyUSB0` 变为 `/dev/ttyUSB1`），请按 USB 身份绑定它：在串口字段中输入设备的 VID:PID（例如
+`0403:6001`）而不是端口路径。自动重连随即会跟随机器前往其新端口。请参阅
+[串口绑定](../machine/general.md#串口绑定)。
+:::
+<!-- prettier-ignore-end -->
+
 ### 波特率不正确
 
 **问题：** 连接建立但命令不起作用或产生乱码响应。

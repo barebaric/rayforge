@@ -92,9 +92,13 @@ Pour créer un dialecte G-code personnalisé basé sur un dialecte intégré :
 3. Modifiez les paramètres du dialecte selon vos besoins
 4. Enregistrez votre dialecte personnalisé
 
-Chaque dialecte personnalisé est une copie indépendante. La modification d'un dialecte n'affecte
-jamais les autres, tu peux donc expérimenter librement sans risquer de perturber une configuration
-existante. Les dialectes personnalisés sont stockés dans ton répertoire de configuration et peuvent
+Chaque dialecte personnalisé est une copie indépendante : la modification d'un dialecte n'affecte
+jamais les autres dialectes ni les autres machines, tu peux donc expérimenter librement sans risquer
+de perturber une configuration existante. Une copie créée à partir d'un dialecte intégré conserve un
+lien vers ce dialecte intégré : les champs de modèle que tu n'as pas explicitement modifiés suivent
+le dialecte intégré, de sorte que les améliorations des dialectes intégrés parviennent
+automatiquement à tes machines, tandis que tes propres modifications sont préservées et jamais
+écrasées. Les dialectes personnalisés sont stockés dans ton répertoire de configuration et peuvent
 être partagés.
 
 ### Paramètres du dialecte

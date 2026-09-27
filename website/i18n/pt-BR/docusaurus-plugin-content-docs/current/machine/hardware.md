@@ -62,6 +62,9 @@ configurações para informar ao Rayforge se sua máquina pode se mover em Z:
   uma cabeça se movendo ao longo de Z.
 - **Inverter Direção do Eixo Z**: Só é mostrado quando **Tem eixo Z** está habilitado. Habilite se
   um comando Z positivo (ex: G0 Z10) move a cabeça para baixo.
+- **Z Min / Z Max**: Só é mostrado quando **Tem eixo Z** está habilitado. A coordenada Z mais baixa
+  e mais alta no referencial da máquina. Os movimentos de jog em Z são limitados a esse intervalo, e
+  o popover Mover para Posição aceita todo o intervalo Z entre os dois valores.
 
 ### Orientação do painel
 

@@ -118,6 +118,16 @@ Power, speed, and laser head selection live on the **Laser** page of the step se
 - How fast the laser moves
 - Slower for thicker materials
 
+#### Power Mode
+
+The Power Mode setting controls how laser power is emitted during moves:
+
+- **Dynamic (M4)** scales power with head speed (default)
+- **Constant (M3)** keeps power fixed regardless of speed
+
+Dynamic power ramps power down when the head slows into a corner, which can leave corners
+under-burned on some machines. Switch to **Constant (M3)** if the frame's corners burn too lightly.
+
 To cut the frame more than once, add a [Multi-Pass](../multi-pass.md) post-processor.
 
 #### Kerf Compensation

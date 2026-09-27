@@ -91,9 +91,12 @@ To create a custom G-code dialect based on a built-in dialect:
 3. Edit the dialect settings as needed
 4. Save your custom dialect
 
-Each custom dialect is an independent copy. Changing one dialect never affects others, so you can
-freely experiment without worrying about breaking an existing setup. Custom dialects are stored in
-your configuration directory and can be shared.
+Each custom dialect is an independent copy: changing one dialect never affects other dialects or
+other machines, so you can freely experiment without worrying about breaking an existing setup. A
+copy created from a built-in dialect keeps a link to that built-in: template fields you have not
+explicitly changed continue to follow the built-in, so improvements to built-in dialects reach your
+machines automatically, while your own edits are preserved and never overwritten. Custom dialects
+are stored in your configuration directory and can be shared.
 
 ### Dialect Settings
 

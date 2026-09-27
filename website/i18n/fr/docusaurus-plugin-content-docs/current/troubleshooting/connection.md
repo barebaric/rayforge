@@ -133,6 +133,17 @@ utilisent `/dev/ttyUSB*` ou `/dev/ttyACM*`.
 :::
 <!-- prettier-ignore-end -->
 
+<!-- prettier-ignore-start -->
+:::tip[La Machine Change de Port Après Reconnexion]
+Si le port de votre machine change
+(par ex. de `/dev/ttyUSB0` à `/dev/ttyUSB1`) après un redémarrage ou une reconnexion, liez-la par
+son identité USB : saisissez le VID:PID du périphérique (par ex. `0403:6001`) dans le champ du port
+série plutôt qu'un chemin de port. La reconnexion automatique suivra alors la machine vers son
+nouveau port. Voir
+[Liaison du Port Série](../machine/general.md#liaison-du-port-série).
+:::
+<!-- prettier-ignore-end -->
+
 ### Débit en bauds incorrect
 
 **Problème :** La connexion s'établit mais les commandes ne fonctionnent pas ou produisent des

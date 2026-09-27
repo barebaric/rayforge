@@ -115,6 +115,17 @@ diálogo de ajustes de paso.
 - Qué tan rápido se mueve el láser
 - Más lento para materiales más gruesos
 
+#### Modo de Potencia
+
+El ajuste de Modo de Potencia controla cómo se emite la potencia láser durante los movimientos:
+
+- **Dinámico (M4)** escala la potencia con la velocidad de avance (predeterminado)
+- **Constante (M3)** mantiene la potencia fija independientemente de la velocidad
+
+La potencia dinámica reduce la potencia cuando el cabezal se frena en una esquina, lo que puede
+dejar esquinas mal grabadas en algunas máquinas. Cambia a **Constante (M3)** si las esquinas del
+marco se graban demasiado débilmente.
+
 Para cortar el marco más de una vez, añade un post-procesador [Multi-Pasada](../multi-pass.md).
 
 #### Compensación de Kerf

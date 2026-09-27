@@ -172,6 +172,20 @@ Schritt-Einstellungen-Dialogs.
 - Langsamer = mehr Energie = tieferer Schnitt
 - Schneller = weniger Energie = leichterer Schnitt
 
+#### Leistungsmodus
+
+Die Einstellung Leistungsmodus steuert, wie die Laserleistung während der Bewegungen ausgegeben
+wird:
+
+| Modus              | G-Code | Verhalten                                                         |
+| ------------------ | ------ | ----------------------------------------------------------------- |
+| **Dynamisch (M4)** | `M4`   | Skaliert die Leistung mit der Bewegungsgeschwindigkeit (Standard) |
+| **Konstant (M3)**  | `M3`   | Hält die Leistung unabhängig von der Geschwindigkeit fest         |
+
+Der dynamische Modus reduziert die Leistung, wenn der Kopf in eine Ecke abbremst — das schützt das
+Material, kann aber auf manchen Maschinen dazu führen, dass Ecken und enge Kurven sichtbar zu
+schwach gebrannt werden. Wechsle zu **Konstant (M3)**, wenn Ecken und Kurven zu schwach brennen.
+
 #### Schnittbreiten-Kompensation
 
 Schnittbreite ist die Breite des vom Laserstrahl entfernten Materials:

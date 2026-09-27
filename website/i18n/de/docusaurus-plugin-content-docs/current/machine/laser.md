@@ -46,9 +46,11 @@ Dieser Wert sollte mit der $30-Einstellung deiner Firmware übereinstimmen.
 
 #### Rahmen-Leistung
 
-Der Leistungswert, der für Rahmen-Operationen verwendet wird (Umreißen ohne Schneiden).
+Der Leistungswert, der für Rahmen-Operationen verwendet wird (Umreißen der Job-Grenze ohne
+Schneiden).
 
-- Auf 0 setzen, um Rahmen zu deaktivieren
+- Auf 0 setzen, um den Umriss mit ausgeschaltetem Strahl nachzuzeichnen — nützlich bei Maschinen mit
+  einem separaten Ausrichtungslaser
 - Passe ihn basierend auf deinem Laser und Material an
 
 #### Rahmen-Geschwindigkeit

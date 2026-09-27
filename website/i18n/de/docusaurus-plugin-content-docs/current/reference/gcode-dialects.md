@@ -87,10 +87,14 @@ Um einen benutzerdefinierten G-Code-Dialekt basierend auf einem integrierten Dia
 3. Bearbeite die Dialekteinstellungen nach Bedarf
 4. Speichere deinen benutzerdefinierten Dialekt
 
-Jeder benutzerdefinierte Dialekt ist eine unabhängige Kopie. Die Änderung eines Dialekts beeinflusst
-niemals andere, sodass du frei experimentieren kannst, ohne dir Sorgen machen zu müssen, eine
-bestehende Konfiguration zu beschädigen. Benutzerdefinierte Dialekte werden in deinem
-Konfigurationsverzeichnis gespeichert und können geteilt werden.
+Jeder benutzerdefinierte Dialekt ist eine unabhängige Kopie: Die Änderung eines Dialekts beeinflusst
+niemals andere Dialekte oder andere Maschinen, sodass du frei experimentieren kannst, ohne dir
+Sorgen machen zu müssen, eine bestehende Konfiguration zu beschädigen. Eine Kopie, die aus einem
+integrierten Dialekt erstellt wurde, behält eine Verknüpfung zu diesem integrierten Dialekt:
+Vorlagenfelder, die du nicht ausdrücklich geändert hast, folgen weiterhin dem integrierten Dialekt,
+sodass Verbesserungen an integrierten Dialekten automatisch deine Maschinen erreichen, während
+eigene Änderungen erhalten bleiben und nie überschrieben werden. Benutzerdefinierte Dialekte werden
+in deinem Konfigurationsverzeichnis gespeichert und können geteilt werden.
 
 ### Dialekt-Einstellungen
 

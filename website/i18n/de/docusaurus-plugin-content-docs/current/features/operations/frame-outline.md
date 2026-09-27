@@ -115,6 +115,18 @@ Schritt-Einstellungen-Dialogs.
 - Wie schnell sich der Laser bewegt
 - Langsamer für dickere Materialien
 
+#### Leistungsmodus
+
+Die Einstellung Leistungsmodus steuert, wie die Laserleistung während der Bewegungen ausgegeben
+wird:
+
+- **Dynamisch (M4)** skaliert die Leistung mit der Bewegungsgeschwindigkeit (Standard)
+- **Konstant (M3)** hält die Leistung unabhängig von der Geschwindigkeit fest
+
+Der dynamische Modus reduziert die Leistung, wenn der Kopf in eine Ecke abbremst, was auf manchen
+Maschinen dazu führt, dass Ecken zu schwach gebrannt werden. Wechsle zu **Konstant (M3)**, wenn die
+Ecken des Rahmens zu schwach brennen.
+
 Um den Rahmen mehr als einmal zu schneiden, füge einen
 [Mehrfach-Durchgang](../multi-pass.md)-Nachbearbeitungsprozessor hinzu.
 

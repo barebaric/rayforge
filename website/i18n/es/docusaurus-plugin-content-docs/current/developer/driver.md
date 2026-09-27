@@ -118,6 +118,13 @@ y deben definirse con `async def`.
   `DriverPrecheckError` en caso de fallo.
 - `setup(**kwargs)`: Llamado una vez con los valores del formulario de configuración. Úsalo para
   inicializar tus transports y estado interno.
+- `update_settings(**kwargs) -> bool`: Opcional. Se llama en lugar de un desmontaje/reconstrucción
+  cuando se editan los argumentos de configuración del driver de una máquina pero la clase del
+  driver no cambia. Devuelve `True` si el driver puede absorber el cambio sin interrumpir una
+  conexión activa (guarda los nuevos argumentos en la instancia; surten efecto en operaciones
+  posteriores o en el siguiente intento de conexión). Devuelve `False` (el valor predeterminado)
+  para solicitar una reconstrucción, que desmonta y vuelve a crear el driver con los nuevos
+  argumentos.
 - `async def connect()`: Establece y mantiene una conexión persistente con el dispositivo. Este
   método debería contener lógica de auto-reconexión.
 - `async def cleanup()`: Llamado al desconectar. Debería cerrar todas las conexiones y liberar
@@ -131,8 +138,10 @@ y deben definirse con `async def`.
   se llama con el op_index cuando cada comando completa.
 - `async def home(axes: Optional[Axis] = None)`: Lleva la máquina al origen. Puede llevar al origen
   ejes específicos o todos los ejes.
-- `async def move_to(pos_x: float, pos_y: float)`: Mueve manualmente el cabezal láser a una
-  coordenada XY específica.
+- `async def move_to(pos_x: float, pos_y: float, pos_z: Optional[float] = None, speed: Optional[float] = None)`:
+  Mueve manualmente el cabezal láser a una coordenada XY específica. Cuando se proporciona `pos_z`,
+  se apunta como una posición Z absoluta en el mismo movimiento. `speed` está en mm/min y recurre a
+  un valor predeterminado del driver cuando es `None`.
 - `async def set_hold(hold: bool = True)`: Pausa o reanuda el trabajo actual.
 - `async def cancel()`: Detiene el trabajo actual.
 - `async def jog(axis: Axis, distance: float, speed: int)`: Mueve la máquina a lo largo de un eje
@@ -168,9 +177,11 @@ helper protegidos desde la clase base `Driver`.
 
 La mejor forma de aprender es mirar los drivers existentes en `rayforge/machine/driver/`, como:
 
-- `grbl/` - Máquinas basadas en GRBL (serial, telnet, red)
+- `grbl/` - Máquinas basadas en GRBL (serial, serial simple, serial Rust, telnet, red)
 - `marlin/` - Máquinas basadas en firmware Marlin (serial)
-- `smoothie.py` - Máquinas basadas en Smoothieboard
+- `ruidarpa/` - Controladores Ruida mediante el Ruida Protocol Analyzer (USB, UDP o TUI RPC)
+- `octoprint/` - Máquinas controladas a través de un servidor OctoPrint
+- `smoothie/` - Máquinas basadas en Smoothieboard
 - `dummy.py` - Un driver de prueba para desarrollo
 
 Si te quedas atascado, ¡no dudes en abrir un issue en GitHub! Estamos felices de ayudar.

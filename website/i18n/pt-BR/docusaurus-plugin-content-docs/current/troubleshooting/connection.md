@@ -132,6 +132,16 @@ Linux, pois estas tipicamente não são dispositivos GRBL baseados em USB. Porta
 :::
 <!-- prettier-ignore-end -->
 
+<!-- prettier-ignore-start -->
+:::tip[Máquina Muda de Porta Após Reconexão]
+Se a porta da sua máquina mudar (ex.: de
+`/dev/ttyUSB0` para `/dev/ttyUSB1`) após uma reinicialização ou reconexão, vincule-a pela identidade
+USB: insira o VID:PID do dispositivo (ex.: `0403:6001`) no campo da porta serial em vez de um caminho
+de porta. A reconexão automática então seguirá a máquina para a nova porta. Consulte
+[Vínculo da Porta Serial](../machine/general.md#vínculo-da-porta-serial).
+:::
+<!-- prettier-ignore-end -->
+
 ### Taxa de Transmissão Incorreta
 
 **Problema:** Conexão estabelece mas comandos não funcionam ou produzem respostas truncadas.

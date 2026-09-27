@@ -90,9 +90,13 @@ Para crear un dialecto de código G personalizado basado en un dialecto integrad
 3. Edita los ajustes del dialecto según sea necesario
 4. Guarda tu dialecto personalizado
 
-Cada dialecto personalizado es una copia independiente. Cambiar un dialecto nunca afecta a otros,
-por lo que puedes experimentar libremente sin preocuparte por dañar una configuración existente. Los
-dialectos personalizados se almacenan en tu directorio de configuración y pueden compartirse.
+Cada dialecto personalizado es una copia independiente: cambiar un dialecto nunca afecta a otros
+dialectos ni a otras máquinas, por lo que puedes experimentar libremente sin preocuparte por dañar
+una configuración existente. Una copia creada a partir de un dialecto integrado mantiene un enlace
+con ese dialecto integrado: los campos de plantilla que no hayas cambiado explícitamente siguen al
+dialecto integrado, de modo que las mejoras en los dialectos integrados llegan automáticamente a tus
+máquinas, mientras que tus propias ediciones se conservan y nunca se sobrescriben. Los dialectos
+personalizados se almacenan en tu directorio de configuración y pueden compartirse.
 
 ### Ajustes del Dialecto
 

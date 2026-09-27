@@ -87,8 +87,12 @@ Para criar um dialeto G-code personalizado baseado em um dialeto embutido:
 3. Edite as configurações do dialeto conforme necessário
 4. Salve seu dialeto personalizado
 
-Cada dialeto personalizado é uma cópia independente. Alterar um dialeto nunca afeta os outros, então
-você pode experimentar livremente sem se preocupar em danificar uma configuração existente. Dialetos
+Cada dialeto personalizado é uma cópia independente: alterar um dialeto nunca afeta outros dialetos
+nem outras máquinas, então você pode experimentar livremente sem se preocupar em danificar uma
+configuração existente. Uma cópia criada a partir de um dialeto embutido mantém um vínculo com esse
+dialeto embutido: os campos de modelo que você não alterou explicitamente continuam seguindo o
+dialeto embutido, de modo que melhorias nos dialetos embutidos chegam automaticamente às suas
+máquinas, enquanto suas próprias edições são preservadas e nunca sobrescritas. Dialetos
 personalizados são armazenados no seu diretório de configuração e podem ser compartilhados.
 
 ### Configurações do Dialeto

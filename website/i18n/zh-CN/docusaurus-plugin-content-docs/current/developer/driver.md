@@ -103,6 +103,9 @@ class YourDriver(Driver):
 - `precheck(**kwargs)`：**(类方法)** 配置的非阻塞静态检查，可在驱动程序实例化之前运行。失败时应引发
   `DriverPrecheckError`。
 - `setup(**kwargs)`：使用设置表单中的值调用一次。用于初始化您的传输和内部状态。
+- `update_settings(**kwargs) -> bool`：可选。当机器的驱动程序设置参数被编辑但驱动程序类未更改时，代替拆卸/重建被调用。如果驱动程序可以在不中断活动连接的情况下吸收该更改，则返回
+  `True`（将新参数存储在实例上；它们对后续操作或下一次连接尝试生效）。返回
+  `False`（默认值）以请求重建，即使用新参数拆卸并重新创建驱动程序。
 - `async def connect()`：建立并维护与设备的持久连接。此方法应包含自动重连逻辑。
 - `async def cleanup()`：断开连接时调用。应关闭所有连接并释放资源。
 
@@ -111,7 +114,9 @@ class YourDriver(Driver):
 - `async def run(machine_code: Any, op_map: MachineCodeOpMap, doc: Doc, on_command_done: Optional[Callable[[int], Union[None, Awaitable[None]]]] = None)`：执行作业的核心方法。接收预编码的机器代码（例如 G-code 字符串）和操作索引与机器代码之间的映射。当每个命令完成时，使用 op_index 调用
   `on_command_done` 回调。
 - `async def home(axes: Optional[Axis] = None)`：归位机器。可以归位特定轴或所有轴。
-- `async def move_to(pos_x: float, pos_y: float)`：手动将激光头移动到特定 XY 坐标。
+- `async def move_to(pos_x: float, pos_y: float, pos_z: Optional[float] = None, speed: Optional[float] = None)`：手动将激光头移动到特定 XY 坐标。当提供
+  `pos_z` 时，它将在同一移动中作为绝对 Z 位置被定位。`speed` 以 mm/min 为单位，为 `None`
+  时回退到驱动程序默认值。
 - `async def set_hold(hold: bool = True)`：暂停或恢复当前作业。
 - `async def cancel()`：停止当前作业。
 - `async def jog(axis: Axis, distance: float, speed: int)`：沿特定轴点动机器。
@@ -140,9 +145,11 @@ class YourDriver(Driver):
 
 学习的最佳方式是查看 `rayforge/machine/driver/` 中的现有驱动程序，例如：
 
-- `grbl/` - 基于 GRBL 的机器（串口、Telnet、网络）
+- `grbl/` - 基于 GRBL 的机器（串口、串口简易版、Rust 串口、Telnet、网络）
 - `marlin/` - 基于 Marlin 固件的机器（串口）
-- `smoothie.py` - 基于 Smoothieboard 的机器
+- `ruidarpa/` - 通过 Ruida Protocol Analyzer 连接的 Ruida 控制器（USB、UDP 或 TUI RPC）
+- `octoprint/` - 通过 OctoPrint 服务器驱动的机器
+- `smoothie/` - 基于 Smoothieboard 的机器
 - `dummy.py` - 用于开发的测试驱动程序
 
 如果您遇到困难，请不要犹豫在 GitHub 上开 issue！我们很乐意提供帮助。

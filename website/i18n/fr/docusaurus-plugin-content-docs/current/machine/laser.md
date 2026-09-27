@@ -46,9 +46,11 @@ Cette valeur doit correspondre au paramètre $30 de ton firmware.
 
 #### Puissance de Cadrage
 
-Le niveau de puissance utilisé pour les opérations de cadrage (traçage du contour sans couper).
+Le niveau de puissance utilisé pour les opérations de cadrage (traçage des limites du travail sans
+couper).
 
-- Définis à 0 pour désactiver le cadrage
+- Définis à 0 pour tracer le contour avec le faisceau éteint, utile pour les machines dotées d'un
+  laser d'alignement auxiliaire
 - Ajuste selon ton laser et matériau
 
 #### Vitesse de Cadrage

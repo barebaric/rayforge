@@ -46,9 +46,11 @@ Este valor deve corresponder à configuração $30 do seu firmware.
 
 #### Potência de Enquadramento
 
-O nível de potência usado para operações de enquadramento (delinear sem cortar).
+O nível de potência usado para operações de enquadramento (delineando o limite do trabalho sem
+cortar).
 
-- Defina como 0 para desabilitar enquadramento
+- Defina como 0 para traçar o contorno com o feixe desligado, útil para máquinas com um laser de
+  alinhamento auxiliar
 - Ajuste com base no seu laser e material
 
 #### Velocidade de Enquadramento

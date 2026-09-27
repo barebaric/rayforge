@@ -129,6 +129,17 @@ You might have selected the wrong port, especially if you have multiple USB devi
 7. Avoid ports named `/dev/ttyS*` on Linux - these are hardware serial ports, not USB
 
 <!-- prettier-ignore-start -->
+:::tip[Machine Changes Ports After Reconnect]
+If your machine's port changes (e.g. from `/dev/ttyUSB0` to
+`/dev/ttyUSB1`) after a reboot or reconnect, bind it by USB identity
+instead: enter the device's VID:PID (e.g. `0403:6001`) in the serial
+port field rather than a port path. Auto-reconnect then follows the
+machine to its new port. See
+[Serial Port Binding](../machine/general.md#serial-port-binding).
+:::
+<!-- prettier-ignore-end -->
+
+<!-- prettier-ignore-start -->
 :::warning[Hardware Serial Ports]
 Rayforge will warn you if you select `/dev/ttyS*` ports on Linux,
 as these are typically not USB-based GRBL devices. USB serial ports use `/dev/ttyUSB*` or

@@ -118,6 +118,13 @@ Votre classe de pilote **DOIT** implémenter les méthodes suivantes. Notez que 
   `DriverPrecheckError` en cas d'échec.
 - `setup(**kwargs)` : Appelé une fois avec les valeurs du formulaire de configuration. Utilisez ceci
   pour initialiser vos transports et état interne.
+- `update_settings(**kwargs) -> bool` : Optionnel. Appelé à la place d'un démontage/reconstruction
+  lorsque les arguments de configuration du pilote d'une machine sont modifiés sans que la classe du
+  pilote ne change. Renvoie `True` si le pilote peut absorber le changement sans interrompre une
+  connexion active (stocke les nouveaux arguments sur l'instance ; ils prennent effet lors des
+  opérations suivantes ou de la prochaine tentative de connexion). Renvoie `False` (valeur par
+  défaut) pour demander une reconstruction, qui démonte et recrée le pilote avec les nouveaux
+  arguments.
 - `async def connect()` : Établit et maintient une connexion persistante à l'appareil. Cette méthode
   devrait contenir la logique de reconnexion automatique.
 - `async def cleanup()` : Appelé lors de la déconnexion. Devrait fermer toutes les connexions et
@@ -134,8 +141,10 @@ Votre classe de pilote **DOIT** implémenter les méthodes suivantes. Notez que 
 - `async def run_raw(gcode: str)` : Exécute directement une chaîne G-code brute.
 - `async def home(axes: Optional[Axis] = None)` : Met la machine à l'origine. Peut mettre à
   l'origine des axes spécifiques/ tous les axes.
-- `async def move_to(pos_x: float, pos_y: float)` : Déplace manuellement la tête laser vers une
-  coordonnée XY spécifique.
+- `async def move_to(pos_x: float, pos_y: float, pos_z: Optional[float] = None, speed: Optional[float] = None)`
+  : Déplace manuellement la tête laser vers une coordonnée XY spécifique. Lorsque `pos_z` est
+  fourni, il est visé comme une position Z absolue dans le même mouvement. `speed` est en mm/min et
+  revient à une valeur par défaut du pilote lorsqu'elle est `None`.
 - `async def set_hold(hold: bool = True)` : Met en pause/ reprend le travail actuel.
 - `async def cancel()` : Arrête le travail actuel.
 - `async def jog(axis: Axis, distance: float, speed: int)` : Déplace la machine le long d'un axe
@@ -203,9 +212,11 @@ directement.** Au lieu de cela, appelez les méthodes d'aide protégées de la c
 La meilleure façon d'apprendre est de regarder les pilotes existants dans
 `rayforge/machine/driver/`, tels que :
 
-- `grbl/` - Machines basées sur GRBL (série, telnet, réseau)
+- `grbl/` - Machines basées sur GRBL (série, série simple, série Rust, telnet, réseau)
 - `marlin/` - Machines basées sur le firmware Marlin (série)
-- `smoothie.py` - Machines basées sur Smoothieboard
+- `ruidarpa/` - Contrôleurs Ruida via le Ruida Protocol Analyzer (USB, UDP ou TUI RPC)
+- `octoprint/` - Machines pilotées via un serveur OctoPrint
+- `smoothie/` - Machines basées sur Smoothieboard
 - `dummy.py` - Un pilote de test pour le développement
 
 Si vous êtes bloqué, n'hésitez pas à ouvrir un ticket sur GitHub ! Nous sommes heureux d'aider.

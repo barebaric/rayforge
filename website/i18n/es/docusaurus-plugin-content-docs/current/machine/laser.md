@@ -46,9 +46,11 @@ Este valor debería coincidir con el ajuste $30 de tu firmware.
 
 #### Potencia de Enmarcado
 
-El nivel de potencia usado para operaciones de enmarcado (delimitando sin cortar).
+El nivel de potencia usado para operaciones de enmarcado (trazando el límite del trabajo sin
+cortar).
 
-- Establecer en 0 para deshabilitar el enmarcado
+- Establecer en 0 para trazar el contorno con el haz apagado, útil para máquinas con un láser de
+  alineación auxiliar
 - Ajusta según tu láser y material
 
 #### Velocidad de Enmarcado
