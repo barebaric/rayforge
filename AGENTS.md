@@ -20,6 +20,12 @@
 - Keep cyclomatic complexity low. Write small, testable functions
 - Never mark your changes with inline comments. Code is for clean, final implementation only
 - Retain exiting formatting, docstrings, and comments
+- When a refactor moves code to another function, class, or file, move the
+  comments and docstrings that belong to it as well. Explanations of a
+  workaround, an edge case, or a non-obvious reason are part of the code being
+  moved and must not be dropped along the way. Only leave a comment behind when
+  it describes the old location rather than the moved code, and only delete one
+  when the refactor makes it untrue
 - Always put imports at the top of the file, never inside functions or methods
 
 ## User-visible text and translations
@@ -40,6 +46,22 @@
   translations, since it falls back to the source text
 - Only add or update entries for the strings of your own change; do not rewrite
   unrelated catalog entries
+- `pixi run update-translations` rewrites every catalog in the repository,
+  including the addon catalogs under `rayforge/builtin_addons/`. Most of those
+  files then only differ by a fresh `POT-Creation-Date` and reshuffled entries
+  and `#:` source references. Revert every catalog that has no functional
+  change, so the review only shows the strings your change really adds
+- To tell a functional change from pure churn, compare a catalog against its
+  committed version with the ordering and bookkeeping removed, for example
+  `git show HEAD:<file> | msgcat --sort-output --no-location - > /tmp/old.po`
+  and the same for the working copy. If the two normalised files are equal,
+  the change is noise and the file should be reverted
+- Keep the catalogs you do have to touch as close to additions-only as
+  possible. Appending the new entries to the committed file beats regenerating
+  it, because a regenerated catalog reorders thousands of unrelated lines and
+  buries the actual change. Verify with `git diff` that the catalogs contain no
+  deletions, then run `msgfmt --check` to confirm the result is still valid and
+  free of duplicate message ids
 - Use `pixi run print-untranslated list` and `pixi run print-untranslated <lang>`
   to find missing translations, and `msgfmt --check --check-format` to verify a
   catalog before committing
