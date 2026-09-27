@@ -525,11 +525,11 @@ class DotGridTarget(CalibrationTarget):
             return None
 
         finalists.sort(key=lambda item: item[0])
-        best_residual = None
+        best_residual = float("inf")
         best_points = None
         for _rank, points, angle in finalists[: self.MAX_FINALISTS]:
             residual = self._homography_residual(points)
-            if best_residual is None or residual < best_residual:
+            if residual < best_residual:
                 best_residual = residual
                 best_points = points
                 best_angle = angle

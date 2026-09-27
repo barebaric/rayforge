@@ -142,7 +142,7 @@ class CardPage(CameraWizardPage):
         self._target_type: CalibrationTargetType = (
             CalibrationTargetType.CHARUCO
         )
-        self._field_rows: dict[str, object] = {}
+        self._field_rows: dict[str, SpinRow] = {}
         self._summary_rows: dict[str, Adw.ActionRow] = {}
         self._customized = False
         self._dictionary_id: int | None = None
@@ -521,8 +521,7 @@ class CardPage(CameraWizardPage):
             if isinstance(row, LengthSpinRow):
                 values[key] = row.get_value_in_base_units()
             else:
-                row_value = row.get_value()  # type: ignore[attr-defined]
-                values[key] = float(row_value)
+                values[key] = float(row.get_value())
         return values
 
     def _rebuild_target(self) -> None:

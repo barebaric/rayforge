@@ -40,7 +40,10 @@ def create_target(
     target_class = get_target_class(target_type)
     config_class = target_class.config_class
     payload = dict(config) if config else {}
-    return target_class(config_class.from_dict(payload))
+    # The registry maps each type to a target whose constructor takes
+    # its own config; that per-class contract is beyond what the
+    # return type of get_target_class can express.
+    return target_class(config_class.from_dict(payload))  # type: ignore
 
 
 def recommend_target(
@@ -54,7 +57,7 @@ def recommend_target(
         card_width_mm=card_width_mm,
         card_height_mm=card_height_mm,
     )
-    return target_class(config)
+    return target_class(config)  # type: ignore
 
 
 def available_target_types() -> list[CalibrationTargetType]:
