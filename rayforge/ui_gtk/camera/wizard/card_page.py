@@ -464,9 +464,10 @@ class CardPage(CameraWizardPage):
                 # A stored sheet may use a dictionary outside the
                 # shortlist; keep calibrating with it and list it
                 # explicitly rather than silently switching.
-                self._dict_labels.append(f"Custom ({current})")
+                label = _("Custom ({id})").format(id=current)
+                self._dict_labels.append(label)
                 self._dict_ids.append(current)
-                model.append(f"Custom ({current})")
+                model.append(label)
                 selected = len(self._dict_ids) - 1
             else:
                 selected = self._dict_ids.index(current)

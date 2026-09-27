@@ -2657,6 +2657,10 @@ msgstr ""
 msgid "Along columns"
 msgstr ""
 
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Custom ({id})"
+msgstr ""
+
 #: rayforge/ui_gtk/settings/color_presets_page.py
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 #: rayforge/ui_gtk/machine/dialect_editor.py
