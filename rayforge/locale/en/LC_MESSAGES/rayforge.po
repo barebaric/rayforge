@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-26 21:08+0200\n"
+"POT-Creation-Date: 2026-09-27 02:20+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -355,6 +355,32 @@ msgstr ""
 #: rayforge/core/expression/errors.py
 #, python-brace-format
 msgid "Cannot use operator '{op}' between types '{left}' and '{right}'"
+msgstr ""
+
+#: rayforge/camera/source/base.py
+#, python-brace-format
+msgid "URL contains placeholder <{placeholder}>; replace it with a valid value"
+msgstr ""
+
+#: rayforge/camera/source/base.py
+msgid "URL is malformed"
+msgstr ""
+
+#: rayforge/camera/source/base.py
+#, python-brace-format
+msgid "URL must start with one of: {schemes}"
+msgstr ""
+
+#: rayforge/camera/source/base.py
+msgid "URL must include a host"
+msgstr ""
+
+#: rayforge/camera/source/base.py
+msgid "URL contains an invalid host or port"
+msgstr ""
+
+#: rayforge/camera/source/base.py
+msgid "URL must include a valid hostname or IP address"
 msgstr ""
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py

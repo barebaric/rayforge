@@ -68,6 +68,147 @@
   </screenshots>
 
   <releases>
+    <release version="1.12.0~beta1" date="2026-09-27">
+      <description>
+        <p>Native Ruida support, arbitrary laser head positioning with
+        pointer-alignment aiming, an experimental Rust GRBL driver,
+        network cameras, and per-step power modes</p>
+        <p>New Features:</p>
+        <ul>
+          <li>New Ruida RPA driver connects Rayforge to Ruida-based
+          controllers over USB or UDP directly, or via TUI RPC through
+          the Ruida Protocol Analyzer; it ships with all installs and
+          includes new Generic Ruida RPA and Monport MP-570 60W CO2
+          device profiles (#404, by StevenIsaacs)</li>
+          <li>The laser head can now be moved to an arbitrary position:
+          a Move to Position popover in the Current Position area
+          offers direct X/Y (and Z, when available) coordinate entry
+          and hosts the selection/workarea corner and WCS origin
+          shortcuts, a Click Canvas to Move Head mode mirrors Click to
+          Zero, the canvas background context menu gains a Move Head
+          Here action, and these moves run at the configured jog speed
+          (#452, #458)</li>
+          <li>Ctrl+M arms the Click Canvas to Move Head mode from the
+          keyboard</li>
+          <li>A per-head pointer offset makes an alignment laser's dot
+          a first-class aiming reference: while Pointer Alignment is
+          on, aiming moves (Move to Position, the corner and WCS origin
+          shortcuts, Click Canvas to Move Head, Move Head Here, and
+          framing) are shifted so the pointer dot lands on the aimed
+          position, zeroing accounts for the offset, and the canvas
+          shows the pointer dot next to the beam dot. Starting a job
+          asks whether to turn alignment off first, since jobs always
+          burn with the unshifted beam (#423)</li>
+          <li>Network cameras are supported as camera stream sources
+          alongside USB cameras, with automatic reconnection after read
+          failures (#438, by atkaper)</li>
+          <li>Experimental GRBL (Rust) driver: the complete GRBL serial
+          protocol stack (character-counting flow control, job
+          streaming, stall detection, deadlock recovery, cancel/safety
+          shutdown, settings, work coordinate systems, and probing) now
+          runs in Rust through the raydriver package; dialects and
+          settings remain Rayforge data, and the driver can be selected
+          per machine as a drop-in alternative to GRBL (Serial)</li>
+          <li>Each step gains a Power Mode setting, Dynamic (M4) or
+          Constant (M3): constant power avoids power sags at corners
+          during vector cuts, while raster engraving keeps dynamic
+          power (#437)</li>
+          <li>The Frame operation gains a Round Corners toggle and a
+          corner radius setting, avoiding sharp, fragile corners
+          without hand-drawing a rounded outline (#447, #448)</li>
+          <li>Framing at 0% power is now allowed and traces the outline
+          with the beam off, so machines with an auxiliary alignment
+          laser can frame without firing the main laser</li>
+          <li>Serial ports can be bound by USB VID:PID instead of a
+          device path, so auto-reconnect follows the machine to its new
+          port after the OS re-enumerates USB devices (#459)</li>
+          <li>Sketcher: array tools now also lay out text boxes
+          (#399)</li>
+          <li>The dialect editor warns when Continuous laser mode is
+          enabled on a dialect whose movement templates have no
+          {s_command} placeholder, a combination that previously
+          dropped all laser power (#403)</li>
+          <li>G-code fields that contain only a number show a warning,
+          since the value is most likely a mistake (#393, #396)</li>
+          <li>New device profile for the Creality Falcon A1 Pro (#461,
+          by atkaper)</li>
+          <li>New device profile for the Creality Falcon 2 Pro 22W,
+          shipping camera lens calibration and image settings as a
+          starting default; the 40W profile's work area is corrected to
+          the official 400 x 415 mm spec (#463)</li>
+          <li>The Falcon A1 and Falcon 10W profiles emit a bounds
+          comment in the G-code preamble so their firmware can trace
+          the job outline before running it</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>The prototype Ruida (UDP) driver has been removed; the
+          RuidaRPA driver supersedes it, and affected device profiles
+          were migrated</li>
+          <li>The default raster threshold is now 254, so only pure
+          white stays unengraved</li>
+          <li>Upgrade raygeo to 1.56.1, which omits zero-length travel
+          moves from generated G-code; this builds on 1.55.0's
+          power-mode-aware laser commands (constant-power M3 output),
+          frame corner radius support, and the contour nesting
+          classification fix (#456)</li>
+          <li>Drivers: move_to accepts an optional absolute Z target;
+          machines with a Z axis receive it in the same move</li>
+          <li>Drivers: drivers may opt into live reconfiguration via
+          update_settings instead of a teardown/rebuild when their
+          setup arguments are edited</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>The time estimate in the machine dropdown counts down
+          again while a job runs: the ETA falls back to the job's
+          estimated duration when GRBL acknowledges buffered commands
+          faster than the machine executes them, the dropdown refreshes
+          it once per second instead of only on driver callbacks, and
+          every bound status label receives the update</li>
+          <li>GRBL: flow-control state jammed by lost acknowledgements
+          is detected and healed, so a firmware that stays silent after
+          a cancel (e.g. the Sculpfun iCube over Bluetooth) no longer
+          leaves Read from Device hanging and the machine controls dead
+          (#428)</li>
+          <li>GRBL: the work coordinate offset is refreshed from the
+          WCS read-back, so zeroing again right after setting a zero no
+          longer reads a stale position and writes the old offset
+          back</li>
+          <li>Z jog moves are clamped to the configured Z axis extents,
+          the Move to Position popover accepts the full Z range, and
+          the hardware settings page gains Z Min/Z Max rows (#459)</li>
+          <li>The ChArUco calibration card is detected again on blurry,
+          unevenly lit frames by falling back through progressively
+          more tolerant detection passes (#443, #465)</li>
+          <li>Dialect copies on existing machines stay linked to the
+          built-in dialect they came from, so fixes to built-in
+          dialects reach machines while user edits remain preserved</li>
+          <li>Ruida: job encoding is routed by driver capability
+          instead of a stale dialect, fixing garbled output after
+          switching drivers (#420)</li>
+          <li>Configuration, machine profiles, and recipes are
+          persisted atomically with backups, so an interrupted save can
+          no longer destroy them (#455)</li>
+          <li>macOS: the full-screen main window stays visible when a
+          dialog closes on top of it (#453)</li>
+          <li>Material test: the test speed is capped at the machine's
+          live speed limit (#439, #440)</li>
+          <li>SVG files that define a viewBox but no width/height
+          attributes now import at the correct scale (#434, by
+          MausRundung)</li>
+          <li>Rounded Frame corners are rendered with arc tolerance, so
+          they come out smooth instead of segmented</li>
+          <li>Sketcher: helper geometry now moves together with the
+          array members it belongs to</li>
+          <li>3D simulation: the playback slider position is re-derived
+          when the playback range shrinks</li>
+          <li>The estimated job time in the right panel stays fully
+          visible in the status bar instead of being clipped behind
+          adjacent widgets</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.11.2" date="2026-09-25">
       <description>
         <p>Immediate job cancellation, driver selection crash fixes,

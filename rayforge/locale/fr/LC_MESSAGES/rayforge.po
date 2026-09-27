@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-26 21:08+0200\n"
+"POT-Creation-Date: 2026-09-27 02:20+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -274,32 +274,6 @@ msgstr "Le schéma de l'URL doit être l'un des suivants : {schemes}."
 msgid "Invalid URL: {error}"
 msgstr "URL invalide : {error}"
 
-#: rayforge/camera/source/base.py
-#, python-brace-format
-msgid "URL contains placeholder <{placeholder}>; replace it with a valid value"
-msgstr "L’URL contient l’espace réservé <{placeholder}> ; remplacez-le par une valeur valide."
-
-#: rayforge/camera/source/base.py
-msgid "URL is malformed"
-msgstr "L’URL est mal formée."
-
-#: rayforge/camera/source/base.py
-#, python-brace-format
-msgid "URL must start with one of: {schemes}"
-msgstr "L’URL doit commencer par l’un des schémas suivants : {schemes}"
-
-#: rayforge/camera/source/base.py
-msgid "URL must include a host"
-msgstr "L’URL doit inclure un hôte."
-
-#: rayforge/camera/source/base.py
-msgid "URL contains an invalid host or port"
-msgstr "L’URL contient un hôte ou un port invalide."
-
-#: rayforge/camera/source/base.py
-msgid "URL must include a valid hostname or IP address"
-msgstr "L’URL doit inclure un nom d’hôte ou une adresse IP valide."
-
 #: rayforge/core/varset/serialportvar.py
 msgid "Serial port cannot be empty."
 msgstr "Le port série ne peut pas être vide."
@@ -387,6 +361,34 @@ msgid "Cannot use operator '{op}' between types '{left}' and '{right}'"
 msgstr ""
 "Impossible d'utiliser l'opérateur « {op} » entre les types « {left} » et "
 "« {right} »"
+
+#: rayforge/camera/source/base.py
+#, python-brace-format
+msgid "URL contains placeholder <{placeholder}>; replace it with a valid value"
+msgstr ""
+"L’URL contient l’espace réservé <{placeholder}> ; remplacez-le par une "
+"valeur valide."
+
+#: rayforge/camera/source/base.py
+msgid "URL is malformed"
+msgstr "L’URL est mal formée."
+
+#: rayforge/camera/source/base.py
+#, python-brace-format
+msgid "URL must start with one of: {schemes}"
+msgstr "L’URL doit commencer par l’un des schémas suivants : {schemes}"
+
+#: rayforge/camera/source/base.py
+msgid "URL must include a host"
+msgstr "L’URL doit inclure un hôte."
+
+#: rayforge/camera/source/base.py
+msgid "URL contains an invalid host or port"
+msgstr "L’URL contient un hôte ou un port invalide."
+
+#: rayforge/camera/source/base.py
+msgid "URL must include a valid hostname or IP address"
+msgstr "L’URL doit inclure un nom d’hôte ou une adresse IP valide."
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 msgid "Ruida RPA"
