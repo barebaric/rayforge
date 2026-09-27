@@ -20,6 +20,43 @@
 - Keep cyclomatic complexity low. Write small, testable functions
 - Never mark your changes with inline comments. Code is for clean, final implementation only
 - Retain exiting formatting, docstrings, and comments
+- Always put imports at the top of the file, never inside functions or methods
+
+## User-visible text and translations
+
+- Every string that can end up in the UI (labels, tooltips, dialog headings and
+  bodies, validation and error messages) must be translatable. Import gettext at
+  the top of the file with `from gettext import gettext as _` and wrap the text
+  in `_("...")`
+- Keep dynamic values out of the message id: translate first, then use named
+  placeholders, for example
+  `_("URL must start with one of: {schemes}").format(schemes=schemes)`. Mark such
+  entries as `python-brace-format` in the catalogs and keep the placeholder names
+  unchanged in every translation
+- Wrapping a string only marks it for extraction. New messages also need to be
+  added to the gettext template `rayforge/locale/rayforge.pot` and translated in
+  `rayforge/locale/<lang>/LC_MESSAGES/rayforge.po` for the shipped languages
+  (`de`, `es`, `fr`, `pt`, `uk`, `zh_CN`). The `en` catalog keeps empty
+  translations, since it falls back to the source text
+- Only add or update entries for the strings of your own change; do not rewrite
+  unrelated catalog entries
+- Use `pixi run print-untranslated list` and `pixi run print-untranslated <lang>`
+  to find missing translations, and `msgfmt --check --check-format` to verify a
+  catalog before committing
+
+## Website documentation
+
+- The user documentation lives in `website/docs`, the blog in `website/blog`
+- Translated documentation lives in
+  `website/i18n/<lang>/docusaurus-plugin-content-docs/current/` for the languages
+  `de`, `es`, `fr`, `pt-BR`, `uk`, `zh-CN`. UI strings of the website itself are
+  in `website/i18n/<lang>/code.json`
+- When a change adds, removes, or alters user-facing behavior, update the
+  relevant page in `website/docs` and the matching page in every translated
+  directory. Purely internal changes, refactors, and error-handling details do
+  not need documentation
+- Run `pixi run site-format` after editing website markdown so Prettier
+  formatting stays consistent
 
 ## Raygeo (Rust/PyO3 geometry library)
 
