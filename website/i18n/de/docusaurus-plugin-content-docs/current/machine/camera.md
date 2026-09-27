@@ -117,32 +117,85 @@ Ausrichtungspunkte sorgfältig gemessen wurden.
 Die Linsenkalibrierung ist die zweite Stufe des Kamera-Assistenten. Du kannst wählen, wie die
 Verzerrung korrigiert werden soll:
 
-- **Automatic** — nimm Bilder einer gedruckten Kalibrierungskarte auf; der Assistent berechnet das
-  Verzerrungsmodell für dich
+- **Automatic** — nimm Bilder eines gedruckten Kalibrierungsmusters auf; der Assistent berechnet
+  das Verzerrungsmodell für dich
 - **Manual** — gib die radialen (k1–k3) und tangentialen (p1–p2) Koeffizienten von Hand ein
 - **Skip** — lasse die Verzerrung unkorrigiert; du kannst später kalibrieren
 
 #### Automatische Kalibrierung
 
 Bei der **Automatic**-Kalibrierung führt dich der Assistent durch das Aufnehmen mehrerer Bilder
-einer gedruckten Kalibrierungskarte von verschiedenen Positionen auf dem Bett und berechnet
+eines gedruckten Kalibrierungsmusters von verschiedenen Positionen auf dem Bett und berechnet
 anschließend automatisch ein Verzerrungsmodell.
 
 ![Assistent — Karteneinstellungen](/screenshots/machine-settings-camera-lens-calibration-wizard-card.webp)
 
-1. Gib **Breite** und **Höhe** deiner gedruckten Karte ein. Die Vorschau aktualisiert sich in
-   Echtzeit — die Karte sollte etwa 70% der Kameraansicht abdecken.
-2. Klicke auf **Save to PDF**, um die Karte zum Drucken zu exportieren, drucke sie dann aus und lege
-   sie auf das Laserbett.
+Wähle zuerst einen **Pattern Type**:
+
+| Muster            | Hinweise                                                                    |
+| ----------------- | --------------------------------------------------------------------------- |
+| **ChArUco Board** | Schachbrett mit Markern. Am genauesten; braucht einen guten Drucker.        |
+| **Marker Grid**   | Einzelne ArUco- oder AprilTag-Marker. Verträgt Teilansichten und Unordnung. |
+| **Dot Grid**      | Schwarze Punkte in Reihen oder versetzt. Billig, aber ungenau.              |
+
+1. Gib **Breite** und **Höhe** deines gedruckten Bogens ein. Die Vorschau aktualisiert sich in
+   Echtzeit — das Muster sollte etwa 70% der Kameraansicht abdecken.
+2. Klicke auf **Save to PDF**, um das Muster zum Drucken zu exportieren, drucke es dann aus und
+   lege es auf das Laserbett.
 
 ![Assistent — Aufnahme](/screenshots/machine-settings-camera-lens-calibration-wizard-capture.webp)
 
-3. Positioniere die Karte in der Kameraansicht an verschiedenen Stellen und Winkeln und klicke für
+3. Positioniere das Muster in der Kameraansicht an verschiedenen Stellen und Winkeln und klicke für
    jede Position auf **Capture Frame**. Strebe mindestens 8 Aufnahmen an, die das gesamte Bild
    abdecken, einschließlich Ecken und Kanten. Die Fortschrittsanzeige und Statusanzeigen zeigen die
    Aufnahmequalität.
 4. Sobald genügend Aufnahmen gemacht wurden, berechnet der Assistent das Verzerrungsmodell und
    wendet es an — das Kamera-Overlay zeigt nun ein korrigiertes, gerades Bild.
+
+#### Ein bereits gedrucktes Muster verwenden
+
+Die Felder unter **Pattern Geometry** beschreiben den Bogen in physikalischen Einheiten —
+Rasteranzahlen, Merkmalsgrößen und die Abstände dazwischen. Werden sie bearbeitet, wechselt der
+Assistent zum Vermessen eines vorhandenen Bogens statt einen neuen vorzuschlagen; so kann gegen
+ein früher gedrucktes Muster kalibriert werden, oder eines, das mit deiner Maschine kam.
+
+Vermiss den Bogen nach dem Drucken und gib die gedruckten Maße statt der Nennmaße ein: Drucker
+skalieren, und wenige Prozent Skalierungsfehler schlagen direkt im Kalibrierungsergebnis durch.
+Wird ein Geometriefeld geändert, wird die **Card Size**-Empfehlung ignoriert, weil nun deine
+Messungen das Muster bestimmen.
+
+Bei einem **Marker Grid** muss das **Marker Dictionary** zur Familie passen, mit der der Bogen
+gedruckt wurde (ArUco oder AprilTag — Rayforge verfeinert die Ecken entsprechend). Beginnen die
+gedruckten IDs nicht bei 0, etwa bei einer Kachel aus einem größeren Satz, trage die erste ID des
+Bogens in **Marker ID Offset** ein; Marker außerhalb des beschriebenen Bereichs werden ignoriert.
+
+Die Nummerierung folgt der **ID Origin**-Ecke, die die Offset-ID trägt, und der **ID Order**:
+fortlaufende IDs laufen zuerst entlang der Reihen oder zuerst entlang der Spalten. Die
+Voreinstellung — Ecke oben links, zuerst Reihen — entspricht OpenCVs eigenen Boards. Um deinen
+Bogen zu beschreiben, finde den Marker mit der niedrigsten ID und wähle die Ecke, in der er sitzt;
+prüfe dann, ob die nächste ID daneben (Reihen) oder darunter (Spalten) sitzt.
+
+Punktbögen gibt es in zwei Anordnungen, und die Felder **Row Spacing** und **Row Offset** sagen
+Rayforge, welche du hast:
+
+- **Rows in a rectangle** — jede Reihe fluchtet. Lasse **Row Offset** auf 0.
+- **Rows staggered** — jede zweite Reihe ist seitlich versetzt, oft um einen halben Abstand, was
+  eine hexagonale Anordnung ergibt. Trage den Reihenabstand in **Row Spacing** und den seitlichen
+  Versatz in **Row Offset** ein.
+
+Rayforge schlägt standardmäßig einen versetzten Bogen vor; ist dein Bogen ein schlichtes Rechteck,
+setze **Row Offset** auf 0 zurück.
+
+:::tip
+
+Ein Punktbogen verrät nicht, wo oben ist, daher liest Rayforge seine Ausrichtung aus der Ansicht
+und aus der Geometrie des Musters. Das gilt, solange der Bogen zwischen den Aufnahmen ungefähr
+gleich ausgerichtet bleibt — rotiere den Bogen bei **Dot Grid** also nicht um eine Vierteldrehung
+zwischen Aufnahmen. Versetzte Reihen helfen, weil der Versatz die Symmetrie eines schlichten
+Rechtecks bricht. ChArUco- und ArUco-Muster bringen ihre eigene Ausrichtung mit und haben diese
+Einschränkung nicht; bevorzuge sie, wenn du die Wahl hast.
+
+:::
 
 #### Manuelle Kalibrierung
 
