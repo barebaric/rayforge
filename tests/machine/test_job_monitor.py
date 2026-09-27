@@ -1,3 +1,4 @@
+import time
 from unittest.mock import MagicMock
 
 import pytest
@@ -125,3 +126,45 @@ class TestJobMonitor:
         assert metrics["total_distance"] == 20.0
         assert metrics["traveled_distance"] == 10.0
         assert metrics["progress_fraction"] == 0.5
+
+    def test_eta_none_without_estimate(self, monitor):
+        """Without an estimate and without samples, eta stays None."""
+        assert monitor.metrics["eta_seconds"] is None
+        monitor.update_progress(1)
+        assert monitor.metrics["eta_seconds"] is None
+
+    def test_eta_falls_back_to_estimate(self, simple_ops):
+        """A buffered job acks within milliseconds, so no speed
+        samples accumulate; the ETA must fall back to the estimate."""
+        monitor = JobMonitor(simple_ops, estimated_seconds=100.0)
+
+        metrics = monitor.update_progress(1) or monitor.metrics
+        assert metrics["eta_seconds"] is not None
+        assert metrics["eta_seconds"] <= 100.0
+        assert metrics["eta_seconds"] > 90.0
+
+    def test_speed_based_eta_preferred_over_estimate(self, simple_ops):
+        """Once real speed samples accumulate they take precedence."""
+        monitor = JobMonitor(simple_ops, estimated_seconds=100.0)
+        first = time.monotonic() - 10.0
+        second = time.monotonic() - 5.0
+        monitor._samples.append((first, 0.0))
+        monitor._samples.append((second, 10.0))
+
+        monitor.update_progress(1)
+
+        eta = monitor.metrics["eta_seconds"]
+        assert eta is not None
+        assert eta < 50.0
+
+    def test_burst_samples_do_not_override_estimate(self, simple_ops):
+        """Ack bursts spanning less than the minimum window must not
+        produce a speed-based ETA."""
+        monitor = JobMonitor(simple_ops, estimated_seconds=100.0)
+        now = time.monotonic()
+        monitor._samples.append((now - 0.02, 0.0))
+        monitor._samples.append((now, 10.0))
+
+        metrics = monitor.update_progress(1) or monitor.metrics
+
+        assert metrics["eta_seconds"] > 90.0

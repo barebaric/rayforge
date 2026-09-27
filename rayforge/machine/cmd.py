@@ -59,6 +59,11 @@ class MachineCmd:
         """Returns True if a monitored job is currently running."""
         return self._current_monitor is not None
 
+    @property
+    def current_monitor(self) -> JobMonitor | None:
+        """Returns the monitor of the running job, if any."""
+        return self._current_monitor
+
     def select_tool(self, machine: Machine, head_index: int):
         """Adds a 'select_head' task to the task manager."""
         if not (0 <= head_index < len(machine.heads)):
@@ -121,7 +126,18 @@ class MachineCmd:
             self._on_progress_callback = None
 
         try:
-            self._current_monitor = JobMonitor(ops)
+            estimated_seconds = ops.estimate_time(
+                default_feed_rate=machine.max_cut_speed,
+                default_rapid_rate=machine.max_travel_speed,
+                acceleration=machine.acceleration,
+            )
+            logger.info(
+                f"JobMonitor: total_distance={ops.distance():.1f}mm, "
+                f"estimated_seconds={estimated_seconds:.1f}s"
+            )
+            self._current_monitor = JobMonitor(
+                ops, estimated_seconds=estimated_seconds
+            )
 
             if self._on_progress_callback:
                 logger.debug("Connecting progress handler to JobMonitor")
@@ -153,11 +169,6 @@ class MachineCmd:
                 if self._current_monitor:
                     self._current_monitor.mark_as_complete()
 
-            estimated_seconds = ops.estimate_time(
-                default_feed_rate=machine.max_cut_speed,
-                default_rapid_rate=machine.max_travel_speed,
-                acceleration=machine.acceleration,
-            )
             estimated_hours = estimated_seconds / 3600.0
             machine.add_machine_hours(estimated_hours)
             logger.info(

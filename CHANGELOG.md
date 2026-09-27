@@ -89,6 +89,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Machine: the time estimate in the machine dropdown counts down
+  again while a job runs. The ETA now falls back to the job's
+  estimated duration when GRBL acknowledges buffered commands faster
+  than the machine executes them (previously no estimate was shown
+  at all for short jobs), the dropdown refreshes it once per second
+  instead of only on driver callbacks, and every bound status label
+  (button face and popup rows) receives the update
 - GRBL: flow-control state jammed by lost acknowledgements is
   detected and healed, so a firmware that stays silent after a
   cancel (e.g. the Sculpfun iCube over Bluetooth) no longer leaves

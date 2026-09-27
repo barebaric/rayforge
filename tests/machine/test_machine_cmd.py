@@ -161,6 +161,33 @@ class TestMachineCmdJobMonitoring:
         assert progress_updated_spy.call_count == expected_call_count
 
     @pytest.mark.asyncio
+    async def test_current_monitor_lifecycle(
+        self,
+        machine_cmd,
+        doc_editor,
+        machine,
+        job_artifact,
+    ):
+        """
+        The monitor exists while the job runs and is cleaned up after.
+        """
+        assert machine_cmd.current_monitor is None
+
+        def on_job_started(sender):
+            assert machine_cmd.current_monitor is not None
+
+        machine_cmd.job_started.connect(on_job_started)
+
+        await machine_cmd._run_send_action(
+            job_artifact, machine, on_progress=lambda metrics: None
+        )
+
+        await asyncio.sleep(0)
+        await doc_editor.wait_until_settled()
+
+        assert machine_cmd.current_monitor is None
+
+    @pytest.mark.asyncio
     async def test_send_job_non_granular_progress(
         self,
         machine_cmd,
