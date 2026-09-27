@@ -30,6 +30,7 @@ from .head_preferences_page import HeadPreferencesPage
 from .hooks_macros_page import HooksMacrosPage
 from .maintenance_page import MaintenancePage
 from .nogo_zones_page import NogoZonesPage
+from .notes_page import NotesPage
 from .rotary_module_page import RotaryModulePage
 
 logger = logging.getLogger(__name__)
@@ -155,47 +156,51 @@ class MachineSettingsDialog(PatchedDialogWindow):
         general_page = GeneralPreferencesPage(machine=self.machine)
         self.content_stack.add_titled(general_page, "general", _("General"))
 
-        # --- Page 2: Hardware ---
+        # --- Page 2: Notes ---
+        notes_page = NotesPage(machine=self.machine)
+        self.content_stack.add_titled(notes_page, "notes", _("Notes"))
+
+        # --- Page 3: Hardware ---
         hardware_page = HardwarePage(machine=self.machine)
         self.content_stack.add_titled(hardware_page, "hardware", _("Hardware"))
 
-        # --- Page 3: Advanced ---
+        # --- Page 4: Advanced ---
         advanced_page = AdvancedPreferencesPage(machine=self.machine)
         self.content_stack.add_titled(advanced_page, "advanced", _("Advanced"))
 
-        # --- Page 4: G-code ---
+        # --- Page 5: G-code ---
         gcode_page = GcodeSettingsPage(machine=self.machine)
         self.content_stack.add_titled(gcode_page, "gcode", _("G-code"))
         self._gcode_stack_page = self.content_stack.get_page(gcode_page)
 
-        # --- Page 5: Hooks & Macros ---
+        # --- Page 6: Hooks & Macros ---
         hooks_macros_page = HooksMacrosPage(machine=self.machine)
         self.content_stack.add_titled(
             hooks_macros_page, "hooks-macros", _("Hooks & Macros")
         )
 
-        # --- Page 6: Device ---
+        # --- Page 7: Device ---
         device_page = DeviceSettingsPage(machine=self.machine)
         device_page.show_toast.connect(self._on_show_toast)
         self.content_stack.add_titled(device_page, "device", _("Device"))
 
-        # --- Page 7: Heads ---
+        # --- Page 8: Heads ---
         heads_page = HeadPreferencesPage(machine=self.machine)
         self.content_stack.add_titled(heads_page, "heads", _("Heads"))
 
-        # --- Page 8: Rotary Module ---
+        # --- Page 9: Rotary Module ---
         rotary_module_page = RotaryModulePage(machine=self.machine)
         self.content_stack.add_titled(
             rotary_module_page, "rotary-module", _("Rotary Module")
         )
 
-        # --- Page 9: No-Go Zones ---
+        # --- Page 10: No-Go Zones ---
         nogo_zones_page = NogoZonesPage(machine=self.machine)
         self.content_stack.add_titled(
             nogo_zones_page, "nogo-zones", _("No-Go Zones")
         )
 
-        # --- Page 10: Camera ---
+        # --- Page 11: Camera ---
         self.camera_page = CameraPreferencesPage()
         self.camera_page.camera_add_requested.connect(
             self._on_camera_add_requested
@@ -205,13 +210,13 @@ class MachineSettingsDialog(PatchedDialogWindow):
         )
         self.content_stack.add_titled(self.camera_page, "camera", _("Camera"))
 
-        # --- Page 11: Maintenance ---
+        # --- Page 12: Maintenance ---
         maintenance_page = MaintenancePage(machine=self.machine)
         self.content_stack.add_titled(
             maintenance_page, "maintenance", _("Maintenance")
         )
 
-        # --- Page 12: Capabilities ---
+        # --- Page 13: Capabilities ---
         capabilities_page = CapabilitiesPage(machine=self.machine)
         self.content_stack.add_titled(
             capabilities_page, "capabilities", _("Capabilities")
@@ -230,12 +235,13 @@ class MachineSettingsDialog(PatchedDialogWindow):
         self._add_sidebar_row(
             _("General"), "machine-settings-general-symbolic", "general"
         )
+        self._add_sidebar_row(_("Notes"), "help-about-symbolic", "notes")
         self._add_sidebar_row(_("Hardware"), "hardware-symbolic", "hardware")
         self._add_sidebar_row(
             _("Advanced"), "machine-settings-advanced-symbolic", "advanced"
         )
         self._add_sidebar_row(_("G-code"), "gcode-symbolic", "gcode")
-        self._gcode_row = self.sidebar_list.get_row_at_index(3)
+        self._gcode_row = self.sidebar_list.get_row_at_index(4)
         self._add_sidebar_row(
             _("Hooks & Macros"), "code-symbolic", "hooks-macros"
         )

@@ -10006,3 +10006,222 @@ msgstr "Bayer 4"
 #: rayforge/image/dither.py
 msgid "Bayer 8"
 msgstr "Bayer 8"
+
+#: rayforge/machine/device/profile_diff.py
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "Device Notes"
+msgstr "Notes de l'appareil"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "Notes"
+msgstr "Notes"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "My Notes"
+msgstr "Mes notes"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "Add your own notes for this machine"
+msgstr "Ajoutez vos propres notes pour cette machine"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "Edit My Notes"
+msgstr "Modifier mes notes"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid ""
+"These notes are stored with this machine and are never overwritten by device "
+"profile updates."
+msgstr ""
+"Ces notes sont enregistrées avec cette machine et ne sont jamais écrasées "
+"par les mises à jour du profil de l’appareil."
+
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "These notes remain available after setup in Machine Settings → Notes."
+msgstr ""
+"Ces notes restent disponibles après la configuration dans Paramètres de la "
+"machine → Notes."
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid ""
+"Supported: headings, paragraphs, bold, italic, lists, links, inline code, "
+"fenced code blocks, and expandable details sections."
+msgstr ""
+"Syntaxe prise en charge : titres, paragraphes, gras, italique, listes, "
+"liens, code en ligne, blocs de code et sections dépliables."
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Bold and italic"
+msgstr "Gras et italique"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Wrap words in two stars for bold, or one star for italic."
+msgstr ""
+"Entourez les mots de deux étoiles pour le gras, ou d'une étoile pour "
+"l'italique."
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Headings"
+msgstr "Titres"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Start a line with number signs. More signs, smaller heading."
+msgstr ""
+"Commencez une ligne par des dièses. Plus il y en a, plus le titre est petit."
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Lists"
+msgstr "Listes"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid ""
+"Start lines with a dash for bullets, or with a number and a dot for a "
+"numbered list."
+msgstr ""
+"Commencez les lignes par un tiret pour des puces, ou par un chiffre et un "
+"point pour une liste numérotée."
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Links"
+msgstr "Liens"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Put the link text in square brackets and the address in round brackets."
+msgstr "Placez le texte du lien entre crochets et l'adresse entre parenthèses."
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Inline code"
+msgstr "Code en ligne"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Wrap short commands in single backticks to keep them readable."
+msgstr ""
+"Entourez les commandes courtes d'accents graves simples pour les garder "
+"lisibles."
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Quotes"
+msgstr "Citations"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Start a line with a greater-than sign to call out a remark."
+msgstr ""
+"Commencez une ligne par un signe supérieur à pour mettre en avant une "
+"remarque."
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Expandable sections"
+msgstr "Sections dépliables"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Hide long details behind a title that readers can unfold."
+msgstr ""
+"Masquez les détails longs derrière un titre que les lecteurs peuvent déplier."
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Formatting help"
+msgstr "Aide au formatage"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Type the text shown below to get the matching result."
+msgstr ""
+"Saisissez le texte indiqué ci-dessous pour obtenir le résultat correspondant."
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Code blocks"
+msgstr "Blocs de code"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid ""
+"Put a line with three backticks before and after a block of commands to show "
+"it unchanged."
+msgstr ""
+"Placez une ligne de trois accents graves avant et après un bloc de commandes "
+"pour l'afficher tel quel."
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Show formatting help"
+msgstr "Afficher l'aide au formatage"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Bold"
+msgstr "Gras"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "bold text"
+msgstr "texte en gras"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Italic"
+msgstr "Italique"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "italic"
+msgstr "italique"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Heading"
+msgstr "Titre"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Bulleted list"
+msgstr "Liste à puces"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "List item"
+msgstr "Élément de liste"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Numbered list"
+msgstr "Liste numérotée"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "First step"
+msgstr "Première étape"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "link text"
+msgstr "texte du lien"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "command"
+msgstr "commande"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Code block"
+msgstr "Bloc de code"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Quote"
+msgstr "Citation"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Remark"
+msgstr "Remarque"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Expandable section"
+msgstr "Section dépliable"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Section title"
+msgstr "Titre de la section"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Hidden details"
+msgstr "Détails masqués"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Side by side"
+msgstr "Côte à côte"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Stacked"
+msgstr "Empilé"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Raw Markdown"
+msgstr "Markdown brut"

@@ -4,7 +4,7 @@ import asyncio
 from unittest.mock import MagicMock, patch
 
 import pytest
-from gi.repository import Adw
+from gi.repository import Adw, Gtk
 
 from rayforge.machine.device.matching import (
     CONFIDENCE_CERTAIN,
@@ -773,6 +773,60 @@ def test_review_page_keeps_explicit_name(ui_context_initializer):
     page = wizard._get_page("review")
     assert isinstance(page, ReviewPage)
     assert page.name_row.get_text() == "My Rig"
+
+
+@pytest.mark.ui
+def test_review_page_shows_and_refreshes_profile_notes(
+    ui_context_initializer,
+):
+    wizard = _make_wizard(ui_context_initializer)
+    profile = _profile()
+    profile.meta.notes = "Connect the camera over USB."
+    wizard.profile = profile
+    wizard._navigate_to("review")
+    page = wizard._get_page("review")
+
+    assert isinstance(page, ReviewPage)
+    assert page.setup_notes_group.get_visible()
+    assert page.setup_notes_group.get_title() == "Notes"
+    assert page.setup_notes_view.get_text() == profile.meta.notes
+    description = page.setup_notes_group.get_description() or ""
+    assert "Machine Settings → Notes" in description
+
+    profile.meta.notes = None
+    page.enter(profile)
+    assert not page.setup_notes_group.get_visible()
+    assert page.setup_notes_view.get_text() == ""
+
+
+@pytest.mark.ui
+def test_review_page_puts_notes_last_at_natural_height(
+    ui_context_initializer,
+):
+    wizard = _make_wizard(ui_context_initializer)
+    profile = _profile()
+    profile.meta.notes = "# Camera setup\n\nPlug it in."
+    wizard.profile = profile
+    wizard._navigate_to("review")
+    page = wizard._get_page("review")
+    assert isinstance(page, ReviewPage)
+
+    groups = []
+    child = page.content.get_first_child()
+    while child is not None:
+        groups.append(child)
+        child = child.get_next_sibling()
+    assert groups[-1] is page.setup_notes_group
+    assert groups.index(page.summary_group) < groups.index(
+        page.setup_notes_group
+    )
+
+    # The page already scrolls; a nested scroller would clamp the
+    # notes into a small viewport of their own.
+    assert page.setup_notes_view.get_parent() is not None
+    assert not isinstance(
+        page.setup_notes_view.get_parent(), Gtk.ScrolledWindow
+    )
 
 
 def _summary_subtitle(page, title):

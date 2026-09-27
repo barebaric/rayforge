@@ -201,6 +201,8 @@ class Machine:
         self.wcs_origin_is_workarea_origin: bool = False
         self.source_profile_id: str | None = None
         self.reviewed_profile_hash: str | None = None
+        self.device_notes: str | None = None
+        self.user_notes: str = ""
         self.schema_version: int = 0
         self.usb_vid: int | None = None
         self.usb_pid: int | None = None
@@ -1791,6 +1793,8 @@ class Machine:
                 ),
                 "source_profile_id": self.source_profile_id,
                 "reviewed_profile_hash": self.reviewed_profile_hash,
+                "device_notes": self.device_notes,
+                "user_notes": self.user_notes,
                 "schema_version": self.schema_version,
                 "usb_vid": _format_usb_field(self.usb_vid),
                 "usb_pid": _format_usb_field(self.usb_pid),
@@ -2069,6 +2073,8 @@ class Machine:
         )
         ma.source_profile_id = ma_data.pop("source_profile_id", None)
         ma.reviewed_profile_hash = ma_data.pop("reviewed_profile_hash", None)
+        ma.device_notes = ma_data.pop("device_notes", None)
+        ma.user_notes = ma_data.pop("user_notes", "")
         ma.schema_version = ma_data.pop("schema_version", 0)
         ma.usb_vid = _parse_usb_field(ma_data.pop("usb_vid", None))
         ma.usb_pid = _parse_usb_field(ma_data.pop("usb_pid", None))

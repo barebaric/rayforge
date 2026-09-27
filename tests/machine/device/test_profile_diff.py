@@ -9,10 +9,12 @@ from rayforge.machine.device.profile_diff import (
     DIALECT_SECTION,
     MACHINE_SECTION,
     apply_diffs,
+    diff_device_notes_with_profile,
     diff_dialect_with_profile,
     diff_heads_with_profile,
     diff_machine_with_profile,
     find_outdated_profiles,
+    split_reviewable,
 )
 from rayforge.machine.models.dialect import GcodeDialect
 from rayforge.machine.models.laser import LaserHead
@@ -50,6 +52,11 @@ def test_content_hash_is_stable_and_sensitive(profile: DeviceProfile):
     changed = dc_replace(profile, dialect_config=dialect)
     assert changed.content_hash() != profile.content_hash()
 
+    changed = dc_replace(
+        profile, meta=dc_replace(profile.meta, notes="Updated guidance")
+    )
+    assert changed.content_hash() != profile.content_hash()
+
 
 def test_create_machine_stamps_provenance(
     profile: DeviceProfile, machine: "Machine"
@@ -67,6 +74,52 @@ def test_provenance_survives_roundtrip(
     restored = Machine.from_dict(data, context=context_initializer)
     assert restored.source_profile_id == machine.source_profile_id
     assert restored.reviewed_profile_hash == machine.reviewed_profile_hash
+
+
+def test_device_notes_are_reviewable_without_replacing_user_notes(
+    profile: DeviceProfile, machine: "Machine"
+):
+    machine.device_notes = "Old profile notes"
+    machine.user_notes = "My alignment notes"
+    changed = dc_replace(
+        profile, meta=dc_replace(profile.meta, notes="Updated profile notes")
+    )
+
+    diffs = diff_device_notes_with_profile(machine, changed)
+    assert len(diffs) == 1
+    assert diffs[0].key == "device.notes"
+    assert diffs[0].current_value == "Old profile notes"
+    assert diffs[0].profile_value == "Updated profile notes"
+
+    apply_diffs(machine, changed, diffs)
+
+    assert machine.device_notes == "Updated profile notes"
+    assert machine.user_notes == "My alignment notes"
+
+
+def test_device_notes_can_be_removed_by_profile_review(
+    profile: DeviceProfile, machine: "Machine"
+):
+    machine.device_notes = "Old profile notes"
+    changed = dc_replace(profile, meta=dc_replace(profile.meta, notes=None))
+
+    diffs = diff_device_notes_with_profile(machine, changed)
+    assert diffs[0].profile_value is None
+    apply_diffs(machine, changed, diffs)
+    assert machine.device_notes is None
+
+
+def test_profile_note_only_change_remains_reviewable(
+    profile: DeviceProfile, machine: "Machine"
+):
+    changed = dc_replace(
+        profile, meta=dc_replace(profile.meta, notes="Camera setup")
+    )
+
+    reviewable, nothing_to_do = split_reviewable([(machine, changed)])
+
+    assert reviewable == [(machine, changed)]
+    assert nothing_to_do == []
 
 
 def test_no_diffs_right_after_creation(

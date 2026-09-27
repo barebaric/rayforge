@@ -21,11 +21,13 @@ from gi.repository import Adw, Gtk
 
 from ...machine.device.profile import DeviceProfile
 from ...machine.device.profile_diff import (
+    DEVICE_NOTES_SECTION,
     DIALECT_SECTION,
     HEADS_SECTION,
     MACHINE_SECTION,
     SettingDiff,
     apply_diffs,
+    diff_device_notes_with_profile,
     diff_dialect_with_profile,
     diff_heads_with_profile,
     diff_machine_with_profile,
@@ -103,7 +105,12 @@ class _ReviewDialogBase(PatchedDialogWindow):
 
         self._rows: list[tuple[SettingDiff, Adw.SwitchRow]] = []
         first_group: Adw.PreferencesGroup | None = None
-        for section in (MACHINE_SECTION, HEADS_SECTION, DIALECT_SECTION):
+        for section in (
+            MACHINE_SECTION,
+            HEADS_SECTION,
+            DIALECT_SECTION,
+            DEVICE_NOTES_SECTION,
+        ):
             section_diffs = [d for d in diffs if d.section == section]
             if not section_diffs:
                 continue
@@ -181,6 +188,7 @@ class ProfileReviewDialog(_ReviewDialogBase):
         self.profile = profile
         diffs = (
             diff_machine_with_profile(machine, profile)
+            + diff_device_notes_with_profile(machine, profile)
             + diff_heads_with_profile(machine, profile)
             + diff_dialect_with_profile(machine, profile)
         )

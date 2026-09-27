@@ -8,7 +8,9 @@ from gi.repository import Adw
 from rayforge.config import BUILTIN_DEVICES_DIR
 from rayforge.machine.device.profile import DeviceProfile
 from rayforge.machine.device.profile_diff import (
+    DEVICE_NOTES_SECTION,
     HEADS_SECTION,
+    diff_device_notes_with_profile,
     diff_dialect_with_profile,
     diff_heads_with_profile,
     diff_machine_with_profile,
@@ -105,3 +107,31 @@ def test_dialog_ignore_marks_reviewed_without_applying(machine):
 
     assert machine.max_cut_speed == old_speed
     assert machine.reviewed_profile_hash == profile.content_hash()
+
+
+@pytest.mark.ui
+def test_dialog_offers_profile_notes_as_separately_selectable_diff(machine):
+    base = DeviceProfile.from_path(BUILTIN_DEVICES_DIR / "sculpfun-icube-3w")
+    profile = dc_replace(
+        base, meta=dc_replace(base.meta, notes="New camera guidance.")
+    )
+    machine.user_notes = "Private alignment notes."
+
+    dialog = ProfileReviewDialog(machine, profile)
+
+    notes_rows = [
+        (diff, row)
+        for diff, row in dialog._rows
+        if diff.section == DEVICE_NOTES_SECTION
+    ]
+    assert len(notes_rows) == len(
+        diff_device_notes_with_profile(machine, profile)
+    )
+    diff, row = notes_rows[0]
+    assert diff.profile_value == "New camera guidance."
+    assert row.get_active()
+
+    row.set_active(False)
+    dialog._apply(dialog._selected_diffs())
+    assert machine.device_notes is None
+    assert machine.user_notes == "Private alignment notes."
