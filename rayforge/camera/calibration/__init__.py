@@ -37,13 +37,14 @@ def create_target(
     Missing keys fall back to the target's own defaults, so a partially
     written configuration still yields a usable target.
     """
-    target_class = get_target_class(target_type)
-    config_class = target_class.config_class
     payload = dict(config) if config else {}
-    # The registry maps each type to a target whose constructor takes
-    # its own config; that per-class contract is beyond what the
-    # return type of get_target_class can express.
-    return target_class(config_class.from_dict(payload))  # type: ignore
+    if target_type is CalibrationTargetType.CHARUCO:
+        return CharucoTarget(CharucoConfig.from_dict(payload))
+    if target_type is CalibrationTargetType.ARUCO_GRID:
+        return ArucoGridTarget(ArucoGridConfig.from_dict(payload))
+    if target_type is CalibrationTargetType.DOT_GRID:
+        return DotGridTarget(DotGridConfig.from_dict(payload))
+    raise ValueError(f"Unsupported calibration target: {target_type}")
 
 
 def recommend_target(
@@ -57,7 +58,7 @@ def recommend_target(
         card_width_mm=card_width_mm,
         card_height_mm=card_height_mm,
     )
-    return target_class(config)  # type: ignore
+    return create_target(target_type, config.to_dict())
 
 
 def available_target_types() -> list[CalibrationTargetType]:

@@ -4,7 +4,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, fields
 from enum import StrEnum
-from typing import ClassVar
+from typing import ClassVar, Self
 
 import cv2
 import numpy as np
@@ -115,7 +115,7 @@ class TargetConfig:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "TargetConfig":
+    def from_dict(cls, data: dict) -> Self:
         known = {field.name for field in fields(cls)}
         kwargs = {key: value for key, value in data.items() if key in known}
         return cls(**kwargs)

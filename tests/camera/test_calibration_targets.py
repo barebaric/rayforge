@@ -8,11 +8,14 @@ synthetic views through a camera with known intrinsics and check that
 the solver recovers them.
 """
 
+from typing import cast
+
 import cv2
 import numpy as np
 import pytest
 
 from rayforge.camera.calibration import (
+    CalibrationTarget,
     CalibrationTargetType,
     available_target_types,
     create_target,
@@ -504,7 +507,7 @@ def test_create_target_fills_in_missing_keys():
 
 def test_create_target_rejects_an_unknown_type():
     with pytest.raises(ValueError):
-        create_target("not-a-target", {})  # type: ignore[arg-type]
+        create_target(cast(CalibrationTargetType, "not-a-target"), {})
 
 
 @pytest.mark.parametrize("target_type", ALL_TYPES)
@@ -647,7 +650,7 @@ def _solve_with_projected_views(target, intrinsics, image_size, poses):
     blank = np.full((image_size[1], image_size[0]), 255, dtype=np.uint8)
 
     holder = _ViewHolder(object_points)
-    calibrator = CameraCalibrator(holder)  # type: ignore[arg-type]
+    calibrator = CameraCalibrator(cast(CalibrationTarget, holder))
     for rvec_values, distance in poses:
         rvec = np.array(rvec_values, dtype=np.float64)
         rotation, _ = cv2.Rodrigues(rvec)
