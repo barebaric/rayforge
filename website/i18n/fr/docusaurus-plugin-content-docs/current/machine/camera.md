@@ -120,32 +120,85 @@ d'alignement sont mesurés avec soin.
 La calibration d'objectif est la deuxième étape de l'assistant de caméra. Elle te permet de choisir
 comment corriger la distorsion :
 
-- **Automatic** — capture des images d'une carte de calibration imprimée ; l'assistant calcule le
+- **Automatic** — capture des images d'un motif de calibration imprimé ; l'assistant calcule le
   modèle de distorsion pour toi
 - **Manual** — saisir à la main les coefficients radiaux (k1–k3) et tangentiels (p1–p2)
 - **Skip** — laisser la distorsion non corrigée ; tu pourras calibrer plus tard
 
 #### Calibration automatique
 
-Pour la calibration **Automatic**, l'assistant te guide pour capturer plusieurs images d'une carte
-de calibration imprimée depuis différentes positions sur le lit, puis calcule un modèle de
-distorsion automatiquement.
+Pour la calibration **Automatic**, l'assistant te guide pour capturer plusieurs images d'un motif
+de calibration imprimé depuis différentes positions sur le lit, puis calcule automatiquement un
+modèle de distorsion.
 
 ![Assistant — Paramètres de la carte](/screenshots/machine-settings-camera-lens-calibration-wizard-card.webp)
 
-1. Définis la **Largeur** et la **Hauteur** de ta carte imprimée. L'aperçu se met à jour en temps
-   réel — la carte doit couvrir environ 70% de la vue caméra.
-2. Clique sur **Save to PDF** pour exporter la carte à imprimer, puis imprime-la et place-la sur le
-   lit laser.
+Choisis d'abord un **Pattern Type** :
+
+| Motif             | Notes                                                                       |
+| ----------------- | --------------------------------------------------------------------------- |
+| **ChArUco Board** | Échiquier portant des marqueurs. Le plus précis ; bonne imprimante requise. |
+| **Marker Grid**   | Marqueurs ArUco ou AprilTag indépendants. Tolère les vues partielles.       |
+| **Dot Grid**      | Points noirs, en rangées ou décalées. Pas cher, moins précis.               |
+
+1. Définis la **Largeur** et la **Hauteur** de ta feuille imprimée. L'aperçu se met à jour en temps
+   réel — le motif doit couvrir environ 70% de la vue caméra.
+2. Clique sur **Save to PDF** pour exporter le motif à imprimer, puis imprime-le et place-le sur
+   le lit laser.
 
 ![Assistant — Capture](/screenshots/machine-settings-camera-lens-calibration-wizard-capture.webp)
 
-3. Déplace la carte à différentes positions et angles dans la vue caméra et clique sur **Capture
+3. Déplace le motif à différentes positions et angles dans la vue caméra et clique sur **Capture
    Frame** pour chaque position. Vise au moins 8 captures couvrant tout le cadre, y compris les
    coins et les bords. La barre de progression et les indicateurs d'état montrent la qualité de la
    capture.
 4. Une fois suffisamment d'images capturées, l'assistant calcule le modèle de distorsion et
    l'applique — la superposition caméra affiche maintenant une image corrigée et droite.
+
+#### Utiliser un motif déjà imprimé
+
+Les champs **Pattern Geometry** décrivent la feuille en unités physiques — nombres d'éléments de
+la grille, tailles des éléments et distances entre eux. Les modifier fait passer l'assistant en
+mode mesure d'une feuille existante plutôt que suggestion d'une nouvelle, pour calibrer avec un
+motif imprimé plus tôt ou fourni avec ta machine.
+
+Mesure la feuille après impression, et saisis les dimensions imprimées plutôt que nominales : les
+imprimantes mettent à l'échelle, et quelques pourcents d'erreur d'échelle se retrouvent
+directement dans le résultat. Si tu modifies un champ de géométrie, la suggestion **Card Size**
+est ignorée, car tes mesures définissent désormais le motif.
+
+Pour une **Marker Grid**, le **Marker Dictionary** doit correspondre à la famille d'impression
+(ArUco ou AprilTag — Rayforge affine les coins en conséquence). Si les ids imprimés ne commencent
+pas à 0, par exemple une tuile d'un jeu plus grand, saisis le premier id de la feuille dans
+**Marker ID Offset** ; les marqueurs hors de la plage décrite sont ignorés.
+
+La numérotation suit le coin **ID Origin**, qui porte l'id de décalage, et l'**ID Order** : les
+ids consécutifs avancent d'abord le long des rangées, ou d'abord le long des colonnes. Par défaut
+— coin en haut à gauche, rangées d'abord — comme les plateaux OpenCV. Pour décrire ta feuille,
+trouve le marqueur à l'id le plus bas et choisis son coin ; puis vérifie si l'id suivant est à
+côté (rangées) ou en dessous (colonnes).
+
+Les feuilles de points existent en deux dispositions, et les champs **Row Spacing** et **Row
+Offset** indiquent à Rayforge laquelle tu as :
+
+- **Rows in a rectangle** — chaque rangée est alignée. Laisse **Row Offset** à 0.
+- **Rows staggered** — une rangée sur deux est décalée latéralement, souvent d'un demi-pas, ce qui
+  donne un arrangement hexagonal. Saisis la distance entre rangées dans **Row Spacing** et le
+  décalage latéral dans **Row Offset**.
+
+Rayforge suggère par défaut une feuille décalée, donc si ta feuille est un simple rectangle, remets
+**Row Offset** à 0.
+
+:::tip
+
+Une feuille de points n'indique pas où est le haut, donc Rayforge lit son orientation dans la vue
+et dans la géométrie du motif. Cela vaut tant que la feuille garde à peu près la même orientation
+entre les captures — avec **Dot Grid**, ne pivote donc pas la feuille d'un quart de tour entre les
+prises. Les rangées décalées aident, car le décalage brise la symétrie d'un rectangle simple. Les
+motifs ChArUco et ArUco portent leur propre orientation et n'ont pas cette contrainte ; préfère-les
+quand tu as le choix.
+
+:::
 
 #### Calibration manuelle
 

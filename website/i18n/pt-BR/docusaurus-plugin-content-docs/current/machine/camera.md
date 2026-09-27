@@ -116,31 +116,84 @@ sejam cuidadosamente medidos.
 A calibração de lente é o segundo estágio do assistente de câmera. Ela permite escolher como
 corrigir a distorção:
 
-- **Automatic** — capture quadros de um cartão de calibração impresso; o assistente calcula o modelo
-  de distorção para você
+- **Automatic** — capture quadros de um padrão de calibração impresso; o assistente calcula o
+  modelo de distorção para você
 - **Manual** — insira os coeficientes radial (k1–k3) e tangencial (p1–p2) manualmente
 - **Skip** — deixe a distorção sem correção; você pode calibrar mais tarde
 
 #### Calibração Automática
 
-Para a calibração **Automatic**, o assistente orienta você a capturar várias imagens de um cartão de
-calibração impresso de diferentes posições na mesa e, em seguida, calcula um modelo de distorção
-automaticamente.
+Para a calibração **Automatic**, o assistente orienta você a capturar várias imagens de um padrão
+de calibração impresso de diferentes posições na mesa e, em seguida, calcula automaticamente um
+modelo de distorção.
 
 ![Assistente — Configurações do Cartão](/screenshots/machine-settings-camera-lens-calibration-wizard-card.webp)
 
-1. Defina a **Largura** e **Altura** do seu cartão impresso. A visualização é atualizada em tempo
-   real — o cartão deve cobrir cerca de 70% da vista da câmera.
-2. Clique em **Save to PDF** para exportar o cartão para impressão, depois imprima-o e coloque-o na
-   mesa do laser.
+Primeiro escolha um **Pattern Type**:
+
+| Padrão            | Notas                                                                       |
+| ----------------- | --------------------------------------------------------------------------- |
+| **ChArUco Board** | Tabuleiro de xadrez com marcadores. Mais preciso; precisa de boa impressora.|
+| **Marker Grid**   | Marcadores ArUco ou AprilTag independentes. Tolera vistas parciais.         |
+| **Dot Grid**      | Pontos pretos, em fileiras ou alternadas. Barato, menos preciso.            |
+
+1. Defina a **Largura** e **Altura** da sua folha impressa. A visualização é atualizada em tempo
+   real — o padrão deve cobrir cerca de 70% da vista da câmera.
+2. Clique em **Save to PDF** para exportar o padrão para impressão, depois imprima-o e coloque-o
+   na mesa do laser.
 
 ![Assistente — Captura](/screenshots/machine-settings-camera-lens-calibration-wizard-capture.webp)
 
-3. Mova o cartão para diferentes posições e ângulos dentro da vista da câmera e clique em **Capture
-   Frame** para cada posição. Procure fazer pelo menos 8 capturas cobrindo todo o quadro, incluindo
-   cantos e bordas. A barra de progresso e os indicadores de status mostram a qualidade da captura.
+3. Mova o padrão para diferentes posições e ângulos dentro da vista da câmera e clique em
+   **Capture Frame** para cada posição. Procure fazer pelo menos 8 capturas cobrindo todo o
+   quadro, incluindo cantos e bordas. A barra de progresso e os indicadores de status mostram a
+   qualidade da captura.
 4. Quando quadros suficientes forem capturados, o assistente calcula o modelo de distorção e o
    aplica — a sobreposição da câmera agora mostra uma imagem corrigida e reta.
+
+#### Usando um padrão já impresso
+
+Os campos de **Pattern Geometry** descrevem a folha em unidades físicas — contagens da grade,
+tamanhos dos elementos e as distâncias entre eles. Editá-los muda o assistente para medir uma
+folha existente em vez de sugerir uma nova, permitindo calibrar com um padrão impresso antes ou
+que veio com sua máquina.
+
+Meça a folha após imprimir e informe as dimensões impressas em vez das nominais: impressoras
+aplicam escala, e alguns por cento de erro de escala aparecem diretamente no resultado. Se você
+alterar um campo de geometria, a sugestão de **Card Size** é ignorada, pois suas medidas passam a
+definir o padrão.
+
+Para um **Marker Grid**, o **Marker Dictionary** deve corresponder à família de impressão (ArUco
+ou AprilTag — o Rayforge refina os cantos de acordo). Se os ids impressos não começam em 0, por
+exemplo um bloco de um conjunto maior, informe o primeiro id da folha em **Marker ID Offset**;
+marcadores fora do intervalo descrito são ignorados.
+
+A numeração segue o canto de **ID Origin**, que contém o id de deslocamento, e o **ID Order**: ids
+consecutivos avançam primeiro ao longo das fileiras, ou primeiro ao longo das colunas. O padrão —
+canto superior esquerdo, fileiras primeiro — segue os tabuleiros do próprio OpenCV. Para descrever
+sua folha, encontre o marcador com o menor id e escolha o canto onde ele está; depois verifique se
+o próximo id está ao lado (fileiras) ou abaixo (colunas).
+
+As folhas de pontos vêm em dois arranjos, e os campos **Row Spacing** e **Row Offset** informam ao
+Rayforge qual é o seu:
+
+- **Rows in a rectangle** — cada fileira está alinhada. Deixe **Row Offset** em 0.
+- **Rows staggered** — cada segunda fileira é deslocada lateralmente, muitas vezes meio passo,
+  formando um arranjo hexagonal. Informe a distância entre fileiras em **Row Spacing** e o
+  deslocamento lateral em **Row Offset**.
+
+O Rayforge sugere uma folha alternada por padrão; se a sua for um retângulo simples, volte **Row
+Offset** para 0.
+
+:::tip
+
+Uma folha de pontos não indica para onde fica o topo; o Rayforge lê sua orientação da vista e da
+geometria do padrão. Isso vale enquanto a folha mantiver aproximadamente a mesma orientação entre
+capturas — com **Dot Grid**, não gire a folha um quarto de volta entre fotos. Fileiras alternadas
+ajudam, pois o deslocamento quebra a simetria de um retângulo simples. Padrões ChArUco e ArUco
+trazem a própria orientação e não têm essa restrição; prefira-os quando puder escolher.
+
+:::
 
 #### Calibração Manual
 

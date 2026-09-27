@@ -1,4 +1,4 @@
-"""Live capture surface that overlays Charuco detections."""
+"""Live capture surface that overlays calibration target detections."""
 
 import logging
 from gettext import gettext as _
@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 from gi.repository import Gdk, GdkPixbuf, GLib, Graphene, Gtk
 
-from ...camera.calibration.charuco import CharucoBoard
+from ...camera.calibration.target import CalibrationTarget
 from ...camera.controller import CameraController
 
 logger = logging.getLogger(__name__)
@@ -42,12 +42,12 @@ class CalibrationCaptureSurface(Gtk.Widget):
     def __init__(
         self,
         controller: CameraController,
-        board: CharucoBoard | None = None,
+        target: CalibrationTarget | None = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.controller = controller
-        self.board = board
+        self.target = target
         self._last_corners: list[tuple[float, float]] | None = None
         self._last_ids: list[int] | None = None
 
@@ -105,8 +105,8 @@ class CalibrationCaptureSurface(Gtk.Widget):
                 ctx.paint()
                 ctx.restore()
 
-                if self.board is not None:
-                    detection = self.board.detect(raw_image)
+                if self.target is not None:
+                    detection = self.target.detect(raw_image)
                     if detection is not None:
                         corners, ids = detection
                         self._last_corners = corners
