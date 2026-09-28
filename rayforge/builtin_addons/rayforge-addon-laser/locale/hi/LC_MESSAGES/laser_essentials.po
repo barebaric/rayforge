@@ -1,0 +1,786 @@
+# Hindi translations for Rayforge.
+# Copyright (C) 2026 The Rayforge Project
+# This file is distributed under the same license as the Rayforge package.
+# Samuel Abels <knipknap@gmail.com>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Rayforge\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-24 21:41+0200\n"
+"PO-Revision-Date: 2026-09-27 22:58\n"
+"Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Cut"
+msgstr "कट"
+
+#: laser_essentials/material_test_helpers.py
+#: laser_essentials/widgets/raster_page.py
+#: laser_essentials/steps/raster_step.py
+msgid "Engrave"
+msgstr "उत्कीर्णन"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Power vs Speed"
+msgstr "शक्ति बनाम गति"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Power vs Passes"
+msgstr "शक्ति बनाम पास"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Speed vs Passes"
+msgstr "गति बनाम पास"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Speed vs Offset"
+msgstr "गति बनाम ऑफ़सेट"
+
+#: laser_essentials/widgets/shrinkwrap_page.py
+#: laser_essentials/steps/shrinkwrap_step.py
+msgid "Shrink Wrap"
+msgstr "श्रिंक रैप"
+
+#: laser_essentials/widgets/shrinkwrap_page.py
+msgid "Fit a hull around the content and trace it."
+msgstr "सामग्री के चारों ओर एक हल फ़िट करके उसका ट्रेस करें."
+
+#: laser_essentials/widgets/wavefront_page.py
+#: laser_essentials/steps/wavefront_step.py
+msgid "Wavefront"
+msgstr "वेवफ़्रंट"
+
+#: laser_essentials/widgets/wavefront_page.py
+msgid "Clear pockets with a wavefront toolpath."
+msgstr "वेवफ़्रंट टूलपाथ से पॉकेट साफ़ करें."
+
+#: laser_essentials/widgets/laser_step_page.py
+msgid "Cut Speed"
+msgstr "कट गति"
+
+#: laser_essentials/widgets/laser_step_page.py
+#: laser_essentials/steps/laser_step.py
+msgid "Laser power, speed, and head selection for this operation."
+msgstr "इस ऑपरेशन के लिए लेज़र शक्ति, गति, और हेड चयन."
+
+#: laser_essentials/widgets/laser_step_page.py
+msgid "Settings provided by the machine's hardware for this head."
+msgstr "इस हेड के लिए मशीन के हार्डवेयर द्वारा दी गई सेटिंग्स."
+
+#: laser_essentials/widgets/laser_step_page.py
+#: laser_essentials/steps/laser_step.py
+msgid "Laser"
+msgstr "लेज़र"
+
+#: laser_essentials/widgets/laser_step_page.py
+msgid "Machine"
+msgstr "मशीन"
+
+#: laser_essentials/widgets/laser_step_page.py
+msgid "Change Head"
+msgstr "हेड बदलें"
+
+#: laser_essentials/widgets/contour_page.py
+msgid "Contour Settings"
+msgstr "कॉन्टूर सेटिंग्स"
+
+#: laser_essentials/widgets/contour_page.py
+msgid "Trace the outline of the selected shapes."
+msgstr "चयनित आकृतियों की आउटलाइन ट्रेस करें."
+
+#: laser_essentials/widgets/frame_page.py
+msgid "Geometry"
+msgstr "ज्यामिति"
+
+#: laser_essentials/widgets/frame_page.py
+msgid "Cut a frame around the selected content."
+msgstr "चयनित सामग्री के चारों ओर फ़्रेम काटें."
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Columns (Power Steps)"
+msgstr "कॉलम (शक्ति चरण)"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Rows (Speed Steps)"
+msgstr "पंक्तियाँ (गति चरण)"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+#: laser_essentials/steps/material_test.py
+msgid "Number of power variations"
+msgstr "शक्ति भिन्नताओं की संख्या"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+#: laser_essentials/steps/material_test.py
+msgid "Number of speed variations"
+msgstr "गति भिन्नताओं की संख्या"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Rows (Passes Steps)"
+msgstr "पंक्तियाँ (पास चरण)"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Number of passes variations"
+msgstr "पास भिन्नताओं की संख्या"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Columns (Speed Steps)"
+msgstr "कॉलम (गति चरण)"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Rows (Offset Steps)"
+msgstr "पंक्तियाँ (ऑफ़सेट चरण)"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Number of offset variations"
+msgstr "ऑफ़सेट भिन्नताओं की संख्या"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Grid"
+msgstr "ग्रिड"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Test cell dimensions, shape, and spacing."
+msgstr "परीक्षण सेल विमाएँ, आकार, और स्पेसिंग."
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Labels"
+msgstr "लेबल"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Speed/power annotations on the grid."
+msgstr "ग्रिड पर गति/शक्ति एनोटेशन."
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Parameters"
+msgstr "पैरामीटर"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Define the parameter ranges for the test grid."
+msgstr "परीक्षण ग्रिड के लिए पैरामीटर सीमाएँ परिभाषित करें."
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Diode Engrave"
+msgstr "डायोड उत्कीर्णन"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Diode Cut"
+msgstr "डायोड कट"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "CO2 Engrave"
+msgstr "CO2 उत्कीर्णन"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "CO2 Cut"
+msgstr "CO2 कट"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Select"
+msgstr "चुनें"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Preset"
+msgstr "प्रीसेट"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Load common test configurations."
+msgstr "सामान्य परीक्षण कॉन्फ़िगरेशन लोड करें."
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Presets"
+msgstr "प्रीसेट"
+
+#: laser_essentials/widgets/material_test_grid_page.py
+msgid "Load common test configurations"
+msgstr "सामान्य परीक्षण कॉन्फ़िगरेशन लोड करें"
+
+#: laser_essentials/widgets/raster_power_widget.py
+#: laser_essentials/steps/raster_step.py
+msgid "Power for lightest areas, as a percentage of the step's main power"
+msgstr "सबसे उजले क्षेत्रों के लिए शक्ति, स्टेप की मुख्य शक्ति के प्रतिशत के रूप में"
+
+#: laser_essentials/widgets/raster_power_widget.py
+#: laser_essentials/steps/raster_step.py
+msgid "Power for darkest areas, as a percentage of the step's main power"
+msgstr "सबसे गहरे क्षेत्रों के लिए शक्ति, स्टेप की मुख्य शक्ति के प्रतिशत के रूप में"
+
+#: laser_essentials/widgets/raster_power_widget.py
+msgid "Min Power (Black)"
+msgstr "न्यूनतम शक्ति (काला)"
+
+#: laser_essentials/widgets/raster_power_widget.py
+msgid "Max Power (White)"
+msgstr "अधिकतम शक्ति (सफ़ेद)"
+
+#: laser_essentials/widgets/raster_power_widget.py
+msgid "Min Power (White)"
+msgstr "न्यूनतम शक्ति (सफ़ेद)"
+
+#: laser_essentials/widgets/raster_power_widget.py
+msgid "Max Power (Black)"
+msgstr "अधिकतम शक्ति (काला)"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Engrave Speed"
+msgstr "उत्कीर्णन गति"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Raster the image onto the material."
+msgstr "छवि को सामग्री पर रास्टर करें."
+
+#: laser_essentials/widgets/raster_page.py laser_essentials/steps/laser_step.py
+msgid "Power"
+msgstr "शक्ति"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Power modulation and brightness range."
+msgstr "शक्ति मॉडुलन और चमक सीमा."
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Change Power Range"
+msgstr "शक्ति सीमा बदलें"
+
+#: laser_essentials/widgets/levels_adapter.py
+msgid "Auto-adjusted based on image content"
+msgstr "छवि सामग्री के आधार पर स्वतः समायोजित"
+
+#: laser_essentials/widgets/levels_adapter.py
+msgid "Drag markers to set black/white points"
+msgstr "काले/सफ़ेद बिंदु सेट करने के लिए मार्कर खींचें"
+
+#: laser_essentials/steps/laser_step.py
+msgid ""
+"Laser head used for this step; the machine's first head is used when unset"
+msgstr ""
+"इस स्टेप के लिए उपयोग होने वाला लेज़र हेड; असेट न होने पर मशीन का पहला हेड उपयोग होता है"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Laser power as a percentage"
+msgstr "प्रतिशत के रूप में लेज़र शक्ति"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Power Mode"
+msgstr "शक्ति मोड"
+
+#: laser_essentials/steps/laser_step.py
+msgid ""
+"Dynamic power (M4) scales power with head speed; constant power (M3) keeps "
+"it fixed. Use constant power if corners and curves burn too lightly"
+msgstr ""
+"डायनामिक पावर (M4) हेड गति के साथ शक्ति स्केल करता है; स्थिर शक्ति (M3) उसे नियत रखती "
+"है. यदि कोने और वक्र बहुत हल्के जलते हैं तो स्थिर शक्ति उपयोग करें"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Dynamic (M4)"
+msgstr "डायनामिक (M4)"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Constant (M3)"
+msgstr "स्थिर (M3)"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Air Assist"
+msgstr "एयर असिस्ट"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Blow air over the cut to clear debris"
+msgstr "मलबा साफ़ करने के लिए कट पर हवा फूँकें"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Tab Power"
+msgstr "टैब शक्ति"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Laser power at tab positions as a percentage"
+msgstr "टैब स्थितियों पर लेज़र शक्ति प्रतिशत के रूप में"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Frequency"
+msgstr "आवृत्ति"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Laser pulse frequency in Hz (0 = head default)"
+msgstr "Hz में लेज़र पल्स आवृत्ति (0 = हेड डिफ़ॉल्ट)"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Pulse Width"
+msgstr "पल्स चौड़ाई"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Laser pulse width in ns (0 = head default)"
+msgstr "ns में लेज़र पल्स चौड़ाई (0 = हेड डिफ़ॉल्ट)"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Step Settings"
+msgstr "स्टेप सेटिंग्स"
+
+#: laser_essentials/steps/laser_step.py
+#, python-brace-format
+msgid "{power_percent}% power, {speed_str}"
+msgstr "{power_percent}% शक्ति, {speed_str}"
+
+#: laser_essentials/steps/shrinkwrap_step.py
+msgid "Gravity"
+msgstr "ग्रैविटी"
+
+#: laser_essentials/steps/shrinkwrap_step.py
+msgid "Pulls the hull inward. 0.0 is a standard convex hull"
+msgstr "हल को भीतर की ओर खींचता है. 0.0 एक मानक उत्तल हल है"
+
+#: laser_essentials/steps/shrinkwrap_step.py
+#: laser_essentials/steps/frame_step.py laser_essentials/steps/contour_step.py
+msgid "Cut Side"
+msgstr "कट पक्ष"
+
+#: laser_essentials/steps/shrinkwrap_step.py
+#: laser_essentials/steps/wavefront_step.py
+#: laser_essentials/steps/frame_step.py laser_essentials/steps/contour_step.py
+msgid "Offset"
+msgstr "ऑफ़सेट"
+
+#: laser_essentials/steps/shrinkwrap_step.py
+msgid ""
+"Shifts the contour inward/outward per Cut Side (none on Centerline). "
+"Defaults to kerf compensation for the head"
+msgstr ""
+"कट पक्ष के अनुसार कॉन्टूर को भीतर/बाहर खिसकाता है (केंद्र रेखा पर कोई नहीं). हेड के लिए "
+"कर्फ़ क्षतिपूर्ति डिफ़ॉल्ट है"
+
+#: laser_essentials/steps/wavefront_step.py
+msgid "Step Over"
+msgstr "स्टेप ओवर"
+
+#: laser_essentials/steps/wavefront_step.py
+msgid "Lateral step-over between wavefront passes"
+msgstr "वेवफ़्रंट पास के बीच पार्श्व स्टेप-ओवर"
+
+#: laser_essentials/steps/wavefront_step.py
+msgid "Extra offset from walls"
+msgstr "दीवारों से अतिरिक्त ऑफ़सेट"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Frame"
+msgstr "फ़्रेम"
+
+#: laser_essentials/steps/frame_step.py
+msgid ""
+"Shifts the frame inward/outward per Cut Side (none on Centerline). Defaults "
+"to kerf compensation for the head"
+msgstr ""
+"कट पक्ष के अनुसार फ़्रेम को भीतर/बाहर खिसकाता है (केंद्र रेखा पर कोई नहीं). हेड के लिए कर्फ़ "
+"क्षतिपूर्ति डिफ़ॉल्ट है"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Round Corners"
+msgstr "कोने गोल करें"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Round the frame's corners instead of cutting right angles"
+msgstr "समकोण काटने के बजाय फ़्रेम के कोने गोल करें"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Corner Radius"
+msgstr "कोना त्रिज्या"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Radius used to round the frame's corners"
+msgstr "फ़्रेम के कोने गोल करने के लिए त्रिज्या"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Mode"
+msgstr "मोड"
+
+#: laser_essentials/steps/raster_step.py laser_essentials/steps/contour_step.py
+msgid "Threshold"
+msgstr "थ्रेशोल्ड"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Brightness cutoff for black/white (0-255)"
+msgstr "काले/सफ़ेद के लिए चमक कटऑफ़ (0-255)"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Engraving Method"
+msgstr "उत्कीर्णन विधि"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Algorithm for converting grayscale to binary"
+msgstr "ग्रेस्केल को बाइनरी में बदलने का एल्गोरिदम"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Cross-Hatch"
+msgstr "क्रॉस-हैच"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Add a second pass at 90 degrees"
+msgstr "90 डिग्री पर दूसरा पास जोड़ें"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Scan Mode"
+msgstr "स्कैन मोड"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Segmented"
+msgstr "खंडित"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Full Sweep"
+msgstr "पूर्ण स्वीप"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Segmented: moves between content regions. Full Sweep: scans full width with "
+"laser toggling"
+msgstr ""
+"खंडित: सामग्री क्षेत्रों के बीच गति करता है. पूर्ण स्वीप: लेज़र टॉगलिंग के साथ पूरी चौड़ाई "
+"स्कैन करता है"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Line Spacing"
+msgstr "रेखा अंतराल"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Distance between scan lines"
+msgstr "स्कैन रेखाओं के बीच दूरी"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Sample Interval"
+msgstr "सैंपल अंतराल"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Distance between power samples along scan line. Lower values improve "
+"accuracy, but increase output size"
+msgstr ""
+"स्कैन रेखा पर शक्ति सैंपलों के बीच दूरी. कम मान सटीकता सुधारते हैं, लेकिन आउटपुट आकार बढ़ाते हैं"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Dot Width Correction"
+msgstr "डॉट चौड़ाई सुधार"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Reduces engrave length at both ends to compensate for physical dot width"
+msgstr "भौतिक डॉट चौड़ाई की क्षतिपूर्ति के लिए दोनों सिरों पर उत्कीर्णन लंबाई घटाता है"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Bidirectional Scan Offset"
+msgstr "द्विदिशात्मक स्कैन ऑफ़सेट"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Corrects X misalignment between left-to-right and right-to-left raster passes"
+msgstr "बाएँ-से-दाएँ और दाएँ-से-बाएँ रास्टर पास के बीच X बेमेल ठीक करता है"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Invert"
+msgstr "उलटें"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Engrave white areas instead of black areas"
+msgstr "काले क्षेत्रों के बजाय सफ़ेद क्षेत्र उत्कीर्ण करें"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Number of Depth Levels"
+msgstr "गहराई स्तरों की संख्या"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Z Step-Down per Level"
+msgstr "प्रति स्तर Z स्टेप-डाउन"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Rotate Angle Per Pass"
+msgstr "प्रति पास घूर्णन कोण"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Degrees to rotate each successive pass"
+msgstr "प्रत्येक अगले पास को घुमाने के डिग्री"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Auto Levels"
+msgstr "स्वतः स्तर"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Automatically adjust black/white points"
+msgstr "काले/सफ़ेद बिंदु स्वतः समायोजित करें"
+
+#: laser_essentials/steps/raster_step.py
+msgid "White Point"
+msgstr "सफ़ेद बिंदु"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Min Power"
+msgstr "न्यूनतम शक्ति"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Max Power"
+msgstr "अधिकतम शक्ति"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Power Levels"
+msgstr "शक्ति स्तर"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Number of discrete power steps (lower = fewer moves)"
+msgstr "असतत शक्ति चरणों की संख्या (कम = कम गतियाँ)"
+
+#: laser_essentials/steps/raster_step.py
+#, python-brace-format
+msgid "The {mode} depth mode is not supported by this machine's driver."
+msgstr "{mode} गहराई मोड इस मशीन के ड्राइवर द्वारा समर्थित नहीं है."
+
+#: laser_essentials/steps/contour_step.py
+msgid "Contour"
+msgstr "कॉन्टूर"
+
+#: laser_essentials/steps/contour_step.py
+msgid ""
+"Shifts the cut path inward/outward per Cut Side (none on Centerline). "
+"Defaults to kerf compensation for the head"
+msgstr ""
+"कट पक्ष के अनुसार कट पाथ को भीतर/बाहर खिसकाता है (केंद्र रेखा पर कोई नहीं). हेड के लिए "
+"कर्फ़ क्षतिपूर्ति डिफ़ॉल्ट है"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Cut Order"
+msgstr "कट क्रम"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Processing order for nested paths"
+msgstr "नेस्टेड पाथ के लिए प्रोसेसिंग क्रम"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Remove Inner Paths"
+msgstr "भीतरी पाथ हटाएँ"
+
+#: laser_essentials/steps/contour_step.py
+msgid "If enabled, only trace the outer outline of shapes"
+msgstr "सक्षम होने पर, आकृतियों की केवल बाहरी आउटलाइन ट्रेस करें"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Overcut"
+msgstr "ओवरकट"
+
+#: laser_essentials/steps/contour_step.py
+msgid ""
+"Extend closed contours past their start point so the cut overlaps itself"
+msgstr "बंद कॉन्टूर को प्रारंभ बिंदु से आगे बढ़ाएँ ताकि कट स्वयं पर ओवरलैप हो"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Rescan Content"
+msgstr "सामग्री पुनः स्कैन करें"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Ignore source geometry and re-trace within the workpiece"
+msgstr "स्रोत ज्यामिति अनदेखा करके वर्कपीस के भीतर पुनः ट्रेस करें"
+
+#: laser_essentials/steps/contour_step.py
+msgid "Brightness level (0.0-1.0) to define edges"
+msgstr "किनारे परिभाषित करने के लिए चमक स्तर (0.0-1.0)"
+
+#: laser_essentials/steps/material_test.py
+#: laser_essentials/commands/material_test_cmd.py
+msgid "Material Test Grid"
+msgstr "सामग्री परीक्षण ग्रिड"
+
+#: laser_essentials/steps/material_test.py
+msgid "Test Type"
+msgstr "परीक्षण प्रकार"
+
+#: laser_essentials/steps/material_test.py
+msgid "Cut: outlines; Engrave: fills with raster lines"
+msgstr "कट: आउटलाइन; उत्कीर्णन: रास्टर रेखाओं से भराव"
+
+#: laser_essentials/steps/material_test.py
+msgid "Grid Mode"
+msgstr "ग्रिड मोड"
+
+#: laser_essentials/steps/material_test.py
+msgid "Choose which parameters to vary on axes"
+msgstr "चुनें कि अक्षों पर कौन से पैरामीटर बदलें"
+
+#: laser_essentials/steps/material_test.py
+msgid "Grid Dimensions"
+msgstr "ग्रिड विमाएँ"
+
+#: laser_essentials/steps/material_test.py
+msgid "Columns"
+msgstr "कॉलम"
+
+#: laser_essentials/steps/material_test.py
+msgid "Rows"
+msgstr "पंक्तियाँ"
+
+#: laser_essentials/steps/material_test.py
+msgid "Shape Size"
+msgstr "आकृति आकार"
+
+#: laser_essentials/steps/material_test.py
+msgid "Size of each test square"
+msgstr "प्रत्येक परीक्षण वर्ग का आकार"
+
+#: laser_essentials/steps/material_test.py
+msgid "Spacing"
+msgstr "स्पेसिंग"
+
+#: laser_essentials/steps/material_test.py
+msgid "Gap between test squares"
+msgstr "परीक्षण वर्गों के बीच अंतर"
+
+#: laser_essentials/steps/material_test.py
+msgid "Line Interval"
+msgstr "रेखा अंतराल"
+
+#: laser_essentials/steps/material_test.py
+msgid ""
+"Distance between scan lines in machine units (for Engrave mode). Leave at 0 "
+"to use laser spot size"
+msgstr ""
+"मशीन इकाइयों में स्कैन रेखाओं के बीच दूरी (उत्कीर्णन मोड के लिए). लेज़र स्पॉट आकार उपयोग "
+"करने के लिए 0 पर छोड़ें"
+
+#: laser_essentials/steps/material_test.py
+msgid "Include Labels"
+msgstr "लेबल शामिल करें"
+
+#: laser_essentials/steps/material_test.py
+msgid "Add speed/power annotations to the grid"
+msgstr "ग्रिड में गति/शक्ति एनोटेशन जोड़ें"
+
+#: laser_essentials/steps/material_test.py
+msgid "Label Engrave Power (%)"
+msgstr "लेबल उत्कीर्णन शक्ति (%)"
+
+#: laser_essentials/steps/material_test.py
+msgid "Label Engrave Speed"
+msgstr "लेबल उत्कीर्णन गति"
+
+#: laser_essentials/steps/material_test.py
+msgid "Speed for engraving labels"
+msgstr "लेबल उत्कीर्णित करने की गति"
+
+#: laser_essentials/steps/material_test.py
+msgid "Fixed Speed"
+msgstr "नियत गति"
+
+#: laser_essentials/steps/material_test.py
+msgid "Constant speed for all cells"
+msgstr "सभी सेल के लिए स्थिर गति"
+
+#: laser_essentials/steps/material_test.py
+msgid "Fixed Power (%)"
+msgstr "नियत शक्ति (%)"
+
+#: laser_essentials/steps/material_test.py
+msgid "Constant power for all cells"
+msgstr "सभी सेल के लिए स्थिर शक्ति"
+
+#: laser_essentials/steps/material_test.py
+msgid "Power Range"
+msgstr "शक्ति सीमा"
+
+#: laser_essentials/steps/material_test.py
+msgid "Minimum Power (%)"
+msgstr "न्यूनतम शक्ति (%)"
+
+#: laser_essentials/steps/material_test.py
+msgid "Maximum Power (%)"
+msgstr "अधिकतम शक्ति (%)"
+
+#: laser_essentials/steps/material_test.py
+msgid "For first column"
+msgstr "पहले कॉलम के लिए"
+
+#: laser_essentials/steps/material_test.py
+msgid "For last column"
+msgstr "अंतिम कॉलम के लिए"
+
+#: laser_essentials/steps/material_test.py
+msgid "Speed Range"
+msgstr "गति सीमा"
+
+#: laser_essentials/steps/material_test.py
+msgid "Minimum Speed"
+msgstr "न्यूनतम गति"
+
+#: laser_essentials/steps/material_test.py
+msgid "Maximum Speed"
+msgstr "अधिकतम गति"
+
+#: laser_essentials/steps/material_test.py
+msgid "Starting speed"
+msgstr "प्रारंभिक गति"
+
+#: laser_essentials/steps/material_test.py
+msgid "Ending speed"
+msgstr "अंतिम गति"
+
+#: laser_essentials/steps/material_test.py
+msgid "Passes Range"
+msgstr "पास सीमा"
+
+#: laser_essentials/steps/material_test.py
+msgid "Minimum Passes"
+msgstr "न्यूनतम पास"
+
+#: laser_essentials/steps/material_test.py
+msgid "Maximum Passes"
+msgstr "अधिकतम पास"
+
+#: laser_essentials/steps/material_test.py
+msgid "Starting number of passes"
+msgstr "प्रारंभिक पास संख्या"
+
+#: laser_essentials/steps/material_test.py
+msgid "Ending number of passes"
+msgstr "अंतिम पास संख्या"
+
+#: laser_essentials/steps/material_test.py
+msgid "Offset Range"
+msgstr "ऑफ़सेट सीमा"
+
+#: laser_essentials/steps/material_test.py
+msgid "Minimum Offset"
+msgstr "न्यूनतम ऑफ़सेट"
+
+#: laser_essentials/steps/material_test.py
+msgid "Maximum Offset"
+msgstr "अधिकतम ऑफ़सेट"
+
+#: laser_essentials/steps/material_test.py
+msgid "Bidir scan X-offset for first row"
+msgstr "पहली पंक्ति के लिए द्विदिशात्मक स्कैन X-ऑफ़सेट"
+
+#: laser_essentials/steps/material_test.py
+msgid "Bidir scan X-offset for last row"
+msgstr "अंतिम पंक्ति के लिए द्विदिशात्मक स्कैन X-ऑफ़सेट"
+
+#: laser_essentials/frontend.py
+msgid "Create Material Test Grid"
+msgstr "सामग्री परीक्षण ग्रिड बनाएँ"
+
+#: laser_essentials/scan_angle_var.py
+msgid "Angle"
+msgstr "कोण"
+
+#: laser_essentials/scan_angle_var.py
+msgid "Angle of scan lines in degrees"
+msgstr "डिग्री में स्कैन रेखाओं का कोण"
+
+#: laser_essentials/levels_range_var.py
+msgid "Brightness Range"
+msgstr "चमक सीमा"
+
+#: laser_essentials/laser_head_var.py
+msgid "Laser Head"
+msgstr "लेज़र हेड"
+
+#: laser_essentials/commands/material_test_cmd.py
+msgid "Add Material Test"
+msgstr "सामग्री परीक्षण जोड़ें"

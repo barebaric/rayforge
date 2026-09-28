@@ -34,7 +34,7 @@ module.exports = {
 
   i18n: {
     defaultLocale: 'en',
-    locales: ['en', 'pt-BR', 'es', 'fr', 'de', 'zh-CN', 'uk'],
+    locales: ['en', 'pt-BR', 'es', 'fr', 'hi', 'de', 'zh-CN', 'uk'],
   },
 
   presets: [
