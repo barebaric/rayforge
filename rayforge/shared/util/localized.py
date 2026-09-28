@@ -13,7 +13,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-SUPPORTED_LANGUAGES = ["en", "de", "es", "fr", "pt", "uk", "zh_CN"]
+SUPPORTED_LANGUAGES = ["en", "de", "es", "fr", "hi", "pt", "uk", "zh_CN"]
 
 LocalizedString = str | dict[str, str]
 

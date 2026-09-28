@@ -1,0 +1,13 @@
+{
+  "title": {
+    "message": "Rayforge ब्लॉग",
+    "description": "The title for the blog used in SEO"
+  },
+  "description": {
+    "message": "Rayforge के बारे में समाचार, अपडेट, ट्यूटोरियल और सुझाव"
+  },
+  "sidebar.title": {
+    "message": "नवीनतम पद",
+    "description": "The label for the left sidebar"
+  }
+}
