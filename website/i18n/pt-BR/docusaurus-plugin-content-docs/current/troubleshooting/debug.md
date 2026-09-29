@@ -42,9 +42,12 @@ Ele inclui:
   principais instaladas.
 - **Estado da Aplicação:** Outra informação interna que pode ajudar a identificar a fonte de um
   erro.
+- **Projeto Atual (opcional):** Seu arquivo de projeto, que contém seu design, se você deixar a
+  opção **Incluir projeto atual** habilitada ao salvar o relatório.
 
-> **Nota de Privacidade:** O relatório **não** inclui nenhum dos seus arquivos de design (SVGs,
-> DXFs, etc.) ou dados pessoais do sistema operacional. Ele contém apenas informação diretamente
-> relacionada ao aplicativo Rayforge e sua conexão com seu laser.
+> **Nota de Privacidade:** Se a opção **Incluir projeto atual** estiver habilitada (ela é habilitada
+> por padrão), o relatório **inclui** seu arquivo de projeto, que contém seu design. Fora isso, ele
+> não contém dados pessoais do sistema operacional — apenas informação diretamente relacionada ao
+> aplicativo Rayforge e sua conexão com seu laser.
 
 Obrigado por nos ajudar a melhorar o Rayforge

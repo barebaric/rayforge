@@ -49,9 +49,12 @@ problème rapidement. Il inclut :
   bibliothèques clés installées.
 - **État de l'application :** D'autres informations internes qui peuvent aider à localiser la source
   d'une erreur.
+- **Projet actuel (optionnel) :** Votre fichier de projet, qui contient votre conception, si vous
+  laissez l'option **Inclure le projet actuel** activée lors de la sauvegarde du rapport.
 
-> **Note de confidentialité :** Le rapport **n'inclut pas** vos fichiers de conception (SVG, DXF,
-> etc.) ou les données personnelles du système d'exploitation. Il ne contient que les informations
-> directement liées à l'application Rayforge et sa connexion à votre laser.
+> **Note de confidentialité :** Si l'option **Inclure le projet actuel** est activée (elle l'est par
+> défaut), le rapport **inclut** votre fichier de projet, qui contient votre conception. À part
+> cela, il ne contient aucune donnée personnelle du système d'exploitation — uniquement les
+> informations directement liées à l'application Rayforge et sa connexion à votre laser.
 
 Merci de nous aider à améliorer Rayforge

@@ -46,9 +46,12 @@ It includes:
 - **System Information:** Your operating system and the versions of Rayforge and key libraries
   installed.
 - **Application State:** Other internal information that can help pinpoint the source of an error.
+- **Current Project (optional):** Your project file, which contains your design, if you leave the
+  **Include current project** option enabled when saving the report.
 
-> **Privacy Note:** The report **does not** include any of your design files (SVGs, DXFs, etc.) or
-> personal operating system data. It only contains information directly related to the Rayforge
+> **Privacy Note:** If the **Include current project** option is enabled (it is by default), the
+> report **does** include your project file, which contains your design. Apart from that, it
+> contains no personal operating system data — only information directly related to the Rayforge
 > application and its connection to your laser.
 
 Thank you for helping us improve Rayforge
