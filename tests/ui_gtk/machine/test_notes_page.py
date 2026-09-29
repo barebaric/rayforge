@@ -1,5 +1,7 @@
 """Tests for per-machine notes in Machine Settings."""
 
+import gc
+
 import pytest
 from gi.repository import Gtk
 
@@ -67,6 +69,7 @@ def test_notes_page_saves_only_user_notes(ui_context_initializer):
     page = NotesPage(machine)
     page.edit_button.emit("clicked")
     dialog = page._editor_dialog
+    assert dialog is not None
 
     assert isinstance(dialog, MarkdownEditorDialog)
     assert dialog.get_title() == "Edit My Notes"
@@ -84,7 +87,70 @@ def test_notes_page_cancel_does_not_save(ui_context_initializer):
     page = NotesPage(machine)
     assert not page.device_group.get_visible()
     page.edit_button.emit("clicked")
-    page._editor_dialog.preview_editor.editor.set_text("Uncommitted")
-    page._editor_dialog._on_cancel()
+    dialog = page._editor_dialog
+    assert dialog is not None
+    dialog.preview_editor.editor.set_text("Uncommitted")
+    dialog._on_cancel()
 
     assert machine.user_notes == ""
+
+
+def test_notes_editor_is_non_modal(ui_context_initializer):
+    machine = Machine(ui_context_initializer)
+    page = NotesPage(machine)
+
+    page.edit_button.emit("clicked")
+
+    dialog = page._editor_dialog
+    assert dialog is not None
+    assert not dialog.get_modal()
+
+
+def test_notes_editor_reuses_still_open_dialog(ui_context_initializer):
+    machine = Machine(ui_context_initializer)
+    page = NotesPage(machine)
+
+    page.edit_button.emit("clicked")
+    dialog = page._editor_dialog
+    assert dialog is not None
+    page.edit_button.emit("clicked")
+
+    assert page._editor_dialog is dialog
+
+
+def test_notes_editor_reopens_with_current_notes(ui_context_initializer):
+    machine = Machine(ui_context_initializer)
+    page = NotesPage(machine)
+    page.edit_button.emit("clicked")
+    dialog = page._editor_dialog
+    assert dialog is not None
+    dialog.preview_editor.editor.set_text("First draft")
+    dialog._on_save()
+
+    page.edit_button.emit("clicked")
+    reopened = page._editor_dialog
+    assert reopened is not None
+
+    assert reopened.get_text() == "First draft"
+    assert reopened is not dialog
+
+
+def test_notes_editor_saves_after_page_lost_its_window(
+    ui_context_initializer,
+):
+    machine = Machine(ui_context_initializer)
+    page = NotesPage(machine)
+    window = Gtk.Window()
+    window.set_child(page)
+    page.edit_button.emit("clicked")
+    dialog = page._editor_dialog
+    assert dialog is not None
+
+    window.destroy()
+    del page
+    gc.collect()
+
+    dialog.preview_editor.editor.set_text("Saved without the window")
+    dialog._on_save()
+
+    assert machine.user_notes == "Saved without the window"

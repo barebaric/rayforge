@@ -59,6 +59,7 @@ class NotesPage(TrackedPreferencesPage):
             bool(machine.device_notes and machine.device_notes.strip())
         )
 
+        self._editor_dialog: MarkdownEditorDialog | None = None
         self._sync_user_notes()
 
     def _sync_user_notes(self):
@@ -69,6 +70,11 @@ class NotesPage(TrackedPreferencesPage):
         self.empty_label.set_visible(not has_notes)
 
     def _on_edit_clicked(self, _button):
+        if self._editor_dialog is not None:
+            if self._editor_dialog.get_visible():
+                self._editor_dialog.present()
+                return
+            self._editor_dialog.destroy()
         self._editor_dialog = MarkdownEditorDialog(
             title=_("Edit My Notes"),
             description=_(
@@ -78,11 +84,13 @@ class NotesPage(TrackedPreferencesPage):
             initial_text=self.machine.user_notes,
             transient_for=self.get_ancestor(Gtk.Window),
         )
-        self._editor_dialog.connect("saved", self._on_notes_saved)
+        # The editor outlives this page when the settings window closes,
+        # so it must keep its save target alive.
+        self._editor_dialog.saved.connect(self._on_notes_saved, weak=False)
         self._editor_dialog.present()
 
-    def _on_notes_saved(self, _dialog, notes: str):
-        self.machine.user_notes = notes
+    def _on_notes_saved(self, _dialog, text: str):
+        self.machine.user_notes = text
         self.machine.changed.send(self.machine)
         self._sync_user_notes()
 

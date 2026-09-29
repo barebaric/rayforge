@@ -4,9 +4,12 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
-import pytest
-from gi.repository import Adw, GLib, Gtk
+import pathlib
 
+import pytest
+from gi.repository import Adw, Gio, GLib, Gtk
+
+import rayforge
 from rayforge.ui_gtk.shared.expander import Expander
 from rayforge.ui_gtk.shared.markdown import (
     MarkdownEditor,
@@ -34,6 +37,13 @@ def _labels(widget):
         for child in _widgets(widget)
         if isinstance(child, Gtk.Label)
     ]
+
+
+def _selected_text(editor: MarkdownEditor) -> str:
+    bounds = editor.buffer.get_selection_bounds()
+    assert len(bounds) == 2, "expected the toolbar to keep a selection"
+    start, end = bounds
+    return editor.buffer.get_text(start, end, True)
 
 
 def test_markdown_view_renders_supported_nodes_and_safe_text(
@@ -197,6 +207,85 @@ def test_toolbar_wraps_selection_with_markers(ui_context_initializer):
     toolbar.buttons["bold"].emit("clicked")
 
     assert editor.get_text() == "**focus height**"
+
+
+def test_toolbar_keeps_selection_after_wrapping(ui_context_initializer):
+    editor = MarkdownEditor("focus height")
+    start, end = editor.buffer.get_bounds()
+    editor.buffer.select_range(start, end)
+    toolbar = MarkdownToolbar(editor)
+
+    toolbar.buttons["bold"].emit("clicked")
+
+    assert _selected_text(editor) == "focus height"
+
+
+def test_toolbar_selects_placeholder_inserted_without_selection(
+    ui_context_initializer,
+):
+    editor = MarkdownEditor("")
+    toolbar = MarkdownToolbar(editor)
+
+    toolbar.buttons["bold"].emit("clicked")
+
+    assert editor.get_text() == "**bold text**"
+    assert _selected_text(editor) == "bold text"
+
+
+def test_toolbar_keeps_lines_selected_after_prefixing(
+    ui_context_initializer,
+):
+    editor = MarkdownEditor("first\nsecond")
+    start, end = editor.buffer.get_bounds()
+    editor.buffer.select_range(start, end)
+    toolbar = MarkdownToolbar(editor)
+
+    toolbar.buttons["numbered-list"].emit("clicked")
+
+    assert _selected_text(editor) == "1. first\n2. second"
+
+
+def test_toolbar_selects_content_inserted_by_block_snippet(
+    ui_context_initializer,
+):
+    editor = MarkdownEditor("")
+    toolbar = MarkdownToolbar(editor)
+
+    toolbar.buttons["details"].emit("clicked")
+
+    assert _selected_text(editor) == "Hidden details"
+
+
+def test_toolbar_help_toggles_via_blinker_signal(ui_context_initializer):
+    toolbar = MarkdownToolbar(MarkdownEditor(""))
+    states = []
+    toolbar.help_toggled.connect(
+        lambda sender, active: states.append(active), weak=False
+    )
+
+    toolbar.help_button.set_active(True)
+    toolbar.help_button.set_active(False)
+
+    assert states == [True, False]
+
+
+def test_toolbar_uses_bundled_icons(ui_context_initializer):
+    toolbar = MarkdownToolbar(MarkdownEditor(""))
+    icons_dir = pathlib.Path(rayforge.__file__).parent / "resources" / "icons"
+
+    images = [button.get_child() for button in toolbar.buttons.values()] + [
+        toolbar.help_button.get_child()
+    ]
+    assert len(images) == 11
+    for image in images:
+        assert isinstance(image, Gtk.Image)
+        gicon = image.get_gicon()
+        assert isinstance(gicon, Gio.FileIcon), (
+            "toolbar icon fell back to the theme instead of a bundled file"
+        )
+        path = gicon.get_file().get_path()
+        assert path is not None
+        assert pathlib.Path(path).parent == icons_dir
 
 
 def test_toolbar_inserts_example_without_a_selection(ui_context_initializer):
@@ -390,6 +479,34 @@ def test_markdown_editor_dialog_allows_omitted_description(
     assert dialog.get_title() == "Edit notes"
     assert dialog.get_text() == "notes"
     assert "Machine-specific guidance" not in _labels(dialog)
+
+
+def test_markdown_editor_dialog_signals_use_blinker(
+    ui_context_initializer,
+):
+    dialog = MarkdownEditorDialog(title="Edit notes", initial_text="notes")
+    events = []
+    dialog.saved.connect(
+        lambda sender, text: events.append(("saved", text)), weak=False
+    )
+    dialog.cancelled.connect(
+        lambda sender: events.append(("cancelled",)), weak=False
+    )
+
+    dialog._on_save()
+    dialog._on_cancel()
+
+    assert events == [("saved", "notes"), ("cancelled",)]
+
+
+def test_markdown_editor_dialog_defaults_to_non_modal(
+    ui_context_initializer,
+):
+    dialog = MarkdownEditorDialog(title="Edit notes")
+    assert not dialog.get_modal()
+
+    modal_dialog = MarkdownEditorDialog(title="Edit notes", modal=True)
+    assert modal_dialog.get_modal()
 
 
 def test_inline_code_background_follows_dark_mode(ui_context_initializer):
