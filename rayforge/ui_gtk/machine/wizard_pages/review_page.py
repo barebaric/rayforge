@@ -143,8 +143,6 @@ class ReviewPage(WizardPage):
         self.setup_notes_group.set_visible(False)
         self.content.append(self.setup_notes_group)
         self.setup_notes_view = MarkdownView()
-        self.setup_notes_view.set_margin_start(12)
-        self.setup_notes_view.set_margin_end(12)
         self.setup_notes_group.add(self.setup_notes_view)
 
         self.set_ready(True)

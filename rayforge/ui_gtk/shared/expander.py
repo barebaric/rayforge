@@ -101,6 +101,7 @@ class Expander(Gtk.Box):
         self.subtitle_label.set_max_width_chars(40)
         self.subtitle_label.set_hexpand(True)
         label_box.append(self.subtitle_label)
+        self._update_header_alignment()
 
         self.suffix_box = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL, spacing=6
@@ -124,9 +125,39 @@ class Expander(Gtk.Box):
 
     def set_title(self, title: str):
         self.title_label.set_text(title)
+        self._update_header_alignment()
 
     def set_subtitle(self, subtitle: str):
         self.subtitle_label.set_text(subtitle)
+        self._update_header_alignment()
+
+    def _update_header_alignment(self) -> None:
+        """Center a lone title without shrinking the header.
+
+        A hidden subtitle label collapses to zero height, so its line
+        is re-added as padding around the title. That keeps headers
+        without a subtitle exactly as tall as headers with one, with
+        the title vertically centered.
+        """
+        has_subtitle = bool(self.subtitle_label.get_text())
+        padding_top = padding_bottom = 0
+        if not has_subtitle:
+            # Measure the subtitle's line height via a placeholder,
+            # making the label visible first because hidden widgets
+            # measure as zero. The title's own size can not be used:
+            # measuring a widget includes its margins, which would
+            # feed back into the padding computed here.
+            self.subtitle_label.set_visible(True)
+            self.subtitle_label.set_text(" ")
+            line_height = self.subtitle_label.measure(
+                Gtk.Orientation.VERTICAL, -1
+            )[1]
+            self.subtitle_label.set_text("")
+            padding_top = line_height // 2
+            padding_bottom = line_height - padding_top
+        self.subtitle_label.set_visible(has_subtitle)
+        self.title_label.set_margin_top(padding_top)
+        self.title_label.set_margin_bottom(padding_bottom)
 
     def add_suffix(self, widget: Gtk.Widget):
         """Add a widget to the suffix area (between title and arrow)."""

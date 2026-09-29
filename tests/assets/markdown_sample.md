@@ -12,6 +12,8 @@ literal, so please do not "fix" it.
 
 This is a standard paragraph to test how the parser handles regular body text. In this section, we also combine **bold text** and *italicized text* within the same paragraph.
 
+Mixed nesting must keep the inner marker working: *italic text with **nested bold** inside* and **bold text with *nested italic* inside**.
+
 ## Features & Specifications
 
 Here is an unordered list to test list formatting:

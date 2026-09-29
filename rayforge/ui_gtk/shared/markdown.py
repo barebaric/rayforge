@@ -34,12 +34,6 @@ apply_css("""
 .markdown-heading-4, .markdown-heading-5, .markdown-heading-6 {
     font-weight: bold;
 }
-.markdown-inline-code {
-    font-family: monospace;
-    background-color: alpha(@headerbar_bg_color, 0.7);
-    border-radius: 4px;
-    padding: 3px 5px;
-}
 .markdown-code, .markdown-code-in-details {
     font-family: monospace;
     border: 1px solid @borders;
@@ -151,6 +145,13 @@ class MarkdownView(Gtk.Box):
         self._text = ""
         self._details_expanded: dict[tuple[str, int], bool] = {}
         self._details_seen: dict[str, int] = {}
+        self._style_handler_ids: list[int] = []
+        style_manager = Adw.StyleManager.get_default()
+        for notify in ("notify::dark", "notify::high-contrast"):
+            self._style_handler_ids.append(
+                style_manager.connect(notify, self._on_style_changed)
+            )
+        self.connect("destroy", self._on_destroy)
         self.set_text(text)
 
     def set_text(self, text: str) -> None:
@@ -177,6 +178,18 @@ class MarkdownView(Gtk.Box):
 
     def get_text(self) -> str:
         return self._text
+
+    def _on_style_changed(self, *_args):
+        """Inline code bakes its background color into Pango markup, so
+        switching between light and dark needs a full re-render.
+        """
+        self.set_text(self._text)
+
+    def _on_destroy(self, *_args):
+        style_manager = Adw.StyleManager.get_default()
+        for handler_id in self._style_handler_ids:
+            style_manager.disconnect(handler_id)
+        self._style_handler_ids = []
 
     def _render_block(self, block, in_details: bool = False):
         if isinstance(block, Heading):
@@ -231,9 +244,10 @@ class MarkdownView(Gtk.Box):
             content = Gtk.Box(
                 orientation=Gtk.Orientation.VERTICAL,
                 spacing=6,
+                margin_top=12,
+                margin_bottom=12,
                 margin_start=12,
                 margin_end=12,
-                margin_bottom=12,
             )
             for child in block.blocks:
                 content.append(self._render_block(child, in_details=True))
@@ -581,7 +595,11 @@ class MarkdownPreviewEditor(Gtk.Box):
         self._timeout_id = 0
         self.editor.buffer.connect("changed", self._on_source_changed)
         self._paned.connect("notify::max-position", self._on_paned_resized)
+        self.connect("destroy", self._on_destroy)
         self._on_width_changed()
+
+    def _on_destroy(self, *_args):
+        self._cancel_pending_refresh()
 
     def _on_paned_resized(self, *_args):
         """Allocation changes may make the responsive layout stale."""
@@ -636,6 +654,7 @@ class MarkdownPreviewEditor(Gtk.Box):
         if self._paned.get_orientation() != orientation:
             self._paned.set_orientation(orientation)
             self._paned.reset_split()
+        self._update_pane_spacing()
         if update_dropdown:
             self._updating_layout = True
             try:
@@ -644,6 +663,15 @@ class MarkdownPreviewEditor(Gtk.Box):
                 )
             finally:
                 self._updating_layout = False
+
+    def _update_pane_spacing(self) -> None:
+        """Keep a gutter between the panes and the split handle."""
+        spacing = 6
+        stacked = self._paned.get_orientation() == Gtk.Orientation.VERTICAL
+        self.editor_pane.set_margin_bottom(spacing if stacked else 0)
+        self.editor_pane.set_margin_end(0 if stacked else spacing)
+        self.preview_pane.set_margin_top(spacing if stacked else 0)
+        self.preview_pane.set_margin_start(0 if stacked else spacing)
 
     def get_layout(self) -> str:
         return (
@@ -654,8 +682,7 @@ class MarkdownPreviewEditor(Gtk.Box):
 
     def _on_source_changed(self, *_args):
         self.show_help(False)
-        if self._timeout_id:
-            GLib.source_remove(self._timeout_id)
+        self._cancel_pending_refresh()
         self._timeout_id = GLib.timeout_add(250, self._refresh_preview)
 
     def _refresh_preview(self):
@@ -663,10 +690,13 @@ class MarkdownPreviewEditor(Gtk.Box):
         self._timeout_id = 0
         return GLib.SOURCE_REMOVE
 
-    def refresh_preview(self) -> None:
+    def _cancel_pending_refresh(self) -> None:
         if self._timeout_id:
             GLib.source_remove(self._timeout_id)
             self._timeout_id = 0
+
+    def refresh_preview(self) -> None:
+        self._cancel_pending_refresh()
         self._refresh_preview()
 
 

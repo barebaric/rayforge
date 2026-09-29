@@ -46,6 +46,21 @@ def test_notes_page_empty_and_device_note_states(ui_context_initializer):
     assert page.device_notes_view.get_text() == machine.device_notes
 
 
+def test_notes_content_aligns_with_group_titles(ui_context_initializer):
+    machine = Machine(ui_context_initializer)
+    machine.user_notes = "# My notes"
+    machine.device_notes = "# Device notes"
+    page = NotesPage(machine)
+
+    for widget in (
+        page.user_notes_view,
+        page.device_notes_view,
+        page.empty_label,
+        page.edit_button,
+    ):
+        assert widget.get_margin_start() == 0
+
+
 def test_notes_page_saves_only_user_notes(ui_context_initializer):
     machine = Machine(ui_context_initializer)
     machine.device_notes = "Profile-maintained guidance."

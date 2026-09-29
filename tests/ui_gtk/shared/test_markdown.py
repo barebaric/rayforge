@@ -169,6 +169,25 @@ def test_preview_split_handle_is_wide_and_styled(ui_context_initializer):
     assert editor._paned.has_css_class("even-split")
 
 
+def test_preview_panes_keep_a_gutter_around_the_handle(
+    ui_context_initializer,
+):
+    preview = MarkdownPreviewEditor()
+    preview.set_layout(MarkdownPreviewEditor.SIDE_BY_SIDE)
+
+    assert preview.editor_pane.get_margin_end() == 6
+    assert preview.preview_pane.get_margin_start() == 6
+    assert preview.editor_pane.get_margin_bottom() == 0
+    assert preview.preview_pane.get_margin_top() == 0
+
+    preview.set_layout(MarkdownPreviewEditor.STACKED)
+
+    assert preview.editor_pane.get_margin_end() == 0
+    assert preview.preview_pane.get_margin_start() == 0
+    assert preview.editor_pane.get_margin_bottom() == 6
+    assert preview.preview_pane.get_margin_top() == 6
+
+
 def test_toolbar_wraps_selection_with_markers(ui_context_initializer):
     editor = MarkdownEditor("focus height")
     start, end = editor.buffer.get_bounds()
@@ -214,19 +233,15 @@ def test_toolbar_block_snippets_stay_parseable(ui_context_initializer):
 
 def test_help_markdown_only_uses_supported_syntax(ui_context_initializer):
     view = MarkdownView(build_help_markdown())
-    labels = [
+    code_texts = [
         child.get_text()
         for child in _widgets(view)
         if isinstance(child, Gtk.Label)
+        and child.has_css_class("markdown-code")
     ]
 
-    assert any(":::details" in label for label in labels)
-    assert not any(":::enddetails" == label.strip() for label in labels[:1])
-    assert any(
-        child.has_css_class("markdown-code")
-        for child in _widgets(view)
-        if isinstance(child, Gtk.Label)
-    )
+    assert any(":::details" in text for text in code_texts)
+    assert not any(isinstance(child, Expander) for child in _widgets(view))
 
 
 def test_help_pane_replaces_preview_and_closes_on_edit(ui_context_initializer):
@@ -375,3 +390,77 @@ def test_markdown_editor_dialog_allows_omitted_description(
     assert dialog.get_title() == "Edit notes"
     assert dialog.get_text() == "notes"
     assert "Machine-specific guidance" not in _labels(dialog)
+
+
+def test_inline_code_background_follows_dark_mode(ui_context_initializer):
+    view = MarkdownView("Run `G0 X0` now.")
+
+    def markup() -> str:
+        label = next(
+            child
+            for child in _widgets(view)
+            if isinstance(child, Gtk.Label) and "G0 X0" in child.get_text()
+        )
+        return label.get_label()
+
+    manager = Adw.StyleManager.get_default()
+    previous_scheme = manager.get_color_scheme()
+    try:
+        manager.set_color_scheme(Adw.ColorScheme.FORCE_LIGHT)
+        assert 'background="#e8edf2"' in markup()
+        manager.set_color_scheme(Adw.ColorScheme.FORCE_DARK)
+        assert 'background="#42464c"' in markup()
+    finally:
+        manager.set_color_scheme(previous_scheme)
+
+
+def test_details_header_and_content_are_balanced(ui_context_initializer):
+    view = MarkdownView(":::details Title\nHidden text\n:::enddetails")
+    expander = next(
+        child for child in _widgets(view) if isinstance(child, Expander)
+    )
+
+    assert not expander.subtitle_label.get_visible()
+
+    content = expander.revealer.get_child()
+    assert content is not None
+    assert content.get_margin_top() == content.get_margin_bottom() != 0
+
+
+def test_details_header_height_matches_expanders_with_subtitle(
+    ui_context_initializer,
+):
+    title_only = Expander()
+    title_only.set_title("Section title")
+
+    with_subtitle = Expander()
+    with_subtitle.set_title("Section title")
+    with_subtitle.set_subtitle("Explains the section")
+
+    title_only_height = title_only.measure(Gtk.Orientation.VERTICAL, -1)[1]
+    with_subtitle_height = with_subtitle.measure(Gtk.Orientation.VERTICAL, -1)[
+        1
+    ]
+    assert title_only_height == with_subtitle_height
+
+    title = title_only.title_label
+    # An odd line height splits unevenly; the halves may differ by one.
+    assert abs(title.get_margin_top() - title.get_margin_bottom()) <= 1
+    assert title.get_margin_top() > 0
+    assert title.get_margin_bottom() > 0
+
+    plain_title = with_subtitle.title_label
+    assert plain_title.get_margin_top() == plain_title.get_margin_bottom() == 0
+
+
+def test_pending_preview_refresh_is_cancelled_on_destroy(
+    ui_context_initializer,
+):
+    preview = MarkdownPreviewEditor("before")
+    preview.editor.set_text("after")
+
+    assert preview._timeout_id
+
+    preview._on_destroy()
+
+    assert not preview._timeout_id

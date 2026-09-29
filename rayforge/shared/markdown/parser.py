@@ -24,6 +24,7 @@ from .model import (
 _DETAILS_START = re.compile(r"^:::details(?:[ \t]+(.+))?$")
 _DETAILS_END = ":::enddetails"
 _FENCE = re.compile(r"^```[ \t]*([^`]*)$")
+_FENCE_END = re.compile(r"^```[ \t]*$")
 _HEADING = re.compile(r"^(#{1,6})[ \t]+(.*)$")
 _LIST = re.compile(r"^([*+-])[ \t]+(.*)$|^(\d+)\.[ \t]+(.*)$")
 _LINK = re.compile(r"\[([^\]]+)\]\(([^)\s]+)(?:\s+[^)]*)?\)")
@@ -63,8 +64,8 @@ class MarkdownParser:
             if fence:
                 index += 1
                 content: list[str] = []
-                while index < len(lines) and not lines[index].startswith(
-                    "```"
+                while index < len(lines) and not _FENCE_END.match(
+                    lines[index]
                 ):
                     content.append(lines[index])
                     index += 1
@@ -158,8 +159,16 @@ class MarkdownParser:
 
     @staticmethod
     def _details_end(lines: list[str], start: int) -> int | None:
+        in_fence = False
         for index in range(start, len(lines)):
-            if lines[index] == _DETAILS_END:
+            line = lines[index]
+            if in_fence:
+                if _FENCE_END.match(line):
+                    in_fence = False
+                continue
+            if _FENCE.match(line):
+                in_fence = True
+            elif line == _DETAILS_END:
                 return index
         return None
 
@@ -198,6 +207,35 @@ def parse(source: str) -> Document:
     return MarkdownParser().parse(source)
 
 
+def _find_emphasis_end(source: str, start: int, marker: str) -> int | None:
+    """Find the closing *marker*, skipping over nested longer runs.
+
+    In ``*foo **bar** baz*`` the first ``**`` run opens nested strong
+    emphasis rather than closing the outer emphasis, so the scan must
+    continue past the nested run's own closing marker. A longer run
+    without a match of its own does not block *marker* from closing
+    there, keeping ``**a***`` parsed as bold text plus a literal star.
+    """
+    index = start
+    while True:
+        index = source.find(marker, index)
+        if index < 0:
+            return None
+        for longer, _node_types in _EMPHASIS_MARKERS:
+            if len(longer) <= len(marker) or not source.startswith(
+                longer, index
+            ):
+                continue
+            nested_end = _find_emphasis_end(
+                source, index + len(longer), longer
+            )
+            if nested_end is not None:
+                index = nested_end + len(longer)
+                break
+        else:
+            return index
+
+
 def parse_inlines(source: str) -> list[Inline]:
     """Parse inline syntax without interpreting raw HTML."""
 
@@ -220,8 +258,8 @@ def parse_inlines(source: str) -> list[Inline]:
         matched = False
         for marker, node_types in _EMPHASIS_MARKERS:
             if source.startswith(marker, index):
-                end = source.find(marker, index + len(marker))
-                if end > index + len(marker):
+                end = _find_emphasis_end(source, index + len(marker), marker)
+                if end is not None and end > index + len(marker):
                     inner = parse_inlines(source[index + len(marker) : end])
                     node: tuple[Inline, ...] = tuple(inner)
                     for node_type in reversed(node_types):
@@ -241,7 +279,5 @@ def parse_inlines(source: str) -> list[Inline]:
             index += 1
         if start == index:
             index += 1
-            result.append(Text(source[start:index]))
-        else:
-            result.append(Text(source[start:index]))
+        result.append(Text(source[start:index]))
     return result

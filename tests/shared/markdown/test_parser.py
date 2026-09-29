@@ -57,6 +57,38 @@ def test_parses_bold_italic_with_triple_markers():
     )
 
 
+def test_parses_nested_markers_of_different_lengths():
+    document = parse("*foo **bar** baz* and __bold _in_ italic__")
+
+    assert document.blocks == (
+        Paragraph(
+            (
+                Emphasis(
+                    (
+                        Text("foo "),
+                        Strong((Text("bar"),)),
+                        Text(" baz"),
+                    )
+                ),
+                Text(" and "),
+                Strong(
+                    (
+                        Text("bold "),
+                        Emphasis((Text("in"),)),
+                        Text(" italic"),
+                    )
+                ),
+            )
+        ),
+    )
+
+
+def test_extra_star_after_bold_stays_literal():
+    document = parse("**a***")
+
+    assert document.blocks == (Paragraph((Strong((Text("a"),)), Text("*"))),)
+
+
 def test_parses_lists_quotes_and_fenced_code():
     document = parse(
         "- one\n- **two**\n\n1. first\n2. second\n\n"
@@ -73,6 +105,12 @@ def test_parses_lists_quotes_and_fenced_code():
     assert document.blocks[3] == CodeBlock("print('x')", "python")
 
 
+def test_fence_with_info_string_does_not_close_block():
+    document = parse("```\ncode\n```python\nmore code\n```")
+
+    assert document.blocks == (CodeBlock("code\n```python\nmore code", None),)
+
+
 def test_parses_details_only_for_matching_directives():
     document = parse(":::details Linux\nUse `ip -br address`.\n:::enddetails")
 
@@ -85,6 +123,22 @@ def test_parses_details_only_for_matching_directives():
                 ),
             ),
         ),
+    )
+
+
+def test_details_directive_inside_fence_does_not_close_details():
+    document = parse(
+        ":::details Syntax\n"
+        "```\n"
+        ":::details Example\ncontent\n:::enddetails\n"
+        "```\n"
+        ":::enddetails"
+    )
+
+    details = document.blocks[0]
+    assert isinstance(details, Details)
+    assert details.blocks == (
+        CodeBlock(":::details Example\ncontent\n:::enddetails", None),
     )
 
 

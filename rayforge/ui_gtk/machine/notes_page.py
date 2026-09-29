@@ -26,22 +26,17 @@ class NotesPage(TrackedPreferencesPage):
         self.add(user_group)
 
         self.user_notes_view = MarkdownView(machine.user_notes)
-        self.user_notes_view.set_margin_start(12)
-        self.user_notes_view.set_margin_end(12)
         user_group.add(self.user_notes_view)
 
         self.empty_label = Gtk.Label(
             label=_("Add your own notes for this machine"),
             xalign=0,
-            margin_start=12,
-            margin_end=12,
         )
         self.empty_label.add_css_class("dim-label")
         user_group.add(self.empty_label)
 
         self.edit_button = Gtk.Button(
             halign=Gtk.Align.START,
-            margin_start=12,
             margin_top=12,
             margin_bottom=12,
         )
@@ -59,8 +54,6 @@ class NotesPage(TrackedPreferencesPage):
         self.device_group = Adw.PreferencesGroup(title=_("Device Notes"))
         self.add(self.device_group)
         self.device_notes_view = MarkdownView(machine.device_notes or "")
-        self.device_notes_view.set_margin_start(12)
-        self.device_notes_view.set_margin_end(12)
         self.device_group.add(self.device_notes_view)
         self.device_group.set_visible(
             bool(machine.device_notes and machine.device_notes.strip())

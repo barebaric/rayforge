@@ -77,6 +77,14 @@ def test_sample_document_covers_nested_bold_italic(sample_nodes):
     )
 
 
+def test_sample_document_covers_nested_italic_bold(sample_nodes):
+    assert any(
+        isinstance(node, Emphasis)
+        and any(isinstance(child, Strong) for child in node.children)
+        for node in sample_nodes
+    )
+
+
 def test_sample_document_repeats_a_details_title(sample_nodes):
     titles = [node.title for node in sample_nodes if isinstance(node, Details)]
     assert len(titles) != len(set(titles))
