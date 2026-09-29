@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-06 00:18+0200\n"
+"POT-Creation-Date: 2026-09-29 21:46+0200\n"
 "PO-Revision-Date: 2026-09-27 22:58\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -107,6 +107,10 @@ msgid "Focus Laser"
 msgstr "फ़ोकस लेज़र"
 
 #: print_and_cut/wizard.py
+msgid "Pointer Alignment"
+msgstr ""
+
+#: print_and_cut/wizard.py
 msgid "Positions"
 msgstr "स्थितियाँ"
 
@@ -189,6 +193,14 @@ msgstr "स्थिति पहचानने के लिए फ़ोक�
 #: print_and_cut/wizard.py
 msgid "Set a focus power in laser preferences to enable"
 msgstr "सक्षम करने के लिए लेज़र वरीयताओं में फ़ोकस शक्ति सेट करें"
+
+#: print_and_cut/wizard.py
+msgid "Record positions at the pointer dot instead of the beam"
+msgstr ""
+
+#: print_and_cut/wizard.py
+msgid "Requires a pointer offset on the laser head"
+msgstr ""
 
 #: print_and_cut/wizard.py
 msgid ""

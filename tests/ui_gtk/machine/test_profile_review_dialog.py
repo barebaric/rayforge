@@ -9,13 +9,18 @@ from rayforge.config import BUILTIN_DEVICES_DIR
 from rayforge.machine.device.profile import DeviceProfile
 from rayforge.machine.device.profile_diff import (
     HEADS_SECTION,
+    MACHINE_SECTION,
+    SettingDiff,
     diff_dialect_with_profile,
     diff_heads_with_profile,
     diff_machine_with_profile,
 )
 from rayforge.machine.models.machine import Machine
 from rayforge.shared import tasker
-from rayforge.ui_gtk.machine.profile_review_dialog import ProfileReviewDialog
+from rayforge.ui_gtk.machine.profile_review_dialog import (
+    ProfileReviewDialog,
+    SchemaReviewDialog,
+)
 
 
 @pytest.fixture
@@ -105,3 +110,35 @@ def test_dialog_ignore_marks_reviewed_without_applying(machine):
 
     assert machine.max_cut_speed == old_speed
     assert machine.reviewed_profile_hash == profile.content_hash()
+
+
+@pytest.mark.ui
+def test_dialog_never_offers_profile_notes_for_review(machine):
+    base = DeviceProfile.from_path(BUILTIN_DEVICES_DIR / "sculpfun-icube-3w")
+    profile = dc_replace(
+        base, meta=dc_replace(base.meta, notes="New camera guidance.")
+    )
+    machine.user_notes = "Private alignment notes."
+
+    dialog = ProfileReviewDialog(machine, profile)
+
+    assert dialog._rows == []
+    assert machine.user_notes == "Private alignment notes."
+
+
+@pytest.mark.ui
+def test_row_subtitle_survives_angle_brackets_in_values(machine):
+    diff = SettingDiff(
+        section=MACHINE_SECTION,
+        key="camera.uri",
+        path="Source URL",
+        current_value=None,
+        profile_value="http://<laser-ip>:8080/photo",
+    )
+
+    dialog = SchemaReviewDialog(machine, [diff])
+
+    _, row = dialog._rows[0]
+    subtitle = row.get_subtitle() or ""
+    assert "<laser-ip>" in subtitle
+    assert not row.get_use_markup()

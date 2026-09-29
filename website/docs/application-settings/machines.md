@@ -35,6 +35,17 @@ Alternatively:
 
 Click the edit icon next to a machine to open the [machine settings dialog](../machine/general.md).
 
+## Machine Notes
+
+The **Notes** category, directly after **General**, brings together guidance supplied by the device
+profile and your own notes for that machine. Device notes are read-only; **My Notes** can be edited
+with Markdown. Supported syntax includes headings, paragraphs, bold, italic, lists, links, inline
+code, fenced code blocks, and expandable `:::details` sections.
+
+When a profile includes setup guidance, it also appears on the wizard's final **Review & Name** page
+and remains available under **Machine Settings → Notes** after the machine is created. Personal
+notes are saved per machine and are not replaced when reviewing profile updates.
+
 ## Switching the Active Machine
 
 Use the machine dropdown in the main window header to switch between configured machines. The

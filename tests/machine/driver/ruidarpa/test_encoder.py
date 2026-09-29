@@ -323,7 +323,7 @@ class TestLayerDeclaration:
         gs = GlueScript()
         gs.stage_gluescript(result.text.split("\n"))
         assert any(
-            "min_power_1 5.0% is below the recommended minimum of 8%" in line
+            "min_power_1 5.0% is below the recommended minimum of 8.0%" in line
             for line in gs.rpascript
         )
 
@@ -535,15 +535,19 @@ class TestSettingsCommands:
     ):
         """Per-op SET_POWER below 8% must clamp with a warning.
 
-        GlueScript 0.20.3 no longer raises for a sub-8% power; the
-        power_range action carries the value and a ``# warning:``
-        comment is emitted into the staged rpascript.
+        GlueScript no longer raises for a sub-8% power; the power_range
+        action carries the value and a ``# warning:`` comment is emitted
+        into the staged rpascript. Since GlueScript 0.21 the emission is
+        deferred: pending power settings only flush when a cut action
+        follows, so the cut below is part of the scenario.
         """
         ops = Ops()
         ops.job_start()
         ops.layer_start(layer_uid=doc.layers[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_power(0.05)
+        ops.move_to(0.0, 0.0, 0.0)
+        ops.line_to(5.0, 5.0, 0.0)
         ops.workpiece_end("wp-0")
         ops.layer_end(layer_uid=doc.layers[0].uid)
         ops.job_end()
@@ -554,7 +558,7 @@ class TestSettingsCommands:
         gs = GlueScript()
         gs.stage_gluescript(result.text.split("\n"))
         assert any(
-            "min_power_1 5.0% is below the recommended minimum of 8%" in line
+            "min_power_1 5.0% is below the recommended minimum of 8.0%" in line
             for line in gs.rpascript
         )
 

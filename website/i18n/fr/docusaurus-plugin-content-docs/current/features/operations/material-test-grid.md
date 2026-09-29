@@ -1,258 +1,176 @@
+---
+description:
+  "Génère une grille de test de matériau pour trouver les réglages de puissance et de vitesse
+  optimaux pour n'importe quel matériau. Calibre ton découpeur laser de façon systématique."
+---
+
 # Grille de Test de Matériau
 
-Le générateur de Grille de Test de Matériau crée des motifs de test paramétriques pour t'aider à
-trouver les paramètres laser optimaux pour différents matériaux.
+Chaque matériau — et souvent chaque couleur et chaque épaisseur d'un même matériau — réagit
+différemment à la puissance et à la vitesse du laser. La Grille de Test de Matériau élimine les
+conjectures dans la recherche de la bonne combinaison : elle génère un motif de cellules de test
+dans lesquelles chaque cellule est gravée ou découpée avec un réglage légèrement différent, le tout
+en un seul travail. Après une seule exécution, tu vois d'un coup d'œil quelle combinaison produit le
+résultat souhaité.
 
-## Aperçu
+Crée-en une via **Outils → Créer une Grille de Test de Matériau**. Rayforge ajoute une pièce
+spéciale sur le canevas ainsi qu'une opération correspondante, et tu configures la grille dans sa
+boîte de dialogue de paramètres.
 
-Les tests de matériau sont essentiels pour le travail laser - différents matériaux nécessitent
-différents paramètres de puissance et vitesse. La Grille de Test de Matériau automatise ce processus
-en :
+![Paramètres de la Grille de Test de Matériau](/screenshots/material-test.webp)
 
-- Générant des grilles de test avec des plages de vitesse/puissance configurables
-- Fournissant des préréglages pour les types de laser courants (Diode, CO2)
-- Optimisant l'ordre d'exécution pour la sécurité (vitesses les plus rapides d'abord)
-- Ajoutant des étiquettes pour identifier les paramètres de chaque cellule de test
+## Préréglages
 
-## Créer une Grille de Test de Matériau
+La boîte de dialogue des paramètres propose des préréglages pour les types de laser courants. Ils
+remplissent une plage de vitesse, une plage de puissance et un type de test raisonnables afin que tu
+démarres avec une base solide :
 
-### Étape 1 : Ouvrir le Générateur
+| Préréglage        | Plage de Vitesse  | Plage de Puissance | Type de Test |
+| ----------------- | ----------------- | ------------------ | ------------ |
+| **Gravure Diode** | 1000-10000 mm/min | 10-100%            | Gravure      |
+| **Coupe Diode**   | 100-5000 mm/min   | 50-100%            | Coupe        |
+| **Gravure CO2**   | 3000-20000 mm/min | 10-50%             | Gravure      |
+| **Coupe CO2**     | 1000-20000 mm/min | 30-100%            | Coupe        |
 
-Accéde au générateur de Grille de Test de Matériau :
+Un préréglage n'est qu'un point de départ — chaque valeur reste ajustable ensuite, et les plages de
+vitesse sont automatiquement limitées aux capacités de ta machine.
 
-- Menu : **Outils → Grille de Test de Matériau**
-- Cela crée une pièce spéciale qui génère le motif de test
+## Modes de Grille
 
-### Étape 2 : Choisir un Préréglage (Optionnel)
+Une grille de test fait varier deux paramètres à la fois : un sur les colonnes et un sur les lignes.
+Le mode de grille détermine lesquels. **Puissance vs Vitesse** est le mode par défaut et couvre la
+question la plus courante — la puissance sur les colonnes, la vitesse sur les lignes.
 
-Rayforge inclut des préréglages pour des scénarios courants :
+**Puissance vs Passes** et **Vitesse vs Passes** maintiennent l'un des deux fixe et font varier le
+nombre de passes à la place, ce qui est utile pour couper des matériaux épais. **Vitesse vs
+Décalage** est un mode de calibration spécial pour la gravure bidirectionnelle : il fait varier le
+décalage horizontal de balayage afin que tu puisses corriger le désalignement entre les lignes.
+Comme cela n'a de sens que pour un travail raster, sa sélection bascule la grille en Gravure et
+élargit l'espacement des lignes pour que tout désalignement soit facile à voir. Dans chaque ligne,
+la puissance est mise à l'échelle avec la vitesse, afin que toutes les cellules restent visuellement
+comparables.
 
-| Préréglage        | Plage de Vitesse  | Plage de Puissance | Utilisation         |
-| ----------------- | ----------------- | ------------------ | ------------------- |
-| **Gravure Diode** | 1000-10000 mm/min | 10-100%            | Gravure laser diode |
-| **Coupe Diode**   | 100-5000 mm/min   | 50-100%            | Coupe laser diode   |
-| **Gravure CO2**   | 3000-20000 mm/min | 10-50%             | Gravure laser CO2   |
-| **Coupe CO2**     | 1000-20000 mm/min | 30-100%            | Coupe laser CO2     |
+## Configuration de la Grille
 
-Les préréglages sont des points de départ - tu peux ajuster tous les paramètres après en avoir
-sélectionné un.
+La boîte de dialogue des paramètres regroupe les paramètres en trois sections.
 
-### Étape 3 : Configurer les Paramètres
+La section **Grille** contrôle le test lui-même. Le type de test détermine si chaque cellule découpe
+le contour d'un carré ou le remplit de lignes raster. Les dimensions de la grille définissent
+combien de colonnes et de lignes tester — chaque colonne représente un pas du premier paramètre du
+mode et chaque ligne un pas du second, du minimum au maximum de la plage saisie. Entre 2 et 20 pas
+sont autorisés par axe ; 5×5 est une bonne valeur par défaut. La taille de la forme (10 mm par
+défaut) et l'espacement (2 mm par défaut) déterminent la taille de la grille. Pour le type de test
+Gravure, l'intervalle de ligne contrôle la distance entre les lignes de balayage — des valeurs plus
+petites remplissent plus densément mais prennent plus de temps. Laisse-le à zéro pour utiliser la
+taille du spot de ton laser, ce qui convient bien à la plupart des gravures.
 
-Ajuste les paramètres de la grille de test dans la boîte de dialogue des paramètres. La grille se
-met à jour automatiquement sur le canevas à mesure que tu modifies les options :
+La section **Étiquettes** contrôle les annotations gravées à côté de la grille. Les étiquettes sont
+activées par défaut et sont gravées en premier, afin que le motif de test ne puisse pas les masquer.
+Elles ont leur propre puissance (10% par défaut) et vitesse (1000 mm/min par défaut), et les valeurs
+de vitesse sont affichées dans ton unité d'affichage préférée.
 
-![Paramètres Grille de Test de Matériau](/screenshots/material-test.webp)
+La section **Paramètres** contient les plages que la grille fait varier — vitesse, puissance, passes
+ou décalage, selon le mode sélectionné. Les modes qui gardent un paramètre fixe (par exemple la
+vitesse dans Puissance vs Passes) te permettent également de définir cette constante ici.
 
-#### Type de Test
+## Comprendre la Disposition
 
-- **Gravure** : Remplit les carrés avec un motif raster
-- **Coupe** : Coupe le contour des carrés
-
-#### Plage de Vitesse
-
-- **Vitesse Min** : Vitesse la plus lente à tester (mm/min)
-- **Vitesse Max** : Vitesse la plus rapide à tester (mm/min)
-- Les colonnes dans la grille représentent différentes vitesses
-
-#### Plage de Puissance
-
-- **Puissance Min** : Puissance la plus basse à tester (%)
-- **Puissance Max** : Puissance la plus élevée à tester (%)
-- Les lignes dans la grille représentent différents niveaux de puissance
-
-#### Dimensions de la Grille
-
-- **Colonnes** : Nombre de variations de vitesse (typiquement 3-7)
-- **Lignes** : Nombre de variations de puissance (typiquement 3-7)
-
-#### Taille & Espacement
-
-- **Taille de la Forme** : Taille de chaque carré de test en mm (défaut : 20mm)
-- **Espacement** : Espace entre les carrés en mm (défaut : 5mm)
-
-#### Étiquettes
-
-- **Inclure les Étiquettes** : Activer/désactiver les étiquettes d'axe montrant les valeurs de
-  vitesse et puissance
-- Les étiquettes apparaissent sur les bords gauche et supérieur
-- **Puissance des étiquettes (%)** : Paramètre de puissance pour graver les étiquettes
-- **Vitesse des étiquettes (mm/min)** : Vitesse pour graver les étiquettes (défaut : 1000 mm/min)
-
-Les étiquettes sont gravées en premier, avant la grille de test, pour ne pas être masquées par le
-motif de test.
-
-#### Intervalle de ligne (Test gravure uniquement)
-
-- **Intervalle de ligne (mm)** : Espacement entre les lignes de balayage en mode gravure
-- Des valeurs plus petites créent des remplissages plus denses mais prennent plus de temps
-- Valeurs typiques : 0.1-0.3mm
-
-## Comprendre la Disposition de la Grille
-
-### Organisation de la Grille
+Dans le mode Puissance vs Vitesse par défaut, la puissance augmente de gauche à droite et la vitesse
+de haut en bas :
 
 ```
-Puissance (%)     Vitesse (mm/min) →
-    ↓      1000   2500   5000   7500   10000
-  100%     [  ]   [  ]   [  ]   [  ]   [  ]
-   75%     [  ]   [  ]   [  ]   [  ]   [  ]
-   50%     [  ]   [  ]   [  ]   [  ]   [  ]
-   25%     [  ]   [  ]   [  ]   [  ]   [  ]
-   10%     [  ]   [  ]   [  ]   [  ]   [  ]
+                   Puissance (%)
+                 10       55       100
+Vitesse    100  [  ]     [  ]     [  ]
+(mm/min)   300  [  ]     [  ]     [  ]
+           500  [  ]     [  ]     [  ]
 ```
 
-- **Colonnes** : La vitesse augmente de gauche à droite
-- **Lignes** : La puissance augmente de bas en haut
-- **Étiquettes** : Montrent les valeurs exactes pour chaque ligne/colonne
+Les étiquettes sur les bords gauche et supérieur affichent la valeur exacte de chaque ligne et
+colonne, donc tu n'as jamais besoin de compter les cellules.
 
-### Calcul de la Taille de Grille
+La taille globale découle directement des dimensions de la grille : chaque axe mesure _pas × taille
+de forme + (pas − 1) × espacement_, plus la place des étiquettes à gauche et en haut (15 mm au
+maximum, et uniquement lorsque les étiquettes sont activées). Une grille 5×5 de carrés de 20 mm avec
+un espacement de 5 mm fait 120 mm de côté sans étiquettes et 135 mm avec.
 
-**Sans étiquettes :**
+## Déroulement de la Grille
 
-- Largeur = colonnes × (taille_forme + espacement) - espacement
-- Hauteur = lignes × (taille_forme + espacement) - espacement
+Les cellules ne s'exécutent délibérément **pas** dans l'ordre de lecture. Rayforge les exécute dans
+un ordre optimisé pour le risque : la vitesse la plus élevée d'abord, la puissance la plus basse à
+chaque vitesse, et le moins de passes à chaque puissance. Les combinaisons lentes et à haute
+puissance sont celles qui risquent le plus de carboniser le matériau ou de déclencher un incendie,
+donc elles s'exécutent en dernier. Cet ordre est intentionnel et ne peut pas être modifié.
 
-**Avec étiquettes :**
+## Exécution du Test
 
-- Ajoute une marge de 15mm à gauche et en haut pour l'espace des étiquettes
+Charge le matériau que tu veux caractériser — du rebut, pas ta pièce finale — et fais la mise au
+point du laser comme pour un travail réel, car la distance de mise au point change le résultat.
+Lance le travail et reste près de la machine : si une cellule commence à carboniser gravement ou à
+fumer excessivement, arrête le travail plutôt que de le laisser se terminer.
 
-**Exemple :** Grille 5×5 avec carrés de 20mm et espacement de 5mm :
-
-- Sans étiquettes : 120mm × 120mm
-- Avec étiquettes : 135mm × 135mm
-
-## Ordre d'Exécution (Optimisation du Risque)
-
-Rayforge exécute les cellules de test dans un **ordre optimisé par risque** pour prévenir les
-dommages au matériau :
-
-1. **Vitesse la plus élevée d'abord** : Les vitesses rapides sont plus sûres (moins d'accumulation
-   de chaleur)
-2. **Puissance la plus basse à l'intérieur de la vitesse** : Minimise le risque à chaque niveau de
-   vitesse
-
-Cela prévient le brunissage ou le feu de commencer avec des combinaisons lentes et à haute
-puissance.
-
-**Exemple d'ordre d'exécution pour une grille 3×3 :**
-
-```
-Ordre :  1  2  3
-         4  5  6  ← Vitesse la plus élevée, puissance croissante
-         7  8  9
-
-(Vitesse la plus rapide/puissance la plus basse exécutée en premier)
-```
-
-## Utiliser les Résultats de Test de Matériau
-
-### Étape 1 : Exécuter le Test
-
-1. Charge ton matériau dans le laser
-2. Fais la mise au point du laser correctement
-3. Exécute le travail de grille de test de matériau
-4. Surveille le test - arrête si une cellule cause des problèmes
-
-### Étape 2 : Évaluer les Résultats
-
-Après l'achèvement du test, examine chaque cellule :
-
-- **Trop clair** : Augmente la puissance ou diminue la vitesse
-- **Trop foncé/brûlé** : Diminue la puissance ou augmente la vitesse
-- **Parfait** : Note la combinaison vitesse/puissance
-
-### Étape 3 : Enregistrer les Paramètres
-
-Documente tes paramètres réussis pour référence future :
-
-- Type et épaisseur du matériau
-- Type d'opération (gravure ou coupe)
-- Combinaison vitesse et puissance
-- Nombre de passes
-- Toutes notes spéciales
+Lorsque le test est terminé, examine chaque cellule. Si la gravure est trop claire, va vers plus de
+puissance ou une vitesse plus lente ; si elle est trop foncée ou brûlée, va vers moins de puissance
+ou une vitesse plus élevée. Pour les tests de coupe, cherche la cellule qui coupe proprement avec le
+moins de carbonisation. Pour cibler le point idéal, exécute une deuxième grille plus fine : si un
+test grossier 5×5 a trouvé sa meilleure cellule autour de 40% de puissance et 4000 mm/min, une
+grille de suivi couvrant 35-45% et 3000-5000 mm/min la localisera précisément.
 
 <!-- prettier-ignore-start -->
-:::tip[Base de Données Matériaux]
-Envisage de créer un document de référence avec tes résultats de
-test de matériau pour une recherche rapide dans les projets futurs.
+:::tip[Enregistre-la comme recette]
+Au lieu de garder un carnet des meilleurs réglages, stocke-les comme une
+[recette](../../application-settings/recipes.md) : nomme-la (par exemple « Coupe Contreplaqué
+3 mm »), lie-la à la machine, à l'opération, au matériau et à l'épaisseur testés, et Rayforge
+suggérera exactement ces réglages la prochaine fois que tu coupes le même matériau.
 :::
 <!-- prettier-ignore-end -->
 
 ## Utilisation Avancée
 
-### Combiner avec d'Autres Opérations
+Les grilles de test de matériau sont des pièces ordinaires, donc elles se combinent librement avec
+d'autres opérations. Un schéma courant consiste à ajouter une opération de contour autour de la
+grille terminée et à découper la pièce de test du matériau de stock une fois la gravure terminée.
 
-Les grilles de test de matériau sont des pièces régulières - tu peux les combiner avec d'autres
-opérations :
+Exécuter la même configuration de grille sur différents matériaux est un moyen rapide de constituer
+une bibliothèque de réglages fiables — et les recettes rendent cette bibliothèque consultable par
+matériau et épaisseur plus tard.
 
-**Exemple de flux de travail :**
+## Conseils & Bonnes Pratiques
 
-1. Crée une grille de test de matériau
-2. Ajoute une coupe de contour autour de toute la grille
-3. Exécute le test, coupe libre, évalue les résultats
+Quelques habitudes rendent les résultats de test plus fiables :
 
-C'est utile pour couper la pièce de test libre du matériau de stock.
+- Commence à partir d'un préréglage et ajuste à partir de là plutôt que de tout configurer à partir
+  de zéro.
+- Donne de l'espace aux cellules : des carrés de 15-20 mm sont bien plus faciles à évaluer que des
+  minuscules.
+- Ne change qu'une variable à la fois lorsque tu affines — une grille fine qui fait varier les deux
+  axes sur de larges plages est difficile à interpréter.
+- Laisse le matériau refroidir entre des tests consécutifs sur la même pièce.
+- Utilise la même distance de mise au point pour chaque test, y compris le travail final.
 
-### Plages de Test Personnalisées
+Et les règles de sécurité laser habituelles s'appliquent doublement aux grilles de test, qui
+explorent intentionnellement un territoire inconnu :
 
-Pour un réglage fin, crée des tests à plage étroite :
-
-**Test grossier** (trouver l'à peu près) :
-
-- Vitesse : 1000-10000 mm/min (5 colonnes)
-- Puissance : 10-100% (5 lignes)
-
-**Test fin** (optimiser) :
-
-- Vitesse : 4000-6000 mm/min (5 colonnes)
-- Puissance : 35-45% (5 lignes)
-
-### Différents Matériaux, Même Grille
-
-Exécute la même configuration de grille sur différents matériaux pour construire ta bibliothèque de
-matériaux plus rapidement.
-
-## Conseils & Meilleures Pratiques
-
-### Conception de Grille
-
-✅ **Commence avec les préréglages** - Bons points de départ pour les scénarios courants ✅
-**Utilise des grilles 5×5** - Bon équilibre entre détail et temps de test ✅ **Active les
-étiquettes** - Essentiel pour identifier les résultats ✅ **Garde les carrés ≥20mm** - Plus facile à
-voir et mesurer les résultats
-
-### Stratégie de Test
-
-✅ **Teste sur du rebut d'abord** - Ne teste jamais sur le matériau final ✅ **Une variable à la
-fois** - Teste la plage de vitesse OU de puissance, pas les deux extrêmes ✅ **Permet le
-refroidissement** - Attends entre les tests sur le même matériau ✅ **Mise au point cohérente** -
-Même distance de mise au point pour tous les tests
-
-### Sécurité
-
-⚠️ **Surveille les tests** - Ne laisse jamais les tests en cours sans surveillance ⚠️ **Commence de
-manière conservatrice** - Commence avec des plages de puissance plus basses ⚠️ **Vérifie la
-ventilation** - Assure une extraction des fumées appropriée ⚠️ **Surveille le feu** - Aie un
-extincteur prêt
+- Ne laisse jamais un test en cours sans surveillance.
+- Commence avec des plages de puissance prudentes et monte progressivement.
+- Assure-toi que l'extraction des fumées fonctionne avant de commencer.
+- Garde un extincteur à portée de main.
 
 ## Dépannage
 
-### Les cellules de test s'exécutent dans le mauvais ordre
+**Les cellules s'exécutent dans un ordre étrange.** C'est l'ordre d'exécution optimisé pour le
+risque décrit dans [Déroulement de la Grille](#how-the-grid-runs) — les combinaisons les plus
+rapides et les plus faibles d'abord. C'est intentionnel.
 
-- Rayforge utilise l'ordre optimisé par risque (vitesses les plus rapides d'abord)
-- C'est intentionnel et ne peut pas être changé
-- Voir [Ordre d'Exécution](#ordre-dexécution-optimisation-du-risque) ci-dessus
-
-### Les résultats sont incohérents
-
-- **Vérifie** : Le matériau est plat et correctement sécurisé
-- **Vérifie** : La mise au point est cohérente sur toute la zone de test
-- **Vérifie** : La puissance laser est stable (vérifie l'alimentation)
-- **Essayez** : Une grille plus petite pour réduire la zone de test
+**Les résultats sont incohérents entre les exécutions.** Assure-toi que le matériau repose à plat et
+est fixé, que la mise au point est identique sur toute la grille, et que ton alimentation délivre
+une puissance stable. Si une seule région de la grille semble incorrecte, le matériau lui-même est
+peut-être irrégulier.
 
 ## Sujets Connexes
 
-- **[Aperçu 3D](../../ui/3d-preview.md)** - Prévisualiser l'exécution du test avant de l'exécuter
+- **[Aperçu 3D](../../ui/3d-preview.md)** - Prévisualise l'exécution du test avant de le lancer
+- **[Recettes](../../application-settings/recipes.md)** - Réutilise automatiquement tes résultats de
+  test
 - **[Gravure](engrave)** - Comprendre les opérations de gravure
 - **[Coupe de Contour](contour)** - Comprendre les opérations de coupe

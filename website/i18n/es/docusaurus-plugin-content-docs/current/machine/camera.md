@@ -118,8 +118,8 @@ alineación están medidos con cuidado.
 La calibración de lente es la segunda etapa del asistente de cámara. Te permite elegir cómo corregir
 la distorsión:
 
-- **Automatic** — captura fotogramas de un patrón de calibración impreso; el asistente calcula
-  el modelo de distorsión por ti
+- **Automatic** — captura fotogramas de un patrón de calibración impreso; el asistente calcula el
+  modelo de distorsión por ti
 - **Manual** — ingresa los coeficientes radiales (k1–k3) y tangenciales (p1–p2) manualmente
 - **Skip** — deja la distorsión sin corregir; puedes calibrar más tarde
 
@@ -133,16 +133,16 @@ distorsión automáticamente.
 
 Primero elige un **Pattern Type**:
 
-| Patrón            | Notas                                                                       |
-| ----------------- | --------------------------------------------------------------------------- |
-| **ChArUco Board** | Tablero de ajedrez con marcadores. Más preciso; necesita una buena impresora.|
-| **Marker Grid**   | Marcadores ArUco o AprilTag independientes. Tolera vistas parciales.        |
-| **Dot Grid**      | Puntos negros, en filas o en filas escalonadas. Barato, menos preciso.      |
+| Patrón            | Notas                                                                         |
+| ----------------- | ----------------------------------------------------------------------------- |
+| **ChArUco Board** | Tablero de ajedrez con marcadores. Más preciso; necesita una buena impresora. |
+| **Marker Grid**   | Marcadores ArUco o AprilTag independientes. Tolera vistas parciales.          |
+| **Dot Grid**      | Puntos negros, en filas o en filas escalonadas. Barato, menos preciso.        |
 
-1. Establece el **Ancho** y **Alto** de tu hoja impresa. La vista previa se actualiza en tiempo
-   real — el patrón debe cubrir aproximadamente el 70% de la vista de la cámara.
-2. Haz clic en **Save to PDF** para exportar el patrón para imprimir, luego imprímelo y colócalo
-   en la cama láser.
+1. Establece el **Ancho** y **Alto** de tu hoja impresa. La vista previa se actualiza en tiempo real
+   — el patrón debe cubrir aproximadamente el 70% de la vista de la cámara.
+2. Haz clic en **Save to PDF** para exportar el patrón para imprimir, luego imprímelo y colócalo en
+   la cama láser.
 
 ![Asistente — Captura](/screenshots/machine-settings-camera-lens-calibration-wizard-capture.webp)
 
@@ -167,15 +167,15 @@ ignora, porque tus medidas ahora deciden el patrón.
 
 Para un **Marker Grid**, el **Marker Dictionary** debe coincidir con la familia con la que se
 imprimió la hoja (ArUco o AprilTag — Rayforge refina las esquinas en consecuencia). Si los ids
-impresos no empiezan en 0, por ejemplo una baldosa de un conjunto mayor, pon el primer id de la
-hoja en **Marker ID Offset**; los marcadores fuera del rango descrito se ignoran.
+impresos no empiezan en 0, por ejemplo una baldosa de un conjunto mayor, pon el primer id de la hoja
+en **Marker ID Offset**; los marcadores fuera del rango descrito se ignoran.
 
 La numeración sigue la esquina de **ID Origin**, que contiene el id de desplazamiento, y el **ID
 Order**: los ids consecutivos avanzan primero a lo largo de las filas, o primero a lo largo de las
 columnas. El valor predeterminado — esquina superior izquierda, primero filas — coincide con los
-tableros del propio OpenCV. Para describir tu hoja, encuentra el marcador con el id más bajo y
-elige la esquina donde se encuentra; luego comprueba si el siguiente id está a su lado (filas) o
-debajo (columnas).
+tableros del propio OpenCV. Para describir tu hoja, encuentra el marcador con el id más bajo y elige
+la esquina donde se encuentra; luego comprueba si el siguiente id está a su lado (filas) o debajo
+(columnas).
 
 Las hojas de puntos vienen en dos disposiciones, y los campos **Row Spacing** y **Row Offset** le
 dicen a Rayforge cuál tienes:

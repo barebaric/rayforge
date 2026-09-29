@@ -121,6 +121,16 @@ class TestMachineModel:
         assert hasattr(machine, "command_status_changed")
         assert hasattr(machine, "wcs_updated")
 
+    def test_machine_notes_round_trip(self, lite_context):
+        machine = Machine(lite_context)
+        machine.device_notes = "Profile-maintained notes"
+        machine.user_notes = "My maintenance notes"
+
+        restored = Machine.from_dict(machine.to_dict(), context=lite_context)
+
+        assert restored.device_notes == "Profile-maintained notes"
+        assert restored.user_notes == "My maintenance notes"
+
     # -- Axis extents --
 
     def test_axis_extents_default(self, lite_context):

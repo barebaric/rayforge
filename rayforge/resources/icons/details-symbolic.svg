@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   height="24px"
+   viewBox="0 0 24 24"
+   width="24px"
+   fill="#000000"
+   version="1.1"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <path
+     d="M 7 17 h 3 q 0.425 0 0.7125 0.2875 T 11 18 q 0 0.425 -0.2875 0.7125 T 10 19 H 6 q -0.425 0 -0.7125 -0.2875 T 5 18 v -4 q 0 -0.425 0.2875 -0.7125 T 6 13 q 0.425 0 0.7125 0.2875 T 7 14 v 3 Z m 10 -10 H 14 q -0.425 0 -0.7125 -0.2875 T 13 6 q 0 -0.425 0.2875 -0.7125 T 14 5 h 4 q 0.425 0 0.7125 0.2875 T 19 6 v 4 q 0 0.425 -0.2875 0.7125 T 18 11 q -0.425 0 -0.7125 -0.2875 T 17 10 v -3 Z"
+     id="path1" />
+</svg>

@@ -44,9 +44,12 @@ rápidamente. Incluye:
   instaladas.
 - **Estado de la Aplicación:** Otra información interna que puede ayudar a localizar la fuente de un
   error.
+- **Proyecto Actual (opcional):** Tu archivo de proyecto, que contiene tu diseño, si dejas
+  habilitada la opción **Incluir proyecto actual** al guardar el reporte.
 
-> **Nota de Privacidad:** El reporte **no** incluye ninguno de tus archivos de diseño (SVGs, DXFs,
-> etc.) ni datos personales del sistema operativo. Solo contiene información directamente
+> **Nota de Privacidad:** Si la opción **Incluir proyecto actual** está habilitada (lo está por
+> defecto), el reporte **sí** incluye tu archivo de proyecto, que contiene tu diseño. Aparte de eso,
+> no incluye datos personales del sistema operativo; solo contiene información directamente
 > relacionada con la aplicación Rayforge y su conexión a tu láser.
 
 Gracias por ayudarnos a mejorar Rayforge
