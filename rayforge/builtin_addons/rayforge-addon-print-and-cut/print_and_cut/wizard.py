@@ -310,6 +310,13 @@ class PrintAndCutWizard(PatchedDialogWindow):
             head.changed.connect(self._on_head_changed)
         self._update_focus_sensitivity()
 
+        self._alignment_row = Adw.SwitchRow(title=_("Pointer Alignment"))
+        self._alignment_handler_id = self._alignment_row.connect(
+            "notify::active", self._on_alignment_toggled
+        )
+        controls_group.add(self._alignment_row)
+        self._update_alignment_row()
+
         positions_group = Adw.PreferencesGroup(title=_("Positions"))
         box.append(positions_group)
 
@@ -363,6 +370,9 @@ class PrintAndCutWizard(PatchedDialogWindow):
             self._machine.state_changed.connect(self._on_machine_state_changed)
             self._machine.connection_status_changed.connect(
                 self._on_connection_status_changed
+            )
+            self._machine.pointer_alignment_changed.connect(
+                self._on_machine_alignment_changed
             )
             self._update_connection_sensitive()
             self._update_laser_position()
@@ -546,6 +556,10 @@ class PrintAndCutWizard(PatchedDialogWindow):
         if x_val is None or y_val is None:
             return
 
+        shift_x, shift_y = self._get_pointer_shift()
+        x_val += shift_x
+        y_val += shift_y
+
         subtitle = f"({x_val:.2f}, {y_val:.2f})"
         if pos_index == 0:
             self._physical_point1 = (x_val, y_val)
@@ -568,7 +582,10 @@ class PrintAndCutWizard(PatchedDialogWindow):
             point = self._physical_point2
         if point is None:
             return
-        self._machine_cmd.move_to(self._machine, point[0], point[1])
+        shift_x, shift_y = self._get_pointer_shift()
+        self._machine_cmd.move_to(
+            self._machine, point[0] - shift_x, point[1] - shift_y
+        )
 
     def _update_jog_next_btn(self):
         p1 = self._physical_point1
@@ -660,6 +677,52 @@ class PrintAndCutWizard(PatchedDialogWindow):
             self._focus_btn.set_sensitive(False)
             if self._focus_active:
                 self._disable_focus()
+
+    def _update_alignment_row(self):
+        """Syncs the alignment switch sensitivity and subtitle."""
+        if not self._machine:
+            self._alignment_row.set_sensitive(False)
+            return
+        has_offset = self._machine.has_pointer_offset()
+        self._alignment_row.set_sensitive(has_offset)
+        if has_offset:
+            self._alignment_row.set_subtitle(
+                _("Record positions at the pointer dot instead of the beam")
+            )
+        else:
+            self._alignment_row.set_subtitle(
+                _("Requires a pointer offset on the laser head")
+            )
+        self._sync_alignment_row_state()
+
+    def _sync_alignment_row_state(self):
+        """Mirrors the machine state into the switch without echo."""
+        if not self._machine:
+            return
+        self._alignment_row.handler_block(self._alignment_handler_id)
+        self._alignment_row.set_active(self._machine.pointer_alignment_enabled)
+        self._alignment_row.handler_unblock(self._alignment_handler_id)
+
+    def _on_alignment_toggled(self, row, _param):
+        if not self._machine:
+            return
+        self._machine.set_pointer_alignment(row.get_active())
+        self._sync_alignment_row_state()
+
+    def _on_machine_alignment_changed(self, machine):
+        self._update_alignment_row()
+
+    def _get_pointer_shift(self) -> tuple[float, float]:
+        """The (x, y) pointer dot displacement while pointer alignment
+        is on, (0, 0) otherwise.
+
+        Recorded positions are aimed with the pointer dot, so recording
+        adds the shift to the beam position and revisiting a recorded
+        position subtracts it from the aim target.
+        """
+        if not self._machine or not self._machine.pointer_alignment_enabled:
+            return (0.0, 0.0)
+        return self._machine.get_pointer_offset()
 
     def _on_scale_toggled(self, switch_row, _param):
         self._allow_scale = switch_row.get_active()
@@ -820,6 +883,9 @@ class PrintAndCutWizard(PatchedDialogWindow):
             )
             self._machine.connection_status_changed.disconnect(
                 self._on_connection_status_changed
+            )
+            self._machine.pointer_alignment_changed.disconnect(
+                self._on_machine_alignment_changed
             )
             head = self._machine.get_default_head()
             head.changed.disconnect(self._on_head_changed)
