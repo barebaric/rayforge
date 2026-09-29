@@ -39,7 +39,8 @@ uno.
 
 ### Paso 3: Configurar Parámetros
 
-Ajusta los parámetros de la cuadrícula de prueba en el diálogo de configuración:
+Ajusta los parámetros de la cuadrícula de prueba en el diálogo de configuración. La cuadrícula se
+actualiza automáticamente en el lienzo a medida que cambias las opciones:
 
 ![Configuración de Cuadrícula de Prueba de Material](/screenshots/material-test.webp)
 
@@ -87,11 +88,6 @@ patrón de prueba.
   grabado
 - Valores menores crean rellenos más densos pero tardan más en ejecutarse
 - Valores típicos: 0.1-0.3mm
-
-### Paso 4: Generar la Cuadrícula
-
-Haz clic en **Generar** para crear el patrón de prueba. La cuadrícula aparece en tu lienzo como una
-pieza de trabajo especial.
 
 ## Entendiendo el Diseño de la Cuadrícula
 

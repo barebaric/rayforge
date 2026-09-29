@@ -120,6 +120,13 @@ Deine Treiberklasse **MUSS** die folgenden Methoden implementieren. Beachte, das
   `DriverPrecheckError` werfen.
 - `setup(**kwargs)`: Wird einmal mit den Werten aus dem Einrichtungsformular aufgerufen. Verwende
   dies um deine Transports und internen Zustände zu initialisieren.
+- `update_settings(**kwargs) -> bool`: Optional. Wird anstelle eines Ab- und Wiederaufbaus
+  aufgerufen, wenn die Setup-Argumente des Treibers einer Maschine bearbeitet werden, ohne dass sich
+  die Treiberklasse ändert. Gib `True` zurück, wenn der Treiber die Änderung absorbieren kann, ohne
+  eine laufende Verbindung zu trennen (speichere die neuen Argumente auf der Instanz; sie wirken auf
+  nachfolgende Operationen oder den nächsten Verbindungsversuch). Gib `False` (der Standard) zurück,
+  um einen Neuaufbau anzufordern, bei dem der Treiber mit den neuen Argumenten ab- und wieder
+  aufgebaut wird.
 - `async def connect()`: Stellt eine persistente Verbindung zum Gerät her und hält sie aufrecht.
   Diese Methode sollte Auto-Wiederverbindungs-Logik enthalten.
 - `async def cleanup()`: Wird beim Trennen aufgerufen. Sollte alle Verbindungen schließen und
@@ -136,8 +143,10 @@ Deine Treiberklasse **MUSS** die folgenden Methoden implementieren. Beachte, das
 - `async def run_raw(gcode: str)`: Führt einen rohen G-Code-String direkt aus.
 - `async def home(axes: Optional[Axis] = None)`: Referenziert die Maschine. Kann spezifische Achsen
   oder alle Achsen referenzieren.
-- `async def move_to(pos_x: float, pos_y: float)`: Bewegt manuell den Laserkopf zu einer
-  spezifischen XY-Koordinate.
+- `async def move_to(pos_x: float, pos_y: float, pos_z: Optional[float] = None, speed: Optional[float] = None)`:
+  Bewegt manuell den Laserkopf zu einer spezifischen XY-Koordinate. Wenn `pos_z` angegeben ist, wird
+  es als absolute Z-Position in derselben Bewegung angefahren. `speed` ist in mm/min und fällt auf
+  einen Treiber-Standardwert zurück, wenn `None`.
 - `async def set_hold(hold: bool = True)`: Pausiert oder setzt den aktuellen Job fort.
 - `async def cancel()`: Stoppt den aktuellen Job.
 - `async def jog(axis: Axis, distance: float, speed: int)`: Joggt die Maschine entlang einer
@@ -203,9 +212,11 @@ emittieren.** Stattdessen rufst du die geschützten Hilfsmethoden aus der Basis-
 Der beste Weg zu lernen ist, sich die bestehenden Treiber in `rayforge/machine/driver/` anzusehen,
 wie:
 
-- `grbl/` - GRBL-basierte Maschinen (seriell, Telnet, Netzwerk)
+- `grbl/` - GRBL-basierte Maschinen (seriell, seriell simple, Rust-seriell, Telnet, Netzwerk)
 - `marlin/` - Marlin-Firmware-basierte Maschinen (seriell)
-- `smoothie.py` - Smoothieboard-basierte Maschinen
+- `ruidarpa/` - Ruida-Controller über den Ruida Protocol Analyzer (USB, UDP oder TUI-RPC)
+- `octoprint/` - Maschinen, die über einen OctoPrint-Server gesteuert werden
+- `smoothie/` - Smoothieboard-basierte Maschinen
 - `dummy.py` - Ein Test-Treiber für die Entwicklung
 
 Wenn du steckenbleibst, zögere bitte nicht, ein Issue auf GitHub zu eröffnen! Wir helfen gerne.

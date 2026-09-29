@@ -968,6 +968,9 @@
   "page.devices.device.creality-falcon-a1.description": {
     "message": "Graveur laser à diode avec zone de travail de 381x305mm et support rotatif"
   },
+  "page.devices.device.creality-falcon-a1-pro.description": {
+    "message": "Graveur laser à diode 20W avec zone de travail de 363x273mm, support rotatif et prise en charge optionnelle d'un module laser infrarouge de 2W"
+  },
   "page.devices.device.creality-falcon-10w.description": {
     "message": "Graveur laser à diode 10W avec zone de travail de 400x415mm"
   },

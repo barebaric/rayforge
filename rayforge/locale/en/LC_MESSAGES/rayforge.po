@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-24 22:18+0200\n"
+"POT-Creation-Date: 2026-09-27 22:23+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -357,6 +357,32 @@ msgstr ""
 msgid "Cannot use operator '{op}' between types '{left}' and '{right}'"
 msgstr ""
 
+#: rayforge/camera/source/base.py
+#, python-brace-format
+msgid "URL contains placeholder <{placeholder}>; replace it with a valid value"
+msgstr ""
+
+#: rayforge/camera/source/base.py
+msgid "URL is malformed"
+msgstr ""
+
+#: rayforge/camera/source/base.py
+#, python-brace-format
+msgid "URL must start with one of: {schemes}"
+msgstr ""
+
+#: rayforge/camera/source/base.py
+msgid "URL must include a host"
+msgstr ""
+
+#: rayforge/camera/source/base.py
+msgid "URL contains an invalid host or port"
+msgstr ""
+
+#: rayforge/camera/source/base.py
+msgid "URL must include a valid hostname or IP address"
+msgstr ""
+
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 msgid "Ruida RPA"
 msgstr ""
@@ -596,6 +622,10 @@ msgstr ""
 msgid "Error during setup. You may need to edit device settings."
 msgstr ""
 
+#: rayforge/machine/driver/driver.py
+msgid "Unexpected error during setup. You may need to edit device settings."
+msgstr ""
+
 #: rayforge/machine/driver/octoprint/octoprint_util.py
 msgid "Could not read the OctoPrint server version."
 msgstr ""
@@ -618,6 +648,7 @@ msgstr ""
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 #: rayforge/machine/driver/smoothie/smoothie_driver.py
 msgid "Machine Coordinates (G53)"
@@ -640,6 +671,7 @@ msgstr ""
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/smoothie/smoothie_driver.py
 msgid "Port"
 msgstr ""
@@ -774,23 +806,27 @@ msgstr ""
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
-msgid "Serial port for the device"
+#: rayforge/machine/driver/grbl/serial_next.py
+msgid "Serial port or USB VID:PID (e.g. 0403:6001)"
 msgstr ""
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Port must be configured."
 msgstr ""
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Baud rate must be configured."
 msgstr ""
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Port not configured"
 msgstr ""
 
@@ -819,11 +855,13 @@ msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Poll device status during jobs"
 msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid ""
 "Periodically query the device for position and status while a job is "
 "running. Warning: Some devices have trouble maintaining a stable connection "
@@ -832,11 +870,13 @@ msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Deadlock detection"
 msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid ""
 "Detect and recover from serial communication deadlocks during jobs. If "
 "disabled, the driver will simply wait for the machine to respond. Disable if "
@@ -1388,14 +1428,17 @@ msgid "GRBL-compatible serial connection"
 msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "GRBL device"
 msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid "RX Buffer Size Override"
 msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/serial_next.py
 msgid ""
 "Force a specific RX buffer size in bytes. Set to 0 to auto-detect from the "
 "device."
@@ -1403,18 +1446,21 @@ msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Unknown Settings"
 msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Settings reported by the device not in the standard list."
 msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
+#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Unknown setting from device"
 msgstr ""
@@ -1441,6 +1487,18 @@ msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
 msgid "Baudrate must be configured."
+msgstr ""
+
+#: rayforge/machine/driver/grbl/serial_next.py
+msgid "GRBL (Rust)"
+msgstr ""
+
+#: rayforge/machine/driver/grbl/serial_next.py
+msgid "GRBL-compatible serial connection (Rust driver)"
+msgstr ""
+
+#: rayforge/machine/driver/grbl/serial_next.py
+msgid "Driver is not set up. Check the port settings."
 msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_network.py
@@ -1839,6 +1897,20 @@ msgid "Max Pulse Width"
 msgstr ""
 
 #: rayforge/machine/models/laser.py
+msgid "Pointer Offset Enabled"
+msgstr ""
+
+#: rayforge/machine/models/laser.py
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Pointer Offset X"
+msgstr ""
+
+#: rayforge/machine/models/laser.py
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Pointer Offset Y"
+msgstr ""
+
+#: rayforge/machine/models/laser.py
 #: rayforge/ui_gtk/machine/laser_control_widget.py
 #: rayforge/ui_gtk/machine/wizard_pages/head_page.py
 #: rayforge/ui_gtk/machine/capabilities_page.py
@@ -2221,6 +2293,19 @@ msgstr ""
 msgid "Sending failed: {error}"
 msgstr ""
 
+#: rayforge/machine/cmd.py
+msgid ""
+"Pointer alignment shifts the frame partly outside the machine travel; the "
+"trace may stop short of a side."
+msgstr ""
+
+#: rayforge/machine/transport/serial.py
+#, python-brace-format
+msgid ""
+"No USB serial device with VID:PID {spec} found. Is the device connected and "
+"powered on?"
+msgstr ""
+
 #: rayforge/machine/transport/serial.py
 #, python-brace-format
 msgid ""
@@ -2316,6 +2401,7 @@ msgstr ""
 #: rayforge/ui_gtk/machine/lbdev_import_dialog.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/machine/template_selector.py
+#: rayforge/ui_gtk/varset/adapter/combo.py
 #: rayforge/ui_gtk/addon_manager/addon_dialog.py
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
@@ -2565,6 +2651,70 @@ msgstr ""
 msgid "Update the color rule details:"
 msgstr ""
 
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "ChArUco Board"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker Grid"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Dot Grid"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Chessboard with markers. Most accurate, needs a good printer."
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "ArUco or AprilTag markers. Tolerates partial views."
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Plain black dots. Cheapest to print, lowest accuracy."
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker Dictionary"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "ID Origin"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "ID Order"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Top-Left"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Top-Right"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Bottom-Left"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Bottom-Right"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Along rows"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Along columns"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Custom ({id})"
+msgstr ""
+
 #: rayforge/ui_gtk/settings/color_presets_page.py
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 #: rayforge/ui_gtk/machine/dialect_editor.py
@@ -2715,6 +2865,10 @@ msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "French"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Hindi"
 msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
@@ -2894,6 +3048,7 @@ msgid ""
 msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py rayforge/ui_gtk/project_cmd.py
 msgid "_Cancel"
 msgstr ""
@@ -3425,8 +3580,31 @@ msgstr ""
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid ""
-"Print a calibration card to correct lens distortion. The card size should "
-"fit within your camera view."
+"Print a calibration pattern to correct lens distortion. The pattern should "
+"fit within your camera view. You can also describe a pattern you already "
+"have and calibrate against that instead."
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Pattern Type"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Pattern"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Choose the printed pattern to calibrate against."
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Pattern Geometry"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid ""
+"Measured from the printed sheet. Editing these lets you use a pattern you "
+"printed earlier."
 msgstr ""
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
@@ -3434,7 +3612,9 @@ msgid "Card Size"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Adjust to fit your work surface."
+msgid ""
+"Used to suggest a pattern that fits. Ignored once the geometry above is "
+"edited."
 msgstr ""
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
@@ -3458,11 +3638,15 @@ msgid "Card height"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Generated Pattern"
+msgid "Pattern Details"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Details about the calibration pattern."
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Output"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
@@ -3474,6 +3658,34 @@ msgid "Square Size"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker Size"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker Gap"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker ID Offset"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Dot Spacing"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Row Spacing"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Row Offset"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Dot Diameter"
+msgstr ""
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Physical Size"
 msgstr ""
 
@@ -3482,7 +3694,7 @@ msgid "Save to PDF"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Export the calibration card for printing"
+msgid "Export the calibration pattern for printing"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
@@ -3780,6 +3992,7 @@ msgid "Clear All Points"
 msgstr ""
 
 #: rayforge/ui_gtk/camera/alignment_widget.py
+#: rayforge/ui_gtk/varset/adapter/combo.py
 #: rayforge/ui_gtk/doceditor/step_type_selection_dialog.py
 msgid "Apply"
 msgstr ""
@@ -3957,6 +4170,16 @@ msgid "Settings for the frame outline operation that traces the job boundary."
 msgstr ""
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Pointer Offset"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid ""
+"Compensation for a pointer laser mounted at a fixed offset from the cutting "
+"beam."
+msgstr ""
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
 msgid "G-code tool number (e.g., T0, T1)"
 msgstr ""
 
@@ -4065,6 +4288,24 @@ msgstr ""
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 msgid ""
 "Pause duration in seconds at each corner of the frame outline. 0 to disable"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Use Pointer Offset"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid ""
+"Compensate when setting the work zero at the current position, so the origin "
+"lands where the pointer dot marks the stock"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Distance from the beam spot to the pointer dot along the machine X axis"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Distance from the beam spot to the pointer dot along the machine Y axis"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
@@ -4344,6 +4585,10 @@ msgid "Move to Position"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Pointer Alignment"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
 msgid "Move to Lower-Left of Selection or Workarea"
 msgstr ""
 
@@ -4361,6 +4606,20 @@ msgstr ""
 
 #: rayforge/ui_gtk/machine/move_to_popover.py
 msgid "Move"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Aim moves at the pointer dot instead of the beam"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Requires a pointer offset on the laser head"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid ""
+"The shifted target is outside the machine travel; moving to the nearest "
+"reachable position instead."
 msgstr ""
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
@@ -5026,6 +5285,22 @@ msgstr ""
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 msgid "Enable if a positive Z command (e.g., G0 Z10) moves the head down"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Z Min"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Lowest Z coordinate (machine frame)"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Z Max"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Highest Z coordinate (machine frame)"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/hardware_page.py
@@ -6138,6 +6413,30 @@ msgstr ""
 msgid "New Parameter"
 msgstr ""
 
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Match by USB VID:PID…"
+msgstr ""
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "First USB device with this VID:PID"
+msgstr ""
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "USB VID:PID (e.g. 0403:6001)"
+msgstr ""
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Match by USB VID:PID"
+msgstr ""
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid ""
+"Always use the first USB serial device with this vendor and product ID. This "
+"keeps the connection working when the operating system reassigns port "
+"numbers. If several identical devices are connected, the first one on the "
+"bus is used."
+msgstr ""
+
 #: rayforge/ui_gtk/varset/adapter/appkey.py
 msgid "Request Access"
 msgstr ""
@@ -6568,6 +6867,26 @@ msgstr ""
 
 #: rayforge/ui_gtk/shared/visibility_overlay.py
 msgid "Toggle no-go zone visibility"
+msgstr ""
+
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
+msgid "Pointer alignment is on"
+msgstr ""
+
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
+msgid ""
+"Dry-Run with Pointer traces the toolpath with the pointer dot: the job runs "
+"with the pointer offset applied and the beam is displaced by it, with all "
+"laser power capped at the framing power so the trace does not burn. Turning "
+"alignment off burns the job normally with the beam at the WCS positions."
+msgstr ""
+
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
+msgid "Dry-Run with _Pointer"
+msgstr ""
+
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
+msgid "_Turn Off and Burn"
 msgstr ""
 
 #: rayforge/ui_gtk/shared/preferences_group.py
@@ -7700,6 +8019,12 @@ msgstr ""
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Current Position"
+msgstr ""
+
+#: rayforge/ui_gtk/doceditor/bottom_panel.py
+msgid ""
+"Pointer Alignment: aim moves and zeroing at the pointer dot instead of the "
+"cutting beam"
 msgstr ""
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py

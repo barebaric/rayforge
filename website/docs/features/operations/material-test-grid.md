@@ -43,7 +43,8 @@ Presets are starting points - you can adjust all parameters after selecting one.
 
 ### Step 3: Configure Parameters
 
-Adjust the test grid parameters in the settings dialog:
+Adjust the test grid parameters in the settings dialog. The grid on the canvas updates automatically
+as you change the options:
 
 ![Material Test Grid Settings](/screenshots/material-test.webp)
 
@@ -88,11 +89,6 @@ Labels are engraved first, before the test grid, so they are not obscured by the
 - **Line Interval (mm)**: Spacing between scan lines when using the engrave test type
 - Smaller values create denser fills but take longer to execute
 - Typical values: 0.1-0.3mm
-
-### Step 4: Generate the Grid
-
-Click **Generate** to create the test pattern. The grid appears on your canvas as a special
-workpiece.
 
 ## Understanding the Grid Layout
 

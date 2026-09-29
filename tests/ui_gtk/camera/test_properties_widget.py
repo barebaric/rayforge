@@ -24,6 +24,14 @@ def _make_camera(device_id: str) -> Camera:
     )
 
 
+def _make_network_camera(uri: str) -> Camera:
+    return Camera(
+        name="Test Network Camera",
+        source_type=CameraSourceType.HTTP_SNAPSHOT,
+        source_config={"uri": uri},
+    )
+
+
 class _FakeController(CameraController):
     """A CameraController whose has_active_source is always True.
 
@@ -116,3 +124,47 @@ def test_external_device_change_rescans_hardware(ui_context_initializer):
 
         camera.device_id = "/dev/video1"
         assert mock_scan.call_count >= 1
+
+
+@pytest.mark.ui
+def test_source_uri_validation_message_is_shown_below_entry(
+    ui_context_initializer,
+):
+    camera = _make_network_camera("http://<ip-address>:8080/image.jpg")
+    widget = CameraProperties(_FakeController(camera))
+
+    assert widget.source_error_label.get_visible()
+    assert widget.source_error_label.get_text() == (
+        "URL contains placeholder <ip-address>; replace it with a valid value"
+    )
+    assert widget.source_error_label.has_css_class("error")
+    assert not widget.enabled_switch.get_sensitive()
+
+    widget.source_entry.set_text("http://camera.local:8080/image.jpg")
+
+    assert not widget.source_error_label.get_visible()
+    assert not widget.enabled_switch.get_sensitive()
+
+    widget._commit_source_uri()
+
+    assert widget.enabled_switch.get_sensitive()
+
+
+@pytest.mark.ui
+def test_editing_source_disables_camera_until_uri_is_committed(
+    ui_context_initializer,
+):
+    camera = _make_network_camera("http://old-camera.local/image.jpg")
+    camera.enabled = True
+    widget = CameraProperties(_FakeController(camera))
+
+    widget.source_entry.set_text("http://new-camera.local/image.jpg")
+
+    assert not camera.enabled
+    assert not widget.enabled_switch.get_active()
+    assert not widget.enabled_switch.get_sensitive()
+
+    widget._commit_source_uri()
+
+    assert camera.source_uri == "http://new-camera.local/image.jpg"
+    assert widget.enabled_switch.get_sensitive()

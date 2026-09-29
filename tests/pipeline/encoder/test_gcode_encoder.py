@@ -22,6 +22,7 @@ def _make_machine_mock(dialect=GRBL_DIALECT):
     machine.axis_extents = (200.0, 200.0)
     machine.get_active_wcs_offset.return_value = (0.0, 0.0, 0.0)
     machine.get_wcs_offset.return_value = (0.0, 0.0, 0.0)
+    machine.get_job_power_cap.return_value = None
     machine.hookmacros = {}
     machine.macros = {}
     head = LaserHead()

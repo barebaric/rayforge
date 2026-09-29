@@ -23,17 +23,30 @@ class JobMonitor:
     This class calculates the total distance of a job from an Ops object and
     updates the progress as individual operations complete. It emits a signal
     with detailed metrics whenever the progress changes.
+
+    The ETA comes from measured speed once the samples span a real-time
+    window of MIN_SPEED_SAMPLE_WINDOW seconds, and falls back to the
+    estimated job duration before that.
     """
 
-    def __init__(self, ops: Ops):
+    MIN_SPEED_SAMPLE_WINDOW: float = 1.0
+
+    def __init__(self, ops: Ops, estimated_seconds: float | None = None):
         """
         Initializes the JobMonitor.
 
         Args:
             ops: The Ops object representing the job to be monitored.
+            estimated_seconds: Total estimated job duration in seconds.
+                Used as the ETA while too few distance samples have
+                accumulated for a speed-based estimate. GRBL-style
+                drivers acknowledge commands when the firmware buffers
+                them, so short jobs complete their streaming long
+                before the machine stops moving.
         """
         self.ops = ops
         self.total_distance = ops.distance()
+        self.estimated_seconds = estimated_seconds
         self.traveled_distance = 0.0
         self.start_time = time.monotonic()
 
@@ -65,7 +78,10 @@ class JobMonitor:
 
         eta_seconds = None
         # Calculate ETA based on recent average speed to avoid fluctuations
-        # caused by pauses or non-moving commands.
+        # caused by pauses or non-moving commands. The window must span
+        # at least MIN_SPEED_SAMPLE_WINDOW seconds: GRBL-style drivers
+        # acknowledge buffered commands in bursts, and a burst window
+        # would otherwise produce an absurd speed estimate.
         if len(self._samples) > 1:
             start_time, start_dist = self._samples[0]
             end_time, end_dist = self._samples[-1]
@@ -73,13 +89,17 @@ class JobMonitor:
             delta_time = end_time - start_time
             delta_dist = end_dist - start_dist
 
-            if delta_time > 0.01 and delta_dist > 0:
+            if delta_time >= self.MIN_SPEED_SAMPLE_WINDOW and delta_dist > 0:
                 recent_average_speed = delta_dist / delta_time
                 distance_remaining = (
                     self.total_distance - self.traveled_distance
                 )
                 if recent_average_speed > 0:
                     eta_seconds = distance_remaining / recent_average_speed
+
+        if eta_seconds is None and self.estimated_seconds:
+            elapsed = time.monotonic() - self.start_time
+            eta_seconds = max(self.estimated_seconds - elapsed, 0.0)
 
         return {
             "total_distance": self.total_distance,

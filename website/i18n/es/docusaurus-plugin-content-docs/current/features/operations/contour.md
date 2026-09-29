@@ -167,6 +167,19 @@ diálogo de ajustes de paso.
 - Más lento = más energía = corte más profundo
 - Más rápido = menos energía = corte más ligero
 
+#### Modo de Potencia
+
+El ajuste de Modo de Potencia controla cómo se emite la potencia láser durante los movimientos:
+
+| Modo               | G-code | Comportamiento                                                 |
+| ------------------ | ------ | -------------------------------------------------------------- |
+| **Dinámico (M4)**  | `M4`   | Escala la potencia con la velocidad de avance (predeterminado) |
+| **Constante (M3)** | `M3`   | Mantiene la potencia fija independientemente de la velocidad   |
+
+La potencia dinámica reduce la potencia cuando el cabezal se frena en una esquina, lo que protege el
+material, pero en algunas máquinas deja esquinas y curvas cerradas visiblemente mal grabadas. Cambia
+a **Constante (M3)** si las esquinas y curvas se graban demasiado débilmente.
+
 #### Compensación de Kerf
 
 Kerf es el ancho de material removido por el haz láser:

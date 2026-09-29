@@ -327,6 +327,46 @@ class TestLayerDeclaration:
             for line in gs.rpascript
         )
 
+    def test_job_power_cap_clamps_power(self, encoder, mock_machine, doc):
+        """While a pointer dry-run is requested, emitted power is
+        clamped at the job power cap (the framing power)."""
+        ops = Ops()
+        ops.job_start()
+        ops.layer_start(layer_uid=doc.layers[0].uid)
+        ops.workpiece_start("wp-0")
+        ops.set_power(0.5)
+        ops.workpiece_end("wp-0")
+        ops.layer_end(layer_uid=doc.layers[0].uid)
+        ops.job_end()
+
+        head = mock_machine.get_default_laser_head()
+        assert head is not None
+        head.set_frame_power(0.1)
+        mock_machine.pointer_job_shift_enabled = True
+        try:
+            result = encoder.encode(ops, mock_machine, doc)
+        finally:
+            mock_machine.pointer_job_shift_enabled = False
+
+        assert "power_range(10.0, 10.0)" in result.text
+        assert "power_range(50.0, 50.0)" not in result.text
+
+    def test_job_power_cap_none_keeps_power(self, encoder, mock_machine, doc):
+        """Without a job power cap, emitted power is untouched."""
+        ops = Ops()
+        ops.job_start()
+        ops.layer_start(layer_uid=doc.layers[0].uid)
+        ops.workpiece_start("wp-0")
+        ops.set_power(0.5)
+        ops.workpiece_end("wp-0")
+        ops.layer_end(layer_uid=doc.layers[0].uid)
+        ops.job_end()
+
+        assert mock_machine.pointer_job_shift_enabled is False
+        result = encoder.encode(ops, mock_machine, doc)
+
+        assert "power_range(50.0, 50.0)" in result.text
+
     def test_unknown_layer_uses_defaults(self, encoder, mock_machine, doc):
         """Layers absent from the document should still stage cleanly."""
         ops = Ops()

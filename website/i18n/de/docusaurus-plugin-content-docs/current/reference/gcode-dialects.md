@@ -87,10 +87,14 @@ Um einen benutzerdefinierten G-Code-Dialekt basierend auf einem integrierten Dia
 3. Bearbeite die Dialekteinstellungen nach Bedarf
 4. Speichere deinen benutzerdefinierten Dialekt
 
-Jeder benutzerdefinierte Dialekt ist eine unabhängige Kopie. Die Änderung eines Dialekts beeinflusst
-niemals andere, sodass du frei experimentieren kannst, ohne dir Sorgen machen zu müssen, eine
-bestehende Konfiguration zu beschädigen. Benutzerdefinierte Dialekte werden in deinem
-Konfigurationsverzeichnis gespeichert und können geteilt werden.
+Jeder benutzerdefinierte Dialekt ist eine unabhängige Kopie: Die Änderung eines Dialekts beeinflusst
+niemals andere Dialekte oder andere Maschinen, sodass du frei experimentieren kannst, ohne dir
+Sorgen machen zu müssen, eine bestehende Konfiguration zu beschädigen. Eine Kopie, die aus einem
+integrierten Dialekt erstellt wurde, behält eine Verknüpfung zu diesem integrierten Dialekt:
+Vorlagenfelder, die du nicht ausdrücklich geändert hast, folgen weiterhin dem integrierten Dialekt,
+sodass Verbesserungen an integrierten Dialekten automatisch deine Maschinen erreichen, während
+eigene Änderungen erhalten bleiben und nie überschrieben werden. Benutzerdefinierte Dialekte werden
+in deinem Konfigurationsverzeichnis gespeichert und können geteilt werden.
 
 ### Dialekt-Einstellungen
 
@@ -192,6 +196,28 @@ mit Platzhaltern, um dynamische Werte einzufügen. Verwende die Syntax `{name}` 
 | -------------- | -------------------------------------------------------- |
 | `seconds`      | Verweildauer in Sekunden als Float (z.B. `1.5`)          |
 | `milliseconds` | Verweildauer in Millisekunden als Ganzzahl (z.B. `1500`) |
+
+#### Präambel und Postscript
+
+Die Skripte **Präambel** und **Postscript** unterstützen einen eigenen Satz von Platzhaltern, die
+die Maschine und den aktuellen Job beschreiben:
+
+| Platzhalter                         | Beschreibung                                                              |
+| ----------------------------------- | ------------------------------------------------------------------------- |
+| `machine.name`                      | Name der Maschine                                                         |
+| `machine.active_wcs`                | Aktuell aktives Arbeitskoordinatensystem (z. B. `G54`)                    |
+| `machine.axis_extents[0]`           | Breite des Arbeitsbereichs (mm)                                           |
+| `machine.axis_extents[1]`           | Höhe des Arbeitsbereichs (mm)                                             |
+| `wcs_offset[0]` … `wcs_offset[2]`   | X/Y/Z-Versatz des aktiven Arbeitskoordinatensystems                       |
+| `doc.name`                          | Name des exportierten Dokuments                                           |
+| `job.extents[0]` … `job.extents[3]` | Job-Begrenzungsrahmen: minimales X, minimales Y, maximales X, maximales Y |
+
+Beispielsweise rahmen manche Maschinen den Job selbst ein — sogar bei offline ausgeführten
+G-code-Dateien —, indem sie die Job-Grenzen aus einem Präambel-Kommentar lesen:
+
+```gcode
+; Bounds: X{job.extents[0]} Y{job.extents[1]} to X{job.extents[2]} Y{job.extents[3]}
+```
 
 ### Tipps
 

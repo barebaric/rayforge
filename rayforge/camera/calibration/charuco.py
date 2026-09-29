@@ -1,49 +1,70 @@
 import logging
 from dataclasses import dataclass
+from typing import ClassVar
 
 import cv2
 import numpy as np
+
+from .target import (
+    CalibrationTarget,
+    CalibrationTargetType,
+    ConfigField,
+    SummaryRow,
+    TargetConfig,
+    normalize_detection,
+    to_gray,
+)
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class CharucoConfig:
+class CharucoConfig(TargetConfig):
     squares_x: int = 5
     squares_y: int = 7
     square_length_mm: float = 20.0
     marker_length_mm: float = 15.0
     dictionary_id: int = cv2.aruco.DICT_6X6_250
 
-    def to_dict(self) -> dict:
-        return {
-            "squares_x": self.squares_x,
-            "squares_y": self.squares_y,
-            "square_length_mm": self.square_length_mm,
-            "marker_length_mm": self.marker_length_mm,
-            "dictionary_id": self.dictionary_id,
-        }
-
-    @classmethod
-    def from_dict(cls, data: dict) -> "CharucoConfig":
-        return cls(
-            squares_x=data.get("squares_x", 5),
-            squares_y=data.get("squares_y", 7),
-            square_length_mm=data.get("square_length_mm", 20.0),
-            marker_length_mm=data.get("marker_length_mm", 15.0),
-            dictionary_id=data.get("dictionary_id", cv2.aruco.DICT_6X6_250),
-        )
+    FIELDS: ClassVar[tuple[ConfigField, ...]] = (
+        ConfigField(key="squares_x", lower=3, upper=12, integer=True),
+        ConfigField(key="squares_y", lower=3, upper=14, integer=True),
+        ConfigField(key="square_length_mm", lower=1.0, upper=300.0, step=0.5),
+        ConfigField(key="marker_length_mm", lower=1.0, upper=300.0, step=0.5),
+    )
 
 
-class CharucoBoard:
+class CharucoTarget(CalibrationTarget):
+    """ChArUco board: a chessboard carrying ArUco markers in its squares.
+
+    Detection yields the chessboard corner intersections rather than the
+    marker corners, which is what gives a ChArUco board its higher
+    angular accuracy compared to a plain marker grid.
+    """
+
+    target_type = CalibrationTargetType.CHARUCO
+    config_class = CharucoConfig
     MIN_SQUARES_X = 4
     MIN_SQUARES_Y = 5
     MIN_MARKER_PIXELS = 10
+    UPSCALE_FACTOR = 2
+    UNSHARP_AMOUNT = 1.5
+    UNSHARP_SIGMA = 2
+    GAMMA = 2.0
 
     def __init__(self, config: CharucoConfig):
+        if config.marker_length_mm >= config.square_length_mm:
+            raise ValueError(
+                "Marker length "
+                f"({config.marker_length_mm}) must be smaller than "
+                f"square length ({config.square_length_mm})"
+            )
+        if config.square_length_mm <= 0 or config.marker_length_mm <= 0:
+            raise ValueError("Square and marker lengths must be positive")
         self.config = config
         self._board = None
         self._detector = None
+        self._relaxed_detector = None
         self._create_board()
 
     def _create_board(self):
@@ -57,22 +78,40 @@ class CharucoBoard:
             dictionary=dictionary,
         )
         charuco_params = cv2.aruco.CharucoParameters()
+        refine_params = cv2.aruco.RefineParameters()
+        self._detector = cv2.aruco.CharucoDetector(
+            self._board,
+            charuco_params,
+            self._create_detector_params(),
+            refine_params,
+        )
+        self._relaxed_detector = cv2.aruco.CharucoDetector(
+            self._board,
+            charuco_params,
+            self._create_detector_params(relaxed=True),
+            refine_params,
+        )
+
+    def _create_detector_params(self, relaxed: bool = False):
         detector_params = cv2.aruco.DetectorParameters()
         detector_params.cornerRefinementMethod = cv2.aruco.CORNER_REFINE_SUBPIX
         detector_params.cornerRefinementWinSize = 5
         detector_params.cornerRefinementMaxIterations = 30
         detector_params.cornerRefinementMinAccuracy = 0.1
-        refine_params = cv2.aruco.RefineParameters()
-        self._detector = cv2.aruco.CharucoDetector(
-            self._board, charuco_params, detector_params, refine_params
-        )
+        if relaxed:
+            detector_params.minMarkerPerimeterRate = 0.01
+            detector_params.adaptiveThreshWinSizeMin = 3
+            detector_params.adaptiveThreshWinSizeMax = 53
+            detector_params.adaptiveThreshWinSizeStep = 10
+            detector_params.minMarkerDistanceRate = 0.01
+        return detector_params
 
     @property
     def board(self):
         return self._board
 
     @property
-    def chessboard_corners(self) -> int:
+    def point_count(self) -> int:
         return (self.config.squares_x - 1) * (self.config.squares_y - 1)
 
     @property
@@ -81,6 +120,10 @@ class CharucoBoard:
             self.config.squares_x * self.config.square_length_mm,
             self.config.squares_y * self.config.square_length_mm,
         )
+
+    def object_points(self) -> np.ndarray:
+        assert self._board is not None
+        return np.asarray(self._board.getChessboardCorners(), dtype=np.float32)
 
     @classmethod
     def recommend_config(
@@ -159,16 +202,52 @@ class CharucoBoard:
     def detect(
         self, image: np.ndarray
     ) -> tuple[list[tuple[float, float]], list[int]] | None:
-        if len(image.shape) == 3:
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        else:
-            gray = image
+        gray = to_gray(image)
 
-        assert self._detector is not None
+        target = self._good_enough_corners()
+        best = None
+        for variant, detector in self._detection_stages(gray):
+            result = self._detect_pass(variant, detector)
+            if result is None:
+                continue
+            if best is None or len(result[0]) > len(best[0]):
+                best = result
+            if len(best[0]) >= target:
+                break
+
+        return best
+
+    def _good_enough_corners(self) -> int:
+        return max(4, self.point_count // 2)
+
+    def _detection_stages(self, gray: np.ndarray):
+        yield gray, self._detector
+        yield gray, self._relaxed_detector
+        enhanced = self._enhance(gray)
+        yield enhanced, self._relaxed_detector
+        yield enhanced, self._detector
+
+    def _enhance(self, gray: np.ndarray) -> np.ndarray:
+        h, w = gray.shape[:2]
+        size = (
+            w * self.UPSCALE_FACTOR,
+            h * self.UPSCALE_FACTOR,
+        )
+        upscaled = cv2.resize(gray, size, interpolation=cv2.INTER_CUBIC)
+        blurred = cv2.GaussianBlur(upscaled, (0, 0), self.UNSHARP_SIGMA)
+        amount = self.UNSHARP_AMOUNT
+        sharpened = cv2.addWeighted(
+            upscaled, 1.0 + amount, blurred, -amount, 0
+        )
+        lut = (
+            (np.arange(256, dtype=np.float32) / 255.0) ** self.GAMMA * 255.0
+        ).astype(np.uint8)
+        return cv2.LUT(sharpened, lut)
+
+    def _detect_pass(self, gray, detector):
+        assert detector is not None
         try:
-            charuco_corners, charuco_ids, _, _ = self._detector.detectBoard(
-                gray
-            )
+            charuco_corners, charuco_ids, _, _ = detector.detectBoard(gray)
         except cv2.error as e:
             logger.debug(f"ChArUco detection error: {e}")
             return None
@@ -176,26 +255,22 @@ class CharucoBoard:
         if charuco_corners is None or charuco_ids is None:
             return None
 
-        try:
-            corners_array = np.asarray(
-                charuco_corners, dtype=np.float32
-            ).reshape(-1, 2)
-            ids_array = np.asarray(charuco_ids).reshape(-1)
-        except (TypeError, ValueError) as error:
-            logger.debug("Invalid ChArUco detection result: %s", error)
-            return None
+        return normalize_detection(charuco_corners, charuco_ids)
 
-        if len(corners_array) < 4 or len(corners_array) != len(ids_array):
-            return None
-
-        try:
-            corners = [(float(x), float(y)) for x, y in corners_array]
-            ids = [int(value) for value in ids_array]
-        except (TypeError, ValueError, OverflowError) as error:
-            logger.debug("Invalid ChArUco detection result: %s", error)
-            return None
-
-        return corners, ids
+    def summary(self) -> list[SummaryRow]:
+        return [
+            SummaryRow(
+                key="grid_size",
+                value=(
+                    f"{self.config.squares_x} x {self.config.squares_y}"
+                    " squares"
+                ),
+            ),
+            SummaryRow(
+                key="square_size",
+                measurement_mm=self.config.square_length_mm,
+            ),
+        ]
 
     def draw_detection(
         self,
@@ -216,3 +291,6 @@ class CharucoBoard:
         )
 
         return result
+
+
+__all__ = ["CharucoConfig", "CharucoTarget"]

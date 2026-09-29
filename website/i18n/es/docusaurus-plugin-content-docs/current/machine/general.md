@@ -21,13 +21,28 @@ cuando tienes varias máquinas configuradas.
 Selecciona el controlador que corresponda al control de tu máquina. El controlador gestiona la
 comunicación entre Rayforge y el hardware.
 
-Los dispositivos GRBL tienen dos opciones de controlador serie:
+Los dispositivos GRBL tienen tres opciones de controlador serie:
 
 - **GRBL (Serial)** — Controlador con contador de búfer, detección de bloqueos y recuperación de
   paradas. Recomendado para la mayoría de dispositivos GRBL
 - **GRBL (Serial Simple)** — Controlador de protocolo ping-pong. Envía una línea, espera "ok", envía
   la siguiente. Sin gestión de búfer ni detección de bloqueos. Útil cuando el controlador estándar
   genera falsas alarmas
+- **GRBL (Rust)** — Controlador experimental cuya pila completa del protocolo serie GRBL (control de
+  flujo, transmisión de trabajos, detección de paradas, recuperación de bloqueos, ajustes y probing)
+  se ejecuta en Rust. Puede seleccionarse como alternativa directa a GRBL (Serial)
+
+Los controladores basados en Ruida son compatibles con el controlador **Ruida RPA**, que se conecta
+directamente por USB o UDP, o vía TUI RPC a través del Ruida Protocol Analyzer.
+
+### Vinculación del Puerto Serie
+
+En lugar de una ruta de dispositivo (p. ej. `/dev/ttyUSB0` o `COM3`), el campo del puerto serie
+también acepta un identificador USB `VID:PID` como `0403:6001`. Cuando una máquina se vincula por
+VID:PID, la reconexión automática la sigue a su nuevo puerto después de que el sistema operativo
+reenumere los dispositivos USB — por ejemplo tras un reinicio o al desenchufar y volver a enchufar.
+Puedes encontrar el VID:PID de un dispositivo en la salida de `lsusb` (Linux) o en el Administrador
+de dispositivos → Identificadores de hardware (Windows).
 
 Tras seleccionar un controlador, aparecerán debajo del selector los ajustes específicos de conexión
 (p. ej., puerto serie, baud rate). Estos varían según el controlador elegido.

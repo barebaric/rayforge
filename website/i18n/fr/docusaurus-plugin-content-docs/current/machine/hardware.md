@@ -62,6 +62,10 @@ Utilisez ces réglages pour indiquer à Rayforge si votre machine peut se dépla
   gravure au lieu d'afficher une tête se déplaçant le long de Z.
 - **Inverser la Direction de l'Axe Z** : N'est affiché que lorsque **A un axe Z** est activé.
   Activez si une commande Z positive (ex : G0 Z10) déplace la tête vers le bas.
+- **Z Min / Z Max** : N'est affiché que lorsque **A un axe Z** est activé. La coordonnée Z la plus
+  basse et la plus haute dans le repère machine. Les déplacements jog en Z sont limités à cette
+  plage, et la fenêtre contextuelle Déplacer vers la Position accepte toute la plage Z entre les
+  deux valeurs.
 
 ### Orientation du panneau
 

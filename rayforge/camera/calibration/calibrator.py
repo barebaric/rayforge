@@ -5,8 +5,8 @@ import cv2
 import numpy as np
 from blinker import Signal
 
-from .charuco import CharucoBoard
 from .result import CalibrationResult
+from .target import CalibrationTarget
 
 logger = logging.getLogger(__name__)
 
@@ -16,8 +16,8 @@ class CameraCalibrator:
     MIN_CORNERS_PER_FRAME = 4
     MIN_UNIQUE_CORNERS = 10
 
-    def __init__(self, board: CharucoBoard):
-        self.board = board
+    def __init__(self, target: CalibrationTarget):
+        self.target = target
         self._all_corners: list[list[tuple[float, float]]] = []
         self._all_ids: list[list[int]] = []
         self._frame_count = 0
@@ -51,7 +51,7 @@ class CameraCalibrator:
     def detect_and_add_frame(
         self, image: np.ndarray
     ) -> tuple[bool, int, list[tuple[float, float]] | None]:
-        detection = self.board.detect(image)
+        detection = self.target.detect(image)
 
         if detection is None:
             self.frame_rejected.send(self, reason="no_detection")
@@ -102,7 +102,7 @@ class CameraCalibrator:
         mid_x, mid_y = w / 2, h / 2
 
         quadrants = [[0, 0], [0, 0], [0, 0], [0, 0]]
-        corner_count = self.board.chessboard_corners
+        corner_count = self.target.point_count
 
         for corners in self._all_corners:
             for x, y in corners:
@@ -172,6 +172,33 @@ class CameraCalibrator:
 
         return True, "Ready to calibrate"
 
+    def _match_object_points(
+        self,
+        corners: list[tuple[float, float]],
+        ids: list[int],
+        all_object_points: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray] | None:
+        """Pair detected image points with their object points.
+
+        Returns None if the detection references points the target does
+        not define, which would otherwise raise on the fancy index.
+        """
+        ids_array = np.array(ids, dtype=np.int32)
+        corners_array = np.array(corners, dtype=np.float32)
+        if len(ids_array) != len(corners_array):
+            return None
+        if len(ids_array) == 0:
+            return None
+        if ids_array.min() < 0 or ids_array.max() >= len(all_object_points):
+            logger.debug(
+                "Detection ids out of range: %d..%d for %d points",
+                int(ids_array.min()),
+                int(ids_array.max()),
+                len(all_object_points),
+            )
+            return None
+        return all_object_points[cast(Any, ids_array)], corners_array
+
     def calibrate(
         self, image_size: tuple[int, int]
     ) -> CalibrationResult | None:
@@ -180,23 +207,26 @@ class CameraCalibrator:
             logger.error(f"Calibration not ready: {reason}")
             return None
 
-        board_obj = self.board.board
-        if board_obj is None:
-            logger.error("Board not initialized")
+        all_object_points = self.target.object_points()
+        if len(all_object_points) == 0:
+            logger.error("Calibration target has no object points")
             return None
-
-        all_object_points = board_obj.getChessboardCorners()
 
         object_points_list = []
         image_points_list = []
 
         for corners, ids in zip(self._all_corners, self._all_ids):
-            corners_array = np.array(corners, dtype=np.float32)
-            ids_array = np.array(ids, dtype=np.int32)
-
-            obj_pts = all_object_points[cast(Any, ids_array)]
+            pairs = self._match_object_points(corners, ids, all_object_points)
+            if pairs is None:
+                logger.warning("Skipping frame with unmatched object points")
+                continue
+            obj_pts, corners_array = pairs
             object_points_list.append(obj_pts)
             image_points_list.append(corners_array)
+
+        if not object_points_list:
+            logger.error("No frame had usable object points")
+            return None
 
         try:
             rms, camera_matrix, dist_coeffs, rvecs, tvecs = (

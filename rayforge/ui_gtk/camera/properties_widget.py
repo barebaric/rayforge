@@ -63,7 +63,23 @@ class CameraProperties(Adw.PreferencesGroup):
         focus_controller = Gtk.EventControllerFocus()
         focus_controller.connect("leave", self._commit_source_uri)
         self.source_entry.add_controller(focus_controller)
-        self.source_entry_row.add_suffix(self.source_entry)
+        source_box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=4,
+            hexpand=True,
+            valign=Gtk.Align.CENTER,
+        )
+        source_box.append(self.source_entry)
+        self.source_error_label = Gtk.Label(
+            halign=Gtk.Align.START,
+            hexpand=True,
+            wrap=True,
+            xalign=0,
+        )
+        self.source_error_label.add_css_class("error")
+        self.source_error_label.set_visible(False)
+        source_box.append(self.source_error_label)
+        self.source_entry_row.add_suffix(source_box)
         self.add(self.source_entry_row)
         self.source_combo = self.source_row
         self._local_device_ids: list[str] = []
@@ -349,17 +365,38 @@ class CameraProperties(Adw.PreferencesGroup):
         if not self._camera or self._camera.source_type is (
             CameraSourceType.LOCAL_DEVICE
         ):
+            self.enabled_switch.set_sensitive(True)
             return True
         error = validate_source_uri(
             self._camera.source_type, self.source_entry.get_text()
         )
         self.source_entry.set_css_classes(["error"] if error else [])
         self.source_entry.set_tooltip_text(error)
+        self.source_error_label.set_text(error or "")
+        self.source_error_label.set_visible(error is not None)
+        source_is_dirty = (
+            self.source_entry.get_text().strip() != self._camera.source_uri
+        )
+        self.enabled_switch.set_sensitive(
+            error is None and not source_is_dirty
+        )
         return error is None
 
     def _on_source_changed(self, entry: Gtk.Entry) -> None:
         if self._updating_ui:
             return
+        if (
+            self._camera
+            and self._camera.source_type is not CameraSourceType.LOCAL_DEVICE
+            and entry.get_text().strip() != self._camera.source_uri
+            and self._camera.enabled
+        ):
+            self._updating_ui = True
+            try:
+                self._camera.enabled = False
+                self.enabled_switch.set_active(False)
+            finally:
+                self._updating_ui = False
         self._validate_source_uri()
 
     def _commit_source_uri(self, *args) -> None:

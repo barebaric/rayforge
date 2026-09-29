@@ -70,6 +70,57 @@ potência para ver o ponto claramente.
 
 ---
 
+## Ponteiro Laser com Deslocamento
+
+Algumas máquinas têm um ponteiro laser dedicado (um pequeno laser de ponto vermelho) montado a uma
+distância fixa do feixe de corte. Quando você alinha o material usando o ponto do ponteiro, o feixe
+de corte na verdade ficaria deslocado desse ponto — a menos que o Rayforge compense.
+
+A configuração de laser [Deslocamento do Ponteiro](../machine/laser.md) permite informar essa
+distância e ativar ou desativar a compensação. Com ela ativada:
+
+- **Definir zero na posição atual** (e Zerar X / Zerar Y) coloca a origem de trabalho na posição do
+  ponto do ponteiro.
+- A tela mostra um ponto amarelo do ponteiro ao lado do ponto vermelho do feixe, marcando onde o
+  ponto do ponteiro está no seu material.
+- Uma chave de **alinhamento do ponteiro** aparece no popover de movimentação (o ícone de bússola ao
+  lado da leitura de posição).
+
+### Alinhamento do Ponteiro
+
+Enquanto o **alinhamento do ponteiro** está ativado, cada operação absoluta de mira — Mover para, os
+atalhos de canto, ir à origem do SCT, Clicar para mover, Mover cabeça para cá e enquadrar — faz o
+_ponto do ponteiro_ ficar na posição mirada, de modo que você pode posicionar o material
+inteiramente pelo ponto visível. A entrada de coordenadas do popover é pré-preenchida com a posição
+do ponto do ponteiro. Na tela, sempre há exatamente um ponto preenchido: o ponto do ponteiro é
+desenhado preenchido enquanto o alinhamento está ativado (o ponto do feixe é então um anel oco), e
+oco enquanto desativado (o ponto do feixe é preenchido).
+
+O fluxo de trabalho combina perfeitamente com o zeramento pelo ponto do ponteiro: a origem fica onde
+o ponteiro marcou, a mira desloca cada alvo pelo deslocamento, e a gravação não é deslocada —
+alinhar com o ponto e cortar com o feixe acabam sendo consistentes.
+
+Ao pressionar **Enviar** com o alinhamento ativado, um aviso aparece a cada envio (não há opção de
+"não perguntar novamente"). Você pode escolher:
+
+- **Simulação com ponteiro**: o trabalho é executado com o deslocamento do ponteiro aplicado, de
+  modo que o ponto do ponteiro traga o trajeto enquanto o feixe corre deslocado. O laser continua
+  disparando na potência do trabalho — certifique-se de que o feixe deslocado não possa atingir nada
+  que não deva.
+- **Desativar e gravar**: o alinhamento é desativado e o trabalho grava normalmente com o feixe nas
+  posições do SCT.
+- **Cancelar**.
+
+Movimentos de jog e trabalhos nunca são deslocados pela chave: o jog é relativo, e a saída G-code é
+idêntica com o alinhamento ativado ou não. A chave vale apenas para a sessão — não é salva no perfil
+da máquina e é redefinida ao trocar de máquina.
+
+O deslocamento do ponteiro é especialmente útil para material maior que a mesa laser (trabalho de
+passagem contínua), onde você alinha repetidamente o desenho a uma marca de referência no material
+em movimento.
+
+---
+
 ## Enquadramento
 
 O enquadramento traça o retângulo delimitador do seu trabalho em potência baixa (ou zero), mostrando
@@ -230,6 +281,22 @@ Para posicionamento preciso em materiais pré-impressos ou marcados:
 4. **Importar e posicionar design** visualmente na imagem da câmera
 5. **Desativar câmera** e enquadrar para verificar
 6. **Executar o trabalho**
+
+### Fluxo de Trabalho de Passagem Contínua
+
+Para material mais longo que a mesa laser (alimentado pela máquina em segmentos), o **deslocamento
+do ponteiro** elimina o cálculo manual:
+
+1. **Corte o segmento 1** do seu desenho normalmente.
+2. **Alimente o material para frente** pela passagem contínua para que o próximo segmento fique
+   sobre a mesa.
+3. **Movimente a máquina** até o ponto do ponteiro marcar um ponto de referência no material (por
+   exemplo, um canto de um elemento já cortado).
+4. **Defina o zero do SCT** (ou Zerar X / Zerar Y) — com o deslocamento do ponteiro ativado, a
+   origem fica exatamente onde o ponteiro apontou.
+5. **Posicione o próximo segmento** do desenho em relação a essa origem na tela.
+6. **Enquadre para verificar**, então **execute o trabalho**.
+7. Repita a partir do passo 2 para cada segmento restante.
 
 ### Fluxo de Trabalho de Produção
 

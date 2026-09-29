@@ -121,6 +121,12 @@ must be defined with `async def`.
   can be run before driver instantiation. Should raise `DriverPrecheckError` on failure.
 - `setup(**kwargs)`: Called once with the values from the setup form. Use this to initialize your
   transports and internal state.
+- `update_settings(**kwargs) -> bool`: Optional. Called in place of a teardown/rebuild when the
+  machine's driver setup arguments are edited but the driver class is unchanged. Return `True` if
+  the driver can absorb the change without dropping a running connection (store the new arguments on
+  the instance; they take effect for subsequent operations or the next connection attempt). Return
+  `False` (the default) to request a rebuild, which tears down and re-creates the driver with the
+  new arguments.
 - `async def connect()`: Establishes and maintains a persistent connection to the device. This
   method should contain auto-reconnection logic.
 - `async def cleanup()`: Called when disconnecting. Should close all connections and release
@@ -134,8 +140,10 @@ must be defined with `async def`.
   the op_index when each command completes.
 - `async def home(axes: Optional[Axis] = None)`: Homes the machine. Can home specific axes or all
   axes.
-- `async def move_to(pos_x: float, pos_y: float)`: Manually moves the laser head to a specific XY
-  coordinate.
+- `async def move_to(pos_x: float, pos_y: float, pos_z: Optional[float] = None, speed: Optional[float] = None)`:
+  Manually moves the laser head to a specific XY coordinate. When `pos_z` is given, it is targeted
+  as an absolute Z position in the same move. `speed` is in mm/min and falls back to a driver
+  default when `None`.
 - `async def set_hold(hold: bool = True)`: Pauses or resumes current job.
 - `async def cancel()`: Stops the current job.
 - `async def jog(axis: Axis, distance: float, speed: int)`: Jogs the machine along a specific axis.
@@ -194,9 +202,11 @@ by another machine instance.
 
 The best way to learn is to look at the existing drivers in `rayforge/machine/driver/`, such as:
 
-- `grbl/` - GRBL-based machines (serial, telnet, network)
+- `grbl/` - GRBL-based machines (serial, serial simple, Rust-backed serial, telnet, network)
 - `marlin/` - Marlin firmware-based machines (serial)
-- `smoothie.py` - Smoothieboard-based machines
+- `ruidarpa/` - Ruida controllers via the Ruida Protocol Analyzer (USB, UDP, or TUI RPC)
+- `octoprint/` - Machines driven through an OctoPrint server
+- `smoothie/` - Smoothieboard-based machines
 - `dummy.py` - A test driver for development
 
 If you get stuck, please don't hesitate to open an issue on GitHub! We're happy to help.

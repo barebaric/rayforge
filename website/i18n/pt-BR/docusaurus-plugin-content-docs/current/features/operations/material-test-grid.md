@@ -37,7 +37,8 @@ Predefinições são pontos de partida - você pode ajustar todos os parâmetros
 
 ### Passo 3: Configurar Parâmetros
 
-Ajuste os parâmetros da grade de teste no diálogo de configurações:
+Ajuste os parâmetros da grade de teste no diálogo de configurações. A grade é atualizada
+automaticamente na tela à medida que você altera as opções:
 
 ![Configurações da Grade de Teste de Material](/screenshots/material-test.webp)
 
@@ -85,11 +86,6 @@ teste.
   gravação
 - Valores menores criam preenchimentos mais densos mas demoram mais para executar
 - Valores típicos: 0,1-0,3mm
-
-### Passo 4: Gerar a Grade
-
-Clique em **Gerar** para criar o padrão de teste. A grade aparece na sua tela como uma peça
-especial.
 
 ## Entendendo o Layout da Grade
 

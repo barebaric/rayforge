@@ -62,6 +62,9 @@ estos ajustes para indicarle a Rayforge si tu máquina puede moverse en Z:
   mostrar una cabeza que se mueve a lo largo de Z.
 - **Invertir Dirección del Eje Z**: Solo se muestra cuando **Tiene eje Z** está activado. Activa si
   un comando Z positivo (ej., G0 Z10) mueve la cabeza hacia abajo.
+- **Z Min / Z Max**: Solo se muestra cuando **Tiene eje Z** está activado. La coordenada Z más baja
+  y más alta en el marco de la máquina. Los movimientos de jog en Z se limitan a este rango, y la
+  ventana emergente Mover a Posición acepta el rango Z completo entre los dos valores.
 
 ### Orientación del panel
 

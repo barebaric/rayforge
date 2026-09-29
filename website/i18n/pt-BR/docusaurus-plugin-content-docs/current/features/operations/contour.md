@@ -168,6 +168,20 @@ configurações de etapa.
 - Mais lento = mais energia = corte mais profundo
 - Mais rápido = menos energia = corte mais leve
 
+#### Modo de Potência
+
+A configuração de Modo de Potência controla como a potência do laser é emitida durante os
+movimentos:
+
+| Modo               | G-code | Comportamento                                          |
+| ------------------ | ------ | ------------------------------------------------------ |
+| **Dinâmico (M4)**  | `M4`   | Ajusta a potência à velocidade de movimento (padrão)   |
+| **Constante (M3)** | `M3`   | Mantém a potência fixa independentemente da velocidade |
+
+A potência dinâmica reduz a potência quando a cabeça desacelera em um canto, o que protege o
+material, mas em algumas máquinas deixa cantos e curvas fechadas visivelmente subgravados. Mude para
+**Constante (M3)** se cantos e curvas queimarem de forma muito fraca.
+
 #### Compensação de Kerf
 
 Kerf é a largura do material removido pelo feixe do laser:

@@ -211,3 +211,56 @@ def test_machine_settings_dialog_recreated_after_machine_switch(
     win._machine_settings_dialog.close()
     process_events_for_duration(0.3)
     assert win._machine_settings_dialog is None
+
+
+def _enable_pointer_alignment(machine):
+    from rayforge.machine.models.machine import Origin
+
+    machine.set_axis_extents(400, 300)
+    machine.set_origin(Origin.BOTTOM_LEFT)
+    head = machine.get_default_laser_head()
+    assert head is not None
+    head.set_pointer_offset(10.0, 20.0)
+    head.set_pointer_offset_enabled(True)
+    machine.set_pointer_alignment(True)
+
+
+@pytest.mark.ui
+def test_click_to_move_shifted_with_alignment(app_and_window, mocker):
+    """Click-to-move commands are shifted by -offset while pointer
+    alignment is on, so the pointer dot lands on the clicked spot."""
+    _app, win = app_and_window
+    machine = get_context().config.machine
+    assert machine is not None
+    _enable_pointer_alignment(machine)
+
+    move_to = mocker.patch.object(win.machine_cmd, "move_to")
+
+    win._on_move_head_requested(None, x=100.0, y=50.0)
+
+    move_to.assert_called_once()
+    args = move_to.call_args.args
+    assert args[0] is machine
+    assert args[1] == pytest.approx(90.0)
+    assert args[2] == pytest.approx(30.0)
+
+
+@pytest.mark.ui
+def test_move_head_here_shifted_with_alignment(app_and_window, mocker):
+    """Move-Head-Here commands are shifted by -offset while pointer
+    alignment is on, so the pointer dot lands on the chosen spot."""
+    _app, win = app_and_window
+    machine = get_context().config.machine
+    assert machine is not None
+    _enable_pointer_alignment(machine)
+    win.surface.right_click_machine_pos = (100.0, 50.0)
+
+    move_to = mocker.patch.object(win.machine_cmd, "move_to")
+
+    win.on_move_head_here_clicked(None, None)
+
+    move_to.assert_called_once()
+    args = move_to.call_args.args
+    assert args[0] is machine
+    assert args[1] == pytest.approx(90.0)
+    assert args[2] == pytest.approx(30.0)

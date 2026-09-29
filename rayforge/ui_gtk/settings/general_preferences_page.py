@@ -27,6 +27,7 @@ def _get_language_label(code: str) -> str:
         "de": _("German"),
         "es": _("Spanish"),
         "fr": _("French"),
+        "hi": _("Hindi"),
         "pt": _("Portuguese"),
         "uk": _("Ukrainian"),
         "zh_CN": _("Chinese (Simplified)"),

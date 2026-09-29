@@ -1,0 +1,58 @@
+{
+  "version.label": {
+    "message": "अगला",
+    "description": "The label for version current"
+  },
+  "sidebar.tutorialSidebar.category.Getting Started": {
+    "message": "शुरुआत",
+    "description": "The label for category 'Getting Started' in sidebar 'tutorialSidebar'"
+  },
+  "sidebar.tutorialSidebar.category.Application Settings": {
+    "message": "एप्लिकेशन सेटिंग्स",
+    "description": "The label for category 'Application Settings' in sidebar 'tutorialSidebar'"
+  },
+  "sidebar.tutorialSidebar.category.Machine Setup": {
+    "message": "मशीन कॉन्फ़िगरेशन",
+    "description": "The label for category 'Machine Setup' in sidebar 'tutorialSidebar'"
+  },
+  "sidebar.tutorialSidebar.category.User Interface": {
+    "message": "उपयोगकर्ता इंटरफ़ेस",
+    "description": "The label for category 'User Interface' in sidebar 'tutorialSidebar'"
+  },
+  "sidebar.tutorialSidebar.category.Features": {
+    "message": "सुविधाएँ",
+    "description": "The label for category 'Features' in sidebar 'tutorialSidebar'"
+  },
+  "sidebar.tutorialSidebar.category.Operations": {
+    "message": "ऑपरेशन",
+    "description": "The label for category 'Operations' in sidebar 'tutorialSidebar'"
+  },
+  "sidebar.tutorialSidebar.category.Files": {
+    "message": "फ़ाइलें",
+    "description": "The label for category 'Files' in sidebar 'tutorialSidebar'"
+  },
+  "sidebar.tutorialSidebar.category.General Info": {
+    "message": "सामान्य जानकारी",
+    "description": "The label for category 'General Info' in sidebar 'tutorialSidebar'"
+  },
+  "sidebar.tutorialSidebar.category.Troubleshooting": {
+    "message": "समस्या निवारण",
+    "description": "The label for category 'Troubleshooting' in sidebar 'tutorialSidebar'"
+  },
+  "sidebar.tutorialSidebar.category.Reference": {
+    "message": "संदर्भ",
+    "description": "The label for category 'Reference' in sidebar 'tutorialSidebar'"
+  },
+  "sidebar.developerSidebar.category.Getting Started": {
+    "message": "शुरुआत",
+    "description": "The label for category 'Getting Started' in sidebar 'developerSidebar'"
+  },
+  "sidebar.developerSidebar.category.Architecture": {
+    "message": "संरचना",
+    "description": "The label for category 'Architecture' in sidebar 'developerSidebar'"
+  },
+  "sidebar.developerSidebar.category.Plugins": {
+    "message": "प्लगइन",
+    "description": "The label for category 'Plugins' in sidebar 'developerSidebar'"
+  }
+}

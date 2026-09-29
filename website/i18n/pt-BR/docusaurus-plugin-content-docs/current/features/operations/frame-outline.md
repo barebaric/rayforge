@@ -114,6 +114,18 @@ configurações de etapa.
 - Quão rápido o laser se move
 - Mais lento para materiais mais espessos
 
+#### Modo de Potência
+
+A configuração de Modo de Potência controla como a potência do laser é emitida durante os
+movimentos:
+
+- **Dinâmico (M4)** ajusta a potência à velocidade de movimento (padrão)
+- **Constante (M3)** mantém a potência fixa independentemente da velocidade
+
+A potência dinâmica reduz a potência quando a cabeça desacelera em um canto, o que pode deixar
+cantos subgravados em algumas máquinas. Mude para **Constante (M3)** se os cantos da moldura
+queimarem de forma muito fraca.
+
 Para cortar a moldura mais de uma vez, adicione um pós-processador de
 [Multi-Passagem](../multi-pass.md).
 

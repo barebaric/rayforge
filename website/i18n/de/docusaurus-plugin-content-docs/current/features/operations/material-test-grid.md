@@ -38,7 +38,8 @@ Presets sind Startpunkte - du kannst alle Parameter nach Auswahl anpassen.
 
 ### Schritt 3: Parameter konfigurieren
 
-Passe die Testraster-Parameter im Einstellungsdialog an:
+Passe die Testraster-Parameter im Einstellungsdialog an. Das Raster auf der Arbeitsfläche wird
+automatisch aktualisiert, wenn du die Optionen änderst:
 
 ![Materialtest-Raster-Einstellungen](/screenshots/material-test.webp)
 
@@ -86,11 +87,6 @@ werden.
 - **Zeilenabstand (mm)**: Abstand zwischen den Scan-Zeilen bei Verwendung des Gravurtesttyps
 - Kleinere Werte erzeugen dichtere Füllungen, dauern aber länger
 - Typische Werte: 0,1-0,3mm
-
-### Schritt 4: Das Raster generieren
-
-Klicke auf **Generieren**, um das Testmuster zu erstellen. Das Raster erscheint auf deiner
-Arbeitsfläche als spezielles Werkstück.
 
 ## Das Raster-Layout verstehen
 

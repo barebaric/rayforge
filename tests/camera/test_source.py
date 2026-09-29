@@ -28,6 +28,23 @@ def test_validate_source_uri_accepts_supported_urls(source_type, uri):
 
 
 @pytest.mark.parametrize(
+    "uri",
+    [
+        "http://192.168.1.20:8080/image.jpg",
+        "http://[2001:db8::1]:8080/image.jpg",
+        "http://falcon-a1-pro.local/image.jpg",
+        "http://camera_name.local/image.jpg",
+        "http://_camera.local/image.jpg",
+        "http://camera.local./image.jpg",
+        "http://cámara.local/image.jpg",
+        "http://user:pass@camera.local/image.jpg",
+    ],
+)
+def test_validate_source_uri_accepts_valid_hosts(uri):
+    assert validate_source_uri(CameraSourceType.HTTP_SNAPSHOT, uri) is None
+
+
+@pytest.mark.parametrize(
     ("source_type", "uri"),
     [
         (CameraSourceType.HTTP_SNAPSHOT, "rtsp://camera.local/image.jpg"),
@@ -35,10 +52,33 @@ def test_validate_source_uri_accepts_supported_urls(source_type, uri):
         (CameraSourceType.RTSP, "https://camera.local/stream"),
         (CameraSourceType.HTTP_SNAPSHOT, "https:///image.jpg"),
         (CameraSourceType.HTTP_STREAM, "http://["),
+        (CameraSourceType.HTTP_SNAPSHOT, "http://bad host/image.jpg"),
+        (CameraSourceType.HTTP_SNAPSHOT, "http://bad-.local/image.jpg"),
+        (CameraSourceType.HTTP_SNAPSHOT, "http://foo..bar/image.jpg"),
+        (CameraSourceType.HTTP_SNAPSHOT, "http://999.999.999.999/image.jpg"),
+        (
+            CameraSourceType.HTTP_SNAPSHOT,
+            "http://camera.local:99999/image.jpg",
+        ),
+        (CameraSourceType.HTTP_SNAPSHOT, "http://camera.local:/image.jpg"),
+        (CameraSourceType.HTTP_SNAPSHOT, "http://:8080/image.jpg"),
     ],
 )
 def test_validate_source_uri_rejects_invalid_urls(source_type, uri):
     assert validate_source_uri(source_type, uri) is not None
+
+
+@pytest.mark.parametrize(
+    "placeholder",
+    ["laser-ip", "ip-address"],
+)
+def test_validate_source_uri_reports_placeholder(placeholder):
+    uri = f"http://<{placeholder}>:8080/image.jpg"
+
+    assert validate_source_uri(CameraSourceType.HTTP_SNAPSHOT, uri) == (
+        f"URL contains placeholder <{placeholder}>; "
+        "replace it with a valid value"
+    )
 
 
 @pytest.fixture(autouse=True)

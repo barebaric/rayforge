@@ -61,6 +61,7 @@ from .main_menu import MainMenu
 from .project_cmd import ProjectCmd
 from .settings.settings_dialog import SettingsWindow
 from .shared.gtk import get_monitor_geometry
+from .shared.pointer_alignment_dialog import PointerAlignmentDialog
 from .shared.progress_bar import ProgressBar
 from .shared.sanity_check_dialog import SanityCheckDialog
 from .shared.time_estimate_overlay import TimeEstimateOverlay
@@ -85,7 +86,7 @@ css = """
 .right-panel-overlay {
     background-color: transparent;
     border-radius: 8px;
-    margin: 6px 12px 12px 6px;
+    margin: 6px 12px 40px 6px;
 }
 
 .status-message-overlay {
@@ -140,10 +141,13 @@ class CappedWidthBox(Gtk.Box):
 
 
 class MainWindow(Adw.ApplicationWindow):
+    ETA_UPDATE_INTERVAL_MS = 1000
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.set_title(const.APP_NAME)
         self._current_machine: Machine | None = None  # For signal handling
+        self._eta_timeout_id: int | None = None
         self._last_bottom_panel_height = 200
         self._saved_bottom_panel_visible = False
         self._old_doc = None  # Track previous document for signal reconnection
@@ -795,7 +799,7 @@ class MainWindow(Adw.ApplicationWindow):
             return
 
         panel = machine.panel
-        wcs_offset = machine.get_active_wcs_offset()
+        wcs_offset = machine.get_command_wcs_offset()
         x_off, y_off, _ = panel.get_command_offset(
             wcs_offset=wcs_offset,
             wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
@@ -953,6 +957,7 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_job_started(self, sender):
         logger.debug("Job started")
         self.machine_selector.update_eta(None)
+        self._start_eta_timer()
         self._update_actions_and_ui()
 
     def _on_addon_state_changed(self, sender, addon_name):
@@ -965,9 +970,37 @@ class MainWindow(Adw.ApplicationWindow):
         eta_seconds = metrics.get("eta_seconds")
         self.machine_selector.update_eta(eta_seconds)
 
+    def _start_eta_timer(self):
+        """
+        Runs a one-per-second refresh of the ETA while a job runs.
+
+        The progress signal is push-only: drivers that acknowledge
+        buffered commands deliver all their updates within the first
+        moments of a job, after which nothing would ever redraw the
+        countdown.
+        """
+        self._stop_eta_timer()
+        self._eta_timeout_id = GLib.timeout_add(
+            self.ETA_UPDATE_INTERVAL_MS, self._on_eta_timer_tick
+        )
+
+    def _stop_eta_timer(self):
+        if self._eta_timeout_id is not None:
+            GLib.source_remove(self._eta_timeout_id)
+            self._eta_timeout_id = None
+
+    def _on_eta_timer_tick(self):
+        monitor = self.machine_cmd.current_monitor
+        if monitor is None:
+            self._eta_timeout_id = None
+            return GLib.SOURCE_REMOVE
+        self.machine_selector.update_eta(monitor.metrics.get("eta_seconds"))
+        return GLib.SOURCE_CONTINUE
+
     def _on_job_finished(self, sender):
         """Handles the completion of a machine job."""
         logger.debug("Job finished")
+        self._stop_eta_timer()
         self.machine_selector.update_eta(None)
 
     def _on_job_future_done(self, future: Future):
@@ -980,6 +1013,7 @@ class MainWindow(Adw.ApplicationWindow):
             # If the submission failed, the driver's 'job_finished' signal
             # will never fire, so we must stop the live view here to prevent
             # the UI from getting stuck.
+            self._stop_eta_timer()
             self.machine_selector.update_eta(None)
 
         # Ensure UI is updated (e.g. Cancel button disabled, others enabled)
@@ -2107,6 +2141,10 @@ class MainWindow(Adw.ApplicationWindow):
             am.get_action("toggle-focus").set_enabled(can_focus)
 
             connected = conn_status == TransportStatus.CONNECTED
+            self.surface.set_pointer_dot_state(
+                active_machine.get_pointer_offset(),
+                active_machine.pointer_alignment_enabled,
+            )
             self.surface.set_laser_dot_visible(connected)
             if state and connected:
                 x, y = state.machine_pos[:2]
@@ -2439,7 +2477,7 @@ class MainWindow(Adw.ApplicationWindow):
 
         machine_x, machine_y = pos
         panel = machine.panel
-        wcs_offset = machine.get_active_wcs_offset()
+        wcs_offset = machine.get_command_wcs_offset()
         x_off, y_off, _ = panel.get_command_offset(
             wcs_offset=wcs_offset,
             wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
@@ -2484,7 +2522,7 @@ class MainWindow(Adw.ApplicationWindow):
         if not machine:
             return
 
-        def _proceed():
+        def _proceed(pointer_dry_run: bool = False):
             focus_action = self.action_manager.get_action("toggle-focus")
             focus_state = focus_action.get_state()
             if focus_state and focus_state.get_boolean():
@@ -2493,10 +2531,24 @@ class MainWindow(Adw.ApplicationWindow):
             job_coro = self.machine_cmd.send_job(
                 machine,
                 on_progress=self._on_job_progress_updated,
+                pointer_dry_run=pointer_dry_run,
             )
             self._run_machine_job(job_coro)
 
-        self._run_sanity_check_and_proceed(_proceed)
+        def _confirm_pointer_alignment():
+            # Jobs burn with the unshifted beam, so ask every time
+            # while the user is aiming with the pointer dot.
+            if machine.pointer_alignment_enabled:
+                dialog = PointerAlignmentDialog(
+                    parent=self,
+                    machine=machine,
+                    on_proceed=_proceed,
+                )
+                dialog.present()
+            else:
+                _proceed()
+
+        self._run_sanity_check_and_proceed(_confirm_pointer_alignment)
 
     def on_hold_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant

@@ -84,7 +84,10 @@ class MachineDropdown(Gtk.DropDown):
         self.machine_selected = Signal()
         self._model = Gio.ListStore.new(MachineListItem)
         self._eta_seconds: float | None = None
-        self._status_label_refs: dict = {}
+        # A machine's status is rendered by several bound list items
+        # at once (the collapsed button face plus one row per open
+        # popup), so refs are tracked per label, not per machine.
+        self._status_labels: dict[int, set[Gtk.Label]] = {}
 
         expression = Gtk.ClosureExpression.new(
             str,
@@ -148,6 +151,8 @@ class MachineDropdown(Gtk.DropDown):
 
         list_item.set_child(box)
         list_item._signal_refs = []
+        list_item._status_label = None
+        list_item._machine = None
 
     def _on_factory_bind(self, factory, list_item):
         box = list_item.get_child()
@@ -162,7 +167,9 @@ class MachineDropdown(Gtk.DropDown):
 
         machine = list_item_obj.machine
         name_label.set_text(machine.name)
-        status_label.set_text(_get_status_text(machine))
+        status_label.set_text(
+            _get_status_text(machine, self._get_eta_for_machine(machine))
+        )
 
         conn_status = _get_connection_status(machine)
         icon_name = _get_connection_icon_name(conn_status)
@@ -197,14 +204,21 @@ class MachineDropdown(Gtk.DropDown):
         machine.connection_status_changed.connect(on_conn_changed)
         refs.append((machine, on_conn_changed))
 
-        self._status_label_refs[id(machine)] = status_label
+        self._status_labels.setdefault(id(machine), set()).add(status_label)
+        list_item._status_label = status_label
+        list_item._machine = machine
 
         list_item._signal_refs = refs
 
     def _on_factory_unbind(self, factory, list_item):
-        list_item_obj: MachineListItem | None = list_item.get_item()
-        if list_item_obj:
-            self._status_label_refs.pop(id(list_item_obj.machine), None)
+        machine = list_item._machine
+        label = list_item._status_label
+        if machine is not None and label is not None:
+            labels = self._status_labels.get(id(machine))
+            if labels is not None:
+                labels.discard(label)
+                if not labels:
+                    del self._status_labels[id(machine)]
         for ref in list_item._signal_refs:
             try:
                 ref[0].disconnect(ref[1])
@@ -219,15 +233,22 @@ class MachineDropdown(Gtk.DropDown):
         return None
 
     def update_eta(self, eta_seconds: float | None):
-        """Update the ETA for the active machine's status label."""
+        """Update the ETA for the active machine's status labels."""
         self._eta_seconds = eta_seconds
         context = get_context()
         machine = context.config.machine
         if not machine:
+            logger.debug("update_eta skipped: no active machine")
             return
-        label = self._status_label_refs.get(id(machine))
-        if label:
-            label.set_text(_get_status_text(machine, eta_seconds))
+        labels = self._status_labels.get(id(machine), set())
+        text = _get_status_text(machine, eta_seconds)
+        status = machine.device_state.status
+        logger.debug(
+            f"update_eta: eta={eta_seconds}, status={status}, "
+            f"updating {len(labels)} label(s) to {text!r}"
+        )
+        for label in labels:
+            label.set_text(text)
 
     def update_model_and_selection(self, *args, **kwargs):
         logger.debug("Syncing machine dropdown model and selection.")

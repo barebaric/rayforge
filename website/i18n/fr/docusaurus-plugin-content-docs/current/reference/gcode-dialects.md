@@ -92,9 +92,13 @@ Pour créer un dialecte G-code personnalisé basé sur un dialecte intégré :
 3. Modifiez les paramètres du dialecte selon vos besoins
 4. Enregistrez votre dialecte personnalisé
 
-Chaque dialecte personnalisé est une copie indépendante. La modification d'un dialecte n'affecte
-jamais les autres, tu peux donc expérimenter librement sans risquer de perturber une configuration
-existante. Les dialectes personnalisés sont stockés dans ton répertoire de configuration et peuvent
+Chaque dialecte personnalisé est une copie indépendante : la modification d'un dialecte n'affecte
+jamais les autres dialectes ni les autres machines, tu peux donc expérimenter librement sans risquer
+de perturber une configuration existante. Une copie créée à partir d'un dialecte intégré conserve un
+lien vers ce dialecte intégré : les champs de modèle que tu n'as pas explicitement modifiés suivent
+le dialecte intégré, de sorte que les améliorations des dialectes intégrés parviennent
+automatiquement à tes machines, tandis que tes propres modifications sont préservées et jamais
+écrasées. Les dialectes personnalisés sont stockés dans ton répertoire de configuration et peuvent
 être partagés.
 
 ### Paramètres du dialecte
@@ -198,6 +202,28 @@ avec des espaces réservés pour injecter des valeurs dynamiques. Utilise la syn
 | -------------- | ------------------------------------------------------------------------- |
 | `seconds`      | Durée de temporisation en secondes en virgule flottante (par ex. `1.5`)   |
 | `milliseconds` | Durée de temporisation en millisecondes en nombre entier (par ex. `1500`) |
+
+#### Préambule et Postscript
+
+Les scripts **Préambule** et **Postscript** prennent en charge un ensemble distinct d'espaces
+réservés décrivant la machine et le travail en cours :
+
+| Espace réservé                      | Description                                               |
+| ----------------------------------- | --------------------------------------------------------- |
+| `machine.name`                      | Nom de la machine                                         |
+| `machine.active_wcs`                | Système de coordonnées de travail actif (par ex. `G54`)   |
+| `machine.axis_extents[0]`           | Largeur de la zone de travail (mm)                        |
+| `machine.axis_extents[1]`           | Hauteur de la zone de travail (mm)                        |
+| `wcs_offset[0]` … `wcs_offset[2]`   | Décalage X/Y/Z du système de coordonnées de travail actif |
+| `doc.name`                          | Nom du document exporté                                   |
+| `job.extents[0]` … `job.extents[3]` | Boîte englobante du travail : X min, Y min, X max, Y max  |
+
+Par exemple, certaines machines cadrent le travail par elles-mêmes — même lors de l'exécution hors
+ligne d'un fichier G-code — en lisant les limites du travail depuis un commentaire du préambule :
+
+```gcode
+; Bounds: X{job.extents[0]} Y{job.extents[1]} to X{job.extents[2]} Y{job.extents[3]}
+```
 
 ### Conseils
 

@@ -132,6 +132,17 @@ Linux, ya que estos típicamente no son dispositivos GRBL basados en USB. Los pu
 :::
 <!-- prettier-ignore-end -->
 
+<!-- prettier-ignore-start -->
+:::tip[La Máquina Cambia de Puerto Tras la Reconexión]
+Si el puerto de tu máquina cambia
+(p. ej. de `/dev/ttyUSB0` a `/dev/ttyUSB1`) tras un reinicio o reconexión, vincúlala por su
+identidad USB: introduce el VID:PID del dispositivo (p. ej. `0403:6001`) en el campo del puerto
+serie en lugar de una ruta de puerto. La reconexión automática seguirá a la máquina a su nuevo
+puerto. Consulta
+[Vinculación del Puerto Serie](../machine/general.md#vinculación-del-puerto-serie).
+:::
+<!-- prettier-ignore-end -->
+
 ### Velocidad de Transmisión Incorrecta
 
 **Problema:** La conexión se establece pero los comandos no funcionan o producen respuestas
