@@ -123,6 +123,7 @@ laser mode can cause unintended burns and fire hazards.
 ### $30 & $31 - Laser Power Range
 
 **$30 - Maximum Laser Power (RPM)**
+
 **$31 - Minimum Laser Power (RPM)**
 
 **Purpose:** Defines the power range for S commands
@@ -142,6 +143,7 @@ should match your $30 value. If $30=1000, set max power to 1000 in Rayforge.
 ### $130 & $131 - Maximum Travel
 
 **$130 - X Maximum Travel (mm)**
+
 **$131 - Y Maximum Travel (mm)**
 
 **Purpose:** Defines your machine's working area

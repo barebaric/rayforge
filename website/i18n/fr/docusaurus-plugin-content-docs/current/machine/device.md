@@ -122,6 +122,7 @@ d'incendie.
 ### $30 & $31 - Plage de Puissance Laser
 
 **$30 - Puissance Laser Maximum (RPM)**
+
 **$31 - Puissance Laser Minimum (RPM)**
 
 **Objectif :** Définit la plage de puissance pour les commandes S
@@ -142,6 +143,7 @@ puissance max à 1000 dans Rayforge.
 ### $130 & $131 - Déplacement Maximum
 
 **$130 - Déplacement Maximum X (mm)**
+
 **$131 - Déplacement Maximum Y (mm)**
 
 **Objectif :** Définit la zone de travail de votre machine

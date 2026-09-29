@@ -120,6 +120,7 @@ láser. El modo láser deshabilitado puede causar quemaduras no intencionales y 
 ### $30 y $31 - Rango de Potencia del Láser
 
 **$30 - Potencia Máxima del Láser (RPM)**
+
 **$31 - Potencia Mínima del Láser (RPM)**
 
 **Propósito:** Define el rango de potencia para comandos S
@@ -140,6 +141,7 @@ máxima en 1000 en Rayforge.
 ### $130 y $131 - Recorrido Máximo
 
 **$130 - Recorrido Máximo X (mm)**
+
 **$131 - Recorrido Máximo Y (mm)**
 
 **Propósito:** Define el área de trabajo de tu máquina

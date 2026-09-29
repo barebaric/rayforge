@@ -120,6 +120,7 @@ laser. Modo laser desabilitado pode causar queimaduras não intencionais e risco
 ### $30 & $31 - Faixa de Potência do Laser
 
 **$30 - Potência Máxima do Laser (RPM)**
+
 **$31 - Potência Mínima do Laser (RPM)**
 
 **Propósito:** Define a faixa de potência para comandos S
@@ -140,6 +141,7 @@ máxima para 1000 no Rayforge.
 ### $130 & $131 - Deslocamento Máximo
 
 **$130 - Deslocamento Máximo X (mm)**
+
 **$131 - Deslocamento Máximo Y (mm)**
 
 **Propósito:** Define a área de trabalho da sua máquina
