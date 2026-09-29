@@ -39,7 +39,8 @@ sélectionné un.
 
 ### Étape 3 : Configurer les Paramètres
 
-Ajuste les paramètres de la grille de test dans la boîte de dialogue des paramètres :
+Ajuste les paramètres de la grille de test dans la boîte de dialogue des paramètres. La grille se
+met à jour automatiquement sur le canevas à mesure que tu modifies les options :
 
 ![Paramètres Grille de Test de Matériau](/screenshots/material-test.webp)
 
@@ -86,11 +87,6 @@ motif de test.
 - **Intervalle de ligne (mm)** : Espacement entre les lignes de balayage en mode gravure
 - Des valeurs plus petites créent des remplissages plus denses mais prennent plus de temps
 - Valeurs typiques : 0.1-0.3mm
-
-### Étape 4 : Générer la Grille
-
-Clique sur **Générer** pour créer le motif de test. La grille apparaît sur ton canevas comme une
-pièce spéciale.
 
 ## Comprendre la Disposition de la Grille
 
