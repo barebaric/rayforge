@@ -127,9 +127,9 @@ comment corriger la distorsion :
 
 #### Calibration automatique
 
-Pour la calibration **Automatic**, l'assistant te guide pour capturer plusieurs images d'un motif
-de calibration imprimé depuis différentes positions sur le lit, puis calcule automatiquement un
-modèle de distorsion.
+Pour la calibration **Automatic**, l'assistant te guide pour capturer plusieurs images d'un motif de
+calibration imprimé depuis différentes positions sur le lit, puis calcule automatiquement un modèle
+de distorsion.
 
 ![Assistant — Paramètres de la carte](/screenshots/machine-settings-camera-lens-calibration-wizard-card.webp)
 
@@ -143,8 +143,8 @@ Choisis d'abord un **Pattern Type** :
 
 1. Définis la **Largeur** et la **Hauteur** de ta feuille imprimée. L'aperçu se met à jour en temps
    réel — le motif doit couvrir environ 70% de la vue caméra.
-2. Clique sur **Save to PDF** pour exporter le motif à imprimer, puis imprime-le et place-le sur
-   le lit laser.
+2. Clique sur **Save to PDF** pour exporter le motif à imprimer, puis imprime-le et place-le sur le
+   lit laser.
 
 ![Assistant — Capture](/screenshots/machine-settings-camera-lens-calibration-wizard-capture.webp)
 
@@ -157,26 +157,26 @@ Choisis d'abord un **Pattern Type** :
 
 #### Utiliser un motif déjà imprimé
 
-Les champs **Pattern Geometry** décrivent la feuille en unités physiques — nombres d'éléments de
-la grille, tailles des éléments et distances entre eux. Les modifier fait passer l'assistant en
-mode mesure d'une feuille existante plutôt que suggestion d'une nouvelle, pour calibrer avec un
-motif imprimé plus tôt ou fourni avec ta machine.
+Les champs **Pattern Geometry** décrivent la feuille en unités physiques — nombres d'éléments de la
+grille, tailles des éléments et distances entre eux. Les modifier fait passer l'assistant en mode
+mesure d'une feuille existante plutôt que suggestion d'une nouvelle, pour calibrer avec un motif
+imprimé plus tôt ou fourni avec ta machine.
 
 Mesure la feuille après impression, et saisis les dimensions imprimées plutôt que nominales : les
-imprimantes mettent à l'échelle, et quelques pourcents d'erreur d'échelle se retrouvent
-directement dans le résultat. Si tu modifies un champ de géométrie, la suggestion **Card Size**
-est ignorée, car tes mesures définissent désormais le motif.
+imprimantes mettent à l'échelle, et quelques pourcents d'erreur d'échelle se retrouvent directement
+dans le résultat. Si tu modifies un champ de géométrie, la suggestion **Card Size** est ignorée, car
+tes mesures définissent désormais le motif.
 
 Pour une **Marker Grid**, le **Marker Dictionary** doit correspondre à la famille d'impression
 (ArUco ou AprilTag — Rayforge affine les coins en conséquence). Si les ids imprimés ne commencent
-pas à 0, par exemple une tuile d'un jeu plus grand, saisis le premier id de la feuille dans
-**Marker ID Offset** ; les marqueurs hors de la plage décrite sont ignorés.
+pas à 0, par exemple une tuile d'un jeu plus grand, saisis le premier id de la feuille dans **Marker
+ID Offset** ; les marqueurs hors de la plage décrite sont ignorés.
 
-La numérotation suit le coin **ID Origin**, qui porte l'id de décalage, et l'**ID Order** : les
-ids consécutifs avancent d'abord le long des rangées, ou d'abord le long des colonnes. Par défaut
-— coin en haut à gauche, rangées d'abord — comme les plateaux OpenCV. Pour décrire ta feuille,
-trouve le marqueur à l'id le plus bas et choisis son coin ; puis vérifie si l'id suivant est à
-côté (rangées) ou en dessous (colonnes).
+La numérotation suit le coin **ID Origin**, qui porte l'id de décalage, et l'**ID Order** : les ids
+consécutifs avancent d'abord le long des rangées, ou d'abord le long des colonnes. Par défaut — coin
+en haut à gauche, rangées d'abord — comme les plateaux OpenCV. Pour décrire ta feuille, trouve le
+marqueur à l'id le plus bas et choisis son coin ; puis vérifie si l'id suivant est à côté (rangées)
+ou en dessous (colonnes).
 
 Les feuilles de points existent en deux dispositions, et les champs **Row Spacing** et **Row
 Offset** indiquent à Rayforge laquelle tu as :
@@ -191,12 +191,12 @@ Rayforge suggère par défaut une feuille décalée, donc si ta feuille est un s
 
 :::tip
 
-Une feuille de points n'indique pas où est le haut, donc Rayforge lit son orientation dans la vue
-et dans la géométrie du motif. Cela vaut tant que la feuille garde à peu près la même orientation
-entre les captures — avec **Dot Grid**, ne pivote donc pas la feuille d'un quart de tour entre les
-prises. Les rangées décalées aident, car le décalage brise la symétrie d'un rectangle simple. Les
-motifs ChArUco et ArUco portent leur propre orientation et n'ont pas cette contrainte ; préfère-les
-quand tu as le choix.
+Une feuille de points n'indique pas où est le haut, donc Rayforge lit son orientation dans la vue et
+dans la géométrie du motif. Cela vaut tant que la feuille garde à peu près la même orientation entre
+les captures — avec **Dot Grid**, ne pivote donc pas la feuille d'un quart de tour entre les prises.
+Les rangées décalées aident, car le décalage brise la symétrie d'un rectangle simple. Les motifs
+ChArUco et ArUco portent leur propre orientation et n'ont pas cette contrainte ; préfère-les quand
+tu as le choix.
 
 :::
 
