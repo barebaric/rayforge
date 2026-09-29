@@ -295,7 +295,7 @@ class RuidaRPAEncoder(OpsEncoder):
         ):
             pass  # Structural marker; no rpascript output
         else:
-            raise ValueError(f"Unknown command type: {ct}")
+            logger.warning("Unknown command type: %s", ct)
         self._gluescript.comment([f"# Op {idx}: {ct.name}"])
 
     # -- Helpers ------------------------------------------------------------

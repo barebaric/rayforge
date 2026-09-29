@@ -2199,6 +2199,24 @@ class TestErrorHandling:
         with pytest.raises(ValueError, match="WORKPIECE_START"):
             encoder.encode(ops, mock_machine, doc)
 
+    def test_unknown_command_warns_instead_of_raising(
+        self, mock_machine, caplog
+    ):
+        """An unrecognized command must warn and skip, not abort the job."""
+        caplog.set_level(logging.WARNING, logger=rpa_encoder.logger.name)
+        encoder = RuidaRPAEncoder(gluescript=GlueScript())
+        ops = Mock()
+        unknown = Mock()
+        unknown.name = "FUTURE_COMMAND"
+        ops.command_type.return_value = unknown
+
+        encoder._handle_command(ops, 0, mock_machine)
+
+        assert any(
+            "Unknown command type" in record.message
+            for record in caplog.records
+        )
+
 
 def _plan_job(doc):
     """Return Ops for a small two-layer plan test job."""
