@@ -6,246 +6,156 @@ description:
 
 # Material Test Grid
 
-The Material Test Grid generator creates parametric test patterns to help you find optimal laser
-settings for different materials.
+Every material — and often every color and thickness of the same material — responds differently to
+laser power and speed. The Material Test Grid takes the guesswork out of finding the right
+combination: it generates a pattern of test cells in which each cell is engraved or cut with a
+slightly different setting, all in a single job. After one run you can see at a glance which
+combination produces the result you want.
 
-## Overview
-
-Material testing is essential for laser work - different materials require different power and speed
-settings. The Material Test Grid automates this process by:
-
-- Generating test grids with configurable speed/power ranges
-- Providing presets for common laser types (Diode, CO2)
-- Optimizing execution order for safety (fastest speeds first)
-- Adding labels to identify each test cell's settings
-
-## Creating a Material Test Grid
-
-### Step 1: Open the Generator
-
-Access the Material Test Grid generator:
-
-- Menu: **Tools → Material Test Grid**
-- This creates a special workpiece that generates the test pattern
-
-### Step 2: Choose a Preset (Optional)
-
-Rayforge includes presets for common scenarios:
-
-| Preset            | Speed Range       | Power Range | Use For               |
-| ----------------- | ----------------- | ----------- | --------------------- |
-| **Diode Engrave** | 1000-10000 mm/min | 10-100%     | Diode laser engraving |
-| **Diode Cut**     | 100-5000 mm/min   | 50-100%     | Diode laser cutting   |
-| **CO2 Engrave**   | 3000-20000 mm/min | 10-50%      | CO2 laser engraving   |
-| **CO2 Cut**       | 1000-20000 mm/min | 30-100%     | CO2 laser cutting     |
-
-Presets are starting points - you can adjust all parameters after selecting one.
-
-### Step 3: Configure Parameters
-
-Adjust the test grid parameters in the settings dialog. The grid on the canvas updates automatically
-as you change the options:
+Create one via **Tools → Create Material Test Grid**. Rayforge adds a special workpiece to the
+canvas along with a matching operation, and you configure the grid in its settings dialog.
 
 ![Material Test Grid Settings](/screenshots/material-test.webp)
 
-#### Test Type
+## Presets
 
-- **Engrave**: Fills squares with raster pattern
-- **Cut**: Cuts outline of squares
+The settings dialog offers presets for common laser types. They fill in a sensible speed range,
+power range, and test type so you can start with a reasonable baseline:
 
-#### Speed Range
+| Preset            | Speed Range       | Power Range | Test Type |
+| ----------------- | ----------------- | ----------- | --------- |
+| **Diode Engrave** | 1000-10000 mm/min | 10-100%     | Engrave   |
+| **Diode Cut**     | 100-5000 mm/min   | 50-100%     | Cut       |
+| **CO2 Engrave**   | 3000-20000 mm/min | 10-50%      | Engrave   |
+| **CO2 Cut**       | 1000-20000 mm/min | 30-100%     | Cut       |
 
-- **Min Speed**: Slowest speed to test (mm/min)
-- **Max Speed**: Fastest speed to test (mm/min)
-- Columns in grid represent different speeds
+A preset is only a starting point — every value remains adjustable afterwards, and speed ranges are
+automatically limited to what your machine can do.
 
-#### Power Range
+## Grid Modes
 
-- **Min Power**: Lowest power to test (%)
-- **Max Power**: Highest power to test (%)
-- Rows in grid represent different power levels
+A test grid varies two parameters at once: one across the columns and one down the rows. The grid
+mode decides which two. **Power vs Speed** is the default and covers the most common question —
+power across the columns, speed down the rows.
 
-#### Grid Dimensions
+**Power vs Passes** and **Speed vs Passes** keep one of the two fixed and vary the number of passes
+instead, which is useful for cutting thicker stock. **Speed vs Offset** is a special calibration
+mode for bidirectional engraving: it varies the horizontal scan offset so you can dial out
+row-to-row misalignment. Because that only makes sense for raster work, selecting it switches the
+grid to Engrave and widens the line spacing so any misalignment is easy to see. Within each row the
+power is scaled along with the speed, so all cells stay visually comparable.
 
-- **Columns**: Number of speed variations (typically 3-7)
-- **Rows**: Number of power variations (typically 3-7)
+## Configuring the Grid
 
-#### Size & Spacing
+The settings dialog groups the parameters into three sections.
 
-- **Shape Size**: Size of each test square in mm (default: 20mm)
-- **Spacing**: Gap between squares in mm (default: 5mm)
+The **Grid** section controls the test itself. The test type determines whether each cell cuts the
+outline of a square or fills it with raster lines. The grid dimensions set how many columns and rows
+to test — each column represents one step of the mode's first parameter and each row one step of the
+second, from the minimum to the maximum of the range you enter. Between 2 and 20 steps are allowed
+per axis; 5×5 is a good default. Shape size (10 mm by default) and spacing (2 mm by default)
+determine how large the grid becomes. For the Engrave test type, the line interval controls the
+distance between scan lines — smaller values fill more densely but take longer. Leave it at zero to
+use your laser's spot size, which is a good match for most engraving.
 
-#### Labels
+The **Labels** section controls the annotations engraved next to the grid. Labels are on by default
+and are engraved first, so the test pattern cannot obscure them. They get their own power (10% by
+default) and speed (1000 mm/min by default), and speed values are shown in your preferred display
+unit.
 
-- **Include Labels**: Enable/disable axis labels showing speed and power values
-- Labels appear on left and top edges
-- **Label Power (%)**: Power setting for engraving labels
-- **Label Speed (mm/min)**: Speed for engraving labels (default: 1000 mm/min)
+The **Parameters** section holds the ranges the grid varies — speed, power, passes, or offset,
+depending on the selected mode. Modes that keep a parameter fixed (for example the speed in Power vs
+Passes) let you set that constant here as well.
 
-Labels are engraved first, before the test grid, so they are not obscured by the test pattern.
+## Understanding the Layout
 
-#### Line Interval (Engrave Test Only)
-
-- **Line Interval (mm)**: Spacing between scan lines when using the engrave test type
-- Smaller values create denser fills but take longer to execute
-- Typical values: 0.1-0.3mm
-
-## Understanding the Grid Layout
-
-### Grid Organization
-
-```
-Power (%)     Speed (mm/min) →
-    ↓      1000   2500   5000   7500   10000
-  100%     [  ]   [  ]   [  ]   [  ]   [  ]
-   75%     [  ]   [  ]   [  ]   [  ]   [  ]
-   50%     [  ]   [  ]   [  ]   [  ]   [  ]
-   25%     [  ]   [  ]   [  ]   [  ]   [  ]
-   10%     [  ]   [  ]   [  ]   [  ]   [  ]
-```
-
-- **Columns**: Speed increases from left to right
-- **Rows**: Power increases from bottom to top
-- **Labels**: Show exact values for each row/column
-
-### Grid Size Calculation
-
-**Without labels:**
-
-- Width = columns × (shape_size + spacing) - spacing
-- Height = rows × (shape_size + spacing) - spacing
-
-**With labels:**
-
-- Add 15mm margin to left and top for label space
-
-**Example:** 5×5 grid with 20mm squares and 5mm spacing:
-
-- Without labels: 120mm × 120mm
-- With labels: 135mm × 135mm
-
-## Execution Order (Risk Optimization)
-
-Rayforge executes test cells in a **risk-optimized order** to prevent material damage:
-
-1. **Highest speed first**: Fast speeds are safer (less heat buildup)
-2. **Lowest power within speed**: Minimizes risk at each speed level
-
-This prevents charring or fire from starting with slow, high-power combinations.
-
-**Example execution order for 3×3 grid:**
+In the default Power vs Speed mode, power increases from left to right and speed from top to bottom:
 
 ```
-Order:  1  2  3
-        4  5  6  ← Highest speed, power increasing
-        7  8  9
-
-(Fastest speed/lowest power executed first)
+                   Power (%)
+                 10       55       100
+Speed      100  [  ]     [  ]     [  ]
+(mm/min)   300  [  ]     [  ]     [  ]
+           500  [  ]     [  ]     [  ]
 ```
 
-## Using Material Test Results
+Labels on the left and top edges show the exact value of every row and column, so you never have to
+count cells.
 
-### Step 1: Run the Test
+The overall size follows directly from the grid dimensions: each axis is _steps × shape size +
+(steps − 1) × spacing_, plus room for the labels on the left and top (at most 15 mm, and only when
+labels are enabled). A 5×5 grid of 20 mm squares with 5 mm spacing is 120 mm square without labels
+and 135 mm with them.
 
-1. Load your material in the laser
-2. Focus the laser properly
-3. Run the material test grid job
-4. Monitor the test - stop if any cell causes problems
+## How the Grid Runs
 
-### Step 2: Evaluate Results
+Cells deliberately do **not** execute in reading order. Rayforge runs them in a risk-optimized
+order: the highest speed first, the lowest power within each speed, and the fewest passes within
+each power. Slow, high-power combinations are the ones most likely to char the material or start a
+fire, so they run last. This ordering is intentional and cannot be changed.
 
-After the test completes, examine each cell:
+## Running the Test
 
-- **Too light**: Increase power or decrease speed
-- **Too dark/charred**: Decrease power or increase speed
-- **Perfect**: Note the speed/power combination
+Load the material you want to characterize — scrap, not your final workpiece — and focus the laser
+as you would for a real job, since focus distance changes the result. Start the job and stay with
+the machine: if a cell starts charring badly or smoking excessively, stop the job rather than let it
+finish.
 
-### Step 3: Record Settings
-
-Document your successful settings for future reference:
-
-- Material type and thickness
-- Operation type (engrave or cut)
-- Speed and power combination
-- Number of passes
-- Any special notes
+When the test is done, examine each cell. If engraving comes out too light, move toward more power
+or slower speed; if it comes out dark or charred, move toward less power or higher speed. For cut
+tests, look for the cell that cuts through cleanly with the least charring. To narrow in on the
+sweet spot, run a second, finer grid: if a coarse 5×5 test found its best cell around 40% power and
+4000 mm/min, a follow-up grid spanning 35-45% and 3000-5000 mm/min will pinpoint it.
 
 <!-- prettier-ignore-start -->
-:::tip[Material Database]
-Consider creating a reference document with your material test results for
-quick lookup in future projects.
+:::tip[Save it as a recipe]
+Instead of keeping a notebook of winning settings, store them as a
+[recipe](../../application-settings/recipes.md): name it (for example "3 mm Plywood Cut"), bind it
+to the machine, operation, material, and thickness you tested, and Rayforge will suggest exactly
+those settings the next time you cut the same material.
 :::
 <!-- prettier-ignore-end -->
 
 ## Advanced Usage
 
-### Combining with Other Operations
+Material test grids are ordinary workpieces, so they combine freely with other operations. A common
+pattern is to add a contour operation around the finished grid and cut the test piece free from the
+stock after engraving completes.
 
-Material test grids are regular workpieces - you can combine them with other operations:
-
-**Example workflow:**
-
-1. Create material test grid
-2. Add contour cut around the entire grid
-3. Run test, cut free, evaluate results
-
-This is useful for cutting the test piece free from stock material.
-
-### Custom Test Ranges
-
-For fine-tuning, create narrow-range tests:
-
-**Coarse test** (find ballpark):
-
-- Speed: 1000-10000 mm/min (5 columns)
-- Power: 10-100% (5 rows)
-
-**Fine test** (optimize):
-
-- Speed: 4000-6000 mm/min (5 columns)
-- Power: 35-45% (5 rows)
-
-### Different Materials, Same Grid
-
-Run the same grid configuration on different materials to build your material library faster.
+Running the same grid configuration on different materials is a quick way to build up a library of
+known-good settings — and recipes make that library searchable by material and thickness later.
 
 ## Tips & Best Practices
 
-### Grid Design
+A few habits make test results more reliable:
 
-✅ **Start with presets** - Good starting points for common scenarios ✅ **Use 5×5 grids** - Good
-balance of detail and test time ✅ **Enable labels** - Essential for identifying results ✅ **Keep
-squares ≥20mm** - Easier to see and measure results
+- Start from a preset and adjust from there rather than configuring from scratch.
+- Give the cells some room: squares of 15-20 mm are much easier to judge than tiny ones.
+- Change one variable at a time when narrowing down — a fine grid that varies both axes widely is
+  hard to interpret.
+- Let the material cool down between consecutive tests on the same piece.
+- Use the same focus distance for every test, including the final job.
 
-### Testing Strategy
+And the usual laser safety rules apply doubly to test grids, which intentionally explore unfamiliar
+territory:
 
-✅ **Test scrap first** - Never test on final material ✅ **One variable at a time** - Test speed OR
-power range, not both extremes ✅ **Allow cooldown** - Wait between tests on same material ✅
-**Consistent focus** - Same focus distance for all tests
-
-### Safety
-
-⚠️ **Monitor tests** - Never leave running tests unattended ⚠️ **Start conservative** - Begin with
-lower power ranges ⚠️ **Check ventilation** - Ensure proper fume extraction ⚠️ **Fire watch** - Have
-fire extinguisher ready
+- Never leave a running test unattended.
+- Start with conservative power ranges and work upward.
+- Make sure fume extraction is working before you start.
+- Keep a fire extinguisher within reach.
 
 ## Troubleshooting
 
-### Test cells execute in wrong order
+**The cells run in a strange order.** That is the risk-optimized execution order described in
+[How the Grid Runs](#how-the-grid-runs) — fastest and weakest combinations first. It is intentional.
 
-- Rayforge uses risk-optimized order (fastest speeds first)
-- This is intentional and cannot be changed
-- See [Execution Order](#execution-order-risk-optimization) above
-
-### Results are inconsistent
-
-- **Check**: Material is flat and properly secured
-- **Check**: Focus is consistent across entire test area
-- **Check**: Laser power is stable (check power supply)
-- **Try**: Smaller grid to reduce test area
+**Results are inconsistent between runs.** Make sure the material lies flat and is secured, that
+focus is identical across the whole grid, and that your power supply delivers stable power. If only
+one region of the grid looks off, the material itself may be uneven.
 
 ## Related Topics
 
 - **[3D Preview](../../ui/3d-preview.md)** - Preview test execution before running
+- **[Recipes](../../application-settings/recipes.md)** - Reuse your test results automatically
 - **[Engrave](engrave)** - Understanding engrave operations
 - **[Contour Cutting](contour)** - Understanding cut operations
