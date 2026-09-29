@@ -64,7 +64,9 @@ PrintAndCutWizard = _load_wizard_class()
 
 @pytest.fixture
 def wizard_stub():
-    return MagicMock()
+    stub = MagicMock()
+    stub._get_pointer_shift.return_value = (0.0, 0.0)
+    return stub
 
 
 @pytest.mark.ui
@@ -116,3 +118,108 @@ def test_record_clicked_with_extra_axis(wizard_stub, pos):
 
     assert wizard_stub._physical_point1 == (1.5, -2.5)
     wizard_stub._pos1_row.set_subtitle.assert_called_once_with("(1.50, -2.50)")
+
+
+@pytest.mark.ui
+@pytest.mark.parametrize(
+    "enabled, offset, expected",
+    [
+        (True, (2.0, -1.0), (2.0, -1.0)),
+        (False, (2.0, -1.0), (0.0, 0.0)),
+    ],
+)
+def test_get_pointer_shift_follows_alignment_state(
+    wizard_stub, enabled, offset, expected
+):
+    wizard_stub._machine.pointer_alignment_enabled = enabled
+    wizard_stub._machine.get_pointer_offset.return_value = offset
+
+    assert PrintAndCutWizard._get_pointer_shift(wizard_stub) == expected
+
+
+@pytest.mark.ui
+def test_get_pointer_shift_without_machine(wizard_stub):
+    wizard_stub._machine = None
+
+    assert PrintAndCutWizard._get_pointer_shift(wizard_stub) == (0.0, 0.0)
+
+
+@pytest.mark.ui
+def test_record_clicked_applies_pointer_shift(wizard_stub):
+    wizard_stub._machine.get_current_position.return_value = (10.0, 20.0, 0.0)
+    wizard_stub._get_pointer_shift.return_value = (2.0, -1.0)
+
+    PrintAndCutWizard._on_record_clicked(wizard_stub, None, 0)
+
+    assert wizard_stub._physical_point1 == (12.0, 19.0)
+    wizard_stub._pos1_row.set_subtitle.assert_called_once_with(
+        "(12.00, 19.00)"
+    )
+
+
+@pytest.mark.ui
+@pytest.mark.parametrize(
+    "point, shift, expected_cmd",
+    [
+        ((12.0, 19.0), (2.0, -1.0), (10.0, 20.0)),
+        ((12.0, 19.0), (0.0, 0.0), (12.0, 19.0)),
+    ],
+)
+def test_goto_clicked_compensates_pointer_shift(
+    wizard_stub, point, shift, expected_cmd
+):
+    wizard_stub._physical_point1 = point
+    wizard_stub._get_pointer_shift.return_value = shift
+
+    PrintAndCutWizard._on_goto_clicked(wizard_stub, None, 0)
+
+    wizard_stub._machine_cmd.move_to.assert_called_once_with(
+        wizard_stub._machine, *expected_cmd
+    )
+
+
+@pytest.mark.ui
+@pytest.mark.parametrize("active", [True, False])
+def test_alignment_toggled_updates_machine(wizard_stub, active):
+    row = MagicMock()
+    row.get_active.return_value = active
+
+    PrintAndCutWizard._on_alignment_toggled(wizard_stub, row, None)
+
+    wizard_stub._machine.set_pointer_alignment.assert_called_once_with(active)
+
+
+@pytest.mark.ui
+def test_update_alignment_row_requires_pointer_offset(wizard_stub):
+    wizard_stub._machine.has_pointer_offset.return_value = False
+
+    PrintAndCutWizard._update_alignment_row(wizard_stub)
+
+    wizard_stub._alignment_row.set_sensitive.assert_called_once_with(False)
+    wizard_stub._sync_alignment_row_state.assert_called_once_with()
+
+
+@pytest.mark.ui
+def test_update_alignment_row_mirrors_machine_state(wizard_stub):
+    wizard_stub._machine.has_pointer_offset.return_value = True
+    wizard_stub._machine.pointer_alignment_enabled = True
+
+    PrintAndCutWizard._update_alignment_row(wizard_stub)
+
+    wizard_stub._alignment_row.set_sensitive.assert_called_once_with(True)
+    wizard_stub._sync_alignment_row_state.assert_called_once_with()
+
+
+@pytest.mark.ui
+def test_sync_alignment_row_state_mirrors_machine(wizard_stub):
+    wizard_stub._machine.pointer_alignment_enabled = True
+
+    PrintAndCutWizard._sync_alignment_row_state(wizard_stub)
+
+    wizard_stub._alignment_row.handler_block.assert_called_once_with(
+        wizard_stub._alignment_handler_id
+    )
+    wizard_stub._alignment_row.set_active.assert_called_once_with(True)
+    wizard_stub._alignment_row.handler_unblock.assert_called_once_with(
+        wizard_stub._alignment_handler_id
+    )
