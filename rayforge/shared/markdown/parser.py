@@ -55,92 +55,139 @@ class MarkdownParser:
         blocks: list[Block] = []
         index = 0
         while index < len(lines):
-            line = lines[index]
-            if not line.strip():
+            if not lines[index].strip():
                 index += 1
                 continue
-
-            fence = _FENCE.match(line)
-            if fence:
-                index += 1
-                content: list[str] = []
-                while index < len(lines) and not _FENCE_END.match(
-                    lines[index]
-                ):
-                    content.append(lines[index])
-                    index += 1
-                if index < len(lines):
-                    index += 1
-                blocks.append(
-                    CodeBlock(
-                        "\n".join(content), fence.group(1).strip() or None
-                    )
-                )
-                continue
-
-            details = _DETAILS_START.match(line)
-            if details:
-                end = self._details_end(lines, index + 1)
-                if end is not None:
-                    blocks.append(
-                        Details(
-                            details.group(1) or "",
-                            tuple(
-                                self._parse_nested(
-                                    lines[index + 1 : end], depth
-                                )
-                            ),
-                        )
-                    )
-                    index = end + 1
-                    continue
-
-            heading = _HEADING.match(line)
-            if heading:
-                blocks.append(
-                    Heading(
-                        len(heading.group(1)),
-                        tuple(parse_inlines(heading.group(2))),
-                    )
-                )
-                index += 1
-                continue
-
-            if line.startswith(">"):
-                quote: list[str] = []
-                while index < len(lines) and lines[index].startswith(">"):
-                    quote.append(lines[index][1:].lstrip())
-                    index += 1
-                blocks.append(
-                    BlockQuote(tuple(self._parse_nested(quote, depth)))
-                )
-                continue
-
-            list_match = _LIST.match(line)
-            if list_match:
-                block, index = self._parse_list(
-                    lines, index, list_match, depth
-                )
-                blocks.append(block)
-                continue
-
-            paragraph: list[str] = [line]
-            index += 1
-            while index < len(lines) and lines[index].strip():
-                if (
-                    _HEADING.match(lines[index])
-                    or _FENCE.match(lines[index])
-                    or _DETAILS_START.match(lines[index])
-                    or lines[index].startswith(">")
-                    or _LIST.match(lines[index])
-                ):
-                    break
-                paragraph.append(lines[index])
-                index += 1
-            blocks.append(
-                Paragraph(tuple(parse_inlines("\n".join(paragraph))))
-            )
+            block, index = self._parse_block(lines, index, depth)
+            blocks.append(block)
         return blocks
+
+    def _parse_block(
+        self, lines: list[str], index: int, depth: int
+    ) -> tuple[Block, int]:
+        """Parse the block starting at *index*.
+
+        Every construct gets its own handler, tried in order until one
+        claims the line. A handler returns the parsed block together with
+        the index of the first line after it, or None when the line does
+        not start that construct (an unclosed details section declines,
+        for example, so its text falls through to the paragraph handler).
+        """
+        for handler in (
+            self._parse_code_block,
+            self._parse_details,
+            self._parse_heading,
+            self._parse_quote,
+            self._parse_list,
+        ):
+            parsed = handler(lines, index, depth)
+            if parsed is not None:
+                return parsed
+        return self._parse_paragraph(lines, index)
+
+    @staticmethod
+    def _parse_code_block(
+        lines: list[str], index: int, _depth: int
+    ) -> tuple[CodeBlock, int] | None:
+        """Parse a fenced code block, tolerating a missing closing fence."""
+        fence = _FENCE.match(lines[index])
+        if not fence:
+            return None
+        content: list[str] = []
+        index += 1
+        while index < len(lines) and not _FENCE_END.match(lines[index]):
+            content.append(lines[index])
+            index += 1
+        if index < len(lines):
+            index += 1
+        language = fence.group(1).strip() or None
+        return CodeBlock("\n".join(content), language), index
+
+    def _parse_details(
+        self, lines: list[str], index: int, depth: int
+    ) -> tuple[Details, int] | None:
+        start = _DETAILS_START.match(lines[index])
+        if not start:
+            return None
+        end = self._details_end(lines, index + 1)
+        if end is None:
+            return None
+        blocks = tuple(self._parse_nested(lines[index + 1 : end], depth))
+        return Details(start.group(1) or "", blocks), end + 1
+
+    @staticmethod
+    def _parse_heading(
+        lines: list[str], index: int, _depth: int
+    ) -> tuple[Heading, int] | None:
+        heading = _HEADING.match(lines[index])
+        if not heading:
+            return None
+        inlines = tuple(parse_inlines(heading.group(2)))
+        return Heading(len(heading.group(1)), inlines), index + 1
+
+    def _parse_quote(
+        self, lines: list[str], index: int, depth: int
+    ) -> tuple[BlockQuote, int] | None:
+        """Collect consecutive quoted lines into one nested block."""
+        if not lines[index].startswith(">"):
+            return None
+        quoted: list[str] = []
+        while index < len(lines) and lines[index].startswith(">"):
+            quoted.append(lines[index][1:].lstrip())
+            index += 1
+        return BlockQuote(tuple(self._parse_nested(quoted, depth))), index
+
+    def _parse_list(
+        self, lines: list[str], index: int, depth: int
+    ) -> tuple[ListBlock, int] | None:
+        """Collect consecutive items of one list kind into a block."""
+        first = _LIST.match(lines[index])
+        if not first:
+            return None
+        ordered = first.group(3) is not None
+        items: list[ListItem] = []
+        while index < len(lines):
+            match = _LIST.match(lines[index])
+            if not match or (match.group(3) is not None) != ordered:
+                break
+            item_lines = [match.group(2) or match.group(4) or ""]
+            index += 1
+            while (
+                index < len(lines)
+                and lines[index].startswith(("  ", "\t"))
+                and lines[index].strip()
+            ):
+                item_lines.append(lines[index].lstrip())
+                index += 1
+            items.append(
+                ListItem(tuple(self._parse_nested(item_lines, depth)))
+            )
+        return ListBlock(ordered, tuple(items)), index
+
+    @staticmethod
+    def _starts_block(line: str) -> bool:
+        """Whether *line* starts a new block and so ends a paragraph."""
+        return bool(
+            _HEADING.match(line)
+            or _FENCE.match(line)
+            or _DETAILS_START.match(line)
+            or line.startswith(">")
+            or _LIST.match(line)
+        )
+
+    def _parse_paragraph(
+        self, lines: list[str], index: int
+    ) -> tuple[Paragraph, int]:
+        """Collect lines until a blank line or the start of another block."""
+        paragraph = [lines[index]]
+        index += 1
+        while index < len(lines):
+            line = lines[index]
+            if not line.strip() or self._starts_block(line):
+                break
+            paragraph.append(line)
+            index += 1
+        return Paragraph(tuple(parse_inlines("\n".join(paragraph)))), index
 
     def _parse_nested(self, lines: list[str], depth: int) -> list[Block]:
         """Parse nested lines, keeping them literal past the depth limit.
@@ -171,34 +218,6 @@ class MarkdownParser:
             elif line == _DETAILS_END:
                 return index
         return None
-
-    def _parse_list(
-        self,
-        lines: list[str],
-        start: int,
-        first_match: re.Match[str],
-        depth: int = 0,
-    ) -> tuple[ListBlock, int]:
-        ordered = first_match.group(3) is not None
-        items: list[ListItem] = []
-        index = start
-        while index < len(lines):
-            match = _LIST.match(lines[index])
-            if not match or (match.group(3) is not None) != ordered:
-                break
-            item_lines = [match.group(2) or match.group(4) or ""]
-            index += 1
-            while (
-                index < len(lines)
-                and lines[index].startswith(("  ", "\t"))
-                and lines[index].strip()
-            ):
-                item_lines.append(lines[index].lstrip())
-                index += 1
-            items.append(
-                ListItem(tuple(self._parse_nested(item_lines, depth)))
-            )
-        return ListBlock(ordered, tuple(items)), index
 
 
 def parse(source: str) -> Document:

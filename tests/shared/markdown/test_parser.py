@@ -8,6 +8,8 @@ from rayforge.shared.markdown import (
     LineBreak,
     Link,
     ListBlock,
+    ListItem,
+    MarkdownParser,
     Paragraph,
     Strong,
     Text,
@@ -168,3 +170,72 @@ def test_excessive_nesting_stays_literal_instead_of_recursing():
         for inline in getattr(block, "children", ()):
             text += getattr(inline, "value", "")
     assert "deep" in text
+
+
+def test_block_handlers_report_where_parsing_continues():
+    parser = MarkdownParser()
+    lines = ["# Title", "", "text"]
+
+    assert parser._parse_heading(lines, 0, 0) == (
+        Heading(1, (Text("Title"),)),
+        1,
+    )
+    assert parser._parse_paragraph(lines, 2) == (
+        Paragraph((Text("text"),)),
+        3,
+    )
+
+
+def test_code_block_handler_tolerates_a_missing_closing_fence():
+    parser = MarkdownParser()
+
+    assert parser._parse_code_block(["```python", "code"], 0, 0) == (
+        CodeBlock("code", "python"),
+        2,
+    )
+    assert parser._parse_code_block(["```", "a", "```", "b"], 0, 0) == (
+        CodeBlock("a", None),
+        3,
+    )
+
+
+def test_details_handler_declines_unmatched_and_unclosed_directives():
+    parser = MarkdownParser()
+
+    assert parser._parse_details([":::note Not ours"], 0, 0) is None
+    assert parser._parse_details([":::details Unclosed"], 0, 0) is None
+    assert parser._parse_details(
+        [":::details T", "content", ":::enddetails"], 0, 0
+    ) == (
+        Details("T", (Paragraph((Text("content"),)),)),
+        3,
+    )
+
+
+def test_list_handler_stops_at_the_other_list_kind():
+    parser = MarkdownParser()
+
+    assert parser._parse_list(["plain"], 0, 0) is None
+    assert parser._parse_list(["- one", "1. two", "- three"], 0, 0) == (
+        ListBlock(False, (ListItem((Paragraph((Text("one"),)),)),)),
+        1,
+    )
+    assert parser._parse_list(["1. one", "2. two"], 0, 0) == (
+        ListBlock(
+            True,
+            (
+                ListItem((Paragraph((Text("one"),)),)),
+                ListItem((Paragraph((Text("two"),)),)),
+            ),
+        ),
+        2,
+    )
+
+
+def test_starts_block_covers_every_construct():
+    parser = MarkdownParser()
+    starting = ("# h", "```", ":::details T", "> quote", "- item", "1. item")
+    continuing = ("plain text", "  indented", ":::note")
+
+    assert all(parser._starts_block(line) for line in starting)
+    assert not any(parser._starts_block(line) for line in continuing)
