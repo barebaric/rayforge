@@ -2720,6 +2720,20 @@ class TestPowerFloorSetup:
         assert ipb_var.min_val == 0.0
         assert ipb_var.max_val == 100.0
 
+    def test_power_floor_enabled_var_present_with_driver_defaults(
+        self, isolated_context, isolated_machine
+    ):
+        """get_setup_vars must expose a power_floor_enabled var."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        varset = adapter.get_setup_vars()
+        pfe_var = varset.get("power_floor_enabled")
+        assert pfe_var is not None
+        assert isinstance(pfe_var, BoolVar)
+        assert pfe_var.default is False
+
+        keys = [var.key for var in varset]
+        assert keys.index("power_floor_enabled") < keys.index("power_floor")
+
     def test_power_scaling_enabled_var_present_with_driver_defaults(
         self, isolated_context, isolated_machine
     ):

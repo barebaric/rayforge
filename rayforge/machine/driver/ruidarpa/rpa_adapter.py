@@ -294,12 +294,24 @@ class RuidaRPAAdapter(Driver):
                     ),
                     default=True,
                 ),
+                BoolVar(
+                    key="power_floor_enabled",
+                    label=_("Enable VECTOR power floor"),
+                    description=_(
+                        "When disabled, the emitted power range always "
+                        "has min == max (constant power). When enabled, "
+                        "the VECTOR power floor value below acts as the "
+                        "minimum power for VECTOR cut compensation."
+                    ),
+                    default=False,
+                ),
                 FloatVar(
                     key="power_floor",
                     label=_("VECTOR power floor"),
                     description=_(
                         "Minimum power percentage for VECTOR cut "
-                        "compensation (e.g. 8 = 8%)."
+                        "compensation (e.g. 8 = 8%). Applies only when "
+                        "the VECTOR power floor toggle is enabled."
                     ),
                     default=DEFAULT_POWER_FLOOR,
                     min_val=0.0,

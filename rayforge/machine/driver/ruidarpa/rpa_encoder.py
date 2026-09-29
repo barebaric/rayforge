@@ -48,7 +48,7 @@ _DEFAULT_LAYER_FREQUENCY_HZ = _DEFAULT_LAYER_FREQUENCY_KHZ * 1000
 _DEFAULT_LAYER_POWER = 0.2  # fraction, i.e. 20%
 _DEFAULT_JOB_LABEL = "Rayforge Job"
 _DEFAULT_LAYER_COLOR = "#00ccff"
-DEFAULT_POWER_FLOOR = 100.0  # percent, i.e. 100%
+DEFAULT_POWER_FLOOR = 8.0  # percent, i.e. 8%
 DEFAULT_IMAGE_POWER_BIAS = 8.0  # percent, i.e. 8%
 
 
@@ -133,7 +133,9 @@ class RuidaRPAEncoder(OpsEncoder):
         self._power_min_fraction: float = 0.0
         self._emitted_min_fraction: float = 0.0
         self._power_floor: float = DEFAULT_POWER_FLOOR / 100.0
+        self._power_floor_enabled: bool = False
         self._image_power_bias: float = DEFAULT_IMAGE_POWER_BIAS / 100.0
+        self._power_scaling_enabled_arg: bool = True
         self._snapshot_len: int = 0
         self._op_count: int = 0
         self._op_contributions: dict[int, list[tuple[int, int]]] = {}
@@ -180,10 +182,16 @@ class RuidaRPAEncoder(OpsEncoder):
         driver_args = machine.driver_args if machine is not None else {}
         raw_floor = driver_args.get("power_floor", DEFAULT_POWER_FLOOR)
         self._power_floor = min(max(float(raw_floor), 0.0), 100.0) / 100.0
+        self._power_floor_enabled = bool(
+            driver_args.get("power_floor_enabled", False)
+        )
         raw_bias = driver_args.get(
             "image_power_bias", DEFAULT_IMAGE_POWER_BIAS
         )
         self._image_power_bias = min(max(float(raw_bias), 0.0), 100.0) / 100.0
+        self._power_scaling_enabled_arg = bool(
+            driver_args.get("power_scaling_enabled", True)
+        )
         self.op_map = MachineCodeOpMap()
         self._op_count = ops.len()
         if self._gluescript is None:
@@ -392,13 +400,17 @@ class RuidaRPAEncoder(OpsEncoder):
     def _layer_min_power_fraction(self, layer: Layer | None) -> float:
         """Resolve the layer's min-power fraction for power compensation.
 
-        Reads the first workflow step's min_power attribute when the
-        step declares one, falling back from step.extra to layer.extra
-        and defaulting to the configured power floor (default 100%).
-        The raw value is clamped once at this boundary so a min below
-        the floor or above 100% never reaches GlueScript as a lower
-        power bound.
+        When the driver's ``power_floor_enabled`` toggle is off, the
+        floor is ignored and 1.0 is returned so every emitted power
+        range keeps min == max (constant power). When enabled, reads the
+        first workflow step's min_power attribute when the step declares
+        one, falling back from step.extra to layer.extra and defaulting
+        to the configured power floor. The raw value is clamped once at
+        this boundary so a min below the floor or above 100% never
+        reaches GlueScript as a lower power bound.
         """
+        if not self._power_floor_enabled:
+            return 1.0
         min_fraction = self._power_floor
         if (
             layer is not None
@@ -513,11 +525,14 @@ class RuidaRPAEncoder(OpsEncoder):
             elif sub_ct == CommandType.SET_POWER:
                 power = sub_ops.power(j)
                 if power > 0.0:
-                    bias = (
-                        self._power_floor
-                        if self._layer_mode == "VECTOR"
-                        else self._image_power_bias
-                    )
+                    if self._layer_mode == "VECTOR":
+                        bias = (
+                            self._power_floor
+                            if self._power_floor_enabled
+                            else 0.0
+                        )
+                    else:
+                        bias = self._image_power_bias
                     self._emit_power(min(power + bias, 1.0))
                 else:
                     self._emit_power(0.0)
@@ -557,7 +572,14 @@ class RuidaRPAEncoder(OpsEncoder):
         emitted minimum rises as the layer's cut speed decreases;
         CONSTANT (fixed power) disables it so the resolved minimum is
         emitted unchanged.
+
+        When the driver's ``power_scaling_enabled`` toggle is off, the
+        SET_POWER_MODE op is ignored and CONSTANT is forced: scaling is
+        always disabled regardless of the op's PowerMode.
         """
+        if not self._power_scaling_enabled_arg:
+            self._gluescript.set_power_scaling_enabled(False)
+            return
         self._gluescript.set_power_scaling_enabled(
             ops.power_mode(idx) == PowerMode.DYNAMIC
         )
