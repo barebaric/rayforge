@@ -107,6 +107,23 @@ def _unwrap_mm(value: object) -> float | None:
     return None
 
 
+def _merged_machine_pos(
+    current: Pos,
+    pos_x: float | None,
+    pos_y: float | None,
+    pos_z: float | None,
+) -> tuple[float, float, float]:
+    """Merge a partial position update onto the last known position.
+
+    ``None`` axes keep the current value; axes never reported before
+    (``None`` in ``current``) become 0.0 so the result is complete.
+    """
+    new_x = (current[0] or 0.0) if pos_x is None else pos_x
+    new_y = (current[1] or 0.0) if pos_y is None else pos_y
+    new_z = (current[2] or 0.0) if pos_z is None else pos_z
+    return (new_x, new_y, new_z)
+
+
 class RuidaUsbDeviceVar(SerialPortVar):
     """SerialPortVar whose value is optional (UDP mode needs no USB)."""
 
@@ -716,77 +733,85 @@ class RuidaRPAAdapter(Driver):
         if isinstance(event, RdStatusEvent):
             event = event.value
         if isinstance(event, str):
-            if event == "CONNECTED" and not self._is_connected:
-                self._set_connected(True, "RPA connected")
-            elif (
-                event in ("DISCONNECTED", "TERMINATED") and self._is_connected
-            ):
-                self._set_connected(False, "RPA disconnected")
+            self._handle_connection_status(event)
         elif isinstance(event, dict):
             # StatusDict or RPyC netref — convert to local dict for reliable
             # type handling
-            event = {k: event[k] for k in event}
-            new_status = self._map_machine_status_to_device_status(event)
-            if new_status != self.state.status:
-                self.state = replace(self.state, status=new_status)
-                self.state_changed.send(self, state=self.state)
+            self._handle_machine_status({k: event[k] for k in event})
 
-            # Extract current position (values in mm)
-            # POSITION_* values are (float_mm, str_description)
-            pos_x = _unwrap_mm(event.get("POSITION_X"))
-            pos_y = _unwrap_mm(event.get("POSITION_Y"))
-            pos_z = _unwrap_mm(event.get("POSITION_Z"))
+    def _handle_connection_status(self, event: str) -> None:
+        """Apply a connection lifecycle event to the adapter state."""
+        if event == "CONNECTED" and not self._is_connected:
+            self._set_connected(True, "RPA connected")
+        elif event in ("DISCONNECTED", "TERMINATED") and self._is_connected:
+            self._set_connected(False, "RPA disconnected")
 
-            if any(v is not None for v in (pos_x, pos_y, pos_z)):
-                current = self.state.machine_pos
-                new_x = (current[0] or 0.0) if pos_x is None else pos_x
-                new_y = (current[1] or 0.0) if pos_y is None else pos_y
-                new_z = (current[2] or 0.0) if pos_z is None else pos_z
-                new_pos = (new_x, new_y, new_z)
+    def _handle_machine_status(self, event: dict[str, Any]) -> None:
+        """Apply a machine status event: flags, position, identity info."""
+        new_status = self._map_machine_status_to_device_status(event)
+        if new_status != self.state.status:
+            self.state = replace(self.state, status=new_status)
+            self.state_changed.send(self, state=self.state)
 
-                if new_pos != current:
-                    self.state = replace(self.state, machine_pos=new_pos)
-                    logger.debug(
-                        "RPA position update: x=%.3f y=%.3f z=%.3f",
-                        new_x,
-                        new_y,
-                        new_z,
-                        extra=self._log_extra(
-                            "TUI_RPC" if self._tui_mode else "RPA"
-                        ),
-                    )
-                    self.state_changed.send(self, state=self.state)
+        self._update_machine_pos(event)
+        self._log_controller_info(event)
 
-            # Log controller identity / bed-size events. StatusDict only
-            # carries keys that changed, so these are rare (card swap,
-            # (re)connect). Values arrive as (value, str_description) tuples.
-            card_id = event.get("CARD_ID")
-            if card_id is not None:
-                if isinstance(card_id, (list, tuple)):
-                    card_id_val = card_id[0]
-                    card_id_desc = card_id[1]
-                else:
-                    card_id_val = card_id
-                    card_id_desc = ""
-                logger.info(
-                    "CARD_ID=0x%08X:%s",
-                    card_id_val,
-                    card_id_desc,
-                    extra=self._log_extra(
-                        "TUI_RPC" if self._tui_mode else "RPA"
-                    ),
-                )
-            bed_size_x = _unwrap_mm(event.get("BED_SIZE_X"))
-            bed_size_y = _unwrap_mm(event.get("BED_SIZE_Y"))
-            if bed_size_x is not None or bed_size_y is not None:
-                logger.info(
-                    "RPA controller info: bed_size_x=%s bed_size_y=%s",
-                    bed_size_x,
-                    bed_size_y,
-                    extra=self._log_extra(
-                        "TUI_RPC" if self._tui_mode else "RPA"
-                    ),
-                )
+    def _update_machine_pos(self, event: dict[str, Any]) -> None:
+        """Merge a partial position update into ``state.machine_pos``.
+
+        POSITION_* values are (float_mm, str_description) tuples in mm.
+        """
+        pos = (
+            _unwrap_mm(event.get("POSITION_X")),
+            _unwrap_mm(event.get("POSITION_Y")),
+            _unwrap_mm(event.get("POSITION_Z")),
+        )
+        if all(v is None for v in pos):
+            return
+        current = self.state.machine_pos
+        new_pos = _merged_machine_pos(current, *pos)
+        if new_pos == current:
+            return
+        self.state = replace(self.state, machine_pos=new_pos)
+        logger.debug(
+            "RPA position update: x=%.3f y=%.3f z=%.3f",
+            new_pos[0],
+            new_pos[1],
+            new_pos[2],
+            extra=self._log_extra("TUI_RPC" if self._tui_mode else "RPA"),
+        )
+        self.state_changed.send(self, state=self.state)
+
+    def _log_controller_info(self, event: dict[str, Any]) -> None:
+        """Log controller identity / bed-size events.
+
+        StatusDict only carries keys that changed, so these are rare (card
+        swap, (re)connect). Values arrive as (value, str_description)
+        tuples.
+        """
+        card_id = event.get("CARD_ID")
+        if card_id is not None:
+            if isinstance(card_id, (list, tuple)):
+                card_id_val = card_id[0]
+                card_id_desc = card_id[1]
+            else:
+                card_id_val = card_id
+                card_id_desc = ""
+            logger.info(
+                "CARD_ID=0x%08X:%s",
+                card_id_val,
+                card_id_desc,
+                extra=self._log_extra("TUI_RPC" if self._tui_mode else "RPA"),
+            )
+        bed_size_x = _unwrap_mm(event.get("BED_SIZE_X"))
+        bed_size_y = _unwrap_mm(event.get("BED_SIZE_Y"))
+        if bed_size_x is not None or bed_size_y is not None:
+            logger.info(
+                "RPA controller info: bed_size_x=%s bed_size_y=%s",
+                bed_size_x,
+                bed_size_y,
+                extra=self._log_extra("TUI_RPC" if self._tui_mode else "RPA"),
+            )
 
     def _on_rpa_error(self, msg: str) -> None:
         """Handle error events from the Ruida controller."""

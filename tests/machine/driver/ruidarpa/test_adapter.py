@@ -51,6 +51,7 @@ from rayforge.machine.driver.ruidarpa.rpa_adapter import (
     DEFAULT_MAX_TRAVEL_SPEED_MMPM,
     DEFAULT_RPC_TIMEOUT_S,
     RuidaRPAAdapter,
+    _merged_machine_pos,
     _unwrap_mm,
 )
 from rayforge.machine.driver.ruidarpa.rpa_direct_driver import (
@@ -1199,6 +1200,38 @@ class TestStatusMmFix:
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_partial_position_backfills_unreported_axes(
+        self, adapter_pair
+    ):
+        """Axes never reported must become 0.0, not None."""
+        adapter, _backend = adapter_pair
+        adapter._on_rpa_status({"POSITION_Z": (7.5, "Z")})
+        assert adapter.state.machine_pos == (0.0, 0.0, 7.5)
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_repeated_position_does_not_re_emit(self, adapter_pair):
+        """An identical position must not re-emit state_changed."""
+        adapter, _backend = adapter_pair
+        state_mock = Mock()
+        adapter.state_changed.send = state_mock
+        adapter._on_rpa_status({"POSITION_X": (1.0, "X")})
+        state_mock.reset_mock()
+        adapter._on_rpa_status({"POSITION_X": (1.0, "X")})
+        state_mock.assert_not_called()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
         "adapter_pair", [RPC_MODE], ids=["rpc"], indirect=True
     )
     async def test_machine_status_dict_accepted(self, adapter_pair):
@@ -1221,6 +1254,30 @@ class TestStatusMmFix:
     def test_unwrap_mm_plain_value_passes_through(self):
         """_unwrap_mm must pass bare floats through unchanged."""
         assert _unwrap_mm(12.5) == 12.5
+
+    def test_merged_machine_pos_full_update_replaces_all_axes(self):
+        """A complete update must replace every axis."""
+        assert _merged_machine_pos((1.0, 2.0, 3.0), 4.0, 5.0, 6.0) == (
+            4.0,
+            5.0,
+            6.0,
+        )
+
+    def test_merged_machine_pos_keeps_unspecified_axes(self):
+        """None axes in the update must keep the current values."""
+        assert _merged_machine_pos((1.0, 2.0, 3.0), None, 5.0, None) == (
+            1.0,
+            5.0,
+            3.0,
+        )
+
+    def test_merged_machine_pos_backfills_unreported_axes(self):
+        """Axes never reported (None in current) must become 0.0."""
+        assert _merged_machine_pos((None, None, None), None, 5.0, None) == (
+            0.0,
+            5.0,
+            0.0,
+        )
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
