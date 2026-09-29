@@ -17,6 +17,7 @@ from ....machine.driver import get_driver_cls
 from ....machine.models.machine import Origin
 from ....machine.models.machine_panel import PanelOrientation
 from ....shared.units.system import UnitSystem
+from ...shared.markdown import MarkdownView
 from . import WizardPage, _makePreferencesGroup
 
 
@@ -129,10 +130,28 @@ class ReviewPage(WizardPage):
         self.content.append(self.warnings_group)
         self._warning_rows: list[Adw.ActionRow] = []
 
+        # Notes sit last and render at their natural height: the page
+        # is already inside a scroller, so a nested one would trap the
+        # notes in a small viewport of their own.
+        self.setup_notes_group = _makePreferencesGroup(
+            title=_("Notes"),
+            description=_(
+                "These notes remain available after setup in "
+                "Machine Settings → Notes."
+            ),
+        )
+        self.setup_notes_group.set_visible(False)
+        self.content.append(self.setup_notes_group)
+        self.setup_notes_view = MarkdownView()
+        self.setup_notes_group.add(self.setup_notes_view)
+
         self.set_ready(True)
 
     def enter(self, profile: DeviceProfile) -> None:
         self.name_row.set_text(_prefill_name(profile))
+        notes = profile.meta.notes or ""
+        self.setup_notes_view.set_text(notes)
+        self.setup_notes_group.set_visible(bool(notes.strip()))
         self._populate_summary(profile)
         self._populate_warnings(profile)
 

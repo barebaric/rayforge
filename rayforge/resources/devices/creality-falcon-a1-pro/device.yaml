@@ -4,6 +4,69 @@ device:
   vendor: Creality
   model: Falcon A1 Pro
   description: Diode laser engraver with 363x273mm work area and rotary support
+  notes: |
+    # Camera setup
+
+    In **Machine Settings → Camera**, configure a **HTTP snapshot** camera source
+    with this URL:
+
+    `http://<laser-ip>:8080/media/getCapturePhoto`
+
+    Replace `<laser-ip>` with the laser's IPv4 address on its USB-exposed
+    network interface or its LAN/Wi-Fi network. The snapshot is requested
+    directly over the local network; a Creality cloud connection is not
+    required.
+
+    After entering the **Source URL**, turn on the **Enabled** switch and run
+    the **Camera Wizard** once to calibrate the camera. The wizard guides you
+    through the image settings, the lens calibration, and the alignment of the
+    camera image with the work area. Without this first-time calibration the
+    camera image cannot be placed correctly on the work surface.
+
+    :::details Linux: Find the USB-network address
+    1. In a terminal, run `ip -br address` before connecting the laser to list active interfaces.
+    2. Connect the laser via USB, power it on, wait a few seconds, and run `ip -br address` again.
+    3. Identify the newly added interface (e.g., `enx1a5589a26942`, `usb0`, or `eth1`) and note your PC's IP range (e.g., `192.168.10.x`).
+    4. Find the laser's IP in the ARP neighbor table for that interface:
+       ```bash
+       ip neighbor show dev <interface_name>
+       ```
+    5. If the ARP cache returns no results, the laser typically uses the `.1` address of that network range (e.g., `192.168.10.1`).
+    :::enddetails
+
+    :::details Windows: Find the USB-network address
+    1. Open Command Prompt or PowerShell and run `ipconfig /all` before connecting the laser to view existing network adapters.
+    2. Connect the laser via USB, power it on, wait a few seconds, and run `ipconfig /all` again.
+    3. Locate the newly added adapter (usually named "Ethernet 2" or "Remote NDIS Compatible Device").
+    4. Read the IP address listed next to **DHCP Server** or **DNS Servers** (e.g., `192.168.10.1`). That is the laser cutter's IP address.
+    5. Alternatively, run `arp -a` and look for the dynamic entry listed under the new interface section, or try the `.1` address of that network range.
+    :::enddetails
+
+    :::details macOS: Use Wi-Fi instead of USB
+    The USB network connection does **not** work on macOS. Use the Wi-Fi
+    method described below instead.
+
+    The laser exposes its USB network interface using **RNDIS**, a Microsoft
+    protocol. Windows and Linux ship drivers for it, but macOS does not: it
+    only supports the CDC-ECM and CDC-NCM USB networking standards, and the
+    laser does not offer either of those. No network interface will appear
+    when the laser is connected over USB.
+
+    The third-party HoRNDIS driver that used to add RNDIS support is
+    unmaintained, its author advises against installing it, and it does not
+    work on current macOS releases or Apple Silicon Macs. It is not
+    recommended.
+
+    The Wi-Fi method needs no driver and works on every platform.
+    :::enddetails
+
+    :::details Wi-Fi: Use the laser's LAN address
+    Note: On Windows and Linux a direct USB network connection is preferred over Wi-Fi as it provides a faster, lower-latency connection for live camera streams and data transfer. On macOS, Wi-Fi is the only option.
+
+    If using Wi-Fi, use the IPv4 address currently assigned to the laser on your LAN/Wi-Fi network. Make sure the computer running Rayforge can reach that address.
+
+    To find the IP address on the device: use the touch screen, go to settings (the bolt icon), choose the "WLAN" tab, and find your wifi access point name. It should show the IP address below the access point name once connected.
+    :::enddetails
 machine:
   driver: GrblSerialDriver
   driver_args:

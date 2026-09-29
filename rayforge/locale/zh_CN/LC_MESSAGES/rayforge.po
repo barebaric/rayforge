@@ -9625,3 +9625,204 @@ msgstr "Bayer 4"
 #: rayforge/image/dither.py
 msgid "Bayer 8"
 msgstr "Bayer 8"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "Device Notes"
+msgstr "设备备注"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "Notes"
+msgstr "备注"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "My Notes"
+msgstr "我的备注"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "Add your own notes for this machine"
+msgstr "为此机器添加个人备注"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "Edit My Notes"
+msgstr "编辑我的备注"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid ""
+"These notes are stored with this machine and are never overwritten by device "
+"profile updates."
+msgstr "这些备注随此机器一起保存，设备配置文件更新绝不会覆盖它们。"
+
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "These notes remain available after setup in Machine Settings → Notes."
+msgstr "完成设置后，仍可在“机器设置 → 备注”中查看这些说明。"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid ""
+"Supported: headings, paragraphs, bold, italic, lists, links, inline code, "
+"fenced code blocks, and expandable details sections."
+msgstr ""
+"支持标题、段落、粗体、斜体、列表、链接、行内代码、代码块以及可展开的详细信息"
+"部分。"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Bold and italic"
+msgstr "粗体和斜体"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Wrap words in two stars for bold, or one star for italic."
+msgstr "用两个星号包围文字表示粗体，用一个星号表示斜体。"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Headings"
+msgstr "标题"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Start a line with number signs. More signs, smaller heading."
+msgstr "以井号开头一行。井号越多，标题越小。"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Lists"
+msgstr "列表"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid ""
+"Start lines with a dash for bullets, or with a number and a dot for a "
+"numbered list."
+msgstr "以短横线开头表示项目符号，或以数字加点开头表示编号列表。"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Links"
+msgstr "链接"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Put the link text in square brackets and the address in round brackets."
+msgstr "把链接文字放在方括号里，把地址放在圆括号里。"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Inline code"
+msgstr "行内代码"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Wrap short commands in single backticks to keep them readable."
+msgstr "用单个反引号包围简短命令，使其保持易读。"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Quotes"
+msgstr "引用"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Start a line with a greater-than sign to call out a remark."
+msgstr "以大于号开头一行，用来突出一条提示。"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Expandable sections"
+msgstr "可展开区域"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Hide long details behind a title that readers can unfold."
+msgstr "把冗长的细节藏在标题后面，读者可以自行展开。"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Formatting help"
+msgstr "格式帮助"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Type the text shown below to get the matching result."
+msgstr "输入下面显示的文字即可得到对应的效果。"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Code blocks"
+msgstr "代码块"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid ""
+"Put a line with three backticks before and after a block of commands to show "
+"it unchanged."
+msgstr "在命令块前后各放一行三个反引号，即可原样显示该代码块。"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Show formatting help"
+msgstr "显示格式帮助"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Bold"
+msgstr "粗体"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "bold text"
+msgstr "粗体文字"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Italic"
+msgstr "斜体"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "italic"
+msgstr "斜体"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Heading"
+msgstr "标题"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Bulleted list"
+msgstr "项目符号列表"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "List item"
+msgstr "列表项"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Numbered list"
+msgstr "编号列表"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "First step"
+msgstr "第一步"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "link text"
+msgstr "链接文字"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "command"
+msgstr "命令"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Code block"
+msgstr "代码块"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Quote"
+msgstr "引用"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Remark"
+msgstr "提示"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Expandable section"
+msgstr "可展开区域"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Section title"
+msgstr "区域标题"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Hidden details"
+msgstr "隐藏的细节"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Side by side"
+msgstr "并排"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Stacked"
+msgstr "上下排列"
+
+#: rayforge/ui_gtk/shared/markdown.py
+msgid "Raw Markdown"
+msgstr "Markdown 源文"

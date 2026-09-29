@@ -37,6 +37,19 @@ Alternativement :
 Cliquez sur l'icône de modification à côté d'une machine pour ouvrir le
 [dialogue de paramètres de machine](../machine/general.md).
 
+## Notes de la machine
+
+La catégorie **Notes**, juste après **General**, regroupe les conseils du profil de l'appareil et
+vos propres notes pour cette machine. Les notes de l'appareil sont en lecture seule ; **My Notes**
+peuvent être modifiées en Markdown. La syntaxe prise en charge comprend les titres, les paragraphes,
+le gras, l'italique, les listes, les liens, le code en ligne, les blocs de code et les sections
+dépliables avec `:::details`.
+
+Lorsqu'un profil fournit des instructions de configuration, elles apparaissent également sur la
+dernière page **Review & Name** de l'assistant et restent disponibles dans **Machine Settings →
+Notes** après la création de la machine. Les notes personnelles sont enregistrées par machine et ne
+sont pas remplacées lors de l'examen des mises à jour du profil.
+
 ## Changer la Machine Active
 
 Utilisez le menu déroulant des machines dans l'en-tête de la fenêtre principale pour basculer entre

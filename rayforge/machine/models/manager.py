@@ -14,6 +14,7 @@ from ..device.profile_diff import (
     SettingDiff,
     find_outdated_profiles,
     split_reviewable,
+    sync_device_notes_from_profile,
 )
 from ..device.schema_migration import (
     CURRENT_SCHEMA_VERSION,
@@ -280,6 +281,9 @@ class MachineManager:
         profile changed since the machine's last review and has at
         least one reviewable setting difference.
 
+        Profile-maintained device notes are synced silently first, so a
+        documentation-only profile change never raises a dialog.
+
         Pairs whose profile changed but where the machine already
         matches (no diff) are silently marked reviewed so they do not
         re-trigger. The manager owns the profile lookup and the
@@ -291,6 +295,9 @@ class MachineManager:
             p.id: p for p in context.device_profile_mgr.get_all()
         }
         outdated = find_outdated_profiles(self.get_machines(), profiles_by_id)
+        for machine, profile in outdated:
+            if sync_device_notes_from_profile(machine, profile):
+                machine.changed.send(machine)
         reviewable, nothing_to_do = split_reviewable(outdated)
         for machine, profile in nothing_to_do:
             machine.reviewed_profile_hash = profile.content_hash()
