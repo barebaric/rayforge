@@ -757,6 +757,37 @@ class RuidaRPAAdapter(Driver):
                     )
                     self.state_changed.send(self, state=self.state)
 
+            # Log controller identity / bed-size events. StatusDict only
+            # carries keys that changed, so these are rare (card swap,
+            # (re)connect). Values arrive as (value, str_description) tuples.
+            card_id = event.get("CARD_ID")
+            if card_id is not None:
+                if isinstance(card_id, (list, tuple)):
+                    card_id_val = card_id[0]
+                    card_id_desc = card_id[1]
+                else:
+                    card_id_val = card_id
+                    card_id_desc = ""
+                logger.info(
+                    "CARD_ID=0x%08X:%s",
+                    card_id_val,
+                    card_id_desc,
+                    extra=self._log_extra(
+                        "TUI_RPC" if self._tui_mode else "RPA"
+                    ),
+                )
+            bed_size_x = _unwrap_mm(event.get("BED_SIZE_X"))
+            bed_size_y = _unwrap_mm(event.get("BED_SIZE_Y"))
+            if bed_size_x is not None or bed_size_y is not None:
+                logger.info(
+                    "RPA controller info: bed_size_x=%s bed_size_y=%s",
+                    bed_size_x,
+                    bed_size_y,
+                    extra=self._log_extra(
+                        "TUI_RPC" if self._tui_mode else "RPA"
+                    ),
+                )
+
     def _on_rpa_error(self, msg: str) -> None:
         """Handle error events from the Ruida controller."""
         if self._shutting_down:

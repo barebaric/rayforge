@@ -1416,6 +1416,62 @@ class TestStatusMmFix:
         adapter._on_rpa_status({})
         assert adapter.state.status == DeviceStatus.IDLE
 
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_controller_info_events_are_logged(
+        self, adapter_pair, caplog
+    ):
+        """CARD_ID and BED_SIZE_* events must log separately at info level."""
+        caplog.set_level(logging.INFO, logger=rpa_adapter.logger.name)
+        adapter, _backend = adapter_pair
+        adapter._on_rpa_status(
+            {
+                "CARD_ID": (12345, "12345"),
+                "BED_SIZE_X": (900.0, "900"),
+                "BED_SIZE_Y": (600.0, "600"),
+            }
+        )
+        info_records = [r for r in caplog.records if r.levelno == logging.INFO]
+        assert len(info_records) == 2
+        messages = [r.message for r in info_records]
+        assert any("CARD_ID=0x00003039:12345" in m for m in messages)
+        assert any(
+            "RPA controller info" in m
+            and "bed_size_x=900.0" in m
+            and "bed_size_y=600.0" in m
+            for m in messages
+        )
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_position_event_does_not_log_controller_info(
+        self, adapter_pair, caplog
+    ):
+        """A position-only event must not log controller info."""
+        caplog.set_level(logging.INFO, logger=rpa_adapter.logger.name)
+        adapter, _backend = adapter_pair
+        adapter._on_rpa_status(
+            {
+                "POSITION_X": (123.456, "X"),
+                "POSITION_Y": (45.678, "Y"),
+                "POSITION_Z": (7.89, "Z"),
+            }
+        )
+        assert not any(
+            "RPA controller info" in r.message or "CARD_ID=" in r.message
+            for r in caplog.records
+        )
+
 
 class TestSetHoldStatusTransitions:
     """set_hold must update DeviceStatus and emit only on change."""
