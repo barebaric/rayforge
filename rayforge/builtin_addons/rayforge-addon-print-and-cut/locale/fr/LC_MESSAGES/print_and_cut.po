@@ -111,7 +111,7 @@ msgstr "Laser de focalisation"
 
 #: print_and_cut/wizard.py
 msgid "Pointer Alignment"
-msgstr ""
+msgstr "Alignement par pointeur"
 
 #: print_and_cut/wizard.py
 msgid "Positions"
@@ -203,10 +203,11 @@ msgstr ""
 #: print_and_cut/wizard.py
 msgid "Record positions at the pointer dot instead of the beam"
 msgstr ""
+"Enregistrer les positions sur le point du pointeur plutôt que sur lefaisceau"
 
 #: print_and_cut/wizard.py
 msgid "Requires a pointer offset on the laser head"
-msgstr ""
+msgstr "Nécessite un décalage de pointeur sur la tête laser"
 
 #: print_and_cut/wizard.py
 msgid ""

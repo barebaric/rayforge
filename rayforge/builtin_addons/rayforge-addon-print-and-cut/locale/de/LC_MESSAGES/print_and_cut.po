@@ -111,7 +111,7 @@ msgstr "Fokuslaser"
 
 #: print_and_cut/wizard.py
 msgid "Pointer Alignment"
-msgstr ""
+msgstr "Pointer-Ausrichtung"
 
 #: print_and_cut/wizard.py
 msgid "Positions"
@@ -199,11 +199,11 @@ msgstr "Fokusleistung in den Lasereinstellungen festlegen, um zu aktivieren"
 
 #: print_and_cut/wizard.py
 msgid "Record positions at the pointer dot instead of the beam"
-msgstr ""
+msgstr "Positionen am Pointer-Punkt statt am Strahl aufzeichnen"
 
 #: print_and_cut/wizard.py
 msgid "Requires a pointer offset on the laser head"
-msgstr ""
+msgstr "Erfordert einen Pointer-Versatz am Laserkopf"
 
 #: print_and_cut/wizard.py
 msgid ""

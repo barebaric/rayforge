@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 22:23+0200\n"
+"POT-Creation-Date: 2026-09-30 02:40+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Ukrainian\n"
@@ -386,12 +386,12 @@ msgid "URL must include a valid hostname or IP address"
 msgstr "URL має містити коректне ім’я хоста або IP-адресу."
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
-msgid "Ruida RPA"
-msgstr "Ruida RPA"
+msgid "Ruida"
+msgstr "Ruida"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
-msgid "Connect via Ruida Protocol Analyzer"
-msgstr "Підключення через аналізатор протоколу Ruida"
+msgid "Connect via Ruida Protocol"
+msgstr "З'єднання через протокол Ruida"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 msgid "Ruida Coordinates"
@@ -418,8 +418,8 @@ msgid "USB"
 msgstr "USB"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
-msgid "USB device path (e.g., /dev/ttyUSB0, 0403:6001, or COM3)"
-msgstr "Шлях до USB-пристрою (напр., /dev/ttyUSB0, 0403:6001 або COM3)"
+msgid "USB device path or VID:PID (e.g. 0403:6001)"
+msgstr "Шлях до USB-пристрою або VID:PID (напр. 0403:6001)"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 msgid "Magic"
@@ -436,8 +436,12 @@ msgid "TUI RPC"
 msgstr "TUI RPC"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
-msgid "Enable TUI RPC connection to a remote RPA TUI service"
-msgstr "Увімкнути з'єднання TUI RPC із віддаленою службою TUI RPA"
+msgid ""
+"Enable RPC connection to a remote RPA TUI service.Useful for problem "
+"diagnosis and experimentation."
+msgstr ""
+"Увімкнути RPC-з'єднання з віддаленою службою TUI RPA. Корисно длядіагностики "
+"проблем та експериментів."
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 msgid "RPC timeout (s)"
@@ -452,14 +456,46 @@ msgstr ""
 "Збільште для великих завдань із багатьма шарами."
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Power scaling"
+msgstr "Масштабування потужності"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"When enabled, power_range() raises the emitted minimum as the layer's cut "
+"speed decreases (effective-min power scaling); when disabled, the resolved "
+"minimum is emitted unchanged."
+msgstr ""
+"Якщо увімкнено, power_range() підвищує мінімум, що видається, зізменшенням "
+"швидкості різання шару (масштабування ефективного мінімумупотужності); якщо "
+"вимкнено, визначений мінімум видається без змін."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Enable VECTOR power floor"
+msgstr "Увімкнути нижню межу потужності VECTOR"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"When disabled, the emitted power range always has min == max (constant "
+"power). When enabled, the VECTOR power floor value below acts as the minimum "
+"power for VECTOR cut compensation."
+msgstr ""
+"Якщо вимкнено, діапазон потужності, що видається, завжди має min == "
+"max(стала потужність). Якщо увімкнено, значення нижньої межі "
+"потужностіVECTOR нижче діє як мінімальна потужність для компенсації "
+"різанняVECTOR."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 msgid "VECTOR power floor"
 msgstr "Мінімальна потужність VECTOR"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
-msgid "Minimum power percentage for VECTOR cut compensation (e.g. 8 = 8%)."
+msgid ""
+"Minimum power percentage for VECTOR cut compensation (e.g. 8 = 8%). Applies "
+"only when the VECTOR power floor toggle is enabled."
 msgstr ""
-"Мінімальний відсоток потужності для компенсації різання VECTOR (напр., 8 = 8 "
-"%)."
+"Мінімальний відсоток потужності для компенсації різання VECTOR (напр. 8= 8 "
+"%). Застосовується лише коли перемикач нижньої межі потужностіVECTOR "
+"увімкнено."
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 msgid "IMAGE power bias"
@@ -2590,6 +2626,7 @@ msgstr ""
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/addon_manager/experimental_dialog.py
+#: rayforge/ui_gtk/shared/markdown/dialog.py
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
 #: rayforge/ui_gtk/debug_log_dialog.py
 #: rayforge/ui_gtk/doceditor/import_dialog.py
@@ -2658,6 +2695,7 @@ msgid "Get early access to premium addons"
 msgstr "Отримати ранній доступ до преміум доповнень"
 
 #: rayforge/ui_gtk/settings/license_settings_page.py
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
 msgid "Link"
 msgstr "Прив'язати"
 
@@ -2842,76 +2880,13 @@ msgstr "Редагувати правило кольору"
 msgid "Update the color rule details:"
 msgstr "Оновіть деталі правила кольору:"
 
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "ChArUco Board"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Marker Grid"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Dot Grid"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Chessboard with markers. Most accurate, needs a good printer."
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "ArUco or AprilTag markers. Tolerates partial views."
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Plain black dots. Cheapest to print, lowest accuracy."
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Marker Dictionary"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "ID Origin"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "ID Order"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Top-Left"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Top-Right"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Bottom-Left"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Bottom-Right"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Along rows"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Along columns"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Custom ({id})"
-msgstr ""
-
 #: rayforge/ui_gtk/settings/color_presets_page.py
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 #: rayforge/ui_gtk/machine/dialect_editor.py
 #: rayforge/ui_gtk/machine/gcode_editor.py
 #: rayforge/ui_gtk/machine/wcs_dialog.py
-#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/machine/maintenance_page.py
+#: rayforge/ui_gtk/shared/markdown/dialog.py rayforge/ui_gtk/main_menu.py
 #: rayforge/ui_gtk/toolbar.py
 #: rayforge/ui_gtk/doceditor/recipes/edit_recipe_dialog.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
@@ -3278,11 +3253,11 @@ msgstr "Решітка"
 msgid "Grid"
 msgstr "Решітка"
 
-#: rayforge/ui_gtk/array_dialog.py
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Rows"
 msgstr "Рядки"
 
-#: rayforge/ui_gtk/array_dialog.py
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Columns"
 msgstr "Стовпці"
 
@@ -3607,6 +3582,7 @@ msgid "Choose an attached local camera"
 msgstr "Виберіть під'єднану локальну камеру"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
 msgid "Preview"
 msgstr "Попередній перегляд"
 
@@ -3788,6 +3764,94 @@ msgid "Skip"
 msgstr "Пропустити"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "ChArUco Board"
+msgstr "Дошка ChArUco"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker Grid"
+msgstr "Сітка маркерів"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Dot Grid"
+msgstr "Сітка крапок"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Square Size"
+msgstr "Розмір квадрата"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker Size"
+msgstr "Розмір маркера"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker Gap"
+msgstr "Проміжок між маркерами"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker ID Offset"
+msgstr "Зсув ID маркерів"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Dot Spacing"
+msgstr "Крок крапок"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Row Spacing"
+msgstr "Крок рядків"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Row Offset"
+msgstr "Зсув рядків"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Dot Diameter"
+msgstr "Діаметр крапки"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Grid Size"
+msgstr "Розмір сітки"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Physical Size"
+msgstr "Фізичний розмір"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Chessboard with markers. Most accurate, needs a good printer."
+msgstr "Шахова дошка з маркерами. Найточніша, потребує гарного принтера."
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "ArUco or AprilTag markers. Tolerates partial views."
+msgstr "Маркери ArUco або AprilTag. Працюють, навіть якщо видно лише частину."
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Plain black dots. Cheapest to print, lowest accuracy."
+msgstr "Прості чорні крапки. Найдешевші в друку, найменш точні."
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Top-Left"
+msgstr "Вгорі ліворуч"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Top-Right"
+msgstr "Вгорі праворуч"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Bottom-Left"
+msgstr "Внизу ліворуч"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Bottom-Right"
+msgstr "Внизу праворуч"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Along rows"
+msgstr "Вздовж рядків"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Along columns"
+msgstr "Вздовж стовпців"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Calibration Card"
 msgstr "Калібрувальна картка"
 
@@ -3802,28 +3866,45 @@ msgid ""
 "fit within your camera view. You can also describe a pattern you already "
 "have and calibrate against that instead."
 msgstr ""
+"Роздрукуйте шаблон калібрування, щоб виправити спотворення об'єктива.Шаблон "
+"має вміститися в поле зору камери. Також можна описати вженаявний шаблон і "
+"виконати калібрування за ним."
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Pattern Type"
-msgstr ""
+msgstr "Тип шаблону"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Pattern"
-msgstr ""
+msgstr "Шаблон"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Choose the printed pattern to calibrate against."
-msgstr ""
+msgstr "Виберіть роздрукований шаблон для калібрування."
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker Dictionary"
+msgstr "Словник маркерів"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "ID Origin"
+msgstr "Початок ID"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "ID Order"
+msgstr "Порядок ID"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Pattern Geometry"
-msgstr ""
+msgstr "Геометрія шаблону"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid ""
 "Measured from the printed sheet. Editing these lets you use a pattern you "
 "printed earlier."
 msgstr ""
+"Виміряно на роздрукованому аркуші. Редагування цих значень "
+"дозволяєвикористати шаблон, надрукований раніше."
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Card Size"
@@ -3834,6 +3915,8 @@ msgid ""
 "Used to suggest a pattern that fits. Ignored once the geometry above is "
 "edited."
 msgstr ""
+"Використовується, щоб запропонувати шаблон відповідного розміру.Ігнорується "
+"після редагування геометрії вище."
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
@@ -3857,7 +3940,7 @@ msgstr "Висота картки"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Pattern Details"
-msgstr ""
+msgstr "Подробиці шаблону"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Details about the calibration pattern."
@@ -3865,47 +3948,7 @@ msgstr "Деталі про калібрувальний шаблон."
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Output"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Grid Size"
-msgstr "Розмір сітки"
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Square Size"
-msgstr "Розмір квадрата"
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Marker Size"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Marker Gap"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Marker ID Offset"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Dot Spacing"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Row Spacing"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Row Offset"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Dot Diameter"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Physical Size"
-msgstr "Фізичний розмір"
+msgstr "Вивід"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Save to PDF"
@@ -3913,7 +3956,12 @@ msgstr "Зберегти як PDF"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Export the calibration pattern for printing"
-msgstr ""
+msgstr "Експортувати шаблон калібрування для друку"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+#, python-brace-format
+msgid "Custom ({id})"
+msgstr "Власний ({id})"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Save Calibration Card"
@@ -5735,6 +5783,36 @@ msgstr "Y макс"
 msgid "Maximum Y coordinate"
 msgstr "Максимальна координата Y"
 
+#: rayforge/ui_gtk/machine/notes_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "Notes"
+msgstr "Нотатки"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "My Notes"
+msgstr "Мої нотатки"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "Add your own notes for this machine"
+msgstr "Додайте власні нотатки для цієї машини"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "Edit My Notes"
+msgstr "Редагувати мої нотатки"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "Device Notes"
+msgstr "Нотатки пристрою"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid ""
+"These notes are stored with this machine and are never overwritten by device "
+"profile updates."
+msgstr ""
+"Ці нотатки зберігаються разом із цією машиною й ніколи не перезаписуються "
+"оновленнями профілю пристрою."
+
 #: rayforge/ui_gtk/machine/wizard_pages/camera_page.py
 msgid ""
 "Optional. Configure any cameras you want to use for preview and alignment."
@@ -5967,6 +6045,12 @@ msgstr "Підсумок"
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "Warnings"
 msgstr "Попередження"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "These notes remain available after setup in Machine Settings → Notes."
+msgstr ""
+"Ці нотатки залишаться доступними після налаштування в Налаштуваннях машини → "
+"Нотатки."
 
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 msgid "None (G-code export only)"
@@ -7308,6 +7392,184 @@ msgstr "Немає параметрів"
 #: rayforge/ui_gtk/shared/splitbutton.py
 msgid "Show all options"
 msgstr "Показати всі параметри"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Bold and italic"
+msgstr "Жирний і курсив"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Wrap words in two stars for bold, or one star for italic."
+msgstr ""
+"Візьміть слова у дві зірочки для жирного шрифту або в одну для курсиву."
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Headings"
+msgstr "Заголовки"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Start a line with number signs. More signs, smaller heading."
+msgstr ""
+"Почніть рядок із символів решітки. Що більше символів, то менший заголовок."
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Lists"
+msgstr "Списки"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid ""
+"Start lines with a dash for bullets, or with a number and a dot for a "
+"numbered list."
+msgstr ""
+"Почніть рядки з дефіса для маркерів або з числа та крапки для нумерованого "
+"списку."
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Links"
+msgstr "Посилання"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Put the link text in square brackets and the address in round brackets."
+msgstr "Розмістіть текст посилання у квадратних дужках, а адресу — у круглих."
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Inline code"
+msgstr "Код у тексті"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Wrap short commands in single backticks to keep them readable."
+msgstr ""
+"Візьміть короткі команди в одинарні зворотні лапки, щоб вони лишалися "
+"читабельними."
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Quotes"
+msgstr "Цитати"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Start a line with a greater-than sign to call out a remark."
+msgstr "Почніть рядок зі знака «більше», щоб виділити зауваження."
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Expandable sections"
+msgstr "Розгортані розділи"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Hide long details behind a title that readers can unfold."
+msgstr "Сховайте довгі подробиці за заголовком, який читачі можуть розгорнути."
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
+msgid "Formatting help"
+msgstr "Довідка з форматування"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Type the text shown below to get the matching result."
+msgstr "Введіть показаний нижче текст, щоб отримати відповідний результат."
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Code blocks"
+msgstr "Блоки коду"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid ""
+"Put a line with three backticks before and after a block of commands to show "
+"it unchanged."
+msgstr ""
+"Розмістіть рядок із трьох зворотних лапок до та після блоку команд, щоб "
+"показати його без змін."
+
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
+msgid "Side by side"
+msgstr "Поруч"
+
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
+msgid "Stacked"
+msgstr "Одне під одним"
+
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
+msgid "Raw Markdown"
+msgstr "Вихідний Markdown"
+
+#: rayforge/ui_gtk/shared/markdown/dialog.py
+msgid ""
+"Supported: headings, paragraphs, bold, italic, lists, links, inline code, "
+"fenced code blocks, and expandable details sections."
+msgstr ""
+"Підтримуються заголовки, абзаци, жирний і курсивний текст, списки, "
+"посилання, вбудований код, блоки коду та розгортані секції."
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Show formatting help"
+msgstr "Показати довідку з форматування"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Bold"
+msgstr "Жирний"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "bold text"
+msgstr "жирний текст"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Italic"
+msgstr "Курсив"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "italic"
+msgstr "курсив"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Heading"
+msgstr "Заголовок"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Bulleted list"
+msgstr "Маркований список"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "List item"
+msgstr "Елемент списку"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Numbered list"
+msgstr "Нумерований список"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "First step"
+msgstr "Перший крок"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "link text"
+msgstr "текст посилання"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "command"
+msgstr "команда"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Code block"
+msgstr "Блок коду"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Quote"
+msgstr "Цитата"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Remark"
+msgstr "Зауваження"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Expandable section"
+msgstr "Розгортаний розділ"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Section title"
+msgstr "Назва розділу"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Hidden details"
+msgstr "Приховані подробиці"
 
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
 msgid "Select Model"
@@ -10002,216 +10264,3 @@ msgstr "Bayer 4"
 #: rayforge/image/dither.py
 msgid "Bayer 8"
 msgstr "Bayer 8"
-
-#: rayforge/ui_gtk/machine/notes_page.py
-msgid "Device Notes"
-msgstr "Нотатки пристрою"
-
-#: rayforge/ui_gtk/machine/notes_page.py
-#: rayforge/ui_gtk/machine/settings_dialog.py
-#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
-msgid "Notes"
-msgstr "Нотатки"
-
-#: rayforge/ui_gtk/machine/notes_page.py
-msgid "My Notes"
-msgstr "Мої нотатки"
-
-#: rayforge/ui_gtk/machine/notes_page.py
-msgid "Add your own notes for this machine"
-msgstr "Додайте власні нотатки для цієї машини"
-
-#: rayforge/ui_gtk/machine/notes_page.py
-msgid "Edit My Notes"
-msgstr "Редагувати мої нотатки"
-
-#: rayforge/ui_gtk/machine/notes_page.py
-msgid ""
-"These notes are stored with this machine and are never overwritten by device "
-"profile updates."
-msgstr ""
-"Ці нотатки зберігаються разом із цією машиною й ніколи не перезаписуються "
-"оновленнями профілю пристрою."
-
-
-#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
-msgid "These notes remain available after setup in Machine Settings → Notes."
-msgstr ""
-"Ці нотатки залишаться доступними після налаштування в Налаштуваннях машини → "
-"Нотатки."
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid ""
-"Supported: headings, paragraphs, bold, italic, lists, links, inline code, "
-"fenced code blocks, and expandable details sections."
-msgstr ""
-"Підтримуються заголовки, абзаци, жирний і курсивний текст, списки, "
-"посилання, вбудований код, блоки коду та розгортані секції."
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Bold and italic"
-msgstr "Жирний і курсив"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Wrap words in two stars for bold, or one star for italic."
-msgstr ""
-"Візьміть слова у дві зірочки для жирного шрифту або в одну для курсиву."
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Headings"
-msgstr "Заголовки"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Start a line with number signs. More signs, smaller heading."
-msgstr ""
-"Почніть рядок із символів решітки. Що більше символів, то менший заголовок."
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Lists"
-msgstr "Списки"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid ""
-"Start lines with a dash for bullets, or with a number and a dot for a "
-"numbered list."
-msgstr ""
-"Почніть рядки з дефіса для маркерів або з числа та крапки для нумерованого "
-"списку."
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Links"
-msgstr "Посилання"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Put the link text in square brackets and the address in round brackets."
-msgstr "Розмістіть текст посилання у квадратних дужках, а адресу — у круглих."
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Inline code"
-msgstr "Код у тексті"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Wrap short commands in single backticks to keep them readable."
-msgstr ""
-"Візьміть короткі команди в одинарні зворотні лапки, щоб вони лишалися "
-"читабельними."
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Quotes"
-msgstr "Цитати"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Start a line with a greater-than sign to call out a remark."
-msgstr "Почніть рядок зі знака «більше», щоб виділити зауваження."
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Expandable sections"
-msgstr "Розгортані розділи"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Hide long details behind a title that readers can unfold."
-msgstr "Сховайте довгі подробиці за заголовком, який читачі можуть розгорнути."
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Formatting help"
-msgstr "Довідка з форматування"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Type the text shown below to get the matching result."
-msgstr "Введіть показаний нижче текст, щоб отримати відповідний результат."
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Code blocks"
-msgstr "Блоки коду"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid ""
-"Put a line with three backticks before and after a block of commands to show "
-"it unchanged."
-msgstr ""
-"Розмістіть рядок із трьох зворотних лапок до та після блоку команд, щоб "
-"показати його без змін."
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Show formatting help"
-msgstr "Показати довідку з форматування"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Bold"
-msgstr "Жирний"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "bold text"
-msgstr "жирний текст"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Italic"
-msgstr "Курсив"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "italic"
-msgstr "курсив"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Heading"
-msgstr "Заголовок"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Bulleted list"
-msgstr "Маркований список"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "List item"
-msgstr "Елемент списку"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Numbered list"
-msgstr "Нумерований список"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "First step"
-msgstr "Перший крок"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "link text"
-msgstr "текст посилання"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "command"
-msgstr "команда"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Code block"
-msgstr "Блок коду"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Quote"
-msgstr "Цитата"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Remark"
-msgstr "Зауваження"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Expandable section"
-msgstr "Розгортаний розділ"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Section title"
-msgstr "Назва розділу"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Hidden details"
-msgstr "Приховані подробиці"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Side by side"
-msgstr "Поруч"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Stacked"
-msgstr "Одне під одним"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Raw Markdown"
-msgstr "Вихідний Markdown"

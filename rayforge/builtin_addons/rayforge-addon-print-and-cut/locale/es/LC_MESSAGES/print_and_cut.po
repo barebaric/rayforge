@@ -111,7 +111,7 @@ msgstr "Láser de enfoque"
 
 #: print_and_cut/wizard.py
 msgid "Pointer Alignment"
-msgstr ""
+msgstr "Alineación por puntero"
 
 #: print_and_cut/wizard.py
 msgid "Positions"
@@ -200,11 +200,11 @@ msgstr ""
 
 #: print_and_cut/wizard.py
 msgid "Record positions at the pointer dot instead of the beam"
-msgstr ""
+msgstr "Registrar las posiciones en el punto del puntero en lugar del haz"
 
 #: print_and_cut/wizard.py
 msgid "Requires a pointer offset on the laser head"
-msgstr ""
+msgstr "Requiere un desplazamiento del puntero en la cabeza láser"
 
 #: print_and_cut/wizard.py
 msgid ""

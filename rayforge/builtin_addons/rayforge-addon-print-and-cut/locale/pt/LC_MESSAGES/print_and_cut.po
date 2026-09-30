@@ -110,7 +110,7 @@ msgstr "Laser de foco"
 
 #: print_and_cut/wizard.py
 msgid "Pointer Alignment"
-msgstr ""
+msgstr "Alinhamento por ponteiro"
 
 #: print_and_cut/wizard.py
 msgid "Positions"
@@ -198,11 +198,11 @@ msgstr "Defina uma potência de foco nas preferências do laser para ativar"
 
 #: print_and_cut/wizard.py
 msgid "Record positions at the pointer dot instead of the beam"
-msgstr ""
+msgstr "Registrar posições no ponto do ponteiro em vez do feixe"
 
 #: print_and_cut/wizard.py
 msgid "Requires a pointer offset on the laser head"
-msgstr ""
+msgstr "Exige um deslocamento do ponteiro na cabeça laser"
 
 #: print_and_cut/wizard.py
 msgid ""

@@ -108,7 +108,7 @@ msgstr "फ़ोकस लेज़र"
 
 #: print_and_cut/wizard.py
 msgid "Pointer Alignment"
-msgstr ""
+msgstr "पॉइंटर संरेखण"
 
 #: print_and_cut/wizard.py
 msgid "Positions"
@@ -196,11 +196,11 @@ msgstr "सक्षम करने के लिए लेज़र वरी�
 
 #: print_and_cut/wizard.py
 msgid "Record positions at the pointer dot instead of the beam"
-msgstr ""
+msgstr "बीम के स्थान पर पॉइंटर बिंदु पर स्थितियाँ रिकॉर्ड करें"
 
 #: print_and_cut/wizard.py
 msgid "Requires a pointer offset on the laser head"
-msgstr ""
+msgstr "लेज़र हेड पर पॉइंटर ऑफ़सेट आवश्यक है"
 
 #: print_and_cut/wizard.py
 msgid ""

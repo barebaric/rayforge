@@ -111,7 +111,7 @@ msgstr "Лазер фокусування"
 
 #: print_and_cut/wizard.py
 msgid "Pointer Alignment"
-msgstr ""
+msgstr "Вирівнювання за вказівником"
 
 #: print_and_cut/wizard.py
 msgid "Positions"
@@ -200,11 +200,11 @@ msgstr ""
 
 #: print_and_cut/wizard.py
 msgid "Record positions at the pointer dot instead of the beam"
-msgstr ""
+msgstr "Записувати позиції за крапкою вказівника, а не за променем"
 
 #: print_and_cut/wizard.py
 msgid "Requires a pointer offset on the laser head"
-msgstr ""
+msgstr "Потребує зміщення вказівника на лазерній головці"
 
 #: print_and_cut/wizard.py
 msgid ""

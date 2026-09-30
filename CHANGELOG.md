@@ -5,6 +5,47 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.12.0-beta2
+
+### Added
+
+- Machine: a new Notes category in Machine Settings combines the
+  guidance shipped with the device profile with your own notes for
+  the machine. Device notes are read-only; My Notes are edited with
+  a built-in Markdown editor (headings, emphasis, lists, links,
+  code blocks, and expandable details sections). Profile setup
+  guidance also appears on the setup wizard's review page, and
+  personal notes survive profile updates (thanks to @atkaper, #471)
+- Camera: lens calibration now supports ArUco/AprilTag marker grids
+  and printable dot grids alongside ChArUco boards. Marker grids
+  tolerate partial views, and their dictionary, ID offset, origin
+  corner and numbering order are all editable, so factory-printed
+  patterns can be calibrated against directly instead of printing
+  a new card (thanks to @TOverbye, #466)
+- Drivers: the Ruida driver honors the step Power Mode setting —
+  Dynamic enables the controller's power scaling and Constant
+  disables it. The driver setup gains Power Scaling and Vector
+  Power Floor toggles, and serial ports can be bound from a USB
+  device dropdown with VID:PID matching (thanks to @StevenIsaacs,
+  #476)
+- Translations: Hindi is now available
+
+### Changed
+
+- raygeo and raydriver now ship aarch64 (ARM64) Linux wheels, so
+  ARM64 installs use prebuilt binaries instead of compiling from
+  source
+
+### Fixed
+
+- Framing now works on Ruida machines: framing became a driver
+  capability, and the Ruida driver traces the outline with beam-off
+  absolute moves (#470)
+- Print and cut: capturing an alignment point now accounts for
+  Pointer Alignment, so the computed transform no longer lands one
+  pointer offset away from the printed marks; the wizard's jog
+  panel gains a Pointer Alignment switch (#478)
+
 ## 1.12.0-beta1
 
 ### Added
@@ -17,12 +58,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Camera: network cameras are supported as stream sources alongside
   USB cameras, with automatic reconnection after read failures
   (thanks to @atkaper, #438)
-- Camera: lens calibration now supports ArUco/AprilTag marker grids
-  and printable dot grids alongside ChArUco boards. Marker grids
-  tolerate partial views, and their dictionary, ID offset, origin
-  corner and numbering order are all editable, so factory-printed
-  patterns can be calibrated against directly instead of printing
-  a new card
 - Drivers: a new GRBL driver `GRBL (Rust)` (`GrblSerialNextDriver`):
   the complete GRBL serial protocol stack (character-counting flow
   control, job streaming, stall detection, deadlock recovery,

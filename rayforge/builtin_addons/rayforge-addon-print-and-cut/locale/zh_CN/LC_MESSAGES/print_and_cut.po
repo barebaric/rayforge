@@ -106,7 +106,7 @@ msgstr "聚焦激光"
 
 #: print_and_cut/wizard.py
 msgid "Pointer Alignment"
-msgstr ""
+msgstr "光点对齐"
 
 #: print_and_cut/wizard.py
 msgid "Positions"
@@ -194,11 +194,11 @@ msgstr "在激光偏好设置中设定聚焦功率以启用"
 
 #: print_and_cut/wizard.py
 msgid "Record positions at the pointer dot instead of the beam"
-msgstr ""
+msgstr "以光点（而非光束）记录位置"
 
 #: print_and_cut/wizard.py
 msgid "Requires a pointer offset on the laser head"
-msgstr ""
+msgstr "需要在激光头上设置光点偏移"
 
 #: print_and_cut/wizard.py
 msgid ""

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 22:23+0200\n"
+"POT-Creation-Date: 2026-09-30 02:40+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -395,12 +395,12 @@ msgstr ""
 "Die URL muss einen gültigen Hostnamen oder eine gültige IP-Adresse enthalten."
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
-msgid "Ruida RPA"
-msgstr "Ruida RPA"
+msgid "Ruida"
+msgstr "Ruida"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
-msgid "Connect via Ruida Protocol Analyzer"
-msgstr "Über den Ruida Protocol Analyzer verbinden"
+msgid "Connect via Ruida Protocol"
+msgstr "Über das Ruida-Protokoll verbinden"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 msgid "Ruida Coordinates"
@@ -428,8 +428,8 @@ msgid "USB"
 msgstr "USB"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
-msgid "USB device path (e.g., /dev/ttyUSB0, 0403:6001, or COM3)"
-msgstr "Pfad zum USB-Gerät (z. B. /dev/ttyUSB0, 0403:6001 oder COM3)"
+msgid "USB device path or VID:PID (e.g. 0403:6001)"
+msgstr "USB-Gerätepfad oder VID:PID (z. B. 0403:6001)"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 msgid "Magic"
@@ -446,8 +446,12 @@ msgid "TUI RPC"
 msgstr "TUI RPC"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
-msgid "Enable TUI RPC connection to a remote RPA TUI service"
-msgstr "TUI-RPC-Verbindung zu einem entfernten RPA-TUI-Dienst aktivieren"
+msgid ""
+"Enable RPC connection to a remote RPA TUI service.Useful for problem "
+"diagnosis and experimentation."
+msgstr ""
+"RPC-Verbindung zu einem entfernten RPA-TUI-Dienst aktivieren. Nützlichzur "
+"Problemdiagnose und für Experimente."
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 msgid "RPC timeout (s)"
@@ -462,14 +466,46 @@ msgstr ""
 "mit vielen Ebenen erhöhen."
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Power scaling"
+msgstr "Leistungsskalierung"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"When enabled, power_range() raises the emitted minimum as the layer's cut "
+"speed decreases (effective-min power scaling); when disabled, the resolved "
+"minimum is emitted unchanged."
+msgstr ""
+"Bei Aktivierung erhöht power_range() das ausgegebene Minimum, wenn "
+"dieSchnittgeschwindigkeit der Ebene sinkt (Skalierung der "
+"effektivenMindestleistung); bei Deaktivierung wird das ermittelte "
+"Minimumunverändert ausgegeben."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Enable VECTOR power floor"
+msgstr "VECTOR-Leistungsuntergrenze aktivieren"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"When disabled, the emitted power range always has min == max (constant "
+"power). When enabled, the VECTOR power floor value below acts as the minimum "
+"power for VECTOR cut compensation."
+msgstr ""
+"Bei Deaktivierung hat der ausgegebene Leistungsbereich immer min == "
+"max(konstante Leistung). Bei Aktivierung dient der unten eingestellteVECTOR-"
+"Leistungsuntergrenzen-Wert als Mindestleistung für dieVECTOR-"
+"Schnittkompensation."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 msgid "VECTOR power floor"
 msgstr "VECTOR-Mindestleistung"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
-msgid "Minimum power percentage for VECTOR cut compensation (e.g. 8 = 8%)."
+msgid ""
+"Minimum power percentage for VECTOR cut compensation (e.g. 8 = 8%). Applies "
+"only when the VECTOR power floor toggle is enabled."
 msgstr ""
-"Minimale Leistung in Prozent für die VECTOR-Schnittkompensation (z. B. 8 = 8 "
-"%)."
+"Minimale Leistung in Prozent für die VECTOR-Schnittkompensation (z. B.8 = 8 "
+"%). Wirkt nur, wenn die VECTOR-Leistungsuntergrenze aktiviertist."
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 msgid "IMAGE power bias"
@@ -2632,6 +2668,7 @@ msgstr ""
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/addon_manager/experimental_dialog.py
+#: rayforge/ui_gtk/shared/markdown/dialog.py
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
 #: rayforge/ui_gtk/debug_log_dialog.py
 #: rayforge/ui_gtk/doceditor/import_dialog.py
@@ -2698,6 +2735,7 @@ msgid "Get early access to premium addons"
 msgstr "Frühen Zugang zu Premium-Erweiterungen erhalten"
 
 #: rayforge/ui_gtk/settings/license_settings_page.py
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
 msgid "Link"
 msgstr "Verknüpfen"
 
@@ -2888,76 +2926,13 @@ msgstr "Farbregel bearbeiten"
 msgid "Update the color rule details:"
 msgstr "Aktualisieren Sie die Details der Farbregel:"
 
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "ChArUco Board"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Marker Grid"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Dot Grid"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Chessboard with markers. Most accurate, needs a good printer."
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "ArUco or AprilTag markers. Tolerates partial views."
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Plain black dots. Cheapest to print, lowest accuracy."
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Marker Dictionary"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "ID Origin"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "ID Order"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Top-Left"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Top-Right"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Bottom-Left"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Bottom-Right"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Along rows"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Along columns"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Custom ({id})"
-msgstr ""
-
 #: rayforge/ui_gtk/settings/color_presets_page.py
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 #: rayforge/ui_gtk/machine/dialect_editor.py
 #: rayforge/ui_gtk/machine/gcode_editor.py
 #: rayforge/ui_gtk/machine/wcs_dialog.py
-#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/machine/maintenance_page.py
+#: rayforge/ui_gtk/shared/markdown/dialog.py rayforge/ui_gtk/main_menu.py
 #: rayforge/ui_gtk/toolbar.py
 #: rayforge/ui_gtk/doceditor/recipes/edit_recipe_dialog.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
@@ -3331,11 +3306,11 @@ msgstr "Raster-Array"
 msgid "Grid"
 msgstr "Raster"
 
-#: rayforge/ui_gtk/array_dialog.py
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Rows"
 msgstr "Zeilen"
 
-#: rayforge/ui_gtk/array_dialog.py
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Columns"
 msgstr "Spalten"
 
@@ -3660,6 +3635,7 @@ msgid "Choose an attached local camera"
 msgstr "Wählen Sie eine angeschlossene lokale Kamera"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
 msgid "Preview"
 msgstr "Vorschau"
 
@@ -3843,6 +3819,95 @@ msgid "Skip"
 msgstr "Überspringen"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "ChArUco Board"
+msgstr "ChArUco-Board"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker Grid"
+msgstr "Markerraster"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Dot Grid"
+msgstr "Punktraster"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Square Size"
+msgstr "Quadratgröße"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker Size"
+msgstr "Markergröße"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker Gap"
+msgstr "Markerabstand"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker ID Offset"
+msgstr "Marker-ID-Versatz"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Dot Spacing"
+msgstr "Punktabstand"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Row Spacing"
+msgstr "Zeilenabstand"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Row Offset"
+msgstr "Zeilenversatz"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Dot Diameter"
+msgstr "Punktdurchmesser"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Grid Size"
+msgstr "Rastergröße"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Physical Size"
+msgstr "Physische Größe"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Chessboard with markers. Most accurate, needs a good printer."
+msgstr "Schachbrett mit Markern. Am genauesten, benötigt einen guten Drucker."
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "ArUco or AprilTag markers. Tolerates partial views."
+msgstr "ArUco- oder AprilTag-Marker. Tolerieren Teilansichten."
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Plain black dots. Cheapest to print, lowest accuracy."
+msgstr ""
+"Einfache schwarze Punkte. Am günstigsten zu drucken, geringsteGenauigkeit."
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Top-Left"
+msgstr "Oben links"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Top-Right"
+msgstr "Oben rechts"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Bottom-Left"
+msgstr "Unten links"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Bottom-Right"
+msgstr "Unten rechts"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Along rows"
+msgstr "Entlang der Zeilen"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Along columns"
+msgstr "Entlang der Spalten"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Calibration Card"
 msgstr "Kalibrierkarte"
 
@@ -3857,28 +3922,45 @@ msgid ""
 "fit within your camera view. You can also describe a pattern you already "
 "have and calibrate against that instead."
 msgstr ""
+"Drucken Sie ein Kalibrierungsmuster, um Linsenverzerrung zukorrigieren. Das "
+"Muster sollte in den Kamerablick passen. Sie könnenauch ein bereits "
+"vorhandenes Muster beschreiben und stattdessen dagegenkalibrieren."
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Pattern Type"
-msgstr ""
+msgstr "Musterart"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Pattern"
-msgstr ""
+msgstr "Muster"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Choose the printed pattern to calibrate against."
-msgstr ""
+msgstr "Wählen Sie das gedruckte Muster, gegen das kalibriert werden soll."
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker Dictionary"
+msgstr "Marker-Wörterbuch"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "ID Origin"
+msgstr "ID-Ursprung"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "ID Order"
+msgstr "ID-Reihenfolge"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Pattern Geometry"
-msgstr ""
+msgstr "Mustergeometrie"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid ""
 "Measured from the printed sheet. Editing these lets you use a pattern you "
 "printed earlier."
 msgstr ""
+"Vom gedruckten Bogen aus gemessen. Durch Bearbeiten dieser Werte könnenSie "
+"ein früher gedrucktes Muster verwenden."
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Card Size"
@@ -3889,6 +3971,8 @@ msgid ""
 "Used to suggest a pattern that fits. Ignored once the geometry above is "
 "edited."
 msgstr ""
+"Wird verwendet, um ein passendes Muster vorzuschlagen. Wird ignoriert,sobald "
+"die obige Geometrie bearbeitet wird."
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
@@ -3912,7 +3996,7 @@ msgstr "Kartenhöhe"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Pattern Details"
-msgstr ""
+msgstr "Musterdetails"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Details about the calibration pattern."
@@ -3920,47 +4004,7 @@ msgstr "Details zum Kalibrierungsmuster."
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Output"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Grid Size"
-msgstr "Rastergröße"
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Square Size"
-msgstr "Quadratgröße"
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Marker Size"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Marker Gap"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Marker ID Offset"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Dot Spacing"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Row Spacing"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Row Offset"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Dot Diameter"
-msgstr ""
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Physical Size"
-msgstr "Physische Größe"
+msgstr "Ausgabe"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Save to PDF"
@@ -3968,7 +4012,12 @@ msgstr "Als PDF speichern"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Export the calibration pattern for printing"
-msgstr ""
+msgstr "Kalibrierungsmuster zum Drucken exportieren"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+#, python-brace-format
+msgid "Custom ({id})"
+msgstr "Benutzerdefiniert ({id})"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Save Calibration Card"
@@ -5807,6 +5856,36 @@ msgstr "Y Max"
 msgid "Maximum Y coordinate"
 msgstr "Maximale Y-Koordinate"
 
+#: rayforge/ui_gtk/machine/notes_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "Notes"
+msgstr "Notizen"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "My Notes"
+msgstr "Meine Notizen"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "Add your own notes for this machine"
+msgstr "Eigene Notizen für diese Maschine hinzufügen"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "Edit My Notes"
+msgstr "Eigene Notizen bearbeiten"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "Device Notes"
+msgstr "Gerätehinweise"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid ""
+"These notes are stored with this machine and are never overwritten by device "
+"profile updates."
+msgstr ""
+"Diese Notizen werden mit dieser Maschine gespeichert und niemals durch "
+"Geräteprofil-Aktualisierungen überschrieben."
+
 #: rayforge/ui_gtk/machine/wizard_pages/camera_page.py
 msgid ""
 "Optional. Configure any cameras you want to use for preview and alignment."
@@ -6041,6 +6120,12 @@ msgstr "Zusammenfassung"
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "Warnings"
 msgstr "Warnungen"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "These notes remain available after setup in Machine Settings → Notes."
+msgstr ""
+"Diese Hinweise bleiben nach der Einrichtung unter Maschineneinstellungen → "
+"Notizen verfügbar."
 
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 msgid "None (G-code export only)"
@@ -7391,6 +7476,190 @@ msgstr "Keine Parameter"
 #: rayforge/ui_gtk/shared/splitbutton.py
 msgid "Show all options"
 msgstr "Alle Optionen anzeigen"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Bold and italic"
+msgstr "Fett und kursiv"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Wrap words in two stars for bold, or one star for italic."
+msgstr ""
+"Setzen Sie zwei Sterne um Wörter für Fettdruck oder einen Stern für "
+"Kursivschrift."
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Headings"
+msgstr "Überschriften"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Start a line with number signs. More signs, smaller heading."
+msgstr ""
+"Beginnen Sie eine Zeile mit Rautezeichen. Mehr Zeichen bedeuten eine "
+"kleinere Überschrift."
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Lists"
+msgstr "Listen"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid ""
+"Start lines with a dash for bullets, or with a number and a dot for a "
+"numbered list."
+msgstr ""
+"Beginnen Sie Zeilen mit einem Bindestrich für Aufzählungen oder mit einer "
+"Zahl und einem Punkt für eine nummerierte Liste."
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Links"
+msgstr "Links"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Put the link text in square brackets and the address in round brackets."
+msgstr ""
+"Setzen Sie den Linktext in eckige Klammern und die Adresse in runde Klammern."
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Inline code"
+msgstr "Code im Text"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Wrap short commands in single backticks to keep them readable."
+msgstr ""
+"Setzen Sie kurze Befehle in einfache Backticks, damit sie lesbar bleiben."
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Quotes"
+msgstr "Zitate"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Start a line with a greater-than sign to call out a remark."
+msgstr ""
+"Beginnen Sie eine Zeile mit einem Größer-als-Zeichen, um einen Hinweis "
+"hervorzuheben."
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Expandable sections"
+msgstr "Ausklappbare Abschnitte"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Hide long details behind a title that readers can unfold."
+msgstr ""
+"Verbergen Sie lange Details hinter einem Titel, den Leser aufklappen können."
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
+msgid "Formatting help"
+msgstr "Formatierungshilfe"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Type the text shown below to get the matching result."
+msgstr ""
+"Geben Sie den unten gezeigten Text ein, um das passende Ergebnis zu erhalten."
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Code blocks"
+msgstr "Codeblöcke"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid ""
+"Put a line with three backticks before and after a block of commands to show "
+"it unchanged."
+msgstr ""
+"Setzen Sie eine Zeile mit drei Backticks vor und hinter einen Befehlsblock, "
+"um ihn unverändert anzuzeigen."
+
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
+msgid "Side by side"
+msgstr "Nebeneinander"
+
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
+msgid "Stacked"
+msgstr "Untereinander"
+
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
+msgid "Raw Markdown"
+msgstr "Markdown-Quelltext"
+
+#: rayforge/ui_gtk/shared/markdown/dialog.py
+msgid ""
+"Supported: headings, paragraphs, bold, italic, lists, links, inline code, "
+"fenced code blocks, and expandable details sections."
+msgstr ""
+"Unterstützt werden Überschriften, Absätze, Fett- und Kursivschrift, Listen, "
+"Links, Inline-Code, Codeblöcke und aufklappbare Detailabschnitte."
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Show formatting help"
+msgstr "Formatierungshilfe anzeigen"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Bold"
+msgstr "Fett"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "bold text"
+msgstr "fetter Text"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Italic"
+msgstr "Kursiv"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "italic"
+msgstr "kursiv"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Heading"
+msgstr "Überschrift"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Bulleted list"
+msgstr "Aufzählung"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "List item"
+msgstr "Listeneintrag"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Numbered list"
+msgstr "Nummerierte Liste"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "First step"
+msgstr "Erster Schritt"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "link text"
+msgstr "Linktext"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "command"
+msgstr "Befehl"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Code block"
+msgstr "Codeblock"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Quote"
+msgstr "Zitat"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Remark"
+msgstr "Hinweis"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Expandable section"
+msgstr "Ausklappbarer Abschnitt"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Section title"
+msgstr "Abschnittstitel"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Hidden details"
+msgstr "Verborgene Details"
 
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
 msgid "Select Model"
@@ -10108,222 +10377,3 @@ msgstr "Bayer 4"
 #: rayforge/image/dither.py
 msgid "Bayer 8"
 msgstr "Bayer 8"
-
-#: rayforge/ui_gtk/machine/notes_page.py
-msgid "Device Notes"
-msgstr "Gerätehinweise"
-
-#: rayforge/ui_gtk/machine/notes_page.py
-#: rayforge/ui_gtk/machine/settings_dialog.py
-#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
-msgid "Notes"
-msgstr "Notizen"
-
-#: rayforge/ui_gtk/machine/notes_page.py
-msgid "My Notes"
-msgstr "Meine Notizen"
-
-#: rayforge/ui_gtk/machine/notes_page.py
-msgid "Add your own notes for this machine"
-msgstr "Eigene Notizen für diese Maschine hinzufügen"
-
-#: rayforge/ui_gtk/machine/notes_page.py
-msgid "Edit My Notes"
-msgstr "Eigene Notizen bearbeiten"
-
-#: rayforge/ui_gtk/machine/notes_page.py
-msgid ""
-"These notes are stored with this machine and are never overwritten by device "
-"profile updates."
-msgstr ""
-"Diese Notizen werden mit dieser Maschine gespeichert und niemals durch "
-"Geräteprofil-Aktualisierungen überschrieben."
-
-
-#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
-msgid "These notes remain available after setup in Machine Settings → Notes."
-msgstr ""
-"Diese Hinweise bleiben nach der Einrichtung unter Maschineneinstellungen → "
-"Notizen verfügbar."
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid ""
-"Supported: headings, paragraphs, bold, italic, lists, links, inline code, "
-"fenced code blocks, and expandable details sections."
-msgstr ""
-"Unterstützt werden Überschriften, Absätze, Fett- und Kursivschrift, Listen, "
-"Links, Inline-Code, Codeblöcke und aufklappbare Detailabschnitte."
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Bold and italic"
-msgstr "Fett und kursiv"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Wrap words in two stars for bold, or one star for italic."
-msgstr ""
-"Setzen Sie zwei Sterne um Wörter für Fettdruck oder einen Stern für "
-"Kursivschrift."
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Headings"
-msgstr "Überschriften"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Start a line with number signs. More signs, smaller heading."
-msgstr ""
-"Beginnen Sie eine Zeile mit Rautezeichen. Mehr Zeichen bedeuten eine "
-"kleinere Überschrift."
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Lists"
-msgstr "Listen"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid ""
-"Start lines with a dash for bullets, or with a number and a dot for a "
-"numbered list."
-msgstr ""
-"Beginnen Sie Zeilen mit einem Bindestrich für Aufzählungen oder mit einer "
-"Zahl und einem Punkt für eine nummerierte Liste."
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Links"
-msgstr "Links"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Put the link text in square brackets and the address in round brackets."
-msgstr ""
-"Setzen Sie den Linktext in eckige Klammern und die Adresse in runde Klammern."
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Inline code"
-msgstr "Code im Text"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Wrap short commands in single backticks to keep them readable."
-msgstr ""
-"Setzen Sie kurze Befehle in einfache Backticks, damit sie lesbar bleiben."
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Quotes"
-msgstr "Zitate"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Start a line with a greater-than sign to call out a remark."
-msgstr ""
-"Beginnen Sie eine Zeile mit einem Größer-als-Zeichen, um einen Hinweis "
-"hervorzuheben."
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Expandable sections"
-msgstr "Ausklappbare Abschnitte"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Hide long details behind a title that readers can unfold."
-msgstr ""
-"Verbergen Sie lange Details hinter einem Titel, den Leser aufklappen können."
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Formatting help"
-msgstr "Formatierungshilfe"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Type the text shown below to get the matching result."
-msgstr ""
-"Geben Sie den unten gezeigten Text ein, um das passende Ergebnis zu erhalten."
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Code blocks"
-msgstr "Codeblöcke"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid ""
-"Put a line with three backticks before and after a block of commands to show "
-"it unchanged."
-msgstr ""
-"Setzen Sie eine Zeile mit drei Backticks vor und hinter einen Befehlsblock, "
-"um ihn unverändert anzuzeigen."
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Show formatting help"
-msgstr "Formatierungshilfe anzeigen"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Bold"
-msgstr "Fett"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "bold text"
-msgstr "fetter Text"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Italic"
-msgstr "Kursiv"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "italic"
-msgstr "kursiv"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Heading"
-msgstr "Überschrift"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Bulleted list"
-msgstr "Aufzählung"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "List item"
-msgstr "Listeneintrag"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Numbered list"
-msgstr "Nummerierte Liste"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "First step"
-msgstr "Erster Schritt"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "link text"
-msgstr "Linktext"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "command"
-msgstr "Befehl"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Code block"
-msgstr "Codeblock"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Quote"
-msgstr "Zitat"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Remark"
-msgstr "Hinweis"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Expandable section"
-msgstr "Ausklappbarer Abschnitt"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Section title"
-msgstr "Abschnittstitel"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Hidden details"
-msgstr "Verborgene Details"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Side by side"
-msgstr "Nebeneinander"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Stacked"
-msgstr "Untereinander"
-
-#: rayforge/ui_gtk/shared/markdown.py
-msgid "Raw Markdown"
-msgstr "Markdown-Quelltext"

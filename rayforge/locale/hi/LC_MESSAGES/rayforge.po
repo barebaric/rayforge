@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-27 22:23+0200\n"
+"POT-Creation-Date: 2026-09-30 02:40+0200\n"
 "PO-Revision-Date: 2026-09-27 22:58\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -384,12 +384,12 @@ msgid "URL must include a valid hostname or IP address"
 msgstr "URL में एक वैध होस्टनाम या IP पता शामिल होना चाहिए"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
-msgid "Ruida RPA"
-msgstr "Ruida RPA"
+msgid "Ruida"
+msgstr "Ruida"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
-msgid "Connect via Ruida Protocol Analyzer"
-msgstr "Ruida Protocol Analyzer से कनेक्ट करें"
+msgid "Connect via Ruida Protocol"
+msgstr "Ruida प्रोटोकॉल द्वारा कनेक्ट करें"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 msgid "Ruida Coordinates"
@@ -416,8 +416,8 @@ msgid "USB"
 msgstr "USB"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
-msgid "USB device path (e.g., /dev/ttyUSB0, 0403:6001, or COM3)"
-msgstr "USB डिवाइस पथ (जैसे, /dev/ttyUSB0, 0403:6001, या COM3)"
+msgid "USB device path or VID:PID (e.g. 0403:6001)"
+msgstr "USB डिवाइस पथ या VID:PID (जैसे 0403:6001)"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 msgid "Magic"
@@ -432,8 +432,11 @@ msgid "TUI RPC"
 msgstr "TUI RPC"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
-msgid "Enable TUI RPC connection to a remote RPA TUI service"
-msgstr "दूरस्थ RPA TUI सेवा से TUI RPC कनेक्शन सक्षम करें"
+msgid ""
+"Enable RPC connection to a remote RPA TUI service.Useful for problem "
+"diagnosis and experimentation."
+msgstr ""
+"रिमोट RPA TUI सेवा से RPC कनेक्शन सक्षम करें। समस्या निदान और प्रयोग केलिए उपयोगी।"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 msgid "RPC timeout (s)"
@@ -448,12 +451,44 @@ msgstr ""
 "इसे बढ़ाएँ."
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Power scaling"
+msgstr "पावर स्केलिंग"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"When enabled, power_range() raises the emitted minimum as the layer's cut "
+"speed decreases (effective-min power scaling); when disabled, the resolved "
+"minimum is emitted unchanged."
+msgstr ""
+"सक्षम होने पर, लेयर की कट गति घटने पर power_range() जारी किए गए न्यूनतमको बढ़ा देता "
+"है (effective-min पावर स्केलिंग); अक्षम होने पर, निर्धारितन्यूनतम अपरिवर्तित जारी होता "
+"है।"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Enable VECTOR power floor"
+msgstr "VECTOR पावर फ़्लोर सक्षम करें"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"When disabled, the emitted power range always has min == max (constant "
+"power). When enabled, the VECTOR power floor value below acts as the minimum "
+"power for VECTOR cut compensation."
+msgstr ""
+"अक्षम होने पर, जारी की गई पावर रेंज में हमेशा min == max (स्थिर पावर)होता है। सक्षम "
+"होने पर, नीचे दिया गया VECTOR पावर फ़्लोर मान VECTOR कटकंपेंसेशन के लिए न्यूनतम पावर के "
+"रूप में कार्य करता है।"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 msgid "VECTOR power floor"
 msgstr "VECTOR न्यूनतम शक्ति"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
-msgid "Minimum power percentage for VECTOR cut compensation (e.g. 8 = 8%)."
-msgstr "VECTOR कट क्षतिपूर्ति के लिए न्यूनतम शक्ति प्रतिशत (जैसे 8 = 8%)."
+msgid ""
+"Minimum power percentage for VECTOR cut compensation (e.g. 8 = 8%). Applies "
+"only when the VECTOR power floor toggle is enabled."
+msgstr ""
+"VECTOR कट कंपेंसेशन के लिए न्यूनतम पावर प्रतिशत (जैसे 8 = 8%)। केवल तभीलागू होता है जब "
+"VECTOR पावर फ़्लोर टॉगल सक्षम हो।"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 msgid "IMAGE power bias"
@@ -2517,6 +2552,7 @@ msgstr ""
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/addon_manager/experimental_dialog.py
+#: rayforge/ui_gtk/shared/markdown/dialog.py
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
 #: rayforge/ui_gtk/debug_log_dialog.py
 #: rayforge/ui_gtk/doceditor/import_dialog.py
@@ -2583,6 +2619,7 @@ msgid "Get early access to premium addons"
 msgstr "प्रीमियम ऐड-ऑन का शीघ्र उपयोग पाएँ"
 
 #: rayforge/ui_gtk/settings/license_settings_page.py
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
 msgid "Link"
 msgstr "लिंक करें"
 
@@ -2771,7 +2808,8 @@ msgstr "रंग नियम विवरण अपडेट करें:"
 #: rayforge/ui_gtk/machine/dialect_editor.py
 #: rayforge/ui_gtk/machine/gcode_editor.py
 #: rayforge/ui_gtk/machine/wcs_dialog.py
-#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/machine/maintenance_page.py
+#: rayforge/ui_gtk/shared/markdown/dialog.py rayforge/ui_gtk/main_menu.py
 #: rayforge/ui_gtk/toolbar.py
 #: rayforge/ui_gtk/doceditor/recipes/edit_recipe_dialog.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
@@ -3131,11 +3169,11 @@ msgstr "ग्रिड ऐरे"
 msgid "Grid"
 msgstr "ग्रिड"
 
-#: rayforge/ui_gtk/array_dialog.py
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Rows"
 msgstr "पंक्तियाँ"
 
-#: rayforge/ui_gtk/array_dialog.py
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Columns"
 msgstr "कॉलम"
 
@@ -3457,6 +3495,7 @@ msgid "Choose an attached local camera"
 msgstr "जुड़ा हुआ एक स्थानीय कैमरा चुनें"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
 msgid "Preview"
 msgstr "पूर्वावलोकन"
 
@@ -3634,6 +3673,94 @@ msgid "Skip"
 msgstr "छोड़ें"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "ChArUco Board"
+msgstr "ChArUco बोर्ड"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker Grid"
+msgstr "मार्कर ग्रिड"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Dot Grid"
+msgstr "डॉट ग्रिड"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Square Size"
+msgstr "वर्ग आकार"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker Size"
+msgstr "मार्कर आकार"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker Gap"
+msgstr "मार्कर अंतर"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker ID Offset"
+msgstr "मार्कर ID ऑफ़सेट"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Dot Spacing"
+msgstr "डॉट अंतर"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Row Spacing"
+msgstr "पंक्ति अंतर"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Row Offset"
+msgstr "पंक्ति ऑफ़सेट"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Dot Diameter"
+msgstr "डॉट व्यास"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Grid Size"
+msgstr "ग्रिड आकार"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Physical Size"
+msgstr "भौतिक आकार"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Chessboard with markers. Most accurate, needs a good printer."
+msgstr "मार्करों के साथ शतरंज की बिसात। सबसे सटीक, अच्छे प्रिंटर की आवश्यकताहै।"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "ArUco or AprilTag markers. Tolerates partial views."
+msgstr "ArUco या AprilTag मार्कर। आंशिक दृश्य सहन करते हैं।"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Plain black dots. Cheapest to print, lowest accuracy."
+msgstr "सादे काले डॉट। प्रिंट करने में सबसे सस्ते, सटीकता सबसे कम।"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Top-Left"
+msgstr "ऊपर-बाएँ"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Top-Right"
+msgstr "ऊपर-दाएँ"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Bottom-Left"
+msgstr "नीचे-बाएँ"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Bottom-Right"
+msgstr "नीचे-दाएँ"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Along rows"
+msgstr "पंक्तियों के अनुदिश"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Along columns"
+msgstr "स्तंभों के अनुदिश"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Calibration Card"
 msgstr "कैलिब्रेशन कार्ड"
 
@@ -3644,19 +3771,60 @@ msgstr "निर्देश"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid ""
-"Print a calibration card to correct lens distortion. The card size should "
-"fit within your camera view."
+"Print a calibration pattern to correct lens distortion. The pattern should "
+"fit within your camera view. You can also describe a pattern you already "
+"have and calibrate against that instead."
 msgstr ""
-"लेंस डिस्टॉर्शन ठीक करने के लिए एक कैलिब्रेशन कार्ड प्रिंट करें. कार्ड का आकार आपके कैमरा व्यू "
-"के भीतर फ़िट होना चाहिए."
+"लेंस विकृति को ठीक करने के लिए कैलिब्रेशन पैटर्न प्रिंट करें। पैटर्नआपके कैमरा दृश्य के भीतर फिट "
+"होना चाहिए। आप पहले से मौजूद किसी पैटर्नका वर्णन कर उसके आधार पर भी कैलिब्रेट कर सकते हैं।"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Pattern Type"
+msgstr "पैटर्न प्रकार"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Pattern"
+msgstr "पैटर्न"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Choose the printed pattern to calibrate against."
+msgstr "कैलिब्रेशन हेतु मुद्रित पैटर्न चुनें।"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker Dictionary"
+msgstr "मार्कर डिक्शनरी"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "ID Origin"
+msgstr "ID प्रारंभ बिंदु"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "ID Order"
+msgstr "ID क्रम"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Pattern Geometry"
+msgstr "पैटर्न ज्यामिति"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid ""
+"Measured from the printed sheet. Editing these lets you use a pattern you "
+"printed earlier."
+msgstr ""
+"मुद्रित शीट से मापा गया। इन्हें संपादित करके आप पहले प्रिंट किए गएपैटर्न का उपयोग कर सकते "
+"हैं।"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Card Size"
 msgstr "कार्ड आकार"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Adjust to fit your work surface."
-msgstr "अपनी कार्य सतह के अनुसार समायोजित करें."
+msgid ""
+"Used to suggest a pattern that fits. Ignored once the geometry above is "
+"edited."
+msgstr ""
+"फिट होने वाला पैटर्न सुझाने के लिए उपयोग किया जाता है। ऊपर की ज्यामितिसंपादित करने के "
+"बाद इसे नज़रअंदाज़ किया जाता है।"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
@@ -3679,32 +3847,29 @@ msgid "Card height"
 msgstr "कार्ड की ऊँचाई"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Generated Pattern"
-msgstr "जनरेट किया गया पैटर्न"
+msgid "Pattern Details"
+msgstr "पैटर्न विवरण"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Details about the calibration pattern."
 msgstr "कैलिब्रेशन पैटर्न के बारे में विवरण."
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Grid Size"
-msgstr "ग्रिड आकार"
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Square Size"
-msgstr "वर्ग आकार"
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Physical Size"
-msgstr "भौतिक आकार"
+msgid "Output"
+msgstr "आउटपुट"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Save to PDF"
 msgstr "PDF में सहेजें"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Export the calibration card for printing"
-msgstr "प्रिंट के लिए कैलिब्रेशन कार्ड निर्यात करें"
+msgid "Export the calibration pattern for printing"
+msgstr "प्रिंट के लिए कैलिब्रेशन पैटर्न निर्यात करें"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+#, python-brace-format
+msgid "Custom ({id})"
+msgstr "कस्टम ({id})"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Save Calibration Card"
@@ -5486,6 +5651,35 @@ msgstr "Y अधिकतम"
 msgid "Maximum Y coordinate"
 msgstr "अधिकतम Y निर्देशांक"
 
+#: rayforge/ui_gtk/machine/notes_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "Notes"
+msgstr "नोट्स"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "My Notes"
+msgstr "मेरे नोट्स"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "Add your own notes for this machine"
+msgstr "इस मशीन के लिए अपने नोट्स जोड़ें"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "Edit My Notes"
+msgstr "मेरे नोट्स संपादित करें"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "Device Notes"
+msgstr "डिवाइस नोट्स"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid ""
+"These notes are stored with this machine and are never overwritten by device "
+"profile updates."
+msgstr ""
+"ये नोट्स इस मशीन के साथ सहेजे जाते हैं और डिवाइस प्रोफ़ाइल अपडेट द्वाराकभी नहीं बदले जाते।"
+
 #: rayforge/ui_gtk/machine/wizard_pages/camera_page.py
 msgid ""
 "Optional. Configure any cameras you want to use for preview and alignment."
@@ -5716,6 +5910,10 @@ msgstr "सारांश"
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "Warnings"
 msgstr "चेतावनियाँ"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "These notes remain available after setup in Machine Settings → Notes."
+msgstr "सेटअप के बाद ये नोट्स मशीन सेटिंग्स → नोट्स में उपलब्ध रहते हैं।"
 
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 msgid "None (G-code export only)"
@@ -7025,6 +7223,177 @@ msgstr "कोई पैरामीटर नहीं"
 #: rayforge/ui_gtk/shared/splitbutton.py
 msgid "Show all options"
 msgstr "सभी विकल्प दिखाएँ"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Bold and italic"
+msgstr "बोल्ड और इटैलिक"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Wrap words in two stars for bold, or one star for italic."
+msgstr "बोल्ड के लिए शब्दों को दो तारों में और इटैलिक के लिए एक तारे मेंलपेटें।"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Headings"
+msgstr "शीर्षक"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Start a line with number signs. More signs, smaller heading."
+msgstr "पंक्ति की शुरुआत हैश चिह्न (#) से करें। अधिक चिह्न होने पर शीर्षक छोटाहोता है।"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Lists"
+msgstr "सूचियाँ"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid ""
+"Start lines with a dash for bullets, or with a number and a dot for a "
+"numbered list."
+msgstr ""
+"बुलेट के लिए पंक्तियाँ डैश (-) से शुरू करें, या क्रमांकित सूची के लिएसंख्या और बिंदु से शुरू करें।"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Links"
+msgstr "लिंक"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Put the link text in square brackets and the address in round brackets."
+msgstr "लिंक टेक्स्ट को वर्ग कोष्ठकों में और पते को गोल कोष्ठकों में रखें।"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Inline code"
+msgstr "इनलाइन कोड"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Wrap short commands in single backticks to keep them readable."
+msgstr "पढ़ने में आसान रखने के लिए छोटे कमांड को सिंगल बैकटिक में लपेटें।"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Quotes"
+msgstr "उद्धरण"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Start a line with a greater-than sign to call out a remark."
+msgstr "टिप्पणी दिखाने के लिए पंक्ति की शुरुआत ग्रेटर-दैन चिह्न (>) से करें।"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Expandable sections"
+msgstr "विस्तारणीय अनुभाग"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Hide long details behind a title that readers can unfold."
+msgstr "लंबे विवरण को एक शीर्षक के पीछे छिपाएँ जिसे पाठक खोल सकते हैं।"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
+msgid "Formatting help"
+msgstr "फ़ॉर्मेटिंग सहायता"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Type the text shown below to get the matching result."
+msgstr "मेल खाता परिणाम पाने के लिए नीचे दिखाया गया टेक्स्ट टाइप करें।"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Code blocks"
+msgstr "कोड ब्लॉक"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid ""
+"Put a line with three backticks before and after a block of commands to show "
+"it unchanged."
+msgstr "कमांड ब्लॉक के पहले और बाद तीन बैकटिक वाली पंक्ति लगाएँ ताकि वह ज्योंका त्यों दिखे।"
+
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
+msgid "Side by side"
+msgstr "साथ-साथ"
+
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
+msgid "Stacked"
+msgstr "ऊपर-नीचे"
+
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
+msgid "Raw Markdown"
+msgstr "कच्चा मार्कडाउन"
+
+#: rayforge/ui_gtk/shared/markdown/dialog.py
+msgid ""
+"Supported: headings, paragraphs, bold, italic, lists, links, inline code, "
+"fenced code blocks, and expandable details sections."
+msgstr ""
+"समर्थित: शीर्षक, अनुच्छेद, बोल्ड, इटैलिक, सूचियाँ, लिंक, इनलाइन कोड,फ़ेंस्ड कोड ब्लॉक और "
+"विस्तारणीय विवरण अनुभाग।"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Show formatting help"
+msgstr "फ़ॉर्मेटिंग सहायता दिखाएँ"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Bold"
+msgstr "बोल्ड"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "bold text"
+msgstr "बोल्ड टेक्स्ट"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Italic"
+msgstr "इटैलिक"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "italic"
+msgstr "इटैलिक"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Heading"
+msgstr "शीर्षक"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Bulleted list"
+msgstr "बुलेट सूची"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "List item"
+msgstr "सूची आइटम"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Numbered list"
+msgstr "क्रमांकित सूची"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "First step"
+msgstr "पहला चरण"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "link text"
+msgstr "लिंक टेक्स्ट"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "command"
+msgstr "कमांड"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Code block"
+msgstr "कोड ब्लॉक"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Quote"
+msgstr "उद्धरण"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Remark"
+msgstr "टिप्पणी"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Expandable section"
+msgstr "विस्तारणीय अनुभाग"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Section title"
+msgstr "अनुभाग शीर्षक"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Hidden details"
+msgstr "छिपे हुए विवरण"
 
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
 msgid "Select Model"

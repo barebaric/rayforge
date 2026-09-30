@@ -68,6 +68,54 @@
   </screenshots>
 
   <releases>
+    <release version="1.12.0~beta2" date="2026-09-30">
+      <description>
+        <p>Machine notes, more camera calibration target types, Ruida
+        power scaling and framing, and a Hindi translation</p>
+        <p>New Features:</p>
+        <ul>
+          <li>A new Notes category in Machine Settings combines the
+          guidance shipped with the device profile with your own
+          notes for the machine. Device notes are read-only; My
+          Notes are edited with a built-in Markdown editor
+          (headings, emphasis, lists, links, code blocks, and
+          expandable details sections). Profile setup guidance also
+          appears on the setup wizard's review page, and personal
+          notes survive profile updates (#471, by atkaper)</li>
+          <li>Lens calibration now supports ArUco/AprilTag marker
+          grids and printable dot grids alongside ChArUco boards.
+          Marker grids tolerate partial views, and their dictionary,
+          ID offset, origin corner and numbering order are all
+          editable, so factory-printed patterns can be calibrated
+          against directly instead of printing a new card (#466, by
+          TOverbye)</li>
+          <li>The Ruida driver honors the step Power Mode setting:
+          Dynamic enables the controller's power scaling and
+          Constant disables it. The driver setup gains Power Scaling
+          and Vector Power Floor toggles, and serial ports can be
+          bound from a USB device dropdown with VID:PID matching
+          (#476, by StevenIsaacs)</li>
+          <li>Hindi translation is now available</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>raygeo and raydriver now ship aarch64 (ARM64) Linux
+          wheels, so ARM64 installs use prebuilt binaries instead of
+          compiling from source</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Framing now works on Ruida machines: framing became a
+          driver capability, and the Ruida driver traces the outline
+          with beam-off absolute moves (#470)</li>
+          <li>Print and cut: capturing an alignment point now
+          accounts for Pointer Alignment, so the computed transform
+          no longer lands one pointer offset away from the printed
+          marks; the wizard's jog panel gains a Pointer Alignment
+          switch (#478)</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.12.0~beta1" date="2026-09-27">
       <description>
         <p>Native Ruida support, arbitrary laser head positioning with
