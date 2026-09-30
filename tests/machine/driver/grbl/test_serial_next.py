@@ -198,6 +198,12 @@ class TestRegistry:
         assert converted.error is not None
         assert converted.error.code == 1
 
+    def test_get_error(self):
+        drv = GrblSerialNextDriver.__new__(GrblSerialNextDriver)
+        error = drv.get_error("20")
+        assert error is not None
+        assert error.code == 20
+
     def test_setup_with_cached_rx_buffer(self, context_initializer, machine):
         drv = GrblSerialNextDriver(context_initializer, machine)
         drv.config["rx_buffer_size"] = 511
@@ -345,12 +351,6 @@ class TestDeviceOperations:
         assert pos is not None
         assert -10.0 < pos[2] <= 0.0
         await recorder.wait_for("probe_status_changed")
-
-    def test_get_error(self):
-        drv = GrblSerialNextDriver.__new__(GrblSerialNextDriver)
-        error = drv.get_error("20")
-        assert error is not None
-        assert error.code == 20
 
 
 @pytest.mark.asyncio
