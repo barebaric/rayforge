@@ -404,7 +404,8 @@ def test_handles_multiple_busy_tasks(doc_editor):
             doc_editor.notify_task_ended()
 
 
-def test_configure_machine_uses_first_layer(doc_editor):
+@pytest.mark.asyncio
+async def test_configure_machine_uses_first_layer(doc_editor):
     editor = doc_editor
     machine = editor.context.machine
     rm = RotaryModule()
@@ -416,6 +417,7 @@ def test_configure_machine_uses_first_layer(doc_editor):
 
     with patch.object(machine, "configure_for_layer") as mock_cfg:
         editor.configure_machine()
+        await editor.wait_until_settled()
     mock_cfg.assert_called_with(first_layer)
 
 
