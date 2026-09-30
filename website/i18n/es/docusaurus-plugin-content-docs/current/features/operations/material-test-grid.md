@@ -91,7 +91,7 @@ tamaño de forma + (pasos − 1) × espaciado_, más el espacio para las etiquet
 arriba (como máximo 15 mm, y solo cuando las etiquetas están activadas). Una cuadrícula de 5×5 con
 cuadrados de 20 mm y espaciado de 5 mm mide 120 mm por lado sin etiquetas y 135 mm con ellas.
 
-## Cómo se Ejecuta la Cuadrícula
+## Cómo se Ejecuta la Cuadrícula {#how-the-grid-runs}
 
 Las celdas deliberadamente **no** se ejecutan en orden de lectura. Rayforge las ejecuta en un orden
 optimizado por riesgo: primero la velocidad más alta, la potencia más baja dentro de cada velocidad

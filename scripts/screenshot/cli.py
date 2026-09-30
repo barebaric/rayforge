@@ -70,6 +70,8 @@ TARGETS = {
     "machine-settings:camera:image-alignment": "machine_settings_camera",
     "machine-settings:maintenance": "machine_settings_maintenance",
     "machine-settings:nogo-zones": "machine_settings_nogo_zones",
+    "machine-settings:notes": "machine_settings_notes",
+    "machine-settings:notes:editor": "machine_settings_notes",
     "main:standard": "main_standard",
     "main:3d": "main_3d",
     "main:3d-bee": "main_3d_bee",

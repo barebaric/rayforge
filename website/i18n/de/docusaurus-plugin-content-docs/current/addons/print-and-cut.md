@@ -52,6 +52,11 @@ Der Schalter **Fokuslimiere Laser** schaltet den Laser mit der konfigurierten Fo
 einen sichtbaren Punkt auf dem Material erzeugt, um Positionen präzise zu lokalisieren. Dieser
 Schalter erfordert einen Fokusleistungswert größer Null in deinen Lasereinstellungen.
 
+Hat dein Laserkopf einen Ausrichtungszeiger, zeichnet der Schalter **Pointer Alignment** die
+Positionen am Zeigerpunkt statt am Strahl auf, sodass die berechnete Transformation dem Punkt folgt,
+auf den du zielst. Er erfordert den in den [Lasereinstellungen](../machine/laser.md) konfigurierten
+Zeiger-Versatz.
+
 Die aktuelle Laserposition wird unten im Panel angezeigt. Wenn beide Positionen aufgezeichnet sind,
 klicke auf **Weiter**, um fortzufahren.
 

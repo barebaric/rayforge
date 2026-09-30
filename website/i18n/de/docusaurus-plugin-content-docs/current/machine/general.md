@@ -33,7 +33,13 @@ GRBL-Geräte haben drei serielle Treiber-Optionen:
   Kann als direkter Ersatz für GRBL (Serial) ausgewählt werden
 
 Ruida-basierte Controller werden vom Treiber **Ruida RPA** unterstützt, der sich direkt über USB
-oder UDP verbindet oder per TUI-RPC über den Ruida Protocol Analyzer.
+oder UDP verbindet oder per TUI-RPC über den Ruida Protocol Analyzer. Sein USB-Feld bietet eine
+Auswahl verbundener Geräte mit VID:PID-Abgleich, und er beachtet die Power-Mode-Einstellung jedes
+Schritts — Dynamic aktiviert die Leistungsskalierung des Controllers, Constant deaktiviert sie. Das
+Leistungsverhalten wird über die Treiberoptionen **Power Scaling**, **VECTOR power floor** und
+**IMAGE power bias** abgestimmt: Power Scaling erhöht die ausgegebene Mindestleistung, wenn die
+Schrittgeschwindigkeit der Lage sinkt, der Vector Power Floor gleicht Nachbrennen an den Enden von
+Linien aus, und der Image Bias gleicht CO2-Röhren aus, die bei sehr geringer Leistung nicht zünden.
 
 ### Serieller Port binden
 

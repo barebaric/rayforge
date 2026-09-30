@@ -92,7 +92,7 @@ forma + (etapas − 1) × espaçamento_, mais espaço para os rótulos à esquer
 mm, e apenas quando os rótulos estão ativados). Uma grade 5×5 de quadrados de 20 mm com espaçamento
 de 5 mm tem 120 mm de lado sem rótulos e 135 mm com eles.
 
-## Como a Grade É Executada
+## Como a Grade É Executada {#how-the-grid-runs}
 
 As células deliberadamente **não** são executadas em ordem de leitura. O Rayforge as executa em uma
 ordem otimizada por risco: primeiro a velocidade mais alta, a potência mais baixa dentro de cada

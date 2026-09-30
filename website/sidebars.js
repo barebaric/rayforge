@@ -28,6 +28,7 @@ module.exports = {
       label: 'Machine Setup',
       items: [
         'machine/general',
+        'machine/notes',
         'machine/hardware',
         'machine/advanced',
         'machine/gcode',

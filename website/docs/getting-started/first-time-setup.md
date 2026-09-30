@@ -169,7 +169,9 @@ later from the machine's camera settings.
 
 Give the machine a name and review a summary of everything you've configured — driver, connection,
 work area, speeds, heads, rotary modules, and cameras. The wizard also surfaces any warnings, such
-as a missing driver or an unset work area.
+as a missing driver or an unset work area. If the chosen device profile ships setup guidance, it is
+shown on this page as well and remains available afterwards on the machine's
+[Notes](../machine/notes.md) page.
 
 ![Wizard — Review & Name](/screenshots/config-wizard-review.webp)
 

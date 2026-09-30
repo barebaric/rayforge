@@ -503,30 +503,43 @@ $22=1       ; Mise à l'origine activée
 
 ---
 
-## Support futur des firmwares
+## Contrôleurs Ruida
 
-### Contrôleurs Ruida
-
-Rayforge inclut un support expérimental pour les contrôleurs basés sur Ruida (p.ex. RDC6442,
-RDC6445, Ruida R5). Le pilote Ruida se connecte via le réseau et prend en charge le jogging, le
-rapport de position, le contrôle de l'air assisté, la sélection de couche, la connexion automatique
-et l'interrogation de statut.
+Rayforge se connecte aux contrôleurs basés sur Ruida (p.ex. RDC6442, RDC6445, Ruida R5) via le
+pilote **Ruida RPA**, qui parle le protocole natif du contrôleur en USB ou UDP, ou via TUI RPC par
+l'intermédiaire du Ruida Protocol Analyzer. Les profils d'appareil Generic Ruida RPA et Monport
+MP-570 60W CO2 fournissent des points de départ pour les nouvelles machines.
 
 **Fonctionnalités :**
 
-- Connectivité réseau (Ethernet/WiFi)
-- Rapport de position
-- Commandes de jogging
-- Air assisté et sélection de couche
-- Prise en charge des points de référence
+- Connectivité USB et UDP ; lorsque les deux sont configurés, Rayforge bascule automatiquement entre
+  eux au fur et à mesure que les câbles sont branchés et débranchés
+- Envoi de travaux avec rapport de position, jogging, homing et Déplacement vers une position
+- Le cadrage trace le contour du travail avec des déplacements absolus faisceau éteint, il
+  fonctionne donc sans tirer le laser
+- Honore le réglage Power Mode de chaque étape : Dynamic active la mise à l'échelle de puissance du
+  contrôleur, Constant la désactive
+- Les ports série peuvent être liés depuis un menu déroulant de périphériques USB avec
+  correspondance VID:PID, si bien que la reconnexion automatique suit la machine après que le
+  système d'exploitation réénumère les périphériques USB
+
+**Réglages de puissance :**
+
+- **Power scaling** — relève le minimum émis lorsque la vitesse de coupe de la couche diminue
+- **VECTOR power floor** — puissance minimale pour la compensation de coupe vectorielle pendant
+  l'accélération et la décélération, réduisant la sur-combustion aux extrémités des lignes
+- **IMAGE power bias** — puissance ajoutée aux lignes de balayage raster, car les tubes CO2 ne
+  s'allument pas à très faible puissance
 
 **Limitations :**
 
-- Expérimental — pas encore totalement stable
+- Expérimental — testé jusqu'ici sur un contrôleur RDC6442S (Monport MP570 CO2)
 - Pas de génération de G-code ; Ruida utilise son propre protocole propriétaire
-- L'envoi de travaux n'est pas encore pris en charge
+- Le mode rotatif n'est pas encore pris en charge
 
 ---
+
+## Pilotes Expérimentaux
 
 ### OctoPrint
 

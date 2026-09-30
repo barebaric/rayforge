@@ -179,6 +179,8 @@ ignorer cette étape et configurer les caméras plus tard depuis les paramètres
 Donnez un nom à la machine et consultez un récapitulatif de tout ce que vous avez configuré —
 pilote, connexion, zone de travail, vitesses, têtes, modules rotatifs et caméras. L'assistant fait
 également remonter tout avertissement, comme un pilote manquant ou une zone de travail non définie.
+Si le profil d'appareil choisi fournit un guide de configuration, il est également affiché sur cette
+page et reste disponible ensuite sur la page [Notes](../machine/notes.md) de la machine.
 
 ![Assistant — Récapitulatif et Nom](/screenshots/config-wizard-review.webp)
 

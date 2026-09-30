@@ -94,7 +94,7 @@ plus (Schritte − 1) × Abstand_, hinzu kommt Platz für die Beschriftungen lin
 15 mm, und nur wenn Beschriftungen aktiviert sind). Ein 5×5-Raster aus 20-mm-Quadraten mit 5 mm
 Abstand ist ohne Beschriftungen 120 mm × 120 mm groß, mit Beschriftungen 135 mm × 135 mm.
 
-## Wie das Raster ausgeführt wird
+## Wie das Raster ausgeführt wird {#how-the-grid-runs}
 
 Zellen werden absichtlich **nicht** in Lesereihenfolge ausgeführt. Rayforge führt sie in einer
 risikooptimierten Reihenfolge aus: die höchste Geschwindigkeit zuerst, innerhalb jeder

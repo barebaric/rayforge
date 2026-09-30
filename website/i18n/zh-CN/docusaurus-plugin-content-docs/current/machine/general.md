@@ -26,7 +26,11 @@ GRBL 设备有三种串行驱动程序选项：
   (Serial) 的直接替代选择
 
 基于 Ruida 的控制器由 **Ruida RPA** 驱动程序支持，它可以直接通过 USB 或 UDP 连接，或通过 TUI
-RPC 经由 Ruida Protocol Analyzer 连接。
+RPC 经由 Ruida Protocol
+Analyzer 连接。它的 USB 字段提供已连接设备的下拉列表（带 VID:PID 匹配），并遵循每个步骤的 Power
+Mode 设置——Dynamic 启用控制器的功率缩放，Constant 将其禁用。功率行为通过驱动程序的 **Power
+Scaling**、**VECTOR power floor** 和 **IMAGE power bias**
+选项调节：功率缩放会在层的切割速度降低时提高发出的最小功率，矢量功率下限补偿线段端部的过烧，图像偏置则补偿在极低功率下不点火的 CO2 激光管。
 
 ### 串口绑定
 

@@ -33,7 +33,14 @@ Los dispositivos GRBL tienen tres opciones de controlador serie:
   se ejecuta en Rust. Puede seleccionarse como alternativa directa a GRBL (Serial)
 
 Los controladores basados en Ruida son compatibles con el controlador **Ruida RPA**, que se conecta
-directamente por USB o UDP, o vía TUI RPC a través del Ruida Protocol Analyzer.
+directamente por USB o UDP, o vía TUI RPC a través del Ruida Protocol Analyzer. Su campo USB ofrece
+un desplegable de dispositivos conectados con coincidencia VID:PID, y honra el ajuste de Modo de
+Potencia de cada paso: Dinámico activa el escalado de potencia del controlador y Constante lo
+desactiva. El comportamiento de la potencia se ajusta con las opciones del controlador **Power
+Scaling**, **VECTOR power floor** e **IMAGE power bias**: el escalado de potencia eleva la potencia
+mínima emitida a medida que la velocidad de corte de la capa disminuye, el suelo de potencia vector
+compensa el sobre-quemado en los extremos de las líneas, y el sesgo de imagen compensa los tubos CO2
+que no disparan con potencias muy bajas.
 
 ### Vinculación del Puerto Serie
 

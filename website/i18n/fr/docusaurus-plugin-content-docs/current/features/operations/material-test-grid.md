@@ -94,7 +94,7 @@ de forme + (pas − 1) × espacement_, plus la place des étiquettes à gauche e
 maximum, et uniquement lorsque les étiquettes sont activées). Une grille 5×5 de carrés de 20 mm avec
 un espacement de 5 mm fait 120 mm de côté sans étiquettes et 135 mm avec.
 
-## Déroulement de la Grille
+## Déroulement de la Grille {#how-the-grid-runs}
 
 Les cellules ne s'exécutent délibérément **pas** dans l'ordre de lecture. Rayforge les exécute dans
 un ordre optimisé pour le risque : la vitesse la plus élevée d'abord, la puissance la plus basse à

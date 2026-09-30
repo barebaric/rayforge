@@ -33,7 +33,14 @@ Les appareils GRBL disposent de trois options de pilote série :
   probing) s'exécute en Rust. Peut être sélectionné comme alternative directe à GRBL (Serial)
 
 Les contrôleurs basés sur Ruida sont pris en charge par le pilote **Ruida RPA**, qui se connecte
-directement en USB ou UDP, ou via TUI RPC par l'intermédiaire du Ruida Protocol Analyzer.
+directement en USB ou UDP, ou via TUI RPC par l'intermédiaire du Ruida Protocol Analyzer. Son champ
+USB propose un menu déroulant des appareils connectés avec correspondance VID:PID, et il honore le
+réglage Power Mode de chaque étape — Dynamic active la mise à l'échelle de puissance du contrôleur,
+Constant la désactive. Le comportement de la puissance se règle avec les options du pilote **Power
+Scaling**, **VECTOR power floor** et **IMAGE power bias** : la mise à l'échelle de puissance relève
+le minimum émis lorsque la vitesse de coupe de la couche diminue, le plancher de puissance vector
+compense la sur-combustion aux extrémités des lignes, et le biais d'image compense les tubes CO2 qui
+ne s'allument pas à très faible puissance.
 
 ### Liaison du Port Série
 

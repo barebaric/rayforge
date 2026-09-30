@@ -50,6 +50,11 @@ El interruptor **Enfocar láser** enciende el láser con la potencia de enfoque 
 crea un punto visible en el material para ayudarte a localizar posiciones con precisión. Este
 interruptor requiere un valor de potencia de enfoque mayor que cero en la configuración del láser.
 
+Si tu cabezal láser tiene un puntero de alineación, el interruptor **Pointer Alignment** registra
+las posiciones en el punto del puntero en lugar del haz, de modo que la transformación calculada
+sigue el punto al que apuntas. Requiere el desplazamiento del puntero configurado en la
+[configuración del láser](../machine/laser.md).
+
 La posición actual del láser se muestra en la parte inferior del panel. Cuando ambas posiciones
 están registradas, haz clic en **Siguiente** para continuar.
 

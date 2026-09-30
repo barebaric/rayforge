@@ -175,7 +175,9 @@ configurar câmeras mais tarde nas configurações de câmera da máquina.
 
 Dê um nome à máquina e revise um resumo de tudo o que você configurou — driver, conexão, área de
 trabalho, velocidades, cabeças, módulos rotativos e câmeras. O assistente também exibe quaisquer
-avisos, como um driver ausente ou uma área de trabalho não definida.
+avisos, como um driver ausente ou uma área de trabalho não definida. Se o perfil de dispositivo
+escolhido traz orientação de configuração, ela também é mostrada nesta página e permanece disponível
+depois na página de [Notas](../machine/notes.md) da máquina.
 
 ![Assistente — Revisar e Nomear](/screenshots/config-wizard-review.webp)
 
