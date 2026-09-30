@@ -773,12 +773,17 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_work_zero_requested(self, sender, *, x: float, y: float):
         """Handle work zero request from canvas click."""
         config = get_context().config
-        if not config.machine:
+        machine = config.machine
+        if not machine:
             return
 
         async def set_zero_func(ctx):
-            if config.machine:
-                await config.machine.set_work_origin(x, y, 0.0)
+            if machine:
+                await machine.set_work_origin(
+                    round(x, machine.gcode_precision),
+                    round(y, machine.gcode_precision),
+                    0.0,
+                )
 
         task_mgr.add_coroutine(set_zero_func)
         self.bottom_panel.set_click_to_zero_mode(False)
@@ -806,8 +811,8 @@ class MainWindow(Adw.ApplicationWindow):
         )
         self.machine_cmd.move_to(
             machine,
-            x - x_off,
-            y - y_off,
+            round(x - x_off, machine.gcode_precision),
+            round(y - y_off, machine.gcode_precision),
             speed=self.bottom_panel.jog_speed,
         )
         self.bottom_panel.set_move_to_mode(False)
