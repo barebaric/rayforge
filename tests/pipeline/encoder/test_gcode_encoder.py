@@ -87,6 +87,40 @@ def test_dialect_template_fields_include_spindle_coolant():
     assert "coolant_off" in keys
 
 
+def test_encodes_frame_opstream():
+    """The frame's synthetic job/layer/workpiece structure encodes.
+
+    The frame layer uid does not exist in the doc; the encoder must
+    still emit the trace with constant power (M3) and the frame speed.
+    """
+    machine = _make_machine_mock()
+    doc = _make_doc_mock()
+
+    ops = Ops()
+    ops.job_start()
+    ops.layer_start("rayforge-frame")
+    ops.workpiece_start("rayforge-frame-workpiece")
+    ops.set_head("head0")
+    ops.set_power_mode(PowerMode.CONSTANT)
+    ops.set_power(0.1)
+    ops.set_feed_rate(3000)
+    ops.move_to(10.0, 20.0, 0.0)
+    ops.line_to(10.0, 40.0, 0.0)
+    ops.line_to(30.0, 40.0, 0.0)
+    ops.line_to(30.0, 20.0, 0.0)
+    ops.line_to(10.0, 20.0, 0.0)
+    ops.workpiece_end("rayforge-frame-workpiece")
+    ops.layer_end("rayforge-frame")
+    ops.job_end()
+
+    encoder = GcodeEncoder(GRBL_DIALECT)
+    result = encoder.encode(ops, machine, doc)
+
+    assert "M3" in result.text
+    assert "F3000" in result.text
+    assert "G1 X30" in result.text
+
+
 # ── Tests for Ops.to_gcode() with typed GcodeDialectSpec ────────
 
 

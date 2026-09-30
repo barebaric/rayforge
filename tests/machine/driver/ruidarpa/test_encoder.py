@@ -367,8 +367,13 @@ class TestLayerDeclaration:
 
         assert "power_range(50.0, 50.0)" in result.text
 
-    def test_unknown_layer_uses_defaults(self, encoder, mock_machine, doc):
-        """Layers absent from the document should still stage cleanly."""
+    def test_unknown_layer_fails_loud(self, encoder, mock_machine, doc):
+        """Layers absent from the document must raise, not guess.
+
+        The Ruida encoder requires a declared layer for every workpiece;
+        guessing default settings would silently cut with unknown
+        power/speed.
+        """
         ops = Ops()
         ops.job_start()
         ops.layer_start(layer_uid="missing-layer-uid")
@@ -377,12 +382,9 @@ class TestLayerDeclaration:
         ops.workpiece_end("wp-0")
         ops.layer_end(layer_uid="missing-layer-uid")
         ops.job_end()
-        result = encoder.encode(ops, mock_machine, doc)
 
-        assert any(
-            line.startswith("declare_layer(")
-            for line in result.text.split("\n")
-        )
+        with pytest.raises(ValueError, match="missing-layer-uid"):
+            encoder.encode(ops, mock_machine, doc)
 
     def test_multi_workpiece_layer_declares_each_workpiece(
         self, encoder, mock_machine, doc
