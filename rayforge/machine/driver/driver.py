@@ -1,6 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 from enum import Enum, auto
 from gettext import gettext as _
@@ -12,7 +12,9 @@ from typing import (
 )
 
 from blinker import Signal
+from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
+from raygeo.ops.state import PowerMode
 
 from ...context import RayforgeContext
 from ...core.varset import IntVar, VarSet
@@ -20,8 +22,6 @@ from ...shared.units.system import UnitSystem
 from ..discovery.spec import DiscoverySpec
 
 if TYPE_CHECKING:
-    from raygeo.ops import Ops
-
     from ...core.doc import Doc
     from ...pipeline.encoder.base import EncodedOutput, OpsEncoder
     from ..device.profile import DeviceProfile
@@ -188,6 +188,60 @@ def pwm_varset(params: PWMParams) -> VarSet:
             ),
         ]
     )
+
+
+FRAME_LAYER_UID = "rayforge-frame"
+FRAME_WORKPIECE_UID = "rayforge-frame-workpiece"
+
+# A frame corner in command space: (x, y, extra_axes). The extra-axes
+# dict carries rotary degrees for rotary frames; it is None for flat
+# frames.
+FrameCorner = tuple[float, float, dict[Axis, float] | None]
+
+
+def build_frame_ops(
+    corners: Sequence[FrameCorner],
+    speed_mm_per_min: float,
+    head_uid: str | None,
+    repeat_count: int = 1,
+    corner_pause_s: float = 0.0,
+    power_fraction: float = 0.0,
+) -> Ops:
+    """Build a frame trace as a well-formed job opstream.
+
+    The frame is emitted as a structured job (job → layer → workpiece)
+    so controllers that require valid layer structure can encode it.
+    The state ops live inside the workpiece because layer-scoped
+    settings require an active layer. The trace repeats per
+    *repeat_count* without duplicating the structural markers.
+    """
+    frame_ops = Ops()
+    frame_ops.job_start()
+    frame_ops.layer_start(FRAME_LAYER_UID)
+    frame_ops.workpiece_start(FRAME_WORKPIECE_UID)
+    if head_uid is not None:
+        frame_ops.set_head(head_uid)
+    # Zero frame power is valid: the frame traces the outline with
+    # the beam off (e.g. for machines with an auxiliary alignment
+    # laser). The encoder omits the laser-on command at 0% power.
+    frame_ops.set_power(power_fraction)
+    # Framing traces at fixed speed steps and on some controllers
+    # a stationary M4 emits no beam at all, so always frame with
+    # constant power (M3).
+    frame_ops.set_power_mode(PowerMode.CONSTANT)
+    frame_ops.set_feed_rate(speed_mm_per_min)
+    for _repeat in range(max(1, repeat_count)):
+        prev = corners[0]
+        for corner in corners[1:]:
+            frame_ops.move_to(prev[0], prev[1], extra=prev[2])
+            frame_ops.line_to(corner[0], corner[1], extra=corner[2])
+            if corner_pause_s > 0:
+                frame_ops.dwell(corner_pause_s * 1000)
+            prev = corner
+    frame_ops.workpiece_end(FRAME_WORKPIECE_UID)
+    frame_ops.layer_end(FRAME_LAYER_UID)
+    frame_ops.job_end()
+    return frame_ops
 
 
 class Driver(ABC):
@@ -574,6 +628,54 @@ class Driver(ABC):
         Args:
             machine_code: The raw machine code to execute.
         """
+
+    async def frame(
+        self,
+        corners: Sequence[FrameCorner],
+        speed_mm_per_min: float,
+        doc: "Doc",
+        repeat_count: int = 1,
+        corner_pause_s: float = 0.0,
+        power_fraction: float = 0.0,
+        on_command_done: Callable[[int], None | Awaitable[None]] | None = None,
+    ) -> None:
+        """
+        Trace the given frame outline.
+
+        The corners are given in command space, in trace order, with the
+        outline closed (the first corner repeated last). Each corner is
+        an ``(x, y, extra_axes)`` tuple; the extra-axes dict carries
+        rotary degrees for rotary frames and is None for flat frames.
+
+        The default implementation encodes a well-formed job opstream
+        (job → layer → workpiece markers with the head state ops, then
+        the trace) and executes it like a minimal job, which is how
+        G-code controllers frame. Drivers whose controllers frame better
+        with protocol-native commands override this; e.g. the Ruida
+        driver frames with beam-off absolute moves.
+
+        Args:
+            corners: Absolute positions to trace, in order.
+            speed_mm_per_min: Trace speed in mm/min.
+            doc: The document context for the encoder.
+            repeat_count: How often to trace the outline.
+            corner_pause_s: Pause to make at each corner, in seconds.
+            power_fraction: Laser power to trace with (0..1). Zero
+                traces with the beam off.
+            on_command_done: Optional sync or async callback called when
+                each command is done. Called with the op index.
+        """
+        head = self._machine.get_default_laser_head()
+        ops = build_frame_ops(
+            corners,
+            speed_mm_per_min,
+            head_uid=head.uid if head is not None else None,
+            repeat_count=repeat_count,
+            corner_pause_s=corner_pause_s,
+            power_fraction=power_fraction,
+        )
+        encoded = self.get_encoder().encode(ops, self._machine, doc)
+        await self.run(encoded, doc, ops, on_command_done=on_command_done)
 
     @abstractmethod
     async def set_hold(self, hold: bool = True) -> None:

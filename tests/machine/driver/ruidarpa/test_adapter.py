@@ -1055,6 +1055,103 @@ class TestLiveBridgeDirect:
         backend.jog_xy_to.assert_called_once_with(0.0, 0.0)
 
 
+class TestFrame:
+    """frame() traces the outline with beam-off absolute moves."""
+
+    @staticmethod
+    def _corners():
+        return [
+            (0.0, 0.0, None),
+            (10.0, 0.0, None),
+            (10.0, 5.0, None),
+            (0.0, 5.0, None),
+            (0.0, 0.0, None),
+        ]
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_frame_moves_to_each_corner_in_order(self, adapter_pair):
+        """Framing must jog to each corner in trace order, never cut."""
+        adapter, backend = adapter_pair
+        await adapter.frame(self._corners(), 3000, doc=None)
+        backend.jog_xy_to.assert_has_calls(
+            [
+                call(0.0, 0.0),
+                call(10.0, 0.0),
+                call(10.0, 5.0),
+                call(0.0, 5.0),
+                call(0.0, 0.0),
+            ]
+        )
+        assert backend.jog_xy_to.call_count == 5
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_frame_sets_speed_before_each_move(self, adapter_pair):
+        """The frame speed (mm/min → mm/s) must be applied to the moves."""
+        adapter, backend = adapter_pair
+        await adapter.frame(self._corners(), 3000, doc=None)
+        backend.jog_set_xy_speed.assert_has_calls([call(50.0)] * 5)
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_frame_repeats_the_outline(self, adapter_pair):
+        """repeat_count=2 must trace the outline twice."""
+        adapter, backend = adapter_pair
+        await adapter.frame(self._corners(), 3000, doc=None, repeat_count=2)
+        assert backend.jog_xy_to.call_count == 10
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_frame_pauses_between_corners(self, adapter_pair, mocker):
+        """A positive corner pause must sleep once per corner."""
+        adapter, _backend = adapter_pair
+        sleep_spy = mocker.spy(asyncio, "sleep")
+        await adapter.frame(
+            self._corners(), 3000, doc=None, corner_pause_s=0.01
+        )
+        assert sleep_spy.call_count == 5
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_frame_emits_job_finished(self, adapter_pair):
+        """Framing must signal job_finished when the trace is done."""
+        adapter, _backend = adapter_pair
+        finished = []
+
+        def on_finished(sender):
+            finished.append(sender)
+
+        adapter.job_finished.connect(on_finished)
+        await adapter.frame(self._corners(), 3000, doc=None)
+        assert finished == [adapter]
+
+
 class TestFailLoud:
     """Backend jog/home failures must propagate through the adapter."""
 

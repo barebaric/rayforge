@@ -6,9 +6,23 @@ import pytest
 import pytest_asyncio
 from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
+from raygeo.ops.state import PowerMode
+from raygeo.ops.types import CommandType
 
 from rayforge.core.config import ConfigManager
-from rayforge.machine.cmd import JobAlreadyRunningError, MachineCmd
+from rayforge.machine.cmd import (
+    JobAlreadyRunningError,
+    MachineCmd,
+    _build_frame_trace,
+    _frame_rect_corners,
+    _frame_trace_corners,
+)
+from rayforge.machine.driver.driver import (
+    FRAME_LAYER_UID,
+    FRAME_WORKPIECE_UID,
+    FrameCorner,
+    build_frame_ops,
+)
 from rayforge.machine.models.machine import Machine
 from rayforge.pipeline.artifact import JobArtifact
 from rayforge.shared.tasker.manager import TaskManager
@@ -589,3 +603,181 @@ class TestMachineCmdLaserPower:
         await wait_for_tasks_to_finish(task_mgr)
 
         set_power_mock.assert_called_once_with(head, 0.5)
+
+
+def _frame_corners() -> list[FrameCorner]:
+    """A closed flat frame outline in trace order."""
+    return [
+        (10.0, 20.0, None),
+        (10.0, 40.0, None),
+        (30.0, 40.0, None),
+        (30.0, 20.0, None),
+        (10.0, 20.0, None),
+    ]
+
+
+class TestBuildFrameOps:
+    """The default frame opstream is a well-formed job for encoders."""
+
+    def test_structured_markers_wrap_the_trace(self):
+        ops = build_frame_ops(_frame_corners(), 6000, "head0")
+
+        assert ops.command_type(0) == CommandType.JOB_START
+        assert ops.command_type(1) == CommandType.LAYER_START
+        assert ops.command_type(2) == CommandType.WORKPIECE_START
+        assert ops.layer_uid(1) == FRAME_LAYER_UID
+        assert ops.workpiece_uid(2) == FRAME_WORKPIECE_UID
+        count = ops.len()
+        assert ops.command_type(count - 3) == CommandType.WORKPIECE_END
+        assert ops.command_type(count - 2) == CommandType.LAYER_END
+        assert ops.command_type(count - 1) == CommandType.JOB_END
+
+    def test_state_ops_come_from_arguments(self):
+        ops = build_frame_ops(
+            _frame_corners(), 1234, "head0", power_fraction=0.5
+        )
+
+        assert ops.command_type(3) == CommandType.SET_HEAD
+        assert ops.head_uid(3) == "head0"
+        assert ops.command_type(4) == CommandType.SET_POWER
+        assert ops.power(4) == pytest.approx(0.5)
+        assert ops.command_type(5) == CommandType.SET_POWER_MODE
+        assert ops.power_mode(5) == PowerMode.CONSTANT
+        assert ops.command_type(6) == CommandType.SET_FEED_RATE
+        assert ops.rate(6) == 1234
+
+    def test_headless_frame_omits_set_head(self):
+        ops = build_frame_ops(_frame_corners(), 6000, None)
+
+        assert not any(
+            ops.command_type(i) == CommandType.SET_HEAD
+            for i in range(ops.len())
+        )
+
+    def test_trace_follows_corners(self):
+        ops = build_frame_ops(_frame_corners(), 6000, "head0")
+
+        moves = [ops.endpoint(i) for i in range(7, ops.len() - 3)]
+        assert moves == [
+            (10.0, 20.0, 0.0),
+            (10.0, 40.0, 0.0),
+            (10.0, 40.0, 0.0),
+            (30.0, 40.0, 0.0),
+            (30.0, 40.0, 0.0),
+            (30.0, 20.0, 0.0),
+            (30.0, 20.0, 0.0),
+            (10.0, 20.0, 0.0),
+        ]
+
+    def test_rotary_extra_axes_are_carried(self):
+        corners = [
+            (0.0, 0.0, {Axis.A: 0.0}),
+            (10.0, 0.0, {Axis.A: 90.0}),
+            (10.0, 5.0, {Axis.A: 180.0}),
+            (0.0, 5.0, {Axis.A: 270.0}),
+            (0.0, 0.0, {Axis.A: 0.0}),
+        ]
+
+        ops = build_frame_ops(corners, 6000, "head0")
+
+        moves = [
+            (ops.endpoint(i), ops.extra_axes(i))
+            for i in range(7, ops.len() - 3)
+        ]
+        assert moves[0] == ((0.0, 0.0, 0.0), {Axis.A: 0.0})
+        assert moves[1] == ((10.0, 0.0, 0.0), {Axis.A: 90.0})
+        assert moves[2] == ((10.0, 0.0, 0.0), {Axis.A: 90.0})
+        assert moves[3] == ((10.0, 5.0, 0.0), {Axis.A: 180.0})
+
+    def test_corner_pause_emits_dwell(self):
+        ops = build_frame_ops(
+            _frame_corners(), 6000, "head0", corner_pause_s=0.5
+        )
+
+        dwells = [
+            ops.dwell_duration(i)
+            for i in range(ops.len())
+            if ops.command_type(i) == CommandType.DWELL
+        ]
+        assert dwells == [500.0, 500.0, 500.0, 500.0]
+
+    def test_repeat_does_not_duplicate_markers(self):
+        ops = build_frame_ops(_frame_corners(), 6000, "head0", repeat_count=3)
+
+        def count(command_type):
+            return sum(
+                1
+                for i in range(ops.len())
+                if ops.command_type(i) == command_type
+            )
+
+        assert count(CommandType.JOB_START) == 1
+        assert count(CommandType.LAYER_START) == 1
+        assert count(CommandType.WORKPIECE_START) == 1
+        assert count(CommandType.WORKPIECE_END) == 1
+        assert count(CommandType.LAYER_END) == 1
+        assert count(CommandType.JOB_END) == 1
+        assert count(CommandType.MOVE_TO) == 12
+
+
+class TestFrameTrace:
+    """cmd builds a moves-only trace and reads the corners back."""
+
+    def test_rect_corners_form_closed_outline(self):
+        assert _frame_rect_corners((10.0, 20.0, 30.0, 40.0)) == [
+            (10.0, 20.0),
+            (10.0, 40.0),
+            (30.0, 40.0),
+            (30.0, 20.0),
+            (10.0, 20.0),
+        ]
+
+    def test_trace_is_moves_only(self):
+        trace = _build_frame_trace((0.0, 0.0, 10.0, 10.0), 1)
+
+        assert all(
+            trace.command_type(i) == CommandType.MOVE_TO
+            for i in range(trace.len())
+        )
+
+    def test_trace_repeats_the_outline(self):
+        trace = _build_frame_trace((0.0, 0.0, 10.0, 10.0), 3)
+
+        moves = sum(
+            1
+            for i in range(trace.len())
+            if trace.command_type(i) == CommandType.MOVE_TO
+        )
+        assert moves == 15
+
+    def test_trace_corners_read_back_in_order(self):
+        trace = _build_frame_trace((0.0, 0.0, 10.0, 10.0), 2)
+
+        corners = _frame_trace_corners(trace, corner_count=5)
+
+        assert corners == [
+            (0.0, 0.0, None),
+            (0.0, 10.0, None),
+            (10.0, 10.0, None),
+            (10.0, 0.0, None),
+            (0.0, 0.0, None),
+        ]
+
+
+class TestDriverFrameDefault:
+    """Driver.frame() falls back to an encoded job run."""
+
+    @pytest.mark.asyncio
+    async def test_frame_encodes_and_runs_the_opstream(
+        self, machine, doc_editor, mocker
+    ):
+        run_spy = mocker.spy(machine.driver, "run")
+
+        await machine.driver.frame(
+            _frame_corners(), 6000, doc_editor.doc, power_fraction=0.5
+        )
+
+        run_spy.assert_called_once()
+        encoded = run_spy.call_args.args[0]
+        assert "F6000" in encoded.text
+        assert "M3" in encoded.text

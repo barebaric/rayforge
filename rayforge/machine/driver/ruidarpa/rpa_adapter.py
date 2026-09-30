@@ -15,7 +15,7 @@ import inspect
 import logging
 import math
 import random
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import replace
 from functools import partial
 from gettext import gettext as _
@@ -45,6 +45,7 @@ from rayforge.machine.driver.driver import (
     DriverMaturity,
     DriverPrecheckError,
     DriverSetupError,
+    FrameCorner,
     Pos,
     PWMParams,
 )
@@ -1008,6 +1009,33 @@ class RuidaRPAAdapter(Driver):
                 extra=self._log_extra("TUI_RPC" if self._tui_mode else "RPA"),
             )
             await self._run_script(lines, auto_checksum=True)
+        self.job_finished.send(self)
+
+    async def frame(
+        self,
+        corners: Sequence[FrameCorner],
+        speed_mm_per_min: float,
+        doc: Doc,
+        repeat_count: int = 1,
+        corner_pause_s: float = 0.0,
+        power_fraction: float = 0.0,
+        on_command_done: Callable[[int], None | Awaitable[None]] | None = None,
+    ) -> None:
+        """Frame with beam-off absolute moves.
+
+        A Ruida controller has MOVES and CUTS: MOVES never fire the
+        laser, CUTS always do. Framing is therefore a sequence of
+        absolute XY moves at the frame speed with the optional pause at
+        each corner; the power settings are ignored because there is no
+        beam to modulate. Using moves also keeps the frame out of the
+        job encoder, which would require a valid layer declaration for
+        a cut.
+        """
+        for _repeat in range(max(1, repeat_count)):
+            for pos_x, pos_y, _extra in corners:
+                await self.move_to(pos_x, pos_y, speed=speed_mm_per_min)
+                if corner_pause_s > 0:
+                    await asyncio.sleep(corner_pause_s)
         self.job_finished.send(self)
 
     async def set_hold(self, hold: bool = True) -> None:

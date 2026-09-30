@@ -47,7 +47,6 @@ _DEFAULT_LAYER_FREQUENCY_KHZ = 20.0
 _DEFAULT_LAYER_FREQUENCY_HZ = _DEFAULT_LAYER_FREQUENCY_KHZ * 1000
 _DEFAULT_LAYER_POWER = 0.2  # fraction, i.e. 20%
 _DEFAULT_JOB_LABEL = "Rayforge Job"
-_DEFAULT_LAYER_COLOR = "#00ccff"
 DEFAULT_POWER_FLOOR = 8.0  # percent, i.e. 8%
 DEFAULT_IMAGE_POWER_BIAS = 8.0  # percent, i.e. 8%
 
@@ -881,10 +880,14 @@ class RuidaRPAEncoder(OpsEncoder):
         self._gluescript.comment([f"# Workpiece Start uid={wp_uid}"])
 
         layer = self._find_layer(layer_uid)
-        label = (
-            layer.name if layer is not None else f"Layer {self._layer_key - 1}"
-        )
-        color = layer.color if layer is not None else _DEFAULT_LAYER_COLOR
+        if layer is None:
+            raise ValueError(
+                f"Layer uid '{layer_uid}' was not found in the document — "
+                "the Ruida encoder requires a declared layer for every "
+                "workpiece"
+            )
+        label = layer.name
+        color = layer.color
         speed_mms, frequency_khz, power_pct = self._layer_settings(layer)
         layer_mode = self._compute_layer_mode(ops, idx)
         self._layer_mode = layer_mode
