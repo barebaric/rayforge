@@ -260,6 +260,12 @@ module.exports = {
           position: 'left',
         },
         {
+          href: 'https://github.com/barebaric/rayforge/discussions',
+          label: 'Discussions',
+          position: 'right',
+          className: 'navbar__discussions',
+        },
+        {
           type: 'localeDropdown',
           position: 'right',
         },

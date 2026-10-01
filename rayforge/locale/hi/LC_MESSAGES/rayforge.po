@@ -9090,6 +9090,10 @@ msgid "Report an Issue"
 msgstr "समस्या रिपोर्ट करें"
 
 #: rayforge/ui_gtk/about.py
+msgid "Discussions"
+msgstr "चर्चाएँ"
+
+#: rayforge/ui_gtk/about.py
 msgid "Version"
 msgstr "संस्करण"
 

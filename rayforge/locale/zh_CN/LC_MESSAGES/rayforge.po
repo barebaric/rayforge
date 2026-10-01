@@ -8912,6 +8912,10 @@ msgid "Report an Issue"
 msgstr "报告问题"
 
 #: rayforge/ui_gtk/about.py
+msgid "Discussions"
+msgstr "讨论"
+
+#: rayforge/ui_gtk/about.py
 msgid "Version"
 msgstr "版本"
 

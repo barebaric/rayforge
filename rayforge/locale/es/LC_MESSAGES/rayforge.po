@@ -9368,6 +9368,10 @@ msgid "Report an Issue"
 msgstr "Informar de un problema"
 
 #: rayforge/ui_gtk/about.py
+msgid "Discussions"
+msgstr "Debates"
+
+#: rayforge/ui_gtk/about.py
 msgid "Version"
 msgstr "Versión"
 

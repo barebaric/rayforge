@@ -8794,6 +8794,10 @@ msgid "Report an Issue"
 msgstr ""
 
 #: rayforge/ui_gtk/about.py
+msgid "Discussions"
+msgstr ""
+
+#: rayforge/ui_gtk/about.py
 msgid "Version"
 msgstr ""
 
