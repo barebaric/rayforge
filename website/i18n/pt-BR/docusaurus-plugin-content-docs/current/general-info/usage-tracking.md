@@ -19,13 +19,14 @@ Você pode alterar essa escolha a qualquer momento nas configurações gerais.
 Quando ativado, coletamos apenas dados anônimos de visualizações de página - semelhante à análise de
 sites. Aqui está o que podemos ver:
 
-| Dados                         | Exemplo                   |
-| ----------------------------- | ------------------------- |
-| Resolução de tela             | 1920x1080                 |
-| Configuração de idioma        | pt-BR                     |
-| Páginas/diálogos visualizados | /machine-settings/general |
-| Tempo na página               | 6m 3s                     |
-| ID de sessão                  | a1b2c3d4-e5f6-...         |
+| Dados                         | Exemplo                       |
+| ----------------------------- | ----------------------------- |
+| Resolução de tela             | 1920x1080                     |
+| Tipo de máquina               | grbl, laser de diodo, 430x400 |
+| Configuração de idioma        | pt-BR                         |
+| Páginas/diálogos visualizados | /machine-settings/general     |
+| Tempo na página               | 6m 3s                         |
+| ID de sessão                  | a1b2c3d4-e5f6-...             |
 
 O ID de sessão é um identificador aleatório gerado cada vez que você inicia o Rayforge. Ele nos
 permite distinguir entre diferentes sessões de uso mantendo o rastreamento totalmente anônimo.
@@ -71,7 +72,7 @@ privacidade. O rastreamento:
 - Envia pequenas requisições HTTP em segundo plano
 - Não afeta o desempenho do aplicativo
 - Funciona offline (requisições com falha são silenciosamente ignoradas)
-- Usa um User-Agent genérico para evitar fingerprinting
+- Envia com um User-Agent de navegador correspondente ao seu sistema operacional
 
 ## Desativar o rastreamento
 

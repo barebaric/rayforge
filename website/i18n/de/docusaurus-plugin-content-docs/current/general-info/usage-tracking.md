@@ -19,13 +19,14 @@ Sie können diese Entscheidung jederzeit in den allgemeinen Einstellungen änder
 Wenn aktiviert, erfassen wir nur anonyme Seitenaufrufdaten – ähnlich wie Website-Analysen. Das
 können wir sehen:
 
-| Daten                    | Beispiel                  |
-| ------------------------ | ------------------------- |
-| Bildschirmauflösung      | 1920x1080                 |
-| Spracheinstellung        | de-DE                     |
-| Seiten/Dialoge angesehen | /machine-settings/general |
-| Zeit auf Seite           | 6m 3s                     |
-| Sitzungs-ID              | a1b2c3d4-e5f6-...         |
+| Daten                    | Beispiel                   |
+| ------------------------ | -------------------------- |
+| Bildschirmauflösung      | 1920x1080                  |
+| Maschinentyp             | grbl, Diodenlaser, 430x400 |
+| Spracheinstellung        | de-DE                      |
+| Seiten/Dialoge angesehen | /machine-settings/general  |
+| Zeit auf Seite           | 6m 3s                      |
+| Sitzungs-ID              | a1b2c3d4-e5f6-...          |
 
 Die Sitzungs-ID ist ein zufälliger Bezeichner, der bei jedem Start von Rayforge generiert wird. Sie
 ermöglicht es uns, zwischen verschiedenen Nutzungssitzungen zu unterscheiden und dabei das Tracking
@@ -72,7 +73,7 @@ Analyseplattform. Die Analyse:
 - Sendet kleine HTTP-Anfragen im Hintergrund
 - Beeinflusst nicht die Anwendungsleistung
 - Funktioniert offline (fehlgeschlagene Anfragen werden still ignoriert)
-- Verwendet einen generischen User-Agent zur Verhinderung von Fingerprinting
+- Sendet ihn mit einem browserähnlichen User-Agent, der zum Betriebssystem passt
 
 ## Analyse deaktivieren
 

@@ -19,13 +19,14 @@ Vous pouvez modifier ce choix à tout moment dans les paramètres généraux.
 Lorsqu'il est activé, nous collectons uniquement des données anonymes de pages vues, similaires aux
 analyses de sites web. Voici ce que nous pouvons voir :
 
-| Données                   | Exemple                   |
-| ------------------------- | ------------------------- |
-| Résolution d'écran        | 1920x1080                 |
-| Paramètre de langue       | fr-FR                     |
-| Pages/dialogues consultés | /machine-settings/general |
-| Temps passé sur la page   | 6m 3s                     |
-| ID de session             | a1b2c3d4-e5f6-...         |
+| Données                   | Exemple                    |
+| ------------------------- | -------------------------- |
+| Résolution d'écran        | 1920x1080                  |
+| Type de machine           | grbl, laser diode, 430x400 |
+| Paramètre de langue       | fr-FR                      |
+| Pages/dialogues consultés | /machine-settings/general  |
+| Temps passé sur la page   | 6m 3s                      |
+| ID de session             | a1b2c3d4-e5f6-...          |
 
 L'ID de session est un identifiant aléatoire généré à chaque démarrage de Rayforge. Il nous permet
 de distinguer les différentes sessions d'utilisation tout en gardant le suivi entièrement anonyme.
@@ -72,7 +73,7 @@ confidentialité. Le suivi :
 - Envoie de petites requêtes HTTP en arrière-plan
 - N'affecte pas les performances de l'application
 - Fonctionne hors ligne (les requêtes échouées sont ignorées silencieusement)
-- Utilise un User-Agent générique pour empêcher l'empreinte numérique
+- L'envoie avec un User-Agent de navigateur correspondant à votre système d'exploitation
 
 ## Désactiver le suivi
 

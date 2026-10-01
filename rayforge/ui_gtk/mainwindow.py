@@ -586,6 +586,9 @@ class MainWindow(Adw.ApplicationWindow):
         if config.has_consented_tracking:
             get_usage_tracker().set_enabled(True)
             get_usage_tracker().track_page_view("/view/2d", "2D View")
+            get_usage_tracker().track_machines(
+                get_context().machine_mgr.get_machines()
+            )
         elif config.has_declined_tracking:
             pass  # Explicitly do nothing, respecting the user's choice
         else:

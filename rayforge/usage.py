@@ -64,6 +64,23 @@ def _get_user_agent() -> str:
     return f"Mozilla/5.0 (X11; Linux {machine}) {_BROWSER_UA_TAIL}"
 
 
+def _get_machine_data(machine) -> dict:
+    """Extracts anonymous type properties from a machine. Uses duck
+    typing to avoid a dependency on the machine model classes."""
+    head = machine.get_default_laser_head()
+    laser = head.laser_type.value if head else "none"
+    power = int(head.effective_max_power_watts) if head else 0
+
+    width, height = machine.axis_extents
+    return {
+        "driver": machine.driver_name or "none",
+        "laser": laser,
+        "power_w": str(power),
+        "bed": f"{int(width)}x{int(height)}",
+        "rotary": "true" if machine.rotary_modules else "false",
+    }
+
+
 class UsageTracker:
     _instance: Optional["UsageTracker"] = None
     _lock = threading.Lock()
@@ -89,7 +106,7 @@ class UsageTracker:
         self._cache_token: str | None = None
         self._session_id = str(uuid.uuid4())
 
-    def _get_screen_size(self) -> str:
+    def _get_screen_size(self) -> str | None:
         try:
             from .ui_gtk.shared.gtk import get_screen_size
 
@@ -98,7 +115,7 @@ class UsageTracker:
                 return f"{size[0]}x{size[1]}"
         except Exception:
             logger.debug("Failed to get screen size", exc_info=True)
-        return "unknown"
+        return None
 
     def set_enabled(self, enabled: bool):
         self._enabled = enabled
@@ -107,6 +124,22 @@ class UsageTracker:
         else:
             logger.info("Usage tracking disabled")
 
+    def _base_payload(self, title: str, url: str) -> dict:
+        # Umami derives the session from website, IP, user agent and
+        # the payload's "id" field; a "sessionId" field is ignored.
+        payload = {
+            "website": UMAMI_WEBSITE_ID,
+            "id": self._session_id,
+            "language": self._language,
+            "title": title,
+            "hostname": "",
+            "url": url,
+            "referrer": "",
+        }
+        if self._screen:
+            payload["screen"] = self._screen
+        return payload
+
     def track_page_view(self, url: str, title: str | None = None):
         if not self._enabled:
             return
@@ -114,23 +147,25 @@ class UsageTracker:
             return
         if not url.startswith("/"):
             url = "/" + url
-        full_url = f"file://{url}"
-        self._send_event(
-            payload={
-                "website": UMAMI_WEBSITE_ID,
-                "screen": self._screen,
-                "language": self._language,
-                "title": title or url,
-                "hostname": "",
-                "url": full_url,
-                "referrer": "",
-                "sessionId": self._session_id,
-                "data": {
-                    "app_version": self._version,
-                    "os": self._os,
-                },
-            },
-        )
+        payload = self._base_payload(title or url, f"file://{url}")
+        payload["data"] = {
+            "app_version": self._version,
+            "os": self._os,
+        }
+        self._send_event(payload)
+
+    def track_machines(self, machines: list):
+        """Reports the type of each configured machine as a named
+        event, so the analytics dashboard can break usage down by
+        driver, laser type and bed size. Machine names and identifiers
+        are never sent."""
+        for machine in machines:
+            if machine.placeholder:
+                continue
+            payload = self._base_payload("Machine", "/machine")
+            payload["name"] = "machine"
+            payload["data"] = _get_machine_data(machine)
+            self._send_event(payload)
 
     def _send_event(self, payload: dict):
         def _send():
