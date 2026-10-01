@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-30 02:40+0200\n"
+"POT-Creation-Date: 2026-10-01 16:16+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -3021,17 +3021,18 @@ msgstr "隐私"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid ""
-"Help us improve Rayforge by allowing anonymous usage reporting. No personal "
-"data is collected."
-msgstr "允许匿名使用报告来帮助我们改进 Rayforge。不会收集任何个人数据。"
+"Anonymous usage data helps decide what to build next. It never includes "
+"project content or personal data."
+msgstr ""
+"匿名使用数据帮助决定接下来开发什么。绝不会收集项目内容或个人数据。"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Report Anonymous Usage"
 msgstr "报告匿名使用情况"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid "Help improve Rayforge"
-msgstr "帮助改进 Rayforge"
+msgid "Help decide what to build next"
+msgstr "帮助决定接下来开发什么"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
@@ -6960,21 +6961,15 @@ msgid "Enable Anyway"
 msgstr "仍然启用"
 
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
-msgid "Help Improve Rayforge"
-msgstr "帮助改进 Rayforge"
+msgid "Help me prioritize what to build"
+msgstr "帮助我决定优先开发什么"
 
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
 msgid ""
-"Would you like to help improve Rayforge by allowing anonymous usage "
-"reporting? This helps us understand how the app is used and prioritize "
-"improvements.\n"
-"\n"
-"No personal data is collected."
+"Anonymous usage data shows me which machines and features people actually "
+"use. It never includes project content or personal data."
 msgstr ""
-"您是否愿意通过允许匿名使用报告来帮助改进 Rayforge？这有助于我们了解应用程序的"
-"使用方式并确定改进的优先级。\n"
-"\n"
-"不会收集任何个人数据。"
+"匿名使用数据让我了解人们实际使用哪些机器和功能。绝不会发送项目内容或个人数据。"
 
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
 msgid "No Thanks"

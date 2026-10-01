@@ -9,13 +9,12 @@ from ...usage import get_usage_tracker
 class UsageConsentDialog(Adw.MessageDialog):
     def __init__(self, parent: Gtk.Window):
         super().__init__(transient_for=parent, modal=True)
-        self.set_heading(_("Help Improve Rayforge"))
+        self.set_heading(_("Help me prioritize what to build"))
         self.set_body(
             _(
-                "Would you like to help improve Rayforge by allowing "
-                "anonymous usage reporting? This helps us understand "
-                "how the app is used and prioritize improvements.\n\n"
-                "No personal data is collected."
+                "Anonymous usage data shows me which machines and "
+                "features people actually use. It never includes "
+                "project content or personal data."
             )
         )
 

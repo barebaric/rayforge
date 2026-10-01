@@ -37,3 +37,37 @@ class TestSetupCompletedFlag:
         """Older configs without the key must not crash on load."""
         restored = Config.from_dict({}, get_machine_by_id=lambda mid: None)
         assert restored.setup_completed is False
+
+
+class TestUsageConsent:
+    def test_unanswered_is_not_consented(self):
+        """Tracking stays off until the prompt is answered."""
+        config = Config()
+        assert config.has_consented_tracking is False
+        assert config.has_declined_tracking is False
+
+    def test_accept_records_consent(self):
+        config = Config()
+        config.set_usage_consent(True)
+        assert config.has_consented_tracking is True
+
+    def test_decline_disables_tracking(self):
+        config = Config()
+        config.set_usage_consent(False)
+        assert config.has_consented_tracking is False
+        assert config.has_declined_tracking is True
+
+    def test_stale_consent_requires_reanswer(self):
+        """Consent predating the current policy date must be re-asked."""
+        config = Config()
+        config.usage_consent_date = "2020-01-01T00:00:00+00:00"
+        assert config.has_consented_tracking is False
+        assert config.has_declined_tracking is False
+
+    def test_round_trip(self):
+        config = Config()
+        config.set_usage_consent(True)
+        restored = Config.from_dict(
+            config.to_dict(), get_machine_by_id=lambda mid: None
+        )
+        assert restored.has_consented_tracking is True

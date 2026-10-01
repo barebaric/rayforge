@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-30 02:40+0200\n"
+"POT-Creation-Date: 2026-10-01 16:16+0200\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -3215,19 +3215,19 @@ msgstr "Privacidade"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid ""
-"Help us improve Rayforge by allowing anonymous usage reporting. No personal "
-"data is collected."
+"Anonymous usage data helps decide what to build next. It never includes "
+"project content or personal data."
 msgstr ""
-"Ajude-nos a melhorar o Rayforge permitindo relatórios de uso anônimos. "
-"Nenhum dado pessoal é coletado."
+"Os dados de uso anônimos ajudam a decidir o que construir a seguir. "
+"Conteúdo de projetos ou dados pessoais nunca são coletados."
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Report Anonymous Usage"
 msgstr "Relatar Uso Anônimo"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid "Help improve Rayforge"
-msgstr "Ajudar a melhorar o Rayforge"
+msgid "Help decide what to build next"
+msgstr "Ajude a decidir o que construir a seguir"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
@@ -7314,22 +7314,16 @@ msgid "Enable Anyway"
 msgstr "Ativar mesmo assim"
 
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
-msgid "Help Improve Rayforge"
-msgstr "Ajudar a Melhorar o Rayforge"
+msgid "Help me prioritize what to build"
+msgstr "Ajude-me a decidir o que construir"
 
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
 msgid ""
-"Would you like to help improve Rayforge by allowing anonymous usage "
-"reporting? This helps us understand how the app is used and prioritize "
-"improvements.\n"
-"\n"
-"No personal data is collected."
+"Anonymous usage data shows me which machines and features people actually "
+"use. It never includes project content or personal data."
 msgstr ""
-"Gostaria de ajudar a melhorar o Rayforge permitindo relatórios de uso "
-"anônimos? Isso nos ajuda a entender como o aplicativo é usado e priorizar "
-"melhorias.\n"
-"\n"
-"Nenhum dado pessoal é coletado."
+"Os dados de uso anônimos me mostram quais máquinas e recursos as pessoas "
+"realmente usam. Conteúdo de projetos ou dados pessoais nunca são enviados."
 
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
 msgid "No Thanks"

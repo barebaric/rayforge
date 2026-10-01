@@ -374,15 +374,16 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         privacy_group.set_title(_("Privacy"))
         privacy_group.set_description(
             _(
-                "Help us improve Rayforge by allowing anonymous usage "
-                "reporting. No personal data is collected."
+                "Anonymous usage data helps decide what to build "
+                "next. It never includes project content or "
+                "personal data."
             )
         )
         self.add(privacy_group)
 
         self.usage_consent_row = Adw.SwitchRow(
             title=_("Report Anonymous Usage"),
-            subtitle=_("Help improve Rayforge"),
+            subtitle=_("Help decide what to build next"),
         )
         self.usage_consent_row.set_active(config.has_consented_tracking)
         self.usage_consent_row.connect(

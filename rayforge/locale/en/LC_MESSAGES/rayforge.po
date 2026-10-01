@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-30 02:40+0200\n"
+"POT-Creation-Date: 2026-10-01 16:16+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -2983,8 +2983,8 @@ msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid ""
-"Help us improve Rayforge by allowing anonymous usage reporting. No personal "
-"data is collected."
+"Anonymous usage data helps decide what to build next. It never includes "
+"project content or personal data."
 msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
@@ -2992,7 +2992,7 @@ msgid "Report Anonymous Usage"
 msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid "Help improve Rayforge"
+msgid "Help decide what to build next"
 msgstr ""
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
@@ -6860,16 +6860,13 @@ msgid "Enable Anyway"
 msgstr ""
 
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
-msgid "Help Improve Rayforge"
+msgid "Help me prioritize what to build"
 msgstr ""
 
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
 msgid ""
-"Would you like to help improve Rayforge by allowing anonymous usage "
-"reporting? This helps us understand how the app is used and prioritize "
-"improvements.\n"
-"\n"
-"No personal data is collected."
+"Anonymous usage data shows me which machines and features people actually "
+"use. It never includes project content or personal data."
 msgstr ""
 
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py

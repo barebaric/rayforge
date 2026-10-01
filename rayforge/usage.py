@@ -1,6 +1,7 @@
 import json
 import locale
 import logging
+import os
 import platform
 import threading
 import urllib.error
@@ -12,6 +13,10 @@ from . import __version__
 from .config import UMAMI_URL, UMAMI_WEBSITE_ID
 
 logger = logging.getLogger(__name__)
+
+_BROWSER_UA_TAIL = (
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+)
 
 
 def _get_language() -> str:
@@ -44,6 +49,21 @@ def _get_os_info() -> str:
     return system.lower()
 
 
+def _get_user_agent() -> str:
+    """Returns a browser-style UA whose OS token matches the host OS,
+    since the analytics server derives its OS dimension from it."""
+    system = platform.system()
+    if system == "Windows":
+        return f"Mozilla/5.0 (Windows NT 10.0; Win64; x64) {_BROWSER_UA_TAIL}"
+    if system == "Darwin":
+        return (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            f"{_BROWSER_UA_TAIL}"
+        )
+    machine = platform.machine()
+    return f"Mozilla/5.0 (X11; Linux {machine}) {_BROWSER_UA_TAIL}"
+
+
 class UsageTracker:
     _instance: Optional["UsageTracker"] = None
     _lock = threading.Lock()
@@ -64,6 +84,7 @@ class UsageTracker:
         self._screen = self._get_screen_size()
         self._language = _get_language()
         self._os = _get_os_info()
+        self._user_agent = _get_user_agent()
         self._version = __version__ or "unknown"
         self._cache_token: str | None = None
         self._session_id = str(uuid.uuid4())
@@ -88,6 +109,8 @@ class UsageTracker:
 
     def track_page_view(self, url: str, title: str | None = None):
         if not self._enabled:
+            return
+        if os.environ.get("RAYFORGE_NO_USAGE_TRACKING"):
             return
         if not url.startswith("/"):
             url = "/" + url
@@ -116,11 +139,7 @@ class UsageTracker:
                 data = json.dumps(body).encode("utf-8")
                 headers = {
                     "Content-Type": "application/json",
-                    "User-Agent": (
-                        "Mozilla/5.0 (X11; Linux x86_64) "
-                        "AppleWebKit/537.36 (KHTML, like Gecko) "
-                        "Chrome/120.0.0.0 Safari/537.36"
-                    ),
+                    "User-Agent": self._user_agent,
                     "Accept": "*/*",
                     "Origin": "null",
                     "Sec-Fetch-Dest": "empty",
