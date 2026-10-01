@@ -259,6 +259,24 @@ class RpaDirectDriver:
         """
         self._require_connected().jog_xy_to(x, y)
 
+    def jog_x_to(self, x: float) -> None:
+        """Jog the X axis to an absolute position in mm.
+
+        The wrapped RdDriver auto-sends the generated lines when
+        connected; the returned lines are deliberately discarded so each
+        jog is sent exactly once.
+        """
+        self._require_connected().jog_x_to(x)
+
+    def jog_y_to(self, y: float) -> None:
+        """Jog the Y axis to an absolute position in mm.
+
+        The wrapped RdDriver auto-sends the generated lines when
+        connected; the returned lines are deliberately discarded so each
+        jog is sent exactly once.
+        """
+        self._require_connected().jog_y_to(y)
+
     def jog_xy_rel(
         self, x: float | None = None, y: float | None = None
     ) -> None:

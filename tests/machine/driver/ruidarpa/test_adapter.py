@@ -923,6 +923,57 @@ class TestLiveBridgeRpc:
         client.jog_xy_to.assert_called_once_with(0.0, 0.0)
 
 
+class TestSingleAxisHome:
+    """Homing one XY axis moves only that axis to its origin."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_home_x_moves_only_x(self, adapter_pair):
+        """home(Axis.X) must jog X to 0 and leave Y alone."""
+        adapter, backend = adapter_pair
+        await adapter.home(Axis.X)
+        backend.jog_x_to.assert_called_once_with(0.0)
+        backend.jog_y_to.assert_not_called()
+        backend.home.assert_not_called()
+        backend.home_z.assert_not_called()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_home_y_moves_only_y(self, adapter_pair):
+        """home(Axis.Y) must jog Y to 0 and leave X alone."""
+        adapter, backend = adapter_pair
+        await adapter.home(Axis.Y)
+        backend.jog_y_to.assert_called_once_with(0.0)
+        backend.jog_x_to.assert_not_called()
+        backend.home.assert_not_called()
+        backend.home_z.assert_not_called()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_home_x_and_z(self, adapter_pair):
+        """home(Axis.X | Axis.Z) homes Z and moves only X in the plane."""
+        adapter, backend = adapter_pair
+        await adapter.home(Axis.X | Axis.Z)
+        backend.jog_x_to.assert_called_once_with(0.0)
+        backend.focus_z.assert_called_once()
+        backend.home.assert_not_called()
+
+
 class TestLiveBridgeDirect:
     """Direct live bridge delegates jog/home to the backend wrapper."""
 
