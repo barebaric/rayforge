@@ -69,6 +69,44 @@
   </screenshots>
 
   <releases>
+    <release version="1.12.0" date="2026-10-02">
+      <description>
+        <p>A Command step for injecting custom machine code, plus fixes
+        for SVG import, click positioning, and Ruida UDP on Windows</p>
+        <p>New Features:</p>
+        <ul>
+          <li>A new built-in "Automation" addon debuts with the Command
+          step: add your own machine code at any position in a layer's
+          workflow — one command per line, sent exactly where the step
+          sits (#449). Handy for pre-positioning the head, toggling air
+          assist between operations, or sending controller-specific
+          codes. Lines can use the same variables as macros, the text
+          is stored with the project, and a warning appears on machines
+          whose driver does not consume machine code (e.g. Ruida)</li>
+          <li>The About dialog gains a GitHub Discussions button</li>
+        </ul>
+        <p>Changes:</p>
+        <ul>
+          <li>Usage tracking (opt-in) now reports the host OS and one
+          anonymous machine event per configured machine, carrying its
+          type (driver, laser type, optical power, bed size, rotary);
+          each launch counts as its own session, and the consent
+          prompt was reworded. Machine names and identifiers are
+          never sent</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>SVGs that contain a DOCTYPE declaration, such as those
+          exported by Affinity Studio, import again (#484)</li>
+          <li>Click to Zero and Click Canvas to Move Head round the
+          clicked position to the machine's precision, so the machine
+          can hit the requested position exactly; the ruler labels use
+          a font that fits them (#479, by atkaper)</li>
+          <li>ruida-pa was upgraded to 0.21.2, fixing UDP connections
+          on Windows (#486, by StevenIsaacs)</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.12.0~beta2" date="2026-09-30">
       <description>
         <p>Machine notes, more camera calibration target types, Ruida

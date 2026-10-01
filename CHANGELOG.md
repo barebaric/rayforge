@@ -5,20 +5,39 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 1.12.0
 
 ### Added
 
-- Workflow: a new "Command" step injects custom machine code at any
-  position in a layer's workflow (issue #449, phase 1). The step holds
-  a multi-line text block; each line is emitted verbatim at the step's
-  exact position when the job is encoded, with the same path
-  variables as macros (`machine.*`, `layer.*`, `job.*`) — `layer.*`
-  also resolves mid-layer. The text travels with the project,
-  unexpanded. Geometry-less by design: the step runs once per layer
-  with no workpiece dependency, and layers with only Command steps
-  can generate a job. A step warning appears when the active
-  machine's driver does not consume G-code (e.g. Ruida)
+- Addons: a new built-in "Automation" addon, debuting with the
+  "Command" step. Add your own machine code at any position in a
+  layer's workflow — one command per line, sent exactly where the
+  step sits (#449). Handy for pre-positioning the head, toggling air
+  assist between operations, or sending controller-specific codes.
+  Lines can use the same variables as macros (`machine.*`, `layer.*`,
+  `job.*`), the text is stored with the project, and a warning
+  appears on machines whose driver does not consume machine code
+  (e.g. Ruida)
+- About dialog: a GitHub Discussions button next to Report an Issue
+
+### Changed
+
+- Usage tracking (opt-in) now reports the host OS and one anonymous
+  machine event per configured machine, carrying its type (driver,
+  laser type, optical power, bed size, rotary); each launch counts as
+  its own session, and the consent prompt was reworded. Machine names
+  and identifiers are never sent
+
+### Fixed
+
+- SVG: files that contain a DOCTYPE declaration, such as those
+  exported by Affinity Studio, import again (raygeo 1.58.2, #484)
+- Click to Zero and Click Canvas to Move Head round the clicked
+  position to the machine's precision, so the machine can hit the
+  requested position exactly; the ruler labels use a font that fits
+  them (thanks to @atkaper, #479)
+- Ruida: ruida-pa was upgraded to 0.21.2, fixing UDP connections on
+  Windows (thanks to @StevenIsaacs, #486)
 
 ## 1.12.0-beta2
 

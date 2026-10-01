@@ -15,6 +15,7 @@ build
 repo
 builddir
 .aider*
+.zcode
 
 debian/rayforge
 debian/.debhelper
