@@ -19,9 +19,7 @@ msgstr ""
 
 #: automation/widgets/command_page.py
 msgid "One command per line. Path variables are expanded at encode time."
-msgstr ""
-"Ein Befehl pro Zeile. Pfadvariablen werden beim Encodieren "
-"expandiert."
+msgstr "Ein Befehl pro Zeile. Pfadvariablen werden beim Encodieren expandiert."
 
 #: automation/steps/command_step.py
 msgid "Command"

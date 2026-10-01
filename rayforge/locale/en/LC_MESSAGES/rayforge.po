@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-01 16:16+0200\n"
+"POT-Creation-Date: 2026-10-01 22:59+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -168,6 +168,10 @@ msgstr ""
 
 #: rayforge/core/varset/var.py
 msgid "Text (Single Line)"
+msgstr ""
+
+#: rayforge/core/varset/codevar.py
+msgid "Code (Multi-Line)"
 msgstr ""
 
 #: rayforge/core/varset/baudratevar.py
@@ -4658,24 +4662,8 @@ msgid "Edit Macro"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "Insert Variable"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "Include Macro"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
 #, python-brace-format
 msgid "Edit Macro for {name}"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "Available Variables"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "No other macros to include."
 msgstr ""
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
@@ -7157,6 +7145,18 @@ msgstr ""
 
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "Errors"
+msgstr ""
+
+#: rayforge/ui_gtk/shared/code_editor.py
+msgid "Insert Variable"
+msgstr ""
+
+#: rayforge/ui_gtk/shared/code_editor.py
+msgid "Include Macro"
+msgstr ""
+
+#: rayforge/ui_gtk/shared/code_editor.py
+msgid "No other macros to include."
 msgstr ""
 
 #: rayforge/ui_gtk/shared/pref_rows/unit_spin_row.py
