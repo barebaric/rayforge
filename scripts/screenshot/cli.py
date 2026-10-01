@@ -122,6 +122,7 @@ TARGETS = {
     "recipe-editor:step-settings": "recipe_editor_settings",
     "recipe-editor:post-processing": "recipe_editor_settings",
     "sanity-check": "sanity_check",
+    "step-settings:command:general": "step_settings_command",
     "step-settings:contour:general": "step_settings",
     "step-settings:contour:laser": "step_settings",
     "step-settings:contour:post": "step_settings",

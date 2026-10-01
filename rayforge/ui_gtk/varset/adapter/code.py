@@ -3,7 +3,24 @@ from typing import Any
 from gi.repository import Adw, Gtk
 
 from ....core.varset import CodeVar, Var
+from ...shared.gtk import apply_css
 from .base import RowAdapter, register_adapter
+
+# A real 1px border on the row itself, so it sits exactly at the
+# card's outer edge and follows the row's rounded corners (12px, from
+# the boxed-list first/last-child rules). The text view and its text
+# node keep transparent backgrounds: the text node's opaque
+# @view_bg_color fill would paint a square-cornered patch right over
+# the border (the text node does not honor border-radius).
+_CODE_AREA_CSS = """
+.code-area-row {
+    border: 1px solid @borders;
+}
+.code-area-editor,
+.code-area-editor text {
+    background: transparent;
+}
+"""
 
 
 @register_adapter(CodeVar)
@@ -25,8 +42,11 @@ class CodeAreaAdapter(RowAdapter):
     def create(
         cls, var: Var, target_property: str
     ) -> tuple[Adw.PreferencesRow, "CodeAreaAdapter"]:
+        apply_css(_CODE_AREA_CSS)
+
         row = Adw.ActionRow()
         row.set_activatable(False)
+        row.add_css_class("code-area-row")
 
         text_view = Gtk.TextView(
             monospace=True,
@@ -36,25 +56,14 @@ class CodeAreaAdapter(RowAdapter):
             left_margin=8,
             right_margin=8,
         )
+        text_view.add_css_class("code-area-editor")
         scroller = Gtk.ScrolledWindow(
             child=text_view,
             min_content_height=220,
             hscrollbar_policy=Gtk.PolicyType.AUTOMATIC,
             vscrollbar_policy=Gtk.PolicyType.AUTOMATIC,
         )
-        # Inset the editor from the row edges: the boxed row draws its
-        # own rounded outline, and a full-bleed text view would paint
-        # its differently-rounded background over that outline, making
-        # the border line disappear at the corners.
-        inset = Gtk.Box(
-            orientation=Gtk.Orientation.VERTICAL,
-            margin_top=6,
-            margin_bottom=6,
-            margin_start=6,
-            margin_end=6,
-        )
-        inset.append(scroller)
-        row.set_child(inset)
+        row.set_child(scroller)
 
         initial_val = getattr(var, target_property)
         if initial_val is not None:
