@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-30 02:40+0200\n"
+"POT-Creation-Date: 2026-10-01 16:16+0200\n"
 "PO-Revision-Date: 2026-09-27 22:58\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -3109,19 +3109,18 @@ msgstr "गोपनीयता"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid ""
-"Help us improve Rayforge by allowing anonymous usage reporting. No personal "
-"data is collected."
+"Anonymous usage data helps decide what to build next. It never includes "
+"project content or personal data."
 msgstr ""
-"गुमनाम उपयोग रिपोर्टिंग की अनुमति देकर Rayforge को बेहतर बनाने में हमारी मदद करें. कोई "
-"व्यक्तिगत डेटा एकत्र नहीं किया जाता."
+"गुमनाम उपयोग डेटा यह तय करने में मदद करता है कि आगे क्या बनाना है। प्रोजेक्ट सामग्री या निजी डेटा कभी एकत्र नहीं किया जाता।"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Report Anonymous Usage"
 msgstr "गुमनाम उपयोग रिपोर्ट करें"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid "Help improve Rayforge"
-msgstr "Rayforge को बेहतर बनाने में मदद करें"
+msgid "Help decide what to build next"
+msgstr "तय करने में मदद करें कि आगे क्या बनाना है"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
@@ -7115,22 +7114,15 @@ msgid "Enable Anyway"
 msgstr "फिर भी सक्षम करें"
 
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
-msgid "Help Improve Rayforge"
-msgstr "Rayforge को बेहतर बनाने में मदद करें"
+msgid "Help me prioritize what to build"
+msgstr "मुझे यह तय करने में मदद करें कि आगे क्या बनाना है"
 
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
 msgid ""
-"Would you like to help improve Rayforge by allowing anonymous usage "
-"reporting? This helps us understand how the app is used and prioritize "
-"improvements.\n"
-"\n"
-"No personal data is collected."
+"Anonymous usage data shows me which machines and features people actually "
+"use. It never includes project content or personal data."
 msgstr ""
-"क्या आप गुमनाम उपयोग रिपोर्टिंग की अनुमति देकर Rayforge को बेहतर बनाने में मदद करना "
-"चाहेंगे? इससे हमें यह समझने में मदद मिलती है कि ऐप का उपयोग कैसे होता है और सुधारों को "
-"प्राथमिकता कैसे दी जाए.\n"
-"\n"
-"कोई व्यक्तिगत डेटा एकत्र नहीं किया जाता."
+"गुमनाम उपयोग डेटा मुझे दिखाता है कि लोग वास्तव में कौन-सी मशीनें और सुविधाएँ उपयोग करते हैं। प्रोजेक्ट सामग्री या निजी डेटा कभी नहीं भेजा जाता।"
 
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
 msgid "No Thanks"

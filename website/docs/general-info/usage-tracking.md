@@ -25,13 +25,14 @@ You can change this choice at any time in the General settings.
 When enabled, we collect only anonymous page view data - similar to website analytics. Here's what
 we can see:
 
-| Data                 | Example                   |
-| -------------------- | ------------------------- |
-| Screen resolution    | 1920x1080                 |
-| Language setting     | en-US                     |
-| Pages/dialogs viewed | /machine-settings/general |
-| Time spent on page   | 6m 3s                     |
-| Session ID           | a1b2c3d4-e5f6-...         |
+| Data                 | Example                    |
+| -------------------- | -------------------------- |
+| Screen resolution    | 1920x1080                  |
+| Machine type         | grbl, diode laser, 430x400 |
+| Language setting     | en-US                      |
+| Pages/dialogs viewed | /machine-settings/general  |
+| Time spent on page   | 6m 3s                      |
+| Session ID           | a1b2c3d4-e5f6-...          |
 
 The session ID is a random identifier generated each time you start Rayforge. It allows us to
 distinguish between different usage sessions while keeping tracking fully anonymous.
@@ -77,7 +78,7 @@ tracking:
 - Sends small HTTP requests in the background
 - Does not affect application performance
 - Works offline (failed requests are silently ignored)
-- Uses a generic User-Agent to prevent fingerprinting
+- Sends it with a browser-style User-Agent that matches your operating system
 
 ## Disabling Tracking
 
