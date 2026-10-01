@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-01 16:16+0200\n"
+"POT-Creation-Date: 2026-10-01 22:59+0200\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -173,6 +173,10 @@ msgstr "Opción"
 #: rayforge/core/varset/var.py
 msgid "Text (Single Line)"
 msgstr "Texto (una línea)"
+
+#: rayforge/core/varset/codevar.py
+msgid "Code (Multi-Line)"
+msgstr "Código (multilínea)"
 
 #: rayforge/core/varset/baudratevar.py
 msgid "Baud rate cannot be empty."
@@ -5002,25 +5006,9 @@ msgid "Edit Macro"
 msgstr "Editar macro"
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "Insert Variable"
-msgstr "Insertar variable"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "Include Macro"
-msgstr "Incluir macro"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
 #, python-brace-format
 msgid "Edit Macro for {name}"
 msgstr "Editar macro para {name}"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "Available Variables"
-msgstr "Variables disponibles"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "No other macros to include."
-msgstr "No hay otras macros para incluir."
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "Name cannot be empty."
@@ -7678,6 +7666,18 @@ msgstr ""
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "Errors"
 msgstr "Errores"
+
+#: rayforge/ui_gtk/shared/code_editor.py
+msgid "Insert Variable"
+msgstr "Insertar variable"
+
+#: rayforge/ui_gtk/shared/code_editor.py
+msgid "Include Macro"
+msgstr "Incluir macro"
+
+#: rayforge/ui_gtk/shared/code_editor.py
+msgid "No other macros to include."
+msgstr "No hay otras macros para incluir."
 
 #: rayforge/ui_gtk/shared/pref_rows/unit_spin_row.py
 #, python-brace-format

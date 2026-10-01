@@ -3,6 +3,7 @@ from .appkeyvar import AppKeyVar
 from .baudratevar import BaudrateVar
 from .boolvar import BoolVar
 from .choicevar import ChoiceVar
+from .codevar import CodeVar
 from .floatvar import FloatVar, SliderFloatVar
 from .hostnamevar import HostnameVar
 from .intvar import IntVar, SliderIntVar
@@ -24,6 +25,7 @@ __all__ = [
     "BaudrateVar",
     "BoolVar",
     "ChoiceVar",
+    "CodeVar",
     "FloatVar",
     "HostnameVar",
     "IntVar",

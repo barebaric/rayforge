@@ -113,10 +113,15 @@ class Pipeline:
         if not self._doc:
             return False
         for layer in self._doc.layers:
-            if (
-                layer.workflow
-                and layer.workflow.steps
-                and layer.all_workpieces
+            if not (layer.workflow and layer.workflow.steps):
+                continue
+            if layer.all_workpieces:
+                return True
+            # Geometry-less steps (e.g. the Command step) run without
+            # any workpiece in the layer.
+            if any(
+                step.visible and not step.needs_workpieces
+                for step in layer.workflow.steps
             ):
                 return True
         return False
@@ -125,9 +130,10 @@ class Pipeline:
         """True when the current doc can produce a job aggregate.
 
         Mirrors the intent builder's criteria: a visible step with at
-        least one workpiece in its layer.  Without these the builder
-        emits no job node, so any rebuild would be a no-op and asking
-        for a job artifact would spin forever.
+        least one workpiece in its layer, or a visible geometry-less
+        step.  Without these the builder emits no job node, so any
+        rebuild would be a no-op and asking for a job artifact would
+        spin forever.
         """
         if not self._doc:
             return False
@@ -135,6 +141,11 @@ class Pipeline:
             if not layer.workflow:
                 continue
             if not layer.all_workpieces:
+                if any(
+                    step.visible and not step.needs_workpieces
+                    for step in layer.workflow.steps
+                ):
+                    return True
                 continue
             if any(step.visible for step in layer.workflow.steps):
                 return True

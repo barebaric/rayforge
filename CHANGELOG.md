@@ -5,6 +5,21 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- Workflow: a new "Command" step injects custom machine code at any
+  position in a layer's workflow (issue #449, phase 1). The step holds
+  a multi-line text block; each line is emitted verbatim at the step's
+  exact position when the job is encoded, with the same path
+  variables as macros (`machine.*`, `layer.*`, `job.*`) — `layer.*`
+  also resolves mid-layer. The text travels with the project,
+  unexpanded. Geometry-less by design: the step runs once per layer
+  with no workpiece dependency, and layers with only Command steps
+  can generate a job. A step warning appears when the active
+  machine's driver does not consume G-code (e.g. Ruida)
+
 ## 1.12.0-beta2
 
 ### Added

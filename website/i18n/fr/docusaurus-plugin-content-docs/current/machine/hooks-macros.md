@@ -47,6 +47,15 @@ Cas d'utilisation courants des macros :
    - Chaque ligne est une commande G-code séparée
    - Les commentaires commencent par `;` ou `(`
    - Des variables peuvent être utilisées (voir Substitution de Variables ci-dessous)
+   - Utilisez la barre d'outils au-dessus de l'éditeur pour insérer un espace réservé de variable ou
+     une référence `@include(...)` vers une autre macro
+
+![Éditeur de macros](/screenshots/machine-settings-hooks-macros-editor.webp)
+
+Le menu contextuel des espaces réservés de variables répertorie toutes les variables disponibles
+dans le contexte actuel :
+
+![Espaces réservés de variables](/screenshots/machine-settings-hooks-macros-editor-variables.webp)
 
 4. **Sauvegardez la macro**
 

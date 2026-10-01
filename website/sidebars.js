@@ -65,6 +65,7 @@ module.exports = {
                 'features/operations/frame-outline',
                 'features/operations/material-test-grid',
                 'features/operations/wavefront',
+                'features/operations/command',
               ],
             },
             {

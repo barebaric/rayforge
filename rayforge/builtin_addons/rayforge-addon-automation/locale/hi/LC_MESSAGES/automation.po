@@ -1,0 +1,55 @@
+# Hindi translations for Rayforge.
+# Copyright (C) 2026 The Rayforge Project
+# This file is distributed under the same license as the Rayforge package.
+# Samuel Abels <knipknap@gmail.com>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Rayforge\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-01 16:40+0200\n"
+"PO-Revision-Date: 2026-10-01 00:50+0200\n"
+"Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: automation/widgets/command_page.py
+msgid "One command per line. Path variables are expanded at encode time."
+msgstr "प्रति पंक्ति एक कमांड। पथ चर एन्कोड समय पर विस्तारित होते हैं।"
+
+#: automation/steps/command_step.py
+msgid "Command"
+msgstr "कमांड"
+
+#: automation/steps/command_step.py
+msgid "Machine Code"
+msgstr "मशीन कोड"
+
+#: automation/steps/command_step.py
+msgid "No machine code"
+msgstr "कोई मशीन कोड नहीं"
+
+#: automation/steps/command_step.py
+#, python-brace-format
+msgid "{count} lines"
+msgstr "{count} पंक्तियाँ"
+
+#: automation/steps/command_step.py
+msgid "The command step has no machine code."
+msgstr "कमांड चरण में कोई मशीन कोड नहीं है।"
+
+#: automation/steps/command_step.py
+#, python-brace-format
+msgid ""
+"The '{name}' driver does not support custom machine code; the lines are not "
+"emitted for this machine."
+msgstr ""
+"'{name}' ड्राइवर कस्टम मशीन कोड का समर्थन नहीं करता; इस मशीन के लिए पंक्तियाँ "
+"उत्सर्जित नहीं होतीं।"
+
+#: automation/steps/command_step.py
+msgid "None"
+msgstr "कोई नहीं"

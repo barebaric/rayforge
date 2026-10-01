@@ -722,8 +722,10 @@ class IntentController:
                 wp = workpieces.get(wp_uid)
                 if wp is not None:
                     self._key_to_item[key] = wp
-            # ``step:{step_uid}``
-            elif key.startswith("step:"):
+            # ``step:{step_uid}``, or ``command:{step_uid}`` — the
+            # compute node key of a geometry-less step, which maps to
+            # the step itself.
+            elif key.startswith(("step:", "command:")):
                 _, s_uid = key.split(":")
                 step = steps.get(s_uid)
                 if step is not None:

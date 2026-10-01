@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-01 16:16+0200\n"
+"POT-Creation-Date: 2026-10-01 22:59+0200\n"
 "PO-Revision-Date: 2026-09-27 22:58\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -169,6 +169,10 @@ msgstr "विकल्प"
 #: rayforge/core/varset/var.py
 msgid "Text (Single Line)"
 msgstr "टेक्स्ट (एक पंक्ति)"
+
+#: rayforge/core/varset/codevar.py
+msgid "Code (Multi-Line)"
+msgstr "कोड (बहु-पंक्ति)"
 
 #: rayforge/core/varset/baudratevar.py
 msgid "Baud rate cannot be empty."
@@ -3112,7 +3116,8 @@ msgid ""
 "Anonymous usage data helps decide what to build next. It never includes "
 "project content or personal data."
 msgstr ""
-"गुमनाम उपयोग डेटा यह तय करने में मदद करता है कि आगे क्या बनाना है। प्रोजेक्ट सामग्री या निजी डेटा कभी एकत्र नहीं किया जाता।"
+"गुमनाम उपयोग डेटा यह तय करने में मदद करता है कि आगे क्या बनाना है। प्रोजेक्ट सामग्री या "
+"निजी डेटा कभी एकत्र नहीं किया जाता।"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Report Anonymous Usage"
@@ -4832,25 +4837,9 @@ msgid "Edit Macro"
 msgstr "मैक्रो संपादित करें"
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "Insert Variable"
-msgstr "वेरिएबल डालें"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "Include Macro"
-msgstr "मैक्रो शामिल करें"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
 #, python-brace-format
 msgid "Edit Macro for {name}"
 msgstr "{name} के लिए मैक्रो संपादित करें"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "Available Variables"
-msgstr "उपलब्ध वेरिएबल"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "No other macros to include."
-msgstr "शामिल करने के लिए कोई अन्य मैक्रो नहीं."
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "Name cannot be empty."
@@ -7122,7 +7111,8 @@ msgid ""
 "Anonymous usage data shows me which machines and features people actually "
 "use. It never includes project content or personal data."
 msgstr ""
-"गुमनाम उपयोग डेटा मुझे दिखाता है कि लोग वास्तव में कौन-सी मशीनें और सुविधाएँ उपयोग करते हैं। प्रोजेक्ट सामग्री या निजी डेटा कभी नहीं भेजा जाता।"
+"गुमनाम उपयोग डेटा मुझे दिखाता है कि लोग वास्तव में कौन-सी मशीनें और सुविधाएँ उपयोग करते "
+"हैं। प्रोजेक्ट सामग्री या निजी डेटा कभी नहीं भेजा जाता।"
 
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
 msgid "No Thanks"
@@ -7420,6 +7410,18 @@ msgstr "{summary} मिले. आगे बढ़ने से आपकी �
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "Errors"
 msgstr "त्रुटियाँ"
+
+#: rayforge/ui_gtk/shared/code_editor.py
+msgid "Insert Variable"
+msgstr "वेरिएबल डालें"
+
+#: rayforge/ui_gtk/shared/code_editor.py
+msgid "Include Macro"
+msgstr "मैक्रो शामिल करें"
+
+#: rayforge/ui_gtk/shared/code_editor.py
+msgid "No other macros to include."
+msgstr "शामिल करने के लिए कोई अन्य मैक्रो नहीं."
 
 #: rayforge/ui_gtk/shared/pref_rows/unit_spin_row.py
 #, python-brace-format

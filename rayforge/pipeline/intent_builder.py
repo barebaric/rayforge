@@ -103,6 +103,7 @@ logger = logging.getLogger(__name__)
 # reattachment map (see IntentController) always agree.
 WORKPIECE_KEY_FMT = "workpiece:{wp_uid}:{step_uid}"
 STEP_KEY_FMT = "step:{step_uid}"
+COMMAND_KEY_FMT = "command:{step_uid}"
 JOB_KEY = "job"
 JOB_ENCODE_KEY = "job:encode"
 JOB_MACHINEXFORM_KEY = "job:machinexform"
@@ -152,6 +153,11 @@ def parse_workpiece_key(key: str) -> tuple[str, str] | None:
 
 def step_key(step_uid: str) -> str:
     return STEP_KEY_FMT.format(step_uid=step_uid)
+
+
+def command_key(step_uid: str) -> str:
+    """The compute node key of a geometry-less (workpiece-free) step."""
+    return COMMAND_KEY_FMT.format(step_uid=step_uid)
 
 
 def job_key() -> str:
@@ -216,10 +222,13 @@ class IntentBuilder:
         validate_panel_configuration(self._machine, doc)
         self._doc = doc
         nodes: list[NodeRequest] = []
-        # Map each step's key to the list of upstream workpiece compute
-        # inputs — the step aggregate token and placement depend on all
-        # of them.
-        step_compute_inputs: dict[str, list[tuple[str, int, WorkPiece]]] = {}
+        # Map each step's key to the list of upstream compute inputs
+        # — the step aggregate token and placement depend on all of
+        # them. Geometry-less steps contribute a single input with a
+        # ``None`` workpiece.
+        step_compute_inputs: dict[
+            str, list[tuple[str, int, WorkPiece | None]]
+        ] = {}
         # Per-step aggregate version tokens, used by the job aggregate
         # token so a position change that invalidates one step's
         # aggregate also invalidates the job aggregate (and encode).
@@ -229,10 +238,13 @@ class IntentBuilder:
             if not layer.workflow or not layer.workflow.steps:
                 continue
             workpieces = list(layer.all_workpieces)
-            if not workpieces:
-                continue
             for step in layer.workflow.steps:
                 if not step.visible:
+                    continue
+                if not step.needs_workpieces:
+                    step_compute_inputs[step.uid] = self._build_command_node(
+                        step, nodes
+                    )
                     continue
                 step_workpieces = self._workpieces_for_step(step, workpieces)
                 if not step_workpieces:
@@ -248,7 +260,8 @@ class IntentBuilder:
         wp_compute_keys: list[tuple[str, WorkPiece]] = []
         for inputs in step_compute_inputs.values():
             for wp_key, _token, wp in inputs:
-                wp_compute_keys.append((wp_key, wp))
+                if wp is not None:
+                    wp_compute_keys.append((wp_key, wp))
         self._build_stock_fold_nodes(doc, wp_compute_keys, nodes)
         self._build_rotary_fold_nodes(doc, wp_compute_keys, nodes)
 
@@ -300,14 +313,14 @@ class IntentBuilder:
         step: Step,
         workpieces: Sequence[WorkPiece],
         out: list[NodeRequest],
-    ) -> list[tuple[str, int, WorkPiece]]:
+    ) -> list[tuple[str, int, WorkPiece | None]]:
         """
         Append one compute NodeRequest per workpiece for *step* and
         return the list of ``(node_key, version_token, workpiece)``
         triples the step aggregate consumes.
         """
         pos_sensitive = step.is_position_sensitive()
-        inputs: list[tuple[str, int, WorkPiece]] = []
+        inputs: list[tuple[str, int, WorkPiece | None]] = []
 
         # Parallelise per-workpiece Part construction (rendering + image
         # preprocessing) when we have a reference to the TaskManager's
@@ -343,11 +356,48 @@ class IntentBuilder:
             out.append(self._make_request(key, token, stage))
         return inputs
 
+    def _build_command_node(
+        self,
+        step: Step,
+        out: list[NodeRequest],
+    ) -> list[tuple[str, int, WorkPiece | None]]:
+        """
+        Append a single compute NodeRequest for a geometry-less *step*
+        (``needs_workpieces == False``) and return its one-entry
+        upstream list with a ``None`` workpiece.
+
+        The node's output is independent of the layer's workpieces; it
+        is aggregated like any other step input so the step keeps its
+        exact position in the layer's workflow.
+        """
+        key = command_key(step.uid)
+        token = self._command_token(step)
+        stage = self._command_stage(step)
+        out.append(self._make_request(key, token, stage))
+        return [(key, token, None)]
+
+    def _command_stage(self, step: Step) -> StageSpec.Compute:
+        """Build the compute stage for a geometry-less step."""
+        part, payload = step.build_command_payload(self._machine)
+        step.populate_payload(payload, self._machine)
+        return StageSpec.Compute(part=part, params=payload)
+
+    def _command_token(self, step: Step) -> int:
+        payload = {
+            "kind": "compute",
+            "step_uid": step.uid,
+            "step_params": step.get_cache_params(),
+            "laser_params": _canonical(
+                step.get_laser_cache_params(self._machine)
+            ),
+        }
+        return _hash_int(payload)
+
     def _build_step_node(
         self,
         step: Step,
         layer: Layer,
-        upstream: list[tuple[str, int, WorkPiece]],
+        upstream: list[tuple[str, int, WorkPiece | None]],
         out: list[NodeRequest],
     ) -> None:
         key = step_key(step.uid)
@@ -743,22 +793,26 @@ class IntentBuilder:
         self,
         step: Step,
         layer: Layer,
-        upstream: list[tuple[str, int, WorkPiece]],
+        upstream: list[tuple[str, int, WorkPiece | None]],
     ) -> int:
         # Fold the per-workpiece placement matrix and target dimensions
         # into the token. The aggregate applies the placement matrix
         # to the (possibly cached) workpiece compute output, so a move
         # that leaves the compute cache untouched must still invalidate
         # the aggregate — otherwise the cached step ops are displayed
-        # at their previous world position.
+        # at their previous world position. Geometry-less inputs have
+        # no placement.
         placements: list[Any] = []
         for _k, _t, wp in upstream:
-            placements.append(
-                {
-                    "matrix": _workpiece_placement_matrix(wp),
-                    "size": list(wp.size) if wp.size else [0, 0],
-                }
-            )
+            if wp is None:
+                placements.append({"matrix": None, "size": [0, 0]})
+            else:
+                placements.append(
+                    {
+                        "matrix": _workpiece_placement_matrix(wp),
+                        "size": list(wp.size) if wp.size else [0, 0],
+                    }
+                )
         payload = {
             "kind": "step_aggregate",
             "step_uid": step.uid,
@@ -995,7 +1049,7 @@ class IntentBuilder:
     def _step_stage(
         self,
         step: Step,
-        upstream: list[tuple[str, int, WorkPiece]],
+        upstream: list[tuple[str, int, WorkPiece | None]],
     ) -> StageSpec.Aggregate:
         """
         Build an aggregate :class:`StageSpec.Aggregate` for the step
@@ -1006,7 +1060,9 @@ class IntentBuilder:
         carries the workpiece's world placement matrix (scale normalised
         to ±1, sign preserved — absolute scale is handled via
         ``target_dimensions`` for scalable artifacts) and the
-        workpiece's physical size as ``target_dimensions``.
+        workpiece's physical size as ``target_dimensions``.  Geometry-
+        less inputs (``None`` workpiece) form a marker-less group with
+        identity placement.
 
         Per-step transformers (e.g. ``MultiPassTransformer``,
         ``Optimize``) are resolved into typed Rust specs and attached
@@ -1017,6 +1073,21 @@ class IntentBuilder:
         """
         groups: list[AggregateGroup] = []
         for wp_key, _token, wp in upstream:
+            if wp is None:
+                groups.append(
+                    AggregateGroup(
+                        start_markers=[],
+                        inputs=[
+                            AggregateInput(
+                                source_key=wp_key,
+                                placement_matrix=_IDENTITY_4X4,
+                                uid=step.uid,
+                            )
+                        ],
+                        end_markers=[],
+                    )
+                )
+                continue
             placement = _workpiece_placement_matrix(wp)
             target = wp.size
             inp = AggregateInput(

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-01 16:16+0200\n"
+"POT-Creation-Date: 2026-10-01 22:59+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Ukrainian\n"
@@ -170,6 +170,10 @@ msgstr "Вибір"
 #: rayforge/core/varset/var.py
 msgid "Text (Single Line)"
 msgstr "Текст (один рядок)"
+
+#: rayforge/core/varset/codevar.py
+msgid "Code (Multi-Line)"
+msgstr "Код (багаторядковий)"
 
 #: rayforge/core/varset/baudratevar.py
 msgid "Baud rate cannot be empty."
@@ -4950,25 +4954,9 @@ msgid "Edit Macro"
 msgstr "Редагувати макрос"
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "Insert Variable"
-msgstr "Вставити змінну"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "Include Macro"
-msgstr "Включити макрос"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
 #, python-brace-format
 msgid "Edit Macro for {name}"
 msgstr "Редагувати макрос для {name}"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "Available Variables"
-msgstr "Доступні змінні"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "No other macros to include."
-msgstr "Немає інших макросів для включення."
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "Name cannot be empty."
@@ -7290,9 +7278,8 @@ msgid ""
 "Anonymous usage data shows me which machines and features people actually "
 "use. It never includes project content or personal data."
 msgstr ""
-"Анонімні дані про використання показують мені, які машини та функції "
-"справді використовуються. Вміст проєктів і персональні дані ніколи не "
-"надсилаються."
+"Анонімні дані про використання показують мені, які машини та функції справді "
+"використовуються. Вміст проєктів і персональні дані ніколи не надсилаються."
 
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
 msgid "No Thanks"
@@ -7601,6 +7588,18 @@ msgstr ""
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "Errors"
 msgstr "Помилки"
+
+#: rayforge/ui_gtk/shared/code_editor.py
+msgid "Insert Variable"
+msgstr "Вставити змінну"
+
+#: rayforge/ui_gtk/shared/code_editor.py
+msgid "Include Macro"
+msgstr "Включити макрос"
+
+#: rayforge/ui_gtk/shared/code_editor.py
+msgid "No other macros to include."
+msgstr "Немає інших макросів для включення."
 
 #: rayforge/ui_gtk/shared/pref_rows/unit_spin_row.py
 #, python-brace-format

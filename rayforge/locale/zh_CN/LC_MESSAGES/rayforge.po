@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-01 16:16+0200\n"
+"POT-Creation-Date: 2026-10-01 22:59+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -169,6 +169,10 @@ msgstr "选择"
 #: rayforge/core/varset/var.py
 msgid "Text (Single Line)"
 msgstr "文本 (单行)"
+
+#: rayforge/core/varset/codevar.py
+msgid "Code (Multi-Line)"
+msgstr "代码（多行）"
 
 #: rayforge/core/varset/baudratevar.py
 msgid "Baud rate cannot be empty."
@@ -3023,8 +3027,7 @@ msgstr "隐私"
 msgid ""
 "Anonymous usage data helps decide what to build next. It never includes "
 "project content or personal data."
-msgstr ""
-"匿名使用数据帮助决定接下来开发什么。绝不会收集项目内容或个人数据。"
+msgstr "匿名使用数据帮助决定接下来开发什么。绝不会收集项目内容或个人数据。"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Report Anonymous Usage"
@@ -4724,25 +4727,9 @@ msgid "Edit Macro"
 msgstr "编辑宏"
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "Insert Variable"
-msgstr "插入变量"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "Include Macro"
-msgstr "包含宏"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
 #, python-brace-format
 msgid "Edit Macro for {name}"
 msgstr "编辑{name}的宏"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "Available Variables"
-msgstr "可用变量"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "No other macros to include."
-msgstr "没有其他宏可包含。"
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "Name cannot be empty."
@@ -6969,7 +6956,8 @@ msgid ""
 "Anonymous usage data shows me which machines and features people actually "
 "use. It never includes project content or personal data."
 msgstr ""
-"匿名使用数据让我了解人们实际使用哪些机器和功能。绝不会发送项目内容或个人数据。"
+"匿名使用数据让我了解人们实际使用哪些机器和功能。绝不会发送项目内容或个人数"
+"据。"
 
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
 msgid "No Thanks"
@@ -7265,6 +7253,18 @@ msgstr "发现{summary}。继续操作可能会损坏您的机器或工件。"
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "Errors"
 msgstr "错误"
+
+#: rayforge/ui_gtk/shared/code_editor.py
+msgid "Insert Variable"
+msgstr "插入变量"
+
+#: rayforge/ui_gtk/shared/code_editor.py
+msgid "Include Macro"
+msgstr "包含宏"
+
+#: rayforge/ui_gtk/shared/code_editor.py
+msgid "No other macros to include."
+msgstr "没有其他宏可包含。"
 
 #: rayforge/ui_gtk/shared/pref_rows/unit_spin_row.py
 #, python-brace-format

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-01 16:16+0200\n"
+"POT-Creation-Date: 2026-10-01 22:59+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -172,6 +172,10 @@ msgstr "Choix"
 #: rayforge/core/varset/var.py
 msgid "Text (Single Line)"
 msgstr "Texte (une seule ligne)"
+
+#: rayforge/core/varset/codevar.py
+msgid "Code (Multi-Line)"
+msgstr "Code (multi-ligne)"
 
 #: rayforge/core/varset/baudratevar.py
 msgid "Baud rate cannot be empty."
@@ -3244,9 +3248,8 @@ msgid ""
 "Anonymous usage data helps decide what to build next. It never includes "
 "project content or personal data."
 msgstr ""
-"Les données d'utilisation anonymes aident à décider quoi construire "
-"ensuite. Le contenu des projets et les données personnelles ne sont jamais "
-"collectés."
+"Les données d'utilisation anonymes aident à décider quoi construire ensuite. "
+"Le contenu des projets et les données personnelles ne sont jamais collectés."
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Report Anonymous Usage"
@@ -5017,25 +5020,9 @@ msgid "Edit Macro"
 msgstr "Modifier la macro"
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "Insert Variable"
-msgstr "Insérer une variable"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "Include Macro"
-msgstr "Inclure une macro"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
 #, python-brace-format
 msgid "Edit Macro for {name}"
 msgstr "Modifier la macro pour {name}"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "Available Variables"
-msgstr "Variables disponibles"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "No other macros to include."
-msgstr "Aucune autre macro à inclure."
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "Name cannot be empty."
@@ -7713,6 +7700,18 @@ msgstr ""
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "Errors"
 msgstr "Erreurs"
+
+#: rayforge/ui_gtk/shared/code_editor.py
+msgid "Insert Variable"
+msgstr "Insérer une variable"
+
+#: rayforge/ui_gtk/shared/code_editor.py
+msgid "Include Macro"
+msgstr "Inclure une macro"
+
+#: rayforge/ui_gtk/shared/code_editor.py
+msgid "No other macros to include."
+msgstr "Aucune autre macro à inclure."
 
 #: rayforge/ui_gtk/shared/pref_rows/unit_spin_row.py
 #, python-brace-format
