@@ -48,6 +48,15 @@ Häufige Makro-Anwendungsfälle:
    - Jede Zeile ist ein separater G-Code-Befehl
    - Kommentare beginnen mit `;` oder `(`
    - Variablen können verwendet werden (siehe Variablensubstitution unten)
+   - Benutze die Werkzeugleiste über dem Editor, um einen Variablen-Platzhalter oder eine
+     `@include(...)`-Referenz auf ein anderes Makro einzufügen
+
+![Makro-Editor](/screenshots/machine-settings-hooks-macros-editor.webp)
+
+Das Variablen-Platzhalter-Popover listet alle Variablen auf, die im aktuellen Kontext verfügbar
+sind:
+
+![Variablen-Platzhalter](/screenshots/machine-settings-hooks-macros-editor-variables.webp)
 
 4. **Speichere das Makro**
 

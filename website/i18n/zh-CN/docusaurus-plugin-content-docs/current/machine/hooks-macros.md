@@ -44,6 +44,13 @@ Rayforge 提供两个强大的自动化功能来自定义您的工作流程：**
    - 每行是一个单独的 G 代码命令
    - 注释以 `;` 或 `(` 开头
    - 可以使用变量（参见下面的变量替换）
+   - 使用编辑器上方的工具栏插入变量占位符或对另一个宏的 `@include(...)` 引用
+
+![宏编辑器](/screenshots/machine-settings-hooks-macros-editor.webp)
+
+变量占位符弹出框列出了当前上下文中可用的所有变量：
+
+![变量占位符](/screenshots/machine-settings-hooks-macros-editor-variables.webp)
 
 4. **保存宏**
 

@@ -60,7 +60,12 @@ def test_command_page_editor_is_flat_and_tall(editor, machine):
             if hasattr(widget, "get_first_child")
             else None
         )
-        return _find_scroller(child) if child is not None else None
+        while child is not None:
+            found = _find_scroller(child)
+            if found is not None:
+                return found
+            child = child.get_next_sibling()
+        return None
 
     scroller = _find_scroller(row.get_child())
     assert scroller is not None
@@ -87,3 +92,16 @@ def test_command_page_model_sync_overrides_buffer(editor, machine):
     step.set_command_text("M104")
 
     assert _buffer_text(page) == "M104"
+
+
+@pytest.mark.ui
+def test_command_page_typing_updates_step(editor, machine):
+    """Typing in the editor reaches the step (via the widget debounce)."""
+    step = CommandStep.create(editor.context)
+    page = CommandStepSettingsPage(editor, step)
+
+    widget, _var_set = page._varset_widgets[0]
+    _text_view(page).get_buffer().set_text("M110\nM111")
+    widget.flush_pending()
+
+    assert step.command_text == "M110\nM111"

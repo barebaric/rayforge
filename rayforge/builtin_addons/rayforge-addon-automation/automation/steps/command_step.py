@@ -101,12 +101,22 @@ class CommandStep(Step):
 
     @classmethod
     def recipe_varset(cls) -> VarSet:
+        def machine_macros() -> list:
+            from rayforge.context import get_context
+
+            machine = get_context().machine
+            if machine is None:
+                return []
+            return list(machine.macros.values())
+
         return VarSet(
             vars=[
                 CodeVar(
                     key="command_text",
                     label=_("Machine Code"),
                     default="",
+                    variable_context_level="layer",
+                    macros_provider=machine_macros,
                 )
             ]
         )
