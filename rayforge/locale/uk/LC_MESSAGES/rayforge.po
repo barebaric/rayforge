@@ -9281,6 +9281,10 @@ msgid "Report an Issue"
 msgstr "Повідомити про проблему"
 
 #: rayforge/ui_gtk/about.py
+msgid "Discussions"
+msgstr "Обговорення"
+
+#: rayforge/ui_gtk/about.py
 msgid "Version"
 msgstr "Версія"
 

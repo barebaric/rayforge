@@ -1362,6 +1362,10 @@ function NeedHelp() {
         {' '}
         <a href="https://github.com/barebaric/rayforge/issues">GitHub</a>
         {' | '}
+        <a href="https://github.com/barebaric/rayforge/discussions">
+          Discussions
+        </a>
+        {' | '}
         <a href="https://discord.gg/sTHNdTtpQJ">Discord</a>
       </p>
     </div>

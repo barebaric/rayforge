@@ -7,6 +7,7 @@
   <content_rating type="oars-1.1" />
   <url type="homepage">https://rayforge.org</url>
   <url type="bugtracker">https://github.com/barebaric/rayforge/issues</url>
+  <url type="help">https://github.com/barebaric/rayforge/discussions</url>
   <url type="vcs-browser">https://github.com/barebaric/rayforge</url>
   
   <name>Rayforge</name>

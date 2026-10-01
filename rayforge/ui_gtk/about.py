@@ -289,6 +289,13 @@ class AboutDialog(PatchedDialogWindow):
         )
         links_box.append(issues_button)
 
+        discussions_button = Gtk.Button.new_with_label(_("Discussions"))
+        discussions_button.connect(
+            "clicked",
+            lambda _: webbrowser.open(const.DISCUSSIONS_URL),
+        )
+        links_box.append(discussions_button)
+
         donate_button = Gtk.Button.new_with_label(_("Donate"))
         donate_button.connect(
             "clicked",
