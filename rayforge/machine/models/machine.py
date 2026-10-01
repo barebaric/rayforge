@@ -82,6 +82,23 @@ def _clamp_margins(margins: Rect, extents: tuple[float, float]) -> Rect:
     return (ml, mt, mr, mb)
 
 
+def _clamp_jog_distance(
+    pos: float, distance: float, lower: float, upper: float
+) -> float:
+    """Shorten a jog so it does not travel past a limit.
+
+    The result never reverses or lengthens the requested jog. When the
+    position is already beyond a limit, a jog further out becomes 0 and
+    a jog back towards the range is allowed, stopping at the far limit.
+    """
+    target = pos + distance
+    if distance > 0:
+        target = min(target, max(upper, pos))
+    elif distance < 0:
+        target = max(target, min(lower, pos))
+    return target - pos
+
+
 def _raise_error(*args, **kwargs):
     raise RuntimeError("Cannot schedule from worker process")
 
@@ -1127,47 +1144,16 @@ class Machine:
         """
         Check if a jog operation would exceed soft limits.
 
+        True when the soft limits would shorten or block the jog, so the
+        warning matches what _adjust_jog_distance_for_limits() sends: a
+        jog back towards the range from outside it is not flagged.
+
         Note: The `distance` argument must be the final, signed coordinate
         delta that will be sent to the machine.
         """
         if not self.soft_limits_enabled:
             return False
-
-        current_pos = self.device_state.machine_pos
-        x_pos, y_pos = current_pos[0], current_pos[1]
-        x_min, y_min, x_max, y_max = self.get_soft_limits()
-
-        # Check X axis
-        if axis & Axis.X:
-            if x_pos is None:
-                return False  # Cannot check limits if position is unknown
-            new_x = x_pos + distance
-            if new_x < x_min or new_x > x_max:
-                return True
-
-        # Check Y axis
-        if axis & Axis.Y:
-            if y_pos is None:
-                return False  # Cannot check limits if position is unknown
-            new_y = y_pos + distance
-            if new_y < y_min or new_y > y_max:
-                return True
-
-        # Check Z axis against the configured Z travel range
-        return bool(axis & Axis.Z) and self._would_z_move_exceed_extents(
-            distance
-        )
-
-    def _would_z_move_exceed_extents(self, distance: float) -> bool:
-        """Whether a Z move by *distance* would leave the Z travel range."""
-        z_extents = self.z_extents
-        if z_extents is None:
-            return False
-        z_pos = self.device_state.machine_pos[2]
-        if z_pos is None:
-            return False  # Cannot check limits if position is unknown
-        new_z = z_pos + distance
-        return new_z < z_extents[0] or new_z > z_extents[1]
+        return self._adjust_jog_distance_for_limits(axis, distance) != distance
 
     def _adjust_jog_distance_for_limits(
         self, axis: Axis, distance: float
@@ -1185,21 +1171,17 @@ class Machine:
         if axis & Axis.X:
             if x_pos is None:
                 return distance  # Cannot adjust if position is unknown
-            new_x = x_pos + distance
-            if new_x < x_min:
-                adjusted_distance = x_min - x_pos
-            elif new_x > x_max:
-                adjusted_distance = x_max - x_pos
+            adjusted_distance = _clamp_jog_distance(
+                x_pos, distance, x_min, x_max
+            )
 
         # Check Y axis
         if axis & Axis.Y:
             if y_pos is None:
                 return distance  # Cannot adjust if position is unknown
-            new_y = y_pos + distance
-            if new_y < y_min:
-                adjusted_distance = y_min - y_pos
-            elif new_y > y_max:
-                adjusted_distance = y_max - y_pos
+            adjusted_distance = _clamp_jog_distance(
+                y_pos, distance, y_min, y_max
+            )
 
         # Adjust the Z axis against the configured Z travel range
         if axis & Axis.Z:
@@ -1208,11 +1190,9 @@ class Machine:
                 z_pos = self.device_state.machine_pos[2]
                 if z_pos is not None:
                     z_min, z_max = z_extents
-                    new_z = z_pos + adjusted_distance
-                    if new_z < z_min:
-                        adjusted_distance = z_min - z_pos
-                    elif new_z > z_max:
-                        adjusted_distance = z_max - z_pos
+                    adjusted_distance = _clamp_jog_distance(
+                        z_pos, adjusted_distance, z_min, z_max
+                    )
 
         return adjusted_distance
 
