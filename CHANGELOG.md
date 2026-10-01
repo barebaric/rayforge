@@ -256,7 +256,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GRBL: reading device settings no longer aborts on grblHAL bitmask
   values, so the settings dialog refreshes correctly (#401)
 - Material test: grid dimensions are truncated to whole numbers before
-  the test grid is generated, repairing broken grids (#405)
+  the test grid is generated, repairing broken grids (thanks to
+  @atkaper, #405)
 
 ## 1.11.0
 

@@ -68,6 +68,12 @@ warning appears when the active machine's driver does not consume G-code, such a
   origin corner and numbering order are all editable, so factory-printed patterns can be calibrated
   against directly instead of printing a new card (thanks to @TOverbye, #466)
 
+## Sketcher
+
+The sketcher keeps improving: array tools now also lay out text boxes (#399), helper geometry moves
+together with the array members it belongs to, and dragging elements no longer resizes the main
+window (#385).
+
 ## Power Modes and Framing
 
 Each step now has a **Power Mode**: Dynamic (M4) or Constant (M3). Constant power avoids power sags
@@ -90,6 +96,22 @@ alternative to GRBL (Serial). Dialects and settings remain plain Rayforge data.
 
 ## Fixes and Minor Improvements
 
+- Selecting a driver that requires connection details no longer crashes the app with a GTK assertion
+  and a crash loop at startup (#415)
+- Importing DXF or LBRN2 files on macOS no longer produces a garbled, wrongly scaled result caused
+  by the generic binary MIME type routing files to the Ruida importer (#384)
+- Material textures are included again in wheel-based installs, repairing blank material thumbnails
+  on flatpak and deb installs (#419)
+- The Machine Settings dialog is now a single instance per main window instead of opening duplicates
+  (#416 -- thank you @StevenIsaacs)
+- Print and cut: the wizard now launches on machines whose position reports include an extra rotary
+  axis (#394), and capturing an alignment point accounts for Pointer Alignment (#478)
+- GRBL: reading device settings no longer aborts on grblHAL bitmask values (#401), and the material
+  test grid is repaired for fractional row and column counts (#405 -- thank you @atkaper)
+- macOS: the full-screen main window stays visible when a dialog closes on top of it (#453)
+- The ChArUco calibration card is detected again on blurry, unevenly lit frames by falling back
+  through progressively more tolerant detection passes (#443, #465)
+- G-code no longer contains zero-length travel moves (raygeo)
 - Serial ports can be bound by USB VID:PID instead of a device path, so auto-reconnect follows the
   machine after the OS re-enumerates USB devices (#459)
 - Configs, machine profiles, and recipes are persisted atomically with backups, so an interrupted
