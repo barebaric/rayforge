@@ -197,6 +197,8 @@ def main():
     class App(Adw.Application):
         def __init__(self, args):
             super().__init__(application_id="org.rayforge.rayforge")
+            GLib.set_prgname("rayforge")
+            Gtk.Window.set_default_icon_name("org.rayforge.rayforge")
             from rayforge.ui_gtk.shared.keyboard import PRIMARY_ACCEL
 
             self.args = args
