@@ -6,6 +6,7 @@ platforms = ["linux-64", "osx-arm64"]
 
 [environments]
 default = { features = ["app", "test"], solve-group = "default" }
+appimage = { features = ["app"], solve-group = "default" }
 website = { features = ["website"], solve-group = "default" }
 build = { features = ["build-tools"], solve-group = "build" }
 video = { features = ["video-tools"], solve-group = "video" }
@@ -180,6 +181,11 @@ depends-on = ["compile-translations"]
 [tasks.build-deb-source]
 # Builds a source package, ready for upload to a PPA.
 cmd = "bash scripts/build-deb.sh --source"
+depends-on = ["compile-translations"]
+
+[tasks.build-appimage]
+# Builds a self-contained AppImage from the "appimage" environment.
+cmd = "bash scripts/build-appimage.sh"
 depends-on = ["compile-translations"]
 
 [dependencies]

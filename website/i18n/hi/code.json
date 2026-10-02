@@ -949,5 +949,44 @@
   },
   "page.devices.device.xtool-d1-pro.description": {
     "message": "430x390mm कार्य क्षेत्र वाला, Wi-Fi से जुड़ा डायोड लेज़र उत्कीर्णक"
+  },
+  "install.appimage.title": {
+    "message": "AppImage"
+  },
+  "install.appimage.description": {
+    "message": "AppImage एक एकल, आत्मनिर्भर फ़ाइल है जो अधिकांश Linux वितरणों पर बिना इंस्टॉलेशन के चलती है। इसे डाउनलोड करें, निष्पादन योग्य बनाएं और चलाएं।"
+  },
+  "install.appimage.downloadAppImage": {
+    "message": "AppImage डाउनलोड करें"
+  },
+  "install.downloadFromGithub": {
+    "message": "GitHub Releases से डाउनलोड करें"
+  },
+  "install.appimage.makeExecutable": {
+    "message": "इसे निष्पादन योग्य बनाएं"
+  },
+  "install.appimage.makeExecutableAlternative": {
+    "message": "वैकल्पिक रूप से, अपने फ़ाइल मैनेजर का उपयोग करें: फ़ाइल पर राइट-क्लिक करें, Properties खोलें और Permissions में \"Executable\" सक्षम करें।"
+  },
+  "install.appimage.launchInstruction": {
+    "message": "AppImage को टर्मिनल से चलाएं या अपने फ़ाइल मैनेजर में इस पर डबल-क्लिक करें:"
+  },
+  "install.appimage.integrationTitle": {
+    "message": "मेनू प्रविष्टि और आइकन"
+  },
+  "install.appimage.integration": {
+    "message": "आइकन के साथ Rayforge मेनू प्रविष्टि पाने के लिए, AppImageLauncher इंस्टॉल करें, या AppImage को मैन्युअल रूप से एक निश्चित स्थान (जैसे ~/.local/bin) पर ले जाएं और उसे इंगित करने वाली एक .desktop फ़ाइल बनाएं। इसके बाद फ़ाइल को उसी स्थान पर रखें — AppImage को उसी पथ पर सुलभ रहना चाहिए।"
+  },
+  "install.appimageNotStarting": {
+    "message": "AppImage शुरू नहीं होता?"
+  },
+  "install.appimageFuseNote": {
+    "message": "यदि आपको FUSE का उल्लेख करती कोई त्रुटि दिखे, तो आपके सिस्टम में वह लाइब्रेरी अनुपस्थित है जिसका उपयोग AppImage स्वयं को माउंट करने के लिए करते हैं। इसे अपने पैकेज मैनेजर से इंस्टॉल करें:"
+  },
+  "install.appimageFusePackages": {
+    "message": "पहली पंक्ति Debian और Ubuntu 23.10 तक के लिए, दूसरी Ubuntu 24.04 और बाद के संस्करणों के लिए, और तीसरी Fedora के लिए लागू होती है।"
+  },
+  "install.appimageExtractRun": {
+    "message": "वैकल्पिक रूप से, FUSE के बिना AppImage चलाने के लिए पहले इसे स्वयं निकालने दें:"
   }
 }

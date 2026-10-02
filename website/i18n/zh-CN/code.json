@@ -1024,5 +1024,44 @@
   },
   "page.devices.device.xtool-d1-pro.description": {
     "message": "二极管激光雕刻机，工作区域430x390mm，通过Wi-Fi连接"
+  },
+  "install.appimage.title": {
+    "message": "AppImage"
+  },
+  "install.appimage.description": {
+    "message": "AppImage 是一个独立的单文件程序，无需安装即可在大多数 Linux 发行版上运行。下载后将其设为可执行并运行即可。"
+  },
+  "install.appimage.downloadAppImage": {
+    "message": "下载 AppImage"
+  },
+  "install.downloadFromGithub": {
+    "message": "从 GitHub Releases 下载"
+  },
+  "install.appimage.makeExecutable": {
+    "message": "将其设为可执行"
+  },
+  "install.appimage.makeExecutableAlternative": {
+    "message": "也可以使用文件管理器：右键点击该文件，打开“属性”，在“权限”中启用“可执行”。"
+  },
+  "install.appimage.launchInstruction": {
+    "message": "在终端中运行该 AppImage，或在文件管理器中双击它："
+  },
+  "install.appimage.integrationTitle": {
+    "message": "菜单项和图标"
+  },
+  "install.appimage.integration": {
+    "message": "要让 Rayforge 在应用菜单中显示并带有图标，请安装 AppImageLauncher，或者手动将 AppImage 移动到固定位置（例如 ~/.local/bin）并创建指向它的 .desktop 文件。之后请保留该文件——AppImage 必须始终可以通过同一路径访问。"
+  },
+  "install.appimageNotStarting": {
+    "message": "AppImage 无法启动？"
+  },
+  "install.appimageFuseNote": {
+    "message": "如果看到提及 FUSE 的错误，说明系统缺少 AppImage 用于自行挂载的库。请使用您的包管理器安装："
+  },
+  "install.appimageFusePackages": {
+    "message": "第一行适用于 Debian 及 23.10 及更早的 Ubuntu，第二行适用于 Ubuntu 24.04 及更高版本，第三行适用于 Fedora。"
+  },
+  "install.appimageExtractRun": {
+    "message": "或者，让 AppImage 先自解压，从而在没有 FUSE 的情况下运行："
   }
 }
