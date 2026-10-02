@@ -2493,6 +2493,74 @@ class TestJogDelegation:
             == -95.0
         )
 
+    @pytest.mark.parametrize(
+        "current_pos, axis, distance, expected",
+        [
+            # Z reported far above its range (Ruida RDC8445S reads ~3176)
+            ((0, 0, 3176.176), Axis.Z, 10.0, 0.0),
+            ((0, 0, 3176.176), Axis.Z, -10.0, -10.0),
+            # Z below its range
+            ((0, 0, -80.0), Axis.Z, -10.0, 0.0),
+            ((0, 0, -80.0), Axis.Z, 10.0, 10.0),
+            # Moving back into range stops at the far limit
+            ((0, 0, -80.0), Axis.Z, 200.0, 130.0),
+            # X and Y beyond their soft limits (extents 200 x 300)
+            ((250, 0, 0), Axis.X, 10.0, 0.0),
+            ((250, 0, 0), Axis.X, -10.0, -10.0),
+            ((0, -20, 0), Axis.Y, -5.0, 0.0),
+            ((0, -20, 0), Axis.Y, 5.0, 5.0),
+            # Exactly at a limit, as left by a previous clamped jog
+            ((0, 0, 50.0), Axis.Z, 10.0, 0.0),
+            ((0, 0, 50.0), Axis.Z, -10.0, -10.0),
+            ((200, 0, 0), Axis.X, 10.0, 0.0),
+            ((200, 0, 0), Axis.X, -10.0, -10.0),
+        ],
+    )
+    def test_adjust_jog_distance_never_reverses_outside_limits(
+        self, isolated_machine: Machine, current_pos, axis, distance, expected
+    ):
+        """
+        A position already beyond a limit must not turn a jog into a
+        move of the opposite direction towards that limit.
+        """
+        isolated_machine.set_axis_extents(200, 300)
+        isolated_machine.device_state.machine_pos = current_pos
+
+        assert isolated_machine._adjust_jog_distance_for_limits(
+            axis, distance
+        ) == pytest.approx(expected)
+
+    @pytest.mark.parametrize(
+        "current_pos, axis, distance, expected",
+        [
+            # Outside the range: only a jog further out is flagged
+            ((0, 0, 3176.176), Axis.Z, 10.0, True),
+            ((0, 0, 3176.176), Axis.Z, -10.0, False),
+            ((250, 0, 0), Axis.X, 10.0, True),
+            ((250, 0, 0), Axis.X, -10.0, False),
+            # Moving back into range past the far limit is still flagged
+            ((0, 0, -80.0), Axis.Z, 200.0, True),
+            # At a limit: outward is flagged, inward is not
+            ((0, 0, 50.0), Axis.Z, 10.0, True),
+            ((0, 0, 50.0), Axis.Z, -10.0, False),
+        ],
+    )
+    def test_would_jog_exceed_limits_matches_clamp_outside_range(
+        self, isolated_machine: Machine, current_pos, axis, distance, expected
+    ):
+        """
+        The jog button warning flags exactly the jogs the soft limits
+        shorten or block, so a working jog back into range is not shown
+        as a warning.
+        """
+        isolated_machine.set_axis_extents(200, 300)
+        isolated_machine.device_state.machine_pos = current_pos
+
+        assert (
+            isolated_machine.would_jog_exceed_limits(axis, distance)
+            is expected
+        )
+
     def test_set_z_extents_updates_travel_range(
         self, isolated_machine: Machine
     ):
