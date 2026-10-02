@@ -38,6 +38,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   them (thanks to @atkaper, #479)
 - Ruida: ruida-pa was upgraded to 0.21.2, fixing UDP connections on
   Windows (thanks to @StevenIsaacs, #486)
+- Machine: a reported position outside the soft limits no longer
+  turns every jog into a long move back to the nearest limit, which
+  could drive an axis into its end stop (e.g. on a Ruida RDC8445S
+  whose controller reports Z around 3176 mm). Jogs heading further
+  out of range are now blocked, jogs back towards the range are
+  allowed and stop at the far limit, and the soft-limit warning
+  matches exactly (thanks to @medoix, #488)
 
 ## 1.12.0-beta2
 

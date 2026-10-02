@@ -72,7 +72,8 @@
     <release version="1.12.0" date="2026-10-02">
       <description>
         <p>A Command step for injecting custom machine code, plus fixes
-        for SVG import, click positioning, and Ruida UDP on Windows</p>
+        for SVG import, click positioning, jog soft limits, and Ruida
+        UDP on Windows</p>
         <p>New Features:</p>
         <ul>
           <li>A new built-in "Automation" addon debuts with the Command
@@ -104,6 +105,13 @@
           a font that fits them (#479, by atkaper)</li>
           <li>ruida-pa was upgraded to 0.21.2, fixing UDP connections
           on Windows (#486, by StevenIsaacs)</li>
+          <li>Jogs no longer reverse towards the nearest soft limit
+          when the reported position lies outside the travel range —
+          previously a single jog could drive an axis into its end
+          stop, e.g. on a Ruida RDC8445S reporting Z around 3176 mm.
+          Jogs heading further out of range are now blocked, jogs back
+          towards the range stop at the far limit, and the soft-limit
+          warning matches exactly (#488, by medoix)</li>
         </ul>
       </description>
     </release>
