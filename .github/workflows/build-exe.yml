@@ -215,3 +215,60 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  winget:
+    name: Submit WinGet Manifest
+    needs: release
+    runs-on: windows-latest
+    if: startsWith(github.ref, 'refs/tags/') && github.repository == 'barebaric/rayforge'
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download Installer
+        shell: bash
+        run: |
+          curl -fSL -o installer.exe \
+            "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/rayforge-v${{ github.ref_name }}-installer.exe"
+
+      - name: Compute Installer Hash
+        id: installer
+        shell: bash
+        run: |
+          HASH=$(sha256sum installer.exe | awk '{print toupper($1)}')
+          echo "sha256=$HASH" >> "$GITHUB_OUTPUT"
+
+      - name: Render Manifests
+        shell: bash
+        run: |
+          bash scripts/win/winget/render_manifests.sh \
+            "${{ github.ref_name }}" \
+            "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/rayforge-v${{ github.ref_name }}-installer.exe" \
+            "${{ steps.installer.outputs.sha256 }}" \
+            winget-manifests
+
+      - name: Validate Manifests
+        shell: pwsh
+        run: |
+          winget validate --manifest "$env:GITHUB_WORKSPACE\winget-manifests"
+
+      - name: Determine PR Title
+        id: prtitle
+        shell: bash
+        run: |
+          # New packages must use the "New package:" title prefix; version
+          # updates must not.
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://api.github.com/repos/microsoft/winget-pkgs/contents/manifests/r/Rayforge/Rayforge")
+          if [ "$CODE" = "200" ]; then
+            echo "title=Rayforge.Rayforge version ${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "title=New package: Rayforge.Rayforge version ${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Submit to winget-pkgs
+        shell: pwsh
+        env:
+          WINGET_CREATE_GITHUB_TOKEN: ${{ secrets.WINGET_PAT }}
+        run: |
+          Invoke-WebRequest -Uri "https://aka.ms/wingetcreate/latest" -OutFile "wingetcreate.exe"
+          .\wingetcreate.exe submit "$env:GITHUB_WORKSPACE\winget-manifests" --prtitle "${{ steps.prtitle.outputs.title }}" --no-open

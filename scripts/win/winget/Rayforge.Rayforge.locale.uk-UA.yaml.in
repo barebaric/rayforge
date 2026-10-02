@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.locale.1.12.0.schema.json
+
+PackageIdentifier: Rayforge.Rayforge
+PackageVersion: @VERSION@
+PackageLocale: uk-UA
+Publisher: Samuel Abels
+PackageName: Rayforge
+License: MIT
+ShortDescription: Настільна програма для різання та гравіювання лазером
+ManifestType: locale
+ManifestVersion: 1.12.0
