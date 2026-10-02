@@ -1024,5 +1024,44 @@
   },
   "page.devices.device.xtool-d1-pro.description": {
     "message": "Діодний лазерний гравер з робочою областю 430x390mm, підключений через Wi-Fi"
+  },
+  "install.appimage.title": {
+    "message": "AppImage"
+  },
+  "install.appimage.description": {
+    "message": "AppImage — це один самодостатній файл, який працює на більшості дистрибутивів Linux без встановлення. Завантажте його, зробіть виконуваним і запустіть."
+  },
+  "install.appimage.downloadAppImage": {
+    "message": "Завантажити AppImage"
+  },
+  "install.downloadFromGithub": {
+    "message": "Завантажити з GitHub Releases"
+  },
+  "install.appimage.makeExecutable": {
+    "message": "Зробити його виконуваним"
+  },
+  "install.appimage.makeExecutableAlternative": {
+    "message": "Крім того, скористайтеся файловим менеджером: клацніть файл правою кнопкою, відкрийте «Властивості» та на вкладці «Права доступу» увімкніть «Виконуваний»."
+  },
+  "install.appimage.launchInstruction": {
+    "message": "Запустіть AppImage з терміналу або двічі клацніть на ньому у файловому менеджері:"
+  },
+  "install.appimage.integrationTitle": {
+    "message": "Пункт меню та піктограма"
+  },
+  "install.appimage.integration": {
+    "message": "Щоб отримати пункт меню Rayforge з піктограмою, встановіть AppImageLauncher, або вручну перемістіть AppImage до фіксованого розташування (наприклад, ~/.local/bin) і створіть файл .desktop, що вказує на нього. Надалі залиште файл на місці — AppImage має залишатися доступним за тим самим шляхом."
+  },
+  "install.appimageNotStarting": {
+    "message": "AppImage не запускається?"
+  },
+  "install.appimageFuseNote": {
+    "message": "Якщо ви бачите помилку із згадкою FUSE, у вашій системі відсутня бібліотека, яку AppImage використовують для власного монтування. Встановіть її за допомогою менеджера пакетів:"
+  },
+  "install.appimageFusePackages": {
+    "message": "Перший рядок стосується Debian та Ubuntu до 23.10, другий — Ubuntu 24.04 і новіших, третій — Fedora."
+  },
+  "install.appimageExtractRun": {
+    "message": "Крім того, запустіть AppImage без FUSE, спочатку дозволивши йому саморозпакуватися:"
   }
 }
