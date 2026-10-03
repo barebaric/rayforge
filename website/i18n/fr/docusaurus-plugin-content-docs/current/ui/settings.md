@@ -44,6 +44,29 @@ l'utilisation anonyme** à tout moment. Consulte la page
 [suivi d'utilisation](https://rayforge.org/docs/general-info/usage-tracking) pour en savoir plus sur
 les données collectées et leur utilisation.
 
+## Gestes de la souris
+
+La page Gestes de la souris te permet de réattribuer les gestes de navigation du canevas 2D, du
+canevas 3D et de l'éditeur de croquis. Chaque entrée affiche la combinaison de boutons de souris
+actuellement attribuée. Clique sur une entrée pour capturer une nouvelle attribution : appuie sur le
+bouton de souris souhaité (avec ou sans touches modificatrices) ou utilise la molette de la souris,
+et l'attribution est appliquée immédiatement.
+
+- **Déplacer la vue** — maintiens le bouton de souris attribué enfoncé et déplace la souris pour
+  déplacer la vue.
+- **Zoomer la vue** — utilise la molette de la souris pour zoomer.
+- **Orbite / rotation (canevas 3D)** — fais glisser pour orbiter autour de la scène ou tourner
+  autour de l'axe Z.
+- **Ouvrir le menu contextuel** — le menu contextuel du canevas 2D ou le menu d'outils de l'éditeur
+  de croquis.
+- **Réinitialiser la vue** — replace la vue. Non attribué par défaut.
+
+Une attribution peut être supprimée avec **Désattribuer** ou restaurée avec **Rétablir les valeurs
+par défaut**. L'attribution d'un geste déjà utilisé pour une autre action dans la même vue est
+refusée, afin qu'une combinaison de boutons de souris ne déclenche jamais deux actions à la fois.
+Les addons peuvent apporter des configurations de gestes supplémentaires, qui apparaissent comme des
+sections supplémentaires sur cette page.
+
 ## Autres paramètres
 
 La boîte de dialogue des paramètres inclut également des pages pour gérer d'autres parties de

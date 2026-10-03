@@ -47,6 +47,24 @@ collected. You can toggle **Report Anonymous Usage** on or off at any time. See 
 [usage tracking](https://rayforge.org/docs/general-info/usage-tracking) page to learn more about
 what data is collected and how it is used.
 
+## Mouse Gestures
+
+The Mouse Gestures page lets you rebind the navigation gestures of the 2D canvas, the 3D canvas, and
+the sketch editor. Each entry shows the currently assigned mouse button combination. Click an entry
+to capture a new binding: press the desired mouse button (with or without modifier keys held) or use
+the scroll wheel, and the binding is applied immediately.
+
+- **Pan the view** — hold the bound mouse button and move to pan.
+- **Zoom the view** — use the mouse wheel to zoom.
+- **Orbit / rotate (3D canvas)** — drag to orbit around the scene or rotate around the Z axis.
+- **Open the context menu** — the 2D canvas context menu or the sketch editor tool menu.
+- **Reset the view** — fits the view again. Unbound by default.
+
+A binding can be removed with **Unassign** or restored with **Reset to default**. Assigning a
+gesture that is already used for another action in the same view is rejected, so a mouse button
+combination never triggers two actions at once. Addons can contribute additional gesture
+configurations, which appear as extra sections on this page.
+
 ## Other Settings
 
 The settings dialog also includes pages for managing other parts of the application. Each has its

@@ -24,6 +24,9 @@ logger = logging.getLogger(__name__)
 
 
 class SketchCanvas(WorldSurface):
+    # Navigation is routed over the sketcher's own gesture bindings.
+    context_id = "sketcher"
+
     def __init__(
         self,
         parent_window: Gtk.Window,
@@ -60,6 +63,12 @@ class SketchCanvas(WorldSurface):
 
         # The SketchCanvas owns a SketchEditor to manage the session.
         self.sketch_editor = SketchEditor(self.parent_window)
+
+        # The base surface routes navigation over the "sketcher" gesture
+        # bindings; the tool menu click is registered here.
+        self._router.register_click(
+            "pie_menu", invoke=self.on_right_click_pressed
+        )
 
         # It creates a single, primary sketch element that is always active.
         self.sketch_element = SketchElement()
