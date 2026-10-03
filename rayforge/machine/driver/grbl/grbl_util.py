@@ -109,6 +109,8 @@ command_url = "/command?commandText={command}&PAGEID="
 upload_url = "/upload"
 execute_url = "/command?commandText=%5BESP220%5D/{filename}"
 status_url = command_url.format(command="?")
+fluidnc_command_url = "/?commandText={command}"
+fluidnc_status_url = fluidnc_command_url.format(command="%3F")
 
 
 # GRBL Regex Parsers

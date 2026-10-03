@@ -38,6 +38,8 @@ from .grbl_util import (
     detect_unit_system_from_settings,
     eeprom_info_url,
     execute_url,
+    fluidnc_command_url,
+    fluidnc_status_url,
     fw_info_url,
     gcode_to_p_number,
     get_grbl_setting_varsets,
@@ -101,6 +103,7 @@ class GrblNetworkDriver(Driver):
         self._current_request: CommandRequest | None = None
         self._cmd_lock = asyncio.Lock()
         self._report_in_inches: bool = False
+        self.is_fluidnc = False
 
     @classmethod
     async def probe(
@@ -150,15 +153,20 @@ class GrblNetworkDriver(Driver):
                 PortVar(
                     key="ws_port",
                     label=_("WebSocket Port"),
-                    description=_("The WebSocket port for the device"),
+                    description=_(
+                        "The WebSocket port for the device. For FluidNC,"
+                        " use the same port as HTTP (usually 80)."
+                    ),
                     default=81,
                 ),
                 ChoiceVar(
                     key="protocol",
                     label=_("Protocol variant"),
-                    description=_("Standard, ESP3D, or Longer GRBL variant"),
+                    description=_(
+                        "Standard, ESP3D, Longer, or FluidNC variant"
+                    ),
                     default="ESP3D",
-                    choices=["ESP3D", "Longer"],
+                    choices=["ESP3D", "Longer", "FluidNC"],
                     null_label=_("Standard"),
                 ),
             ]
@@ -184,9 +192,16 @@ class GrblNetworkDriver(Driver):
         self.protocol = protocol
 
         self.http_base = f"http://{host}:{port}"
-        self.http = HttpTransport(
-            f"{self.http_base}{status_url}", receive_interval=0.5
-        )
+        self.is_fluidnc = protocol == "FluidNC"
+        if self.is_fluidnc:
+            self.http = HttpTransport(
+                f"{self.http_base}{fluidnc_status_url}",
+                receive_interval=0.5,
+            )
+        else:
+            self.http = HttpTransport(
+                f"{self.http_base}{status_url}", receive_interval=0.5
+            )
         self.http.received.connect(self.on_http_data_received)
         self.http.status_changed.connect(self.on_http_status_changed)
 
@@ -248,7 +263,8 @@ class GrblNetworkDriver(Driver):
             )
 
         encoded = quote(command, safe="")
-        url = f"{self.http_base}{command_url.format(command=encoded)}"
+        command_path = fluidnc_command_url if self.is_fluidnc else command_url
+        url = f"{self.http_base}{command_path.format(command=encoded)}"
         logger.debug(
             f"GET {url}",
             extra={
@@ -286,7 +302,7 @@ class GrblNetworkDriver(Driver):
         multipart/form-data POST request.
         """
         form = aiohttp.FormData()
-        if self.protocol == "Longer":
+        if self.protocol in ("Longer", "FluidNC"):
             form.add_field("path", "/")
             form.add_field("size", str(len(gcode)))
             form.add_field(
@@ -368,14 +384,18 @@ class GrblNetworkDriver(Driver):
         while self.keep_running:
             self._update_connection_status(TransportStatus.CONNECTING)
             try:
-                logger.info("Fetching hardware info...")
-                await self._http_get(f"{self.http_base}{hw_info_url}")
+                if self.is_fluidnc:
+                    logger.info("Fetching firmware info...")
+                    await self._http_get(f"{self.http_base}/api/status")
+                else:
+                    logger.info("Fetching hardware info...")
+                    await self._http_get(f"{self.http_base}{hw_info_url}")
 
-                logger.info("Fetching device info...")
-                await self._http_get(f"{self.http_base}{fw_info_url}")
+                    logger.info("Fetching device info...")
+                    await self._http_get(f"{self.http_base}{fw_info_url}")
 
-                logger.info("Fetching EEPROM info...")
-                await self._http_get(f"{self.http_base}{eeprom_info_url}")
+                    logger.info("Fetching EEPROM info...")
+                    await self._http_get(f"{self.http_base}{eeprom_info_url}")
 
                 logger.info("Starting HTTP and WebSocket transports...")
                 async with asyncio.TaskGroup() as tg:
