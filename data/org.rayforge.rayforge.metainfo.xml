@@ -12,6 +12,13 @@
   
   <name>Rayforge</name>
   <summary>A desktop application for laser cutting and engraving</summary>
+  <summary xml:lang="de">Eine Desktop-Anwendung zum Schneiden und Gravieren mit einem Laser</summary>
+  <summary xml:lang="es">Una aplicación de escritorio para corte y grabado con láser</summary>
+  <summary xml:lang="fr">Une application de bureau pour la découpe et la gravure au laser</summary>
+  <summary xml:lang="hi">लेज़र से कटौती और उत्कीर्णन के लिए एक डेस्कटॉप एप्लिकेशन</summary>
+  <summary xml:lang="pt-BR">Um aplicativo de desktop para corte e gravação a laser</summary>
+  <summary xml:lang="uk">Настільна програма для різання та гравіювання лазером</summary>
+  <summary xml:lang="zh-CN">一款使用激光进行切割和雕刻的桌面应用程序</summary>
 
   <categories>
     <category>Utility</category>

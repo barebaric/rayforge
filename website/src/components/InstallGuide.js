@@ -254,6 +254,7 @@ const linuxMethods = [
 
 const windowsMethods = [
   { id: 'installer', label: translate({ id: 'install.installer.recommended', message: 'Installer (Recommended)' }) },
+  { id: 'winget', label: 'WinGet' },
   { id: 'developer', label: translate({ id: 'install.msys2.developers', message: 'MSYS2 (Developers)' }) },
 ];
 
@@ -845,6 +846,7 @@ function WindowsInstall({ version, method, onMethodChange, latestRelease }) {
       {method === 'installer' && (
         <WindowsInstallerInstall version={version} latestRelease={latestRelease} />
       )}
+      {method === 'winget' && <WindowsWinGetInstall />}
       {method === 'developer' && <WindowsDeveloperInstall />}
     </>
   );
@@ -895,6 +897,52 @@ function WindowsInstallerInstall({ version, latestRelease }) {
               as Administrator (right-click - Run as Administrator).
             </Translate>
           </Admonition>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">3</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.launchRayforge">Launch Rayforge</Translate></h5>
+          <p>
+            <Translate id="install.windowsLaunch">
+              Launch Rayforge from the Start Menu or Desktop shortcut.
+            </Translate>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WindowsWinGetInstall() {
+  return (
+    <div className="install-section">
+      <h4><Translate id="install.winget.title">WinGet Installation</Translate></h4>
+      <p>
+        <Translate id="install.winget.description">
+          Rayforge can be installed using WinGet, the Windows Package
+          Manager that is built into Windows 10 and 11.
+        </Translate>
+      </p>
+
+      <div className="install-step">
+        <div className="install-step-number">1</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.winget.openTerminal">Open a Terminal</Translate></h5>
+          <p>
+            <Translate id="install.winget.openTerminalInstruction">
+              Open Windows Terminal, PowerShell, or Command Prompt.
+            </Translate>
+          </p>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">2</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.winget.installRayforge">Install Rayforge</Translate></h5>
+          <CodeBlock language="powershell">winget install rayforge</CodeBlock>
         </div>
       </div>
 

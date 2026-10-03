@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.12.0.schema.json
+
+PackageIdentifier: Rayforge.Rayforge
+PackageVersion: @VERSION@
+ReleaseDate: @RELEASE_DATE@
+InstallerLocale: en-US
+InstallerType: nullsoft
+InstallModes:
+- interactive
+- silent
+- silentWithProgress
+ElevationRequirement: elevationRequired
+UpgradeBehavior: install
+AppsAndFeaturesEntries:
+- DisplayName: Rayforge
+  DisplayVersion: @VERSION@
+  Publisher: Samuel Abels
+FileExtensions:
+- ryp
+- rfs
+- rd
+- dxf
+- svg
+Installers:
+- Architecture: x64
+  Scope: machine
+  InstallerUrl: @INSTALLER_URL@
+  InstallerSha256: @INSTALLER_SHA256@
+  InstallerSwitches:
+    Silent: /S
+    SilentWithProgress: /S
+ManifestType: installer
+ManifestVersion: 1.12.0
