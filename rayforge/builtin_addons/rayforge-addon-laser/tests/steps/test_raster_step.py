@@ -10,6 +10,7 @@ from raygeo.ops.part import Part
 from rayforge.core.step_registry import step_registry
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.dither import DitherAlgorithm
+from rayforge.pipeline.transformer import OpsTransformer
 
 
 @pytest.fixture
@@ -41,6 +42,29 @@ class TestEngraveStep:
         }
         assert "BidirScanOffsetTransformer" in transformer_names
         assert step.selected_head_uid == "test-laser-uid"
+
+    def test_merge_scanlines_enabled_by_default(self, mock_context):
+        """Scanline merging ships as part of Optimize, enabled."""
+        step = EngraveStep.create(mock_context, name="Created")
+        optimize = next(
+            t
+            for t in step.per_step_transformers_dicts
+            if t.get("name") == "Optimize"
+        )
+        assert optimize.get("merge_scanlines") is True
+
+        # Docs saved before the merge-in lack the key and default to
+        # enabled on load.
+        data = step.to_dict()
+        for t in data["per_step_transformers_dicts"]:
+            t.pop("merge_scanlines", None)
+        restored = EngraveStep.from_dict(data)
+        optimizer = next(
+            OpsTransformer.from_dict(t)
+            for t in restored.per_step_transformers_dicts
+            if t.get("name") == "Optimize"
+        )
+        assert optimizer.to_dict()["merge_scanlines"] is True
 
     def test_serialization_includes_step_type(self):
         step = EngraveStep(name="Test")

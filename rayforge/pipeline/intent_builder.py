@@ -822,6 +822,10 @@ class IntentBuilder:
             "wpxf": _canonical(step.per_workpiece_transformers_dicts),
             "position_sensitive": step.is_position_sensitive(),
             "placements": placements,
+            # Transformer specs bake machine kinematics in at build
+            # time (acceleration-aware merging, time estimates), so a
+            # kinematics change must invalidate the aggregate cache.
+            "machine": self._machine_params_payload(),
         }
         if step.is_position_sensitive():
             payload["stock_rev"] = self._stock_revision()
@@ -984,7 +988,10 @@ class IntentBuilder:
 
         Currently this carries the ``driver_native_overscan`` flag so
         :class:`OverscanTransformer` can short-circuit when the
-        machine driver handles overscan itself.
+        machine driver handles overscan itself, and the machine
+        kinematics so acceleration-aware transformers (e.g. the
+        scanline merging inside :class:`Optimize`) can build their
+        specs from them.
         """
         if self._machine is None:
             return None
@@ -992,7 +999,12 @@ class IntentBuilder:
             native = bool(self._machine.driver.native_overscan)
         except AttributeError:
             native = False
-        return {"driver_native_overscan": native}
+        return {
+            "driver_native_overscan": native,
+            "machine_max_cut_speed": self._machine.max_cut_speed,
+            "machine_max_travel_speed": self._machine.max_travel_speed,
+            "machine_acceleration": self._machine.acceleration,
+        }
 
     def _resolve_stock_geometries(self) -> list[Any] | None:
         """Return the world-space stock boundary geometries.
@@ -1129,6 +1141,16 @@ class IntentBuilder:
             default_rapid_rate=float(self._machine.max_travel_speed),
             acceleration=float(self._machine.acceleration),
         )
+
+    def _machine_params_payload(self) -> dict[str, float] | None:
+        """The machine kinematics as a cache-token payload entry."""
+        if self._machine is None:
+            return None
+        return {
+            "max_cut_speed": float(self._machine.max_cut_speed),
+            "max_travel_speed": float(self._machine.max_travel_speed),
+            "acceleration": float(self._machine.acceleration),
+        }
 
     # ------------------------------------------------------------------
     # Job aggregate stage
