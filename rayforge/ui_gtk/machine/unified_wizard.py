@@ -699,10 +699,9 @@ class UnifiedWizard(PatchedDialogWindow):
             return True
         saved = mc.driver_args or {}
         for var in driver_cls.get_setup_vars():
-            if var.default in (None, "") and saved.get(var.key) in (
-                None,
-                "",
-            ):
+            if var.optional or var.default not in (None, ""):
+                continue
+            if saved.get(var.key) in (None, ""):
                 return False
         return True
 

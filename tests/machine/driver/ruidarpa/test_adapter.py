@@ -2731,7 +2731,8 @@ class TestRpcTimeoutSetup:
 
 
 class TestSetupVars:
-    """The setup 'usb_device' var is an optional SerialPortVar."""
+    """The setup 'usb_device' var is an optional SerialPortVar and
+    'magic_number' carries the standard default."""
 
     def test_usb_device_var_is_serial_port_var(
         self, isolated_context, isolated_machine
@@ -2742,6 +2743,18 @@ class TestSetupVars:
         usb_var = varset.get("usb_device")
         assert usb_var is not None
         assert isinstance(usb_var, SerialPortVar)
+        assert usb_var.optional is True
+
+    def test_magic_number_var_defaults_to_standard_0x88(
+        self, isolated_context, isolated_machine
+    ):
+        """magic_number must be prefilled with the standard 0x88."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        varset = adapter.get_setup_vars()
+        magic_var = varset.get("magic_number")
+        assert magic_var is not None
+        assert magic_var.default == "0x88"
+        assert magic_var.optional is False
 
     def test_empty_usb_device_validates_ok(
         self, isolated_context, isolated_machine

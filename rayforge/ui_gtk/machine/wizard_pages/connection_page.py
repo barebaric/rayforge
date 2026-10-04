@@ -78,11 +78,14 @@ class ConnectionPage(WizardPage):
         self.driver_row.set_subtitle(driver_cls.subtitle or "")
 
         var_set = driver_cls.get_setup_vars()
-        # Vars without a usable default are the host-specific values the
-        # user must supply (USB path, hostname, API key, …). The page
-        # stays unready until every one of them is filled.
+        # Vars without a usable default that are not marked optional are
+        # the host-specific values the user must supply (USB path,
+        # hostname, API key, …). The page stays unready until every one
+        # of them is filled.
         self._required_keys = {
-            var.key for var in var_set if var.default in (None, "")
+            var.key
+            for var in var_set
+            if var.default in (None, "") and not var.optional
         }
         # If the working profile carries saved driver_args (e.g. via
         # import), prefill the var set before rendering.

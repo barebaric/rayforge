@@ -45,6 +45,7 @@ class Var(Generic[T]):
         value: T | None = None,
         validator: Callable[[T | None], None] | None = None,
         *,
+        optional: bool = False,
         visible_when: "Callable[[dict[str, Any]], bool] | None" = None,
         sensitive_when: "Callable[[dict[str, Any]], bool] | None" = None,
     ):
@@ -60,6 +61,10 @@ class Var(Generic[T]):
             value: The initial value. If provided, it overrides the default.
             validator: An optional callable that raises an exception if a new
                        value is invalid.
+            optional: True when leaving the value empty is valid even
+                      without a default (e.g. one of several alternative
+                      connection parameters). Setup wizards must not
+                      require a value for it.
             visible_when: Optional callable that receives a dict of all
                           current var values in the widget and returns True
                           when this var's row should be visible.
@@ -75,6 +80,7 @@ class Var(Generic[T]):
         self._description = description
         self._default = default
         self.validator = validator
+        self.optional = optional
         self._value: T | None = None
         self._varset: VarSet | None = None
         self._visible_when = visible_when

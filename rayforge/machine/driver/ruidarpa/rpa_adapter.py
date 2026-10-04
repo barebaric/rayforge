@@ -147,6 +147,7 @@ class RuidaUsbDeviceVar(SerialPortVar):
             visible_when=visible_when,
         )
         self.validator = None
+        self.optional = True
 
 
 class RuidaRPAAdapter(Driver):
@@ -275,10 +276,10 @@ class RuidaRPAAdapter(Driver):
                     label=_("Magic"),
                     var_type=str,
                     description=_(
-                        "Controller magic number in hex "
-                        "(e.g., 0x88). Leave empty for default."
+                        "Controller magic number in hex. The default "
+                        "0x88 works for most controllers."
                     ),
-                    default=None,
+                    default="0x88",
                 ),
                 BoolVar(
                     key="tui",
