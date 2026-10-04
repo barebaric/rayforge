@@ -126,6 +126,36 @@ class LayerPostProcessorGroup(Adw.PreferencesGroup):
                 )
                 row.add_suffix(disable_btn)
             self.add(row)
+            return
+
+        if not self.layer.post_processors_dicts:
+            # Nothing owned by the layer and nothing to override:
+            # offer the bed mesh correction directly when the machine
+            # has a probed mesh, otherwise explain what is missing.
+            if machine is not None and machine.bed_mesh is not None:
+                row = Adw.ActionRow(
+                    title=_("Bed Mesh Correction"),
+                    subtitle=_(
+                        "Compensate the toolpath Z with the machine's "
+                        "probed bed height map."
+                    ),
+                )
+                add_btn = Gtk.Button(label=_("Add"), valign=Gtk.Align.CENTER)
+                add_btn.add_css_class("suggested-action")
+                add_btn.connect("clicked", self._add_mesh_correction)
+                row.add_suffix(add_btn)
+                self.add(row)
+            else:
+                row = Adw.ActionRow(
+                    title=_("No Post Processing Available"),
+                    subtitle=_(
+                        "This machine has no probed bed mesh. Probe one "
+                        "on the Bed Mesh page in the machine settings "
+                        "to enable surface compensation."
+                    ),
+                )
+                row.add_css_class("dim-label")
+                self.add(row)
 
     def _add_group(self, group, t_dict: dict):
         """Wrap a transformer settings group in an expander row.
@@ -190,6 +220,26 @@ class LayerPostProcessorGroup(Adw.PreferencesGroup):
             if d.get("name") != name
         ]
         dicts.append({"name": name, "enabled": False})
+        self._save(dicts)
+
+    def _add_mesh_correction(self, _button):
+        """Add a bed mesh correction entry from scratch."""
+        machine = self._machine()
+        if machine is None or machine.bed_mesh is None:
+            return
+        if any(
+            d.get("name") == "MeshCorrectionTransformer"
+            for d in self.layer.post_processors_dicts
+        ):
+            return
+        dicts = list(self.layer.post_processors_dicts)
+        dicts.append(
+            {
+                "name": "MeshCorrectionTransformer",
+                "enabled": True,
+                "z_offset": 0.0,
+            }
+        )
         self._save(dicts)
 
     def reset_to_machine_defaults(self, name: str):

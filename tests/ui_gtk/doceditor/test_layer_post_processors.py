@@ -1,6 +1,7 @@
 """UI tests for the layer post processor settings group."""
 
 import pytest
+from gi.repository import Adw
 
 from rayforge.core.layer import Layer
 from rayforge.machine.models.machine import Machine
@@ -112,3 +113,62 @@ def test_group_renders_layer_owned_entry(ui_context_initializer):
     assert layer.post_processors_dicts[0]["name"] == (
         "MeshCorrectionTransformer"
     )
+
+
+def _action_row_titles(group) -> list[str]:
+    from gi.repository import Adw
+
+    return [
+        child.get_title()
+        for child in group._children
+        if isinstance(child, Adw.ActionRow)
+    ]
+
+
+@pytest.mark.ui
+def test_empty_group_offers_add_with_probed_mesh(ui_context_initializer):
+    """No defaults, no layer entries, mesh probed: an Add row shows."""
+    machine = _make_machine()
+    _make_mesh(machine)
+
+    layer = Layer(name="l")
+    group = LayerPostProcessorGroup(layer, editor=None)
+    assert "Bed Mesh Correction" in _action_row_titles(group)
+
+    (add_row,) = [
+        child
+        for child in group._children
+        if isinstance(child, Adw.ActionRow)
+        and child.get_title() == "Bed Mesh Correction"
+    ] or [None]
+    assert add_row is not None
+    group._add_mesh_correction(None)
+    assert layer.post_processors_dicts == [
+        {"name": "MeshCorrectionTransformer", "enabled": True, "z_offset": 0.0}
+    ]
+    # Rebuilt: the layer now owns an entry rendered as a widget group.
+    assert group._group_dicts
+
+
+@pytest.mark.ui
+def test_empty_group_shows_hint_without_mesh(ui_context_initializer):
+    """No defaults, no layer entries, no mesh: a hint row explains."""
+    _make_machine()
+
+    layer = Layer(name="l")
+    group = LayerPostProcessorGroup(layer, editor=None)
+    assert "No Post Processing Available" in _action_row_titles(group)
+
+
+@pytest.mark.ui
+def test_add_is_idempotent_when_entry_exists(ui_context_initializer):
+    machine = _make_machine()
+    _make_mesh(machine)
+
+    layer = Layer(name="l")
+    layer.post_processors_dicts = [dict(MESH_DICT)]
+    group = LayerPostProcessorGroup(layer, editor=None)
+    before = len(group._children)
+    group._add_mesh_correction(None)
+    assert len(layer.post_processors_dicts) == 1
+    assert len(group._children) == before
