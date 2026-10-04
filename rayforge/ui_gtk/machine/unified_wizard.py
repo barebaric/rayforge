@@ -698,10 +698,13 @@ class UnifiedWizard(PatchedDialogWindow):
         if driver_cls is None or driver_cls is NoDeviceDriver:
             return True
         saved = mc.driver_args or {}
-        for var in driver_cls.get_setup_vars():
-            if var.optional or var.default not in (None, ""):
+        var_set = driver_cls.get_setup_vars()
+        var_set.set_values(saved)
+        values = var_set.get_values()
+        for var in var_set:
+            if not var.is_required(values):
                 continue
-            if saved.get(var.key) in (None, ""):
+            if values.get(var.key) in (None, ""):
                 return False
         return True
 

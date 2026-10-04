@@ -38,15 +38,24 @@ from rpalib.rpyc_client import RpcRdDriver
 from ruidadriver.rd_gluescript import GlueScript
 
 from rayforge.core.doc import Doc
-from rayforge.core.varset import BoolVar, FloatVar, SerialPortVar
+from rayforge.core.varset import (
+    BoolVar,
+    FloatVar,
+    LabeledChoiceVar,
+    SerialPortVar,
+)
 from rayforge.machine.driver.driver import (
     Axis,
     DeviceStatus,
     Driver,
+    DriverPrecheckError,
     DriverSetupError,
 )
 from rayforge.machine.driver.ruidarpa import rpa_adapter
 from rayforge.machine.driver.ruidarpa.rpa_adapter import (
+    CONNECTION_AUTO,
+    CONNECTION_NETWORK,
+    CONNECTION_USB,
     DEFAULT_MAX_CUT_SPEED_MMPM,
     DEFAULT_MAX_TRAVEL_SPEED_MMPM,
     DEFAULT_RPC_TIMEOUT_S,
@@ -2784,6 +2793,164 @@ class TestSetupVars:
             {"udp_host": "192.168.1.10", "usb_device": "0403:6001"}
         )
         varset.validate()
+
+
+class TestConnectionMode:
+    """The 'connection' var selects network, USB, or auto fallback and
+    drives endpoint visibility and requiredness."""
+
+    def _setup_vars(self, isolated_context, isolated_machine):
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        return adapter.get_setup_vars()
+
+    def test_connection_var_defaults_to_auto(
+        self, isolated_context, isolated_machine
+    ):
+        """The connection var is a labeled choice defaulting to auto."""
+        varset = self._setup_vars(isolated_context, isolated_machine)
+        conn = varset.get("connection")
+        assert isinstance(conn, LabeledChoiceVar)
+        assert conn.default == CONNECTION_AUTO
+        assert conn.get_value_for_display("Network") == CONNECTION_NETWORK
+
+    def test_hostname_visible_in_network_and_auto(
+        self, isolated_context, isolated_machine
+    ):
+        """The hostname field hides in USB mode."""
+        varset = self._setup_vars(isolated_context, isolated_machine)
+        host = varset.get("udp_host")
+        assert host is not None
+        assert host.is_visible({"connection": CONNECTION_AUTO}) is True
+        assert host.is_visible({"connection": CONNECTION_NETWORK}) is True
+        assert host.is_visible({"connection": CONNECTION_USB}) is False
+
+    def test_usb_visible_in_usb_and_auto(
+        self, isolated_context, isolated_machine
+    ):
+        """The USB field hides in network mode."""
+        varset = self._setup_vars(isolated_context, isolated_machine)
+        usb = varset.get("usb_device")
+        assert usb is not None
+        assert usb.is_visible({"connection": CONNECTION_AUTO}) is True
+        assert usb.is_visible({"connection": CONNECTION_USB}) is True
+        assert usb.is_visible({"connection": CONNECTION_NETWORK}) is False
+
+    def test_usb_required_only_in_usb_mode(
+        self, isolated_context, isolated_machine
+    ):
+        """A USB device is only mandatory when USB mode is selected."""
+        varset = self._setup_vars(isolated_context, isolated_machine)
+        usb = varset.get("usb_device")
+        assert usb is not None
+        assert usb.is_required({"connection": CONNECTION_USB}) is True
+        assert usb.is_required({"connection": CONNECTION_AUTO}) is False
+        assert usb.is_required({"connection": CONNECTION_NETWORK}) is False
+
+    @pytest.mark.asyncio
+    async def test_setup_network_mode_drops_usb(
+        self, isolated_context, isolated_machine
+    ):
+        """Network mode must strip a stale USB device from the config."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        adapter.setup(
+            connection=CONNECTION_NETWORK,
+            udp_host="192.168.1.10",
+            usb_device="/dev/ttyUSB0",
+        )
+        assert adapter._config.get("usb_device") is None
+        assert adapter._config.get("udp_host") == "192.168.1.10"
+        assert adapter.resource_uri == "ruidarpa://192.168.1.10"
+        await adapter.cleanup()
+        await isolated_machine.shutdown()
+
+    @pytest.mark.asyncio
+    async def test_setup_usb_mode_drops_host(
+        self, isolated_context, isolated_machine
+    ):
+        """USB mode must strip a stale hostname from the config."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        adapter.setup(
+            connection=CONNECTION_USB,
+            udp_host="192.168.1.10",
+            usb_device="/dev/ttyUSB0",
+        )
+        assert adapter._config.get("udp_host") is None
+        assert adapter._config.get("usb_device") == "/dev/ttyUSB0"
+        assert adapter.resource_uri == "ruidarpa:///dev/ttyUSB0"
+        await adapter.cleanup()
+        await isolated_machine.shutdown()
+
+    @pytest.mark.asyncio
+    async def test_setup_without_connection_keeps_both_endpoints(
+        self, isolated_context, isolated_machine
+    ):
+        """No mode (legacy profiles) must behave exactly like auto."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        adapter.setup(udp_host="192.168.1.10", usb_device="/dev/ttyUSB0")
+        assert adapter._config.get("udp_host") == "192.168.1.10"
+        assert adapter._config.get("usb_device") == "/dev/ttyUSB0"
+        await adapter.cleanup()
+        await isolated_machine.shutdown()
+
+    @pytest.mark.asyncio
+    async def test_update_settings_mode_change_requests_rebuild(
+        self, isolated_context, isolated_machine
+    ):
+        """Changing the connection mode must request a rebuild."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        adapter.setup(udp_host="192.168.1.10")
+        accepted = adapter.update_settings(
+            connection=CONNECTION_USB, usb_device="/dev/ttyUSB0"
+        )
+        assert accepted is False
+        assert adapter._config.get("udp_host") is None
+        await adapter.cleanup()
+        await isolated_machine.shutdown()
+
+    @pytest.mark.asyncio
+    async def test_update_settings_same_mode_absorbs(
+        self, isolated_context, isolated_machine
+    ):
+        """Non-endpoint changes keep the live adapter alive."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        adapter.setup(udp_host="192.168.1.10", timeout=1.0)
+        accepted = adapter.update_settings(
+            udp_host="192.168.1.10", timeout=9.5
+        )
+        assert accepted is True
+        await adapter.cleanup()
+        await isolated_machine.shutdown()
+
+
+class TestPrecheck:
+    """precheck validates the endpoint for the selected mode."""
+
+    def test_auto_requires_at_least_one_endpoint(self):
+        """Without a mode, either endpoint satisfies the check."""
+        with pytest.raises(DriverPrecheckError, match="At least one"):
+            RuidaRPAAdapter.precheck()
+        RuidaRPAAdapter.precheck(udp_host="192.168.1.10")
+        RuidaRPAAdapter.precheck(usb_device="/dev/ttyUSB0")
+
+    def test_network_mode_requires_hostname(self):
+        """Network mode ignores the USB device."""
+        with pytest.raises(DriverPrecheckError, match="Hostname"):
+            RuidaRPAAdapter.precheck(
+                connection=CONNECTION_NETWORK, usb_device="/dev/ttyUSB0"
+            )
+        RuidaRPAAdapter.precheck(
+            connection=CONNECTION_NETWORK, udp_host="192.168.1.10"
+        )
+
+    def test_usb_mode_requires_device(self):
+        """USB mode ignores the hostname."""
+        with pytest.raises(DriverPrecheckError, match="USB device"):
+            RuidaRPAAdapter.precheck(
+                connection=CONNECTION_USB, udp_host="192.168.1.10"
+            )
+        RuidaRPAAdapter.precheck(
+            connection=CONNECTION_USB, usb_device="/dev/ttyUSB0"
+        )
 
 
 class TestUpdateSettings:
