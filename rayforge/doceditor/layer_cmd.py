@@ -279,6 +279,19 @@ class LayerCmd:
         )
         self._editor.history_manager.execute(cmd)
 
+    def set_layer_post_processors(
+        self, layer: Layer, post_processors_dicts: list[dict]
+    ):
+        """Sets a layer's post processors with an undoable command."""
+        cmd = ChangePropertyCommand(
+            target=layer,
+            property_name="post_processors_dicts",
+            new_value=list(post_processors_dicts),
+            setter_method_name="set_post_processors_dicts",
+            name=_("Change layer post processors"),
+        )
+        self._editor.history_manager.execute(cmd)
+
     def set_layer_stock_material(self, layer: Layer, material_uid: str | None):
         """Sets a layer's rotary stock material with an undoable command."""
         if material_uid == layer.stock_material_uid:

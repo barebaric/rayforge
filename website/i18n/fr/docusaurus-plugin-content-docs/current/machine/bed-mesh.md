@@ -44,9 +44,27 @@ maillage** pour le retirer si vous ne souhaitez plus de compensation de hauteur.
 tout objet susceptible de gêner la sonde et assurez-vous que votre pointe de sonde (ou le réticule
 du laser) peut atteindre la surface en chaque point de la grille. :::
 
+## Appliquer le maillage
+
+Le sondage ne fait qu'enregistrer la carte de hauteur — son application se contrôle par travail :
+
+- **Appliquer aux travaux par défaut** : Activez cet interrupteur sur la page Maillage du plateau
+  pour compenser l'axe Z de chaque travail sur cette machine.
+- **Dérogation par calque** : Dans les paramètres d'un calque (Paramètres du calque →
+  Post-traitement), la valeur par défaut de la machine apparaît avec les actions **Personnaliser**
+  et **Désactiver**. Personnaliser copie la correction dans le calque, où vous pouvez ajuster le
+  décalage Z (par ex. pour focaliser légèrement au-dessus de la surface) ; Désactiver coupe la
+  correction pour ce calque uniquement. Supprimer l'entrée du calque ramène au réglage par défaut de
+  la machine.
+
+La correction s'applique aussi bien aux mouvements de découpe qu'aux déplacements, et les arcs
+restent des arcs (ils deviennent hélicoïdaux). Elle s'exécute sur le parcours final en coordonnées
+machine : elle n'est donc pas affectée par les systèmes de coordonnées de travail ni par le coin
+d'origine de la machine.
+
 ---
 
-## Pages associées
+## Pages associées## Pages associées
 
 - [Paramètres matériels](hardware) - Dimensions de la machine et configuration des axes
 - [Paramètres de l'appareil](device) - Connexion et options du contrôleur

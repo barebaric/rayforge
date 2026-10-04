@@ -980,7 +980,14 @@ class IntentBuilder:
         for t in transformers:
             if not t.enabled:
                 continue
-            specs.append(t.to_spec(workpiece, stock, settings))
+            try:
+                specs.append(t.to_spec(workpiece, stock, settings))
+            except Exception:
+                logger.warning(
+                    "Transformer %s could not build its spec; skipping",
+                    type(t).__name__,
+                    exc_info=True,
+                )
         return specs
 
     def _transformer_settings(self) -> dict[str, Any] | None:
@@ -999,12 +1006,15 @@ class IntentBuilder:
             native = bool(self._machine.driver.native_overscan)
         except AttributeError:
             native = False
-        return {
+        settings = {
             "driver_native_overscan": native,
             "machine_max_cut_speed": self._machine.max_cut_speed,
             "machine_max_travel_speed": self._machine.max_travel_speed,
             "machine_acceleration": self._machine.acceleration,
         }
+        if self._machine.bed_mesh is not None:
+            settings["bed_mesh"] = self._machine.bed_mesh.to_dict()
+        return settings
 
     def _resolve_stock_geometries(self) -> list[Any] | None:
         """Return the world-space stock boundary geometries.
@@ -1325,6 +1335,23 @@ class IntentBuilder:
         # Per-layer rotary mappings.
         rotary_mappings = self._build_rotary_mappings(doc, machine)
 
+        # Layer-level post processors run last, in machine space.
+        default_post_specs = self._build_post_processor_specs(
+            machine.default_post_processors_dicts
+        )
+        layer_post_specs = [
+            (layer.uid, specs)
+            for layer in doc.layers
+            if layer.post_processors_dicts
+            for specs in [
+                self._build_post_processor_specs(
+                    layer.post_processors_dicts,
+                    fallback=machine.default_post_processors_dicts,
+                )
+            ]
+            if specs
+        ]
+
         return MachineTransformSpec(
             source_key=job_key(),
             linearize_curves=not machine.supports_curves,
@@ -1333,7 +1360,27 @@ class IntentBuilder:
             layer_wcs_offsets=layer_wcs_offsets,
             reverse_z=machine.reverse_z_axis,
             rotary_mappings=rotary_mappings,
+            default_transformers=default_post_specs,
+            layer_transformers=layer_post_specs,
         )
+
+    def _build_post_processor_specs(
+        self,
+        transformer_dicts: list[dict[str, Any]],
+        fallback: list[dict[str, Any]] | None = None,
+    ) -> list[Any]:
+        """Build specs for layer-level post processors.
+
+        The layer's entries override the machine's default post
+        processors per transformer name; machine defaults not
+        overridden remain in effect. The result is the merged list of
+        typed Rust specs, built through the same registry path as
+        step-level transformers.
+        """
+        merged = _merge_post_processor_dicts(fallback or [], transformer_dicts)
+        if not merged:
+            return []
+        return self._build_transformer_specs(merged)
 
     @staticmethod
     def _build_rotary_mappings(
@@ -1617,6 +1664,36 @@ def _machine_token_payload(machine: Machine | None, doc: Doc) -> Any:
     }
 
 
+def _merge_post_processor_dicts(
+    defaults: list[dict[str, Any]],
+    overrides: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Merge machine-default post processors with layer overrides.
+
+    Overrides are keyed by transformer ``name`` and replace the
+    matching default entry entirely (including its position), so a
+    layer can reconfigure or disable (``enabled: False``) a machine
+    default. Defaults not overridden keep their original order,
+    followed by any overrides that introduce new transformers.
+    """
+    merged: list[dict[str, Any]] = []
+    override_by_name: dict[str, dict[str, Any]] = {
+        d["name"]: d for d in overrides if isinstance(d.get("name"), str)
+    }
+    overridden: set[str] = set()
+    for d in defaults:
+        name = d.get("name")
+        if isinstance(name, str) and name in override_by_name:
+            merged.append(override_by_name[name])
+            overridden.add(name)
+        else:
+            merged.append(d)
+    for d in overrides:
+        if d.get("name") not in overridden:
+            merged.append(d)
+    return merged
+
+
 def _machine_transform_config_payload(
     machine: Machine, doc: Doc
 ) -> dict[str, Any]:
@@ -1625,7 +1702,25 @@ def _machine_transform_config_payload(
 
     payload: dict[str, Any] = {
         "wcs_origin_is_workarea_origin": machine.wcs_origin_is_workarea_origin,
+        "default_post_processors_dicts": _canonical(
+            machine.default_post_processors_dicts
+        ),
     }
+    if machine.bed_mesh is not None:
+        mesh = machine.bed_mesh
+        payload["bed_mesh"] = _canonical(
+            {
+                "uid": mesh.uid,
+                "heights": mesh.heights,
+                "nx": mesh.nx,
+                "ny": mesh.ny,
+            }
+        )
+    for layer in doc.layers:
+        if layer.post_processors_dicts:
+            payload[f"post_processors:{layer.uid}"] = _canonical(
+                layer.post_processors_dicts
+            )
     # Rotary module UIDs per layer (to detect rotary config changes).
     for layer in doc.layers:
         uid = layer.uid

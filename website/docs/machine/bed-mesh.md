@@ -40,6 +40,22 @@ height compensation.
 the probe, and make sure your probe tip (or laser crosshair) can actually reach the surface at every
 grid point. :::
 
+## Applying the Mesh
+
+Probing only records the height map — applying it is controlled per job:
+
+- **Apply to Jobs by Default**: Enable this switch on the Bed Mesh page to compensate the Z axis of
+  every job on this machine.
+- **Per-layer override**: In a layer's settings (Layer Settings → Post Processing), the machine
+  default shows up with **Customize** and **Disable** actions. Customizing copies the correction
+  into the layer, where you can adjust the Z offset (e.g. to focus slightly above the surface);
+  disabling turns the correction off for that layer only. Removing the layer's entry falls back to
+  the machine default.
+
+The correction applies to cutting moves and travel moves alike, and arcs stay arcs (they become
+helical). It runs on the final toolpath in machine coordinates, so it is unaffected by work
+coordinate systems or the machine origin corner.
+
 ---
 
 ## Related Pages

@@ -23,6 +23,14 @@ from .bed_mesh_view import BedMeshView
 logger = logging.getLogger(__name__)
 
 _PROBE_TASK_KEY = "bed-mesh-probe"
+#: Serialized default entry the "apply by default" switch manages.
+#: Resolved through the transformer registry (registered by the post
+#: processors addon); the page never imports the addon itself.
+MESH_CORRECTION_DICT = {
+    "name": "MeshCorrectionTransformer",
+    "enabled": True,
+    "z_offset": 0.0,
+}
 
 DEFAULT_FEED_RATE = 100.0
 DEFAULT_MAX_TRAVEL = 10.0
@@ -196,6 +204,18 @@ class BedMeshPage(TrackedPreferencesPage):
         self.mesh_info_row = Adw.ActionRow(title=_("No mesh probed yet"))
         mesh_group.add(self.mesh_info_row)
 
+        self.apply_row = Adw.SwitchRow(
+            title=_("Apply to Jobs by Default"),
+            subtitle=_(
+                "Compensate the toolpath Z on every job; layers can "
+                "override this in their settings"
+            ),
+        )
+        self.apply_row.connect(
+            "notify::active", self._on_apply_default_changed
+        )
+        mesh_group.add(self.apply_row)
+
         clear_button = Gtk.Button(
             child=Gtk.Image.new_from_icon_name("edit-delete-symbolic")
         )
@@ -245,11 +265,14 @@ class BedMeshPage(TrackedPreferencesPage):
 
     def _show_current_mesh(self):
         mesh = self.machine.bed_mesh
+        self._sync_apply_row()
         if mesh is None:
             self.mesh_info_row.set_title(_("No mesh probed yet"))
             self.mesh_info_row.set_subtitle("")
+            self.apply_row.set_sensitive(False)
             self._heights = []
             return
+        self.apply_row.set_sensitive(True)
         zmin, zmax = mesh.z_range
         self.mesh_info_row.set_title(
             _("{}×{} grid, {} mm spacing").format(mesh.nx, mesh.ny, mesh.dx)
@@ -270,6 +293,30 @@ class BedMeshPage(TrackedPreferencesPage):
     def _clear_mesh(self):
         self.machine.clear_bed_mesh()
         self._show_current_mesh()
+
+    def _sync_apply_row(self):
+        """Reflect whether the mesh-correction default is active."""
+        self._initializing = True
+        self.apply_row.set_active(
+            any(
+                d.get("name") == MESH_CORRECTION_DICT["name"]
+                and d.get("enabled", True)
+                for d in self.machine.default_post_processors_dicts
+            )
+        )
+        self._initializing = False
+
+    def _on_apply_default_changed(self, row, _pspec):
+        if self._initializing:
+            return
+        dicts = [
+            d
+            for d in self.machine.default_post_processors_dicts
+            if d.get("name") != MESH_CORRECTION_DICT["name"]
+        ]
+        if row.get_active():
+            dicts.append(dict(MESH_CORRECTION_DICT))
+        self.machine.set_default_post_processors(dicts)
 
     # ── Probing ───────────────────────────────────────────────────
 

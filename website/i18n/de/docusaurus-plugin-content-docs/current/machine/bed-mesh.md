@@ -41,9 +41,25 @@ Höhenkompensation mehr möchtest.
 Objekten, die den Taster blockieren könnten, und stelle sicher, dass dein Taster (oder
 Laser-Fadenkreuz) die Oberfläche an jedem Rasterpunkt tatsächlich erreichen kann. :::
 
+## Das Netz anwenden
+
+Das Aufnehmen des Netzes ändert nur die Höhenkarte — die Anwendung wird pro Auftrag gesteuert:
+
+- **Aufträge standardmäßig anwenden**: Aktiviere diese Option auf der Bettnetz-Seite, um die Z-Achse
+  jedes Auftrags auf dieser Maschine zu kompensieren.
+- **Pro-Ebene-Überschreibung**: In den Ebenen-Einstellungen (Ebeneneinstellungen → Nachbearbeitung)
+  erscheint der Maschinenstandard mit den Aktionen **Anpassen** und **Deaktivieren**. Anpassen
+  kopiert die Korrektur in die Ebene, wo du den Z-Versatz ändern kannst (z. B. um etwas über der
+  Oberfläche zu fokussieren); Deaktivieren schaltet die Korrektur nur für diese Ebene aus. Entfernt
+  man den Eintrag der Ebene, greift wieder der Maschinenstandard.
+
+Die Korrektur gilt für Schneide- und Bewegungsbewegungen gleichermaßen, und Bögen bleiben Bögen (sie
+werden zu Helixbewegungen). Sie läuft auf dem fertigen Werkzeugweg in Maschinenkoordinaten und ist
+daher von Arbeitskoordinatensystemen oder der Ursprungsecke der Maschine unbeeinflusst.
+
 ---
 
-## Verwandte Seiten
+## Verwandte Seiten## Verwandte Seiten
 
 - [Hardware-Einstellungen](hardware) - Maschinenabmessungen und Achsenkonfiguration
 - [Geräteeinstellungen](device) - Verbindung und Controller-Optionen

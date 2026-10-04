@@ -264,6 +264,10 @@ class Machine:
         self.rotary_modules: dict[str, RotaryModule] = {}
         self.nogo_zones: dict[str, Zone] = {}
         self._bed_mesh: BedMesh | None = None
+        # Post processors applied to every job on this machine by
+        # default (serialized transformer dicts, resolved via the
+        # transformer registry). Layers can override per transformer.
+        self.default_post_processors_dicts: list[dict[str, Any]] = []
 
         self._assembly: Assembly | None = None
         self._assembly_dirty: bool = True
@@ -1516,6 +1520,14 @@ class Machine:
         self._bed_mesh = None
         self.changed.send(self)
 
+    def set_default_post_processors(
+        self, post_processors_dicts: list[dict[str, Any]]
+    ):
+        if self.default_post_processors_dicts == post_processors_dicts:
+            return
+        self.default_post_processors_dicts = list(post_processors_dicts)
+        self.changed.send(self)
+
     def _on_machine_hours_changed(self, machine_hours, *args):
         """
         Handle machine hours changes and propagate to machine changed
@@ -1805,6 +1817,9 @@ class Machine:
                 "nogo_zones": [z.to_dict() for z in self.nogo_zones.values()],
                 "bed_mesh": (
                     self._bed_mesh.to_dict() if self._bed_mesh else None
+                ),
+                "default_post_processors_dicts": (
+                    self.default_post_processors_dicts
                 ),
                 "capabilities": (
                     [
@@ -2117,6 +2132,9 @@ class Machine:
         bed_mesh_data = ma_data.pop("bed_mesh", None)
         if bed_mesh_data:
             ma.set_bed_mesh(BedMesh.from_dict(bed_mesh_data))
+        ma.default_post_processors_dicts = list(
+            ma_data.pop("default_post_processors_dicts", [])
+        )
         speeds = ma_data.pop("speeds", {})
         ma.max_cut_speed = speeds.get("max_cut_speed", ma.max_cut_speed)
         ma.max_travel_speed = speeds.get(

@@ -478,6 +478,7 @@ class MachineConfig:
     rotary_modules: list[dict[str, Any]] | None = None
     nogo_zones: list[dict[str, Any]] | None = None
     bed_mesh: dict[str, Any] | None = None
+    default_post_processors_dicts: list[dict[str, Any]] | None = None
     cameras: list[dict[str, Any]] | None = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -524,6 +525,11 @@ class MachineConfig:
             nogo_zones = [z.to_dict() for z in machine.nogo_zones.values()]
 
         bed_mesh = machine.bed_mesh.to_dict() if machine.bed_mesh else None
+        default_post_processors_dicts = (
+            list(machine.default_post_processors_dicts)
+            if machine.default_post_processors_dicts
+            else None
+        )
 
         cameras = None
         if machine.cameras:
@@ -572,6 +578,7 @@ class MachineConfig:
             rotary_modules=rotary_modules,
             nogo_zones=nogo_zones,
             bed_mesh=bed_mesh,
+            default_post_processors_dicts=default_post_processors_dicts,
             cameras=cameras,
         )
 
@@ -786,6 +793,10 @@ class DeviceProfile:
 
         if cfg.bed_mesh is not None:
             m.set_bed_mesh(BedMesh.from_dict(cfg.bed_mesh))
+        if cfg.default_post_processors_dicts is not None:
+            m.default_post_processors_dicts = list(
+                cfg.default_post_processors_dicts
+            )
 
         return m
 

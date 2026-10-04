@@ -42,9 +42,26 @@ ya no quieres compensación de altura.
 objetos que puedan bloquear el sensor y asegúrate de que tu punta de sondeo (o la retícula del
 láser) pueda alcanzar la superficie en cada punto de la cuadrícula. :::
 
+## Aplicar la malla
+
+Sondear solo registra el mapa de altura; aplicarlo se controla por trabajo:
+
+- **Aplicar a los trabajos por defecto**: Activa este interruptor en la página Malla de la cama para
+  compensar el eje Z de cada trabajo en esta máquina.
+- **Anulación por capa**: En los ajustes de una capa (Ajustes de capa → Posprocesamiento), el valor
+  por defecto de la máquina aparece con las acciones **Personalizar** y **Desactivar**. Personalizar
+  copia la corrección a la capa, donde puedes ajustar el desfase Z (p. ej. para enfocar ligeramente
+  por encima de la superficie); desactivar apaga la corrección solo para esa capa. Al eliminar la
+  entrada de la capa se vuelve al valor por defecto de la máquina.
+
+La corrección se aplica por igual a los movimientos de corte y de desplazamiento, y los arcos siguen
+siendo arcos (se vuelven helicoidales). Se ejecuta sobre el trayecto final en coordenadas de
+máquina, por lo que no le afectan los sistemas de coordenadas de trabajo ni la esquina de origen de
+la máquina.
+
 ---
 
-## Páginas relacionadas
+## Páginas relacionadas## Páginas relacionadas
 
 - [Ajustes de hardware](hardware) - Dimensiones de la máquina y configuración de ejes
 - [Ajustes del dispositivo](device) - Conexión y opciones del controlador

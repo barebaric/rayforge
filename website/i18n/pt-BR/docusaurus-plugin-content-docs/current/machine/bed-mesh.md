@@ -42,9 +42,25 @@ se não quiser mais compensação de altura.
 possam bloquear a sonda e certifique-se de que a ponta da sonda (ou a mira do laser) alcance a
 superfície em todos os pontos da grade. :::
 
+## Aplicar a malha
+
+Medir apenas registra o mapa de altura — aplicá-lo é controlado por trabalho:
+
+- **Aplicar aos trabalhos por padrão**: Ative esta opção na página Malha da mesa para compensar o
+  eixo Z de todos os trabalhos nesta máquina.
+- **Substituição por camada**: Nas configurações de uma camada (Configurações da camada →
+  Pós-processamento), o padrão da máquina aparece com as ações **Personalizar** e **Desativar**.
+  Personalizar copia a correção para a camada, onde você pode ajustar o deslocamento Z (por exemplo,
+  para focar ligeiramente acima da superfície); desativar desliga a correção apenas para essa
+  camada. Remover a entrada da camada volta ao padrão da máquina.
+
+A correção se aplica tanto a movimentos de corte quanto de deslocamento, e os arcos continuam arcos
+(tornam-se helicoidais). Ela roda no trajeto final em coordenadas da máquina, portanto não é afetada
+por sistemas de coordenadas de trabalho nem pelo canto de origem da máquina.
+
 ---
 
-## Páginas relacionadas
+## Páginas relacionadas## Páginas relacionadas
 
 - [Configurações de hardware](hardware) - Dimensões da máquina e configuração dos eixos
 - [Configurações do dispositivo](device) - Conexão e opções do controlador

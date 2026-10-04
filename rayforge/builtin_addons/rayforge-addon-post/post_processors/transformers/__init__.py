@@ -9,6 +9,7 @@ from .bidir_scan_offset_transformer import BidirScanOffsetTransformer
 from .crop_transformer import CropTransformer
 from .lead_in_out_transformer import LeadInOutTransformer
 from .merge_lines_transformer import MergeLinesTransformer
+from .mesh_correction_transformer import MeshCorrectionTransformer
 from .multipass_transformer import MultiPassTransformer
 from .optimize_transformer import Optimize
 from .overscan_transformer import OverscanTransformer
@@ -20,6 +21,7 @@ __all__ = [
     "CropTransformer",
     "LeadInOutTransformer",
     "MergeLinesTransformer",
+    "MeshCorrectionTransformer",
     "MultiPassTransformer",
     "Optimize",
     "OverscanTransformer",
