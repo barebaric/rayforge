@@ -16,6 +16,9 @@ from typing import cast
 import numpy as np
 from gi.repository import Gtk
 from OpenGL import GL
+from OpenGL.raw.GL.VERSION.GL_2_0 import (
+    glVertexAttribPointer as _raw_glVertexAttribPointer,
+)
 
 from ..sim3d.shader.base import Shader
 
@@ -255,11 +258,17 @@ class BedMeshView(Gtk.GLArea):
             setattr(self, f"_{suffix}_vbo", vbo)
             GL.glBindVertexArray(vao)
             GL.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo)
-            GL.glVertexAttribPointer(
+            # The wrapped glVertexAttribPointer caches the array in a
+            # per-context store keyed by PyOpenGL's static platform
+            # (GLX or EGL); that lookup raises when GDK's context API
+            # differs from the picked platform. The raw call skips the
+            # cache and GLVND dispatches to whichever context is
+            # current.
+            _raw_glVertexAttribPointer(
                 0, 3, GL.GL_FLOAT, GL.GL_FALSE, stride, None
             )
             GL.glEnableVertexAttribArray(0)
-            GL.glVertexAttribPointer(
+            _raw_glVertexAttribPointer(
                 1,
                 4,
                 GL.GL_FLOAT,
