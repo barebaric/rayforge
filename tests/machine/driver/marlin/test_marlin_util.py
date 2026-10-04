@@ -1,6 +1,6 @@
 import pytest
+from raydriver.grbl.parser import strip_gcode_comments
 
-from rayforge.machine.driver.grbl.grbl_util import strip_gcode_comments
 from rayforge.machine.driver.marlin.marlin_util import (
     extract_marlin_banner_from_output,
     extract_marlin_device_name,

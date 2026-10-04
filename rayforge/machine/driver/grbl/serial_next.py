@@ -10,6 +10,11 @@ from typing import (
 
 import serial
 from raydriver.grbl import GrblSession
+from raydriver.grbl.parser import (
+    error_code_to_device_error,
+    extract_device_name_from_output,
+    is_grbl_output,
+)
 
 from ....context import RayforgeContext
 from ....core.varset import (
@@ -36,20 +41,17 @@ from ..driver import (
     Axis,
     DeviceConnectionError,
     DeviceError,
-    DeviceState,
-    DeviceStatus,
     Driver,
     DriverMaturity,
     DriverPrecheckError,
     DriverSetupError,
     Pos,
 )
+from ..session_state import error_from_session_state, from_session_state
 from .grbl_probe import probe_grbl_device
 from .grbl_util import (
     apply_setting_to_varset,
-    extract_device_name_from_output,
     get_grbl_setting_varsets,
-    is_grbl_output,
 )
 
 if TYPE_CHECKING:
@@ -270,7 +272,7 @@ class GrblSerialNextDriver(Driver):
 
         print(f"SHELL EVENT {name} {type(payload).__name__}", flush=True)
         if name == "state_changed":
-            state = self._convert_state(payload)
+            state = from_session_state(payload)
             old_status = self.state.status
             self.state = state
             if state.status != old_status:
@@ -310,29 +312,6 @@ class GrblSerialNextDriver(Driver):
             self.config_changed.send(self)
         else:  # pragma: no cover - unknown events are ignored
             logger.debug(f"Ignoring session event: {name}")
-
-    @staticmethod
-    def _convert_state(rd_state: Any) -> DeviceState:
-        """Convert a raydriver DeviceState into a Rayforge one."""
-        error = None
-        rd_error = rd_state.error
-        if rd_error is not None:
-            error = DeviceError(
-                rd_error.code,
-                rd_error.title,
-                rd_error.description,
-            )
-        return DeviceState(
-            status=DeviceStatus[rd_state.status.name],
-            error=error,
-            machine_pos=tuple(rd_state.machine_pos),
-            work_pos=tuple(rd_state.work_pos),
-            wco=tuple(rd_state.wco),
-            feed_rate=rd_state.feed_rate,
-            spindle_speed=rd_state.spindle_speed,
-            buffer_available=rd_state.buffer_available,
-            buffer_rx_available=rd_state.buffer_rx_available,
-        )
 
     async def cleanup(self):
         logger.debug("Cleanup initiated.")
@@ -586,6 +565,4 @@ class GrblSerialNextDriver(Driver):
 
     def get_error(self, error_code: str) -> DeviceError | None:
         """Returns error details for a given GRBL error code."""
-        from .grbl_util import error_code_to_device_error
-
-        return error_code_to_device_error(error_code)
+        return error_from_session_state(error_code_to_device_error(error_code))

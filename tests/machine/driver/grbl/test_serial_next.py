@@ -17,6 +17,7 @@ from rayforge.machine.driver.driver import (
     DriverMaturity,
 )
 from rayforge.machine.driver.grbl import GrblSerialNextDriver
+from rayforge.machine.driver.session_state import from_session_state
 from rayforge.pipeline.encoder.gcode import GcodeEncoder
 
 FAST_CONFIG = {
@@ -192,7 +193,7 @@ class TestRegistry:
         state = _parser_module().parse_state(
             "<Alarm:1|FS:500,0>", RDState(), False
         )
-        converted = GrblSerialNextDriver._convert_state(state)
+        converted = from_session_state(state)
         assert converted.status == DeviceStatus.ALARM
         assert converted.feed_rate == 500
         assert converted.error is not None

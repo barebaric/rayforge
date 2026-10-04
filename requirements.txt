@@ -1,4 +1,4 @@
-raydriver==0.2.0
+raydriver==0.3.0
 raygeo==1.60.0
 aiohttp==3.14.3
 asyncudp==0.11.0
