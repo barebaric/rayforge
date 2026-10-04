@@ -13,8 +13,10 @@ from raygeo.geo.shape.line import (
 from raygeo.geo.shape.polygon import (
     EndStyle,
     JoinStyle,
+    get_polygon_area,
     get_polygon_closest_point,
     get_polygon_convex_hull,
+    get_polygon_signed_area,
     is_point_inside_polygon,
     offset_polyline,
 )
@@ -26,6 +28,7 @@ from .entity import Entity, OffsetPlan, quantize
 if TYPE_CHECKING:
     from ..commands.mirror import MirrorAxis
     from ..constraints import Constraint
+    from ..entity_group import PlacementTransform
     from ..registry import EntityRegistry
     from ..sketch import Sketch
     from .point import Point
@@ -66,7 +69,7 @@ class PolygonOutline:
         for vertices, closed in offset_outline(
             self.vertices, self.closed, offset
         ):
-            center_pt, handle_pt, entity = _outline_item(
+            center_pt, handle_pt, entity = outline_item(
                 vertices, closed, allocate_id
             )
             plan.points.extend((center_pt, handle_pt))
@@ -88,16 +91,61 @@ class PolygonOutline:
         ]
 
 
-def _outline_item(
+def rings_to_geometry(
+    rings: Sequence[Sequence[tuple[float, float]]],
+) -> Geometry:
+    """Builds a multi-ring closed geometry from a flat ring list.
+    Ring winding is preserved: outer rings CCW, hole rings CW."""
+    geo = Geometry()
+    for ring in rings:
+        if len(ring) < 3:
+            continue
+        geo.move_to(ring[0][0], ring[0][1])
+        for x, y in ring[1:]:
+            geo.line_to(x, y)
+        geo.close_path()
+    return geo
+
+
+def group_rings_into_solids(
+    rings: Sequence[Sequence[tuple[float, float]]],
+) -> list[tuple[list[tuple[float, float]], list[list[tuple[float, float]]]]]:
+    """
+    Groups a flat ring list into (outer, holes) solids. Role
+    classification and winding canonicalization (outer CCW, holes CW)
+    are delegated to raygeo's topology; each hole is then assigned to
+    the smallest outer ring that contains it, and unassignable holes
+    are dropped.
+    """
+    geo = rings_to_geometry(rings)
+    if geo.is_empty():
+        return []
+    normalized = geo.normalize_winding_orders()
+    outers, holes = normalized.split_inner_and_outer_polygons()
+    solids: list[tuple[list[tuple[float, float]], list]] = [
+        (outer, []) for outer in outers
+    ]
+    solids.sort(key=lambda solid: get_polygon_area(solid[0]))
+    for hole in holes:
+        for outer, assigned in solids:
+            if is_point_inside_polygon(hole[0], outer):
+                assigned.append(hole)
+                break
+    return solids
+
+
+def outline_item(
     vertices: list[tuple[float, float]],
     closed: bool,
     allocate_id: Callable[[], EntityID],
+    holes: Sequence[Sequence[tuple[float, float]]] | None = None,
 ) -> tuple:
     """Builds the frame points and PolygonEntity for a world-coordinate
     outline. For closed outlines the frame center is the pole of
     inaccessibility (guaranteed inside the contour) and the handle is
     snapped onto the contour; open outlines use the bounding-box center
-    with the handle snapped to the nearest polyline point."""
+    with the handle snapped to the nearest polyline point. Hole rings
+    share the outer ring's frame."""
     center, handle = _frame_for_outline(vertices, closed)
     return PolygonEntity.build(
         allocate_id(),
@@ -107,6 +155,7 @@ def _outline_item(
         handle,
         vertices,
         closed=closed,
+        world_holes=list(holes) if holes else None,
     )
 
 
@@ -261,6 +310,13 @@ class PolygonEntity(Entity):
     """
     A closed or open outline stored as one atomic shape.
 
+    Closed shapes may carry multiple rings: ring 0 is the outer
+    contour, further rings are holes. Winding is the semantic —
+    outer rings are CCW (positive signed area), hole rings CW
+    (negative), enforced by ``_normalize_ring_winding`` after every
+    mutation. Consumers (renderer, fills, toolpaths) interpret the
+    winding directly, so holes need no extra bookkeeping.
+
     The outline has no individually editable edges; it is transformed
     as a whole. Vertices are kept normalized in a local frame defined
     by two registry points (the Ellipse pattern):
@@ -281,15 +337,50 @@ class PolygonEntity(Entity):
         vertices: Sequence[Sequence[float]],
         closed: bool = False,
         construction: bool = False,
+        rings: Sequence[Sequence[Sequence[float]]] | None = None,
     ):
         super().__init__(id, construction)
         self.center_idx: EntityID = center_idx
         self.handle_idx: EntityID = handle_idx
-        self.vertices: list[tuple[float, float]] = [
-            (float(u), float(v)) for u, v in vertices
-        ]
         self.closed: bool = closed
+        if rings:
+            self.rings: list[list[tuple[float, float]]] = [
+                [(float(u), float(v)) for u, v in ring] for ring in rings
+            ]
+        else:
+            self.rings = [[(float(u), float(v)) for u, v in vertices]]
         self.type = "polygon"
+        self._normalize_ring_winding()
+
+    @property
+    def vertices(self) -> list[tuple[float, float]]:
+        """The outer ring in frame-local coordinates."""
+        return self.rings[0]
+
+    @vertices.setter
+    def vertices(self, value: Sequence[Sequence[float]]) -> None:
+        self.rings[0] = [(float(u), float(v)) for u, v in value]
+
+    def _normalize_ring_winding(self) -> None:
+        """Enforces the winding convention on closed shapes: ring 0
+        CCW, hole rings CW. The local frame is right-handed, so local
+        winding matches world winding."""
+        if not self.closed:
+            return
+        if self.rings[0] and get_polygon_signed_area(self.rings[0]) < 0:
+            self.rings[0].reverse()
+        for ring in self.rings[1:]:
+            if ring and get_polygon_signed_area(ring) > 0:
+                ring.reverse()
+
+    @staticmethod
+    def _placement_flips_chirality(
+        placement: "PlacementTransform",
+    ) -> bool:
+        """Returns True when the placement mirrors the plane."""
+        ex = placement.transform_offset(1.0, 0.0)
+        ey = placement.transform_offset(0.0, 1.0)
+        return ex[0] * ey[1] - ex[1] * ey[0] < 0
 
     @staticmethod
     def normalize_vertices(
@@ -323,16 +414,24 @@ class PolygonEntity(Entity):
         world_vertices: Sequence[Sequence[float]],
         closed: bool = False,
         construction: bool = False,
+        world_holes: Sequence[Sequence[Sequence[float]]] | None = None,
     ) -> tuple["Point", "Point", "PolygonEntity"]:
         """
         Creates the frame points and the entity for a world-coordinate
-        outline. Returns (center_point, handle_point, entity).
+        outline. Hole rings are normalized into the same frame.
+        Returns (center_point, handle_point, entity).
         """
         from .point import Point
 
         center_pt = Point(center_id, center[0], center[1])
         handle_pt = Point(handle_id, handle[0], handle[1])
         vertices = cls.normalize_vertices(center, handle, world_vertices)
+        rings: list[list[tuple[float, float]]] | None = None
+        if world_holes:
+            rings = [vertices] + [
+                cls.normalize_vertices(center, handle, hole)
+                for hole in world_holes
+            ]
         entity = cls(
             entity_id,
             center_id,
@@ -340,6 +439,7 @@ class PolygonEntity(Entity):
             vertices,
             closed=closed,
             construction=construction,
+            rings=rings,
         )
         return center_pt, handle_pt, entity
 
@@ -365,7 +465,23 @@ class PolygonEntity(Entity):
                 cx + scale * (u * ux - v * uy),
                 cy + scale * (u * uy + v * ux),
             )
-            for u, v in self.vertices
+            for u, v in self.rings[0]
+        ]
+
+    def get_world_rings(
+        self, registry: "EntityRegistry"
+    ) -> list[list[tuple[float, float]]]:
+        """Returns every ring in world coordinates (outer first)."""
+        cx, cy, ux, uy, scale = self._frame(registry)
+        return [
+            [
+                (
+                    cx + scale * (u * ux - v * uy),
+                    cy + scale * (u * uy + v * ux),
+                )
+                for u, v in ring
+            ]
+            for ring in self.rings
         ]
 
     def to_outline(
@@ -374,10 +490,68 @@ class PolygonEntity(Entity):
         """Returns (world_vertices, closed) for offset processing."""
         return self.get_world_vertices(registry), self.closed
 
-    def as_offset_item(self, sketch: "Sketch") -> "PolygonOutline":
-        """A polygon offsets on its own; the offset result replaces it."""
-        vertices, closed = self.to_outline(sketch.registry)
-        return PolygonOutline(vertices, closed, source_ids=[self.id])
+    def as_offset_item(self, sketch: "Sketch") -> Entity | PolygonOutline:
+        """A closed polygon offsets on its own (holes included); an
+        open polygon is sampled into an outline. Both are replaced by
+        the offset result."""
+        if not self.closed:
+            return PolygonOutline(
+                self.get_world_vertices(sketch.registry),
+                False,
+                source_ids=[self.id],
+            )
+        return self
+
+    def _offset_solids(
+        self, registry: "EntityRegistry", offset: float
+    ) -> list[tuple[list, list]]:
+        """Grows the multi-ring shape by the offset and regroups the
+        result into (outer, holes) solids."""
+        grown = rings_to_geometry(self.get_world_rings(registry)).grow(offset)
+        return group_rings_into_solids(grown.to_polygons(0.02))
+
+    def plan_offset(
+        self,
+        registry: "EntityRegistry",
+        offset: float,
+        allocate_id: Callable[[], EntityID],
+    ) -> OffsetPlan | None:
+        """Offsets this polygon. Closed shapes keep their entity type:
+        the multi-ring geometry is grown via raygeo (holes shrink and
+        may vanish) and regrouped into one PolygonEntity per result
+        solid. Open polygons fall back to outline sampling."""
+        if not self.closed:
+            outline = PolygonOutline(
+                self.get_world_vertices(registry),
+                False,
+                source_ids=[self.id],
+            )
+            return outline.plan_offset(registry, offset, allocate_id)
+        solids = self._offset_solids(registry, offset)
+        if not solids:
+            return None
+        plan = OffsetPlan(removed_entity_ids=[self.id])
+        for outer, holes in solids:
+            center_pt, handle_pt, entity = outline_item(
+                outer, True, allocate_id, holes
+            )
+            plan.points.extend((center_pt, handle_pt))
+            plan.entities.append(entity)
+        return plan
+
+    def preview_polylines(
+        self, registry: "EntityRegistry", offset: float
+    ) -> list[list[tuple[float, float]]]:
+        """Flattens every ring of the offset result into a closed
+        polyline, for live preview."""
+        if not self.closed:
+            outline = PolygonOutline(self.get_world_vertices(registry), False)
+            return outline.preview_polylines(registry, offset)
+        polylines: list[list[tuple[float, float]]] = []
+        for outer, holes in self._offset_solids(registry, offset):
+            for ring in [outer, *holes]:
+                polylines.append(list(ring) + [ring[0]])
+        return polylines
 
     def get_point_ids(self) -> list[EntityID]:
         return [self.center_idx, self.handle_idx]
@@ -390,23 +564,34 @@ class PolygonEntity(Entity):
 
     def get_state(self) -> dict[str, Any] | None:
         state = super().get_state() or {}
-        state["vertices"] = list(self.vertices)
+        state["vertices"] = list(self.rings[0])
         state["closed"] = self.closed
+        if len(self.rings) > 1:
+            state["rings"] = [list(ring) for ring in self.rings[1:]]
         return state
 
     def set_state(self, state: dict[str, Any]) -> None:
         super().set_state(state)
-        if "vertices" in state:
-            self.vertices = [
-                (float(u), float(v)) for u, v in state["vertices"]
+        if "rings" in state:
+            outer = state.get("vertices")
+            self.rings = [
+                [(float(u), float(v)) for u, v in ring]
+                for ring in [outer, *state["rings"]]
+                if ring is not None
             ]
+        elif "vertices" in state:
+            self.rings = [[(float(u), float(v)) for u, v in state["vertices"]]]
         if "closed" in state:
             self.closed = state["closed"]
+        self._normalize_ring_winding()
 
     def geometry_signature(self, registry: "EntityRegistry") -> tuple:
         return (
             *super().geometry_signature(registry),
-            tuple((quantize(u), quantize(v)) for u, v in self.vertices),
+            tuple(
+                tuple((quantize(u), quantize(v)) for u, v in ring)
+                for ring in self.rings
+            ),
             self.closed,
         )
 
@@ -433,7 +618,57 @@ class PolygonEntity(Entity):
         # The frame points are mirrored centrally by the command, which
         # flips the frame's chirality; negating the local v component
         # mirrors the outline with it (true for both mirror axes).
-        self.vertices = [(u, -v) for u, v in self.vertices]
+        self.rings = [[(u, -v) for u, v in ring] for ring in self.rings]
+        self._normalize_ring_winding()
+
+    def transform_offsets(self, placement: "PlacementTransform") -> None:
+        # Ring vertices are frame-local, so rotating or uniformly
+        # scaling the frame leaves them unchanged; only mirroring
+        # placements flip the frame's chirality and require a flip.
+        if self._placement_flips_chirality(placement):
+            self.rings = [[(u, -v) for u, v in ring] for ring in self.rings]
+            self._normalize_ring_winding()
+
+    def rewrite_offsets_from(
+        self, template: "Entity", placement: "PlacementTransform"
+    ) -> None:
+        # The copy's frame points follow its own placement; re-derive
+        # the rings from the template's, flipping chirality when the
+        # placement mirrors the plane.
+        if not isinstance(template, PolygonEntity):
+            return
+        rings = template.rings
+        if self._placement_flips_chirality(placement):
+            rings = [[(u, -v) for u, v in ring] for ring in rings]
+        self.rings = [list(ring) for ring in rings]
+        self._normalize_ring_winding()
+
+    def is_closed_loop(self) -> bool:
+        return self.closed
+
+    def enclosed_signed_area(self, registry: "EntityRegistry") -> float:
+        # By convention, a single closed loop is CCW -> positive area.
+        rings = self.get_world_rings(registry)
+        area = abs(get_polygon_signed_area(rings[0]))
+        for ring in rings[1:]:
+            area -= abs(get_polygon_signed_area(ring))
+        return area
+
+    def contains_point(
+        self, registry: "EntityRegistry", x: float, y: float
+    ) -> bool:
+        """A point is inside the shape when it is inside the outer
+        ring and not inside any hole."""
+        if not self.closed:
+            return False
+        rings = self.get_world_rings(registry)
+        if len(rings[0]) < 3 or not is_point_inside_polygon((x, y), rings[0]):
+            return False
+        return all(
+            not is_point_inside_polygon((x, y), hole)
+            for hole in rings[1:]
+            if len(hole) >= 3
+        )
 
     def hit_test(
         self,
@@ -442,16 +677,16 @@ class PolygonEntity(Entity):
         threshold: float,
         registry: "EntityRegistry",
     ) -> bool:
-        vertices = self.get_world_vertices(registry)
-        if len(vertices) < 2:
-            return False
-        count = len(vertices)
-        for i in range(count - 1 if not self.closed else count):
-            p1 = vertices[i]
-            p2 = vertices[(i + 1) % count]
-            _, _, dist_sq = get_line_segment_closest_point(p1, p2, mx, my)
-            if dist_sq < threshold**2:
-                return True
+        for vertices in self.get_world_rings(registry):
+            if len(vertices) < 2:
+                continue
+            count = len(vertices)
+            for i in range(count - 1 if not self.closed else count):
+                p1 = vertices[i]
+                p2 = vertices[(i + 1) % count]
+                _, _, dist_sq = get_line_segment_closest_point(p1, p2, mx, my)
+                if dist_sq < threshold**2:
+                    return True
         return False
 
     def is_contained_by(
@@ -459,12 +694,14 @@ class PolygonEntity(Entity):
         rect: Rect,
         registry: "EntityRegistry",
     ) -> bool:
-        vertices = self.get_world_vertices(registry)
-        if not vertices:
+        rings = self.get_world_rings(registry)
+        if not rings or not rings[0]:
             return False
         x_min, y_min, x_max, y_max = rect
         return all(
-            x_min <= x <= x_max and y_min <= y <= y_max for x, y in vertices
+            x_min <= x <= x_max and y_min <= y <= y_max
+            for ring in rings
+            for x, y in ring
         )
 
     def intersects_rect(
@@ -472,30 +709,35 @@ class PolygonEntity(Entity):
         rect: Rect,
         registry: "EntityRegistry",
     ) -> bool:
-        vertices = self.get_world_vertices(registry)
-        count = len(vertices)
+        rings = self.get_world_rings(registry)
+        count = len(rings[0]) if rings else 0
         if count < 2:
             return False
-        for i in range(count - 1 if not self.closed else count):
-            p1 = vertices[i]
-            p2 = vertices[(i + 1) % count]
-            if does_line_segment_intersect_rect(p1, p2, rect):
-                return True
+        for vertices in rings:
+            ring_count = len(vertices)
+            for i in range(ring_count - 1 if not self.closed else ring_count):
+                p1 = vertices[i]
+                p2 = vertices[(i + 1) % ring_count]
+                if does_line_segment_intersect_rect(p1, p2, rect):
+                    return True
         center = ((rect[0] + rect[2]) / 2, (rect[1] + rect[3]) / 2)
-        if is_point_inside_polygon(center, vertices):
+        if self.contains_point(registry, *center):
             return True
         return self.is_contained_by(rect, registry)
 
     def to_geometry(self, registry: "EntityRegistry") -> Geometry:
-        vertices = self.get_world_vertices(registry)
+        rings = self.get_world_rings(registry)
         geo = Geometry()
-        if not vertices:
+        if not rings or not rings[0]:
             return geo
-        geo.move_to(vertices[0][0], vertices[0][1])
-        for x, y in vertices[1:]:
-            geo.line_to(x, y)
-        if self.closed:
-            geo.close_path()
+        for ring in rings:
+            if not ring:
+                continue
+            geo.move_to(ring[0][0], ring[0][1])
+            for x, y in ring[1:]:
+                geo.line_to(x, y)
+            if self.closed:
+                geo.close_path()
         return geo
 
     def to_polygon_vertices(
@@ -529,14 +771,20 @@ class PolygonEntity(Entity):
             {
                 "center_idx": self.center_idx,
                 "handle_idx": self.handle_idx,
-                "vertices": [list(v) for v in self.vertices],
+                "vertices": [list(v) for v in self.rings[0]],
                 "closed": self.closed,
             }
         )
+        if len(self.rings) > 1:
+            data["rings"] = [
+                [list(v) for v in ring] for ring in self.rings[1:]
+            ]
         return data
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "PolygonEntity":
+        holes = data.get("rings")
+        rings = [data["vertices"], *holes] if holes else None
         return cls(
             id=data["id"],
             center_idx=data["center_idx"],
@@ -544,11 +792,12 @@ class PolygonEntity(Entity):
             vertices=data["vertices"],
             closed=data.get("closed", False),
             construction=data.get("construction", False),
+            rings=rings,
         )
 
     def __repr__(self) -> str:
         return (
             f"PolygonEntity(id={self.id}, center={self.center_idx}, "
             f"handle={self.handle_idx}, closed={self.closed}, "
-            f"vertices={len(self.vertices)})"
+            f"rings={len(self.rings)})"
         )

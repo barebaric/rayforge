@@ -332,6 +332,10 @@ class SketchStudio(Gtk.Box):
             ("view_fit", self._on_view_fit),
             ("toggle_construction", self._on_toggle_construction),
             ("chamfer_corner", self._on_chamfer),
+            ("boolean_union", self._on_boolean_union),
+            ("boolean_difference", self._on_boolean_difference),
+            ("boolean_intersection", self._on_boolean_intersection),
+            ("boolean_exclude", self._on_boolean_exclude),
         ]
 
         for name, cb in actions:
@@ -359,6 +363,10 @@ class SketchStudio(Gtk.Box):
             "sketch.delete": ["Delete"],
             "sketch.view_fit": ["1"],
             "sketch.finish": [f"{PRIMARY_ACCEL}Return"],
+            "sketch.boolean_union": [f"{PRIMARY_ACCEL}plus"],
+            "sketch.boolean_difference": [f"{PRIMARY_ACCEL}minus"],
+            "sketch.boolean_intersection": [f"{PRIMARY_ACCEL}asterisk"],
+            "sketch.boolean_exclude": [f"{PRIMARY_ACCEL}asciicircum"],
         }
 
         for action_name, accels in shortcuts.items():
@@ -596,6 +604,22 @@ class SketchStudio(Gtk.Box):
     def _on_chamfer(self, action, param):
         if self.canvas.sketch_element:
             self.canvas.sketch_element.add_chamfer_action()
+
+    def _on_boolean_union(self, action, param):
+        self._apply_boolean("union")
+
+    def _on_boolean_difference(self, action, param):
+        self._apply_boolean("difference")
+
+    def _on_boolean_intersection(self, action, param):
+        self._apply_boolean("intersection")
+
+    def _on_boolean_exclude(self, action, param):
+        self._apply_boolean("exclude")
+
+    def _apply_boolean(self, op_name: str):
+        if self.canvas.sketch_element:
+            self.canvas.sketch_element.apply_boolean(op_name)
 
     def _on_toggle_constraints(self, btn):
         if self.canvas.sketch_element:
