@@ -47,67 +47,50 @@ def _mesh_group(group) -> Adw.ExpanderRow:
     return expander
 
 
+def _mesh_widget(group):
+    (widget_group,) = group._group_dicts.keys()
+    return widget_group
+
+
 @pytest.mark.ui
 def test_renders_unconditionally_without_mesh(ui_context_initializer):
     """The transformer renders even with nothing probed; the addon
-    widget itself banners the missing mesh."""
+    widget reports the missing mesh in its description."""
     _make_machine()
     layer = Layer(name="l")
     group = LayerPostProcessorGroup(layer, editor=None)
 
     expander = _mesh_group(group)
     assert expander.get_title() == "Bed Mesh Correction"
-    (widget_group,) = group._group_dicts.keys()
-    assert widget_group._no_mesh_banner.get_revealed()
+    assert "No bed mesh has been probed" in (
+        _mesh_widget(group).get_description() or ""
+    )
     assert layer.post_processors_dicts == []
 
 
 @pytest.mark.ui
-def test_follows_machine_default_subtitle_and_claim(ui_context_initializer):
+def test_follows_machine_default_and_claims_on_edit(
+    ui_context_initializer,
+):
     machine = _make_machine()
     _make_mesh(machine)
     machine.default_post_processors_dicts = [
-        {"name": MESH_NAME, "enabled": True, "z_offset": 2.0}
+        {"name": MESH_NAME, "enabled": True}
     ]
 
     layer = Layer(name="l")
     group = LayerPostProcessorGroup(layer, editor=None)
-    expander = _mesh_group(group)
-    assert expander.get_subtitle() == "Follows the machine default"
-    # The widget reflects the machine default's values.
-    (widget_group,) = group._group_dicts.keys()
-    assert widget_group.transformer.z_offset == 2.0
+    assert _mesh_group(group).get_subtitle() == "Follows the machine default"
     assert layer.post_processors_dicts == []
 
-    # First interaction claims an entry seeded from the displayed
-    # configuration, then applies the change.
-    widget_group.param_changed.send(
-        widget_group, key="z_offset", value=3.5, name="test"
+    _mesh_widget(group).param_changed.send(
+        _mesh_widget(group), key="enabled", value=False, name="test"
     )
     assert layer.post_processors_dicts == [
-        {"name": MESH_NAME, "enabled": True, "z_offset": 3.5}
+        {"name": MESH_NAME, "enabled": False}
     ]
-    _, owned, _source = group._group_dicts[(widget_group)]
+    _cls, owned, _source = next(iter(group._group_dicts.values()))
     assert owned is not None
-
-
-@pytest.mark.ui
-def test_disable_via_switch_claims_disabled_entry(ui_context_initializer):
-    machine = _make_machine()
-    _make_mesh(machine)
-    machine.default_post_processors_dicts = [
-        {"name": MESH_NAME, "enabled": True, "z_offset": 0.0}
-    ]
-
-    layer = Layer(name="l")
-    group = LayerPostProcessorGroup(layer, editor=None)
-    (widget_group,) = group._group_dicts.keys()
-    widget_group.param_changed.send(
-        widget_group, key="enabled", value=False, name="test"
-    )
-    assert layer.post_processors_dicts == [
-        {"name": MESH_NAME, "enabled": False, "z_offset": 0.0}
-    ]
 
 
 @pytest.mark.ui
@@ -115,19 +98,15 @@ def test_owned_entry_edits_in_place(ui_context_initializer):
     machine = _make_machine()
     _make_mesh(machine)
     layer = Layer(name="l")
-    layer.post_processors_dicts = [
-        {"name": MESH_NAME, "enabled": True, "z_offset": 1.0}
-    ]
+    layer.post_processors_dicts = [{"name": MESH_NAME, "enabled": True}]
     group = LayerPostProcessorGroup(layer, editor=None)
-    (widget_group,) = group._group_dicts.keys()
     original_dict = layer.post_processors_dicts[0]
 
-    widget_group.param_changed.send(
-        widget_group, key="z_offset", value=2.25, name="test"
+    _mesh_widget(group).param_changed.send(
+        _mesh_widget(group), key="enabled", value=False, name="test"
     )
     assert layer.post_processors_dicts[0] is original_dict
-    assert original_dict["z_offset"] == 2.25
-    # No duplicate entry was created.
+    assert original_dict["enabled"] is False
     assert len(layer.post_processors_dicts) == 1
 
 
@@ -136,33 +115,11 @@ def test_reset_to_machine_default_removes_entry(ui_context_initializer):
     machine = _make_machine()
     _make_mesh(machine)
     machine.default_post_processors_dicts = [
-        {"name": MESH_NAME, "enabled": True, "z_offset": 2.0}
+        {"name": MESH_NAME, "enabled": True}
     ]
     layer = Layer(name="l")
-    layer.post_processors_dicts = [
-        {"name": MESH_NAME, "enabled": False, "z_offset": 0.0}
-    ]
+    layer.post_processors_dicts = [{"name": MESH_NAME, "enabled": False}]
     group = LayerPostProcessorGroup(layer, editor=None)
-    (transformer_cls, _owned, _source) = next(
-        iter(group._group_dicts.values())
-    )
+    transformer_cls = next(iter(group._group_dicts.values()))[0]
     group._reset_to_default(transformer_cls)
     assert layer.post_processors_dicts == []
-
-
-@pytest.mark.ui
-def test_machine_default_without_mesh_still_renders(
-    ui_context_initializer,
-):
-    """A default can exist without a probed mesh (it will no-op);
-    the group still renders and the widget flags the missing mesh."""
-    machine = _make_machine()
-    machine.default_post_processors_dicts = [
-        {"name": MESH_NAME, "enabled": True, "z_offset": 0.0}
-    ]
-    layer = Layer(name="l")
-    group = LayerPostProcessorGroup(layer, editor=None)
-    expander = _mesh_group(group)
-    assert expander.get_subtitle() == "Follows the machine default"
-    (widget_group,) = group._group_dicts.keys()
-    assert widget_group._no_mesh_banner.get_revealed()

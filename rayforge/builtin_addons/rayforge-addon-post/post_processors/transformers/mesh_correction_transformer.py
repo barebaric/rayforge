@@ -35,19 +35,8 @@ class MeshCorrectionTransformer(OpsTransformer):
     #: Applies to a layer's merged toolpath in machine space.
     LAYER_APPLICABLE = True
 
-    def __init__(self, enabled: bool = True, z_offset: float = 0.0):
+    def __init__(self, enabled: bool = True):
         super().__init__(enabled=enabled)
-        self._z_offset: float = 0.0
-        self.z_offset = z_offset
-
-    @property
-    def z_offset(self) -> float:
-        """Constant Z added on top of the sampled map height (mm)."""
-        return self._z_offset
-
-    @z_offset.setter
-    def z_offset(self, value: float) -> None:
-        self._z_offset = float(value)
 
     @property
     def label(self) -> str:
@@ -75,24 +64,11 @@ class MeshCorrectionTransformer(OpsTransformer):
         heights = np.asarray(mesh.heights, dtype=np.float64).reshape(
             mesh.ny, mesh.nx
         )
-        return MeshCorrectionSpec(
-            mesh.x0,
-            mesh.y0,
-            mesh.dx,
-            mesh.dy,
-            heights,
-            z_offset=self.z_offset,
-        )
+        return MeshCorrectionSpec(mesh.x0, mesh.y0, mesh.dx, mesh.dy, heights)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
-            **super().to_dict(),
-            "z_offset": self.z_offset,
-        }
+        return {**super().to_dict()}
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> MeshCorrectionTransformer:
-        return cls(
-            enabled=data.get("enabled", True),
-            z_offset=data.get("z_offset", 0.0),
-        )
+        return cls(enabled=data.get("enabled", True))

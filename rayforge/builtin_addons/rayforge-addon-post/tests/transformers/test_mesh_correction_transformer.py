@@ -31,16 +31,14 @@ def machine_with_mesh() -> FakeMachine:
 
 
 def test_serialization_round_trip():
-    original = MeshCorrectionTransformer(enabled=False, z_offset=1.5)
+    original = MeshCorrectionTransformer(enabled=False)
     data = original.to_dict()
     assert data["name"] == "MeshCorrectionTransformer"
     assert data["enabled"] is False
-    assert data["z_offset"] == 1.5
 
     recreated = MeshCorrectionTransformer.from_dict(data)
     assert isinstance(recreated, MeshCorrectionTransformer)
     assert recreated.enabled is False
-    assert recreated.z_offset == 1.5
 
 
 def test_to_spec_raises_without_mesh(
@@ -58,7 +56,6 @@ def test_to_spec_builds_rust_spec(
     spec = transformer.to_spec(None, None, cast(Machine, machine_with_mesh))
     assert spec.x0 == 0.0
     assert spec.dx == 100.0
-    assert spec.z_offset == 0.0
     assert spec.heights.shape == (2, 2)
 
 
@@ -77,19 +74,6 @@ def test_applies_mesh_to_ops(
     assert ops.endpoint(0) == (0.0, 0.0, 0.0)
     # Grid corner (100, 100) has height 3.0; added to the original z=1.
     assert ops.endpoint(1) == (100.0, 100.0, 4.0)
-
-
-def test_z_offset_added(machine_with_mesh):
-    from raygeo.ops import Ops
-
-    transformer = MeshCorrectionTransformer(enabled=True, z_offset=-0.5)
-    ops = Ops()
-    ops.move_to(0.0, 0.0, 1.0)
-
-    specs = [transformer.to_spec(None, None, cast(Machine, machine_with_mesh))]
-    Ops.apply_transformers(ops, specs, progress_cb=None)
-
-    assert ops.endpoint(0) == (0.0, 0.0, 0.5)
 
 
 def test_interpolation_midpoint_is_corner_average(

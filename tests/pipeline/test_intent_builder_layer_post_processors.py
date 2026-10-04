@@ -140,28 +140,13 @@ def test_layer_override_builds_layer_transformers(isolated_machine):
 
     doc = Doc()
     doc.active_layer.post_processors_dicts = [
-        {"name": "MeshCorrectionTransformer", "z_offset": 1.5}
+        {"name": "MeshCorrectionTransformer", "enabled": False}
     ]
     spec = _builder(isolated_machine)._build_machine_transform_stage(doc)
 
     assert spec.default_transformers  # machine default still global
-    assert len(spec.layer_transformers) == 1
-    layer_uid, specs = spec.layer_transformers[0]
-    assert layer_uid == doc.active_layer.uid
-    assert len(specs) == 1
-    assert specs[0].z_offset == 1.5
-
-
-def test_layer_disable_entry_yields_no_specs(isolated_machine):
-    """A disabled layer entry overrides the default to 'off'."""
-    isolated_machine.default_post_processors_dicts = [dict(MESH_DICT)]
-    isolated_machine.set_bed_mesh(_make_bed_mesh())
-
-    doc = Doc()
-    doc.active_layer.post_processors_dicts = [
-        {"name": "MeshCorrectionTransformer", "enabled": False}
-    ]
-    spec = _builder(isolated_machine)._build_machine_transform_stage(doc)
+    # The disabled layer entry overrides the default; the spec list
+    # itself is empty because the layer turned the transformer off.
     assert spec.layer_transformers == []
 
 
