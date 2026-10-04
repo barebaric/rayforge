@@ -58,6 +58,7 @@ TARGETS = {
     "machine-settings:hooks-macros:editor": "macro_editor",
     "machine-settings:hooks-macros:editor:variables": "macro_editor",
     "machine-settings:device": "machine_settings_device",
+    "machine-settings:bed-mesh": "machine_settings_bed_mesh",
     "machine-settings:laser": "machine_settings_laser",
     "machine-settings:rotary-module": "machine_settings_rotary_module",
     "machine-settings:camera": "machine_settings_camera",

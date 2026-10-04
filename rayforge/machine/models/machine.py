@@ -29,6 +29,7 @@ from ..driver.driver import DeviceState, Pos, PWMParams, pwm_varset
 from ..kinematics import HeadSpec, Kinematics, build_assembly
 from ..models.axis import AxisConfig, AxisDirection, AxisSet, AxisType
 from ..transport import TransportStatus
+from .bed_mesh import BedMesh
 from .coordspace import MachineSpace
 from .dialect import GcodeDialect
 from .head import Head, head_from_dict
@@ -262,6 +263,7 @@ class Machine:
 
         self.rotary_modules: dict[str, RotaryModule] = {}
         self.nogo_zones: dict[str, Zone] = {}
+        self._bed_mesh: BedMesh | None = None
 
         self._assembly: Assembly | None = None
         self._assembly_dirty: bool = True
@@ -1497,6 +1499,23 @@ class Machine:
     def _on_nogo_zone_changed(self, zone, *args):
         self.changed.send(self)
 
+    @property
+    def bed_mesh(self) -> BedMesh | None:
+        """The probed bed height map, or None when never probed."""
+        return self._bed_mesh
+
+    def set_bed_mesh(self, mesh: BedMesh):
+        """Replace the bed mesh with a new probe run's result."""
+        self._bed_mesh = mesh
+        self.changed.send(self)
+
+    def clear_bed_mesh(self):
+        """Drop the bed mesh (the machine reverts to a flat bed)."""
+        if self._bed_mesh is None:
+            return
+        self._bed_mesh = None
+        self.changed.send(self)
+
     def _on_machine_hours_changed(self, machine_hours, *args):
         """
         Handle machine hours changes and propagate to machine changed
@@ -1784,6 +1803,9 @@ class Machine:
                     rm.to_dict() for rm in self.rotary_modules.values()
                 ],
                 "nogo_zones": [z.to_dict() for z in self.nogo_zones.values()],
+                "bed_mesh": (
+                    self._bed_mesh.to_dict() if self._bed_mesh else None
+                ),
                 "capabilities": (
                     [
                         c.value
@@ -2092,6 +2114,9 @@ class Machine:
         nogo_zones_data = ma_data.pop("nogo_zones", [])
         for obj in nogo_zones_data:
             ma.add_nogo_zone(Zone.from_dict(obj))
+        bed_mesh_data = ma_data.pop("bed_mesh", None)
+        if bed_mesh_data:
+            ma.set_bed_mesh(BedMesh.from_dict(bed_mesh_data))
         speeds = ma_data.pop("speeds", {})
         ma.max_cut_speed = speeds.get("max_cut_speed", ma.max_cut_speed)
         ma.max_travel_speed = speeds.get(

@@ -705,6 +705,7 @@ class TestExportMachine:
         machine.rotary_modules = {}
         machine.hookmacros = {}
         machine.nogo_zones = {}
+        machine.bed_mesh = None
         machine.source_profile_id = None
         machine.usb_vid = None
         machine.usb_pid = None
