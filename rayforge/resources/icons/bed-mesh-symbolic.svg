@@ -25,26 +25,19 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:zoom="32"
      inkscape:cx="11.96875"
-     inkscape:cy="11.96875"
-     inkscape:window-width="2698"
-     inkscape:window-height="1576"
+     inkscape:cy="11.953125"
+     inkscape:window-width="2278"
+     inkscape:window-height="1263"
      inkscape:window-x="26"
      inkscape:window-y="23"
      inkscape:window-maximized="0"
-     inkscape:current-layer="g9" />
-  <g
-     id="g9"
-     transform="matrix(1.0836309,0,0,1.2654887,-1.0035703,-1.920375)">
-    <path
-       d="M 12,6.5237473 20.53875,11 12,15.476253 3.4612503,11 Z"
-       stroke-width="1.4225"
-       id="outline"
-       style="fill:none;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.20833294;stroke-dasharray:none" />
-    <path
-       d="M 14.842901,8.0188157 6.3041517,12.495068 M 17.695848,9.5049316 9.1570986,13.981184 M 9.659378,8.0188157 17.695848,12.190683 M 7.0261783,9.6448145 14.842901,13.897255"
-       stroke-width="1.04316"
-       id="grid"
-       style="fill:none;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;stroke-width:0.84028241;stroke-dasharray:none"
-       sodipodi:nodetypes="cccccccc" />
-  </g>
+     inkscape:current-layer="svg1" />
+  <path
+     style="baseline-shift:baseline;display:inline;overflow:visible;vector-effect:none;stroke-linecap:round;stroke-linejoin:round;enable-background:accumulate;stop-color:#000000;stop-opacity:1;opacity:1"
+     d="M 11.630859,5.7324219 2.3769531,11.396484 a 0.70757073,0.70757073 0 0 0 0,1.207032 l 9.2539059,5.664062 a 0.70757073,0.70757073 0 0 0 0.738282,0 l 9.253906,-5.664062 a 0.70757073,0.70757073 0 0 0 0,-1.207032 L 12.369141,5.7324219 a 0.70757073,0.70757073 0 0 0 -0.738282,0 z M 12,7.1660156 19.896484,12 12,16.835937 4.1035156,12 Z"
+     id="outline" />
+  <path
+     style="baseline-shift:baseline;display:inline;overflow:visible;vector-effect:none;stroke-linecap:round;stroke-linejoin:round;enable-background:accumulate;stop-color:#000000;stop-opacity:1;opacity:1"
+     d="M 9.71875,7.8066406 A 0.49200001,0.49200001 0 0 0 9.0429688,7.9726562 0.49200001,0.49200001 0 0 0 9.2089844,8.6484375 L 11.339844,9.9414063 9.1230469,11.298828 6.875,9.8691406 A 0.49200001,0.49200001 0 0 0 6.1953125,10.021484 0.49200001,0.49200001 0 0 0 6.3457031,10.701172 L 8.1875,11.871094 5.5703125,13.472656 A 0.49200001,0.49200001 0 0 0 5.4082031,14.148438 0.49200001,0.49200001 0 0 0 6.0839844,14.3125 l 3.0273437,-1.853516 2.0996099,1.333985 -2.5488286,1.560547 A 0.49200001,0.49200001 0 0 0 8.5,16.029297 0.49200001,0.49200001 0 0 0 9.1757813,16.191406 l 2.9609377,-1.8125 2.679687,1.703125 a 0.49200001,0.49200001 0 0 0 0.679688,-0.152343 0.49200001,0.49200001 0 0 0 -0.152344,-0.677735 l -2.273437,-1.445312 2.314453,-1.416016 2.533203,1.537109 A 0.49200001,0.49200001 0 0 0 18.59375,13.761719 0.49200001,0.49200001 0 0 0 18.427734,13.085938 L 16.328125,11.8125 18.429687,10.527344 A 0.49200001,0.49200001 0 0 0 18.591797,9.8515625 0.49200001,0.49200001 0 0 0 17.916016,9.6875 L 15.380859,11.240234 13.232422,9.9355469 15.337891,8.6464844 A 0.49200001,0.49200001 0 0 0 15.5,7.9707031 0.49200001,0.49200001 0 0 0 14.824219,7.8085937 l -2.539063,1.5546876 z m 2.568359,2.7070314 2.150391,1.304687 -2.291016,1.402344 -2.099609,-1.335937 z"
+     id="grid" />
 </svg>
