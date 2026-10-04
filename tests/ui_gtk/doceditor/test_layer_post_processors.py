@@ -9,7 +9,7 @@ from rayforge.ui_gtk.doceditor.layer_post_processors import (
     LayerPostProcessorGroup,
 )
 
-MESH_DICT = {"name": "MeshCorrectionTransformer", "enabled": True}
+MESH_NAME = "MeshCorrectionTransformer"
 
 
 def _make_machine() -> Machine:
@@ -37,138 +37,132 @@ def _make_mesh(machine: Machine):
     machine.set_bed_mesh(mesh)
 
 
-@pytest.mark.ui
-def test_group_shows_machine_default_row(ui_context_initializer):
-    machine = _make_machine()
-    _make_mesh(machine)
-    machine.default_post_processors_dicts = [dict(MESH_DICT)]
+def _mesh_group(group) -> Adw.ExpanderRow:
+    """The single rendered expander for the mesh transformer."""
+    (expander,) = [
+        child
+        for child in group._children
+        if isinstance(child, Adw.ExpanderRow)
+    ]
+    return expander
 
+
+@pytest.mark.ui
+def test_renders_unconditionally_without_mesh(ui_context_initializer):
+    """The transformer renders even with nothing probed; the addon
+    widget itself banners the missing mesh."""
+    _make_machine()
     layer = Layer(name="l")
     group = LayerPostProcessorGroup(layer, editor=None)
-    assert group._group_dicts == {}
 
-    # The machine-defaults info row is present with its actions.
-    from gi.repository import Adw
-
-    action_rows = [
-        child for child in group._children if isinstance(child, Adw.ActionRow)
-    ]
-    assert action_rows
+    expander = _mesh_group(group)
+    assert expander.get_title() == "Bed Mesh Correction"
+    (widget_group,) = group._group_dicts.keys()
+    assert widget_group._no_mesh_banner.get_revealed()
+    assert layer.post_processors_dicts == []
 
 
 @pytest.mark.ui
-def test_group_disable_default_writes_layer_dict(ui_context_initializer):
-    machine = _make_machine()
-    _make_mesh(machine)
-    machine.default_post_processors_dicts = [dict(MESH_DICT)]
-
-    layer = Layer(name="l")
-    group = LayerPostProcessorGroup(layer, editor=None)
-    group._disable_default("MeshCorrectionTransformer")
-
-    assert layer.post_processors_dicts == [
-        {"name": "MeshCorrectionTransformer", "enabled": False}
-    ]
-    # Rebuilt: the layer now owns a disabled entry, so the info row
-    # for unoverridden defaults is gone.
-    assert group._group_dicts
-
-
-@pytest.mark.ui
-def test_group_customize_copies_machine_default(ui_context_initializer):
+def test_follows_machine_default_subtitle_and_claim(ui_context_initializer):
     machine = _make_machine()
     _make_mesh(machine)
     machine.default_post_processors_dicts = [
-        {"name": "MeshCorrectionTransformer", "enabled": True, "z_offset": 2.0}
+        {"name": MESH_NAME, "enabled": True, "z_offset": 2.0}
     ]
 
     layer = Layer(name="l")
     group = LayerPostProcessorGroup(layer, editor=None)
-    group._override_default("MeshCorrectionTransformer")
+    expander = _mesh_group(group)
+    assert expander.get_subtitle() == "Follows the machine default"
+    # The widget reflects the machine default's values.
+    (widget_group,) = group._group_dicts.keys()
+    assert widget_group.transformer.z_offset == 2.0
+    assert layer.post_processors_dicts == []
 
-    assert layer.post_processors_dicts == [
-        {"name": "MeshCorrectionTransformer", "enabled": True, "z_offset": 2.0}
-    ]
-
-
-@pytest.mark.ui
-def test_group_renders_layer_owned_entry(ui_context_initializer):
-    """With the addon registries populated, the layer's dict renders
-    as a settings group and param changes persist to the layer."""
-    machine = _make_machine()
-    _make_mesh(machine)
-
-    layer = Layer(name="l")
-    layer.post_processors_dicts = [dict(MESH_DICT)]
-    group = LayerPostProcessorGroup(layer, editor=None)
-    assert group._group_dicts, (
-        "expected a widget group for the mesh correction entry"
-    )
-
-    ((widget_group, _t_dict),) = group._group_dicts.items()
+    # First interaction claims an entry seeded from the displayed
+    # configuration, then applies the change.
     widget_group.param_changed.send(
-        widget_group, key="z_offset", value=1.25, name="test"
+        widget_group, key="z_offset", value=3.5, name="test"
     )
-    assert layer.post_processors_dicts[0]["z_offset"] == 1.25
-    assert layer.post_processors_dicts[0]["name"] == (
-        "MeshCorrectionTransformer"
-    )
-
-
-def _action_row_titles(group) -> list[str]:
-    from gi.repository import Adw
-
-    return [
-        child.get_title()
-        for child in group._children
-        if isinstance(child, Adw.ActionRow)
-    ]
-
-
-@pytest.mark.ui
-def test_empty_group_offers_add_with_probed_mesh(ui_context_initializer):
-    """No defaults, no layer entries, mesh probed: an Add row shows."""
-    machine = _make_machine()
-    _make_mesh(machine)
-
-    layer = Layer(name="l")
-    group = LayerPostProcessorGroup(layer, editor=None)
-    assert "Bed Mesh Correction" in _action_row_titles(group)
-
-    (add_row,) = [
-        child
-        for child in group._children
-        if isinstance(child, Adw.ActionRow)
-        and child.get_title() == "Bed Mesh Correction"
-    ] or [None]
-    assert add_row is not None
-    group._add_mesh_correction(None)
     assert layer.post_processors_dicts == [
-        {"name": "MeshCorrectionTransformer", "enabled": True, "z_offset": 0.0}
+        {"name": MESH_NAME, "enabled": True, "z_offset": 3.5}
     ]
-    # Rebuilt: the layer now owns an entry rendered as a widget group.
-    assert group._group_dicts
+    _, owned, _source = group._group_dicts[(widget_group)]
+    assert owned is not None
 
 
 @pytest.mark.ui
-def test_empty_group_shows_hint_without_mesh(ui_context_initializer):
-    """No defaults, no layer entries, no mesh: a hint row explains."""
-    _make_machine()
-
-    layer = Layer(name="l")
-    group = LayerPostProcessorGroup(layer, editor=None)
-    assert "No Post Processing Available" in _action_row_titles(group)
-
-
-@pytest.mark.ui
-def test_add_is_idempotent_when_entry_exists(ui_context_initializer):
+def test_disable_via_switch_claims_disabled_entry(ui_context_initializer):
     machine = _make_machine()
     _make_mesh(machine)
+    machine.default_post_processors_dicts = [
+        {"name": MESH_NAME, "enabled": True, "z_offset": 0.0}
+    ]
 
     layer = Layer(name="l")
-    layer.post_processors_dicts = [dict(MESH_DICT)]
     group = LayerPostProcessorGroup(layer, editor=None)
-    before = len(group._children)
-    group._add_mesh_correction(None)
+    (widget_group,) = group._group_dicts.keys()
+    widget_group.param_changed.send(
+        widget_group, key="enabled", value=False, name="test"
+    )
+    assert layer.post_processors_dicts == [
+        {"name": MESH_NAME, "enabled": False, "z_offset": 0.0}
+    ]
+
+
+@pytest.mark.ui
+def test_owned_entry_edits_in_place(ui_context_initializer):
+    machine = _make_machine()
+    _make_mesh(machine)
+    layer = Layer(name="l")
+    layer.post_processors_dicts = [
+        {"name": MESH_NAME, "enabled": True, "z_offset": 1.0}
+    ]
+    group = LayerPostProcessorGroup(layer, editor=None)
+    (widget_group,) = group._group_dicts.keys()
+    original_dict = layer.post_processors_dicts[0]
+
+    widget_group.param_changed.send(
+        widget_group, key="z_offset", value=2.25, name="test"
+    )
+    assert layer.post_processors_dicts[0] is original_dict
+    assert original_dict["z_offset"] == 2.25
+    # No duplicate entry was created.
     assert len(layer.post_processors_dicts) == 1
-    assert len(group._children) == before
+
+
+@pytest.mark.ui
+def test_reset_to_machine_default_removes_entry(ui_context_initializer):
+    machine = _make_machine()
+    _make_mesh(machine)
+    machine.default_post_processors_dicts = [
+        {"name": MESH_NAME, "enabled": True, "z_offset": 2.0}
+    ]
+    layer = Layer(name="l")
+    layer.post_processors_dicts = [
+        {"name": MESH_NAME, "enabled": False, "z_offset": 0.0}
+    ]
+    group = LayerPostProcessorGroup(layer, editor=None)
+    (transformer_cls, _owned, _source) = next(
+        iter(group._group_dicts.values())
+    )
+    group._reset_to_default(transformer_cls)
+    assert layer.post_processors_dicts == []
+
+
+@pytest.mark.ui
+def test_machine_default_without_mesh_still_renders(
+    ui_context_initializer,
+):
+    """A default can exist without a probed mesh (it will no-op);
+    the group still renders and the widget flags the missing mesh."""
+    machine = _make_machine()
+    machine.default_post_processors_dicts = [
+        {"name": MESH_NAME, "enabled": True, "z_offset": 0.0}
+    ]
+    layer = Layer(name="l")
+    group = LayerPostProcessorGroup(layer, editor=None)
+    expander = _mesh_group(group)
+    assert expander.get_subtitle() == "Follows the machine default"
+    (widget_group,) = group._group_dicts.keys()
+    assert widget_group._no_mesh_banner.get_revealed()

@@ -19,8 +19,10 @@ class MeshCorrectionSettingsGroup(TransformerSettingsGroup):
     """UI for configuring the MeshCorrectionTransformer.
 
     The bed height map itself is probed in the machine settings; this
-    group only offers the Z offset applied on top of the map. When the
-    machine has no mesh, a banner points at the Bed Mesh page.
+    group only offers the Z offset applied on top of the map. The
+    group manages its own availability: when the machine has no mesh,
+    it shows a banner pointing at the Bed Mesh page and insensitizes
+    its rows.
     """
 
     def __init__(
@@ -50,9 +52,10 @@ class MeshCorrectionSettingsGroup(TransformerSettingsGroup):
             value_in_base=transformer.z_offset,
         )
         self.add(z_offset_row)
+        self.z_offset_row = z_offset_row
         z_offset_row.value_changed.connect(self._on_z_offset_changed)
 
-        self._update_banner()
+        self._update_sensitivity()
 
     def _has_mesh(self) -> bool:
         from rayforge.context import get_context
@@ -60,10 +63,18 @@ class MeshCorrectionSettingsGroup(TransformerSettingsGroup):
         machine = get_context().machine
         return bool(machine and machine.bed_mesh is not None)
 
-    def _update_banner(self) -> None:
-        self._no_mesh_banner.set_revealed(
-            self._is_enabled() and not self._has_mesh()
-        )
+    def _update_sensitivity(self) -> None:
+        """Gate rows by the switch and the machine's mesh state.
+
+        The group stays visible and interactive (its enable switch can
+        still claim a layer entry); only the meaningless controls are
+        insensitive while no mesh is probed.
+        """
+        super()._update_sensitivity()
+        enabled = self._is_enabled()
+        has_mesh = self._has_mesh()
+        self._no_mesh_banner.set_revealed(enabled and not has_mesh)
+        self.z_offset_row.set_sensitive(enabled and has_mesh)
 
     def _on_z_offset_changed(self, row: LengthSpinRow) -> None:
         self.param_changed.send(

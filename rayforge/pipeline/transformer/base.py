@@ -26,6 +26,18 @@ class OpsTransformer(ABC):
     #: (e.g. ``"overscan"``), used to label batch progress details.
     SPEC_NAME: ClassVar[str] = ""
 
+    #: The ``to_spec()`` settings entry this transformer depends on to
+    #: be meaningful (e.g. ``"bed_mesh"``), or ``None``. Declared by
+    #: addons so hosts can offer the transformer wherever that machine
+    #: state exists — without core knowing concrete transformers.
+    SETTINGS_DEPENDENCY: ClassVar[str | None] = None
+
+    #: Whether this transformer can be used as a layer post processor
+    #: (applied to a layer's merged toolpath in machine space).
+    #: Declared by addons; the layer settings render every registered
+    #: transformer with this flag, unconditionally.
+    LAYER_APPLICABLE: ClassVar[bool] = False
+
     def __init__(self, enabled: bool = True, **kwargs):
         self._enabled = enabled
         self.changed = Signal()

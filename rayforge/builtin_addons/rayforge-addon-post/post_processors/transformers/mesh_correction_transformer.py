@@ -32,6 +32,12 @@ class MeshCorrectionTransformer(OpsTransformer):
 
     SPEC_NAME = "mesh_correction"
 
+    #: Only meaningful when the machine has a probed bed height map.
+    SETTINGS_DEPENDENCY = "bed_mesh"
+
+    #: Applies to a layer's merged toolpath in machine space.
+    LAYER_APPLICABLE = True
+
     def __init__(self, enabled: bool = True, z_offset: float = 0.0):
         super().__init__(enabled=enabled)
         self._z_offset: float = 0.0

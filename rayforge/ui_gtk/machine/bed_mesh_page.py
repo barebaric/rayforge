@@ -23,14 +23,10 @@ from .bed_mesh_view import BedMeshView
 logger = logging.getLogger(__name__)
 
 _PROBE_TASK_KEY = "bed-mesh-probe"
-#: Serialized default entry the "apply by default" switch manages.
-#: Resolved through the transformer registry (registered by the post
-#: processors addon); the page never imports the addon itself.
-MESH_CORRECTION_DICT = {
-    "name": "MeshCorrectionTransformer",
-    "enabled": True,
-    "z_offset": 0.0,
-}
+#: to_spec() settings entry post processors can declare a dependency
+#: on; the "apply by default" switch manages the machine defaults of
+#: every registered transformer with this dependency.
+BED_MESH_SETTINGS_KEY = "bed_mesh"
 
 DEFAULT_FEED_RATE = 100.0
 DEFAULT_MAX_TRAVEL = 10.0
@@ -295,27 +291,55 @@ class BedMeshPage(TrackedPreferencesPage):
         self._show_current_mesh()
 
     def _sync_apply_row(self):
-        """Reflect whether the mesh-correction default is active."""
+        """Reflect whether a bed mesh post processor default is active."""
+        names = self._dependent_transformer_names()
+        self.apply_row.set_visible(bool(names))
         self._initializing = True
         self.apply_row.set_active(
             any(
-                d.get("name") == MESH_CORRECTION_DICT["name"]
-                and d.get("enabled", True)
+                d.get("name") in names and d.get("enabled", True)
                 for d in self.machine.default_post_processors_dicts
             )
         )
         self._initializing = False
 
+    def _dependent_transformer_names(self) -> set[str]:
+        """Names of registered transformers that use the bed mesh.
+
+        Transformers declare the dependency themselves (addons); this
+        page only goes through the transformer registry.
+        """
+        from rayforge.pipeline.transformer.registry import (
+            transformer_registry,
+        )
+
+        return {
+            cls.__name__
+            for cls in transformer_registry.get_for_settings_dependency(
+                BED_MESH_SETTINGS_KEY
+            )
+        }
+
     def _on_apply_default_changed(self, row, _pspec):
         if self._initializing:
             return
+        from rayforge.pipeline.transformer.registry import (
+            transformer_registry,
+        )
+
+        names = self._dependent_transformer_names()
         dicts = [
             d
             for d in self.machine.default_post_processors_dicts
-            if d.get("name") != MESH_CORRECTION_DICT["name"]
+            if d.get("name") not in names
         ]
         if row.get_active():
-            dicts.append(dict(MESH_CORRECTION_DICT))
+            dicts.extend(
+                cls().to_dict()
+                for cls in transformer_registry.get_for_settings_dependency(
+                    BED_MESH_SETTINGS_KEY
+                )
+            )
         self.machine.set_default_post_processors(dicts)
 
     # ── Probing ───────────────────────────────────────────────────

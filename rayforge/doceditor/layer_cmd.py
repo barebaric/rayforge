@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from gettext import gettext as _
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from ..context import get_context
 from ..core.color import pick_unused_color
@@ -12,6 +12,7 @@ from ..core.layer import Layer
 from ..core.undo import (
     ChangePropertyCommand,
     Command,
+    DictItemCommand,
 )
 from ..core.undo.list_cmd import ReorderListCommand
 from ..core.workpiece import WorkPiece
@@ -289,6 +290,31 @@ class LayerCmd:
             new_value=list(post_processors_dicts),
             setter_method_name="set_post_processors_dicts",
             name=_("Change layer post processors"),
+        )
+        self._editor.history_manager.execute(cmd)
+
+    def set_layer_post_processor_param(
+        self,
+        target_dict: dict,
+        key: str,
+        new_value: Any,
+        name: str,
+    ):
+        """Sets one parameter of a layer post processor dict, undoable."""
+        if isinstance(new_value, float):
+            old_value = target_dict.get(key)
+            if (
+                isinstance(old_value, (int, float))
+                and abs(new_value - old_value) < 1e-6
+            ):
+                return
+        elif new_value == target_dict.get(key):
+            return
+        cmd = DictItemCommand(
+            target_dict=target_dict,
+            key=key,
+            new_value=new_value,
+            name=name,
         )
         self._editor.history_manager.execute(cmd)
 
