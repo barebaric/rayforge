@@ -5,6 +5,19 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Changed
+
+- Machines: the GRBL Serial driver now runs its entire protocol stack
+  (handshake, character-counting flow control, streaming, stall
+  detection and deadlock recovery) in Rust through the raydriver
+  library. The experimental "GRBL (Rust)" driver replaces the old
+  Python implementation under the familiar "GRBL (Serial)" name, so
+  existing machine configurations continue to work unchanged.
+  Machines saved while the driver carried its experimental name keep
+  working through a compatibility alias.
+
 ## 1.12.0
 
 ### Added

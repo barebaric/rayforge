@@ -1,7 +1,6 @@
-from unittest.mock import AsyncMock, MagicMock, PropertyMock
+from unittest.mock import AsyncMock
 
 import pytest
-from blinker import Signal
 
 from rayforge.machine.driver.grbl.grbl_probe import (
     build_grbl_profile,
@@ -249,17 +248,6 @@ class TestBuildGrblProfile:
         assert profile.machine_config.acceleration == 600
 
 
-def _make_mock_serial():
-    mock = MagicMock()
-    mock.connect = AsyncMock()
-    mock.disconnect = AsyncMock()
-    mock.send = AsyncMock()
-    mock.received = Signal()
-    mock.status_changed = Signal()
-    mock.is_connected = True
-    return mock
-
-
 class TestDriverProbe:
     """
     Tests for GrblSerialDriver.probe() verifying that it creates
@@ -270,18 +258,6 @@ class TestDriverProbe:
     async def test_probe_connects_and_queries(
         self, context_initializer, mocker
     ):
-        mock_serial = _make_mock_serial()
-        mocker.patch(
-            "rayforge.machine.driver.grbl.grbl_serial.SerialTransport",
-            return_value=mock_serial,
-        )
-        mocker.patch.object(
-            mock_serial,
-            "is_connected",
-            new_callable=PropertyMock,
-            return_value=True,
-        )
-
         build_info = [
             "[VER:1.1h.ORTUR:]",
             "[OPT:VMPH,63,511]",
@@ -300,8 +276,9 @@ class TestDriverProbe:
         ]
 
         async def fake_connect(self):
-            self._handshake_received.set()
-            self._update_connection_status(TransportStatus.CONNECTED)
+            self.connection_status_changed.send(
+                self, status=TransportStatus.CONNECTED, message=None
+            )
 
         async def fake_interactive(self, command):
             if command == "$I":
@@ -345,12 +322,6 @@ class TestDriverProbe:
 
     @pytest.mark.asyncio
     async def test_probe_cleanup_on_error(self, context_initializer, mocker):
-        mock_serial = _make_mock_serial()
-        mocker.patch(
-            "rayforge.machine.driver.grbl.grbl_serial.SerialTransport",
-            return_value=mock_serial,
-        )
-
         async def failing_connect(self):
             raise ConnectionError("Port not found")
 
