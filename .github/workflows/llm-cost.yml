@@ -1,0 +1,50 @@
+name: LLM Cost Estimate
+
+on:
+  pull_request:
+    types:
+      - closed
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  estimate:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+
+      - name: Fetch original PR head
+        run: |
+          git fetch origin "+refs/pull/${{ github.event.pull_request.number }}/head" \
+            || echo "::notice::original PR head unavailable, using merge diff"
+
+      - name: Install scc
+        run: |
+          curl -fsSL "https://github.com/boyter/scc/releases/download/v4.1.0/scc_Linux_x86_64.tar.gz" -o /tmp/scc.tar.gz
+          tar -xzf /tmp/scc.tar.gz -C /tmp
+          sudo install -m 0755 /tmp/scc /usr/local/bin/scc
+          scc --version
+
+      - name: Estimate LLM implementation cost
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SCC_LLM_TOKENS_PER_LINE: "10"
+          SCC_LLM_PRICE_PER_MTOK: "15"
+        run: |
+          python3 .github/scripts/estimate_llm_cost.py \
+            --merge-sha "${{ github.event.pull_request.merge_commit_sha }}" \
+            --head-sha "${{ github.event.pull_request.head.sha }}" \
+            --pr-number "${{ github.event.pull_request.number }}" \
+            --out comment.md
+
+      - name: Comment on the pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment "${{ github.event.pull_request.number }}" --body-file comment.md
