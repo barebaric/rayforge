@@ -8,6 +8,9 @@ from sketcher.core import Sketch
 from sketcher.core.boolean import BooleanOp
 from sketcher.core.commands import BooleanCommand
 from sketcher.core.entities import Circle, PolygonEntity
+from sketcher.core.sketch import Fill
+
+from rayforge.image.structures import FillStyle
 
 
 def _square(sketch, x=0.0, y=0.0, size=20.0):
@@ -29,6 +32,17 @@ def _circle(sketch, cx=0.0, cy=0.0, r=10.0):
     center = sketch.add_point(cx, cy)
     radius_pt = sketch.add_point(cx + r, cy)
     return sketch.add_circle(center, radius_pt)
+
+
+def _fill(sketch, entity_id, color=(0.1, 0.2, 0.3, 0.9)):
+    fill = Fill(
+        uid=f"fill-{entity_id}",
+        boundary=[(entity_id, True)],
+        style=FillStyle.SOLID,
+        color=color,
+    )
+    sketch.fills.append(fill)
+    return fill
 
 
 def _polygons(sketch):
@@ -183,3 +197,105 @@ def test_prepare_solids_is_side_effect_free():
     assert solids is not None and len(solids) == 1
     assert _point_state(sketch) == pytest.approx(points_before)
     assert len(sketch.registry.entities) == entities_before
+
+
+def test_exclude_transfers_fill_to_every_result():
+    sketch = Sketch()
+    c1 = _circle(sketch, 0.0)
+    c2 = _circle(sketch, 8.0)
+    fill1 = _fill(sketch, c1)
+    _fill(sketch, c2)
+    cmd = BooleanCommand(sketch, [c1, c2], BooleanOp.EXCLUDE)
+    cmd.execute()
+
+    polygons = _polygons(sketch)
+    assert len(polygons) == 2
+    assert len(sketch.fills) == 2
+    for polygon, fill in zip(polygons, sketch.fills):
+        assert fill.boundary == [(polygon.id, True)]
+        assert fill.style is FillStyle.SOLID
+    assert fill1 not in sketch.fills
+
+
+def test_fill_style_is_inherited_from_bottom_source():
+    sketch = Sketch()
+    c1 = _circle(sketch, 0.0)
+    c2 = _circle(sketch, 8.0)
+    _fill(sketch, c1, color=(0.9, 0.8, 0.7, 1.0))
+    _fill(sketch, c2, color=(0.1, 0.2, 0.3, 0.5))
+    cmd = BooleanCommand(sketch, [c1, c2], BooleanOp.UNION)
+    cmd.execute()
+
+    polygons = _polygons(sketch)
+    assert len(polygons) == 1
+    assert len(sketch.fills) == 1
+    assert sketch.fills[0].color == pytest.approx((0.9, 0.8, 0.7, 1.0))
+
+
+def test_boolean_without_source_fills_adds_none():
+    sketch = Sketch()
+    c1 = _circle(sketch, 0.0)
+    c2 = _circle(sketch, 8.0)
+    cmd = BooleanCommand(sketch, [c1, c2], BooleanOp.UNION)
+    cmd.execute()
+    assert sketch.fills == []
+
+
+def test_unrelated_fills_survive_boolean():
+    sketch = Sketch()
+    c1 = _circle(sketch, 0.0)
+    c2 = _circle(sketch, 8.0)
+    other = _circle(sketch, 100.0, 100.0, 5.0)
+    unrelated = _fill(sketch, other)
+    _fill(sketch, c1)
+    cmd = BooleanCommand(sketch, [c1, c2], BooleanOp.EXCLUDE)
+    cmd.execute()
+
+    assert unrelated in sketch.fills
+    assert len(sketch.fills) == 3
+
+
+def test_fill_transfer_undo_restores_original_fills():
+    sketch = Sketch()
+    c1 = _circle(sketch, 0.0)
+    c2 = _circle(sketch, 8.0)
+    other = _circle(sketch, 100.0, 100.0, 5.0)
+    unrelated = _fill(sketch, other)
+    fill1 = _fill(sketch, c1)
+    fill2 = _fill(sketch, c2)
+    cmd = BooleanCommand(sketch, [c1, c2], BooleanOp.EXCLUDE)
+    cmd.execute()
+    cmd.undo()
+
+    assert sketch.fills == [unrelated, fill1, fill2]
+    assert isinstance(sketch.registry.get_entity(c1), Circle)
+    assert isinstance(sketch.registry.get_entity(c2), Circle)
+
+
+def test_fill_transfer_redo_reapplies_fills():
+    sketch = Sketch()
+    c1 = _circle(sketch, 0.0)
+    c2 = _circle(sketch, 8.0)
+    _fill(sketch, c1)
+    _fill(sketch, c2)
+    cmd = BooleanCommand(sketch, [c1, c2], BooleanOp.EXCLUDE)
+    cmd.execute()
+    cmd.undo()
+    cmd.execute()
+
+    polygons = _polygons(sketch)
+    assert len(polygons) == 2
+    assert len(sketch.fills) == 2
+    for polygon, fill in zip(polygons, sketch.fills):
+        assert fill.boundary == [(polygon.id, True)]
+        assert sketch.registry.get_entity(polygon.id) is polygon
+
+
+def test_abort_keeps_fills_untouched():
+    sketch = Sketch()
+    c1 = _circle(sketch, 0.0, 0.0, 5.0)
+    c2 = _circle(sketch, 50.0, 0.0, 5.0)
+    fill1 = _fill(sketch, c1)
+    cmd = BooleanCommand(sketch, [c1, c2], BooleanOp.INTERSECTION)
+    cmd.execute()
+    assert sketch.fills == [fill1]
