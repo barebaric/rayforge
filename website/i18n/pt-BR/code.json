@@ -50,6 +50,24 @@
   "install.launchFromMenu": {
     "message": "Inicie o Rayforge no menu de aplicativos ou executando:"
   },
+  "install.gentoo.title": {
+    "message": "Pacote do Gentoo"
+  },
+  "install.gentoo.description": {
+    "message": "O Rayforge está disponível no Gentoo por meio do overlay \"snakebyte\", mantido pela comunidade. O pacote é compilado a partir do código-fonte, portanto a instalação pode levar algum tempo."
+  },
+  "install.gentoo.community": {
+    "message": "Este pacote é mantido pela comunidade e não possui suporte oficial do projeto Rayforge."
+  },
+  "install.gentoo.overlayLink": {
+    "message": "Veja o overlay no GitHub."
+  },
+  "install.gentoo.addOverlay": {
+    "message": "Adicionar o overlay snakebyte"
+  },
+  "install.gentoo.syncOverlay": {
+    "message": "Sincronizar o overlay"
+  },
   "install.flathub.title": {
     "message": "Pacote Flathub"
   },
