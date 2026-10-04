@@ -25,15 +25,12 @@ class MeshCorrectionTransformer(OpsTransformer):
     the Bed Mesh page in the machine settings); this transformer adds
     the bilinearly interpolated map height to every move's Z.
 
-    The transformer itself is geometry-free: it reads the machine's
-    bed mesh through ``to_spec``'s settings and raises when no mesh
-    has been probed, which the pipeline handles by skipping it.
+    The transformer itself is geometry-free: it queries the machine's
+    probed bed mesh in ``to_spec`` and raises when none has been
+    probed, which the pipeline handles by skipping it.
     """
 
     SPEC_NAME = "mesh_correction"
-
-    #: Only meaningful when the machine has a probed bed height map.
-    SETTINGS_DEPENDENCY = "bed_mesh"
 
     #: Applies to a layer's merged toolpath in machine space.
     LAYER_APPLICABLE = True
@@ -67,22 +64,22 @@ class MeshCorrectionTransformer(OpsTransformer):
         self,
         workpiece: WorkPiece | None,
         stock_geometries: list[Geometry] | None,
-        settings: dict[str, Any] | None,
+        machine=None,
     ) -> MeshCorrectionSpec:
-        if not settings or "bed_mesh" not in settings:
+        mesh = machine.bed_mesh if machine is not None else None
+        if mesh is None:
             raise ValueError(
                 "machine has no probed bed mesh; probe the bed in the "
                 "machine settings first"
             )
-        mesh = settings["bed_mesh"]
-        heights = np.asarray(mesh["heights"], dtype=np.float64).reshape(
-            mesh["ny"], mesh["nx"]
+        heights = np.asarray(mesh.heights, dtype=np.float64).reshape(
+            mesh.ny, mesh.nx
         )
         return MeshCorrectionSpec(
-            mesh["x0"],
-            mesh["y0"],
-            mesh["dx"],
-            mesh["dy"],
+            mesh.x0,
+            mesh.y0,
+            mesh.dx,
+            mesh.dy,
             heights,
             z_offset=self.z_offset,
         )

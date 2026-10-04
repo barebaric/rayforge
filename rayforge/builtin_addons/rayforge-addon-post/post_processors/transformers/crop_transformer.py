@@ -70,7 +70,7 @@ class CropTransformer(OpsTransformer):
         self,
         workpiece: WorkPiece | None,
         stock_geometries: list[Geometry] | None,
-        settings: dict[str, Any] | None,
+        machine=None,
     ) -> CropSpec:
         if not stock_geometries or workpiece is None:
             return CropSpec(

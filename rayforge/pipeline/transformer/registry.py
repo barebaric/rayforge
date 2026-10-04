@@ -73,29 +73,6 @@ class TransformerRegistry:
         """
         return self._transformers.get(name)
 
-    def get_for_settings_dependency(
-        self, settings_key: str
-    ) -> list[type["OpsTransformer"]]:
-        """
-        Return registered transformers that depend on a settings entry.
-
-        Transformers declare their dependency via
-        :attr:`OpsTransformer.SETTINGS_DEPENDENCY`. Hosts use this to
-        offer transformers wherever the matching machine state (e.g.
-        the probed bed mesh) exists, without knowing concrete classes.
-
-        Args:
-            settings_key: The settings entry name (e.g. ``"bed_mesh"``).
-
-        Returns:
-            The matching transformer classes, in registration order.
-        """
-        return [
-            cls
-            for cls in self._transformers.values()
-            if cls.SETTINGS_DEPENDENCY == settings_key
-        ]
-
     def get_layer_applicable(self) -> list[type["OpsTransformer"]]:
         """
         Return registered transformers usable as layer post processors.

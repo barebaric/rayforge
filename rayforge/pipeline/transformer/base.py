@@ -10,6 +10,8 @@ from ...core.workpiece import WorkPiece
 if TYPE_CHECKING:
     from raygeo.geo import Geometry
 
+    from ...machine.models.machine import Machine
+
 
 class OpsTransformer(ABC):
     """
@@ -25,12 +27,6 @@ class OpsTransformer(ABC):
     #: The raygeo transformer spec ``name()`` this transformer produces
     #: (e.g. ``"overscan"``), used to label batch progress details.
     SPEC_NAME: ClassVar[str] = ""
-
-    #: The ``to_spec()`` settings entry this transformer depends on to
-    #: be meaningful (e.g. ``"bed_mesh"``), or ``None``. Declared by
-    #: addons so hosts can offer the transformer wherever that machine
-    #: state exists — without core knowing concrete transformers.
-    SETTINGS_DEPENDENCY: ClassVar[str | None] = None
 
     #: Whether this transformer can be used as a layer post processor
     #: (applied to a layer's merged toolpath in machine space).
@@ -73,14 +69,18 @@ class OpsTransformer(ABC):
         self,
         workpiece: WorkPiece | None,
         stock_geometries: list[Geometry] | None,
-        settings: dict[str, Any] | None,
+        machine: Machine | None,
     ) -> Any:
         """Return the typed Rust spec for this transformer.
 
-        The returned object is one of the ``*Spec`` pyclasses defined in
-        :mod:`raygeo.ops.transform`. Implementations must not return
-        ``None``: if the transformer cannot run, raise an exception
-        describing the misconfiguration instead.
+        The transformer is self-sufficient: it queries whatever state
+        it needs from *machine* (the resolved
+        :class:`~rayforge.machine.models.machine.Machine`, or ``None``
+        when unavailable). The returned object is one of the ``*Spec``
+        pyclasses defined in :mod:`raygeo.ops.transform`.
+        Implementations must not return ``None``: if the transformer
+        cannot run, raise an exception describing the
+        misconfiguration instead.
         """
 
     def to_dict(self) -> dict[str, Any]:

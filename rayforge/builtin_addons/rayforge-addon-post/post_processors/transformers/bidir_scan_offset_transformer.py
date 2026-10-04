@@ -28,8 +28,9 @@ class BidirScanOffsetTransformer(OpsTransformer):
 
     SPEC_NAME = "bidir_scan_offset"
 
-    def __init__(self, enabled: bool = True):
+    def __init__(self, enabled: bool = True, offset_mm: float = 0.0):
         super().__init__(enabled=enabled)
+        self.offset_mm = float(offset_mm)
 
     @property
     def label(self) -> str:
@@ -46,14 +47,16 @@ class BidirScanOffsetTransformer(OpsTransformer):
         self,
         workpiece: WorkPiece | None,
         stock_geometries: list[Geometry] | None,
-        settings: dict[str, Any] | None,
+        machine=None,
     ) -> BidirScanOffsetSpec:
-        offset = settings.get("bidir_x_offset_mm", 0.0) if settings else 0.0
-        return BidirScanOffsetSpec(offset_mm=offset)
+        return BidirScanOffsetSpec(offset_mm=self.offset_mm)
 
     def to_dict(self) -> dict[str, Any]:
-        return {**super().to_dict()}
+        return {**super().to_dict(), "offset_mm": self.offset_mm}
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> BidirScanOffsetTransformer:
-        return cls(enabled=data.get("enabled", True))
+        return cls(
+            enabled=data.get("enabled", True),
+            offset_mm=data.get("offset_mm", 0.0),
+        )

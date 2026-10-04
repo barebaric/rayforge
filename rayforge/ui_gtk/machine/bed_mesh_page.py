@@ -19,14 +19,11 @@ from ..shared.pref_rows.base import SpinRow
 from ..shared.pref_rows.length_spin_row import LengthSpinRow
 from ..shared.preferences_page import TrackedPreferencesPage
 from .bed_mesh_view import BedMeshView
+from .machine_post_processors_group import MachinePostProcessorsGroup
 
 logger = logging.getLogger(__name__)
 
 _PROBE_TASK_KEY = "bed-mesh-probe"
-#: to_spec() settings entry post processors can declare a dependency
-#: on; the "apply by default" switch manages the machine defaults of
-#: every registered transformer with this dependency.
-BED_MESH_SETTINGS_KEY = "bed_mesh"
 
 DEFAULT_FEED_RATE = 100.0
 DEFAULT_MAX_TRAVEL = 10.0
@@ -200,18 +197,6 @@ class BedMeshPage(TrackedPreferencesPage):
         self.mesh_info_row = Adw.ActionRow(title=_("No mesh probed yet"))
         mesh_group.add(self.mesh_info_row)
 
-        self.apply_row = Adw.SwitchRow(
-            title=_("Apply to Jobs by Default"),
-            subtitle=_(
-                "Compensate the toolpath Z on every job; layers can "
-                "override this in their settings"
-            ),
-        )
-        self.apply_row.connect(
-            "notify::active", self._on_apply_default_changed
-        )
-        mesh_group.add(self.apply_row)
-
         clear_button = Gtk.Button(
             child=Gtk.Image.new_from_icon_name("edit-delete-symbolic")
         )
@@ -224,6 +209,9 @@ class BedMeshPage(TrackedPreferencesPage):
         self.view = BedMeshView(hexpand=True, vexpand=True)
         view_row = _ViewRow(self.view)
         mesh_group.add(view_row)
+
+        self.post_processors_group = MachinePostProcessorsGroup(machine)
+        self.add(self.post_processors_group)
 
         self._update_points_row()
         self._show_current_mesh()
@@ -261,14 +249,11 @@ class BedMeshPage(TrackedPreferencesPage):
 
     def _show_current_mesh(self):
         mesh = self.machine.bed_mesh
-        self._sync_apply_row()
         if mesh is None:
             self.mesh_info_row.set_title(_("No mesh probed yet"))
             self.mesh_info_row.set_subtitle("")
-            self.apply_row.set_sensitive(False)
             self._heights = []
             return
-        self.apply_row.set_sensitive(True)
         zmin, zmax = mesh.z_range
         self.mesh_info_row.set_title(
             _("{}×{} grid, {} mm spacing").format(mesh.nx, mesh.ny, mesh.dx)
@@ -289,58 +274,6 @@ class BedMeshPage(TrackedPreferencesPage):
     def _clear_mesh(self):
         self.machine.clear_bed_mesh()
         self._show_current_mesh()
-
-    def _sync_apply_row(self):
-        """Reflect whether a bed mesh post processor default is active."""
-        names = self._dependent_transformer_names()
-        self.apply_row.set_visible(bool(names))
-        self._initializing = True
-        self.apply_row.set_active(
-            any(
-                d.get("name") in names and d.get("enabled", True)
-                for d in self.machine.default_post_processors_dicts
-            )
-        )
-        self._initializing = False
-
-    def _dependent_transformer_names(self) -> set[str]:
-        """Names of registered transformers that use the bed mesh.
-
-        Transformers declare the dependency themselves (addons); this
-        page only goes through the transformer registry.
-        """
-        from rayforge.pipeline.transformer.registry import (
-            transformer_registry,
-        )
-
-        return {
-            cls.__name__
-            for cls in transformer_registry.get_for_settings_dependency(
-                BED_MESH_SETTINGS_KEY
-            )
-        }
-
-    def _on_apply_default_changed(self, row, _pspec):
-        if self._initializing:
-            return
-        from rayforge.pipeline.transformer.registry import (
-            transformer_registry,
-        )
-
-        names = self._dependent_transformer_names()
-        dicts = [
-            d
-            for d in self.machine.default_post_processors_dicts
-            if d.get("name") not in names
-        ]
-        if row.get_active():
-            dicts.extend(
-                cls().to_dict()
-                for cls in transformer_registry.get_for_settings_dependency(
-                    BED_MESH_SETTINGS_KEY
-                )
-            )
-        self.machine.set_default_post_processors(dicts)
 
     # ── Probing ───────────────────────────────────────────────────
 

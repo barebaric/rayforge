@@ -89,38 +89,3 @@ def test_settings_dialog_selects_bed_mesh_initial_page(
     assert dialog._bed_mesh_row is not None
     assert dialog._bed_mesh_row.get_visible()
     dialog.destroy()
-
-
-@pytest.mark.ui
-def test_bed_mesh_page_apply_default_switch(ui_context_initializer):
-    from rayforge.machine.models.bed_mesh import BedMesh
-
-    machine = _make_machine()
-    mesh = BedMesh()
-    mesh.set_params(
-        x0=0.0,
-        y0=0.0,
-        dx=10.0,
-        dy=10.0,
-        nx=2,
-        ny=2,
-        heights=[0.0, 0.0, 0.0, 0.0],
-    )
-    machine.set_bed_mesh(mesh)
-    page = BedMeshPage(machine=machine)
-
-    # Off by default; no mesh correction default configured.
-    assert not page.apply_row.get_active()
-    page.apply_row.set_active(True)
-    page._on_apply_default_changed(page.apply_row, None)
-    assert machine.default_post_processors_dicts == [
-        {
-            "name": "MeshCorrectionTransformer",
-            "enabled": True,
-            "z_offset": 0.0,
-        }
-    ]
-
-    page.apply_row.set_active(False)
-    page._on_apply_default_changed(page.apply_row, None)
-    assert machine.default_post_processors_dicts == []

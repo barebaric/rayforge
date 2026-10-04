@@ -974,14 +974,13 @@ class IntentBuilder:
         if not transformers:
             return []
         stock = self._resolve_stock_geometries()
-        settings = self._transformer_settings()
 
         specs: list = []
         for t in transformers:
             if not t.enabled:
                 continue
             try:
-                specs.append(t.to_spec(workpiece, stock, settings))
+                specs.append(t.to_spec(workpiece, stock, self._machine))
             except Exception:
                 logger.warning(
                     "Transformer %s could not build its spec; skipping",
@@ -989,32 +988,6 @@ class IntentBuilder:
                     exc_info=True,
                 )
         return specs
-
-    def _transformer_settings(self) -> dict[str, Any] | None:
-        """Return the settings dict forwarded to ``to_spec``.
-
-        Currently this carries the ``driver_native_overscan`` flag so
-        :class:`OverscanTransformer` can short-circuit when the
-        machine driver handles overscan itself, and the machine
-        kinematics so acceleration-aware transformers (e.g. the
-        scanline merging inside :class:`Optimize`) can build their
-        specs from them.
-        """
-        if self._machine is None:
-            return None
-        try:
-            native = bool(self._machine.driver.native_overscan)
-        except AttributeError:
-            native = False
-        settings = {
-            "driver_native_overscan": native,
-            "machine_max_cut_speed": self._machine.max_cut_speed,
-            "machine_max_travel_speed": self._machine.max_travel_speed,
-            "machine_acceleration": self._machine.acceleration,
-        }
-        if self._machine.bed_mesh is not None:
-            settings["bed_mesh"] = self._machine.bed_mesh.to_dict()
-        return settings
 
     def _resolve_stock_geometries(self) -> list[Any] | None:
         """Return the world-space stock boundary geometries.

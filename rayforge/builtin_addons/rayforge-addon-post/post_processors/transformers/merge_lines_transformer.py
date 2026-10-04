@@ -58,7 +58,7 @@ class MergeLinesTransformer(OpsTransformer):
         self,
         workpiece: WorkPiece | None,
         stock_geometries: Sequence[Geometry] | None,
-        settings: dict[str, Any] | None,
+        machine=None,
     ) -> MergeLinesSpec:
         return MergeLinesSpec(tolerance=self._tolerance)
 
