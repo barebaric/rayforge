@@ -6,9 +6,11 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
 import cairo
+from gi.repository import PangoCairo
 from raygeo.geo.types import Point
 
 from ..entities import Arc, Circle
+from ..text import create_text_layout
 from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 
@@ -276,7 +278,8 @@ class RadiusConstraint(Constraint):
         sx, sy, arc_mid_sx, arc_mid_sy = pos_data
 
         label = f"R{self._format_value()}"
-        ext = ctx.text_extents(label)
+        layout = create_text_layout(ctx, label)
+        ext, _ = layout.get_pixel_extents()
 
         ctx.save()
         # Set background color based on selection, hover, and status
@@ -308,8 +311,8 @@ class RadiusConstraint(Constraint):
         else:
             ctx.set_source_rgb(0, 0, 0.5)  # Dark blue otherwise
 
-        ctx.move_to(sx - ext.width / 2, sy + ext.height / 2 - 2)
-        ctx.show_text(label)
+        ctx.move_to(sx - ext.width / 2 - ext.x, sy - ext.height / 2 - ext.y)
+        PangoCairo.show_layout(ctx, layout)
 
         ctx.set_line_width(1)
         ctx.set_dash([4, 4])

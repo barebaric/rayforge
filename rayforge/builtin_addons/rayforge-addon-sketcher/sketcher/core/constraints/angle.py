@@ -9,11 +9,13 @@ from typing import (
     Any,
 )
 
+from gi.repository import PangoCairo
 from raygeo.geo.shape.arc import normalize_angle
 from raygeo.geo.shape.line import get_line_line_intersection
 from raygeo.geo.types import Point
 
 from ..entities import Line
+from ..text import create_text_layout
 from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 
@@ -470,7 +472,8 @@ class AngleConstraint(Constraint):
         ctx.stroke()
 
         label = self._format_value() + "°"
-        ext = ctx.text_extents(label)
+        layout = create_text_layout(ctx, label)
+        ext, _ = layout.get_pixel_extents()
 
         ccw_diff = normalize_angle(other_ang - anchor_ang)
 
@@ -505,8 +508,11 @@ class AngleConstraint(Constraint):
         else:
             ctx.set_source_rgb(0, 0, 0.5)
 
-        ctx.move_to(label_x - ext.width / 2, label_y + ext.height / 2 - 2)
-        ctx.show_text(label)
+        ctx.move_to(
+            label_x - ext.width / 2 - ext.x,
+            label_y - ext.height / 2 - ext.y,
+        )
+        PangoCairo.show_layout(ctx, layout)
         ctx.new_path()
 
         ctx.restore()

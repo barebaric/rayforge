@@ -5,6 +5,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 import cairo
+from gi.repository import PangoCairo
 from raygeo.geo import Geometry, Matrix
 from raygeo.geo.shape.text import text_to_geometry
 from raygeo.geo.types import Point as GeoPoint
@@ -31,6 +32,7 @@ from ..core.entities import (
     TextBoxEntity,
 )
 from ..core.sketch import FillStyle
+from ..core.text import create_text_layout
 from ..core.types import EntityID
 from .tools import PathTool, TextBoxTool
 
@@ -87,8 +89,6 @@ class SketchRenderer:
         """Draws constraints, points, and handles on top of the canvas."""
         if not self.element.canvas:
             return
-
-        ctx.set_font_size(12)
 
         to_screen = self.element.hittester.get_model_to_screen_transform(
             self.element
@@ -897,7 +897,6 @@ class SketchRenderer:
         to_screen = to_screen_transform.transform_point
 
         ctx.save()
-        ctx.set_font_size(11)
         ctx.set_line_width(1.0)
 
         dim_input_buffer = getattr(tool, "_dim_input", None)
@@ -924,10 +923,11 @@ class SketchRenderer:
                     label = dim_input_buffer.get_display_text() or label
                     is_editing = True
 
-            extents = ctx.text_extents(label)
+            layout = create_text_layout(ctx, label, 11)
+            extents, _ = layout.get_pixel_extents()
             text_w = extents.width
             text_h = extents.height
-            x_bearing = extents.x_bearing
+            x_bearing = extents.x
 
             label_offset_x = 15
             label_offset_y = -15
@@ -958,8 +958,8 @@ class SketchRenderer:
                 ctx.set_source_rgba(0.0, 0.2, 0.8, 1.0)
             else:
                 ctx.set_source_rgba(0.1, 0.1, 0.1, 1.0)
-            ctx.move_to(label_sx, label_sy)
-            ctx.show_text(label)
+            ctx.move_to(label_sx, label_sy - text_h - extents.y)
+            PangoCairo.show_layout(ctx, layout)
 
         ctx.restore()
 

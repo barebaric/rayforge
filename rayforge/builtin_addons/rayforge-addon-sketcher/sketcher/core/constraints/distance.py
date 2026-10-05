@@ -8,10 +8,12 @@ from typing import (
     Any,
 )
 
+from gi.repository import PangoCairo
 from raygeo.geo.shape.line import get_line_segment_closest_point
 from raygeo.geo.types import Point
 
 from ..entities import Line
+from ..text import create_text_layout
 from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 
@@ -242,7 +244,8 @@ class DistanceConstraint(Constraint):
         mx, my = (s1[0] + s2[0]) / 2, (s1[1] + s2[1]) / 2
 
         label = self._format_value()
-        ext = ctx.text_extents(label)
+        layout = create_text_layout(ctx, label)
+        ext, _ = layout.get_pixel_extents()
 
         ctx.save()
         # Set background color based on selection, hover, and status
@@ -275,8 +278,11 @@ class DistanceConstraint(Constraint):
         else:
             ctx.set_source_rgb(0, 0, 0.5)  # Dark blue otherwise
 
-        ctx.move_to(mx - ext.width / 2, my + ext.height / 2 - 2)
-        ctx.show_text(label)
+        ctx.move_to(
+            mx - ext.width / 2 - ext.x,
+            my - ext.height / 2 - ext.y,
+        )
+        PangoCairo.show_layout(ctx, layout)
         ctx.new_path()
 
         # Draw Dash Line - only if no solid line entity connects these points

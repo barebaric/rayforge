@@ -140,16 +140,17 @@ class CameraDisplay(Gtk.DrawingArea):
 
         layout = PangoCairo.create_layout(ctx)
         layout.set_font_description(font_desc)
+        layout.set_text(message, -1)
 
         # Get text extents
-        _, _, text_width, text_height, _, _ = ctx.text_extents(message)
+        extents, _ = layout.get_pixel_extents()
 
         # Calculate position to center the text
-        x = (width - text_width) / 2
-        y = (height + text_height) / 2
+        x = (width - extents.width) / 2 - extents.x
+        y = (height - extents.height) / 2 - extents.y
 
         ctx.move_to(x, y)
-        ctx.show_text(message)
+        PangoCairo.show_layout(ctx, layout)
 
     def _draw_disabled_message(self, ctx, width, height):
         """Draws a 'Camera Disabled' message."""
