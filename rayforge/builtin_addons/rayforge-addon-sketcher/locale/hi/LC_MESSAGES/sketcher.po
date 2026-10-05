@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-23 23:33+0200\n"
+"POT-Creation-Date: 2026-10-04 18:52+0200\n"
 "PO-Revision-Date: 2026-09-27 22:58\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -282,6 +282,22 @@ msgstr "टेक्स्ट गुण संशोधित करें"
 #: sketcher/core/commands/waypoint.py
 msgid "Set Waypoint Type"
 msgstr "वेपॉइंट प्रकार सेट करें"
+
+#: sketcher/core/commands/boolean.py sketcher/ui_gtk/menu.py
+msgid "Union"
+msgstr "संयोजन"
+
+#: sketcher/core/commands/boolean.py sketcher/ui_gtk/menu.py
+msgid "Difference"
+msgstr "अंतर"
+
+#: sketcher/core/commands/boolean.py sketcher/ui_gtk/menu.py
+msgid "Intersection"
+msgstr "प्रतिच्छेदन"
+
+#: sketcher/core/commands/boolean.py sketcher/ui_gtk/menu.py
+msgid "Exclude"
+msgstr "बाहर रखें"
 
 #: sketcher/core/commands/point.py
 msgid "Move Point"
@@ -819,6 +835,10 @@ msgstr "कोना छरछरी"
 #: sketcher/ui_gtk/menu.py
 msgid "Modify"
 msgstr "संशोधित करें"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Boolean"
+msgstr "बूलियन"
 
 #: sketcher/ui_gtk/menu.py
 msgid "Arrays"
