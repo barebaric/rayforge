@@ -15,6 +15,8 @@ if TYPE_CHECKING:
 class BboxAlignLeftStrategy(LayoutStrategy):
     """Aligns the left edges of the selection's bounding boxes."""
 
+    slug = "align-left"
+
     def calculate_deltas(
         self, context: ExecutionContext | None = None
     ) -> dict[DocItem, Matrix]:
@@ -41,6 +43,8 @@ class BboxAlignLeftStrategy(LayoutStrategy):
 
 class BboxAlignCenterStrategy(LayoutStrategy):
     """Horizontally centers the selection's bounding boxes."""
+
+    slug = "center-horizontally"
 
     def __init__(
         self,
@@ -77,6 +81,8 @@ class BboxAlignCenterStrategy(LayoutStrategy):
 class BboxAlignRightStrategy(LayoutStrategy):
     """Aligns the right edges of the selection's bounding boxes."""
 
+    slug = "align-right"
+
     def __init__(
         self,
         items: Sequence[DocItem],
@@ -111,6 +117,8 @@ class BboxAlignRightStrategy(LayoutStrategy):
 class BboxAlignTopStrategy(LayoutStrategy):
     """Aligns the top edges of the selection's bounding boxes."""
 
+    slug = "align-top"
+
     def __init__(
         self,
         items: Sequence[DocItem],
@@ -144,6 +152,8 @@ class BboxAlignTopStrategy(LayoutStrategy):
 
 class BboxAlignMiddleStrategy(LayoutStrategy):
     """Vertically centers the selection's bounding boxes."""
+
+    slug = "center-vertically"
 
     def __init__(
         self,
@@ -180,6 +190,8 @@ class BboxAlignMiddleStrategy(LayoutStrategy):
 class BboxAlignBottomStrategy(LayoutStrategy):
     """Aligns the bottom edges of the selection's bounding boxes."""
 
+    slug = "align-bottom"
+
     def calculate_deltas(
         self, context: ExecutionContext | None = None
     ) -> dict[DocItem, Matrix]:
@@ -207,6 +219,8 @@ class PositionAtStrategy(LayoutStrategy):
     """
     Positions the center of the selection's bounding box at a specific point.
     """
+
+    slug = "position-at-point"
 
     def __init__(
         self,
