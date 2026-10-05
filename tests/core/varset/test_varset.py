@@ -190,6 +190,27 @@ class TestVarSet:
         vs["bad"] = 15
         vs.validate()  # Should not raise
 
+    def test_validate_skips_hidden_vars(self):
+        """Vars hidden by visible_when are inert and not validated."""
+        vs = VarSet()
+        v_show = Var(key="show", label="Show", var_type=bool, value=False)
+        v_bad = IntVar(
+            key="bad",
+            label="Bad",
+            min_val=10,
+            max_val=20,
+            value=5,
+            visible_when=lambda values: values.get("show") is True,
+        )
+        vs.add(v_show)
+        vs.add(v_bad)
+
+        vs.validate()
+
+        vs["show"] = True
+        with pytest.raises(ValidationError, match="at least 10"):
+            vs.validate()
+
     def test_repr(self):
         """Test the __repr__ method."""
         vs = VarSet(title="My Settings")
