@@ -5,7 +5,15 @@ from gettext import gettext as _
 
 import cv2
 import numpy as np
-from gi.repository import Gdk, GdkPixbuf, GLib, Graphene, Gtk
+from gi.repository import (
+    Gdk,
+    GdkPixbuf,
+    GLib,
+    Graphene,
+    Gtk,
+    Pango,
+    PangoCairo,
+)
 
 from ...camera.calibration.target import CalibrationTarget
 from ...camera.controller import CameraController
@@ -134,14 +142,19 @@ class CalibrationCaptureSurface(Gtk.Widget):
             ctx.fill()
 
             ctx.set_source_rgb(0.5, 0.5, 0.5)
-            ctx.set_font_size(14)
             text = _("Waiting for camera...")
-            extents = ctx.text_extents(text)
+            layout = PangoCairo.create_layout(ctx)
+            font = Pango.FontDescription()
+            font.set_family("Sans")
+            font.set_absolute_size(14 * Pango.SCALE)
+            layout.set_font_description(font)
+            layout.set_text(text, -1)
+            extents = layout.get_pixel_extents()[0]
             ctx.move_to(
-                (width - extents.width) / 2,
-                (height + extents.height) / 2,
+                (width - extents.width) / 2 - extents.x,
+                (height - extents.height) / 2 - extents.y,
             )
-            ctx.show_text(text)
+            PangoCairo.show_layout(ctx, layout)
 
     @property
     def last_detection(
