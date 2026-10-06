@@ -5,6 +5,54 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## UNRELEASED
+
+### Added
+
+- Sketcher: boolean operations. Union, Difference, Intersection and
+  Exclude bake the selected closed regions into multi-ring polygons
+  (outer contours counter-clockwise, hole contours clockwise), so
+  difference results cut correctly; the Sketch menu gains a Boolean
+  section with shortcuts, and undo/redo restores the original
+  entities and fills (#398)
+- Optimize: acceleration-aware scanline merging. Parallel cut lines
+  on the same scan row, including rows spanning multiple workpieces,
+  are bridged at zero power when the machine's motion profile makes
+  the merged sweep faster; a cost guard ensures merging never makes a
+  job slower than the time estimate. Enabled by default, with a
+  "Merge Scanlines" switch and an optional manual max-gap override
+  (raygeo 1.60.0)
+- Ruida: the setup wizard connection page gains a Connection mode
+  selector (Auto, Network, USB) that shows only the fields relevant
+  to the chosen transport; Auto opens USB when available and falls
+  back to the network
+- Linux: official AppImage builds are attached to GitHub releases
+- Windows: Publish Rayforge through WinGet ("winget install rayforge")
+
+### Changed
+
+- Updated translations
+
+### Fixed
+
+- Ruida: the setup wizard no longer requires the optional USB device
+  and Magic fields, so Next is enabled again once a valid hostname is
+  entered; the Magic field is prefilled with the standard 0x88
+  (#501, #504)
+- GRBL (Network): a new FluidNC protocol variant uses FluidNC's
+  native command endpoint over its WebSocket and tolerates its
+  response shapes, replacing the confusing "did not receive a valid
+  HTTP response" error on ESP3D-style handshakes (#490)
+- Device export: zipping a machine export no longer fails with "ZIP
+  does not support timestamps before 1980" when exported 3D models
+  carry such timestamps (#500)
+- Text rendering: on-canvas text is drawn through Pango instead of
+  Cairo's toy font API. Sketcher constraint labels and dimension
+  input, pie menu labels, camera overlay messages, and the histogram
+  placeholder now pick fonts with proper fallback, fixing garbled
+  text and wrong sizes, especially for non-Latin languages (thanks
+  to @atkaper, #507)
+
 ## 1.12.0
 
 ### Added
