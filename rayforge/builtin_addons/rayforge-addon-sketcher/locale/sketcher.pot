@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-23 23:33+0200\n"
+"POT-Creation-Date: 2026-10-04 18:52+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -289,6 +289,26 @@ msgstr ""
 
 #: sketcher/core/commands/waypoint.py
 msgid "Set Waypoint Type"
+msgstr ""
+
+#: sketcher/core/commands/boolean.py
+#: sketcher/ui_gtk/menu.py
+msgid "Union"
+msgstr ""
+
+#: sketcher/core/commands/boolean.py
+#: sketcher/ui_gtk/menu.py
+msgid "Difference"
+msgstr ""
+
+#: sketcher/core/commands/boolean.py
+#: sketcher/ui_gtk/menu.py
+msgid "Intersection"
+msgstr ""
+
+#: sketcher/core/commands/boolean.py
+#: sketcher/ui_gtk/menu.py
+msgid "Exclude"
 msgstr ""
 
 #: sketcher/core/commands/point.py
@@ -843,6 +863,10 @@ msgstr ""
 
 #: sketcher/ui_gtk/menu.py
 msgid "Modify"
+msgstr ""
+
+#: sketcher/ui_gtk/menu.py
+msgid "Boolean"
 msgstr ""
 
 #: sketcher/ui_gtk/menu.py

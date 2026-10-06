@@ -14,6 +14,8 @@ if TYPE_CHECKING:
 class SpreadHorizontallyStrategy(LayoutStrategy):
     """Distributes items evenly in the horizontal direction."""
 
+    slug = "spread-horizontally"
+
     def calculate_deltas(
         self, context: ExecutionContext | None = None
     ) -> dict[DocItem, Matrix]:
@@ -58,6 +60,8 @@ class SpreadHorizontallyStrategy(LayoutStrategy):
 
 class SpreadVerticallyStrategy(LayoutStrategy):
     """Distributes items evenly in the vertical direction."""
+
+    slug = "spread-vertically"
 
     def calculate_deltas(
         self, context: ExecutionContext | None = None

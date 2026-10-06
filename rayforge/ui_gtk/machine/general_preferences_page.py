@@ -2,14 +2,13 @@ import logging
 from gettext import gettext as _
 from typing import Any
 
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, Gtk, Pango
 
 from ...machine.driver import drivers, get_driver_cls
 from ...machine.driver.driver import Driver
 from ...machine.models.machine import Machine
 from ...shared.units.system import UnitSystem
 from ..icons import get_icon
-from ..shared.gtk import apply_css
 from ..shared.pref_rows.acceleration_spin_row import AccelerationSpinRow
 from ..shared.pref_rows.speed_spin_row import SpeedSpinRow
 from ..shared.preferences_page import TrackedPreferencesPage
@@ -22,20 +21,6 @@ UNIT_SYSTEM_LABELS = {
     UnitSystem.IMPERIAL: _("Imperial (inches)"),
 }
 UNIT_SYSTEM_ORDER = [UnitSystem.METRIC, UnitSystem.IMPERIAL]
-
-# The driver dropdown lists Adw.ActionRows. Adwaita gives each row a
-# 50px minimum height (box.header) plus 6px top/bottom margins around
-# the title box, which is more vertical padding than a compact selector
-# needs. Drop both so the entries are tighter while keeping the same
-# title/subtitle layout.
-_DRIVER_COMBO_CSS = """
-.driver-combo popover listview.view > row > row > box.header {
-    min-height: 0;
-}
-.driver-combo popover listview.view > row > row > box.header > box.title {
-    margin: 0;
-}
-"""
 
 
 class GeneralPreferencesPage(TrackedPreferencesPage):
@@ -100,7 +85,6 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         self.combo_row.add_css_class("driver-combo")
         self.combo_row.set_use_subtitle(True)
         self.driver_group.add(self.combo_row)
-        apply_css(_DRIVER_COMBO_CSS)
 
         # Set up a custom factory to display both title and subtitle in the
         # dropdown
@@ -317,22 +301,42 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         self.machine.set_driver_args(values)
 
     def on_factory_setup(self, factory, list_item):
-        # Adw.ActionRow renders the title/subtitle pair the way Adwaita
-        # intends. It is a Gtk.ListBoxRow though, and here it lives in a
-        # Gtk.ListItem's child slot (the combo's Gtk.ListView), so GTK
-        # would assert in gtk_list_box_row_grab_focus when the dropdown
-        # focuses it. Keeping it non-focusable avoids that: the
-        # Gtk.ListView owns keyboard focus, not the item child.
-        row = Adw.ActionRow()
-        row.set_can_focus(False)
-        list_item.set_child(row)
+        # Adw.ActionRow cannot be used here: libadwaita only allows its
+        # rows inside a Gtk.ListBox, but this factory binds widgets into
+        # a Gtk.ListItem. Replicate the action row's title/subtitle
+        # layout with a plain box instead; inside a list view row,
+        # Adwaita styles a ".subtitle" label like an action row
+        # subtitle (smaller and dimmed).
+        box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=3,
+            valign=Gtk.Align.CENTER,
+        )
+        title = Gtk.Label(
+            xalign=0,
+            wrap=True,
+            wrap_mode=Pango.WrapMode.WORD_CHAR,
+        )
+        subtitle = Gtk.Label(
+            xalign=0,
+            wrap=True,
+            wrap_mode=Pango.WrapMode.WORD_CHAR,
+        )
+        subtitle.add_css_class("subtitle")
+        subtitle.set_visible(False)
+        box.append(title)
+        box.append(subtitle)
+        list_item.set_child(box)
 
     def on_factory_bind(self, factory, list_item):
         index = list_item.get_position()
         driver_cls = drivers[index]
-        row = list_item.get_child()
-        row.set_title(driver_cls.label)
-        row.set_subtitle(driver_cls.subtitle)
+        box = list_item.get_child()
+        title = box.get_first_child()
+        subtitle = title.get_next_sibling()
+        title.set_text(driver_cls.label)
+        subtitle.set_text(driver_cls.subtitle)
+        subtitle.set_visible(bool(driver_cls.subtitle))
 
     def on_combo_row_changed(self, combo_row, _param):
         if self._is_initializing:

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-01 22:59+0200\n"
+"POT-Creation-Date: 2026-10-06 11:03+0200\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -403,10 +403,44 @@ msgid "Ruida Coordinates"
 msgstr "Coordenadas Ruida"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "A Hostname must be configured."
+msgstr "Um nome de host deve ser configurado."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "A USB device must be configured."
+msgstr "Um dispositivo USB deve ser configurado."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 msgid "At least one of 'Hostname' or 'USB device' must be configured."
 msgstr ""
 "Pelo menos um de \"Nome do Host\" ou \"Dispositivo USB\" deve ser "
 "configurado."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/connection_page.py
+msgid "Connection"
+msgstr "Conexão"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Auto (USB preferred)"
+msgstr "Automático (USB preferido)"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Network"
+msgstr "Rede"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "USB"
+msgstr "USB"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"Which transport to use. Automatic opens USB when available and falls back to "
+"the network."
+msgstr ""
+"Qual transporte usar. Automático abre o USB quando disponível e recorre à "
+"rede."
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
@@ -421,10 +455,6 @@ msgid "The IP address or hostname of the Ruida controller"
 msgstr "O endereço IP ou nome do host do controlador Ruida"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
-msgid "USB"
-msgstr "USB"
-
-#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 msgid "USB device path or VID:PID (e.g. 0403:6001)"
 msgstr "Caminho do dispositivo USB ou VID:PID (ex.: 0403:6001)"
 
@@ -433,10 +463,11 @@ msgid "Magic"
 msgstr "Número mágico"
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
-msgid "Controller magic number in hex (e.g., 0x88). Leave empty for default."
+msgid ""
+"Controller magic number in hex. The default 0x88 works for most controllers."
 msgstr ""
-"Número mágico do controlador em hexadecimal (ex.: 0x88). Deixe vazio para o "
-"valor padrão."
+"Número mágico do controlador em hexadecimal. O valor padrão 0x88 funciona "
+"para a maioria dos controladores."
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 msgid "TUI RPC"
@@ -717,7 +748,6 @@ msgstr "Enviar G-code para um servidor OctoPrint"
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
-#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 #: rayforge/machine/driver/smoothie/smoothie_driver.py
 msgid "Machine Coordinates (G53)"
@@ -740,7 +770,6 @@ msgstr "Endereço IP ou nome do host do servidor OctoPrint"
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
-#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/smoothie/smoothie_driver.py
 msgid "Port"
 msgstr "Porta"
@@ -895,7 +924,6 @@ msgstr "Dispositivo Marlin"
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
-#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Serial port or USB VID:PID (e.g. 0403:6001)"
 msgstr "Porta série ou VID:PID USB (p. ex., 0403:6001)"
 
@@ -903,24 +931,20 @@ msgstr "Porta série ou VID:PID USB (p. ex., 0403:6001)"
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
-#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Port must be configured."
 msgstr "A porta deve ser configurada."
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
-#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Baud rate must be configured."
 msgstr "A taxa de transmissão deve ser configurada."
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
-#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Port not configured"
 msgstr "Porta não configurada"
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
-#: rayforge/machine/driver/grbl/grbl_serial.py
 msgid "No response from device"
 msgstr "Sem resposta do dispositivo"
 
@@ -944,13 +968,11 @@ msgstr "Porta TCP para o serviço raw/telnet"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
-#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Poll device status during jobs"
 msgstr "Consultar status do dispositivo durante os trabalhos"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
-#: rayforge/machine/driver/grbl/serial_next.py
 msgid ""
 "Periodically query the device for position and status while a job is "
 "running. Warning: Some devices have trouble maintaining a stable connection "
@@ -962,13 +984,11 @@ msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
-#: rayforge/machine/driver/grbl/serial_next.py
 msgid "Deadlock detection"
 msgstr "Detecção de impasse"
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
-#: rayforge/machine/driver/grbl/serial_next.py
 msgid ""
 "Detect and recover from serial communication deadlocks during jobs. If "
 "disabled, the driver will simply wait for the machine to respond. Disable if "
@@ -1622,17 +1642,18 @@ msgid "GRBL-compatible serial connection"
 msgstr "Conexão serial compatível com GRBL"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
-#: rayforge/machine/driver/grbl/serial_next.py
 msgid "GRBL device"
 msgstr "Dispositivo GRBL"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
-#: rayforge/machine/driver/grbl/serial_next.py
+msgid "Driver is not set up. Check the port settings."
+msgstr "O controlador não está configurado. Verifique as definições da porta."
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
 msgid "RX Buffer Size Override"
 msgstr "Substituir tamanho do buffer RX"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
-#: rayforge/machine/driver/grbl/serial_next.py
 msgid ""
 "Force a specific RX buffer size in bytes. Set to 0 to auto-detect from the "
 "device."
@@ -1642,14 +1663,12 @@ msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
-#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Unknown Settings"
 msgstr "Configurações Desconhecidas"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
-#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Settings reported by the device not in the standard list."
 msgstr ""
@@ -1657,7 +1676,6 @@ msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
-#: rayforge/machine/driver/grbl/serial_next.py
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Unknown setting from device"
 msgstr "Configuração desconhecida do dispositivo"
@@ -1690,18 +1708,6 @@ msgstr "GRBL serial com protocolo ping-pong simples (sem contagem de buffer)"
 msgid "Baudrate must be configured."
 msgstr "A taxa de transmissão deve ser configurada."
 
-#: rayforge/machine/driver/grbl/serial_next.py
-msgid "GRBL (Rust)"
-msgstr "GRBL (Rust)"
-
-#: rayforge/machine/driver/grbl/serial_next.py
-msgid "GRBL-compatible serial connection (Rust driver)"
-msgstr "Ligação série compatível com GRBL (controlador Rust)"
-
-#: rayforge/machine/driver/grbl/serial_next.py
-msgid "Driver is not set up. Check the port settings."
-msgstr "O controlador não está configurado. Verifique as definições da porta."
-
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "GRBL (Network)"
 msgstr "GRBL (Rede)"
@@ -1723,16 +1729,20 @@ msgid "WebSocket Port"
 msgstr "Porta WebSocket"
 
 #: rayforge/machine/driver/grbl/grbl_network.py
-msgid "The WebSocket port for the device"
-msgstr "A porta WebSocket para o dispositivo"
+msgid ""
+"The WebSocket port for the device. For FluidNC, use the same port as HTTP "
+"(usually 80)."
+msgstr ""
+"A porta WebSocket para o dispositivo. Para FluidNC, use a mesma portaque "
+"HTTP (normalmente 80)."
 
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Protocol variant"
 msgstr "Variante de protocolo"
 
 #: rayforge/machine/driver/grbl/grbl_network.py
-msgid "Standard, ESP3D, or Longer GRBL variant"
-msgstr "Variante GRBL Standard, ESP3D ou Longer"
+msgid "Standard, ESP3D, Longer, or FluidNC variant"
+msgstr "Variante Standard, ESP3D, Longer ou FluidNC"
 
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Standard"
@@ -6078,11 +6088,6 @@ msgstr "Nenhum (apenas exportação de G-code)"
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 msgid "Unknown driver: {}"
 msgstr "Controlador desconhecido: {}"
-
-#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
-#: rayforge/ui_gtk/machine/wizard_pages/connection_page.py
-msgid "Connection"
-msgstr "Conexão"
 
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 msgid "Work Area X×Y"

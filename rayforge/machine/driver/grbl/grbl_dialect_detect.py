@@ -8,7 +8,7 @@ flags, and settings-key inventory. Pure functions only — no I/O.
 import logging
 import re
 
-from .grbl_util import parse_version
+from raydriver.grbl.parser import parse_version
 
 logger = logging.getLogger(__name__)
 

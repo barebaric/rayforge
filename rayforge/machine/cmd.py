@@ -144,7 +144,11 @@ class MachineCmd:
                 f"estimated_seconds={estimated_seconds:.1f}s"
             )
             self._current_monitor = JobMonitor(
-                ops, estimated_seconds=estimated_seconds
+                ops,
+                estimated_seconds=estimated_seconds,
+                default_feed_rate=machine.max_cut_speed,
+                default_rapid_rate=machine.max_travel_speed,
+                acceleration=machine.acceleration,
             )
 
             if self._on_progress_callback:

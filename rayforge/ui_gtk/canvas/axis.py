@@ -4,8 +4,10 @@ from typing import TYPE_CHECKING
 
 import cairo
 import numpy as np
-from gi.repository import Pango, PangoCairo
+from gi.repository import PangoCairo
 from raygeo.geo import Matrix
+
+from ..shared.text import create_text_layout
 
 if TYPE_CHECKING:
     from raygeo.geo.types import Point3D
@@ -427,7 +429,7 @@ class AxisRenderer:
 
             label = f"{round(label_val, precision):g}"
             label_pos_px = view_transform.transform_point((world_x, x_axis_y))
-            layout = self._create_label_layout(ctx, label)
+            layout = create_text_layout(ctx, label, self.label_font_size)
             label_width, label_height = layout.get_pixel_size()
             y = (
                 label_pos_px[1] - label_height - 4
@@ -477,7 +479,7 @@ class AxisRenderer:
                 continue
 
             label = f"{round(label_val, precision):g}"
-            layout = self._create_label_layout(ctx, label)
+            layout = create_text_layout(ctx, label, self.label_font_size)
             label_width, label_height = layout.get_pixel_size()
 
             label_pos_px = view_transform.transform_point(
@@ -491,17 +493,6 @@ class AxisRenderer:
             )
             PangoCairo.show_layout(ctx, layout)
 
-    def _create_label_layout(
-        self, ctx: cairo.Context, text: str
-    ) -> Pango.Layout:
-        layout = PangoCairo.create_layout(ctx)
-        font = Pango.FontDescription()
-        font.set_family("Sans")
-        font.set_absolute_size(self.label_font_size * Pango.SCALE)
-        layout.set_font_description(font)
-        layout.set_text(text, -1)
-        return layout
-
     def get_x_axis_height(self) -> int:
         """Calculates the maximum height of the X-axis labels."""
         # The height of numeric labels is generally constant for a given font.
@@ -509,7 +500,7 @@ class AxisRenderer:
         # the maximum height among digits.
         temp_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1)
         ctx = cairo.Context(temp_surface)
-        layout = self._create_label_layout(ctx, "8")
+        layout = create_text_layout(ctx, "8", self.label_font_size)
         _, height = layout.get_pixel_size()
         return height + 4
 
@@ -524,7 +515,7 @@ class AxisRenderer:
             max_y_label = f"{-self.height_mm:.0f}"
         else:
             max_y_label = f"{self.height_mm:.0f}"
-        layout = self._create_label_layout(ctx, max_y_label)
+        layout = create_text_layout(ctx, max_y_label, self.label_font_size)
         width, _ = layout.get_pixel_size()
         return width + 4
 
