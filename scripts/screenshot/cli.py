@@ -27,6 +27,7 @@ TARGETS = {
     "addon:print-and-cut:apply": "print_and_cut",
     "addon:projector-mode": "projector_mode",
     "app-settings:general": "app_settings_general",
+    "app-settings:gestures": "app_settings_gestures",
     "app-settings:machines": "app_settings_machines",
     "app-settings:machines:add": "add_machine_dialog",
     "app-settings:materials": "app_settings_materials",
@@ -256,6 +257,10 @@ class XvfbSession:
             "DISPLAY": f":{self.number}",
             "RAYFORGE_XVFB": "1",
             "GSK_RENDERER": "cairo",
+            # The capture helpers talk to the X server directly, so GTK
+            # must not stray onto a Wayland backend from the developer's
+            # desktop session environment.
+            "GDK_BACKEND": "x11",
         }
         if self._font_config:
             env["FONTCONFIG_FILE"] = self._font_config

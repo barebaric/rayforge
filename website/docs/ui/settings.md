@@ -49,6 +49,8 @@ what data is collected and how it is used.
 
 ## Mouse Gestures
 
+![Mouse Gestures settings](/screenshots/app-settings-gestures.webp)
+
 The Mouse Gestures page lets you rebind the navigation gestures of the 2D canvas and the 3D canvas;
 the sketch editor uses the same gestures as the 2D canvas. Each row offers a dropdown with the
 available mouse button combinations:

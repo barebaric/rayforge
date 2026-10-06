@@ -46,6 +46,8 @@ les données collectées et leur utilisation.
 
 ## Gestes de la souris
 
+![Réglages des gestes de la souris](/screenshots/app-settings-gestures.webp)
+
 La page Gestes de la souris te permet de réattribuer les gestes de navigation du canevas 2D et du
 canevas 3D ; l'éditeur de croquis utilise les mêmes gestes que le canevas 2D. Chaque ligne propose
 un menu déroulant avec les combinaisons de boutons de souris disponibles :

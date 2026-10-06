@@ -43,6 +43,8 @@ obtener más información sobre qué datos se recopilan y cómo se usan.
 
 ## Gestos del ratón
 
+![Ajustes de gestos del ratón](/screenshots/app-settings-gestures.webp)
+
 La página de gestos del ratón te permite reasignar los gestos de navegación del lienzo 2D y del
 lienzo 3D; el editor de bocetos usa los mismos gestos que el lienzo 2D. Cada fila ofrece un menú
 desplegable con las combinaciones de botones del ratón disponibles:

@@ -43,6 +43,8 @@ mais sobre quais dados são coletados e como são usados.
 
 ## Gestos do mouse
 
+![Configurações de gestos do mouse](/screenshots/app-settings-gestures.webp)
+
 A página de gestos do mouse permite reatribuir os gestos de navegação da tela 2D e da tela 3D; o
 editor de esboços usa os mesmos gestos da tela 2D. Cada linha oferece um menu suspenso com as
 combinações de botões do mouse disponíveis:

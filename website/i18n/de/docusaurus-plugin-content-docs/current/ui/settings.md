@@ -46,6 +46,8 @@ zu erfahren, welche Daten gesammelt und wie sie verwendet werden.
 
 ## Mausgesten
 
+![Mausgesten-Einstellungen](/screenshots/app-settings-gestures.webp)
+
 Die Seite Mausgesten erlaubt es dir, die Navigationsgesten der 2D-Arbeitsfläche und der
 3D-Arbeitsfläche neu zuzuweisen; der Skizzen-Editor verwendet dieselben Gesten wie die
 2D-Arbeitsfläche. Jede Zeile bietet ein Aufklappmenü mit den verfügbaren Maustastenkombinationen:
