@@ -36,11 +36,12 @@ class TestEngraveStep:
     def test_create(self, mock_context):
         step = EngraveStep.create(mock_context, name="Created")
         assert isinstance(step, EngraveStep)
-        assert len(step.per_workpiece_transformers_dicts) == 3
+        assert len(step.per_workpiece_transformers_dicts) == 4
         transformer_names = {
             t.get("name") for t in step.per_workpiece_transformers_dicts
         }
         assert "BidirScanOffsetTransformer" in transformer_names
+        assert "CropTransformer" in transformer_names
         assert step.selected_head_uid == "test-laser-uid"
 
     def test_merge_scanlines_enabled_by_default(self, mock_context):
