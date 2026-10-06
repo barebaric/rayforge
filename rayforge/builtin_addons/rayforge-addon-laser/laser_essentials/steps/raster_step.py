@@ -639,9 +639,7 @@ class EngraveStep(LaserStep):
         OverscanTransformer = transformer_registry.get("OverscanTransformer")
         CropTransformer = transformer_registry.get("CropTransformer")
         Optimize = transformer_registry.get("Optimize")
-        MultiPassTransformer = transformer_registry.get(
-            "MultiPassTransformer"
-        )
+        MultiPassTransformer = transformer_registry.get("MultiPassTransformer")
         BidirScanOffsetTransformer = transformer_registry.get(
             "BidirScanOffsetTransformer"
         )
