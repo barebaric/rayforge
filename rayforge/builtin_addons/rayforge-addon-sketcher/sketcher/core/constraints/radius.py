@@ -9,8 +9,9 @@ import cairo
 from gi.repository import PangoCairo
 from raygeo.geo.types import Point
 
+from rayforge.ui_gtk.shared.text import create_text_layout
+
 from ..entities import Arc, Circle
-from ..text import create_text_layout
 from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 

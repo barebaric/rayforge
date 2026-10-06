@@ -12,6 +12,7 @@ from raygeo.geo.types import Point as GeoPoint
 
 from rayforge.image.geo_renderer import geometry_to_cairo
 from rayforge.ui_gtk.canvas import WorldSurface
+from rayforge.ui_gtk.shared.text import create_text_layout
 
 from ..core.commands import BezierPreviewState
 from ..core.commands.dimension import DimensionData
@@ -32,7 +33,6 @@ from ..core.entities import (
     TextBoxEntity,
 )
 from ..core.sketch import FillStyle
-from ..core.text import create_text_layout
 from ..core.types import EntityID
 from .tools import PathTool, TextBoxTool
 

@@ -1,7 +1,9 @@
 import cairo
 import numpy as np
 from blinker import Signal
-from gi.repository import Gdk, Gtk, Pango, PangoCairo
+from gi.repository import Gdk, Gtk
+
+from .text import draw_centered_text
 
 
 class HistogramPreview(Gtk.DrawingArea):
@@ -217,18 +219,7 @@ class HistogramPreview(Gtk.DrawingArea):
             ctx.fill()
         else:
             ctx.set_source_rgba(0.5, 0.5, 0.5, 1.0)
-            layout = PangoCairo.create_layout(ctx)
-            font = Pango.FontDescription()
-            font.set_family("Sans")
-            font.set_absolute_size(12 * Pango.SCALE)
-            layout.set_font_description(font)
-            layout.set_text("No image", -1)
-            extents, _ = layout.get_pixel_extents()
-            ctx.move_to(
-                (width - extents.width) / 2 - extents.x,
-                (height - extents.height) / 2 - extents.y,
-            )
-            PangoCairo.show_layout(ctx, layout)
+            draw_centered_text(ctx, "No image", width, height)
 
         if self._auto_mode:
             black_x = self._value_to_x(self._auto_black_point, width)

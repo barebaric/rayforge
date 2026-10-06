@@ -19,6 +19,7 @@ from rayforge.ui_gtk.shared.piemenu import (
     index_in_span,
     submenu_span,
 )
+from rayforge.ui_gtk.shared.text import create_text_layout
 
 pytestmark = pytest.mark.ui
 
@@ -118,7 +119,12 @@ def test_default_inner_capacity(menu):
 
 def test_label_layout_font(menu):
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1)
-    layout = menu._create_label_layout(cairo.Context(surface), "Text (T)")
+    layout = create_text_layout(
+        cairo.Context(surface),
+        "Text (T)",
+        menu.label_font_size,
+        weight=Pango.Weight.BOLD,
+    )
     font = layout.get_font_description()
     assert font is not None
     assert font.get_family() == "Sans"
@@ -136,7 +142,12 @@ def test_label_width_includes_submenu_labels(menu):
 
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1)
     ctx = cairo.Context(surface)
-    layout = menu._create_label_layout(ctx, child.label)
+    layout = create_text_layout(
+        ctx,
+        child.label,
+        menu.label_font_size,
+        weight=Pango.Weight.BOLD,
+    )
     assert menu._get_max_label_width() == layout.get_pixel_extents()[0].width
 
     menu.set_items([])

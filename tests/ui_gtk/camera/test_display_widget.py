@@ -48,6 +48,7 @@ def test_status_message_uses_centered_pango_layout(
     assert font is not None
     assert font.get_family() == "Sans"
     assert font.get_weight() == Pango.Weight.BOLD
+    assert not font.get_size_is_absolute()
     assert font.get_size() == 24 * Pango.SCALE
     extents, _ = layout.get_pixel_extents()
     x, y = ctx.get_current_point()

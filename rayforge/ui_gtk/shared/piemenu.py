@@ -8,6 +8,7 @@ from gi.repository import Gdk, Gtk, Pango, PangoCairo
 
 from ..icons import get_icon_pixbuf
 from .gtk import apply_css
+from .text import create_text_layout
 
 logger = logging.getLogger(__name__)
 
@@ -270,18 +271,6 @@ class PieMenu(Gtk.Popover):
         )
         return max(4, int(capacity))
 
-    def _create_label_layout(
-        self, ctx: cairo.Context, text: str
-    ) -> Pango.Layout:
-        layout = PangoCairo.create_layout(ctx)
-        font = Pango.FontDescription()
-        font.set_family("Sans")
-        font.set_weight(Pango.Weight.BOLD)
-        font.set_absolute_size(self.label_font_size * Pango.SCALE)
-        layout.set_font_description(font)
-        layout.set_text(text, -1)
-        return layout
-
     def _get_max_label_width(self) -> float:
         """Measures the widest item label using the label font."""
         items = list(self._inner_items)
@@ -293,7 +282,12 @@ class PieMenu(Gtk.Popover):
         surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 0, 0)
         ctx = cairo.Context(surface)
         return max(
-            self._create_label_layout(ctx, item.label)
+            create_text_layout(
+                ctx,
+                item.label,
+                self.label_font_size,
+                weight=Pango.Weight.BOLD,
+            )
             .get_pixel_extents()[0]
             .width
             for item in items
@@ -759,7 +753,12 @@ class PieMenu(Gtk.Popover):
         ly = cy + math.sin(angle) * label_dist
 
         ctx.save()
-        layout = self._create_label_layout(ctx, text)
+        layout = create_text_layout(
+            ctx,
+            text,
+            self.label_font_size,
+            weight=Pango.Weight.BOLD,
+        )
         extents, _ = layout.get_pixel_extents()
 
         # Determine Alignment based on angle (cos)

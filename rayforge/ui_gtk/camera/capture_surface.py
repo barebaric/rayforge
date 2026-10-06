@@ -11,12 +11,11 @@ from gi.repository import (
     GLib,
     Graphene,
     Gtk,
-    Pango,
-    PangoCairo,
 )
 
 from ...camera.calibration.target import CalibrationTarget
 from ...camera.controller import CameraController
+from ..shared.text import draw_centered_text
 
 logger = logging.getLogger(__name__)
 
@@ -142,19 +141,9 @@ class CalibrationCaptureSurface(Gtk.Widget):
             ctx.fill()
 
             ctx.set_source_rgb(0.5, 0.5, 0.5)
-            text = _("Waiting for camera...")
-            layout = PangoCairo.create_layout(ctx)
-            font = Pango.FontDescription()
-            font.set_family("Sans")
-            font.set_absolute_size(14 * Pango.SCALE)
-            layout.set_font_description(font)
-            layout.set_text(text, -1)
-            extents = layout.get_pixel_extents()[0]
-            ctx.move_to(
-                (width - extents.width) / 2 - extents.x,
-                (height - extents.height) / 2 - extents.y,
+            draw_centered_text(
+                ctx, _("Waiting for camera..."), width, height, 14
             )
-            PangoCairo.show_layout(ctx, layout)
 
     @property
     def last_detection(

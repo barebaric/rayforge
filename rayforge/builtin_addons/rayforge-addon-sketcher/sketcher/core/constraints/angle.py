@@ -14,8 +14,9 @@ from raygeo.geo.shape.arc import normalize_angle
 from raygeo.geo.shape.line import get_line_line_intersection
 from raygeo.geo.types import Point
 
+from rayforge.ui_gtk.shared.text import create_text_layout
+
 from ..entities import Line
-from ..text import create_text_layout
 from ..types import EntityID
 from .base import Constraint, ConstraintStatus
 
