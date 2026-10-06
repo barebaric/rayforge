@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-01 22:59+0200\n"
+"POT-Creation-Date: 2026-10-05 10:20+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1553,7 +1553,9 @@ msgid "WebSocket Port"
 msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_network.py
-msgid "The WebSocket port for the device"
+msgid ""
+"The WebSocket port for the device. For FluidNC, use the same port as HTTP "
+"(usually 80)."
 msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_network.py
@@ -1561,7 +1563,7 @@ msgid "Protocol variant"
 msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_network.py
-msgid "Standard, ESP3D, or Longer GRBL variant"
+msgid "Standard, ESP3D, Longer, or FluidNC variant"
 msgstr ""
 
 #: rayforge/machine/driver/grbl/grbl_network.py

@@ -34,6 +34,7 @@ from rayforge.core.varset import (
     BoolVar,
     FloatVar,
     HostnameVar,
+    LabeledChoiceVar,
     SerialPortVar,
     Var,
     VarSet,
@@ -81,6 +82,13 @@ DEFAULT_MOVE_TO_JOG_SPEED_MM_S = 600.0
 # Driver-level default for the RPC sync request timeout (seconds); the
 # RpcRdDriver class default is 5.0 for direct constructions.
 DEFAULT_RPC_TIMEOUT_S = 30.0
+
+# Values of the 'connection' setup var: which transport the controller
+# is reached through. 'auto' mirrors the backend behavior of opening
+# USB when available and falling back to UDP.
+CONNECTION_AUTO = "auto"
+CONNECTION_NETWORK = "network"
+CONNECTION_USB = "usb"
 
 # Ruida test-hardware speed limits (mm/min base units): 400 mm/s cut,
 # 600 mm/s travel. Seeded into the machine only while it still holds the
@@ -135,6 +143,7 @@ class RuidaUsbDeviceVar(SerialPortVar):
         description: str | None = None,
         default: str | None = None,
         value: str | None = None,
+        required_when: Callable[[dict[str, Any]], bool] | None = None,
         *,
         visible_when: Callable[[dict[str, Any]], bool] | None = None,
     ):
@@ -147,6 +156,8 @@ class RuidaUsbDeviceVar(SerialPortVar):
             visible_when=visible_when,
         )
         self.validator = None
+        self.optional = True
+        self.required_when = required_when
 
 
 class RuidaRPAAdapter(Driver):
@@ -240,27 +251,69 @@ class RuidaRPAAdapter(Driver):
 
     # --- Classmethods ---
 
+    @staticmethod
+    def _apply_connection_mode(
+        config: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Drops the endpoint the selected connection mode does not use.
+
+        In network mode the USB device is removed and vice versa, so
+        the connection loop and resource_uri only ever see the active
+        endpoint. Auto keeps both (the backend prefers USB)."""
+        mode = config.get("connection", CONNECTION_AUTO)
+        config = dict(config)
+        if mode == CONNECTION_NETWORK:
+            config.pop("usb_device", None)
+        elif mode == CONNECTION_USB:
+            config.pop("udp_host", None)
+        return config
+
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
-        udp_host = kwargs.get("udp_host", "")
-        usb_device = kwargs.get("usb_device", "")
+        connection = cls._apply_connection_mode(kwargs)
+        mode = connection.get("connection", CONNECTION_AUTO)
+        udp_host = connection.get("udp_host", "")
+        usb_device = connection.get("usb_device", "")
         if not udp_host and not usb_device:
-            raise DriverPrecheckError(
-                _(
+            if mode == CONNECTION_NETWORK:
+                message = _("A Hostname must be configured.")
+            elif mode == CONNECTION_USB:
+                message = _("A USB device must be configured.")
+            else:
+                message = _(
                     "At least one of 'Hostname' or 'USB device' "
                     "must be configured."
                 )
-            )
+            raise DriverPrecheckError(message)
 
     @classmethod
     def get_setup_vars(cls) -> VarSet:
         return VarSet(
             vars=[
+                LabeledChoiceVar(
+                    key="connection",
+                    label=_("Connection"),
+                    choices=[
+                        (_("Auto (USB preferred)"), CONNECTION_AUTO),
+                        (_("Network"), CONNECTION_NETWORK),
+                        (_("USB"), CONNECTION_USB),
+                    ],
+                    default=CONNECTION_AUTO,
+                    allow_none=False,
+                    description=_(
+                        "Which transport to use. Automatic opens USB "
+                        "when available and falls back to the network."
+                    ),
+                ),
                 HostnameVar(
                     key="udp_host",
                     label=_("Hostname"),
                     description=_(
                         "The IP address or hostname of the Ruida controller"
+                    ),
+                    visible_when=lambda v: (
+                        v.get("connection", CONNECTION_AUTO)
+                        in (CONNECTION_NETWORK, CONNECTION_AUTO)
                     ),
                 ),
                 RuidaUsbDeviceVar(
@@ -269,16 +322,23 @@ class RuidaRPAAdapter(Driver):
                     description=_(
                         "USB device path or VID:PID (e.g. 0403:6001)"
                     ),
+                    required_when=lambda v: (
+                        v.get("connection", CONNECTION_AUTO) == CONNECTION_USB
+                    ),
+                    visible_when=lambda v: (
+                        v.get("connection", CONNECTION_AUTO)
+                        in (CONNECTION_USB, CONNECTION_AUTO)
+                    ),
                 ),
                 Var(
                     key="magic_number",
                     label=_("Magic"),
                     var_type=str,
                     description=_(
-                        "Controller magic number in hex "
-                        "(e.g., 0x88). Leave empty for default."
+                        "Controller magic number in hex. The default "
+                        "0x88 works for most controllers."
                     ),
-                    default=None,
+                    default="0x88",
                 ),
                 BoolVar(
                     key="tui",
@@ -420,7 +480,7 @@ class RuidaRPAAdapter(Driver):
         return magic
 
     def _setup_implementation(self, **kwargs: Any) -> None:
-        self._config = dict(kwargs)
+        self._config = self._apply_connection_mode(kwargs)
         self._tui_mode = bool(kwargs.get("tui", False))
 
         self._rpc_timeout = self._parse_rpc_timeout(
@@ -463,6 +523,7 @@ class RuidaRPAAdapter(Driver):
         """
         old_uri = self.resource_uri
         old_tui_mode = self._tui_mode
+        old_mode = self._config.get("connection", CONNECTION_AUTO)
 
         try:
             timeout = self._parse_rpc_timeout(
@@ -472,12 +533,17 @@ class RuidaRPAAdapter(Driver):
         except DriverSetupError:
             return False
 
-        self._config = dict(kwargs)
+        self._config = self._apply_connection_mode(kwargs)
         self._rpc_timeout = timeout
         self._magic = magic
 
         tui_mode = bool(kwargs.get("tui", False))
-        return tui_mode == old_tui_mode and self.resource_uri == old_uri
+        connection_mode = self._config.get("connection", CONNECTION_AUTO)
+        return (
+            tui_mode == old_tui_mode
+            and connection_mode == old_mode
+            and self.resource_uri == old_uri
+        )
 
     async def _connect_implementation(self) -> None:
         if self._connection_task and not self._connection_task.done():

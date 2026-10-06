@@ -54,9 +54,8 @@ class LayoutCmd:
             transaction_name: Name for the undo transaction.
             use_async: If True, use async calculation for the strategy.
         """
-        slug = transaction_name.lower().replace(" ", "-")
         get_usage_tracker().track_page_view(
-            f"/doc/layout/{slug}", transaction_name
+            f"/doc/layout/{strategy.slug}", transaction_name
         )
 
         # Define the handler that will receive error signals from the strategy.

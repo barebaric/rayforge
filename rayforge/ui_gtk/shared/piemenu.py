@@ -4,10 +4,11 @@ from typing import Any
 
 import cairo
 from blinker import Signal
-from gi.repository import Gdk, Gtk
+from gi.repository import Gdk, Gtk, Pango, PangoCairo
 
 from ..icons import get_icon_pixbuf
 from .gtk import apply_css
+from .text import create_text_layout
 
 logger = logging.getLogger(__name__)
 
@@ -270,12 +271,6 @@ class PieMenu(Gtk.Popover):
         )
         return max(4, int(capacity))
 
-    def _apply_label_font(self, ctx):
-        ctx.select_font_face(
-            "Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD
-        )
-        ctx.set_font_size(self.label_font_size)
-
     def _get_max_label_width(self) -> float:
         """Measures the widest item label using the label font."""
         items = list(self._inner_items)
@@ -286,8 +281,17 @@ class PieMenu(Gtk.Popover):
             return 0.0
         surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 0, 0)
         ctx = cairo.Context(surface)
-        self._apply_label_font(ctx)
-        return max(ctx.text_extents(i.label).width for i in items)
+        return max(
+            create_text_layout(
+                ctx,
+                item.label,
+                self.label_font_size,
+                weight=Pango.Weight.BOLD,
+            )
+            .get_pixel_extents()[0]
+            .width
+            for item in items
+        )
 
     def _get_background_color(
         self, style: Gtk.StyleContext, fg: tuple
@@ -749,27 +753,32 @@ class PieMenu(Gtk.Popover):
         ly = cy + math.sin(angle) * label_dist
 
         ctx.save()
-        self._apply_label_font(ctx)
-        extents = ctx.text_extents(text)
+        layout = create_text_layout(
+            ctx,
+            text,
+            self.label_font_size,
+            weight=Pango.Weight.BOLD,
+        )
+        extents, _ = layout.get_pixel_extents()
 
         # Determine Alignment based on angle (cos)
         cos_a = math.cos(angle)
 
         text_x = 0.0
-        text_y = ly - (extents.height / 2) - extents.y_bearing
+        text_y = ly - (extents.height / 2) - extents.y
 
         if cos_a > 0.3:
             # Right side: Text starts at lx
             text_x = lx
         elif cos_a < -0.3:
             # Left side: Text ends at lx
-            text_x = lx - extents.width - extents.x_bearing
+            text_x = lx - extents.width - extents.x
         else:
             # Top/Bottom: Text centered on lx
-            text_x = lx - (extents.width / 2) - extents.x_bearing
+            text_x = lx - (extents.width / 2) - extents.x
 
         ctx.move_to(text_x, text_y)
-        ctx.text_path(text)
+        PangoCairo.layout_path(ctx, layout)
         ctx.set_source_rgba(*colors["outline"])
         ctx.set_line_width(self.label_outline_width)
         ctx.set_line_join(cairo.LINE_JOIN_ROUND)

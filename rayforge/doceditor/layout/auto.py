@@ -68,6 +68,8 @@ class PixelPerfectLayoutStrategy(LayoutStrategy):
         into world-coordinate transformation matrices for each workpiece.
     """
 
+    slug = "auto-layout"
+
     def __init__(
         self,
         items: Sequence[DocItem],

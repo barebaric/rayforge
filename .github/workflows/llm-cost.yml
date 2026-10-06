@@ -37,6 +37,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           SCC_LLM_TOKENS_PER_LINE: "10"
           SCC_LLM_PRICE_PER_MTOK: "15"
+          SCC_LLM_INPUT_RATIO: "15"
+          SCC_LLM_INPUT_PRICE_PER_MTOK: "3"
         run: |
           python3 .github/scripts/estimate_llm_cost.py \
             --merge-sha "${{ github.event.pull_request.merge_commit_sha }}" \

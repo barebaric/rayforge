@@ -276,10 +276,15 @@ class VarSet:
 
     def validate(self):
         """
-        Validates all Var objects in the set.
+        Validates all visible Var objects in the set. Vars hidden by
+        their ``visible_when`` are inert and are not validated.
+
         Raises: ValidationError on the first validation failure.
         """
+        values = self.get_values()
         for var in self:
+            if not var.is_visible(values):
+                continue
             var.validate()
 
     def __repr__(self) -> str:

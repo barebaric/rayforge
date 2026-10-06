@@ -9,7 +9,10 @@ from typing import (
     cast,
 )
 
+from gi.repository import PangoCairo
 from raygeo.geo.types import Point
+
+from rayforge.ui_gtk.shared.text import create_text_layout
 
 from ..entities import Arc, Circle, Ellipse, Line
 from ..types import EntityID
@@ -292,9 +295,11 @@ class EqualLengthConstraint(Constraint):
                 ctx.fill()
 
             self._set_color(ctx, is_hovered)
-            ctx.set_font_size(16)
-            ext = ctx.text_extents("=")
-            ctx.move_to(sx - ext.width / 2, sy + ext.height / 2)
-            ctx.show_text("=")
+            layout = create_text_layout(ctx, "=", 16)
+            ext, _ = layout.get_pixel_extents()
+            ctx.move_to(
+                sx - ext.width / 2 - ext.x, sy - ext.height / 2 - ext.y
+            )
+            PangoCairo.show_layout(ctx, layout)
             ctx.restore()
             ctx.new_path()
