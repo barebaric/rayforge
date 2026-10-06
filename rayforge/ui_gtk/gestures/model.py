@@ -30,6 +30,16 @@ _MODIFIER_NAMES = {
 }
 _MODIFIERS_BY_NAME = {name: mod for mod, name in _MODIFIER_NAMES.items()}
 
+_NO_MODIFIERS = Gdk.ModifierType(0)
+
+_BUTTON_ORDER = (BUTTON_MIDDLE, BUTTON_PRIMARY, BUTTON_SECONDARY)
+_MODIFIER_ORDER = (
+    _NO_MODIFIERS,
+    Gdk.ModifierType.SHIFT_MASK,
+    Gdk.ModifierType.CONTROL_MASK,
+    Gdk.ModifierType.ALT_MASK,
+)
+
 
 class GestureKind(Enum):
     """The type of physical input that makes up a gesture."""
@@ -38,9 +48,6 @@ class GestureKind(Enum):
     DOUBLE_CLICK = "double_click"
     DRAG = "drag"
     SCROLL = "scroll"
-
-
-_NO_MODIFIERS = Gdk.ModifierType(0)
 
 
 def normalize_modifiers(state) -> Gdk.ModifierType:
@@ -161,6 +168,23 @@ class GestureSpec:
         return f"{'+'.join(parts)} {kind_labels[self.kind]}"
 
 
+def get_candidate_specs(
+    kind: GestureKind, buttons: tuple[int, ...] | None = None
+) -> list[GestureSpec]:
+    """
+    Returns the physical gestures of a kind that a slot can be bound
+    to, in display order. If ``buttons`` is given, only those mouse
+    buttons are offered.
+    """
+    if kind is GestureKind.SCROLL:
+        return [GestureSpec(GestureKind.SCROLL)]
+    return [
+        GestureSpec(kind, button=button, modifiers=modifiers)
+        for button in (buttons if buttons is not None else _BUTTON_ORDER)
+        for modifiers in _MODIFIER_ORDER
+    ]
+
+
 @dataclass(frozen=True)
 class GestureSlot:
     """
@@ -178,6 +202,7 @@ class GestureSlot:
     continuous: bool = False
     default_binding: GestureSpec | None = None
     allow_unassign: bool = True
+    buttons: tuple[int, ...] | None = None
 
 
 @dataclass(frozen=True)

@@ -25,10 +25,6 @@ class WorldSurface(Canvas):
     # The maximum allowed pixel density when zooming in.
     MAX_PIXELS_PER_MM = 100.0
 
-    # The gesture context whose bindings drive navigation on this
-    # surface. Subclasses can override it to provide their own slots.
-    context_id = "canvas2d"
-
     def __init__(
         self,
         width_mm: float = 100.0,
@@ -71,23 +67,39 @@ class WorldSurface(Canvas):
         # Set theme colors for axis and grid.
         self._update_theme_colors()
 
-        # Route the navigation gestures (pan, zoom, context menu) over
-        # the configurable gesture bindings of the surface's context.
-        self._router = GestureRouter(self.context_id, self)
+        # Route the panning gesture over the configurable gesture
+        # bindings of the "canvas2d" context. Zooming (scroll) and the
+        # context menu (right-click) are hard-coded.
+        self._router = GestureRouter("canvas2d", self)
         self._router.register_drag(
             "pan",
             begin=self.on_pan_begin,
             update=self.on_pan_update,
             end=self.on_pan_end,
         )
-        self._router.register_scroll("zoom", scroll=self.on_scroll)
-        self._router.register_click(
-            "context_menu", invoke=self.on_right_click_pressed
+
+        # Add scroll event controller for zoom
+        self._scroll_controller = Gtk.EventControllerScroll.new(
+            Gtk.EventControllerScrollFlags.VERTICAL
         )
-        self._router.register_click(
-            "reset_view", invoke=self._on_reset_view_gesture
+        self._scroll_controller.connect("scroll", self.on_scroll)
+        self.add_controller(self._scroll_controller)
+
+        # Add right-click gesture for context menu. The menu opens on
+        # button release, so that dragging the same button (e.g. for a
+        # configured pan gesture) does not open it.
+        self._context_menu_gesture = Gtk.GestureClick.new()
+        self._context_menu_gesture.set_button(Gdk.BUTTON_SECONDARY)
+        self._context_menu_gesture.connect(
+            "pressed", self._on_context_menu_press
         )
+        self._context_menu_gesture.connect(
+            "released", self._on_context_menu_release
+        )
+        self.add_controller(self._context_menu_gesture)
+
         self._pan_start = (0.0, 0.0)
+        self._context_menu_press_pos: tuple[float, float] | None = None
 
         # Track Space key for Space+drag panning
         self._space_pressed = False
@@ -97,12 +109,6 @@ class WorldSurface(Canvas):
         # get the mouse position in Gtk4. So I have to store it here and
         # track the motion event...
         self._mouse_pos = (0.0, 0.0)
-
-    def _on_reset_view_gesture(
-        self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
-    ) -> None:
-        """Handler for the rebindable reset-view gesture."""
-        self.reset_view()
 
     def set_show_grid(self, show: bool):
         """Sets the visibility of the inner grid lines."""
@@ -114,12 +120,33 @@ class WorldSurface(Canvas):
         self._axis_renderer.show_axis = show
         self.queue_draw()
 
-    def on_right_click_pressed(
+    def _on_context_menu_press(
+        self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
+    ) -> None:
+        """Records the press position of a potential context menu click."""
+        self._context_menu_press_pos = (x, y)
+
+    def _on_context_menu_release(
+        self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
+    ) -> None:
+        """Opens the context menu if the gesture was a click, not a drag."""
+        press_pos = self._context_menu_press_pos
+        self._context_menu_press_pos = None
+        if press_pos is None:
+            return
+        press_x, press_y = press_pos
+        threshold = GestureRouter.DRAG_THRESHOLD_PX
+        moved = (x - press_x) ** 2 + (y - press_y) ** 2
+        if moved > threshold * threshold:
+            return
+        self.on_right_click_released(gesture, n_press, x, y)
+
+    def on_right_click_released(
         self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
     ) -> None:
         """
-        Placeholder for handling right-clicks. Subclasses should override this
-        to implement context menu logic.
+        Placeholder for handling right-clicks. Subclasses should override
+        this to implement context menu logic.
         """
 
     def _update_theme_colors(self) -> None:

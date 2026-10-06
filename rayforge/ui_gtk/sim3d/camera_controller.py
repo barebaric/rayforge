@@ -114,8 +114,9 @@ class CameraController:
 
     def _setup_interactions(self, on_key_pressed: Callable | None = None):
         """Connects GTK4 gesture and event controllers for interaction."""
-        # Navigation drags and scrolling are routed over the
-        # configurable gesture bindings of the "canvas3d" context.
+        # Navigation drags are routed over the configurable gesture
+        # bindings of the "canvas3d" context. Zooming (scroll) is
+        # hard-coded.
         self._router = GestureRouter("canvas3d", self._widget)
         self._router.register_drag(
             "orbit",
@@ -135,7 +136,12 @@ class CameraController:
             update=self.on_z_rotate_update,
             end=self.on_z_rotate_end,
         )
-        self._router.register_scroll("zoom", scroll=self.on_scroll)
+
+        scroll = Gtk.EventControllerScroll.new(
+            Gtk.EventControllerScrollFlags.VERTICAL
+        )
+        scroll.connect("scroll", self.on_scroll)
+        self._widget.add_controller(scroll)
 
         # Track the pointer position for zooming towards the cursor.
         motion = Gtk.EventControllerMotion.new()

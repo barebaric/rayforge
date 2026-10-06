@@ -46,26 +46,23 @@ zu erfahren, welche Daten gesammelt und wie sie verwendet werden.
 
 ## Mausgesten
 
-Die Seite Mausgesten erlaubt es dir, die Navigationsgesten der 2D-Arbeitsfläche, der
-3D-Arbeitsfläche und des Skizzen-Editors neu zuzuweisen. Jeder Eintrag zeigt die aktuell zugewiesene
-Maustastenkombination. Klicke auf einen Eintrag, um eine neue Zuweisung aufzunehmen: Drücke die
-gewünschte Maustaste (mit oder ohne gedrückte Zusatztasten) oder benutze das Mausrad, und die
-Zuweisung wird sofort übernommen.
+Die Seite Mausgesten erlaubt es dir, die Navigationsgesten der 2D-Arbeitsfläche und der
+3D-Arbeitsfläche neu zuzuweisen; der Skizzen-Editor verwendet dieselben Gesten wie die
+2D-Arbeitsfläche. Jede Zeile bietet ein Aufklappmenü mit den verfügbaren Maustastenkombinationen:
 
-- **Ansicht schwenken** — halte die zugewiesene Maustaste gedrückt und bewege die Maus, um zu
-  schwenken.
-- **Ansicht zoomen** — benutze das Mausrad zum Zoomen.
-- **Orbit / Drehung (3D-Arbeitsfläche)** — ziehe, um um die Szene zu kreisen oder um die Z-Achse zu
-  drehen.
-- **Kontextmenü öffnen** — das Kontextmenü der 2D-Arbeitsfläche oder das Werkzeugmenü des
-  Skizzen-Editors.
-- **Ansicht zurücksetzen** — passt die Ansicht wieder an. Standardmäßig nicht zugewiesen.
+- **2D-Arbeitsfläche** — _Ansicht schwenken_ (Standard: mittlere Maustaste ziehen; über der linken
+  Maustaste ist das Ziehen für die Auswahl reserviert und wird daher nicht angeboten).
+- **3D-Arbeitsfläche** — _Kamera orbitieren_ (mittlere Maustaste ziehen), _Kamera schwenken_
+  (Umschalt + mittlere Maustaste ziehen) und _Um die Z-Achse drehen_ (linke Maustaste ziehen).
 
-Eine Zuweisung kann mit **Aufheben** entfernt oder mit **Auf Standard zurücksetzen**
-wiederhergestellt werden. Das Zuweisen einer Geste, die in derselben Ansicht bereits für eine andere
-Aktion verwendet wird, wird abgelehnt, sodass eine Maustastenkombination nie zwei Aktionen
-gleichzeitig auslöst. Addons können zusätzliche Gestenkonfigurationen bereitstellen, die als
-zusätzliche Abschnitte auf dieser Seite erscheinen.
+Zoomen (Mausrad), das Öffnen des Kontextmenüs (rechte Maustaste) und das Zurücksetzen der Ansicht
+(Taste `1` auf der 2D-Arbeitsfläche) sind fest vorgegeben und lassen sich nicht ändern. Ein
+einfacher Klick auf eine zugewiesene Taste löst weiterhin die feste Aktion aus: Ist das Schwenken
+auf die rechte Maustaste gelegt, schwenkt ein Ziehen mit der rechten Taste, und ein einfacher
+Rechtsklick öffnet weiterhin das Kontextmenü. Die Auswahl von **Nicht zugewiesen** deaktiviert eine
+Geste, und Kombinationen, die bereits von einer anderen Aktion derselben Arbeitsfläche verwendet
+werden, werden nicht angeboten. Addons können zusätzliche Gestenkonfigurationen bereitstellen, die
+als zusätzliche Abschnitte auf dieser Seite erscheinen.
 
 ## Weitere Einstellungen
 

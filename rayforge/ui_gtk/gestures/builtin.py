@@ -50,30 +50,7 @@ def _canvas2d_slots() -> list[GestureSlot]:
             default_binding=GestureSpec(
                 GestureKind.DRAG, button=BUTTON_MIDDLE
             ),
-        ),
-        GestureSlot(
-            id="zoom",
-            context_id="canvas2d",
-            label=_("Zoom the view"),
-            description=_("Use the mouse wheel to zoom."),
-            continuous=True,
-            default_binding=GestureSpec(GestureKind.SCROLL),
-            allow_unassign=False,
-        ),
-        GestureSlot(
-            id="context_menu",
-            context_id="canvas2d",
-            label=_("Open the context menu"),
-            default_binding=GestureSpec(
-                GestureKind.CLICK, button=BUTTON_SECONDARY
-            ),
-        ),
-        GestureSlot(
-            id="reset_view",
-            context_id="canvas2d",
-            label=_("Reset the view"),
-            description=_("Fits the work area into the view."),
-            default_binding=None,
+            buttons=(BUTTON_MIDDLE, BUTTON_SECONDARY),
         ),
     ]
 
@@ -115,14 +92,5 @@ def _canvas3d_slots() -> list[GestureSlot]:
             default_binding=GestureSpec(
                 GestureKind.DRAG, button=BUTTON_PRIMARY
             ),
-        ),
-        GestureSlot(
-            id="zoom",
-            context_id="canvas3d",
-            label=_("Zoom the view"),
-            description=_("Use the mouse wheel to zoom."),
-            continuous=True,
-            default_binding=GestureSpec(GestureKind.SCROLL),
-            allow_unassign=False,
         ),
     ]

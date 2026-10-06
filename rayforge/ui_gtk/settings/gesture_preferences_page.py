@@ -6,9 +6,9 @@ from gettext import gettext as _
 from gi.repository import Adw, Gtk
 
 from ...context import get_context
-from ..gestures import GestureSlot, gesture_registry
+from ..gestures import GestureKind, GestureSlot, gesture_registry
+from ..gestures.model import GestureSpec, get_candidate_specs
 from ..shared.preferences_page import TrackedPreferencesPage
-from .gesture_capture import GestureBindingPopover
 
 logger = logging.getLogger(__name__)
 
@@ -16,10 +16,12 @@ logger = logging.getLogger(__name__)
 class GesturePreferencesPage(TrackedPreferencesPage):
     """
     Preferences page showing the mouse gesture bindings of all
-    registered gesture contexts.
+    registered gesture contexts as dropdown rows.
 
-    The page is rebuilt whenever the gesture registry changes, so
-    addon-contributed contexts appear and disappear live.
+    The page is rebuilt whenever the gesture registry or the bindings
+    change, so addon-contributed contexts appear and disappear live and
+    gestures already used by another slot of the same context are not
+    offered again.
     """
 
     key = "gestures"
@@ -28,8 +30,8 @@ class GesturePreferencesPage(TrackedPreferencesPage):
         super().__init__(**kwargs)
         self.set_title(_("Mouse Gestures"))
         self.set_icon_name("input-mouse-symbolic")
-        self._rows: dict[tuple[str, str], Adw.ActionRow] = {}
-        self._buttons: dict[tuple[str, str], Gtk.Button] = {}
+        self._rows: dict[tuple[str, str], Adw.ComboRow] = {}
+        self._options: dict[tuple[str, str], list[GestureSpec | None]] = {}
         self._groups: list[Adw.PreferencesGroup] = []
         self._config = get_context().config
         self._config.changed.connect(self._on_config_changed)
@@ -46,7 +48,7 @@ class GesturePreferencesPage(TrackedPreferencesPage):
             self.remove(group)
         self._groups.clear()
         self._rows.clear()
-        self._buttons.clear()
+        self._options.clear()
         for context in gesture_registry.get_contexts():
             slots = gesture_registry.get_slots(context.id)
             if not slots:
@@ -61,8 +63,8 @@ class GesturePreferencesPage(TrackedPreferencesPage):
 
     def _build_slot_row(
         self, context_id: str, slot: GestureSlot
-    ) -> Adw.ActionRow:
-        row = Adw.ActionRow(title=slot.label)
+    ) -> Adw.ComboRow:
+        row = Adw.ComboRow(title=slot.label)
         subtitle_parts = []
         if slot.description:
             subtitle_parts.append(slot.description)
@@ -73,46 +75,103 @@ class GesturePreferencesPage(TrackedPreferencesPage):
         if subtitle_parts:
             row.set_subtitle("\n".join(subtitle_parts))
 
-        button = Gtk.Button(valign=Gtk.Align.CENTER)
-        button.connect("clicked", self._on_edit_binding, context_id, slot)
-        row.add_suffix(button)
+        options = self._build_options(context_id, slot)
+        row.set_model(
+            Gtk.StringList.new(
+                [self._option_label(option) for option in options]
+            )
+        )
+        row.set_selected(self._selected_index(context_id, slot, options))
+        row.connect(
+            "notify::selected", self._on_binding_selected, context_id, slot
+        )
 
         self._rows[(context_id, slot.id)] = row
-        self._buttons[(context_id, slot.id)] = button
-        self._update_row(context_id, slot)
+        self._options[(context_id, slot.id)] = options
         return row
 
-    def _update_row(self, context_id: str, slot: GestureSlot) -> None:
+    def _build_options(
+        self, context_id: str, slot: GestureSlot
+    ) -> list[GestureSpec | None]:
+        """
+        Returns the gesture options the user can pick for a slot: every
+        physical gesture of the slot's kind that is not already used by
+        another slot of the same context, plus the slot's current
+        binding and, if allowed, the "unassigned" choice.
+        """
+        taken = set()
+        for other in gesture_registry.get_slots(context_id):
+            if other.id == slot.id:
+                continue
+            taken.add(
+                gesture_registry.resolve_binding(
+                    self._config, context_id, other.id
+                )
+            )
+        default = slot.default_binding
+        kind = default.kind if default is not None else GestureKind.DRAG
+        options: list[GestureSpec | None] = [
+            spec
+            for spec in get_candidate_specs(kind, buttons=slot.buttons)
+            if spec not in taken
+        ]
         binding = gesture_registry.resolve_binding(
             self._config, context_id, slot.id
         )
-        if binding is not None:
-            label = binding.display_label()
-        else:
-            label = _("Unassigned")
-        button = self._buttons.get((context_id, slot.id))
-        if button is not None:
-            button.set_label(label)
+        if binding is not None and binding not in options:
+            options.insert(0, binding)
+        if slot.allow_unassign:
+            options.append(None)
+        return options
 
-    def _on_edit_binding(
-        self, button: Gtk.Button, context_id: str, slot: GestureSlot
-    ) -> None:
-        popover = GestureBindingPopover(
-            self._config, context_id, slot, on_applied=self._refresh_rows
+    @staticmethod
+    def _option_label(option: GestureSpec | None) -> str:
+        if option is None:
+            return _("Unassigned")
+        return option.display_label()
+
+    def _selected_index(
+        self,
+        context_id: str,
+        slot: GestureSlot,
+        options: list[GestureSpec | None],
+    ) -> int:
+        binding = gesture_registry.resolve_binding(
+            self._config, context_id, slot.id
         )
-        popover.set_parent(button)
-        popover.popdown()
-        popover.present()
-        popover.connect("closed", lambda p: p.unparent())
+        try:
+            return options.index(binding)
+        except ValueError:
+            return 0
 
-    def _refresh_rows(self) -> None:
-        for context_id, slot_id in self._rows:
-            slot = gesture_registry.get_slot(context_id, slot_id)
-            if slot is not None:
-                self._update_row(context_id, slot)
+    def _on_binding_selected(
+        self,
+        row: Adw.ComboRow,
+        _pspec,
+        context_id: str,
+        slot: GestureSlot,
+    ) -> None:
+        options = self._options.get((context_id, slot.id))
+        if not options:
+            return
+        index = row.get_selected()
+        if index < 0 or index >= len(options):
+            return
+        option = options[index]
+        default = slot.default_binding
+        if option is None:
+            self._config.set_gesture_binding(context_id, slot.id, None)
+        elif default is not None and option == default:
+            self._config.reset_gesture_binding(context_id, slot.id)
+        else:
+            self._config.set_gesture_binding(
+                context_id, slot.id, option.to_config_string()
+            )
+        value = option.to_config_string() if option is not None else "None"
+        logger.debug(f"Gesture '{context_id}/{slot.id}' set to {value}")
 
     def _on_config_changed(self, sender, **kwargs) -> None:
-        self._refresh_rows()
+        self._rebuild()
 
     def _on_registry_changed(self, sender, **kwargs) -> None:
         self._rebuild()

@@ -49,20 +49,20 @@ what data is collected and how it is used.
 
 ## Mouse Gestures
 
-The Mouse Gestures page lets you rebind the navigation gestures of the 2D canvas, the 3D canvas, and
-the sketch editor. Each entry shows the currently assigned mouse button combination. Click an entry
-to capture a new binding: press the desired mouse button (with or without modifier keys held) or use
-the scroll wheel, and the binding is applied immediately.
+The Mouse Gestures page lets you rebind the navigation gestures of the 2D canvas and the 3D canvas;
+the sketch editor uses the same gestures as the 2D canvas. Each row offers a dropdown with the
+available mouse button combinations:
 
-- **Pan the view** — hold the bound mouse button and move to pan.
-- **Zoom the view** — use the mouse wheel to zoom.
-- **Orbit / rotate (3D canvas)** — drag to orbit around the scene or rotate around the Z axis.
-- **Open the context menu** — the 2D canvas context menu or the sketch editor tool menu.
-- **Reset the view** — fits the view again. Unbound by default.
+- **2D Canvas** — _Pan the view_ (middle drag by default; on the left mouse button the drag is
+  reserved for selecting, so it is not offered).
+- **3D Canvas** — _Orbit the camera_ (middle drag), _Pan the camera_ (Shift + middle drag) and
+  _Rotate around the Z axis_ (left drag).
 
-A binding can be removed with **Unassign** or restored with **Reset to default**. Assigning a
-gesture that is already used for another action in the same view is rejected, so a mouse button
-combination never triggers two actions at once. Addons can contribute additional gesture
+Zooming (mouse wheel), the context menu (right-click), and resetting the view (the `1` key on the 2D
+canvas) are fixed and cannot be changed. A plain click on a bound button still performs its fixed
+action: when panning is bound to the right mouse button, right-dragging pans and a plain right-click
+still opens the context menu. Selecting **Unassigned** disables a gesture, and combinations already
+used by another action of the same canvas are not offered. Addons can contribute additional gesture
 configurations, which appear as extra sections on this page.
 
 ## Other Settings

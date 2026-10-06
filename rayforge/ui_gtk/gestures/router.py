@@ -35,12 +35,21 @@ class GestureRouter:
     each input it resolves the physical gesture (button + modifiers)
     against the bindings registered for its context:
 
-    - On a match, the router claims the input sequence and forwards
-      the events to the handlers registered for the matching slot.
+    - A matching drag claims the input sequence once the pointer
+      leaves the drag threshold, and dispatches to the slot's
+      handlers with offsets relative to that point. Claiming late
+      leaves room for a plain click on the same button (e.g. a
+      context menu) when the pointer does not move.
+    - A matching click claims the input sequence and dispatches to
+      the slot's handlers.
     - Without a match, the sequence is denied so that any other
       gestures on the widget (e.g. element selection on a canvas)
       handle it unchanged.
     """
+
+    #: Pointer travel in pixels after which a drag engages. Matches
+    #: GTK's default "gtk-dnd-drag-threshold" setting.
+    DRAG_THRESHOLD_PX = 8.0
 
     def __init__(
         self,
@@ -54,7 +63,9 @@ class GestureRouter:
         self._drag_handlers: dict[str, DragHandlers] = {}
         self._click_handlers: dict[str, Callable] = {}
         self._scroll_handlers: dict[str, Callable] = {}
+        self._pending_drag_slot: str | None = None
         self._active_drag_slot: str | None = None
+        self._claim_offset = (0.0, 0.0)
         self._setup_controllers()
 
     @staticmethod
@@ -91,9 +102,10 @@ class GestureRouter:
     ) -> None:
         """
         Registers the handlers for a continuous drag slot. The
-        callbacks use the ``Gtk.GestureDrag`` signal signatures:
-        ``begin(gesture, x, y)``, ``update(gesture, dx, dy)`` and
-        ``end(gesture, dx, dy)``.
+        callbacks use modified ``Gtk.GestureDrag`` signal signatures:
+        ``begin(gesture, x, y)`` receives the press start point, while
+        ``update(gesture, dx, dy)`` and ``end(gesture, dx, dy)``
+        receive offsets relative to the point where the drag engaged.
         """
         self._drag_handlers[slot_id] = DragHandlers(
             begin=begin, update=update, end=end
@@ -134,26 +146,35 @@ class GestureRouter:
             modifiers=normalize_modifiers(gesture.get_current_event_state()),
         )
         slot_id = self._resolve_slot(spec, self._drag_handlers)
+        self._active_drag_slot = None
+        self._claim_offset = (0.0, 0.0)
         if slot_id is None:
-            self._active_drag_slot = None
+            self._pending_drag_slot = None
             gesture.set_state(Gtk.EventSequenceState.DENIED)
             return
-        logger.debug(f"Gesture '{self.context_id}/{slot_id}' drag begin")
-        self._active_drag_slot = slot_id
-        gesture.set_state(Gtk.EventSequenceState.CLAIMED)
-        handler = self._drag_handlers[slot_id]
-        if handler.begin:
-            handler.begin(gesture, x, y)
+        logger.debug(f"Gesture '{self.context_id}/{slot_id}' drag pending")
+        self._pending_drag_slot = slot_id
 
     def _on_drag_update(self, gesture, offset_x: float, offset_y: float):
+        if self._pending_drag_slot is not None:
+            dx = offset_x - self._claim_offset[0]
+            dy = offset_y - self._claim_offset[1]
+            if dx * dx + dy * dy < self._drag_threshold_squared():
+                return
+            self._engage_drag(gesture, offset_x, offset_y)
         slot_id = self._active_drag_slot
         if slot_id is None:
             return
         handler = self._drag_handlers[slot_id]
         if handler.update:
-            handler.update(gesture, offset_x, offset_y)
+            handler.update(
+                gesture,
+                offset_x - self._claim_offset[0],
+                offset_y - self._claim_offset[1],
+            )
 
     def _on_drag_end(self, gesture, offset_x: float, offset_y: float):
+        self._pending_drag_slot = None
         slot_id = self._active_drag_slot
         self._active_drag_slot = None
         if slot_id is None:
@@ -161,7 +182,32 @@ class GestureRouter:
         logger.debug(f"Gesture '{self.context_id}/{slot_id}' drag end")
         handler = self._drag_handlers[slot_id]
         if handler.end:
-            handler.end(gesture, offset_x, offset_y)
+            handler.end(
+                gesture,
+                offset_x - self._claim_offset[0],
+                offset_y - self._claim_offset[1],
+            )
+
+    def _drag_threshold_squared(self) -> float:
+        threshold = self.DRAG_THRESHOLD_PX
+        return threshold * threshold
+
+    def _engage_drag(self, gesture, offset_x: float, offset_y: float) -> None:
+        """Claims the sequence and starts the pending drag slot."""
+        slot_id = self._pending_drag_slot
+        if slot_id is None:
+            return
+        self._pending_drag_slot = None
+        self._active_drag_slot = slot_id
+        self._claim_offset = (offset_x, offset_y)
+        gesture.set_state(Gtk.EventSequenceState.CLAIMED)
+        logger.debug(f"Gesture '{self.context_id}/{slot_id}' drag begin")
+        ok, start_x, start_y = gesture.get_start_point()
+        if not ok:
+            start_x = start_y = 0.0
+        handler = self._drag_handlers[slot_id]
+        if handler.begin:
+            handler.begin(gesture, start_x, start_y)
 
     def _on_click_pressed(self, gesture, n_press: int, x: float, y: float):
         spec = GestureSpec(

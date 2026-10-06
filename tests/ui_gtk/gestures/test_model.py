@@ -16,6 +16,7 @@ from rayforge.ui_gtk.gestures.model import (
     BUTTON_SECONDARY,
     GestureKind,
     GestureSpec,
+    get_candidate_specs,
     normalize_modifiers,
 )
 
@@ -122,3 +123,40 @@ class TestGestureSpec:
     def test_display_label_for_right_click(self):
         spec = GestureSpec(GestureKind.CLICK, button=BUTTON_SECONDARY)
         assert "Right" in spec.display_label()
+
+
+class TestGetCandidateSpecs:
+    def test_drag_candidates_cover_buttons_and_modifiers(self):
+        specs = get_candidate_specs(GestureKind.DRAG)
+        assert GestureSpec(GestureKind.DRAG, button=BUTTON_MIDDLE) in specs
+        assert (
+            GestureSpec(
+                GestureKind.DRAG,
+                button=BUTTON_PRIMARY,
+                modifiers=Gdk.ModifierType.ALT_MASK,
+            )
+            in specs
+        )
+        assert len(specs) == 12
+
+    def test_click_candidates_are_clicks_only(self):
+        specs = get_candidate_specs(GestureKind.CLICK)
+        right_click = GestureSpec(GestureKind.CLICK, button=BUTTON_SECONDARY)
+        assert right_click in specs
+        assert all(spec.kind is GestureKind.CLICK for spec in specs)
+
+    def test_scroll_candidates_are_scroll_only(self):
+        assert get_candidate_specs(GestureKind.SCROLL) == [
+            GestureSpec(GestureKind.SCROLL)
+        ]
+
+    def test_button_restriction_limits_candidates(self):
+        specs = get_candidate_specs(
+            GestureKind.DRAG, buttons=(BUTTON_MIDDLE, BUTTON_SECONDARY)
+        )
+        assert GestureSpec(GestureKind.DRAG, button=BUTTON_MIDDLE) in specs
+        assert GestureSpec(GestureKind.DRAG, button=BUTTON_SECONDARY) in specs
+        assert (
+            GestureSpec(GestureKind.DRAG, button=BUTTON_PRIMARY) not in specs
+        )
+        assert len(specs) == 8

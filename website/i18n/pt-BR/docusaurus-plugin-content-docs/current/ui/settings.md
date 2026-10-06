@@ -43,23 +43,22 @@ mais sobre quais dados são coletados e como são usados.
 
 ## Gestos do mouse
 
-A página de gestos do mouse permite reatribuir os gestos de navegação da tela 2D, da tela 3D e do
-editor de esboços. Cada entrada mostra a combinação de botões do mouse atribuída atualmente. Clique
-em uma entrada para capturar uma nova atribuição: pressione o botão do mouse desejado (com ou sem
-teclas modificadoras pressionadas) ou use a roda do mouse, e a atribuição é aplicada imediatamente.
+A página de gestos do mouse permite reatribuir os gestos de navegação da tela 2D e da tela 3D; o
+editor de esboços usa os mesmos gestos da tela 2D. Cada linha oferece um menu suspenso com as
+combinações de botões do mouse disponíveis:
 
-- **Deslocar a visão** — mantenha o botão do mouse atribuído pressionado e mova para deslocar.
-- **Zoom da visão** — use a roda do mouse para dar zoom.
-- **Órbita / rotação (tela 3D)** — arraste para orbitar ao redor da cena ou girar ao redor do eixo
-  Z.
-- **Abrir o menu de contexto** — o menu de contexto da tela 2D ou o menu de ferramentas do editor de
-  esboços.
-- **Redefinir a visão** — ajusta a visão novamente. Sem atribuição por padrão.
+- **Tela 2D** — _Deslocar a visão_ (por padrão, arrastar com o botão do meio; no botão esquerdo, o
+  arraste é reservado para a seleção e por isso não é oferecido).
+- **Tela 3D** — _Orbitar a câmera_ (arrastar com o botão do meio), _Deslocar a câmera_ (Shift +
+  botão do meio) e _Girar ao redor do eixo Z_ (arrastar com o botão esquerdo).
 
-Uma atribuição pode ser removida com **Remover atribuição** ou restaurada com **Restaurar padrão**.
-A atribuição de um gesto que já é usado por outra ação na mesma tela é rejeitada, de modo que uma
-combinação de botões do mouse nunca acione duas ações ao mesmo tempo. Addons podem contribuir com
-configurações de gestos adicionais, que aparecem como seções extras nesta página.
+O zoom (roda do mouse), o menu de contexto (botão direito do mouse) e a redefinição da visão (a
+tecla `1` na tela 2D) são fixos e não podem ser alterados. Um clique simples em um botão atribuído
+ainda executa sua ação fixa: quando o deslocamento é atribuído ao botão direito do mouse, arrastar
+com o botão direito desloca a visão e um clique direito simples ainda abre o menu de contexto.
+Selecionar **Sem atribuição** desativa um gesto, e combinações já usadas por outra ação da mesma
+tela não são oferecidas. Addons podem contribuir com configurações de gestos adicionais, que
+aparecem como seções extras nesta página.
 
 ## Outras configurações
 
