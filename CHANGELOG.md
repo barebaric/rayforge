@@ -31,6 +31,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Machines: the GRBL Serial driver now runs its entire protocol stack
+  (handshake, character-counting flow control, streaming, stall
+  detection and deadlock recovery) in Rust through the raydriver
+  library. The experimental "GRBL (Rust)" driver replaces the old
+  Python implementation under the familiar "GRBL (Serial)" name, so
+  existing machine configurations continue to work unchanged.
+  Machines saved while the driver carried its experimental name keep
+  working through a compatibility alias
 - Updated translations
 
 ### Fixed

@@ -9,19 +9,19 @@ from typing import (
 )
 
 from blinker import Signal
+from raydriver.grbl.parser import (
+    extract_device_name,
+    parse_grbl_settings,
+    parse_opt_flags,
+    parse_opt_info,
+    parse_version,
+)
 
 from ....shared.units.system import UnitSystem
 from ...models.dialect.grbl import GRBL_DIALECT
 from ...models.dialect.grbl_dynamic import GRBL_DYNAMIC_DIALECT
 from ...transport import TransportStatus
 from .grbl_dialect_detect import detect_grbl_dialect
-from .grbl_util import (
-    extract_device_name,
-    grbl_opt_re,
-    parse_grbl_settings,
-    parse_opt_info,
-    parse_version,
-)
 
 if TYPE_CHECKING:
     from ....context import RayforgeContext
@@ -129,9 +129,9 @@ def build_grbl_profile(
         rx = parse_opt_info(line)
         if rx is not None:
             rx_buffer_size = rx
-        match = grbl_opt_re.search(line)
-        if match:
-            compile_flags = match.group(1)
+        flags = parse_opt_flags(line)
+        if flags is not None:
+            compile_flags = flags
 
     settings = parse_grbl_settings(settings_lines)
     warnings: list[str] = []
