@@ -2,10 +2,10 @@ import logging
 from gettext import gettext as _
 from typing import Any, cast
 
+from raydriver.grbl import GrblSession
+
 from ....core.varset import HostnameVar, PortVar, Var, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
-from ...transport import TelnetTransport
-from ...transport.grbl import GrblSerialTransport
 from ..driver import DriverPrecheckError, DriverSetupError
 from .grbl_serial import GrblSerialDriver
 
@@ -17,9 +17,10 @@ class GrblTelnetDriver(GrblSerialDriver):
     GRBL-compatible controller connected over raw TCP (telnet).
 
     Intended for networked grblHAL controllers with the "raw" telnet
-    service enabled, and for ESP3D firmware's telnet bridge. Reuses the
-    full GRBL protocol stack from GrblSerialDriver, swapping only the
-    underlying byte transport from SerialTransport to TelnetTransport.
+    service enabled, and for ESP3D firmware's telnet bridge. The
+    entire GRBL protocol stack runs in Rust via the ``raydriver``
+    session; only the transport selection differs from the serial
+    driver.
     """
 
     label = _("GRBL (Telnet)")
@@ -28,17 +29,6 @@ class GrblTelnetDriver(GrblSerialDriver):
     # makes no sense here: a telnet connection has no serial port and
     # must not claim devices found on one.
     DISCOVERY = None
-
-    def __init__(self, context, machine):
-        super().__init__(context, machine)
-        self._host: str | None = None
-        self._port: int | None = None
-
-    @property
-    def resource_uri(self) -> str | None:
-        if self._host and self._port:
-            return f"tcp://{self._host}:{self._port}"
-        return None
 
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
@@ -93,24 +83,28 @@ class GrblTelnetDriver(GrblSerialDriver):
     def _setup_implementation(self, **kwargs: Any) -> None:
         host = cast(str, kwargs.get("host", ""))
         port = cast(int, kwargs.get("port", 23))
-        self._poll_status_while_running = bool(
-            kwargs.get("poll_status_while_running", False)
-        )
-        self._deadlock_detection = bool(
-            kwargs.get("deadlock_detection", False)
-        )
 
         if not host:
             raise DriverSetupError(_("Hostname must be configured."))
         if not port:
             raise DriverSetupError(_("Port must be configured."))
 
-        self._host = host
-        self._port = port
+        config = {
+            "host": host,
+            "tcp_port": int(port),
+            "poll_status_while_running": bool(
+                kwargs.get("poll_status_while_running", False)
+            ),
+            "deadlock_detection": bool(
+                kwargs.get("deadlock_detection", False)
+            ),
+        }
+        cached_rx_buffer_size = self.config.get("rx_buffer_size")
+        if cached_rx_buffer_size is not None:
+            config["cached_rx_buffer_size"] = int(cached_rx_buffer_size)
 
-        telnet_transport = TelnetTransport(host, port)
-        self.grbl_transport = GrblSerialTransport(telnet_transport)
-        self.grbl_transport.received.connect(self.on_serial_data_received)
-        self.grbl_transport.status_changed.connect(
-            self.on_serial_status_changed
+        self._session = GrblSession(
+            config=config,
+            dialect=self._dialect_templates(),
+            event_callback=self._on_session_event,
         )

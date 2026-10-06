@@ -575,6 +575,97 @@ def test_connection_page_next_requires_details(ui_context_initializer):
 
 
 @pytest.mark.ui
+def test_connection_page_ruida_needs_only_hostname(ui_context_initializer):
+    wizard = _make_wizard(ui_context_initializer)
+    wizard.profile = _profile(driver="RuidaRPAAdapter")
+    wizard._navigate_to("connect")
+    page = wizard._get_page("connect")
+    assert isinstance(page, ConnectionPage)
+    assert page.ready is False
+    assert not wizard.next_btn.get_sensitive()
+    assert page.connect_widget.get_values()["magic_number"] == "0x88"
+
+    page.connect_widget.set_values({"udp_host": "192.168.1.25"})
+    page._refresh_ready()
+    assert page.ready is True
+    assert wizard.next_btn.get_sensitive()
+
+
+@pytest.mark.ui
+def test_connection_page_ruida_network_mode(ui_context_initializer):
+    wizard = _make_wizard(ui_context_initializer)
+    wizard.profile = _profile(driver="RuidaRPAAdapter")
+    wizard._navigate_to("connect")
+    page = wizard._get_page("connect")
+    assert isinstance(page, ConnectionPage)
+
+    page.connect_widget.set_values({"connection": "network"})
+    page._refresh_ready()
+    assert page.ready is False
+
+    page.connect_widget.set_values(
+        {"connection": "network", "udp_host": "192.168.1.25"}
+    )
+    page._refresh_ready()
+    assert page.ready is True
+
+
+@pytest.mark.ui
+def test_connection_page_ruida_usb_mode(ui_context_initializer):
+    wizard = _make_wizard(ui_context_initializer)
+    wizard.profile = _profile(driver="RuidaRPAAdapter")
+    wizard._navigate_to("connect")
+    page = wizard._get_page("connect")
+    assert isinstance(page, ConnectionPage)
+
+    page.connect_widget.set_values({"connection": "usb"})
+    page._refresh_ready()
+    assert page.ready is False
+
+    page.connect_widget.set_values(
+        {"connection": "usb", "usb_device": "/dev/ttyUSB0"}
+    )
+    page._refresh_ready()
+    assert page.ready is True
+
+
+@pytest.mark.ui
+def test_connection_args_complete_ruida_hostname_only(
+    ui_context_initializer,
+):
+    wizard = _make_wizard(ui_context_initializer)
+    profile = _profile(driver="RuidaRPAAdapter")
+    profile.machine_config.driver_args = {"udp_host": "192.168.1.25"}
+    wizard.profile = profile
+    assert wizard._connection_args_complete() is True
+
+
+@pytest.mark.ui
+def test_connection_args_complete_ruida_usb_mode(
+    ui_context_initializer,
+):
+    wizard = _make_wizard(ui_context_initializer)
+    profile = _profile(driver="RuidaRPAAdapter")
+    profile.machine_config.driver_args = {
+        "connection": "usb",
+        "usb_device": "/dev/ttyUSB0",
+    }
+    wizard.profile = profile
+    assert wizard._connection_args_complete() is True
+
+
+@pytest.mark.ui
+def test_connection_args_complete_ruida_auto_needs_hostname(
+    ui_context_initializer,
+):
+    wizard = _make_wizard(ui_context_initializer)
+    profile = _profile(driver="RuidaRPAAdapter")
+    profile.machine_config.driver_args = {"usb_device": "/dev/ttyUSB0"}
+    wizard.profile = profile
+    assert wizard._connection_args_complete() is False
+
+
+@pytest.mark.ui
 def test_skip_button_only_on_optional_pages(ui_context_initializer):
     wizard = _make_wizard(ui_context_initializer)
     for name in ("ai_provider", "rotary", "camera"):

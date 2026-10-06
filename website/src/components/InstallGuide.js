@@ -246,6 +246,7 @@ const linuxMethods = [
   { id: 'snap', label: translate({ id: 'install.snap.recommended', message: 'Snap (Recommended)' }) },
   { id: 'debian', label: 'Debian (apt)' },
   { id: 'ppa', label: 'Ubuntu 24.04 (PPA)' },
+  { id: 'gentoo', label: 'Gentoo (Portage)' },
   { id: 'flatpak', label: 'Flathub' },
   { id: 'appimage', label: 'AppImage' },
   { id: 'pixi', label: translate({ id: 'install.pixi.developers', message: 'Pixi (Developers)' }) },
@@ -310,6 +311,7 @@ function LinuxInstall({ method, onMethodChange, latestRelease }) {
 
       {method === 'debian' && <LinuxDebianInstall />}
       {method === 'ppa' && <LinuxPpaInstall />}
+      {method === 'gentoo' && <LinuxGentooInstall />}
       {method === 'flatpak' && <LinuxFlatpakInstall />}
       {method === 'appimage' && <LinuxAppImageInstall latestRelease={latestRelease} />}
       {method === 'snap' && <LinuxSnapInstall />}
@@ -508,6 +510,91 @@ sudo apt update`}
 
       <div className="install-step">
         <div className="install-step-number">3</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.launchRayforge">Launch Rayforge</Translate></h5>
+          <p>
+            <Translate id="install.launchFromMenu">
+              Launch Rayforge from your application menu or by running:
+            </Translate>
+          </p>
+          <CodeBlock language="bash">rayforge</CodeBlock>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LinuxGentooInstall() {
+  return (
+    <div className="install-section">
+      <h4><Translate id="install.gentoo.title">Gentoo Package</Translate></h4>
+      <p>
+        <Translate id="install.gentoo.description">
+          Rayforge is available on Gentoo through the community-maintained
+          "snakebyte" overlay. The package is built from source, so the
+          installation may take a while.
+        </Translate>
+      </p>
+
+      <Admonition type="note">
+        <Translate id="install.gentoo.community">
+          This package is maintained by the community and is not officially
+          supported by the Rayforge project.
+        </Translate>{' '}
+        <a
+          href="https://github.com/switch87/snakebyte-overlay"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Translate id="install.gentoo.overlayLink">
+            View the overlay on GitHub.
+          </Translate>
+        </a>
+      </Admonition>
+
+      <div className="install-step">
+        <div className="install-step-number">1</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.gentoo.addOverlay">Add the snakebyte Overlay</Translate></h5>
+          <CodeBlock language="bash">
+            eselect repository add snakebyte git https://github.com/switch87/snakebyte-overlay.git
+          </CodeBlock>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">2</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.gentoo.syncOverlay">Sync the Overlay</Translate></h5>
+          <CodeBlock language="bash">emaint sync -r snakebyte</CodeBlock>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">3</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.installRayforge">Install Rayforge</Translate></h5>
+          <CodeBlock language="bash">emerge --ask media-gfx/rayforge</CodeBlock>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">4</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.addDialoutGroup">Add User to dialout Group</Translate></h5>
+          <p><Translate id="install.requiredSerialAccess">Required for serial port access:</Translate></p>
+          <CodeBlock language="bash">
+            sudo usermod -a -G dialout $USER
+          </CodeBlock>
+          <p>
+            <strong><Translate id="install.important">Important:</Translate></strong>{' '}
+            <Translate id="install.logoutLogin">Log out and log back in for this change to take effect.</Translate>
+          </p>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">5</div>
         <div className="install-step-content">
           <h5><Translate id="install.launchRayforge">Launch Rayforge</Translate></h5>
           <p>

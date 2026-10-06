@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-06 00:18+0200\n"
+"POT-Creation-Date: 2026-10-03 16:38+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -35,12 +35,40 @@ msgid "Keep the first workpiece at its original position"
 msgstr "Mantener la primera pieza en su posición original"
 
 #: post_processors/widgets/optimize_group.py
+msgid "Merge Scanlines"
+msgstr "Fusionar líneas de barrido"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Merges nearby parallel cut lines into longer scanlines when this is faster "
+"for the machine's acceleration."
+msgstr ""
+"Fusiona líneas de corte paralelas cercanas en líneas de barrido más largas "
+"cuando esto es más rápido para la aceleración de la máquina."
+
+#: post_processors/widgets/optimize_group.py
+msgid "Max gap"
+msgstr "Espacio máx."
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Maximum gap to bridge at zero power; 0 decides automatically from the "
+"machine's acceleration"
+msgstr ""
+"Espacio máximo a salvar a potencia cero; 0 decide automáticamente según la "
+"aceleración de la máquina"
+
+#: post_processors/widgets/optimize_group.py
 msgid "Toggle Flipping"
 msgstr "Alternar inversión"
 
 #: post_processors/widgets/optimize_group.py
 msgid "Toggle Preserve First Workpiece"
 msgstr "Alternar preservación de primera pieza"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Change maximum bridged gap"
+msgstr "Cambiar el espacio máximo salvado"
 
 #: post_processors/widgets/overscan_group.py
 msgid "This machine adds overscan automatically; the setting has no effect."

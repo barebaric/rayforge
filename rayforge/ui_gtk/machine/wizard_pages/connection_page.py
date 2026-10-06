@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any
 
 from gi.repository import Adw, Gtk
 
+from ....core.varset import VarSet
 from ....machine.device.profile import DeviceProfile
 from ....machine.driver import get_driver_cls
 from ....machine.driver.driver import Driver
@@ -34,7 +35,7 @@ class ConnectionPage(WizardPage):
 
     def __init__(self, wizard: "UnifiedWizard", **kwargs: Any) -> None:
         self._driver_cls: type[Driver] | None = None
-        self._required_keys: set[str] = set()
+        self._var_set: VarSet | None = None
         super().__init__(wizard, **kwargs)
 
     def build_ui(self) -> None:
@@ -70,6 +71,7 @@ class ConnectionPage(WizardPage):
             self.connect_widget.clear_dynamic_rows()
             self.set_ready(True)
             self._driver_cls = None
+            self._var_set = None
             return
 
         driver_cls = get_driver_cls(driver_name)
@@ -78,12 +80,10 @@ class ConnectionPage(WizardPage):
         self.driver_row.set_subtitle(driver_cls.subtitle or "")
 
         var_set = driver_cls.get_setup_vars()
-        # Vars without a usable default are the host-specific values the
-        # user must supply (USB path, hostname, API key, …). The page
-        # stays unready until every one of them is filled.
-        self._required_keys = {
-            var.key for var in var_set if var.default in (None, "")
-        }
+        # Which vars are required is evaluated on every refresh via
+        # Var.is_required(), so a var can become mandatory or optional
+        # depending on other values (e.g. a connection-mode selector).
+        self._var_set = var_set
         # If the working profile carries saved driver_args (e.g. via
         # import), prefill the var set before rendering.
         saved_args = profile.machine_config.driver_args or {}
@@ -99,7 +99,7 @@ class ConnectionPage(WizardPage):
 
     def _refresh_ready(self) -> None:
         """Ready when there's no driver or all required vars are set."""
-        if self._driver_cls is None:
+        if self._var_set is None:
             self.set_ready(True)
             return
         try:
@@ -107,8 +107,10 @@ class ConnectionPage(WizardPage):
         except ValueError:
             self.set_ready(False)
             return
-        for key in self._required_keys:
-            if values.get(key) in (None, ""):
+        for var in self._var_set:
+            if not var.is_required(values):
+                continue
+            if values.get(var.key) in (None, ""):
                 self.set_ready(False)
                 return
         self.set_ready(True)

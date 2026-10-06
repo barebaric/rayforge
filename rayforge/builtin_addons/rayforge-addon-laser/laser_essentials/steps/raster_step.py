@@ -637,17 +637,20 @@ class EngraveStep(LaserStep):
     @classmethod
     def get_default_transformers_dicts(cls) -> tuple[list, list]:
         OverscanTransformer = transformer_registry.get("OverscanTransformer")
+        CropTransformer = transformer_registry.get("CropTransformer")
         Optimize = transformer_registry.get("Optimize")
         MultiPassTransformer = transformer_registry.get("MultiPassTransformer")
         BidirScanOffsetTransformer = transformer_registry.get(
             "BidirScanOffsetTransformer"
         )
         assert OverscanTransformer is not None
+        assert CropTransformer is not None
         assert Optimize is not None
         assert MultiPassTransformer is not None
         assert BidirScanOffsetTransformer is not None
         optimize_dict = Optimize().to_dict()
         return [
+            CropTransformer(enabled=False).to_dict(),
             OverscanTransformer(
                 enabled=True, distance_mm=0, auto=True
             ).to_dict(),

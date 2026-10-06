@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-06 00:18+0200\n"
+"POT-Creation-Date: 2026-10-03 16:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -34,11 +34,35 @@ msgid "Keep the first workpiece at its original position"
 msgstr ""
 
 #: post_processors/widgets/optimize_group.py
+msgid "Merge Scanlines"
+msgstr ""
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Merges nearby parallel cut lines into longer scanlines when this is faster "
+"for the machine's acceleration."
+msgstr ""
+
+#: post_processors/widgets/optimize_group.py
+msgid "Max gap"
+msgstr ""
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Maximum gap to bridge at zero power; 0 decides automatically from the "
+"machine's acceleration"
+msgstr ""
+
+#: post_processors/widgets/optimize_group.py
 msgid "Toggle Flipping"
 msgstr ""
 
 #: post_processors/widgets/optimize_group.py
 msgid "Toggle Preserve First Workpiece"
+msgstr ""
+
+#: post_processors/widgets/optimize_group.py
+msgid "Change maximum bridged gap"
 msgstr ""
 
 #: post_processors/widgets/overscan_group.py

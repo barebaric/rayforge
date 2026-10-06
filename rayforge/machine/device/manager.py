@@ -2,6 +2,7 @@ import logging
 import re
 import shutil
 import tempfile
+import time
 import zipfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
@@ -33,6 +34,24 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _UNSAFE_FILENAME_RE = re.compile(r"[^\w\-. ]")
+
+
+_ZIP_EPOCH = (1980, 1, 1, 0, 0, 0)
+
+
+def _write_file_to_zip(zf: zipfile.ZipFile, file_path: Path, arcname):
+    try:
+        mtime = file_path.stat().st_mtime
+        date_time = time.localtime(mtime)[:6]
+    except (OSError, OverflowError, ValueError):
+        date_time = _ZIP_EPOCH
+    if tuple(date_time[:3]) < _ZIP_EPOCH[:3]:
+        date_time = _ZIP_EPOCH
+    with open(file_path, "rb") as src:
+        info = zipfile.ZipInfo(str(arcname), date_time=date_time)
+        info.compress_type = zipfile.ZIP_DEFLATED
+        info.external_attr = 0o644 << 16
+        zf.writestr(info, src.read())
 
 
 def _safe_filename(name: str) -> str:
@@ -328,7 +347,7 @@ class DeviceProfileManager:
                         arcname = file_path.resolve().relative_to(
                             source_resolved
                         )
-                        zf.write(file_path, arcname)
+                        _write_file_to_zip(zf, file_path, arcname)
 
             if zip_path.exists():
                 zip_path.unlink()
@@ -369,7 +388,7 @@ class DeviceProfileManager:
                 for file_path in sorted(pkg_dir.rglob("*")):
                     if file_path.is_file():
                         arcname = file_path.resolve().relative_to(pkg_resolved)
-                        zf.write(file_path, arcname)
+                        _write_file_to_zip(zf, file_path, arcname)
 
             if zip_path.exists():
                 zip_path.unlink()

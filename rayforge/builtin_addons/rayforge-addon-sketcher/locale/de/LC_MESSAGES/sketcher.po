@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-06 20:26+0200\n"
+"POT-Creation-Date: 2026-10-04 18:52+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -282,6 +282,22 @@ msgstr "Texteigenschaft ändern"
 #: sketcher/core/commands/waypoint.py
 msgid "Set Waypoint Type"
 msgstr "Wegpunkttyp festlegen"
+
+#: sketcher/core/commands/boolean.py sketcher/ui_gtk/menu.py
+msgid "Union"
+msgstr "Vereinigung"
+
+#: sketcher/core/commands/boolean.py sketcher/ui_gtk/menu.py
+msgid "Difference"
+msgstr "Differenz"
+
+#: sketcher/core/commands/boolean.py sketcher/ui_gtk/menu.py
+msgid "Intersection"
+msgstr "Schnittmenge"
+
+#: sketcher/core/commands/boolean.py sketcher/ui_gtk/menu.py
+msgid "Exclude"
+msgstr "Ausschluss"
 
 #: sketcher/core/commands/point.py
 msgid "Move Point"
@@ -819,6 +835,10 @@ msgstr "Ecke abfasen"
 #: sketcher/ui_gtk/menu.py
 msgid "Modify"
 msgstr "Ändern"
+
+#: sketcher/ui_gtk/menu.py
+msgid "Boolean"
+msgstr "Boolesch"
 
 #: sketcher/ui_gtk/menu.py
 msgid "Arrays"

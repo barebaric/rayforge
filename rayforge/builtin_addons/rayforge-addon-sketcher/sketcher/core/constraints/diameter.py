@@ -5,7 +5,10 @@ from collections.abc import Callable, Sequence
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
+from gi.repository import PangoCairo
 from raygeo.geo.types import Point
+
+from rayforge.ui_gtk.shared.text import create_text_layout
 
 from ..entities import Circle
 from ..types import EntityID
@@ -231,7 +234,8 @@ class DiameterConstraint(Constraint):
         arc_mid_sx, arc_mid_sy = to_screen((arc_mid_mx, arc_mid_my))
 
         label = f"Ø{self._format_value()}"
-        ext = ctx.text_extents(label)
+        layout = create_text_layout(ctx, label)
+        ext, _ = layout.get_pixel_extents()
 
         ctx.save()
         # Set background color based on selection, hover, and status
@@ -263,8 +267,8 @@ class DiameterConstraint(Constraint):
         else:
             ctx.set_source_rgb(0, 0, 0.5)  # Dark blue otherwise
 
-        ctx.move_to(sx - ext.width / 2, sy + ext.height / 2 - 2)
-        ctx.show_text(label)
+        ctx.move_to(sx - ext.width / 2 - ext.x, sy - ext.height / 2 - ext.y)
+        PangoCairo.show_layout(ctx, layout)
 
         ctx.set_line_width(1)
         ctx.set_dash([4, 4])

@@ -7,6 +7,7 @@ from rayforge.ui_gtk.doceditor.post_processor.groups import (
     ExpanderHost,
     TransformerSettingsGroup,
 )
+from rayforge.ui_gtk.shared.pref_rows import LengthSpinRow
 
 from ..transformers import Optimize
 
@@ -46,6 +47,33 @@ class OptimizeSettingsGroup(TransformerSettingsGroup):
             "notify::active", self._on_preserve_first_toggled
         )
 
+        self.merge_row = Adw.SwitchRow(
+            title=_("Merge Scanlines"),
+            subtitle=_(
+                "Merges nearby parallel cut lines into longer scanlines "
+                "when this is faster for the machine's acceleration."
+            ),
+        )
+        self.merge_row.set_active(transformer.merge_scanlines)
+        self.add(self.merge_row)
+        self.merge_row.connect("notify::active", self._on_merge_toggled)
+
+        self.merge_gap_row = LengthSpinRow(
+            _("Max gap"),
+            _(
+                "Maximum gap to bridge at zero power; 0 decides "
+                "automatically from the machine's acceleration"
+            ),
+            lower=0.0,
+            upper=1000.0,
+            value_in_base=transformer.merge_max_gap_mm,
+        )
+        self.merge_gap_row.set_sensitive(transformer.merge_scanlines)
+        self.add(self.merge_gap_row)
+        self.merge_gap_row.value_changed.connect(
+            lambda r: self._on_merge_gap_changed(r)
+        )
+
     def _on_flip_toggled(
         self, row: Adw.SwitchRow, _pspec: GObject.ParamSpec
     ) -> None:
@@ -64,4 +92,23 @@ class OptimizeSettingsGroup(TransformerSettingsGroup):
             key="preserve_first",
             value=row.get_active(),
             name=_("Toggle Preserve First Workpiece"),
+        )
+
+    def _on_merge_toggled(
+        self, row: Adw.SwitchRow, _pspec: GObject.ParamSpec
+    ) -> None:
+        self.merge_gap_row.set_sensitive(row.get_active())
+        self.param_changed.send(
+            self,
+            key="merge_scanlines",
+            value=row.get_active(),
+            name=_("Merge Scanlines"),
+        )
+
+    def _on_merge_gap_changed(self, row: LengthSpinRow) -> None:
+        self.param_changed.send(
+            self,
+            key="merge_max_gap_mm",
+            value=row.get_value_in_base_units(),
+            name=_("Change maximum bridged gap"),
         )

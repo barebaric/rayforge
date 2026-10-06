@@ -1,5 +1,4 @@
-from unittest.mock import MagicMock
-
+import cairo
 import numpy as np
 import pytest
 from scipy.optimize import check_grad
@@ -140,7 +139,7 @@ def test_equal_distance_draw(setup_env):
 
     c = EqualDistanceConstraint(p1, p2, p3, p4)
 
-    ctx = MagicMock()
+    ctx = cairo.Context(cairo.ImageSurface(cairo.FORMAT_ARGB32, 200, 200))
 
     def to_screen(pos):
         return pos

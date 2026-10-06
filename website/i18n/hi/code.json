@@ -50,6 +50,24 @@
   "install.launchFromMenu": {
     "message": "Rayforge को अपने एप्लिकेशन मेनू से या चलाकर लॉन्च करें:"
   },
+  "install.gentoo.title": {
+    "message": "Gentoo पैकेज"
+  },
+  "install.gentoo.description": {
+    "message": "Rayforge Gentoo पर समुदाय द्वारा अनुरक्षित \"snakebyte\" ओवरले के माध्यम से उपलब्ध है. पैकेज स्रोत कोड से बनाया जाता है, इसलिए इंस्टॉलेशन में कुछ समय लग सकता है."
+  },
+  "install.gentoo.community": {
+    "message": "यह पैकेज समुदाय द्वारा अनुरक्षित है और इसे Rayforge परियोजना का आधिकारिक समर्थन प्राप्त नहीं है."
+  },
+  "install.gentoo.overlayLink": {
+    "message": "GitHub पर ओवरले देखें."
+  },
+  "install.gentoo.addOverlay": {
+    "message": "snakebyte ओवरले जोड़ें"
+  },
+  "install.gentoo.syncOverlay": {
+    "message": "ओवरले सिंक करें"
+  },
   "install.flathub.title": {
     "message": "Flathub पैकेज"
   },

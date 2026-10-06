@@ -3,6 +3,8 @@ import numpy as np
 from blinker import Signal
 from gi.repository import Gdk, Gtk
 
+from .text import draw_centered_text
+
 
 class HistogramPreview(Gtk.DrawingArea):
     WIDTH = 200
@@ -217,9 +219,7 @@ class HistogramPreview(Gtk.DrawingArea):
             ctx.fill()
         else:
             ctx.set_source_rgba(0.5, 0.5, 0.5, 1.0)
-            ctx.set_font_size(12)
-            ctx.move_to(width // 2 - 40, height // 2)
-            ctx.show_text("No image")
+            draw_centered_text(ctx, "No image", width, height)
 
         if self._auto_mode:
             black_x = self._value_to_x(self._auto_black_point, width)
