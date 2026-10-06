@@ -5,10 +5,17 @@ from gettext import gettext as _
 
 import cv2
 import numpy as np
-from gi.repository import Gdk, GdkPixbuf, GLib, Graphene, Gtk
+from gi.repository import (
+    Gdk,
+    GdkPixbuf,
+    GLib,
+    Graphene,
+    Gtk,
+)
 
 from ...camera.calibration.target import CalibrationTarget
 from ...camera.controller import CameraController
+from ..shared.text import draw_centered_text
 
 logger = logging.getLogger(__name__)
 
@@ -134,14 +141,9 @@ class CalibrationCaptureSurface(Gtk.Widget):
             ctx.fill()
 
             ctx.set_source_rgb(0.5, 0.5, 0.5)
-            ctx.set_font_size(14)
-            text = _("Waiting for camera...")
-            extents = ctx.text_extents(text)
-            ctx.move_to(
-                (width - extents.width) / 2,
-                (height + extents.height) / 2,
+            draw_centered_text(
+                ctx, _("Waiting for camera..."), width, height, 14
             )
-            ctx.show_text(text)
 
     @property
     def last_detection(
