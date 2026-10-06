@@ -27,6 +27,7 @@ TARGETS = {
     "addon:print-and-cut:apply": "print_and_cut",
     "addon:projector-mode": "projector_mode",
     "app-settings:general": "app_settings_general",
+    "app-settings:gestures": "app_settings_gestures",
     "app-settings:machines": "app_settings_machines",
     "app-settings:machines:add": "add_machine_dialog",
     "app-settings:materials": "app_settings_materials",

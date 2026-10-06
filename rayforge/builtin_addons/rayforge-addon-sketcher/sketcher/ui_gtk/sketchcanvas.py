@@ -378,7 +378,7 @@ class SketchCanvas(WorldSurface):
         self._active_dialog.connect("response", on_response)
         self._active_dialog.present()
 
-    def on_right_click_pressed(
+    def on_right_click_released(
         self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
     ):
         """

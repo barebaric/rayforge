@@ -354,7 +354,7 @@ def test_right_click_cancels_move_head_mode(surface):
 
     surface.move_head_cancelled.connect(on_cancelled)
 
-    surface.on_right_click_pressed(MagicMock(), 1, 5.0, 5.0)
+    surface.on_right_click_released(MagicMock(), 1, 5.0, 5.0)
 
     assert len(emissions) == 1
 

@@ -401,7 +401,7 @@ class WorkSurface(WorldSurface):
             wp_view = cast(WorkPieceElement, wp_elem)
             wp_view.set_tabs_visible_override(visible)
 
-    def on_right_click_pressed(
+    def on_right_click_released(
         self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
     ):
         """
@@ -426,7 +426,7 @@ class WorkSurface(WorldSurface):
         hit_elem = self.root.get_elem_hit(world_x, world_y, selectable=True)
 
         if not hit_elem or hit_elem is self.root:
-            context_menu.show_background_context_menu(self, gesture)
+            context_menu.show_background_context_menu(self, gesture, x, y)
             self.context_changed.send(self)
             return
 
@@ -472,12 +472,12 @@ class WorkSurface(WorldSurface):
                     hit_elem.selected = True
                     self._finalize_selection_state()
                 context_menu.show_item_context_menu(
-                    self, gesture, item=hit_elem.data
+                    self, gesture, x, y, item=hit_elem.data
                 )
             elif context_type == "geometry":
-                context_menu.show_geometry_context_menu(self, gesture)
+                context_menu.show_geometry_context_menu(self, gesture, x, y)
             elif context_type == "tab":
-                context_menu.show_tab_context_menu(self, gesture)
+                context_menu.show_tab_context_menu(self, gesture, x, y)
 
     def _on_history_changed(self, sender, **kwargs):
         """

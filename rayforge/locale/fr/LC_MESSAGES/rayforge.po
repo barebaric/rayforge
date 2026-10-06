@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-06 11:03+0200\n"
+"POT-Creation-Date: 2026-10-06 22:41+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -2915,6 +2915,19 @@ msgstr "Extensions installées"
 #: rayforge/ui_gtk/settings/addon_manager_page.py
 msgid "Install, update, and remove addons."
 msgstr "Installer, mettre à jour et supprimer des extensions."
+
+#: rayforge/ui_gtk/settings/gesture_preferences_page.py
+msgid "Mouse Gestures"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/gesture_preferences_page.py
+#, python-format
+msgid "Default: %s"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/gesture_preferences_page.py
+msgid "Unassigned"
+msgstr ""
 
 #: rayforge/ui_gtk/settings/recipe_manager_page.py
 msgid "Recipes"
@@ -7871,11 +7884,11 @@ msgstr "Déplacer la sélection vers le calque supérieur"
 msgid "Move Selection to Layer Below"
 msgstr "Déplacer la sélection vers le calque inférieur"
 
-#: rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/gestures/model.py
 msgid "Left"
 msgstr "Gauche"
 
-#: rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/gestures/model.py
 msgid "Right"
 msgstr "Droite"
 
@@ -8179,6 +8192,82 @@ msgstr "Erreur lors de l’enregistrement du fichier : {msg}"
 #, python-brace-format
 msgid "An unexpected error occurred: {error}"
 msgstr "Une erreur inattendue s’est produite : {error}"
+
+#: rayforge/ui_gtk/gestures/model.py
+msgid "Click"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/model.py
+msgid "Double-click"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/model.py
+msgid "Drag"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/model.py
+msgid "Scroll"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/model.py
+msgid "Middle"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/model.py
+msgid "Shift"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/model.py
+msgid "Ctrl"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/model.py
+msgid "Alt"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "2D Canvas"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Navigation gestures on the 2D work surface."
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "3D Canvas"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Navigation gestures on the 3D preview."
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Pan the view"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Hold the mouse button down and move to pan the view."
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Orbit the camera"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Hold the mouse button down and move to orbit around the scene."
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Pan the camera"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Hold the mouse button down and move to pan the scene."
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Rotate around the Z axis"
+msgstr ""
 
 #: rayforge/ui_gtk/project_cmd.py
 msgid "Unsaved Changes"

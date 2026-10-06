@@ -44,6 +44,28 @@ ausschalten. Siehe die
 [Nutzungsverfolgung](https://rayforge.org/docs/general-info/usage-tracking)-Seite, um mehr darüber
 zu erfahren, welche Daten gesammelt und wie sie verwendet werden.
 
+## Mausgesten
+
+![Mausgesten-Einstellungen](/screenshots/app-settings-gestures.webp)
+
+Die Seite Mausgesten erlaubt es dir, die Navigationsgesten der 2D-Arbeitsfläche und der
+3D-Arbeitsfläche neu zuzuweisen; der Skizzen-Editor verwendet dieselben Gesten wie die
+2D-Arbeitsfläche. Jede Zeile bietet ein Aufklappmenü mit den verfügbaren Maustastenkombinationen:
+
+- **2D-Arbeitsfläche** — _Ansicht schwenken_ (Standard: mittlere Maustaste ziehen; über der linken
+  Maustaste ist das Ziehen für die Auswahl reserviert und wird daher nicht angeboten).
+- **3D-Arbeitsfläche** — _Kamera orbitieren_ (mittlere Maustaste ziehen), _Kamera schwenken_
+  (Umschalt + mittlere Maustaste ziehen) und _Um die Z-Achse drehen_ (linke Maustaste ziehen).
+
+Zoomen (Mausrad), das Öffnen des Kontextmenüs (rechte Maustaste) und das Zurücksetzen der Ansicht
+(Taste `1` auf der 2D-Arbeitsfläche) sind fest vorgegeben und lassen sich nicht ändern. Ein
+einfacher Klick auf eine zugewiesene Taste löst weiterhin die feste Aktion aus: Ist das Schwenken
+auf die rechte Maustaste gelegt, schwenkt ein Ziehen mit der rechten Taste, und ein einfacher
+Rechtsklick öffnet weiterhin das Kontextmenü. Die Auswahl von **Nicht zugewiesen** deaktiviert eine
+Geste, und Kombinationen, die bereits von einer anderen Aktion derselben Arbeitsfläche verwendet
+werden, werden nicht angeboten. Addons können zusätzliche Gestenkonfigurationen bereitstellen, die
+als zusätzliche Abschnitte auf dieser Seite erscheinen.
+
 ## Weitere Einstellungen
 
 Der Einstellungsdialog enthält weitere Seiten zur Verwaltung anderer Teile der Anwendung. Jede

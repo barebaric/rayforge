@@ -44,6 +44,27 @@ l'utilisation anonyme** à tout moment. Consulte la page
 [suivi d'utilisation](https://rayforge.org/docs/general-info/usage-tracking) pour en savoir plus sur
 les données collectées et leur utilisation.
 
+## Gestes de la souris
+
+![Réglages des gestes de la souris](/screenshots/app-settings-gestures.webp)
+
+La page Gestes de la souris te permet de réattribuer les gestes de navigation du canevas 2D et du
+canevas 3D ; l'éditeur de croquis utilise les mêmes gestes que le canevas 2D. Chaque ligne propose
+un menu déroulant avec les combinaisons de boutons de souris disponibles :
+
+- **Canevas 2D** — _Déplacer la vue_ (par défaut, glisser avec le bouton du milieu ; sur le bouton
+  gauche, le glissement est réservé à la sélection et n'est donc pas proposé).
+- **Canevas 3D** — _Orbiter la caméra_ (glisser avec le bouton du milieu), _Déplacer la caméra_
+  (Maj + bouton du milieu) et _Tourner autour de l'axe Z_ (glisser avec le bouton gauche).
+
+Le zoom (molette de la souris), le menu contextuel (clic droit) et la réinitialisation de la vue (la
+touche `1` sur le canevas 2D) sont fixes et ne peuvent pas être modifiés. Un simple clic sur un
+bouton attribué conserve son action fixe : lorsque le déplacement est attribué au bouton droit de la
+souris, glisser avec le bouton droit déplace la vue et un simple clic droit ouvre toujours le menu
+contextuel. Choisir **Non attribué** désactive un geste, et les combinaisons déjà utilisées par une
+autre action du même canevas ne sont pas proposées. Les addons peuvent apporter des configurations
+de gestes supplémentaires, qui apparaissent comme des sections supplémentaires sur cette page.
+
 ## Autres paramètres
 
 La boîte de dialogue des paramètres inclut également des pages pour gérer d'autres parties de
