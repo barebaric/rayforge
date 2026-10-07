@@ -45,6 +45,7 @@ class DeviceMeta:
     api_version: int = CURRENT_API_VERSION
     id: str = ""
     usb_ids: list[tuple[int, int | None]] = field(default_factory=list)
+    notes: str | None = None
 
 
 _DEVICE_META_FIELDS = frozenset(f.name for f in dc_fields(DeviceMeta))
@@ -104,6 +105,10 @@ def parse_meta(data: dict, manifest_path: Path) -> DeviceMeta:
 
     if not device_data.get("name"):
         raise ValueError(f"Missing 'device.name' in {manifest_path}")
+
+    notes = device_data.get("notes")
+    if notes is not None and not isinstance(notes, str):
+        raise TypeError(f"'device.notes' must be a string in {manifest_path}")
 
     filtered = {
         k: v for k, v in device_data.items() if k in _DEVICE_META_FIELDS
@@ -587,6 +592,7 @@ class DeviceProfile:
         updates can be detected without keeping a full snapshot.
         """
         payload = {
+            "device_notes": self.meta.notes,
             "machine": self.machine_config.to_dict(),
             "dialect": self.dialect_config,
         }
@@ -663,6 +669,7 @@ class DeviceProfile:
         m.name = self.meta.name
         cfg = self.machine_config
         m.source_profile_id = self.id
+        m.device_notes = self.meta.notes
         m.reviewed_profile_hash = self.content_hash()
         # Fresh machines already carry current defaults; stamp them so
         # they never trigger the schema-migration review dialog.
@@ -779,6 +786,8 @@ def export_machine_to_dir(
 
     mc = MachineConfig.from_machine(machine)
     device_section: dict[str, Any] = {"name": machine.name}
+    if isinstance(machine.device_notes, str) and machine.device_notes:
+        device_section["notes"] = machine.device_notes
     if machine.source_profile_id:
         device_section["id"] = machine.source_profile_id
 

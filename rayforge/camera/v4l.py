@@ -124,11 +124,20 @@ def migrate_camera_data(data: dict[str, Any]) -> dict[str, Any]:
     their corresponding /dev/v4l/by-id/ path when available.
     Returns a copy with the migrated device_id.
     """
-    if "device_id" not in data:
+    if "device_id" not in data and "source_config" not in data:
         return data
 
     migrated = dict(data)
-    migrated["device_id"] = resolve_device_id(data["device_id"])
+    source_config = dict(migrated.get("source_config") or {})
+    legacy_device_id = migrated.get("device_id")
+    if legacy_device_id is not None and "device_id" not in source_config:
+        source_config["device_id"] = legacy_device_id
+    device_id = source_config.get("device_id")
+    if device_id is not None:
+        source_config["device_id"] = resolve_device_id(device_id)
+        migrated["device_id"] = source_config["device_id"]
+    if source_config:
+        migrated["source_config"] = source_config
     return migrated
 
 

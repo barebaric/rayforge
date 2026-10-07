@@ -3,6 +3,7 @@ import logging
 from gi.repository import Gdk, Graphene, Gtk
 from raygeo.geo import Matrix
 
+from ..gestures import GestureRouter
 from .axis import AxisRenderer
 from .canvas import Canvas
 
@@ -66,6 +67,17 @@ class WorldSurface(Canvas):
         # Set theme colors for axis and grid.
         self._update_theme_colors()
 
+        # Route the panning gesture over the configurable gesture
+        # bindings of the "canvas2d" context. Zooming (scroll) and the
+        # context menu (right-click) are hard-coded.
+        self._router = GestureRouter("canvas2d", self)
+        self._router.register_drag(
+            "pan",
+            begin=self.on_pan_begin,
+            update=self.on_pan_update,
+            end=self.on_pan_end,
+        )
+
         # Add scroll event controller for zoom
         self._scroll_controller = Gtk.EventControllerScroll.new(
             Gtk.EventControllerScrollFlags.VERTICAL
@@ -73,25 +85,24 @@ class WorldSurface(Canvas):
         self._scroll_controller.connect("scroll", self.on_scroll)
         self.add_controller(self._scroll_controller)
 
-        # Add middle click gesture for panning
-        self._pan_gesture = Gtk.GestureDrag.new()
-        self._pan_gesture.set_button(Gdk.BUTTON_MIDDLE)
-        self._pan_gesture.connect("drag-begin", self.on_pan_begin)
-        self._pan_gesture.connect("drag-update", self.on_pan_update)
-        self._pan_gesture.connect("drag-end", self.on_pan_end)
-        self.add_controller(self._pan_gesture)
-        self._pan_start = (0.0, 0.0)
-
-        # Track Space key for Space+drag panning
-        self._space_pressed = False
-
-        # Add right-click gesture for context menu
+        # Add right-click gesture for context menu. The menu opens on
+        # button release, so that dragging the same button (e.g. for a
+        # configured pan gesture) does not open it.
         self._context_menu_gesture = Gtk.GestureClick.new()
         self._context_menu_gesture.set_button(Gdk.BUTTON_SECONDARY)
         self._context_menu_gesture.connect(
-            "pressed", self.on_right_click_pressed
+            "pressed", self._on_context_menu_press
+        )
+        self._context_menu_gesture.connect(
+            "released", self._on_context_menu_release
         )
         self.add_controller(self._context_menu_gesture)
+
+        self._pan_start = (0.0, 0.0)
+        self._context_menu_press_pos: tuple[float, float] | None = None
+
+        # Track Space key for Space+drag panning
+        self._space_pressed = False
 
         # This is hacky, but what to do: The EventControllerScroll provides
         # no access to any mouse position, and there is no easy way to
@@ -109,12 +120,33 @@ class WorldSurface(Canvas):
         self._axis_renderer.show_axis = show
         self.queue_draw()
 
-    def on_right_click_pressed(
+    def _on_context_menu_press(
+        self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
+    ) -> None:
+        """Records the press position of a potential context menu click."""
+        self._context_menu_press_pos = (x, y)
+
+    def _on_context_menu_release(
+        self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
+    ) -> None:
+        """Opens the context menu if the gesture was a click, not a drag."""
+        press_pos = self._context_menu_press_pos
+        self._context_menu_press_pos = None
+        if press_pos is None:
+            return
+        press_x, press_y = press_pos
+        threshold = GestureRouter.DRAG_THRESHOLD_PX
+        moved = (x - press_x) ** 2 + (y - press_y) ** 2
+        if moved > threshold * threshold:
+            return
+        self.on_right_click_released(gesture, n_press, x, y)
+
+    def on_right_click_released(
         self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
     ) -> None:
         """
-        Placeholder for handling right-clicks. Subclasses should override this
-        to implement context menu logic.
+        Placeholder for handling right-clicks. Subclasses should override
+        this to implement context menu logic.
         """
 
     def _update_theme_colors(self) -> None:

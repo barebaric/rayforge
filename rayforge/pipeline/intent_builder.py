@@ -103,6 +103,7 @@ logger = logging.getLogger(__name__)
 # reattachment map (see IntentController) always agree.
 WORKPIECE_KEY_FMT = "workpiece:{wp_uid}:{step_uid}"
 STEP_KEY_FMT = "step:{step_uid}"
+COMMAND_KEY_FMT = "command:{step_uid}"
 JOB_KEY = "job"
 JOB_ENCODE_KEY = "job:encode"
 JOB_MACHINEXFORM_KEY = "job:machinexform"
@@ -152,6 +153,11 @@ def parse_workpiece_key(key: str) -> tuple[str, str] | None:
 
 def step_key(step_uid: str) -> str:
     return STEP_KEY_FMT.format(step_uid=step_uid)
+
+
+def command_key(step_uid: str) -> str:
+    """The compute node key of a geometry-less (workpiece-free) step."""
+    return COMMAND_KEY_FMT.format(step_uid=step_uid)
 
 
 def job_key() -> str:
@@ -216,10 +222,13 @@ class IntentBuilder:
         validate_panel_configuration(self._machine, doc)
         self._doc = doc
         nodes: list[NodeRequest] = []
-        # Map each step's key to the list of upstream workpiece compute
-        # inputs — the step aggregate token and placement depend on all
-        # of them.
-        step_compute_inputs: dict[str, list[tuple[str, int, WorkPiece]]] = {}
+        # Map each step's key to the list of upstream compute inputs
+        # — the step aggregate token and placement depend on all of
+        # them. Geometry-less steps contribute a single input with a
+        # ``None`` workpiece.
+        step_compute_inputs: dict[
+            str, list[tuple[str, int, WorkPiece | None]]
+        ] = {}
         # Per-step aggregate version tokens, used by the job aggregate
         # token so a position change that invalidates one step's
         # aggregate also invalidates the job aggregate (and encode).
@@ -229,10 +238,13 @@ class IntentBuilder:
             if not layer.workflow or not layer.workflow.steps:
                 continue
             workpieces = list(layer.all_workpieces)
-            if not workpieces:
-                continue
             for step in layer.workflow.steps:
                 if not step.visible:
+                    continue
+                if not step.needs_workpieces:
+                    step_compute_inputs[step.uid] = self._build_command_node(
+                        step, nodes
+                    )
                     continue
                 step_workpieces = self._workpieces_for_step(step, workpieces)
                 if not step_workpieces:
@@ -248,7 +260,8 @@ class IntentBuilder:
         wp_compute_keys: list[tuple[str, WorkPiece]] = []
         for inputs in step_compute_inputs.values():
             for wp_key, _token, wp in inputs:
-                wp_compute_keys.append((wp_key, wp))
+                if wp is not None:
+                    wp_compute_keys.append((wp_key, wp))
         self._build_stock_fold_nodes(doc, wp_compute_keys, nodes)
         self._build_rotary_fold_nodes(doc, wp_compute_keys, nodes)
 
@@ -300,14 +313,14 @@ class IntentBuilder:
         step: Step,
         workpieces: Sequence[WorkPiece],
         out: list[NodeRequest],
-    ) -> list[tuple[str, int, WorkPiece]]:
+    ) -> list[tuple[str, int, WorkPiece | None]]:
         """
         Append one compute NodeRequest per workpiece for *step* and
         return the list of ``(node_key, version_token, workpiece)``
         triples the step aggregate consumes.
         """
         pos_sensitive = step.is_position_sensitive()
-        inputs: list[tuple[str, int, WorkPiece]] = []
+        inputs: list[tuple[str, int, WorkPiece | None]] = []
 
         # Parallelise per-workpiece Part construction (rendering + image
         # preprocessing) when we have a reference to the TaskManager's
@@ -343,11 +356,48 @@ class IntentBuilder:
             out.append(self._make_request(key, token, stage))
         return inputs
 
+    def _build_command_node(
+        self,
+        step: Step,
+        out: list[NodeRequest],
+    ) -> list[tuple[str, int, WorkPiece | None]]:
+        """
+        Append a single compute NodeRequest for a geometry-less *step*
+        (``needs_workpieces == False``) and return its one-entry
+        upstream list with a ``None`` workpiece.
+
+        The node's output is independent of the layer's workpieces; it
+        is aggregated like any other step input so the step keeps its
+        exact position in the layer's workflow.
+        """
+        key = command_key(step.uid)
+        token = self._command_token(step)
+        stage = self._command_stage(step)
+        out.append(self._make_request(key, token, stage))
+        return [(key, token, None)]
+
+    def _command_stage(self, step: Step) -> StageSpec.Compute:
+        """Build the compute stage for a geometry-less step."""
+        part, payload = step.build_command_payload(self._machine)
+        step.populate_payload(payload, self._machine)
+        return StageSpec.Compute(part=part, params=payload)
+
+    def _command_token(self, step: Step) -> int:
+        payload = {
+            "kind": "compute",
+            "step_uid": step.uid,
+            "step_params": step.get_cache_params(),
+            "laser_params": _canonical(
+                step.get_laser_cache_params(self._machine)
+            ),
+        }
+        return _hash_int(payload)
+
     def _build_step_node(
         self,
         step: Step,
         layer: Layer,
-        upstream: list[tuple[str, int, WorkPiece]],
+        upstream: list[tuple[str, int, WorkPiece | None]],
         out: list[NodeRequest],
     ) -> None:
         key = step_key(step.uid)
@@ -743,22 +793,26 @@ class IntentBuilder:
         self,
         step: Step,
         layer: Layer,
-        upstream: list[tuple[str, int, WorkPiece]],
+        upstream: list[tuple[str, int, WorkPiece | None]],
     ) -> int:
         # Fold the per-workpiece placement matrix and target dimensions
         # into the token. The aggregate applies the placement matrix
         # to the (possibly cached) workpiece compute output, so a move
         # that leaves the compute cache untouched must still invalidate
         # the aggregate — otherwise the cached step ops are displayed
-        # at their previous world position.
+        # at their previous world position. Geometry-less inputs have
+        # no placement.
         placements: list[Any] = []
         for _k, _t, wp in upstream:
-            placements.append(
-                {
-                    "matrix": _workpiece_placement_matrix(wp),
-                    "size": list(wp.size) if wp.size else [0, 0],
-                }
-            )
+            if wp is None:
+                placements.append({"matrix": None, "size": [0, 0]})
+            else:
+                placements.append(
+                    {
+                        "matrix": _workpiece_placement_matrix(wp),
+                        "size": list(wp.size) if wp.size else [0, 0],
+                    }
+                )
         payload = {
             "kind": "step_aggregate",
             "step_uid": step.uid,
@@ -768,6 +822,10 @@ class IntentBuilder:
             "wpxf": _canonical(step.per_workpiece_transformers_dicts),
             "position_sensitive": step.is_position_sensitive(),
             "placements": placements,
+            # Transformer specs bake machine kinematics in at build
+            # time (acceleration-aware merging, time estimates), so a
+            # kinematics change must invalidate the aggregate cache.
+            "machine": self._machine_params_payload(),
         }
         if step.is_position_sensitive():
             payload["stock_rev"] = self._stock_revision()
@@ -930,7 +988,10 @@ class IntentBuilder:
 
         Currently this carries the ``driver_native_overscan`` flag so
         :class:`OverscanTransformer` can short-circuit when the
-        machine driver handles overscan itself.
+        machine driver handles overscan itself, and the machine
+        kinematics so acceleration-aware transformers (e.g. the
+        scanline merging inside :class:`Optimize`) can build their
+        specs from them.
         """
         if self._machine is None:
             return None
@@ -938,7 +999,12 @@ class IntentBuilder:
             native = bool(self._machine.driver.native_overscan)
         except AttributeError:
             native = False
-        return {"driver_native_overscan": native}
+        return {
+            "driver_native_overscan": native,
+            "machine_max_cut_speed": self._machine.max_cut_speed,
+            "machine_max_travel_speed": self._machine.max_travel_speed,
+            "machine_acceleration": self._machine.acceleration,
+        }
 
     def _resolve_stock_geometries(self) -> list[Any] | None:
         """Return the world-space stock boundary geometries.
@@ -995,7 +1061,7 @@ class IntentBuilder:
     def _step_stage(
         self,
         step: Step,
-        upstream: list[tuple[str, int, WorkPiece]],
+        upstream: list[tuple[str, int, WorkPiece | None]],
     ) -> StageSpec.Aggregate:
         """
         Build an aggregate :class:`StageSpec.Aggregate` for the step
@@ -1006,7 +1072,9 @@ class IntentBuilder:
         carries the workpiece's world placement matrix (scale normalised
         to ±1, sign preserved — absolute scale is handled via
         ``target_dimensions`` for scalable artifacts) and the
-        workpiece's physical size as ``target_dimensions``.
+        workpiece's physical size as ``target_dimensions``.  Geometry-
+        less inputs (``None`` workpiece) form a marker-less group with
+        identity placement.
 
         Per-step transformers (e.g. ``MultiPassTransformer``,
         ``Optimize``) are resolved into typed Rust specs and attached
@@ -1017,6 +1085,21 @@ class IntentBuilder:
         """
         groups: list[AggregateGroup] = []
         for wp_key, _token, wp in upstream:
+            if wp is None:
+                groups.append(
+                    AggregateGroup(
+                        start_markers=[],
+                        inputs=[
+                            AggregateInput(
+                                source_key=wp_key,
+                                placement_matrix=_IDENTITY_4X4,
+                                uid=step.uid,
+                            )
+                        ],
+                        end_markers=[],
+                    )
+                )
+                continue
             placement = _workpiece_placement_matrix(wp)
             target = wp.size
             inp = AggregateInput(
@@ -1058,6 +1141,16 @@ class IntentBuilder:
             default_rapid_rate=float(self._machine.max_travel_speed),
             acceleration=float(self._machine.acceleration),
         )
+
+    def _machine_params_payload(self) -> dict[str, float] | None:
+        """The machine kinematics as a cache-token payload entry."""
+        if self._machine is None:
+            return None
+        return {
+            "max_cut_speed": float(self._machine.max_cut_speed),
+            "max_travel_speed": float(self._machine.max_travel_speed),
+            "acceleration": float(self._machine.acceleration),
+        }
 
     # ------------------------------------------------------------------
     # Job aggregate stage
@@ -1138,18 +1231,24 @@ class IntentBuilder:
     def _build_encoder(self, doc: Doc) -> Any:
         """Resolve the encoder for the configured machine.
 
-        Routes Grbl machines to the native Rust ``GcodeSpec`` and
-        every other machine to a :class:`PythonEncoder` wrapping the
-        driver-specific encoder callable.  The pre-processing
-        transforms are handled by the upstream machine-transform
-        stage.
+        Routes G-code drivers on the Grbl dialect to the native Rust
+        ``GcodeSpec`` and every other machine to a
+        :class:`PythonEncoder` wrapping the driver-specific encoder
+        callable.  The pre-processing transforms are handled by the
+        upstream machine-transform stage.
+
+        The route is decided by the driver's G-code capability, never
+        by the dialect alone: a driver that does not speak G-code
+        (e.g. Ruida) must always use its own encoder, even when the
+        machine still carries a leftover Grbl dialect (issue #420).
         """
         machine = self._machine
         assert machine is not None
 
-        dialect = machine.dialect
-        if dialect is not None and _is_grbl(dialect):
-            return self._grbl_encoder_spec(doc)
+        if _driver_uses_gcode(machine):
+            dialect = machine.dialect
+            if dialect is not None and _is_grbl(dialect):
+                return self._grbl_encoder_spec(doc)
 
         return PythonEncoder(
             self._make_python_encoder_callable(machine, doc),
@@ -1198,10 +1297,14 @@ class IntentBuilder:
         # concern and never reaches the encoder).
         w2m = space.get_world_to_machine_matrix()
 
-        # Default WCS command offset.
+        # Default WCS command offset. While a pointer dry-run is
+        # requested, the pointer offset is included so the pointer dot
+        # traces the toolpath instead of the beam.
         default_wcs_offset = list(
             space.get_command_offset(
-                wcs_offset=machine.get_active_wcs_offset(),
+                wcs_offset=machine.get_job_wcs_offset(
+                    machine.get_active_wcs_offset()
+                ),
                 wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
             )
         )
@@ -1210,7 +1313,9 @@ class IntentBuilder:
         layer_wcs_offsets: list[tuple[str, list[float]]] = []
         for layer in doc.layers:
             effective_wcs = layer.get_effective_wcs(machine)
-            wcs_off = machine.get_wcs_offset(effective_wcs)
+            wcs_off = machine.get_job_wcs_offset(
+                machine.get_wcs_offset(effective_wcs)
+            )
             cmd_offset = space.get_command_offset(
                 wcs_offset=wcs_off,
                 wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
@@ -1449,6 +1554,22 @@ def _is_grbl(dialect: GcodeDialect) -> bool:
     return dialect.uid == GRBL_DIALECT.uid
 
 
+def _driver_uses_gcode(machine: Machine) -> bool:
+    """Return True if the machine's driver consumes G-code.
+
+    Mirrors the driver resolution of the Python encoder callable:
+    an unset or unresolvable driver name falls back to
+    :class:`NoDeviceDriver`, which is a G-code driver.
+    """
+    if not machine.driver_name:
+        return NoDeviceDriver.uses_gcode
+    try:
+        driver_cls = get_driver_cls(machine.driver_name)
+    except (ValueError, ImportError):
+        return NoDeviceDriver.uses_gcode
+    return driver_cls.uses_gcode
+
+
 def _machine_token_payload(machine: Machine | None, doc: Doc) -> Any:
     """Build a JSON-serialisable representation of the machine
     identity for the encode token.
@@ -1486,6 +1607,13 @@ def _machine_token_payload(machine: Machine | None, doc: Doc) -> Any:
             )
             for layer in doc.layers
         },
+        "pointer_job_shift": machine.pointer_job_shift_enabled,
+        "pointer_job_offset": (
+            list(machine.get_pointer_offset())
+            if machine.pointer_job_shift_enabled
+            else [0.0, 0.0]
+        ),
+        "pointer_job_power_cap": machine.get_job_power_cap(),
     }
 
 

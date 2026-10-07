@@ -87,6 +87,7 @@ SHORTCUTS = {
     "win.flip-horizontal": "<Shift>h",
     "win.flip-vertical": "<Shift>v",
     # Machine & Help
+    "win.move-head-here": f"{PRIMARY_ACCEL}m",
     "win.machine-settings": f"{PRIMARY_ACCEL}less",
     "win.about": "F1",
 }
@@ -491,6 +492,7 @@ class ActionManager:
             self.win.on_zero_here_clicked,
             GLib.VariantType.new("s"),
         )
+        self._add_action("move-head-here", self.win.on_move_head_here_clicked)
 
         action_extension_registry.invoke_setup_handlers(self)
 

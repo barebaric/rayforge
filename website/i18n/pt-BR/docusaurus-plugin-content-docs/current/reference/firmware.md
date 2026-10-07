@@ -502,29 +502,44 @@ $22=1       ; Homing ativado
 
 ---
 
-## Suporte Futuro de Firmware
+## Controladores Ruida
 
-### Controladores Ruida
-
-O Rayforge inclui suporte experimental para controladores baseados em Ruida (ex. RDC6442, RDC6445,
-Ruida R5). O driver Ruida conecta via rede e suporta jogging, relatório de posição, controle de ar
-assistido, seleção de camada, auto-conexão e sondagem de status.
+O Rayforge conecta-se a controladores baseados em Ruida (ex. RDC6442, RDC6445, Ruida R5) por meio do
+driver **Ruida RPA**, que fala o protocolo nativo do controlador via USB ou UDP, ou via TUI RPC por
+meio do Ruida Protocol Analyzer. Os perfis de dispositivo Generic Ruida RPA e Monport MP-570 60W CO2
+fornecem pontos de partida para novas máquinas.
 
 **Funcionalidades:**
 
-- Conectividade de rede (Ethernet/WiFi)
-- Relatório de posição
-- Controles de jogging
-- Ar assistido e seleção de camada
-- Suporte a pontos de referência
+- Conectividade USB e UDP; quando ambos estão configurados, o Rayforge alterna automaticamente entre
+  eles conforme os cabos são conectados e desconectados
+- Envio de trabalhos com relatório de posição, jogging, homing e Mover para Posição
+- O enquadramento traça o contorno do trabalho com movimentos absolutos com o feixe desligado, por
+  isso funciona sem disparar o laser
+- Respeita a definição de Modo de Potência de cada etapa: Dinâmico ativa o escalonamento de potência
+  do controlador e Constante o desativa
+- Portas seriais podem ser vinculadas a partir de um menu suspenso de dispositivos USB com
+  correspondência VID:PID, de modo que a reconexão automática segue a máquina após o sistema
+  operacional reenumerar os dispositivos USB
+
+**Ajustes de potência:**
+
+- **Power scaling** — eleva a potência mínima emitida conforme a velocidade de corte da camada
+  diminui
+- **VECTOR power floor** — potência mínima para a compensação de corte vetorial durante aceleração e
+  desaceleração, reduzindo a queima excessiva nas extremidades das linhas
+- **IMAGE power bias** — potência adicionada às linhas de varredura raster, pois tubos CO2 não
+  disparam com potências muito baixas
 
 **Limitações:**
 
-- Experimental — ainda não totalmente estável
+- Experimental — testado até agora em um controlador RDC6442S (Monport MP570 CO2)
 - Sem geração de G-code; Ruida usa seu próprio protocolo proprietário
-- Envio de trabalhos ainda não suportado
+- O modo rotativo ainda não é suportado
 
 ---
+
+## Drivers Experimentais
 
 ### OctoPrint
 

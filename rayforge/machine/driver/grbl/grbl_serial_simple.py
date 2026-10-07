@@ -58,6 +58,7 @@ from .grbl_util import (
     prb_re,
     split_realtime_commands,
     strip_gcode_comments,
+    sync_state_wco,
     wcs_re,
 )
 
@@ -176,7 +177,9 @@ class GrblSerialSimpleDriver(Driver):
                 SerialPortVar(
                     key="port",
                     label=_("Port"),
-                    description=_("Serial port for the device"),
+                    description=(
+                        _("Serial port or USB VID:PID (e.g. 0403:6001)")
+                    ),
                 ),
                 BaudrateVar(
                     "baudrate",
@@ -679,13 +682,8 @@ class GrblSerialSimpleDriver(Driver):
         self.state.error = None
         self.state_changed.send(self, state=self.state)
 
-    async def move_to(self, pos_x, pos_y) -> None:
-        dialect = self.dialect
-        cmd = dialect.move_to.format(
-            speed=self._to_machine_speed(1500),
-            x=self._to_machine_length(float(pos_x)),
-            y=self._to_machine_length(float(pos_y)),
-        )
+    async def move_to(self, pos_x, pos_y, pos_z=None, speed=None) -> None:
+        cmd = self._format_move_to(float(pos_x), float(pos_y), pos_z, speed)
         await self._execute_command(cmd)
 
     async def select_tool(self, tool_number: int) -> None:
@@ -824,6 +822,12 @@ class GrblSerialSimpleDriver(Driver):
                     if self._report_in_inches
                     else parsed
                 )
+        sync_state_wco(
+            self.state,
+            offsets,
+            self._machine.active_wcs if self._machine else None,
+        )
+        self.state_changed.send(self, state=self.state)
         self.wcs_updated.send(self, offsets=offsets)
         return offsets
 

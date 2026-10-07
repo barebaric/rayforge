@@ -10,6 +10,7 @@ from ....core.varset import Var
 from .angle import AngleRowAdapter
 from .appkey import AppKeyAdapter
 from .base import _ADAPTER_REGISTRY, RowAdapter, escape_title
+from .code import CodeAreaAdapter
 from .combo import BaudRateAdapter, ComboAdapter, SerialPortAdapter
 from .entry import EntryAdapter, HostnameAdapter
 from .length import LengthRowAdapter
@@ -24,6 +25,7 @@ _ALL_ADAPTERS = (
     AngleRowAdapter,
     AppKeyAdapter,
     BaudRateAdapter,
+    CodeAreaAdapter,
     ComboAdapter,
     SerialPortAdapter,
     HostnameAdapter,

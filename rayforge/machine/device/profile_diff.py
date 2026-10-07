@@ -82,6 +82,24 @@ def diff_machine_with_profile(
     return diffs
 
 
+def sync_device_notes_from_profile(
+    machine: "Machine", profile: "DeviceProfile"
+) -> bool:
+    """Copies profile-maintained notes onto the machine, returning
+    whether anything changed.
+
+    Device notes are documentation the profile owns and the user
+    cannot edit, so they are never offered for review: declining them
+    would strand the machine on outdated guidance with no way back.
+    The user's own notes live in ``Machine.user_notes`` and are left
+    untouched.
+    """
+    if machine.device_notes == profile.meta.notes:
+        return False
+    machine.device_notes = profile.meta.notes
+    return True
+
+
 def diff_heads_with_profile(
     machine: "Machine", profile: "DeviceProfile"
 ) -> list[SettingDiff]:

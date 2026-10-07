@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-26 17:18+0200\n"
+"POT-Creation-Date: 2026-10-06 22:41+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Chinese (Simplified)\n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
@@ -169,6 +169,10 @@ msgstr "选择"
 #: rayforge/core/varset/var.py
 msgid "Text (Single Line)"
 msgstr "文本 (单行)"
+
+#: rayforge/core/varset/codevar.py
+msgid "Code (Multi-Line)"
+msgstr "代码（多行）"
 
 #: rayforge/core/varset/baudratevar.py
 msgid "Baud rate cannot be empty."
@@ -338,7 +342,7 @@ msgstr "核心"
 msgid "Stock Material"
 msgstr "原材料"
 
-#: rayforge/core/source_asset.py
+#: rayforge/core/source_asset.py rayforge/ui_gtk/camera/properties_widget.py
 msgid "Source"
 msgstr "来源"
 
@@ -357,6 +361,210 @@ msgstr "未知的变量或函数：'{name}'"
 msgid "Cannot use operator '{op}' between types '{left}' and '{right}'"
 msgstr "不能在类型 '{left}' 和 '{right}' 之间使用运算符 '{op}'"
 
+#: rayforge/camera/source/base.py
+#, python-brace-format
+msgid "URL contains placeholder <{placeholder}>; replace it with a valid value"
+msgstr "URL 中包含占位符 <{placeholder}>；请将其替换为有效值。"
+
+#: rayforge/camera/source/base.py
+msgid "URL is malformed"
+msgstr "URL 格式错误。"
+
+#: rayforge/camera/source/base.py
+#, python-brace-format
+msgid "URL must start with one of: {schemes}"
+msgstr "URL 必须以以下某种协议开头：{schemes}"
+
+#: rayforge/camera/source/base.py
+msgid "URL must include a host"
+msgstr "URL 必须包含主机名。"
+
+#: rayforge/camera/source/base.py
+msgid "URL contains an invalid host or port"
+msgstr "URL 中的主机名或端口无效。"
+
+#: rayforge/camera/source/base.py
+msgid "URL must include a valid hostname or IP address"
+msgstr "URL 必须包含有效的主机名或 IP 地址。"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Ruida"
+msgstr "Ruida"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Connect via Ruida Protocol"
+msgstr "通过 Ruida 协议连接"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Ruida Coordinates"
+msgstr "Ruida 坐标"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "A Hostname must be configured."
+msgstr "必须配置主机名。"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "A USB device must be configured."
+msgstr "必须配置 USB 设备。"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "At least one of 'Hostname' or 'USB device' must be configured."
+msgstr "必须至少配置“主机名”或“USB 设备”之一。"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/connection_page.py
+msgid "Connection"
+msgstr "连接"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Auto (USB preferred)"
+msgstr "自动（优先使用 USB）"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Network"
+msgstr "网络"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "USB"
+msgstr "USB"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"Which transport to use. Automatic opens USB when available and falls back to "
+"the network."
+msgstr ""
+"选择要使用的传输方式。自动模式会在 USB 可用时打开 USB，否则回退到网络。"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+#: rayforge/machine/driver/smoothie/smoothie_driver.py
+msgid "Hostname"
+msgstr "主机名"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "The IP address or hostname of the Ruida controller"
+msgstr "Ruida控制器的IP地址或主机名"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "USB device path or VID:PID (e.g. 0403:6001)"
+msgstr "USB 设备路径或 VID:PID（如 0403:6001）"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Magic"
+msgstr "魔数"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"Controller magic number in hex. The default 0x88 works for most controllers."
+msgstr "控制器的十六进制魔数。默认值 0x88 适用于大多数控制器。"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "TUI RPC"
+msgstr "TUI RPC"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"Enable RPC connection to a remote RPA TUI service.Useful for problem "
+"diagnosis and experimentation."
+msgstr "启用到远程 RPA TUI 服务的 RPC 连接。可用于问题诊断与实验。"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "RPC timeout (s)"
+msgstr "RPC 超时（秒）"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"Maximum seconds to wait for each synchronous RPC. Raise for large jobs with "
+"many layers."
+msgstr "每个同步 RPC 的最长等待秒数。对于包含大量图层的作业可适当增大。"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Power scaling"
+msgstr "功率缩放"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"When enabled, power_range() raises the emitted minimum as the layer's cut "
+"speed decreases (effective-min power scaling); when disabled, the resolved "
+"minimum is emitted unchanged."
+msgstr ""
+"启用后，随着图层切割速度降低，power_range() 会提高输出的最小功率（有效最小功"
+"率缩放）；停用后，解析出的最小值按原样输出。"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Enable VECTOR power floor"
+msgstr "启用 VECTOR 功率下限"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"When disabled, the emitted power range always has min == max (constant "
+"power). When enabled, the VECTOR power floor value below acts as the minimum "
+"power for VECTOR cut compensation."
+msgstr ""
+"停用后，输出的功率范围始终 min == max（恒定功率）。启用后，下方 VECTOR 功率下"
+"限的值将作为 VECTOR切割补偿的最小功率。"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "VECTOR power floor"
+msgstr "VECTOR 功率下限"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"Minimum power percentage for VECTOR cut compensation (e.g. 8 = 8%). Applies "
+"only when the VECTOR power floor toggle is enabled."
+msgstr ""
+"VECTOR 切割补偿的最小功率百分比（如 8 = 8%）。仅在启用 VECTOR 功率下限开关时"
+"生效。"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "IMAGE power bias"
+msgstr "IMAGE 功率偏置"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"Power bias added to IMAGE/raster scan-line power (SET_POWER), % of max (e.g. "
+"8 = 8%)."
+msgstr ""
+"添加到 IMAGE/光栅扫描线功率（SET_POWER）的功率偏置，以最大值的百分比表示（例"
+"如 8 = 8%）。"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"set_power is not supported outside of a job with a Ruida controller — the "
+"correct handling is to be determined; no command was sent."
+msgstr ""
+"在带有 Ruida 控制器的作业之外不支持 set_power——正确的处理方式尚待确定；未发送"
+"任何命令。"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"set_focus_power is not supported outside of a job with a Ruida controller — "
+"the correct handling is to be determined; no command was sent."
+msgstr ""
+"在带有 Ruida 控制器的作业之外不支持 set_focus_power——正确的处理方式尚待确定；"
+"未发送任何命令。"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"set_wcs_offset is not supported: protect mode blocks SET_SETTING, and the "
+"feature was dropped by user decision. Use select_wcs to pick a reference "
+"point."
+msgstr ""
+"不支持 set_wcs_offset：保护模式会阻止 SET_SETTING，且该功能已按用户决定移除。"
+"请使用 select_wcs 选择参考点。"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+#: rayforge/machine/driver/dummy.py
+msgid "No settings"
+msgstr "无设置"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Probe not supported by RPA driver"
+msgstr "RPA 驱动不支持探测"
+
 #: rayforge/machine/driver/dummy.py rayforge/ui_gtk/machine/machine_dropdown.py
 #: rayforge/ui_gtk/machine/status_widget.py
 msgid "No driver"
@@ -367,15 +575,9 @@ msgid "No connection"
 msgstr "无连接"
 
 #: rayforge/machine/driver/dummy.py
-#: rayforge/machine/driver/ruida/ruida_driver.py
 #: rayforge/machine/driver/marlin/marlin_serial.py
 msgid "Machine Coordinates"
 msgstr "机器坐标"
-
-#: rayforge/machine/driver/dummy.py
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "No settings"
-msgstr "无设置"
 
 #: rayforge/machine/driver/driver.py
 #, python-brace-format
@@ -495,62 +697,9 @@ msgstr "脉冲宽度（微秒）"
 msgid "Error during setup. You may need to edit device settings."
 msgstr "设置期间出错。您可能需要编辑设备设置。"
 
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "Ruida (UDP)"
-msgstr "Ruida (UDP)"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "Connect to a Ruida laser controller over UDP"
-msgstr "通过UDP连接到Ruida激光控制器"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#: rayforge/machine/driver/grbl/grbl_telnet.py
-#: rayforge/machine/driver/grbl/grbl_network.py
-#: rayforge/machine/driver/smoothie/smoothie_driver.py
-#, python-brace-format
-msgid "Invalid hostname or IP address: '{host}'"
-msgstr "无效的主机名或IP地址：'{host}'"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#: rayforge/machine/driver/grbl/grbl_telnet.py
-#: rayforge/machine/driver/grbl/grbl_network.py
-#: rayforge/machine/driver/smoothie/smoothie_driver.py
-msgid "Hostname"
-msgstr "主机名"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "The IP address or hostname of the Ruida controller"
-msgstr "Ruida控制器的IP地址或主机名"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "Main Port"
-msgstr "主端口"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "The UDP port for main commands (default: 50200)"
-msgstr "主命令的UDP端口（默认：50200）"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "Jog Port"
-msgstr "点动端口"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "The UDP port for jog commands (default: 50207)"
-msgstr "点动命令的UDP端口（默认：50207）"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#: rayforge/machine/driver/grbl/grbl_telnet.py
-#: rayforge/machine/driver/grbl/grbl_network.py
-#: rayforge/machine/driver/smoothie/smoothie_driver.py
-msgid "Hostname must be configured."
-msgstr "必须配置主机名。"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "No response from controller"
-msgstr "控制器无响应"
+#: rayforge/machine/driver/driver.py
+msgid "Unexpected error during setup. You may need to edit device settings."
+msgstr "设置时发生意外错误。您可能需要编辑设备设置。"
 
 #: rayforge/machine/driver/octoprint/octoprint_util.py
 msgid "Could not read the OctoPrint server version."
@@ -578,6 +727,14 @@ msgstr "将G代码提交到OctoPrint服务器"
 #: rayforge/machine/driver/smoothie/smoothie_driver.py
 msgid "Machine Coordinates (G53)"
 msgstr "机器坐标（G53）"
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+#: rayforge/machine/driver/smoothie/smoothie_driver.py
+#, python-brace-format
+msgid "Invalid hostname or IP address: '{host}'"
+msgstr "无效的主机名或IP地址：'{host}'"
 
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 msgid "IP address or hostname of the OctoPrint server"
@@ -619,6 +776,13 @@ msgid ""
 "OctoPrint's Application Keys plugin."
 msgstr ""
 "手动输入API密钥，或点击\"请求访问\"通过OctoPrint的Application Keys插件获取。"
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+#: rayforge/machine/driver/smoothie/smoothie_driver.py
+msgid "Hostname must be configured."
+msgstr "必须配置主机名。"
 
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 msgid ""
@@ -716,8 +880,8 @@ msgstr "Marlin设备"
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
-msgid "Serial port for the device"
-msgstr "设备的串口"
+msgid "Serial port or USB VID:PID (e.g. 0403:6001)"
+msgstr "串口或 USB VID:PID（例如 0403:6001）"
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
@@ -737,7 +901,6 @@ msgid "Port not configured"
 msgstr "端口未配置"
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
-#: rayforge/machine/driver/grbl/grbl_serial.py
 msgid "No response from device"
 msgstr "设备无响应"
 
@@ -1341,6 +1504,10 @@ msgid "GRBL device"
 msgstr "GRBL设备"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Driver is not set up. Check the port settings."
+msgstr "驱动未设置。请检查端口设置。"
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
 msgid "RX Buffer Size Override"
 msgstr "RX缓冲区大小覆盖"
 
@@ -1413,16 +1580,19 @@ msgid "WebSocket Port"
 msgstr "WebSocket端口"
 
 #: rayforge/machine/driver/grbl/grbl_network.py
-msgid "The WebSocket port for the device"
-msgstr "设备的WebSocket端口"
+msgid ""
+"The WebSocket port for the device. For FluidNC, use the same port as HTTP "
+"(usually 80)."
+msgstr ""
+"设备的 WebSocket 端口。对于 FluidNC，请使用与 HTTP 相同的端口（通常为 80）。"
 
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Protocol variant"
 msgstr "协议变体"
 
 #: rayforge/machine/driver/grbl/grbl_network.py
-msgid "Standard, ESP3D, or Longer GRBL variant"
-msgstr "标准、ESP3D 或 Longer GRBL 变体"
+msgid "Standard, ESP3D, Longer, or FluidNC variant"
+msgstr "Standard、ESP3D、Longer 或 FluidNC 变体"
 
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Standard"
@@ -1786,6 +1956,20 @@ msgstr "最小脉冲宽度"
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 msgid "Max Pulse Width"
 msgstr "最大脉冲宽度"
+
+#: rayforge/machine/models/laser.py
+msgid "Pointer Offset Enabled"
+msgstr "光点偏移已启用"
+
+#: rayforge/machine/models/laser.py
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Pointer Offset X"
+msgstr "光点偏移 X"
+
+#: rayforge/machine/models/laser.py
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Pointer Offset Y"
+msgstr "光点偏移 Y"
 
 #: rayforge/machine/models/laser.py
 #: rayforge/ui_gtk/machine/laser_control_widget.py
@@ -2177,6 +2361,19 @@ msgstr "取景失败：{error}"
 msgid "Sending failed: {error}"
 msgstr "发送失败：{error}"
 
+#: rayforge/machine/cmd.py
+msgid ""
+"Pointer alignment shifts the frame partly outside the machine travel; the "
+"trace may stop short of a side."
+msgstr "光点对齐会使边框部分超出机器行程；描边可能会在某一边提前停止。"
+
+#: rayforge/machine/transport/serial.py
+#, python-brace-format
+msgid ""
+"No USB serial device with VID:PID {spec} found. Is the device connected and "
+"powered on?"
+msgstr "未找到 VID:PID 为 {spec} 的 USB 串口设备。设备是否已连接并通电？"
+
 #: rayforge/machine/transport/serial.py
 #, python-brace-format
 msgid ""
@@ -2280,10 +2477,12 @@ msgstr "此机器配置文件及其所有设置将被永久删除。此操作无
 #: rayforge/ui_gtk/machine/lbdev_import_dialog.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/machine/template_selector.py
+#: rayforge/ui_gtk/varset/adapter/combo.py
 #: rayforge/ui_gtk/addon_manager/addon_dialog.py
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/addon_manager/experimental_dialog.py
+#: rayforge/ui_gtk/shared/markdown/dialog.py
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
 #: rayforge/ui_gtk/debug_log_dialog.py
 #: rayforge/ui_gtk/doceditor/import_dialog.py
@@ -2350,6 +2549,7 @@ msgid "Get early access to premium addons"
 msgstr "获取高级插件抢先体验"
 
 #: rayforge/ui_gtk/settings/license_settings_page.py
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
 msgid "Link"
 msgstr "关联"
 
@@ -2513,6 +2713,19 @@ msgstr "已安装插件"
 msgid "Install, update, and remove addons."
 msgstr "安装、更新和移除插件。"
 
+#: rayforge/ui_gtk/settings/gesture_preferences_page.py
+msgid "Mouse Gestures"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/gesture_preferences_page.py
+#, python-format
+msgid "Default: %s"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/gesture_preferences_page.py
+msgid "Unassigned"
+msgstr ""
+
 #: rayforge/ui_gtk/settings/recipe_manager_page.py
 msgid "Recipes"
 msgstr "配方"
@@ -2534,7 +2747,8 @@ msgstr "更新颜色规则详细信息："
 #: rayforge/ui_gtk/machine/dialect_editor.py
 #: rayforge/ui_gtk/machine/gcode_editor.py
 #: rayforge/ui_gtk/machine/wcs_dialog.py
-#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/machine/maintenance_page.py
+#: rayforge/ui_gtk/shared/markdown/dialog.py rayforge/ui_gtk/main_menu.py
 #: rayforge/ui_gtk/toolbar.py
 #: rayforge/ui_gtk/doceditor/recipes/edit_recipe_dialog.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
@@ -2551,6 +2765,7 @@ msgid "Map a color to a step type for SVG imports."
 msgstr "为 SVG 导入将颜色映射到步骤类型。"
 
 #: rayforge/ui_gtk/settings/color_presets_page.py
+#: rayforge/ui_gtk/camera/selection_dialog.py
 #: rayforge/ui_gtk/doceditor/recipes/edit_recipe_dialog.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
@@ -2679,6 +2894,10 @@ msgstr "西班牙语"
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "French"
 msgstr "法语"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Hindi"
+msgstr "印地语"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Portuguese"
@@ -2827,17 +3046,17 @@ msgstr "隐私"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid ""
-"Help us improve Rayforge by allowing anonymous usage reporting. No personal "
-"data is collected."
-msgstr "允许匿名使用报告来帮助我们改进 Rayforge。不会收集任何个人数据。"
+"Anonymous usage data helps decide what to build next. It never includes "
+"project content or personal data."
+msgstr "匿名使用数据帮助决定接下来开发什么。绝不会收集项目内容或个人数据。"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Report Anonymous Usage"
 msgstr "报告匿名使用情况"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid "Help improve Rayforge"
-msgstr "帮助改进 Rayforge"
+msgid "Help decide what to build next"
+msgstr "帮助决定接下来开发什么"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
@@ -2859,6 +3078,7 @@ msgid ""
 msgstr "语言将在重启 Rayforge 后生效。是否现在重启？"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py rayforge/ui_gtk/project_cmd.py
 msgid "_Cancel"
 msgstr "取消(_C)"
@@ -2883,11 +3103,11 @@ msgstr "网格阵列"
 msgid "Grid"
 msgstr "网格"
 
-#: rayforge/ui_gtk/array_dialog.py
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Rows"
 msgstr "行"
 
-#: rayforge/ui_gtk/array_dialog.py
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Columns"
 msgstr "列"
 
@@ -3015,6 +3235,10 @@ msgstr "导入文件…"
 #: rayforge/ui_gtk/doceditor/layer_column.py
 msgid "Paste"
 msgstr "粘贴"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+msgid "Move Head Here"
+msgstr "将激光头移动到此处"
 
 #: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py rayforge/doceditor/edit_cmd.py
 msgid "Add {} Instance"
@@ -3149,34 +3373,81 @@ msgid "Transparency on the worksurface"
 msgstr "工作台上的透明度"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-msgid "Please select an available camera device"
-msgstr "请选择可用的摄像头设备"
+msgid "Scanning for devices…"
+msgstr "正在扫描设备…"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-msgid "Please select a configured camera"
-msgstr "请选择已配置的摄像头"
+msgid "Add Camera"
+msgstr "添加摄像头"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Choose a camera source."
+msgstr "选择摄像头来源。"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
 msgid "Select Camera"
 msgstr "选择摄像头"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-msgid "No cameras configured."
-msgstr "未配置任何摄像头。"
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+#: rayforge/ui_gtk/shared/model_selection_dialog.py
+msgid "Select"
+msgstr "选择"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-#, python-brace-format
-msgid "Failed to load image for Device ID: {device_id}"
-msgstr "无法加载设备ID的图像：{device_id}"
+msgid "Source Type"
+msgstr "来源类型"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-#, python-brace-format
-msgid "Camera {device_id}"
-msgstr "摄像头 {device_id}"
+msgid "Choose source type"
+msgstr "选择来源类型"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-msgid "No cameras found."
-msgstr "未找到摄像头。"
+msgid "Local camera"
+msgstr "本地摄像头"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "HTTP snapshot URL"
+msgstr "HTTP 快照 URL"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "HTTP stream URL"
+msgstr "HTTP 流 URL"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "RTSP stream"
+msgstr "RTSP 流"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+#: rayforge/ui_gtk/machine/device_settings_page.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "Device"
+msgstr "设备"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Choose an attached local camera"
+msgstr "选择已连接的本地摄像头"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
+msgid "Preview"
+msgstr "预览"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Capture one frame from the selected local camera"
+msgstr "从选定的本地摄像头捕获一帧"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "URL"
+msgstr "URL"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Enter the snapshot or stream URL"
+msgstr "输入快照或流的 URL"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Choose device"
+msgstr "选择设备"
 
 #: rayforge/ui_gtk/camera/point_bubble_widget.py
 #, python-brace-format
@@ -3200,12 +3471,12 @@ msgid "Configure the selected camera."
 msgstr "配置选定的摄像头。"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
-msgid "Device ID"
-msgstr "设备ID"
+msgid "Choose a connected local camera"
+msgstr "选择已连接的本地摄像头"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
-msgid "System identifier for the camera device"
-msgstr "摄像头设备的系统标识符"
+msgid "Camera source URL"
+msgstr "摄像头来源 URL"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Display name for this camera"
@@ -3264,6 +3535,11 @@ msgstr "图像对齐"
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Calibrate camera position and perspective"
 msgstr "校准摄像头位置和透视"
+
+#: rayforge/ui_gtk/camera/properties_widget.py
+#, python-brace-format
+msgid "Unavailable: {device_id}"
+msgstr "不可用：{device_id}"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Lens calibration completed"
@@ -3329,6 +3605,94 @@ msgid "Skip"
 msgstr "跳过"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "ChArUco Board"
+msgstr "ChArUco 棋盘"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker Grid"
+msgstr "标记网格"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Dot Grid"
+msgstr "圆点网格"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Square Size"
+msgstr "方格大小"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker Size"
+msgstr "标记尺寸"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker Gap"
+msgstr "标记间距"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker ID Offset"
+msgstr "标记 ID 偏移"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Dot Spacing"
+msgstr "圆点间距"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Row Spacing"
+msgstr "行间距"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Row Offset"
+msgstr "行偏移"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Dot Diameter"
+msgstr "圆点直径"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Grid Size"
+msgstr "网格大小"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Physical Size"
+msgstr "物理尺寸"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Chessboard with markers. Most accurate, needs a good printer."
+msgstr "带标记的棋盘格。精度最高，需要较好的打印机。"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "ArUco or AprilTag markers. Tolerates partial views."
+msgstr "ArUco 或 AprilTag 标记。允许部分入镜。"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Plain black dots. Cheapest to print, lowest accuracy."
+msgstr "普通黑色圆点。打印成本最低，精度最低。"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Top-Left"
+msgstr "左上"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Top-Right"
+msgstr "右上"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Bottom-Left"
+msgstr "左下"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Bottom-Right"
+msgstr "右下"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Along rows"
+msgstr "按行"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Along columns"
+msgstr "按列"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Calibration Card"
 msgstr "校准卡"
 
@@ -3339,17 +3703,56 @@ msgstr "说明"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid ""
-"Print a calibration card to correct lens distortion. The card size should "
-"fit within your camera view."
-msgstr "打印校准卡以校正镜头畸变。卡片大小应适合您的相机视野。"
+"Print a calibration pattern to correct lens distortion. The pattern should "
+"fit within your camera view. You can also describe a pattern you already "
+"have and calibrate against that instead."
+msgstr ""
+"打印一张标定图案以校正镜头畸变。图案应位于相机视野内。您也可以描述已有的图"
+"案，直接对照它进行标定。"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Pattern Type"
+msgstr "图案类型"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Pattern"
+msgstr "图案"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Choose the printed pattern to calibrate against."
+msgstr "选择用于标定的已打印图案。"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker Dictionary"
+msgstr "标记字典"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "ID Origin"
+msgstr "ID 起点"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "ID Order"
+msgstr "ID 顺序"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Pattern Geometry"
+msgstr "图案几何尺寸"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid ""
+"Measured from the printed sheet. Editing these lets you use a pattern you "
+"printed earlier."
+msgstr "从打印出的纸张上测量。编辑这些数值即可使用之前打印的图案。"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Card Size"
 msgstr "卡片大小"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Adjust to fit your work surface."
-msgstr "调整以适合您的工作台面。"
+msgid ""
+"Used to suggest a pattern that fits. Ignored once the geometry above is "
+"edited."
+msgstr "用于推荐合适的图案。编辑上方几何尺寸后将被忽略。"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
@@ -3372,32 +3775,29 @@ msgid "Card height"
 msgstr "卡片高度"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Generated Pattern"
-msgstr "生成的图案"
+msgid "Pattern Details"
+msgstr "图案详情"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Details about the calibration pattern."
 msgstr "校准图案的详细信息。"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Grid Size"
-msgstr "网格大小"
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Square Size"
-msgstr "方格大小"
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Physical Size"
-msgstr "物理尺寸"
+msgid "Output"
+msgstr "输出"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Save to PDF"
 msgstr "保存为 PDF"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Export the calibration card for printing"
-msgstr "导出校准卡以供打印"
+msgid "Export the calibration pattern for printing"
+msgstr "导出标定图案以供打印"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+#, python-brace-format
+msgid "Custom ({id})"
+msgstr "自定义 ({id})"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Save Calibration Card"
@@ -3502,6 +3902,30 @@ msgstr "放弃"
 #: rayforge/ui_gtk/camera/wizard/capture_page.py
 msgid "Save Calibration"
 msgstr "保存校准"
+
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+msgid "Lens calibration saved."
+msgstr "镜头校准已保存。"
+
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+msgid "Skip Lens Calibration?"
+msgstr "跳过镜头校准？"
+
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+#, python-brace-format
+msgid ""
+"You captured {frames} frame(s) but have not run Calibrate yet. Continuing "
+"discards them and leaves the lens uncorrected."
+msgstr ""
+"您已捕获 {frames} 帧，但尚未运行“校准”。继续将丢弃这些帧，且镜头仍未经校正。"
+
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+msgid "Skip Anyway"
+msgstr "仍要跳过"
+
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+msgid "Stay Here"
+msgstr "留在此处"
 
 #: rayforge/ui_gtk/camera/wizard/wizard.py
 #, python-brace-format
@@ -3610,6 +4034,11 @@ msgid "Device ID: {device_id}"
 msgstr "设备ID：{device_id}"
 
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
+#, python-brace-format
+msgid "Source: {source}"
+msgstr "来源：{source}"
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
 msgid "Add New Camera"
 msgstr "添加新摄像头"
 
@@ -3674,9 +4103,47 @@ msgid "Clear All Points"
 msgstr "清除所有点"
 
 #: rayforge/ui_gtk/camera/alignment_widget.py
+#: rayforge/ui_gtk/varset/adapter/combo.py
 #: rayforge/ui_gtk/doceditor/step_type_selection_dialog.py
 msgid "Apply"
 msgstr "应用"
+
+#: rayforge/ui_gtk/machine/validation.py
+#, python-brace-format
+msgid ""
+"\"{value}\" is only a number and would be sent to the machine as-is. A G-"
+"code command must start with a letter (e.g. \"M4 S{value}\")."
+msgstr ""
+"“{value}”只是一个数字，会被原样发送到机器。G代码命令必须以字母开头（例如“M4 "
+"S{value}”）。"
+
+#: rayforge/ui_gtk/machine/validation.py
+#, python-brace-format
+msgid ""
+"Line {lineno} is only the number \"{value}\" and would be sent to the "
+"machine as-is. A G-code command must start with a letter (e.g. \"M4 S{value}"
+"\")."
+msgstr ""
+"第 {lineno} 行只是数字“{value}”，会被原样发送到机器。G代码命令必须以字母开头"
+"（例如“M4 S{value}”）。"
+
+#: rayforge/ui_gtk/machine/validation.py
+#, python-brace-format
+msgid ""
+"Continuous laser mode is enabled: laser power is carried on movement lines, "
+"but this template has no {s_command} placeholder and the power would be "
+"silently dropped."
+msgstr ""
+"连续激光模式已启用：激光功率由运动行携带，但此模板没有 {s_command} 占位符，功"
+"率将被静默丢弃。"
+
+#: rayforge/ui_gtk/machine/validation.py
+#, python-brace-format
+msgid ""
+"In continuous laser mode these templates need the {{s_command}} placeholder "
+"to carry laser power: {labels}."
+msgstr ""
+"在连续激光模式下，这些模板需要 {{s_command}} 占位符来承载激光功率：{labels}。"
 
 #: rayforge/ui_gtk/machine/macro_list.py
 msgid "Add New Macro"
@@ -3821,6 +4288,16 @@ msgid "Settings for the frame outline operation that traces the job boundary."
 msgstr "追踪作业边界的边框轮廓操作设置。"
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Pointer Offset"
+msgstr "光点偏移"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid ""
+"Compensation for a pointer laser mounted at a fixed offset from the cutting "
+"beam."
+msgstr "补偿安装在切割光束固定偏移位置的定位激光笔。"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
 msgid "G-code tool number (e.g., T0, T1)"
 msgstr "G代码工具编号（例如：T0、T1）"
 
@@ -3904,8 +4381,10 @@ msgid "Maximum pulse width in µs"
 msgstr "最大脉冲宽度（µs）"
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
-msgid "Power value in percent to use when framing. 0 to disable"
-msgstr "边框时使用的功率百分比。0表示禁用"
+msgid ""
+"Power value in percent to use when framing. 0 traces the outline with the "
+"beam off"
+msgstr "走边框时使用的功率百分比。0 表示关闭光束描画轮廓"
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 msgid ""
@@ -3928,6 +4407,24 @@ msgstr "角落暂停"
 msgid ""
 "Pause duration in seconds at each corner of the frame outline. 0 to disable"
 msgstr "边框轮廓每个角落的暂停时间（秒）。0 表示禁用"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Use Pointer Offset"
+msgstr "使用光点偏移"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid ""
+"Compensate when setting the work zero at the current position, so the origin "
+"lands where the pointer dot marks the stock"
+msgstr "在当前位置设置工作原点时进行补偿，使原点落在光点标记材料的位置"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Distance from the beam spot to the pointer dot along the machine X axis"
+msgstr "沿机床 X 轴方向从光束落点到光点的距离"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Distance from the beam spot to the pointer dot along the machine Y axis"
+msgstr "沿机床 Y 轴方向从光束落点到光点的距离"
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 msgid "Spindle Properties"
@@ -4055,6 +4552,7 @@ msgid "Zone geometry shape"
 msgstr "区域几何形状"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
+#: rayforge/ui_gtk/machine/move_to_popover.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "X"
 msgstr "X"
@@ -4065,6 +4563,7 @@ msgid "X position in {wcs}"
 msgstr "X 位置 ({wcs})"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
+#: rayforge/ui_gtk/machine/move_to_popover.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Y"
 msgstr "Y"
@@ -4075,6 +4574,7 @@ msgid "Y position in {wcs}"
 msgstr "Y 位置 ({wcs})"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
+#: rayforge/ui_gtk/machine/move_to_popover.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Z"
 msgstr "Z"
@@ -4201,30 +4701,56 @@ msgstr "所有文件"
 msgid "Import Device Profile"
 msgstr "导入设备配置文件"
 
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Move to Position"
+msgstr "移动到位置"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Pointer Alignment"
+msgstr "光点对齐"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Move to Lower-Left of Selection or Workarea"
+msgstr "移动到选择或工作区域的左下角"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Move to Center of Selection or Workarea"
+msgstr "移动到选择或工作区域的中心"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Move to Upper-Right of Selection or Workarea"
+msgstr "移动到选择或工作区域的右上角"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Move to Origin of Active WCS"
+msgstr "移动到活动WCS原点"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Move"
+msgstr "移动"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Aim moves at the pointer dot instead of the beam"
+msgstr "以光点而非光束为移动目标"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Requires a pointer offset on the laser head"
+msgstr "需要在激光头上设置光点偏移"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid ""
+"The shifted target is outside the machine travel; moving to the nearest "
+"reachable position instead."
+msgstr "偏移后的目标超出机器行程；将移动到最近的可到达位置。"
+
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "Edit Macro"
 msgstr "编辑宏"
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "Insert Variable"
-msgstr "插入变量"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "Include Macro"
-msgstr "包含宏"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
 #, python-brace-format
 msgid "Edit Macro for {name}"
 msgstr "编辑{name}的宏"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "Available Variables"
-msgstr "可用变量"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "No other macros to include."
-msgstr "没有其他宏可包含。"
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "Name cannot be empty."
@@ -4359,11 +4885,6 @@ msgid ""
 "This will reset the total cumulative operating hours to zero. Maintenance "
 "counters will not be affected."
 msgstr "这将把总累计运行工时重置为零。维护计数器将不受影响。"
-
-#: rayforge/ui_gtk/machine/device_settings_page.py
-#: rayforge/ui_gtk/machine/settings_dialog.py
-msgid "Device"
-msgstr "设备"
 
 #: rayforge/ui_gtk/machine/device_settings_page.py
 msgid "Device Settings"
@@ -4878,6 +5399,22 @@ msgid "Enable if a positive Z command (e.g., G0 Z10) moves the head down"
 msgstr "如果正Z命令（例如 G0 Z10）使激光头向下移动，请启用此项"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Z Min"
+msgstr "Z 最小值"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Lowest Z coordinate (machine frame)"
+msgstr "最低 Z 坐标（机床坐标系）"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Z Max"
+msgstr "Z 最大值"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Highest Z coordinate (machine frame)"
+msgstr "最高 Z 坐标（机床坐标系）"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Work Area"
 msgstr "工作区域"
@@ -4992,6 +5529,34 @@ msgstr "Y最大值"
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Maximum Y coordinate"
 msgstr "Y坐标最大值"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "Notes"
+msgstr "备注"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "My Notes"
+msgstr "我的备注"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "Add your own notes for this machine"
+msgstr "为此机器添加个人备注"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "Edit My Notes"
+msgstr "编辑我的备注"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "Device Notes"
+msgstr "设备备注"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid ""
+"These notes are stored with this machine and are never overwritten by device "
+"profile updates."
+msgstr "这些备注随此机器一起保存，设备配置文件更新绝不会覆盖它们。"
 
 #: rayforge/ui_gtk/machine/wizard_pages/camera_page.py
 msgid ""
@@ -5138,11 +5703,6 @@ msgid "Configured"
 msgstr "已配置"
 
 #: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
-#: rayforge/ui_gtk/shared/model_selection_dialog.py
-msgid "Select"
-msgstr "选择"
-
-#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
 msgid ""
 "Connect your machine via USB or network — we will find it automatically."
 msgstr "通过USB或网络连接您的机器 — 我们将自动找到它。"
@@ -5224,17 +5784,16 @@ msgid "Warnings"
 msgstr "警告"
 
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "These notes remain available after setup in Machine Settings → Notes."
+msgstr "完成设置后，仍可在“机器设置 → 备注”中查看这些说明。"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 msgid "None (G-code export only)"
 msgstr "无（仅导出 G-code）"
 
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 msgid "Unknown driver: {}"
 msgstr "未知驱动程序：{}"
-
-#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
-#: rayforge/ui_gtk/machine/wizard_pages/connection_page.py
-msgid "Connection"
-msgstr "连接"
 
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 msgid "Work Area X×Y"
@@ -5888,6 +6447,10 @@ msgstr "已导出到 {path}"
 msgid "Export failed: {error}"
 msgstr "导出失败：{error}"
 
+#: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "This camera source is already configured."
+msgstr "此摄像头来源已配置。"
+
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #: rayforge/ui_gtk/doceditor/recipes/pages/applicability.py
 msgid "Machine"
@@ -6007,6 +6570,32 @@ msgstr "添加参数"
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "New Parameter"
 msgstr "新参数"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Match by USB VID:PID…"
+msgstr "按 USB VID:PID 匹配…"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "First USB device with this VID:PID"
+msgstr "第一个具有此 VID:PID 的 USB 设备"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "USB VID:PID (e.g. 0403:6001)"
+msgstr "USB VID:PID（例如 0403:6001）"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Match by USB VID:PID"
+msgstr "按 USB VID:PID 匹配"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid ""
+"Always use the first USB serial device with this vendor and product ID. This "
+"keeps the connection working when the operating system reassigns port "
+"numbers. If several identical devices are connected, the first one on the "
+"bus is used."
+msgstr ""
+"始终使用第一个具有此供应商和产品 ID 的 USB 串口设备。这样即使操作系统重新分配"
+"端口号，连接仍能保持正常。如果连接了多个相同的设备，将使用总线上的第一个。"
 
 #: rayforge/ui_gtk/varset/adapter/appkey.py
 msgid "Request Access"
@@ -6375,21 +6964,16 @@ msgid "Enable Anyway"
 msgstr "仍然启用"
 
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
-msgid "Help Improve Rayforge"
-msgstr "帮助改进 Rayforge"
+msgid "Help me prioritize what to build"
+msgstr "帮助我决定优先开发什么"
 
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
 msgid ""
-"Would you like to help improve Rayforge by allowing anonymous usage "
-"reporting? This helps us understand how the app is used and prioritize "
-"improvements.\n"
-"\n"
-"No personal data is collected."
+"Anonymous usage data shows me which machines and features people actually "
+"use. It never includes project content or personal data."
 msgstr ""
-"您是否愿意通过允许匿名使用报告来帮助改进 Rayforge？这有助于我们了解应用程序的"
-"使用方式并确定改进的优先级。\n"
-"\n"
-"不会收集任何个人数据。"
+"匿名使用数据让我了解人们实际使用哪些机器和功能。绝不会发送项目内容或个人数"
+"据。"
 
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
 msgid "No Thanks"
@@ -6451,6 +7035,29 @@ msgstr "切换移动路径可见性"
 msgid "Toggle no-go zone visibility"
 msgstr "切换禁入区域可见性"
 
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
+msgid "Pointer alignment is on"
+msgstr "光点对齐已开启"
+
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
+msgid ""
+"Dry-Run with Pointer traces the toolpath with the pointer dot: the job runs "
+"with the pointer offset applied and the beam is displaced by it, with all "
+"laser power capped at the framing power so the trace does not burn. Turning "
+"alignment off burns the job normally with the beam at the WCS positions."
+msgstr ""
+"光点空走描边会沿刀路用光点描边：任务在应用光点偏移的情况下运行，光束因此偏"
+"移，且所有激光功率被限制在边框功率以下，以免描边烧灼材料。关闭对齐后，任务将"
+"正常烧灼，光束位于 WCS 坐标位置。"
+
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
+msgid "Dry-Run with _Pointer"
+msgstr "光点空走(_P)"
+
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
+msgid "_Turn Off and Burn"
+msgstr "_关闭并烧灼"
+
 #: rayforge/ui_gtk/shared/preferences_group.py
 msgid "No parameters"
 msgstr "无参数"
@@ -6458,6 +7065,176 @@ msgstr "无参数"
 #: rayforge/ui_gtk/shared/splitbutton.py
 msgid "Show all options"
 msgstr "显示所有选项"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Bold and italic"
+msgstr "粗体和斜体"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Wrap words in two stars for bold, or one star for italic."
+msgstr "用两个星号包围文字表示粗体，用一个星号表示斜体。"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Headings"
+msgstr "标题"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Start a line with number signs. More signs, smaller heading."
+msgstr "以井号开头一行。井号越多，标题越小。"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Lists"
+msgstr "列表"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid ""
+"Start lines with a dash for bullets, or with a number and a dot for a "
+"numbered list."
+msgstr "以短横线开头表示项目符号，或以数字加点开头表示编号列表。"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Links"
+msgstr "链接"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Put the link text in square brackets and the address in round brackets."
+msgstr "把链接文字放在方括号里，把地址放在圆括号里。"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Inline code"
+msgstr "行内代码"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Wrap short commands in single backticks to keep them readable."
+msgstr "用单个反引号包围简短命令，使其保持易读。"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Quotes"
+msgstr "引用"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Start a line with a greater-than sign to call out a remark."
+msgstr "以大于号开头一行，用来突出一条提示。"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Expandable sections"
+msgstr "可展开区域"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Hide long details behind a title that readers can unfold."
+msgstr "把冗长的细节藏在标题后面，读者可以自行展开。"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
+msgid "Formatting help"
+msgstr "格式帮助"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Type the text shown below to get the matching result."
+msgstr "输入下面显示的文字即可得到对应的效果。"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Code blocks"
+msgstr "代码块"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid ""
+"Put a line with three backticks before and after a block of commands to show "
+"it unchanged."
+msgstr "在命令块前后各放一行三个反引号，即可原样显示该代码块。"
+
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
+msgid "Side by side"
+msgstr "并排"
+
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
+msgid "Stacked"
+msgstr "上下排列"
+
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
+msgid "Raw Markdown"
+msgstr "Markdown 源文"
+
+#: rayforge/ui_gtk/shared/markdown/dialog.py
+msgid ""
+"Supported: headings, paragraphs, bold, italic, lists, links, inline code, "
+"fenced code blocks, and expandable details sections."
+msgstr ""
+"支持标题、段落、粗体、斜体、列表、链接、行内代码、代码块以及可展开的详细信息"
+"部分。"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Show formatting help"
+msgstr "显示格式帮助"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Bold"
+msgstr "粗体"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "bold text"
+msgstr "粗体文字"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Italic"
+msgstr "斜体"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "italic"
+msgstr "斜体"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Heading"
+msgstr "标题"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Bulleted list"
+msgstr "项目符号列表"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "List item"
+msgstr "列表项"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Numbered list"
+msgstr "编号列表"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "First step"
+msgstr "第一步"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "link text"
+msgstr "链接文字"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "command"
+msgstr "命令"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Code block"
+msgstr "代码块"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Quote"
+msgstr "引用"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Remark"
+msgstr "提示"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Expandable section"
+msgstr "可展开区域"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Section title"
+msgstr "区域标题"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Hidden details"
+msgstr "隐藏的细节"
 
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
 msgid "Select Model"
@@ -6492,6 +7269,18 @@ msgstr "发现{summary}。继续操作可能会损坏您的机器或工件。"
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "Errors"
 msgstr "错误"
+
+#: rayforge/ui_gtk/shared/code_editor.py
+msgid "Insert Variable"
+msgstr "插入变量"
+
+#: rayforge/ui_gtk/shared/code_editor.py
+msgid "Include Macro"
+msgstr "包含宏"
+
+#: rayforge/ui_gtk/shared/code_editor.py
+msgid "No other macros to include."
+msgstr "没有其他宏可包含。"
 
 #: rayforge/ui_gtk/shared/pref_rows/unit_spin_row.py
 #, python-brace-format
@@ -6646,11 +7435,11 @@ msgstr "将选中项移至上层"
 msgid "Move Selection to Layer Below"
 msgstr "将选中项移至下层"
 
-#: rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/gestures/model.py
 msgid "Left"
 msgstr "左"
 
-#: rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/gestures/model.py
 msgid "Right"
 msgstr "右"
 
@@ -6806,8 +7595,8 @@ msgid "Add or enable a processing step to enable export"
 msgstr "添加或启用处理步骤以启用导出"
 
 #: rayforge/ui_gtk/mainwindow.py
-msgid "Configure frame power to enable"
-msgstr "配置边框功率以启用"
+msgid "Add a laser head to enable"
+msgstr "添加激光头以启用"
 
 #: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/toolbar.py
 msgid "Cycle laser head around the occupied area"
@@ -6945,6 +7734,82 @@ msgstr "保存文件错误：{msg}"
 #, python-brace-format
 msgid "An unexpected error occurred: {error}"
 msgstr "发生意外错误：{error}"
+
+#: rayforge/ui_gtk/gestures/model.py
+msgid "Click"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/model.py
+msgid "Double-click"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/model.py
+msgid "Drag"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/model.py
+msgid "Scroll"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/model.py
+msgid "Middle"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/model.py
+msgid "Shift"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/model.py
+msgid "Ctrl"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/model.py
+msgid "Alt"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "2D Canvas"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Navigation gestures on the 2D work surface."
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "3D Canvas"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Navigation gestures on the 3D preview."
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Pan the view"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Hold the mouse button down and move to pan the view."
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Orbit the camera"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Hold the mouse button down and move to orbit around the scene."
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Pan the camera"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Hold the mouse button down and move to pan the scene."
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Rotate around the Z axis"
+msgstr ""
 
 #: rayforge/ui_gtk/project_cmd.py
 msgid "Unsaved Changes"
@@ -7589,20 +8454,18 @@ msgid "Current Position"
 msgstr "当前位置"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Move to Lower-Left of Selection or Workarea"
-msgstr "移动到选择或工作区域的左下角"
+msgid ""
+"Pointer Alignment: aim moves and zeroing at the pointer dot instead of the "
+"cutting beam"
+msgstr "光点对齐：以光点而非切割光束为移动和原点目标"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Move to Center of Selection or Workarea"
-msgstr "移动到选择或工作区域的中心"
+msgid "Click Canvas to Move Head"
+msgstr "点击画布移动激光头"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Move to Upper-Right of Selection or Workarea"
-msgstr "移动到选择或工作区域的右上角"
-
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Move to Origin of Active WCS"
-msgstr "移动到活动WCS原点"
+msgid "Move to Coordinates"
+msgstr "移动到坐标"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Zero Axes"
@@ -7626,10 +8489,6 @@ msgstr "在当前位置设置工件零点"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Click Canvas to Set Work Zero"
-msgstr "点击画布设置工作零点"
-
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Click on canvas to set work zero"
 msgstr "点击画布设置工作零点"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
@@ -8138,6 +8997,10 @@ msgstr "网站"
 #: rayforge/ui_gtk/about.py
 msgid "Report an Issue"
 msgstr "报告问题"
+
+#: rayforge/ui_gtk/about.py
+msgid "Discussions"
+msgstr "讨论"
 
 #: rayforge/ui_gtk/about.py
 msgid "Version"

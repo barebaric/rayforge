@@ -1,8 +1,9 @@
 import logging
 
-from gi.repository import Gdk, GdkPixbuf, Graphene, Gtk, Pango, PangoCairo
+from gi.repository import Gdk, GdkPixbuf, Graphene, Gtk, Pango
 
 from ...camera.controller import CameraController
+from ..shared.text import draw_centered_text
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,7 @@ class CameraDisplay(Gtk.DrawingArea):
         self.set_size_request(640, 480)
         self.marked_points = []
         self.active_point_index = -1
+        self._streaming = False
         self.start()
         self.connect("destroy", self.on_destroy)
 
@@ -24,7 +26,13 @@ class CameraDisplay(Gtk.DrawingArea):
         """
         Starts the camera display by connecting to the image_captured signal
         and subscribing to the controller.
+
+        Idempotent: repeated calls without an intervening stop() are
+        ignored, so the controller's subscriber count stays balanced.
         """
+        if self._streaming:
+            return
+        self._streaming = True
         logger.debug(
             "CameraDisplay.start called for camera %s (instance: %s)",
             self.camera.name,
@@ -39,7 +47,14 @@ class CameraDisplay(Gtk.DrawingArea):
         """
         Stops the camera display by disconnecting the image_captured signal
         and unsubscribing from the controller.
+
+        Idempotent: calls made while not streaming are ignored, so a
+        stop() from both an owner and the destroy handler cannot drop
+        another subscriber's reference.
         """
+        if not self._streaming:
+            return
+        self._streaming = False
         logger.debug(
             "CameraDisplay.stop called for camera %s (instance: %s)",
             self.camera.name,
@@ -117,25 +132,15 @@ class CameraDisplay(Gtk.DrawingArea):
         """Helper to draw a message in the center of the widget."""
         ctx.set_source_rgb(0.5, 0.5, 0.5)  # Grey color for text
 
-        # Use Pango to set font options
-        font_desc = Pango.FontDescription()
-        font_desc.set_family("Sans")
-        font_desc.set_style(Pango.Style.NORMAL)
-        font_desc.set_weight(Pango.Weight.BOLD)
-        font_desc.set_size(24 * Pango.SCALE)  # Pango units
-
-        layout = PangoCairo.create_layout(ctx)
-        layout.set_font_description(font_desc)
-
-        # Get text extents
-        _, _, text_width, text_height, _, _ = ctx.text_extents(message)
-
-        # Calculate position to center the text
-        x = (width - text_width) / 2
-        y = (height + text_height) / 2
-
-        ctx.move_to(x, y)
-        ctx.show_text(message)
+        draw_centered_text(
+            ctx,
+            message,
+            width,
+            height,
+            24,
+            weight=Pango.Weight.BOLD,
+            absolute_size=False,
+        )
 
     def _draw_disabled_message(self, ctx, width, height):
         """Draws a 'Camera Disabled' message."""

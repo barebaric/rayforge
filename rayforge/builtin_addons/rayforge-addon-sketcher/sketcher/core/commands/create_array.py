@@ -13,7 +13,7 @@ from ..arrays import (
     InstancePlacement,
     resolve_template_center,
 )
-from ..entities import Bezier, Circle, Ellipse
+from ..entities import Bezier, Circle
 from ..entities import Point as SketchPoint
 from ..entity_group import EntityGroup, remap_point_refs
 from .base import SketchChangeCommand
@@ -174,12 +174,11 @@ class CreateArrayCommand(SketchChangeCommand):
                 eid_map[tpl_entity.id] = clone.id
                 remap_point_refs(clone, pid_map)
                 clone.transform_offsets(placement)
-                # Copied Ellipses must not retain the template's
-                # helper-line IDs — those reference entities that will
-                # be deleted, causing calculate_dependencies to cascade
-                # the deletion onto the copies.
-                if isinstance(clone, Ellipse):
-                    clone.helper_line_ids = []
+                # The helpers are not cloned with the template: a copy
+                # must not retain references to another member's helper
+                # geometry (an ellipse's helper lines, a text box's
+                # construction lines).
+                clone.clear_helper_references()
                 instance_entities.append(clone)
 
             points.extend(instance_points)
@@ -489,7 +488,11 @@ class CreateArrayCommand(SketchChangeCommand):
             registry, self.template_entity_ids, pts
         )
         placement = strategy.template_placement(template_center, registry)
-        self._pre_place_snapshot = template_group.snapshot_positions()
+        # The helper geometry is placed with the member: a helper's
+        # points complete the member's shape (a text box's fourth
+        # frame corner lives only on its construction lines).
+        placement_group = template_group.with_helpers()
+        self._pre_place_snapshot = placement_group.snapshot_positions()
         for pid in self._extra_template_pids:
             try:
                 pt = registry.get_point(pid)
@@ -499,11 +502,11 @@ class CreateArrayCommand(SketchChangeCommand):
             pt.x, pt.y = placement.transform_point(pt.x, pt.y)
         self._pre_place_cp_snapshot = [
             (entity, entity.cp1, entity.cp2)
-            for entity in template_group.entities()
+            for entity in placement_group.entities()
             if isinstance(entity, Bezier)
         ]
         self._template_placement = placement
-        template_group.apply_placement(placement)
+        placement_group.apply_placement(placement)
 
     def _do_undo(self) -> None:
         if self.add_cmd:
@@ -526,9 +529,10 @@ class CreateArrayCommand(SketchChangeCommand):
         self._reapply_extraction()
         if self._template_placement is not None:
             registry = self.sketch.registry
-            EntityGroup(registry, self.template_entity_ids).apply_placement(
-                self._template_placement
-            )
+            placement_group = EntityGroup(
+                registry, self.template_entity_ids
+            ).with_helpers()
+            placement_group.apply_placement(self._template_placement)
             for pid in self._extra_template_pids:
                 try:
                     pt = registry.get_point(pid)

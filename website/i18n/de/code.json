@@ -50,6 +50,24 @@
   "install.launchFromMenu": {
     "message": "Starte Rayforge aus deinem Anwendungsmenü oder indem du Folgendes ausführst:"
   },
+  "install.gentoo.title": {
+    "message": "Gentoo-Paket"
+  },
+  "install.gentoo.description": {
+    "message": "Rayforge ist auf Gentoo über das von der Community gepflegte Overlay „snakebyte“ verfügbar. Das Paket wird aus dem Quellcode erstellt, daher kann die Installation eine Weile dauern."
+  },
+  "install.gentoo.community": {
+    "message": "Dieses Paket wird von der Community gepflegt und nicht offiziell vom Rayforge-Projekt unterstützt."
+  },
+  "install.gentoo.overlayLink": {
+    "message": "Overlay auf GitHub ansehen."
+  },
+  "install.gentoo.addOverlay": {
+    "message": "Overlay „snakebyte“ hinzufügen"
+  },
+  "install.gentoo.syncOverlay": {
+    "message": "Overlay synchronisieren"
+  },
   "install.flathub.title": {
     "message": "Flathub-Paket"
   },
@@ -968,6 +986,9 @@
   "page.devices.device.creality-falcon-a1.description": {
     "message": "Diodenlasergravierer mit 381x305mm Arbeitsbereich und Rotationsunterstützung"
   },
+  "page.devices.device.creality-falcon-a1-pro.description": {
+    "message": "20W Diodenlasergravierer mit 363x273mm Arbeitsbereich, Rotationsunterstützung und optionaler Unterstützung für ein 2W-Infrarotlasermodul"
+  },
   "page.devices.device.creality-falcon-10w.description": {
     "message": "10W Diodenlasergravierer mit 400x415mm Arbeitsbereich"
   },
@@ -1021,5 +1042,44 @@
   },
   "page.devices.device.xtool-d1-pro.description": {
     "message": "Diodenlasergravierer mit 430x390mm Arbeitsbereich, über WLAN verbunden"
+  },
+  "install.appimage.title": {
+    "message": "AppImage"
+  },
+  "install.appimage.description": {
+    "message": "Das AppImage ist eine einzelne, eigenständige Datei, die auf den meisten Linux-Distributionen ohne Installation läuft. Lade sie herunter, mache sie ausführbar und starte sie."
+  },
+  "install.appimage.downloadAppImage": {
+    "message": "AppImage herunterladen"
+  },
+  "install.downloadFromGithub": {
+    "message": "Von GitHub Releases herunterladen"
+  },
+  "install.appimage.makeExecutable": {
+    "message": "Ausführbar machen"
+  },
+  "install.appimage.makeExecutableAlternative": {
+    "message": "Alternativ über den Dateimanager: Rechtsklick auf die Datei, Eigenschaften öffnen und unter Berechtigungen „Ausführbar“ aktivieren."
+  },
+  "install.appimage.launchInstruction": {
+    "message": "Starte das AppImage im Terminal oder per Doppelklick im Dateimanager:"
+  },
+  "install.appimage.integrationTitle": {
+    "message": "Menüeintrag und Symbol"
+  },
+  "install.appimage.integration": {
+    "message": "Für einen Rayforge-Menüeintrag mit Symbol installiere AppImageLauncher, oder verschiebe das AppImage manuell an einen festen Speicherort (z. B. ~/.local/bin) und lege eine .desktop-Datei an, die darauf verweist. Die Datei muss anschließend an diesem Pfad erreichbar bleiben."
+  },
+  "install.appimageNotStarting": {
+    "message": "AppImage startet nicht?"
+  },
+  "install.appimageFuseNote": {
+    "message": "Wenn eine Fehlermeldung FUSE erwähnt, fehlt deinem System die Bibliothek, mit der AppImages sich selbst einhängen. Installiere sie mit deiner Paketverwaltung:"
+  },
+  "install.appimageFusePackages": {
+    "message": "Die erste Zeile gilt für Debian und Ubuntu bis 23.10, die zweite für Ubuntu 24.04 und neuer, die dritte für Fedora."
+  },
+  "install.appimageExtractRun": {
+    "message": "Alternativ kannst du das AppImage ohne FUSE starten, indem du es zuerst entpacken lässt:"
   }
 }

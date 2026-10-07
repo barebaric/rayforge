@@ -103,7 +103,11 @@ class _ReviewDialogBase(PatchedDialogWindow):
 
         self._rows: list[tuple[SettingDiff, Adw.SwitchRow]] = []
         first_group: Adw.PreferencesGroup | None = None
-        for section in (MACHINE_SECTION, HEADS_SECTION, DIALECT_SECTION):
+        for section in (
+            MACHINE_SECTION,
+            HEADS_SECTION,
+            DIALECT_SECTION,
+        ):
             section_diffs = [d for d in diffs if d.section == section]
             if not section_diffs:
                 continue
@@ -129,12 +133,16 @@ class _ReviewDialogBase(PatchedDialogWindow):
     ) -> Adw.PreferencesGroup:
         group = Adw.PreferencesGroup(title=title)
         for diff in diffs:
+            # Setting values may contain angle brackets (for example a
+            # camera URL placeholder), which Pango would reject as
+            # broken markup and render as an empty subtitle.
             row = Adw.SwitchRow(
                 title=diff.path,
                 subtitle=_("{current}  →  {profile}").format(
                     current=format_value(diff.current_value),
                     profile=format_value(diff.profile_value),
                 ),
+                use_markup=False,
                 active=True,
             )
             group.add(row)

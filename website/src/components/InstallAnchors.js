@@ -1,7 +1,14 @@
 import React from 'react';
 import useBrokenLinks from '@docusaurus/useBrokenLinks';
 
-const ANCHORS = ['linux', 'windows', 'macos', 'linux-pixi', 'windows-developer'];
+const ANCHORS = [
+  'linux',
+  'windows',
+  'macos',
+  'linux-appimage',
+  'linux-pixi',
+  'windows-developer',
+];
 
 export default function InstallAnchors() {
   const brokenLinks = useBrokenLinks();

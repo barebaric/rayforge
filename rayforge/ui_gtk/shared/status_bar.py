@@ -48,7 +48,6 @@ class StatusBar(Gtk.Box):
         separator = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         separator.set_size_request(1, 16)
         separator.add_css_class("separator")
-        separator.get_style_context().add_class("separator")
         self._content.append(separator)
 
     def clear(self):

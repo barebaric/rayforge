@@ -54,6 +54,11 @@ créant un point visible sur le matériau pour vous aider à localiser les posit
 basculeur nécessite une valeur de puissance de mise au point supérieure à zéro dans vos paramètres
 laser.
 
+Si votre tête laser dispose d'un pointeur d'alignement, le basculeur **Pointer Alignment**
+enregistre les positions au niveau du point du pointeur plutôt que du faisceau, si bien que la
+transformation calculée suit le point que vous visez. Il nécessite le décalage de pointeur configuré
+dans les [paramètres laser](../machine/laser.md).
+
 La position actuelle du laser est affichée en bas du panneau. Lorsque les deux positions sont
 enregistrées, cliquez sur **Suivant** pour continuer.
 

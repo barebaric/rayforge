@@ -321,6 +321,17 @@ def test_returns_immediately_when_not_processing(doc_editor):
     assert result is True
 
 
+@pytest.mark.asyncio
+async def test_settled_flushes_pending_rebuild(doc_editor):
+    """A model change arms a debounced rebuild. Settling must flush
+    and wait for it so no rebuild can start afterwards."""
+    machine = doc_editor.context.machine
+    machine.set_max_cut_speed(1234)
+
+    await doc_editor.wait_until_settled()
+    assert not doc_editor.pipeline.is_busy
+
+
 def test_returns_true_when_processing_finishes(doc_editor):
     """Test that wait_until_settled_sync returns True when
     processing finishes within timeout."""
@@ -393,7 +404,8 @@ def test_handles_multiple_busy_tasks(doc_editor):
             doc_editor.notify_task_ended()
 
 
-def test_configure_machine_uses_first_layer(doc_editor):
+@pytest.mark.asyncio
+async def test_configure_machine_uses_first_layer(doc_editor):
     editor = doc_editor
     machine = editor.context.machine
     rm = RotaryModule()
@@ -405,10 +417,14 @@ def test_configure_machine_uses_first_layer(doc_editor):
 
     with patch.object(machine, "configure_for_layer") as mock_cfg:
         editor.configure_machine()
+        await editor.wait_until_settled()
     mock_cfg.assert_called_with(first_layer)
 
 
-def test_configure_machine_mounts_rotary_for_first_layer(doc_editor):
+@pytest.mark.asyncio
+async def test_configure_machine_mounts_rotary_for_first_layer(
+    doc_editor,
+):
     editor = doc_editor
     machine = editor.context.machine
     rm = RotaryModule()
@@ -419,6 +435,7 @@ def test_configure_machine_mounts_rotary_for_first_layer(doc_editor):
     first_layer.set_rotary_module_uid(rm.uid)
 
     editor.configure_machine()
+    await editor.wait_until_settled()
     assert machine.assembly.has_rotary
 
 

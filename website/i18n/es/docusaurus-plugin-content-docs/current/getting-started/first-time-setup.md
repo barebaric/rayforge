@@ -176,7 +176,9 @@ configurar cámaras más tarde desde los ajustes de cámara de la máquina.
 
 Dale un nombre a la máquina y revisa un resumen de todo lo que has configurado — controlador,
 conexión, área de trabajo, velocidades, cabezales, módulos rotativos y cámaras. El asistente también
-muestra advertencias, como un controlador faltante o un área de trabajo sin establecer.
+muestra advertencias, como un controlador faltante o un área de trabajo sin establecer. Si el perfil
+de dispositivo elegido incluye una guía de configuración, también se muestra en esta página y sigue
+estando disponible después en la página de [Notas](../machine/notes.md) de la máquina.
 
 ![Asistente — Revisión y Nombre](/screenshots/config-wizard-review.webp)
 

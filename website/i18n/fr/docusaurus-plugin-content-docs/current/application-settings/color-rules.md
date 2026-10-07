@@ -41,8 +41,8 @@ Cliquez sur **Ajouter une règle de couleur** pour ouvrir la boîte de dialogue 
 ### 3. Enregistrer
 
 Cliquez sur **Ajouter** pour enregistrer la règle. Elle prend effet immédiatement à la prochaine
-importation. La règle apparaît dans la liste ci-dessous avec un échantillon de couleur, une étiquette
-et un type d'étape.
+importation. La règle apparaît dans la liste ci-dessous avec un échantillon de couleur, une
+étiquette et un type d'étape.
 
 ![Page des règles de couleur](/screenshots/app-settings-color-rules.webp)
 

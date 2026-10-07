@@ -15,7 +15,6 @@ from rayforge.ui_gtk.mainwindow import MainWindow
 
 from ..material_test_helpers import GridMode
 from .laser_step_page import LaserStepSettingsPage
-from .tuple_adapter import TupleAdapter
 
 if TYPE_CHECKING:
     from rayforge.doceditor.editor import DocEditor
@@ -194,7 +193,7 @@ class MaterialTestGridSettingsPage(LaserStepSettingsPage):
     def _update_dimension_labels(self):
         """Retitle the cols/rows rows for the current grid mode."""
         adapter = self.grid_widget.adapter_for("grid_dimensions")
-        if not isinstance(adapter, TupleAdapter):
+        if adapter is None:
             return
         mode = self.grid_widget.get_values().get("grid_mode")
         if mode is None:
@@ -205,11 +204,22 @@ class MaterialTestGridSettingsPage(LaserStepSettingsPage):
         adapter.set_item_labels(labels)
         adapter.set_item_subtitles(subtitles)
 
+    def _max_speed_ceiling(self) -> float:
+        """Highest selectable speed, from the active machine.
+
+        Falls back to the step's creation-time snapshot when no
+        machine is active, so projects edited without one stay usable.
+        """
+        machine = self.get_machine()
+        if machine is not None:
+            return float(machine.max_cut_speed)
+        return float(self.step.max_cut_speed)
+
     def _update_machine_bounds(self):
-        """Cap the speed range at the step's machine limit."""
+        """Cap the speed range at the active machine's limit."""
         adapter = self.params_widget.adapter_for("speed_range")
-        if isinstance(adapter, TupleAdapter):
-            adapter.set_bounds(1.0, float(self.step.max_cut_speed))
+        if adapter is not None:
+            adapter.set_bounds(1.0, self._max_speed_ceiling())
 
     def _on_machine_changed(self):
         """Re-apply mode-dependent state after a config/machine change.
@@ -256,7 +266,7 @@ class MaterialTestGridSettingsPage(LaserStepSettingsPage):
         power_range = preset["power_range"]
         test_type = preset.get("test_type", "Cut")
 
-        machine_max_speed = self.step.max_cut_speed
+        machine_max_speed = self._max_speed_ceiling()
         min_speed = min(speed_range[0], machine_max_speed)
         max_speed = min(speed_range[1], machine_max_speed)
 

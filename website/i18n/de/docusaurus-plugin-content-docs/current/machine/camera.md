@@ -6,9 +6,10 @@ description:
 
 # Kamera-Integration
 
-Rayforge unterstützt die USB-Kamera-Integration für präzise Materialausrichtung und Positionierung.
-Die Kamera-Overlay-Funktion ermöglicht es dir, genau zu sehen, wo dein Laser auf dem Material
-schneiden oder gravieren wird, was Rätselraten eliminiert und Materialabfall reduziert.
+Rayforge unterstützt die Kamera-Integration für präzise Materialausrichtung und Positionierung, mit
+lokalen USB-Kameras oder Netzwerkkameras (HTTP-Schnappschuss, HTTP/MJPEG-Stream oder RTSP). Die
+Kamera-Overlay-Funktion ermöglicht es dir, genau zu sehen, wo dein Laser auf dem Material schneiden
+oder gravieren wird, was Rätselraten eliminiert und Materialabfall reduziert.
 
 ![Kameraeinstellungen](/screenshots/machine-settings-camera.webp)
 
@@ -40,7 +41,7 @@ Das Kameraeigenschaften-Panel zeigt Status-Symbole für Kalibrierung und Ausrich
 
 ### Hardware-Anforderungen
 
-**Kompatible Kameras:**
+**Kompatible lokale Kameras:**
 
 - USB-Webcams (am häufigsten)
 - Eingebaute Laptop-Kameras (wenn Rayforge auf einem Laptop in der Nähe der Maschine läuft)
@@ -54,20 +55,18 @@ Das Kameraeigenschaften-Panel zeigt Status-Symbole für Kalibrierung und Ausrich
 - Kamera positioniert, um den Laser-Arbeitsbereich zu erfassen
 - Sichere Befestigung, um Kamerabewegungen zu verhindern
 
-### Eine Kamera hinzufügen
+### Eine lokale Kamera hinzufügen
 
 1. **Verbinde deine Kamera** über USB mit deinem Computer
 
 2. **Kameraeinstellungen öffnen:**
-   - Navigiere zu **Einstellungen → Einstellungen → Kamera**
-   - Oder verwende die Kamera-Symbolleistenschaltfläche
+   - Navigiere zu **Maschine → Maschineneinstellungen → Kamera**
 
 3. **Eine neue Kamera hinzufügen:**
    - Klicke auf die "+"-Taste, um eine Kamera hinzuzufügen
+   - Wähle **Local camera** als Quelltyp
    - Gib einen beschreibenden Namen ein (z.B. "Obere Kamera", "Arbeitsbereich-Kamera")
    - Wähle das Gerät aus dem Dropdown-Menü
-     - Unter Linux: `/dev/video0`, `/dev/video1`, usw.
-     - Unter Windows: Kamera 0, Kamera 1, usw.
 
 4. **Kamera aktivieren:**
    - Schalte den Kamera-Aktivierungsschalter um
@@ -118,7 +117,7 @@ Ausrichtungspunkte sorgfältig gemessen wurden.
 Die Linsenkalibrierung ist die zweite Stufe des Kamera-Assistenten. Du kannst wählen, wie die
 Verzerrung korrigiert werden soll:
 
-- **Automatic** — nimm Bilder einer gedruckten Kalibrierungskarte auf; der Assistent berechnet das
+- **Automatic** — nimm Bilder eines gedruckten Kalibrierungsmusters auf; der Assistent berechnet das
   Verzerrungsmodell für dich
 - **Manual** — gib die radialen (k1–k3) und tangentialen (p1–p2) Koeffizienten von Hand ein
 - **Skip** — lasse die Verzerrung unkorrigiert; du kannst später kalibrieren
@@ -126,24 +125,77 @@ Verzerrung korrigiert werden soll:
 #### Automatische Kalibrierung
 
 Bei der **Automatic**-Kalibrierung führt dich der Assistent durch das Aufnehmen mehrerer Bilder
-einer gedruckten Kalibrierungskarte von verschiedenen Positionen auf dem Bett und berechnet
+eines gedruckten Kalibrierungsmusters von verschiedenen Positionen auf dem Bett und berechnet
 anschließend automatisch ein Verzerrungsmodell.
 
 ![Assistent — Karteneinstellungen](/screenshots/machine-settings-camera-lens-calibration-wizard-card.webp)
 
-1. Gib **Breite** und **Höhe** deiner gedruckten Karte ein. Die Vorschau aktualisiert sich in
-   Echtzeit — die Karte sollte etwa 70% der Kameraansicht abdecken.
-2. Klicke auf **Save to PDF**, um die Karte zum Drucken zu exportieren, drucke sie dann aus und lege
-   sie auf das Laserbett.
+Wähle zuerst einen **Pattern Type**:
+
+| Muster            | Hinweise                                                                    |
+| ----------------- | --------------------------------------------------------------------------- |
+| **ChArUco Board** | Schachbrett mit Markern. Am genauesten; braucht einen guten Drucker.        |
+| **Marker Grid**   | Einzelne ArUco- oder AprilTag-Marker. Verträgt Teilansichten und Unordnung. |
+| **Dot Grid**      | Schwarze Punkte in Reihen oder versetzt. Billig, aber ungenau.              |
+
+1. Gib **Breite** und **Höhe** deines gedruckten Bogens ein. Die Vorschau aktualisiert sich in
+   Echtzeit — das Muster sollte etwa 70% der Kameraansicht abdecken.
+2. Klicke auf **Save to PDF**, um das Muster zum Drucken zu exportieren, drucke es dann aus und lege
+   es auf das Laserbett.
 
 ![Assistent — Aufnahme](/screenshots/machine-settings-camera-lens-calibration-wizard-capture.webp)
 
-3. Positioniere die Karte in der Kameraansicht an verschiedenen Stellen und Winkeln und klicke für
+3. Positioniere das Muster in der Kameraansicht an verschiedenen Stellen und Winkeln und klicke für
    jede Position auf **Capture Frame**. Strebe mindestens 8 Aufnahmen an, die das gesamte Bild
    abdecken, einschließlich Ecken und Kanten. Die Fortschrittsanzeige und Statusanzeigen zeigen die
    Aufnahmequalität.
 4. Sobald genügend Aufnahmen gemacht wurden, berechnet der Assistent das Verzerrungsmodell und
    wendet es an — das Kamera-Overlay zeigt nun ein korrigiertes, gerades Bild.
+
+#### Ein bereits gedrucktes Muster verwenden
+
+Die Felder unter **Pattern Geometry** beschreiben den Bogen in physikalischen Einheiten —
+Rasteranzahlen, Merkmalsgrößen und die Abstände dazwischen. Werden sie bearbeitet, wechselt der
+Assistent zum Vermessen eines vorhandenen Bogens statt einen neuen vorzuschlagen; so kann gegen ein
+früher gedrucktes Muster kalibriert werden, oder eines, das mit deiner Maschine kam.
+
+Vermiss den Bogen nach dem Drucken und gib die gedruckten Maße statt der Nennmaße ein: Drucker
+skalieren, und wenige Prozent Skalierungsfehler schlagen direkt im Kalibrierungsergebnis durch. Wird
+ein Geometriefeld geändert, wird die **Card Size**-Empfehlung ignoriert, weil nun deine Messungen
+das Muster bestimmen.
+
+Bei einem **Marker Grid** muss das **Marker Dictionary** zur Familie passen, mit der der Bogen
+gedruckt wurde (ArUco oder AprilTag — Rayforge verfeinert die Ecken entsprechend). Beginnen die
+gedruckten IDs nicht bei 0, etwa bei einer Kachel aus einem größeren Satz, trage die erste ID des
+Bogens in **Marker ID Offset** ein; Marker außerhalb des beschriebenen Bereichs werden ignoriert.
+
+Die Nummerierung folgt der **ID Origin**-Ecke, die die Offset-ID trägt, und der **ID Order**:
+fortlaufende IDs laufen zuerst entlang der Reihen oder zuerst entlang der Spalten. Die
+Voreinstellung — Ecke oben links, zuerst Reihen — entspricht OpenCVs eigenen Boards. Um deinen Bogen
+zu beschreiben, finde den Marker mit der niedrigsten ID und wähle die Ecke, in der er sitzt; prüfe
+dann, ob die nächste ID daneben (Reihen) oder darunter (Spalten) sitzt.
+
+Punktbögen gibt es in zwei Anordnungen, und die Felder **Row Spacing** und **Row Offset** sagen
+Rayforge, welche du hast:
+
+- **Rows in a rectangle** — jede Reihe fluchtet. Lasse **Row Offset** auf 0.
+- **Rows staggered** — jede zweite Reihe ist seitlich versetzt, oft um einen halben Abstand, was
+  eine hexagonale Anordnung ergibt. Trage den Reihenabstand in **Row Spacing** und den seitlichen
+  Versatz in **Row Offset** ein.
+
+Rayforge schlägt standardmäßig einen versetzten Bogen vor; ist dein Bogen ein schlichtes Rechteck,
+setze **Row Offset** auf 0 zurück.
+
+:::tip
+
+Ein Punktbogen verrät nicht, wo oben ist, daher liest Rayforge seine Ausrichtung aus der Ansicht und
+aus der Geometrie des Musters. Das gilt, solange der Bogen zwischen den Aufnahmen ungefähr gleich
+ausgerichtet bleibt — rotiere den Bogen bei **Dot Grid** also nicht um eine Vierteldrehung zwischen
+Aufnahmen. Versetzte Reihen helfen, weil der Versatz die Symmetrie eines schlichten Rechtecks
+bricht. ChArUco- und ArUco-Muster bringen ihre eigene Ausrichtung mit und haben diese Einschränkung
+nicht; bevorzuge sie, wenn du die Wahl hast.
+
+:::
 
 #### Manuelle Kalibrierung
 
@@ -360,6 +412,42 @@ sudo lsof /dev/video0
 - Kameraauflösung in den Geräteeinstellungen senken (falls zugänglich)
 - Andere Anwendungen schließen, die CPU/GPU verwenden
 - Grafiktreiber aktualisieren
+
+---
+
+## Netzwerkkameras
+
+Rayforge unterstützt lokale Kameras sowie Netzwerkkameras über HTTP-Schnappschüsse,
+HTTP/MJPEG-Streams und RTSP. Lokale Kameras werden automatisch erkannt; Netzwerkkameras werden über
+ihre URL hinzugefügt.
+
+### Netzwerkkamera hinzufügen
+
+1. Öffne **Maschine → Maschineneinstellungen → Kamera**.
+2. Klicke auf **+** und wähle **HTTP snapshot URL**, **HTTP stream URL** oder **RTSP stream**.
+3. Gib einen Namen und die URL ein, zum Beispiel:
+   - HTTP-Schnappschuss: `http://192.168.1.50:8080/media/getCapturePhoto`
+   - HTTP/MJPEG-Stream: `http://192.168.1.50/mjpeg`
+   - RTSP: `rtsp://192.168.1.50/stream`
+4. Aktiviere die Kamera. Der Live-Feed sollte auf der Arbeitsfläche erscheinen.
+
+Das Geräteprofil des Creality Falcon A1 Pro enthält bereits eine vorkonfigurierte, deaktivierte
+HTTP-Snapshot-Kamera. Wähle unter **Maschine → Maschineneinstellungen → Kamera** **Falcon A1 Pro
+Camera** aus und ersetze `<laser-ip>` in der URL des Feldes **Source** durch die erreichbare
+IP-Adresse der Maschine. Übernimm die gültige URL mit **Enter** oder indem du das Feld verlässt, und
+aktiviere die Kamera anschließend manuell. Alternativ kannst du die IP-Adresse verwenden, die dem
+Falcon in deinem WLAN zugewiesen wurde.
+
+Die URL kann später im Feld **Source** geändert werden, ohne Kalibrierung oder Ausrichtung zu
+verlieren. Beim Ändern wird die Kamera sofort deaktiviert. Der Aktivierungsschalter bleibt gesperrt,
+bis eine gültige URL übernommen wurde; aktiviere die Kamera danach wieder manuell. Rayforge prüft,
+ob das URL-Schema zum Quelltyp passt (`http://`, `https://`, `rtsp://` oder `rtsps://`).
+
+### Probleme mit Netzwerkkameras
+
+Prüfe bei einem fehlenden Bild die IP-Adresse, das URL-Schema und ob Kamera und Computer im selben
+Netzwerk erreichbar sind. Bei HTTP-Schnappschüssen bleibt das letzte gültige Bild sichtbar, während
+Rayforge die Verbindung mit reduzierter Rate erneut versucht.
 
 ---
 

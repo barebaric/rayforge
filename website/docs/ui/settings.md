@@ -47,6 +47,26 @@ collected. You can toggle **Report Anonymous Usage** on or off at any time. See 
 [usage tracking](https://rayforge.org/docs/general-info/usage-tracking) page to learn more about
 what data is collected and how it is used.
 
+## Mouse Gestures
+
+![Mouse Gestures settings](/screenshots/app-settings-gestures.webp)
+
+The Mouse Gestures page lets you rebind the navigation gestures of the 2D canvas and the 3D canvas;
+the sketch editor uses the same gestures as the 2D canvas. Each row offers a dropdown with the
+available mouse button combinations:
+
+- **2D Canvas** — _Pan the view_ (middle drag by default; on the left mouse button the drag is
+  reserved for selecting, so it is not offered).
+- **3D Canvas** — _Orbit the camera_ (middle drag), _Pan the camera_ (Shift + middle drag) and
+  _Rotate around the Z axis_ (left drag).
+
+Zooming (mouse wheel), the context menu (right-click), and resetting the view (the `1` key on the 2D
+canvas) are fixed and cannot be changed. A plain click on a bound button still performs its fixed
+action: when panning is bound to the right mouse button, right-dragging pans and a plain right-click
+still opens the context menu. Selecting **Unassigned** disables a gesture, and combinations already
+used by another action of the same canvas are not offered. Addons can contribute additional gesture
+configurations, which appear as extra sections on this page.
+
 ## Other Settings
 
 The settings dialog also includes pages for managing other parts of the application. Each has its

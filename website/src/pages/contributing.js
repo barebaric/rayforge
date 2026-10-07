@@ -113,6 +113,17 @@ export default function Contributing() {
               </div>
               <div className={styles.panelLinks}>
                 <a
+                  href="https://github.com/barebaric/rayforge/discussions"
+                  className={styles.panelLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className={styles.panelLinkLabel}>Ask questions</span>
+                  <span className={styles.panelLinkMeta}>
+                    GitHub Discussions
+                  </span>
+                </a>
+                <a
                   href="https://github.com/barebaric/rayforge/issues"
                   className={styles.panelLink}
                   target="_blank"

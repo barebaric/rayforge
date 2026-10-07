@@ -60,6 +60,8 @@ def pytest_configure(config):
     if sys.platform.startswith("linux"):
         multiprocessing.set_start_method("spawn", force=True)
 
+    os.environ["RAYFORGE_NO_USAGE_TRACKING"] = "1"
+
     pyvips_loggers = [
         "pyvips",
         "pyvips.vobject",

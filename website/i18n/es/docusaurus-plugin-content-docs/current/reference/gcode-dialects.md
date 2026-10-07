@@ -90,9 +90,13 @@ Para crear un dialecto de código G personalizado basado en un dialecto integrad
 3. Edita los ajustes del dialecto según sea necesario
 4. Guarda tu dialecto personalizado
 
-Cada dialecto personalizado es una copia independiente. Cambiar un dialecto nunca afecta a otros,
-por lo que puedes experimentar libremente sin preocuparte por dañar una configuración existente. Los
-dialectos personalizados se almacenan en tu directorio de configuración y pueden compartirse.
+Cada dialecto personalizado es una copia independiente: cambiar un dialecto nunca afecta a otros
+dialectos ni a otras máquinas, por lo que puedes experimentar libremente sin preocuparte por dañar
+una configuración existente. Una copia creada a partir de un dialecto integrado mantiene un enlace
+con ese dialecto integrado: los campos de plantilla que no hayas cambiado explícitamente siguen al
+dialecto integrado, de modo que las mejoras en los dialectos integrados llegan automáticamente a tus
+máquinas, mientras que tus propias ediciones se conservan y nunca se sobrescriben. Los dialectos
+personalizados se almacenan en tu directorio de configuración y pueden compartirse.
 
 ### Ajustes del Dialecto
 
@@ -194,6 +198,28 @@ con espacios reservados para inyectar valores dinámicos. Usa la sintaxis `{nomb
 | ----------------- | ------------------------------------------------------------ |
 | `seconds`         | Duración de espera en segundos como float (ej., `1.5`)       |
 | `milliseconds`    | Duración de espera en milisegundos como entero (ej., `1500`) |
+
+#### Preámbulo y Postscript
+
+Los scripts de **Preámbulo** y **Postscript** admiten un conjunto aparte de espacios reservados que
+describen la máquina y el trabajo actual:
+
+| Espacio reservado                   | Descripción                                                           |
+| ----------------------------------- | --------------------------------------------------------------------- |
+| `machine.name`                      | Nombre de la máquina                                                  |
+| `machine.active_wcs`                | Sistema de coordenadas de trabajo activo (p. ej., `G54`)              |
+| `machine.axis_extents[0]`           | Ancho del área de trabajo (mm)                                        |
+| `machine.axis_extents[1]`           | Alto del área de trabajo (mm)                                         |
+| `wcs_offset[0]` … `wcs_offset[2]`   | Desplazamiento X/Y/Z del sistema de coordenadas de trabajo activo     |
+| `doc.name`                          | Nombre del documento que se exporta                                   |
+| `job.extents[0]` … `job.extents[3]` | Caja delimitadora del trabajo: X mínima, Y mínima, X máxima, Y máxima |
+
+Por ejemplo, algunas máquinas enmarcan el trabajo por sí mismas —incluso al ejecutar un archivo
+G-code sin conexión— leyendo los límites del trabajo desde un comentario del preámbulo:
+
+```gcode
+; Bounds: X{job.extents[0]} Y{job.extents[1]} to X{job.extents[2]} Y{job.extents[3]}
+```
 
 ### Consejos
 

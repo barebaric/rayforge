@@ -180,7 +180,9 @@ Kameras später über die Kamera-Einstellungen der Maschine einrichten.
 Gib der Maschine einen Namen und überprüfe eine Zusammenfassung von allem, was du konfiguriert hast
 — Treiber, Verbindung, Arbeitsbereich, Geschwindigkeiten, Köpfe, Rotationsmodule und Kameras. Der
 Assistent zeigt auch Warnungen an, z.B. einen fehlenden Treiber oder einen nicht gesetzten
-Arbeitsbereich.
+Arbeitsbereich. Liefert das gewählte Geräteprofil Einrichtungshinweise, werden sie ebenfalls auf
+dieser Seite angezeigt und stehen danach auf der [Notizen](../machine/notes.md)-Seite der Maschine
+zur Verfügung.
 
 ![Assistent — Überprüfen & Benennen](/screenshots/config-wizard-review.webp)
 

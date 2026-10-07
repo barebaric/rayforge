@@ -77,6 +77,13 @@ class Step(DocItem, ABC):
     ASSEMBLER_NAME: ClassVar[str] = ""
     uses_global_state: ClassVar[bool] = False
 
+    #: Whether this step kind operates on the layer's workpieces.
+    #: Geometry-less steps (e.g. the Command step) run once per layer
+    #: at their workflow position instead of once per workpiece; the
+    #: intent builder gives them a single compute node with no
+    #: workpiece markers.
+    needs_workpieces: ClassVar[bool] = True
+
     def __init__(
         self,
         typelabel: str,
@@ -395,6 +402,30 @@ class Step(DocItem, ABC):
         if part is None:
             part = Part(size_mm=workpiece.size)
         return part, ComputePayload(assembler=Assembler(ContourSpec()))
+
+    def build_command_payload(
+        self,
+        machine: "Machine",
+    ) -> "tuple[Part, ComputePayload]":
+        """
+        Build the raygeo :class:`Part` and :class:`ComputePayload`
+        for the single compute node of a geometry-less step
+        (``needs_workpieces == False``).
+
+        Such steps run once per layer at their workflow position and
+        have no workpiece context; the default returns an empty part
+        and a bare :class:`ContourSpec` payload. Geometry-less step
+        kinds override this with their own assembler (see
+        :class:`CommandStep`).
+
+        :param machine: The machine context the step resolves its
+            process defaults from.
+        :returns: ``(part, payload)`` for ``StageSpec.Compute``.
+        """
+        return (
+            Part(size_mm=(0.0, 0.0)),
+            ComputePayload(assembler=Assembler(ContourSpec())),
+        )
 
     def assembler_token_params(
         self,

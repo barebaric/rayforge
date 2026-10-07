@@ -115,6 +115,18 @@ boîte de dialogue des paramètres d'étape.
 - À quelle vitesse le laser se déplace
 - Plus lent pour les matériaux plus épais
 
+#### Mode de Puissance
+
+Le réglage du Mode de Puissance contrôle comment la puissance laser est émise pendant les mouvements
+:
+
+- **Dynamique (M4)** ajuste la puissance à la vitesse de déplacement (défaut)
+- **Constant (M3)** maintient la puissance fixe quelle que soit la vitesse
+
+La puissance dynamique réduit la puissance lorsque la tête ralentit dans un coin, ce qui peut
+laisser des coins sous-brûlés sur certaines machines. Passe en **Constant (M3)** si les coins du
+cadre brûlent trop faiblement.
+
 Pour couper le cadre plus d'une fois, ajoutez un post-processeur [Passe Multiple](../multi-pass.md).
 
 #### Compensation de Kerf

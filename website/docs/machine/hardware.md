@@ -64,6 +64,9 @@ Rayforge whether your machine can move in Z:
   the 3D canvas layers content at the engrave plane instead of showing a moving head along Z.
 - **Reverse Z-Axis Direction**: Only shown when **Has Z-Axis** is enabled. Enable if a positive Z
   command (e.g., G0 Z10) moves the head down.
+- **Z Min / Z Max**: Only shown when **Has Z-Axis** is enabled. The lowest and highest Z coordinate
+  in the machine frame. Z jog moves are clamped to this range, and the Move to Position popover
+  accepts the full Z range between the two values.
 
 ### Panel Orientation
 

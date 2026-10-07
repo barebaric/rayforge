@@ -335,3 +335,72 @@ class TestVar:
         listener.assert_called_once_with(v, new_value=10, old_value=50)
 
         v.value_changed.disconnect(listener)
+
+
+class TestVarVisibilityAndRequiredness:
+    def test_visible_by_default(self):
+        """Without visible_when a var is always visible."""
+        v = Var(key="a", label="A", var_type=str)
+        assert v.is_visible({}) is True
+
+    def test_visible_when_decides(self):
+        """is_visible evaluates visible_when against the values."""
+        v = Var(
+            key="a",
+            label="A",
+            var_type=str,
+            visible_when=lambda values: values.get("mode") == "on",
+        )
+        assert v.is_visible({"mode": "on"}) is True
+        assert v.is_visible({"mode": "off"}) is False
+
+    def test_required_without_default(self):
+        """A var without default and not optional is required."""
+        v = Var(key="a", label="A", var_type=str)
+        assert v.is_required({}) is True
+
+    def test_optional_var_not_required(self):
+        """An optional var never blocks on the default rule."""
+        v = Var(key="a", label="A", var_type=str, optional=True)
+        assert v.is_required({}) is False
+
+    def test_default_satisfies_requiredness(self):
+        """A var with a default does not require a value."""
+        v = Var(key="a", label="A", var_type=str, default="x")
+        assert v.is_required({}) is False
+
+    def test_hidden_var_not_required(self):
+        """A hidden var must not be required even without a default."""
+        v = Var(
+            key="a",
+            label="A",
+            var_type=str,
+            visible_when=lambda values: values.get("mode") == "on",
+        )
+        assert v.is_required({"mode": "off"}) is False
+        assert v.is_required({"mode": "on"}) is True
+
+    def test_required_when_overrides_default_rule(self):
+        """required_when decides requiredness when given."""
+        v = Var(
+            key="a",
+            label="A",
+            var_type=str,
+            default="x",
+            optional=True,
+            required_when=lambda values: values.get("mode") == "strict",
+        )
+        assert v.is_required({"mode": "strict"}) is True
+        assert v.is_required({"mode": "loose"}) is False
+
+    def test_required_when_not_evaluated_when_hidden(self):
+        """A hidden var is never required, whatever required_when says."""
+        v = Var(
+            key="a",
+            label="A",
+            var_type=str,
+            required_when=lambda values: True,
+            visible_when=lambda values: values.get("mode") == "on",
+        )
+        assert v.is_required({"mode": "off"}) is False
+        assert v.is_required({"mode": "on"}) is True

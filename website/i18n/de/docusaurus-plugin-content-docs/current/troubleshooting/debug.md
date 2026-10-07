@@ -48,9 +48,12 @@ diagnostizieren. Sie umfasst:
   Schlüsselbibliotheken.
 - **Anwendungszustand:** Andere interne Informationen, die helfen können, die Quelle eines Fehlers
   einzugrenzen.
+- **Aktuelles Projekt (optional):** Deine Projektdatei, die dein Design enthält, wenn du die Option
+  **Aktuelles Projekt einbeziehen** beim Speichern des Berichts aktiviert lässt.
 
-> **Hinweis zum Datenschutz:** Der Bericht **enthält keine** deiner Designdateien (SVGs, DXFs usw.)
-> oder persönlichen Betriebssystemdaten. Er enthält nur Informationen, die direkt mit der
-> Rayforge-Anwendung und ihrer Verbindung zu deinem Laser zusammenhängen.
+> **Hinweis zum Datenschutz:** Wenn die Option **Aktuelles Projekt einbeziehen** aktiviert ist (sie
+> ist standardmäßig aktiviert), **enthält** der Bericht deine Projektdatei, die dein Design enthält.
+> Abgesehen davon enthält er keine persönlichen Betriebssystemdaten — nur Informationen, die direkt
+> mit der Rayforge-Anwendung und ihrer Verbindung zu deinem Laser zusammenhängen.
 
 Danke, dass du uns hilfst, Rayforge zu verbessern

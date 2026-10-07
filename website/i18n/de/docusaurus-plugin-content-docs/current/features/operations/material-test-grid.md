@@ -1,258 +1,176 @@
+---
+description:
+  "Erstelle ein Materialtest-Raster, um optimale Leistungs- und Geschwindigkeitseinstellungen für
+  jedes Material zu finden. Kalibriere deinen Lasercutter systematisch."
+---
+
 # Materialtest-Raster
 
-Der Materialtest-Raster-Generator erstellt parametrische Testmuster, um optimale Lasereinstellungen
-für verschiedene Materialien zu finden.
+Jedes Material — und oft jede Farbe und Dicke desselben Materials — reagiert unterschiedlich auf
+Laserleistung und -geschwindigkeit. Das Materialtest-Raster nimmt der Suche nach der richtigen
+Kombination das Rätselraten: Es erzeugt ein Muster aus Testzellen, in denen jede Zelle mit einer
+leicht anderen Einstellung graviert oder geschnitten wird — alles in einem einzigen Job. Nach einem
+Durchlauf siehst du auf einen Blick, welche Kombination das gewünschte Ergebnis liefert.
 
-## Übersicht
-
-Material-Testen ist essentiell für Laserarbeit - verschiedene Materialien erfordern verschiedene
-Leistungs- und Geschwindigkeitseinstellungen. Der Materialtest-Raster automatisiert diesen Prozess
-durch:
-
-- Generieren von Testrastern mit konfigurierbaren Geschwindigkeits-/Leistungsbereichen
-- Bereitstellen von Presets für gängige Lasertypen (Diode, CO2)
-- Optimieren der Ausführungsreihenfolge zur Sicherheit (schnellste Geschwindigkeiten zuerst)
-- Hinzufügen von Beschriftungen zur Identifizierung der Einstellungen jeder Testzelle
-
-## Ein Materialtest-Raster erstellen
-
-### Schritt 1: Den Generator öffnen
-
-Zugriff auf den Materialtest-Raster-Generator:
-
-- Menü: **Werkzeuge → Materialtest-Raster**
-- Dies erstellt ein spezielles Werkstück, das das Testmuster generiert
-
-### Schritt 2: Ein Preset wählen (Optional)
-
-Rayforge enthält Presets für gängige Szenarien:
-
-| Preset             | Geschwindigkeitsbereich | Leistungsbereich | Verwendung für        |
-| ------------------ | ----------------------- | ---------------- | --------------------- |
-| **Dioden-Gravur**  | 1000-10000 mm/min       | 10-100%          | Diodenlaser-Gravur    |
-| **Dioden-Schnitt** | 100-5000 mm/min         | 50-100%          | Diodenlaser-Schneiden |
-| **CO2-Gravur**     | 3000-20000 mm/min       | 10-50%           | CO2-Laser-Gravur      |
-| **CO2-Schnitt**    | 1000-20000 mm/min       | 30-100%          | CO2-Laser-Schneiden   |
-
-Presets sind Startpunkte - du kannst alle Parameter nach Auswahl anpassen.
-
-### Schritt 3: Parameter konfigurieren
-
-Passe die Testraster-Parameter im Einstellungsdialog an:
+Erstelle eines über **Werkzeuge → Materialtest-Raster erstellen**. Rayforge fügt der Arbeitsfläche
+ein spezielles Werkstück zusammen mit einer passenden Operation hinzu, und du konfigurierst das
+Raster in dessen Einstellungsdialog.
 
 ![Materialtest-Raster-Einstellungen](/screenshots/material-test.webp)
 
-#### Testtyp
+## Presets
 
-- **Gravur**: Füllt Quadrate mit Rastermuster
-- **Schnitt**: Schneidet Umrisse von Quadraten
+Der Einstellungsdialog bietet Presets für gängige Lasertypen. Sie füllen einen sinnvollen
+Geschwindigkeitsbereich, Leistungsbereich und Testtyp aus, damit du mit einer vernünftigen Basis
+starten kannst:
 
-#### Geschwindigkeitsbereich
+| Preset             | Geschwindigkeitsbereich | Leistungsbereich | Testtyp |
+| ------------------ | ----------------------- | ---------------- | ------- |
+| **Dioden-Gravur**  | 1000-10000 mm/min       | 10-100%          | Gravur  |
+| **Dioden-Schnitt** | 100-5000 mm/min         | 50-100%          | Schnitt |
+| **CO2-Gravur**     | 3000-20000 mm/min       | 10-50%           | Gravur  |
+| **CO2-Schnitt**    | 1000-20000 mm/min       | 30-100%          | Schnitt |
 
-- **Min. Geschwindigkeit**: Langsamste zu testende Geschwindigkeit (mm/min)
-- **Max. Geschwindigkeit**: Schnellste zu testende Geschwindigkeit (mm/min)
-- Spalten im Raster repräsentieren verschiedene Geschwindigkeiten
+Ein Preset ist nur ein Startpunkt — jeder Wert bleibt danach anpassbar, und Geschwindigkeitsbereiche
+werden automatisch auf das begrenzt, was deine Maschine schafft.
 
-#### Leistungsbereich
+## Raster-Modi
 
-- **Min. Leistung**: Niedrigste zu testende Leistung (%)
-- **Max. Leistung**: Höchste zu testende Leistung (%)
-- Zeilen im Raster repräsentieren verschiedene Leistungsstufen
+Ein Testraster variiert zwei Parameter gleichzeitig: einen über die Spalten und einen über die
+Zeilen. Der Raster-Modus legt fest, welche beiden das sind. **Leistung vs. Geschwindigkeit** ist der
+Standard und deckt die häufigste Frage ab — Leistung über die Spalten, Geschwindigkeit entlang der
+Zeilen.
 
-#### Raster-Abmessungen
+**Leistung vs. Durchgänge** und **Geschwindigkeit vs. Durchgänge** halten einen der beiden Parameter
+fest und variieren stattdessen die Anzahl der Durchgänge, was beim Schneiden dickerer Materialien
+nützlich ist. **Geschwindigkeit vs. Versatz** ist ein spezieller Kalibrierungsmodus für
+bidirektionale Gravur: Er variiert den horizontalen Scan-Versatz, damit du zeilenweise
+Fehlausrichtung ausgleichen kannst. Da das nur bei Rasterarbeit sinnvoll ist, schaltet die Auswahl
+das Raster auf Gravur um und vergrößert den Zeilenabstand, sodass eine Fehlausrichtung leicht zu
+erkennen ist. Innerhalb jeder Zeile wird die Leistung zusammen mit der Geschwindigkeit skaliert,
+damit alle Zellen visuell vergleichbar bleiben.
 
-- **Spalten**: Anzahl der Geschwindigkeits-Variationen (typisch 3-7)
-- **Zeilen**: Anzahl der Leistungs-Variationen (typisch 3-7)
+## Raster konfigurieren
 
-#### Größe & Abstand
+Der Einstellungsdialog gruppiert die Parameter in drei Bereiche.
 
-- **Form-Größe**: Größe jedes Testquadrats in mm (Standard: 20mm)
-- **Abstand**: Lücke zwischen Quadraten in mm (Standard: 5mm)
+Der Bereich **Raster** steuert den Test selbst. Der Testtyp bestimmt, ob jede Zelle den Umriss eines
+Quadrats schneidet oder es mit Rasterlinien füllt. Die Rasterabmessungen legen fest, wie viele
+Spalten und Zeilen getestet werden — jede Spalte steht für einen Schritt des ersten Parameters des
+Modus und jede Zeile für einen Schritt des zweiten, vom Minimum bis zum Maximum des eingegebenen
+Bereichs. Erlaubt sind 2 bis 20 Schritte pro Achse; 5×5 ist ein guter Standard. Formgröße (Standard
+10 mm) und Abstand (Standard 2 mm) bestimmen, wie groß das Raster wird. Beim Testtyp Gravur steuert
+der Zeilenabstand den Abstand zwischen den Scanlinien — kleinere Werte füllen dichter, dauern aber
+länger. Lass ihn auf null stehen, um die Spotgröße deines Lasers zu verwenden, was für die meisten
+Gravurarbeiten gut passt.
 
-#### Beschriftungen
+Der Bereich **Beschriftungen** steuert die Anmerkungen, die neben dem Raster graviert werden.
+Beschriftungen sind standardmäßig aktiviert und werden zuerst graviert, damit das Testmuster sie
+nicht verdecken kann. Sie haben ihre eigene Leistung (Standard 10%) und Geschwindigkeit (Standard
+1000 mm/min), und Geschwindigkeitswerte werden in deiner bevorzugten Anzeigeeinheit angezeigt.
 
-- **Beschriftungen einschließen**: Achsenbeschriftungen ein/aus, die Geschwindigkeits- und
-  Leistungswerte anzeigen
-- Beschriftungen erscheinen an linken und oberen Kanten
-- **Beschriftungs-Leistung (%)**: Leistungseinstellung zum Gravieren der Beschriftungen
-- **Beschriftungs-Geschwindigkeit (mm/min)**: Geschwindigkeit zum Gravieren der Beschriftungen
-  (Standard: 1000 mm/min)
-
-Beschriftungen werden zuerst graviert, vor dem Testraster, sodass sie nicht vom Testmuster verdeckt
-werden.
-
-#### Zeilenabstand (nur Gravurtest)
-
-- **Zeilenabstand (mm)**: Abstand zwischen den Scan-Zeilen bei Verwendung des Gravurtesttyps
-- Kleinere Werte erzeugen dichtere Füllungen, dauern aber länger
-- Typische Werte: 0,1-0,3mm
-
-### Schritt 4: Das Raster generieren
-
-Klicke auf **Generieren**, um das Testmuster zu erstellen. Das Raster erscheint auf deiner
-Arbeitsfläche als spezielles Werkstück.
+Der Bereich **Parameter** enthält die Bereiche, die das Raster variiert — Geschwindigkeit, Leistung,
+Durchgänge oder Versatz, je nach gewähltem Modus. Modi, die einen Parameter festhalten (zum Beispiel
+die Geschwindigkeit bei Leistung vs. Durchgänge), lassen diese Konstante hier ebenfalls einstellen.
 
 ## Das Raster-Layout verstehen
 
-### Raster-Organisation
+Im Standardmodus Leistung vs. Geschwindigkeit nimmt die Leistung von links nach rechts zu und die
+Geschwindigkeit von oben nach unten:
 
 ```
-Leistung (%)     Geschwindigkeit (mm/min) →
-    ↓      1000   2500   5000   7500   10000
-  100%     [  ]   [  ]   [  ]   [  ]   [  ]
-   75%     [  ]   [  ]   [  ]   [  ]   [  ]
-   50%     [  ]   [  ]   [  ]   [  ]   [  ]
-   25%     [  ]   [  ]   [  ]   [  ]   [  ]
-   10%     [  ]   [  ]   [  ]   [  ]   [  ]
+                   Leistung (%)
+                 10       55       100
+Geschw.    100  [  ]     [  ]     [  ]
+(mm/min)   300  [  ]     [  ]     [  ]
+           500  [  ]     [  ]     [  ]
 ```
 
-- **Spalten**: Geschwindigkeit nimmt von links nach rechts zu
-- **Zeilen**: Leistung nimmt von unten nach oben zu
-- **Beschriftungen**: Zeigen exakte Werte für jede Zeile/Spalte
+Beschriftungen an der linken und oberen Kante zeigen den exakten Wert jeder Zeile und Spalte, sodass
+du Zellen nie zählen musst.
 
-### Raster-Größen-Berechnung
+Die Gesamtgröße ergibt sich direkt aus den Rasterabmessungen: Jede Achse misst _Schritte × Formgröße
+plus (Schritte − 1) × Abstand_, hinzu kommt Platz für die Beschriftungen links und oben (höchstens
+15 mm, und nur wenn Beschriftungen aktiviert sind). Ein 5×5-Raster aus 20-mm-Quadraten mit 5 mm
+Abstand ist ohne Beschriftungen 120 mm × 120 mm groß, mit Beschriftungen 135 mm × 135 mm.
 
-**Ohne Beschriftungen:**
+## Wie das Raster ausgeführt wird {#how-the-grid-runs}
 
-- Breite = Spalten × (form_größe + abstand) - abstand
-- Höhe = Zeilen × (form_größe + abstand) - abstand
+Zellen werden absichtlich **nicht** in Lesereihenfolge ausgeführt. Rayforge führt sie in einer
+risikooptimierten Reihenfolge aus: die höchste Geschwindigkeit zuerst, innerhalb jeder
+Geschwindigkeit die niedrigste Leistung und innerhalb jeder Leistung die wenigsten Durchgänge.
+Langsame, leistungsstarke Kombinationen sind diejenigen, die am ehesten das Material verrußen lassen
+oder einen Brand auslösen, daher laufen sie zuletzt. Diese Reihenfolge ist beabsichtigt und kann
+nicht geändert werden.
 
-**Mit Beschriftungen:**
+## Den Test ausführen
 
-- 15mm Rand links und oben für Beschriftungsplatz hinzufügen
+Lege das Material ein, das du charakterisieren möchtest — Reststücke, nicht dein finales Werkstück —
+und fokussiere den Laser wie bei einem echten Job, da die Fokusdistanz das Ergebnis verändert.
+Starte den Job und bleib bei der Maschine: Wenn eine Zelle stark verrußt oder übermäßig raucht,
+brich den Job ab, statt ihn zu Ende laufen zu lassen.
 
-**Beispiel:** 5×5 Raster mit 20mm Quadraten und 5mm Abstand:
-
-- Ohne Beschriftungen: 120mm × 120mm
-- Mit Beschriftungen: 135mm × 135mm
-
-## Ausführungsreihenfolge (Risiko-Optimierung)
-
-Rayforge führt Testzellen in einer **risiko-optimierten Reihenfolge** aus, um Materialschäden zu
-verhindern:
-
-1. **Höchste Geschwindigkeit zuerst**: Schnelle Geschwindigkeiten sind sicherer (weniger Hitzestau)
-2. **Niedrigste Leistung innerhalb der Geschwindigkeit**: Minimiert Risiko bei jeder
-   Geschwindigkeitsstufe
-
-Dies verhindert, dass Verrußen oder Feuer mit langsamen, hochleistungs-Kombinationen beginnen.
-
-**Beispiel-Ausführungsreihenfolge für 3×3 Raster:**
-
-```
-Reihenfolge:  1  2  3
-              4  5  6  ← Höchste Geschwindigkeit, zunehmende Leistung
-              7  8  9
-
-(Schnellste Geschwindigkeit/niedrigste Leistung zuerst ausgeführt)
-```
-
-## Materialtest-Ergebnisse verwenden
-
-### Schritt 1: Den Test ausführen
-
-1. Dein Material in den Laser laden
-2. Den Laser richtig fokussieren
-3. Den Materialtest-Raster-Job ausführen
-4. Den Test überwachen - stoppen, wenn eine Zelle Probleme verursacht
-
-### Schritt 2: Ergebnisse bewerten
-
-Nach Abschluss des Tests untersuche jede Zelle:
-
-- **Zu hell:** Leistung erhöhen oder Geschwindigkeit verringern
-- **Zu dunkel/verrußt:** Leistung verringern oder Geschwindigkeit erhöhen
-- **Perfekt:** Die Geschwindigkeits-/Leistungskombination notieren
-
-### Schritt 3: Einstellungen aufzeichnen
-
-Dokumentiere deine erfolgreichen Einstellungen zur späteren Referenz:
-
-- Materialtyp und -dicke
-- Operationstyp (gravieren oder schneiden)
-- Geschwindigkeits- und Leistungskombination
-- Anzahl der Durchgänge
-- Alle speziellen Hinweise
+Wenn der Test abgeschlossen ist, untersuche jede Zelle. Wenn die Gravur zu hell ausfällt, geh in
+Richtung mehr Leistung oder langsamerer Geschwindigkeit; wenn sie zu dunkel oder verrußt ausfällt,
+geh in Richtung weniger Leistung oder höherer Geschwindigkeit. Bei Schnitttests such die Zelle, die
+sauber durchschneidet und dabei am wenigsten verrußt. Um den Sweet Spot einzugrenzen, führe ein
+zweites, feineres Raster aus: Wenn ein grobes 5×5-Testraster seine beste Zelle bei etwa 40% Leistung
+und 4000 mm/min gefunden hat, grenzt ein nachfolgendes Raster mit 35-45% und 3000-5000 mm/min sie
+genau ein.
 
 <!-- prettier-ignore-start -->
-:::tip[Materialdatenbank]
-Erwäge, ein Referenzdokument mit deinen Materialtest-Ergebnissen zu
-erstellen, um in zukünftigen Projekten schnell nachzuschlagen.
+:::tip[Als Rezept speichern]
+Statt ein Notizbuch mit Gewinner-Einstellungen zu führen, speichere sie als
+[Rezept](../../application-settings/recipes.md): Benenne es (zum Beispiel „3 mm Sperrholz
+Schnitt"), binde es an die Maschine, die Operation, das Material und die Dicke, die du getestet
+hast, und Rayforge schlägt genau diese Einstellungen vor, wenn du dasselbe Material das nächste Mal
+schneidest.
 :::
 <!-- prettier-ignore-end -->
 
 ## Erweiterte Verwendung
 
-### Mit anderen Operationen kombinieren
+Materialtest-Raster sind gewöhnliche Werkstücke, daher lassen sie sich frei mit anderen Operationen
+kombinieren. Ein häufiges Muster ist, eine Kontur-Operation um das fertige Raster zu legen und das
+Teststück nach Abschluss der Gravur aus dem Rohmaterial zu schneiden.
 
-Materialtest-Raster sind reguläre Werkstücke - du kannst sie mit anderen Operationen kombinieren:
-
-**Beispiel-Workflow:**
-
-1. Materialtest-Raster erstellen
-2. Kontur-Schnitt um das gesamte Raster hinzufügen
-3. Test ausführen, frei schneiden, Ergebnisse bewerten
-
-Dies ist nützlich, um das Teststück aus Rohmaterial zu schneiden.
-
-### Benutzerdefinierte Test-Bereiche
-
-Für Feinabstimmung erstelle Testbereiche mit engen Grenzen:
-
-**Grobtest** (Bereich finden):
-
-- Geschwindigkeit: 1000-10000 mm/min (5 Spalten)
-- Leistung: 10-100% (5 Zeilen)
-
-**Feinabstimmungs-Test** (optimieren):
-
-- Geschwindigkeit: 4000-6000 mm/min (5 Spalten)
-- Leistung: 35-45% (5 Zeilen)
-
-### Verschiedene Materialien, gleiches Raster
-
-Führe dieselbe Rasterkonfiguration auf verschiedenen Materialien aus, um deine Materialbibliothek
-schneller aufzubauen.
+Dieselbe Rasterkonfiguration auf verschiedenen Materialien auszuführen, ist ein schneller Weg, um
+eine Bibliothek erprobter Einstellungen aufzubauen — und Rezepte machen diese Bibliothek später nach
+Material und Dicke durchsuchbar.
 
 ## Tipps & Best Practices
 
-### Raster-Design
+Ein paar Gewohnheiten machen Testergebnisse verlässlicher:
 
-✅ **Mit Presets beginnen** - Gute Startpunkte für gängige Szenarien ✅ **5×5-Raster verwenden** -
-Gute Balance aus Detail und Testzeit ✅ **Beschriftungen aktivieren** - Essentiell zur
-Identifizierung von Ergebnissen ✅ **Quadrate ≥20mm halten** - Einfacher Ergebnisse zu sehen und zu
-messen
+- Beginne mit einem Preset und passe von dort an, statt von Grund auf zu konfigurieren.
+- Gib den Zellen etwas Raum: Quadrate von 15-20 mm sind viel leichter zu beurteilen als winzige.
+- Ändere immer nur eine Variable, wenn du eingrenzt — ein feines Raster, das beide Achsen weit
+  variiert, ist schwer zu interpretieren.
+- Lass das Material zwischen aufeinanderfolgenden Tests auf demselben Stück abkühlen.
+- Verwende für jeden Test dieselbe Fokusdistanz, auch für den finalen Job.
 
-### Test-Strategie
+Und die üblichen Laser-Sicherheitsregeln gelten für Testraster doppelt, die absichtlich unbekanntes
+Terrain erkunden:
 
-✅ **Zuerst Abfall testen** - Niemals auf Endmaterial testen ✅ **Eine Variable nach der anderen** -
-Geschwindigkeit ODER Leistungsbereich testen, nicht beide Extreme ✅ **Abkühlen lassen** - Zwischen
-Tests auf gleichem Material warten ✅ **Konsistenter Fokus** - Gleiche Fokusdistanz für alle Tests
-
-### Sicherheit
-
-⚠️ **Tests überwachen** - Laufende Tests niemals unbeaufsichtigt lassen ⚠️ **Konservativ
-beginnen** - Mit niedrigeren Leistungsbereichen beginnen ⚠️ **Belüftung überprüfen** -
-Sicherstellen, dass ordnungsgemäße Rauchabsaugung vorhanden ist ⚠️ **Feuerwache** - Feuerlöscher
-bereit haben
+- Lass einen laufenden Test niemals unbeaufsichtigt.
+- Beginne mit konservativen Leistungsbereichen und arbeite dich nach oben.
+- Stelle sicher, dass die Rauchabsaugung funktioniert, bevor du beginnst.
+- Halte einen Feuerlöscher in Reichweite.
 
 ## Fehlerbehebung
 
-### Testzellen werden in falscher Reihenfolge ausgeführt
+**Die Zellen werden in einer seltsamen Reihenfolge ausgeführt.** Das ist die risikooptimierte
+Ausführungsreihenfolge, die in [Wie das Raster ausgeführt wird](#how-the-grid-runs) beschrieben wird
+— schnellste und schwächste Kombinationen zuerst. Sie ist beabsichtigt.
 
-- Rayforge verwendet risiko-optimierte Reihenfolge (schnellste Geschwindigkeiten zuerst)
-- Dies ist beabsichtigt und kann nicht geändert werden
-- Siehe [Ausführungsreihenfolge](#ausführungsreihenfolge-risiko-optimierung) oben
-
-### Ergebnisse sind inkonsistent
-
-- **Überprüfen:** Material ist flach und richtig befestigt
-- **Überprüfen:** Fokus ist über den gesamten Testbereich konsistent
-- **Überprüfen:** Laserleistung ist stabil (Netzteil überprüfen)
-- **Versuchen:** Kleineres Raster, um Testbereich zu reduzieren
+**Die Ergebnisse sind zwischen Durchläufen inkonsistent.** Stelle sicher, dass das Material flach
+aufliegt und befestigt ist, dass der Fokus über das gesamte Raster hinweg identisch ist und dass
+dein Netzteil stabile Leistung liefert. Wenn nur ein Bereich des Rasters falsch aussieht, kann das
+Material selbst ungleichmäßig sein.
 
 ## Verwandte Themen
 
-- **[3D-Vorschau](../../ui/3d-preview.md)** - Testausführung vor dem Ausführen vorschauen
+- **[3D-Vorschau](../../ui/3d-preview.md)** - Testausführung vor dem Starten in der Vorschau ansehen
+- **[Rezepte](../../application-settings/recipes.md)** - Testergebnisse automatisch wiederverwenden
 - **[Gravur](engrave)** - Gravur-Operationen verstehen
 - **[Kontur-Schneiden](contour)** - Schneide-Operationen verstehen

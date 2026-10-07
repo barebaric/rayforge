@@ -6,9 +6,10 @@ description:
 
 # Integración de Cámara
 
-Rayforge soporta la integración de cámara USB para la alineación y posicionamiento preciso del
-material. La función de superposición de cámara te permite ver exactamente dónde tu láser va a
-cortar o grabar en el material, eliminando las conjeturas y reduciendo el desperdicio de material.
+Rayforge admite la integración de cámaras para una alineación y posicionamiento precisos, usando
+cámaras USB locales o cámaras de red (instantánea HTTP, transmisión HTTP/MJPEG o RTSP). La función
+de superposición de cámara te permite ver exactamente dónde tu láser va a cortar o grabar en el
+material, eliminando las conjeturas y reduciendo el desperdicio de material.
 
 ![Ajustes de Cámara](/screenshots/machine-settings-camera.webp)
 
@@ -42,7 +43,7 @@ vistazo:
 
 ### Requisitos de Hardware
 
-**Cámaras compatibles:**
+**Cámaras locales compatibles:**
 
 - Cámaras web USB (más común)
 - Cámaras integradas de laptop (si ejecutas Rayforge en una laptop cerca de la máquina)
@@ -55,20 +56,18 @@ vistazo:
 - Cámara posicionada para capturar el área de trabajo del láser
 - Montaje seguro para prevenir el movimiento de la cámara
 
-### Añadir una Cámara
+### Añadir una cámara local
 
 1. **Conecta tu cámara** a tu computadora vía USB
 
 2. **Abre Ajustes de Cámara:**
-   - Navega a **Configuración → Preferencias → Cámara**
-   - O usa el botón de la barra de herramientas de cámara
+   - Navega a **Máquina → Ajustes de Máquina → Cámara**
 
 3. **Añade una nueva cámara:**
    - Haz clic en el botón "+" para añadir una cámara
+   - Elige **Local camera** como tipo de fuente
    - Ingresa un nombre descriptivo (ej., "Cámara Superior", "Cámara Área de Trabajo")
    - Selecciona el dispositivo del menú desplegable
-     - En Linux: `/dev/video0`, `/dev/video1`, etc.
-     - En Windows: Cámara 0, Cámara 1, etc.
 
 4. **Habilita la cámara:**
    - Activa el interruptor de habilitación de cámara
@@ -119,32 +118,86 @@ alineación están medidos con cuidado.
 La calibración de lente es la segunda etapa del asistente de cámara. Te permite elegir cómo corregir
 la distorsión:
 
-- **Automatic** — captura fotogramas de una tarjeta de calibración impresa; el asistente calcula el
+- **Automatic** — captura fotogramas de un patrón de calibración impreso; el asistente calcula el
   modelo de distorsión por ti
 - **Manual** — ingresa los coeficientes radiales (k1–k3) y tangenciales (p1–p2) manualmente
 - **Skip** — deja la distorsión sin corregir; puedes calibrar más tarde
 
 #### Calibración automática
 
-Para la calibración **Automatic**, el asistente te guía para capturar varias imágenes de una tarjeta
-de calibración impresa desde diferentes posiciones en la cama, y luego calcula un modelo de
+Para la calibración **Automatic**, el asistente te guía para capturar varias imágenes de un patrón
+de calibración impreso desde diferentes posiciones en la cama, y luego calcula un modelo de
 distorsión automáticamente.
 
 ![Asistente — Configuración de Tarjeta](/screenshots/machine-settings-camera-lens-calibration-wizard-card.webp)
 
-1. Establece el **Ancho** y **Alto** de tu tarjeta impresa. La vista previa se actualiza en tiempo
-   real — la tarjeta debe cubrir aproximadamente el 70% de la vista de la cámara.
-2. Haz clic en **Save to PDF** para exportar la tarjeta para imprimir, luego imprímela y colócala en
+Primero elige un **Pattern Type**:
+
+| Patrón            | Notas                                                                         |
+| ----------------- | ----------------------------------------------------------------------------- |
+| **ChArUco Board** | Tablero de ajedrez con marcadores. Más preciso; necesita una buena impresora. |
+| **Marker Grid**   | Marcadores ArUco o AprilTag independientes. Tolera vistas parciales.          |
+| **Dot Grid**      | Puntos negros, en filas o en filas escalonadas. Barato, menos preciso.        |
+
+1. Establece el **Ancho** y **Alto** de tu hoja impresa. La vista previa se actualiza en tiempo real
+   — el patrón debe cubrir aproximadamente el 70% de la vista de la cámara.
+2. Haz clic en **Save to PDF** para exportar el patrón para imprimir, luego imprímelo y colócalo en
    la cama láser.
 
 ![Asistente — Captura](/screenshots/machine-settings-camera-lens-calibration-wizard-capture.webp)
 
-3. Mueve la tarjeta a diferentes posiciones y ángulos dentro de la vista de la cámara y haz clic en
+3. Mueve el patrón a diferentes posiciones y ángulos dentro de la vista de la cámara y haz clic en
    **Capture Frame** para cada posición. Apunta a al menos 8 capturas que cubran todo el encuadre,
    incluyendo esquinas y bordes. La barra de progreso y los indicadores de estado muestran la
    calidad de captura.
 4. Cuando se hayan capturado suficientes fotogramas, el asistente calcula el modelo de distorsión y
    lo aplica — la superposición de la cámara ahora muestra una imagen corregida y recta.
+
+#### Uso de un patrón ya impreso
+
+Los campos de **Pattern Geometry** describen la hoja en unidades físicas — recuentos de cuadrícula,
+tamaños de elementos y las distancias entre ellos. Editarlos cambia el asistente a medir una hoja
+existente en lugar de sugerir una nueva, así puedes calibrar con un patrón que imprimiste antes o
+que venía con tu máquina.
+
+Mide la hoja después de imprimirla e introduce las dimensiones impresas en lugar de las nominales:
+las impresoras escalan, y un pequeño porcentaje de error de escala aparece directamente en el
+resultado de calibración. Si cambias un campo de geometría, la sugerencia de **Card Size** se
+ignora, porque tus medidas ahora deciden el patrón.
+
+Para un **Marker Grid**, el **Marker Dictionary** debe coincidir con la familia con la que se
+imprimió la hoja (ArUco o AprilTag — Rayforge refina las esquinas en consecuencia). Si los ids
+impresos no empiezan en 0, por ejemplo una baldosa de un conjunto mayor, pon el primer id de la hoja
+en **Marker ID Offset**; los marcadores fuera del rango descrito se ignoran.
+
+La numeración sigue la esquina de **ID Origin**, que contiene el id de desplazamiento, y el **ID
+Order**: los ids consecutivos avanzan primero a lo largo de las filas, o primero a lo largo de las
+columnas. El valor predeterminado — esquina superior izquierda, primero filas — coincide con los
+tableros del propio OpenCV. Para describir tu hoja, encuentra el marcador con el id más bajo y elige
+la esquina donde se encuentra; luego comprueba si el siguiente id está a su lado (filas) o debajo
+(columnas).
+
+Las hojas de puntos vienen en dos disposiciones, y los campos **Row Spacing** y **Row Offset** le
+dicen a Rayforge cuál tienes:
+
+- **Rows in a rectangle** — cada fila está alineada. Deja **Row Offset** en 0.
+- **Rows staggered** — cada segunda fila está desplazada lateralmente, a menudo medio paso, lo que
+  da una disposición hexagonal. Pon la distancia entre filas en **Row Spacing** y el desplazamiento
+  lateral en **Row Offset**.
+
+Rayforge sugiere una hoja escalonada por defecto, así que si tu hoja es un rectángulo simple,
+devuelve **Row Offset** a 0.
+
+:::tip
+
+Una hoja de puntos no indica hacia dónde está arriba, así que Rayforge lee su orientación de la
+vista y de la propia geometría del patrón. Esto vale mientras la hoja mantenga aproximadamente la
+misma orientación entre capturas — así que con **Dot Grid**, no gires la hoja un cuarto de vuelta
+entre tomas. Las filas escalonadas ayudan, porque el desplazamiento rompe la simetría de un
+rectángulo simple. Los patrones ChArUco y ArUco llevan su propia orientación y no tienen esa
+restricción; prefiérelos cuando puedas elegir.
+
+:::
 
 #### Calibración manual
 
@@ -363,6 +416,43 @@ sudo lsof /dev/video0
 - Reduce la resolución de la cámara en ajustes del dispositivo (si es accesible)
 - Cierra otras aplicaciones que usen CPU/GPU
 - Actualiza los controladores de gráficos
+
+---
+
+## Cámaras de red
+
+Rayforge admite cámaras locales y cámaras de red mediante instantáneas HTTP, transmisiones
+HTTP/MJPEG y RTSP. Las cámaras locales se detectan automáticamente; las cámaras de red se añaden
+introduciendo directamente su URL.
+
+### Añadir una cámara de red
+
+1. Abre **Máquina → Ajustes de Máquina → Cámara**.
+2. Haz clic en **+** y elige **HTTP snapshot URL**, **HTTP stream URL** o **RTSP stream**.
+3. Introduce un nombre y la URL, por ejemplo:
+   - Instantánea HTTP: `http://192.168.1.50:8080/media/getCapturePhoto`
+   - Transmisión HTTP/MJPEG: `http://192.168.1.50/mjpeg`
+   - RTSP: `rtsp://192.168.1.50/stream`
+4. Activa la cámara. La transmisión debería aparecer en el lienzo.
+
+El perfil del dispositivo Creality Falcon A1 Pro incluye una cámara de instantáneas HTTP
+preconfigurada y desactivada. En **Máquina → Ajustes de Máquina → Cámara**, selecciona **Falcon A1
+Pro Camera** y sustituye `<laser-ip>` en la URL del campo **Source** por la dirección IP accesible
+de la máquina. Confirma la URL válida con **Enter** o haciendo clic fuera del campo y, después,
+activa la cámara manualmente. También puedes usar la dirección IP asignada al Falcon en tu red
+Wi-Fi.
+
+Más adelante puedes editar el campo **Source** sin perder la calibración ni la alineación. Al editar
+la URL, la cámara se desactiva inmediatamente. El interruptor de activación permanece deshabilitado
+hasta que se aplique una URL válida; después, vuelve a activar la cámara manualmente. Rayforge
+comprueba que el esquema de la URL coincida con el tipo de fuente (`http://`, `https://`, `rtsp://`
+o `rtsps://`).
+
+### Problemas de conexión
+
+Si no aparece ninguna imagen, comprueba la dirección IP, el esquema de la URL y que la cámara y el
+ordenador puedan comunicarse en la misma red. Para instantáneas HTTP, Rayforge conserva la última
+imagen válida y vuelve a intentarlo con una frecuencia reducida.
 
 ---
 

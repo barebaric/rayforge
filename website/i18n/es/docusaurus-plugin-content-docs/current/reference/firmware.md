@@ -502,29 +502,44 @@ $22=1       ; Homing habilitado
 
 ---
 
-## Soporte de Firmware Futuro
+## Controladores Ruida
 
-### Controladores Ruida
-
-Rayforge incluye soporte experimental para controladores basados en Ruida (p.ej. RDC6442, RDC6445,
-Ruida R5). El controlador Ruida se conecta por red y soporta jogging, reporte de posición, control
-de aire asistido, selección de capa, auto-conexión y sondeo de estado.
+Rayforge se conecta a controladores basados en Ruida (p.ej. RDC6442, RDC6445, Ruida R5) mediante el
+controlador **Ruida RPA**, que habla el protocolo nativo del controlador por USB o UDP, o vía TUI
+RPC a través del Ruida Protocol Analyzer. Los perfiles de dispositivo Generic Ruida RPA y Monport
+MP-570 60W CO2 proporcionan puntos de partida para máquinas nuevas.
 
 **Funciones:**
 
-- Conectividad de red (Ethernet/WiFi)
-- Reporte de posición
-- Controles de jogging
-- Aire asistido y selección de capa
-- Soporte de puntos de referencia
+- Conectividad USB y UDP; cuando ambos están configurados, Rayforge alterna automáticamente entre
+  ellos a medida que se conectan y desconectan los cables
+- Envío de trabajos con reporte de posición, jogging, homing y Mover a Posición
+- El encuadre traza el contorno del trabajo con movimientos absolutos sin haz, por lo que funciona
+  sin disparar el láser
+- Honra el ajuste de Modo de Potencia de cada paso: Dinámico activa el escalado de potencia del
+  controlador y Constante lo desactiva
+- Los puertos serie pueden vincularse desde un desplegable de dispositivos USB con coincidencia
+  VID:PID, de modo que la reconexión automática sigue a la máquina después de que el sistema
+  operativo reenumere los dispositivos USB
+
+**Ajustes de afinado de potencia:**
+
+- **Power scaling** — eleva la potencia mínima emitida a medida que la velocidad de corte de la capa
+  disminuye
+- **VECTOR power floor** — potencia mínima para la compensación de corte vectorial durante la
+  aceleración y la desaceleración, reduciendo el sobre-quemado en los extremos de las líneas
+- **IMAGE power bias** — potencia añadida a las líneas de escaneo raster, ya que los tubos CO2 no
+  disparan con potencias muy bajas
 
 **Limitaciones:**
 
-- Experimental — aún no completamente estable
+- Experimental — probado hasta ahora en un controlador RDC6442S (Monport MP570 CO2)
 - Sin generación de G-code; Ruida usa su propio protocolo propietario
-- Envío de trabajos aún no soportado
+- El modo rotatorio aún no está soportado
 
 ---
+
+## Controladores Experimentales
 
 ### OctoPrint
 

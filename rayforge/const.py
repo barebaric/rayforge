@@ -9,4 +9,5 @@ GITHUB_RELEASES_API = (
 )
 GITHUB_URL = "https://github.com/barebaric/rayforge"
 ISSUES_URL = "https://github.com/barebaric/rayforge/issues"
+DISCUSSIONS_URL = "https://github.com/barebaric/rayforge/discussions"
 DOWNLOAD_URL = "https://rayforge.org/docs/getting-started/installation"

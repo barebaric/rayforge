@@ -21,13 +21,35 @@ sélection lorsque vous avez plusieurs machines configurées.
 Sélectionnez le pilote correspondant au contrôleur de votre machine. Le pilote gère la communication
 entre Rayforge et le matériel.
 
-Les appareils GRBL disposent de deux options de pilote série :
+Les appareils GRBL disposent de trois options de pilote série :
 
 - **GRBL (Serial)** — Pilote avec comptage de tampon, détection d'interblocage et récupération de
   blocage. Recommandé pour la plupart des appareils GRBL
 - **GRBL (Serial Simple)** — Pilote à protocole ping-pong. Envoie une ligne, attend « ok », envoie
   la suivante. Sans gestion de tampon ni détection d'interblocage. Utile lorsque le pilote standard
   déclenche de fausses alarmes
+- **GRBL (Rust)** — Pilote expérimental dont toute la pile du protocole série GRBL (contrôle de
+  flux, diffusion des travaux, détection de blocage, récupération d'interblocage, réglages et
+  probing) s'exécute en Rust. Peut être sélectionné comme alternative directe à GRBL (Serial)
+
+Les contrôleurs basés sur Ruida sont pris en charge par le pilote **Ruida RPA**, qui se connecte
+directement en USB ou UDP, ou via TUI RPC par l'intermédiaire du Ruida Protocol Analyzer. Son champ
+USB propose un menu déroulant des appareils connectés avec correspondance VID:PID, et il honore le
+réglage Power Mode de chaque étape — Dynamic active la mise à l'échelle de puissance du contrôleur,
+Constant la désactive. Le comportement de la puissance se règle avec les options du pilote **Power
+Scaling**, **VECTOR power floor** et **IMAGE power bias** : la mise à l'échelle de puissance relève
+le minimum émis lorsque la vitesse de coupe de la couche diminue, le plancher de puissance vector
+compense la sur-combustion aux extrémités des lignes, et le biais d'image compense les tubes CO2 qui
+ne s'allument pas à très faible puissance.
+
+### Liaison du Port Série
+
+Au lieu d'un chemin de périphérique (ex. `/dev/ttyUSB0` ou `COM3`), le champ du port série accepte
+également un identifiant USB `VID:PID` tel que `0403:6001`. Lorsqu'une machine est liée par VID:PID,
+la reconnexion automatique la suit vers son nouveau port après que le système d'exploitation
+réénumère les périphériques USB — par exemple après un redémarrage ou un
+débranchement/rebranchement. Vous pouvez trouver le VID:PID d'un périphérique dans la sortie de
+`lsusb` (Linux) ou dans le Gestionnaire de périphériques → Identificateurs de matériel (Windows).
 
 Après avoir sélectionné un pilote, des paramètres de connexion spécifiques apparaissent sous le
 sélecteur (ex. : port série, baud rate). Ils varient selon le pilote choisi.

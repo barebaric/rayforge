@@ -61,6 +61,9 @@ diese Einstellungen, um Rayforge mitzuteilen, ob sich deine Maschine in Z bewege
   Gravurebene, statt einen sich entlang Z bewegenden Kopf zu zeigen.
 - **Z-Achsenrichtung umkehren**: Wird nur angezeigt, wenn **Hat Z-Achse** aktiviert ist. Aktiviere,
   wenn ein positiver Z-Befehl (z.B. G0 Z10) den Kopf nach unten bewegt.
+- **Z Min / Z Max**: Wird nur angezeigt, wenn **Hat Z-Achse** aktiviert ist. Die niedrigste und
+  höchste Z-Koordinate im Maschinenrahmen. Z-Jog-Bewegungen werden auf diesen Bereich begrenzt, und
+  das Popover „Zur Position bewegen" akzeptiert den vollen Z-Bereich zwischen den beiden Werten.
 
 ### Panel-Ausrichtung
 

@@ -9,6 +9,8 @@ from typing import (
     cast,
 )
 
+from raydriver.grbl.parser import parse_state
+
 from ....context import RayforgeContext
 from ....core.varset import HostnameVar, PortVar, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
@@ -23,7 +25,7 @@ from ..driver import (
     DriverSetupError,
     Pos,
 )
-from ..grbl.grbl_util import parse_state
+from ..session_state import from_session_state, to_session_state
 from .smoothie_util import SmoothieProbeResult, build_smoothie_profile
 
 if TYPE_CHECKING:
@@ -396,12 +398,8 @@ class SmoothieDriver(Driver):
             cmd = dialect.home_axis.format(axis_letter=axis.name)
             await self._send_and_wait(cmd.encode())
 
-    async def move_to(self, pos_x, pos_y) -> None:
-        dialect = self.dialect
-        cmd = dialect.move_to.format(
-            x=self._to_machine_length(float(pos_x)),
-            y=self._to_machine_length(float(pos_y)),
-        )
+    async def move_to(self, pos_x, pos_y, pos_z=None, speed=None) -> None:
+        cmd = self._format_move_to(float(pos_x), float(pos_y), pos_z, speed)
         await self._send_and_wait(cmd.encode())
 
     def can_jog(self, axis: Axis | None = None) -> bool:
@@ -505,9 +503,8 @@ class SmoothieDriver(Driver):
 
         if not is_status_report:
             return
-        state = parse_state(
-            line, self.state, lambda message: logger.info(message)
-        )
+        session_state = parse_state(line, to_session_state(self.state))
+        state = from_session_state(session_state)
         if state != self.state:
             self.state = state
             logger.info(

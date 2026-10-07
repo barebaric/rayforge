@@ -113,10 +113,15 @@ class Pipeline:
         if not self._doc:
             return False
         for layer in self._doc.layers:
-            if (
-                layer.workflow
-                and layer.workflow.steps
-                and layer.all_workpieces
+            if not (layer.workflow and layer.workflow.steps):
+                continue
+            if layer.all_workpieces:
+                return True
+            # Geometry-less steps (e.g. the Command step) run without
+            # any workpiece in the layer.
+            if any(
+                step.visible and not step.needs_workpieces
+                for step in layer.workflow.steps
             ):
                 return True
         return False
@@ -125,9 +130,10 @@ class Pipeline:
         """True when the current doc can produce a job aggregate.
 
         Mirrors the intent builder's criteria: a visible step with at
-        least one workpiece in its layer.  Without these the builder
-        emits no job node, so any rebuild would be a no-op and asking
-        for a job artifact would spin forever.
+        least one workpiece in its layer, or a visible geometry-less
+        step.  Without these the builder emits no job node, so any
+        rebuild would be a no-op and asking for a job artifact would
+        spin forever.
         """
         if not self._doc:
             return False
@@ -135,6 +141,11 @@ class Pipeline:
             if not layer.workflow:
                 continue
             if not layer.all_workpieces:
+                if any(
+                    step.visible and not step.needs_workpieces
+                    for step in layer.workflow.steps
+                ):
+                    return True
                 continue
             if any(step.visible for step in layer.workflow.steps):
                 return True
@@ -214,6 +225,24 @@ class Pipeline:
             self._intent_ctl.is_rebuild_pending
             or self._task_manager.has_tasks()
         )
+
+    def flush_pending_rebuild(self) -> None:
+        """Runs a pending debounced rebuild immediately.
+
+        Used by code that needs a guaranteed-idle pipeline: without
+        this, a rebuild armed by a recent model change could still
+        start after the caller observed an idle pipeline.
+        """
+        self._intent_ctl.flush_pending_debounce()
+
+    async def wait_until_idle(self, timeout: float = 10.0) -> None:
+        """Waits until no pipeline rebuild is pending or running.
+
+        Debounced rebuilds are flushed and one debounce period is
+        waited out, so a rebuild armed by a late callback cannot start
+        after this coroutine returns.
+        """
+        await self._intent_ctl.wait_until_idle(timeout)
 
     # ------------------------------------------------------------------
     # Pause / resume
@@ -296,7 +325,7 @@ class Pipeline:
         message: str | None = None,
     ) -> None:
         if message is not None:
-            self._clear_last_job_output()
+            self.invalidate_job_output()
         elif error_kind == ErrorKind.CACHE_BUDGET_EXCEEDED:
             message = (
                 "Scene too complex for the current cache budget. "
@@ -308,9 +337,17 @@ class Pipeline:
         logger.error("Pipeline execution error: %s", message)
         self.pipeline_error.send(self, message=message)
 
-    def _clear_last_job_output(self) -> None:
-        """Discard machine output that no longer matches the
-        configuration."""
+    def invalidate_job_output(self) -> None:
+        """Discards the cached job artifact so the next job generation
+        rebuilds it.
+
+        This covers both output that no longer matches the
+        configuration and output a caller deliberately invalidates to
+        have the next send produce a different variant. Callers that
+        checkout the current handle first may safely call this while
+        still using the artifact: the checkout's retain keeps it
+        alive.
+        """
         if self._last_job_handle is not None:
             self._store.release(self._last_job_handle)
             self._last_job_handle = None
@@ -502,7 +539,7 @@ class Pipeline:
         try:
             validate_panel_configuration(self._machine, self._doc)
         except UnsupportedRotaryPanelOrientationError as exc:
-            self._clear_last_job_output()
+            self.invalidate_job_output()
             when_done(None, exc)
             return
 

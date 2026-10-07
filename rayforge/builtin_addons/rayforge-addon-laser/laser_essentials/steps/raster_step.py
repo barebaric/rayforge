@@ -96,7 +96,7 @@ class EngraveStep(LaserStep):
                     key="threshold",
                     label=_("Threshold"),
                     description=_("Brightness cutoff for black/white (0-255)"),
-                    default=128,
+                    default=254,
                     min_val=0,
                     max_val=255,
                     visible_when=is_constant,
@@ -290,7 +290,7 @@ class EngraveStep(LaserStep):
         self.auto_levels = True
         self.black_point = 0
         self.white_point = 255
-        self.threshold = 128
+        self.threshold = 254
         self.line_interval_mm = None
         self.sample_interval_mm = None
         self.dot_width_correction_mm = None
@@ -539,7 +539,7 @@ class EngraveStep(LaserStep):
         step.white_point = data.get(
             "white_point", legacy.get("white_point", 255)
         )
-        step.threshold = data.get("threshold", legacy.get("threshold", 128))
+        step.threshold = data.get("threshold", legacy.get("threshold", 254))
         step.line_interval_mm = data.get(
             "line_interval_mm", legacy.get("line_interval_mm", None)
         )
@@ -637,17 +637,20 @@ class EngraveStep(LaserStep):
     @classmethod
     def get_default_transformers_dicts(cls) -> tuple[list, list]:
         OverscanTransformer = transformer_registry.get("OverscanTransformer")
+        CropTransformer = transformer_registry.get("CropTransformer")
         Optimize = transformer_registry.get("Optimize")
         MultiPassTransformer = transformer_registry.get("MultiPassTransformer")
         BidirScanOffsetTransformer = transformer_registry.get(
             "BidirScanOffsetTransformer"
         )
         assert OverscanTransformer is not None
+        assert CropTransformer is not None
         assert Optimize is not None
         assert MultiPassTransformer is not None
         assert BidirScanOffsetTransformer is not None
         optimize_dict = Optimize().to_dict()
         return [
+            CropTransformer(enabled=False).to_dict(),
             OverscanTransformer(
                 enabled=True, distance_mm=0, auto=True
             ).to_dict(),

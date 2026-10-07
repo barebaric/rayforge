@@ -1,7 +1,6 @@
-from unittest.mock import AsyncMock, MagicMock, PropertyMock
+from unittest.mock import AsyncMock
 
 import pytest
-from blinker import Signal
 
 from rayforge.machine.driver.grbl.grbl_probe import (
     build_grbl_profile,
@@ -9,6 +8,7 @@ from rayforge.machine.driver.grbl.grbl_probe import (
 from rayforge.machine.driver.grbl.grbl_serial import GrblSerialDriver
 from rayforge.machine.driver.grbl.grbl_util import (
     extract_device_name,
+    parse_board,
     parse_grbl_settings,
     parse_msg,
     parse_ver,
@@ -99,6 +99,19 @@ class TestParseMsg:
         assert parse_msg("") is None
 
 
+class TestParseBoard:
+    def test_board_name(self):
+        assert parse_board("[BOARD:A1 Pro Laser Master]") == (
+            "A1 Pro Laser Master"
+        )
+
+    def test_empty_board_ignored(self):
+        assert parse_board("[BOARD: ]") is None
+
+    def test_not_a_board_line(self):
+        assert parse_board("[VER:1.1h:]") is None
+
+
 class TestExtractDeviceName:
     def test_name_from_ver_with_build_info(self):
         lines = ["[VER:1.1h.ORTUR:]", "[OPT:VMPH,63,511]"]
@@ -126,6 +139,20 @@ class TestExtractDeviceName:
     def test_name_from_msg_machine_spelling(self):
         lines = ["[VER:1.1h:]", "[MSG:Machine:Some Device]"]
         assert extract_device_name(lines) == "Some Device"
+
+    def test_name_from_grblhal_board(self):
+        lines = [
+            "[VER:1.1f.20231005:]",
+            "[BOARD:A1 Pro Laser Master]",
+        ]
+        assert extract_device_name(lines) == "A1 Pro Laser Master"
+
+    def test_msg_takes_priority_over_board(self):
+        lines = [
+            "[BOARD:A1 Pro Laser Master]",
+            "[MSG:machine:Creality Falcon A1 Pro]",
+        ]
+        assert extract_device_name(lines) == "Creality Falcon A1 Pro"
 
     def test_comma_ver_no_msg(self):
         lines = ["[VER:1.0.15,20240923:]", "[OPT:VMP,31,511]"]
@@ -221,17 +248,6 @@ class TestBuildGrblProfile:
         assert profile.machine_config.acceleration == 600
 
 
-def _make_mock_serial():
-    mock = MagicMock()
-    mock.connect = AsyncMock()
-    mock.disconnect = AsyncMock()
-    mock.send = AsyncMock()
-    mock.received = Signal()
-    mock.status_changed = Signal()
-    mock.is_connected = True
-    return mock
-
-
 class TestDriverProbe:
     """
     Tests for GrblSerialDriver.probe() verifying that it creates
@@ -242,18 +258,6 @@ class TestDriverProbe:
     async def test_probe_connects_and_queries(
         self, context_initializer, mocker
     ):
-        mock_serial = _make_mock_serial()
-        mocker.patch(
-            "rayforge.machine.driver.grbl.grbl_serial.SerialTransport",
-            return_value=mock_serial,
-        )
-        mocker.patch.object(
-            mock_serial,
-            "is_connected",
-            new_callable=PropertyMock,
-            return_value=True,
-        )
-
         build_info = [
             "[VER:1.1h.ORTUR:]",
             "[OPT:VMPH,63,511]",
@@ -272,8 +276,9 @@ class TestDriverProbe:
         ]
 
         async def fake_connect(self):
-            self._handshake_received.set()
-            self._update_connection_status(TransportStatus.CONNECTED)
+            self.connection_status_changed.send(
+                self, status=TransportStatus.CONNECTED, message=None
+            )
 
         async def fake_interactive(self, command):
             if command == "$I":
@@ -317,12 +322,6 @@ class TestDriverProbe:
 
     @pytest.mark.asyncio
     async def test_probe_cleanup_on_error(self, context_initializer, mocker):
-        mock_serial = _make_mock_serial()
-        mocker.patch(
-            "rayforge.machine.driver.grbl.grbl_serial.SerialTransport",
-            return_value=mock_serial,
-        )
-
         async def failing_connect(self):
             raise ConnectionError("Port not found")
 

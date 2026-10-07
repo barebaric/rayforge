@@ -120,6 +120,30 @@ class RowAdapter(ABC):
         """Return True if the row must be recreated for the new var."""
         return type(old_var) is not type(new_var)
 
+    def set_bounds(self, lower: float, upper: float) -> None:
+        """Apply machine-dependent bounds to the row's spin entries.
+
+        Only composite range adapters (e.g. min/max tuples) own spin
+        entries that can be re-bounded; the default does nothing.
+        """
+        return
+
+    def set_item_labels(self, labels: tuple[str, str]) -> None:
+        """Retitle a composite row's component rows.
+
+        Only composite adapters render more than one titled row; the
+        default does nothing.
+        """
+        return
+
+    def set_item_subtitles(self, subtitles: tuple[str, str]) -> None:
+        """Set the subtitles of a composite row's component rows.
+
+        Only composite adapters render more than one subtitled row;
+        the default does nothing.
+        """
+        return
+
     def update_from_var(self, var: Var):
         pass
 

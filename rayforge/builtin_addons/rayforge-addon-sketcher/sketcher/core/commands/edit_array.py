@@ -339,7 +339,10 @@ class EditArrayCommand(SketchChangeCommand):
         stored = self.array.standalone_pids.get(0)
         if stored is not None:
             return stored
-        discovered = self.sketch.find_standalone_point_ids(template_eids)
+        discovered = self.sketch.find_standalone_point_ids(
+            list(template_eids)
+            + EntityGroup(registry, template_eids).helper_ids()
+        )
         if discovered:
             self.array.standalone_pids[0] = discovered
         return discovered
@@ -484,9 +487,11 @@ class EditArrayCommand(SketchChangeCommand):
         template_eids: list[int],
     ) -> None:
         """Saves the current positions of all template points — the
-        member's entity points and its standalone points — so undo can
-        restore them after ``_reanchor_template`` moves them."""
-        snapshot = EntityGroup(registry, template_eids).snapshot_positions()
+        member's entity points, its standalone points and its helper
+        geometry's points (a text box's fourth frame corner) — so undo
+        can restore them after ``_reanchor_template`` moves them."""
+        template_group = EntityGroup(registry, template_eids)
+        snapshot = template_group.with_helpers().snapshot_positions()
         for pid in self._template_standalone:
             try:
                 pt = registry.get_point(pid)

@@ -37,6 +37,18 @@ Alternativamente:
 Clique no ícone de edição ao lado de uma máquina para abrir o
 [diálogo de configurações da máquina](../machine/general.md).
 
+## Notas da máquina
+
+A categoria **Notes**, logo após **General**, reúne as orientações do perfil do dispositivo e suas
+próprias notas para essa máquina. As notas do dispositivo são somente leitura; **My Notes** podem
+ser editadas com Markdown. A sintaxe compatível inclui títulos, parágrafos, negrito, itálico,
+listas, links, código em linha, blocos de código e seções expansíveis com `:::details`.
+
+Quando um perfil fornece instruções de configuração, elas também aparecem na página final **Review &
+Name** do assistente e permanecem disponíveis em **Machine Settings → Notes** após a criação da
+máquina. As notas pessoais são salvas por máquina e não são substituídas ao revisar atualizações do
+perfil.
+
 ## Alternar a Máquina Ativa
 
 Use o menu suspenso de máquinas no cabeçalho da janela principal para alternar entre as máquinas

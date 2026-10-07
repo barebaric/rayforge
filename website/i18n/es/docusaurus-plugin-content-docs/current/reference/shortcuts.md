@@ -130,11 +130,12 @@ Referencia completa de atajos de teclado en Rayforge.
 
 ## Control de Máquina
 
-| Atajo       | Acción             | Descripción                             |
-| ----------- | ------------------ | --------------------------------------- |
-| `Ctrl+L`    | Panel Inferior     | Alternar visibilidad del panel inferior |
-| `Ctrl+&lt;` | Ajustes de Máquina | Abrir diálogo de ajustes de máquina     |
-| `F1`        | Acerca de          | Mostrar diálogo acerca de               |
+| Atajo       | Acción             | Descripción                              |
+| ----------- | ------------------ | ---------------------------------------- |
+| `Ctrl+L`    | Panel Inferior     | Alternar visibilidad del panel inferior  |
+| `Ctrl+M`    | Modo Mover Cabeza  | Activar clic en lienzo para mover cabeza |
+| `Ctrl+&lt;` | Ajustes de Máquina | Abrir diálogo de ajustes de máquina      |
+| `F1`        | Acerca de          | Mostrar diálogo acerca de                |
 
 <!-- prettier-ignore-start -->
 :::note[Operaciones de Máquina]
@@ -386,6 +387,7 @@ Algunos atajos menos conocidos:
 |                 | Ctrl+G          | Agrupar             |
 |                 | Ctrl+U          | Desagrupar          |
 | **Máquina**     | Ctrl+L          | Panel Inferior      |
+|                 | Ctrl+M          | Modo Mover Cabeza   |
 |                 | Ctrl+&lt;       | Ajustes de Máquina  |
 |                 | F1              | Acerca de           |
 

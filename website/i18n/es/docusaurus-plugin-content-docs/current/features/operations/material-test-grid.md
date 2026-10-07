@@ -1,261 +1,173 @@
+---
+description:
+  "Genera una cuadrícula de prueba de material para encontrar los ajustes óptimos de potencia y
+  velocidad del láser en cualquier material. Calibra tu cortadora láser de forma sistemática."
+---
+
 # Cuadrícula de Prueba de Material
 
-El generador de Cuadrícula de Prueba de Material crea patrones de prueba paramétricos para ayudarte
-a encontrar los ajustes óptimos de láser para diferentes materiales.
+Cada material — y a menudo cada color y espesor del mismo material — responde de forma diferente a
+la potencia y velocidad del láser. La Cuadrícula de Prueba de Material elimina las conjeturas al
+buscar la combinación adecuada: genera un patrón de celdas de prueba en el que cada celda se graba o
+corta con un ajuste ligeramente diferente, todo en un solo trabajo. Después de una ejecución podrás
+ver de un vistazo qué combinación produce el resultado que deseas.
 
-## Resumen
+Crea una mediante **Herramientas → Crear Cuadrícula de Prueba de Material**. Rayforge añade una
+pieza de trabajo especial al lienzo junto con una operación correspondiente, y configuras la
+cuadrícula en su diálogo de ajustes.
 
-Las pruebas de material son esenciales para el trabajo láser - diferentes materiales requieren
-diferentes ajustes de potencia y velocidad. La Cuadrícula de Prueba de Material automatiza este
-proceso:
+![Ajustes de Cuadrícula de Prueba de Material](/screenshots/material-test.webp)
 
-- Generando cuadrículas de prueba con rangos configurables de velocidad/potencia
-- Proporcionando preajustes para tipos comunes de láser (Diodo, CO2)
-- Optimizando el orden de ejecución para seguridad (velocidades más rápidas primero)
-- Añadiendo etiquetas para identificar los ajustes de cada celda de prueba
+## Preajustes
 
-## Crear una Cuadrícula de Prueba de Material
+El diálogo de ajustes ofrece preajustes para tipos comunes de láser. Rellenan un rango de velocidad
+sensato, un rango de potencia y el tipo de prueba para que puedas empezar con una base razonable:
 
-### Paso 1: Abrir el Generador
+| Preajuste         | Rango de Velocidad | Rango de Potencia | Tipo de Prueba |
+| ----------------- | ------------------ | ----------------- | -------------- |
+| **Grabado Diodo** | 1000-10000 mm/min  | 10-100%           | Grabar         |
+| **Corte Diodo**   | 100-5000 mm/min    | 50-100%           | Cortar         |
+| **Grabado CO2**   | 3000-20000 mm/min  | 10-50%            | Grabar         |
+| **Corte CO2**     | 1000-20000 mm/min  | 30-100%           | Cortar         |
 
-Accede al generador de Cuadrícula de Prueba de Material:
+Un preajuste es solo un punto de partida — todos los valores siguen siendo ajustables después, y los
+rangos de velocidad se limitan automáticamente a lo que tu máquina puede hacer.
 
-- Menú: **Herramientas → Cuadrícula de Prueba de Material**
-- Esto crea una pieza de trabajo especial que genera el patrón de prueba
+## Modos de Cuadrícula
 
-### Paso 2: Elegir un Preajuste (Opcional)
+Una cuadrícula de prueba varía dos parámetros a la vez: uno a lo largo de las columnas y otro a lo
+largo de las filas. El modo de cuadrícula decide cuáles son. **Potencia vs Velocidad** es el modo
+predeterminado y cubre la pregunta más común — potencia en las columnas, velocidad en las filas.
 
-Rayforge incluye preajustes para escenarios comunes:
+**Potencia vs Pasadas** y **Velocidad vs Pasadas** mantienen fijo uno de los dos y varían el número
+de pasadas en su lugar, lo cual es útil para cortar material grueso. **Velocidad vs Desfase** es un
+modo de calibración especial para grabado bidireccional: varía el desfase horizontal de escaneo para
+que puedas corregir la desalineación entre filas. Como eso solo tiene sentido para trabajos raster,
+al seleccionarlo la cuadrícula cambia a Grabar y se amplía el espaciado de líneas para que cualquier
+desalineación sea fácil de ver. Dentro de cada fila la potencia se escala junto con la velocidad, de
+modo que todas las celdas permanezcan visualmente comparables.
 
-| Preajuste         | Rango de Velocidad | Rango de Potencia | Usar Para           |
-| ----------------- | ------------------ | ----------------- | ------------------- |
-| **Grabado Diodo** | 1000-10000 mm/min  | 10-100%           | Grabado láser diodo |
-| **Corte Diodo**   | 100-5000 mm/min    | 50-100%           | Corte láser diodo   |
-| **Grabado CO2**   | 3000-20000 mm/min  | 10-50%            | Grabado láser CO2   |
-| **Corte CO2**     | 1000-20000 mm/min  | 30-100%           | Corte láser CO2     |
+## Configurar la Cuadrícula
 
-Los preajustes son puntos de partida - puedes ajustar todos los parámetros después de seleccionar
-uno.
+El diálogo de ajustes agrupa los parámetros en tres secciones.
 
-### Paso 3: Configurar Parámetros
+La sección **Cuadrícula** controla la prueba en sí. El tipo de prueba determina si cada celda corta
+el contorno de un cuadrado o lo rellena con líneas raster. Las dimensiones de la cuadrícula
+establecen cuántas columnas y filas probar — cada columna representa un paso del primer parámetro
+del modo y cada fila un paso del segundo, desde el mínimo hasta el máximo del rango que introduzcas.
+Se permiten entre 2 y 20 pasos por eje; 5×5 es un buen valor predeterminado. El tamaño de forma (10
+mm por defecto) y el espaciado (2 mm por defecto) determinan cuán grande se vuelve la cuadrícula.
+Para el tipo de prueba Grabar, el intervalo de línea controla la distancia entre las líneas de
+escaneo — los valores más pequeños rellenan de forma más densa pero tardan más. Déjalo en cero para
+usar el tamaño del punto de tu láser, que es una buena opción para la mayoría de los grabados.
 
-Ajusta los parámetros de la cuadrícula de prueba en el diálogo de configuración:
+La sección **Etiquetas** controla las anotaciones grabadas junto a la cuadrícula. Las etiquetas
+están activadas por defecto y se graban primero, de modo que el patrón de prueba no pueda
+ocultarlas. Tienen su propia potencia (10% por defecto) y velocidad (1000 mm/min por defecto), y los
+valores de velocidad se muestran en tu unidad de visualización preferida.
 
-![Configuración de Cuadrícula de Prueba de Material](/screenshots/material-test.webp)
+La sección **Parámetros** contiene los rangos que varía la cuadrícula — velocidad, potencia, pasadas
+o desfase, según el modo seleccionado. Los modos que mantienen un parámetro fijo (por ejemplo la
+velocidad en Potencia vs Pasadas) también te permiten establecer esa constante aquí.
 
-#### Tipo de Prueba
+## Entendiendo el Diseño
 
-- **Grabar**: Rellena cuadrados con patrón raster
-- **Cortar**: Corta el contorno de los cuadrados
-
-#### Rango de Velocidad
-
-- **Velocidad Mín**: Velocidad más lenta a probar (mm/min)
-- **Velocidad Máx**: Velocidad más rápida a probar (mm/min)
-- Las columnas en la cuadrícula representan diferentes velocidades
-
-#### Rango de Potencia
-
-- **Potencia Mín**: Potencia más baja a probar (%)
-- **Potencia Máx**: Potencia más alta a probar (%)
-- Las filas en la cuadrícula representan diferentes niveles de potencia
-
-#### Dimensiones de la Cuadrícula
-
-- **Columnas**: Número de variaciones de velocidad (típicamente 3-7)
-- **Filas**: Número de variaciones de potencia (típicamente 3-7)
-
-#### Tamaño y Espaciado
-
-- **Tamaño de Forma**: Tamaño de cada cuadrado de prueba en mm (por defecto: 20mm)
-- **Espaciado**: Espacio entre cuadrados en mm (por defecto: 5mm)
-
-#### Etiquetas
-
-- **Incluir Etiquetas**: Habilitar/deshabilitar etiquetas de ejes mostrando valores de velocidad y
-  potencia
-- Las etiquetas aparecen en los bordes izquierdo y superior
-- **Potencia de Etiqueta (%)**: Ajuste de potencia para grabar etiquetas
-- **Velocidad de Etiqueta (mm/min)**: Velocidad para grabar etiquetas (por defecto: 1000 mm/min)
-
-Las etiquetas se graban primero, antes de la cuadrícula de prueba, para que no sean ocultadas por el
-patrón de prueba.
-
-#### Intervalo de Línea (Solo Prueba de Grabado)
-
-- **Intervalo de Línea (mm)**: Espaciado entre líneas de escaneo al usar el tipo de prueba de
-  grabado
-- Valores menores crean rellenos más densos pero tardan más en ejecutarse
-- Valores típicos: 0.1-0.3mm
-
-### Paso 4: Generar la Cuadrícula
-
-Haz clic en **Generar** para crear el patrón de prueba. La cuadrícula aparece en tu lienzo como una
-pieza de trabajo especial.
-
-## Entendiendo el Diseño de la Cuadrícula
-
-### Organización de la Cuadrícula
+En el modo predeterminado Potencia vs Velocidad, la potencia aumenta de izquierda a derecha y la
+velocidad de arriba abajo:
 
 ```
-Potencia (%)     Velocidad (mm/min) →
-    ↓         1000   2500   5000   7500   10000
-  100%      [  ]   [  ]   [  ]   [  ]   [  ]
-   75%      [  ]   [  ]   [  ]   [  ]   [  ]
-   50%      [  ]   [  ]   [  ]   [  ]   [  ]
-   25%      [  ]   [  ]   [  ]   [  ]   [  ]
-   10%      [  ]   [  ]   [  ]   [  ]   [  ]
+                   Potencia (%)
+                 10       55       100
+Velocidad  100  [  ]     [  ]     [  ]
+(mm/min)   300  [  ]     [  ]     [  ]
+           500  [  ]     [  ]     [  ]
 ```
 
-- **Columnas**: La velocidad aumenta de izquierda a derecha
-- **Filas**: La potencia aumenta de abajo hacia arriba
-- **Etiquetas**: Muestran valores exactos para cada fila/columna
+Las etiquetas en los bordes izquierdo y superior muestran el valor exacto de cada fila y columna, de
+modo que nunca tengas que contar celdas.
 
-### Cálculo del Tamaño de Cuadrícula
+El tamaño total se deduce directamente de las dimensiones de la cuadrícula: cada eje mide _pasos ×
+tamaño de forma + (pasos − 1) × espaciado_, más el espacio para las etiquetas a la izquierda y
+arriba (como máximo 15 mm, y solo cuando las etiquetas están activadas). Una cuadrícula de 5×5 con
+cuadrados de 20 mm y espaciado de 5 mm mide 120 mm por lado sin etiquetas y 135 mm con ellas.
 
-**Sin etiquetas:**
+## Cómo se Ejecuta la Cuadrícula {#how-the-grid-runs}
 
-- Ancho = columnas × (tamaño_forma + espaciado) - espaciado
-- Alto = filas × (tamaño_forma + espaciado) - espaciado
+Las celdas deliberadamente **no** se ejecutan en orden de lectura. Rayforge las ejecuta en un orden
+optimizado por riesgo: primero la velocidad más alta, la potencia más baja dentro de cada velocidad
+y el menor número de pasadas dentro de cada potencia. Las combinaciones lentas y de alta potencia
+son las más propensas a chamuscar el material o iniciar un fuego, por lo que se ejecutan al final.
+Este orden es intencional y no puede cambiarse.
 
-**Con etiquetas:**
+## Ejecutar la Prueba
 
-- Añadir margen de 15mm a la izquierda y arriba para espacio de etiquetas
+Carga el material que quieres caracterizar — material de desecho, no tu pieza final — y enfoca el
+láser como lo harías para un trabajo real, ya que la distancia de enfoque cambia el resultado.
+Inicia el trabajo y quédate junto a la máquina: si una celda comienza a chamuscarse gravemente o a
+echar demasiado humo, detén el trabajo en lugar de dejarlo terminar.
 
-**Ejemplo:** Cuadrícula 5×5 con cuadrados de 20mm y espaciado de 5mm:
-
-- Sin etiquetas: 120mm × 120mm
-- Con etiquetas: 135mm × 135mm
-
-## Orden de Ejecución (Optimización de Riesgo)
-
-Rayforge ejecuta las celdas de prueba en un **orden optimizado por riesgo** para prevenir daño al
-material:
-
-1. **Velocidad más alta primero**: Las velocidades rápidas son más seguras (menor acumulación de
-   calor)
-2. **Menor potencia dentro de cada velocidad**: Minimiza el riesgo en cada nivel de velocidad
-
-Esto previene chamuscado o fuego al comenzar con combinaciones lentas y de alta potencia.
-
-**Ejemplo de orden de ejecución para cuadrícula 3×3:**
-
-```
-Orden:  1  2  3
-        4  5  6  ← Velocidad más alta, potencia aumentando
-        7  8  9
-
-(Velocidad más rápida/potencia más baja ejecutada primero)
-```
-
-## Usando Resultados de Prueba de Material
-
-### Paso 1: Ejecutar la Prueba
-
-1. Carga tu material en el láser
-2. Enfoca el láser correctamente
-3. Ejecuta el trabajo de cuadrícula de prueba de material
-4. Monitorea la prueba - detén si alguna celda causa problemas
-
-### Paso 2: Evaluar Resultados
-
-Después de completar la prueba, examina cada celda:
-
-- **Muy claro**: Aumenta potencia o disminuye velocidad
-- **Muy oscuro/chamuscado**: Disminuye potencia o aumenta velocidad
-- **Perfecto**: Anota la combinación de velocidad/potencia
-
-### Paso 3: Registrar Ajustes
-
-Documenta tus ajustes exitosos para referencia futura:
-
-- Tipo y espesor de material
-- Tipo de operación (grabar o cortar)
-- Combinación de velocidad y potencia
-- Número de pasadas
-- Cualquier nota especial
+Cuando la prueba termine, examina cada celda. Si el grabado sale demasiado claro, muévete hacia más
+potencia o menor velocidad; si sale oscuro o chamuscado, muévete hacia menos potencia o mayor
+velocidad. Para las pruebas de corte, busca la celda que corta completamente con la menor chamusca.
+Para acercarte al punto óptimo, ejecuta una segunda cuadrícula más fina: si una prueba gruesa de 5×5
+encontró su mejor celda alrededor del 40% de potencia y 4000 mm/min, una cuadrícula de seguimiento
+que abarque 35-45% y 3000-5000 mm/min la ubicará con precisión.
 
 <!-- prettier-ignore-start -->
-:::tip[Base de Datos de Materiales]
-Considera crear un documento de referencia con tus resultados de
-prueba de material para consulta rápida en proyectos futuros.
+:::tip[Guárdalo como receta]
+En lugar de llevar un cuaderno con los ajustes ganadores, guárdalos como una
+[receta](../../application-settings/recipes.md): ponle nombre (por ejemplo "Corte de Contrachapado
+de 3 mm"), vincúlala a la máquina, la operación, el material y el espesor que probaste, y Rayforge
+sugerirá exactamente esos ajustes la próxima vez que cortes el mismo material.
 :::
 <!-- prettier-ignore-end -->
 
 ## Uso Avanzado
 
-### Combinando con Otras Operaciones
+Las cuadrículas de prueba de material son piezas de trabajo normales, por lo que se combinan
+libremente con otras operaciones. Un patrón común es añadir una operación de contorno alrededor de
+la cuadrícula terminada y cortar la pieza de prueba del material base cuando el grabado termina.
 
-Las cuadrículas de prueba de material son piezas de trabajo normales - puedes combinarlas con otras
-operaciones:
-
-**Ejemplo de flujo de trabajo:**
-
-1. Crear cuadrícula de prueba de material
-2. Añadir corte de contorno alrededor de toda la cuadrícula
-3. Ejecutar prueba, liberar, evaluar resultados
-
-Esto es útil para liberar la pieza de prueba del material base.
-
-### Rangos de Prueba Personalizados
-
-Para ajuste fino, crea pruebas de rango estrecho:
-
-**Prueba gruesa** (encontrar rango aproximado):
-
-- Velocidad: 1000-10000 mm/min (5 columnas)
-- Potencia: 10-100% (5 filas)
-
-**Prueba fina** (optimizar):
-
-- Velocidad: 4000-6000 mm/min (5 columnas)
-- Potencia: 35-45% (5 filas)
-
-### Diferentes Materiales, Misma Cuadrícula
-
-Ejecuta la misma configuración de cuadrícula en diferentes materiales para construir tu biblioteca
-de materiales más rápido.
+Ejecutar la misma configuración de cuadrícula en diferentes materiales es una forma rápida de
+construir una biblioteca de ajustes confiables — y las recetas hacen que esa biblioteca se pueda
+buscar por material y espesor más adelante.
 
 ## Consejos y Mejores Prácticas
 
-### Diseño de Cuadrícula
+Algunos hábitos hacen que los resultados de las pruebas sean más confiables:
 
-✅ **Comienza con preajustes** - Buenos puntos de partida para escenarios comunes ✅ **Usa
-cuadrículas 5×5** - Buen balance entre detalle y tiempo de prueba ✅ **Habilita etiquetas** -
-Esenciales para identificar resultados ✅ **Mantén cuadrados ≥20mm** - Más fácil de ver y medir
-resultados
+- Comienza desde un preajuste y ajusta a partir de ahí en lugar de configurar desde cero.
+- Dale espacio a las celdas: los cuadrados de 15-20 mm son mucho más fáciles de evaluar que los
+  diminutos.
+- Cambia una variable a la vez al acotar resultados — una cuadrícula fina que varía ambos ejes en un
+  rango amplio es difícil de interpretar.
+- Deja que el material se enfríe entre pruebas consecutivas en la misma pieza.
+- Usa la misma distancia de enfoque en cada prueba, incluido el trabajo final.
 
-### Estrategia de Prueba
+Y las reglas habituales de seguridad láser se aplican doble a las cuadrículas de prueba, que
+exploran intencionadamente territorio desconocido:
 
-✅ **Prueba primero en material de desecho** - Nunca pruebes en material final ✅ **Una variable a
-la vez** - Prueba rango de velocidad O potencia, no ambos extremos ✅ **Permite enfriamiento** -
-Espera entre pruebas en el mismo material ✅ **Enfoque consistente** - Misma distancia de enfoque
-para todas las pruebas
-
-### Seguridad
-
-⚠️ **Monitorea las pruebas** - Nunca dejes pruebas en ejecución sin supervisión ⚠️ **Comienza
-conservador** - Comienza con rangos de potencia más bajos ⚠️ **Verifica ventilación** - Asegura
-extracción de humos adecuada ⚠️ **Vigilancia de fuego** - Ten extintor listo
+- Nunca dejes una prueba en ejecución sin supervisión.
+- Comienza con rangos de potencia conservadores y ve subiendo.
+- Asegúrate de que la extracción de humos funcione antes de comenzar.
+- Ten un extintor al alcance de la mano.
 
 ## Solución de Problemas
 
-### Las celdas de prueba ejecutan en orden incorrecto
+**Las celdas se ejecutan en un orden extraño.** Ese es el orden de ejecución optimizado por riesgo
+descrito en [Cómo se Ejecuta la Cuadrícula](#how-the-grid-runs) — primero las combinaciones más
+rápidas y de menor potencia. Es intencional.
 
-- Rayforge usa orden optimizado por riesgo (velocidades más rápidas primero)
-- Esto es intencional y no puede cambiarse
-- Ver [Orden de Ejecución](#orden-de-ejecución-optimización-de-riesgo) arriba
-
-### Los resultados son inconsistentes
-
-- **Verifica**: El material está plano y correctamente asegurado
-- **Verifica**: El enfoque es consistente en toda el área de prueba
-- **Verifica**: La potencia del láser es estable (revisa la fuente de alimentación)
-- **Prueba**: Cuadrícula más pequeña para reducir el área de prueba
+**Los resultados son inconsistentes entre ejecuciones.** Asegúrate de que el material esté plano y
+sujeto, de que el enfoque sea idéntico en toda la cuadrícula y de que tu fuente de alimentación
+entregue una potencia estable. Si solo una región de la cuadrícula se ve mal, el propio material
+puede ser irregular.
 
 ## Temas Relacionados
 
-- **[Vista Previa 3D](../../ui/3d-preview.md)** - Previsualizar ejecución de prueba antes de
-  ejecutar
-- **[Grabado](engrave)** - Entender operaciones de grabado
-- **[Corte de Contorno](contour)** - Entender operaciones de corte
+- **[Vista Previa 3D](../../ui/3d-preview.md)** - Previsualiza la ejecución de la prueba antes de
+  ejecutarla
+- **[Recetas](../../application-settings/recipes.md)** - Reutiliza tus resultados de prueba
+  automáticamente
+- **[Grabado](engrave)** - Entender las operaciones de grabado
+- **[Corte de Contorno](contour)** - Entender las operaciones de corte

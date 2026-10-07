@@ -132,6 +132,17 @@ auswählst, da diese typischerweise keine USB-basierten GRBL-Geräte sind. USB-S
 :::
 <!-- prettier-ignore-end -->
 
+<!-- prettier-ignore-start -->
+:::tip[Maschine wechselt nach Wiederverbindung den Port]
+Wenn sich der Port deiner Maschine ändert
+(z. B. von `/dev/ttyUSB0` zu `/dev/ttyUSB1`) nach einem Neustart oder Wiederverbinden, binde sie
+über ihre USB-Identität: Gib die VID:PID des Geräts (z. B. `0403:6001`) in das Feld für den
+seriellen Port ein, anstatt einen Port-Pfad. Die automatische Wiederverbindung folgt der Maschine
+dann zu ihrem neuen Port. Siehe
+[Seriellen Port binden](../machine/general.md#serieller-port-binden).
+:::
+<!-- prettier-ignore-end -->
+
 ### Falsche Baudrate
 
 **Problem:** Verbindung wird hergestellt, aber Befehle funktionieren nicht oder produzieren

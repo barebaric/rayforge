@@ -3,13 +3,18 @@ from unittest.mock import MagicMock, patch
 import pytest
 from laser_essentials.steps import EngraveStep
 from raygeo.cnc.execution.specs import ComputePayload
+from raygeo.geo import Geometry
+from raygeo.ops import Ops
 from raygeo.ops.assembly import Assembler
 from raygeo.ops.assembly.raster import RasterSpec
 from raygeo.ops.part import Part
+from raygeo.ops.types import CommandCategory, CommandType
 
 from rayforge.core.step_registry import step_registry
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.dither import DitherAlgorithm
+from rayforge.pipeline.transformer import OpsTransformer
+from rayforge.pipeline.transformer.registry import transformer_registry
 
 
 @pytest.fixture
@@ -35,12 +40,36 @@ class TestEngraveStep:
     def test_create(self, mock_context):
         step = EngraveStep.create(mock_context, name="Created")
         assert isinstance(step, EngraveStep)
-        assert len(step.per_workpiece_transformers_dicts) == 3
+        assert len(step.per_workpiece_transformers_dicts) == 4
         transformer_names = {
             t.get("name") for t in step.per_workpiece_transformers_dicts
         }
         assert "BidirScanOffsetTransformer" in transformer_names
+        assert "CropTransformer" in transformer_names
         assert step.selected_head_uid == "test-laser-uid"
+
+    def test_merge_scanlines_enabled_by_default(self, mock_context):
+        """Scanline merging ships as part of Optimize, enabled."""
+        step = EngraveStep.create(mock_context, name="Created")
+        optimize = next(
+            t
+            for t in step.per_step_transformers_dicts
+            if t.get("name") == "Optimize"
+        )
+        assert optimize.get("merge_scanlines") is True
+
+        # Docs saved before the merge-in lack the key and default to
+        # enabled on load.
+        data = step.to_dict()
+        for t in data["per_step_transformers_dicts"]:
+            t.pop("merge_scanlines", None)
+        restored = EngraveStep.from_dict(data)
+        optimizer = next(
+            OpsTransformer.from_dict(t)
+            for t in restored.per_step_transformers_dicts
+            if t.get("name") == "Optimize"
+        )
+        assert optimizer.to_dict()["merge_scanlines"] is True
 
     def test_serialization_includes_step_type(self):
         step = EngraveStep(name="Test")
@@ -281,3 +310,236 @@ class TestEngraveCheck:
         step = EngraveStep(name="engrave")
         step.depth_mode = "MULTI_PASS"
         assert step.check(None) == []
+
+
+def _stock_rect(x, y, width, height):
+    geo = Geometry()
+    geo.move_to(x, y)
+    geo.line_to(x + width, y)
+    geo.line_to(x + width, y + height)
+    geo.line_to(x, y + height)
+    geo.close_path()
+    return geo
+
+
+class TestEngraveCropToStock:
+    """Verifies that the Engrave step's Crop to Stock transformer
+    actually crops engrave toolpath to the stock boundary, for every
+    movement type (scan lines, travel moves, cut lines) and geometry
+    type (lines, beziers, arcs)."""
+
+    @staticmethod
+    def _crop_only_step(mock_context):
+        """A created EngraveStep whose per-workpiece transformer chain
+        is reduced to an enabled CropTransformer."""
+        step = EngraveStep.create(mock_context, name="Engrave")
+        step.per_workpiece_transformers_dicts = [
+            t
+            for t in step.per_workpiece_transformers_dicts
+            if t.get("name") == "CropTransformer"
+        ]
+        for t in step.per_workpiece_transformers_dicts:
+            t["enabled"] = True
+        return step
+
+    @staticmethod
+    def _apply(step, ops, stock_geometries):
+        """Instantiate the step's enabled per-workpiece transformers
+        and apply them the way IntentBuilder does."""
+        workpiece = WorkPiece(name="wp")
+        workpiece.set_size(1.0, 1.0)
+        specs = []
+        for t_dict in step.per_workpiece_transformers_dicts:
+            if not t_dict.get("enabled", True):
+                continue
+            cls = transformer_registry.get(t_dict["name"])
+            assert cls is not None
+            transformer = cls.from_dict(t_dict)
+            specs.append(
+                transformer.to_spec(workpiece, stock_geometries, None)
+            )
+        Ops.apply_transformers(ops, specs, progress_cb=None)
+
+    @staticmethod
+    def _moving_endpoints(ops):
+        for i in range(ops.len()):
+            if ops.category(i) == CommandCategory.MOVING:
+                yield ops.endpoint(i)
+
+    @staticmethod
+    def _commands_of_type(ops, command_type):
+        return [
+            i for i in range(ops.len()) if ops.command_type(i) == command_type
+        ]
+
+    @staticmethod
+    def _snapshot(ops):
+        items = []
+        for i in range(ops.len()):
+            item = [ops.command_type(i), ops.endpoint(i)]
+            if ops.is_scanline(i):
+                item.append(list(ops.scanline_data(i)))
+            items.append(item)
+        return items
+
+    def test_crop_disabled_by_default(self, mock_context):
+        step = EngraveStep.create(mock_context, name="Engrave")
+        crop = next(
+            t
+            for t in step.per_workpiece_transformers_dicts
+            if t.get("name") == "CropTransformer"
+        )
+        assert crop["enabled"] is False
+
+    def test_disabled_crop_does_not_change_ops(self, mock_context):
+        """Applying the step's default chain with the crop toggle off
+        must produce the same output as a chain without the crop
+        transformer at all."""
+        stock = [_stock_rect(0.3, 0.0, 0.4, 1.0)]
+        with_crop = EngraveStep.create(mock_context, name="Engrave")
+        without_crop = EngraveStep.create(mock_context, name="Engrave")
+        without_crop.per_workpiece_transformers_dicts = [
+            t
+            for t in without_crop.per_workpiece_transformers_dicts
+            if t.get("name") != "CropTransformer"
+        ]
+
+        snapshots = []
+        for step in (with_crop, without_crop):
+            ops = Ops()
+            ops.move_to(0.0, 0.5)
+            ops.scan_to(1.0, 0.5, 0.0, bytes(range(64)))
+            self._apply(step, ops, stock)
+            snapshots.append(self._snapshot(ops))
+
+        assert snapshots[0] == snapshots[1]
+
+    def test_enabled_crop_trims_scanline_to_stock(self, mock_context):
+        step = self._crop_only_step(mock_context)
+        stock = [_stock_rect(0.3, 0.0, 0.4, 1.0)]
+
+        ops = Ops()
+        ops.move_to(0.0, 0.5)
+        ops.scan_to(1.0, 0.5, 0.0, bytes(range(256)))
+        self._apply(step, ops, stock)
+
+        scanlines = self._commands_of_type(ops, CommandType.SCAN_LINE)
+        assert len(scanlines) == 1
+        endpoints = list(self._moving_endpoints(ops))
+        assert len(endpoints) == 2
+        for endpoint in endpoints:
+            assert 0.3 - 1e-6 <= endpoint[0] <= 0.7 + 1e-6
+            assert endpoint[1] == pytest.approx(0.5, abs=1e-6)
+        assert endpoints[1][0] == pytest.approx(0.7, abs=1e-6)
+
+        power = list(ops.scanline_data(scanlines[0]))
+        assert len(power) == pytest.approx(102, abs=3)
+        assert power[0] == pytest.approx(77, abs=3)
+        assert power[-1] == pytest.approx(178, abs=3)
+
+    def test_enabled_crop_removes_scanline_outside_stock(self, mock_context):
+        step = self._crop_only_step(mock_context)
+        stock = [_stock_rect(0.0, 0.0, 1.0, 1.0)]
+
+        ops = Ops()
+        ops.move_to(1.2, 0.5)
+        ops.scan_to(1.9, 0.5, 0.0, bytes([128] * 16))
+        self._apply(step, ops, stock)
+
+        assert list(self._moving_endpoints(ops)) == []
+
+    def test_enabled_crop_keeps_scanline_inside_stock(self, mock_context):
+        step = self._crop_only_step(mock_context)
+        stock = [_stock_rect(0.0, 0.0, 1.0, 1.0)]
+
+        ops = Ops()
+        ops.move_to(0.4, 0.5)
+        ops.scan_to(0.6, 0.5, 0.0, bytes([9] * 8))
+        self._apply(step, ops, stock)
+
+        scanlines = self._commands_of_type(ops, CommandType.SCAN_LINE)
+        assert len(scanlines) == 1
+        assert ops.endpoint(scanlines[0]) == pytest.approx(
+            (0.6, 0.5, 0.0), abs=1e-6
+        )
+        assert list(ops.scanline_data(scanlines[0])) == [9] * 8
+
+    def test_enabled_crop_trims_scanlines_and_cut_lines(self, mock_context):
+        """Travel moves (MOVE_TO), scan lines and cut lines (LINE_TO)
+        in one ops sequence are all confined to the stock."""
+        step = self._crop_only_step(mock_context)
+        stock = [_stock_rect(0.3, 0.0, 0.4, 1.0)]
+
+        ops = Ops()
+        ops.move_to(0.0, 0.25)
+        ops.scan_to(1.0, 0.25, 0.0, bytes([64] * 32))
+        ops.move_to(0.0, 0.75)
+        ops.line_to(1.0, 0.75)
+        self._apply(step, ops, stock)
+
+        scanlines = self._commands_of_type(ops, CommandType.SCAN_LINE)
+        cut_lines = self._commands_of_type(ops, CommandType.LINE_TO)
+        assert len(scanlines) == 1
+        assert len(cut_lines) == 1
+        endpoints = list(self._moving_endpoints(ops))
+        assert len(endpoints) == 4
+        for endpoint in endpoints:
+            assert 0.3 - 1e-6 <= endpoint[0] <= 0.7 + 1e-6
+
+    def test_enabled_crop_refits_bezier_crossing_stock(self, mock_context):
+        step = self._crop_only_step(mock_context)
+        stock = [_stock_rect(0.3, 0.0, 0.4, 1.0)]
+
+        ops = Ops()
+        ops.move_to(0.1, 0.5)
+        ops.bezier_to((0.3, 0.3, 0.0), (0.7, 0.7, 0.0), (0.9, 0.5, 0.0))
+        self._apply(step, ops, stock)
+
+        endpoints = list(self._moving_endpoints(ops))
+        assert endpoints
+        for endpoint in endpoints:
+            assert 0.3 - 1e-6 <= endpoint[0] <= 0.7 + 1e-6
+
+    def test_enabled_crop_keeps_bezier_inside_stock(self, mock_context):
+        step = self._crop_only_step(mock_context)
+        stock = [_stock_rect(0.0, 0.0, 1.0, 1.0)]
+
+        ops = Ops()
+        ops.move_to(0.3, 0.5)
+        ops.bezier_to((0.4, 0.3, 0.0), (0.6, 0.7, 0.0), (0.7, 0.5, 0.0))
+        self._apply(step, ops, stock)
+
+        beziers = self._commands_of_type(ops, CommandType.BEZIER_TO)
+        assert len(beziers) == 1
+        assert ops.endpoint(beziers[0]) == pytest.approx(
+            (0.7, 0.5, 0.0), abs=1e-6
+        )
+
+    def test_enabled_crop_refits_arc_crossing_stock(self, mock_context):
+        step = self._crop_only_step(mock_context)
+        stock = [_stock_rect(0.3, 0.0, 0.4, 1.0)]
+
+        ops = Ops()
+        ops.move_to(0.1, 0.5)
+        ops.arc_to(0.9, 0.5, 0.4, 0.0, clockwise=True)
+        self._apply(step, ops, stock)
+
+        endpoints = list(self._moving_endpoints(ops))
+        assert endpoints
+        for endpoint in endpoints:
+            assert 0.3 - 1e-6 <= endpoint[0] <= 0.7 + 1e-6
+
+    def test_enabled_crop_keeps_arc_inside_stock(self, mock_context):
+        step = self._crop_only_step(mock_context)
+        stock = [_stock_rect(0.0, 0.0, 1.0, 1.0)]
+
+        ops = Ops()
+        ops.move_to(0.4, 0.5)
+        ops.arc_to(0.6, 0.5, 0.1, 0.0, clockwise=True)
+        self._apply(step, ops, stock)
+
+        arcs = self._commands_of_type(ops, CommandType.ARC_TO)
+        assert len(arcs) == 1
+        assert ops.endpoint(arcs[0]) == pytest.approx(
+            (0.6, 0.5, 0.0), abs=1e-6
+        )

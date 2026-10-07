@@ -1,4 +1,5 @@
 import re
+import sys
 
 from gi.repository import Adw, Gdk, Gtk
 
@@ -19,6 +20,17 @@ See:
 https://bugzilla.gnome.org/show_bug.cgi?id=112404
 & https://gitlab.gnome.org/GNOME/gtk/-/issues/7313
 """
+
+
+def _can_reactivate(parent: Gtk.Window) -> bool:
+    """
+    On macOS, presenting a full-screen parent from the dialog-close
+    path can tear the window out of its native Space, leaving it
+    invisible. Elsewhere, the presentation is harmless.
+    """
+    if sys.platform != "darwin":
+        return True
+    return not parent.is_fullscreen()
 
 
 class PatchedDialogWindow(Adw.Window):
@@ -54,7 +66,7 @@ class PatchedDialogWindow(Adw.Window):
     def do_close_request(self, *args) -> bool:
         parent = self.get_transient_for()
         # Focus the original parent
-        if parent:
+        if parent and not parent.is_active() and _can_reactivate(parent):
             parent.present()
         # Let GTK close the window
         return False

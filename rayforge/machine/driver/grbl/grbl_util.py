@@ -109,6 +109,8 @@ command_url = "/command?commandText={command}&PAGEID="
 upload_url = "/upload"
 execute_url = "/command?commandText=%5BESP220%5D/{filename}"
 status_url = command_url.format(command="?")
+fluidnc_command_url = "/?commandText={command}"
+fluidnc_status_url = fluidnc_command_url.format(command="%3F")
 
 
 # GRBL Regex Parsers
@@ -665,13 +667,21 @@ def parse_msg(line: str) -> tuple[str, str] | None:
     return (key.strip(), value.strip())
 
 
+def parse_board(line: str) -> str | None:
+    """Parse grblHAL's ``[BOARD:...]`` build-info line."""
+    if not line.startswith("[BOARD:"):
+        return None
+    board = line[7:].rstrip("]").strip()
+    return board or None
+
+
 def extract_device_name(build_info: list[str]) -> str:
     """
     Extract a human-readable device name from build info lines.
 
     Checks ``[MSG:machine:...]`` / ``[MSG:mechine:...]`` lines first,
-    then falls back to the VER line's build-info field (e.g.
-    ``[VER:1.1h.ORTUR:]`` → ``"ORTUR"``).
+    then grblHAL's ``[BOARD:...]`` line, and finally the VER line's
+    build-info field (e.g. ``[VER:1.1h.ORTUR:]`` → ``"ORTUR"``).
     """
     for line in build_info:
         msg = parse_msg(line)
@@ -679,6 +689,10 @@ def extract_device_name(build_info: list[str]) -> str:
             key, value = msg
             if key.lower() in ("machine", "mechine"):
                 return value
+    for line in build_info:
+        board = parse_board(line)
+        if board is not None:
+            return board
     for line in build_info:
         ver = parse_ver(line)
         if ver is not None:
@@ -694,9 +708,10 @@ def extract_device_name_from_output(data: bytes) -> str | None:
     captured during device discovery.
 
     Returns the machine name when the output carries one (e.g. Grbl's
-    ``[MSG:machine:...]`` line or a ``[VER:...]`` build name). When no
-    name is present (e.g. a stock Grbl whose banner only states its
-    version), falls back to the first informative banner line — a
+    ``[MSG:machine:...]`` or grblHAL's ``[BOARD:...]`` line, or a
+    ``[VER:...]`` build name). When no name is present (e.g. a stock
+    Grbl whose banner only states its version), falls back to the first
+    informative banner line — a
     ``Grbl``/``GrblHAL`` version line, a build-info ``[VER:...]`` /
     ``[OPT:...]`` / ``[MSG:...]`` line, or a status report — skipping
     bare ``ok``/``error:`` acks that are merely responses to the
@@ -1017,6 +1032,37 @@ def _recalculate_positions(
         )
 
     return machine_pos, work_pos, wco
+
+
+def sync_state_wco(
+    state: DeviceState,
+    offsets: dict[str, Pos],
+    active_wcs: str | None,
+) -> None:
+    """
+    Refresh *state*'s work coordinate offset from authoritative
+    ``$#`` data.
+
+    GRBL includes WCO in status reports only when it changes, so
+    right after a WCS write the cached WCO can be stale and
+    ``machine_pos``, when derived from WPos + WCO, is wrong until
+    the next report carries the new WCO. Zeroing again in that
+    window would read a wrong machine position and write the old
+    offset back. The ``$#`` read-back reports every slot, so the
+    active slot's offset is authoritative and positions are
+    recomputed from it immediately.
+    """
+    if not active_wcs or active_wcs not in offsets:
+        return
+    state.wco = offsets[active_wcs]
+    state.machine_pos, state.work_pos, _ = _recalculate_positions(
+        state.machine_pos,
+        state.work_pos,
+        state.wco,
+        state.machine_pos[0] is not None,
+        state.work_pos[0] is not None,
+        True,
+    )
 
 
 def parse_state(

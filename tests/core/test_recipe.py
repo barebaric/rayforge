@@ -753,6 +753,33 @@ class TestRecipe:
         assert data["future_field_string"] == "some value"
         assert data["future_field_number"] == 42
         assert data["future_field_dict"] == {"nested": "data"}
+        assert "extra" not in data
+
+    def test_extra_blob_does_not_nest_across_save_load_cycles(self):
+        """A literal ``extra`` key from an old save is unwrapped instead
+        of nesting one level deeper on every cycle."""
+        saved_by_old_version = {
+            "uid": "recipe-extra-1",
+            "name": "Legacy",
+            "extra": {
+                "future_field_string": "some value",
+                "future_field_number": 42,
+            },
+        }
+
+        recipe = Recipe.from_dict(saved_by_old_version)
+
+        assert recipe.extra == {
+            "future_field_string": "some value",
+            "future_field_number": 42,
+        }
+
+        data = recipe.to_dict()
+        assert "extra" not in data
+        assert data["future_field_string"] == "some value"
+
+        reloaded = Recipe.from_dict(data)
+        assert reloaded.extra == recipe.extra
 
     def test_recipe_backward_compatibility_with_missing_optional_fields(self):
         """from_dict handles missing optional fields gracefully."""

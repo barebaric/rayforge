@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-06 00:18+0200\n"
+"POT-Creation-Date: 2026-09-29 21:46+0200\n"
 "PO-Revision-Date: 2026-05-17 02:10+0200\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -110,6 +110,10 @@ msgid "Focus Laser"
 msgstr "Fokuslaser"
 
 #: print_and_cut/wizard.py
+msgid "Pointer Alignment"
+msgstr "Pointer-Ausrichtung"
+
+#: print_and_cut/wizard.py
 msgid "Positions"
 msgstr "Positionen"
 
@@ -192,6 +196,14 @@ msgstr "Laser mit Fokusleistung einschalten, um Position zu finden"
 #: print_and_cut/wizard.py
 msgid "Set a focus power in laser preferences to enable"
 msgstr "Fokusleistung in den Lasereinstellungen festlegen, um zu aktivieren"
+
+#: print_and_cut/wizard.py
+msgid "Record positions at the pointer dot instead of the beam"
+msgstr "Positionen am Pointer-Punkt statt am Strahl aufzeichnen"
+
+#: print_and_cut/wizard.py
+msgid "Requires a pointer offset on the laser head"
+msgstr "Erfordert einen Pointer-Versatz am Laserkopf"
 
 #: print_and_cut/wizard.py
 msgid ""

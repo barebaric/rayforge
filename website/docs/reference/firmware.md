@@ -472,29 +472,41 @@ $22=1       ; Homing enabled
 
 ---
 
-## Future Firmware Support
+## Ruida Controllers
 
-### Ruida Controllers
-
-Rayforge includes experimental support for Ruida-based controllers (e.g. RDC6442, RDC6445, Ruida
-R5). The Ruida driver connects over the network and supports jogging, position reporting, air assist
-control, layer selection, auto-connect, and status polling.
+Rayforge connects to Ruida-based controllers (e.g. RDC6442, RDC6445, Ruida R5) through the **Ruida
+RPA** driver, which talks the controller's native protocol over USB or UDP, or via TUI RPC through
+the Ruida Protocol Analyzer. The Generic Ruida RPA and Monport MP-570 60W CO2 device profiles
+provide starting points for new machines.
 
 **Features:**
 
-- Network connectivity (Ethernet/WiFi)
-- Position reporting
-- Jogging controls
-- Air assist and layer selection
-- Reference point support
+- USB and UDP connectivity; when both are configured, Rayforge swaps automatically between them as
+  cables are connected and disconnected
+- Job sending with position reporting, jogging, homing, and Move to Position
+- Framing traces the job outline with beam-off absolute moves, so it works without firing the laser
+- Honors each step's Power Mode setting: Dynamic (M4) enables the controller's power scaling and
+  Constant (M3) disables it
+- Serial ports can be bound from a USB device dropdown with VID:PID matching, so auto-reconnect
+  follows the machine after the OS re-enumerates USB devices
+
+**Power tuning settings:**
+
+- **Power scaling** — raises the emitted minimum power as the layer's cut speed decreases
+- **VECTOR power floor** — minimum power for vector cut compensation during acceleration and
+  deceleration, reducing over-burn at the ends of lines
+- **IMAGE power bias** — power added to raster scan lines, since CO2 tubes do not fire at very low
+  power settings
 
 **Limitations:**
 
-- Experimental — not yet fully stable
+- Experimental — so far tested on a RDC6442S controller (Monport MP570 CO2)
 - No G-code generation; Ruida uses its own proprietary protocol
-- Job sending is not yet supported
+- Rotary mode is not yet supported
 
 ---
+
+## Experimental Drivers
 
 ### OctoPrint
 

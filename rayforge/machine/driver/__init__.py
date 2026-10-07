@@ -39,6 +39,11 @@ drivers = [
 
 driver_by_classname = {o.__name__: o for o in drivers}
 
+# Transitional alias, remove with the next release: machines saved
+# while the Rust-backed serial driver carried its experimental name
+# keep resolving.
+driver_by_classname["GrblSerialNextDriver"] = GrblSerialDriver
+
 
 def get_driver_cls(classname: str, default=NoDeviceDriver):
     return driver_by_classname.get(classname, default)

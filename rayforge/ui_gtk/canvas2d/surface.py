@@ -92,6 +92,12 @@ class WorkSurface(WorldSurface):
         # Click-to-zero mode state
         self._click_to_zero_mode = False
 
+        # Click-to-move-head mode state
+        self._move_head_mode = False
+
+        # Machine-frame position of the last right-click (background)
+        self.right_click_machine_pos: tuple[float, float] | None = None
+
         # Ops rendering suppression for lazy ops rendering (Idea 5).
         # During pan/zoom/drag, ops drawing and pipeline context updates
         # are suppressed. They are restored after ~200ms of idle time.
@@ -127,8 +133,18 @@ class WorkSurface(WorldSurface):
         # DotElement size is in world units (mm) and is dynamically
         # updated to maintain a constant pixel size on screen.
         self._laser_dot_pos_mm = 0.0, 0.0
-        self._laser_dot = DotElement(0, 0, 1.0)
+        self._laser_dot_visible = True
+        # The pointer offset (beam -> pointer dot) in machine mm, and
+        # whether runtime pointer alignment is on (filled vs. hollow).
+        self._pointer_offset_mm = (0.0, 0.0)
+        self._pointer_alignment_on = False
+        self._laser_dot = DotElement(0, 0, 1.0, color=(0.9, 0.0, 0.0))
         self.root.add(self._laser_dot)
+        self._pointer_dot = DotElement(
+            0, 0, 1.0, color=(0.98, 0.85, 0.2), filled=False
+        )
+        self._pointer_dot.set_visible(False)
+        self.root.add(self._pointer_dot)
 
         # Add the Work Origin visual element
         self._work_origin_element = WorkOriginElement()
@@ -167,6 +183,13 @@ class WorkSurface(WorldSurface):
 
         # Signal to cancel click-to-zero mode
         self.click_to_zero_cancelled = Signal()
+
+        # Signal to move the laser head to the clicked position
+        # Sends: (x, y) in machine coordinates
+        self.move_head_requested = Signal()
+
+        # Signal to cancel click-to-move-head mode
+        self.move_head_cancelled = Signal()
 
         # Signal for context menu extension - addons can connect to add items
         # Sends: (item, gesture, menu)
@@ -272,11 +295,50 @@ class WorkSurface(WorldSurface):
         return False
 
     def set_laser_dot_visible(self, visible: bool = True) -> None:
+        self._laser_dot_visible = visible
         self._laser_dot.set_visible(visible)
+        self._update_pointer_dot_visibility()
         self.queue_draw()
 
+    def set_pointer_dot_state(
+        self,
+        offset_mm: tuple[float, float],
+        alignment_enabled: bool,
+    ) -> None:
+        """Sets the pointer dot offset and alignment state.
+
+        The offset is the (x, y) distance from the beam spot to the
+        pointer dot in machine millimeters; the pointer dot is shown
+        whenever it is non-zero. The alignment flag reflects runtime
+        pointer alignment: the pointer dot is drawn filled while on
+        and as a hollow ring while off, and the beam dot mirrors that
+        (hollow while alignment is on) so exactly one dot is ever
+        filled.
+        """
+        if (
+            self._pointer_offset_mm == offset_mm
+            and self._pointer_alignment_on == alignment_enabled
+        ):
+            return
+        self._pointer_offset_mm = offset_mm
+        self._pointer_alignment_on = alignment_enabled
+        self._pointer_dot.set_filled(alignment_enabled)
+        self._laser_dot.set_filled(not alignment_enabled)
+        self._update_pointer_dot_visibility()
+        self.set_laser_dot_position(*self._laser_dot_pos_mm)
+
+    def _update_pointer_dot_visibility(self) -> None:
+        has_offset = self._pointer_offset_mm != (0.0, 0.0)
+        self._pointer_dot.set_visible(has_offset and self._laser_dot_visible)
+
     def set_laser_dot_position(self, x_mm: float, y_mm: float) -> None:
-        """Sets the laser dot position in real-world mm."""
+        """Sets the laser dot position in machine millimeters.
+
+        The coordinates describe where the cutting beam physically is,
+        so the red dot stays truthful to the machine position. When a
+        pointer offset is configured, a second yellow dot marks the
+        pointer dot's position (beam + offset).
+        """
         self._laser_dot_pos_mm = x_mm, y_mm
 
         # Transform machine coordinates to canvas coordinates (similar to
@@ -290,6 +352,17 @@ class WorkSurface(WorldSurface):
         self._laser_dot.set_pos(
             canvas_x - dot_w_mm / 2, canvas_y - dot_h_mm / 2
         )
+
+        pointer_dx, pointer_dy = self._pointer_offset_mm
+        if (pointer_dx, pointer_dy) != (0.0, 0.0):
+            p_canvas_x, p_canvas_y = self._machine_coords_to_canvas(
+                x_mm + pointer_dx, y_mm + pointer_dy
+            )
+            p_w_mm = self._pointer_dot.width
+            p_h_mm = self._pointer_dot.height
+            self._pointer_dot.set_pos(
+                p_canvas_x - p_w_mm / 2, p_canvas_y - p_h_mm / 2
+            )
 
         self.queue_draw()
 
@@ -328,7 +401,7 @@ class WorkSurface(WorldSurface):
             wp_view = cast(WorkPieceElement, wp_elem)
             wp_view.set_tabs_visible_override(visible)
 
-    def on_right_click_pressed(
+    def on_right_click_released(
         self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
     ):
         """
@@ -338,12 +411,22 @@ class WorkSurface(WorldSurface):
             self.click_to_zero_cancelled.send(self)
             return
 
+        if self._move_head_mode and n_press == 1:
+            self.move_head_cancelled.send(self)
+            return
+
         self.right_click_context = None  # Reset context on each click
         world_x, world_y = self._get_world_coords(x, y)
+        if self.machine:
+            self.right_click_machine_pos = (
+                self.machine.panel.panel_point_to_machine(world_x, world_y)
+            )
+        else:
+            self.right_click_machine_pos = (world_x, world_y)
         hit_elem = self.root.get_elem_hit(world_x, world_y, selectable=True)
 
         if not hit_elem or hit_elem is self.root:
-            context_menu.show_background_context_menu(self, gesture)
+            context_menu.show_background_context_menu(self, gesture, x, y)
             self.context_changed.send(self)
             return
 
@@ -389,12 +472,12 @@ class WorkSurface(WorldSurface):
                     hit_elem.selected = True
                     self._finalize_selection_state()
                 context_menu.show_item_context_menu(
-                    self, gesture, item=hit_elem.data
+                    self, gesture, x, y, item=hit_elem.data
                 )
             elif context_type == "geometry":
-                context_menu.show_geometry_context_menu(self, gesture)
+                context_menu.show_geometry_context_menu(self, gesture, x, y)
             elif context_type == "tab":
-                context_menu.show_tab_context_menu(self, gesture)
+                context_menu.show_tab_context_menu(self, gesture, x, y)
 
     def _on_history_changed(self, sender, **kwargs):
         """
@@ -600,6 +683,22 @@ class WorkSurface(WorldSurface):
             self.work_zero_requested.send(self, x=machine_x, y=machine_y)
             return
 
+        # Handle click-to-move-head mode
+        if (
+            self._move_head_mode
+            and gesture.get_button() == Gdk.BUTTON_PRIMARY
+            and n_press == 1
+        ):
+            world_x, world_y = self._get_world_coords(x, y)
+            if self.machine:
+                machine_x, machine_y = (
+                    self.machine.panel.panel_point_to_machine(world_x, world_y)
+                )
+            else:
+                machine_x, machine_y = world_x, world_y
+            self.move_head_requested.send(self, x=machine_x, y=machine_y)
+            return
+
         # A left-click should clear any lingering right-click context.
         if (
             gesture.get_button() == Gdk.BUTTON_PRIMARY
@@ -654,13 +753,13 @@ class WorkSurface(WorldSurface):
                 self.editor.layer.set_active_layer(active_layer)
 
     def on_motion(self, gesture: Gtk.Gesture, x: float, y: float) -> None:
-        if self._click_to_zero_mode:
+        if self._click_to_zero_mode or self._move_head_mode:
             self.set_cursor(Gdk.Cursor.new_from_name("crosshair"))
             return
         super().on_motion(gesture, x, y)
 
     def on_motion_leave(self, controller: Gtk.EventControllerMotion) -> None:
-        if self._click_to_zero_mode:
+        if self._click_to_zero_mode or self._move_head_mode:
             self.set_cursor(None)
         super().on_motion_leave(controller)
 
@@ -689,6 +788,10 @@ class WorkSurface(WorldSurface):
             self.machine.changed.connect(self._on_machine_changed)
             self.machine.wcs_updated.connect(self._on_wcs_updated)
             self.machine.state_changed.connect(self._on_machine_state_changed)
+            self.set_pointer_dot_state(
+                self.machine.get_pointer_offset(),
+                self.machine.pointer_alignment_enabled,
+            )
             self.reset_view()
             self._on_wcs_updated(self.machine)
 
@@ -826,6 +929,7 @@ class WorkSurface(WorldSurface):
             if new_scale_x > 1e-9:
                 diameter_mm = desired_diameter_px / new_scale_x
                 self._laser_dot.set_size(diameter_mm, diameter_mm)
+                self._pointer_dot.set_size(diameter_mm, diameter_mm)
 
             # Skip pipeline context updates and ops re-rendering during
             # interaction. They will be restored after idle via
@@ -896,6 +1000,12 @@ class WorkSurface(WorldSurface):
     def set_click_to_zero_mode(self, active: bool):
         """Sets whether click-to-zero mode is active."""
         self._click_to_zero_mode = active
+        if not active:
+            self.set_cursor(None)
+
+    def set_move_head_mode(self, active: bool):
+        """Sets whether click-to-move-head mode is active."""
+        self._move_head_mode = active
         if not active:
             self.set_cursor(None)
 
@@ -1226,6 +1336,13 @@ class WorkSurface(WorldSurface):
             self._on_wcs_updated(machine)
             self._update_pipeline_view_context()
 
+        # Keep the pointer dot in sync with pointer-offset and
+        # alignment changes; this also repositions both dots.
+        self.set_pointer_dot_state(
+            machine.get_pointer_offset(),
+            machine.pointer_alignment_enabled,
+        )
+
     def reset_view(self):
         """
         Resets the view to fit the given machine's properties.
@@ -1451,13 +1568,13 @@ class WorkSurface(WorldSurface):
         # Get the controller for each camera model in the current machine
         machine_camera_controllers = []
         for camera_model in self.machine.cameras:
-            controller = camera_mgr.get_controller(camera_model.device_id)
+            controller = camera_mgr.get_controller(camera_model.id)
             if controller:
                 machine_camera_controllers.append(controller)
             else:
                 logger.warning(
                     "Could not find a live controller for camera "
-                    f"with device ID '{camera_model.device_id}'."
+                    f"with camera ID '{camera_model.id}'."
                 )
 
         self.set_camera_controllers(machine_camera_controllers)

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-06 00:18+0200\n"
+"POT-Creation-Date: 2026-09-29 21:46+0200\n"
 "PO-Revision-Date: 2026-05-17 02:10+0200\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -105,6 +105,10 @@ msgid "Focus Laser"
 msgstr "聚焦激光"
 
 #: print_and_cut/wizard.py
+msgid "Pointer Alignment"
+msgstr "光点对齐"
+
+#: print_and_cut/wizard.py
 msgid "Positions"
 msgstr "位置"
 
@@ -187,6 +191,14 @@ msgstr "以聚焦功率开启激光以定位"
 #: print_and_cut/wizard.py
 msgid "Set a focus power in laser preferences to enable"
 msgstr "在激光偏好设置中设定聚焦功率以启用"
+
+#: print_and_cut/wizard.py
+msgid "Record positions at the pointer dot instead of the beam"
+msgstr "以光点（而非光束）记录位置"
+
+#: print_and_cut/wizard.py
+msgid "Requires a pointer offset on the laser head"
+msgstr "需要在激光头上设置光点偏移"
 
 #: print_and_cut/wizard.py
 msgid ""

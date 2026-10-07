@@ -1,7 +1,6 @@
 import asyncio
-import inspect
 import logging
-from collections.abc import Awaitable, Callable, Coroutine
+from collections.abc import Awaitable, Callable
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
@@ -9,7 +8,13 @@ from typing import (
     cast,
 )
 
-import serial.serialutil
+import serial
+from raydriver.grbl import GrblSession
+from raydriver.grbl.parser import (
+    error_code_to_device_error,
+    extract_device_name_from_output,
+    is_grbl_output,
+)
 
 from ....context import RayforgeContext
 from ....core.varset import (
@@ -21,51 +26,31 @@ from ....core.varset import (
 )
 from ....pipeline.encoder.base import (
     EncodedOutput,
-    MachineCodeOpMap,
     OpsEncoder,
 )
 from ....pipeline.encoder.gcode import GcodeEncoder
-from ....shared.units.system import UnitSystem, inches_to_mm
+from ....shared.units.system import UnitSystem
 from ...discovery.spec import DiscoverySpec, SerialRecognizer
-from ...transport import SerialTransport, TransportStatus
-from ...transport.grbl import (
-    DEFAULT_GRBL_RX_BUFFER_SIZE,
-    BufferStallError,
-    GrblResponseType,
-    GrblSerialTransport,
+from ...transport import TransportStatus
+from ...transport.serial import (
+    SerialPortPermissionError,
+    SerialTransport,
+    resolve_serial_port,
 )
-from ...transport.serial import SerialPortPermissionError
 from ..driver import (
     Axis,
     DeviceConnectionError,
     DeviceError,
-    DeviceStatus,
     Driver,
     DriverPrecheckError,
     DriverSetupError,
     Pos,
 )
+from ..session_state import error_from_session_state, from_session_state
 from .grbl_probe import probe_grbl_device
 from .grbl_util import (
-    CommandRequest,
-    alarm_code_to_device_error,
     apply_setting_to_varset,
-    detect_unit_system_from_settings,
-    error_code_to_device_error,
-    extract_device_name_from_output,
-    gcode_to_p_number,
     get_grbl_setting_varsets,
-    grbl_setting_re,
-    is_grbl_output,
-    is_report_in_inches,
-    parse_grbl_parser_state,
-    parse_opt_info,
-    parse_state,
-    parse_version,
-    prb_re,
-    split_realtime_commands,
-    strip_gcode_comments,
-    wcs_re,
 )
 
 if TYPE_CHECKING:
@@ -81,8 +66,13 @@ logger = logging.getLogger(__name__)
 
 class GrblSerialDriver(Driver):
     """
-    An advanced GRBL serial driver that supports reading and writing
-    device settings ($$ commands).
+    The GRBL serial driver with the entire protocol stack (flow
+    control, streaming, stall detection and deadlock recovery)
+    running in Rust via the ``raydriver`` package.
+
+    This shell only translates between the Rayforge ``Driver``
+    interface and the Rust session: dialects remain Rayforge data
+    and are passed to the session as resolved command templates.
     """
 
     label = _("GRBL (Serial)")
@@ -100,81 +90,14 @@ class GrblSerialDriver(Driver):
         )
     )
 
-    # Buffer-stall timeout bounds for a single gcode line. The actual
-    # timeout scales with the estimated duration of the command
-    # (estimate * safety factor), so slow moves do not trip stalls.
-    STALL_TIMEOUT_MIN: float = 5.0
-    STALL_TIMEOUT_MAX: float = 120.0
-    STALL_TIMEOUT_SAFETY_FACTOR: float = 3.0
-    STALL_TIMEOUT_DEFAULT: float = 30.0
-
-    SAFETY_SHUTDOWN_DELAY: float = 0.2
-
-    # A device that stays silent for this many consecutive stall
-    # polls (no status report, no ack) is considered dead. GRBL
-    # answers '?' in every state (Run, Hold, Door, Alarm), so an
-    # alive-but-busy or paused machine never reaches this limit.
-    UNANSWERED_POLL_LIMIT: int = 3
-    POLL_RESPONSE_ATTEMPTS: int = 10
-    POLL_RESPONSE_INTERVAL: float = 0.1
-
-    # Handshake verification bounds. The '?' realtime poll is repeated
-    # every POLL_INTERVAL until a response arrives, because devices
-    # that are still booting silently drop queries sent before their
-    # serial stream is ready.
-    # Opening a USB-serial port toggles DTR, which resets many GRBL
-    # boards (Arduino/CH340 based). Their bootloader can take ~2-3 s
-    # before GRBL starts answering, so the window must outlast it; a
-    # too-short timeout made the connection loop close and reopen the
-    # port on every retry, resetting the board again and never
-    # converging.
-    HANDSHAKE_TIMEOUT: float = 6.0
-    HANDSHAKE_POLL_INTERVAL: float = 0.5
-
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
-        self.grbl_transport: GrblSerialTransport | None = None
-        self.keep_running = False
-        self._connection_task: asyncio.Task | None = None
-        self._current_request: CommandRequest | None = None
-        self._interactive_request: CommandRequest | None = None
-        self._cmd_lock = asyncio.Lock()
-        self._command_queue: asyncio.Queue[CommandRequest] = asyncio.Queue()
-        self._command_task: asyncio.Task | None = None
-        self._stream_task: asyncio.Task | None = None
-        self._last_connection_status: TransportStatus = TransportStatus.UNKNOWN
-        self._is_cancelled = False
-        self._raw_grbl_status: DeviceStatus = DeviceStatus.UNKNOWN
-        self._job_running = False
-        # Monotonic count of device responses (status reports and
-        # ok/error acks) received, regardless of whether they could
-        # be interpreted. Snapshot/compare this to prove liveness:
-        # a device that transmits anything at all is alive.
-        self._device_response_count = 0
-        # Number of consecutive stall polls that went unanswered
-        # (no response of any kind arrived). Used to detect a device
-        # that died mid-job; see UNANSWERED_POLL_LIMIT.
-        self._consecutive_unanswered_polls = 0
-        # Tracks whether we have requested the machine to hold (pause). The
-        # driver owns this state: status polling is disabled while a job runs,
-        # so the firmware's HOLD status is not observed. Without this, the UI
-        # never learns that the job is paused and cannot offer a resume.
-        self._is_holding = False
-        self._on_command_done: (
-            Callable[[int], None | Awaitable[None]] | None
-        ) = None
-        self._last_reported_op_index = -1
-        self._job_exception: Exception | None = None
-        self._poll_status_while_running: bool = False
-        self._deadlock_detection: bool = False
-        self._rx_buffer_size_override: int = 0
-        self._report_in_inches: bool = False
-        self._handshake_received = asyncio.Event()
-        self._loop: asyncio.AbstractEventLoop | None = None
+        self._session: GrblSession | None = None
+        self._machine_wcs = "G53"
 
     @property
     def machine_space_wcs(self) -> str:
-        return "G53"
+        return self._machine_wcs
 
     @property
     def machine_space_wcs_display_name(self) -> str:
@@ -182,9 +105,18 @@ class GrblSerialDriver(Driver):
 
     @property
     def resource_uri(self) -> str | None:
-        if self.grbl_transport and self.grbl_transport.port:
-            return f"serial://{self.grbl_transport.port}"
-        return None
+        if self._session is None:
+            return None
+        return self._session.resource_uri
+
+    def _require_session(self) -> GrblSession:
+        """Returns the session, raising a descriptive error when the
+        driver was never set up (e.g. no port configured)."""
+        if self._session is None:
+            raise DeviceConnectionError(
+                _("Driver is not set up. Check the port settings.")
+            )
+        return self._session
 
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
@@ -192,7 +124,6 @@ class GrblSerialDriver(Driver):
         try:
             SerialTransport.check_serial_permissions_globally()
         except SerialPortPermissionError as e:
-            # Re-raise as a precheck error for the UI.
             raise DriverPrecheckError(str(e)) from e
 
     @classmethod
@@ -202,7 +133,9 @@ class GrblSerialDriver(Driver):
                 SerialPortVar(
                     key="port",
                     label=_("Port"),
-                    description=_("Serial port for the device"),
+                    description=(
+                        _("Serial port or USB VID:PID (e.g. 0403:6001)")
+                    ),
                 ),
                 BaudrateVar(
                     "baudrate",
@@ -258,886 +191,169 @@ class GrblSerialDriver(Driver):
     ) -> tuple["DeviceProfile", list[str]]:
         return await probe_grbl_device(cls, context, **kwargs)
 
+    def _dialect_templates(self) -> dict[str, Any]:
+        """Resolve the interactive-command templates the Rust session
+        needs from the machine's dialect."""
+        dialect = self.dialect
+        templates: dict[str, Any] = {
+            "home_all": dialect.home_all,
+            "home_axis": dialect.home_axis,
+            "move_to": dialect.move_to,
+            "jog": dialect.jog,
+            "clear_alarm": dialect.clear_alarm,
+            "laser_on": dialect.laser_on,
+            "laser_off": dialect.laser_off,
+            "focus_laser_on": dialect.focus_laser_on,
+            "tool_change": dialect.tool_change,
+            "set_wcs_offset": dialect.set_wcs_offset,
+            "probe_cycle": dialect.probe_cycle,
+            "safety_off_commands": dialect.get_safety_off_commands(),
+        }
+        if dialect.emergency_stop:
+            templates["emergency_stop"] = dialect.emergency_stop
+        return templates
+
+    def _update_session_dialect(self) -> None:
+        if self._session is not None:
+            self._session.update_dialect(self._dialect_templates())
+
     def _setup_implementation(self, **kwargs: Any) -> None:
         port = cast(str, kwargs.get("port", ""))
         baudrate = kwargs.get("baudrate", 115200)
-        self._poll_status_while_running = bool(
-            kwargs.get("poll_status_while_running", False)
-        )
-        self._deadlock_detection = bool(
-            kwargs.get("deadlock_detection", False)
-        )
-        self._rx_buffer_size_override = int(
-            kwargs.get("rx_buffer_size_override", 0) or 0
-        )
-
         if not port:
             raise DriverSetupError(_("Port must be configured."))
         if not baudrate:
             raise DriverSetupError(_("Baud rate must be configured."))
 
-        # Note that we intentionally do not check if the serial
-        # port exists, as a missing port is a common occurance when
-        # e.g. the USB cable is not plugged in, and not a sign of
+        # Note that we intentionally do not check if the serial port
+        # exists, as a missing port is a common occurrence when e.g.
+        # the USB cable is not plugged in, and not a sign of
         # misconfiguration.
-
         if port.startswith("/dev/ttyS"):
             logger.warning(
-                f"Port {port} is a hardware serial port, which is unlikely "
-                f"for USB-based GRBL devices."
+                f"Port {port} is a hardware serial port, which is "
+                f"unlikely for USB-based GRBL devices."
             )
 
-        serial_transport = SerialTransport(port, baudrate)
-        self.grbl_transport = GrblSerialTransport(serial_transport)
-        self.grbl_transport.received.connect(self.on_serial_data_received)
-        self.grbl_transport.status_changed.connect(
-            self.on_serial_status_changed
+        # The Rust session retries its fixed port internally, so a
+        # 'vid:pid' spec can only be resolved once, here at setup.
+        try:
+            port = resolve_serial_port(port)
+        except serial.SerialException as e:
+            raise DriverSetupError(str(e)) from e
+
+        config = {
+            "port": port,
+            "baudrate": int(baudrate),
+            "poll_status_while_running": bool(
+                kwargs.get("poll_status_while_running", False)
+            ),
+            "deadlock_detection": bool(
+                kwargs.get("deadlock_detection", False)
+            ),
+            "rx_buffer_size_override": int(
+                kwargs.get("rx_buffer_size_override", 0) or 0
+            ),
+        }
+        cached_rx_buffer_size = self.config.get("rx_buffer_size")
+        if cached_rx_buffer_size is not None:
+            config["cached_rx_buffer_size"] = int(cached_rx_buffer_size)
+
+        self._session = GrblSession(
+            config=config,
+            dialect=self._dialect_templates(),
+            event_callback=self._on_session_event,
         )
 
-    def on_serial_status_changed(
-        self, sender, status: TransportStatus, message: str | None = None
-    ):
-        """
-        Handle status changes from the serial transport.
-
-        Suppresses the transport-level CONNECTED signal to prevent
-        premature actions (like $G/$# sync) before the driver has
-        verified the device responds. The driver emits its own
-        CONNECTED in _connection_loop after handshake verification.
-        """
-        if status == TransportStatus.CONNECTED:
-            logger.debug(
-                "Suppressing transport-level CONNECTED. Driver will "
-                "emit CONNECTED after handshake verification."
+    def _on_session_event(self, name: str, payload: Any) -> None:
+        """Re-emit Rust session events as Rayforge blinker signals."""
+        if name == "state_changed":
+            state = from_session_state(payload)
+            old_status = self.state.status
+            self.state = state
+            if state.status != old_status:
+                logger.info(
+                    f"Device state changed: {state.status.name}",
+                    extra=self._log_extra("STATE_CHANGE"),
+                )
+            self.state_changed.send(self, state=state)
+        elif name == "connection_status_changed":
+            status_str, message = payload
+            logger.info(
+                f"Connection status: {status_str}"
+                + (f" - {message}" if message else ""),
+                extra=self._log_extra("MACHINE_EVENT"),
             )
-            return
-        logger.debug(
-            f"Serial transport status changed: {status}, message: {message}"
-        )
-        self._update_connection_status(status, message)
+            self.connection_status_changed.send(
+                self,
+                status=TransportStatus[status_str],
+                message=message,
+            )
+        elif name == "command_status_changed":
+            status_str, message = payload
+            self.command_status_changed.send(
+                self,
+                status=TransportStatus[status_str],
+                message=message,
+            )
+        elif name == "job_finished":
+            self.job_finished.send(self)
+        elif name == "probe_status_changed":
+            self.probe_status_changed.send(self, message=payload)
+        elif name == "wcs_updated":
+            self.wcs_updated.send(self, offsets=payload)
+        elif name == "config_changed":
+            key, value = payload
+            self.config[key] = value
+            self.config_changed.send(self)
+        else:  # pragma: no cover - unknown events are ignored
+            logger.debug(f"Ignoring session event: {name}")
 
     async def cleanup(self):
         logger.debug("Cleanup initiated.")
-        self.keep_running = False
-        self._job_running = False
-        self._on_command_done = None
-        # Abort the streaming task while _is_cancelled is set, so its
-        # interrupt handler does not call cancel() from within.
-        self._is_cancelled = True
-        await self._abort_stream_task()
-        self._is_cancelled = False
-        if self.grbl_transport:
-            self.grbl_transport.reset()
-        self._job_exception = None
-
-        # Cancel tasks and wait for them to ensure loops terminate
-        if self._connection_task:
-            self._connection_task.cancel()
-            try:
-                await self._connection_task
-            except asyncio.CancelledError:
-                pass
-            except Exception as e:  # noqa: BLE001 - awaited task cleanup
-                logger.warning(
-                    f"Ignored exception in connection task during cleanup: {e}"
-                )
-            self._connection_task = None
-
-        if self._command_task:
-            self._command_task.cancel()
-            try:
-                await self._command_task
-            except asyncio.CancelledError:
-                pass
-            except Exception as e:  # noqa: BLE001 - awaited task cleanup
-                logger.warning(
-                    f"Ignored exception in command task during cleanup: {e}"
-                )
-            self._command_task = None
-
-        if self.grbl_transport:
-            self.grbl_transport.received.disconnect(
-                self.on_serial_data_received
-            )
-            self.grbl_transport.status_changed.disconnect(
-                self.on_serial_status_changed
-            )
-            # Close the serial port to prevent duplicate readers/writers
-            if self.grbl_transport.is_connected:
-                await self.grbl_transport.disconnect()
-
+        if self._session is not None:
+            await self._session.disconnect()
+            self._session = None
         await super().cleanup()
         logger.debug("Cleanup completed.")
 
-    async def _send_realtime(self, command: str, add_newline: bool = True):
-        logger.debug(f"Sending realtime command: {command}")
-        if not self.grbl_transport or not self.grbl_transport.is_connected:
-            raise ConnectionError("Serial transport not initialized")
-        payload = (command + ("\n" if add_newline else "")).encode("utf-8")
-        await self.grbl_transport.send_control(payload)
-
     async def _connect_implementation(self):
-        """
-        Launches the connection loop as a background task and returns,
-        allowing the UI to remain responsive.
-        """
-        # Defensive cleanup of existing tasks
-        if self._connection_task and not self._connection_task.done():
-            logger.warning(
-                "Connect called with active connection task. Cleaning up."
-            )
-            self._connection_task.cancel()
-            try:
-                await self._connection_task
-            except asyncio.CancelledError:
-                pass
-
-        if self._command_task and not self._command_task.done():
-            self._command_task.cancel()
-            try:
-                await self._command_task
-            except asyncio.CancelledError:
-                pass
-
-        # Check if setup was successful (grbl_transport exists)
-        if not self.grbl_transport:
+        """Launches the Rust connection loop and returns, allowing the
+        UI to remain responsive."""
+        if self._session is None:
             logger.error(
-                "Cannot connect: Transport not initialized "
+                "Cannot connect: session not initialized "
                 "(check port settings)."
             )
-            self._update_connection_status(
-                TransportStatus.ERROR, _("Port not configured")
+            self.connection_status_changed.send(
+                self,
+                status=TransportStatus.ERROR,
+                message=_("Port not configured"),
             )
             return
+        self._update_session_dialect()
+        await self._session.connect()
 
-        logger.debug("Connect initiated.")
-        self._loop = asyncio.get_running_loop()
-        self.keep_running = True
-        self._is_cancelled = False
-        self._job_running = False
-        self._on_command_done = None
-        self.grbl_transport.reset()
-        self._job_exception = None
-        self._connection_task = asyncio.create_task(self._connection_loop())
-        self._command_task = asyncio.create_task(self._process_command_queue())
-
-    def _set_request_finished(self, request: "CommandRequest") -> None:
-        if not request.finished.is_set():
-            if self._loop is not None:
-                self._loop.call_soon_threadsafe(request.finished.set)
-            else:
-                request.finished.set()
-
-    async def _await_handshake(self) -> bool:
-        """
-        Polls the device with realtime '?' commands until it responds
-        with a status report (or its welcome message arrives), bounded
-        by HANDSHAKE_TIMEOUT. Returns True once the handshake event is
-        set, False if the device stayed silent.
-        """
-        loop = asyncio.get_event_loop()
-        deadline = loop.time() + self.HANDSHAKE_TIMEOUT
-        while True:
-            await self._send_realtime("?", add_newline=False)
-            try:
-                await asyncio.wait_for(
-                    self._handshake_received.wait(),
-                    timeout=self.HANDSHAKE_POLL_INTERVAL,
-                )
-                return True
-            except asyncio.TimeoutError:
-                if loop.time() >= deadline:
-                    return False
-
-    async def _connection_loop(self) -> None:
-        logger.debug("Entering _connection_loop.")
-        while self.keep_running:
-            logger.debug("Attempting connection…")
-
-            try:
-                transport = self.grbl_transport
-                if not transport:
-                    raise DriverSetupError("Transport not initialized")
-
-                self._handshake_received.clear()
-                await transport.connect()
-                logger.debug(
-                    "Serial port opened. Verifying device response..."
-                )
-
-                if not await self._await_handshake():
-                    logger.warning(
-                        "No response from device. Port may be a phantom "
-                        "COM port without a connected device."
-                    )
-                    await transport.disconnect()
-                    self._update_connection_status(
-                        TransportStatus.ERROR,
-                        _("No response from device"),
-                    )
-                    self._update_connection_status(TransportStatus.SLEEPING)
-                    await asyncio.sleep(5)
-                    continue
-
-                logger.info("Connection established successfully.")
-
-                self._apply_cached_rx_buffer_size()
-
-                try:
-                    await self.execute_interactive_command("$I")
-                except (ConnectionError, asyncio.TimeoutError) as e:
-                    logger.warning(f"Failed to retrieve build info: {e}")
-
-                self._warn_if_buffer_size_unknown()
-
-                self._update_connection_status(TransportStatus.CONNECTED)
-
-                logger.debug("Connection verified. Starting status polling.")
-                while transport.is_connected and self.keep_running:
-                    # Skip status polling during jobs if configured
-                    if (
-                        not self._poll_status_while_running
-                        and self._job_running
-                    ):
-                        await asyncio.sleep(0.5)
-                        continue
-
-                    # Deliberately not taking _cmd_lock here: a gcode
-                    # send holds the lock for the whole buffer-space
-                    # wait, including stall retries, which can last a
-                    # long time while a job is paused. Polls are
-                    # realtime bytes that bypass the GRBL RX buffer
-                    # and its accounting, so they are safe to send
-                    # without the lock (same as other realtime
-                    # commands sent via _send_realtime). Blocking on
-                    # the lock here would starve status polling, so
-                    # the driver state would go stale.
-                    responses_before = self._device_response_count
-                    try:
-                        payload = b"?"
-                        await transport.send_poll(payload)
-                    except ConnectionError as e:
-                        logger.warning(
-                            f"Connection lost while sending poll command: {e}"
-                        )
-                        break
-                    await asyncio.sleep(0.5)
-
-                    if not self.keep_running or not transport.is_connected:
-                        break
-
-                    # A device that answers polls after a transient
-                    # write error is alive: recover the connection
-                    # status instead of leaving the UI stuck in
-                    # ERROR (issue #428).
-                    if (
-                        self._last_connection_status is TransportStatus.ERROR
-                        and self._device_response_count > responses_before
-                    ):
-                        logger.info(
-                            "Device responded after connection error; "
-                            "recovering connection status."
-                        )
-                        self._update_connection_status(
-                            TransportStatus.CONNECTED
-                        )
-
-            except (serial.serialutil.SerialException, OSError) as e:
-                logger.error(f"Connection error: {e}")
-                # Don't update status here - the transport's status_changed
-                # signal already sent ERROR status via
-                # on_serial_status_changed.
-            except asyncio.CancelledError:
-                logger.info("Connection loop cancelled.")
-                break
-            except Exception as e:
-                logger.exception("Unexpected error in connection loop")
-                self._update_connection_status(TransportStatus.ERROR, str(e))
-            finally:
-                if self.grbl_transport and self.grbl_transport.is_connected:
-                    logger.debug("Disconnecting transport in finally block")
-                    await self.grbl_transport.disconnect()
-
-            if not self.keep_running:
-                break
-
-            logger.debug("Connection lost. Reconnecting in 5s…")
-            self._update_connection_status(TransportStatus.SLEEPING)
-            await asyncio.sleep(5)
-
-        logger.debug("Leaving _connection_loop.")
-
-    async def _process_command_queue(self) -> None:
-        logger.debug("Entering _process_command_queue.")
-        while self.keep_running:
-            try:
-                request = await self._command_queue.get()
-                if (
-                    not self.grbl_transport
-                    or not self.grbl_transport.is_connected
-                    or self._is_cancelled
-                ):
-                    logger.warning(
-                        "Cannot process command: Serial transport not "
-                        "connected or job is cancelled. Dropping command."
-                    )
-                    self._set_request_finished(request)
-                    self._command_queue.task_done()
-                    continue
-
-                self._current_request = request
-                try:
-                    cmd_text = request.command.strip()
-                    if cmd_text:
-                        logger.info(
-                            cmd_text,
-                            extra=self._log_extra("USER_COMMAND"),
-                        )
-
-                    async with self._cmd_lock:
-                        if (
-                            not self.grbl_transport
-                            or not self.grbl_transport.is_connected
-                        ):
-                            raise ConnectionError(
-                                "Serial transport disconnected during command."
-                            )
-                        await self.grbl_transport.send_command(request.payload)
-
-                    # Wait for the response to arrive outside the lock
-                    # so that status polling and gcode streaming are not
-                    # blocked. The timeout is handled by the caller
-                    # (_execute_command).
-                    await request.finished.wait()
-
-                except ConnectionError as e:
-                    logger.error(f"Connection error during command: {e}")
-                    self._update_connection_status(
-                        TransportStatus.ERROR,
-                        str(e),
-                    )
-                finally:
-                    self._current_request = None
-                    self._command_queue.task_done()
-
-                # Release lock briefly to allow status polling
-                await asyncio.sleep(0.1)
-
-            except asyncio.CancelledError:
-                logger.info("Command queue processing cancelled.")
-                break
-            except Exception as e:
-                logger.exception("Unexpected error in command queue")
-                self._update_connection_status(TransportStatus.ERROR, str(e))
-        logger.debug("Leaving _process_command_queue.")
-
-    def _start_job(
-        self,
-        on_command_done: Callable[[int], None | Awaitable[None]] | None = None,
-    ):
-        """Initializes state for a new streaming job."""
-        self._is_cancelled = False
-        self._job_running = True
-        self._is_holding = False
-        self._on_command_done = on_command_done
-        self._last_reported_op_index = -1
-        self._job_exception = None
-        self._consecutive_unanswered_polls = 0
-        if self.grbl_transport:
-            self.grbl_transport.reset_flow_control()
-
-        # The driver owns the state while a job runs: status polling
-        # is disabled during jobs by default, so the firmware's Run
-        # status is never observed. Reflect the job start immediately
-        # so the UI does not keep showing Idle while the machine is
-        # working. An ALARM (which aborts the job right away) is not
-        # masked.
-        if self.state.status not in (DeviceStatus.RUN, DeviceStatus.ALARM):
-            self.state.status = DeviceStatus.RUN
-            self.state_changed.send(self, state=self.state)
-
-    async def _abort_stream_task(self) -> None:
-        """
-        Cancel and reap the streaming task, if one is still alive.
-
-        Cancelling the task is the only reliable way to stop a sender
-        that is parked waiting for buffer space: wake-up signals can
-        be missed or arrive before the buffer accounting is reset,
-        and the ``_is_cancelled`` flag can be cleared again by
-        unrelated code paths. A surviving sender would later wake up
-        from its stall timeout and resume streaming a job that was
-        cancelled long before (issue #428).
-        """
-        task = self._stream_task
-        self._stream_task = None
-        if task is None or task.done():
-            return
-        if task is asyncio.current_task():
-            # Self-interruption: the streaming task is already
-            # unwinding through its own exception handler. Cancelling
-            # the current task here would cut the ongoing cancel()
-            # (including the safety shutdown) short.
-            return
-        task.cancel()
-        try:
-            await task
-        except asyncio.CancelledError:
-            pass
-        except Exception as e:  # noqa: BLE001 - reaping aborted task
-            logger.warning(f"Ignored exception while aborting job: {e}")
-
-    async def _run_streaming_job(self, coro: Coroutine) -> None:
-        """
-        Run a ``_stream_gcode()`` coroutine as a tracked task.
-
-        The task is stored so that ``cancel()`` can hard-abort it.
-        Never allows two streaming jobs to overlap.
-        """
-        # Reap a leftover task from a previous job first.
-        await self._abort_stream_task()
-        task = asyncio.create_task(coro)
-        self._stream_task = task
-        try:
-            await task
-        except asyncio.CancelledError:
-            if task.cancelled():
-                # Hard-aborted by cancel(): intentional, do not
-                # propagate into the caller's task.
-                return
-            # This (outer) task itself was cancelled: forward the
-            # cancellation to the streaming task and propagate.
-            task.cancel()
-            raise
-        finally:
-            if self._stream_task is task:
-                self._stream_task = None
-
-    async def _recover_from_deadlock(
-        self, transport, hold_lock: bool = True
-    ) -> None:
-        """
-        Recover from a detected deadlock by sending a G4 P0.01 dwell.
-        When its 'ok' arrives, the planner buffer is guaranteed empty.
-        Then reset host-side buffer accounting.
-
-        When *hold_lock* is False the caller already holds
-        ``_cmd_lock`` (e.g. the stall callback inside ``send_gcode``).
-        """
-        if not transport or not transport.is_connected:
-            logger.warning("Cannot recover: transport disconnected.")
-            return
-        logger.info("Deadlock recovery: sending G4 P0.01 to drain planner.")
-        try:
-
-            async def _do_recovery():
-                if (
-                    not self.grbl_transport
-                    or not self.grbl_transport.is_connected
-                ):
-                    return
-                transport.reset_flow_control()
-                await transport.send_gcode(b"G4 P0.01\n")
-
-            if hold_lock:
-                async with self._cmd_lock:
-                    await _do_recovery()
-            else:
-                await _do_recovery()
-            try:
-                await asyncio.wait_for(
-                    transport.pending_queue.join(), timeout=30.0
-                )
-                logger.info("Deadlock recovery: all pending acks received.")
-            except asyncio.TimeoutError:
-                logger.warning(
-                    "Deadlock recovery: timed out waiting for acks "
-                    "after G4 P0.01. Resetting host buffers."
-                )
-            transport.reset()
-        except (ConnectionError, OSError) as e:
-            logger.warning(f"Deadlock recovery failed: {e}")
-
-    def _is_grbl_idle_or_desynced(self, transport) -> bool:
-        """
-        Check if GRBL is actually idle or buffer tracking has
-        desynchronized.
-
-        During jobs, the IDLE status is overridden to RUN for the
-        UI, so ``self.state.status == IDLE`` is never true.  Instead
-        we check: (1) the raw GRBL status before the override, (2)
-        whether GRBL reports full buffer availability while we still
-        have pending commands, or (3) whether a non-busy raw status
-        (IDLE/HOLD) has been seen repeatedly with a non-empty
-        pending queue — indicating a desync even without ``Bf:``.
-        """
-        if self.state.status == DeviceStatus.IDLE:
-            return True
-        if self._raw_grbl_status in (
-            DeviceStatus.IDLE,
-            DeviceStatus.HOLD,
-        ):
-            return True
-
-        buf_avail = self.state.buffer_available
-        return (
-            buf_avail is not None
-            and transport._rx_buffer_size > 0
-            and buf_avail >= transport._rx_buffer_size
+    async def execute_interactive_command(self, command: str) -> list[str]:
+        """Send a command and await its full response, blocking other
+        commands from interleaving; used by device probing."""
+        return await self._require_session().execute_interactive_command(
+            command
         )
 
-    async def _poll_and_check_idle(
-        self, transport, hold_lock: bool = True
-    ) -> bool:
-        """
-        Send a realtime status poll and check if GRBL is idle.
+    def get_setting_vars(self) -> list["VarSet"]:
+        return get_grbl_setting_varsets()
 
-        Resets ``_raw_grbl_status`` to UNKNOWN, sends a ``?`` poll
-        (which bypasses the RX buffer), and waits briefly for a
-        fresh status report.  Returns True only if the fresh
-        response confirms GRBL is idle or buffer-desynchronized.
-
-        Also tracks liveness in ``_consecutive_unanswered_polls``.
-        GRBL answers '?' with a status report in every state (Run,
-        Hold, Door, Alarm), so a machine that is merely busy or
-        paused always answers. Liveness is proven by *any* received
-        response (status report or ok/error ack) -- not by whether
-        the report could be interpreted, so an uninterpretable
-        report from a live device never counts as silence. The
-        counter only grows when nothing at all arrives within the
-        response window, or when the poll cannot be written.
-        Callers use this to detect a dead device.
-
-        When *hold_lock* is False the caller already holds
-        ``_cmd_lock`` (e.g. the stall callback inside ``send_gcode``).
-        """
-        self._raw_grbl_status = DeviceStatus.UNKNOWN
-        responses_before = self._device_response_count
-        try:
-
-            async def _do_poll():
-                if (
-                    not self.grbl_transport
-                    or not self.grbl_transport.is_connected
-                ):
-                    return
-                await transport.send_poll(b"?")
-
-            if hold_lock:
-                async with self._cmd_lock:
-                    await _do_poll()
-            else:
-                await _do_poll()
-        except (ConnectionError, OSError):
-            self._consecutive_unanswered_polls += 1
-            logger.debug(
-                f"Failed to send status poll "
-                f"({self._consecutive_unanswered_polls}/"
-                f"{self.UNANSWERED_POLL_LIMIT} unanswered)."
-            )
-            return False
-        for _attempt in range(self.POLL_RESPONSE_ATTEMPTS):
-            await asyncio.sleep(self.POLL_RESPONSE_INTERVAL)
-            if self._raw_grbl_status != DeviceStatus.UNKNOWN:
-                break
-        if self._device_response_count > responses_before:
-            self._consecutive_unanswered_polls = 0
-        else:
-            self._consecutive_unanswered_polls += 1
-            logger.debug(
-                f"No response to status poll "
-                f"({self._consecutive_unanswered_polls}/"
-                f"{self.UNANSWERED_POLL_LIMIT} unanswered)."
-            )
-        return self._is_grbl_idle_or_desynced(transport)
-
-    def _device_stopped_responding(self) -> bool:
-        """True if the last stall polls went completely unanswered."""
-        return self._consecutive_unanswered_polls >= self.UNANSWERED_POLL_LIMIT
-
-    def _mark_device_unresponsive(self) -> None:
-        """Records a fatal 'device is dead' job exception."""
-        logger.error(
-            f"No response to {self._consecutive_unanswered_polls} "
-            "consecutive status polls. Assuming the device stopped "
-            "responding."
-        )
-        self._job_exception = DeviceConnectionError(
-            "Device stopped responding during job (no reply to status polls)."
-        )
-
-    async def _on_buffer_stall(
-        self, transport: GrblSerialTransport, command_len: int
-    ) -> bool:
-        """
-        Callback for ``transport.send_gcode()`` when the buffer-space
-        wait times out.
-
-        Called from within ``send_gcode`` which is inside the
-        driver's ``_cmd_lock``, so poll and recovery must skip the
-        lock.  pyserial serializes concurrent writes, making this
-        safe.
-
-        Aborts the job (returns False) only with proof that it cannot
-        proceed: the job was cancelled, the machine is in ALARM, or
-        the device stopped responding to status polls entirely. A
-        device that answers polls is alive -- it may be busy with a
-        slow move or paused via feed hold -- so the wait is retried
-        (possibly forever), regardless of the deadlock_detection
-        setting. Deadlock detection additionally attempts G4 P0.01
-        recovery when the poll proves the machine is idle.
-
-        Returns True to retry the wait, False to abort the job.
-        """
-        if self._is_cancelled:
-            return False
-
-        idle_or_desynced = await self._poll_and_check_idle(
-            transport, hold_lock=False
-        )
-
-        if self._device_stopped_responding():
-            self._mark_device_unresponsive()
-            return False
-
-        if self.state.status == DeviceStatus.ALARM:
-            if not self._job_exception:
-                self._job_exception = DeviceConnectionError(
-                    "Machine entered ALARM state during job."
-                )
-            return False
-
-        if not self._deadlock_detection:
-            logger.debug(
-                "Buffer stall timed out (deadlock detection disabled). "
-                "Retrying."
-            )
-            return True
-
-        if idle_or_desynced:
-            if not transport.needs_space(command_len):
-                logger.info(
-                    "Buffer freed during status poll. Continuing streaming."
-                )
-                return True
-            logger.warning(
-                "Deadlock detected during streaming. "
-                "Attempting G4 P0.01 recovery."
-            )
-            await self._recover_from_deadlock(transport, hold_lock=False)
-            if not transport.needs_space(command_len):
-                return True
-            logger.error("Recovery failed: buffer still full.")
-            return False
-        logger.info(
-            "Timeout waiting for buffer space (machine not IDLE). "
-            "This is normal during slow moves. Retrying."
-        )
-        return True
-
-    async def _send_gcode_line(
-        self,
-        transport,
-        line: str,
-        command_bytes: bytes,
-        op_index: int | None,
-        timeout: float,
-    ) -> None:
-        """Send a single gcode line with buffer accounting."""
-        async with self._cmd_lock:
-            if not self.grbl_transport or not self.grbl_transport.is_connected:
-                raise ConnectionError(
-                    "Serial transport disconnected during job."
-                )
-
-            logger.info(line, extra=self._log_extra("USER_COMMAND"))
-
-            await transport.send_gcode(
-                command_bytes,
-                op_index,
-                timeout=timeout,
-                on_stall=self._on_buffer_stall,
-            )
-
-    async def _drain_pending_acks(self, transport, timeout: float) -> None:
-        """Wait for all pending acks, recovering from deadlocks."""
-        while not transport.pending_queue.empty():
-            if self._job_exception or self.state.status == DeviceStatus.ALARM:
-                break
-            if self._is_cancelled:
-                break
-
-            try:
-                await asyncio.wait_for(
-                    transport.pending_queue.join(), timeout=timeout
-                )
-                logger.debug("All 'ok' responses received.")
-                break
-            except asyncio.TimeoutError:
-                idle_or_desynced = await self._poll_and_check_idle(transport)
-                if self._device_stopped_responding():
-                    self._mark_device_unresponsive()
-                    break
-                if idle_or_desynced:
-                    if transport.pending_queue.empty():
-                        logger.info(
-                            "Pending acks resolved during status poll."
-                        )
-                        break
-                    logger.warning(
-                        "Deadlock detected at end of job. "
-                        "Attempting G4 P0.01 recovery."
-                    )
-                    await self._recover_from_deadlock(transport)
-                else:
-                    logger.warning(
-                        "Timeout waiting for acks "
-                        "(machine not IDLE). Retrying."
-                    )
-
-    async def _stream_gcode(
-        self,
-        gcode_lines: list[str],
-        op_map: MachineCodeOpMap | None = None,
-        command_times: list[float] | None = None,
-    ):
-        """
-        The core G-code streaming logic using character-counting protocol.
-        Assumes _start_job() has been called.
-        """
-        total = len(gcode_lines)
-        logger.debug(f"Starting GRBL streaming job with {total} lines.")
-        transport = self.grbl_transport
-        if not transport:
-            raise ConnectionError("Transport not initialized")
-        job_completed_successfully = False
-        sent_count = 0
-        try:
-            for line_idx, line in enumerate(gcode_lines):
-                if (
-                    self._is_cancelled
-                    or self._job_exception
-                    or self.state.status == DeviceStatus.ALARM
-                ):
-                    logger.info(
-                        "Job cancelled, errored, or machine in ALARM "
-                        "state. Stopping G-code sending."
-                    )
-                    if (
-                        self.state.status == DeviceStatus.ALARM
-                        and not self._job_exception
-                    ):
-                        self._job_exception = DeviceConnectionError(
-                            "Machine entered ALARM state during job."
-                        )
-                    break
-
-                line = strip_gcode_comments(line)
-                if not line:
-                    continue
-
-                op_index = op_map.op_for_line(line_idx) if op_map else None
-                command_bytes = (line + "\n").encode("utf-8")
-
-                if (
-                    command_times is not None
-                    and op_index is not None
-                    and op_index < len(command_times)
-                ):
-                    estimated = command_times[op_index]
-                    timeout = min(
-                        self.STALL_TIMEOUT_MAX,
-                        max(
-                            self.STALL_TIMEOUT_MIN,
-                            estimated * self.STALL_TIMEOUT_SAFETY_FACTOR,
-                        ),
-                    )
-                else:
-                    timeout = self.STALL_TIMEOUT_DEFAULT
-
-                try:
-                    await self._send_gcode_line(
-                        transport,
-                        line,
-                        command_bytes,
-                        op_index,
-                        timeout,
-                    )
-                except BufferStallError:
-                    if not self._job_exception:
-                        self._job_exception = DeviceConnectionError(
-                            "Deadlock recovery failed."
-                        )
-                if (
-                    self._job_exception
-                    or self.state.status == DeviceStatus.ALARM
-                ):
-                    break
-
-                sent_count += 1
-                if sent_count % 500 == 0:
-                    logger.debug(
-                        f"Streaming progress: {sent_count}/{total} lines sent"
-                    )
-                await asyncio.sleep(0)
-
-            if not self._is_cancelled and not self._job_exception:
-                logger.debug(
-                    "All G-code sent. Waiting for all 'ok' responses."
-                )
-                await self._drain_pending_acks(
-                    transport, self.STALL_TIMEOUT_DEFAULT
-                )
-
-            if self._job_exception:
-                raise self._job_exception
-
-            job_completed_successfully = not self._is_cancelled
-
-        except (
-            asyncio.CancelledError,
-            ConnectionError,
-            DeviceConnectionError,
-        ) as e:
-            logger.warning(f"Job interrupted: {e!r}")
-            job_completed_successfully = False
-            # If not cancelled explicitly, send a cancel command
-            if not self._is_cancelled:
-                logger.info(f"Calling cancel() due to interruption: {e!r}")
-                await self.cancel(emergency=True)
-            # Do not re-raise ConnectionError or
-            # DeviceConnectionError, let the task finish "failed"
-            # Only re-raise CancelledError to propagate cancellation
-            # upwards.
-            if isinstance(e, asyncio.CancelledError):
-                raise
-        finally:
-            self._raw_grbl_status = DeviceStatus.UNKNOWN
-            self._job_running = False
-            self._is_holding = False
-            self._on_command_done = None
-            if job_completed_successfully:
-                self.job_finished.send(self)
-                logger.debug(
-                    f"G-code streaming finished successfully "
-                    f"({sent_count}/{total} lines)."
-                )
-            elif self._is_cancelled:
-                logger.debug(
-                    f"G-code streaming cancelled at line {sent_count}/{total}."
-                )
-            elif self._job_exception:
-                logger.debug(
-                    f"G-code streaming aborted by exception at "
-                    f"line {sent_count}/{total}: "
-                    f"{self._job_exception}"
-                )
-                self.job_finished.send(self)
-            else:
-                logger.warning(
-                    f"G-code streaming ended unexpectedly at "
-                    f"line {sent_count}/{total}."
-                )
-                self.job_finished.send(self)
+    @staticmethod
+    def _op_line_map(op_map: Any) -> dict[int, int]:
+        """Extract the {line index: op index} mapping for the Rust
+        session's per-line progress reporting."""
+        result = {}
+        for line_idx in range(op_map.line_count):
+            op_index = op_map.op_for_line(line_idx)
+            if op_index is not None:
+                result[line_idx] = op_index
+        return result
 
     async def run(
         self,
@@ -1146,25 +362,31 @@ class GrblSerialDriver(Driver):
         ops: "Ops",
         on_command_done: Callable[[int], None | Awaitable[None]] | None = None,
     ) -> None:
-        self._start_job(on_command_done)
-
-        mapping = encoded.op_map
-        gcode_lines = encoded.text.splitlines()
-
+        session = self._require_session()
+        self._update_session_dialect()
         command_times = ops.estimate_command_times(
             default_feed_rate=self._machine.max_cut_speed,
             default_rapid_rate=self._machine.max_travel_speed,
             acceleration=self._machine.acceleration,
         )
+        estimates = [float(t) for t in command_times]
+        line_map = self._op_line_map(encoded.op_map)
+
+        def _on_command_done(op_index: int):
+            if on_command_done is None:
+                return
+            result = on_command_done(op_index)
+            if asyncio.iscoroutine(result):
+                asyncio.ensure_future(result)
 
         try:
-            await self._run_streaming_job(
-                self._stream_gcode(gcode_lines, mapping, command_times)
+            await session.run(
+                encoded.text,
+                line_map,
+                estimates,
+                None if on_command_done is None else _on_command_done,
             )
         except DeviceConnectionError as e:
-            # Catch the device error here to prevent it from propagating
-            # up and tearing down the connection task. The error has
-            # already been logged inside _stream_gcode.
             logger.warning(
                 f"Job terminated due to device error: {e}. "
                 "Connection remains active."
@@ -1173,30 +395,9 @@ class GrblSerialDriver(Driver):
             logger.exception("Job terminated with unexpected error")
 
     async def run_raw(self, machine_code: str) -> None:
-        """
-        Executes a raw G-code string using the character-counting
-        streaming protocol.
-
-        GRBL realtime commands (?, ~, !) are sent directly via the
-        control path instead: the firmware executes them on receipt,
-        never acknowledges them, and streaming them as gcode would
-        both queue them behind buffered commands and wedge the
-        protocol waiting for an 'ok' that does not come.
-        """
-        lines = [
-            line.strip() for line in machine_code.splitlines() if line.strip()
-        ]
-        gcode_lines, realtime_lines = split_realtime_commands(lines)
-
-        for line in realtime_lines:
-            logger.info(line, extra=self._log_extra("USER_COMMAND"))
-            await self._send_realtime(line, add_newline=False)
-
-        if not gcode_lines:
-            return
-        self._start_job()
+        session = self._require_session()
         try:
-            await self._run_streaming_job(self._stream_gcode(gcode_lines))
+            await session.run_raw(machine_code)
         except DeviceConnectionError as e:
             logger.warning(
                 f"Raw G-code terminated due to device error: {e}. "
@@ -1206,380 +407,110 @@ class GrblSerialDriver(Driver):
             logger.exception("Raw G-code terminated with unexpected error")
 
     async def cancel(self, emergency: bool = False) -> None:
-        logger.debug("Cancel command initiated.")
-        job_was_running = self._job_running
-        self._is_cancelled = True
-        self._job_running = False
-        self._on_command_done = None
-
-        # Unblock the run loop if it's waiting
-        if self.grbl_transport:
-            self.grbl_transport.signal_space_available()
-
-            logger.info("Sending Soft Reset (Ctrl-X) to device.")
-            payload = b"\x18"
-            await self.grbl_transport.send_control(payload)
-
-            # Hard-abort the streaming sender before resetting the
-            # flow-control state, so a sender parked waiting for
-            # buffer space can never wake up later and resume a job
-            # that was cancelled (issue #428).
-            await self._abort_stream_task()
-
-            while not self._command_queue.empty():
-                try:
-                    request = self._command_queue.get_nowait()
-                    self._set_request_finished(request)
-                    self._command_queue.task_done()
-                except asyncio.QueueEmpty:
-                    break
-            logger.debug("Command queue cleared after cancel.")
-
-            # Clear the streaming queue and buffer state
-            self.grbl_transport.reset()
-            logger.debug("Streaming queue cleared after cancel.")
-
-            await self._send_safety_shutdown(emergency)
-
-            if job_was_running:
-                self.job_finished.send(self)
-        else:
+        if self._session is None:
             raise ConnectionError("Serial transport not initialized")
-
-    async def _send_safety_shutdown(self, emergency: bool = False) -> None:
-        """
-        Best-effort transmission of the dialect's tool-off commands so
-        a cancelled or aborted job cannot leave persistent PWM outputs
-        energized. After a soft reset the firmware needs a moment to
-        become ready again, hence the short delay before sending.
-        """
-        dialect = self.dialect
-        commands = dialect.get_safety_off_commands()
-        if emergency and dialect.emergency_stop:
-            commands.append(dialect.emergency_stop)
-        if not commands:
-            return
-        transport = self.grbl_transport
-        if not transport or not transport.is_connected:
-            return
-        await asyncio.sleep(self.SAFETY_SHUTDOWN_DELAY)
-        for command in commands:
-            if not transport.is_connected:
-                break
-            try:
-                logger.info(command, extra=self._log_extra("USER_COMMAND"))
-                await transport.send_gcode((command + "\n").encode("utf-8"))
-            except (
-                ConnectionError,
-                asyncio.TimeoutError,
-                BufferStallError,
-            ) as e:
-                logger.warning(f"Safety command '{command}' failed: {e}")
-
-    async def _execute_command(self, command: str) -> list[str]:
-        # Only clear the cancellation flag once the cancelled job's
-        # sender has fully terminated. Clearing it while the sender
-        # is still winding down allowed stall recovery to resume
-        # streaming a cancelled job (issue #428).
-        if not self._job_running and (
-            self._stream_task is None or self._stream_task.done()
-        ):
-            self._is_cancelled = False
-        request = CommandRequest(command)
-        await self._command_queue.put(request)
-        try:
-            await asyncio.wait_for(request.finished.wait(), timeout=10.0)
-        except asyncio.TimeoutError:
-            logger.error(
-                f"Command '{command}' timed out after 10 seconds. "
-                "Unblocking command queue."
-            )
-            self._set_request_finished(request)
-            raise
-        except asyncio.CancelledError:
-            logger.debug(
-                f"Command '{command}' was cancelled. Unblocking queue."
-            )
-            self._set_request_finished(request)
-            raise
-        return request.response_lines
-
-    async def execute_interactive_command(self, command: str) -> list[str]:
-        """
-        Send a command and synchronously await its full response.
-
-        Unlike ``_execute_command`` (which queues commands for
-        asynchronous processing by ``_process_command_queue``), this
-        method holds the command lock for the entire send-and-wait
-        cycle so that no other command can be interleaved:
-
-        1. Acquire ``_cmd_lock`` (blocks ``_process_command_queue``
-           and status polling from sending anything).
-        2. Drain the transport's pending-ack queue so that no stale
-           ``ok``/``error`` is in flight.
-        3. Set ``_interactive_request``, send the command, and wait
-           for its response.
-        4. Release the lock.
-
-        ``_interactive_request`` is checked *before*
-        ``_current_request`` in ``_handle_ok`` / ``_handle_error``,
-        so an interactive command always claims the next
-        acknowledgement even if ``_process_command_queue`` has a
-        pending ``_current_request`` from before it blocked on the
-        lock.
-        """
-        transport = self.grbl_transport
-        if not transport or not transport.is_connected:
-            raise ConnectionError("Serial transport not connected")
-
-        request = CommandRequest(command)
-
-        async with self._cmd_lock:
-            await transport.pending_queue.join()
-
-            self._interactive_request = request
-            try:
-                logger.info(
-                    command.strip(),
-                    extra=self._log_extra("USER_COMMAND"),
-                )
-                await transport.send_command(request.payload)
-                await asyncio.wait_for(request.finished.wait(), timeout=10.0)
-            except asyncio.TimeoutError:
-                logger.error(
-                    f"Interactive command '{command}' timed out "
-                    "after 10 seconds."
-                )
-                raise
-            finally:
-                self._interactive_request = None
-
-        return request.response_lines
+        await self._session.cancel(emergency)
 
     async def set_hold(self, hold: bool = True) -> None:
-        self._is_holding = hold
-        # Do not un-cancel a job that is still winding down (see
-        # _execute_command; issue #428).
-        if not self._job_running and (
-            self._stream_task is None or self._stream_task.done()
-        ):
-            self._is_cancelled = False
-        await self._send_realtime("!" if hold else "~", add_newline=False)
-        desired = (
-            DeviceStatus.HOLD
-            if hold
-            else DeviceStatus.RUN
-            if self._job_running
-            else DeviceStatus.IDLE
-        )
-        if self.state.status != desired:
-            self.state.status = desired
-            self.state_changed.send(self, state=self.state)
+        await self._require_session().set_hold(hold)
 
     def can_home(self, axis: Axis | None = None) -> bool:
         """GRBL supports homing for all axes."""
         return True
 
     async def home(self, axes: Axis | None = None) -> None:
-        """
-        Homes the specified axes or all axes if none specified.
+        session = self._require_session()
+        names = None
+        if axes is not None:
+            names = [axis.name for axis in axes]
+        await session.home(names, self._machine.active_wcs)
 
-        Args:
-            axes: Optional axis or combination of axes to home. If None,
-                 homes all axes. Can be a single Axis or multiple axes
-                 using binary operators (e.g. Axis.X|Axis.Y)
-        """
-        dialect = self.dialect
-
-        # Execute the homing command(s)
-        if axes is None:
-            await self._execute_command(dialect.home_all)
-        else:
-            for axis in axes:
-                cmd = dialect.home_axis.format(axis_letter=axis.name)
-                await self._execute_command(cmd)
-
-        # The following works around a quirk in some Grbl versions:
-        # After homing, the machine is still in G54, but forgets its
-        # offset. To re-activate the offset, we toggle to another
-        # WCS and then back.
-        # Just sending G54 is ignored if GRBL thinks it's already
-        # in G54.
-        active_wcs = self._machine.active_wcs
-        temp_wcs = "G55" if active_wcs == "G54" else "G54"
-
-        # Flush planner buffer
-        await self._execute_command("G4 P0.01")
-
-        # Toggle sequence
-        await self._execute_command(temp_wcs)
-        await self._execute_command(active_wcs)
-        self.state.error = None
-        self.state_changed.send(self, state=self.state)
-
-    async def move_to(self, pos_x, pos_y) -> None:
-        dialect = self.dialect
-        cmd = dialect.move_to.format(
-            speed=self._to_machine_speed(1500),
-            x=self._to_machine_length(float(pos_x)),
-            y=self._to_machine_length(float(pos_y)),
-        )
-        await self._execute_command(cmd)
+    async def move_to(
+        self,
+        pos_x: float,
+        pos_y: float,
+        pos_z: float | None = None,
+        speed: float | None = None,
+    ) -> None:
+        cmd = self._format_move_to(float(pos_x), float(pos_y), pos_z, speed)
+        await self._require_session().execute_command(cmd)
 
     async def select_tool(self, tool_number: int) -> None:
         """Sends a tool change command for the given tool number."""
-        dialect = self.dialect
-        cmd = dialect.tool_change.format(tool_number=tool_number)
-        await self._execute_command(cmd)
+        await self._require_session().select_tool(tool_number)
 
     async def clear_alarm(self) -> None:
+        session = self._require_session()
         dialect = self.dialect
-        response = await self._execute_command(dialect.clear_alarm)
+        response = await session.execute_command(dialect.clear_alarm)
         has_error = any(line.startswith("error:") for line in response)
         if not has_error:
             self.state.error = None
             self.state_changed.send(self, state=self.state)
 
     async def set_power(self, head: "Laser", percent: float) -> None:
-        """
-        Sets the laser power to the specified percentage of max power.
-
-        Args:
-            head: The laser head to control.
-            percent: Power percentage (0.0-1.0). 0 disables power.
-        """
-        # Get the dialect for power control commands
-        dialect = self.dialect
-
-        if percent <= 0:
-            # Disable power
-            cmd = dialect.laser_off
-        else:
-            # Enable power with specified percentage
-            power_abs = percent * head.max_power
-            cmd = dialect.laser_on.format(power=power_abs)
-
-        await self._execute_command(cmd)
+        """Sets the laser power (0.0-1.0 of max power)."""
+        power = percent * head.max_power if percent > 0 else None
+        await self._require_session().set_power(power)
 
     async def set_focus_power(self, head: "Laser", percent: float) -> None:
-        """
-        Sets the laser power for focus mode using the focus_laser_on
-        command.
-
-        Args:
-            head: The laser head to control.
-            percent: Power percentage (0.0-1.0). 0 disables power.
-        """
-        dialect = self.dialect
-
-        if percent <= 0:
-            await self._wait_for_idle()
-            cmd = dialect.laser_off
-        else:
-            power_abs = percent * head.max_power
-            cmd = dialect.focus_laser_on.format(power=power_abs)
-
-        await self._execute_command(cmd)
-
-    async def _wait_for_idle(self, timeout: float = 5.0):
-        deadline = asyncio.get_event_loop().time() + timeout
-        while self.state.status == DeviceStatus.JOG:
-            if asyncio.get_event_loop().time() > deadline:
-                logger.warning(
-                    "Timed out waiting for JOG to finish before "
-                    "sending laser-off command."
-                )
-                break
-            await asyncio.sleep(0.05)
+        """Sets the laser power for focus mode."""
+        power = percent * head.max_power if percent > 0 else None
+        await self._require_session().set_focus_power(power)
 
     def can_jog(self, axis: Axis | None = None) -> bool:
         """GRBL supports jogging for all axes."""
         return True
 
     async def jog(self, speed: int, **deltas: float) -> None:
-        """
-        Jogs the machine using GRBL's $J command.
-
-        Args:
-            speed: The jog speed in mm/min
-            **deltas: Axis names and distances (e.g. x=10.0, y=5.0)
-        """
-        # Build the command with all specified axes
-        dialect = self.dialect
-        cmd_parts = [dialect.jog.format(speed=self._to_machine_speed(speed))]
-
-        for axis_name, distance in deltas.items():
-            cmd_parts.append(
-                f"{axis_name.upper()}{self._to_machine_length(distance)}"
-            )
-
-        if len(cmd_parts) == 1:
-            return
-
-        cmd = " ".join(cmd_parts)
-        await self._execute_command(cmd)
-
-    def get_setting_vars(self) -> list["VarSet"]:
-        return get_grbl_setting_varsets()
+        session = self._require_session()
+        converted = [
+            (name, self._to_machine_length(distance))
+            for name, distance in deltas.items()
+        ]
+        await session.jog(self._to_machine_speed(speed), converted)
 
     async def detect_unit_system(self) -> UnitSystem | None:
-        """
-        Queries the device's ``$$`` settings and infers the unit
-        system from the ``$13`` (Report in inches) flag.
-        """
-        try:
-            response_lines = await self.execute_interactive_command("$$")
-        except (ConnectionError, asyncio.TimeoutError) as e:
-            logger.warning(f"Unit system detection failed: {e}")
-            return None
-        self._report_in_inches = is_report_in_inches(response_lines)
-        return detect_unit_system_from_settings(response_lines)
+        """Queries the device's ``$$`` settings and infers the unit
+        system from the ``$13`` (Report in inches) flag."""
+        result = await self._require_session().detect_unit_system()
+        if result == "metric":
+            return UnitSystem.METRIC
+        if result == "imperial":
+            return UnitSystem.IMPERIAL
+        return None
 
     async def read_settings(self) -> None:
-        response_lines = await self.execute_interactive_command("$$")
-        self._report_in_inches = is_report_in_inches(response_lines)
-        # Get the list of VarSets, which serve as our template
-        known_varsets = self.get_setting_vars()
+        pairs = await self._require_session().read_settings()
 
-        # For efficient lookup, map each setting key to its parent VarSet
+        known_varsets = self.get_setting_vars()
         key_to_varset_map = {
             var_key: varset
             for varset in known_varsets
             for var_key in varset.keys()  # noqa: SIM118
         }
-
         unknown_vars = VarSet(
             title=_("Unknown Settings"),
             description=_(
                 "Settings reported by the device not in the standard list."
             ),
         )
-
-        for line in response_lines:
-            match = grbl_setting_re.match(line)
-            if match:
-                key, value_str = match.groups()
-                # Find which VarSet this key belongs to
-                target_varset = key_to_varset_map.get(key)
-                if target_varset:
-                    # Update the value in the correct VarSet
-                    apply_setting_to_varset(target_varset, key, value_str)
-                else:
-                    # This setting is not defined in our known VarSets
-                    unknown_vars.add(
-                        Var(
-                            key=key,
-                            label=f"${key}",
-                            var_type=str,
-                            value=value_str,
-                            description=_("Unknown setting from device"),
-                        )
+        for key, value_str in pairs:
+            target_varset = key_to_varset_map.get(key)
+            if target_varset:
+                apply_setting_to_varset(target_varset, key, value_str)
+            else:
+                unknown_vars.add(
+                    Var(
+                        key=key,
+                        label=f"${key}",
+                        var_type=str,
+                        value=value_str,
+                        description=_("Unknown setting from device"),
                     )
-
-        # The result is the list of known VarSets (now populated)
+                )
         result = known_varsets
         if len(unknown_vars) > 0:
-            # Append the VarSet of unknown settings if any were found
             result.append(unknown_vars)
 
         num_settings = sum(len(vs) for vs in result)
@@ -1592,45 +523,27 @@ class GrblSerialDriver(Driver):
     async def write_setting(self, key: str, value: Any) -> None:
         if isinstance(value, bool):
             value = 1 if value else 0
-        cmd = f"${key}={value}"
-        await self._execute_command(cmd)
+        await self._require_session().write_setting(key, str(value))
 
     async def set_wcs_offset(
         self, wcs_slot: str, x: float, y: float, z: float | None
     ) -> None:
-        p_num = gcode_to_p_number(wcs_slot)
-        if p_num is None:
-            raise ValueError(f"Invalid WCS slot: {wcs_slot}")
-        cmd = self.dialect.format_wcs_offset(
-            p_num,
+        session = self._require_session()
+        await session.set_wcs_offset(
+            wcs_slot,
             self._to_machine_length(x),
             self._to_machine_length(y),
             self._to_machine_length(z) if z is not None else None,
         )
-        await self._execute_command(cmd)
 
     async def read_wcs_offsets(self) -> dict[str, Pos]:
-        response_lines = await self.execute_interactive_command("$#")
-        offsets = {}
-        for line in response_lines:
-            match = wcs_re.match(line)
-            if match:
-                slot, x_str, y_str, z_str = match.groups()
-                z_str = z_str or "0.000"
-                parsed: Pos = (float(x_str), float(y_str), float(z_str))
-                offsets[slot] = (
-                    tuple(inches_to_mm(v) for v in parsed)
-                    if self._report_in_inches
-                    else parsed
-                )
-        self.wcs_updated.send(self, offsets=offsets)
-        return offsets
+        offsets = await self._require_session().read_wcs_offsets()
+        return {slot: tuple(pos) for slot, pos in offsets.items()}
 
     async def read_parser_state(self) -> str | None:
         """Reads the $G parser state to determine the active WCS."""
         try:
-            response_lines = await self.execute_interactive_command("$G")
-            return parse_grbl_parser_state(response_lines)
+            return await self._require_session().read_parser_state()
         except DeviceConnectionError as e:
             logger.warning(f"Could not read parser state: {e}")
             return None
@@ -1638,343 +551,14 @@ class GrblSerialDriver(Driver):
     async def run_probe_cycle(
         self, axis: Axis, max_travel: float, feed_rate: int
     ) -> Pos | None:
+        session = self._require_session()
         assert axis.name, "Probing requires a single, named axis."
-        axis_letter = axis.name.upper()
-        dialect = self.dialect
-        cmd = dialect.probe_cycle.format(
-            axis_letter=axis_letter,
-            max_travel=self._to_machine_length(max_travel),
-            feed_rate=self._to_machine_speed(feed_rate),
+        return await session.run_probe_cycle(
+            axis.name.upper(),
+            self._to_machine_length(max_travel),
+            self._to_machine_speed(feed_rate),
         )
-
-        self.probe_status_changed.send(
-            self, message=f"Probing {axis_letter}..."
-        )
-        try:
-            response_lines = await self.execute_interactive_command(cmd)
-        except DeviceConnectionError:
-            self.probe_status_changed.send(
-                self, message="Probe failed: Timed out"
-            )
-            return None
-
-        for line in response_lines:
-            match = prb_re.match(line)
-            if match:
-                x_str, y_str, z_str, success = match.groups()
-                if int(success) == 1:
-                    pos: Pos = (
-                        float(x_str),
-                        float(y_str),
-                        float(z_str),
-                    )
-                    if self._report_in_inches:
-                        pos = tuple(inches_to_mm(v) for v in pos)
-                    self.probe_status_changed.send(
-                        self, message=f"Probe triggered at {pos}"
-                    )
-                    return pos
-
-        self.probe_status_changed.send(self, message="Probe failed")
-        return None
-
-    def on_serial_data_received(self, sender, data: bytes):
-        """
-        Primary handler for incoming serial data. Delegates parsing
-        to the transport layer and processes structured responses.
-        """
-        if not self.grbl_transport:
-            return
-
-        responses = self.grbl_transport.parse_incoming(data)
-
-        # Process LINE responses before OK/ERROR to ensure
-        # informational lines are collected before the command
-        # is marked as finished. _extract_acks_from_buffer
-        # returns OK/ERROR first, but _handle_ok schedules
-        # request.finished.set() via call_soon_threadsafe on a
-        # separate thread. If that thread executes before
-        # _handle_line runs, the lines would be lost.
-        lines = []
-        acks = []
-        for resp in responses:
-            if resp.type == GrblResponseType.LINE:
-                lines.append(resp)
-            else:
-                acks.append(resp)
-        for resp in lines + acks:
-            self._handle_response(resp)
-
-    def _handle_response(self, resp):
-        """
-        Route a parsed GrblResponse to the appropriate handler.
-        """
-        if resp.type == GrblResponseType.OK:
-            self._handle_ok(resp)
-        elif resp.type == GrblResponseType.ERROR:
-            self._handle_error(resp.text)
-        else:
-            self._handle_line(resp.text)
-
-    def _handle_status_report(self, report: str):
-        """
-        Parses a GRBL status report (e.g., '<Idle|WPos:0,0,0|...>')
-        and updates the device state.
-        """
-        self._note_device_response()
-        if self.grbl_transport:
-            count = self.grbl_transport.ack_status_report()
-        else:
-            count = 0
-        buf_size = (
-            self.grbl_transport._rx_buffer_size
-            if self.grbl_transport
-            else DEFAULT_GRBL_RX_BUFFER_SIZE
-        )
-        buf_info = f"buf: {count}/{buf_size}"
-        logger.debug(f"Processing status report: {report} ({buf_info})")
-        logger.info(report, extra=self._log_extra("STATUS_POLL"))
-
-        state = parse_state(
-            report,
-            self.state,
-            lambda message: logger.info(message),
-            report_in_inches=self._report_in_inches,
-        )
-
-        self._raw_grbl_status = state.status
-
-        if (
-            state.buffer_rx_available is not None
-            and state.status == DeviceStatus.IDLE
-            and self.grbl_transport
-            and self._rx_buffer_size_override <= 0
-        ):
-            total = state.buffer_rx_available
-            cur = self.grbl_transport._rx_buffer_size
-            if total > 0 and total != cur:
-                logger.info(
-                    f"Detected RX buffer size {total} from "
-                    f"Bf: status field (device idle, "
-                    f"available == total)"
-                )
-                self.grbl_transport.set_rx_buffer_size(total)
-                self._cache_rx_buffer_size(total)
-
-        # If a job is active, 'Idle' state between commands should be
-        # reported as 'Run' to the UI.
-        if self._job_running and state.status == DeviceStatus.IDLE:
-            state.status = DeviceStatus.RUN
-
-        # The driver owns the pause state. While we have requested a hold,
-        # force HOLD so a firmware status report (which we may not receive
-        # while status polling is disabled during a job) cannot mask it.
-        if self._is_holding and state.status != DeviceStatus.ALARM:
-            state.status = DeviceStatus.HOLD
-
-        old_status = self.state.status
-        if state != self.state:
-            self.state = state
-            if state.status != old_status:
-                logger.info(
-                    f"Device state changed: {self.state.status.name}",
-                    extra=self._log_extra("STATE_CHANGE"),
-                )
-            self.state_changed.send(self, state=self.state)
-
-    def _apply_cached_rx_buffer_size(self) -> None:
-        if not self.grbl_transport:
-            return
-        if self._rx_buffer_size_override > 0:
-            logger.info(
-                f"Applying RX buffer size override: "
-                f"{self._rx_buffer_size_override} bytes"
-            )
-            self.grbl_transport.set_rx_buffer_size(
-                self._rx_buffer_size_override
-            )
-            return
-        cached = self.config.get("rx_buffer_size")
-        if cached and cached > 0:
-            logger.info(f"Applying cached RX buffer size: {cached} bytes")
-            self.grbl_transport.set_rx_buffer_size(cached)
-
-    def _cache_rx_buffer_size(self, size: int) -> None:
-        logger.info(f"Caching RX buffer size: {size} bytes")
-        self.config["rx_buffer_size"] = size
-        self.config_changed.send(self)
-
-    def _warn_if_buffer_size_unknown(self) -> None:
-        if self._rx_buffer_size_override > 0:
-            return
-        if "rx_buffer_size" in self.config:
-            return
-        logger.warning(
-            "Device did not report RX buffer size via $I. "
-            f"Using default {DEFAULT_GRBL_RX_BUFFER_SIZE} bytes. "
-            "If you experience errors, the device may have a "
-            "smaller buffer than expected.",
-            extra=self._log_extra("ERROR"),
-        )
-
-    def _note_device_response(self) -> None:
-        """Record that the device transmitted something, proving it
-        is alive. Called for every received response (status report,
-        ok, error), even when it cannot be interpreted."""
-        self._device_response_count += 1
-
-    def _handle_ok(self, resp):
-        """Handle a parsed 'ok' response."""
-        self._note_device_response()
-        pending = resp.pending
-        logger.info("ok", extra=self._log_extra("MACHINE_RESPONSE"))
-
-        if pending is not None:
-            transport = self.grbl_transport
-            assert transport is not None
-            logger.debug(
-                f"Processed 'ok', freed {pending.length} bytes "
-                f"for {pending.command!r} "
-                f"(buf: {transport.buffer_count}"
-                f"/{transport._rx_buffer_size}, "
-                f"op_index={pending.op_index})"
-            )
-
-        # Logic for single, interactive commands
-        request = self._interactive_request or self._current_request
-        if request and not request.finished.is_set():
-            request.response_lines.append("ok")
-            self.command_status_changed.send(self, status=TransportStatus.IDLE)
-            logger.debug(f"Command '{request.command}' completed with 'ok'")
-            self._set_request_finished(request)
-        # Logic for streaming protocol during a job
-        if (
-            self._job_running
-            and pending is not None
-            and self._on_command_done
-            and pending.op_index is not None
-        ):
-            for i in range(
-                self._last_reported_op_index + 1,
-                pending.op_index + 1,
-            ):
-                try:
-                    logger.debug(f"Firing on_command_done for op_index {i}")
-                    result = self._on_command_done(i)
-                    if inspect.isawaitable(result):
-                        asyncio.ensure_future(result)
-                except Exception as e:
-                    logger.error(
-                        "Error in on_command_done callback",
-                        exc_info=e,
-                    )
-            self._last_reported_op_index = pending.op_index
-
-    def _handle_error(self, text: str):
-        """Handle a parsed 'error:...' response."""
-        self._note_device_response()
-        logger.info(text, extra=self._log_extra("MACHINE_EVENT"))
-        error_code = text.split(":")[1].strip() if ":" in text else ""
-        self.state.error = error_code_to_device_error(error_code)
-        self.state_changed.send(self, state=self.state)
-
-        request = self._interactive_request or self._current_request
-        if request and not request.finished.is_set():
-            request.response_lines.append(text)
-            self.command_status_changed.send(
-                self, status=TransportStatus.ERROR, message=text
-            )
-            self._set_request_finished(request)
-
-        if self._job_running:
-            self.command_status_changed.send(
-                self, status=TransportStatus.ERROR, message=text
-            )
-            logger.error(
-                f"GRBL error during job: {text}. Halting stream.",
-                extra={"log_category": "ERROR"},
-            )
-            self._job_exception = DeviceConnectionError(f"GRBL error: {text}")
-            if self.grbl_transport:
-                self.grbl_transport.signal_space_available()
-
-    def _handle_line(self, line: str):
-        """Handle a parsed general line (status report, alarm, info)."""
-        if line.startswith("<") and not line.endswith(">"):
-            logger.debug(f"Ignoring fragmented status report: {line}")
-            return
-
-        if "Pos:" in line and "|" in line and not line.startswith("<"):
-            logger.debug(f"Ignoring fragmented status report: {line}")
-            return
-
-        if line.startswith("<") and line.endswith(">"):
-            self._handshake_received.set()
-            self._handle_status_report(line.strip())
-            return
-
-        logger.info(line, extra=self._log_extra("MACHINE_EVENT"))
-
-        # Collect response lines for pending single commands
-        request = self._interactive_request or self._current_request
-        if request and not request.finished.is_set():
-            request.response_lines.append(line)
-
-        if line.startswith("ALARM:"):
-            alarm_code = line.split(":")[1].strip()
-            self.state.error = alarm_code_to_device_error(alarm_code)
-            self.state_changed.send(self, state=self.state)
-            self.command_status_changed.send(
-                self, status=TransportStatus.ERROR, message=line
-            )
-            if self._job_running:
-                logger.error(
-                    f"GRBL ALARM during job: {line}. Halting stream.",
-                    extra={"log_category": "ERROR"},
-                )
-                self._job_exception = DeviceConnectionError(
-                    f"GRBL ALARM: {line}"
-                )
-                if self.grbl_transport:
-                    self.grbl_transport.signal_space_available()
-        elif line.startswith("[VER:"):
-            ver = parse_version([line])
-            if ver:
-                logger.info(f"Connected to GRBL version {ver}")
-        elif line.startswith("[OPT:"):
-            rx_buffer_size = parse_opt_info(line)
-            if rx_buffer_size:
-                self._cache_rx_buffer_size(rx_buffer_size)
-                if self._rx_buffer_size_override <= 0 and self.grbl_transport:
-                    self.grbl_transport.set_rx_buffer_size(rx_buffer_size)
-        elif line.startswith(("Grbl ", "GrblHAL ")):
-            self._handshake_received.set()
-            logger.debug(f"Received Grbl welcome message: {line}")
-        else:
-            logger.debug(f"Received informational line: {line}")
 
     def get_error(self, error_code: str) -> DeviceError | None:
-        """
-        Returns error details for a given GRBL error code.
-
-        Args:
-            error_code: The error code string from device (e.g., "1",
-                        "2").
-
-        Returns:
-            An ErrorCode instance with title and description, or None
-            if the error code is not recognized.
-        """
-        return error_code_to_device_error(error_code)
-
-    def _update_connection_status(
-        self, status: TransportStatus, message: str | None = None
-    ):
-        self._last_connection_status = status
-        log_data = f"Connection status: {status.name}"
-        if message:
-            log_data += f" - {message}"
-        logger.info(log_data, extra=self._log_extra("MACHINE_EVENT"))
-        self.connection_status_changed.send(
-            self, status=status, message=message
-        )
+        """Returns error details for a given GRBL error code."""
+        return error_from_session_state(error_code_to_device_error(error_code))

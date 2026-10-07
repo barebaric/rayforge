@@ -170,6 +170,19 @@ Power, speed, and laser head selection live on the **Laser** page of the step se
 - Slower = more energy = deeper cut
 - Faster = less energy = lighter cut
 
+#### Power Mode
+
+The Power Mode setting controls how laser power is emitted during moves:
+
+| Mode              | G-code | Behavior                               |
+| ----------------- | ------ | -------------------------------------- |
+| **Dynamic (M4)**  | `M4`   | Scales power with head speed (default) |
+| **Constant (M3)** | `M3`   | Keeps power fixed regardless of speed  |
+
+Dynamic power ramps power down whenever the head slows down, which protects the material at corners
+— but on some machines it leaves corners and tight curves visibly under-burned. Switch to **Constant
+(M3)** if corners and curves burn too lightly.
+
 #### Kerf Compensation
 
 Kerf is the width of material removed by the laser beam:

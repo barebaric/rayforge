@@ -28,6 +28,7 @@ module.exports = {
       label: 'Machine Setup',
       items: [
         'machine/general',
+        'machine/notes',
         'machine/hardware',
         'machine/advanced',
         'machine/gcode',
@@ -64,6 +65,7 @@ module.exports = {
                 'features/operations/frame-outline',
                 'features/operations/material-test-grid',
                 'features/operations/wavefront',
+                'features/operations/command',
               ],
             },
             {

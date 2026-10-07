@@ -347,8 +347,48 @@ class Recipe:
     def to_dict(self) -> dict[str, Any]:
         """Serializes the Recipe to a dictionary suitable for YAML."""
         result = asdict(self)
+        del result["extra"]
         result.update(self.extra)
         return result
+
+    @classmethod
+    def _collect_extra(cls, data: dict[str, Any]) -> dict[str, Any]:
+        """Gathers keys that are not dataclass fields or legacy keys.
+
+        A literal ``extra`` key from an older save is unwrapped so the
+        blob does not nest one level deeper on every save/load cycle.
+        """
+        known_keys = cls._known_keys()
+        extra: dict[str, Any] = {}
+        for key, value in data.items():
+            if key == "extra" and isinstance(value, dict):
+                extra.update(
+                    {k: v for k, v in value.items() if k not in known_keys}
+                )
+            elif key not in known_keys:
+                extra[key] = value
+        return extra
+
+    @classmethod
+    def _known_keys(cls) -> set[str]:
+        """All keys :meth:`from_dict` consumes directly."""
+        return {
+            "uid",
+            "name",
+            "description",
+            "target_step_types",
+            "target_machine_id",
+            "material_uid",
+            "min_thickness_mm",
+            "max_thickness_mm",
+            "setting_dicts",
+            "transformer_dicts",
+            "extra",
+            # Legacy keys, consumed by the migration below.
+            "settings",
+            "target_capability_name",
+            "target_step_type",
+        }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Recipe":
@@ -360,23 +400,7 @@ class Recipe:
         expanded to the step class names that declared them via
         :data:`_LEGACY_CAPABILITY_STEPS`.
         """
-        known_keys = {
-            "uid",
-            "name",
-            "description",
-            "target_step_types",
-            "target_machine_id",
-            "material_uid",
-            "min_thickness_mm",
-            "max_thickness_mm",
-            "setting_dicts",
-            "transformer_dicts",
-            # Legacy keys, consumed by the migration below.
-            "settings",
-            "target_capability_name",
-            "target_step_type",
-        }
-        extra = {k: v for k, v in data.items() if k not in known_keys}
+        extra = cls._collect_extra(data)
 
         setting_dicts = cls._migrate_setting_dicts(data)
 

@@ -29,6 +29,10 @@ Copies are static baked geometry with no solver constraints: they are regenerate
 when the array is edited. Deleting a member removes only that member's geometry and never
 redistributes the survivors.
 
+Text boxes can be arrayed like any other entity. Editing the template's text content or font
+propagates to all copies, and the copies follow the template's frame, so they rotate around the
+guide circle as a group.
+
 ## Array Along Curve
 
 The **Array Along Curve** tool distributes copies of one or more entities along a guide path (a

@@ -61,6 +61,7 @@ from .main_menu import MainMenu
 from .project_cmd import ProjectCmd
 from .settings.settings_dialog import SettingsWindow
 from .shared.gtk import get_monitor_geometry
+from .shared.pointer_alignment_dialog import PointerAlignmentDialog
 from .shared.progress_bar import ProgressBar
 from .shared.sanity_check_dialog import SanityCheckDialog
 from .shared.time_estimate_overlay import TimeEstimateOverlay
@@ -85,7 +86,7 @@ css = """
 .right-panel-overlay {
     background-color: transparent;
     border-radius: 8px;
-    margin: 6px 12px 12px 6px;
+    margin: 6px 12px 40px 6px;
 }
 
 .status-message-overlay {
@@ -140,10 +141,13 @@ class CappedWidthBox(Gtk.Box):
 
 
 class MainWindow(Adw.ApplicationWindow):
+    ETA_UPDATE_INTERVAL_MS = 1000
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.set_title(const.APP_NAME)
         self._current_machine: Machine | None = None  # For signal handling
+        self._eta_timeout_id: int | None = None
         self._last_bottom_panel_height = 200
         self._saved_bottom_panel_visible = False
         self._old_doc = None  # Track previous document for signal reconnection
@@ -467,6 +471,8 @@ class MainWindow(Adw.ApplicationWindow):
         self.surface.click_to_zero_cancelled.connect(
             self._on_click_to_zero_cancelled
         )
+        self.surface.move_head_requested.connect(self._on_move_head_requested)
+        self.surface.move_head_cancelled.connect(self._on_move_head_cancelled)
 
         # Connect new signal from WorkSurface for edit item requests
         self.surface.edit_item_requested.connect(self._on_edit_item_requested)
@@ -503,6 +509,9 @@ class MainWindow(Adw.ApplicationWindow):
 
         self.bottom_panel.click_to_zero_mode_changed.connect(
             self._on_click_to_zero_mode_changed
+        )
+        self.bottom_panel.move_to_mode_changed.connect(
+            self._on_move_to_mode_changed
         )
 
         self.bottom_panel.asset_browser.add_asset_requested.connect(
@@ -577,6 +586,9 @@ class MainWindow(Adw.ApplicationWindow):
         if config.has_consented_tracking:
             get_usage_tracker().set_enabled(True)
             get_usage_tracker().track_page_view("/view/2d", "2D View")
+            get_usage_tracker().track_machines(
+                get_context().machine_mgr.get_machines()
+            )
         elif config.has_declined_tracking:
             pass  # Explicitly do nothing, respecting the user's choice
         else:
@@ -764,12 +776,17 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_work_zero_requested(self, sender, *, x: float, y: float):
         """Handle work zero request from canvas click."""
         config = get_context().config
-        if not config.machine:
+        machine = config.machine
+        if not machine:
             return
 
         async def set_zero_func(ctx):
-            if config.machine:
-                await config.machine.set_work_origin(x, y, 0.0)
+            if machine:
+                await machine.set_work_origin(
+                    round(x, machine.gcode_precision),
+                    round(y, machine.gcode_precision),
+                    0.0,
+                )
 
         task_mgr.add_coroutine(set_zero_func)
         self.bottom_panel.set_click_to_zero_mode(False)
@@ -777,6 +794,35 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_click_to_zero_cancelled(self, sender):
         """Handle click-to-zero mode cancellation."""
         self.bottom_panel.set_click_to_zero_mode(False)
+
+    def _on_move_to_mode_changed(self, sender, *, active: bool):
+        """Handle click-to-move-head mode toggle from control panel."""
+        self.surface.set_move_head_mode(active)
+
+    def _on_move_head_requested(self, sender, *, x: float, y: float):
+        """Move the laser head to the clicked canvas position."""
+        config = get_context().config
+        machine = config.machine
+        if not machine:
+            return
+
+        panel = machine.panel
+        wcs_offset = machine.get_command_wcs_offset()
+        x_off, y_off, _ = panel.get_command_offset(
+            wcs_offset=wcs_offset,
+            wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
+        )
+        self.machine_cmd.move_to(
+            machine,
+            round(x - x_off, machine.gcode_precision),
+            round(y - y_off, machine.gcode_precision),
+            speed=self.bottom_panel.jog_speed,
+        )
+        self.bottom_panel.set_move_to_mode(False)
+
+    def _on_move_head_cancelled(self, sender):
+        """Handle click-to-move-head mode cancellation."""
+        self.bottom_panel.set_move_to_mode(False)
 
     def _apply_saved_visibility_state(self):
         """
@@ -919,6 +965,7 @@ class MainWindow(Adw.ApplicationWindow):
     def _on_job_started(self, sender):
         logger.debug("Job started")
         self.machine_selector.update_eta(None)
+        self._start_eta_timer()
         self._update_actions_and_ui()
 
     def _on_addon_state_changed(self, sender, addon_name):
@@ -931,9 +978,37 @@ class MainWindow(Adw.ApplicationWindow):
         eta_seconds = metrics.get("eta_seconds")
         self.machine_selector.update_eta(eta_seconds)
 
+    def _start_eta_timer(self):
+        """
+        Runs a one-per-second refresh of the ETA while a job runs.
+
+        The progress signal is push-only: drivers that acknowledge
+        buffered commands deliver all their updates within the first
+        moments of a job, after which nothing would ever redraw the
+        countdown.
+        """
+        self._stop_eta_timer()
+        self._eta_timeout_id = GLib.timeout_add(
+            self.ETA_UPDATE_INTERVAL_MS, self._on_eta_timer_tick
+        )
+
+    def _stop_eta_timer(self):
+        if self._eta_timeout_id is not None:
+            GLib.source_remove(self._eta_timeout_id)
+            self._eta_timeout_id = None
+
+    def _on_eta_timer_tick(self):
+        monitor = self.machine_cmd.current_monitor
+        if monitor is None:
+            self._eta_timeout_id = None
+            return GLib.SOURCE_REMOVE
+        self.machine_selector.update_eta(monitor.metrics.get("eta_seconds"))
+        return GLib.SOURCE_CONTINUE
+
     def _on_job_finished(self, sender):
         """Handles the completion of a machine job."""
         logger.debug("Job finished")
+        self._stop_eta_timer()
         self.machine_selector.update_eta(None)
 
     def _on_job_future_done(self, future: Future):
@@ -946,6 +1021,7 @@ class MainWindow(Adw.ApplicationWindow):
             # If the submission failed, the driver's 'job_finished' signal
             # will never fire, so we must stop the live view here to prevent
             # the UI from getting stuck.
+            self._stop_eta_timer()
             self.machine_selector.update_eta(None)
 
         # Ensure UI is updated (e.g. Cancel button disabled, others enabled)
@@ -1927,6 +2003,7 @@ class MainWindow(Adw.ApplicationWindow):
             am.get_action("machine-clear-alarm").set_enabled(False)
             am.get_action("execute-macro").set_enabled(False)
             am.get_action("zero-here").set_enabled(False)
+            am.get_action("move-head-here").set_enabled(False)
 
             self.toolbar.export_button.set_tooltip_text(
                 _("Select a machine to enable G-code export")
@@ -2072,6 +2149,10 @@ class MainWindow(Adw.ApplicationWindow):
             am.get_action("toggle-focus").set_enabled(can_focus)
 
             connected = conn_status == TransportStatus.CONNECTED
+            self.surface.set_pointer_dot_state(
+                active_machine.get_pointer_offset(),
+                active_machine.pointer_alignment_enabled,
+            )
             self.surface.set_laser_dot_visible(connected)
             if state and connected:
                 x, y = state.machine_pos[:2]
@@ -2094,6 +2175,11 @@ class MainWindow(Adw.ApplicationWindow):
                 and not is_job_or_task_active
             )
             am.get_action("zero-here").set_enabled(can_zero)
+
+            can_move_head = (
+                connected or is_dummy
+            ) and not is_job_or_task_active
+            am.get_action("move-head-here").set_enabled(can_move_head)
 
         # Update actions that don't depend on the machine state
         selected_elements = self.surface.get_selected_elements()
@@ -2385,6 +2471,32 @@ class MainWindow(Adw.ApplicationWindow):
 
         self.machine_cmd.home(config.machine)
 
+    def on_move_head_here_clicked(self, action, param):
+        config = get_context().config
+        machine = config.machine
+        if not machine:
+            return
+
+        pos = self.surface.right_click_machine_pos
+        self.surface.right_click_machine_pos = None
+        if not pos:
+            self.bottom_panel.toggle_move_to_mode()
+            return
+
+        machine_x, machine_y = pos
+        panel = machine.panel
+        wcs_offset = machine.get_command_wcs_offset()
+        x_off, y_off, _ = panel.get_command_offset(
+            wcs_offset=wcs_offset,
+            wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
+        )
+        self.machine_cmd.move_to(
+            machine,
+            machine_x - x_off,
+            machine_y - y_off,
+            speed=self.bottom_panel.jog_speed,
+        )
+
     def _run_machine_job(self, job_coroutine: Coroutine):
         """
         Wraps a machine job coroutine in an asyncio.Task and handles
@@ -2418,7 +2530,7 @@ class MainWindow(Adw.ApplicationWindow):
         if not machine:
             return
 
-        def _proceed():
+        def _proceed(pointer_dry_run: bool = False):
             focus_action = self.action_manager.get_action("toggle-focus")
             focus_state = focus_action.get_state()
             if focus_state and focus_state.get_boolean():
@@ -2427,10 +2539,24 @@ class MainWindow(Adw.ApplicationWindow):
             job_coro = self.machine_cmd.send_job(
                 machine,
                 on_progress=self._on_job_progress_updated,
+                pointer_dry_run=pointer_dry_run,
             )
             self._run_machine_job(job_coro)
 
-        self._run_sanity_check_and_proceed(_proceed)
+        def _confirm_pointer_alignment():
+            # Jobs burn with the unshifted beam, so ask every time
+            # while the user is aiming with the pointer dot.
+            if machine.pointer_alignment_enabled:
+                dialog = PointerAlignmentDialog(
+                    parent=self,
+                    machine=machine,
+                    on_proceed=_proceed,
+                )
+                dialog.present()
+            else:
+                _proceed()
+
+        self._run_sanity_check_and_proceed(_confirm_pointer_alignment)
 
     def on_hold_state_change(
         self, action: Gio.SimpleAction, value: GLib.Variant

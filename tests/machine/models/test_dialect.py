@@ -1,9 +1,13 @@
 from rayforge.machine.models.dialect import (
     GRBL_DIALECT,
+    GRBL_RASTER_DIALECT,
     LINUXCNC_DIALECT,
     MARLIN_DIALECT,
+    POWER_MOVE_TEMPLATE_KEYS,
     SMOOTHIEWARE_DIALECT,
     GcodeDialect,
+    has_s_command,
+    replace,
 )
 
 
@@ -456,3 +460,85 @@ def test_get_safety_off_commands_on_default_dialects():
         "M5",
         "M9",
     ]
+
+
+def test_has_s_command():
+    assert has_s_command("G1{x_cmd}{y_cmd}{s_command}")
+    assert has_s_command("G1{f_command}{s_command:.0f}")
+    assert not has_s_command("G1{x_cmd}{y_cmd}{f_command}")
+    assert not has_s_command("G1{s_vel}")
+    assert not has_s_command("")
+    assert not has_s_command(None)
+
+
+def test_missing_s_command_templates_when_mode_disabled():
+    assert GRBL_DIALECT.find_missing_s_command_templates() == []
+
+
+def test_missing_s_command_templates_when_mode_enabled():
+    dialect = replace(GRBL_DIALECT, continuous_laser_mode=True)
+    assert dialect.find_missing_s_command_templates() == [
+        "travel_move",
+        "linear_move",
+        "arc_cw",
+        "arc_ccw",
+    ]
+
+
+def test_missing_s_command_templates_skips_empty_templates():
+    dialect = replace(GRBL_DIALECT, continuous_laser_mode=True)
+    assert "bezier_cubic" not in dialect.find_missing_s_command_templates()
+    dialect = replace(
+        dialect,
+        travel_move="",
+        linear_move="",
+        arc_cw="",
+        arc_ccw="",
+    )
+    assert dialect.find_missing_s_command_templates() == []
+
+
+def test_missing_s_command_templates_none_when_placeholder_present():
+    assert GRBL_RASTER_DIALECT.find_missing_s_command_templates() == []
+
+
+def test_missing_s_command_templates_reflects_fixed_template():
+    dialect = replace(
+        GRBL_DIALECT,
+        continuous_laser_mode=True,
+        linear_move="G1{x_cmd}{y_cmd}{f_command}{s_command}",
+    )
+    assert dialect.find_missing_s_command_templates() == [
+        "travel_move",
+        "arc_cw",
+        "arc_ccw",
+    ]
+
+
+def test_power_move_template_keys_are_dialect_fields():
+    for key in POWER_MOVE_TEMPLATE_KEYS:
+        assert hasattr(GRBL_DIALECT, key)
+
+
+def test_format_move_to_uses_move_to_template_without_z():
+    cmd = GRBL_DIALECT.format_move_to(x=10.5, y=20.0, speed=1500)
+    assert cmd == "$J=G90 G21 F1500 X10.5 Y20.0"
+
+
+def test_format_move_to_appends_z_target():
+    cmd = GRBL_DIALECT.format_move_to(x=10.5, y=20.0, speed=1500, z=5.0)
+    assert cmd == "$J=G90 G21 F1500 X10.5 Y20.0 Z5.0"
+
+
+def test_format_move_to_with_z_ignores_unused_speed_template():
+    cmd = SMOOTHIEWARE_DIALECT.format_move_to(x=1.0, y=2.0, z=3.0)
+    assert cmd == "G90 G0 X1.0 Y2.0 Z3.0"
+
+
+def test_format_move_to_move_to_template_with_removable_z_fragment():
+    dialect = replace(
+        GRBL_DIALECT,
+        move_to="G90 G0{x_cmd}{y_cmd}{z_cmd} F{speed}",
+    )
+    without_z = dialect.format_move_to(x=1.0, y=2.0, speed=1500)
+    assert without_z == "G90 G0 X1.0 Y2.0 F1500"

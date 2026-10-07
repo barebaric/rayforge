@@ -1,0 +1,12 @@
+name: automation
+display_name: "Automation"
+description: "Automation helpers, starting with the Command step for injecting custom machine code"
+api_version: 19
+author:
+  name: "Rayforge Team"
+  email: "noreply@rayforge.org"
+provides:
+  worker: "automation.worker"
+  frontend: "automation.frontend"
+license:
+  name: "MIT"

@@ -28,7 +28,12 @@ class LayoutStrategy(ABC):
 
     Each strategy calculates the necessary transformation deltas to apply
     to a list of DocItems to achieve a specific layout.
+
+    Attributes:
+        slug: Stable, untranslated identifier used for usage tracking.
     """
+
+    slug: str
 
     def __init__(self, items: Sequence[DocItem], **kwargs):
         if not items:

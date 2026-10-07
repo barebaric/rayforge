@@ -62,6 +62,13 @@
   }
 }
 
+/* The bar is too tight for one more link below wide desktop */
+@media (min-width: 997px) and (max-width: 1259px) {
+  .navbar__item.navbar__discussions {
+    display: none;
+  }
+}
+
 .button {
   font-weight: 700;
   letter-spacing: 0.5px;

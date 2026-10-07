@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-29 16:07+0200\n"
+"POT-Creation-Date: 2026-09-24 21:41+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Chinese (Simplified)\n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
@@ -265,6 +265,26 @@ msgid "Laser power as a percentage"
 msgstr "激光功率（百分比）"
 
 #: laser_essentials/steps/laser_step.py
+msgid "Power Mode"
+msgstr "功率模式"
+
+#: laser_essentials/steps/laser_step.py
+msgid ""
+"Dynamic power (M4) scales power with head speed; constant power (M3) keeps "
+"it fixed. Use constant power if corners and curves burn too lightly"
+msgstr ""
+"动态功率（M4）使功率随激光头速度缩放；恒定功率（M3）保持功率不变。如果拐角和"
+"曲线烧得过浅，请使用恒定功率"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Dynamic (M4)"
+msgstr "动态（M4）"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Constant (M3)"
+msgstr "恒定（M3）"
+
+#: laser_essentials/steps/laser_step.py
 msgid "Air Assist"
 msgstr "空气辅助"
 
@@ -353,6 +373,22 @@ msgid ""
 "to kerf compensation for the head"
 msgstr ""
 "根据切割侧向内/向外偏移边框（中心线时无偏移）。默认根据机头进行切缝补偿"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Round Corners"
+msgstr "圆角"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Round the frame's corners instead of cutting right angles"
+msgstr "将边框的角改为圆角，而不是切割直角"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Corner Radius"
+msgstr "圆角半径"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Radius used to round the frame's corners"
+msgstr "用于圆化边框拐角的半径"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Mode"

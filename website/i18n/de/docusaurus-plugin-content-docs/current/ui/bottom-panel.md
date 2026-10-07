@@ -126,6 +126,41 @@ Konfiguriere das Verhalten von Jog-Operationen:
 :::
 <!-- prettier-ignore-end -->
 
+## Laserkopf bewegen
+
+Zusätzlich zum Joggen kann der Laserkopf an eine exakte Position bewegt werden. Alle diese
+Bewegungen verwenden die oben beschriebene **Jog-Geschwindigkeit**.
+
+### Popover „Zu Position bewegen"
+
+Klicke auf das Kompass-Symbol in der Zeile „Aktuelle Position", um das Popover zu öffnen. Es ist mit
+der aktuellen Position vorausgefüllt, und die Koordinaten werden im aktiven Arbeitskoordinatensystem
+eingegeben, passend zur Positionsanzeige:
+
+| Steuerung        | Funktion                                                       |
+| ---------------- | -------------------------------------------------------------- |
+| X / Y / Z        | Zielkoordinaten (Z nur bei Maschinen mit Z-Achse)              |
+| Bewegen          | Bewegt den Kopf zu den eingegebenen Koordinaten                |
+| Unten links      | Zur unteren linken Ecke der Auswahl, sonst des Arbeitsbereichs |
+| Mitte            | Zur Mitte der Auswahl, sonst des Arbeitsbereichs               |
+| Oben rechts      | Zur oberen rechten Ecke der Auswahl, sonst des Arbeitsbereichs |
+| Zum WCS-Ursprung | Zu X0 Y0 des aktiven WCS                                       |
+
+Das Popover und seine Verknüpfungen sind deaktiviert, solange die Maschine offline ist.
+
+### Auf Canvas klicken, um den Kopf zu bewegen
+
+Klicke auf das Verschieben-Symbol in der Zeile „Aktuelle Position" (oder drücke <kbd>Strg+M</kbd>),
+um den Modus zu aktivieren. Der nächste Linksklick auf eine freie Stelle der Canvas bewegt den Kopf
+zu diesem Punkt, und der Modus wird danach automatisch deaktiviert. Ein Rechtsklick bricht den Modus
+ab, ohne den Kopf zu bewegen. Das Aktivieren dieses Modus deaktiviert „Klicken zum Nullen" und
+umgekehrt.
+
+### Kopf hierher bewegen
+
+Ein Rechtsklick auf eine freie Stelle der Canvas bietet den Eintrag **Kopf hierher bewegen**, der
+den Kopf direkt zum angeklickten Punkt bewegt.
+
 ## Maschinenstatus-Anzeige
 
 Das Steuerungs-Panel zeigt Echtzeitinformationen über deine Maschine:

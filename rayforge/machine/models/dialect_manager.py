@@ -1,5 +1,4 @@
 import logging
-from dataclasses import replace
 from gettext import gettext as _
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -64,8 +63,9 @@ class DialectManager:
         copy and returns the new UID with migrated=True. Otherwise returns
         the original UID with migrated=False.
 
-        This ensures user configurations are isolated from built-in dialect
-        changes during app upgrades.
+        The copy keeps its ``parent_uid`` link to the built-in, so fields
+        a stored copy does not explicitly override are inherited from the
+        up-to-date built-in on load, while user edits are preserved.
         """
         if dialect_uid is None:
             return None, False
@@ -83,7 +83,6 @@ class DialectManager:
                 machine_name=machine_name,
             )
             new_dialect = dialect.copy_as_custom(new_label=new_label)
-            new_dialect = replace(new_dialect, parent_uid=None)
             self.add_dialect(new_dialect)
             logger.info(
                 f"Migrated built-in dialect '{dialect_uid}' to isolated "

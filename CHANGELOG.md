@@ -5,6 +5,304 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## UNRELEASED
+
+### Added
+
+- Sketcher: boolean operations. Union, Difference, Intersection and
+  Exclude bake the selected closed regions into multi-ring polygons
+  (outer contours counter-clockwise, hole contours clockwise), so
+  difference results cut correctly; the Sketch menu gains a Boolean
+  section with shortcuts, and undo/redo restores the original
+  entities and fills (#398)
+- Optimize: acceleration-aware scanline merging. Parallel cut lines
+  on the same scan row, including rows spanning multiple workpieces,
+  are bridged at zero power when the machine's motion profile makes
+  the merged sweep faster; a cost guard ensures merging never makes a
+  job slower than the time estimate. Enabled by default, with a
+  "Merge Scanlines" switch and an optional manual max-gap override
+  (raygeo 1.60.0)
+- Ruida: the setup wizard connection page gains a Connection mode
+  selector (Auto, Network, USB) that shows only the fields relevant
+  to the chosen transport; Auto opens USB when available and falls
+  back to the network
+- Linux: official AppImage builds are attached to GitHub releases
+- Windows: Publish Rayforge through WinGet ("winget install rayforge")
+
+### Changed
+
+- Machines: the GRBL Serial driver now runs its entire protocol stack
+  (handshake, character-counting flow control, streaming, stall
+  detection and deadlock recovery) in Rust through the raydriver
+  library. The experimental "GRBL (Rust)" driver replaces the old
+  Python implementation under the familiar "GRBL (Serial)" name, so
+  existing machine configurations continue to work unchanged.
+  Machines saved while the driver carried its experimental name keep
+  working through a compatibility alias
+- Updated translations
+
+### Fixed
+
+- Ruida: the setup wizard no longer requires the optional USB device
+  and Magic fields, so Next is enabled again once a valid hostname is
+  entered; the Magic field is prefilled with the standard 0x88
+  (#501, #504)
+- GRBL (Network): a new FluidNC protocol variant uses FluidNC's
+  native command endpoint over its WebSocket and tolerates its
+  response shapes, replacing the confusing "did not receive a valid
+  HTTP response" error on ESP3D-style handshakes (#490)
+- Device export: zipping a machine export no longer fails with "ZIP
+  does not support timestamps before 1980" when exported 3D models
+  carry such timestamps (#500)
+- Text rendering: on-canvas text is drawn through Pango instead of
+  Cairo's toy font API. Sketcher constraint labels and dimension
+  input, pie menu labels, camera overlay messages, and the histogram
+  placeholder now pick fonts with proper fallback, fixing garbled
+  text and wrong sizes, especially for non-Latin languages (thanks
+  to @atkaper, #507)
+
+## 1.12.0
+
+### Added
+
+- Addons: a new built-in "Automation" addon, debuting with the
+  "Command" step. Add your own machine code at any position in a
+  layer's workflow — one command per line, sent exactly where the
+  step sits (#449). Handy for pre-positioning the head, toggling air
+  assist between operations, or sending controller-specific codes.
+  Lines can use the same variables as macros (`machine.*`, `layer.*`,
+  `job.*`), the text is stored with the project, and a warning
+  appears on machines whose driver does not consume machine code
+  (e.g. Ruida)
+- About dialog: a GitHub Discussions button next to Report an Issue
+
+### Changed
+
+- Usage tracking (opt-in) now reports the host OS and one anonymous
+  machine event per configured machine, carrying its type (driver,
+  laser type, optical power, bed size, rotary); each launch counts as
+  its own session, and the consent prompt was reworded. Machine names
+  and identifiers are never sent
+
+### Fixed
+
+- SVG: files that contain a DOCTYPE declaration, such as those
+  exported by Affinity Studio, import again (raygeo 1.58.2, #484)
+- Click to Zero and Click Canvas to Move Head round the clicked
+  position to the machine's precision, so the machine can hit the
+  requested position exactly; the ruler labels use a font that fits
+  them (thanks to @atkaper, #479)
+- Ruida: ruida-pa was upgraded to 0.21.2, fixing UDP connections on
+  Windows (thanks to @StevenIsaacs, #486)
+- Machine: a reported position outside the soft limits no longer
+  turns every jog into a long move back to the nearest limit, which
+  could drive an axis into its end stop (e.g. on a Ruida RDC8445S
+  whose controller reports Z around 3176 mm). Jogs heading further
+  out of range are now blocked, jogs back towards the range are
+  allowed and stop at the far limit, and the soft-limit warning
+  matches exactly (thanks to @medoix, #488)
+
+## 1.12.0-beta2
+
+### Added
+
+- Machine: a new Notes category in Machine Settings combines the
+  guidance shipped with the device profile with your own notes for
+  the machine. Device notes are read-only; My Notes are edited with
+  a built-in Markdown editor (headings, emphasis, lists, links,
+  code blocks, and expandable details sections). Profile setup
+  guidance also appears on the setup wizard's review page, and
+  personal notes survive profile updates (thanks to @atkaper, #471)
+- Camera: lens calibration now supports ArUco/AprilTag marker grids
+  and printable dot grids alongside ChArUco boards. Marker grids
+  tolerate partial views, and their dictionary, ID offset, origin
+  corner and numbering order are all editable, so factory-printed
+  patterns can be calibrated against directly instead of printing
+  a new card (thanks to @TOverbye, #466)
+- Drivers: the Ruida driver honors the step Power Mode setting —
+  Dynamic enables the controller's power scaling and Constant
+  disables it. The driver setup gains Power Scaling and Vector
+  Power Floor toggles, and serial ports can be bound from a USB
+  device dropdown with VID:PID matching (thanks to @StevenIsaacs,
+  #476)
+- Translations: Hindi is now available
+
+### Changed
+
+- raygeo and raydriver now ship aarch64 (ARM64) Linux wheels, so
+  ARM64 installs use prebuilt binaries instead of compiling from
+  source
+
+### Fixed
+
+- Framing now works on Ruida machines: framing became a driver
+  capability, and the Ruida driver traces the outline with beam-off
+  absolute moves (#470)
+- Print and cut: capturing an alignment point now accounts for
+  Pointer Alignment, so the computed transform no longer lands one
+  pointer offset away from the printed marks; the wizard's jog
+  panel gains a Pointer Alignment switch (#478)
+
+## 1.12.0-beta1
+
+### Added
+
+- Drivers: a new "Ruida RPA" driver connects Rayforge to Ruida-based
+  controllers over USB or UDP directly, or via TUI RPC through the
+  Ruida Protocol Analyzer. It ships with all installs, and new
+  Generic Ruida RPA and Monport MP-570 60W CO2 device profiles are
+  included (thanks to @StevenIsaacs, #404)
+- Camera: network cameras are supported as stream sources alongside
+  USB cameras, with automatic reconnection after read failures
+  (thanks to @atkaper, #438)
+- Drivers: a new GRBL driver `GRBL (Rust)` (`GrblSerialNextDriver`):
+  the complete GRBL serial protocol stack (character-counting flow
+  control, job streaming, stall detection, deadlock recovery,
+  cancel/safety shutdown, settings, WCS and probing) now runs in Rust
+  through the `raydriver` package. Dialects and settings remain
+  Rayforge data; this driver is experimental and can be selected per
+  machine as a drop-in alternative to `GRBL (Serial)`
+- Machine control: the laser head can now be moved to an arbitrary
+  position. A "Move to Position" popover in the Current Position area
+  offers direct X/Y (and Z, when available) coordinate entry and hosts
+  the selection/workarea corner and WCS origin shortcuts, a "Click
+  Canvas to Move Head" mode mirrors Click to Zero, and the canvas
+  background context menu gains a "Move Head Here" action. These moves
+  run at the configured Jog Speed (#452, #458)
+- Machine control: Ctrl+M arms the "Click Canvas to Move Head" mode
+  from the keyboard
+- Machine control: a per-head pointer offset makes an alignment
+  laser's dot a first-class aiming reference. While "Pointer
+  Alignment" is on, aiming moves (Move to Position, the corner and
+  WCS origin shortcuts, Click Canvas to Move Head, Move Head Here,
+  and framing) are shifted so the pointer dot lands on the aimed
+  position, zeroing accounts for the offset, and the canvas shows
+  the pointer dot next to the beam dot. Starting a job asks whether
+  to turn alignment off first, since jobs always burn with the
+  unshifted beam (#423)
+- Drivers: serial ports can be bound by USB VID:PID instead of a
+  device path, so auto-reconnect follows the machine to its new
+  port after the OS re-enumerates USB devices (#459)
+- Laser: each step gains a Power Mode setting, Dynamic (M4) or
+  Constant (M3). Constant power avoids power sags at corners during
+  vector cuts, while raster engraving keeps dynamic power (#437)
+- Laser: the Frame operation gains a Round Corners toggle and a
+  corner radius setting, avoiding sharp, fragile corners without
+  hand-drawing a rounded outline (#447, #448)
+- Laser: framing at 0% power is now allowed and traces the outline
+  with the beam off, so machines with an auxiliary alignment laser
+  can frame without firing the main laser
+- Sketcher: array tools now also lay out text boxes (#399)
+- Machine: the dialect editor warns when "Continuous laser mode" is
+  enabled on a dialect whose movement templates have no {s_command}
+  placeholder, a combination that previously dropped all laser
+  power (#403)
+- Machine: G-code fields that contain only a number show a warning,
+  since the value is most likely a mistake (#393, #396)
+- Devices: a built-in profile for the Creality Falcon A1 Pro
+  (thanks to @atkaper, #461)
+- Devices: a built-in profile for the Creality Falcon 2 Pro 22W,
+  shipping camera lens calibration and image settings as a starting
+  default; the 40W profile's work area is corrected to the official
+  400 x 415 mm spec (#463)
+- Devices: the Falcon A1 and Falcon 10W profiles emit a bounds
+  comment in the G-code preamble so their firmware can trace the
+  job outline before running it
+- Drivers: `move_to` accepts an optional absolute Z target; machines
+  with a Z axis receive it in the same move
+- Drivers: drivers may opt into live reconfiguration via
+  `update_settings` instead of a teardown/rebuild when their setup
+  arguments are edited
+
+### Changed
+
+- The prototype Ruida (UDP) driver has been removed; the RuidaRPA
+  driver supersedes it, and affected device profiles were migrated
+- Raster: the default threshold is now 254, so only pure white stays
+  unengraved
+- Upgrade raygeo to 1.56.1, which omits zero-length travel moves from
+  generated G-code; this builds on 1.55.0's power-mode-aware laser
+  commands (constant-power M3 output), frame corner radius support, and
+  the contour nesting classification fix (#456)
+
+### Fixed
+
+- Machine: the time estimate in the machine dropdown counts down
+  again while a job runs. The ETA now falls back to the job's
+  estimated duration when GRBL acknowledges buffered commands faster
+  than the machine executes them (previously no estimate was shown
+  at all for short jobs), the dropdown refreshes it once per second
+  instead of only on driver callbacks, and every bound status label
+  (button face and popup rows) receives the update
+- GRBL: flow-control state jammed by lost acknowledgements is
+  detected and healed, so a firmware that stays silent after a
+  cancel (e.g. the Sculpfun iCube over Bluetooth) no longer leaves
+  "Read from Device" hanging and the machine controls dead (#428)
+- GRBL: the work coordinate offset is refreshed from the WCS
+  read-back, so zeroing again right after setting a zero no longer
+  reads a stale position and writes the old offset back
+- Machine: Z jog moves are clamped to the configured Z axis
+  extents, the Move to Position popover accepts the full Z range,
+  and the hardware settings page gains Z Min/Z Max rows (#459)
+- Camera: the ChArUco card is detected again on blurry, unevenly
+  lit frames by falling back through progressively more tolerant
+  detection passes (#443, #465)
+- Machine: dialect copies on existing machines stay linked to the
+  built-in dialect they came from, so fixes to built-in dialects
+  reach machines while user edits remain preserved
+- Ruida: job encoding is routed by driver capability instead of a
+  stale dialect, fixing garbled output after switching drivers (#420)
+- Configuration, machine profiles, and recipes are persisted
+  atomically with backups, so an interrupted save can no longer
+  destroy them (#455)
+- macOS: the full-screen main window stays visible when a dialog
+  closes on top of it (#453)
+- Material test: the test speed is capped at the machine's live
+  speed limit (#439, #440)
+- SVG: files that define a viewBox but no width/height attributes
+  now import at the correct scale (thanks to @MausRundung, #434)
+- Laser: rounded Frame corners are rendered with arc tolerance, so
+  they come out smooth instead of segmented
+- Sketcher: helper geometry now moves together with the array
+  members it belongs to
+- 3D simulation: the playback slider position is re-derived when the
+  playback range shrinks
+- Right panel: the estimated job time now stays fully visible in the
+  status bar; its container's bottom margin was increased so it is no
+  longer clipped behind adjacent widgets
+
+## 1.11.2
+
+### Fixed
+
+- GRBL: cancelling a job now hard-aborts the streaming sender instead
+  of waiting for the controller's RX buffer to drain, so the machine
+  stops immediately; interactive commands issued while a cancelled job
+  is winding down can no longer resume it, and a transient connection
+  error no longer grays out the machine controls for the rest of the
+  session (#428)
+- Selecting a driver that requires connection details no longer
+  crashes the app with a GTK assertion and a crash loop at startup
+  (#415)
+- Machine settings: a fast editing burst of driver setup arguments can
+  no longer leave a cancelled driver rebuild touching live driver
+  state (#416)
+- The Machine Settings dialog is now a single instance per main window
+  instead of opening duplicates, and the machine counters action opens
+  the maintenance page instead of a nonexistent page (thanks to
+  @StevenIsaacs, #416)
+- Preview assembly failures for everyday states such as an empty
+  document are no longer logged as errors
+- Material textures are included again in wheel-based installs,
+  repairing blank material thumbnails on flatpak and deb installs
+  (#419)
+
+### Changed
+
+- Upgrade raygeo to 1.52.0
+- Windows builds now use the UCRT64 environment, following the MSYS2
+  deprecation of MINGW64
+
 ## 1.11.1
 
 ### Fixed
@@ -21,7 +319,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GRBL: reading device settings no longer aborts on grblHAL bitmask
   values, so the settings dialog refreshes correctly (#401)
 - Material test: grid dimensions are truncated to whole numbers before
-  the test grid is generated, repairing broken grids (#405)
+  the test grid is generated, repairing broken grids (thanks to
+  @atkaper, #405)
 
 ## 1.11.0
 

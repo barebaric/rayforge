@@ -34,8 +34,12 @@ class GcodeContext:
         """The (x, y, z) offset for the current layer's effective WCS."""
         if self.layer:
             effective_wcs = self.layer.get_effective_wcs(self.machine)
-            return self.machine.get_wcs_offset(effective_wcs)
-        return self.machine.get_active_wcs_offset()
+            return self.machine.get_job_wcs_offset(
+                self.machine.get_wcs_offset(effective_wcs)
+            )
+        return self.machine.get_job_wcs_offset(
+            self.machine.get_active_wcs_offset()
+        )
 
     @property
     def wcs_name(self) -> str:
@@ -150,7 +154,7 @@ class GcodeContext:
             "air_assist_off": set(),
             "home_all": set(),
             "home_axis": {"axis_letter"},
-            "move_to": {"speed", "x", "y", "z"},
+            "move_to": move_vars | {"s_command", "speed"},
             "jog": {"speed"},
             "clear_alarm": set(),
             "set_wcs_offset": {"p_num", "x", "y", "z"},

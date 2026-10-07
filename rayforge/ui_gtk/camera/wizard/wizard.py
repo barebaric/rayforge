@@ -222,24 +222,26 @@ class CameraWizard(PatchedDialogWindow):
         self._current = name
         page = self._pages[name]
         if isinstance(page, CapturePage):
-            self._sync_capture_board(page)
+            self._sync_capture_target(page)
         page.enter()
         self._stack.set_visible_child_name(name)
         self._update_footer(name, page)
 
-    def _sync_capture_board(self, capture: CapturePage) -> None:
-        """Propagate the calibration card board to the capture page.
+    def _sync_capture_target(self, capture: CapturePage) -> None:
+        """Propagate the calibration target to the capture page.
 
-        The card page owns the generated :class:`CharucoBoard` (it may
-        be regenerated when the user tweaks the card size). Without this
-        the capture page never receives a board, so its calibrator is
-        never initialised and Capture Frame silently does nothing.
+        The card page owns the configured
+        :class:`~rayforge.camera.calibration.target.CalibrationTarget`
+        (it is rebuilt when the user changes the pattern type or its
+        geometry). Without this the capture page never receives a
+        target, so its calibrator is never initialised and Capture Frame
+        silently does nothing.
         """
         card = self._pages.get("card")
         if not isinstance(card, CardPage):
             return
-        if card.board is not None:
-            capture.set_board(card.board)
+        if card.target is not None:
+            capture.set_target(card.target)
 
     def _on_page_changed(self, _stack, _pspec) -> None:
         name = self._stack.get_visible_child_name()
@@ -278,6 +280,14 @@ class CameraWizard(PatchedDialogWindow):
     def _on_next_clicked(self, _btn) -> None:
         if self._current is None:
             return
+        if not self._pages[self._current].on_next_requested():
+            return
+        self.advance()
+
+    def advance(self) -> None:
+        """Move to the next page, bypassing any page-level veto."""
+        if self._current is None:
+            return
         idx = self._page_order.index(self._current)
         if idx + 1 >= len(self._page_order):
             return
@@ -299,11 +309,16 @@ class CameraWizard(PatchedDialogWindow):
         self.toast_overlay.add_toast(Adw.Toast.new(message))
 
     def close(self):
+        """Release every page's resources before closing.
+
+        ``leave()`` is idempotent on all pages (the camera widgets guard
+        their subscribe/unsubscribe), so pages that were already left
+        during navigation cannot release a camera subscription they no
+        longer own -- which used to kill the live feed for the rest of
+        the application.
+        """
         for page in self._pages.values():
-            if isinstance(page, CapturePage):
-                page.stop()
-            elif isinstance(page, (ImageSettingsPage, AlignmentPage)):
-                page.leave()
+            page.leave()
         super().close()
 
 

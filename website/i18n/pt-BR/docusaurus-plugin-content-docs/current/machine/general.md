@@ -21,13 +21,35 @@ você tem várias máquinas configuradas.
 Selecione o driver correspondente ao controlador da sua máquina. O driver gerencia a comunicação
 entre o Rayforge e o hardware.
 
-Dispositivos GRBL têm duas opções de driver serial:
+Dispositivos GRBL têm três opções de driver serial:
 
 - **GRBL (Serial)** — Driver com contagem de buffer, detecção de deadlock e recuperação de parada.
   Recomendado para a maioria dos dispositivos GRBL
 - **GRBL (Serial Simple)** — Driver de protocolo ping-pong. Envia uma linha, aguarda "ok", envia a
   próxima. Sem gerenciamento de buffer ou detecção de deadlock. Útil quando o driver padrão causa
   falsos alarmes
+- **GRBL (Rust)** — Driver experimental cuja pilha completa do protocolo serial GRBL (controle de
+  fluxo, streaming de trabalhos, detecção de paradas, recuperação de deadlock, configurações e
+  probing) roda em Rust. Pode ser selecionado como alternativa direta ao GRBL (Serial)
+
+Controladores baseados em Ruida são suportados pelo driver **Ruida RPA**, que conecta diretamente
+via USB ou UDP, ou via TUI RPC por meio do Ruida Protocol Analyzer. O campo USB dele oferece um menu
+suspenso de dispositivos conectados com correspondência VID:PID, e ele respeita a definição de Modo
+de Potência de cada etapa — Dinâmico ativa o escalonamento de potência do controlador e Constante o
+desativa. O comportamento da potência é ajustado com as opções do driver **Power Scaling**, **VECTOR
+power floor** e **IMAGE power bias**: o escalonamento de potência eleva a potência mínima emitida
+conforme a velocidade de corte da camada diminui, o piso de potência vector compensa a queima
+excessiva nas extremidades das linhas, e o viés de imagem compensa tubos CO2 que não disparam com
+potências muito baixas.
+
+### Vínculo da Porta Serial
+
+Em vez de um caminho de dispositivo (ex.: `/dev/ttyUSB0` ou `COM3`), o campo da porta serial também
+aceita um identificador USB `VID:PID` como `0403:6001`. Quando uma máquina é vinculada por VID:PID,
+a reconexão automática a segue para a nova porta depois que o sistema operacional reenumera os
+dispositivos USB — por exemplo, após uma reinicialização ou ao desconectar e reconectar. Você pode
+encontrar o VID:PID de um dispositivo na saída do `lsusb` (Linux) ou no Gerenciador de Dispositivos
+→ IDs de Hardware (Windows).
 
 Após selecionar um driver, as definições específicas de conexão aparecem abaixo do seletor (ex.:
 porta serial, baud rate). Elas variam conforme o driver escolhido.

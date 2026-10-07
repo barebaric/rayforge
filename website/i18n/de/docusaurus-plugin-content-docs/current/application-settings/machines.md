@@ -37,6 +37,18 @@ Alternativ:
 Klicke auf das Bearbeiten-Symbol neben einer Maschine, um den
 [Maschineneinstellungen-Dialog](../machine/general.md) zu öffnen.
 
+## Maschinennotizen
+
+Die Kategorie **Notes** direkt nach **General** vereint Hinweise aus dem Geräteprofil und deine
+eigenen Notizen für diese Maschine. Gerätehinweise sind schreibgeschützt; **My Notes** kannst du mit
+Markdown bearbeiten. Unterstützt werden Überschriften, Absätze, Fett- und Kursivschrift, Listen,
+Links, Inline-Code, Codeblöcke und aufklappbare Abschnitte mit `:::details`.
+
+Wenn ein Profil Einrichtungshinweise enthält, werden sie auch auf der letzten Seite **Review &
+Name** des Einrichtungsassistenten angezeigt und bleiben nach dem Erstellen der Maschine unter
+**Machine Settings → Notes** verfügbar. Persönliche Notizen werden pro Maschine gespeichert und bei
+der Überprüfung von Profilaktualisierungen nicht ersetzt.
+
 ## Aktive Maschine wechseln
 
 Verwende das Maschinen-Dropdown in der Kopfzeile des Hauptfensters, um zwischen konfigurierten

@@ -4,7 +4,10 @@ from typing import TYPE_CHECKING
 
 import cairo
 import numpy as np
+from gi.repository import PangoCairo
 from raygeo.geo import Matrix
+
+from ..shared.text import create_text_layout
 
 if TYPE_CHECKING:
     from raygeo.geo.types import Point3D
@@ -325,7 +328,6 @@ class AxisRenderer:
 
         ctx.set_source_rgba(*self.fg_color)
         ctx.set_line_width(1)
-        ctx.set_font_size(self.label_font_size)
 
         work_origin_x, work_origin_y, _ = origin_offset_mm
 
@@ -427,13 +429,19 @@ class AxisRenderer:
 
             label = f"{round(label_val, precision):g}"
             label_pos_px = view_transform.transform_point((world_x, x_axis_y))
-            extents = ctx.text_extents(label)
-            y_offset = -4 if self.y_axis_down else extents.height + 4
+            layout = create_text_layout(ctx, label, self.label_font_size)
+            label_width, label_height = layout.get_pixel_size()
+            y = (
+                label_pos_px[1] - label_height - 4
+                if self.y_axis_down
+                else label_pos_px[1] + 4
+            )
 
             ctx.move_to(
-                label_pos_px[0] - extents.width / 2, label_pos_px[1] + y_offset
+                label_pos_px[0] - label_width / 2,
+                y,
             )
-            ctx.show_text(label)
+            PangoCairo.show_layout(ctx, layout)
 
         # Draw Y Labels
         min_delta_y = workarea_top - wcs_world_y
@@ -471,18 +479,19 @@ class AxisRenderer:
                 continue
 
             label = f"{round(label_val, precision):g}"
-            extents = ctx.text_extents(label)
+            layout = create_text_layout(ctx, label, self.label_font_size)
+            label_width, label_height = layout.get_pixel_size()
 
             label_pos_px = view_transform.transform_point(
                 (world_x_for_y_labels, world_y)
             )
 
-            x_offset = 4 if self.x_axis_right else -extents.width - 4
+            x_offset = 4 if self.x_axis_right else -label_width - 4
             ctx.move_to(
                 label_pos_px[0] + x_offset,
-                label_pos_px[1] + extents.height / 2,
+                label_pos_px[1] - label_height / 2,
             )
-            ctx.show_text(label)
+            PangoCairo.show_layout(ctx, layout)
 
     def get_x_axis_height(self) -> int:
         """Calculates the maximum height of the X-axis labels."""
@@ -491,10 +500,9 @@ class AxisRenderer:
         # the maximum height among digits.
         temp_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1)
         ctx = cairo.Context(temp_surface)
-        ctx.set_font_size(self.label_font_size)
-
-        extents = ctx.text_extents("8")
-        return math.ceil(extents.height) + 4
+        layout = create_text_layout(ctx, "8", self.label_font_size)
+        _, height = layout.get_pixel_size()
+        return height + 4
 
     def get_y_axis_width(self) -> int:
         """Calculates the maximum width of the Y-axis labels."""
@@ -502,14 +510,14 @@ class AxisRenderer:
         # which corresponds to the largest coordinate value.
         temp_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1)
         ctx = cairo.Context(temp_surface)
-        ctx.set_font_size(self.label_font_size)
         # Account for negative sign potentially making label wider
         if self.y_axis_negative:
             max_y_label = f"{-self.height_mm:.0f}"
         else:
             max_y_label = f"{self.height_mm:.0f}"
-        extents = ctx.text_extents(max_y_label)
-        return math.ceil(extents.width) + 4
+        layout = create_text_layout(ctx, max_y_label, self.label_font_size)
+        width, _ = layout.get_pixel_size()
+        return width + 4
 
     def set_width_mm(self, width_mm: float):
         self.width_mm = width_mm

@@ -59,6 +59,15 @@ Configure o comportamento do enquadramento nas configurações da cabeça do las
 - **Número de repetições**: Quantas vezes o contorno é traçado. Definir um valor maior que um pode
   tornar o caminho mais fácil de seguir visualmente.
 
+<!-- prettier-ignore-start -->
+:::note[Enquadramento controlado pela máquina]
+Algumas máquinas podem enquadrar o trabalho mesmo executando offline (p. ex., a partir de um
+arquivo G-code em um cartão de memória). O Rayforge pode incluir as dimensões necessárias do
+trabalho no G-code para permitir isso. Veja [Dialetos G-code](../reference/gcode-dialects.md) para os
+espaços reservados disponíveis.
+:::
+<!-- prettier-ignore-end -->
+
 ## Usando os resultados do enquadramento
 
 Após o enquadramento, você pode:

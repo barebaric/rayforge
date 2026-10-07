@@ -41,8 +41,16 @@ class TestFrameStep:
         workpiece.size = (100, 100)
         kwargs = step.get_assembler_kwargs(machine, workpiece)
         assert isinstance(kwargs, dict)
-        expected_keys = {"cut_side", "offset_mm", "corner_radius"}
+        expected_keys = {
+            "cut_side",
+            "offset_mm",
+            "corner_radius",
+            "arc_tolerance",
+            "allow_arcs",
+        }
         assert set(kwargs.keys()) == expected_keys
+        assert kwargs["arc_tolerance"] == machine.arc_tolerance
+        assert kwargs["allow_arcs"] is machine.supports_arcs
 
     def test_assembler_kwargs_corner_radius(self, machine):
         step = FrameStep(name="Test")
@@ -111,6 +119,8 @@ class TestFrameComputePayload:
         assert spec.cut_side == "outside"
         assert spec.offset_mm == 0.3
         assert spec.corner_radius == 2.0
+        assert spec.arc_tolerance == machine.arc_tolerance
+        assert spec.allow_arcs is machine.supports_arcs
 
     def test_assembler_token_params_mirrors_kwargs(self, machine):
         step = FrameStep(name="frame")

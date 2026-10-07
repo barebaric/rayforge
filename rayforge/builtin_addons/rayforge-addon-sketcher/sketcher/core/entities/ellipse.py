@@ -61,6 +61,9 @@ class Ellipse(Entity):
     def get_helper_ids(self) -> list[EntityID]:
         return list(self.helper_line_ids)
 
+    def clear_helper_references(self) -> None:
+        self.helper_line_ids = []
+
     def is_closed_loop(self) -> bool:
         return True
 

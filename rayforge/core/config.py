@@ -1,4 +1,5 @@
 import logging
+import os
 from dataclasses import dataclass, fields
 from datetime import datetime, timezone
 from enum import Enum
@@ -10,6 +11,7 @@ import yaml
 from blinker import Signal
 
 from ..machine.models.machine import Machine
+from ..shared.util.atomic import atomic_write_yaml, load_yaml_with_backup
 
 logger = logging.getLogger(__name__)
 
@@ -118,6 +120,11 @@ class Config:
         # (or dismissed). Absent in older configs; the wizard itself
         # only triggers while placeholder machines are the only ones.
         self.setup_completed: bool = False
+        # Mouse gesture bindings: maps context_id -> (slot_id ->
+        # binding spec string). A value of None marks the slot as
+        # unassigned. Absent entries fall back to the slot defaults
+        # declared in the gesture registry.
+        self.gesture_bindings: dict[str, dict[str, str | None]] = {}
         self.changed = Signal()
 
     def set_machine(self, machine: Machine | None):
@@ -267,6 +274,34 @@ class Config:
         self.usage_consent_date = new_value
         self.changed.send(self)
 
+    def set_gesture_binding(
+        self, context_id: str, slot_id: str, value: str | None
+    ):
+        """
+        Stores a custom gesture binding for a slot.
+
+        Args:
+            context_id: The gesture context the slot belongs to.
+            slot_id: The gesture slot to bind.
+            value: The serialized gesture spec, or None to mark the
+                slot as unassigned.
+        """
+        per_context = self.gesture_bindings.setdefault(context_id, {})
+        if slot_id in per_context and per_context[slot_id] == value:
+            return
+        per_context[slot_id] = value
+        self.changed.send(self)
+
+    def reset_gesture_binding(self, context_id: str, slot_id: str):
+        """Removes a custom gesture binding, restoring the default."""
+        per_context = self.gesture_bindings.get(context_id)
+        if not per_context or slot_id not in per_context:
+            return
+        del per_context[slot_id]
+        if not per_context:
+            del self.gesture_bindings[context_id]
+        self.changed.send(self)
+
     @property
     def has_consented_tracking(self) -> bool:
         """Returns True if user has consented to usage tracking after
@@ -315,6 +350,7 @@ class Config:
             "default_stock_material_uid": self.default_stock_material_uid,
             "default_stock_thickness_mm": self.default_stock_thickness_mm,
             "setup_completed": self.setup_completed,
+            "gesture_bindings": self.gesture_bindings,
         }
 
     @classmethod
@@ -406,6 +442,11 @@ class Config:
         # Load first-run setup flag
         config.setup_completed = data.get("setup_completed", False)
 
+        # Load custom mouse gesture bindings
+        config.gesture_bindings = cls._load_gesture_bindings(
+            data.get("gesture_bindings", {})
+        )
+
         # Get the machine by ID. add fallbacks in case the machines
         # no longer exist.
         machine_id = data.get("machine")
@@ -419,6 +460,38 @@ class Config:
             config.set_machine(machine)
 
         return config
+
+    @staticmethod
+    def _load_gesture_bindings(data: Any) -> dict[str, dict[str, str | None]]:
+        """
+        Validates the stored gesture bindings, dropping malformed
+        entries. Binding specs are validated against the gesture
+        registry at lookup time, because unknown contexts and slots
+        are legal in the config (e.g. written by an addon that is
+        currently disabled).
+        """
+        if not isinstance(data, dict):
+            logger.warning("Invalid gesture bindings in config, ignoring.")
+            return {}
+        bindings: dict[str, dict[str, str | None]] = {}
+        for context_id, per_context in data.items():
+            if not isinstance(per_context, dict):
+                logger.warning(
+                    f"Invalid gesture bindings for '{context_id}', ignoring."
+                )
+                continue
+            valid: dict[str, str | None] = {}
+            for slot_id, value in per_context.items():
+                if value is None or isinstance(value, str):
+                    valid[str(slot_id)] = value
+                else:
+                    logger.warning(
+                        f"Invalid gesture binding '{slot_id}' for "
+                        f"'{context_id}', ignoring."
+                    )
+            if valid:
+                bindings[str(context_id)] = valid
+        return bindings
 
 
 class ConfigManager:
@@ -457,8 +530,7 @@ class ConfigManager:
         if not self.config:
             return
         self.filepath.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.filepath, "w") as f:
-            yaml.safe_dump(self.config.to_dict(), f)
+        atomic_write_yaml(self.filepath, self.config.to_dict())
 
     def load(self) -> "Config":
         if not self.filepath.exists():
@@ -467,29 +539,26 @@ class ConfigManager:
             return self.config
 
         try:
-            with open(self.filepath, "r") as f:
-                data = yaml.safe_load(f)
-                if not data:
+            data, recovered = load_yaml_with_backup(self.filepath)
+            if not data:
+                logger.info("Config file is empty, creating default config.")
+                self.config = Config()
+            else:
+                if recovered:
+                    self._repair_corrupted()
+                machine_id = data.get("machine")
+                logger.info(f"Loading config with machine_id: {machine_id}")
+                self.config = Config.from_dict(
+                    data, self.machine_mgr.get_machine_by_id
+                )
+                if self.config.machine:
                     logger.info(
-                        "Config file is empty, creating default config."
+                        f"Config loaded with machine: "
+                        f"{self.config.machine.id} "
+                        f"({self.config.machine.name})"
                     )
-                    self.config = Config()
                 else:
-                    machine_id = data.get("machine")
-                    logger.info(
-                        f"Loading config with machine_id: {machine_id}"
-                    )
-                    self.config = Config.from_dict(
-                        data, self.machine_mgr.get_machine_by_id
-                    )
-                    if self.config.machine:
-                        logger.info(
-                            f"Config loaded with machine: "
-                            f"{self.config.machine.id} "
-                            f"({self.config.machine.name})"
-                        )
-                    else:
-                        logger.info("Config loaded but no machine set.")
+                    logger.info("Config loaded but no machine set.")
         except (OSError, yaml.YAMLError) as e:
             logger.error(
                 f"Failed to load config file: {e}. Creating a default config."
@@ -497,3 +566,22 @@ class ConfigManager:
             self.config = Config()
 
         return self.config
+
+    def _repair_corrupted(self) -> None:
+        """Moves a primary file that failed to parse out of the way.
+
+        Called only after a successful backup recovery so the damaged
+        file no longer shadows the good backup on future starts. The
+        recovered settings are written back on the next save.
+        """
+        corrupt_path = self.filepath.with_name(self.filepath.name + ".corrupt")
+        try:
+            os.replace(self.filepath, corrupt_path)
+            logger.warning(
+                "Moved unreadable %s to %s; the recovered settings "
+                "will be written back on the next save.",
+                self.filepath,
+                corrupt_path,
+            )
+        except OSError as e:
+            logger.warning("Could not quarantine %s: %s", self.filepath, e)

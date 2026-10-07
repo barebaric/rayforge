@@ -1,0 +1,53 @@
+# Chinese (Simplified) translations for Rayforge.
+# Copyright (C) 2026 The Rayforge Project
+# This file is distributed under the same license as the Rayforge package.
+# Samuel Abels <knipknap@gmail.com>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Rayforge\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-01 16:40+0200\n"
+"PO-Revision-Date: 2026-10-01 00:50+0200\n"
+"Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
+"Language-Team: none\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: automation/widgets/command_page.py
+msgid "One command per line. Path variables are expanded at encode time."
+msgstr "每行一条命令。路径变量在编码时展开。"
+
+#: automation/steps/command_step.py
+msgid "Command"
+msgstr "命令"
+
+#: automation/steps/command_step.py
+msgid "Machine Code"
+msgstr "机器代码"
+
+#: automation/steps/command_step.py
+msgid "No machine code"
+msgstr "无机器代码"
+
+#: automation/steps/command_step.py
+#, python-brace-format
+msgid "{count} lines"
+msgstr "{count} 行"
+
+#: automation/steps/command_step.py
+msgid "The command step has no machine code."
+msgstr "命令步骤没有机器代码。"
+
+#: automation/steps/command_step.py
+#, python-brace-format
+msgid ""
+"The '{name}' driver does not support custom machine code; the lines are not "
+"emitted for this machine."
+msgstr "驱动程序“{name}”不支持自定义机器代码；不会为该机器输出这些行。"
+
+#: automation/steps/command_step.py
+msgid "None"
+msgstr "无"

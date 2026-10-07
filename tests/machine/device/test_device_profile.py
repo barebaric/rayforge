@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+import rayforge
 from rayforge.machine.device.manager import DeviceProfileManager
 from rayforge.machine.device.profile import (
     CURRENT_API_VERSION,
@@ -16,6 +17,7 @@ from rayforge.machine.device.profile import (
 from rayforge.machine.models.laser import LaserHead, LaserType
 from rayforge.machine.models.machine import Origin
 from rayforge.machine.models.machine_panel import PanelOrientation
+from rayforge.shared.markdown import Details, parse
 from rayforge.shared.tasker.manager import TaskManager
 from rayforge.shared.units.system import UnitSystem
 
@@ -47,7 +49,7 @@ GRBL_DIALECT_YAML = {
     "air_assist_off": "M9",
     "home_all": "$H",
     "home_axis": "$H{axis_letter}",
-    "move_to": "$J=G90 G21 F{speed} X{x} Y{y}",
+    "move_to": "$J=G90 G21 F{speed} X{x} Y{y}{z_cmd}",
     "jog": "$J=G91 G21 F{speed}",
     "clear_alarm": "$X",
     "set_wcs_offset": "G10 L2 P{p_num} X{x} Y{y} Z{z}",
@@ -72,6 +74,7 @@ def _make_device(
     subdir: str = "test-device",
     machine_extra=None,
     dialect_overrides=None,
+    device_extra=None,
 ) -> Path:
     device_dir = tmp_path / subdir
     machine = {
@@ -82,7 +85,7 @@ def _make_device(
         device_dir / "device.yaml",
         {
             "api_version": CURRENT_API_VERSION,
-            "device": {"name": name},
+            "device": {"name": name, **(device_extra or {})},
             "machine": machine,
         },
     )
@@ -114,6 +117,7 @@ class TestDeviceProfileLoad:
                     "vendor": "OMTech",
                     "model": "K40-40W",
                     "description": "40W CO2 laser",
+                    "notes": "# Setup\n\nRead the manual.",
                 },
                 "machine": {
                     "driver": "GrblSerialDriver",
@@ -134,6 +138,7 @@ class TestDeviceProfileLoad:
         assert pkg.meta.vendor == "OMTech"
         assert pkg.meta.model == "K40-40W"
         assert pkg.meta.description == "40W CO2 laser"
+        assert pkg.meta.notes == "# Setup\n\nRead the manual."
         assert pkg.machine_config.axis_extents == (300, 200)
         assert pkg.machine_config.origin == Origin("top_left")
         assert (
@@ -141,6 +146,14 @@ class TestDeviceProfileLoad:
             == PanelOrientation.ROTATED_RIGHT
         )
         assert pkg.machine_config.supports_arcs is True
+
+    def test_load_rejects_non_string_notes(self, tmp_path):
+        device_dir = _make_device(
+            tmp_path,
+            device_extra={"notes": ["not", "markdown"]},
+        )
+        with pytest.raises(TypeError, match="device.notes"):
+            DeviceProfile.from_path(device_dir)
 
     def test_load_with_custom_dialect(self, tmp_path):
         device_dir = _make_device(
@@ -600,6 +613,7 @@ class TestExportToZip:
             tmp_path,
             name="Roundtrip",
             machine_extra={"axis_extents": [400, 300]},
+            device_extra={"notes": "Profile setup notes."},
         )
         mgr = DeviceProfileManager([tmp_path])
         mgr.discover()
@@ -615,7 +629,49 @@ class TestExportToZip:
         pkg2 = mgr2.install_from_zip(zip_path)
 
         assert pkg2.meta.name == "Roundtrip"
+        assert pkg2.meta.notes == "Profile setup notes."
         assert pkg2.machine_config.axis_extents == (400, 300)
+
+
+FALCON_BOUNDS_LINE = (
+    "; Bounds: X{job.extents[0]} Y{job.extents[1]} "
+    "to X{job.extents[2]} Y{job.extents[3]}"
+)
+
+
+def test_falcon_profiles_emit_framing_bounds_comment():
+    devices_dir = Path(rayforge.__file__).parent / "resources" / "devices"
+    falcon_dirs = sorted(
+        p
+        for p in devices_dir.iterdir()
+        if p.is_dir() and p.name.startswith("creality-falcon")
+    )
+    assert len(falcon_dirs) >= 4
+    for profile_dir in falcon_dirs:
+        profile = DeviceProfile.from_path(profile_dir)
+        assert FALCON_BOUNDS_LINE in profile.dialect_config["preamble"], (
+            profile_dir.name
+        )
+
+
+def test_falcon_a1_pro_profile_has_camera_setup_details():
+    devices_dir = Path(rayforge.__file__).parent / "resources" / "devices"
+    profile = DeviceProfile.from_path(devices_dir / "creality-falcon-a1-pro")
+
+    details = [
+        block
+        for block in parse(profile.meta.notes or "").blocks
+        if isinstance(block, Details)
+    ]
+    assert [block.title for block in details] == [
+        "Linux: Find the USB-network address",
+        "Windows: Find the USB-network address",
+        "macOS: Use Wi-Fi instead of USB",
+        "Wi-Fi: Use the laser's LAN address",
+    ]
+    assert "http://<laser-ip>:8080/media/getCapturePhoto" in (
+        profile.meta.notes or ""
+    )
 
 
 class TestExportMachine:
@@ -684,12 +740,21 @@ class TestExportMachine:
             assert data["machine"]["panel_orientation"] == "rotated_left"
 
     def test_export_machine_to_dir(self, tmp_path):
-        machine = self._make_mock_machine("Dir Export")
+        machine = self._make_mock_machine(
+            "Dir Export",
+            device_notes="Profile-owned setup notes.",
+            user_notes="Do not export private notes.",
+        )
 
         dest_dir = tmp_path / "pkg"
         pkg = export_machine_to_dir(machine, dest_dir)
 
         assert pkg.meta.name == "Dir Export"
+        assert pkg.meta.notes == "Profile-owned setup notes."
+        with open(dest_dir / MANIFEST_FILENAME) as f:
+            manifest = yaml.safe_load(f)
+        assert "user_notes" not in manifest["device"]
+        assert "user_notes" not in manifest["machine"]
         assert (dest_dir / MANIFEST_FILENAME).exists()
         assert (dest_dir / DIALECT_FILENAME).exists()
 

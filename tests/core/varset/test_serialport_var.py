@@ -1,7 +1,32 @@
 import pytest
 
-from rayforge.core.varset.serialportvar import SerialPortVar, ValidationError
+from rayforge.core.varset.serialportvar import (
+    SerialPortVar,
+    ValidationError,
+    format_vidpid,
+    parse_vidpid,
+)
 from rayforge.core.varset.varset import VarSet
+
+
+class TestParseVidpid:
+    def test_valid_specs(self):
+        assert parse_vidpid("0403:6001") == (0x0403, 0x6001)
+        assert parse_vidpid("0403:6001".upper()) == (0x0403, 0x6001)
+        assert parse_vidpid("403:601") == (0x0403, 0x0601)
+        assert parse_vidpid("0x0403:0x6001") == (0x0403, 0x6001)
+
+    def test_invalid_specs(self):
+        assert parse_vidpid("/dev/ttyUSB0") is None
+        assert parse_vidpid("COM3") is None
+        assert parse_vidpid("0403:60011") is None
+        assert parse_vidpid("0403-6001") is None
+        assert parse_vidpid("") is None
+        assert parse_vidpid(None) is None
+
+    def test_format(self):
+        assert format_vidpid(0x0403, 0x6001) == "0403:6001"
+        assert parse_vidpid(format_vidpid(0x1A86, 0x7523)) == (0x1A86, 0x7523)
 
 
 class TestSerialPortVar:
@@ -11,7 +36,14 @@ class TestSerialPortVar:
         v.value = "/dev/ttyUSB0"
         v.validate()
 
+        v.value = "0403:6001"
+        v.validate()
+
         v.value = None
+        with pytest.raises(ValidationError, match="cannot be empty"):
+            v.validate()
+
+        v.value = "  "
         with pytest.raises(ValidationError, match="cannot be empty"):
             v.validate()
 

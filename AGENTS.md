@@ -1,66 +1,46 @@
 # AGENTS.md
 
-## General commands
+## Commands
 
 - No setup needed. Do not run "cd", assume you are in the correct path by default.
-- Use these commands:
-   o `pixi run format`: Apply automatic code formatting
-   o `pixi run site-format`: Format website markdown files (docs, blog, i18n)
-   o `pixi run test`: Run backend tests
-   o `pixi run uitest`: Run UI tests
-   o `pixi run lint`. Performs linting and static code analysis
-   o `pixi run print-untranslated list`: List languages with untranslated strings
-   o `pixi run print-untranslated <lang>`: Print untranslated strings from po file
-   o `python3 scripts/media/gen_image.sh --prompt "a wooden CNC part" --out part.png`:
-      Generates an image using AI. Only works if environment set up for it (pytorch)
+- `pixi run test`: backend tests; `pixi run uitest`: UI tests
+- `pixi run lint`: linting and static analysis; `pixi run format`: format code
+- `pixi run site-format`: format website markdown (docs, blog, i18n)
+- `pixi run print-untranslated list|<lang>`: find untranslated UI strings
+- `python3 scripts/media/gen_image.sh --prompt "..." --out out.png`: generate
+  an image with AI (needs pytorch)
 
 ## Code style
 
-- When writing Python, conform to PEP8 with maximum line length of 79 chars
-- Keep cyclomatic complexity low. Write small, testable functions
-- Never mark your changes with inline comments. Code is for clean, final implementation only
-- Retain exiting formatting, docstrings, and comments
-
-## Raygeo (Rust/PyO3 geometry library)
-
-Even though Raygeo is installed as a regular pip dependency, we own it. If the root
-cause of an issue is in Raygeo, you should fix it there instead of building a
-workaround.
-Source repository: https://github.com/barebaric/raygeo
-
-### Testing with a local Raygeo checkout
-
-Attention: Running "pixi run", even to lint, reinstalls from PyPi.
-
-`scripts/pixi-raygeo.sh` wraps any pixi command with a
-`dependency-override` that uses a local raygeo checkout. The project's
-real `pixi.toml`/`pixi.lock` are never permanently modified.
-
-```bash
-ln -s /path/to/raygeo external/raygeo    # one-time symlink (external/ is gitignored)
-scripts/pixi-raygeo.sh run rayforge      # run against local raygeo
-scripts/pixi-raygeo.sh run test          # test against local raygeo
-scripts/pixi-raygeo.sh shell             # activate a shell with local raygeo
-```
-
-After editing raygeo Rust or Python source, rebuild it with:
-
-```bash
-scripts/rebuild-raygeo.sh                # clear uv cache + rebuild raygeo
-```
-
-To go back to the PyPI raygeo, just use `pixi run rayforge` without the
-wrapper (or any other pixi command).
+- Python: PEP8 with a maximum line length of 79 chars. Keep functions small
+  and cyclomatic complexity low
+- Never mark your changes with inline comments. Code is for clean, final
+  implementation only
+- Retain existing formatting, docstrings, and comments. When refactoring moves
+  code, move the comments and docstrings that belong to it as well
+- Always put imports at the top of the file, never inside functions
+- Wrap every user-visible string with gettext `_()`; see
+  docs/agents/translations.md
 
 ## Other rules
 
-- Do not run the full test suite prematurely. Fix all linter errors first. Run targeted tests.
-- Never use "head" to filter CLI commands! This would hide useful error messages.
-- Use proper markdown to put each file into a separate code block.
-- File start markers do not belong INTO code blocks. Putting them OUTSIDE is ok.
+- Do not run the full test suite prematurely. Fix all linter errors first.
+  Run targeted tests
+- Never use "head" to filter CLI commands; it hides useful error messages
 - Do not make changes unrelated to the current task
 - Never remove logging or debugging unless asked by the user
+- In answers, put each file into its own markdown code block. File start
+  markers belong outside the block
 - Do not repeat files unless they have changes
 
-## Addendums
-- When working on the Ruida driver, read the AGENTS.md located in the ruidarpa driver directory at rayforge/machine/driver/ruidarpa.
+## Read on demand
+
+These areas are kept out of this file to save context; read the matching file
+before working on them:
+
+- docs/agents/translations.md: gettext workflow for UI strings and catalogs
+- docs/agents/website.md: website docs, blog, and their translations
+- docs/agents/raygeo.md: our Rust/PyO3 geometry library; fix root causes
+  there instead of building workarounds
+- docs/agents/raydriver.md: our Rust/PyO3 GRBL serial driver
+- rayforge/machine/driver/ruidarpa/AGENTS.md: rules for the Ruida driver

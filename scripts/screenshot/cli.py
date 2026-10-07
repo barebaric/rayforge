@@ -27,6 +27,7 @@ TARGETS = {
     "addon:print-and-cut:apply": "print_and_cut",
     "addon:projector-mode": "projector_mode",
     "app-settings:general": "app_settings_general",
+    "app-settings:gestures": "app_settings_gestures",
     "app-settings:machines": "app_settings_machines",
     "app-settings:machines:add": "add_machine_dialog",
     "app-settings:materials": "app_settings_materials",
@@ -55,6 +56,8 @@ TARGETS = {
     "machine-settings:advanced": "machine_settings_advanced",
     "machine-settings:gcode": "machine_settings_gcode",
     "machine-settings:hooks-macros": "machine_settings_hooks-macros",
+    "machine-settings:hooks-macros:editor": "macro_editor",
+    "machine-settings:hooks-macros:editor:variables": "macro_editor",
     "machine-settings:device": "machine_settings_device",
     "machine-settings:laser": "machine_settings_laser",
     "machine-settings:rotary-module": "machine_settings_rotary_module",
@@ -70,6 +73,8 @@ TARGETS = {
     "machine-settings:camera:image-alignment": "machine_settings_camera",
     "machine-settings:maintenance": "machine_settings_maintenance",
     "machine-settings:nogo-zones": "machine_settings_nogo_zones",
+    "machine-settings:notes": "machine_settings_notes",
+    "machine-settings:notes:editor": "machine_settings_notes",
     "main:standard": "main_standard",
     "main:3d": "main_3d",
     "main:3d-bee": "main_3d_bee",
@@ -120,6 +125,7 @@ TARGETS = {
     "recipe-editor:step-settings": "recipe_editor_settings",
     "recipe-editor:post-processing": "recipe_editor_settings",
     "sanity-check": "sanity_check",
+    "step-settings:command:general": "step_settings_command",
     "step-settings:contour:general": "step_settings",
     "step-settings:contour:laser": "step_settings",
     "step-settings:contour:post": "step_settings",
@@ -215,6 +221,24 @@ def write_font_config(family: str) -> str:
     return path
 
 
+WAYLAND_ENV_KEYS = ("WAYLAND_DISPLAY", "WAYLAND_SOCKET", "GDK_BACKEND")
+
+
+def desktop_environment() -> dict[str, str]:
+    """Return os.environ without the desktop's Wayland variables.
+
+    A Wayland desktop session exports WAYLAND_DISPLAY, and many
+    setups also export GDK_BACKEND=wayland; either one makes GTK
+    connect the app to the developer's desktop instead of the
+    headless Xvfb display, so both are dropped here.
+    """
+    return {
+        key: value
+        for key, value in os.environ.items()
+        if key not in WAYLAND_ENV_KEYS
+    }
+
+
 class XvfbSession:
     """A temporary Xvfb server providing a headless display.
 
@@ -223,7 +247,11 @@ class XvfbSession:
     RAYFORGE_XVFB tells the capture helpers inside the app to skip
     desktop-only tools such as gnome-screenshot. GSK_RENDERER=cairo
     is required because Xvfb has no GLX: GTK's GL renderer blocks
-    forever in frame uploads with drivers such as NVIDIA's.
+    forever in frame uploads with drivers such as NVIDIA's. The
+    session environment is built from the desktop's environment
+    with the Wayland variables removed and GDK_BACKEND forced to
+    x11, so the app opens on the headless display even when the
+    desktop session itself is Wayland.
     """
 
     SCREEN = "2560x1800x24"
@@ -247,11 +275,15 @@ class XvfbSession:
 
     @property
     def env(self) -> dict[str, str]:
-        env = {
-            "DISPLAY": f":{self.number}",
-            "RAYFORGE_XVFB": "1",
-            "GSK_RENDERER": "cairo",
-        }
+        env = desktop_environment()
+        env.update(
+            {
+                "DISPLAY": f":{self.number}",
+                "RAYFORGE_XVFB": "1",
+                "GSK_RENDERER": "cairo",
+                "GDK_BACKEND": "x11",
+            }
+        )
         if self._font_config:
             env["FONTCONFIG_FILE"] = self._font_config
         if self._bus_address:
@@ -304,7 +336,7 @@ class XvfbSession:
         bg_uri = f"file://{self._background_file}"
         if not self._start_session_bus():
             return
-        env = {**os.environ, **self.env}
+        env = self.env
         for command in (
             [
                 "gsettings",
@@ -407,7 +439,7 @@ class XvfbSession:
                 capture_output=True,
                 text=True,
                 check=False,
-                env={**os.environ, **self.env},
+                env=self.env,
             )
             if check.returncode == 0 and "not found" not in check.stdout:
                 print("Running GNOME Shell as window manager")
@@ -429,7 +461,7 @@ class XvfbSession:
                 text=True,
                 capture_output=True,
                 check=False,
-                env={**os.environ, **self.env},
+                env=self.env,
             )
 
     def _claim_display(self, number: int) -> bool:
@@ -693,10 +725,8 @@ def main() -> int:
                 print(f"  {s}")
         return 1
 
-    base_env = os.environ.copy()
     session = setup_display(args.no_xvfb)
-    if session is not None:
-        base_env.update(session.env)
+    base_env = session.env if session is not None else os.environ.copy()
     try:
         for target in targets:
             script = TARGETS[target]

@@ -34,7 +34,7 @@ module.exports = {
 
   i18n: {
     defaultLocale: 'en',
-    locales: ['en', 'pt-BR', 'es', 'fr', 'de', 'zh-CN', 'uk'],
+    locales: ['en', 'pt-BR', 'es', 'fr', 'hi', 'de', 'zh-CN', 'uk'],
   },
 
   presets: [
@@ -258,6 +258,12 @@ module.exports = {
           to: '/blog',
           label: 'Blog',
           position: 'left',
+        },
+        {
+          href: 'https://github.com/barebaric/rayforge/discussions',
+          label: 'Discussions',
+          position: 'right',
+          className: 'navbar__discussions',
         },
         {
           type: 'localeDropdown',

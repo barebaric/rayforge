@@ -4,7 +4,7 @@ import asyncio
 from unittest.mock import MagicMock, patch
 
 import pytest
-from gi.repository import Adw
+from gi.repository import Adw, Gtk
 
 from rayforge.machine.device.matching import (
     CONFIDENCE_CERTAIN,
@@ -575,6 +575,97 @@ def test_connection_page_next_requires_details(ui_context_initializer):
 
 
 @pytest.mark.ui
+def test_connection_page_ruida_needs_only_hostname(ui_context_initializer):
+    wizard = _make_wizard(ui_context_initializer)
+    wizard.profile = _profile(driver="RuidaRPAAdapter")
+    wizard._navigate_to("connect")
+    page = wizard._get_page("connect")
+    assert isinstance(page, ConnectionPage)
+    assert page.ready is False
+    assert not wizard.next_btn.get_sensitive()
+    assert page.connect_widget.get_values()["magic_number"] == "0x88"
+
+    page.connect_widget.set_values({"udp_host": "192.168.1.25"})
+    page._refresh_ready()
+    assert page.ready is True
+    assert wizard.next_btn.get_sensitive()
+
+
+@pytest.mark.ui
+def test_connection_page_ruida_network_mode(ui_context_initializer):
+    wizard = _make_wizard(ui_context_initializer)
+    wizard.profile = _profile(driver="RuidaRPAAdapter")
+    wizard._navigate_to("connect")
+    page = wizard._get_page("connect")
+    assert isinstance(page, ConnectionPage)
+
+    page.connect_widget.set_values({"connection": "network"})
+    page._refresh_ready()
+    assert page.ready is False
+
+    page.connect_widget.set_values(
+        {"connection": "network", "udp_host": "192.168.1.25"}
+    )
+    page._refresh_ready()
+    assert page.ready is True
+
+
+@pytest.mark.ui
+def test_connection_page_ruida_usb_mode(ui_context_initializer):
+    wizard = _make_wizard(ui_context_initializer)
+    wizard.profile = _profile(driver="RuidaRPAAdapter")
+    wizard._navigate_to("connect")
+    page = wizard._get_page("connect")
+    assert isinstance(page, ConnectionPage)
+
+    page.connect_widget.set_values({"connection": "usb"})
+    page._refresh_ready()
+    assert page.ready is False
+
+    page.connect_widget.set_values(
+        {"connection": "usb", "usb_device": "/dev/ttyUSB0"}
+    )
+    page._refresh_ready()
+    assert page.ready is True
+
+
+@pytest.mark.ui
+def test_connection_args_complete_ruida_hostname_only(
+    ui_context_initializer,
+):
+    wizard = _make_wizard(ui_context_initializer)
+    profile = _profile(driver="RuidaRPAAdapter")
+    profile.machine_config.driver_args = {"udp_host": "192.168.1.25"}
+    wizard.profile = profile
+    assert wizard._connection_args_complete() is True
+
+
+@pytest.mark.ui
+def test_connection_args_complete_ruida_usb_mode(
+    ui_context_initializer,
+):
+    wizard = _make_wizard(ui_context_initializer)
+    profile = _profile(driver="RuidaRPAAdapter")
+    profile.machine_config.driver_args = {
+        "connection": "usb",
+        "usb_device": "/dev/ttyUSB0",
+    }
+    wizard.profile = profile
+    assert wizard._connection_args_complete() is True
+
+
+@pytest.mark.ui
+def test_connection_args_complete_ruida_auto_needs_hostname(
+    ui_context_initializer,
+):
+    wizard = _make_wizard(ui_context_initializer)
+    profile = _profile(driver="RuidaRPAAdapter")
+    profile.machine_config.driver_args = {"usb_device": "/dev/ttyUSB0"}
+    wizard.profile = profile
+    assert wizard._connection_args_complete() is False
+
+
+@pytest.mark.ui
 def test_skip_button_only_on_optional_pages(ui_context_initializer):
     wizard = _make_wizard(ui_context_initializer)
     for name in ("ai_provider", "rotary", "camera"):
@@ -773,6 +864,60 @@ def test_review_page_keeps_explicit_name(ui_context_initializer):
     page = wizard._get_page("review")
     assert isinstance(page, ReviewPage)
     assert page.name_row.get_text() == "My Rig"
+
+
+@pytest.mark.ui
+def test_review_page_shows_and_refreshes_profile_notes(
+    ui_context_initializer,
+):
+    wizard = _make_wizard(ui_context_initializer)
+    profile = _profile()
+    profile.meta.notes = "Connect the camera over USB."
+    wizard.profile = profile
+    wizard._navigate_to("review")
+    page = wizard._get_page("review")
+
+    assert isinstance(page, ReviewPage)
+    assert page.setup_notes_group.get_visible()
+    assert page.setup_notes_group.get_title() == "Notes"
+    assert page.setup_notes_view.get_text() == profile.meta.notes
+    description = page.setup_notes_group.get_description() or ""
+    assert "Machine Settings → Notes" in description
+
+    profile.meta.notes = None
+    page.enter(profile)
+    assert not page.setup_notes_group.get_visible()
+    assert page.setup_notes_view.get_text() == ""
+
+
+@pytest.mark.ui
+def test_review_page_puts_notes_last_at_natural_height(
+    ui_context_initializer,
+):
+    wizard = _make_wizard(ui_context_initializer)
+    profile = _profile()
+    profile.meta.notes = "# Camera setup\n\nPlug it in."
+    wizard.profile = profile
+    wizard._navigate_to("review")
+    page = wizard._get_page("review")
+    assert isinstance(page, ReviewPage)
+
+    groups = []
+    child = page.content.get_first_child()
+    while child is not None:
+        groups.append(child)
+        child = child.get_next_sibling()
+    assert groups[-1] is page.setup_notes_group
+    assert groups.index(page.summary_group) < groups.index(
+        page.setup_notes_group
+    )
+
+    # The page already scrolls; a nested scroller would clamp the
+    # notes into a small viewport of their own.
+    assert page.setup_notes_view.get_parent() is not None
+    assert not isinstance(
+        page.setup_notes_view.get_parent(), Gtk.ScrolledWindow
+    )
 
 
 def _summary_subtitle(page, title):

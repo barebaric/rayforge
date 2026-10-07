@@ -2,6 +2,7 @@ import asyncio
 import logging
 import re
 import threading
+import time
 from collections.abc import Awaitable, Callable
 from enum import Enum, auto
 from typing import NamedTuple
@@ -25,6 +26,12 @@ class PendingCommand(NamedTuple):
     length: int
     op_index: int | None
     command: str = ""
+    # How long the ack for this command may legitimately take. Motion
+    # lines carry their estimate-derived stall timeout (scaled with
+    # the expected move duration); interactive commands keep a short
+    # default. Used to detect acks that will never arrive (lost to a
+    # device reset or a flaky link) without punishing slow moves.
+    timeout: float = 10.0
 
 
 class GrblResponseType(Enum):
@@ -71,6 +78,11 @@ class GrblSerialTransport:
         self._space_available.set()
         self._status_buffer = bytearray()
         self._loop: asyncio.AbstractEventLoop | None = None
+        # Monotonic timestamp of the oldest un-acked command and the
+        # ack deadline of that command, used to detect acks that were
+        # lost to a device-side reset (see pending_ack_overdue()).
+        self._pending_since: float | None = None
+        self._pending_timeout: float = 10.0
 
     @property
     def is_connected(self) -> bool:
@@ -289,6 +301,11 @@ class GrblSerialTransport:
         deadlock recovery and return True to retry.  Raises
         ``BufferStallError`` if recovery fails or no callback is
         provided.  Returns the buffer fill level after sending.
+
+        *timeout* both bounds the buffer-space wait and becomes the
+        entry's ack deadline: callers pass the per-command estimate-
+        derived stall timeout, so slow moves are never mistaken for
+        lost acks (see ``pending_ack_overdue()``).
         """
         command_len = len(data)
         waited = False
@@ -341,8 +358,9 @@ class GrblSerialTransport:
             )
         cmd_text = data.decode("ascii", "replace")
         self._pending.put_nowait(
-            PendingCommand(command_len, op_index, cmd_text)
+            PendingCommand(command_len, op_index, cmd_text, timeout)
         )
+        self._note_pending(timeout)
         count = self._add(command_len)
         self._log_tx(data, count)
         await self._transport.send(data)
@@ -381,6 +399,7 @@ class GrblSerialTransport:
         self._pending.put_nowait(
             PendingCommand(command_len, None, data.decode("ascii", "replace"))
         )
+        self._note_pending()
         count = self._add(command_len)
         self._log_tx(data, count)
         await self._transport.send(data)
@@ -444,6 +463,14 @@ class GrblSerialTransport:
         )
         self._sub(pending.length)
         self._pending.task_done()
+        if self._pending.empty():
+            self._pending_since = None
+        else:
+            # Per-entry deadlines cannot be inspected without popping,
+            # so the next entry's wait effectively starts now. This is
+            # deliberately conservative: healing can only happen
+            # later, never earlier than an entry's own deadline.
+            self._pending_since = time.monotonic()
         self.signal_space_available()
         return pending
 
@@ -460,11 +487,41 @@ class GrblSerialTransport:
         with self._lock:
             self._rx_buffer_count = 0
         self._pending = asyncio.Queue()
+        self._pending_since = None
         # Wake parked waiters rather than replacing the Event: a new
         # Event object orphans tasks that are already waiting on the
         # old one, leaving them stranded until their stall timeout
         # fires (issue #428).
         self.signal_space_available()
+
+    def _note_pending(self, timeout: float = 10.0) -> None:
+        """Record when the oldest pending command was enqueued, and
+        the ack deadline of that command."""
+        if self._pending_since is None:
+            self._pending_since = time.monotonic()
+            self._pending_timeout = timeout
+
+    def pending_ack_overdue(self) -> float | None:
+        """
+        Seconds by which the oldest un-acked command has exceeded its
+        own ack deadline, or None while within budget or nothing is
+        pending.
+
+        Deadlines come from the same duration estimates that drive
+        the per-line stall timeouts (estimate * safety factor, so slow
+        moves are never considered overdue); interactive commands use
+        a short default. Used to detect flow-control state poisoned
+        by acks that will never arrive, e.g. for commands sent right
+        before or after a soft reset that the firmware answers with
+        silence. Without this, a single lost ack blocks all
+        interactive commands forever (issue #428).
+        """
+        if self._pending_since is None:
+            return None
+        overdue = (
+            time.monotonic() - self._pending_since - self._pending_timeout
+        )
+        return overdue if overdue > 0 else None
 
     def reset(self) -> None:
         """Reset all buffer state (cancel, reconnect, cleanup)."""

@@ -171,6 +171,20 @@ boîte de dialogue des paramètres d'étape.
 - Plus lent = plus d'énergie = coupe plus profonde
 - Plus rapide = moins d'énergie = coupe plus légère
 
+#### Mode de Puissance
+
+Le réglage du Mode de Puissance contrôle comment la puissance laser est émise pendant les mouvements
+:
+
+| Mode               | G-code | Comportement                                             |
+| ------------------ | ------ | -------------------------------------------------------- |
+| **Dynamique (M4)** | `M4`   | Ajuste la puissance à la vitesse de déplacement (défaut) |
+| **Constant (M3)**  | `M3`   | Maintient la puissance fixe quelle que soit la vitesse   |
+
+La puissance dynamique réduit la puissance lorsque la tête ralentit dans un virage, ce qui protège
+le matériau, mais sur certaines machines elle laisse les coins et les courbes serrées visiblement
+sous-brûlés. Passe en **Constant (M3)** si les coins et les courves brûlent trop faiblement.
+
 #### Compensation de Kerf
 
 Le kerf est la largeur du matériau retiré par le faisceau laser :

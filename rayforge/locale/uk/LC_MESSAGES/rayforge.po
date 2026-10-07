@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-26 17:18+0200\n"
+"POT-Creation-Date: 2026-10-06 22:41+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Ukrainian\n"
 "Language: uk\n"
 "MIME-Version: 1.0\n"
@@ -170,6 +170,10 @@ msgstr "Вибір"
 #: rayforge/core/varset/var.py
 msgid "Text (Single Line)"
 msgstr "Текст (один рядок)"
+
+#: rayforge/core/varset/codevar.py
+msgid "Code (Multi-Line)"
+msgstr "Код (багаторядковий)"
 
 #: rayforge/core/varset/baudratevar.py
 msgid "Baud rate cannot be empty."
@@ -339,7 +343,7 @@ msgstr "Ядро"
 msgid "Stock Material"
 msgstr "Матеріал заготовки"
 
-#: rayforge/core/source_asset.py
+#: rayforge/core/source_asset.py rayforge/ui_gtk/camera/properties_widget.py
 msgid "Source"
 msgstr "Джерело"
 
@@ -358,6 +362,223 @@ msgstr "Невідома змінна або функція: '{name}'"
 msgid "Cannot use operator '{op}' between types '{left}' and '{right}'"
 msgstr "Неможливо використати оператор '{op}' між типами '{left}' та '{right}'"
 
+#: rayforge/camera/source/base.py
+#, python-brace-format
+msgid "URL contains placeholder <{placeholder}>; replace it with a valid value"
+msgstr ""
+"URL містить заповнювач <{placeholder}>; замініть його на коректне значення."
+
+#: rayforge/camera/source/base.py
+msgid "URL is malformed"
+msgstr "URL має неправильний формат."
+
+#: rayforge/camera/source/base.py
+#, python-brace-format
+msgid "URL must start with one of: {schemes}"
+msgstr "URL має починатися з однієї з таких схем: {schemes}"
+
+#: rayforge/camera/source/base.py
+msgid "URL must include a host"
+msgstr "URL має містити хост."
+
+#: rayforge/camera/source/base.py
+msgid "URL contains an invalid host or port"
+msgstr "URL містить некоректний хост або порт."
+
+#: rayforge/camera/source/base.py
+msgid "URL must include a valid hostname or IP address"
+msgstr "URL має містити коректне ім’я хоста або IP-адресу."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Ruida"
+msgstr "Ruida"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Connect via Ruida Protocol"
+msgstr "З'єднання через протокол Ruida"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Ruida Coordinates"
+msgstr "Координати Ruida"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "A Hostname must be configured."
+msgstr "Потрібно налаштувати ім'я хоста."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "A USB device must be configured."
+msgstr "Потрібно налаштувати USB-пристрій."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "At least one of 'Hostname' or 'USB device' must be configured."
+msgstr "Потрібно налаштувати принаймні «Ім'я хоста» або «USB-пристрій»."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/connection_page.py
+msgid "Connection"
+msgstr "З'єднання"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Auto (USB preferred)"
+msgstr "Автоматично (пріоритет USB)"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Network"
+msgstr "Мережа"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "USB"
+msgstr "USB"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"Which transport to use. Automatic opens USB when available and falls back to "
+"the network."
+msgstr ""
+"Який транспорт використовувати. Автоматично відкриває USB, якщо він "
+"доступний, і переходить до мережі в іншому разі."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+#: rayforge/machine/driver/smoothie/smoothie_driver.py
+msgid "Hostname"
+msgstr "Ім'я хоста"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "The IP address or hostname of the Ruida controller"
+msgstr "IP-адреса або ім'я хоста контролера Ruida"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "USB device path or VID:PID (e.g. 0403:6001)"
+msgstr "Шлях до USB-пристрою або VID:PID (напр. 0403:6001)"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Magic"
+msgstr "Магічне число"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"Controller magic number in hex. The default 0x88 works for most controllers."
+msgstr ""
+"Магічне число контролера у шістнадцятковому вигляді. Типове значення 0x88 "
+"підходить для більшості контролерів."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "TUI RPC"
+msgstr "TUI RPC"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"Enable RPC connection to a remote RPA TUI service.Useful for problem "
+"diagnosis and experimentation."
+msgstr ""
+"Увімкнути RPC-з'єднання з віддаленою службою TUI RPA. Корисно длядіагностики "
+"проблем та експериментів."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "RPC timeout (s)"
+msgstr "Час очікування RPC (с)"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"Maximum seconds to wait for each synchronous RPC. Raise for large jobs with "
+"many layers."
+msgstr ""
+"Максимальна кількість секунд очікування для кожного синхронного RPC. "
+"Збільште для великих завдань із багатьма шарами."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Power scaling"
+msgstr "Масштабування потужності"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"When enabled, power_range() raises the emitted minimum as the layer's cut "
+"speed decreases (effective-min power scaling); when disabled, the resolved "
+"minimum is emitted unchanged."
+msgstr ""
+"Якщо увімкнено, power_range() підвищує мінімум, що видається, зізменшенням "
+"швидкості різання шару (масштабування ефективного мінімумупотужності); якщо "
+"вимкнено, визначений мінімум видається без змін."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Enable VECTOR power floor"
+msgstr "Увімкнути нижню межу потужності VECTOR"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"When disabled, the emitted power range always has min == max (constant "
+"power). When enabled, the VECTOR power floor value below acts as the minimum "
+"power for VECTOR cut compensation."
+msgstr ""
+"Якщо вимкнено, діапазон потужності, що видається, завжди має min == "
+"max(стала потужність). Якщо увімкнено, значення нижньої межі "
+"потужностіVECTOR нижче діє як мінімальна потужність для компенсації "
+"різанняVECTOR."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "VECTOR power floor"
+msgstr "Мінімальна потужність VECTOR"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"Minimum power percentage for VECTOR cut compensation (e.g. 8 = 8%). Applies "
+"only when the VECTOR power floor toggle is enabled."
+msgstr ""
+"Мінімальний відсоток потужності для компенсації різання VECTOR (напр. 8= 8 "
+"%). Застосовується лише коли перемикач нижньої межі потужностіVECTOR "
+"увімкнено."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "IMAGE power bias"
+msgstr "Зсув потужності IMAGE"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"Power bias added to IMAGE/raster scan-line power (SET_POWER), % of max (e.g. "
+"8 = 8%)."
+msgstr ""
+"Зсув потужності, що додається до потужності рядків розвідки IMAGE/растра "
+"(SET_POWER), у % від максимуму (напр., 8 = 8 %)."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"set_power is not supported outside of a job with a Ruida controller — the "
+"correct handling is to be determined; no command was sent."
+msgstr ""
+"set_power не підтримується поза завданням із контролером Ruida — належний "
+"спосіб обробки ще належить визначити; команду не надіслано."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"set_focus_power is not supported outside of a job with a Ruida controller — "
+"the correct handling is to be determined; no command was sent."
+msgstr ""
+"set_focus_power не підтримується поза завданням із контролером Ruida — "
+"належний спосіб обробки ще належить визначити; команду не надіслано."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"set_wcs_offset is not supported: protect mode blocks SET_SETTING, and the "
+"feature was dropped by user decision. Use select_wcs to pick a reference "
+"point."
+msgstr ""
+"set_wcs_offset не підтримується: режим захисту блокує SET_SETTING, і цю "
+"можливість вилучено рішенням користувача. Використовуйте select_wcs, щоб "
+"вибрати опорну точку."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+#: rayforge/machine/driver/dummy.py
+msgid "No settings"
+msgstr "Без налаштувань"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "Probe not supported by RPA driver"
+msgstr "Зондування не підтримується драйвером RPA"
+
 #: rayforge/machine/driver/dummy.py rayforge/ui_gtk/machine/machine_dropdown.py
 #: rayforge/ui_gtk/machine/status_widget.py
 msgid "No driver"
@@ -368,15 +589,9 @@ msgid "No connection"
 msgstr "Без з'єднання"
 
 #: rayforge/machine/driver/dummy.py
-#: rayforge/machine/driver/ruida/ruida_driver.py
 #: rayforge/machine/driver/marlin/marlin_serial.py
 msgid "Machine Coordinates"
 msgstr "Машинні координати"
-
-#: rayforge/machine/driver/dummy.py
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "No settings"
-msgstr "Без налаштувань"
 
 #: rayforge/machine/driver/driver.py
 #, python-brace-format
@@ -503,62 +718,11 @@ msgstr ""
 "Помилка під час налаштування. Можливо, потрібно редагувати налаштування "
 "пристрою."
 
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "Ruida (UDP)"
-msgstr "Ruida (UDP)"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "Connect to a Ruida laser controller over UDP"
-msgstr "Підключення до лазерного контролера Ruida через UDP"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#: rayforge/machine/driver/grbl/grbl_telnet.py
-#: rayforge/machine/driver/grbl/grbl_network.py
-#: rayforge/machine/driver/smoothie/smoothie_driver.py
-#, python-brace-format
-msgid "Invalid hostname or IP address: '{host}'"
-msgstr "Неправильне ім'я хоста або IP-адреса: '{host}'"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#: rayforge/machine/driver/grbl/grbl_telnet.py
-#: rayforge/machine/driver/grbl/grbl_network.py
-#: rayforge/machine/driver/smoothie/smoothie_driver.py
-msgid "Hostname"
-msgstr "Ім'я хоста"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "The IP address or hostname of the Ruida controller"
-msgstr "IP-адреса або ім'я хоста контролера Ruida"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "Main Port"
-msgstr "Основний порт"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "The UDP port for main commands (default: 50200)"
-msgstr "UDP-порт для основних команд (за замовчуванням: 50200)"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "Jog Port"
-msgstr "Порт ручного переміщення"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "The UDP port for jog commands (default: 50207)"
-msgstr "UDP-порт для команд ручного переміщення (за замовчуванням: 50207)"
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-#: rayforge/machine/driver/octoprint/octoprint_driver.py
-#: rayforge/machine/driver/grbl/grbl_telnet.py
-#: rayforge/machine/driver/grbl/grbl_network.py
-#: rayforge/machine/driver/smoothie/smoothie_driver.py
-msgid "Hostname must be configured."
-msgstr "Ім'я хоста має бути налаштоване."
-
-#: rayforge/machine/driver/ruida/ruida_driver.py
-msgid "No response from controller"
-msgstr "Немає відповіді від контролера"
+#: rayforge/machine/driver/driver.py
+msgid "Unexpected error during setup. You may need to edit device settings."
+msgstr ""
+"Неочікувана помилка під час налаштування. Можливо, потрібно змінити "
+"параметри пристрою."
 
 #: rayforge/machine/driver/octoprint/octoprint_util.py
 msgid "Could not read the OctoPrint server version."
@@ -586,6 +750,14 @@ msgstr "Надіслати G-код на сервер OctoPrint"
 #: rayforge/machine/driver/smoothie/smoothie_driver.py
 msgid "Machine Coordinates (G53)"
 msgstr "Машинні координати (G53)"
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+#: rayforge/machine/driver/smoothie/smoothie_driver.py
+#, python-brace-format
+msgid "Invalid hostname or IP address: '{host}'"
+msgstr "Неправильне ім'я хоста або IP-адреса: '{host}'"
 
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 msgid "IP address or hostname of the OctoPrint server"
@@ -630,6 +802,13 @@ msgid ""
 msgstr ""
 "Введіть API-ключ вручну або натисніть 'Запитати доступ', щоб отримати його "
 "через плагін Application Keys OctoPrint."
+
+#: rayforge/machine/driver/octoprint/octoprint_driver.py
+#: rayforge/machine/driver/grbl/grbl_telnet.py
+#: rayforge/machine/driver/grbl/grbl_network.py
+#: rayforge/machine/driver/smoothie/smoothie_driver.py
+msgid "Hostname must be configured."
+msgstr "Ім'я хоста має бути налаштоване."
 
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 msgid ""
@@ -740,8 +919,8 @@ msgstr "Пристрій Marlin"
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial_simple.py
-msgid "Serial port for the device"
-msgstr "Послідовний порт для пристрою"
+msgid "Serial port or USB VID:PID (e.g. 0403:6001)"
+msgstr "Послідовний порт або USB VID:PID (напр. 0403:6001)"
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
@@ -761,7 +940,6 @@ msgid "Port not configured"
 msgstr "Порт не налаштовано"
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
-#: rayforge/machine/driver/grbl/grbl_serial.py
 msgid "No response from device"
 msgstr "Немає відповіді від пристрою"
 
@@ -1452,6 +1630,10 @@ msgid "GRBL device"
 msgstr "Пристрій GRBL"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
+msgid "Driver is not set up. Check the port settings."
+msgstr "Драйвер не налаштовано. Перевірте параметри порту."
+
+#: rayforge/machine/driver/grbl/grbl_serial.py
 msgid "RX Buffer Size Override"
 msgstr "Перевизначення розміру буфера RX"
 
@@ -1531,16 +1713,20 @@ msgid "WebSocket Port"
 msgstr "WebSocket-порт"
 
 #: rayforge/machine/driver/grbl/grbl_network.py
-msgid "The WebSocket port for the device"
-msgstr "WebSocket-порт для пристрою"
+msgid ""
+"The WebSocket port for the device. For FluidNC, use the same port as HTTP "
+"(usually 80)."
+msgstr ""
+"WebSocket-порт для пристрою. Для FluidNC використовуйте той самийпорт, що й "
+"для HTTP (зазвичай 80)."
 
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Protocol variant"
 msgstr "Варіант протоколу"
 
 #: rayforge/machine/driver/grbl/grbl_network.py
-msgid "Standard, ESP3D, or Longer GRBL variant"
-msgstr "Стандартний, ESP3D або Longer варіант GRBL"
+msgid "Standard, ESP3D, Longer, or FluidNC variant"
+msgstr "Варіант Standard, ESP3D, Longer або FluidNC"
 
 #: rayforge/machine/driver/grbl/grbl_network.py
 msgid "Standard"
@@ -1909,6 +2095,20 @@ msgstr "Мін. ширина імпульсу"
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 msgid "Max Pulse Width"
 msgstr "Макс. ширина імпульсу"
+
+#: rayforge/machine/models/laser.py
+msgid "Pointer Offset Enabled"
+msgstr "Зміщення вказівника увімкнено"
+
+#: rayforge/machine/models/laser.py
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Pointer Offset X"
+msgstr "Зміщення вказівника X"
+
+#: rayforge/machine/models/laser.py
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Pointer Offset Y"
+msgstr "Зміщення вказівника Y"
 
 #: rayforge/machine/models/laser.py
 #: rayforge/ui_gtk/machine/laser_control_widget.py
@@ -2311,6 +2511,23 @@ msgstr "Не вдалося виконати обрамлення: {error}"
 msgid "Sending failed: {error}"
 msgstr "Не вдалося надіслати: {error}"
 
+#: rayforge/machine/cmd.py
+msgid ""
+"Pointer alignment shifts the frame partly outside the machine travel; the "
+"trace may stop short of a side."
+msgstr ""
+"Вирівнювання за вказівником частково зміщує рамку за межі ходу верстата; "
+"обведення може зупинитися, не дійшовши до однієї зі сторін."
+
+#: rayforge/machine/transport/serial.py
+#, python-brace-format
+msgid ""
+"No USB serial device with VID:PID {spec} found. Is the device connected and "
+"powered on?"
+msgstr ""
+"Не знайдено жодного USB-послідовного пристрою з VID:PID {spec}. Чи "
+"підключено та чи увімкнено пристрій?"
+
 #: rayforge/machine/transport/serial.py
 #, python-brace-format
 msgid ""
@@ -2418,10 +2635,12 @@ msgstr ""
 #: rayforge/ui_gtk/machine/lbdev_import_dialog.py
 #: rayforge/ui_gtk/machine/dialect_list.py
 #: rayforge/ui_gtk/machine/template_selector.py
+#: rayforge/ui_gtk/varset/adapter/combo.py
 #: rayforge/ui_gtk/addon_manager/addon_dialog.py
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/addon_manager/experimental_dialog.py
+#: rayforge/ui_gtk/shared/markdown/dialog.py
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
 #: rayforge/ui_gtk/debug_log_dialog.py
 #: rayforge/ui_gtk/doceditor/import_dialog.py
@@ -2490,6 +2709,7 @@ msgid "Get early access to premium addons"
 msgstr "Отримати ранній доступ до преміум доповнень"
 
 #: rayforge/ui_gtk/settings/license_settings_page.py
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
 msgid "Link"
 msgstr "Прив'язати"
 
@@ -2658,6 +2878,19 @@ msgstr "Встановлені додатки"
 msgid "Install, update, and remove addons."
 msgstr "Встановлення, оновлення та видалення додатків."
 
+#: rayforge/ui_gtk/settings/gesture_preferences_page.py
+msgid "Mouse Gestures"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/gesture_preferences_page.py
+#, python-format
+msgid "Default: %s"
+msgstr ""
+
+#: rayforge/ui_gtk/settings/gesture_preferences_page.py
+msgid "Unassigned"
+msgstr ""
+
 #: rayforge/ui_gtk/settings/recipe_manager_page.py
 msgid "Recipes"
 msgstr "Рецепти"
@@ -2679,7 +2912,8 @@ msgstr "Оновіть деталі правила кольору:"
 #: rayforge/ui_gtk/machine/dialect_editor.py
 #: rayforge/ui_gtk/machine/gcode_editor.py
 #: rayforge/ui_gtk/machine/wcs_dialog.py
-#: rayforge/ui_gtk/machine/maintenance_page.py rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/machine/maintenance_page.py
+#: rayforge/ui_gtk/shared/markdown/dialog.py rayforge/ui_gtk/main_menu.py
 #: rayforge/ui_gtk/toolbar.py
 #: rayforge/ui_gtk/doceditor/recipes/edit_recipe_dialog.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
@@ -2696,6 +2930,7 @@ msgid "Map a color to a step type for SVG imports."
 msgstr "Зіставте колір із типом кроку для імпорту SVG."
 
 #: rayforge/ui_gtk/settings/color_presets_page.py
+#: rayforge/ui_gtk/camera/selection_dialog.py
 #: rayforge/ui_gtk/doceditor/recipes/edit_recipe_dialog.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
@@ -2830,6 +3065,10 @@ msgstr "Іспанська"
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "French"
 msgstr "Французька"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Hindi"
+msgstr "Хінді"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Portuguese"
@@ -2981,19 +3220,19 @@ msgstr "Приватність"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid ""
-"Help us improve Rayforge by allowing anonymous usage reporting. No personal "
-"data is collected."
+"Anonymous usage data helps decide what to build next. It never includes "
+"project content or personal data."
 msgstr ""
-"Допоможіть нам покращити Rayforge, дозволивши анонімні звіти про "
-"використання. Персональні дані не збираються."
+"Анонімні дані про використання допомагають визначити, що розробляти далі. "
+"Вміст проєктів і персональні дані ніколи не збираються."
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Report Anonymous Usage"
 msgstr "Повідомити про анонімне використання"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
-msgid "Help improve Rayforge"
-msgstr "Допомогти покращити Rayforge"
+msgid "Help decide what to build next"
+msgstr "Допоможіть вирішити, що розробляти далі"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
@@ -3016,6 +3255,7 @@ msgstr ""
 "Мова набуде чинності після перезапуску Rayforge. Бажаєте перезапустити зараз?"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py rayforge/ui_gtk/project_cmd.py
 msgid "_Cancel"
 msgstr "_Скасувати"
@@ -3040,11 +3280,11 @@ msgstr "Решітка"
 msgid "Grid"
 msgstr "Решітка"
 
-#: rayforge/ui_gtk/array_dialog.py
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Rows"
 msgstr "Рядки"
 
-#: rayforge/ui_gtk/array_dialog.py
+#: rayforge/ui_gtk/array_dialog.py rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Columns"
 msgstr "Стовпці"
 
@@ -3172,6 +3412,10 @@ msgstr "Імпортувати файл…"
 #: rayforge/ui_gtk/doceditor/layer_column.py
 msgid "Paste"
 msgstr "Вставити"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+msgid "Move Head Here"
+msgstr "Перемістити головку сюди"
 
 #: rayforge/ui_gtk/canvas2d/drag_drop_cmd.py rayforge/doceditor/edit_cmd.py
 msgid "Add {} Instance"
@@ -3309,34 +3553,81 @@ msgid "Transparency on the worksurface"
 msgstr "Прозорість на робочій поверхні"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-msgid "Please select an available camera device"
-msgstr "Будь ласка, виберіть доступну камеру"
+msgid "Scanning for devices…"
+msgstr "Пошук пристроїв…"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-msgid "Please select a configured camera"
-msgstr "Будь ласка, виберіть налаштовану камеру"
+msgid "Add Camera"
+msgstr "Додати камеру"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Choose a camera source."
+msgstr "Виберіть джерело камери."
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
 msgid "Select Camera"
 msgstr "Вибрати камеру"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-msgid "No cameras configured."
-msgstr "Немає налаштованих камер."
+#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
+#: rayforge/ui_gtk/shared/model_selection_dialog.py
+msgid "Select"
+msgstr "Вибрати"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-#, python-brace-format
-msgid "Failed to load image for Device ID: {device_id}"
-msgstr "Не вдалося завантажити зображення для ID пристрою: {device_id}"
+msgid "Source Type"
+msgstr "Тип джерела"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-#, python-brace-format
-msgid "Camera {device_id}"
-msgstr "Камера {device_id}"
+msgid "Choose source type"
+msgstr "Виберіть тип джерела"
 
 #: rayforge/ui_gtk/camera/selection_dialog.py
-msgid "No cameras found."
-msgstr "Камери не знайдено."
+msgid "Local camera"
+msgstr "Локальна камера"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "HTTP snapshot URL"
+msgstr "URL знімка HTTP"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "HTTP stream URL"
+msgstr "URL потоку HTTP"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "RTSP stream"
+msgstr "Потік RTSP"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+#: rayforge/ui_gtk/machine/device_settings_page.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "Device"
+msgstr "Пристрій"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Choose an attached local camera"
+msgstr "Виберіть під'єднану локальну камеру"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
+msgid "Preview"
+msgstr "Попередній перегляд"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Capture one frame from the selected local camera"
+msgstr "Захопити один кадр із вибраної локальної камери"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "URL"
+msgstr "URL"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Enter the snapshot or stream URL"
+msgstr "Введіть URL знімка або потоку"
+
+#: rayforge/ui_gtk/camera/selection_dialog.py
+msgid "Choose device"
+msgstr "Виберіть пристрій"
 
 #: rayforge/ui_gtk/camera/point_bubble_widget.py
 #, python-brace-format
@@ -3360,12 +3651,12 @@ msgid "Configure the selected camera."
 msgstr "Налаштувати вибрану камеру."
 
 #: rayforge/ui_gtk/camera/properties_widget.py
-msgid "Device ID"
-msgstr "ID пристрою"
+msgid "Choose a connected local camera"
+msgstr "Виберіть під'єднану локальну камеру"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
-msgid "System identifier for the camera device"
-msgstr "Системний ідентифікатор камери"
+msgid "Camera source URL"
+msgstr "URL джерела камери"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Display name for this camera"
@@ -3426,6 +3717,11 @@ msgstr "Вирівнювання зображення"
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Calibrate camera position and perspective"
 msgstr "Калібрувати положення та перспективу камери"
+
+#: rayforge/ui_gtk/camera/properties_widget.py
+#, python-brace-format
+msgid "Unavailable: {device_id}"
+msgstr "Недоступно: {device_id}"
 
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Lens calibration completed"
@@ -3495,6 +3791,94 @@ msgid "Skip"
 msgstr "Пропустити"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "ChArUco Board"
+msgstr "Дошка ChArUco"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker Grid"
+msgstr "Сітка маркерів"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Dot Grid"
+msgstr "Сітка крапок"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Square Size"
+msgstr "Розмір квадрата"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker Size"
+msgstr "Розмір маркера"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker Gap"
+msgstr "Проміжок між маркерами"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker ID Offset"
+msgstr "Зсув ID маркерів"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Dot Spacing"
+msgstr "Крок крапок"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Row Spacing"
+msgstr "Крок рядків"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Row Offset"
+msgstr "Зсув рядків"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Dot Diameter"
+msgstr "Діаметр крапки"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Grid Size"
+msgstr "Розмір сітки"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Physical Size"
+msgstr "Фізичний розмір"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Chessboard with markers. Most accurate, needs a good printer."
+msgstr "Шахова дошка з маркерами. Найточніша, потребує гарного принтера."
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "ArUco or AprilTag markers. Tolerates partial views."
+msgstr "Маркери ArUco або AprilTag. Працюють, навіть якщо видно лише частину."
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Plain black dots. Cheapest to print, lowest accuracy."
+msgstr "Прості чорні крапки. Найдешевші в друку, найменш точні."
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Top-Left"
+msgstr "Вгорі ліворуч"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Top-Right"
+msgstr "Вгорі праворуч"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Bottom-Left"
+msgstr "Внизу ліворуч"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Bottom-Right"
+msgstr "Внизу праворуч"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Along rows"
+msgstr "Вздовж рядків"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Along columns"
+msgstr "Вздовж стовпців"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Calibration Card"
 msgstr "Калібрувальна картка"
 
@@ -3505,19 +3889,61 @@ msgstr "Інструкції"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid ""
-"Print a calibration card to correct lens distortion. The card size should "
-"fit within your camera view."
+"Print a calibration pattern to correct lens distortion. The pattern should "
+"fit within your camera view. You can also describe a pattern you already "
+"have and calibrate against that instead."
 msgstr ""
-"Надрукуйте калібрувальну картку для виправлення дисторсії об'єктива. Розмір "
-"картки має вміщуватися в огляд камери."
+"Роздрукуйте шаблон калібрування, щоб виправити спотворення об'єктива.Шаблон "
+"має вміститися в поле зору камери. Також можна описати вженаявний шаблон і "
+"виконати калібрування за ним."
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Pattern Type"
+msgstr "Тип шаблону"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Pattern"
+msgstr "Шаблон"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Choose the printed pattern to calibrate against."
+msgstr "Виберіть роздрукований шаблон для калібрування."
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Marker Dictionary"
+msgstr "Словник маркерів"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "ID Origin"
+msgstr "Початок ID"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "ID Order"
+msgstr "Порядок ID"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid "Pattern Geometry"
+msgstr "Геометрія шаблону"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+msgid ""
+"Measured from the printed sheet. Editing these lets you use a pattern you "
+"printed earlier."
+msgstr ""
+"Виміряно на роздрукованому аркуші. Редагування цих значень "
+"дозволяєвикористати шаблон, надрукований раніше."
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Card Size"
 msgstr "Розмір картки"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Adjust to fit your work surface."
-msgstr "Налаштуйте для вашої робочої поверхні."
+msgid ""
+"Used to suggest a pattern that fits. Ignored once the geometry above is "
+"edited."
+msgstr ""
+"Використовується, щоб запропонувати шаблон відповідного розміру.Ігнорується "
+"після редагування геометрії вище."
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
@@ -3540,32 +3966,29 @@ msgid "Card height"
 msgstr "Висота картки"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Generated Pattern"
-msgstr "Згенерований шаблон"
+msgid "Pattern Details"
+msgstr "Подробиці шаблону"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Details about the calibration pattern."
 msgstr "Деталі про калібрувальний шаблон."
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Grid Size"
-msgstr "Розмір сітки"
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Square Size"
-msgstr "Розмір квадрата"
-
-#: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Physical Size"
-msgstr "Фізичний розмір"
+msgid "Output"
+msgstr "Вивід"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Save to PDF"
 msgstr "Зберегти як PDF"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
-msgid "Export the calibration card for printing"
-msgstr "Експортувати калібрувальну картку для друку"
+msgid "Export the calibration pattern for printing"
+msgstr "Експортувати шаблон калібрування для друку"
+
+#: rayforge/ui_gtk/camera/wizard/card_page.py
+#, python-brace-format
+msgid "Custom ({id})"
+msgstr "Власний ({id})"
 
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Save Calibration Card"
@@ -3671,6 +4094,31 @@ msgstr "Відхилити"
 #: rayforge/ui_gtk/camera/wizard/capture_page.py
 msgid "Save Calibration"
 msgstr "Зберегти калібрування"
+
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+msgid "Lens calibration saved."
+msgstr "Калібрування об'єктива збережено."
+
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+msgid "Skip Lens Calibration?"
+msgstr "Пропустити калібрування об'єктива?"
+
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+#, python-brace-format
+msgid ""
+"You captured {frames} frame(s) but have not run Calibrate yet. Continuing "
+"discards them and leaves the lens uncorrected."
+msgstr ""
+"Ви захопили {frames} кадр(ів), але ще не запустили «Калібрувати». "
+"Продовження відкине їх і залишить об'єктив нескоригованим."
+
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+msgid "Skip Anyway"
+msgstr "Усе одно пропустити"
+
+#: rayforge/ui_gtk/camera/wizard/capture_page.py
+msgid "Stay Here"
+msgstr "Залишитися тут"
 
 #: rayforge/ui_gtk/camera/wizard/wizard.py
 #, python-brace-format
@@ -3781,6 +4229,11 @@ msgid "Device ID: {device_id}"
 msgstr "ID пристрою: {device_id}"
 
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
+#, python-brace-format
+msgid "Source: {source}"
+msgstr "Джерело: {source}"
+
+#: rayforge/ui_gtk/camera/camera_preferences_page.py
 msgid "Add New Camera"
 msgstr "Додати нову камеру"
 
@@ -3850,9 +4303,49 @@ msgid "Clear All Points"
 msgstr "Очистити всі точки"
 
 #: rayforge/ui_gtk/camera/alignment_widget.py
+#: rayforge/ui_gtk/varset/adapter/combo.py
 #: rayforge/ui_gtk/doceditor/step_type_selection_dialog.py
 msgid "Apply"
 msgstr "Застосувати"
+
+#: rayforge/ui_gtk/machine/validation.py
+#, python-brace-format
+msgid ""
+"\"{value}\" is only a number and would be sent to the machine as-is. A G-"
+"code command must start with a letter (e.g. \"M4 S{value}\")."
+msgstr ""
+"\"{value}\" — це лише число, і його буде надіслано на верстат без змін. "
+"Команда G-коду має починатися з літери (напр., \"M4 S{value}\")."
+
+#: rayforge/ui_gtk/machine/validation.py
+#, python-brace-format
+msgid ""
+"Line {lineno} is only the number \"{value}\" and would be sent to the "
+"machine as-is. A G-code command must start with a letter (e.g. \"M4 S{value}"
+"\")."
+msgstr ""
+"Рядок {lineno} — це лише число \"{value}\", і його буде надіслано на верстат "
+"без змін. Команда G-коду має починатися з літери (напр., \"M4 S{value}\")."
+
+#: rayforge/ui_gtk/machine/validation.py
+#, python-brace-format
+msgid ""
+"Continuous laser mode is enabled: laser power is carried on movement lines, "
+"but this template has no {s_command} placeholder and the power would be "
+"silently dropped."
+msgstr ""
+"Увімкнено безперервний режим лазера: потужність лазера передається у рядках "
+"руху, але цей шаблон не містить заповнювача {s_command}, і потужність буде "
+"безшумно відкинуто."
+
+#: rayforge/ui_gtk/machine/validation.py
+#, python-brace-format
+msgid ""
+"In continuous laser mode these templates need the {{s_command}} placeholder "
+"to carry laser power: {labels}."
+msgstr ""
+"У безперервному режимі лазера цим шаблонам потрібен заповнювач "
+"{{s_command}}, щоб передавати потужність лазера: {labels}."
 
 #: rayforge/ui_gtk/machine/macro_list.py
 msgid "Add New Macro"
@@ -4003,6 +4496,18 @@ msgid "Settings for the frame outline operation that traces the job boundary."
 msgstr "Налаштування операції обведення контуру меж завдання."
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Pointer Offset"
+msgstr "Зміщення вказівника"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid ""
+"Compensation for a pointer laser mounted at a fixed offset from the cutting "
+"beam."
+msgstr ""
+"Компенсація для вказівного лазера, встановленого з фіксованим зміщенням від "
+"ріжучого променя."
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
 msgid "G-code tool number (e.g., T0, T1)"
 msgstr "Номер інструменту G-коду (наприклад, T0, T1)"
 
@@ -4090,8 +4595,12 @@ msgid "Maximum pulse width in µs"
 msgstr "Максимальна ширина імпульсу в мкс"
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
-msgid "Power value in percent to use when framing. 0 to disable"
-msgstr "Значення потужності у відсотках для обведення. 0 для вимкнення"
+msgid ""
+"Power value in percent to use when framing. 0 traces the outline with the "
+"beam off"
+msgstr ""
+"Значення потужності у відсотках для обрамлення. 0 обводить контур із "
+"вимкненим променем"
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 msgid ""
@@ -4116,6 +4625,26 @@ msgstr "Пауза на кутах"
 msgid ""
 "Pause duration in seconds at each corner of the frame outline. 0 to disable"
 msgstr "Тривалість паузи в секундах на кожному куті контуру. 0 для вимкнення"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Use Pointer Offset"
+msgstr "Використовувати зміщення вказівника"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid ""
+"Compensate when setting the work zero at the current position, so the origin "
+"lands where the pointer dot marks the stock"
+msgstr ""
+"Компенсувати під час встановлення робочого нуля в поточній позиції, щоб "
+"початок координат опинився там, де точка вказівника позначає заготовку"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Distance from the beam spot to the pointer dot along the machine X axis"
+msgstr "Відстань від точки променя до точки вказівника вздовж осі X верстата"
+
+#: rayforge/ui_gtk/machine/head_preferences_page.py
+msgid "Distance from the beam spot to the pointer dot along the machine Y axis"
+msgstr "Відстань від точки променя до точки вказівника вздовж осі Y верстата"
 
 #: rayforge/ui_gtk/machine/head_preferences_page.py
 msgid "Spindle Properties"
@@ -4246,6 +4775,7 @@ msgid "Zone geometry shape"
 msgstr "Геометрична форма зони"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
+#: rayforge/ui_gtk/machine/move_to_popover.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "X"
 msgstr "X"
@@ -4256,6 +4786,7 @@ msgid "X position in {wcs}"
 msgstr "Позиція X у {wcs}"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
+#: rayforge/ui_gtk/machine/move_to_popover.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Y"
 msgstr "Y"
@@ -4266,6 +4797,7 @@ msgid "Y position in {wcs}"
 msgstr "Позиція Y у {wcs}"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
+#: rayforge/ui_gtk/machine/move_to_popover.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Z"
 msgstr "Z"
@@ -4396,30 +4928,58 @@ msgstr "Усі файли"
 msgid "Import Device Profile"
 msgstr "Імпортувати профіль пристрою"
 
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Move to Position"
+msgstr "Перемістити до позиції"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Pointer Alignment"
+msgstr "Вирівнювання за вказівником"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Move to Lower-Left of Selection or Workarea"
+msgstr "Перемістити в нижній лівий кут вибраного або робочої області"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Move to Center of Selection or Workarea"
+msgstr "Перемістити в центр вибраного або робочої області"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Move to Upper-Right of Selection or Workarea"
+msgstr "Перемістити у верхній правий кут вибраного або робочої області"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Move to Origin of Active WCS"
+msgstr "Перемістити до початку активного WCS"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Move"
+msgstr "Перемістити"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Aim moves at the pointer dot instead of the beam"
+msgstr "Наводити переміщення на точку вказівника замість променя"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid "Requires a pointer offset on the laser head"
+msgstr "Потребує зміщення вказівника на лазерній головці"
+
+#: rayforge/ui_gtk/machine/move_to_popover.py
+msgid ""
+"The shifted target is outside the machine travel; moving to the nearest "
+"reachable position instead."
+msgstr ""
+"Зміщена ціль поза межами ходу верстата; натомість рух до найближчої досяжної "
+"позиції."
+
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "Edit Macro"
 msgstr "Редагувати макрос"
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "Insert Variable"
-msgstr "Вставити змінну"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "Include Macro"
-msgstr "Включити макрос"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
 #, python-brace-format
 msgid "Edit Macro for {name}"
 msgstr "Редагувати макрос для {name}"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "Available Variables"
-msgstr "Доступні змінні"
-
-#: rayforge/ui_gtk/machine/gcode_editor.py
-msgid "No other macros to include."
-msgstr "Немає інших макросів для включення."
 
 #: rayforge/ui_gtk/machine/gcode_editor.py
 msgid "Name cannot be empty."
@@ -4562,11 +5122,6 @@ msgid ""
 msgstr ""
 "Це скине загальний накопичений час роботи до нуля. Лічильники технічного "
 "обслуговування не будуть змінені."
-
-#: rayforge/ui_gtk/machine/device_settings_page.py
-#: rayforge/ui_gtk/machine/settings_dialog.py
-msgid "Device"
-msgstr "Пристрій"
 
 #: rayforge/ui_gtk/machine/device_settings_page.py
 msgid "Device Settings"
@@ -5104,6 +5659,22 @@ msgstr ""
 "вниз"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Z Min"
+msgstr "Z мін."
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Lowest Z coordinate (machine frame)"
+msgstr "Найнижча координата Z (система координат верстата)"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Z Max"
+msgstr "Z макс."
+
+#: rayforge/ui_gtk/machine/hardware_page.py
+msgid "Highest Z coordinate (machine frame)"
+msgstr "Найвища координата Z (система координат верстата)"
+
+#: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Work Area"
 msgstr "Робоча зона"
@@ -5222,6 +5793,36 @@ msgstr "Y макс"
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Maximum Y coordinate"
 msgstr "Максимальна координата Y"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "Notes"
+msgstr "Нотатки"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "My Notes"
+msgstr "Мої нотатки"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "Add your own notes for this machine"
+msgstr "Додайте власні нотатки для цієї машини"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "Edit My Notes"
+msgstr "Редагувати мої нотатки"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid "Device Notes"
+msgstr "Нотатки пристрою"
+
+#: rayforge/ui_gtk/machine/notes_page.py
+msgid ""
+"These notes are stored with this machine and are never overwritten by device "
+"profile updates."
+msgstr ""
+"Ці нотатки зберігаються разом із цією машиною й ніколи не перезаписуються "
+"оновленнями профілю пристрою."
 
 #: rayforge/ui_gtk/machine/wizard_pages/camera_page.py
 msgid ""
@@ -5373,11 +5974,6 @@ msgid "Configured"
 msgstr "Налаштовано"
 
 #: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
-#: rayforge/ui_gtk/shared/model_selection_dialog.py
-msgid "Select"
-msgstr "Вибрати"
-
-#: rayforge/ui_gtk/machine/wizard_pages/discover_page.py
 msgid ""
 "Connect your machine via USB or network — we will find it automatically."
 msgstr ""
@@ -5462,17 +6058,18 @@ msgid "Warnings"
 msgstr "Попередження"
 
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "These notes remain available after setup in Machine Settings → Notes."
+msgstr ""
+"Ці нотатки залишаться доступними після налаштування в Налаштуваннях машини → "
+"Нотатки."
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 msgid "None (G-code export only)"
 msgstr "Немає (лише експорт G-code)"
 
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 msgid "Unknown driver: {}"
 msgstr "Невідомий драйвер: {}"
-
-#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
-#: rayforge/ui_gtk/machine/wizard_pages/connection_page.py
-msgid "Connection"
-msgstr "З'єднання"
 
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 msgid "Work Area X×Y"
@@ -6159,6 +6756,10 @@ msgstr "Експортовано до {path}"
 msgid "Export failed: {error}"
 msgstr "Помилка експорту: {error}"
 
+#: rayforge/ui_gtk/machine/settings_dialog.py
+msgid "This camera source is already configured."
+msgstr "Це джерело камери вже налаштовано."
+
 #: rayforge/ui_gtk/machine/general_preferences_page.py
 #: rayforge/ui_gtk/doceditor/recipes/pages/applicability.py
 msgid "Machine"
@@ -6284,6 +6885,34 @@ msgstr "Додати параметр"
 #: rayforge/ui_gtk/varset/varset_editor.py
 msgid "New Parameter"
 msgstr "Новий параметр"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Match by USB VID:PID…"
+msgstr "Збіг за USB VID:PID…"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "First USB device with this VID:PID"
+msgstr "Перший USB-пристрій із цим VID:PID"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "USB VID:PID (e.g. 0403:6001)"
+msgstr "USB VID:PID (напр. 0403:6001)"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid "Match by USB VID:PID"
+msgstr "Збіг за USB VID:PID"
+
+#: rayforge/ui_gtk/varset/adapter/combo.py
+msgid ""
+"Always use the first USB serial device with this vendor and product ID. This "
+"keeps the connection working when the operating system reassigns port "
+"numbers. If several identical devices are connected, the first one on the "
+"bus is used."
+msgstr ""
+"Завжди використовувати перший USB-послідовний пристрій із цим "
+"ідентифікатором виробника та продукту. Це забезпечує роботу з'єднання, коли "
+"операційна система перепризначає номери портів. Якщо підключено кілька "
+"однакових пристроїв, використовується перший на шині."
 
 #: rayforge/ui_gtk/varset/adapter/appkey.py
 msgid "Request Access"
@@ -6659,22 +7288,16 @@ msgid "Enable Anyway"
 msgstr "Увімкнути в будь-якому разі"
 
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
-msgid "Help Improve Rayforge"
-msgstr "Допомогти покращити Rayforge"
+msgid "Help me prioritize what to build"
+msgstr "Допоможіть визначити, що розробляти далі"
 
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
 msgid ""
-"Would you like to help improve Rayforge by allowing anonymous usage "
-"reporting? This helps us understand how the app is used and prioritize "
-"improvements.\n"
-"\n"
-"No personal data is collected."
+"Anonymous usage data shows me which machines and features people actually "
+"use. It never includes project content or personal data."
 msgstr ""
-"Бажаєте допомогти покращити Rayforge, дозволивши анонімні звіти про "
-"використання? Це допоможе нам зрозуміти, як використовується програма, та "
-"визначити пріоритети покращень.\n"
-"\n"
-"Персональні дані не збираються."
+"Анонімні дані про використання показують мені, які машини та функції справді "
+"використовуються. Вміст проєктів і персональні дані ніколи не надсилаються."
 
 #: rayforge/ui_gtk/shared/usage_consent_dialog.py
 msgid "No Thanks"
@@ -6736,6 +7359,32 @@ msgstr "Перемкнути видимість холостих переміщ�
 msgid "Toggle no-go zone visibility"
 msgstr "Перемкнути видимість забороненої зони"
 
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
+msgid "Pointer alignment is on"
+msgstr "Вирівнювання за вказівником увімкнено"
+
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
+msgid ""
+"Dry-Run with Pointer traces the toolpath with the pointer dot: the job runs "
+"with the pointer offset applied and the beam is displaced by it, with all "
+"laser power capped at the framing power so the trace does not burn. Turning "
+"alignment off burns the job normally with the beam at the WCS positions."
+msgstr ""
+"Пробний запуск із вказівником обводить траєкторію інструменту точкою "
+"вказівника: завдання виконується із застосованим зміщенням вказівника, і "
+"промінь зміщується на нього, причому вся потужність лазера обмежена "
+"потужністю обведення рамки, щоб обведення не пропалювало матеріал. Якщо "
+"вимкнути вирівнювання, завдання пропалюється як завжди, з променем у "
+"позиціях WCS."
+
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
+msgid "Dry-Run with _Pointer"
+msgstr "Пробний запуск із _вказівником"
+
+#: rayforge/ui_gtk/shared/pointer_alignment_dialog.py
+msgid "_Turn Off and Burn"
+msgstr "_Вимкнути й пропалити"
+
 #: rayforge/ui_gtk/shared/preferences_group.py
 msgid "No parameters"
 msgstr "Немає параметрів"
@@ -6743,6 +7392,184 @@ msgstr "Немає параметрів"
 #: rayforge/ui_gtk/shared/splitbutton.py
 msgid "Show all options"
 msgstr "Показати всі параметри"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Bold and italic"
+msgstr "Жирний і курсив"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Wrap words in two stars for bold, or one star for italic."
+msgstr ""
+"Візьміть слова у дві зірочки для жирного шрифту або в одну для курсиву."
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Headings"
+msgstr "Заголовки"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Start a line with number signs. More signs, smaller heading."
+msgstr ""
+"Почніть рядок із символів решітки. Що більше символів, то менший заголовок."
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Lists"
+msgstr "Списки"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid ""
+"Start lines with a dash for bullets, or with a number and a dot for a "
+"numbered list."
+msgstr ""
+"Почніть рядки з дефіса для маркерів або з числа та крапки для нумерованого "
+"списку."
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Links"
+msgstr "Посилання"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Put the link text in square brackets and the address in round brackets."
+msgstr "Розмістіть текст посилання у квадратних дужках, а адресу — у круглих."
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Inline code"
+msgstr "Код у тексті"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Wrap short commands in single backticks to keep them readable."
+msgstr ""
+"Візьміть короткі команди в одинарні зворотні лапки, щоб вони лишалися "
+"читабельними."
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Quotes"
+msgstr "Цитати"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Start a line with a greater-than sign to call out a remark."
+msgstr "Почніть рядок зі знака «більше», щоб виділити зауваження."
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Expandable sections"
+msgstr "Розгортані розділи"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Hide long details behind a title that readers can unfold."
+msgstr "Сховайте довгі подробиці за заголовком, який читачі можуть розгорнути."
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
+msgid "Formatting help"
+msgstr "Довідка з форматування"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Type the text shown below to get the matching result."
+msgstr "Введіть показаний нижче текст, щоб отримати відповідний результат."
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid "Code blocks"
+msgstr "Блоки коду"
+
+#: rayforge/ui_gtk/shared/markdown/help.py
+msgid ""
+"Put a line with three backticks before and after a block of commands to show "
+"it unchanged."
+msgstr ""
+"Розмістіть рядок із трьох зворотних лапок до та після блоку команд, щоб "
+"показати його без змін."
+
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
+msgid "Side by side"
+msgstr "Поруч"
+
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
+msgid "Stacked"
+msgstr "Одне під одним"
+
+#: rayforge/ui_gtk/shared/markdown/preview_editor.py
+msgid "Raw Markdown"
+msgstr "Вихідний Markdown"
+
+#: rayforge/ui_gtk/shared/markdown/dialog.py
+msgid ""
+"Supported: headings, paragraphs, bold, italic, lists, links, inline code, "
+"fenced code blocks, and expandable details sections."
+msgstr ""
+"Підтримуються заголовки, абзаци, жирний і курсивний текст, списки, "
+"посилання, вбудований код, блоки коду та розгортані секції."
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Show formatting help"
+msgstr "Показати довідку з форматування"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Bold"
+msgstr "Жирний"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "bold text"
+msgstr "жирний текст"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Italic"
+msgstr "Курсив"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "italic"
+msgstr "курсив"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Heading"
+msgstr "Заголовок"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Bulleted list"
+msgstr "Маркований список"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "List item"
+msgstr "Елемент списку"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Numbered list"
+msgstr "Нумерований список"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "First step"
+msgstr "Перший крок"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "link text"
+msgstr "текст посилання"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "command"
+msgstr "команда"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Code block"
+msgstr "Блок коду"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Quote"
+msgstr "Цитата"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Remark"
+msgstr "Зауваження"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Expandable section"
+msgstr "Розгортаний розділ"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Section title"
+msgstr "Назва розділу"
+
+#: rayforge/ui_gtk/shared/markdown/toolbar.py
+msgid "Hidden details"
+msgstr "Приховані подробиці"
 
 #: rayforge/ui_gtk/shared/model_selection_dialog.py
 msgid "Select Model"
@@ -6779,6 +7606,18 @@ msgstr ""
 #: rayforge/ui_gtk/shared/sanity_check_dialog.py
 msgid "Errors"
 msgstr "Помилки"
+
+#: rayforge/ui_gtk/shared/code_editor.py
+msgid "Insert Variable"
+msgstr "Вставити змінну"
+
+#: rayforge/ui_gtk/shared/code_editor.py
+msgid "Include Macro"
+msgstr "Включити макрос"
+
+#: rayforge/ui_gtk/shared/code_editor.py
+msgid "No other macros to include."
+msgstr "Немає інших макросів для включення."
 
 #: rayforge/ui_gtk/shared/pref_rows/unit_spin_row.py
 #, python-brace-format
@@ -6933,11 +7772,11 @@ msgstr "Перемістити вибране на шар вище"
 msgid "Move Selection to Layer Below"
 msgstr "Перемістити вибране на шар нижче"
 
-#: rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/gestures/model.py
 msgid "Left"
 msgstr "Ліворуч"
 
-#: rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/gestures/model.py
 msgid "Right"
 msgstr "Праворуч"
 
@@ -7096,8 +7935,8 @@ msgid "Add or enable a processing step to enable export"
 msgstr "Додайте або увімкніть крок обробки, щоб увімкнути експорт"
 
 #: rayforge/ui_gtk/mainwindow.py
-msgid "Configure frame power to enable"
-msgstr "Налаштуйте потужність рамки, щоб увімкнути"
+msgid "Add a laser head to enable"
+msgstr "Додайте лазерну головку, щоб увімкнути"
 
 #: rayforge/ui_gtk/mainwindow.py rayforge/ui_gtk/toolbar.py
 msgid "Cycle laser head around the occupied area"
@@ -7239,6 +8078,82 @@ msgstr "Помилка збереження файлу: {msg}"
 #, python-brace-format
 msgid "An unexpected error occurred: {error}"
 msgstr "Сталася неочікувана помилка: {error}"
+
+#: rayforge/ui_gtk/gestures/model.py
+msgid "Click"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/model.py
+msgid "Double-click"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/model.py
+msgid "Drag"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/model.py
+msgid "Scroll"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/model.py
+msgid "Middle"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/model.py
+msgid "Shift"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/model.py
+msgid "Ctrl"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/model.py
+msgid "Alt"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "2D Canvas"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Navigation gestures on the 2D work surface."
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "3D Canvas"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Navigation gestures on the 3D preview."
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Pan the view"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Hold the mouse button down and move to pan the view."
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Orbit the camera"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Hold the mouse button down and move to orbit around the scene."
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Pan the camera"
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Hold the mouse button down and move to pan the scene."
+msgstr ""
+
+#: rayforge/ui_gtk/gestures/builtin.py
+msgid "Rotate around the Z axis"
+msgstr ""
 
 #: rayforge/ui_gtk/project_cmd.py
 msgid "Unsaved Changes"
@@ -7898,20 +8813,20 @@ msgid "Current Position"
 msgstr "Поточна позиція"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Move to Lower-Left of Selection or Workarea"
-msgstr "Перемістити в нижній лівий кут вибраного або робочої області"
+msgid ""
+"Pointer Alignment: aim moves and zeroing at the pointer dot instead of the "
+"cutting beam"
+msgstr ""
+"Вирівнювання за вказівником: наводити переміщення та нуль на точку "
+"вказівника замість ріжучого променя"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Move to Center of Selection or Workarea"
-msgstr "Перемістити в центр вибраного або робочої області"
+msgid "Click Canvas to Move Head"
+msgstr "Натисніть на полотно, щоб перемістити головку"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Move to Upper-Right of Selection or Workarea"
-msgstr "Перемістити у верхній правий кут вибраного або робочої області"
-
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Move to Origin of Active WCS"
-msgstr "Перемістити до початку активного WCS"
+msgid "Move to Coordinates"
+msgstr "Перемістити до координат"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Zero Axes"
@@ -7935,10 +8850,6 @@ msgstr "Встановити робочий нуль у поточній поз�
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Click Canvas to Set Work Zero"
-msgstr "Натисніть на полотно, щоб встановити робочий нуль"
-
-#: rayforge/ui_gtk/doceditor/bottom_panel.py
-msgid "Click on canvas to set work zero"
 msgstr "Натисніть на полотно, щоб встановити робочий нуль"
 
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
@@ -8456,6 +9367,10 @@ msgstr "Веб-сайт"
 #: rayforge/ui_gtk/about.py
 msgid "Report an Issue"
 msgstr "Повідомити про проблему"
+
+#: rayforge/ui_gtk/about.py
+msgid "Discussions"
+msgstr "Обговорення"
 
 #: rayforge/ui_gtk/about.py
 msgid "Version"

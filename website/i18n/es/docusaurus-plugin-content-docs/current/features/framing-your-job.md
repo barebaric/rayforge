@@ -59,6 +59,15 @@ Configure el comportamiento del enmarcado en los ajustes de la cabeza láser de 
 - **Cantidad de repeticiones**: Número de veces que se traza el contorno. Establecer un valor mayor
   a uno puede hacer que la ruta sea más fácil de seguir a simple vista.
 
+<!-- prettier-ignore-start -->
+:::note[Enmarcado controlado por la máquina]
+Algunas máquinas pueden enmarcar el trabajo incluso al ejecutarse sin conexión (p. ej., desde un
+archivo G-code en una tarjeta de memoria). Rayforge puede incluir las dimensiones necesarias del
+trabajo en el G-code para permitirlo. Consulte [Dialectos de G-code](../reference/gcode-dialects.md)
+para ver los espacios reservados disponibles.
+:::
+<!-- prettier-ignore-end -->
+
 ## Uso de los resultados del enmarcado
 
 Después de enmarcar, puede:

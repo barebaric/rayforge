@@ -323,6 +323,45 @@ def test_material_test_preset_applies_values(
 
 
 @pytest.mark.ui
+def test_material_test_speed_bounds_follow_machine(
+    editor, laser_machine, ui_context
+):
+    """Speed range rows cap at the live machine's limit, not the
+    step's creation-time snapshot (#439)."""
+    step_cls = step_registry.get("MaterialTestStep")
+    assert step_cls is not None
+    step = step_cls.create(ui_context)
+    step.max_cut_speed = 1000  # stale snapshot from an older machine
+    page = MaterialTestGridSettingsPage(editor, step)
+
+    adapter = page.params_widget.adapter_for("speed_range")
+    assert adapter is not None
+    max_row = cast(SpeedSpinRow, adapter.extra_rows()[0])
+    assert max_row._upper == pytest.approx(5000.0)
+
+    # Raising the machine's limit while the page is open lifts the cap.
+    laser_machine.set_max_cut_speed(8000)
+    adapter = page.params_widget.adapter_for("speed_range")
+    assert adapter is not None
+    max_row = cast(SpeedSpinRow, adapter.extra_rows()[0])
+    assert max_row._upper == pytest.approx(8000.0)
+
+
+@pytest.mark.ui
+def test_material_test_preset_clamps_to_machine_limit(
+    editor, laser_machine, ui_context
+):
+    """Preset speed ranges clamp to the live machine's limit, not a
+    stale step snapshot."""
+    step = MaterialTestStep()
+    step.max_cut_speed = 1000  # stale snapshot from an older machine
+    page = MaterialTestGridSettingsPage(editor, step)
+    page.preset_row.set_selected(1)  # Diode Engrave: (1000, 10000)
+
+    assert step.speed_range == (1000.0, 5000.0)
+
+
+@pytest.mark.ui
 def test_material_test_speed_vs_offset_defaults(
     editor, laser_machine, ui_context
 ):

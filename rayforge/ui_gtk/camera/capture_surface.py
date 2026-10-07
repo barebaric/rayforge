@@ -1,14 +1,21 @@
-"""Live capture surface that overlays Charuco detections."""
+"""Live capture surface that overlays calibration target detections."""
 
 import logging
 from gettext import gettext as _
 
 import cv2
 import numpy as np
-from gi.repository import Gdk, GdkPixbuf, GLib, Graphene, Gtk
+from gi.repository import (
+    Gdk,
+    GdkPixbuf,
+    GLib,
+    Graphene,
+    Gtk,
+)
 
-from ...camera.calibration.charuco import CharucoBoard
+from ...camera.calibration.target import CalibrationTarget
 from ...camera.controller import CameraController
+from ..shared.text import draw_centered_text
 
 logger = logging.getLogger(__name__)
 
@@ -42,12 +49,12 @@ class CalibrationCaptureSurface(Gtk.Widget):
     def __init__(
         self,
         controller: CameraController,
-        board: CharucoBoard | None = None,
+        target: CalibrationTarget | None = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.controller = controller
-        self.board = board
+        self.target = target
         self._last_corners: list[tuple[float, float]] | None = None
         self._last_ids: list[int] | None = None
 
@@ -55,10 +62,23 @@ class CalibrationCaptureSurface(Gtk.Widget):
         self.set_vexpand(True)
         self.set_size_request(750, 500)
 
+        self._streaming = False
+        self.start()
+
+    def start(self) -> None:
+        """Subscribe to the camera stream. Idempotent."""
+        if self._streaming:
+            return
+        self._streaming = True
         self.controller.subscribe()
         self.controller.image_captured.connect(self._on_image_captured)
 
     def stop(self) -> None:
+        """Release the camera subscription. Idempotent."""
+        if not self._streaming:
+            return
+        self._streaming = False
+        self.controller.image_captured.disconnect(self._on_image_captured)
         self.controller.unsubscribe()
 
     def _on_image_captured(self, _):
@@ -92,8 +112,8 @@ class CalibrationCaptureSurface(Gtk.Widget):
                 ctx.paint()
                 ctx.restore()
 
-                if self.board is not None:
-                    detection = self.board.detect(raw_image)
+                if self.target is not None:
+                    detection = self.target.detect(raw_image)
                     if detection is not None:
                         corners, ids = detection
                         self._last_corners = corners
@@ -121,14 +141,9 @@ class CalibrationCaptureSurface(Gtk.Widget):
             ctx.fill()
 
             ctx.set_source_rgb(0.5, 0.5, 0.5)
-            ctx.set_font_size(14)
-            text = _("Waiting for camera...")
-            extents = ctx.text_extents(text)
-            ctx.move_to(
-                (width - extents.width) / 2,
-                (height + extents.height) / 2,
+            draw_centered_text(
+                ctx, _("Waiting for camera..."), width, height, 14
             )
-            ctx.show_text(text)
 
     @property
     def last_detection(

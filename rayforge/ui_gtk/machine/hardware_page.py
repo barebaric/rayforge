@@ -136,6 +136,28 @@ class HardwarePage(TrackedPreferencesPage):
         )
         axes_group.add(self.reverse_z_axis_row)
 
+        z_extents = machine.z_extents or (-50.0, 50.0)
+
+        self.z_min_row = LengthSpinRow(
+            _("Z Min"),
+            _("Lowest Z coordinate (machine frame)"),
+            lower=-10000,
+            upper=10000,
+            value_in_base=z_extents[0],
+        )
+        self.z_min_row.value_changed.connect(self.on_z_extents_changed)
+        axes_group.add(self.z_min_row)
+
+        self.z_max_row = LengthSpinRow(
+            _("Z Max"),
+            _("Highest Z coordinate (machine frame)"),
+            lower=-10000,
+            upper=10000,
+            value_in_base=z_extents[1],
+        )
+        self.z_max_row.value_changed.connect(self.on_z_extents_changed)
+        axes_group.add(self.z_max_row)
+
         work_area_group = Adw.PreferencesGroup(title=_("Work Area"))
         work_area_group.set_description(
             _("Margins define the unusable space around the axis extents.")
@@ -321,6 +343,11 @@ class HardwarePage(TrackedPreferencesPage):
     def on_reverse_z_changed(self, row, _):
         self.machine.set_reverse_z_axis(row.get_active())
 
+    def on_z_extents_changed(self, row):
+        z_min = self.z_min_row.get_value_in_base_units()
+        z_max = self.z_max_row.get_value_in_base_units()
+        self.machine.set_z_extents(z_min, z_max)
+
     def on_has_z_axis_changed(self, row, _):
         self.machine.set_has_z_axis(row.get_active())
 
@@ -384,3 +411,9 @@ class HardwarePage(TrackedPreferencesPage):
         if self.has_z_axis_row.get_active() != has_z:
             self.has_z_axis_row.set_active(has_z)
         self.reverse_z_axis_row.set_visible(has_z)
+        self.z_min_row.set_visible(has_z)
+        self.z_max_row.set_visible(has_z)
+        if has_z:
+            z_extents = self.machine.z_extents or (-50.0, 50.0)
+            self.z_min_row.set_value_in_base_units(z_extents[0])
+            self.z_max_row.set_value_in_base_units(z_extents[1])

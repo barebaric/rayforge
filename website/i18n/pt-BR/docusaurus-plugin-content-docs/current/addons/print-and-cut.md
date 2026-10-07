@@ -50,6 +50,11 @@ O interruptor **Foco do laser** liga o laser na potência de foco configurada, c
 visível no material para ajudá-lo a localizar posições com precisão. Este interruptor requer um
 valor de potência de foco maior que zero nas configurações do laser.
 
+Se a sua cabeça a laser tiver um ponteiro de alinhamento, o interruptor **Pointer Alignment**
+registra as posições no ponto do ponteiro em vez do feixe, de modo que a transformação calculada
+segue o ponto que você mira. Ele requer o deslocamento do ponteiro configurado nas
+[configurações do laser](../machine/laser.md).
+
 A posição atual do laser é exibida na parte inferior do painel. Quando ambas as posições estiverem
 registradas, clique em **Avançar** para continuar.
 

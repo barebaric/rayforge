@@ -60,6 +60,15 @@ Konfiguriere das Rahmen-Verhalten in den Laserkopf-Einstellungen deiner Maschine
 - **Wiederholungsanzahl**: Anzahl der Male, den Umriss nachzuzeichnen. Ein Wert größer als eins kann
   den Rahmen-Pfad leichter visuell verfolgbar machen.
 
+<!-- prettier-ignore-start -->
+:::note[Maschinengesteuertes Einrahmen]
+Manche Maschinen können den Job auch dann selbst einrahmen, wenn sie offline laufen (z. B. aus
+einer G-code-Datei auf einer Speicherkarte). Rayforge kann die dafür benötigten Job-Maße in den
+G-code einbetten. Siehe [G-code-Dialekte](../reference/gcode-dialects.md) für die verfügbaren
+Platzhalter.
+:::
+<!-- prettier-ignore-end -->
+
 ## Rahmen-Ergebnisse verwenden
 
 Nach dem Einrahmen kannst du:

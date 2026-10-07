@@ -118,6 +118,12 @@ Sua classe de driver **DEVE** implementar os seguintes métodos. Note que a maio
   `DriverPrecheckError` em caso de falha.
 - `setup(**kwargs)`: Chamado uma vez com os valores do formulário de configuração. Use isso para
   inicializar seus transportes e estado interno.
+- `update_settings(**kwargs) -> bool`: Opcional. Chamado em vez de uma desmontagem/reconstrução
+  quando os argumentos de configuração do driver de uma máquina são editados, mas a classe do driver
+  permanece a mesma. Retorne `True` se o driver puder absorver a mudança sem interromper uma conexão
+  ativa (armazene os novos argumentos na instância; eles entram em vigor nas operações seguintes ou
+  na próxima tentativa de conexão). Retorne `False` (o padrão) para solicitar uma reconstrução, que
+  desmonta e recria o driver com os novos argumentos.
 - `async def connect()`: Estabelece e mantém uma conexão persistente com o dispositivo. Este método
   deve conter lógica de reconexão automática.
 - `async def cleanup()`: Chamado ao desconectar. Deve fechar todas as conexões e liberar recursos.
@@ -133,8 +139,10 @@ Sua classe de driver **DEVE** implementar os seguintes métodos. Note que a maio
 - `async def run_raw(gcode: str)`: Executa uma string G-code crua diretamente.
 - `async def home(axes: Optional[Axis] = None)`: Faz home da máquina. Pode fazer home de eixos
   específicos ou todos os eixos.
-- `async def move_to(pos_x: float, pos_y: float)`: Move manualmente a cabeça do laser para uma
-  coordenada XY específica.
+- `async def move_to(pos_x: float, pos_y: float, pos_z: Optional[float] = None, speed: Optional[float] = None)`:
+  Move manualmente a cabeça do laser para uma coordenada XY específica. Quando `pos_z` é fornecido,
+  ele é alvo como uma posição Z absoluta no mesmo movimento. `speed` está em mm/min e recorre a um
+  padrão do driver quando `None`.
 - `async def set_hold(hold: bool = True)`: Pausa ou retoma o trabalho atual.
 - `async def cancel()`: Para o trabalho atual.
 - `async def jog(axis: Axis, distance: float, speed: int)`: Move a máquina ao longo de um eixo
@@ -201,9 +209,11 @@ protegidos da classe base `Driver`.
 
 A melhor forma de aprender é olhar os drivers existentes em `rayforge/machine/driver/`, como:
 
-- `grbl/` - Máquinas baseadas em GRBL (serial, telnet, rede)
+- `grbl/` - Máquinas baseadas em GRBL (serial, serial simple, serial Rust, telnet, rede)
 - `marlin/` - Máquinas baseadas em firmware Marlin (serial)
-- `smoothie.py` - Máquinas baseadas em Smoothieboard
+- `ruidarpa/` - Controladores Ruida via Ruida Protocol Analyzer (USB, UDP ou TUI RPC)
+- `octoprint/` - Máquinas controladas por meio de um servidor OctoPrint
+- `smoothie/` - Máquinas baseadas em Smoothieboard
 - `dummy.py` - Um driver de teste para desenvolvimento
 
 Se você travar, por favor não hesite em abrir uma issue no GitHub! Ficaremos felizes em ajudar.

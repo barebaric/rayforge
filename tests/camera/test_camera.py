@@ -4,13 +4,15 @@ import numpy as np
 import pytest
 
 from rayforge.camera.calibration.result import CalibrationResult
-from rayforge.camera.models.camera import Camera
+from rayforge.camera.models.camera import Camera, CameraSourceType
 
 
 def test_camera_initialization():
     camera = Camera("Test Camera", "device123")
+    assert camera.id
     assert camera.name == "Test Camera"
     assert camera.device_id == "device123"
+    assert camera.source_type is CameraSourceType.LOCAL_DEVICE
     assert not camera.enabled
     assert camera.image_to_world is None
     assert camera.resolution is None
@@ -49,6 +51,23 @@ def test_distortion_coefficients():
     assert camera.distortion_k3 == pytest.approx(0.02)
     assert camera.distortion_p1 == pytest.approx(0.001)
     assert camera.distortion_p2 == pytest.approx(-0.002)
+
+
+def test_distortion_setter_ignores_unchanged_value():
+    camera = Camera("Test", "0")
+    received = []
+
+    def on_changed(sender):
+        received.append(sender)
+
+    camera.changed.connect(on_changed)
+
+    camera.distortion_k1 = 0.5
+    first_date = camera.calibration_date
+    camera.distortion_k1 = 0.5
+
+    assert len(received) == 1
+    assert camera.calibration_date == first_date
 
 
 def test_get_distortion_coeffs():
@@ -168,9 +187,13 @@ def test_set_calibration_result_type_error():
 def test_to_from_json():
     camera = Camera("JSON Camera", "json_device")
     camera.enabled = True
+    serialized = camera.to_dict()
+    assert serialized["device_id"] == "json_device"
+    assert serialized["source_config"]["device_id"] == "json_device"
     json_str = camera.to_json()
     reconstructed_camera = Camera.from_json(json_str)
 
+    assert reconstructed_camera.id == camera.id
     assert reconstructed_camera.name == camera.name
     assert reconstructed_camera.device_id == camera.device_id
     assert reconstructed_camera.enabled == camera.enabled
@@ -335,6 +358,54 @@ def test_resolution_settings_changed_signal():
 
     camera.resolution = None
     assert len(signal_received) == 2
+
+
+def test_source_uri_and_type_roundtrip():
+    camera = Camera(
+        "Network Camera",
+        source_type=CameraSourceType.HTTP_STREAM,
+        source_config={"uri": "https://camera.local/mjpeg"},
+    )
+    data = camera.to_dict()
+    assert data["source_type"] == CameraSourceType.HTTP_STREAM.value
+    assert data["source_config"] == {"uri": "https://camera.local/mjpeg"}
+
+    restored = Camera.from_dict(data)
+    assert restored.source_type is CameraSourceType.HTTP_STREAM
+    assert restored.source_uri == "https://camera.local/mjpeg"
+
+
+def test_source_config_preserves_unknown_attributes():
+    camera = Camera(
+        "Network Camera",
+        source_type=CameraSourceType.HTTP_SNAPSHOT,
+        source_config={
+            "uri": "https://camera.local/image.jpg",
+            "timeout_seconds": 7,
+            "future_option": {"enabled": True},
+        },
+    )
+
+    restored = Camera.from_dict(camera.to_dict())
+
+    assert restored.source_config == camera.source_config
+
+
+def test_network_camera_does_not_write_legacy_device_id():
+    camera = Camera(
+        "Network Camera",
+        source_type=CameraSourceType.HTTP_SNAPSHOT,
+        source_config={"uri": "https://camera.local/image.jpg"},
+    )
+
+    assert "device_id" not in camera.to_dict()
+
+
+def test_legacy_device_id_migrates_to_source_config():
+    camera = Camera.from_dict({"name": "Legacy Cam", "device_id": "0"})
+    assert camera.source_type is CameraSourceType.LOCAL_DEVICE
+    assert camera.device_id == "0"
+    assert camera.source_config["device_id"] == "0"
 
 
 def _camera_with_alignment(

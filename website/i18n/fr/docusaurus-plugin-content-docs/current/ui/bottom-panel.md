@@ -128,6 +128,40 @@ Configure le comportement des opérations de déplacement :
 :::
 <!-- prettier-ignore-end -->
 
+## Déplacement de la tête laser
+
+En plus du déplacement pas à pas (jog), la tête laser peut être déplacée vers une position exacte.
+Tous ces déplacements utilisent la **Vitesse de déplacement** décrite ci-dessus.
+
+### Popover « Aller à la position »
+
+Clique sur l'icône de boussole de la ligne « Position actuelle » pour ouvrir le popover « Aller à la
+position ». Il est prérempli avec la position actuelle, et les coordonnées sont saisies dans le
+système de coordonnées actif, conformément à l'affichage de la position :
+
+| Contrôle              | Fonction                                                      |
+| --------------------- | ------------------------------------------------------------- |
+| X / Y / Z             | Coordonnées cibles (Z uniquement sur les machines avec axe Z) |
+| Déplacer              | Déplace la tête vers les coordonnées saisies                  |
+| Bas à gauche          | Vers le bas-gauche de la sélection, ou de la zone de travail  |
+| Centre                | Vers le centre de la sélection, ou de la zone de travail      |
+| Haut à droite         | Vers le haut-droite de la sélection, ou de la zone de travail |
+| Aller à l'origine WCS | Vers X0 Y0 du WCS actif                                       |
+
+Le popover et ses raccourcis sont désactivés lorsque la machine est hors ligne.
+
+### Clic sur le canevas pour déplacer la tête
+
+Clique sur l'icône de déplacement de la ligne « Position actuelle » (ou appuie sur
+<kbd>Ctrl+M</kbd>) pour activer le mode. Le prochain clic gauche sur un espace vide du canevas
+déplace la tête vers ce point, puis le mode se désactive automatiquement. Un clic droit annule le
+mode sans déplacer la tête. Activer ce mode désactive « Cliquer pour zéro », et inversement.
+
+### Déplacer la tête ici
+
+Un clic droit sur un espace vide du canevas propose l'entrée **Déplacer la tête ici**, qui déplace
+la tête directement vers le point cliqué.
+
 ## Affichage de l'état de la machine
 
 Le panneau de contrôle affiche des informations en temps réel sur ta machine :

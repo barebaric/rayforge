@@ -110,6 +110,8 @@ class FrameStep(LaserStep):
         kwargs["corner_radius"] = (
             self.corner_radius_mm if self.round_corners else 0.0
         )
+        kwargs["arc_tolerance"] = machine.arc_tolerance
+        kwargs["allow_arcs"] = machine.supports_arcs
         return kwargs
 
     def build_compute_payload(
@@ -132,6 +134,8 @@ class FrameStep(LaserStep):
             offset_mm=kwargs["offset_mm"],
             cut_side=kwargs["cut_side"],
             corner_radius=kwargs["corner_radius"],
+            arc_tolerance=kwargs["arc_tolerance"],
+            allow_arcs=kwargs["allow_arcs"],
         )
         return part, ComputePayload(assembler=Assembler(spec))
 

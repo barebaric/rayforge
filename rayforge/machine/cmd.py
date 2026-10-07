@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable, Coroutine
+from collections.abc import Awaitable, Callable, Coroutine
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
@@ -9,7 +9,7 @@ import numpy as np
 from blinker import Signal
 from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
-from raygeo.ops.state import PowerMode
+from raygeo.ops.types import CommandType
 
 from ..context import get_context
 from ..pipeline.artifact import JobArtifact
@@ -17,8 +17,7 @@ from ..pipeline.artifact.handle import BaseArtifactHandle
 from ..pipeline.encoder.base import EncodedOutput
 from ..pipeline.encoder.context import GcodeContext, JobInfo
 from ..shared.util.template import TemplateFormatter
-from .driver import get_driver_cls
-from .driver.dummy import NoDeviceDriver
+from .driver.driver import FrameCorner
 from .job_monitor import JobMonitor
 from .kinematic_mapping import KinematicMapping
 from .models.coordspace import MachineSpace
@@ -59,6 +58,11 @@ class MachineCmd:
         """Returns True if a monitored job is currently running."""
         return self._current_monitor is not None
 
+    @property
+    def current_monitor(self) -> JobMonitor | None:
+        """Returns the monitor of the running job, if any."""
+        return self._current_monitor
+
     def select_tool(self, machine: Machine, head_index: int):
         """Adds a 'select_head' task to the task manager."""
         if not (0 <= head_index < len(machine.heads)):
@@ -84,10 +88,19 @@ class MachineCmd:
         machine: Machine,
         on_progress: Callable[[dict], None] | None = None,
         encoded: EncodedOutput | None = None,
+        execute: Callable[
+            [Callable[[int], None | Awaitable[None]] | None],
+            Coroutine,
+        ]
+        | None = None,
     ):
         """
         Internal helper to execute a job on a driver while managing
         a JobMonitor for progress reporting.
+
+        The job runs the encoded pipeline output, unless *execute* is
+        given: then it calls ``execute(on_command_done)`` instead, which
+        runs a driver-defined action (framing) under the same monitoring.
         """
         if self._current_monitor:
             msg = _(
@@ -121,7 +134,22 @@ class MachineCmd:
             self._on_progress_callback = None
 
         try:
-            self._current_monitor = JobMonitor(ops)
+            estimated_seconds = ops.estimate_time(
+                default_feed_rate=machine.max_cut_speed,
+                default_rapid_rate=machine.max_travel_speed,
+                acceleration=machine.acceleration,
+            )
+            logger.info(
+                f"JobMonitor: total_distance={ops.distance():.1f}mm, "
+                f"estimated_seconds={estimated_seconds:.1f}s"
+            )
+            self._current_monitor = JobMonitor(
+                ops,
+                estimated_seconds=estimated_seconds,
+                default_feed_rate=machine.max_cut_speed,
+                default_rapid_rate=machine.max_travel_speed,
+                acceleration=machine.acceleration,
+            )
 
             if self._on_progress_callback:
                 logger.debug("Connecting progress handler to JobMonitor")
@@ -132,11 +160,25 @@ class MachineCmd:
             # Signal that the job has started.
             self._scheduler(self.job_started.send, self)
 
-            # Pipeline must have produced encoded output.
-            if encoded is None:
+            if execute is not None:
+                on_command_done = (
+                    self._current_monitor.update_progress
+                    if (
+                        machine.reports_granular_progress
+                        and self._current_monitor
+                    )
+                    else None
+                )
+                await execute(on_command_done)
+                if self._current_monitor and not (
+                    machine.reports_granular_progress
+                ):
+                    self._current_monitor.mark_as_complete()
+            elif encoded is None:
+                # No driver-defined action: the pipeline must have
+                # produced encoded output.
                 raise RuntimeError("Pipeline did not produce encoded output.")
-
-            if machine.reports_granular_progress:
+            elif machine.reports_granular_progress:
                 await machine.driver.run(
                     encoded,
                     self._editor.doc,
@@ -153,11 +195,6 @@ class MachineCmd:
                 if self._current_monitor:
                     self._current_monitor.mark_as_complete()
 
-            estimated_seconds = ops.estimate_time(
-                default_feed_rate=machine.max_cut_speed,
-                default_rapid_rate=machine.max_travel_speed,
-                acceleration=machine.acceleration,
-            )
             estimated_hours = estimated_seconds / 3600.0
             machine.add_machine_hours(estimated_hours)
             logger.info(
@@ -173,50 +210,30 @@ class MachineCmd:
         machine: Machine,
         on_progress: Callable[[dict], None] | None,
     ):
-        """The specific machine action for a framing job."""
+        """The specific machine action for a framing job.
+
+        Builds the frame outline in command space — through the same
+        transforms a job gets — and hands the corners to the driver,
+        which frames in whatever way fits the controller (see
+        Driver.frame()).
+        """
         if not isinstance(artifact, JobArtifact):
             raise TypeError("_run_frame_action received a non-JobArtifact")
-        ops = artifact.ops
 
         head = machine.get_default_laser_head()
         if head is None:
             raise ValueError("Machine has no laser heads configured.")
-
-        # Zero frame power is valid: the frame traces the outline with
-        # the beam off (e.g. for machines with an auxiliary alignment
-        # laser). The encoder omits the laser-on command at 0% power.
 
         frame_speed = (
             head.frame_speed
             if head.frame_speed > 0
             else machine.max_travel_speed
         )
+        repeat_count = max(1, head.frame_repeat_count)
 
-        min_x, min_y, max_x, max_y = ops.rect()
-
-        frame_ops = Ops()
-        frame_ops.set_head(head.uid)
-        frame_ops.set_power(head.frame_power_percent)
-        # Framing traces at fixed speed steps and on some controllers
-        # a stationary M4 emits no beam at all, so always frame with
-        # constant power (M3).
-        frame_ops.set_power_mode(PowerMode.CONSTANT)
-        frame_ops.set_feed_rate(frame_speed)
-
-        corners = [
-            (min_x, min_y),
-            (min_x, max_y),
-            (max_x, max_y),
-            (max_x, min_y),
-            (min_x, min_y),
-        ]
-        prev = corners[0]
-        for corner in corners[1:]:
-            frame_ops.move_to(*prev)
-            frame_ops.line_to(*corner)
-            if head.frame_corner_pause > 0:
-                frame_ops.dwell(head.frame_corner_pause * 1000)
-            prev = corner
+        # A moves-only trace carrying the outline through the same
+        # transforms a job gets.
+        frame_ops = _build_frame_trace(artifact.ops.rect(), repeat_count)
 
         # Apply the active layer's rotary mapping so the frame drives
         # the rotary axis instead of the physical Y axis (issue #356).
@@ -230,44 +247,61 @@ class MachineCmd:
             self._editor.doc.active_layer,
         )
 
-        frame_with_laser = frame_ops * head.frame_repeat_count
-        frame_with_laser.job_end()
-
         # Transform world-space frame ops to machine space, then to
         # command space: the emitted coordinates must be relative to
         # the active WCS origin because the controller adds the WCS
         # offset back (issue #362). The regular send path performs the
-        # same adjustment in the machine-transform stage.
+        # same adjustment in the machine-transform stage. While
+        # pointer alignment is on, the command WCS offset includes the
+        # pointer offset, so the frame outline is traced by the
+        # pointer dot rather than the cutting beam.
         space = MachineSpace.from_machine(machine)
         combined = space.get_world_to_machine_matrix()
         if machine.reverse_z_axis:
             z_flip = np.eye(4)
             z_flip[2, 2] = -1.0
             combined = z_flip @ combined
+        frame_ops.transform(combined)
+
+        _warn_if_frame_exceeds_travel(self._editor, machine, frame_ops.rect())
+
         to_command = space.get_machine_to_command_matrix(
-            wcs_offset=machine.get_active_wcs_offset(),
+            wcs_offset=machine.get_command_wcs_offset(),
             wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
         )
-        frame_with_laser.transform(to_command @ combined)
+        frame_ops.transform(to_command)
 
         # AXIS_REPLACEMENT modules encode the rotary degrees into the
         # replaced machine axis after the world→machine transform.
         if rotary_module is not None and rotary_module.is_replacement():
             KinematicMapping.degrees_to_mm_pass(
-                frame_with_laser,
+                frame_ops,
                 rotary_module.mm_per_rotation,
                 target_axis=rotary_module.axis,
             )
 
-        # Encode via the driver encoder (no pre-processing needed).
-        encoder = _create_driver_encoder(machine)
-        encoded = encoder.encode(frame_with_laser, machine, self._editor.doc)
+        corners = _frame_trace_corners(
+            frame_ops, len(_frame_rect_corners(artifact.ops.rect()))
+        )
+
+        async def execute(
+            on_command_done: Callable[[int], None | Awaitable[None]] | None,
+        ):
+            await machine.driver.frame(
+                corners,
+                frame_speed,
+                self._editor.doc,
+                repeat_count=repeat_count,
+                corner_pause_s=head.frame_corner_pause,
+                power_fraction=head.frame_power_percent,
+                on_command_done=on_command_done,
+            )
 
         await self._execute_monitored_job(
-            frame_with_laser,
+            frame_ops,
             machine,
             on_progress=on_progress,
-            encoded=encoded,
+            execute=execute,
         )
 
     async def _run_send_action(
@@ -276,7 +310,13 @@ class MachineCmd:
         machine: Machine,
         on_progress: Callable[[dict], None] | None,
     ):
-        """The specific machine action for a send job."""
+        """The specific machine action for a send job.
+
+        While a pointer dry-run was requested, the pipeline encoded
+        this artifact with all laser power capped at the head's
+        framing power and the pointer offset folded into the WCS
+        offsets, so the pointer dot traces an unburnable toolpath.
+        """
         if not isinstance(artifact, JobArtifact):
             raise TypeError("_run_send_action received a non-JobArtifact")
 
@@ -292,6 +332,7 @@ class MachineCmd:
         machine: Machine,
         final_job_action: Callable[..., Coroutine],
         on_progress: Callable[[dict], None] | None = None,
+        pointer_dry_run: bool = False,
     ):
         """
         Generic, awaitable job executor that orchestrates artifact
@@ -299,10 +340,27 @@ class MachineCmd:
         """
         handle: BaseArtifactHandle | None = None
         artifact_store = self._editor.pipeline.artifact_store
+        pipeline = self._editor.pipeline
+        shift_used = False
 
         try:
-            # 1. Await the job artifact generation from the pipeline
-            handle = await self._editor.pipeline.generate_job_artifact_async()
+            if pointer_dry_run and machine.has_pointer_offset():
+                # Generate the job once with the pointer offset folded
+                # into the WCS offsets so the pointer dot traces the
+                # toolpath, and with all laser power capped at the
+                # head's framing power (via get_job_power_cap in the
+                # encode context) so the trace cannot burn. The flags
+                # are only visible during generation; the shifted
+                # artifact is discarded afterwards so the next regular
+                # send burns unshifted at job power.
+                machine.pointer_job_shift_enabled = True
+                shift_used = True
+                pipeline.invalidate_job_output()
+            try:
+                # 1. Await the job artifact generation from the pipeline
+                handle = await pipeline.generate_job_artifact_async()
+            finally:
+                machine.pointer_job_shift_enabled = False
 
             if not handle:
                 logger.warning("Job has no operations.")
@@ -315,6 +373,10 @@ class MachineCmd:
                     raise ValueError(
                         "Failed to retrieve artifact from handle."
                     )
+                if shift_used:
+                    # The cached output is shifted; drop it while our
+                    # checkout keeps the artifact alive.
+                    pipeline.invalidate_job_output()
 
                 await final_job_action(artifact, machine, on_progress)
 
@@ -361,16 +423,24 @@ class MachineCmd:
         self,
         machine: Machine,
         on_progress: Callable[[dict], None] | None = None,
+        pointer_dry_run: bool = False,
     ):
         """
         Asynchronously generates ops and sends the job to the machine.
         This is an awaitable coroutine.
+
+        With pointer_dry_run, the job is generated with the pointer
+        offset folded into the WCS offsets, so the pointer dot traces
+        the toolpath while the beam runs displaced by the offset, and
+        all laser power is capped at the head's framing power so the
+        trace does not burn the material.
         """
         try:
             await self._start_job(
                 machine,
                 final_job_action=self._run_send_action,
                 on_progress=on_progress,
+                pointer_dry_run=pointer_dry_run,
             )
         except JobAlreadyRunningError as e:
             # An expected refusal, not a failure: the guard's message
@@ -499,25 +569,65 @@ class MachineCmd:
         """Adds a task to home a specific axis."""
         self._editor.task_manager.add_coroutine(lambda ctx: machine.home(axis))
 
-    def move_to(self, machine: Machine, x: float, y: float):
-        """Adds a task to move to an absolute position."""
+    def move_to(
+        self,
+        machine: Machine,
+        x: float,
+        y: float,
+        z: float | None = None,
+        speed: float | None = None,
+    ):
+        """
+        Adds a task to move to an absolute position.
+
+        The speed is given in mm/min; when None the driver applies its
+        default move speed.
+        """
         driver = machine.driver
         if driver:
             self._editor.task_manager.add_coroutine(
-                lambda ctx: driver.move_to(x, y), key="move-to"
+                lambda ctx: driver.move_to(x, y, z, speed), key="move-to"
             )
 
 
-def _create_driver_encoder(machine: Machine):
-    """Instantiate the machine's driver encoder."""
-    if machine.driver_name:
-        try:
-            driver_cls = get_driver_cls(machine.driver_name)
-        except (ValueError, ImportError):
-            driver_cls = NoDeviceDriver
-    else:
-        driver_cls = NoDeviceDriver
-    return driver_cls.create_encoder(machine)
+def _warn_if_frame_exceeds_travel(
+    editor: DocEditor,
+    machine: Machine,
+    frame_rect: tuple[float, float, float, float],
+):
+    """
+    Warn when the pointer-shifted frame leaves the machine travel.
+
+    While pointer alignment is on, the beam traces the frame one
+    pointer offset behind the outline, which can leave the reachable
+    area even though the outline itself is on the bed. The frame still
+    runs; the warning explains why the trace may stop short of a side.
+    """
+    if not machine.pointer_alignment_enabled:
+        return
+    dx, dy = machine.get_pointer_offset()
+    min_x, min_y, max_x, max_y = frame_rect
+    width, height = machine.axis_extents
+    x_min = -width if machine.reverse_x_axis else 0.0
+    x_max = 0.0 if machine.reverse_x_axis else width
+    y_min = -height if machine.reverse_y_axis else 0.0
+    y_max = 0.0 if machine.reverse_y_axis else height
+    corners = [
+        (min_x - dx, min_y - dy),
+        (min_x - dx, max_y - dy),
+        (max_x - dx, max_y - dy),
+        (max_x - dx, min_y - dy),
+    ]
+    if all(x_min <= x <= x_max and y_min <= y <= y_max for x, y in corners):
+        return
+    editor.notification_requested.send(
+        editor,
+        message=_(
+            "Pointer alignment shifts the frame partly outside the "
+            "machine travel; the trace may stop short of a side."
+        ),
+        persistent=True,
+    )
 
 
 def _apply_frame_rotary_mapping(
@@ -557,3 +667,60 @@ def _apply_frame_rotary_mapping(
     if mapping is not None:
         mapping.apply(frame_ops)
     return module
+
+
+def _frame_rect_corners(
+    rect: tuple[float, float, float, float],
+) -> list[tuple[float, float]]:
+    """The frame outline corners for a bounding *rect*.
+
+    The list is closed: the first corner repeats last so a trace of
+    consecutive segments returns to the start.
+    """
+    min_x, min_y, max_x, max_y = rect
+    return [
+        (min_x, min_y),
+        (min_x, max_y),
+        (max_x, max_y),
+        (max_x, min_y),
+        (min_x, min_y),
+    ]
+
+
+def _build_frame_trace(
+    rect: tuple[float, float, float, float],
+    repeat_count: int,
+) -> Ops:
+    """Build the frame outline as a moves-only trace.
+
+    This carries the outline through the frame's coordinate transforms
+    and feeds the job estimate; the driver builds the actual command
+    stream from the traced corners (see ``Driver.frame``).
+    """
+    trace = Ops()
+    corners = _frame_rect_corners(rect)
+    for _repeat in range(max(1, repeat_count)):
+        for corner in corners:
+            trace.move_to(*corner)
+    return trace
+
+
+def _frame_trace_corners(
+    ops: Ops,
+    corner_count: int,
+) -> list[FrameCorner]:
+    """Read the first-pass outline corners back from the trace.
+
+    Returns the position and extra axes of the first *corner_count*
+    MOVE_TO commands — the transformed corners in command space, in
+    trace order. The extra axes carry the rotary degrees of rotary
+    frames.
+    """
+    corners = []
+    for i in range(ops.len()):
+        if ops.command_type(i) == CommandType.MOVE_TO:
+            x, y, _z = ops.endpoint(i)
+            corners.append((x, y, ops.extra_axes(i)))
+            if len(corners) == corner_count:
+                break
+    return corners

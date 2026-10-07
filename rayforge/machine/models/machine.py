@@ -82,6 +82,23 @@ def _clamp_margins(margins: Rect, extents: tuple[float, float]) -> Rect:
     return (ml, mt, mr, mb)
 
 
+def _clamp_jog_distance(
+    pos: float, distance: float, lower: float, upper: float
+) -> float:
+    """Shorten a jog so it does not travel past a limit.
+
+    The result never reverses or lengthens the requested jog. When the
+    position is already beyond a limit, a jog further out becomes 0 and
+    a jog back towards the range is allowed, stopping at the far limit.
+    """
+    target = pos + distance
+    if distance > 0:
+        target = min(target, max(upper, pos))
+    elif distance < 0:
+        target = max(target, min(lower, pos))
+    return target - pos
+
+
 def _raise_error(*args, **kwargs):
     raise RuntimeError("Cannot schedule from worker process")
 
@@ -131,6 +148,7 @@ class Machine:
         self.job_finished = Signal()
         self.command_status_changed = Signal()
         self.wcs_updated = Signal()
+        self.pointer_alignment_changed = Signal()
 
         self.connection_status: TransportStatus = TransportStatus.DISCONNECTED
         self.device_state: DeviceState = DeviceState()
@@ -200,6 +218,8 @@ class Machine:
         self.wcs_origin_is_workarea_origin: bool = False
         self.source_profile_id: str | None = None
         self.reviewed_profile_hash: str | None = None
+        self.device_notes: str | None = None
+        self.user_notes: str = ""
         self.schema_version: int = 0
         self.usb_vid: int | None = None
         self.usb_pid: int | None = None
@@ -215,6 +235,20 @@ class Machine:
         self.coordinate_systems: dict[str, CoordinateSystem] = (
             CoordinateSystem.defaults()
         )
+
+        # Runtime "pointer alignment" state: while on, absolute aim
+        # commands are shifted so the pointer dot lands on the aimed
+        # position (see get_command_wcs_offset()). Session-only by
+        # design: never serialized into the machine profile, and it
+        # resets naturally when the active machine is switched.
+        self.pointer_alignment_enabled: bool = False
+
+        # Transient companion to pointer_alignment_enabled: while on,
+        # job output is generated with the pointer offset added (see
+        # get_job_wcs_offset()), making the pointer dot trace the
+        # toolpath. Only set for the duration of a pointer dry-run
+        # send; never serialized.
+        self.pointer_job_shift_enabled: bool = False
 
         self.machine_hours: MachineHours = MachineHours()
         self.machine_hours.changed.connect(self._on_machine_hours_changed)
@@ -580,6 +614,11 @@ class Machine:
         Selects a new driver class and resets its arguments, then emits
         ``changed``. The controller listens for this signal and performs
         the (debounced) driver rebuild.
+
+        The G-code dialect is kept in sync with the driver: drivers that
+        do not speak G-code (e.g. Ruida) get the leftover dialect
+        cleared, so no stale dialect survives a driver switch and job
+        encoding always follows the connected driver.
         """
         new_driver_name = driver_cls.__name__
         new_args = args or {}
@@ -596,7 +635,27 @@ class Machine:
 
         self.driver_name = new_driver_name
         self.driver_args = new_args
+        self._sync_dialect_with_driver(driver_cls)
         self.changed.send(self)
+
+    def _sync_dialect_with_driver(self, driver_cls: type["Driver"]):
+        """
+        Aligns the dialect with the driver's G-code capability.
+
+        Non-G-code drivers must not carry a dialect: a stale one would
+        make job encoding produce G-code for a driver that cannot
+        consume it (issue #420). Switching back to a G-code driver while
+        no dialect is set restores the framework default, mirroring the
+        deserialization fallback.
+        """
+        if not driver_cls.uses_gcode:
+            if self.dialect_uid is None and self._hydrated_dialect is None:
+                return
+            self.dialect_uid = None
+            self._hydrated_dialect = None
+        elif self.dialect_uid is None:
+            self.dialect_uid = "grbl"
+            self._hydrated_dialect = None
 
     def set_driver_args(self, args=None):
         """
@@ -953,6 +1012,28 @@ class Machine:
             )
         self.changed.send(self)
 
+    @property
+    def z_extents(self) -> tuple[float, float] | None:
+        """The Z axis travel range (min, max) in machine coordinates.
+
+        None when the machine has no Z axis.
+        """
+        cfg = self.axes.get(Axis.Z)
+        if cfg is None:
+            return None
+        return (float(cfg.extents[0]), float(cfg.extents[1]))
+
+    def set_z_extents(self, z_min: float, z_max: float) -> None:
+        """Sets the Z axis travel range (min, max) in machine coordinates."""
+        cfg = self.axes.get(Axis.Z)
+        if cfg is None:
+            return
+        extents = (min(z_min, z_max), max(z_min, z_max))
+        if cfg.extents == extents:
+            return
+        cfg.extents = extents
+        self.changed.send(self)
+
     def set_rotary_enabled_default(self, enabled: bool):
         if self.rotary_enabled_default == enabled:
             return
@@ -1063,35 +1144,16 @@ class Machine:
         """
         Check if a jog operation would exceed soft limits.
 
+        True when the soft limits would shorten or block the jog, so the
+        warning matches what _adjust_jog_distance_for_limits() sends: a
+        jog back towards the range from outside it is not flagged.
+
         Note: The `distance` argument must be the final, signed coordinate
         delta that will be sent to the machine.
         """
         if not self.soft_limits_enabled:
             return False
-
-        current_pos = self.device_state.machine_pos
-        x_pos, y_pos = current_pos[0], current_pos[1]
-        x_min, y_min, x_max, y_max = self.get_soft_limits()
-
-        # Check X axis
-        if axis & Axis.X:
-            if x_pos is None:
-                return False  # Cannot check limits if position is unknown
-            new_x = x_pos + distance
-            if new_x < x_min or new_x > x_max:
-                return True
-
-        # Check Y axis
-        if axis & Axis.Y:
-            if y_pos is None:
-                return False  # Cannot check limits if position is unknown
-            new_y = y_pos + distance
-            if new_y < y_min or new_y > y_max:
-                return True
-
-        # Note: Z-axis soft limits are not currently implemented
-
-        return False
+        return self._adjust_jog_distance_for_limits(axis, distance) != distance
 
     def _adjust_jog_distance_for_limits(
         self, axis: Axis, distance: float
@@ -1109,21 +1171,28 @@ class Machine:
         if axis & Axis.X:
             if x_pos is None:
                 return distance  # Cannot adjust if position is unknown
-            new_x = x_pos + distance
-            if new_x < x_min:
-                adjusted_distance = x_min - x_pos
-            elif new_x > x_max:
-                adjusted_distance = x_max - x_pos
+            adjusted_distance = _clamp_jog_distance(
+                x_pos, distance, x_min, x_max
+            )
 
         # Check Y axis
         if axis & Axis.Y:
             if y_pos is None:
                 return distance  # Cannot adjust if position is unknown
-            new_y = y_pos + distance
-            if new_y < y_min:
-                adjusted_distance = y_min - y_pos
-            elif new_y > y_max:
-                adjusted_distance = y_max - y_pos
+            adjusted_distance = _clamp_jog_distance(
+                y_pos, distance, y_min, y_max
+            )
+
+        # Adjust the Z axis against the configured Z travel range
+        if axis & Axis.Z:
+            z_extents = self.z_extents
+            if z_extents is not None:
+                z_pos = self.device_state.machine_pos[2]
+                if z_pos is not None:
+                    z_min, z_max = z_extents
+                    adjusted_distance = _clamp_jog_distance(
+                        z_pos, adjusted_distance, z_min, z_max
+                    )
 
         return adjusted_distance
 
@@ -1183,6 +1252,104 @@ class Machine:
                 return head
         return None
 
+    def get_pointer_offset(
+        self, head: LaserHead | None = None
+    ) -> tuple[float, float]:
+        """
+        The (x, y) pointer offset in machine millimeters for the given
+        laser head, defaulting to the first laser head.
+
+        Returns ``(0.0, 0.0)`` when the head has no pointer offset or
+        it is disabled, so callers can add it unconditionally.
+        """
+        if head is None:
+            head = self.get_default_laser_head()
+        if not isinstance(head, LaserHead):
+            return (0.0, 0.0)
+        return head.pointer_offset
+
+    def has_pointer_offset(self, head: LaserHead | None = None) -> bool:
+        """True while the given (or default) laser head has an enabled,
+        non-zero pointer offset."""
+        return self.get_pointer_offset(head) != (0.0, 0.0)
+
+    def set_pointer_alignment(self, enabled: bool):
+        """
+        Enables or disables runtime pointer alignment.
+
+        While enabled, absolute aim commands (Move-To, Frame,
+        Click-to-Move, Move-Head-Here, the WCS-origin shortcut) are
+        shifted so the pointer dot lands on the aimed position; jobs
+        always burn with the unshifted beam. The state is session-only
+        and requires an enabled pointer offset on the laser head.
+        """
+        if enabled and not self.has_pointer_offset():
+            logger.warning(
+                "Pointer alignment requires an enabled pointer offset "
+                "on the laser head."
+            )
+            return
+        if self.pointer_alignment_enabled == enabled:
+            return
+        self.pointer_alignment_enabled = enabled
+        self.pointer_alignment_changed.send(self)
+        self.changed.send(self)
+
+    def get_command_wcs_offset(self, head: LaserHead | None = None) -> Point3D:
+        """
+        The WCS offset for converting absolute aim targets from MACHINE
+        coordinates into COMMAND (G-code) coordinates.
+
+        This is the plain active WCS offset while pointer alignment is
+        off. While it is on, the pointer offset of the given (or
+        default) laser head is added, so that subtracting the result
+        from a machine-space aim target shifts the issued command by
+        -offset: the pointer dot lands on the target while the beam
+        ends up offset behind it.
+
+        Display-only paths (DRO position, grid origin labels) must keep
+        using get_active_wcs_offset() so they stay truthful. Jog (a
+        relative move) and jobs are never affected.
+        """
+        off_x, off_y, off_z = self.get_active_wcs_offset()
+        if self.pointer_alignment_enabled:
+            dx, dy = self.get_pointer_offset(head)
+            off_x += dx
+            off_y += dy
+        return (off_x, off_y, off_z)
+
+    def get_job_wcs_offset(self, wcs_offset: Point3D) -> Point3D:
+        """
+        The WCS offset to use when generating job output.
+
+        Normally the given offset unchanged. While a pointer dry-run is
+        requested (pointer_job_shift_enabled), the pointer offset of
+        the default laser head is added so the pointer dot traces the
+        toolpath while the beam runs displaced by the offset.
+        """
+        if not self.pointer_job_shift_enabled:
+            return wcs_offset
+        dx, dy = self.get_pointer_offset()
+        return (wcs_offset[0] + dx, wcs_offset[1] + dy, wcs_offset[2])
+
+    def get_job_power_cap(self) -> float | None:
+        """
+        The laser power fraction (0-1) encoded jobs must not exceed
+        while a pointer dry-run is requested, None otherwise.
+
+        While pointer_job_shift_enabled is set, jobs are generated for
+        the pointer dry-run, and the default head's framing power is
+        reported as the cap so the encoded trace cannot burn the
+        material. The cap is consumed by the G-code encoder via the
+        encode context.
+        """
+        if not self.pointer_job_shift_enabled:
+            return None
+        head = self.get_default_laser_head()
+        if head is None:
+            return None
+        return head.frame_power_percent
+
     def remove_head(self, head: Head):
         head.changed.disconnect(self._on_head_changed)
         self.heads.remove(head)
@@ -1191,6 +1358,10 @@ class Machine:
 
     def _on_head_changed(self, head, *args):
         self.invalidate_assembly()
+        if self.pointer_alignment_enabled and not self.has_pointer_offset():
+            # The pointer offset backing runtime alignment is gone, so
+            # alignment can no longer stay on.
+            self.set_pointer_alignment(False)
         self.changed.send(self)
 
     def add_camera(self, camera: Camera):
@@ -1602,6 +1773,8 @@ class Machine:
                 ),
                 "source_profile_id": self.source_profile_id,
                 "reviewed_profile_hash": self.reviewed_profile_hash,
+                "device_notes": self.device_notes,
+                "user_notes": self.user_notes,
                 "schema_version": self.schema_version,
                 "usb_vid": _format_usb_field(self.usb_vid),
                 "usb_pid": _format_usb_field(self.usb_pid),
@@ -1880,6 +2053,8 @@ class Machine:
         )
         ma.source_profile_id = ma_data.pop("source_profile_id", None)
         ma.reviewed_profile_hash = ma_data.pop("reviewed_profile_hash", None)
+        ma.device_notes = ma_data.pop("device_notes", None)
+        ma.user_notes = ma_data.pop("user_notes", "")
         ma.schema_version = ma_data.pop("schema_version", 0)
         ma.usb_vid = _parse_usb_field(ma_data.pop("usb_vid", None))
         ma.usb_pid = _parse_usb_field(ma_data.pop("usb_pid", None))

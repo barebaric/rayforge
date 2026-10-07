@@ -38,19 +38,29 @@ from rpalib.rpyc_client import RpcRdDriver
 from ruidadriver.rd_gluescript import GlueScript
 
 from rayforge.core.doc import Doc
-from rayforge.core.varset import FloatVar
+from rayforge.core.varset import (
+    BoolVar,
+    FloatVar,
+    LabeledChoiceVar,
+    SerialPortVar,
+)
 from rayforge.machine.driver.driver import (
     Axis,
     DeviceStatus,
     Driver,
+    DriverPrecheckError,
     DriverSetupError,
 )
 from rayforge.machine.driver.ruidarpa import rpa_adapter
 from rayforge.machine.driver.ruidarpa.rpa_adapter import (
+    CONNECTION_AUTO,
+    CONNECTION_NETWORK,
+    CONNECTION_USB,
     DEFAULT_MAX_CUT_SPEED_MMPM,
     DEFAULT_MAX_TRAVEL_SPEED_MMPM,
     DEFAULT_RPC_TIMEOUT_S,
     RuidaRPAAdapter,
+    _merged_machine_pos,
     _unwrap_mm,
 )
 from rayforge.machine.driver.ruidarpa.rpa_direct_driver import (
@@ -637,6 +647,69 @@ class TestRunRouting:
         assert adapter._selected_wcs == "MACHINE"
         backend.run.assert_not_called()
 
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "tui_mode", [DIRECT_MODE, RPC_MODE], ids=["direct", "rpc"]
+    )
+    async def test_run_applies_power_scaling_enabled_before_stage(
+        self, isolated_context, isolated_machine, tui_mode
+    ):
+        """run() must apply the power_scaling_enabled flag to the backend
+        before staging the transcript."""
+        machine = isolated_machine
+        machine.driver_args = {"power_scaling_enabled": False}
+        gs, _real = self._gluescript_backend()
+        adapter = self._make_adapter(isolated_context, machine, tui_mode, gs)
+        doc = Doc()
+        ops = self._job_ops(doc)
+        transcript = (
+            "declare_job('Rayforge Job', 'MACHINE', [0.0, 0.0], "
+            "1, 1, 0.0, 0.0)\n"
+            "move_xy_to(5.0, 5.0)\n"
+            "cut_xy_to(10.0, 8.0)\n"
+            "end_job()"
+        )
+        encoded = EncodedOutput(text=transcript, op_map=MachineCodeOpMap())
+
+        await adapter.run(encoded, doc, ops)
+
+        gs.set_power_scaling_enabled.assert_called_once_with(False)
+        stage_call = call.stage_gluescript(transcript.splitlines())
+        assert gs.mock_calls.index(call.set_power_scaling_enabled(False)) < (
+            gs.mock_calls.index(stage_call)
+        )
+
+        await adapter.cleanup()
+        await machine.shutdown()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "tui_mode", [DIRECT_MODE, RPC_MODE], ids=["direct", "rpc"]
+    )
+    async def test_run_power_scaling_enabled_defaults_to_true(
+        self, isolated_context, isolated_machine, tui_mode
+    ):
+        """run() must enable power scaling when driver_args omit the key."""
+        machine = isolated_machine
+        machine.driver_args = {}
+        gs, _real = self._gluescript_backend()
+        adapter = self._make_adapter(isolated_context, machine, tui_mode, gs)
+        doc = Doc()
+        ops = self._job_ops(doc)
+        transcript = (
+            "declare_job('Rayforge Job', 'MACHINE', [0.0, 0.0], "
+            "1, 1, 0.0, 0.0)\n"
+            "end_job()"
+        )
+        encoded = EncodedOutput(text=transcript, op_map=MachineCodeOpMap())
+
+        await adapter.run(encoded, doc, ops)
+
+        gs.set_power_scaling_enabled.assert_called_once_with(True)
+
+        await adapter.cleanup()
+        await machine.shutdown()
+
 
 class TestWcsHandling:
     """WCS selection and offset reads behave per the framework contract."""
@@ -991,6 +1064,103 @@ class TestLiveBridgeDirect:
         backend.jog_xy_to.assert_called_once_with(0.0, 0.0)
 
 
+class TestFrame:
+    """frame() traces the outline with beam-off absolute moves."""
+
+    @staticmethod
+    def _corners():
+        return [
+            (0.0, 0.0, None),
+            (10.0, 0.0, None),
+            (10.0, 5.0, None),
+            (0.0, 5.0, None),
+            (0.0, 0.0, None),
+        ]
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_frame_moves_to_each_corner_in_order(self, adapter_pair):
+        """Framing must jog to each corner in trace order, never cut."""
+        adapter, backend = adapter_pair
+        await adapter.frame(self._corners(), 3000, doc=None)
+        backend.jog_xy_to.assert_has_calls(
+            [
+                call(0.0, 0.0),
+                call(10.0, 0.0),
+                call(10.0, 5.0),
+                call(0.0, 5.0),
+                call(0.0, 0.0),
+            ]
+        )
+        assert backend.jog_xy_to.call_count == 5
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_frame_sets_speed_before_each_move(self, adapter_pair):
+        """The frame speed (mm/min → mm/s) must be applied to the moves."""
+        adapter, backend = adapter_pair
+        await adapter.frame(self._corners(), 3000, doc=None)
+        backend.jog_set_xy_speed.assert_has_calls([call(50.0)] * 5)
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_frame_repeats_the_outline(self, adapter_pair):
+        """repeat_count=2 must trace the outline twice."""
+        adapter, backend = adapter_pair
+        await adapter.frame(self._corners(), 3000, doc=None, repeat_count=2)
+        assert backend.jog_xy_to.call_count == 10
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_frame_pauses_between_corners(self, adapter_pair, mocker):
+        """A positive corner pause must sleep once per corner."""
+        adapter, _backend = adapter_pair
+        sleep_spy = mocker.spy(asyncio, "sleep")
+        await adapter.frame(
+            self._corners(), 3000, doc=None, corner_pause_s=0.01
+        )
+        assert sleep_spy.call_count == 5
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_frame_emits_job_finished(self, adapter_pair):
+        """Framing must signal job_finished when the trace is done."""
+        adapter, _backend = adapter_pair
+        finished = []
+
+        def on_finished(sender):
+            finished.append(sender)
+
+        adapter.job_finished.connect(on_finished)
+        await adapter.frame(self._corners(), 3000, doc=None)
+        assert finished == [adapter]
+
+
 class TestFailLoud:
     """Backend jog/home failures must propagate through the adapter."""
 
@@ -1136,6 +1306,38 @@ class TestStatusMmFix:
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_partial_position_backfills_unreported_axes(
+        self, adapter_pair
+    ):
+        """Axes never reported must become 0.0, not None."""
+        adapter, _backend = adapter_pair
+        adapter._on_rpa_status({"POSITION_Z": (7.5, "Z")})
+        assert adapter.state.machine_pos == (0.0, 0.0, 7.5)
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_repeated_position_does_not_re_emit(self, adapter_pair):
+        """An identical position must not re-emit state_changed."""
+        adapter, _backend = adapter_pair
+        state_mock = Mock()
+        adapter.state_changed.send = state_mock
+        adapter._on_rpa_status({"POSITION_X": (1.0, "X")})
+        state_mock.reset_mock()
+        adapter._on_rpa_status({"POSITION_X": (1.0, "X")})
+        state_mock.assert_not_called()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
         "adapter_pair", [RPC_MODE], ids=["rpc"], indirect=True
     )
     async def test_machine_status_dict_accepted(self, adapter_pair):
@@ -1158,6 +1360,30 @@ class TestStatusMmFix:
     def test_unwrap_mm_plain_value_passes_through(self):
         """_unwrap_mm must pass bare floats through unchanged."""
         assert _unwrap_mm(12.5) == 12.5
+
+    def test_merged_machine_pos_full_update_replaces_all_axes(self):
+        """A complete update must replace every axis."""
+        assert _merged_machine_pos((1.0, 2.0, 3.0), 4.0, 5.0, 6.0) == (
+            4.0,
+            5.0,
+            6.0,
+        )
+
+    def test_merged_machine_pos_keeps_unspecified_axes(self):
+        """None axes in the update must keep the current values."""
+        assert _merged_machine_pos((1.0, 2.0, 3.0), None, 5.0, None) == (
+            1.0,
+            5.0,
+            3.0,
+        )
+
+    def test_merged_machine_pos_backfills_unreported_axes(self):
+        """Axes never reported (None in current) must become 0.0."""
+        assert _merged_machine_pos((None, None, None), None, 5.0, None) == (
+            0.0,
+            5.0,
+            0.0,
+        )
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -1352,6 +1578,62 @@ class TestStatusMmFix:
         assert adapter.state.status == DeviceStatus.IDLE
         adapter._on_rpa_status({})
         assert adapter.state.status == DeviceStatus.IDLE
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_controller_info_events_are_logged(
+        self, adapter_pair, caplog
+    ):
+        """CARD_ID and BED_SIZE_* events must log separately at info level."""
+        caplog.set_level(logging.INFO, logger=rpa_adapter.logger.name)
+        adapter, _backend = adapter_pair
+        adapter._on_rpa_status(
+            {
+                "CARD_ID": (12345, "12345"),
+                "BED_SIZE_X": (900.0, "900"),
+                "BED_SIZE_Y": (600.0, "600"),
+            }
+        )
+        info_records = [r for r in caplog.records if r.levelno == logging.INFO]
+        assert len(info_records) == 2
+        messages = [r.message for r in info_records]
+        assert any("CARD_ID=0x00003039:12345" in m for m in messages)
+        assert any(
+            "RPA controller info" in m
+            and "bed_size_x=900.0" in m
+            and "bed_size_y=600.0" in m
+            for m in messages
+        )
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_position_event_does_not_log_controller_info(
+        self, adapter_pair, caplog
+    ):
+        """A position-only event must not log controller info."""
+        caplog.set_level(logging.INFO, logger=rpa_adapter.logger.name)
+        adapter, _backend = adapter_pair
+        adapter._on_rpa_status(
+            {
+                "POSITION_X": (123.456, "X"),
+                "POSITION_Y": (45.678, "Y"),
+                "POSITION_Z": (7.89, "Z"),
+            }
+        )
+        assert not any(
+            "RPA controller info" in r.message or "CARD_ID=" in r.message
+            for r in caplog.records
+        )
 
 
 class TestSetHoldStatusTransitions:
@@ -2457,6 +2739,220 @@ class TestRpcTimeoutSetup:
             adapter._setup_implementation(tui=True, timeout=value)
 
 
+class TestSetupVars:
+    """The setup 'usb_device' var is an optional SerialPortVar and
+    'magic_number' carries the standard default."""
+
+    def test_usb_device_var_is_serial_port_var(
+        self, isolated_context, isolated_machine
+    ):
+        """get_setup_vars must expose usb_device as a SerialPortVar."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        varset = adapter.get_setup_vars()
+        usb_var = varset.get("usb_device")
+        assert usb_var is not None
+        assert isinstance(usb_var, SerialPortVar)
+        assert usb_var.optional is True
+
+    def test_magic_number_var_defaults_to_standard_0x88(
+        self, isolated_context, isolated_machine
+    ):
+        """magic_number must be prefilled with the standard 0x88."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        varset = adapter.get_setup_vars()
+        magic_var = varset.get("magic_number")
+        assert magic_var is not None
+        assert magic_var.default == "0x88"
+        assert magic_var.optional is False
+
+    def test_empty_usb_device_validates_ok(
+        self, isolated_context, isolated_machine
+    ):
+        """UDP-only mode: an empty usb_device must validate."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        varset = adapter.get_setup_vars()
+        varset.set_values({"udp_host": "192.168.1.10", "usb_device": None})
+        varset.validate()
+
+    def test_device_path_validates_ok(
+        self, isolated_context, isolated_machine
+    ):
+        """A device path value must validate."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        varset = adapter.get_setup_vars()
+        varset.set_values(
+            {"udp_host": "192.168.1.10", "usb_device": "/dev/ttyUSB0"}
+        )
+        varset.validate()
+
+    def test_vidpid_validates_ok(self, isolated_context, isolated_machine):
+        """A VID:PID value must validate."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        varset = adapter.get_setup_vars()
+        varset.set_values(
+            {"udp_host": "192.168.1.10", "usb_device": "0403:6001"}
+        )
+        varset.validate()
+
+
+class TestConnectionMode:
+    """The 'connection' var selects network, USB, or auto fallback and
+    drives endpoint visibility and requiredness."""
+
+    def _setup_vars(self, isolated_context, isolated_machine):
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        return adapter.get_setup_vars()
+
+    def test_connection_var_defaults_to_auto(
+        self, isolated_context, isolated_machine
+    ):
+        """The connection var is a labeled choice defaulting to auto."""
+        varset = self._setup_vars(isolated_context, isolated_machine)
+        conn = varset.get("connection")
+        assert isinstance(conn, LabeledChoiceVar)
+        assert conn.default == CONNECTION_AUTO
+        assert conn.get_value_for_display("Network") == CONNECTION_NETWORK
+
+    def test_hostname_visible_in_network_and_auto(
+        self, isolated_context, isolated_machine
+    ):
+        """The hostname field hides in USB mode."""
+        varset = self._setup_vars(isolated_context, isolated_machine)
+        host = varset.get("udp_host")
+        assert host is not None
+        assert host.is_visible({"connection": CONNECTION_AUTO}) is True
+        assert host.is_visible({"connection": CONNECTION_NETWORK}) is True
+        assert host.is_visible({"connection": CONNECTION_USB}) is False
+
+    def test_usb_visible_in_usb_and_auto(
+        self, isolated_context, isolated_machine
+    ):
+        """The USB field hides in network mode."""
+        varset = self._setup_vars(isolated_context, isolated_machine)
+        usb = varset.get("usb_device")
+        assert usb is not None
+        assert usb.is_visible({"connection": CONNECTION_AUTO}) is True
+        assert usb.is_visible({"connection": CONNECTION_USB}) is True
+        assert usb.is_visible({"connection": CONNECTION_NETWORK}) is False
+
+    def test_usb_required_only_in_usb_mode(
+        self, isolated_context, isolated_machine
+    ):
+        """A USB device is only mandatory when USB mode is selected."""
+        varset = self._setup_vars(isolated_context, isolated_machine)
+        usb = varset.get("usb_device")
+        assert usb is not None
+        assert usb.is_required({"connection": CONNECTION_USB}) is True
+        assert usb.is_required({"connection": CONNECTION_AUTO}) is False
+        assert usb.is_required({"connection": CONNECTION_NETWORK}) is False
+
+    @pytest.mark.asyncio
+    async def test_setup_network_mode_drops_usb(
+        self, isolated_context, isolated_machine
+    ):
+        """Network mode must strip a stale USB device from the config."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        adapter.setup(
+            connection=CONNECTION_NETWORK,
+            udp_host="192.168.1.10",
+            usb_device="/dev/ttyUSB0",
+        )
+        assert adapter._config.get("usb_device") is None
+        assert adapter._config.get("udp_host") == "192.168.1.10"
+        assert adapter.resource_uri == "ruidarpa://192.168.1.10"
+        await adapter.cleanup()
+        await isolated_machine.shutdown()
+
+    @pytest.mark.asyncio
+    async def test_setup_usb_mode_drops_host(
+        self, isolated_context, isolated_machine
+    ):
+        """USB mode must strip a stale hostname from the config."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        adapter.setup(
+            connection=CONNECTION_USB,
+            udp_host="192.168.1.10",
+            usb_device="/dev/ttyUSB0",
+        )
+        assert adapter._config.get("udp_host") is None
+        assert adapter._config.get("usb_device") == "/dev/ttyUSB0"
+        assert adapter.resource_uri == "ruidarpa:///dev/ttyUSB0"
+        await adapter.cleanup()
+        await isolated_machine.shutdown()
+
+    @pytest.mark.asyncio
+    async def test_setup_without_connection_keeps_both_endpoints(
+        self, isolated_context, isolated_machine
+    ):
+        """No mode (legacy profiles) must behave exactly like auto."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        adapter.setup(udp_host="192.168.1.10", usb_device="/dev/ttyUSB0")
+        assert adapter._config.get("udp_host") == "192.168.1.10"
+        assert adapter._config.get("usb_device") == "/dev/ttyUSB0"
+        await adapter.cleanup()
+        await isolated_machine.shutdown()
+
+    @pytest.mark.asyncio
+    async def test_update_settings_mode_change_requests_rebuild(
+        self, isolated_context, isolated_machine
+    ):
+        """Changing the connection mode must request a rebuild."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        adapter.setup(udp_host="192.168.1.10")
+        accepted = adapter.update_settings(
+            connection=CONNECTION_USB, usb_device="/dev/ttyUSB0"
+        )
+        assert accepted is False
+        assert adapter._config.get("udp_host") is None
+        await adapter.cleanup()
+        await isolated_machine.shutdown()
+
+    @pytest.mark.asyncio
+    async def test_update_settings_same_mode_absorbs(
+        self, isolated_context, isolated_machine
+    ):
+        """Non-endpoint changes keep the live adapter alive."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        adapter.setup(udp_host="192.168.1.10", timeout=1.0)
+        accepted = adapter.update_settings(
+            udp_host="192.168.1.10", timeout=9.5
+        )
+        assert accepted is True
+        await adapter.cleanup()
+        await isolated_machine.shutdown()
+
+
+class TestPrecheck:
+    """precheck validates the endpoint for the selected mode."""
+
+    def test_auto_requires_at_least_one_endpoint(self):
+        """Without a mode, either endpoint satisfies the check."""
+        with pytest.raises(DriverPrecheckError, match="At least one"):
+            RuidaRPAAdapter.precheck()
+        RuidaRPAAdapter.precheck(udp_host="192.168.1.10")
+        RuidaRPAAdapter.precheck(usb_device="/dev/ttyUSB0")
+
+    def test_network_mode_requires_hostname(self):
+        """Network mode ignores the USB device."""
+        with pytest.raises(DriverPrecheckError, match="Hostname"):
+            RuidaRPAAdapter.precheck(
+                connection=CONNECTION_NETWORK, usb_device="/dev/ttyUSB0"
+            )
+        RuidaRPAAdapter.precheck(
+            connection=CONNECTION_NETWORK, udp_host="192.168.1.10"
+        )
+
+    def test_usb_mode_requires_device(self):
+        """USB mode ignores the hostname."""
+        with pytest.raises(DriverPrecheckError, match="USB device"):
+            RuidaRPAAdapter.precheck(
+                connection=CONNECTION_USB, udp_host="192.168.1.10"
+            )
+        RuidaRPAAdapter.precheck(
+            connection=CONNECTION_USB, usb_device="/dev/ttyUSB0"
+        )
+
+
 class TestUpdateSettings:
     """update_settings absorbs non-endpoint changes into the live
     adapter and requests a rebuild for endpoint or mode changes."""
@@ -2613,3 +3109,31 @@ class TestPowerFloorSetup:
         assert ipb_var.default == DEFAULT_IMAGE_POWER_BIAS
         assert ipb_var.min_val == 0.0
         assert ipb_var.max_val == 100.0
+
+    def test_power_floor_enabled_var_present_with_driver_defaults(
+        self, isolated_context, isolated_machine
+    ):
+        """get_setup_vars must expose a power_floor_enabled var."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        varset = adapter.get_setup_vars()
+        pfe_var = varset.get("power_floor_enabled")
+        assert pfe_var is not None
+        assert isinstance(pfe_var, BoolVar)
+        assert pfe_var.default is False
+
+        keys = [var.key for var in varset]
+        assert keys.index("power_floor_enabled") < keys.index("power_floor")
+
+    def test_power_scaling_enabled_var_present_with_driver_defaults(
+        self, isolated_context, isolated_machine
+    ):
+        """get_setup_vars must expose a power_scaling_enabled var."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        varset = adapter.get_setup_vars()
+        pse_var = varset.get("power_scaling_enabled")
+        assert pse_var is not None
+        assert isinstance(pse_var, BoolVar)
+        assert pse_var.default is True
+
+        keys = [var.key for var in varset]
+        assert keys.index("power_scaling_enabled") < keys.index("power_floor")

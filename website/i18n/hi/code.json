@@ -1,0 +1,1010 @@
+{
+  "navbar.patreon.link": {
+    "message": "Patreon पर संरक्षक बनें"
+  },
+  "install.snap.recommended": {
+    "message": "Snap (अनुशंसित)"
+  },
+  "install.pixi.developers": {
+    "message": "Pixi (डेवलपर)"
+  },
+  "install.fromSource": {
+    "message": "स्रोत से"
+  },
+  "install.installer.recommended": {
+    "message": "इंस्टॉलर (अनुशंसित)"
+  },
+  "install.msys2.developers": {
+    "message": "MSYS2 (डेवलपर)"
+  },
+  "install.selectOs": {
+    "message": "अपना ऑपरेटिंग सिस्टम चुनें:"
+  },
+  "install.chooseMethod": {
+    "message": "इंस्टॉलेशन विधि चुनें:"
+  },
+  "install.debian.title": {
+    "message": "Debian पैकेज"
+  },
+  "install.debian.description": {
+    "message": "Rayforge आधिकारिक Debian आर्काइव का हिस्सा है. यदि आप Debian चला रहे हैं, तो इसे इंस्टॉल करने का यह सबसे एकीकृत तरीका है: आपको अपडेट स्वतः, अपने सिस्टम के बाकी हिस्सों के साथ मिलते हैं."
+  },
+  "install.debian.suites": {
+    "message": "पैकेज इस समय Debian unstable (sid) और testing में उपलब्ध है, और अगले स्थिर रिलीज़ में शामिल होगा. इसे पहले से रिलीज़ हो चुके Debian या Ubuntu संस्करणों में जोड़ा नहीं जा सकता — उन पर Snap, Flathub, या Ubuntu PPA का उपयोग करें."
+  },
+  "install.debian.trackerLink": {
+    "message": "Debian पैकेज ट्रैकर पर पैकेज का पालन करें."
+  },
+  "install.ppa.description": {
+    "message": "Ubuntu 24.04 LTS के लिए, आप हमारा आधिकारिक PPA उपयोग कर सकते हैं. यह विधि आपके सिस्टम के पैकेज मैनेजर के माध्यम से स्वतः अपडेट प्रदान करती है."
+  },
+  "install.addPpa": {
+    "message": "Rayforge PPA जोड़ें"
+  },
+  "install.installRayforge": {
+    "message": "Rayforge इंस्टॉल करें"
+  },
+  "install.launchRayforge": {
+    "message": "Rayforge लॉन्च करें"
+  },
+  "install.launchFromMenu": {
+    "message": "Rayforge को अपने एप्लिकेशन मेनू से या चलाकर लॉन्च करें:"
+  },
+  "install.gentoo.title": {
+    "message": "Gentoo पैकेज"
+  },
+  "install.gentoo.description": {
+    "message": "Rayforge Gentoo पर समुदाय द्वारा अनुरक्षित \"snakebyte\" ओवरले के माध्यम से उपलब्ध है. पैकेज स्रोत कोड से बनाया जाता है, इसलिए इंस्टॉलेशन में कुछ समय लग सकता है."
+  },
+  "install.gentoo.community": {
+    "message": "यह पैकेज समुदाय द्वारा अनुरक्षित है और इसे Rayforge परियोजना का आधिकारिक समर्थन प्राप्त नहीं है."
+  },
+  "install.gentoo.overlayLink": {
+    "message": "GitHub पर ओवरले देखें."
+  },
+  "install.gentoo.addOverlay": {
+    "message": "snakebyte ओवरले जोड़ें"
+  },
+  "install.gentoo.syncOverlay": {
+    "message": "ओवरले सिंक करें"
+  },
+  "install.flathub.title": {
+    "message": "Flathub पैकेज"
+  },
+  "install.flathub.description": {
+    "message": "Linux पर Rayforge से शुरुआत करने का सबसे आसान तरीका Flathub पैकेज है."
+  },
+  "install.installFromFlathub": {
+    "message": "Flathub से इंस्टॉल करें"
+  },
+  "install.getFromFlathub": {
+    "message": "इसे Flathub से पाएँ"
+  },
+  "install.orCommandLine": {
+    "message": "या कमांड लाइन से इंस्टॉल करें:"
+  },
+  "install.snap.title": {
+    "message": "Snap पैकेज"
+  },
+  "install.snap.description": {
+    "message": "Snap पैकेज अधिकांश Linux वितरणों पर काम करता है और सभी निर्भरताओं को एक सैंडबॉक्स वातावरण में शामिल करता है."
+  },
+  "install.grantPermissions": {
+    "message": "Snap अनुमतियाँ प्रदान करें (महत्वपूर्ण!)"
+  },
+  "install.permissionsRequired": {
+    "message": "अनुमतियाँ आवश्यक"
+  },
+  "install.snap.permissionNote": {
+    "message": "Snap संस्करण एक सैंडबॉक्स में चलता है और हार्डवेयर एक्सेस के लिए मैन्युअल अनुमति प्रदान करने की आवश्यकता होती है."
+  },
+  "install.snap.dialoutNote": {
+    "message": "Debian-आधारित वितरणों पर, AppArmor DENIED संदेशों से बचने के लिए Snap का उपयोग करते समय भी आपके उपयोगकर्ता को dialout समूह में होना चाहिए."
+  },
+  "install.usbSerialAccess": {
+    "message": "USB सीरियल पोर्ट एक्सेस के लिए:"
+  },
+  "install.cameraAccess": {
+    "message": "कैमरा एक्सेस के लिए:"
+  },
+  "install.verifyPermissions": {
+    "message": "अनुमतियाँ सत्यापित करें"
+  },
+  "install.serialPortConnected": {
+    "message": "सूची में {code} देखें. यदि यह \"connected\" दिखाता है, तो आप तैयार हैं."
+  },
+  "install.pixi.title": {
+    "message": "Pixi (डेवलपर इंस्टॉलेशन)"
+  },
+  "install.pixi.description": {
+    "message": "Python परियोजनाओं के लिए एक तेज़ पैकेज मैनेजर है. यह विधि उन डेवलपर के लिए अनुशंसित है जो Rayforge में योगदान देना चाहते हैं या नवीनतम विकास संस्करण चलाना चाहते हैं."
+  },
+  "install.linuxOnly": {
+    "message": "केवल Linux"
+  },
+  "install.pixi.linuxOnly": {
+    "message": "Pixi इंस्टॉलेशन वर्तमान में केवल Linux पर उपलब्ध है."
+  },
+  "install.installPixi": {
+    "message": "Pixi इंस्टॉल करें"
+  },
+  "install.pixi.installInstruction": {
+    "message": "आधिकारिक इंस्टॉलर का उपयोग करके Pixi इंस्टॉल करें:"
+  },
+  "install.restartShell": {
+    "message": "इंस्टॉलेशन के बाद, अपना शेल पुनरारंभ करें या चलाएँ:"
+  },
+  "install.cloneRepo": {
+    "message": "रिपॉज़िटरी क्लोन करें"
+  },
+  "install.installDependencies": {
+    "message": "निर्भरताएँ इंस्टॉल करें"
+  },
+  "install.pixi.autoVenv": {
+    "message": "Pixi स्वतः एक वर्चुअल वातावरण बनाएगा और सभी निर्भरताएँ इंस्टॉल करेगा:"
+  },
+  "install.addDialoutGroup": {
+    "message": "उपयोगकर्ता को dialout समूह में जोड़ें"
+  },
+  "install.requiredSerialAccess": {
+    "message": "सीरियल पोर्ट एक्सेस के लिए आवश्यक:"
+  },
+  "install.important": {
+    "message": "महत्वपूर्ण:"
+  },
+  "install.logoutLogin": {
+    "message": "यह बदलाव लागू होने के लिए लॉग आउट करके वापस लॉग इन करें."
+  },
+  "install.runRayforge": {
+    "message": "Rayforge चलाएँ"
+  },
+  "install.usefulPixiCommands": {
+    "message": "उपयोगी Pixi कमांड"
+  },
+  "install.availableDevCommands": {
+    "message": "उपलब्ध विकास कमांड"
+  },
+  "install.runTestSuite": {
+    "message": "परीक्षण सूट चलाएँ"
+  },
+  "install.runUiTests": {
+    "message": "UI परीक्षण चलाएँ"
+  },
+  "install.runLinting": {
+    "message": "लिंटिंग और स्थिर विश्लेषण चलाएँ"
+  },
+  "install.formatCode": {
+    "message": "ruff से कोड फ़ॉर्मेट करें"
+  },
+  "install.source.title": {
+    "message": "स्रोत से इंस्टॉल करें"
+  },
+  "install.source.description": {
+    "message": "उन डेवलपर और उन्नत उपयोगकर्ताओं के लिए जो नवीनतम विकास संस्करण चलाना चाहते हैं या परियोजना में योगदान देना चाहते हैं."
+  },
+  "install.installSystemDeps": {
+    "message": "सिस्टम निर्भरताएँ इंस्टॉल करें"
+  },
+  "install.onDebianUbuntu": {
+    "message": "Debian/Ubuntu पर:"
+  },
+  "install.installFromPypi": {
+    "message": "PyPI से Rayforge इंस्टॉल करें"
+  },
+  "install.pypiNote": {
+    "message": "अन्य वितरणों पर पैकेज नाम भिन्न हो सकते हैं. अपने वितरण के दस्तावेज़ीकरण देखें."
+  },
+  "install.windows.title": {
+    "message": "Windows इंस्टॉलेशन"
+  },
+  "install.windows.dev.title": {
+    "message": "Windows डेवलपर सेटअप (MSYS2)"
+  },
+  "install.windows.dev.description": {
+    "message": "उन डेवलपर के लिए जो Rayforge में योगदान देना चाहते हैं या Windows पर नवीनतम विकास संस्करण चलाना चाहते हैं. यह विधि Unix जैसा विकास वातावरण प्रदान करने के लिए MSYS2 का उपयोग करती है."
+  },
+  "install.installMsys2": {
+    "message": "MSYS2 इंस्टॉल करें"
+  },
+  "install.msys2.download": {
+    "message": "MSYS2 को आधिकारिक वेबसाइट से डाउनलोड और इंस्टॉल करें:"
+  },
+  "install.msys2.defaultPath": {
+    "message": "सर्वोत्तम संगतता के लिए डिफ़ॉल्ट इंस्टॉलेशन पथ (C:\\msys64) उपयोग करें. इंस्टॉलेशन के बाद, MSYS2 स्टार्ट मेनू में कई शेल शॉर्टकट प्रदान करता है — Rayforge विकास के लिए हमेशा UCRT64 शेल का उपयोग करें. अन्य शेल (MSYS2, MINGW64) काम नहीं करेंगे."
+  },
+  "install.runSetup": {
+    "message": "सेटअप स्क्रिप्ट चलाएँ"
+  },
+  "install.msys2.shell": {
+    "message": "MSYS2 UCRT64 शेल खोलें और सेटअप स्क्रिप्ट चलाएँ:"
+  },
+  "install.msys2.setupNote": {
+    "message": "यह स्क्रिप्ट सभी आवश्यक सिस्टम निर्भरताएँ और Python पैकेज इंस्टॉल करती है. पूरा होने में कई मिनट लग सकते हैं."
+  },
+  "install.installDevTools": {
+    "message": "विकास उपकरण इंस्टॉल करें (वैकल्पिक)"
+  },
+  "install.msys2.devTools": {
+    "message": "लिंटिंग, फ़ॉर्मेटिंग, और pre-commit हुक के लिए:"
+  },
+  "install.usefulWinCommands": {
+    "message": "उपयोगी Windows विकास कमांड"
+  },
+  "install.gitCommands": {
+    "message": "Git कमांड"
+  },
+  "install.msys2.gitNote": {
+    "message": "pre-commit हुक का उपयोग करते समय, आपको git कमांड MSYS2 UCRT64 शेल के भीतर से चलानी होंगी, PowerShell या Command Prompt से नहीं."
+  },
+  "install.buildInstaller": {
+    "message": "Windows इंस्टॉलर बनाएँ"
+  },
+  "install.downloadInstaller": {
+    "message": "इंस्टॉलर डाउनलोड करें"
+  },
+  "install.downloadRayforge": {
+    "message": "Rayforge डाउनलोड करें"
+  },
+  "install.runInstaller": {
+    "message": "इंस्टॉलर चलाएँ"
+  },
+  "install.runInstallerInstruction": {
+    "message": "डाउनलोड किया गया इंस्टॉलर चलाएँ और ऑन-स्क्रीन निर्देशों का पालन करें."
+  },
+  "install.runAsAdmin": {
+    "message": "यदि आपको अनुमति त्रुटियाँ मिलती हैं, तो इंस्टॉलर को व्यवस्थापक के रूप में चलाने का प्रयास करें (right-click - Run as Administrator)."
+  },
+  "install.windowsLaunch": {
+    "message": "Rayforge को स्टार्ट मेनू या डेस्कटॉप शॉर्टकट से लॉन्च करें."
+  },
+  "install.macOS.chooseBuild": {
+    "message": "बिल्ड प्रकार चुनें:"
+  },
+  "install.macOS.universalInstructions": {
+    "message": "DMG खोलें और Rayforge.app को अपने Applications फ़ोल्डर में खींचें."
+  },
+  "install.macOS.zipInstructions": {
+    "message": "ZIP निकालें और Rayforge.app को Applications में ले जाएँ."
+  },
+  "install.macOS.openRayforge": {
+    "message": "Rayforge खोलें"
+  },
+  "install.macOS.openRayforgeInstructions": {
+    "message": "अपने Applications फ़ोल्डर से Rayforge.app प्रारंभ करें."
+  },
+  "install.macOS.gatekeeper": {
+    "message": "टर्मिनल से एक बार लॉन्च करें (यदि Gatekeeper रोकता है)"
+  },
+  "install.macOS.gatekeeperInstructions": {
+    "message": "यदि macOS पहला लॉन्च रोकता है, तो क्वारंटीन विशेषताएँ हटाएँ और Rayforge प्रारंभ करें:"
+  },
+  "install.macOS.source": {
+    "message": "स्रोत (डेवलपर)"
+  },
+  "install.macOS.cloneRepo": {
+    "message": "रिपॉज़िटरी क्लोन करें"
+  },
+  "install.macOS.runSetup": {
+    "message": "सेटअप स्क्रिप्ट चलाएँ"
+  },
+  "install.macOS.runSetupInstructions": {
+    "message": "यह निर्भरताएँ इंस्टॉल करता है और वातावरण कॉन्फ़िगर करता है:"
+  },
+  "install.macOS.buildAndRun": {
+    "message": "बिल्ड और चलाएँ"
+  },
+  "install.macOS.universal": {
+    "message": "यूनिवर्सल (अनुशंसित)"
+  },
+  "install.macOS.arm": {
+    "message": "Apple Silicon (M1/M2/M3)"
+  },
+  "install.macOS.intel": {
+    "message": "Intel Mac"
+  },
+  "install.verify.title": {
+    "message": "इंस्टॉलेशन सत्यापित करें"
+  },
+  "install.verify.launch": {
+    "message": "Rayforge को अपने एप्लिकेशन मेनू या टर्मिनल से लॉन्च करें. आपको कैनवस और टूलबार के साथ मुख्य विंडो दिखनी चाहिए."
+  },
+  "install.checkVersion": {
+    "message": "संस्करण जाँचें"
+  },
+  "install.checkVersionInstruction": {
+    "message": "इंस्टॉल किया गया संस्करण पुष्टि करने के लिए Help - About देखें."
+  },
+  "install.connectMachine": {
+    "message": "अपनी मशीन कनेक्ट करें"
+  },
+  "install.verifySerialPort": {
+    "message": "अपना लेज़र नियंत्रक USB से जोड़ें और सत्यापित करें कि सीरियल पोर्ट Rayforge की मशीन सेटिंग्स में दिखाई देता है."
+  },
+  "install.linuxSerialTip": {
+    "message": "Linux पर, लेज़र नियंत्रक प्रायः /dev/ttyUSB0 या /dev/ttyACM0 के रूप में दिखाई देते हैं."
+  },
+  "install.windowsComTip": {
+    "message": "Windows पर, अपना COM पोर्ट नंबर खोजने के लिए Device Manager में Ports (COM and LPT) देखें."
+  },
+  "install.troubleshooting.title": {
+    "message": "समस्या निवारण"
+  },
+  "install.permissionIssues": {
+    "message": "अनुमति समस्याएँ?"
+  },
+  "install.seeSnapGuide": {
+    "message": "यदि आपका डिवाइस पहचाना नहीं जाता, तो Snap अनुमति गाइड देखें."
+  },
+  "install.snapPermissionsGuide": {
+    "message": "Snap अनुमति गाइड"
+  },
+  "install.serialNotWorking": {
+    "message": "सीरियल पोर्ट अभी भी काम नहीं कर रहा?"
+  },
+  "install.replugUsb": {
+    "message": "USB डिवाइस दोबारा लगाएँ:"
+  },
+  "install.replugInstruction": {
+    "message": "अपना लेज़र नियंत्रक अनप्लग करें, 5 सेकंड प्रतीक्षा करें, फिर से लगाएँ."
+  },
+  "install.restartRayforge": {
+    "message": "Rayforge पुनरारंभ करें:"
+  },
+  "install.closeRelaunch": {
+    "message": "पूरी तरह बंद करें और फिर से लॉन्च करें."
+  },
+  "install.checkDeviceExists": {
+    "message": "जाँचें कि डिवाइस मौजूद है:"
+  },
+  "install.reinstallIfNeeded": {
+    "message": "आवश्यक हो तो पुनः इंस्टॉल करें:"
+  },
+  "install.permissionDenied": {
+    "message": "अनुमति अस्वीकृत त्रुटियाँ?"
+  },
+  "install.permissionDeniedInstruction": {
+    "message": "सीरियल पोर्ट एक्सेस करते समय यदि आपको \"permission denied\" त्रुटियाँ मिलती हैं, तो अपने उपयोगकर्ता को {code} समूह में जोड़ें:"
+  },
+  "install.logoutBack": {
+    "message": "फिर बदलाव लागू होने के लिए लॉग आउट करके वापस लॉग इन करें."
+  },
+  "install.installerCrashing": {
+    "message": "इंस्टॉलर क्रैश हो रहा है या इंस्टॉल नहीं हो रहा?"
+  },
+  "install.missingVcRedist": {
+    "message": "यदि इंस्टॉलर क्रैश होता है या इंस्टॉल करने में विफल होता है, तो संभव है कि Microsoft Visual C++ Redistributable अनुपस्थित हो. इसे Microsoft से डाउनलोड और इंस्टॉल करें:"
+  },
+  "install.downloadVc14": {
+    "message": "C++ Redistributable v14 डाउनलोड करें"
+  },
+  "install.afterVcInstall": {
+    "message": "redistributable इंस्टॉल करने के बाद, Rayforge इंस्टॉलर फिर से चलाएँ."
+  },
+  "install.driverIssues": {
+    "message": "ड्राइवर समस्याएँ?"
+  },
+  "install.checkDeviceManager": {
+    "message": "यदि आपका लेज़र नियंत्रक पहचाना नहीं जाता, तो COM पोर्ट नंबर की पुष्टि के लिए Device Manager में Ports (COM and LPT) जाँचें. अपने USB-टू-सीरियल एडॉप्टर के लिए आपको CH340 या CP2102 ड्राइवर इंस्टॉल करने पड़ सकते हैं."
+  },
+  "install.antivirusBlocking": {
+    "message": "एंटीवायरस कनेक्शन रोक रहा है?"
+  },
+  "install.antivirusNote": {
+    "message": "कुछ एंटीवायरस सॉफ़्टवेयर Rayforge को USB डिवाइसों तक पहुँच से रोक सकते हैं. यदि आपको कनेक्शन समस्याएँ आती हैं तो एक अपवाद जोड़ने का प्रयास करें."
+  },
+  "install.usbNotDetected": {
+    "message": "USB डिवाइस पहचाना नहीं गया?"
+  },
+  "install.approveUsb": {
+    "message": "यदि आपका डिवाइस पहचाना नहीं जाता, तो आपको System Settings - Privacy and Security में USB डिवाइस को स्वीकृत देने की आवश्यकता हो सकती है."
+  },
+  "install.driverIssuesMac": {
+    "message": "कुछ USB-टू-सीरियल एडॉप्टर को अतिरिक्त ड्राइवरों की आवश्यकता होती है. जाँचें कि आपका एडॉप्टर CH340 या CP2102 चिप उपयोग करता है और उपयुक्त ड्राइवर इंस्टॉल करें."
+  },
+  "install.needHelp": {
+    "message": "सहायता चाहिए?"
+  },
+  "install.needHelpDescription": {
+    "message": "अतिरिक्त सहायता के लिए, GitHub पर एक समस्या रिपोर्ट करें या हमारे Discord से जुड़ें."
+  },
+  "theme.ErrorPageContent.title": {
+    "message": "यह पृष्ठ मौजूद नहीं है."
+  },
+  "theme.BackToTopButton.buttonAriaLabel": {
+    "message": "ऊपर वापस जाएँ"
+  },
+  "theme.blog.archive.title": {
+    "message": "संग्रह"
+  },
+  "theme.blog.archive.description": {
+    "message": "संग्रह"
+  },
+  "theme.blog.paginator.navAriaLabel": {
+    "message": "ब्लॉग पदों की सूची नेविगेशन"
+  },
+  "theme.blog.paginator.newerEntries": {
+    "message": "नई प्रविष्टियाँ"
+  },
+  "theme.blog.paginator.olderEntries": {
+    "message": "पुरानी प्रविष्टियाँ"
+  },
+  "theme.blog.post.paginator.navAriaLabel": {
+    "message": "ब्लॉग पद नेविगेशन"
+  },
+  "theme.blog.post.paginator.newerPost": {
+    "message": "नया पद"
+  },
+  "theme.blog.post.paginator.olderPost": {
+    "message": "पुराना पद"
+  },
+  "theme.tags.tagsPageLink": {
+    "message": "सभी टैग देखें"
+  },
+  "theme.colorToggle.ariaLabel.mode.system": {
+    "message": "सिस्टम मोड"
+  },
+  "theme.colorToggle.ariaLabel.mode.light": {
+    "message": "लाइट मोड"
+  },
+  "theme.colorToggle.ariaLabel.mode.dark": {
+    "message": "डार्क मोड"
+  },
+  "theme.colorToggle.ariaLabel": {
+    "message": "लाइट और डार्क मोड के बीच बदलें (वर्तमान में {mode})"
+  },
+  "theme.docs.breadcrumbs.navAriaLabel": {
+    "message": "ब्रेडक्रंब"
+  },
+  "theme.docs.DocCard.categoryDescription.plurals": {
+    "message": "{count} आइटम"
+  },
+  "theme.docs.paginator.navAriaLabel": {
+    "message": "दस्तावेज़ नेविगेशन"
+  },
+  "theme.docs.paginator.previous": {
+    "message": "पिछला"
+  },
+  "theme.docs.paginator.next": {
+    "message": "अगला"
+  },
+  "theme.docs.tagDocListPageTitle.nDocsTagged": {
+    "message": "एक दस्तावेज़ टैग किया गया|{count} दस्तावेज़ टैग किए गए"
+  },
+  "theme.docs.tagDocListPageTitle": {
+    "message": "\"{tagName}\" के साथ {nDocsTagged}"
+  },
+  "theme.docs.versionBadge.label": {
+    "message": "संस्करण: {versionLabel}"
+  },
+  "theme.docs.versions.unreleasedVersionLabel": {
+    "message": "यह {siteTitle} {versionLabel} के लिए अप्रकाशित दस्तावेज़ीकरण है."
+  },
+  "theme.docs.versions.unmaintainedVersionLabel": {
+    "message": "यह {siteTitle} {versionLabel} के लिए दस्तावेज़ीकरण है, जिसे अब सक्रिय रूप से बनाए नहीं रखा जाता."
+  },
+  "theme.docs.versions.latestVersionSuggestionLabel": {
+    "message": "अद्यतन दस्तावेज़ीकरण के लिए, {latestVersionLink} ({versionLabel}) देखें."
+  },
+  "theme.docs.versions.latestVersionLinkLabel": {
+    "message": "नवीनतम संस्करण"
+  },
+  "theme.common.editThisPage": {
+    "message": "यह पृष्ठ संपादित करें"
+  },
+  "theme.common.headingLinkTitle": {
+    "message": "शीर्षक का सीधा लिंक"
+  },
+  "theme.lastUpdated.atDate": {
+    "message": " {date}"
+  },
+  "theme.lastUpdated.byUser": {
+    "message": " {user} द्वारा"
+  },
+  "theme.lastUpdated.lastUpdatedAtBy": {
+    "message": "अंतिम अपडेट{atDate}{byUser}"
+  },
+  "theme.navbar.mobileVersionsDropdown.label": {
+    "message": "संस्करण"
+  },
+  "theme.NotFound.title": {
+    "message": "पृष्ठ नहीं मिला"
+  },
+  "theme.tags.tagsListLabel": {
+    "message": "टैग:"
+  },
+  "theme.AnnouncementBar.closeButtonAriaLabel": {
+    "message": "बंद करें"
+  },
+  "theme.blog.sidebar.navAriaLabel": {
+    "message": "हाल के ब्लॉग पदों का नेविगेशन"
+  },
+  "theme.DocSidebarItem.expandCategoryAriaLabel": {
+    "message": "साइडबार श्रेणी '{label}' विस्तृत करें"
+  },
+  "theme.DocSidebarItem.collapseCategoryAriaLabel": {
+    "message": "साइडबार श्रेणी '{label}' संकुचित करें"
+  },
+  "theme.IconExternalLink.ariaLabel": {
+    "message": "(नए टैब में खुलता है)"
+  },
+  "theme.NavBar.navAriaLabel": {
+    "message": "मुख्य नेविगेशन"
+  },
+  "theme.navbar.mobileLanguageDropdown.label": {
+    "message": "भाषाएँ"
+  },
+  "theme.NotFound.p1": {
+    "message": "हमें वह नहीं मिला जिसकी आपको खोज थी."
+  },
+  "theme.NotFound.p2": {
+    "message": "कृपया उस साइट के स्वामी से संपर्क करें जिसने आपको यहाँ लाया और उन्हें बताएं कि लिंक टूटा हुआ है."
+  },
+  "theme.TOCCollapsible.toggleButtonLabel": {
+    "message": "इस पृष्ठ पर"
+  },
+  "theme.blog.post.readMore": {
+    "message": "और पढ़ें"
+  },
+  "theme.blog.post.readMoreLabel": {
+    "message": "{title} के बारे में और पढ़ें"
+  },
+  "theme.blog.post.readingTime.plurals": {
+    "message": "एक मिनट की पठन अवधि|{readingTime} मिनटों की पठन अवधि"
+  },
+  "theme.CodeBlock.copy": {
+    "message": "कॉपी करें"
+  },
+  "theme.CodeBlock.copied": {
+    "message": "कॉपी हुआ"
+  },
+  "theme.CodeBlock.copyButtonAriaLabel": {
+    "message": "क्लिपबोर्ड पर कॉपी करें"
+  },
+  "theme.CodeBlock.wordWrapToggle": {
+    "message": "लाइन रैप टॉगल करें"
+  },
+  "theme.docs.breadcrumbs.home": {
+    "message": "मुख्य पृष्ठ"
+  },
+  "theme.docs.sidebar.collapseButtonTitle": {
+    "message": "साइडबार संकुचित करें"
+  },
+  "theme.docs.sidebar.collapseButtonAriaLabel": {
+    "message": "साइडबार संकुचित करें"
+  },
+  "theme.docs.sidebar.navAriaLabel": {
+    "message": "दस्तावेज़ साइडबार"
+  },
+  "theme.docs.sidebar.closeSidebarButtonAriaLabel": {
+    "message": "नेविगेशन बार बंद करें"
+  },
+  "theme.navbar.mobileSidebarSecondaryMenu.backButtonLabel": {
+    "message": "← मुख्य मेनू पर वापस जाएँ"
+  },
+  "theme.docs.sidebar.toggleSidebarButtonAriaLabel": {
+    "message": "नेविगेशन बार टॉगल करें"
+  },
+  "theme.navbar.mobileDropdown.collapseButton.expandAriaLabel": {
+    "message": "ड्रॉपडाउन मेनू विस्तृत करें"
+  },
+  "theme.navbar.mobileDropdown.collapseButton.collapseAriaLabel": {
+    "message": "ड्रॉपडाउन मेनू संकुचित करें"
+  },
+  "theme.docs.sidebar.expandButtonTitle": {
+    "message": "साइडबार विस्तृत करें"
+  },
+  "theme.docs.sidebar.expandButtonAriaLabel": {
+    "message": "साइडबार विस्तृत करें"
+  },
+  "theme.blog.post.plurals": {
+    "message": "एक पद|{count} पद"
+  },
+  "theme.blog.tagTitle": {
+    "message": "\"{tagName}\" के साथ टैग किए गए {nPosts}"
+  },
+  "theme.blog.author.pageTitle": {
+    "message": "{authorName} - {nPosts}"
+  },
+  "theme.blog.authorsList.pageTitle": {
+    "message": "लेखक"
+  },
+  "theme.blog.authorsList.viewAll": {
+    "message": "सभी लेखक देखें"
+  },
+  "theme.blog.author.noPosts": {
+    "message": "इस लेखक ने अभी तक कोई पद नहीं लिखा है."
+  },
+  "theme.contentVisibility.unlistedBanner.title": {
+    "message": "अनसूचित पृष्ठ"
+  },
+  "theme.contentVisibility.unlistedBanner.message": {
+    "message": "यह पृष्ठ अनसूचित है. खोज इंजन इसे अनुक्रमित नहीं करेंगे और केवल सीधा लिंक रखने वाले उपयोगकर्ता ही इसे एक्सेस कर सकते हैं."
+  },
+  "theme.contentVisibility.draftBanner.title": {
+    "message": "पृष्ठ ड्राफ़्ट में"
+  },
+  "theme.contentVisibility.draftBanner.message": {
+    "message": "यह पृष्ठ एक ड्राफ़्ट है. यह केवल विकास में दृश्यमान है और उत्पादन बिल्ड से बाहर रखा जाएगा."
+  },
+  "theme.ErrorPageContent.tryAgain": {
+    "message": "पुनः प्रयास करें"
+  },
+  "theme.common.skipToMainContent": {
+    "message": "मुख्य सामग्री पर जाएँ"
+  },
+  "theme.tags.tagsPageTitle": {
+    "message": "टैग"
+  },
+  "homepage.community.title": {
+    "message": "Rayforge के साथ निर्मित"
+  },
+  "homepage.community.subtitle": {
+    "message": "देखें कि दुनिया भर के निर्माता क्या बना रहे हैं"
+  },
+  "homepage.community.cta": {
+    "message": "अपनी रचनाएँ साझा करें"
+  },
+  "sponsor.title": {
+    "message": "Rayforge का प्रायोजक बनें"
+  },
+  "sponsor.description": {
+    "message": "अपनी लेज़र मशीनें Rayforge में लाएँ — पूर्व-कॉन्फ़िगर, शोकेस में, और वीडियो सामग्री व ट्यूटोरियल के साथ. आइए साथ काम करें!"
+  },
+  "sponsor.hero.gradient": {
+    "message": "Partner"
+  },
+  "sponsor.hero.title": {
+    "message": "Rayforge के साथ"
+  },
+  "sponsor.hero.subtitle": {
+    "message": "अपनी मशीनों को दुनिया भर के लेज़र कटिंग और उत्कीर्णन उत्साही लोगों के सामने रखें. सॉफ़्टवेयर, ट्यूटोरियल और समुदाय की ज़िम्मेदारी हमारी — आप हार्डवेयर को शानदार बनाएँ."
+  },
+  "sponsor.hero.cta": {
+    "message": "संपर्क करें"
+  },
+  "sponsor.stats.views": {
+    "message": "मासिक वेबसाइट दृश्य"
+  },
+  "sponsor.stats.downloads": {
+    "message": "मासिक डाउनलोड"
+  },
+  "sponsor.stats.stars": {
+    "message": "GitHub स्टार"
+  },
+  "sponsor.stats.languages": {
+    "message": "भाषाएँ"
+  },
+  "sponsor.stats.platforms": {
+    "message": "प्लेटफ़ॉर्म"
+  },
+  "sponsor.stats.opensource": {
+    "message": "मुफ़्त और ओपन सोर्स"
+  },
+  "sponsor.benefits.title": {
+    "message": "आपको क्या मिलेगा"
+  },
+  "sponsor.benefits.subtitle": {
+    "message": "हम बस आपका लोगो किसी पृष्ठ पर लगाकर काम पूरा नहीं करेंगे. हम वास्तविक एकीकरण बनाते हैं. एक सहयोग ऐसा दिखेगा."
+  },
+  "sponsor.benefit.brandSelector.title": {
+    "message": "प्रथम-रन सेटअप"
+  },
+  "sponsor.benefit.brandSelector.description": {
+    "message": "जब कोई पहली बार Rayforge खोलता है, वह अपना ब्रांड और मॉडल चुनता है — और सब कुछ स्वतः काम करता है."
+  },
+  "sponsor.benefit.machineProfile.title": {
+    "message": "ब्रांडेड प्रोफ़ाइल"
+  },
+  "sponsor.benefit.machineProfile.description": {
+    "message": "आपकी मशीनें आपके लोगो और फ़ोटो के साथ सीधे चयनकर्ता में दिखाई देती हैं. आपका ब्रांड, हमेशा दृश्यमान, हर दिन."
+  },
+  "sponsor.benefit.showcase.title": {
+    "message": "अनुशंसित शोकेस"
+  },
+  "sponsor.benefit.showcase.description": {
+    "message": "ऐप और वेबसाइट में एक समर्पित स्थान जो फ़ोटो, विनिर्देश, और खरीद लिंक के साथ पार्टनर मशीनें प्रदर्शित करता है."
+  },
+  "sponsor.benefit.badgeProgram.title": {
+    "message": "\"Works with Rayforge\""
+  },
+  "sponsor.benefit.badgeProgram.description": {
+    "message": "अपनी वेबसाइट, पैकेजिंग, और मार्केटप्लेस लिस्टिंग के लिए ब्रांडेड बैज ग्राफ़िक्स प्राप्त करें, जो उच्च ग्राहक विश्वास बनाने के लिए Rayforge से जुड़ते हैं."
+  },
+  "sponsor.benefit.materialPresets.title": {
+    "message": "सामग्री प्रीसेट"
+  },
+  "sponsor.benefit.materialPresets.description": {
+    "message": "हम विशेष रूप से आपकी मशीनों के लिए शक्ति, गति, और पास सेटिंग्स ठीक करते हैं. कम सपोर्ट परेशानी और अधिक संतुष्ट ग्राहक."
+  },
+  "sponsor.benefit.coBrandedInstall.title": {
+    "message": "बंडल इंस्टॉल"
+  },
+  "sponsor.benefit.coBrandedInstall.description": {
+    "message": "अपनी मशीन के साथ QR कोड या कस्टम इंस्टॉलर से Rayforge भेजें. अपना स्वयं का सॉफ़्टवेयर विकसित करने की लागत बचाएँ."
+  },
+  "sponsor.benefit.prioritySupport.title": {
+    "message": "प्राथमिकता समर्थन"
+  },
+  "sponsor.benefit.prioritySupport.description": {
+    "message": "क्या आपके पास एक नया नियंत्रक है? हम तेज़ी से समर्थन जोड़ते हैं — लॉन्च दिवस पर, महीनों बाद नहीं. आपका रोडमैप कवर है."
+  },
+  "sponsor.benefit.youtubeSpotlights.title": {
+    "message": "मशीन स्पॉटलाइट"
+  },
+  "sponsor.benefit.youtubeSpotlights.description": {
+    "message": "ट्यूटोरियल, सेटअप, अनबॉक्सिंग, सामग्री परीक्षण और अधिक — सब Barebaric के YouTube चैनल पर."
+  },
+  "sponsor.benefit.githubVisibility.title": {
+    "message": "GitHub दृश्यमानता"
+  },
+  "sponsor.benefit.githubVisibility.description": {
+    "message": "Rayforge README में आपका लोगो, जिसे डेवलपर और निर्माता देखते हैं. मशीन प्रोफ़ाइल \"Contributed by Brand\" के साथ कमिट होती हैं."
+  },
+  "sponsor.benefit.forumPresence.title": {
+    "message": "समुदाय उपस्थिति"
+  },
+  "sponsor.benefit.forumPresence.description": {
+    "message": "GitHub Discussions और Discord पर आपके ब्रांड का एक आधिकारिक स्थान, उपयोगकर्ताओं से सीधे बात करने के लिए."
+  },
+  "sponsor.benefit.analytics.title": {
+    "message": "उपयोगकर्ता अंतर्दृष्टि"
+  },
+  "sponsor.benefit.analytics.description": {
+    "message": "संकुलित और गुमनाम डेटा कि आपके ग्राहक वास्तव में कौन सी सामग्री और सुविधाएँ उपयोग करते हैं. (सब ऑप्ट-इन, बिल्कुल.)"
+  },
+  "sponsor.benefit.coMarketing.title": {
+    "message": "क्रॉस-प्रमोशन"
+  },
+  "sponsor.benefit.coMarketing.description": {
+    "message": "ब्लॉग पद, सोशल मीडिया उल्लेख और YouTube, GitHub और Discord पर रिव्यू."
+  },
+  "sponsor.comparison.title": {
+    "message": "Rayforge क्यों?"
+  },
+  "sponsor.comparison.subtitle": {
+    "message": "कोई अन्य मुफ़्त लेज़र सॉफ़्टवेयर निर्माताओं को ऐसा कुछ नहीं देता. हम इस प्रकार तुलना करते हैं."
+  },
+  "sponsor.comparison.costToUser": {
+    "message": "उपयोगकर्ता को लागत"
+  },
+  "sponsor.comparison.free": {
+    "message": "मुफ़्त"
+  },
+  "sponsor.comparison.costToBrand": {
+    "message": "ब्रांड को लागत"
+  },
+  "sponsor.comparison.lb.costToBrand": {
+    "message": "प्रति-लाइसेंस पुनर्विक्रय"
+  },
+  "sponsor.comparison.grbl.costToBrand": {
+    "message": "कोई कार्यक्रम नहीं"
+  },
+  "sponsor.comparison.rf.costToBrand": {
+    "message": "वैकल्पिक साझेदारी"
+  },
+  "sponsor.comparison.brandVisibility": {
+    "message": "ब्रांड दृश्यमानता"
+  },
+  "sponsor.comparison.lb.brandVisibility": {
+    "message": "संगतता सूची"
+  },
+  "sponsor.comparison.grbl.brandVisibility": {
+    "message": "सहबद्ध कूपन"
+  },
+  "sponsor.comparison.rf.brandVisibility": {
+    "message": "इन-ऐप प्रथम-रन चयनकर्ता + शोकेस"
+  },
+  "sponsor.comparison.machineProfiles": {
+    "message": "मशीन प्रोफ़ाइल"
+  },
+  "sponsor.comparison.lb.machineProfiles": {
+    "message": "सामान्य (नियंत्रक द्वारा)"
+  },
+  "sponsor.comparison.grbl.machineProfiles": {
+    "message": "कोई नहीं"
+  },
+  "sponsor.comparison.rf.machineProfiles": {
+    "message": "ब्रांड-विशिष्ट, पूर्व-ट्यून्ड"
+  },
+  "sponsor.comparison.linuxSupport": {
+    "message": "Linux समर्थन"
+  },
+  "sponsor.comparison.no": {
+    "message": "नहीं"
+  },
+  "sponsor.comparison.rf.linuxSupport": {
+    "message": "नेटिव (GTK4 / Flatpak / Snap)"
+  },
+  "sponsor.comparison.crossPlatform": {
+    "message": "क्रॉस-प्लेटफ़ॉर्म"
+  },
+  "sponsor.comparison.grbl.crossPlatform": {
+    "message": "केवल Windows"
+  },
+  "sponsor.comparison.devPace": {
+    "message": "विकास गति"
+  },
+  "sponsor.comparison.lb.devPace": {
+    "message": "मध्यम"
+  },
+  "sponsor.comparison.grbl.devPace": {
+    "message": "थम रहा"
+  },
+  "sponsor.comparison.rf.devPace": {
+    "message": "साप्ताहिक रिलीज़"
+  },
+  "sponsor.cta.title": {
+    "message": "आइए बात करें"
+  },
+  "sponsor.cta.text": {
+    "message": "चाहे आप अपनी मशीनें Rayforge में पूर्व-कॉन्फ़िगर चाहते हों, एक समर्पित रिव्यू वीडियो चाहते हों, या पूरी तरह अनुकूलित कुछ — मुझे लिखें. मैं लचीला हूँ और दोनों के लिए उपयुक्त कुछ ढूँढने में प्रसन्न हूँ. प्रोफ़ाइल विकसित करने के लिए हार्डवेयर ऋण सदैव स्वागत योग्य हैं."
+  },
+  "sponsor.cta.button": {
+    "message": "नमस्ते कहें"
+  },
+  "page.devices.layout.title": {
+    "message": "समर्थित डिवाइस"
+  },
+  "page.devices.layout.description": {
+    "message": "Rayforge द्वारा समर्थित लेज़र कटर, उत्कीर्णक, और नियंत्रकों की सूची देखें — जिसमें GRBL, Smoothieware, Ruida, और OctoPrint-आधारित मशीनें शामिल हैं."
+  },
+  "page.devices.hero.title": {
+    "message": "समर्थित डिवाइस"
+  },
+  "page.devices.hero.subtitle": {
+    "message": "Rayforge लेज़र कटर, उत्कीर्णक, और नियंत्रकों की एक विस्तृत श्रृंखला के साथ काम करता है. नीचे अंतर्निहित डिवाइस प्रोफ़ाइल हैं — अपनी मशीन से मेल खाता एक चुनें या कस्टम बिल्ड के लिए एक सामान्य प्रोफ़ाइल उपयोग करें."
+  },
+  "page.devices.hero.getStarted": {
+    "message": "शुरू करें"
+  },
+  "page.devices.hero.configGuide": {
+    "message": "कॉन्फ़िगरेशन गाइड"
+  },
+  "page.devices.card.shop": {
+    "message": "{shop} पर खरीदें"
+  },
+  "page.devices.note.grbl": {
+    "message": "कोई भी {grblLink}-आधारित डिवाइस समर्थित है, बिना अंतर्निहित प्रोफ़ाइल के भी."
+  },
+  "page.devices.note.smoothieware": {
+    "message": "अन्य {smoothieLink}-आधारित डिवाइस भी समर्थित होने चाहिए."
+  },
+  "page.devices.note.marlin": {
+    "message": "Rayforge Marlin Serial ड्राइवर के माध्यम से {marlinLink} फ़र्मवेयर का समर्थन करता है. अपनी Marlin-आधारित मशीन कनेक्ट करने के लिए {configWizard} में {marlinSerial} चुनें."
+  },
+  "page.devices.note.octoprint": {
+    "message": "अपने लेज़र को एक {octoLink} सर्वर के माध्यम से कनेक्ट करें."
+  },
+  "page.devices.note.ruida": {
+    "message": "Ruida समर्थन प्रयोगात्मक है. Ruida-आधारित मशीनों के लिए {genericRuida} प्रोफ़ाइल आज़माएँ."
+  },
+  "page.devices.generic.heading": {
+    "message": "सामान्य प्रोफ़ाइल"
+  },
+  "page.devices.generic.text": {
+    "message": "यदि आपका डिवाइस ऊपर सूचीबद्ध नहीं है, तो कोई सामान्य प्रोफ़ाइल आज़माएँ — {grblGeneric}, {ruidaGeneric}, {smoothieGeneric}. वे किसी भी {firmwareLink} के साथ काम करते हैं और {configWizard} के माध्यम से कॉन्फ़िगर किए जा सकते हैं."
+  },
+  "page.devices.missing.heading": {
+    "message": "कोई डिवाइस अनुपस्थित?"
+  },
+  "page.devices.missing.text": {
+    "message": "Rayforge {profilesLink} उपयोग करता है — एप्लिकेशन को अपडेट किए बिना नई मशीनें जोड़ी जा सकती हैं. यदि आप अपने डिवाइस के लिए एक प्रोफ़ाइल योगदान देना चाहते हैं, तो {devDocs} या {ghIssues} देखें."
+  },
+  "page.devices.device.acmer-s1.description": {
+    "message": "130x130mm कार्य क्षेत्र वाला कॉम्पैक्ट डायोड लेज़र उत्कीर्णक"
+  },
+  "page.devices.device.acmer-p3.description": {
+    "message": "400x390mm कार्य क्षेत्र वाला दोहरा-हेड डायोड लेज़र उत्कीर्णक"
+  },
+  "page.devices.device.atomstack-a70.description": {
+    "message": "500x500mm कार्य क्षेत्र और स्पॉट कंप्रेशन वाला 70W डायोड लेज़र कटर"
+  },
+  "page.devices.device.atomstack-x40-pro.description": {
+    "message": "400x400mm कार्य क्षेत्र और एयर असिस्ट वाला 40W डायोड लेज़र उत्कीर्णक"
+  },
+  "page.devices.device.carvera-air.description": {
+    "message": "Smoothieware नियंत्रक और 300x200mm कार्य क्षेत्र वाला डेस्कटॉप लेज़र उत्कीर्णक"
+  },
+  "page.devices.device.creality-falcon-2-pro.description": {
+    "message": "300x300mm कार्य क्षेत्र वाला बंद 40W डायोड लेज़र उत्कीर्णक"
+  },
+  "page.devices.device.creality-falcon-a1.description": {
+    "message": "381x305mm कार्य क्षेत्र और रोटरी समर्थन वाला डायोड लेज़र उत्कीर्णक"
+  },
+  "page.devices.device.creality-falcon-a1-pro.description": {
+    "message": "363x273mm कार्य क्षेत्र, रोटरी समर्थन और वैकल्पिक 2W इन्फ़्रारेड लेज़र मॉड्यूल समर्थन वाला 20W डायोड लेज़र उत्कीर्णक"
+  },
+  "page.devices.device.creality-falcon-10w.description": {
+    "message": "400x415mm कार्य क्षेत्र वाला 10W डायोड लेज़र उत्कीर्णक"
+  },
+  "page.devices.device.elidor-z6.description": {
+    "message": "300x300mm कार्य क्षेत्र वाला डायोड लेज़र उत्कीर्णक"
+  },
+  "page.devices.device.grbl-mks-dlc32.description": {
+    "message": "कस्टम लेज़र बिल्ड के लिए GRBL-आधारित नियंत्रक बोर्ड"
+  },
+  "page.devices.device.longer-ray5.description": {
+    "message": "375x375mm कार्य क्षेत्र और टचस्क्रीन वाला डायोड लेज़र उत्कीर्णक"
+  },
+  "page.devices.device.neje-master-3-max.description": {
+    "message": "460x460mm कार्य क्षेत्र वाला 40W डायोड लेज़र उत्कीर्णक"
+  },
+  "page.devices.device.octoprint.description": {
+    "message": "एक OctoPrint सर्वर के माध्यम से जुड़ा लेज़र"
+  },
+  "page.devices.device.omtech-k40plus.description": {
+    "message": "300x200mm कार्य क्षेत्र वाला CO2 लेज़र कटर"
+  },
+  "page.devices.device.ortur-laser-master-3.description": {
+    "message": "400x400mm कार्य क्षेत्र और 32-बिट नियंत्रक वाला डायोड लेज़र उत्कीर्णक"
+  },
+  "page.devices.device.ortur-laser-master-4.description": {
+    "message": "400x400mm कार्य क्षेत्र और उच्च गति क्षमताओं वाला डायोड लेज़र उत्कीर्णक"
+  },
+  "page.devices.device.sculpfun-icube.description": {
+    "message": "120x120mm कार्य क्षेत्र वाला कॉम्पैक्ट डायोड लेज़र उत्कीर्णक"
+  },
+  "page.devices.device.sculpfun-icube-ultra.description": {
+    "message": "Bluetooth और 150x150mm कार्य क्षेत्र वाला डायोड लेज़र उत्कीर्णक"
+  },
+  "page.devices.device.sculpfun-c1.description": {
+    "message": "150x130mm कार्य क्षेत्र वाला किफ़ायती डायोड लेज़र उत्कीर्णक"
+  },
+  "page.devices.device.sculpfun-s30.description": {
+    "message": "400x400mm कार्य क्षेत्र वाला किफ़ायती डायोड लेज़र उत्कीर्णक"
+  },
+  "page.devices.device.sculpfun-s30-pro-max.description": {
+    "message": "370x360mm कार्य क्षेत्र और स्वतः एयर असिस्ट वाला 20W डायोड लेज़र उत्कीर्णक"
+  },
+  "page.devices.device.sculpfun-s40-max.description": {
+    "message": "830x800mm कार्य क्षेत्र और स्वतः फ़ोकस वाला 48W डायोड लेज़र कटर"
+  },
+  "page.devices.device.sculpfun-s70-max.description": {
+    "message": "830x800mm कार्य क्षेत्र और स्वतः फ़ोकस वाला 70W डायोड लेज़र कटर"
+  },
+  "page.devices.device.twotrees-tts55.description": {
+    "message": "400x400mm कार्य क्षेत्र वाला 55W डायोड लेज़र उत्कीर्णक"
+  },
+  "page.devices.device.xtool-d1-pro.description": {
+    "message": "430x390mm कार्य क्षेत्र वाला, Wi-Fi से जुड़ा डायोड लेज़र उत्कीर्णक"
+  },
+  "install.appimage.title": {
+    "message": "AppImage"
+  },
+  "install.appimage.description": {
+    "message": "AppImage एक एकल, आत्मनिर्भर फ़ाइल है जो अधिकांश Linux वितरणों पर बिना इंस्टॉलेशन के चलती है। इसे डाउनलोड करें, निष्पादन योग्य बनाएं और चलाएं।"
+  },
+  "install.appimage.downloadAppImage": {
+    "message": "AppImage डाउनलोड करें"
+  },
+  "install.downloadFromGithub": {
+    "message": "GitHub Releases से डाउनलोड करें"
+  },
+  "install.appimage.makeExecutable": {
+    "message": "इसे निष्पादन योग्य बनाएं"
+  },
+  "install.appimage.makeExecutableAlternative": {
+    "message": "वैकल्पिक रूप से, अपने फ़ाइल मैनेजर का उपयोग करें: फ़ाइल पर राइट-क्लिक करें, Properties खोलें और Permissions में \"Executable\" सक्षम करें।"
+  },
+  "install.appimage.launchInstruction": {
+    "message": "AppImage को टर्मिनल से चलाएं या अपने फ़ाइल मैनेजर में इस पर डबल-क्लिक करें:"
+  },
+  "install.appimage.integrationTitle": {
+    "message": "मेनू प्रविष्टि और आइकन"
+  },
+  "install.appimage.integration": {
+    "message": "आइकन के साथ Rayforge मेनू प्रविष्टि पाने के लिए, AppImageLauncher इंस्टॉल करें, या AppImage को मैन्युअल रूप से एक निश्चित स्थान (जैसे ~/.local/bin) पर ले जाएं और उसे इंगित करने वाली एक .desktop फ़ाइल बनाएं। इसके बाद फ़ाइल को उसी स्थान पर रखें — AppImage को उसी पथ पर सुलभ रहना चाहिए।"
+  },
+  "install.appimageNotStarting": {
+    "message": "AppImage शुरू नहीं होता?"
+  },
+  "install.appimageFuseNote": {
+    "message": "यदि आपको FUSE का उल्लेख करती कोई त्रुटि दिखे, तो आपके सिस्टम में वह लाइब्रेरी अनुपस्थित है जिसका उपयोग AppImage स्वयं को माउंट करने के लिए करते हैं। इसे अपने पैकेज मैनेजर से इंस्टॉल करें:"
+  },
+  "install.appimageFusePackages": {
+    "message": "पहली पंक्ति Debian और Ubuntu 23.10 तक के लिए, दूसरी Ubuntu 24.04 और बाद के संस्करणों के लिए, और तीसरी Fedora के लिए लागू होती है।"
+  },
+  "install.appimageExtractRun": {
+    "message": "वैकल्पिक रूप से, FUSE के बिना AppImage चलाने के लिए पहले इसे स्वयं निकालने दें:"
+  }
+}

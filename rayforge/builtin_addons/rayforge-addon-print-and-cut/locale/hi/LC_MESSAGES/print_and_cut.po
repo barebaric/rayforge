@@ -1,0 +1,215 @@
+# Hindi translations for Rayforge.
+# Copyright (C) 2026 The Rayforge Project
+# This file is distributed under the same license as the Rayforge package.
+# Samuel Abels <knipknap@gmail.com>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Rayforge\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-29 21:46+0200\n"
+"PO-Revision-Date: 2026-09-27 22:58\n"
+"Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: print_and_cut/frontend.py
+msgid "Align to Physical Position"
+msgstr "भौतिक स्थिति से संरेखित करें"
+
+#: print_and_cut/wizard.py
+msgid "Print & Cut"
+msgstr "प्रिंट और कट"
+
+#: print_and_cut/wizard.py
+msgid "Back"
+msgstr "पीछे"
+
+#: print_and_cut/wizard.py
+msgid "Reset"
+msgstr "रीसेट करें"
+
+#: print_and_cut/wizard.py
+msgid "Cancel"
+msgstr "रद्द करें"
+
+#: print_and_cut/wizard.py
+msgid "Next"
+msgstr "आगे"
+
+#: print_and_cut/wizard.py
+msgid "Apply"
+msgstr "लागू करें"
+
+#: print_and_cut/wizard.py
+msgid "Instructions"
+msgstr "निर्देश"
+
+#: print_and_cut/wizard.py
+msgid ""
+"Click on two alignment points on the design. These will be matched to "
+"physical locations in the next step."
+msgstr ""
+"डिज़ाइन पर दो संरेखण बिंदुओं पर क्लिक करें. ये अगले चरण में भौतिक स्थानों से मेल किए जाएँगे."
+
+#: print_and_cut/wizard.py
+msgid "Picked Points"
+msgstr "चुने गए बिंदु"
+
+#: print_and_cut/wizard.py
+msgid "Point 1"
+msgstr "बिंदु 1"
+
+#: print_and_cut/wizard.py
+msgid "No point picked"
+msgstr "कोई बिंदु नहीं चुना"
+
+#: print_and_cut/wizard.py
+msgid "Point 2"
+msgstr "बिंदु 2"
+
+#: print_and_cut/wizard.py
+msgid "Status"
+msgstr "स्थिति"
+
+#: print_and_cut/wizard.py
+msgid "Click on the first alignment point on the design."
+msgstr "डिज़ाइन पर पहले संरेखण बिंदु पर क्लिक करें."
+
+#: print_and_cut/wizard.py
+msgid ""
+"Jog the laser to the physical location of each point, then record the "
+"position."
+msgstr "लेज़र को प्रत्येक बिंदु के भौतिक स्थान पर जॉग करें, फिर स्थिति रिकॉर्ड करें."
+
+#: print_and_cut/wizard.py
+msgid "Jog Distance"
+msgstr "जॉग दूरी"
+
+#: print_and_cut/wizard.py
+msgid "Distance"
+msgstr "दूरी"
+
+#: print_and_cut/wizard.py
+msgid "Distance Presets"
+msgstr "दूरी प्रीसेट"
+
+#: print_and_cut/wizard.py
+msgid "Toggle focus laser"
+msgstr "फ़ोकस लेज़र टॉगल करें"
+
+#: print_and_cut/wizard.py
+msgid "Focus Laser"
+msgstr "फ़ोकस लेज़र"
+
+#: print_and_cut/wizard.py
+msgid "Pointer Alignment"
+msgstr "पॉइंटर संरेखण"
+
+#: print_and_cut/wizard.py
+msgid "Positions"
+msgstr "स्थितियाँ"
+
+#: print_and_cut/wizard.py
+msgid "Record"
+msgstr "रिकॉर्ड करें"
+
+#: print_and_cut/wizard.py
+msgid "Go to recorded position"
+msgstr "रिकॉर्ड की गई स्थिति पर जाएँ"
+
+#: print_and_cut/wizard.py
+msgid "Position 1"
+msgstr "स्थिति 1"
+
+#: print_and_cut/wizard.py
+msgid "Not recorded"
+msgstr "रिकॉर्ड नहीं"
+
+#: print_and_cut/wizard.py
+msgid "Position 2"
+msgstr "स्थिति 2"
+
+#: print_and_cut/wizard.py
+msgid "Laser Position"
+msgstr "लेज़र स्थिति"
+
+#: print_and_cut/wizard.py
+msgid "X: --- Y: ---"
+msgstr "X: --- Y: ---"
+
+#: print_and_cut/wizard.py
+msgid "Transform Preview"
+msgstr "ट्रांसफ़ॉर्म पूर्वावलोकन"
+
+#: print_and_cut/wizard.py
+msgid "Review the computed alignment transform before applying it."
+msgstr "लागू करने से पहले गणना किए गए संरेखण ट्रांसफ़ॉर्म की समीक्षा करें."
+
+#: print_and_cut/wizard.py
+msgid "Transform"
+msgstr "ट्रांसफ़ॉर्म"
+
+#: print_and_cut/wizard.py
+msgid "Translation"
+msgstr "अनुवाद"
+
+#: print_and_cut/wizard.py
+msgid "Rotation"
+msgstr "रोटेशन"
+
+#: print_and_cut/wizard.py
+msgid "Allow scaling"
+msgstr "स्केलिंग की अनुमति दें"
+
+#: print_and_cut/wizard.py
+msgid "Scale"
+msgstr "स्केल"
+
+#: print_and_cut/wizard.py
+msgid "Point picked"
+msgstr "बिंदु चुना गया"
+
+#: print_and_cut/wizard.py
+msgid "Click on the second alignment point on the design."
+msgstr "डिज़ाइन पर दूसरे संरेखण बिंदु पर क्लिक करें."
+
+#: print_and_cut/wizard.py
+msgid "Both points selected. Click Next to continue."
+msgstr "दोनों बिंदु चयनित. जारी रखने के लिए आगे पर क्लिक करें."
+
+#: print_and_cut/wizard.py
+msgid "Points are too close. Pick points further apart."
+msgstr "बिंदु बहुत निकट हैं. दूर के बिंदु चुनें."
+
+#: print_and_cut/wizard.py
+msgid "Turn on laser at focus power to locate position"
+msgstr "स्थिति पहचानने के लिए फ़ोकस शक्ति पर लेज़र चालू करें"
+
+#: print_and_cut/wizard.py
+msgid "Set a focus power in laser preferences to enable"
+msgstr "सक्षम करने के लिए लेज़र वरीयताओं में फ़ोकस शक्ति सेट करें"
+
+#: print_and_cut/wizard.py
+msgid "Record positions at the pointer dot instead of the beam"
+msgstr "बीम के स्थान पर पॉइंटर बिंदु पर स्थितियाँ रिकॉर्ड करें"
+
+#: print_and_cut/wizard.py
+msgid "Requires a pointer offset on the laser head"
+msgstr "लेज़र हेड पर पॉइंटर ऑफ़सेट आवश्यक है"
+
+#: print_and_cut/wizard.py
+msgid ""
+"Note: Scale is locked. Point 2 may not align exactly if the physical "
+"distance differs from the design distance."
+msgstr ""
+"ध्यान दें: स्केल लॉक है. यदि भौतिक दूरी डिज़ाइन दूरी से भिन्न है तो बिंदु 2 सटीक रूप से "
+"संरेखित नहीं हो सकता."
+
+#: print_and_cut/wizard.py
+msgid "Alignment applied"
+msgstr "संरेखण लागू हुआ"

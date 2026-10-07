@@ -1,0 +1,64 @@
+# Hindi translations for Rayforge.
+# Copyright (C) 2026 The Rayforge Project
+# This file is distributed under the same license as the Rayforge package.
+# Samuel Abels <knipknap@gmail.com>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Rayforge\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-30 19:31+0200\n"
+"PO-Revision-Date: 2026-09-27 22:58\n"
+"Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
+"Language-Team: none\n"
+"Language: hi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid "Generate a Workpiece"
+msgstr "एक वर्कपीस जनरेट करें"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid "Cancel"
+msgstr "रद्द करें"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid "Generate"
+msgstr "जनरेट करें"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid ""
+"Describe the design you want to create. Example: 'A simple star shape with 5 "
+"points'"
+msgstr "बनाना चाहता डिज़ाइन बताएँ. उदाहरण: '5 बिंदुओं वाला एक साधारण तारा आकार'"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid "No content generated."
+msgstr "कोई सामग्री जनरेट नहीं हुई."
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid "Add AI-Generated Workpiece"
+msgstr "AI-जनरेटेड वर्कपीस जोड़ें"
+
+#: ai_workpiece_generator/widgets/dialog.py
+msgid "Close"
+msgstr "बंद करें"
+
+#: ai_workpiece_generator/frontend.py
+msgid "Generate Workpiece with AI..."
+msgstr "AI से वर्कपीस जनरेट करें..."
+
+#: ai_workpiece_generator/generator.py
+msgid "No AI provider configured. Please configure an AI provider in Settings."
+msgstr "कोई AI प्रदाता कॉन्फ़िगर नहीं है. कृपया सेटिंग्स में एक AI प्रदाता कॉन्फ़िगर करें."
+
+#: ai_workpiece_generator/generator.py
+msgid "No response from AI provider."
+msgstr "AI प्रदाता से कोई प्रतिक्रिया नहीं."
+
+#: ai_workpiece_generator/generator.py
+msgid "AI did not generate valid SVG code. Please try a different prompt."
+msgstr "AI ने वैध SVG कोड जनरेट नहीं किया. कृपया कोई भिन्न प्रॉम्प्ट आज़माएँ."

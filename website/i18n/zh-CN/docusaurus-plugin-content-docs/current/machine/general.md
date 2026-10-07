@@ -16,11 +16,27 @@ description: "在 Rayforge 中配置机器的常规设置 — 设置机器名称
 
 选择与你的机器控制器匹配的驱动程序。驱动程序负责 Rayforge 与硬件之间的通信。
 
-GRBL 设备有两种串行驱动程序选项：
+GRBL 设备有三种串行驱动程序选项：
 
 - **GRBL (Serial)** — 带缓冲计数、死锁检测和 stall 恢复的驱动程序。推荐用于大多数 GRBL 设备
 - **GRBL (Serial Simple)**
   — 乒乓协议驱动程序。发送一行，等待 "ok"，再发送下一行。无缓冲管理，无死锁检测。当标准驱动程序导致误报时非常有用
+- **GRBL (Rust)**
+  — 实验性驱动程序，其完整的 GRBL 串行协议栈（流控制、作业流传输、stall 检测、死锁恢复、设置和探测）在 Rust 中运行。可以作为 GRBL
+  (Serial) 的直接替代选择
+
+基于 Ruida 的控制器由 **Ruida RPA** 驱动程序支持，它可以直接通过 USB 或 UDP 连接，或通过 TUI
+RPC 经由 Ruida Protocol
+Analyzer 连接。它的 USB 字段提供已连接设备的下拉列表（带 VID:PID 匹配），并遵循每个步骤的 Power
+Mode 设置——Dynamic 启用控制器的功率缩放，Constant 将其禁用。功率行为通过驱动程序的 **Power
+Scaling**、**VECTOR power floor** 和 **IMAGE power bias**
+选项调节：功率缩放会在层的切割速度降低时提高发出的最小功率，矢量功率下限补偿线段端部的过烧，图像偏置则补偿在极低功率下不点火的 CO2 激光管。
+
+### 串口绑定
+
+串口字段除了设备路径（例如 `/dev/ttyUSB0` 或 `COM3`）外，还接受 USB `VID:PID` 标识符，例如
+`0403:6001`。当机器按 VID:PID 绑定时，在操作系统重新枚举 USB 设备后（例如重启后，或拔下并重新插入后），自动重连会跟随机器前往其新端口。你可以在
+`lsusb` 输出（Linux）或设备管理器 → 硬件 ID（Windows）中找到设备的 VID:PID。
 
 选择驱动程序后，选择器下方会出现特定于连接的设置（例如串口、波特率）。这些设置因所选驱动程序而异。
 

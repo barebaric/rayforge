@@ -3,12 +3,13 @@
 
 import math
 
+import cairo
 import gi
 
 gi.require_version("Gtk", "4.0")
 
 import pytest
-from gi.repository import Gtk
+from gi.repository import Gtk, Pango, PangoCairo
 
 from rayforge.ui_gtk.shared.piemenu import (
     PieMenu,
@@ -18,6 +19,7 @@ from rayforge.ui_gtk.shared.piemenu import (
     index_in_span,
     submenu_span,
 )
+from rayforge.ui_gtk.shared.text import create_text_layout
 
 pytestmark = pytest.mark.ui
 
@@ -113,6 +115,60 @@ def test_index_in_span():
 
 def test_default_inner_capacity(menu):
     assert menu._get_max_inner_items() == 10
+
+
+def test_label_layout_font(menu):
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1)
+    layout = create_text_layout(
+        cairo.Context(surface),
+        "Text (T)",
+        menu.label_font_size,
+        weight=Pango.Weight.BOLD,
+    )
+    font = layout.get_font_description()
+    assert font is not None
+    assert font.get_family() == "Sans"
+    assert font.get_weight() == Pango.Weight.BOLD
+    assert font.get_size_is_absolute()
+    assert font.get_size() == menu.label_font_size * Pango.SCALE
+    assert layout.get_text() == "Text (T)"
+
+
+def test_label_width_includes_submenu_labels(menu):
+    child = make_item("A much longer submenu label (\u6587\u672c)")
+    group = make_item("group", children=[child, make_item("short")])
+    menu.set_items([make_item(f"i{i}") for i in range(9)] + [group])
+    assert menu._collapsed
+
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1)
+    ctx = cairo.Context(surface)
+    layout = create_text_layout(
+        ctx,
+        child.label,
+        menu.label_font_size,
+        weight=Pango.Weight.BOLD,
+    )
+    assert menu._get_max_label_width() == layout.get_pixel_extents()[0].width
+
+    menu.set_items([])
+    assert menu._get_max_label_width() == 0
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["Text (T)", "\u6587\u672c", "\u0646\u0635", "\u092a\u093e\u0920"],
+)
+@pytest.mark.parametrize("angle", [0, math.pi / 2, math.pi])
+def test_draw_label_uses_pango_path(menu, mocker, text, angle):
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 500, 500)
+    ctx = cairo.Context(surface)
+    layout_path = mocker.spy(PangoCairo, "layout_path")
+    colors = {"outline": (1, 1, 1, 1), "fg": (0, 0, 0, 1)}
+    menu._draw_label(ctx, 250, 250, angle, text, menu.radius_outer, colors)
+
+    layout_path.assert_called_once()
+    assert layout_path.call_args.args[1].get_text() == text
+    assert any(surface.get_data())
 
 
 def test_hover_on_flat_menu(menu):

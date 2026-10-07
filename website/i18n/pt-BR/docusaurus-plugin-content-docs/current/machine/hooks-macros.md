@@ -47,6 +47,15 @@ Casos de uso comuns de macros:
    - Cada linha é um comando G-code separado
    - Comentários começam com `;` ou `(`
    - Variáveis podem ser usadas (veja Substituição de Variáveis abaixo)
+   - Use a barra de ferramentas acima do editor para inserir um marcador de posição de variável ou
+     uma referência `@include(...)` a outra macro
+
+![Editor de macros](/screenshots/machine-settings-hooks-macros-editor.webp)
+
+O popover de marcadores de posição de variáveis lista todas as variáveis disponíveis no contexto
+atual:
+
+![Marcadores de posição de variáveis](/screenshots/machine-settings-hooks-macros-editor-variables.webp)
 
 4. **Salve a macro**
 

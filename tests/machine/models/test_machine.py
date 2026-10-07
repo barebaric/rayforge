@@ -224,6 +224,107 @@ class TestMachine:
         set_wcs_spy.assert_called_once_with("G54", 100.0, 200.0, 0.0)
         read_wcs_spy.assert_called_once()
 
+    @pytest.mark.asyncio
+    async def test_set_work_origin_here_pointer_offset(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
+        """
+        When the laser head has a pointer offset enabled, setting the
+        work origin at the current position compensates by the offset,
+        so the origin lands where the pointer dot marks the stock
+        instead of where the cutting beam is.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+        await machine.connect()
+        await wait_for_tasks_to_finish(task_mgr)
+        machine.active_wcs = "G54"
+        machine.update_wcs_offset("G54", (10.0, 20.0, 0.0))
+        machine.device_state.machine_pos = (100.0, 200.0, 0.0)
+
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(12.0, -3.5)
+        head.set_pointer_offset_enabled(True)
+        machine.set_pointer_alignment(True)
+
+        set_wcs_spy = mocker.patch.object(
+            machine.driver, "set_wcs_offset", new_callable=mocker.AsyncMock
+        )
+        read_wcs_spy = mocker.patch.object(
+            machine.driver, "read_wcs_offsets", new_callable=mocker.AsyncMock
+        )
+
+        await machine.set_work_origin_here(Axis.X | Axis.Y)
+
+        # Beam at (100, 200) means the pointer marks (112, 196.5).
+        set_wcs_spy.assert_called_once_with("G54", 112.0, 196.5, 0.0)
+        read_wcs_spy.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_set_work_origin_here_ignores_offset_when_alignment_off(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
+        """
+        With pointer alignment off, zeroing sets the origin at the
+        cutting beam position, without the pointer compensation.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+        await machine.connect()
+        await wait_for_tasks_to_finish(task_mgr)
+        machine.active_wcs = "G54"
+        machine.update_wcs_offset("G54", (10.0, 20.0, 0.0))
+        machine.device_state.machine_pos = (100.0, 200.0, 0.0)
+
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(12.0, -3.5)
+        head.set_pointer_offset_enabled(True)
+        assert machine.pointer_alignment_enabled is False
+
+        set_wcs_spy = mocker.patch.object(
+            machine.driver, "set_wcs_offset", new_callable=mocker.AsyncMock
+        )
+        mocker.patch.object(
+            machine.driver,
+            "read_wcs_offsets",
+            new_callable=mocker.AsyncMock,
+        )
+
+        await machine.set_work_origin_here(Axis.X | Axis.Y)
+
+        set_wcs_spy.assert_called_once_with("G54", 100.0, 200.0, 0.0)
+
+    @pytest.mark.asyncio
+    async def test_set_work_origin_here_pointer_offset_z_unaffected(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
+        """Zeroing only Z ignores the pointer offset entirely."""
+        await wait_for_tasks_to_finish(task_mgr)
+        await machine.connect()
+        await wait_for_tasks_to_finish(task_mgr)
+        machine.active_wcs = "G54"
+        machine.update_wcs_offset("G54", (10.0, 20.0, 5.0))
+        machine.device_state.machine_pos = (100.0, 200.0, 7.0)
+
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(12.0, -3.5)
+        head.set_pointer_offset_enabled(True)
+        machine.set_pointer_alignment(True)
+
+        set_wcs_spy = mocker.patch.object(
+            machine.driver, "set_wcs_offset", new_callable=mocker.AsyncMock
+        )
+        mocker.patch.object(
+            machine.driver,
+            "read_wcs_offsets",
+            new_callable=mocker.AsyncMock,
+        )
+
+        await machine.set_work_origin_here(Axis.Z)
+
+        set_wcs_spy.assert_called_once_with("G54", 10.0, 20.0, 7.0)
+
     def test_has_z_axis_default_true(self, machine: Machine):
         """A default machine has a Z axis configured."""
         assert machine.has_z_axis is True
@@ -813,6 +914,180 @@ class TestMachine:
             assert ox == pytest.approx(bx - 60.0)
             assert oy == pytest.approx(by - 60.0)
 
+    @pytest.mark.asyncio
+    async def test_frame_job_shifts_with_pointer_alignment(
+        self,
+        doc: Doc,
+        machine: Machine,
+        doc_editor: DocEditor,
+        mocker,
+        lite_context,
+        task_mgr: TaskManager,
+        contour_step_class,
+    ):
+        """
+        While pointer alignment is on, the frame outline is traced by
+        the pointer dot: the emitted coordinates shift by -offset, so
+        the beam stays one offset behind the outline. Jobs are not
+        affected (see test_send_job_ignores_pointer_alignment).
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_frame_power(1)
+        head.set_pointer_offset(12.0, -8.0)
+        head.set_pointer_offset_enabled(True)
+
+        machine.set_axis_extents(200.0, 200.0)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+        machine.wcs_origin_is_workarea_origin = False
+        machine.active_wcs = "G56"
+        machine.update_wcs_offset("G56", (0.0, 0.0, 0.0))
+
+        step = contour_step_class.create(lite_context)
+        workflow = doc.active_layer.workflow
+        assert workflow is not None
+        workflow.add_step(step)
+
+        workpiece, source = create_test_workpiece_and_source()
+        doc.add_asset(source)
+        doc.active_layer.add_child(workpiece)
+
+        await doc_editor.wait_until_settled()
+        await wait_for_tasks_to_finish(task_mgr)
+
+        run_spy = mocker.spy(machine.driver, "run")
+        machine_cmd = MachineCmd(doc_editor)
+
+        await machine_cmd.frame_job(machine)
+        await wait_for_tasks_to_finish(task_mgr)
+        run_spy.assert_called_once()
+        unaligned_text = run_spy.call_args.args[0].text
+
+        machine.set_pointer_alignment(True)
+        run_spy.reset_mock()
+
+        await machine_cmd.frame_job(machine)
+        await wait_for_tasks_to_finish(task_mgr)
+        run_spy.assert_called_once()
+        aligned_text = run_spy.call_args.args[0].text
+
+        unaligned = extract_move_positions(unaligned_text)
+        aligned = extract_move_positions(aligned_text)
+        assert len(unaligned) > 0
+        assert len(aligned) == len(unaligned)
+        for (ux, uy), (ax, ay) in zip(unaligned, aligned):
+            assert ax == pytest.approx(ux - 12.0)
+            assert ay == pytest.approx(uy + 8.0)
+
+    @pytest.mark.asyncio
+    async def test_frame_job_warns_when_shift_exceeds_travel(
+        self,
+        doc: Doc,
+        machine: Machine,
+        doc_editor: DocEditor,
+        mocker,
+        lite_context,
+        task_mgr: TaskManager,
+        contour_step_class,
+    ):
+        """
+        When the pointer-shifted frame leaves the machine travel, a
+        persistent notification warns before the trace starts.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_frame_power(1)
+        # A huge offset pushes the beam far off the bed.
+        head.set_pointer_offset(500.0, 0.0)
+        head.set_pointer_offset_enabled(True)
+        machine.set_pointer_alignment(True)
+
+        machine.set_axis_extents(200.0, 200.0)
+        machine.set_origin(Origin.BOTTOM_LEFT)
+
+        step = contour_step_class.create(lite_context)
+        workflow = doc.active_layer.workflow
+        assert workflow is not None
+        workflow.add_step(step)
+
+        workpiece, source = create_test_workpiece_and_source()
+        doc.add_asset(source)
+        doc.active_layer.add_child(workpiece)
+
+        await doc_editor.wait_until_settled()
+        await wait_for_tasks_to_finish(task_mgr)
+
+        notifications: list[str] = []
+
+        def on_notification(sender, **kw):
+            message = kw.get("message")
+            assert isinstance(message, str)
+            notifications.append(message)
+
+        doc_editor.notification_requested.connect(on_notification)
+        machine_cmd = MachineCmd(doc_editor)
+
+        await machine_cmd.frame_job(machine)
+        await wait_for_tasks_to_finish(task_mgr)
+
+        assert any("travel" in str(n) for n in notifications)
+
+    @pytest.mark.asyncio
+    async def test_send_job_ignores_pointer_alignment(
+        self,
+        doc: Doc,
+        machine: Machine,
+        doc_editor: DocEditor,
+        mocker,
+        lite_context,
+        task_mgr: TaskManager,
+        contour_step_class,
+    ):
+        """
+        Jobs always burn with the beam: the G-code output is identical
+        whether pointer alignment is on or off.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(12.0, -8.0)
+        head.set_pointer_offset_enabled(True)
+
+        step = contour_step_class.create(lite_context)
+        workflow = doc.active_layer.workflow
+        assert workflow is not None
+        workflow.add_step(step)
+
+        workpiece, source = create_test_workpiece_and_source()
+        doc.add_asset(source)
+        doc.active_layer.add_child(workpiece)
+
+        await doc_editor.wait_until_settled()
+        await wait_for_tasks_to_finish(task_mgr)
+
+        run_spy = mocker.spy(machine.driver, "run")
+        machine_cmd = MachineCmd(doc_editor)
+
+        await machine_cmd.send_job(machine)
+        await wait_for_tasks_to_finish(task_mgr)
+        run_spy.assert_called_once()
+        unaligned_text = run_spy.call_args.args[0].text
+
+        machine.set_pointer_alignment(True)
+        run_spy.reset_mock()
+
+        await machine_cmd.send_job(machine)
+        await wait_for_tasks_to_finish(task_mgr)
+        run_spy.assert_called_once()
+        aligned_text = run_spy.call_args.args[0].text
+
+        assert aligned_text == unaligned_text
+
     def test_apply_frame_rotary_mapping_drives_a_axis(self, sync_machine, doc):
         """Framing a TRUE_4TH_AXIS rotary layer maps Y movement onto the
         A (rotary) axis instead of driving the physical Y axis (#356)."""
@@ -1290,7 +1565,6 @@ class TestMachine:
     ):
         """A Ruida machine has no dialect but can emit travel speed."""
         await wait_for_tasks_to_finish(task_mgr)
-        machine.set_dialect_uid(None)
         machine.auto_connect = False
         machine.set_driver(RuidaRPAAdapter, {"udp_host": "localhost"})
         await wait_for_tasks_to_finish(task_mgr)
@@ -1298,6 +1572,44 @@ class TestMachine:
         assert machine.driver_name == "RuidaRPAAdapter"
         assert machine.dialect is None
         assert machine.supports_travel_speed()
+
+    @pytest.mark.asyncio
+    async def test_set_driver_clears_stale_dialect_for_non_gcode_driver(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
+        """Switching to a non-G-code driver clears the leftover dialect.
+
+        A machine that previously spoke GRBL keeps its dialect_uid when
+        it is switched over to the Ruida driver; job encoding must not
+        feed that G-code dialect's output to the Ruida driver
+        (issue #420).
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+        assert machine.dialect_uid == "grbl"
+        machine.auto_connect = False
+
+        machine.set_driver(RuidaRPAAdapter, {"udp_host": "localhost"})
+        await wait_for_tasks_to_finish(task_mgr)
+
+        assert machine.driver_name == "RuidaRPAAdapter"
+        assert machine.dialect_uid is None
+        assert machine.dialect is None
+
+    @pytest.mark.asyncio
+    async def test_set_driver_restores_default_dialect_for_gcode_driver(
+        self, machine: Machine, task_mgr: TaskManager
+    ):
+        """Switching back to a G-code driver restores the default dialect."""
+        await wait_for_tasks_to_finish(task_mgr)
+        machine.set_dialect_uid(None)
+        assert machine.dialect is None
+
+        machine.set_driver(GrblSerialDriver, {"port": "/dev/null"})
+        await wait_for_tasks_to_finish(task_mgr)
+
+        assert machine.driver_name == "GrblSerialDriver"
+        assert machine.dialect_uid == "grbl"
+        assert machine.dialect is not None
 
     @pytest.mark.asyncio
     async def test_supports_multi_depth_raster(
@@ -2122,6 +2434,15 @@ class TestJogDelegation:
             # Position unknown for the axis
             (True, False, False, (None, 150, 0), Axis.X, 9999, False),
             (True, False, False, (100, None, 0), Axis.Y, 9999, False),
+            # --- Z-Axis (Extents Z:-50-50), Soft Limits ON ---
+            (True, False, False, (100, 150, 0), Axis.Z, 40.0, False),
+            (True, False, False, (100, 150, 0), Axis.Z, 60.0, True),
+            (True, False, False, (100, 150, -40), Axis.Z, -20.0, True),
+            (True, False, False, (100, 150, -40), Axis.Z, -5.0, False),
+            # Soft limits disabled
+            (False, False, False, (100, 150, 0), Axis.Z, 9999, False),
+            # Position unknown for the axis
+            (True, False, False, (100, 150, None), Axis.Z, 9999, False),
         ],
     )
     def test_would_jog_exceed_limits(
@@ -2149,3 +2470,331 @@ class TestJogDelegation:
             isolated_machine.would_jog_exceed_limits(axis, distance)
             is expected
         )
+
+    def test_adjust_jog_distance_clamps_z_to_extents(
+        self, isolated_machine: Machine
+    ):
+        isolated_machine.set_axis_extents(200, 300)
+        isolated_machine.device_state.machine_pos = (0, 0, -45)
+
+        assert (
+            isolated_machine._adjust_jog_distance_for_limits(Axis.Z, 100.0)
+            == 95.0
+        )
+
+    def test_adjust_jog_distance_clamps_z_to_negative_extent(
+        self, isolated_machine: Machine
+    ):
+        isolated_machine.set_axis_extents(200, 300)
+        isolated_machine.device_state.machine_pos = (0, 0, 45)
+
+        assert (
+            isolated_machine._adjust_jog_distance_for_limits(Axis.Z, -100.0)
+            == -95.0
+        )
+
+    @pytest.mark.parametrize(
+        "current_pos, axis, distance, expected",
+        [
+            # Z reported far above its range (Ruida RDC8445S reads ~3176)
+            ((0, 0, 3176.176), Axis.Z, 10.0, 0.0),
+            ((0, 0, 3176.176), Axis.Z, -10.0, -10.0),
+            # Z below its range
+            ((0, 0, -80.0), Axis.Z, -10.0, 0.0),
+            ((0, 0, -80.0), Axis.Z, 10.0, 10.0),
+            # Moving back into range stops at the far limit
+            ((0, 0, -80.0), Axis.Z, 200.0, 130.0),
+            # X and Y beyond their soft limits (extents 200 x 300)
+            ((250, 0, 0), Axis.X, 10.0, 0.0),
+            ((250, 0, 0), Axis.X, -10.0, -10.0),
+            ((0, -20, 0), Axis.Y, -5.0, 0.0),
+            ((0, -20, 0), Axis.Y, 5.0, 5.0),
+            # Exactly at a limit, as left by a previous clamped jog
+            ((0, 0, 50.0), Axis.Z, 10.0, 0.0),
+            ((0, 0, 50.0), Axis.Z, -10.0, -10.0),
+            ((200, 0, 0), Axis.X, 10.0, 0.0),
+            ((200, 0, 0), Axis.X, -10.0, -10.0),
+        ],
+    )
+    def test_adjust_jog_distance_never_reverses_outside_limits(
+        self, isolated_machine: Machine, current_pos, axis, distance, expected
+    ):
+        """
+        A position already beyond a limit must not turn a jog into a
+        move of the opposite direction towards that limit.
+        """
+        isolated_machine.set_axis_extents(200, 300)
+        isolated_machine.device_state.machine_pos = current_pos
+
+        assert isolated_machine._adjust_jog_distance_for_limits(
+            axis, distance
+        ) == pytest.approx(expected)
+
+    @pytest.mark.parametrize(
+        "current_pos, axis, distance, expected",
+        [
+            # Outside the range: only a jog further out is flagged
+            ((0, 0, 3176.176), Axis.Z, 10.0, True),
+            ((0, 0, 3176.176), Axis.Z, -10.0, False),
+            ((250, 0, 0), Axis.X, 10.0, True),
+            ((250, 0, 0), Axis.X, -10.0, False),
+            # Moving back into range past the far limit is still flagged
+            ((0, 0, -80.0), Axis.Z, 200.0, True),
+            # At a limit: outward is flagged, inward is not
+            ((0, 0, 50.0), Axis.Z, 10.0, True),
+            ((0, 0, 50.0), Axis.Z, -10.0, False),
+        ],
+    )
+    def test_would_jog_exceed_limits_matches_clamp_outside_range(
+        self, isolated_machine: Machine, current_pos, axis, distance, expected
+    ):
+        """
+        The jog button warning flags exactly the jogs the soft limits
+        shorten or block, so a working jog back into range is not shown
+        as a warning.
+        """
+        isolated_machine.set_axis_extents(200, 300)
+        isolated_machine.device_state.machine_pos = current_pos
+
+        assert (
+            isolated_machine.would_jog_exceed_limits(axis, distance)
+            is expected
+        )
+
+    def test_set_z_extents_updates_travel_range(
+        self, isolated_machine: Machine
+    ):
+        isolated_machine.set_z_extents(-100.0, 20.0)
+
+        assert isolated_machine.z_extents == (-100.0, 20.0)
+
+    def test_set_z_extents_orders_min_and_max(self, isolated_machine: Machine):
+        isolated_machine.set_z_extents(30.0, -10.0)
+
+        assert isolated_machine.z_extents == (-10.0, 30.0)
+
+    def test_set_z_extents_ignored_without_z_axis(
+        self, isolated_machine: Machine
+    ):
+        isolated_machine.set_has_z_axis(False)
+
+        isolated_machine.set_z_extents(-100.0, 100.0)
+
+        assert isolated_machine.z_extents is None
+
+
+class TestPointerAlignment:
+    """Runtime pointer alignment state and command offset resolution."""
+
+    def test_alignment_defaults_off(self, isolated_machine: Machine):
+        assert isolated_machine.pointer_alignment_enabled is False
+
+    def test_alignment_requires_offset(self, isolated_machine: Machine):
+        """Enabling without a configured offset is refused."""
+        machine = isolated_machine
+        machine.set_pointer_alignment(True)
+        assert machine.pointer_alignment_enabled is False
+
+    def test_alignment_can_be_enabled_and_disabled(
+        self, isolated_machine: Machine
+    ):
+        machine = isolated_machine
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(12.0, -3.5)
+        head.set_pointer_offset_enabled(True)
+
+        machine.set_pointer_alignment(True)
+        assert machine.pointer_alignment_enabled is True
+
+        machine.set_pointer_alignment(False)
+        assert machine.pointer_alignment_enabled is False
+
+    def test_alignment_signals(self, isolated_machine: Machine):
+        machine = isolated_machine
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(12.0, -3.5)
+        head.set_pointer_offset_enabled(True)
+
+        alignment_calls = []
+        changed_calls = []
+
+        def on_alignment_changed(sender):
+            alignment_calls.append(sender)
+
+        def on_changed(sender):
+            changed_calls.append(sender)
+
+        machine.pointer_alignment_changed.connect(on_alignment_changed)
+        machine.changed.connect(on_changed)
+
+        machine.set_pointer_alignment(True)
+        assert len(alignment_calls) == 1
+        machine.set_pointer_alignment(False)
+        assert len(alignment_calls) == 2
+
+        # Redundant sets send nothing.
+        machine.set_pointer_alignment(False)
+        assert len(alignment_calls) == 2
+
+        # Both toggles also notified plain changed listeners.
+        assert len(changed_calls) >= 2
+
+    def test_alignment_auto_resets_when_offset_disabled(
+        self, isolated_machine: Machine
+    ):
+        machine = isolated_machine
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(12.0, -3.5)
+        head.set_pointer_offset_enabled(True)
+        machine.set_pointer_alignment(True)
+        assert machine.pointer_alignment_enabled is True
+
+        head.set_pointer_offset_enabled(False)
+        assert machine.pointer_alignment_enabled is False
+
+    def test_alignment_auto_resets_when_offset_zeroed(
+        self, isolated_machine: Machine
+    ):
+        machine = isolated_machine
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(12.0, -3.5)
+        head.set_pointer_offset_enabled(True)
+        machine.set_pointer_alignment(True)
+
+        head.set_pointer_offset(0.0, 0.0)
+        assert machine.pointer_alignment_enabled is False
+
+    def test_alignment_not_serialized(self, isolated_machine: Machine):
+        """The session-only flag never enters the machine profile."""
+        machine = isolated_machine
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(12.0, -3.5)
+        head.set_pointer_offset_enabled(True)
+        machine.set_pointer_alignment(True)
+
+        data = machine.to_dict()
+        assert "pointer_alignment_enabled" not in data["machine"]
+
+    def test_get_command_wcs_offset_plain_when_off(
+        self, isolated_machine: Machine
+    ):
+        machine = isolated_machine
+        machine.update_wcs_offset("G54", (10.0, 20.0, 5.0))
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(12.0, -3.5)
+        head.set_pointer_offset_enabled(True)
+
+        assert machine.get_command_wcs_offset() == (10.0, 20.0, 5.0)
+
+    def test_get_command_wcs_offset_shifted_when_on(
+        self, isolated_machine: Machine
+    ):
+        """While on, the pointer offset is added to the active WCS
+        offset, so subtracting it from a machine-space aim target
+        shifts the issued command by -offset."""
+        machine = isolated_machine
+        machine.update_wcs_offset("G54", (10.0, 20.0, 5.0))
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(12.0, -3.5)
+        head.set_pointer_offset_enabled(True)
+        machine.set_pointer_alignment(True)
+
+        assert machine.get_command_wcs_offset() == (22.0, 16.5, 5.0)
+
+    def test_get_command_wcs_offset_resolves_given_head(
+        self, isolated_machine: Machine
+    ):
+        """The offset of the explicitly given head is used, not the
+        default head's."""
+        machine = isolated_machine
+        machine.update_wcs_offset("G54", (10.0, 20.0, 5.0))
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(3.0, 4.0)
+        head.set_pointer_offset_enabled(True)
+
+        second = Laser()
+        second.set_pointer_offset(1.0, 2.0)
+        second.set_pointer_offset_enabled(True)
+        machine.add_head(second)
+        machine.set_pointer_alignment(True)
+
+        assert machine.get_command_wcs_offset() == (13.0, 24.0, 5.0)
+        assert machine.get_command_wcs_offset(second) == (11.0, 22.0, 5.0)
+
+    def test_get_command_wcs_offset_ignores_disabled_offset(
+        self, isolated_machine: Machine
+    ):
+        machine = isolated_machine
+        machine.update_wcs_offset("G54", (10.0, 20.0, 5.0))
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(12.0, -3.5)
+        head.set_pointer_offset_enabled(True)
+        machine.set_pointer_alignment(True)
+        head.set_pointer_offset_enabled(False)
+
+        assert machine.get_command_wcs_offset() == (10.0, 20.0, 5.0)
+
+    def test_get_job_wcs_offset_unchanged_by_default(
+        self, isolated_machine: Machine
+    ):
+        machine = isolated_machine
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(12.0, -3.5)
+        head.set_pointer_offset_enabled(True)
+
+        assert machine.get_job_wcs_offset((10.0, 20.0, 5.0)) == (
+            10.0,
+            20.0,
+            5.0,
+        )
+
+    def test_get_job_wcs_offset_adds_pointer_offset_while_shifting(
+        self, isolated_machine: Machine
+    ):
+        """While a pointer dry-run shifts job output, the pointer
+        offset is added to the given WCS offset."""
+        machine = isolated_machine
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(12.0, -3.5)
+        head.set_pointer_offset_enabled(True)
+        machine.pointer_job_shift_enabled = True
+
+        assert machine.get_job_wcs_offset((10.0, 20.0, 5.0)) == (
+            22.0,
+            16.5,
+            5.0,
+        )
+
+    def test_get_job_wcs_offset_ignores_disabled_offset(
+        self, isolated_machine: Machine
+    ):
+        machine = isolated_machine
+        head = machine.get_default_laser_head()
+        assert head is not None
+        head.set_pointer_offset(12.0, -3.5)
+        head.set_pointer_offset_enabled(False)
+        machine.pointer_job_shift_enabled = True
+
+        assert machine.get_job_wcs_offset((10.0, 20.0, 5.0)) == (
+            10.0,
+            20.0,
+            5.0,
+        )
+
+    def test_pointer_job_shift_not_serialized(self, isolated_machine: Machine):
+        machine = isolated_machine
+        machine.pointer_job_shift_enabled = True
+
+        data = machine.to_dict()
+        assert "pointer_job_shift_enabled" not in data["machine"]

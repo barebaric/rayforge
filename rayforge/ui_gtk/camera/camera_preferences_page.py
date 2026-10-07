@@ -5,7 +5,7 @@ from blinker import Signal
 from gi.repository import Adw, Gtk
 
 from ...camera.controller import CameraController
-from ...camera.models.camera import Camera
+from ...camera.models.camera import Camera, CameraSourceType
 from ...camera.v4l import display_name
 from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
@@ -66,8 +66,12 @@ class CameraRow(Gtk.Box):
 
     def _get_subtitle_text(self) -> str:
         """Generates the subtitle text from camera properties."""
-        name = display_name(self.camera.device_id)
-        return _("Device ID: {device_id}").format(device_id=name)
+        if self.camera.source_type is CameraSourceType.LOCAL_DEVICE:
+            name = display_name(self.camera.device_id)
+            return _("Device ID: {device_id}").format(device_id=name)
+        return _("Source: {source}").format(
+            source=self.camera.source_display_value()
+        )
 
     def _on_remove_clicked(self, button: Gtk.Button):
         """Emits a signal requesting the removal of this camera."""
@@ -79,6 +83,7 @@ class CameraListEditor(PreferencesGroupWithButton):
 
     def __init__(self, **kwargs):
         super().__init__(button_label=_("Add New Camera"), **kwargs)
+        self._preferred_camera_id: str | None = None
         self._setup_ui()
 
         # Signals
@@ -116,7 +121,9 @@ class CameraListEditor(PreferencesGroupWithButton):
 
         new_selection_index = -1
         for i, camera in enumerate(cameras):
-            if camera == selected_camera:
+            if self._preferred_camera_id == camera.id or (
+                new_selection_index < 0 and camera == selected_camera
+            ):
                 new_selection_index = i
 
             if i < row_count:
@@ -151,6 +158,10 @@ class CameraListEditor(PreferencesGroupWithButton):
                 self.list_box.unselect_all()
             else:
                 self.list_box.emit("row-selected", None)
+        self._preferred_camera_id = None
+
+    def prefer_camera_selection(self, camera_id: str | None) -> None:
+        self._preferred_camera_id = camera_id
 
     def create_row_widget(self, item: Camera) -> Gtk.Widget:
         """Creates a CameraRow for the given camera item."""
@@ -305,11 +316,12 @@ class CameraPreferencesPage(TrackedPreferencesPage):
         self._controllers: list[CameraController] = []
         self._cameras: list[Camera] = []
         self.selected_controller: CameraController | None = None
+        self._pending_selection_camera_id: str | None = None
 
         # Signals
         self.camera_add_requested = Signal()
         """Signal emitted when a user requests to add a camera.
-        Sends: sender, device_id (str)
+        Sends: sender, name (str), source_type (str), source_config (dict)
         """
         self.camera_remove_requested = Signal()
         """Signal emitted when a user requests to remove a camera.
@@ -341,28 +353,61 @@ class CameraPreferencesPage(TrackedPreferencesPage):
         """Sets the list of camera controllers and refreshes the UI."""
         self._controllers = controllers
         self._cameras = [c.config for c in controllers]
+        self.camera_list_editor.prefer_camera_selection(
+            self._pending_selection_camera_id
+        )
         self.camera_list_editor.set_cameras(self._cameras)
+        self._pending_selection_camera_id = None
 
     def on_add_camera(self, sender):
         """Show a dialog to select a new camera device."""
-        dialog = CameraSelectionDialog(self.get_ancestor(Gtk.Window))
+        dialog = CameraSelectionDialog(
+            self.get_ancestor(Gtk.Window),
+            active_controllers=self._controllers,
+        )
         dialog.present()
         dialog.connect("response", self.on_camera_selection_dialog_response)
 
     def on_camera_selection_dialog_response(self, dialog, response_id):
         if response_id == "select":
-            device_id = dialog.selected_device_id
-            if device_id:
-                # Check for duplicates in the current list
-                if any(c.device_id == device_id for c in self._cameras):
-                    return
-                # Emit a signal to request the addition
-                self.camera_add_requested.send(self, device_id=device_id)
+            payload = dialog.camera_payload
+            if payload:
+                self.camera_add_requested.send(self, **payload)
         dialog.destroy()
 
     def on_remove_camera(self, sender, camera: Camera):
         """Emit a signal to request removal of the selected Camera."""
+        # First some code to set default selection to the most logical
+        # left-over camera
+        selected_row = self.camera_list_editor.list_box.get_selected_row()
+        selected_camera = None
+        if selected_row is not None:
+            camera_row_widget = cast(CameraRow, selected_row.get_child())
+            selected_camera = camera_row_widget.camera
+
+        remaining_cameras = [c for c in self._cameras if c.id != camera.id]
+        if selected_camera is not None and selected_camera.id != camera.id:
+            self._pending_selection_camera_id = selected_camera.id
+        elif remaining_cameras:
+            try:
+                removed_index = next(
+                    i
+                    for i, existing in enumerate(self._cameras)
+                    if existing.id == camera.id
+                )
+            except StopIteration:
+                removed_index = len(remaining_cameras) - 1
+            next_index = min(removed_index, len(remaining_cameras) - 1)
+            self._pending_selection_camera_id = remaining_cameras[
+                next_index
+            ].id
+        else:
+            self._pending_selection_camera_id = None
+        # the actual remove request
         self.camera_remove_requested.send(self, camera=camera)
+
+    def select_camera_by_id(self, camera_id: str | None) -> None:
+        self._pending_selection_camera_id = camera_id
 
     def on_camera_selected(self, listbox, row):
         """Update the configuration panel when a Camera is selected."""

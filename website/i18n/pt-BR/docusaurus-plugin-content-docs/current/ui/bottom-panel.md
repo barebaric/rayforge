@@ -126,6 +126,40 @@ Configure o comportamento das operações de jog:
 :::
 <!-- prettier-ignore-end -->
 
+## Movendo a Cabeça do Laser
+
+Além do jog, a cabeça do laser pode ser movida para uma posição exata. Todos esses movimentos usam a
+**Velocidade de Jog** descrita acima.
+
+### Popover Mover para Posição
+
+Clique no ícone de bússola na linha Posição Atual para abrir o popover Mover para Posição. Ele vem
+preenchido com a posição atual, e as coordenadas são inseridas no sistema de coordenadas de trabalho
+ativo, correspondendo à leitura de posição:
+
+| Controle              | Função                                                             |
+| --------------------- | ------------------------------------------------------------------ |
+| X / Y / Z             | Coordenadas de destino (Z apenas em máquinas com eixo Z)           |
+| Mover                 | Move a cabeça para as coordenadas inseridas                        |
+| Inferior Esquerdo     | Move para o canto inferior esquerdo da seleção ou área de trabalho |
+| Centro                | Move para o centro da seleção ou área de trabalho                  |
+| Superior Direito      | Move para o canto superior direito da seleção ou área de trabalho  |
+| Mover para Origem WCS | Move para X0 Y0 do WCS ativo                                       |
+
+O popover e seus atalhos ficam desativados enquanto a máquina estiver offline.
+
+### Clicar na Tela para Mover a Cabeça
+
+Clique no ícone de mover na linha Posição Atual (ou pressione <kbd>Ctrl+M</kbd>) para ativar o modo.
+O próximo clique com o botão esquerdo em um espaço vazio da tela move a cabeça para esse ponto, e o
+modo é desativado automaticamente em seguida. Um clique com o botão direito cancela o modo sem mover
+a cabeça. Ativar este modo desativa o Clique para Zero, e vice-versa.
+
+### Mover Cabeça para Aqui
+
+Clicar com o botão direito em um espaço vazio da tela oferece a entrada **Mover Cabeça para Aqui**,
+que move a cabeça diretamente para o ponto clicado.
+
 ## Display de Status da Máquina
 
 O Painel de Controle exibe informação em tempo real sobre sua máquina:

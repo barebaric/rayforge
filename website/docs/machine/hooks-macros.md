@@ -51,6 +51,14 @@ Common macro use cases:
    - Each line is a separate G-code command
    - Comments start with `;` or `(`
    - Variables can be used (see Variable Substitution below)
+   - Use the toolbar above the editor to insert a variable placeholder or an `@include(...)`
+     reference to another macro
+
+![Macro editor](/screenshots/machine-settings-hooks-macros-editor.webp)
+
+The variable placeholder popover lists all variables available at the current context:
+
+![Variable placeholders](/screenshots/machine-settings-hooks-macros-editor-variables.webp)
 
 4. **Save the macro**
 

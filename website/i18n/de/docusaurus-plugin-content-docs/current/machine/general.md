@@ -21,13 +21,33 @@ erkennen, wenn du mehrere Maschinen konfiguriert hast.
 Wähle den Treiber aus, der zum Controller deiner Maschine passt. Der Treiber übernimmt die
 Kommunikation zwischen Rayforge und der Hardware.
 
-GRBL-Geräte haben zwei serielle Treiber-Optionen:
+GRBL-Geräte haben drei serielle Treiber-Optionen:
 
 - **GRBL (Serial)** — Pufferzählender Treiber mit Deadlock-Erkennung und Stall-Wiederherstellung.
   Für die meisten GRBL-Geräte empfohlen
 - **GRBL (Serial Simple)** — Ping-Pong-Protokoll-Treiber. Sendet eine Zeile, wartet auf "ok", sendet
   die nächste. Keine Pufferverwaltung, keine Deadlock-Erkennung. Nützlich, wenn der Standardtreiber
   falsche Alarme auslöst
+- **GRBL (Rust)** — Experimenteller Treiber, dessen kompletter GRBL-Protokollstack (Flusssteuerung,
+  Auftrags-Streaming, Stall-Erkennung, Deadlock-Recovery, Einstellungen und Probe) in Rust läuft.
+  Kann als direkter Ersatz für GRBL (Serial) ausgewählt werden
+
+Ruida-basierte Controller werden vom Treiber **Ruida RPA** unterstützt, der sich direkt über USB
+oder UDP verbindet oder per TUI-RPC über den Ruida Protocol Analyzer. Sein USB-Feld bietet eine
+Auswahl verbundener Geräte mit VID:PID-Abgleich, und er beachtet die Power-Mode-Einstellung jedes
+Schritts — Dynamic aktiviert die Leistungsskalierung des Controllers, Constant deaktiviert sie. Das
+Leistungsverhalten wird über die Treiberoptionen **Power Scaling**, **VECTOR power floor** und
+**IMAGE power bias** abgestimmt: Power Scaling erhöht die ausgegebene Mindestleistung, wenn die
+Schrittgeschwindigkeit der Lage sinkt, der Vector Power Floor gleicht Nachbrennen an den Enden von
+Linien aus, und der Image Bias gleicht CO2-Röhren aus, die bei sehr geringer Leistung nicht zünden.
+
+### Serieller Port binden
+
+Statt eines Gerätepfads (z. B. `/dev/ttyUSB0` oder `COM3`) akzeptiert das Feld für den seriellen
+Port auch eine USB-`VID:PID`-Kennung wie `0403:6001`. Wenn eine Maschine per VID:PID gebunden ist,
+folgt die automatische Wiederverbindung ihrem neuen Port, nachdem das Betriebssystem die USB-Geräte
+neu aufzählt — z. B. nach einem Neustart oder beim Ab- und Wiederanstecken. Die VID:PID eines Geräts
+findest du in der Ausgabe von `lsusb` (Linux) oder im Geräte-Manager unter Hardware-IDs (Windows).
 
 Nach der Auswahl eines Treibers werden verbindungsspezifische Einstellungen unter der Auswahl
 angezeigt (z. B. serieller Port, Baudrate). Diese variieren je nach gewähltem Treiber.

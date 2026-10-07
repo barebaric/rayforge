@@ -1,0 +1,42 @@
+{
+  "title": {
+    "message": "Rayforge",
+    "description": "The title in the navbar"
+  },
+  "logo.alt": {
+    "message": "Rayforge लोगो",
+    "description": "The alt text of navbar logo"
+  },
+  "item.label.Documentation": {
+    "message": "दस्तावेज़ीकरण",
+    "description": "Navbar item with label Documentation"
+  },
+  "item.label.Developer": {
+    "message": "डेवलपर",
+    "description": "Navbar item with label Developer"
+  },
+  "item.label.Contributing": {
+    "message": "योगदान",
+    "description": "Navbar item with label Contributing"
+  },
+  "item.label.Blog": {
+    "message": "ब्लॉग",
+    "description": "Navbar item with label Blog"
+  },
+  "item.label.GitHub": {
+    "message": "GitHub",
+    "description": "Navbar item with label GitHub"
+  },
+  "item.label.Discord": {
+    "message": "Discord",
+    "description": "Navbar item with label Discord"
+  },
+  "item.label.Sponsor": {
+    "message": "प्रायोजक",
+    "description": "Navbar item with label Sponsor"
+  },
+  "item.label.Devices": {
+    "message": "डिवाइस",
+    "description": "Navbar item with label Devices"
+  }
+}

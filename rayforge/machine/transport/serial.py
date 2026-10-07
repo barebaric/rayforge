@@ -12,6 +12,7 @@ from gettext import gettext as _
 import serial
 from serial.tools import list_ports
 
+from ...core.varset.serialportvar import format_vidpid, parse_vidpid
 from .transport import Transport, TransportStatus
 
 logger = logging.getLogger(__name__)
@@ -135,6 +136,36 @@ def safe_list_ports_linux() -> list[str]:
                 f"Error scanning for serial ports. Pattern '{pattern}': {e}"
             )
     return sorted(ports)
+
+
+def resolve_serial_port(port: str) -> str:
+    """
+    Resolves a 'vid:pid' USB specification (e.g. '0403:6001') to a
+    concrete device path by scanning the available ports. Device paths
+    are returned unchanged.
+
+    Unlike a fixed path, a VID:PID match survives the OS re-enumerating
+    devices (e.g. ttyUSB0 becoming ttyUSB1 after a reconnect). If
+    several devices share the same VID:PID, the first one on the bus
+    wins. Raises SerialException when no matching device is present.
+    """
+    vidpid = parse_vidpid(port)
+    if vidpid is None:
+        return port
+    vid, pid = vidpid
+    for info in SerialTransport.list_port_info():
+        if info.vid == vid and info.pid == pid:
+            logger.debug(
+                f"Resolved {port} to {info.device} "
+                f"({info.description or 'no description'})."
+            )
+            return info.device
+    raise serial.SerialException(
+        _(
+            "No USB serial device with VID:PID {spec} found. "
+            "Is the device connected and powered on?"
+        ).format(spec=format_vidpid(vid, pid))
+    )
 
 
 class SerialTransport(Transport):
@@ -285,7 +316,9 @@ class SerialTransport(Transport):
         Initialize serial transport.
 
         Args:
-            port: Device path (e.g., '/dev/ttyUSB0')
+            port: Device path (e.g., '/dev/ttyUSB0') or a USB
+                'vid:pid' spec (e.g. '0403:6001') that is resolved to
+                a path on every connect attempt
             baudrate: Communication speed in bits per second
         """
         super().__init__()
@@ -306,8 +339,12 @@ class SerialTransport(Transport):
         logger.debug("Attempting to connect serial port...")
         self.status_changed.send(self, status=TransportStatus.CONNECTING)
         try:
+            # Resolving on every attempt lets a 'vid:pid' spec follow
+            # the device when the OS reassigns its path, which is what
+            # makes auto-reconnect work across power cycles.
+            port = resolve_serial_port(self.port)
             self._serial = serial.Serial(
-                port=self.port,
+                port=port,
                 baudrate=self.baudrate,
                 timeout=self._READ_TIMEOUT,
                 exclusive=True,

@@ -7,9 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-29 16:07+0200\n"
+"POT-Creation-Date: 2026-09-24 21:41+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Ukrainian\n"
 "Language: uk\n"
 "MIME-Version: 1.0\n"
@@ -271,6 +271,27 @@ msgid "Laser power as a percentage"
 msgstr "Потужність лазера у відсотках"
 
 #: laser_essentials/steps/laser_step.py
+msgid "Power Mode"
+msgstr "Режим потужності"
+
+#: laser_essentials/steps/laser_step.py
+msgid ""
+"Dynamic power (M4) scales power with head speed; constant power (M3) keeps "
+"it fixed. Use constant power if corners and curves burn too lightly"
+msgstr ""
+"Динамічна потужність (M4) масштабує потужність залежно від швидкості "
+"головки; постійна потужність (M3) утримує її сталою. Використовуйте постійну "
+"потужність, якщо кути та криві прогоряють занадто слабко"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Dynamic (M4)"
+msgstr "Динамічна (M4)"
+
+#: laser_essentials/steps/laser_step.py
+msgid "Constant (M3)"
+msgstr "Постійна (M3)"
+
+#: laser_essentials/steps/laser_step.py
 msgid "Air Assist"
 msgstr "Повітряний обдув"
 
@@ -363,6 +384,22 @@ msgid ""
 msgstr ""
 "Зсуває рамку усередину/назовні залежно від сторони різу (жодного на "
 "центральній лінії). За замовчуванням — компенсація kerf для голівки"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Round Corners"
+msgstr "Заокруглені кути"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Round the frame's corners instead of cutting right angles"
+msgstr "Заокруглює кути рамки замість різання прямих кутів"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Corner Radius"
+msgstr "Радіус кутів"
+
+#: laser_essentials/steps/frame_step.py
+msgid "Radius used to round the frame's corners"
+msgstr "Радіус, що використовується для заокруглення кутів рамки"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Mode"

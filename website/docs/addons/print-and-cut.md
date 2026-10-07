@@ -54,6 +54,10 @@ The **Focus Laser** toggle turns the laser on at your configured focus power, wh
 visible dot on the material to help you locate positions precisely. This toggle requires a focus
 power value greater than zero in your laser settings.
 
+If your laser head has an alignment pointer, the **Pointer Alignment** switch records the positions
+at the pointer dot instead of the beam, so the computed transform follows the dot you aim with. It
+requires the pointer offset to be configured in the [laser settings](../machine/laser.md).
+
 The current laser position is shown at the bottom of the panel. When both positions are recorded,
 click **Next** to proceed.
 

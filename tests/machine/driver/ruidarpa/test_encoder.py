@@ -15,12 +15,12 @@ stage_gluescript when the job runs. Tests cover:
 
 import ast
 import logging
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 import pytest
 from raygeo.geo import Matrix
 from raygeo.ops import Ops
-from raygeo.ops.state import AirAssistMode, CoolantMode
+from raygeo.ops.state import AirAssistMode, CoolantMode, PowerMode
 from raygeo.ops.types import RasterMode, SectionType
 from ruidadriver.rd_gluescript import GlueScript
 
@@ -323,12 +323,57 @@ class TestLayerDeclaration:
         gs = GlueScript()
         gs.stage_gluescript(result.text.split("\n"))
         assert any(
-            "min_power_1 5.0% is below the recommended minimum of 8%" in line
+            "min_power_1 5.0% is below the recommended minimum of 8.0%" in line
             for line in gs.rpascript
         )
 
-    def test_unknown_layer_uses_defaults(self, encoder, mock_machine, doc):
-        """Layers absent from the document should still stage cleanly."""
+    def test_job_power_cap_clamps_power(self, encoder, mock_machine, doc):
+        """While a pointer dry-run is requested, emitted power is
+        clamped at the job power cap (the framing power)."""
+        ops = Ops()
+        ops.job_start()
+        ops.layer_start(layer_uid=doc.layers[0].uid)
+        ops.workpiece_start("wp-0")
+        ops.set_power(0.5)
+        ops.workpiece_end("wp-0")
+        ops.layer_end(layer_uid=doc.layers[0].uid)
+        ops.job_end()
+
+        head = mock_machine.get_default_laser_head()
+        assert head is not None
+        head.set_frame_power(0.1)
+        mock_machine.pointer_job_shift_enabled = True
+        try:
+            result = encoder.encode(ops, mock_machine, doc)
+        finally:
+            mock_machine.pointer_job_shift_enabled = False
+
+        assert "power_range(10.0, 10.0)" in result.text
+        assert "power_range(50.0, 50.0)" not in result.text
+
+    def test_job_power_cap_none_keeps_power(self, encoder, mock_machine, doc):
+        """Without a job power cap, emitted power is untouched."""
+        ops = Ops()
+        ops.job_start()
+        ops.layer_start(layer_uid=doc.layers[0].uid)
+        ops.workpiece_start("wp-0")
+        ops.set_power(0.5)
+        ops.workpiece_end("wp-0")
+        ops.layer_end(layer_uid=doc.layers[0].uid)
+        ops.job_end()
+
+        assert mock_machine.pointer_job_shift_enabled is False
+        result = encoder.encode(ops, mock_machine, doc)
+
+        assert "power_range(50.0, 50.0)" in result.text
+
+    def test_unknown_layer_fails_loud(self, encoder, mock_machine, doc):
+        """Layers absent from the document must raise, not guess.
+
+        The Ruida encoder requires a declared layer for every workpiece;
+        guessing default settings would silently cut with unknown
+        power/speed.
+        """
         ops = Ops()
         ops.job_start()
         ops.layer_start(layer_uid="missing-layer-uid")
@@ -337,12 +382,9 @@ class TestLayerDeclaration:
         ops.workpiece_end("wp-0")
         ops.layer_end(layer_uid="missing-layer-uid")
         ops.job_end()
-        result = encoder.encode(ops, mock_machine, doc)
 
-        assert any(
-            line.startswith("declare_layer(")
-            for line in result.text.split("\n")
-        )
+        with pytest.raises(ValueError, match="missing-layer-uid"):
+            encoder.encode(ops, mock_machine, doc)
 
     def test_multi_workpiece_layer_declares_each_workpiece(
         self, encoder, mock_machine, doc
@@ -495,15 +537,19 @@ class TestSettingsCommands:
     ):
         """Per-op SET_POWER below 8% must clamp with a warning.
 
-        GlueScript 0.20.3 no longer raises for a sub-8% power; the
-        power_range action carries the value and a ``# warning:``
-        comment is emitted into the staged rpascript.
+        GlueScript no longer raises for a sub-8% power; the power_range
+        action carries the value and a ``# warning:`` comment is emitted
+        into the staged rpascript. Since GlueScript 0.21 the emission is
+        deferred: pending power settings only flush when a cut action
+        follows, so the cut below is part of the scenario.
         """
         ops = Ops()
         ops.job_start()
         ops.layer_start(layer_uid=doc.layers[0].uid)
         ops.workpiece_start("wp-0")
         ops.set_power(0.05)
+        ops.move_to(0.0, 0.0, 0.0)
+        ops.line_to(5.0, 5.0, 0.0)
         ops.workpiece_end("wp-0")
         ops.layer_end(layer_uid=doc.layers[0].uid)
         ops.job_end()
@@ -514,7 +560,7 @@ class TestSettingsCommands:
         gs = GlueScript()
         gs.stage_gluescript(result.text.split("\n"))
         assert any(
-            "min_power_1 5.0% is below the recommended minimum of 8%" in line
+            "min_power_1 5.0% is below the recommended minimum of 8.0%" in line
             for line in gs.rpascript
         )
 
@@ -629,6 +675,66 @@ class TestSettingsCommands:
         assert "air_assist_on()" in lines
         assert "air_assist_off()" in lines
         assert lines.index("air_assist_on()") < lines.index("air_assist_off()")
+
+    @pytest.mark.parametrize(
+        ("mode", "expected"),
+        [
+            (PowerMode.DYNAMIC, True),
+            (PowerMode.CONSTANT, False),
+        ],
+        ids=["dynamic", "constant"],
+    )
+    def test_set_power_mode_toggles_power_scaling(
+        self, mock_machine, doc, mode, expected
+    ):
+        """SET_POWER_MODE must enable scaling for DYNAMIC and disable for
+        CONSTANT by calling set_power_scaling_enabled on the backend."""
+        ops = Ops()
+        ops.job_start()
+        ops.layer_start(layer_uid=doc.layers[0].uid)
+        ops.workpiece_start("wp-0")
+        ops.set_power_mode(mode)
+        ops.workpiece_end("wp-0")
+        ops.layer_end(layer_uid=doc.layers[0].uid)
+        ops.job_end()
+
+        mock_gluescript = Mock(spec=GlueScript)
+        mock_gluescript.gluescript = []
+        encoder = RuidaRPAEncoder(gluescript=mock_gluescript)
+        encoder.encode(ops, mock_machine, doc)
+
+        assert mock_gluescript.set_power_scaling_enabled.call_args_list == [
+            call(expected)
+        ]
+
+    @pytest.mark.parametrize(
+        "mode",
+        [PowerMode.DYNAMIC, PowerMode.CONSTANT],
+        ids=["dynamic", "constant"],
+    )
+    def test_power_scaling_disabled_forces_constant(
+        self, mock_machine, doc, mode
+    ):
+        """When the power_scaling_enabled driver arg is off, SET_POWER_MODE
+        is ignored and CONSTANT is forced (scaling always disabled)."""
+        mock_machine.driver_args = {"power_scaling_enabled": False}
+        ops = Ops()
+        ops.job_start()
+        ops.layer_start(layer_uid=doc.layers[0].uid)
+        ops.workpiece_start("wp-0")
+        ops.set_power_mode(mode)
+        ops.workpiece_end("wp-0")
+        ops.layer_end(layer_uid=doc.layers[0].uid)
+        ops.job_end()
+
+        mock_gluescript = Mock(spec=GlueScript)
+        mock_gluescript.gluescript = []
+        encoder = RuidaRPAEncoder(gluescript=mock_gluescript)
+        encoder.encode(ops, mock_machine, doc)
+
+        assert mock_gluescript.set_power_scaling_enabled.call_args_list == [
+            call(False)
+        ]
 
     def test_set_head_selects_laser_device(
         self, encoder, mock_machine, doc, caplog
@@ -940,7 +1046,10 @@ class TestPowerCompensation:
         self, encoder, mock_machine, doc
     ):
         """min_power on the first workflow step lowers the vector floor."""
-        mock_machine.driver_args = {"power_floor": 1.0}
+        mock_machine.driver_args = {
+            "power_floor": 1.0,
+            "power_floor_enabled": True,
+        }
         step = CutStep()
         step.power = 0.5
         step.min_power = 0.3
@@ -953,7 +1062,10 @@ class TestPowerCompensation:
 
     def test_step_extra_min_power_fallback(self, encoder, mock_machine, doc):
         """Unregistered steps recover min_power from step.extra."""
-        mock_machine.driver_args = {"power_floor": 1.0}
+        mock_machine.driver_args = {
+            "power_floor": 1.0,
+            "power_floor_enabled": True,
+        }
         step = Step.from_dict(
             {
                 "typelabel": "laser",
@@ -975,7 +1087,10 @@ class TestPowerCompensation:
 
     def test_layer_extra_min_power_fallback(self, encoder, mock_machine, doc):
         """min_power on the layer's extra applies when the step has none."""
-        mock_machine.driver_args = {"power_floor": 1.0}
+        mock_machine.driver_args = {
+            "power_floor": 1.0,
+            "power_floor_enabled": True,
+        }
         step = CutStep()
         step.power = 0.5
         doc.layers[0].workflow.add_step(step)
@@ -987,7 +1102,10 @@ class TestPowerCompensation:
 
     def test_min_power_source_precedence(self, encoder, mock_machine, doc):
         """Step attr beats step.extra, which beats layer.extra."""
-        mock_machine.driver_args = {"power_floor": 1.0}
+        mock_machine.driver_args = {
+            "power_floor": 1.0,
+            "power_floor_enabled": True,
+        }
         step0 = CutStep()
         step0.power = 0.5
         step0.min_power = 0.3
@@ -1023,23 +1141,23 @@ class TestPowerCompensation:
             assert self._declared_min_power(result.text) == min_pct
 
     def test_min_power_defaults_to_floor(self, encoder, mock_machine, doc):
-        """Vector layers without min_power use the 100% floor (min==max)."""
+        """Vector layers without min_power keep min==max by default."""
         step = CutStep()
         step.power = 0.5
         doc.layers[0].workflow.add_step(step)
 
         result = encoder.encode(self._vector_job(doc, 0.5), mock_machine, doc)
 
-        # With default floor=100%, the elif condition (100 < 50) is
-        # False, so min==max==power_pct.
+        # With the power floor toggle disabled by default, the floor is
+        # ignored and min==max==power_pct.
         assert self._declared_min_power(result.text) == 50.0
         assert "power_range(50.0, 50.0)" in result.text
 
     def test_min_power_below_floor_clamps_to_floor(
         self, encoder, mock_machine, doc
     ):
-        """A sub-100% min_power clamps up to the floor; with default
-        floor=100% min==max==power_pct (100% >= 50%)."""
+        """A sub-floor min_power clamps up to the floor; with the floor
+        toggle disabled by default min==max==power_pct."""
         step = CutStep()
         step.power = 0.5
         step.min_power = 0.03
@@ -1061,7 +1179,10 @@ class TestPowerCompensation:
         self, encoder, mock_machine, doc, power, expected
     ):
         """A power at or below the min emits min == max."""
-        mock_machine.driver_args = {"power_floor": 1.0}
+        mock_machine.driver_args = {
+            "power_floor": 1.0,
+            "power_floor_enabled": True,
+        }
         step = CutStep()
         step.power = 0.5
         step.min_power = 0.3
@@ -1161,7 +1282,10 @@ class TestPowerFloorFromDriverArgs:
         self, encoder, mock_machine, doc
     ):
         """A non-default power_floor from driver_args raises the floor."""
-        mock_machine.driver_args = {"power_floor": 20.0}
+        mock_machine.driver_args = {
+            "power_floor": 20.0,
+            "power_floor_enabled": True,
+        }
         step = CutStep()
         step.power = 0.5
         doc.layers[0].workflow.add_step(step)
@@ -1174,7 +1298,7 @@ class TestPowerFloorFromDriverArgs:
     def test_default_power_floor_when_key_absent(
         self, encoder, mock_machine, doc
     ):
-        """Without a power_floor key the encoder uses the default 100%."""
+        """Without a power_floor key the encoder uses the default 8%."""
         mock_machine.driver_args = {}
         step = CutStep()
         step.power = 0.5
@@ -1182,8 +1306,8 @@ class TestPowerFloorFromDriverArgs:
 
         result = encoder.encode(self._vector_job(doc, 0.5), mock_machine, doc)
 
-        # Floor=100% >= power_pct(50%), so elif (100 < 50) is False;
-        # min==max==power_pct.
+        # The floor toggle is disabled by default, so the floor is
+        # ignored and min==max==power_pct.
         assert self._declared_min_power(result.text) == 50.0
         assert "power_range(50.0, 50.0)" in result.text
 
@@ -1191,7 +1315,10 @@ class TestPowerFloorFromDriverArgs:
         self, encoder, mock_machine, doc
     ):
         """An out-of-range power_floor (e.g. 150.0) clamps to 100%."""
-        mock_machine.driver_args = {"power_floor": 150.0}
+        mock_machine.driver_args = {
+            "power_floor": 150.0,
+            "power_floor_enabled": True,
+        }
         step = CutStep()
         step.power = 0.5
         doc.layers[0].workflow.add_step(step)
@@ -1201,6 +1328,85 @@ class TestPowerFloorFromDriverArgs:
         # 150.0 is clamped to 100.0 at read time; with no explicit
         # min_power, the layer min defaults to the step power.
         assert self._declared_min_power(result.text) == 50.0
+
+
+class TestPowerFloorEnabledToggle:
+    """The power_floor_enabled driver arg gates VECTOR min-power
+    compensation. When disabled (the default), the emitted power range
+    always keeps min == max even when a floor and/or step min_power is
+    configured."""
+
+    @staticmethod
+    def _vector_job(doc, power):
+        ops = Ops()
+        ops.job_start()
+        ops.layer_start(layer_uid=doc.layers[0].uid)
+        ops.workpiece_start("wp-0")
+        ops.set_power(power)
+        ops.workpiece_end("wp-0")
+        ops.layer_end(layer_uid=doc.layers[0].uid)
+        ops.job_end()
+        return ops
+
+    @staticmethod
+    def _declared_min_power(text):
+        declared = next(
+            line
+            for line in text.split("\n")
+            if line.startswith("declare_layer(")
+        )
+        return _declare_layer_min_power(declared)
+
+    def test_disabled_ignores_floor_and_step_min(
+        self, encoder, mock_machine, doc
+    ):
+        """With the toggle off, a floor and step min_power are ignored
+        and min always equals max."""
+        mock_machine.driver_args = {
+            "power_floor": 20.0,
+            "power_floor_enabled": False,
+        }
+        step = CutStep()
+        step.power = 0.5
+        step.min_power = 0.3
+        doc.layers[0].workflow.add_step(step)
+
+        result = encoder.encode(self._vector_job(doc, 0.5), mock_machine, doc)
+
+        declared = next(
+            line
+            for line in result.text.split("\n")
+            if line.startswith("declare_layer(")
+        )
+        assert _declare_layer_min_power(declared) == 50.0
+        assert "power_range(50.0, 50.0)" in result.text
+
+    def test_disabled_is_default(self, encoder, mock_machine, doc):
+        """Without the key the toggle is off: floor ignored, min==max."""
+        mock_machine.driver_args = {"power_floor": 20.0}
+        step = CutStep()
+        step.power = 0.5
+        doc.layers[0].workflow.add_step(step)
+
+        result = encoder.encode(self._vector_job(doc, 0.5), mock_machine, doc)
+
+        assert self._declared_min_power(result.text) == 50.0
+        assert "power_range(50.0, 50.0)" in result.text
+
+    def test_enabled_applies_floor(self, encoder, mock_machine, doc):
+        """With the toggle on, the floor acts as the vector min power."""
+        mock_machine.driver_args = {
+            "power_floor": 20.0,
+            "power_floor_enabled": True,
+        }
+        step = CutStep()
+        step.power = 0.5
+        doc.layers[0].workflow.add_step(step)
+
+        result = encoder.encode(self._vector_job(doc, 0.5), mock_machine, doc)
+
+        assert self._declared_min_power(result.text) == 20.0
+        assert "power_range(20.0, 50.0)" in result.text
 
 
 class TestImagePowerBias:
@@ -1277,6 +1483,7 @@ class TestImagePowerBias:
         mock_machine.driver_args = {
             "power_floor": 20.0,
             "image_power_bias": 0.0,
+            "power_floor_enabled": True,
         }
         step = CutStep()
         step.power = 0.5
@@ -2037,6 +2244,24 @@ class TestErrorHandling:
 
         with pytest.raises(ValueError, match="WORKPIECE_START"):
             encoder.encode(ops, mock_machine, doc)
+
+    def test_unknown_command_warns_instead_of_raising(
+        self, mock_machine, caplog
+    ):
+        """An unrecognized command must warn and skip, not abort the job."""
+        caplog.set_level(logging.WARNING, logger=rpa_encoder.logger.name)
+        encoder = RuidaRPAEncoder(gluescript=GlueScript())
+        ops = Mock()
+        unknown = Mock()
+        unknown.name = "FUTURE_COMMAND"
+        ops.command_type.return_value = unknown
+
+        encoder._handle_command(ops, 0, mock_machine)
+
+        assert any(
+            "Unknown command type" in record.message
+            for record in caplog.records
+        )
 
 
 def _plan_job(doc):

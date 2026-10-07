@@ -504,29 +504,44 @@ $22=1       ; Referenzfahrt aktiviert
 
 ---
 
-## Zukünftige Firmware-Unterstützung
+## Ruida-Controller
 
-### Ruida-Controller
-
-Rayforge bietet experimentelle Unterstützung für Ruida-basierte Controller (z.B. RDC6442, RDC6445,
-Ruida R5). Der Ruida-Treiber verbindet sich über das Netzwerk und unterstützt Jogging,
-Positionsreporting, Luftdrucksteuerung, Ebenenauswahl, Auto-Connect und Status-Polling.
+Rayforge verbindet sich mit Ruida-basierten Controllern (z. B. RDC6442, RDC6445, Ruida R5) über den
+Treiber **Ruida RPA**, der das native Protokoll des Controllers über USB oder UDP spricht oder per
+TUI-RPC über den Ruida Protocol Analyzer. Die Geräteprofile Generic Ruida RPA und Monport MP-570 60W
+CO2 bieten Ausgangspunkte für neue Maschinen.
 
 **Funktionen:**
 
-- Netzwerkverbindung (Ethernet/WiFi)
-- Positionsreporting
-- Jogging-Steuerung
-- Luftdruck und Ebenenauswahl
-- Referenzpunkt-Unterstützung
+- USB- und UDP-Verbindung; sind beide konfiguriert, wechselt Rayforge automatisch zwischen ihnen,
+  wenn Kabel angeschlossen oder getrennt werden
+- Auftragsversand mit Positionsreporting, Jogging, Homing und Move to Position
+- Framing fährt den Umriss des Jobs mit strahllosen absoluten Bewegungen ab und funktioniert so,
+  ohne den Laser auszulösen
+- Beachtet die Power-Mode-Einstellung jedes Schritts: Dynamic aktiviert die Leistungsskalierung des
+  Controllers, Constant deaktiviert sie
+- Serielle Ports lassen sich über eine USB-Geräteauswahl mit VID:PID-Abgleich binden, sodass die
+  automatische Wiederverbindung der Maschine folgt, nachdem das Betriebssystem die USB-Geräte neu
+  aufzählt
+
+**Leistungsabstimmung:**
+
+- **Power Scaling** — erhöht die ausgegebene Mindestleistung, wenn die Schrittgeschwindigkeit der
+  Lage sinkt
+- **VECTOR power floor** — Mindestleistung für die Vektorschnitt-Kompensation während Beschleunigung
+  und Verzögerung, reduziert Nachbrennen an den Enden von Linien
+- **IMAGE power bias** — Leistung, die Raster-Scanzeilen hinzugerechnet wird, da CO2-Röhren bei sehr
+  geringer Leistung nicht zünden
 
 **Einschränkungen:**
 
-- Experimentell — noch nicht vollständig stabil
+- Experimentell — bisher an einem RDC6442S-Controller (Monport MP570 CO2) getestet
 - Keine G-Code-Generierung; Ruida verwendet ein eigenes proprietäres Protokoll
-- Auftragsversand wird noch nicht unterstützt
+- Rotary-Modus wird noch nicht unterstützt
 
 ---
+
+## Experimentelle Treiber
 
 ### OctoPrint
 

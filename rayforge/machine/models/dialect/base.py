@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import uuid
 from dataclasses import (
     MISSING,
@@ -16,6 +17,26 @@ from typing import Any
 from ....core.varset import BoolVar, TextAreaVar, Var, VarSet
 
 logger = logging.getLogger(__name__)
+
+#: Movement templates that carry laser power via the {s_command}
+#: placeholder while continuous laser mode is enabled.
+POWER_MOVE_TEMPLATE_KEYS = (
+    "travel_move",
+    "linear_move",
+    "arc_cw",
+    "arc_ccw",
+    "bezier_cubic",
+)
+
+_S_COMMAND_PATTERN = re.compile(r"\{s_command(?::[^}]+)?\}")
+
+
+def has_s_command(template: str | None) -> bool:
+    """
+    Returns True if the template contains an {s_command} placeholder,
+    optionally with a format specifier (e.g. "{s_command:.0f}").
+    """
+    return bool(template and _S_COMMAND_PATTERN.search(template))
 
 
 @dataclass
@@ -224,6 +245,31 @@ class GcodeDialect:
             label=new_label,
         )
 
+    def find_missing_s_command_templates(self) -> list[str]:
+        """
+        Returns the keys of power-carrying movement templates that lack
+        the {s_command} placeholder while continuous laser mode is on.
+
+        In continuous laser mode the separate laser-on power updates are
+        suppressed and the power is instead carried as an S parameter on
+        every movement line, so templates without the placeholder would
+        silently drop it. Empty templates are ignored since they are
+        never emitted.
+        """
+        if not self.continuous_laser_mode:
+            return []
+        return [
+            key
+            for key in POWER_MOVE_TEMPLATE_KEYS
+            if self._template_drops_s_command(getattr(self, key, None))
+        ]
+
+    @staticmethod
+    def _template_drops_s_command(template: str | None) -> bool:
+        return bool(
+            template and template.strip() and not has_s_command(template)
+        )
+
     def get_safety_off_commands(self) -> list[str]:
         """
         Returns the commands that return persistent tool outputs to a
@@ -262,6 +308,35 @@ class GcodeDialect:
             template = self.set_wcs_offset.replace(" Z{z}", "")
             return template.format(p_num=p_num, x=x, y=y)
         return self.set_wcs_offset.format(p_num=p_num, x=x, y=y, z=z)
+
+    def format_move_to(
+        self,
+        x: float | str,
+        y: float | str,
+        speed: float | str | None = None,
+        z: float | str | None = None,
+    ) -> str:
+        """Format an absolute positioning move for emission.
+
+        Both the raw axis values and the axis-fragment variables of
+        the G-code encoder are supplied, so templates may use either
+        convention; a template that wants a removable Z word uses the
+        ``{z_cmd}`` fragment, which is empty when no Z target is
+        given. Values are pre-converted strings or floats; the caller
+        is responsible for converting to the machine's unit system
+        before calling this.
+        """
+        return self.move_to.format(
+            x=x,
+            y=y,
+            speed=speed,
+            x_cmd=f" X{x}",
+            y_cmd=f" Y{y}",
+            z_cmd=f" Z{z}" if z is not None else "",
+            extra_cmd="",
+            f_command="",
+            s_command="",
+        )
 
     def to_dict(self) -> dict[str, Any]:
         """Serializes the dialect to a dictionary."""

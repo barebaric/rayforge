@@ -1,7 +1,7 @@
 import math
 from types import SimpleNamespace
-from unittest.mock import MagicMock
 
+import cairo
 import pytest
 from sketcher.core import Sketch
 from sketcher.core.constraints import AngleConstraint
@@ -195,7 +195,7 @@ def test_angle_draw(setup_env):
 
     c = AngleConstraint(l1, l2, 90.0)
 
-    ctx = MagicMock()
+    ctx = cairo.Context(cairo.ImageSurface(cairo.FORMAT_ARGB32, 200, 200))
 
     def to_screen(pos):
         return pos

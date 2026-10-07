@@ -121,6 +121,7 @@ Deaktivierter Lasermodus kann unbeabsichtigte Verbrennungen und Feuergefahren ve
 ### $30 & $31 - Laserleistungsbereich
 
 **$30 - Maximale Laserleistung (RPM)**
+
 **$31 - Minimale Laserleistung (RPM)**
 
 **Zweck:** Definiert den Leistungsbereich für S-Befehle
@@ -141,6 +142,7 @@ Leistung in Rayforge auf 1000 ein.
 ### $130 & $131 - Maximaler Verfahrweg
 
 **$130 - X Maximaler Verfahrweg (mm)**
+
 **$131 - Y Maximaler Verfahrweg (mm)**
 
 **Zweck:** Definiert den Arbeitsbereich deiner Maschine

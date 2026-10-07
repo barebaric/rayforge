@@ -6,7 +6,8 @@ from pathlib import Path
 from gi.repository import Adw, Gdk, GLib, Gtk
 
 from ... import const
-from ...camera.models import Camera
+from ...camera.controller import CameraController
+from ...camera.models.camera import Camera, CameraSourceType
 from ...camera.v4l import display_name
 from ...context import get_context
 from ...machine.driver import (
@@ -29,6 +30,7 @@ from .head_preferences_page import HeadPreferencesPage
 from .hooks_macros_page import HooksMacrosPage
 from .maintenance_page import MaintenancePage
 from .nogo_zones_page import NogoZonesPage
+from .notes_page import NotesPage
 from .rotary_module_page import RotaryModulePage
 
 logger = logging.getLogger(__name__)
@@ -154,47 +156,51 @@ class MachineSettingsDialog(PatchedDialogWindow):
         general_page = GeneralPreferencesPage(machine=self.machine)
         self.content_stack.add_titled(general_page, "general", _("General"))
 
-        # --- Page 2: Hardware ---
+        # --- Page 2: Notes ---
+        notes_page = NotesPage(machine=self.machine)
+        self.content_stack.add_titled(notes_page, "notes", _("Notes"))
+
+        # --- Page 3: Hardware ---
         hardware_page = HardwarePage(machine=self.machine)
         self.content_stack.add_titled(hardware_page, "hardware", _("Hardware"))
 
-        # --- Page 3: Advanced ---
+        # --- Page 4: Advanced ---
         advanced_page = AdvancedPreferencesPage(machine=self.machine)
         self.content_stack.add_titled(advanced_page, "advanced", _("Advanced"))
 
-        # --- Page 4: G-code ---
+        # --- Page 5: G-code ---
         gcode_page = GcodeSettingsPage(machine=self.machine)
         self.content_stack.add_titled(gcode_page, "gcode", _("G-code"))
         self._gcode_stack_page = self.content_stack.get_page(gcode_page)
 
-        # --- Page 5: Hooks & Macros ---
+        # --- Page 6: Hooks & Macros ---
         hooks_macros_page = HooksMacrosPage(machine=self.machine)
         self.content_stack.add_titled(
             hooks_macros_page, "hooks-macros", _("Hooks & Macros")
         )
 
-        # --- Page 6: Device ---
+        # --- Page 7: Device ---
         device_page = DeviceSettingsPage(machine=self.machine)
         device_page.show_toast.connect(self._on_show_toast)
         self.content_stack.add_titled(device_page, "device", _("Device"))
 
-        # --- Page 7: Heads ---
+        # --- Page 8: Heads ---
         heads_page = HeadPreferencesPage(machine=self.machine)
         self.content_stack.add_titled(heads_page, "heads", _("Heads"))
 
-        # --- Page 8: Rotary Module ---
+        # --- Page 9: Rotary Module ---
         rotary_module_page = RotaryModulePage(machine=self.machine)
         self.content_stack.add_titled(
             rotary_module_page, "rotary-module", _("Rotary Module")
         )
 
-        # --- Page 9: No-Go Zones ---
+        # --- Page 10: No-Go Zones ---
         nogo_zones_page = NogoZonesPage(machine=self.machine)
         self.content_stack.add_titled(
             nogo_zones_page, "nogo-zones", _("No-Go Zones")
         )
 
-        # --- Page 10: Camera ---
+        # --- Page 11: Camera ---
         self.camera_page = CameraPreferencesPage()
         self.camera_page.camera_add_requested.connect(
             self._on_camera_add_requested
@@ -204,13 +210,13 @@ class MachineSettingsDialog(PatchedDialogWindow):
         )
         self.content_stack.add_titled(self.camera_page, "camera", _("Camera"))
 
-        # --- Page 11: Maintenance ---
+        # --- Page 12: Maintenance ---
         maintenance_page = MaintenancePage(machine=self.machine)
         self.content_stack.add_titled(
             maintenance_page, "maintenance", _("Maintenance")
         )
 
-        # --- Page 12: Capabilities ---
+        # --- Page 13: Capabilities ---
         capabilities_page = CapabilitiesPage(machine=self.machine)
         self.content_stack.add_titled(
             capabilities_page, "capabilities", _("Capabilities")
@@ -229,12 +235,13 @@ class MachineSettingsDialog(PatchedDialogWindow):
         self._add_sidebar_row(
             _("General"), "machine-settings-general-symbolic", "general"
         )
+        self._add_sidebar_row(_("Notes"), "help-about-symbolic", "notes")
         self._add_sidebar_row(_("Hardware"), "hardware-symbolic", "hardware")
         self._add_sidebar_row(
             _("Advanced"), "machine-settings-advanced-symbolic", "advanced"
         )
         self._add_sidebar_row(_("G-code"), "gcode-symbolic", "gcode")
-        self._gcode_row = self.sidebar_list.get_row_at_index(3)
+        self._gcode_row = self.sidebar_list.get_row_at_index(4)
         self._add_sidebar_row(
             _("Hooks & Macros"), "code-symbolic", "hooks-macros"
         )
@@ -392,18 +399,69 @@ class MachineSettingsDialog(PatchedDialogWindow):
         """
         self.toast_overlay.add_toast(Adw.Toast(title=message, timeout=5))
 
-    def _on_camera_add_requested(self, sender, *, device_id: str):
+    def _on_camera_add_requested(
+        self,
+        sender,
+        *,
+        name: str,
+        source_type: str,
+        source_config: dict,
+    ):
         """Handles the request to add a new camera to the machine."""
-        if any(c.device_id == device_id for c in self.machine.cameras):
-            return  # Safety check
+        if any(
+            c.source_type.value == source_type
+            and c.source_config == source_config
+            for c in self.machine.cameras
+        ):
+            self.toast_overlay.add_toast(
+                Adw.Toast(
+                    title=_("This camera source is already configured."),
+                    timeout=5,
+                )
+            )
+            return
 
         new_camera = Camera(
-            display_name(device_id),
-            device_id,
+            name
+            or (
+                display_name(source_config.get("device_id", ""))
+                if source_type == CameraSourceType.LOCAL_DEVICE.value
+                else source_config.get("uri", "")
+            ),
+            source_type=CameraSourceType(source_type),
+            source_config=source_config,
         )
+        if new_camera.source_type is CameraSourceType.LOCAL_DEVICE:
+            self._adopt_current_local_camera_settings(new_camera)
         new_camera.enabled = True
+        self.camera_page.select_camera_by_id(new_camera.id)
         self.machine.add_camera(new_camera)
         # The machine.changed signal will handle the UI update
+
+    def _adopt_current_local_camera_settings(self, camera: Camera) -> None:
+        controller = CameraController(camera)
+        try:
+            settings = controller.read_current_source_settings()
+        except OSError as exc:
+            logger.warning(
+                "Could not read current settings for local camera %s: %s",
+                camera.device_id,
+                exc,
+            )
+            return
+        finally:
+            controller.dispose()
+        white_balance = settings.get("white_balance")
+        if white_balance is None:
+            camera.white_balance = None
+        elif isinstance(white_balance, (int, float)):
+            camera.white_balance = float(white_balance)
+        contrast = settings.get("contrast")
+        if isinstance(contrast, (int, float)):
+            camera.contrast = float(contrast)
+        brightness = settings.get("brightness")
+        if isinstance(brightness, (int, float)):
+            camera.brightness = float(brightness)
 
     def _on_camera_remove_requested(self, sender, *, camera: Camera):
         """Handles the request to remove a camera from the machine."""
@@ -417,11 +475,9 @@ class MachineSettingsDialog(PatchedDialogWindow):
         # Get all live controllers and filter them for this specific
         # machine
         all_controllers = camera_mgr.controllers
-        machine_camera_device_ids = {c.device_id for c in self.machine.cameras}
+        machine_camera_ids = {c.id for c in self.machine.cameras}
         relevant_controllers = [
-            c
-            for c in all_controllers
-            if c.config.device_id in machine_camera_device_ids
+            c for c in all_controllers if c.config.id in machine_camera_ids
         ]
         self.camera_page.set_controllers(relevant_controllers)
 

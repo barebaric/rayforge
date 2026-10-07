@@ -152,6 +152,15 @@ class Entity:
         """
         return []
 
+    def clear_helper_references(self) -> None:
+        """
+        Drops this entity's references to its helper entities. Called
+        when a copy of the entity is baked as an array instance: the
+        helpers are not cloned with it, so stale IDs would resolve to
+        — and cascade-delete with — another member's helper geometry.
+        The default is a no-op for entities without helper references.
+        """
+
     def get_rigidly_connected_points(
         self, point_id: EntityID
     ) -> list[EntityID]:
@@ -312,6 +321,19 @@ class Entity:
         """
         polygons = self.to_geometry(registry).to_polygons(tolerance)
         return polygons[0] if polygons else []
+
+    def to_polylines(
+        self,
+        registry: "EntityRegistry",
+        tolerance: float = 0.1,
+    ) -> list[list[tuple[float, float]]]:
+        """
+        Samples this entity into one or more polylines in model
+        coordinates. Multi-contour entities (e.g. text glyphs)
+        return one polyline per contour; the default is the single
+        ``to_polyline`` polyline.
+        """
+        return [self.to_polyline(registry, tolerance)]
 
     def to_dict(self) -> dict[str, Any]:
         """Base serialization method for entities."""

@@ -3,7 +3,7 @@
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
@@ -29,7 +29,7 @@ def _make_pbr_slider_row(
     return create_slider_row(title, adjustment, subtitle=subtitle, digits=2)
 
 
-class AddMaterialDialog(Adw.MessageDialog):
+class AddMaterialDialog(Adw.AlertDialog):
     """A dialog for creating a new material."""
 
     def __init__(self, material: Material | None = None, **kwargs):
@@ -141,7 +141,7 @@ class AddMaterialDialog(Adw.MessageDialog):
 
         # Widen the dialog: libadwaita dialogs are presented at their
         # minimum preferred width, so add the extra width to that.
-        self.set_default_size(600, -1)
+        self.set_content_width(600)
 
         # Connect Enter key handler to entries
         # Adw.EntryRow has an internal entry widget we need to access
@@ -150,10 +150,10 @@ class AddMaterialDialog(Adw.MessageDialog):
 
     def _on_enter_key(self, widget):
         """Handle Enter key pressed in entry fields."""
-        # Get the default response and emit the response signal
+        # Trigger the default response as if its button was clicked
         default_response = self.get_default_response()
         if default_response:
-            self.response(default_response)
+            self.emit("response", default_response)
 
     def get_name(self) -> str:
         """Get the text from the name entry."""
@@ -210,7 +210,9 @@ class AddMaterialDialog(Adw.MessageDialog):
         filters = Gio.ListStore.new(Gtk.FileFilter)
         filters.append(file_filter)
         dialog.set_filters(filters)
-        dialog.open(self, None, self._on_file_dialog_finished)
+        root = self.get_root()
+        parent = cast(Gtk.Window, root) if root else None
+        dialog.open(parent, None, self._on_file_dialog_finished)
 
     def _on_file_dialog_finished(self, dialog: Gtk.FileDialog, result):
         """Handle the file chooser result."""
@@ -245,13 +247,12 @@ class AddMaterialDialog(Adw.MessageDialog):
 
     def _show_error(self, message: str):
         """Show an error dialog."""
-        err_dialog = Adw.MessageDialog(
-            transient_for=self,
+        err_dialog = Adw.AlertDialog(
             heading=_("Error"),
             body=message,
         )
         err_dialog.add_response("ok", _("OK"))
-        err_dialog.present()
+        err_dialog.present(cast(Gtk.Window, self.get_root()))
 
     def _populate_fields(self):
         """Populate the dialog fields with existing material data."""

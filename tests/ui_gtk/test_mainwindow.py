@@ -1,4 +1,5 @@
 # flake8: noqa: E402
+import asyncio
 import logging
 import os
 import sys
@@ -211,3 +212,79 @@ def test_machine_settings_dialog_recreated_after_machine_switch(
     win._machine_settings_dialog.close()
     process_events_for_duration(0.3)
     assert win._machine_settings_dialog is None
+
+
+def _enable_pointer_alignment(machine):
+    from rayforge.machine.models.machine import Origin
+
+    machine.set_axis_extents(400, 300)
+    machine.set_origin(Origin.BOTTOM_LEFT)
+    head = machine.get_default_laser_head()
+    assert head is not None
+    head.set_pointer_offset(10.0, 20.0)
+    head.set_pointer_offset_enabled(True)
+    machine.set_pointer_alignment(True)
+
+
+@pytest.mark.ui
+def test_click_to_move_shifted_with_alignment(app_and_window, mocker):
+    """Click-to-move commands are shifted by -offset while pointer
+    alignment is on, so the pointer dot lands on the clicked spot."""
+    _app, win = app_and_window
+    machine = get_context().config.machine
+    assert machine is not None
+    _enable_pointer_alignment(machine)
+    machine.set_gcode_precision(2)
+
+    move_to = mocker.patch.object(win.machine_cmd, "move_to")
+
+    win._on_move_head_requested(None, x=100.126, y=50.124)
+
+    move_to.assert_called_once()
+    args = move_to.call_args.args
+    assert args[0] is machine
+    assert args[1] == pytest.approx(90.13)
+    assert args[2] == pytest.approx(30.12)
+
+
+@pytest.mark.ui
+def test_click_to_set_work_origin_uses_machine_precision(
+    app_and_window, mocker
+):
+    """Click-to-zero rounds coordinates to the machine's G-code precision."""
+    _app, win = app_and_window
+    machine = get_context().config.machine
+    assert machine is not None
+    machine.set_gcode_precision(3)
+
+    set_work_origin = mocker.patch.object(machine, "set_work_origin")
+    add_coroutine = mocker.patch(
+        "rayforge.ui_gtk.mainwindow.task_mgr.add_coroutine"
+    )
+
+    win._on_work_zero_requested(None, x=12.3456, y=7.8914)
+
+    add_coroutine.assert_called_once()
+    asyncio.run(add_coroutine.call_args.args[0](None))
+    set_work_origin.assert_awaited_once_with(12.346, 7.891, 0.0)
+
+
+@pytest.mark.ui
+def test_move_head_here_shifted_with_alignment(app_and_window, mocker):
+    """Move-Head-Here commands are shifted by -offset while pointer
+    alignment is on, so the pointer dot lands on the chosen spot."""
+    _app, win = app_and_window
+    machine = get_context().config.machine
+    assert machine is not None
+    _enable_pointer_alignment(machine)
+    win.surface.right_click_machine_pos = (100.0, 50.0)
+
+    move_to = mocker.patch.object(win.machine_cmd, "move_to")
+
+    win.on_move_head_here_clicked(None, None)
+
+    move_to.assert_called_once()
+    args = move_to.call_args.args
+    assert args[0] is machine
+    assert args[1] == pytest.approx(90.0)
+    assert args[2] == pytest.approx(30.0)

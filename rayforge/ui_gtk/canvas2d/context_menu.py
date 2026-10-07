@@ -5,7 +5,9 @@ from collections.abc import Callable
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Optional
 
-from gi.repository import Gio, Gtk
+from gi.repository import Gdk, Gio, GLib, Gtk
+
+from ..shared.keyboard import PRIMARY_ACCEL
 
 if TYPE_CHECKING:
     from ...core.item import DocItem
@@ -152,7 +154,7 @@ _MENU_MODELS = {
 
 
 def _show_popover(
-    surface: WorkSurface, gesture: Gtk.Gesture, menu_model: Gio.Menu
+    surface: WorkSurface, x: float, y: float, menu_model: Gio.Menu
 ):
     """Helper to create and show a popover menu from a model."""
     popover = Gtk.PopoverMenu.new_from_model(menu_model)
@@ -163,16 +165,43 @@ def _show_popover(
     # exact placement.
     popover.set_position(Gtk.PositionType.RIGHT)
 
-    ok, rect = gesture.get_bounding_box()
-    if ok:
-        popover.set_pointing_to(rect)
+    # The gesture's bounding box cannot be used here: by release time
+    # the only tracked point carries the release event, which
+    # get_bounding_box() ignores and reports no position for.
+    rect = Gdk.Rectangle()
+    rect.x = int(x)
+    rect.y = int(y)
+    rect.width = 0
+    rect.height = 0
+    popover.set_pointing_to(rect)
 
+    popover.connect("closed", _on_context_menu_closed, surface)
     popover.popup()
+
+
+def _on_context_menu_closed(_popover: Gtk.Popover, surface: WorkSurface):
+    """Drop the stored right-click position after the menu closes, so a
+    later keyboard invocation of win.move-head-here cannot act on a
+    stale point.
+
+    GTK pops a popover menu down before activating the chosen item's
+    action, so the clearing is deferred to an idle callback: a menu
+    invocation consumes the position first, while closing the menu
+    without a choice still clears it.
+    """
+    GLib.idle_add(_clear_click_position, surface)
+
+
+def _clear_click_position(surface: WorkSurface) -> bool:
+    surface.right_click_machine_pos = None
+    return GLib.SOURCE_REMOVE
 
 
 def show_item_context_menu(
     surface: WorkSurface,
     gesture: Gtk.Gesture,
+    x: float,
+    y: float,
     item: DocItem | None = None,
 ):
     """
@@ -193,20 +222,26 @@ def show_item_context_menu(
         surface, item=item, gesture=gesture, menu=menu
     )
 
-    _show_popover(surface, gesture, menu)
+    _show_popover(surface, x, y, menu)
 
 
-def show_geometry_context_menu(surface: WorkSurface, gesture: Gtk.Gesture):
+def show_geometry_context_menu(
+    surface: WorkSurface, gesture: Gtk.Gesture, x: float, y: float
+):
     """Displays the context menu for adding a tab to a geometry path."""
-    _show_popover(surface, gesture, _MENU_MODELS["geometry"])
+    _show_popover(surface, x, y, _MENU_MODELS["geometry"])
 
 
-def show_tab_context_menu(surface: WorkSurface, gesture: Gtk.Gesture):
+def show_tab_context_menu(
+    surface: WorkSurface, gesture: Gtk.Gesture, x: float, y: float
+):
     """Displays the context menu for an existing tab."""
-    _show_popover(surface, gesture, _MENU_MODELS["tab"])
+    _show_popover(surface, x, y, _MENU_MODELS["tab"])
 
 
-def show_background_context_menu(surface: WorkSurface, gesture: Gtk.Gesture):
+def show_background_context_menu(
+    surface: WorkSurface, gesture: Gtk.Gesture, x: float, y: float
+):
     """Displays the context menu for empty canvas space."""
     menu = Gio.Menu.new()
     menu.append_item(Gio.MenuItem.new(_("New Sketch"), "win.new_sketch"))
@@ -215,4 +250,10 @@ def show_background_context_menu(surface: WorkSurface, gesture: Gtk.Gesture):
     menu.append_item(Gio.MenuItem.new(_("Import File\u2026"), "win.import"))
     menu.append_section(None, Gio.Menu.new())
     menu.append_item(Gio.MenuItem.new(_("Paste"), "win.paste"))
-    _show_popover(surface, gesture, menu)
+    menu.append_section(None, Gio.Menu.new())
+    move_item = Gio.MenuItem.new(_("Move Head Here"), "win.move-head-here")
+    move_item.set_attribute_value(
+        "accel", GLib.Variant.new_string(f"{PRIMARY_ACCEL}m")
+    )
+    menu.append_item(move_item)
+    _show_popover(surface, x, y, menu)

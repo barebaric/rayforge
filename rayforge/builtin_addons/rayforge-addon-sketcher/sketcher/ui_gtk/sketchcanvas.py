@@ -94,7 +94,7 @@ class SketchCanvas(WorldSurface):
 
         controllers: list[CameraController] = []
         for camera_model in machine.cameras:
-            controller = camera_mgr.get_controller(camera_model.device_id)
+            controller = camera_mgr.get_controller(camera_model.id)
             if controller:
                 controllers.append(controller)
 
@@ -378,7 +378,7 @@ class SketchCanvas(WorldSurface):
         self._active_dialog.connect("response", on_response)
         self._active_dialog.present()
 
-    def on_right_click_pressed(
+    def on_right_click_released(
         self, gesture: Gtk.GestureClick, n_press: int, x: float, y: float
     ):
         """

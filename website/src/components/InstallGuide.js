@@ -246,13 +246,16 @@ const linuxMethods = [
   { id: 'snap', label: translate({ id: 'install.snap.recommended', message: 'Snap (Recommended)' }) },
   { id: 'debian', label: 'Debian (apt)' },
   { id: 'ppa', label: 'Ubuntu 24.04 (PPA)' },
+  { id: 'gentoo', label: 'Gentoo (Portage)' },
   { id: 'flatpak', label: 'Flathub' },
+  { id: 'appimage', label: 'AppImage' },
   { id: 'pixi', label: translate({ id: 'install.pixi.developers', message: 'Pixi (Developers)' }) },
   { id: 'source', label: translate({ id: 'install.fromSource', message: 'From Source' }) },
 ];
 
 const windowsMethods = [
   { id: 'installer', label: translate({ id: 'install.installer.recommended', message: 'Installer (Recommended)' }) },
+  { id: 'winget', label: 'WinGet' },
   { id: 'developer', label: translate({ id: 'install.msys2.developers', message: 'MSYS2 (Developers)' }) },
 ];
 
@@ -285,7 +288,7 @@ function OsSelector({ selectedOs, onSelectOs }) {
   );
 }
 
-function LinuxInstall({ method, onMethodChange }) {
+function LinuxInstall({ method, onMethodChange, latestRelease }) {
   return (
     <>
       <div className="install-method-selector">
@@ -308,11 +311,101 @@ function LinuxInstall({ method, onMethodChange }) {
 
       {method === 'debian' && <LinuxDebianInstall />}
       {method === 'ppa' && <LinuxPpaInstall />}
+      {method === 'gentoo' && <LinuxGentooInstall />}
       {method === 'flatpak' && <LinuxFlatpakInstall />}
+      {method === 'appimage' && <LinuxAppImageInstall latestRelease={latestRelease} />}
       {method === 'snap' && <LinuxSnapInstall />}
       {method === 'pixi' && <LinuxPixiInstall />}
       {method === 'source' && <LinuxSourceInstall />}
     </>
+  );
+}
+
+function LinuxAppImageInstall({ latestRelease }) {
+  const asset = findReleaseAsset({
+    release: latestRelease,
+    os: 'linux',
+    linuxMethod: 'appimage',
+  });
+  const downloadUrl =
+    asset?.browser_download_url ||
+    `https://github.com/${GITHUB_REPO}/releases/latest`;
+  return (
+    <div className="install-section">
+      <h4><Translate id="install.appimage.title">AppImage</Translate></h4>
+      <p>
+        <Translate id="install.appimage.description">
+          The AppImage is a single self-contained file that runs on most Linux
+          distributions without installation. Download it, make it executable,
+          and run it.
+        </Translate>
+      </p>
+
+      <div className="install-step">
+        <div className="install-step-number">1</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.appimage.downloadAppImage">Download the AppImage</Translate></h5>
+          <p>
+            <a href={downloadUrl} target="_blank" rel="noopener noreferrer">
+              <strong><Translate id="install.downloadFromGithub">Download from GitHub Releases</Translate></strong>
+            </a>
+          </p>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">2</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.appimage.makeExecutable">Make it Executable</Translate></h5>
+          <CodeBlock language="bash">chmod +x Rayforge-*.AppImage</CodeBlock>
+          <p>
+            <Translate id="install.appimage.makeExecutableAlternative">
+              Alternatively, use your file manager: right-click the file, open
+              Properties, and enable "Executable" under Permissions.
+            </Translate>
+          </p>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">3</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.launchRayforge">Launch Rayforge</Translate></h5>
+          <p>
+            <Translate id="install.appimage.launchInstruction">
+              Run the AppImage from a terminal or double-click it in your file
+              manager:
+            </Translate>
+          </p>
+          <CodeBlock language="bash">./Rayforge-*.AppImage</CodeBlock>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">4</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.addDialoutGroup">Add User to dialout Group</Translate></h5>
+          <p><Translate id="install.requiredSerialAccess">Required for serial port access:</Translate></p>
+          <CodeBlock language="bash">
+            sudo usermod -a -G dialout $USER
+          </CodeBlock>
+          <p>
+            <strong><Translate id="install.important">Important:</Translate></strong>{' '}
+            <Translate id="install.logoutLogin">Log out and log back in for this change to take effect.</Translate>
+          </p>
+        </div>
+      </div>
+
+      <Admonition type="tip" title={translate({ id: 'install.appimage.integrationTitle', message: 'Menu Entry and Icon' })}>
+        <Translate id="install.appimage.integration">
+          To get a Rayforge menu entry with icon, install
+          AppImageLauncher, or manually move the AppImage to a fixed
+          location (e.g. ~/.local/bin) and create a .desktop file
+          pointing to it. Keep the file in place afterwards — the
+          AppImage must remain accessible at the same path.
+        </Translate>
+      </Admonition>
+    </div>
   );
 }
 
@@ -417,6 +510,91 @@ sudo apt update`}
 
       <div className="install-step">
         <div className="install-step-number">3</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.launchRayforge">Launch Rayforge</Translate></h5>
+          <p>
+            <Translate id="install.launchFromMenu">
+              Launch Rayforge from your application menu or by running:
+            </Translate>
+          </p>
+          <CodeBlock language="bash">rayforge</CodeBlock>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LinuxGentooInstall() {
+  return (
+    <div className="install-section">
+      <h4><Translate id="install.gentoo.title">Gentoo Package</Translate></h4>
+      <p>
+        <Translate id="install.gentoo.description">
+          Rayforge is available on Gentoo through the community-maintained
+          "snakebyte" overlay. The package is built from source, so the
+          installation may take a while.
+        </Translate>
+      </p>
+
+      <Admonition type="note">
+        <Translate id="install.gentoo.community">
+          This package is maintained by the community and is not officially
+          supported by the Rayforge project.
+        </Translate>{' '}
+        <a
+          href="https://github.com/switch87/snakebyte-overlay"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Translate id="install.gentoo.overlayLink">
+            View the overlay on GitHub.
+          </Translate>
+        </a>
+      </Admonition>
+
+      <div className="install-step">
+        <div className="install-step-number">1</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.gentoo.addOverlay">Add the snakebyte Overlay</Translate></h5>
+          <CodeBlock language="bash">
+            eselect repository add snakebyte git https://github.com/switch87/snakebyte-overlay.git
+          </CodeBlock>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">2</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.gentoo.syncOverlay">Sync the Overlay</Translate></h5>
+          <CodeBlock language="bash">emaint sync -r snakebyte</CodeBlock>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">3</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.installRayforge">Install Rayforge</Translate></h5>
+          <CodeBlock language="bash">emerge --ask media-gfx/rayforge</CodeBlock>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">4</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.addDialoutGroup">Add User to dialout Group</Translate></h5>
+          <p><Translate id="install.requiredSerialAccess">Required for serial port access:</Translate></p>
+          <CodeBlock language="bash">
+            sudo usermod -a -G dialout $USER
+          </CodeBlock>
+          <p>
+            <strong><Translate id="install.important">Important:</Translate></strong>{' '}
+            <Translate id="install.logoutLogin">Log out and log back in for this change to take effect.</Translate>
+          </p>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">5</div>
         <div className="install-step-content">
           <h5><Translate id="install.launchRayforge">Launch Rayforge</Translate></h5>
           <p>
@@ -755,6 +933,7 @@ function WindowsInstall({ version, method, onMethodChange, latestRelease }) {
       {method === 'installer' && (
         <WindowsInstallerInstall version={version} latestRelease={latestRelease} />
       )}
+      {method === 'winget' && <WindowsWinGetInstall />}
       {method === 'developer' && <WindowsDeveloperInstall />}
     </>
   );
@@ -805,6 +984,52 @@ function WindowsInstallerInstall({ version, latestRelease }) {
               as Administrator (right-click - Run as Administrator).
             </Translate>
           </Admonition>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">3</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.launchRayforge">Launch Rayforge</Translate></h5>
+          <p>
+            <Translate id="install.windowsLaunch">
+              Launch Rayforge from the Start Menu or Desktop shortcut.
+            </Translate>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WindowsWinGetInstall() {
+  return (
+    <div className="install-section">
+      <h4><Translate id="install.winget.title">WinGet Installation</Translate></h4>
+      <p>
+        <Translate id="install.winget.description">
+          Rayforge can be installed using WinGet, the Windows Package
+          Manager that is built into Windows 10 and 11.
+        </Translate>
+      </p>
+
+      <div className="install-step">
+        <div className="install-step-number">1</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.winget.openTerminal">Open a Terminal</Translate></h5>
+          <p>
+            <Translate id="install.winget.openTerminalInstruction">
+              Open Windows Terminal, PowerShell, or Command Prompt.
+            </Translate>
+          </p>
+        </div>
+      </div>
+
+      <div className="install-step">
+        <div className="install-step-number">2</div>
+        <div className="install-step-content">
+          <h5><Translate id="install.winget.installRayforge">Install Rayforge</Translate></h5>
+          <CodeBlock language="powershell">winget install rayforge</CodeBlock>
         </div>
       </div>
 
@@ -1267,6 +1492,42 @@ sudo snap connect rayforge:serial-port`}
           </details>
         </div>
       )}
+      {os === 'linux' && linuxMethod === 'appimage' && (
+        <div className="install-troubleshoot">
+          <details>
+            <summary><Translate id="install.appimageNotStarting">AppImage does not start?</Translate></summary>
+            <div className="install-troubleshoot-content">
+              <p>
+                <Translate id="install.appimageFuseNote">
+                  If you see an error mentioning FUSE, your system is missing
+                  the library that AppImages use to mount themselves. Install
+                  it with your package manager:
+                </Translate>
+              </p>
+              <CodeBlock language="bash">
+                {`sudo apt install libfuse2
+sudo apt install libfuse2t64
+sudo dnf install fuse`}
+              </CodeBlock>
+              <p>
+                <Translate id="install.appimageFusePackages">
+                  The first line applies to Debian and Ubuntu up to 23.10, the
+                  second to Ubuntu 24.04 and later, and the third to Fedora.
+                </Translate>
+              </p>
+              <p>
+                <Translate id="install.appimageExtractRun">
+                  Alternatively, run the AppImage without FUSE by having it
+                  extract itself first:
+                </Translate>
+              </p>
+              <CodeBlock language="bash">
+                ./Rayforge-*.AppImage --appimage-extract-and-run
+              </CodeBlock>
+            </div>
+          </details>
+        </div>
+      )}
       {os === 'windows' && (
         <div className="install-troubleshoot">
           <details>
@@ -1362,6 +1623,10 @@ function NeedHelp() {
         {' '}
         <a href="https://github.com/barebaric/rayforge/issues">GitHub</a>
         {' | '}
+        <a href="https://github.com/barebaric/rayforge/discussions">
+          Discussions
+        </a>
+        {' | '}
         <a href="https://discord.gg/sTHNdTtpQJ">Discord</a>
       </p>
     </div>
@@ -1414,6 +1679,7 @@ export default function InstallGuide() {
           <LinuxInstall
             method={linuxMethod}
             onMethodChange={setLinuxMethod}
+            latestRelease={latestReleaseState.release}
           />
         )}
         {selectedOs === 'windows' && (

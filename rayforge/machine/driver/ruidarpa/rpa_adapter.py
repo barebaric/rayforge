@@ -15,7 +15,7 @@ import inspect
 import logging
 import math
 import random
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import replace
 from functools import partial
 from gettext import gettext as _
@@ -30,7 +30,15 @@ from rpalib.rpyc_client import RpcRdDriver
 from ruidadriver.rd_status import RdStatusEvent
 
 from rayforge.context import RayforgeContext
-from rayforge.core.varset import BoolVar, FloatVar, HostnameVar, Var, VarSet
+from rayforge.core.varset import (
+    BoolVar,
+    FloatVar,
+    HostnameVar,
+    LabeledChoiceVar,
+    SerialPortVar,
+    Var,
+    VarSet,
+)
 from rayforge.machine.driver.driver import (
     Axis,
     DeviceStatus,
@@ -38,6 +46,7 @@ from rayforge.machine.driver.driver import (
     DriverMaturity,
     DriverPrecheckError,
     DriverSetupError,
+    FrameCorner,
     Pos,
     PWMParams,
 )
@@ -74,6 +83,13 @@ DEFAULT_MOVE_TO_JOG_SPEED_MM_S = 600.0
 # RpcRdDriver class default is 5.0 for direct constructions.
 DEFAULT_RPC_TIMEOUT_S = 30.0
 
+# Values of the 'connection' setup var: which transport the controller
+# is reached through. 'auto' mirrors the backend behavior of opening
+# USB when available and falling back to UDP.
+CONNECTION_AUTO = "auto"
+CONNECTION_NETWORK = "network"
+CONNECTION_USB = "usb"
+
 # Ruida test-hardware speed limits (mm/min base units): 400 mm/s cut,
 # 600 mm/s travel. Seeded into the machine only while it still holds the
 # framework defaults (see _UNCONFIGURED_* below).
@@ -100,20 +116,64 @@ def _unwrap_mm(value: object) -> float | None:
     return None
 
 
+def _merged_machine_pos(
+    current: Pos,
+    pos_x: float | None,
+    pos_y: float | None,
+    pos_z: float | None,
+) -> tuple[float, float, float]:
+    """Merge a partial position update onto the last known position.
+
+    ``None`` axes keep the current value; axes never reported before
+    (``None`` in ``current``) become 0.0 so the result is complete.
+    """
+    new_x = (current[0] or 0.0) if pos_x is None else pos_x
+    new_y = (current[1] or 0.0) if pos_y is None else pos_y
+    new_z = (current[2] or 0.0) if pos_z is None else pos_z
+    return (new_x, new_y, new_z)
+
+
+class RuidaUsbDeviceVar(SerialPortVar):
+    """SerialPortVar whose value is optional (UDP mode needs no USB)."""
+
+    def __init__(
+        self,
+        key: str,
+        label: str,
+        description: str | None = None,
+        default: str | None = None,
+        value: str | None = None,
+        required_when: Callable[[dict[str, Any]], bool] | None = None,
+        *,
+        visible_when: Callable[[dict[str, Any]], bool] | None = None,
+    ):
+        super().__init__(
+            key=key,
+            label=label,
+            description=description,
+            default=default,
+            value=value,
+            visible_when=visible_when,
+        )
+        self.validator = None
+        self.optional = True
+        self.required_when = required_when
+
+
 class RuidaRPAAdapter(Driver):
     """
     Main driver class for connecting to Ruida laser controllers via the
-    Ruida Protocol Analyzer (RPA) library.
+    ruida-pa (RPA) library.
 
     Supports two connection modes:
-    * **Direct mode** — wraps ``RdDriver`` from ``ruida-protocol-analyzer``
+    * **Direct mode** — wraps ``RdDriver`` from ``ruida-pa``
       in-process over USB or UDP.
     * **TUI RPC mode** — connects to a remote RPyC service running the
       RPA TUI adapter.
     """
 
-    label = _("Ruida RPA")
-    subtitle = _("Connect via Ruida Protocol Analyzer")
+    label = _("Ruida")
+    subtitle = _("Connect via Ruida Protocol")
     supports_settings = False
     reports_granular_progress = False
     uses_gcode = False
@@ -191,38 +251,83 @@ class RuidaRPAAdapter(Driver):
 
     # --- Classmethods ---
 
+    @staticmethod
+    def _apply_connection_mode(
+        config: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Drops the endpoint the selected connection mode does not use.
+
+        In network mode the USB device is removed and vice versa, so
+        the connection loop and resource_uri only ever see the active
+        endpoint. Auto keeps both (the backend prefers USB)."""
+        mode = config.get("connection", CONNECTION_AUTO)
+        config = dict(config)
+        if mode == CONNECTION_NETWORK:
+            config.pop("usb_device", None)
+        elif mode == CONNECTION_USB:
+            config.pop("udp_host", None)
+        return config
+
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
-        udp_host = kwargs.get("udp_host", "")
-        usb_device = kwargs.get("usb_device", "")
+        connection = cls._apply_connection_mode(kwargs)
+        mode = connection.get("connection", CONNECTION_AUTO)
+        udp_host = connection.get("udp_host", "")
+        usb_device = connection.get("usb_device", "")
         if not udp_host and not usb_device:
-            raise DriverPrecheckError(
-                _(
+            if mode == CONNECTION_NETWORK:
+                message = _("A Hostname must be configured.")
+            elif mode == CONNECTION_USB:
+                message = _("A USB device must be configured.")
+            else:
+                message = _(
                     "At least one of 'Hostname' or 'USB device' "
                     "must be configured."
                 )
-            )
+            raise DriverPrecheckError(message)
 
     @classmethod
     def get_setup_vars(cls) -> VarSet:
         return VarSet(
             vars=[
+                LabeledChoiceVar(
+                    key="connection",
+                    label=_("Connection"),
+                    choices=[
+                        (_("Auto (USB preferred)"), CONNECTION_AUTO),
+                        (_("Network"), CONNECTION_NETWORK),
+                        (_("USB"), CONNECTION_USB),
+                    ],
+                    default=CONNECTION_AUTO,
+                    allow_none=False,
+                    description=_(
+                        "Which transport to use. Automatic opens USB "
+                        "when available and falls back to the network."
+                    ),
+                ),
                 HostnameVar(
                     key="udp_host",
                     label=_("Hostname"),
                     description=_(
                         "The IP address or hostname of the Ruida controller"
                     ),
+                    visible_when=lambda v: (
+                        v.get("connection", CONNECTION_AUTO)
+                        in (CONNECTION_NETWORK, CONNECTION_AUTO)
+                    ),
                 ),
-                Var(
+                RuidaUsbDeviceVar(
                     key="usb_device",
                     label=_("USB"),
-                    var_type=str,
                     description=_(
-                        "USB device path "
-                        "(e.g., /dev/ttyUSB0, "
-                        "0403:6001, "
-                        "or COM3)"
+                        "USB device path or VID:PID (e.g. 0403:6001)"
+                    ),
+                    required_when=lambda v: (
+                        v.get("connection", CONNECTION_AUTO) == CONNECTION_USB
+                    ),
+                    visible_when=lambda v: (
+                        v.get("connection", CONNECTION_AUTO)
+                        in (CONNECTION_USB, CONNECTION_AUTO)
                     ),
                 ),
                 Var(
@@ -230,16 +335,17 @@ class RuidaRPAAdapter(Driver):
                     label=_("Magic"),
                     var_type=str,
                     description=_(
-                        "Controller magic number in hex "
-                        "(e.g., 0x88). Leave empty for default."
+                        "Controller magic number in hex. The default "
+                        "0x88 works for most controllers."
                     ),
-                    default=None,
+                    default="0x88",
                 ),
                 BoolVar(
                     key="tui",
                     label=_("TUI RPC"),
                     description=_(
-                        "Enable TUI RPC connection to a remote RPA TUI service"
+                        "Enable RPC connection to a remote RPA TUI service."
+                        "Useful for problem diagnosis and experimentation."
                     ),
                     default=False,
                 ),
@@ -255,17 +361,40 @@ class RuidaRPAAdapter(Driver):
                     digits=1,
                     visible_when=lambda v: v.get("tui", False),
                 ),
+                BoolVar(
+                    key="power_scaling_enabled",
+                    label=_("Power scaling"),
+                    description=_(
+                        "When enabled, power_range() raises the emitted "
+                        "minimum as the layer's cut speed decreases "
+                        "(effective-min power scaling); when disabled, the "
+                        "resolved minimum is emitted unchanged."
+                    ),
+                    default=True,
+                ),
+                BoolVar(
+                    key="power_floor_enabled",
+                    label=_("Enable VECTOR power floor"),
+                    description=_(
+                        "When disabled, the emitted power range always "
+                        "has min == max (constant power). When enabled, "
+                        "the VECTOR power floor value below acts as the "
+                        "minimum power for VECTOR cut compensation."
+                    ),
+                    default=False,
+                ),
                 FloatVar(
                     key="power_floor",
                     label=_("VECTOR power floor"),
                     description=_(
                         "Minimum power percentage for VECTOR cut "
-                        "compensation (e.g. 8 = 8%)."
+                        "compensation (e.g. 8 = 8%). Applies only when "
+                        "the VECTOR power floor toggle is enabled."
                     ),
                     default=DEFAULT_POWER_FLOOR,
                     min_val=0.0,
                     max_val=100.0,
-                    digits=3,
+                    digits=1,
                 ),
                 FloatVar(
                     key="image_power_bias",
@@ -351,7 +480,7 @@ class RuidaRPAAdapter(Driver):
         return magic
 
     def _setup_implementation(self, **kwargs: Any) -> None:
-        self._config = dict(kwargs)
+        self._config = self._apply_connection_mode(kwargs)
         self._tui_mode = bool(kwargs.get("tui", False))
 
         self._rpc_timeout = self._parse_rpc_timeout(
@@ -394,6 +523,7 @@ class RuidaRPAAdapter(Driver):
         """
         old_uri = self.resource_uri
         old_tui_mode = self._tui_mode
+        old_mode = self._config.get("connection", CONNECTION_AUTO)
 
         try:
             timeout = self._parse_rpc_timeout(
@@ -403,12 +533,17 @@ class RuidaRPAAdapter(Driver):
         except DriverSetupError:
             return False
 
-        self._config = dict(kwargs)
+        self._config = self._apply_connection_mode(kwargs)
         self._rpc_timeout = timeout
         self._magic = magic
 
         tui_mode = bool(kwargs.get("tui", False))
-        return tui_mode == old_tui_mode and self.resource_uri == old_uri
+        connection_mode = self._config.get("connection", CONNECTION_AUTO)
+        return (
+            tui_mode == old_tui_mode
+            and connection_mode == old_mode
+            and self.resource_uri == old_uri
+        )
 
     async def _connect_implementation(self) -> None:
         if self._connection_task and not self._connection_task.done():
@@ -665,46 +800,85 @@ class RuidaRPAAdapter(Driver):
         if isinstance(event, RdStatusEvent):
             event = event.value
         if isinstance(event, str):
-            if event == "CONNECTED" and not self._is_connected:
-                self._set_connected(True, "RPA connected")
-            elif (
-                event in ("DISCONNECTED", "TERMINATED") and self._is_connected
-            ):
-                self._set_connected(False, "RPA disconnected")
+            self._handle_connection_status(event)
         elif isinstance(event, dict):
             # StatusDict or RPyC netref — convert to local dict for reliable
             # type handling
-            event = {k: event[k] for k in event}
-            new_status = self._map_machine_status_to_device_status(event)
-            if new_status != self.state.status:
-                self.state = replace(self.state, status=new_status)
-                self.state_changed.send(self, state=self.state)
+            self._handle_machine_status({k: event[k] for k in event})
 
-            # Extract current position (values in mm)
-            # POSITION_* values are (float_mm, str_description)
-            pos_x = _unwrap_mm(event.get("POSITION_X"))
-            pos_y = _unwrap_mm(event.get("POSITION_Y"))
-            pos_z = _unwrap_mm(event.get("POSITION_Z"))
+    def _handle_connection_status(self, event: str) -> None:
+        """Apply a connection lifecycle event to the adapter state."""
+        if event == "CONNECTED" and not self._is_connected:
+            self._set_connected(True, "RPA connected")
+        elif event in ("DISCONNECTED", "TERMINATED") and self._is_connected:
+            self._set_connected(False, "RPA disconnected")
 
-            if any(v is not None for v in (pos_x, pos_y, pos_z)):
-                current = self.state.machine_pos
-                new_x = (current[0] or 0.0) if pos_x is None else pos_x
-                new_y = (current[1] or 0.0) if pos_y is None else pos_y
-                new_z = (current[2] or 0.0) if pos_z is None else pos_z
-                new_pos = (new_x, new_y, new_z)
+    def _handle_machine_status(self, event: dict[str, Any]) -> None:
+        """Apply a machine status event: flags, position, identity info."""
+        new_status = self._map_machine_status_to_device_status(event)
+        if new_status != self.state.status:
+            self.state = replace(self.state, status=new_status)
+            self.state_changed.send(self, state=self.state)
 
-                if new_pos != current:
-                    self.state = replace(self.state, machine_pos=new_pos)
-                    logger.debug(
-                        "RPA position update: x=%.3f y=%.3f z=%.3f",
-                        new_x,
-                        new_y,
-                        new_z,
-                        extra=self._log_extra(
-                            "TUI_RPC" if self._tui_mode else "RPA"
-                        ),
-                    )
-                    self.state_changed.send(self, state=self.state)
+        self._update_machine_pos(event)
+        self._log_controller_info(event)
+
+    def _update_machine_pos(self, event: dict[str, Any]) -> None:
+        """Merge a partial position update into ``state.machine_pos``.
+
+        POSITION_* values are (float_mm, str_description) tuples in mm.
+        """
+        pos = (
+            _unwrap_mm(event.get("POSITION_X")),
+            _unwrap_mm(event.get("POSITION_Y")),
+            _unwrap_mm(event.get("POSITION_Z")),
+        )
+        if all(v is None for v in pos):
+            return
+        current = self.state.machine_pos
+        new_pos = _merged_machine_pos(current, *pos)
+        if new_pos == current:
+            return
+        self.state = replace(self.state, machine_pos=new_pos)
+        logger.debug(
+            "RPA position update: x=%.3f y=%.3f z=%.3f",
+            new_pos[0],
+            new_pos[1],
+            new_pos[2],
+            extra=self._log_extra("TUI_RPC" if self._tui_mode else "RPA"),
+        )
+        self.state_changed.send(self, state=self.state)
+
+    def _log_controller_info(self, event: dict[str, Any]) -> None:
+        """Log controller identity / bed-size events.
+
+        StatusDict only carries keys that changed, so these are rare (card
+        swap, (re)connect). Values arrive as (value, str_description)
+        tuples.
+        """
+        card_id = event.get("CARD_ID")
+        if card_id is not None:
+            if isinstance(card_id, (list, tuple)):
+                card_id_val = card_id[0]
+                card_id_desc = card_id[1]
+            else:
+                card_id_val = card_id
+                card_id_desc = ""
+            logger.info(
+                "CARD_ID=0x%08X:%s",
+                card_id_val,
+                card_id_desc,
+                extra=self._log_extra("TUI_RPC" if self._tui_mode else "RPA"),
+            )
+        bed_size_x = _unwrap_mm(event.get("BED_SIZE_X"))
+        bed_size_y = _unwrap_mm(event.get("BED_SIZE_Y"))
+        if bed_size_x is not None or bed_size_y is not None:
+            logger.info(
+                "RPA controller info: bed_size_x=%s bed_size_y=%s",
+                bed_size_x,
+                bed_size_y,
+                extra=self._log_extra("TUI_RPC" if self._tui_mode else "RPA"),
+            )
 
     def _on_rpa_error(self, msg: str) -> None:
         """Handle error events from the Ruida controller."""
@@ -851,6 +1025,9 @@ class RuidaRPAAdapter(Driver):
                     await result
 
         backend = self._backend_gluescript()
+        backend.set_power_scaling_enabled(
+            bool(self._machine.driver_args.get("power_scaling_enabled", True))
+        )
         loop = asyncio.get_running_loop()
 
         # The encoded text IS the GlueScript transcript (the source);
@@ -900,6 +1077,33 @@ class RuidaRPAAdapter(Driver):
             await self._run_script(lines, auto_checksum=True)
         self.job_finished.send(self)
 
+    async def frame(
+        self,
+        corners: Sequence[FrameCorner],
+        speed_mm_per_min: float,
+        doc: Doc,
+        repeat_count: int = 1,
+        corner_pause_s: float = 0.0,
+        power_fraction: float = 0.0,
+        on_command_done: Callable[[int], None | Awaitable[None]] | None = None,
+    ) -> None:
+        """Frame with beam-off absolute moves.
+
+        A Ruida controller has MOVES and CUTS: MOVES never fire the
+        laser, CUTS always do. Framing is therefore a sequence of
+        absolute XY moves at the frame speed with the optional pause at
+        each corner; the power settings are ignored because there is no
+        beam to modulate. Using moves also keeps the frame out of the
+        job encoder, which would require a valid layer declaration for
+        a cut.
+        """
+        for _repeat in range(max(1, repeat_count)):
+            for pos_x, pos_y, _extra in corners:
+                await self.move_to(pos_x, pos_y, speed=speed_mm_per_min)
+                if corner_pause_s > 0:
+                    await asyncio.sleep(corner_pause_s)
+        self.job_finished.send(self)
+
     async def set_hold(self, hold: bool = True) -> None:
         if self._backend is None:
             raise DriverSetupError("Backend not initialized")
@@ -942,27 +1146,40 @@ class RuidaRPAAdapter(Driver):
         if axes is not None and (axes & Axis.Z):
             await loop.run_in_executor(None, self._backend.home_z)
 
-    async def move_to(self, pos_x: float, pos_y: float) -> None:
+    async def move_to(
+        self,
+        pos_x: float,
+        pos_y: float,
+        pos_z: float | None = None,
+        speed: float | None = None,
+    ) -> None:
         """Move to an absolute position in machine-frame mm.
 
         Coordinates are machine-frame (same frame as POSITION_* status
         reporting: +X left of home, +Y down from home) and are passed
-        through unchanged to the backend jog_xy_to.
+        through unchanged to the backend jog_xy_to. Absolute Z moves
+        are not supported by the backend and are ignored. The optional
+        speed is given in mm/min and overrides the jog speed for this
+        move only.
         """
         logger.info(
-            "move_to x=%.3f y=%.3f",
+            "move_to x=%.3f y=%.3f z=%s",
             pos_x,
             pos_y,
+            pos_z,
             extra=self._log_extra("TUI_RPC" if self._tui_mode else "RPA"),
         )
         if self._backend is None:
             raise DriverSetupError("Backend not initialized")
         loop = asyncio.get_running_loop()
-        speed_mm_s = (
-            self._jog_speed_mm_s
-            if self._jog_speed_mm_s is not None
-            else DEFAULT_MOVE_TO_JOG_SPEED_MM_S
-        )
+        if speed is not None:
+            speed_mm_s = speed / 60.0
+        else:
+            speed_mm_s = (
+                self._jog_speed_mm_s
+                if self._jog_speed_mm_s is not None
+                else DEFAULT_MOVE_TO_JOG_SPEED_MM_S
+            )
         await loop.run_in_executor(
             None, self._backend.jog_set_xy_speed, speed_mm_s
         )

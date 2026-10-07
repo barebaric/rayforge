@@ -130,7 +130,9 @@ class MarlinSerialDriver(Driver):
                 SerialPortVar(
                     key="port",
                     label=_("Port"),
-                    description=_("Serial port for the device"),
+                    description=(
+                        _("Serial port or USB VID:PID (e.g. 0403:6001)")
+                    ),
                 ),
                 BaudrateVar(
                     "baudrate",
@@ -537,13 +539,8 @@ class MarlinSerialDriver(Driver):
         self.state.error = None
         self.state_changed.send(self, state=self.state)
 
-    async def move_to(self, pos_x, pos_y) -> None:
-        dialect = self.dialect
-        cmd = dialect.move_to.format(
-            speed=self._to_machine_speed(1500),
-            x=self._to_machine_length(float(pos_x)),
-            y=self._to_machine_length(float(pos_y)),
-        )
+    async def move_to(self, pos_x, pos_y, pos_z=None, speed=None) -> None:
+        cmd = self._format_move_to(float(pos_x), float(pos_y), pos_z, speed)
         await self._send_and_wait(cmd)
 
     async def jog(self, speed: int, **deltas: float) -> None:

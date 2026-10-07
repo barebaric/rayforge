@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 import cairo
 import numpy as np
 import pytest
+from gi.repository import PangoCairo
 from raygeo.geo import Matrix
 
 from rayforge.ui_gtk.canvas.axis import AxisRenderer
@@ -90,12 +91,36 @@ def renderer() -> AxisRenderer:
     return AxisRenderer(width_mm=WORLD_W, height_mm=WORLD_H, grid_size_mm=10.0)
 
 
+def _mock_pango_layout(mocker, context):
+    layout = mocker.MagicMock()
+    layout.text = ""
+    layout.font_size = None
+    layout.get_pixel_size.return_value = (10, 12)
+
+    def capture_font(font):
+        layout.font_size = font.get_size() / 1024
+
+    def capture_text(text, length):
+        layout.text = text
+
+    layout.set_font_description.side_effect = capture_font
+    layout.set_text.side_effect = capture_text
+    mocker.patch.object(PangoCairo, "create_layout", return_value=layout)
+    mocker.patch.object(
+        PangoCairo,
+        "show_layout",
+        side_effect=lambda ctx, current_layout: ctx.show_text(
+            current_layout.text
+        ),
+    )
+    context.pango_layout = layout
+
+
 @pytest.fixture
 def mock_context(mocker) -> MagicMock:
     """Provides a mocked Cairo context to spy on drawing calls."""
     mock = mocker.MagicMock(spec=cairo.Context)
-    # Mock text_extents to return a predictable size
-    mock.text_extents.return_value = MagicMock(width=10, height=12)
+    _mock_pango_layout(mocker, mock)
     return mock
 
 
@@ -103,13 +128,7 @@ def mock_context(mocker) -> MagicMock:
 def mock_context_with_font_size(mocker) -> MagicMock:
     """Provides a mocked Cairo context with font size tracking."""
     mock = mocker.MagicMock(spec=cairo.Context)
-    mock.text_extents.return_value = MagicMock(width=10, height=12)
-    mock.font_size = None
-
-    def capture_font_size(size):
-        mock.font_size = size
-
-    mock.set_font_size.side_effect = capture_font_size
+    _mock_pango_layout(mocker, mock)
     return mock
 
 
@@ -264,7 +283,7 @@ class TestAxisRendererDrawing:
             mock_context_with_font_size, transform, 10.0, (0, 0, 0)
         )
         # Verify font size is set
-        assert mock_context_with_font_size.font_size == 12.0
+        assert mock_context_with_font_size.pango_layout.font_size == 12.0
 
         # Check if the text "20" was drawn for the X axis.
         # The preceding move_to call should be at world_x = 20
@@ -294,7 +313,7 @@ class TestAxisRendererDrawing:
             mock_context_with_font_size, transform, 10.0, offset
         )
         # Verify font size is set
-        assert mock_context_with_font_size.font_size == 12.0
+        assert mock_context_with_font_size.pango_layout.font_size == 12.0
 
         calls = mock_context_with_font_size.method_calls
         # The label "10" should be physically located at world_x = 50 + 10 = 60
@@ -358,7 +377,7 @@ class TestAxisRendererDrawing:
             mock_context_with_font_size, transform, 10.0, (0, 0, 0)
         )
         # Verify custom font size is applied
-        assert mock_context_with_font_size.font_size == 16.0
+        assert mock_context_with_font_size.pango_layout.font_size == 16.0
 
     def test_draw_labels_in_preferred_unit(self, mock_context_with_font_size):
         """Labels are shown in the user's preferred length unit."""
