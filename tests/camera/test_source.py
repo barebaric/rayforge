@@ -1,3 +1,4 @@
+import threading
 from unittest.mock import patch
 
 import cv2
@@ -236,6 +237,63 @@ def test_capture_has_initial_frame_accepts_device_that_eventually_reads():
     result = _capture_has_initial_frame(cap, attempts=3, delay=0.0)
     assert result is True
     assert cap.calls == 3  # type: ignore[attr-defined]
+
+
+def test_capture_has_initial_frame_warms_up_before_first_read():
+    """The first read must be preceded by a warm-up wait.
+
+    Grabbing the first frame immediately after open() can segfault the
+    AVFoundation backend on macOS (issue #510), so the warm-up delay is
+    observed before the very first read attempt, and a cancellation
+    during that warm-up must abort without reading at all.
+    """
+    waits: list[float] = []
+
+    class MockCapture:
+        def __init__(self):
+            self.reads = 0
+
+        def read(self):
+            self.reads += 1
+            return False, None
+
+    cap: cv2.VideoCapture = MockCapture()  # type: ignore[assignment]
+    with (
+        patch("rayforge.camera.source.local._FIRST_READ_WARMUP_DELAY", 0.25),
+        patch(
+            "rayforge.camera.source.local._interruptible_wait",
+            side_effect=lambda d, _e: waits.append(d) or False,
+        ),
+    ):
+        result = _capture_has_initial_frame(cap, attempts=2, delay=0.1)
+
+    assert result is False
+    assert waits == [0.25, 0.1]
+    assert cap.reads == 2  # type: ignore[attr-defined]
+
+
+def test_capture_has_initial_frame_aborts_during_warmup_when_cancelled():
+    """A cancellation arriving during the warm-up wait must return
+    without a single read, so shutdown stays prompt even before the
+    first frame attempt.
+    """
+
+    class MockCapture:
+        def __init__(self):
+            self.reads = 0
+
+        def read(self):
+            self.reads += 1
+            return True, None
+
+    cap: cv2.VideoCapture = MockCapture()  # type: ignore[assignment]
+    cancel_event = threading.Event()
+    cancel_event.set()
+    with patch("rayforge.camera.source.local._FIRST_READ_WARMUP_DELAY", 5.0):
+        result = _capture_has_initial_frame(cap, cancel_event=cancel_event)
+
+    assert result is False
+    assert cap.reads == 0  # type: ignore[attr-defined]
 
 
 def test_open_raises_when_device_never_delivers_initial_frame():
