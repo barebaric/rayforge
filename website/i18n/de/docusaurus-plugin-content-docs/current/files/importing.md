@@ -7,13 +7,15 @@ Rasterformate. Diese Seite erklärt, wie du Dateien importierst und für beste E
 
 ### Vektorformate
 
-| Format        | Erweiterung       | Importmethode                 | Am besten für                       |
-| ------------- | ----------------- | ----------------------------- | ----------------------------------- |
-| **SVG**       | `.svg`            | Direkte Vektoren oder Tracing | Vektorgrafiken, Logos, Designs      |
-| **DXF**       | `.dxf`            | Direkte Vektoren              | CAD-Zeichnungen, technische Designs |
-| **PDF**       | `.pdf`            | Direkte Vektoren oder Tracing | Dokumente mit Vektorinhalt          |
-| **LightBurn** | `.lbrn`, `.lbrn2` | Direkte Vektoren              | LightBurn-Projekte                  |
-| **Ruida**     | `.rd`             | Direkte Vektoren              | Ruida-Controller-Auftragsdateien    |
+| Format          | Erweiterung       | Importmethode                                        | Am besten für                       |
+| --------------- | ----------------- | ---------------------------------------------------- | ----------------------------------- |
+| **SVG**         | `.svg`            | Direkte Vektoren oder Tracing                        | Vektorgrafiken, Logos, Designs      |
+| **DXF**         | `.dxf`            | Direkte Vektoren                                     | CAD-Zeichnungen, technische Designs |
+| **PDF**         | `.pdf`            | Direkte Vektoren oder Tracing                        | Dokumente mit Vektorinhalt          |
+| **LightBurn**   | `.lbrn`, `.lbrn2` | Direkte Vektoren                                     | LightBurn-Projekte                  |
+| **Ruida**       | `.rd`             | Direkte Vektoren                                     | Ruida-Controller-Auftragsdateien    |
+| **Illustrator** | `.ai`             | Direkte Vektoren oder Tracing                        | Logos aus Illustrator               |
+| **EPS**         | `.eps`, `.ps`     | Direkte Vektoren oder Tracing (benötigt Ghostscript) | Logos, Druckvorlagen                |
 
 ### Rasterformate
 
@@ -357,6 +359,17 @@ farbcodierten Ebenen mit konfigurierbaren Laser-Einstellungen organisiert ist.
 - **Binärformat** — Direktes Bearbeiten von Original-.lbrn-Dateien nicht unterstützt
 - **Proprietäre Funktionen** — Einige fortgeschrittene LightBurn-Funktionen werden möglicherweise
   nicht vollständig unterstützt
+
+---
+
+## Illustrator- und EPS-Import
+
+Illustrator-Dateien, die mit PDF-Kompatibilität gespeichert wurden (Standard seit Illustrator 9),
+werden genau wie PDF-Dateien importiert, mit derselben Ebenenauswahl und denselben Tracing-Optionen.
+
+EPS-, PostScript- und ältere Illustrator-Dateien werden zuerst mit Ghostscript in PDF umgewandelt.
+Installiere Ghostscript, wenn der Importdialog meldet, dass es fehlt. Wenn du es nicht installieren
+kannst, exportiere das Design im Ursprungsprogramm als PDF oder SVG.
 
 ---
 

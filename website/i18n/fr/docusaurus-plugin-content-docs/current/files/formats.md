@@ -12,6 +12,8 @@ Rayforge, y compris les capacités, les limitations et les recommandations.
 | **SVG**             | Vecteur   | ✓ Direct / Trace | ✓ Export obj. | Format de conception principal       |
 | **DXF**             | Vecteur   | ✓ Direct         | ✓ Export obj. | Échange CAO                          |
 | **PDF**             | Mixte     | ✓ Direct / Trace | –             | Documents avec contenu vectoriel     |
+| **Illustrator**     | Vecteur   | ✓ Direct / Trace | –             | Logos issus d'Illustrator            |
+| **EPS**             | Vecteur   | ✓ Direct / Trace | –             | Logos, fichiers d'impression         |
 | **LightBurn**       | Vecteur   | ✓ Direct         | –             | Projets LightBurn                    |
 | **Ruida**           | Vecteur   | ✓ Direct         | –             | Fichiers de tâches Ruida             |
 | **PNG**             | Matriciel | ✓ Trace          | –             | Photos, images                       |
@@ -218,6 +220,38 @@ rendu et au tracé.
 - PDF reçus de designers contenant des illustrations vectorielles
 - Tout PDF avec des calques bien organisés
 - Lorsque SVG ou DXF n'est pas disponible depuis la source
+
+---
+
+### Adobe Illustrator (.ai)
+
+**Extension :** `.ai` **Type MIME :** `application/illustrator` **Importation :** Vecteurs directs
+ou rendu et vectorisation **Exportation :** Non pris en charge
+
+Depuis la version 9, Illustrator enregistre par défaut ses fichiers avec un PDF intégré (option
+**Créer un fichier compatible PDF**). Rayforge lit ce PDF : ces fichiers s'importent donc comme un
+PDF, calques compris.
+
+Les fichiers Illustrator plus anciens, et ceux enregistrés sans compatibilité PDF, sont en
+PostScript. Rayforge les convertit avec Ghostscript lorsqu'il est installé. Sinon, la boîte de
+dialogue d'importation explique comment enregistrer à nouveau le fichier.
+
+---
+
+### EPS et PostScript (.eps / .ps)
+
+**Extension :** `.eps`, `.epsf`, `.ps` **Type MIME :** `image/x-eps`, `application/postscript`
+**Importation :** Vecteurs directs ou rendu et vectorisation, via Ghostscript **Exportation :** Non
+pris en charge
+
+Rayforge convertit les fichiers EPS et PostScript en PDF avec Ghostscript, puis les importe comme un
+PDF. La boîte englobante de l'EPS devient la taille de la page et le texte est converti en contours.
+
+**Ghostscript** est une dépendance facultative. Sous Linux, installez le paquet `ghostscript` de
+votre distribution ; sous Windows et macOS, installez-le depuis le site de Ghostscript. Sans
+Ghostscript, la boîte de dialogue d'importation affiche un message au lieu d'un aperçu. Le projet
+enregistre le PDF converti : un projet enregistré s'ouvre donc aussi sur un ordinateur sans
+Ghostscript.
 
 ---
 

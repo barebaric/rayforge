@@ -8,13 +8,15 @@ meilleurs résultats.
 
 ### Formats vectoriels
 
-| Format        | Extension         | Méthode d'importation             | Idéal pour                            |
-| ------------- | ----------------- | --------------------------------- | ------------------------------------- |
-| **SVG**       | `.svg`            | Vecteurs directs ou vectorisation | Graphiques vectoriels, logos, dessins |
-| **DXF**       | `.dxf`            | Vecteurs directs                  | Dessins CAO, plans techniques         |
-| **PDF**       | `.pdf`            | Vecteurs directs ou vectorisation | Documents avec contenu vectoriel      |
-| **LightBurn** | `.lbrn`, `.lbrn2` | Vecteurs directs                  | Projets LightBurn                     |
-| **Ruida**     | `.rd`             | Vecteurs directs                  | Fichiers de tâches contrôleur Ruida   |
+| Format          | Extension         | Méthode d'importation                                     | Idéal pour                            |
+| --------------- | ----------------- | --------------------------------------------------------- | ------------------------------------- |
+| **SVG**         | `.svg`            | Vecteurs directs ou vectorisation                         | Graphiques vectoriels, logos, dessins |
+| **DXF**         | `.dxf`            | Vecteurs directs                                          | Dessins CAO, plans techniques         |
+| **PDF**         | `.pdf`            | Vecteurs directs ou vectorisation                         | Documents avec contenu vectoriel      |
+| **LightBurn**   | `.lbrn`, `.lbrn2` | Vecteurs directs                                          | Projets LightBurn                     |
+| **Ruida**       | `.rd`             | Vecteurs directs                                          | Fichiers de tâches contrôleur Ruida   |
+| **Illustrator** | `.ai`             | Vecteurs directs ou vectorisation                         | Logos issus d'Illustrator             |
+| **EPS**         | `.eps`, `.ps`     | Vecteurs directs ou vectorisation (nécessite Ghostscript) | Logos, fichiers d'impression          |
 
 ### Formats matriciels
 
@@ -362,6 +364,18 @@ colorés avec des paramètres laser configurables.
 - **Format binaire** — L'édition directe des fichiers .lbrn originaux n'est pas prise en charge
 - **Fonctionnalités propriétaires** — Certaines fonctionnalités avancées de LightBurn peuvent ne pas
   être entièrement prises en charge
+
+---
+
+## Importation d'Illustrator et d'EPS
+
+Les fichiers Illustrator enregistrés avec la compatibilité PDF, le réglage par défaut depuis
+Illustrator 9, s'importent exactement comme des fichiers PDF, avec la même sélection de calques et
+les mêmes options de vectorisation.
+
+Les fichiers EPS, PostScript et Illustrator plus anciens sont d'abord convertis en PDF avec
+Ghostscript. Installez Ghostscript si la boîte de dialogue d'importation indique qu'il manque. Si
+vous ne pouvez pas l'installer, exportez le dessin en PDF ou en SVG depuis le logiciel qui l'a créé.
 
 ---
 

@@ -30,6 +30,7 @@ from .pdf.importer import PdfImporter
 from .pdf.renderer import PDF_RENDERER
 from .png.importer import PngImporter
 from .png.renderer import PNG_RENDERER
+from .postscript.importer import AiImporter, EpsImporter
 from .procedural.renderer import PROCEDURAL_RENDERER
 from .registry import (
     exporter_registry,
@@ -250,8 +251,10 @@ def get_renderer_for_asset(asset_type: str) -> Renderer | None:
 
 
 __all__ = [
+    "AiImporter",
     "BmpImporter",
     "DxfImporter",
+    "EpsImporter",
     "GeometryDxfExporter",
     "GeometrySvgExporter",
     "GifImporter",

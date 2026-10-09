@@ -13,13 +13,15 @@ import files and optimize them for best results.
 
 ### Vector Formats
 
-| Format        | Extension         | Import Method           | Best For                        |
-| ------------- | ----------------- | ----------------------- | ------------------------------- |
-| **SVG**       | `.svg`            | Direct vectors or trace | Vector graphics, logos, designs |
-| **DXF**       | `.dxf`            | Direct vectors          | CAD drawings, technical designs |
-| **PDF**       | `.pdf`            | Direct vectors or trace | Documents with vector content   |
-| **LightBurn** | `.lbrn`, `.lbrn2` | Direct vectors          | LightBurn project files         |
-| **Ruida**     | `.rd`             | Direct vectors          | Ruida controller job files      |
+| Format          | Extension         | Import Method                               | Best For                        |
+| --------------- | ----------------- | ------------------------------------------- | ------------------------------- |
+| **SVG**         | `.svg`            | Direct vectors or trace                     | Vector graphics, logos, designs |
+| **DXF**         | `.dxf`            | Direct vectors                              | CAD drawings, technical designs |
+| **PDF**         | `.pdf`            | Direct vectors or trace                     | Documents with vector content   |
+| **LightBurn**   | `.lbrn`, `.lbrn2` | Direct vectors                              | LightBurn project files         |
+| **Ruida**       | `.rd`             | Direct vectors                              | Ruida controller job files      |
+| **Illustrator** | `.ai`             | Direct vectors or trace                     | Logos from Illustrator          |
+| **EPS**         | `.eps`, `.ps`     | Direct vectors or trace (needs Ghostscript) | Logos, print artwork            |
 
 ### Raster Formats
 
@@ -351,6 +353,17 @@ settings.
 - **Read-only import** — LightBurn files can only be imported, not exported
 - **Binary format** — Direct editing of original .lbrn files is not supported
 - **Proprietary features** — Some advanced LightBurn-specific features may not be fully supported
+
+---
+
+## Illustrator and EPS Import
+
+Illustrator files saved with PDF compatibility, the default since Illustrator 9, import exactly like
+PDF files, with the same layer selection and tracing options.
+
+EPS, PostScript and older Illustrator files are converted to PDF with Ghostscript first. Install
+Ghostscript if the import dialog reports that it is missing. If you cannot install it, export the
+design as PDF or SVG from the program that made it.
 
 ---
 

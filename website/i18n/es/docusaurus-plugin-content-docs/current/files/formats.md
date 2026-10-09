@@ -7,22 +7,24 @@ Rayforge, incluyendo capacidades, limitaciones y recomendaciones.
 
 ### Referencia rápida
 
-| Formato               | Tipo     | Importar          | Exportar        | Uso recomendado               |
-| --------------------- | -------- | ----------------- | --------------- | ----------------------------- |
-| **SVG**               | Vector   | ✓ Directo / Traza | ✓ Exportar obj. | Formato de diseño principal   |
-| **DXF**               | Vector   | ✓ Directo         | ✓ Exportar obj. | Intercambio CAD               |
-| **PDF**               | Mixto    | ✓ Directo / Traza | –               | Documentos con contenido vec. |
-| **LightBurn**         | Vector   | ✓ Directo         | –               | Proyectos LightBurn           |
-| **Ruida**             | Vector   | ✓ Directo         | –               | Archivos de trabajo Ruida     |
-| **PNG**               | Raster   | ✓ Traza           | –               | Fotos, imágenes               |
-| **JPEG**              | Raster   | ✓ Traza           | –               | Fotos                         |
-| **BMP**               | Raster   | ✓ Traza           | –               | Gráficos simples              |
-| **GIF**               | Raster   | ✓ Traza           | –               | Gráficos simples, animaciones |
-| **TIFF**              | Raster   | ✓ Traza           | –               | Escaneos, arte para impresión |
-| **WebP**              | Raster   | ✓ Traza           | –               | Imágenes web                  |
-| **RFS**               | Bosquejo | ✓ Directo         | ✓ Exportar obj. | Bosquejos paramétricos        |
-| **G-code**            | Control  | –                 | ✓ Principal     | Salida de máquina             |
-| **Proyecto Rayforge** | Proyecto | ✓                 | ✓               | Guardar/cargar proyectos      |
+| Formato               | Tipo     | Importar          | Exportar        | Uso recomendado                |
+| --------------------- | -------- | ----------------- | --------------- | ------------------------------ |
+| **SVG**               | Vector   | ✓ Directo / Traza | ✓ Exportar obj. | Formato de diseño principal    |
+| **DXF**               | Vector   | ✓ Directo         | ✓ Exportar obj. | Intercambio CAD                |
+| **PDF**               | Mixto    | ✓ Directo / Traza | –               | Documentos con contenido vec.  |
+| **Illustrator**       | Vector   | ✓ Directo / Traza | –               | Logotipos de Illustrator       |
+| **EPS**               | Vector   | ✓ Directo / Traza | –               | Logotipos, arte para impresión |
+| **LightBurn**         | Vector   | ✓ Directo         | –               | Proyectos LightBurn            |
+| **Ruida**             | Vector   | ✓ Directo         | –               | Archivos de trabajo Ruida      |
+| **PNG**               | Raster   | ✓ Traza           | –               | Fotos, imágenes                |
+| **JPEG**              | Raster   | ✓ Traza           | –               | Fotos                          |
+| **BMP**               | Raster   | ✓ Traza           | –               | Gráficos simples               |
+| **GIF**               | Raster   | ✓ Traza           | –               | Gráficos simples, animaciones  |
+| **TIFF**              | Raster   | ✓ Traza           | –               | Escaneos, arte para impresión  |
+| **WebP**              | Raster   | ✓ Traza           | –               | Imágenes web                   |
+| **RFS**               | Bosquejo | ✓ Directo         | ✓ Exportar obj. | Bosquejos paramétricos         |
+| **G-code**            | Control  | –                 | ✓ Principal     | Salida de máquina              |
+| **Proyecto Rayforge** | Proyecto | ✓                 | ✓               | Guardar/cargar proyectos       |
 
 ---
 
@@ -216,6 +218,38 @@ renderizado y trazado.
 - PDFs recibidos de diseñadores que contienen arte vectorial
 - Cualquier PDF con capas bien organizadas
 - Cuando SVG o DXF no están disponibles desde la fuente
+
+---
+
+### Adobe Illustrator (.ai)
+
+**Extensión:** `.ai` **Tipo MIME:** `application/illustrator` **Importación:** Vectores directos o
+renderizado y trazo **Exportación:** No soportado
+
+Desde la versión 9, Illustrator guarda sus archivos con un PDF incrustado por defecto (la opción
+**Crear archivo compatible con PDF**). Rayforge lee ese PDF, así que estos archivos se importan
+igual que un PDF, capas incluidas.
+
+Los archivos de Illustrator más antiguos, y los guardados sin compatibilidad con PDF, son
+PostScript. Rayforge los convierte con Ghostscript cuando está instalado. Si no, el diálogo de
+importación explica cómo volver a guardar el archivo.
+
+---
+
+### EPS y PostScript (.eps / .ps)
+
+**Extensión:** `.eps`, `.epsf`, `.ps` **Tipo MIME:** `image/x-eps`, `application/postscript`
+**Importación:** Vectores directos o renderizado y trazo, mediante Ghostscript **Exportación:** No
+soportado
+
+Rayforge convierte los archivos EPS y PostScript a PDF con Ghostscript y luego los importa como un
+PDF. El cuadro delimitador del EPS pasa a ser el tamaño de página y el texto se convierte en
+contornos.
+
+**Ghostscript** es una dependencia opcional. En Linux, instala el paquete `ghostscript` de tu
+distribución. En Windows y macOS, instálalo desde el sitio web de Ghostscript. Sin Ghostscript, el
+diálogo de importación muestra un mensaje en lugar de una vista previa. El proyecto guarda el PDF
+convertido, así que un proyecto guardado también se abre en un equipo sin Ghostscript.
 
 ---
 

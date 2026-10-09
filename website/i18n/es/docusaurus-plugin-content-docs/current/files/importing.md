@@ -7,13 +7,15 @@ bits. Esta página explica cómo importar archivos y optimizarlos para obtener l
 
 ### Formatos vectoriales
 
-| Formato       | Extensión         | Método de importación     | Mejor para                            |
-| ------------- | ----------------- | ------------------------- | ------------------------------------- |
-| **SVG**       | `.svg`            | Vectores directos o trazo | Gráficos vectoriales, logos, diseños  |
-| **DXF**       | `.dxf`            | Vectores directos         | Planos CAD, diseños técnicos          |
-| **PDF**       | `.pdf`            | Vectores directos o trazo | Documentos con contenido vectorial    |
-| **LightBurn** | `.lbrn`, `.lbrn2` | Vectores directos         | Proyectos LightBurn                   |
-| **Ruida**     | `.rd`             | Vectores directos         | Archivos de trabajo controlador Ruida |
+| Formato         | Extensión         | Método de importación                            | Mejor para                            |
+| --------------- | ----------------- | ------------------------------------------------ | ------------------------------------- |
+| **SVG**         | `.svg`            | Vectores directos o trazo                        | Gráficos vectoriales, logos, diseños  |
+| **DXF**         | `.dxf`            | Vectores directos                                | Planos CAD, diseños técnicos          |
+| **PDF**         | `.pdf`            | Vectores directos o trazo                        | Documentos con contenido vectorial    |
+| **LightBurn**   | `.lbrn`, `.lbrn2` | Vectores directos                                | Proyectos LightBurn                   |
+| **Ruida**       | `.rd`             | Vectores directos                                | Archivos de trabajo controlador Ruida |
+| **Illustrator** | `.ai`             | Vectores directos o trazo                        | Logotipos de Illustrator              |
+| **EPS**         | `.eps`, `.ps`     | Vectores directos o trazo (requiere Ghostscript) | Logotipos, arte para impresión        |
 
 ### Formatos de mapa de bits
 
@@ -355,6 +357,18 @@ configuraciones láser ajustables.
 - **Formato binario** — La edición directa de archivos .lbrn originales no es compatible
 - **Funciones propietarias** — Algunas funciones avanzadas de LightBurn pueden no ser totalmente
   compatibles
+
+---
+
+## Importación de Illustrator y EPS
+
+Los archivos de Illustrator guardados con compatibilidad con PDF, lo predeterminado desde
+Illustrator 9, se importan igual que los archivos PDF, con la misma selección de capas y las mismas
+opciones de trazo.
+
+Los archivos EPS, PostScript y los de Illustrator más antiguos se convierten primero a PDF con
+Ghostscript. Instala Ghostscript si el diálogo de importación indica que falta. Si no puedes
+instalarlo, exporta el diseño como PDF o SVG desde el programa que lo creó.
 
 ---
 

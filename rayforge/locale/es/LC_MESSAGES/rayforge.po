@@ -10449,3 +10449,16 @@ msgstr "Bayer 8"
 #, python-brace-format
 msgid "Could not read the {format} image: {error}"
 msgstr "No se pudo leer la imagen {format}: {error}"
+
+#: rayforge/image/postscript/importer.py
+msgid "Importing EPS and PostScript files requires Ghostscript, which was not found. Install Ghostscript and try again."
+msgstr "Para importar archivos EPS y PostScript se necesita Ghostscript, que no se encontró. Instala Ghostscript e inténtalo de nuevo."
+
+#: rayforge/image/postscript/importer.py
+#, python-brace-format
+msgid "Ghostscript could not convert {filename}: {error}"
+msgstr "Ghostscript no pudo convertir {filename}: {error}"
+
+#: rayforge/image/postscript/importer.py
+msgid "This Illustrator file was saved without PDF compatibility. Rayforge can only read it with Ghostscript, which was not found. Install Ghostscript, or save the file again in Illustrator with \"Create PDF Compatible File\" enabled."
+msgstr "Este archivo de Illustrator se guardó sin compatibilidad con PDF. Rayforge solo puede leerlo con Ghostscript, que no se encontró. Instala Ghostscript o vuelve a guardar el archivo en Illustrator con la opción «Crear archivo compatible con PDF» activada."

@@ -18,6 +18,8 @@ capabilities, limitations, and recommendations.
 | **SVG**              | Vector  | ✓ Direct / Trace | ✓ Object export | Primary design format         |
 | **DXF**              | Vector  | ✓ Direct         | ✓ Object export | CAD interchange               |
 | **PDF**              | Mixed   | ✓ Direct / Trace | –               | Documents with vector content |
+| **Illustrator**      | Vector  | ✓ Direct / Trace | –               | Logos from Illustrator        |
+| **EPS**              | Vector  | ✓ Direct / Trace | –               | Logos, print artwork          |
 | **LightBurn**        | Vector  | ✓ Direct         | –               | LightBurn project files       |
 | **Ruida**            | Vector  | ✓ Direct         | –               | Ruida controller job files    |
 | **PNG**              | Raster  | ✓ Trace          | –               | Photos, images                |
@@ -220,6 +222,36 @@ and tracing.
 - PDFs received from designers that contain vector artwork
 - Any PDF with well-organized layers
 - When SVG or DXF is not available from the source
+
+---
+
+### Adobe Illustrator (.ai)
+
+**Extension:** `.ai` **MIME Type:** `application/illustrator` **Import:** Direct vectors or
+render-and-trace **Export:** Not supported
+
+Since version 9, Illustrator saves its files with an embedded PDF by default (the **Create PDF
+Compatible File** option). Rayforge reads that PDF, so these files import just like a PDF, layers
+included.
+
+Older Illustrator files, and files saved without PDF compatibility, are PostScript. Rayforge
+converts them with Ghostscript when it is installed. Otherwise the import dialog explains how to
+save the file again.
+
+---
+
+### EPS and PostScript (.eps / .ps)
+
+**Extension:** `.eps`, `.epsf`, `.ps` **MIME Type:** `image/x-eps`, `application/postscript`
+**Import:** Direct vectors or render-and-trace, through Ghostscript **Export:** Not supported
+
+Rayforge converts EPS and PostScript files to PDF with Ghostscript and then imports them like a PDF.
+The EPS bounding box becomes the page size, and text is converted to outlines.
+
+**Ghostscript** is an optional dependency. On Linux, install your distribution's `ghostscript`
+package. On Windows and macOS, install it from the Ghostscript website. Without Ghostscript, the
+import dialog shows a message instead of a preview. The project stores the converted PDF, so a saved
+project also opens on a computer without Ghostscript.
 
 ---
 

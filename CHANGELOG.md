@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Import: Adobe Illustrator (`.ai`) and EPS/PostScript files. AI files
+  saved with PDF compatibility (the default since Illustrator 9) import
+  like PDFs; EPS, PostScript and older AI files are converted to PDF
+  with Ghostscript, an optional dependency, with a clear message when
+  it is missing. Text becomes outlines and the EPS bounding box sets
+  the page size (#517)
 - Import: GIF, TIFF and WebP bitmaps, traced like PNG. Animated GIFs
   and multi-page TIFFs import their first frame or page (#517)
 - Sketcher: boolean operations. Union, Difference, Intersection and
