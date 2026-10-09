@@ -10396,3 +10396,8 @@ msgstr "Bayer 4"
 #: rayforge/image/dither.py
 msgid "Bayer 8"
 msgstr "Bayer 8"
+
+#: rayforge/image/bitmap/importer.py
+#, python-brace-format
+msgid "Could not read the {format} image: {error}"
+msgstr "Não foi possível ler a imagem {format}: {error}"

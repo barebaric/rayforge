@@ -7,19 +7,22 @@ Rayforge, incluindo capacidades, limitações e recomendações.
 
 ### Referência rápida
 
-| Formato              | Tipo     | Importação        | Exportação      | Uso recomendado              |
-| -------------------- | -------- | ----------------- | --------------- | ---------------------------- |
-| **SVG**              | Vetor    | ✓ Direto / Traçar | ✓ Exportar obj. | Formato de design principal  |
-| **DXF**              | Vetor    | ✓ Direto          | ✓ Exportar obj. | Intercâmbio CAD              |
-| **PDF**              | Misto    | ✓ Direto / Traçar | –               | Documentos com conteúdo vet. |
-| **LightBurn**        | Vetor    | ✓ Direto          | –               | Projetos LightBurn           |
-| **Ruida**            | Vetor    | ✓ Direto          | –               | Arquivos de trabalho Ruida   |
-| **PNG**              | Raster   | ✓ Traçar          | –               | Fotos, imagens               |
-| **JPEG**             | Raster   | ✓ Traçar          | –               | Fotos                        |
-| **BMP**              | Raster   | ✓ Traçar          | –               | Gráficos simples             |
-| **RFS**              | Esboço   | ✓ Direto          | ✓ Exportar obj. | Esboços paramétricos         |
-| **G-code**           | Controle | –                 | ✓ Principal     | Saída da máquina             |
-| **Projeto Rayforge** | Projeto  | ✓                 | ✓               | Salvar/carregar projetos     |
+| Formato              | Tipo     | Importação        | Exportação      | Uso recomendado                     |
+| -------------------- | -------- | ----------------- | --------------- | ----------------------------------- |
+| **SVG**              | Vetor    | ✓ Direto / Traçar | ✓ Exportar obj. | Formato de design principal         |
+| **DXF**              | Vetor    | ✓ Direto          | ✓ Exportar obj. | Intercâmbio CAD                     |
+| **PDF**              | Misto    | ✓ Direto / Traçar | –               | Documentos com conteúdo vet.        |
+| **LightBurn**        | Vetor    | ✓ Direto          | –               | Projetos LightBurn                  |
+| **Ruida**            | Vetor    | ✓ Direto          | –               | Arquivos de trabalho Ruida          |
+| **PNG**              | Raster   | ✓ Traçar          | –               | Fotos, imagens                      |
+| **JPEG**             | Raster   | ✓ Traçar          | –               | Fotos                               |
+| **BMP**              | Raster   | ✓ Traçar          | –               | Gráficos simples                    |
+| **GIF**              | Raster   | ✓ Traçar          | –               | Gráficos simples, animações         |
+| **TIFF**             | Raster   | ✓ Traçar          | –               | Digitalizações, arte para impressão |
+| **WebP**             | Raster   | ✓ Traçar          | –               | Imagens da web                      |
+| **RFS**              | Esboço   | ✓ Direto          | ✓ Exportar obj. | Esboços paramétricos                |
+| **G-code**           | Controle | –                 | ✓ Principal     | Saída da máquina                    |
+| **Projeto Rayforge** | Projeto  | ✓                 | ✓               | Salvar/carregar projetos            |
 
 ---
 
@@ -282,6 +285,19 @@ suportado
 
 - Converta para PNG para tamanho de arquivo menor (sem diferença de qualidade)
 - Use apenas se o software de origem não puder exportar PNG/SVG
+
+---
+
+### GIF, TIFF e WebP
+
+**Extensão:** `.gif`, `.tif`, `.tiff`, `.webp` **Tipo MIME:** `image/gif`, `image/tiff`,
+`image/webp` **Importação:** Vetorização **Exportação:** Não suportado
+
+Esses formatos são vetorizados da mesma forma que o PNG.
+
+- **GIFs animados** e **TIFFs de várias páginas** importam apenas o primeiro quadro ou página
+- Arquivos **TIFF** geralmente guardam sua resolução de impressão, que define o tamanho físico
+- Imagens sem resolução são importadas a 96 DPI
 
 ---
 

@@ -17,11 +17,14 @@ explica como importar arquivos e otimizá-los para obter os melhores resultados.
 
 ### Formatos raster
 
-| Formato  | Extensão        | Método de importação | Ideal para                         |
-| -------- | --------------- | -------------------- | ---------------------------------- |
-| **PNG**  | `.webp`         | Vetorização          | Fotos, imagens com transparência   |
-| **JPEG** | `.jpg`, `.jpeg` | Vetorização          | Fotos, imagens de tom contínuo     |
-| **BMP**  | `.bmp`          | Vetorização          | Gráficos simples, capturas de tela |
+| Formato  | Extensão        | Método de importação | Ideal para                          |
+| -------- | --------------- | -------------------- | ----------------------------------- |
+| **PNG**  | `.png`          | Vetorização          | Fotos, imagens com transparência    |
+| **JPEG** | `.jpg`, `.jpeg` | Vetorização          | Fotos, imagens de tom contínuo      |
+| **BMP**  | `.bmp`          | Vetorização          | Gráficos simples, capturas de tela  |
+| **GIF**  | `.gif`          | Vetorização          | Gráficos simples, animações         |
+| **TIFF** | `.tif`, `.tiff` | Vetorização          | Digitalizações, arte para impressão |
+| **WebP** | `.webp`         | Vetorização          | Imagens da web                      |
 
 <!-- prettier-ignore-start -->
 :::note[Importação de imagens raster]
@@ -354,7 +357,7 @@ configurações de laser ajustáveis.
 
 ---
 
-## Importação de imagens raster (PNG, JPG, BMP)
+## Importação de imagens raster (PNG, JPG, BMP, GIF, TIFF, WebP)
 
 As imagens raster são **vetorizadas** para criar caminhos vetoriais usando o diálogo de importação.
 

@@ -19,9 +19,12 @@ bits. Esta página explica cómo importar archivos y optimizarlos para obtener l
 
 | Formato  | Extensión       | Método de importación | Mejor para                             |
 | -------- | --------------- | --------------------- | -------------------------------------- |
-| **PNG**  | `.webp`         | Trazo a vectores      | Fotos, imágenes con transparencia      |
+| **PNG**  | `.png`          | Trazo a vectores      | Fotos, imágenes con transparencia      |
 | **JPEG** | `.jpg`, `.jpeg` | Trazo a vectores      | Fotos, imágenes de tono continuo       |
 | **BMP**  | `.bmp`          | Trazo a vectores      | Gráficos simples, capturas de pantalla |
+| **GIF**  | `.gif`          | Trazo a vectores      | Gráficos simples, animaciones          |
+| **TIFF** | `.tif`, `.tiff` | Trazo a vectores      | Escaneos, arte para impresión          |
+| **WebP** | `.webp`         | Trazo a vectores      | Imágenes web                           |
 
 <!-- prettier-ignore-start -->
 :::note[Importación de mapa de bits]
@@ -355,7 +358,7 @@ configuraciones láser ajustables.
 
 ---
 
-## Importación de imágenes de mapa de bits (PNG, JPG, BMP)
+## Importación de imágenes de mapa de bits (PNG, JPG, BMP, GIF, TIFF, WebP)
 
 Las imágenes de mapa de bits se **trazan** para crear trazados vectoriales utilizando el diálogo de
 importación.

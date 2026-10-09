@@ -25,9 +25,12 @@ import files and optimize them for best results.
 
 | Format   | Extension       | Import Method    | Best For                         |
 | -------- | --------------- | ---------------- | -------------------------------- |
-| **PNG**  | `.webp`         | Trace to vectors | Photos, images with transparency |
+| **PNG**  | `.png`          | Trace to vectors | Photos, images with transparency |
 | **JPEG** | `.jpg`, `.jpeg` | Trace to vectors | Photos, continuous-tone images   |
 | **BMP**  | `.bmp`          | Trace to vectors | Simple graphics, screenshots     |
+| **GIF**  | `.gif`          | Trace to vectors | Simple graphics, animations      |
+| **TIFF** | `.tif`, `.tiff` | Trace to vectors | Scans, print artwork             |
+| **WebP** | `.webp`         | Trace to vectors | Web images                       |
 
 <!-- prettier-ignore-start -->
 :::note[Raster Import]
@@ -351,7 +354,7 @@ settings.
 
 ---
 
-## Raster Image Import (PNG, JPG, BMP)
+## Raster Image Import (PNG, JPG, BMP, GIF, TIFF, WebP)
 
 Raster images are **traced** to create vector paths using the import dialog.
 

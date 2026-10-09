@@ -19,9 +19,12 @@ Rasterformate. Diese Seite erklärt, wie du Dateien importierst und für beste E
 
 | Format   | Erweiterung     | Importmethode       | Am besten für                            |
 | -------- | --------------- | ------------------- | ---------------------------------------- |
-| **PNG**  | `.webp`         | Tracing zu Vektoren | Fotos, Bilder mit Transparenz            |
+| **PNG**  | `.png`          | Tracing zu Vektoren | Fotos, Bilder mit Transparenz            |
 | **JPEG** | `.jpg`, `.jpeg` | Tracing zu Vektoren | Fotos, Bilder mit kontinuierlichen Tönen |
 | **BMP**  | `.bmp`          | Tracing zu Vektoren | Einfache Grafiken, Screenshots           |
+| **GIF**  | `.gif`          | Tracing zu Vektoren | Einfache Grafiken, Animationen           |
+| **TIFF** | `.tif`, `.tiff` | Tracing zu Vektoren | Scans, Druckvorlagen                     |
+| **WebP** | `.webp`         | Tracing zu Vektoren | Webbilder                                |
 
 <!-- prettier-ignore-start -->
 :::note[Raster-Import]
@@ -357,7 +360,7 @@ farbcodierten Ebenen mit konfigurierbaren Laser-Einstellungen organisiert ist.
 
 ---
 
-## Rasterbild-Import (PNG, JPG, BMP)
+## Rasterbild-Import (PNG, JPG, BMP, GIF, TIFF, WebP)
 
 Rasterbilder werden **traced**, um Vektorpfade über den Import-Dialog zu erstellen.
 

@@ -13,6 +13,8 @@ from .base_importer import (
     ImporterFeature,
 )
 from .base_renderer import Renderer
+from .bitmap.importer import GifImporter, TiffImporter, WebpImporter
+from .bitmap.renderer import BITMAP_RENDERER
 from .bmp.importer import BmpImporter
 from .bmp.renderer import BMP_RENDERER
 from .dxf.exporter import GeometryDxfExporter
@@ -224,6 +226,7 @@ def import_file(
 
 
 _RENDERERS = [
+    BITMAP_RENDERER,
     BMP_RENDERER,
     DXF_RENDERER,
     LIGHTBURN_RENDERER,
@@ -251,6 +254,7 @@ __all__ = [
     "DxfImporter",
     "GeometryDxfExporter",
     "GeometrySvgExporter",
+    "GifImporter",
     "ImportManifest",
     "ImportPayload",
     "ImportResult",
@@ -263,6 +267,8 @@ __all__ = [
     "PngImporter",
     "RuidaImporter",
     "SvgImporter",
+    "TiffImporter",
+    "WebpImporter",
     "exporter_registry",
     "get_renderer_for_asset",
     "import_file",

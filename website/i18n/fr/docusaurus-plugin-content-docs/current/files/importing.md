@@ -20,9 +20,12 @@ meilleurs résultats.
 
 | Format   | Extension       | Méthode d'importation | Idéal pour                           |
 | -------- | --------------- | --------------------- | ------------------------------------ |
-| **PNG**  | `.webp`         | Vectorisation         | Photos, images avec transparence     |
+| **PNG**  | `.png`          | Vectorisation         | Photos, images avec transparence     |
 | **JPEG** | `.jpg`, `.jpeg` | Vectorisation         | Photos, images à tons continus       |
 | **BMP**  | `.bmp`          | Vectorisation         | Graphiques simples, captures d'écran |
+| **GIF**  | `.gif`          | Vectorisation         | Graphiques simples, animations       |
+| **TIFF** | `.tif`, `.tiff` | Vectorisation         | Numérisations, fichiers d'impression |
+| **WebP** | `.webp`         | Vectorisation         | Images web                           |
 
 <!-- prettier-ignore-start -->
 :::note[Importation d'images matricielles]
@@ -362,7 +365,7 @@ colorés avec des paramètres laser configurables.
 
 ---
 
-## Importation d'images matricielles (PNG, JPG, BMP)
+## Importation d'images matricielles (PNG, JPG, BMP, GIF, TIFF, WebP)
 
 Les images matricielles sont **vectorisées** pour créer des tracés vectoriels via la boîte de
 dialogue d'importation.

@@ -17,6 +17,9 @@ Rayforge, incluyendo capacidades, limitaciones y recomendaciones.
 | **PNG**               | Raster   | ✓ Traza           | –               | Fotos, imágenes               |
 | **JPEG**              | Raster   | ✓ Traza           | –               | Fotos                         |
 | **BMP**               | Raster   | ✓ Traza           | –               | Gráficos simples              |
+| **GIF**               | Raster   | ✓ Traza           | –               | Gráficos simples, animaciones |
+| **TIFF**              | Raster   | ✓ Traza           | –               | Escaneos, arte para impresión |
+| **WebP**              | Raster   | ✓ Traza           | –               | Imágenes web                  |
 | **RFS**               | Bosquejo | ✓ Directo         | ✓ Exportar obj. | Bosquejos paramétricos        |
 | **G-code**            | Control  | –                 | ✓ Principal     | Salida de máquina             |
 | **Proyecto Rayforge** | Proyecto | ✓                 | ✓               | Guardar/cargar proyectos      |
@@ -282,6 +285,19 @@ No compatible
 
 - Convierta a PNG para un tamaño de archivo menor (sin diferencia de calidad)
 - Use solo si el software de origen no puede exportar PNG/SVG
+
+---
+
+### GIF, TIFF y WebP
+
+**Extensión:** `.gif`, `.tif`, `.tiff`, `.webp` **Tipo MIME:** `image/gif`, `image/tiff`,
+`image/webp` **Importación:** Trazo a vectores **Exportación:** No soportado
+
+Estos formatos se trazan igual que PNG.
+
+- Los **GIF animados** y los **TIFF de varias páginas** solo importan su primer fotograma o página
+- Los archivos **TIFF** suelen guardar su resolución de impresión, que determina el tamaño físico
+- Las imágenes sin resolución se importan a 96 DPI
 
 ---
 

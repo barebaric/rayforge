@@ -7,19 +7,22 @@ einschließlich Fähigkeiten, Einschränkungen und Empfehlungen.
 
 ### Schnellreferenz
 
-| Format               | Typ       | Import             | Export          | Empfohlene Verwendung      |
-| -------------------- | --------- | ------------------ | --------------- | -------------------------- |
-| **SVG**              | Vektor    | ✓ Direkt / Tracing | ✓ Objekt-Export | Primäres Design-Format     |
-| **DXF**              | Vektor    | ✓ Direkt           | ✓ Objekt-Export | CAD-Datenaustausch         |
-| **PDF**              | Gemischt  | ✓ Direkt / Tracing | –               | Dokumente mit Vektorinhalt |
-| **LightBurn**        | Vektor    | ✓ Direkt           | –               | LightBurn-Projekte         |
-| **Ruida**            | Vektor    | ✓ Direkt           | –               | Ruida-Aufgabendateien      |
-| **PNG**              | Raster    | ✓ Tracing          | –               | Fotos, Bilder              |
-| **JPEG**             | Raster    | ✓ Tracing          | –               | Fotos                      |
-| **BMP**              | Raster    | ✓ Tracing          | –               | Einfache Grafiken          |
-| **RFS**              | Skizze    | ✓ Direkt           | ✓ Objekt-Export | Parametrische Skizzen      |
-| **G-Code**           | Steuerung | –                  | ✓ Primär        | Maschinenausgabe           |
-| **Rayforge-Projekt** | Projekt   | ✓                  | ✓               | Projekte speichern/laden   |
+| Format               | Typ       | Import             | Export          | Empfohlene Verwendung          |
+| -------------------- | --------- | ------------------ | --------------- | ------------------------------ |
+| **SVG**              | Vektor    | ✓ Direkt / Tracing | ✓ Objekt-Export | Primäres Design-Format         |
+| **DXF**              | Vektor    | ✓ Direkt           | ✓ Objekt-Export | CAD-Datenaustausch             |
+| **PDF**              | Gemischt  | ✓ Direkt / Tracing | –               | Dokumente mit Vektorinhalt     |
+| **LightBurn**        | Vektor    | ✓ Direkt           | –               | LightBurn-Projekte             |
+| **Ruida**            | Vektor    | ✓ Direkt           | –               | Ruida-Aufgabendateien          |
+| **PNG**              | Raster    | ✓ Tracing          | –               | Fotos, Bilder                  |
+| **JPEG**             | Raster    | ✓ Tracing          | –               | Fotos                          |
+| **BMP**              | Raster    | ✓ Tracing          | –               | Einfache Grafiken              |
+| **GIF**              | Raster    | ✓ Tracing          | –               | Einfache Grafiken, Animationen |
+| **TIFF**             | Raster    | ✓ Tracing          | –               | Scans, Druckvorlagen           |
+| **WebP**             | Raster    | ✓ Tracing          | –               | Webbilder                      |
+| **RFS**              | Skizze    | ✓ Direkt           | ✓ Objekt-Export | Parametrische Skizzen          |
+| **G-Code**           | Steuerung | –                  | ✓ Primär        | Maschinenausgabe               |
+| **Rayforge-Projekt** | Projekt   | ✓                  | ✓               | Projekte speichern/laden       |
 
 ---
 
@@ -279,6 +282,19 @@ unterstützt
 
 - Zu PNG für kleinere Dateigröße konvertieren (kein Qualitätsunterschied)
 - Nur verwenden wenn Quellsoftware kein PNG/SVG exportieren kann
+
+---
+
+### GIF, TIFF und WebP
+
+**Erweiterung:** `.gif`, `.tif`, `.tiff`, `.webp` **MIME-Typ:** `image/gif`, `image/tiff`,
+`image/webp` **Import:** Tracing zu Vektoren **Export:** Nicht unterstützt
+
+Diese Formate werden genauso nachgezeichnet wie PNG.
+
+- **Animierte GIFs** und **mehrseitige TIFFs** importieren nur ihr erstes Bild bzw. ihre erste Seite
+- **TIFF**-Dateien speichern meist ihre Druckauflösung, die die physische Größe bestimmt
+- Bilder ohne Auflösung werden mit 96 DPI importiert
 
 ---
 

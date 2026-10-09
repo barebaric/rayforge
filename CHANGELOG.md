@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Import: GIF, TIFF and WebP bitmaps, traced like PNG. Animated GIFs
+  and multi-page TIFFs import their first frame or page (#517)
 - Sketcher: boolean operations. Union, Difference, Intersection and
   Exclude bake the selected closed regions into multi-ring polygons
   (outer contours counter-clockwise, hole contours clockwise), so

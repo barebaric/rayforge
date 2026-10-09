@@ -23,6 +23,9 @@ capabilities, limitations, and recommendations.
 | **PNG**              | Raster  | ✓ Trace          | –               | Photos, images                |
 | **JPEG**             | Raster  | ✓ Trace          | –               | Photos                        |
 | **BMP**              | Raster  | ✓ Trace          | –               | Simple graphics               |
+| **GIF**              | Raster  | ✓ Trace          | –               | Simple graphics, animations   |
+| **TIFF**             | Raster  | ✓ Trace          | –               | Scans, print artwork          |
+| **WebP**             | Raster  | ✓ Trace          | –               | Web images                    |
 | **RFS**              | Sketch  | ✓ Direct         | ✓ Object export | Parametric sketches           |
 | **G-code**           | Control | –                | ✓ Primary       | Machine output                |
 | **Rayforge Project** | Project | ✓                | ✓               | Save/load projects            |
@@ -284,6 +287,19 @@ supported
 
 - Convert to PNG for smaller file size (no quality difference)
 - Only use if source software can't export PNG/SVG
+
+---
+
+### GIF, TIFF and WebP
+
+**Extension:** `.gif`, `.tif`, `.tiff`, `.webp` **MIME Type:** `image/gif`, `image/tiff`,
+`image/webp` **Import:** Trace to vectors **Export:** Not supported
+
+These formats are traced in the same way as PNG.
+
+- **Animated GIFs** and **multi-page TIFFs** import only their first frame or page
+- **TIFF** files usually store their print resolution, which sets the physical size
+- Images without a resolution are imported at 96 DPI
 
 ---
 

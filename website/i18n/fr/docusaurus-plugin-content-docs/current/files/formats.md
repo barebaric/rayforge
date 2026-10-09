@@ -7,19 +7,22 @@ Rayforge, y compris les capacités, les limitations et les recommandations.
 
 ### Référence rapide
 
-| Format              | Type      | Importation      | Exportation   | Utilisation recommandée          |
-| ------------------- | --------- | ---------------- | ------------- | -------------------------------- |
-| **SVG**             | Vecteur   | ✓ Direct / Trace | ✓ Export obj. | Format de conception principal   |
-| **DXF**             | Vecteur   | ✓ Direct         | ✓ Export obj. | Échange CAO                      |
-| **PDF**             | Mixte     | ✓ Direct / Trace | –             | Documents avec contenu vectoriel |
-| **LightBurn**       | Vecteur   | ✓ Direct         | –             | Projets LightBurn                |
-| **Ruida**           | Vecteur   | ✓ Direct         | –             | Fichiers de tâches Ruida         |
-| **PNG**             | Matriciel | ✓ Trace          | –             | Photos, images                   |
-| **JPEG**            | Matriciel | ✓ Trace          | –             | Photos                           |
-| **BMP**             | Matriciel | ✓ Trace          | –             | Graphiques simples               |
-| **RFS**             | Croquis   | ✓ Direct         | ✓ Export obj. | Croquis paramétriques            |
-| **G-code**          | Commande  | –                | ✓ Principal   | Sortie machine                   |
-| **Projet Rayforge** | Projet    | ✓                | ✓             | Enregistrer/charger projets      |
+| Format              | Type      | Importation      | Exportation   | Utilisation recommandée              |
+| ------------------- | --------- | ---------------- | ------------- | ------------------------------------ |
+| **SVG**             | Vecteur   | ✓ Direct / Trace | ✓ Export obj. | Format de conception principal       |
+| **DXF**             | Vecteur   | ✓ Direct         | ✓ Export obj. | Échange CAO                          |
+| **PDF**             | Mixte     | ✓ Direct / Trace | –             | Documents avec contenu vectoriel     |
+| **LightBurn**       | Vecteur   | ✓ Direct         | –             | Projets LightBurn                    |
+| **Ruida**           | Vecteur   | ✓ Direct         | –             | Fichiers de tâches Ruida             |
+| **PNG**             | Matriciel | ✓ Trace          | –             | Photos, images                       |
+| **JPEG**            | Matriciel | ✓ Trace          | –             | Photos                               |
+| **BMP**             | Matriciel | ✓ Trace          | –             | Graphiques simples                   |
+| **GIF**             | Matriciel | ✓ Trace          | –             | Graphiques simples, animations       |
+| **TIFF**            | Matriciel | ✓ Trace          | –             | Numérisations, fichiers d'impression |
+| **WebP**            | Matriciel | ✓ Trace          | –             | Images web                           |
+| **RFS**             | Croquis   | ✓ Direct         | ✓ Export obj. | Croquis paramétriques                |
+| **G-code**          | Commande  | –                | ✓ Principal   | Sortie machine                       |
+| **Projet Rayforge** | Projet    | ✓                | ✓             | Enregistrer/charger projets          |
 
 ---
 
@@ -284,6 +287,20 @@ vectoriels.
 
 - Convertissez en PNG pour une taille de fichier réduite (aucune différence de qualité)
 - À utiliser uniquement si le logiciel source ne peut pas exporter en PNG/SVG
+
+---
+
+### GIF, TIFF et WebP
+
+**Extension :** `.gif`, `.tif`, `.tiff`, `.webp` **Type MIME :** `image/gif`, `image/tiff`,
+`image/webp` **Importation :** Vectorisation **Exportation :** Non pris en charge
+
+Ces formats sont vectorisés de la même manière que le PNG.
+
+- Les **GIF animés** et les **TIFF multipages** n'importent que leur première image ou page
+- Les fichiers **TIFF** enregistrent généralement leur résolution d'impression, qui détermine la
+  taille physique
+- Les images sans résolution sont importées à 96 DPI
 
 ---
 
