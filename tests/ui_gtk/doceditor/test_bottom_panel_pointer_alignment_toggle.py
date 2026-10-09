@@ -21,6 +21,7 @@ def bottom_panel_toggle(sync_machine):
     bottom: Any = BottomPanel.__new__(BottomPanel)
     bottom.machine = sync_machine
     bottom._sync_wcs_model = MagicMock()
+    bottom.job_origin_rows = MagicMock()
     bottom._updating_wcs_ui = False
     bottom.wcs_list = ["G54", "G55"]
     bottom.wcs_row = MagicMock()

@@ -22,6 +22,7 @@ def bottom_panel_dro(sync_machine):
     assert sync_machine.driver is not None
     bottom.doc = None
     bottom._sync_wcs_model = MagicMock()
+    bottom.job_origin_rows = MagicMock()
     bottom._updating_wcs_ui = False
     bottom.wcs_list = ["G54", "G55"]
     bottom.wcs_row = MagicMock()
