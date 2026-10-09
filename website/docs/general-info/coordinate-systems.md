@@ -189,6 +189,40 @@ next to the selector lets you adjust offsets without leaving the dialog.
 
 Layers without an explicit WCS assignment use the globally active WCS from the toolbar dropdown.
 
+## Start From and Job Origin
+
+By default a job runs exactly where it is placed on the canvas. The **Start From** setting in the
+Control Panel (saved with the project) lets you place it somewhere else instead:
+
+| Mode                     | Where the job runs                                                         |
+| ------------------------ | -------------------------------------------------------------------------- |
+| **Absolute Coordinates** | As placed on the canvas (default)                                          |
+| **User Origin**          | The job origin point lands on the zero point of the active WCS             |
+| **Current Position**     | The job origin point lands where the laser head is when you Frame or Start |
+
+The **Job Origin** selector next to it picks which of nine points of the job's bounding box (a
+corner, the middle of an edge or the center) is placed on that position. The bounding box is the one
+of the designs you see on the canvas, without overscan or lead-ins.
+
+When the mode is not Absolute, the canvas shows a dashed blue outline where the job will actually
+run, with a marker on the job origin point.
+
+How it works:
+
+- The whole job is shifted as one piece before it is turned into G-code. The G-code stays ordinary
+  absolute G-code in the active WCS: Rayforge does not send `G92` or `G10` and does not change your
+  WCS offsets.
+- Framing, the 3D preview and the pre-flight checks use the same shifted job. When the shifted job
+  would leave the machine travel or enter a no-go zone, sending and framing are refused.
+- **User Origin** produces coordinates relative to the WCS zero. A G-code file exported this way
+  follows the WCS when you zero it somewhere else on the machine, which makes it the right choice
+  for files you run from an SD card or USB stick.
+- **Current Position** needs a connected, idle machine that reports its position. With pointer
+  alignment on, the pointer dot is used instead of the beam. After framing, or after a finished job,
+  the head is moved back to the start position, so Frame followed by Start lands in the same place.
+  An exported file contains the head position at the time of the export.
+- Layers that use a rotary module only support Absolute Coordinates.
+
 ## Practical Workflows
 
 ### Workflow 1: Multiple Fixture Positions
