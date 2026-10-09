@@ -826,3 +826,34 @@ msgstr "Halbton-Winkel"
 #: laser_essentials/steps/raster_step.py
 msgid "Rotation of the halftone dot grid"
 msgstr "Drehung des Halbton-Punktrasters"
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Offset Fill"
+msgstr "Offset-Füllung"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Distance between neighbouring fill rings. Defaults to the laser spot size"
+msgstr "Abstand zwischen benachbarten Füllringen. Standardmäßig die Laser-Spotgröße"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Distance of the first ring inside the outline"
+msgstr "Abstand des ersten Rings innerhalb der Kontur"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Fill Direction"
+msgstr "Füllrichtung"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Order in which the rings are cut"
+msgstr "Reihenfolge, in der die Ringe geschnitten werden"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Outside → Inside"
+msgstr "Außen → Innen"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Inside → Outside"
+msgstr "Innen → Außen"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/offset_fill_page.py
+msgid "Fill closed shapes with rings that follow the outline."
+msgstr "Füllt geschlossene Formen mit Ringen, die der Kontur folgen."
