@@ -797,3 +797,34 @@ msgstr "Лазерна голівка"
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Add Material Test"
 msgstr "Додати тест матеріалу"
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Offset Fill"
+msgstr "Заливка офсетом"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Distance between neighbouring fill rings. Defaults to the laser spot size"
+msgstr "Відстань між сусідніми кільцями заливки. За замовчуванням — розмір плями лазера"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Distance of the first ring inside the outline"
+msgstr "Відстань першого кільця всередині контуру"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Fill Direction"
+msgstr "Напрям заливки"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Order in which the rings are cut"
+msgstr "Порядок різання кілець"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Outside → Inside"
+msgstr "Ззовні → всередину"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Inside → Outside"
+msgstr "Зсередини → назовні"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/offset_fill_page.py
+msgid "Fill closed shapes with rings that follow the outline."
+msgstr "Заповнює замкнені форми кільцями, що повторюють контур."

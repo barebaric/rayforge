@@ -799,3 +799,34 @@ msgstr "Cabeça de Laser"
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Add Material Test"
 msgstr "Adicionar Teste de Material"
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Offset Fill"
+msgstr "Preenchimento por deslocamento"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Distance between neighbouring fill rings. Defaults to the laser spot size"
+msgstr "Distância entre anéis de preenchimento vizinhos. Por padrão, o tamanho do ponto do laser"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Distance of the first ring inside the outline"
+msgstr "Distância do primeiro anel dentro do contorno"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Fill Direction"
+msgstr "Direção do preenchimento"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Order in which the rings are cut"
+msgstr "Ordem em que os anéis são cortados"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Outside → Inside"
+msgstr "Exterior → Interior"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Inside → Outside"
+msgstr "Interior → Exterior"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/offset_fill_page.py
+msgid "Fill closed shapes with rings that follow the outline."
+msgstr "Preenche formas fechadas com anéis que seguem o contorno."

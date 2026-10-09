@@ -6,6 +6,7 @@ from .contour_page import ContourStepSettingsPage
 from .frame_page import FrameStepSettingsPage
 from .levels_adapter import LevelsAdapter
 from .material_test_grid_page import MaterialTestGridSettingsPage
+from .offset_fill_page import OffsetFillStepSettingsPage
 from .raster_page import RasterSettingsPage
 from .scan_angle_adapter import ScanAngleAdapter
 from .shrinkwrap_page import ShrinkWrapStepSettingsPage
@@ -19,6 +20,7 @@ ASSEMBLER_WIDGETS = {
     "shrinkwrap": ShrinkWrapStepSettingsPage,
     "wavefront": WavefrontStepSettingsPage,
     "material_test_grid": MaterialTestGridSettingsPage,
+    "offset_fill": OffsetFillStepSettingsPage,
 }
 
 __all__ = [
@@ -27,6 +29,7 @@ __all__ = [
     "FrameStepSettingsPage",
     "LevelsAdapter",
     "MaterialTestGridSettingsPage",
+    "OffsetFillStepSettingsPage",
     "RasterSettingsPage",
     "ScanAngleAdapter",
     "ShrinkWrapStepSettingsPage",

@@ -784,3 +784,34 @@ msgstr "लेज़र हेड"
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Add Material Test"
 msgstr "सामग्री परीक्षण जोड़ें"
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Offset Fill"
+msgstr "ऑफ़सेट भरण"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Distance between neighbouring fill rings. Defaults to the laser spot size"
+msgstr "पड़ोसी भरण वलयों के बीच की दूरी। डिफ़ॉल्ट रूप से लेज़र स्पॉट आकार"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Distance of the first ring inside the outline"
+msgstr "रूपरेखा के अंदर पहली वलय की दूरी"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Fill Direction"
+msgstr "भरण दिशा"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Order in which the rings are cut"
+msgstr "वलयों को काटे जाने का क्रम"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Outside → Inside"
+msgstr "बाहर → अंदर"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/steps/offset_fill_step.py
+msgid "Inside → Outside"
+msgstr "अंदर → बाहर"
+
+#: rayforge/builtin_addons/rayforge-addon-laser/laser_essentials/widgets/offset_fill_page.py
+msgid "Fill closed shapes with rings that follow the outline."
+msgstr "बंद आकृतियों को रूपरेखा के समानांतर वलयों से भरें।"
