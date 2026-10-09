@@ -795,11 +795,12 @@ class TestLiveBridgeRpc:
     @pytest.mark.parametrize(
         "adapter_pair", [RPC_MODE], ids=["rpc"], indirect=True
     )
-    async def test_home_z_uses_client_home_z(self, adapter_pair):
-        """home(Axis.Z) must call client.home_z only."""
+    async def test_home_z_uses_client_focus_z(self, adapter_pair):
+        """home(Axis.Z) must call client.focus_z only."""
         adapter, client = adapter_pair
         await adapter.home(Axis.Z)
-        client.home_z.assert_called_once()
+        client.focus_z.assert_called_once()
+        client.home_z.assert_not_called()
         client.home.assert_not_called()
         client.run.assert_not_called()
 
@@ -940,11 +941,12 @@ class TestLiveBridgeDirect:
     @pytest.mark.parametrize(
         "adapter_pair", [DIRECT_MODE], ids=["direct"], indirect=True
     )
-    async def test_home_z_calls_backend_home_z(self, adapter_pair):
-        """home(Axis.Z) must call backend.home_z only."""
+    async def test_home_z_calls_backend_focus_z(self, adapter_pair):
+        """home(Axis.Z) must call backend.focus_z only."""
         adapter, backend = adapter_pair
         await adapter.home(Axis.Z)
-        backend.home_z.assert_called_once()
+        backend.focus_z.assert_called_once()
+        backend.home_z.assert_not_called()
         backend.home.assert_not_called()
         backend.run.assert_not_called()
 

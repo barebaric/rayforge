@@ -239,6 +239,17 @@ class RpaDirectDriver:
         """
         self._require_connected().home_z()
 
+    def focus_z(self) -> None:
+        """Run the Z auto-focus routine.
+
+        Probes until the focus sensor triggers, then moves to the
+        configured focus distance and sets Z to it (same as the panel's
+        Focus key). The wrapped RdDriver auto-sends the generated lines
+        when connected; the returned lines are deliberately discarded so
+        each command is sent exactly once.
+        """
+        self._require_connected().focus_z()
+
     def jog_xy_to(self, x: float, y: float) -> None:
         """Jog the XY axes to an absolute position in mm.
 

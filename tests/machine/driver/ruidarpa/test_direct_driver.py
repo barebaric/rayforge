@@ -18,6 +18,7 @@ from rayforge.machine.driver.ruidarpa.rpa_direct_driver import RpaDirectDriver
 _LIVE_METHODS = [
     ("home", ()),
     ("home_z", ()),
+    ("focus_z", ()),
     ("jog_xy_to", (10.0, 20.0)),
     ("jog_xy_rel", (5.0, 5.0)),
     ("jog_x_rel", (5.0,)),

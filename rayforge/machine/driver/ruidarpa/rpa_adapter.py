@@ -1250,7 +1250,7 @@ class RuidaRPAAdapter(Driver):
         if axes is None or (axes & (Axis.X | Axis.Y)):
             await loop.run_in_executor(None, self._backend.home)
         if axes is not None and (axes & Axis.Z):
-            await loop.run_in_executor(None, self._backend.home_z)
+            await loop.run_in_executor(None, self._backend.focus_z)
 
     async def move_to(
         self,
