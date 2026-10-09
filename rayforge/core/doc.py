@@ -15,6 +15,7 @@ from .asset import IAsset, UnknownAsset
 from .color import COLOR_PALETTE
 from .image_edit import ImageEditStep, missing_image_edit_ops
 from .item import DocItem
+from .job_origin import JobOrigin
 from .layer import Layer
 from .source_asset import SourceAsset
 from .workpiece import WorkPiece
@@ -40,6 +41,8 @@ class Doc(DocItem):
         self.history_manager = HistoryManager()
         self.active_layer_changed = Signal()
         self.job_assembly_invalidated = Signal()
+        self.job_origin_changed = Signal()
+        self.job_origin: JobOrigin = JobOrigin()
 
         # Asset Management
         self.assets: dict[str, IAsset] = {}
@@ -147,6 +150,7 @@ class Doc(DocItem):
         doc.set_children(children)
         doc._active_layer_index = data.get("active_layer_index", 0)
         doc.adopt_legacy_image_edits()
+        doc.job_origin = JobOrigin.from_dict(data.get("job_origin"))
 
         return doc
 
@@ -173,7 +177,19 @@ class Doc(DocItem):
             "active_layer_index": self._active_layer_index,
             "children": [child.to_dict() for child in self.children],
             "assets": [asset.to_dict() for asset in self.get_all_assets()],
+            "job_origin": self.job_origin.to_dict(),
         }
+
+    def set_job_origin(self, job_origin: JobOrigin):
+        """
+        Sets where jobs of this document start (see JobOrigin) and
+        invalidates the assembled job, which depends on it.
+        """
+        if job_origin == self.job_origin:
+            return
+        self.job_origin = job_origin
+        self.job_origin_changed.send(self)
+        self.job_assembly_invalidated.send(self)
 
     def add_asset(
         self, asset: IAsset, index: int | None = None, silent: bool = False
