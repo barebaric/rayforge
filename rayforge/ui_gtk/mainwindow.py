@@ -15,6 +15,7 @@ from ..core.asset_registry import asset_type_registry
 from ..core.config import RightPanelMode
 from ..core.group import Group
 from ..core.item import DocItem
+from ..core.job_origin import StartFrom
 from ..core.registration import call_registration_hooks
 from ..core.undo import Command, HistoryManager
 from ..doceditor.editor import DocEditor
@@ -2357,6 +2358,12 @@ class MainWindow(Adw.ApplicationWindow):
                 dialog.present()
 
         existing = self.doc_editor.pipeline.get_existing_job_handle()
+        if self.doc_editor.doc.job_origin.start_from == (
+            StartFrom.CURRENT_POSITION
+        ):
+            # The cached job was placed where the head was back then;
+            # check the placement for the position it has now.
+            existing = None
         if existing is not None:
             artifact_store = self.doc_editor.pipeline.artifact_store
             try:
