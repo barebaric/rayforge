@@ -710,6 +710,23 @@ class RuidaRPAAdapter(Driver):
                         await loop.run_in_executor(
                             None, backend.set_tail_script, []
                         )
+                        version = await loop.run_in_executor(
+                            None, backend.get_version
+                        )
+                        logger.info(
+                            "RPA controller info: ruidapa_version=%s",
+                            version,
+                            extra=log_extra,
+                        )
+                        mismatch = await loop.run_in_executor(
+                            None, attrgetter("version_mismatch"), backend
+                        )
+                        if mismatch:
+                            logger.warning(
+                                "ruida-pa server/client version mismatch; "
+                                "install matching versions",
+                                extra=log_extra,
+                            )
                 else:
                     backend = self._backend
                     if not isinstance(backend, RpaDirectDriver):
@@ -749,6 +766,14 @@ class RuidaRPAAdapter(Driver):
                         )
                         await loop.run_in_executor(
                             None, driver.gluescript.set_tail_script, []
+                        )
+                        version = await loop.run_in_executor(
+                            None, driver.get_version
+                        )
+                        logger.info(
+                            "RPA controller info: ruidapa_version=%s",
+                            version,
+                            extra=log_extra,
                         )
 
                 if not connected:

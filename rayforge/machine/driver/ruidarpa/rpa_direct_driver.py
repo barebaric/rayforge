@@ -10,6 +10,7 @@ import logging
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
+from rpalib.version import __version__
 from ruidadriver.ruida_driver import RdDriver
 
 from rayforge.pipeline.encoder.base import EncodedOutput
@@ -104,6 +105,14 @@ class RpaDirectDriver:
     def is_connected(self) -> bool:
         """Whether the underlying driver is connected."""
         return self._driver is not None and self._driver.is_connected
+
+    def get_version(self) -> str:
+        """Return the ruida-pa version serving this session (direct mode).
+
+        Mirrors ``AppAdapter.get_version()``: direct mode has no remote
+        process, so the version is the locally installed ruida-pa.
+        """
+        return __version__
 
     # --- Run control ---
 

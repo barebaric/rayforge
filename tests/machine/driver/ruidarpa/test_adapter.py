@@ -136,6 +136,7 @@ async def adapter_pair(
     backend.start.return_value = True
     backend.is_connected = True
     backend.machine_status = {}
+    backend.get_version.return_value = "0.22.0"
     if tui_mode:
         # RpcRdDriver self-connects in its constructor; patch the class
         # so the connection loop builds our mock instead of a real one.
@@ -145,6 +146,9 @@ async def adapter_pair(
         backend.unregister_status_listener = Mock()
         backend.unregister_error_listener = Mock()
         backend.unregister_reply_listener = Mock()
+        # Spec exposure returns a truthy Mock for this property; default
+        # it to no-mismatch so connect-path tests stay quiet.
+        backend.version_mismatch = False
     adapter._backend = backend
 
     yield adapter, backend
@@ -2105,6 +2109,57 @@ class TestConnectClearsServerHeadTail:
         await _run_connect_cycle(adapter, lambda: adapter._is_connected)
         backend.gluescript.set_head_script.assert_any_call([])
         backend.gluescript.set_tail_script.assert_any_call([])
+
+
+class TestVersionLogging:
+    """The ruida-pa version is logged once at connect time."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_connection_logs_ruidapa_version(self, adapter_pair, caplog):
+        """A successful connect must log the serving ruida-pa version."""
+        caplog.set_level(logging.INFO, logger=rpa_adapter.logger.name)
+        adapter, backend = adapter_pair
+        await _run_connect_cycle(adapter, lambda: adapter._is_connected)
+
+        assert "RPA controller info: ruidapa_version=0.22.0" in caplog.text
+        backend.get_version.assert_called()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair", [RPC_MODE], ids=["rpc"], indirect=True
+    )
+    async def test_tui_version_mismatch_warns(self, adapter_pair, caplog):
+        """A TUI server/client mismatch must log a one-time warning."""
+        caplog.set_level(logging.WARNING, logger=rpa_adapter.logger.name)
+        adapter, backend = adapter_pair
+        backend.version_mismatch = True
+        await _run_connect_cycle(adapter, lambda: adapter._is_connected)
+
+        assert "version mismatch" in caplog.text
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_connection_info_not_logged_when_disconnected(
+        self, adapter_pair, caplog
+    ):
+        """A failed connect must not log the ruida-pa version."""
+        caplog.set_level(logging.INFO, logger=rpa_adapter.logger.name)
+        adapter, backend = adapter_pair
+        backend.start.return_value = False
+        await _run_connect_cycle(adapter, lambda: backend.stop.called)
+
+        assert "ruidapa_version=" not in caplog.text
 
 
 class TestHealthPoll:

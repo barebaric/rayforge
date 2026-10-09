@@ -10,6 +10,7 @@ those lines would double-send every live command, so the tests pin
 from unittest.mock import Mock
 
 import pytest
+from rpalib.version import __version__
 from ruidadriver.ruida_driver import RdDriver
 
 from rayforge.machine.driver.ruidarpa.rpa_direct_driver import RpaDirectDriver
@@ -117,6 +118,11 @@ class TestStartDelegation:
             magic=0x88,
             protocol="udp",
         )
+
+    def test_get_version_returns_installed_ruida_pa(self):
+        """get_version reflects the locally installed ruida-pa version."""
+        driver = RpaDirectDriver()
+        assert driver.get_version() == __version__
 
 
 class TestRequireConnected:
