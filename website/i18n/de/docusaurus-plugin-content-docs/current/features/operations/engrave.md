@@ -288,6 +288,21 @@ ein Raster, das du mit **Halbton-Zellgröße** (Abstand zwischen den Punktmittel
 Invertieren für Lithophanen verwenden (helle Bereiche sollten dünn sein) oder Prägen (erhabene
 Bereiche).
 
+### Bildanpassungen
+
+Der Abschnitt **Bildanpassungen** korrigiert das Foto, bevor es umgewandelt wird, sodass du es nicht
+mehr in einem Bildbearbeitungsprogramm vorbereiten musst. Er gilt für die Modi Variable Leistung,
+Dithering und Mehrere Tiefen; die Standardwerte lassen das Bild unverändert.
+
+- **Helligkeit** und **Kontrast** (-100 bis 100) verschieben und spreizen die Tonwerte um das mittlere Grau
+- **Gamma** über 1 hellt die Mitteltöne auf, unter 1 dunkelt es sie ab
+- **Schärfen** (Unscharfmaskierung, in Prozent) und **Schärferadius** betonen Kanten und feine Details
+
+Die Anpassungen werden vor Invertieren und dem Helligkeitsbereich angewendet, und Automatische Pegel
+berücksichtigt sie. Der Abschnitt **Verarbeitetes Bild** zeigt das erste Bild der Ebene genau so,
+wie es graviert wird (dunkle Bereiche werden graviert), und **Verarbeitete Bitmap speichern…**
+schreibt dieses Bild in eine PNG-Datei.
+
 ### Scan-Muster
 
 #### Linienabstand

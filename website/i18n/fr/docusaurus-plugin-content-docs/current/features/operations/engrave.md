@@ -289,6 +289,21 @@ de point laser.
 Utilisez inverser pour les lithophanes (les zones claires doivent être fines) ou le gaufrage (zones
 en relief).
 
+### Réglages de l'image
+
+La section **Réglages de l'image** corrige la photo avant sa conversion, si bien qu'il n'est plus
+nécessaire de la préparer dans un éditeur d'images. Elle s'applique aux modes Puissance Variable,
+Tramage et Profondeurs Multiples ; les valeurs par défaut laissent l'image inchangée.
+
+- **Luminosité** et **Contraste** (-100 à 100) décalent et étirent les tons autour du gris moyen
+- **Gamma** au-dessus de 1 éclaircit les tons moyens, en dessous de 1 les assombrit
+- **Netteté** (masque flou, en pourcentage) et **Rayon de netteté** font ressortir les contours et les détails fins
+
+Les réglages sont appliqués avant Inverser et la plage de luminosité, et Niveaux Automatiques en
+tient compte. La section **Image traitée** montre la première image du calque telle qu'elle sera
+gravée (les zones sombres sont gravées), et **Enregistrer le bitmap traité…** écrit cette image dans
+un fichier PNG.
+
 ### Motif de Balayage
 
 #### Intervalle de Ligne
