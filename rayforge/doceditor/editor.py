@@ -26,6 +26,7 @@ from .file_cmd import FileCmd
 from .group_cmd import GroupCmd
 from .layer_cmd import LayerCmd
 from .layout_cmd import LayoutCmd
+from .reload_cmd import ReloadCmd
 from .split_cmd import SplitCmd
 from .step_cmd import StepCmd
 from .stock_cmd import StockCmd
@@ -151,6 +152,7 @@ class DocEditor:
         self.group = GroupCmd(self, self.task_manager)
         self.layer = LayerCmd(self)
         self.layout = LayoutCmd(self, self.task_manager)
+        self.reload = ReloadCmd(self)
         self.split = SplitCmd(self)
         self.stock = StockCmd(self)
         self.step = StepCmd(self)
