@@ -6,12 +6,18 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from rayforge.context import get_context
 from rayforge.core.source_asset import SourceAsset
 from rayforge.image.svg.renderer import SVG_RENDERER
+from rayforge.ui_gtk.canvas2d import context_menu
 from rayforge.ui_gtk.doceditor.source_changed_dialog import (
     SourceChangedDialog,
 )
 from rayforge.ui_gtk.doceditor.source_reload import SourceReloadMonitor
+from rayforge.ui_gtk.main_menu import MainMenu
+from rayforge.ui_gtk.settings.general_preferences_page import (
+    GeneralPreferencesPage,
+)
 
 pytestmark = pytest.mark.ui
 
@@ -83,7 +89,11 @@ def monitor():
     editor = MagicMock()
     watcher = MagicMock()
     monitor = SourceReloadMonitor(
-        MagicMock(), editor, watcher=watcher, dialog_factory=_FakeDialog
+        MagicMock(),
+        editor,
+        watcher=watcher,
+        dialog_factory=_FakeDialog,
+        enabled=lambda: True,
     )
     return monitor, editor, watcher
 
@@ -147,3 +157,88 @@ class TestSourceReloadMonitor:
         mon.check_now()
 
         assert _FakeDialog.instances[0].assets == [asset]
+
+
+class TestMonitorPreferenceAndActions:
+    def test_disabled_watching_does_nothing(self):
+        _FakeDialog.instances = []
+        watcher = MagicMock()
+        mon = SourceReloadMonitor(
+            MagicMock(),
+            MagicMock(),
+            watcher=watcher,
+            dialog_factory=_FakeDialog,
+            enabled=lambda: False,
+        )
+
+        assert mon.tick() is True
+        mon.check_now()
+
+        watcher.poll.assert_not_called()
+        watcher.check_now.assert_not_called()
+        assert _FakeDialog.instances == []
+
+    def test_reload_assets_reloads_and_acknowledges(self, monitor):
+        mon, editor, watcher = monitor
+        a, b = _asset("a.svg"), _asset("b.svg")
+
+        mon.reload_assets([a, b])
+
+        assert editor.reload.reload_source.call_count == 2
+        watcher.acknowledge.assert_any_call(a)
+        watcher.acknowledge.assert_any_call(b)
+
+    def test_relink_choice_relinks_and_acknowledges(self, monitor):
+        mon, editor, watcher = monitor
+        asset = _asset("a.svg")
+        path = Path("/tmp/elsewhere/a.svg")
+
+        mon.relink_to(asset, path)
+
+        editor.reload.relink_source.assert_called_once_with(asset, path)
+        watcher.acknowledge.assert_called_once_with(asset)
+
+
+class TestMenus:
+    def _actions(self, model) -> set[str]:
+        found = set()
+        for i in range(model.get_n_items()):
+            action = model.get_item_attribute_value(i, "action", None)
+            if action is not None:
+                found.add(action.get_string())
+            for link in ("section", "submenu"):
+                sub = model.get_item_link(i, link)
+                if sub is not None:
+                    found |= self._actions(sub)
+        return found
+
+    def test_canvas_item_menu_offers_reload_and_relink(self):
+        actions = self._actions(context_menu._MENU_MODELS["item"])
+
+        assert {"win.reload-source", "win.relink-source"} <= actions
+
+    def test_file_menu_offers_reload_and_relink(self):
+        actions = self._actions(MainMenu())
+
+        assert {"win.reload-source", "win.relink-source"} <= actions
+
+
+class TestWatchPreference:
+    def test_switch_reflects_and_updates_config(self, context_initializer):
+        config = get_context().config
+        page = GeneralPreferencesPage()
+        assert page.watch_sources_row.get_active() is True
+
+        page.watch_sources_row.set_active(False)
+
+        assert config.watch_source_files is False
+
+    def test_default_monitor_follows_config(self, context_initializer):
+        watcher = MagicMock()
+        watcher.poll.return_value = []
+        mon = SourceReloadMonitor(MagicMock(), MagicMock(), watcher=watcher)
+        get_context().config.set_watch_source_files(False)
+
+        mon.tick()
+
+        watcher.poll.assert_not_called()

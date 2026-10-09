@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from gi.repository import GLib
 
+from ...context import get_context
 from ...core.source_asset import SourceAsset
 from ...doceditor.source_watcher import SourceWatcher
+from . import file_dialogs
 from .source_changed_dialog import SourceChangedDialog
 
 if TYPE_CHECKING:
@@ -35,6 +38,7 @@ class SourceReloadMonitor:
         editor: DocEditor,
         watcher: SourceWatcher | None = None,
         dialog_factory: Callable[..., Any] = SourceChangedDialog,
+        enabled: Callable[[], bool] | None = None,
     ):
         self._parent = parent
         self._editor = editor
@@ -43,6 +47,7 @@ class SourceReloadMonitor:
         self._dialog: Any | None = None
         self._queue: list[SourceAsset] = []
         self._timeout_id: int | None = None
+        self._enabled = enabled or _watching_enabled
 
     def start(self) -> None:
         if self._timeout_id is None:
@@ -56,6 +61,8 @@ class SourceReloadMonitor:
             self._timeout_id = None
 
     def tick(self) -> bool:
+        if not self._enabled():
+            return True
         try:
             self._handle(self._watcher.poll())
         except Exception:
@@ -64,7 +71,32 @@ class SourceReloadMonitor:
 
     def check_now(self) -> None:
         """Checks all imported files right away, e.g. after opening."""
+        if not self._enabled():
+            return
         self._handle(self._watcher.check_now())
+
+    def reload_assets(self, assets: list[SourceAsset]) -> None:
+        """Reloads the given sources from disk on request."""
+        for asset in assets:
+            self._reload(asset)
+
+    def choose_relink(self, asset: SourceAsset) -> None:
+        """Lets the user pick another file for a source."""
+        file_dialogs.show_relink_dialog(
+            self._parent, asset, self._on_relink_response, asset
+        )
+
+    def relink_to(self, asset: SourceAsset, path: Path) -> None:
+        self._editor.reload.relink_source(asset, path)
+        self._watcher.acknowledge(asset)
+
+    def _on_relink_response(self, dialog, result, asset: SourceAsset):
+        try:
+            file = dialog.open_finish(result)
+        except GLib.Error:
+            return
+        if file is not None and file.get_path():
+            self.relink_to(asset, Path(file.get_path()))
 
     def _handle(self, changed: list[SourceAsset]) -> None:
         for asset in changed:
@@ -111,3 +143,7 @@ class SourceReloadMonitor:
         for asset in assets:
             self._watcher.acknowledge(asset)
         self._show_next()
+
+
+def _watching_enabled() -> bool:
+    return get_context().config.watch_source_files

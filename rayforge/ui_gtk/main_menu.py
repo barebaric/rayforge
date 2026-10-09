@@ -37,6 +37,10 @@ class MainMenu(Gio.Menu):
 
         import_export_group = Gio.Menu()
         import_export_group.append(_("Import..."), "win.import")
+        import_export_group.append(_("Reload from Disk"), "win.reload-source")
+        import_export_group.append(
+            _("Relink Source File..."), "win.relink-source"
+        )
         import_export_group.append(_("Export G-code..."), "win.export")
         import_export_group.append(
             _("Export Document..."), "win.export_document"
