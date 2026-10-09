@@ -107,6 +107,9 @@ and delete individual vector segments of the workpiece.
 
 To exit vector editing mode, click outside the workpiece or press <kbd>Escape</kbd>.
 
+To close gaps, join open pieces, delete duplicate paths or break a workpiece apart, use the
+[Path Clean-Up](../features/path-cleanup) tools.
+
 ---
 
 **Next**: [3D View →](3d-preview)

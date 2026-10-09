@@ -166,6 +166,9 @@ In diesem Modus kannst du einzelne Vektorsegmente des Werkstücks auswählen und
 Um den Vektorbearbeitungsmodus zu verlassen, klicke außerhalb des Werkstücks oder drücke
 <kbd>Escape</kbd>.
 
+Um Lücken zu schließen, offene Teile zu verbinden, doppelte Pfade zu löschen oder ein Werkstück zu
+zerlegen, verwende die Werkzeuge unter [Pfade bereinigen](../features/path-cleanup).
+
 ---
 
 **Weiter**: [3D-Vorschau →](3d-preview)

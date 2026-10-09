@@ -166,6 +166,9 @@ este modo, puedes seleccionar y eliminar segmentos de vector individuales de la 
 Para salir del modo de edición de vectores, haz clic fuera de la pieza de trabajo o presiona
 <kbd>Escape</kbd>.
 
+Para cerrar huecos, unir piezas abiertas, eliminar rutas duplicadas o separar una pieza de trabajo,
+usa las herramientas de [Limpieza de rutas](../features/path-cleanup).
+
 ---
 
 **Siguiente**: [Vista Previa 3D →](3d-preview)
