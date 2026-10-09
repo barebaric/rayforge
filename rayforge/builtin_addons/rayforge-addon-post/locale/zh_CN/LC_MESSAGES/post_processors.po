@@ -282,3 +282,26 @@ msgstr "标签"
 #: post_processors/transformers/tabs_transformer.py
 msgid "Creates holding tabs by adding gaps or reducing power on cut paths"
 msgstr "通过添加间隙或降低切割路径上的功率来创建保持标签"
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Choose Best Start Point"
+msgstr "选择最佳起点"
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Enter closed paths at the vertex nearest the current position, hiding the seam of every loop."
+msgstr "在离当前位置最近的顶点开始闭合路径，隐藏每个环的接缝。"
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Prefer Corners"
+msgstr "优先选择角点"
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Only start closed paths at sharp corners, when the path has any (circles fall back to any vertex)."
+msgstr "仅在锐角处开始闭合路径（若有）；圆则使用任意顶点。"
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Toggle Choose Best Start Point"
+msgstr "切换选择最佳起点"
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Toggle Prefer Corners"
+msgstr "切换优先角点"
