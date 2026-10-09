@@ -205,6 +205,8 @@ Ver [Kerf](../kerf.md) para una guía detallada.
 Las operaciones de contorno soportan varias opciones de post-procesamiento:
 
 - **[Suavizar Trayectoria](../smooth.md)** - Reduce bordes irregulares en trayectorias de corte
+- **[Perforación](../perforation.md)** - Cortes discontinuos para pliegues, líneas de rasgado y
+  agujeros de costura
 - **[Pestañas de Sujeción](../holding-tabs.md)** - Mantienen las piezas cortadas adjuntas al
   material base
 - **[Recortar al Material](../crop-to-stock.md)** - Limita los cortes al límite del material

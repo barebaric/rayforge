@@ -207,6 +207,8 @@ Veja [Kerf](../kerf.md) para um guia detalhado.
 Operações de contorno suportam várias opções de pós-processamento:
 
 - **[Suavização de Caminho](../smooth.md)** - Reduz bordas irregulares em caminhos de corte
+- **[Perfuração](../perforation.md)** - Cortes tracejados para dobras, linhas destacáveis e furos de
+  costura
 - **[Abas de Fixação](../holding-tabs.md)** - Mantém peças cortadas anexadas ao material de estoque
 - **[Cortar para Estoque](../crop-to-stock.md)** - Limita cortes ao limite do material
 - **[Otimização de Caminho](../path-optimization.md)** - Reduz distância de deslocamento entre
