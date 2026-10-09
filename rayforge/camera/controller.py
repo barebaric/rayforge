@@ -10,6 +10,18 @@ from blinker import Signal
 from ..image.util.srgb import resize_linear_nd
 from ..shared.util.glib import idle_add
 from .models.camera import Camera
+from .outside_view import (
+    LensModel,
+    OutsideView,
+    expand_area,
+    frame_coverage_extent,
+    lens_coverage_extent,
+    lens_remap_maps,
+    native_output_size,
+    remap_transparent,
+    to_opaque_bgra,
+    warp_transparent,
+)
 from .source import (
     create_camera_source,
     list_local_device_ids,
@@ -70,6 +82,9 @@ class CameraController:
         self._active_source: CameraSource | None = None
         self._last_source_key = self._source_key()
         self._disposed: bool = False
+        # Cached outside view coverage and remap tables, which only
+        # change with calibration, alignment, and display geometry.
+        self._outside_cache: dict[str, tuple] = {}
 
         # Stream lifecycle: _lifecycle_lock serializes start/stop so that
         # at most one capture thread can ever own the device at a time
@@ -119,6 +134,8 @@ class CameraController:
         """Reacts to changes in the data model."""
         if self._disposed:
             return
+        if not self.config.outside_view_enabled:
+            self._outside_cache.clear()
         self._settings_dirty = True
         with self._frame_lock:
             self._accumulator = None  # Reset smoothing if settings change
@@ -346,6 +363,66 @@ class CameraController:
             logger.warning("No image data available.")
             return None
 
+        return self._work_surface_from_image(image, output_size, physical_area)
+
+    def get_work_surface_images(
+        self,
+        output_size: tuple[int, int],
+        physical_area: tuple[Pos, Pos],
+        outside_margin_mm: float,
+        max_dimension: int,
+    ) -> tuple[np.ndarray | None, OutsideView | None]:
+        """
+        Get the workspace image and the surrounding outside view from a
+        single frame.
+
+        The workspace image is identical to what
+        :meth:`get_work_surface_image` returns for the same arguments. The
+        outside view covers ``physical_area`` expanded by the effective
+        margin on all four sides, which is ``outside_margin_mm`` clamped to
+        the area the camera actually sees. It is rendered at the camera's
+        pixel density, capped to ``max_dimension``, independent of
+        ``output_size``.
+
+        With lens correction, the outside view is sampled from the raw
+        frame captured together with the processed one, since lens
+        correction crops the edges of the processed frame.
+
+        Returns:
+            A tuple (workspace image, outside view). The outside view is
+            None without alignment, without coverage beyond the workspace,
+            or on failure; the workspace image is None on failure.
+        """
+        with self._frame_lock:
+            image = self._image_data
+            raw = self._raw_image_data
+
+        if image is None:
+            logger.warning("No image data available.")
+            return None, None
+
+        workspace = self._work_surface_from_image(
+            image, output_size, physical_area
+        )
+        try:
+            outside = self._outside_view_from_image(
+                image,
+                raw,
+                physical_area,
+                outside_margin_mm,
+                max_dimension,
+            )
+        except (cv2.error, ValueError, np.linalg.LinAlgError) as e:
+            logger.error(f"Failed to render outside camera view: {e}")
+            outside = None
+        return workspace, outside
+
+    def _work_surface_from_image(
+        self,
+        image: np.ndarray,
+        output_size: tuple[int, int],
+        physical_area: tuple[Pos, Pos],
+    ) -> np.ndarray | None:
         if self.config.image_to_world is not None:
             return self._transform_with_homography(
                 image, output_size, physical_area
@@ -417,6 +494,91 @@ class CameraController:
         except cv2.error as e:
             logger.error(f"Failed to apply perspective warp: {e}")
             return None
+
+    def _outside_view_from_image(
+        self,
+        image: np.ndarray,
+        raw: np.ndarray | None,
+        physical_area: tuple[Pos, Pos],
+        margin_mm: float,
+        max_dimension: int,
+    ) -> OutsideView | None:
+        if self.config.image_to_world is None or margin_mm <= 0:
+            return None
+        H = self._compute_homography(image.shape[0])
+        lens = self._lens_model(image)
+        if lens is not None and raw is not None:
+            return self._outside_view_from_raw(
+                raw,
+                H,
+                lens,
+                physical_area,
+                margin_mm,
+                max_dimension,
+            )
+
+        margin = min(
+            margin_mm,
+            frame_coverage_extent(H, image.shape, physical_area),
+        )
+        if margin <= 0:
+            return None
+        area = expand_area(physical_area, margin)
+        size = native_output_size(H, physical_area, margin, max_dimension)
+        warped = warp_transparent(to_opaque_bgra(image), H, size, area)
+        return OutsideView(image=warped, area=area, margin_mm=margin)
+
+    def _outside_view_from_raw(
+        self,
+        raw: np.ndarray,
+        H: np.ndarray,
+        lens: LensModel,
+        physical_area: tuple[Pos, Pos],
+        margin_mm: float,
+        max_dimension: int,
+    ) -> OutsideView | None:
+        """
+        Render the outside view from the raw frame, so that content lens
+        correction pushed out of the corrected frame is still shown.
+        """
+        base_key = (H.tobytes(), lens.key(), raw.shape[:2], physical_area)
+
+        extent_key = (base_key, margin_mm)
+        cached = self._outside_cache.get("extent")
+        if cached is not None and cached[0] == extent_key:
+            margin = cached[1]
+        else:
+            margin = lens_coverage_extent(
+                H, lens, raw.shape, physical_area, margin_mm
+            )
+            self._outside_cache["extent"] = (extent_key, margin)
+        if margin <= 0:
+            return None
+
+        area = expand_area(physical_area, margin)
+        size = native_output_size(H, physical_area, margin, max_dimension)
+        maps_key = (base_key, area, size)
+        cached = self._outside_cache.get("maps")
+        if cached is not None and cached[0] == maps_key:
+            maps = cached[1]
+        else:
+            maps = lens_remap_maps(H, lens, size, area)
+            self._outside_cache["maps"] = (maps_key, maps)
+
+        remapped = remap_transparent(to_opaque_bgra(raw), maps)
+        return OutsideView(image=remapped, area=area, margin_mm=margin)
+
+    def _lens_model(self, image: np.ndarray) -> LensModel | None:
+        """The lens correction applied to frames of this image's size."""
+        cam_mat, dist = self._get_effective_calibration(
+            image.shape[0], image.shape[1]
+        )
+        if cam_mat is None or dist is None:
+            return None
+        return LensModel(
+            camera_matrix=np.asarray(cam_mat, dtype=np.float64),
+            distortion=np.asarray(dist, dtype=np.float64),
+        )
 
     def _apply_settings(self, source) -> None:
         """Applies the current settings to the VideoCapture object."""

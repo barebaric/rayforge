@@ -10150,3 +10150,35 @@ msgstr "Bayer 4"
 #: rayforge/image/dither.py
 msgid "Bayer 8"
 msgstr "Bayer 8"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "View Outside Workspace"
+msgstr "कार्य क्षेत्र के बाहर का दृश्य"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Show the camera image in a margin around the work area to help position workpieces. Requires image alignment."
+msgstr "वर्कपीस को स्थित करने में मदद के लिए कार्य क्षेत्र के चारों ओर एक मार्जिन में कैमरा छवि दिखाएँ। छवि संरेखण आवश्यक है।"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Show Outside Workspace"
+msgstr "कार्य क्षेत्र के बाहर दिखाएँ"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Draw the camera image around the work area"
+msgstr "कार्य क्षेत्र के चारों ओर कैमरा छवि बनाएँ"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Not shown until the camera image is aligned"
+msgstr "कैमरा छवि संरेखित होने तक नहीं दिखाई जाती"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Margin"
+msgstr "मार्जिन"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Size of the visible area on each side of the work area"
+msgstr "कार्य क्षेत्र के प्रत्येक ओर दृश्य क्षेत्र का आकार"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Transparency outside the work area"
+msgstr "कार्य क्षेत्र के बाहर पारदर्शिता"

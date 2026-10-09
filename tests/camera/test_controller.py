@@ -12,6 +12,15 @@ import pytest
 
 from rayforge.camera.controller import CameraController
 from rayforge.camera.models.camera import Camera, CameraSourceType
+from rayforge.camera.outside_view import (
+    LensModel,
+    frame_coverage_extent,
+    lens_remap_maps,
+    radial_limit,
+    to_opaque_bgra,
+    warp_transparent,
+    world_to_raw,
+)
 from rayforge.camera.source import (
     CameraSource,
     HttpSnapshotSource,
@@ -1108,3 +1117,342 @@ def test_subscribe_after_dispose_is_a_noop():
 
     assert start_calls == []
     assert controller._active_subscribers == 0
+
+
+def _aligned_gradient_controller() -> CameraController:
+    """An aligned controller whose frame encodes pixel positions.
+
+    The alignment maps 4 px/mm in x and 3 px/mm in y, so the 640x480
+    frame covers world x in [-25, 135] and y in about [-33.3, 126.7].
+    """
+    camera_config = Camera("Test Camera", "0")
+    controller = CameraController(camera_config)
+    image = np.zeros((480, 640, 3), dtype=np.uint8)
+    image[:, :, 0] = (np.arange(640) * 255 // 639)[np.newaxis, :]
+    image[:, :, 1] = (np.arange(480) * 255 // 479)[:, np.newaxis]
+    controller._image_data = image
+    camera_config.image_to_world = (
+        [(100, 100), (500, 100), (500, 400), (100, 400)],
+        [(0, 100), (100, 100), (100, 0), (0, 0)],
+    )
+    return controller
+
+
+WORKSPACE = ((0, 0), (100, 100))
+
+
+def test_get_work_surface_images_workspace_matches_single_render():
+    controller = _aligned_gradient_controller()
+
+    workspace, outside = controller.get_work_surface_images(
+        (200, 200), WORKSPACE, 20, 2048
+    )
+
+    expected = controller.get_work_surface_image((200, 200), WORKSPACE)
+    assert workspace is not None and expected is not None
+    np.testing.assert_array_equal(workspace, expected)
+    assert outside is not None
+
+
+def test_outside_view_area_size_and_world_coordinates():
+    controller = _aligned_gradient_controller()
+
+    _, outside = controller.get_work_surface_images(
+        (200, 200), WORKSPACE, 20, 2048
+    )
+
+    assert outside is not None
+    assert outside.margin_mm == 20
+    assert outside.area == ((-20, -20), (120, 120))
+    # Rendered at the camera's density of 4 px/mm, the sharper axis.
+    assert outside.image.shape == (560, 560, 4)
+
+    # Every covered pixel, including all edges and corners at negative
+    # coordinates, matches the existing transform of the expanded area.
+    reference = controller.get_work_surface_image((560, 560), outside.area)
+    assert reference is not None
+    alpha = outside.image[:, :, 3]
+    covered = alpha == 255
+    for row, col in [(0, 0), (0, -1), (-1, 0), (-1, -1), (280, 0)]:
+        assert covered[row, col]
+    np.testing.assert_array_equal(
+        outside.image[:, :, :3][covered], reference[covered]
+    )
+
+
+def test_outside_view_margin_is_clamped_to_camera_coverage():
+    controller = _aligned_gradient_controller()
+
+    _, outside = controller.get_work_surface_images(
+        (200, 200), WORKSPACE, 100, 2048
+    )
+
+    assert outside is not None
+    # The frame reaches 35 mm beyond the right edge of the workspace.
+    assert outside.margin_mm == pytest.approx(35.0)
+    assert controller.config.outside_view_margin_mm == 30.0
+
+
+def test_outside_view_missing_coverage_is_transparent():
+    controller = _aligned_gradient_controller()
+    controller._image_data = np.zeros((480, 640, 3), dtype=np.uint8)
+
+    _, outside = controller.get_work_surface_images(
+        (200, 200), WORKSPACE, 100, 2048
+    )
+
+    assert outside is not None
+    image = outside.image
+    # Left of x=-25 mm the camera sees nothing: fully transparent.
+    assert image[:, :10, 3].max() == 0
+    # Genuine black pixels inside the frame stay opaque.
+    assert image[170, 170, 3] == 255
+    np.testing.assert_array_equal(image[170, 170, :3], [0, 0, 0])
+
+
+def test_outside_view_is_premultiplied_with_partial_edges():
+    controller = _aligned_gradient_controller()
+    controller._image_data = np.full((480, 640, 3), 255, dtype=np.uint8)
+
+    # A non-integer density puts the frame edges between pixels.
+    _, outside = controller.get_work_surface_images(
+        (233, 233), WORKSPACE, 100, 2048
+    )
+
+    assert outside is not None
+    alpha = outside.image[:, :, 3]
+    assert ((alpha > 0) & (alpha < 255)).any()
+    assert (outside.image[:, :, :3] <= alpha[:, :, np.newaxis]).all()
+
+
+def test_outside_view_none_without_alignment_or_margin():
+    controller = _aligned_gradient_controller()
+
+    _, outside = controller.get_work_surface_images(
+        (200, 200), WORKSPACE, 0, 2048
+    )
+    assert outside is None
+
+    controller.config.image_to_world = None
+    workspace, outside = controller.get_work_surface_images(
+        (200, 200), WORKSPACE, 20, 2048
+    )
+    assert outside is None
+    assert workspace is not None
+
+
+def test_outside_view_none_without_coverage_beyond_workspace():
+    controller = _aligned_gradient_controller()
+
+    _, outside = controller.get_work_surface_images(
+        (200, 200), ((-50, -50), (150, 150)), 20, 2048
+    )
+
+    assert outside is None
+
+
+def test_outside_view_size_is_capped():
+    controller = _aligned_gradient_controller()
+
+    _, outside = controller.get_work_surface_images(
+        (200, 200), WORKSPACE, 20, 400
+    )
+
+    assert outside is not None
+    assert outside.image.shape[:2] == (400, 400)
+
+
+def test_get_work_surface_images_uses_a_single_frame():
+    controller = _aligned_gradient_controller()
+    controller._image_data = np.full((480, 640, 3), 200, dtype=np.uint8)
+    newer_frame = np.full((480, 640, 3), 50, dtype=np.uint8)
+    original = controller._work_surface_from_image
+
+    def replace_frame_midway(*args):
+        result = original(*args)
+        with controller._frame_lock:
+            controller._image_data = newer_frame
+        return result
+
+    with patch.object(
+        controller, "_work_surface_from_image", replace_frame_midway
+    ):
+        workspace, outside = controller.get_work_surface_images(
+            (200, 200), WORKSPACE, 20, 2048
+        )
+
+    assert workspace is not None and outside is not None
+    assert (workspace == 200).all()
+    covered = outside.image[:, :, 3] == 255
+    assert (outside.image[:, :, :3][covered] == 200).all()
+
+
+def _aligned_lens_controller(k1: float = -0.3) -> CameraController:
+    """An aligned gradient controller with barrel lens correction.
+
+    The raw frame is the gradient; the processed frame is its lens
+    correction, which pushes the frame edges out of the image.
+    """
+    controller = _aligned_gradient_controller()
+    controller.config.distortion_k1 = k1
+    raw = controller._image_data
+    assert raw is not None
+    controller._raw_image_data = raw
+    controller._image_data = controller._process_frame(raw)
+    return controller
+
+
+def test_outside_view_recovers_content_cropped_by_lens_correction():
+    controller = _aligned_lens_controller()
+    image = controller._image_data
+    assert image is not None
+    H = controller._compute_homography(image.shape[0])
+    corrected_extent = frame_coverage_extent(H, image.shape, WORKSPACE)
+
+    _, outside = controller.get_work_surface_images(
+        (200, 200), WORKSPACE, 100, 2048
+    )
+
+    assert outside is not None
+    assert outside.margin_mm > corrected_extent + 5
+
+
+def test_outside_view_from_raw_matches_corrected_frame():
+    controller = _aligned_lens_controller()
+    image = controller._image_data
+    assert image is not None
+
+    _, outside = controller.get_work_surface_images(
+        (200, 200), WORKSPACE, 100, 2048
+    )
+
+    assert outside is not None
+    size = outside.image.shape[1::-1]
+    H = controller._compute_homography(image.shape[0])
+    reference = warp_transparent(to_opaque_bgra(image), H, size, outside.area)
+    both = (reference[:, :, 3] == 255) & (outside.image[:, :, 3] == 255)
+    assert both.mean() > 0.3
+    difference = np.abs(
+        reference[:, :, :3][both].astype(int)
+        - outside.image[:, :, :3][both].astype(int)
+    )
+    assert difference.mean() < 2
+
+
+def test_world_to_raw_inverts_lens_correction():
+    controller = _aligned_lens_controller()
+    image = controller._image_data
+    assert image is not None
+    lens = controller._lens_model(image)
+    assert lens is not None
+    corrected = np.array(
+        [[320.0, 240.0], [50.0, 60.0], [600.0, 420.0], [10.0, 470.0]]
+    )
+
+    raw_x, raw_y, valid = world_to_raw(
+        np.eye(3), lens, corrected[:, 0], corrected[:, 1]
+    )
+
+    assert valid.all()
+    raw = np.stack([raw_x, raw_y], axis=1).reshape(-1, 1, 2)
+    back = cv2.undistortPoints(
+        raw, lens.camera_matrix, lens.distortion, P=lens.camera_matrix
+    ).reshape(-1, 2)
+    np.testing.assert_allclose(back, corrected, atol=0.05)
+
+
+def test_radial_limit_excludes_folding_distortion():
+    assert radial_limit(np.zeros(5)) == float("inf")
+
+    distortion = np.array([-0.98, 1.75, 0.0, 0.0, -1.75])
+    limit = radial_limit(distortion)
+
+    assert 0.6 < limit < 0.8
+    lens = LensModel(np.eye(3), distortion)
+    _, _, valid = world_to_raw(
+        np.eye(3),
+        lens,
+        np.array([0.5 * limit, 1.1 * limit]),
+        np.zeros(2),
+    )
+    np.testing.assert_array_equal(valid, [True, False])
+
+
+def test_outside_view_lens_maps_are_cached_across_frames():
+    controller = _aligned_lens_controller()
+
+    with patch(
+        "rayforge.camera.controller.lens_remap_maps",
+        wraps=lens_remap_maps,
+    ) as build_maps:
+        for value in (100, 150):
+            raw = np.full((480, 640, 3), value, dtype=np.uint8)
+            controller._raw_image_data = raw
+            controller._image_data = controller._process_frame(raw)
+            _, outside = controller.get_work_surface_images(
+                (200, 200), WORKSPACE, 30, 2048
+            )
+            assert outside is not None
+
+        controller.config.outside_view_margin_mm = 10
+        controller.get_work_surface_images((200, 200), WORKSPACE, 10, 2048)
+
+    assert build_maps.call_count == 2
+
+
+def test_get_work_surface_images_uses_a_single_raw_frame():
+    controller = _aligned_lens_controller()
+    controller._raw_image_data = np.full((480, 640, 3), 200, np.uint8)
+    controller._image_data = np.full((480, 640, 3), 200, np.uint8)
+    newer_frame = np.full((480, 640, 3), 50, dtype=np.uint8)
+    original = controller._work_surface_from_image
+
+    def replace_frames_midway(*args):
+        result = original(*args)
+        with controller._frame_lock:
+            controller._image_data = newer_frame
+            controller._raw_image_data = newer_frame
+        return result
+
+    with patch.object(
+        controller, "_work_surface_from_image", replace_frames_midway
+    ):
+        workspace, outside = controller.get_work_surface_images(
+            (200, 200), WORKSPACE, 20, 2048
+        )
+
+    assert workspace is not None and outside is not None
+    assert (workspace == 200).all()
+    covered = outside.image[:, :, 3] == 255
+    assert covered.any()
+    assert (outside.image[:, :, :3][covered] == 200).all()
+
+
+def test_outside_view_does_not_depend_on_display_size():
+    controller = _aligned_lens_controller()
+
+    with patch(
+        "rayforge.camera.controller.lens_remap_maps",
+        wraps=lens_remap_maps,
+    ) as build_maps:
+        shapes = set()
+        for output_size in [(200, 200), (800, 600), (1203, 777)]:
+            _, outside = controller.get_work_surface_images(
+                output_size, WORKSPACE, 20, 2048
+            )
+            assert outside is not None
+            shapes.add(outside.image.shape)
+
+    assert len(shapes) == 1
+    assert build_maps.call_count == 1
+
+
+def test_disabling_outside_view_frees_cached_maps():
+    controller = _aligned_lens_controller()
+    controller.config.outside_view_enabled = True
+    controller.get_work_surface_images((200, 200), WORKSPACE, 20, 2048)
+    assert controller._outside_cache
+
+    controller.config.outside_view_enabled = False
+
+    assert not controller._outside_cache

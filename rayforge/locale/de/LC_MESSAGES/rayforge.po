@@ -10470,3 +10470,35 @@ msgstr "Bayer 4"
 #: rayforge/image/dither.py
 msgid "Bayer 8"
 msgstr "Bayer 8"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "View Outside Workspace"
+msgstr "Ansicht außerhalb des Arbeitsbereichs"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Show the camera image in a margin around the work area to help position workpieces. Requires image alignment."
+msgstr "Das Kamerabild in einem Rand um den Arbeitsbereich anzeigen, um Werkstücke zu positionieren. Erfordert eine Bildausrichtung."
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Show Outside Workspace"
+msgstr "Außerhalb des Arbeitsbereichs anzeigen"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Draw the camera image around the work area"
+msgstr "Das Kamerabild um den Arbeitsbereich herum zeichnen"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Not shown until the camera image is aligned"
+msgstr "Wird erst angezeigt, wenn das Kamerabild ausgerichtet ist"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Margin"
+msgstr "Rand"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Size of the visible area on each side of the work area"
+msgstr "Größe des sichtbaren Bereichs auf jeder Seite des Arbeitsbereichs"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Transparency outside the work area"
+msgstr "Transparenz außerhalb des Arbeitsbereichs"

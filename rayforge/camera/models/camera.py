@@ -1,5 +1,6 @@
 import json
 import logging
+import math
 import uuid
 from collections.abc import Sequence
 from datetime import datetime, timezone
@@ -14,6 +15,8 @@ from .source_type import CameraSourceType
 logger = logging.getLogger(__name__)
 Pos = tuple[float, float]
 PointList = Sequence[Pos]
+
+OUTSIDE_VIEW_MAX_MARGIN_MM = 100.0
 
 
 def _as_utc(dt: datetime | None) -> datetime | None:
@@ -59,6 +62,12 @@ class Camera:
         self._denoise: float = 0.0
 
         self._prefer_yuyv: bool = False
+
+        # Optional camera view around the workspace, drawn on the work
+        # surface only outside the workspace rectangle.
+        self._outside_view_enabled: bool = False
+        self._outside_view_margin_mm: float = 30.0
+        self._outside_view_transparency: float = 0.65
 
         self._resolution: tuple[int, int] | None = None
 
@@ -316,6 +325,82 @@ class Camera:
             f"Camera prefer_yuyv changed from {self._prefer_yuyv} to {value}"
         )
         self._prefer_yuyv = value
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    @property
+    def outside_view_enabled(self) -> bool:
+        """Whether to show the camera image around the workspace."""
+        return self._outside_view_enabled
+
+    @outside_view_enabled.setter
+    def outside_view_enabled(self, value: bool):
+        if not isinstance(value, bool):
+            raise TypeError("outside_view_enabled must be a boolean.")
+        if self._outside_view_enabled == value:
+            return
+        logger.debug(
+            f"Camera outside_view_enabled changed from "
+            f"{self._outside_view_enabled} to {value}"
+        )
+        self._outside_view_enabled = value
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    @property
+    def outside_view_margin_mm(self) -> float:
+        """Margin shown on each side of the workspace, in mm."""
+        return self._outside_view_margin_mm
+
+    @outside_view_margin_mm.setter
+    def outside_view_margin_mm(self, value: float):
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            raise TypeError("Outside view margin must be a number.")
+        if not math.isfinite(value):
+            raise ValueError("Outside view margin must be finite.")
+        if not (0.0 <= value <= OUTSIDE_VIEW_MAX_MARGIN_MM):
+            logger.warning(
+                f"Outside view margin {value} is outside range "
+                f"(0.0-{OUTSIDE_VIEW_MAX_MARGIN_MM}). "
+                "Clamping to nearest bound."
+            )
+            value = max(0.0, min(value, OUTSIDE_VIEW_MAX_MARGIN_MM))
+        value = float(value)
+        if self._outside_view_margin_mm == value:
+            return
+        logger.debug(
+            f"Camera outside_view_margin_mm changed from "
+            f"{self._outside_view_margin_mm} to {value}"
+        )
+        self._outside_view_margin_mm = value
+        self.changed.send(self)
+        self.settings_changed.send(self)
+
+    @property
+    def outside_view_transparency(self) -> float:
+        """Visibility of the outside view; higher is more visible."""
+        return self._outside_view_transparency
+
+    @outside_view_transparency.setter
+    def outside_view_transparency(self, value: float):
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            raise TypeError("Outside view transparency must be a number.")
+        if not math.isfinite(value):
+            raise ValueError("Outside view transparency must be finite.")
+        if not (0.0 <= value <= 1.0):
+            logger.warning(
+                f"Outside view transparency {value} is outside range "
+                "(0.0-1.0). Clamping to nearest bound."
+            )
+            value = max(0.0, min(value, 1.0))
+        value = float(value)
+        if self._outside_view_transparency == value:
+            return
+        logger.debug(
+            f"Camera outside_view_transparency changed from "
+            f"{self._outside_view_transparency} to {value}"
+        )
+        self._outside_view_transparency = value
         self.changed.send(self)
         self.settings_changed.send(self)
 
@@ -656,6 +741,9 @@ class Camera:
             "transparency": self.transparency,
             "denoise": self.denoise,
             "prefer_yuyv": self.prefer_yuyv,
+            "outside_view_enabled": self.outside_view_enabled,
+            "outside_view_margin_mm": self.outside_view_margin_mm,
+            "outside_view_transparency": self.outside_view_transparency,
             "distortion_k1": self.distortion_k1,
             "distortion_k2": self.distortion_k2,
             "distortion_p1": self.distortion_p1,
@@ -725,6 +813,9 @@ class Camera:
             "transparency",
             "denoise",
             "prefer_yuyv",
+            "outside_view_enabled",
+            "outside_view_margin_mm",
+            "outside_view_transparency",
             "image_to_world",
             "distortion_k1",
             "distortion_k2",
@@ -768,6 +859,15 @@ class Camera:
         camera.transparency = data.get("transparency", camera.transparency)
         camera.denoise = data.get("denoise", 0.0)
         camera.prefer_yuyv = data.get("prefer_yuyv", False)
+        camera.outside_view_enabled = data.get(
+            "outside_view_enabled", camera.outside_view_enabled
+        )
+        camera.outside_view_margin_mm = data.get(
+            "outside_view_margin_mm", camera.outside_view_margin_mm
+        )
+        camera.outside_view_transparency = data.get(
+            "outside_view_transparency", camera.outside_view_transparency
+        )
 
         camera.distortion_k1 = data.get("distortion_k1", 0.0)
         camera.distortion_k2 = data.get("distortion_k2", 0.0)
