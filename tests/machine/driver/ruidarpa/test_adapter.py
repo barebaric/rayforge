@@ -1620,6 +1620,75 @@ class TestStatusMmFix:
         ids=["direct", "rpc"],
         indirect=True,
     )
+    async def test_mainboard_version_event_is_logged(
+        self, adapter_pair, caplog
+    ):
+        """A MAINBOARD_VERSION event must log the decoded version string."""
+        caplog.set_level(logging.INFO, logger=rpa_adapter.logger.name)
+        adapter, _backend = adapter_pair
+        adapter._on_rpa_status(
+            {"MAINBOARD_VERSION": (22155418420, "RDC6442S")}
+        )
+        info_records = [r for r in caplog.records if r.levelno == logging.INFO]
+        assert len(info_records) == 1
+        assert "RPA controller info: mainboard_version=RDC6442S" in (
+            info_records[0].message
+        )
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_machine_features_event_is_logged(
+        self, adapter_pair, caplog
+    ):
+        """A MACHINE_FEATURES event must log the decoded feature string."""
+        caplog.set_level(logging.INFO, logger=rpa_adapter.logger.name)
+        adapter, _backend = adapter_pair
+        features = "MFeat:Focus, Z Return to Docking, Air Assist Mode: Mode 0"
+        adapter._on_rpa_status({"MACHINE_FEATURES": (9, features)})
+        info_records = [r for r in caplog.records if r.levelno == logging.INFO]
+        assert len(info_records) == 1
+        assert (
+            f"RPA controller info: machine_features={features}"
+            in info_records[0].message
+        )
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_capability_fields_accept_list_encoding(
+        self, adapter_pair, caplog
+    ):
+        """RPC mode may deliver the field tuple as a list."""
+        caplog.set_level(logging.INFO, logger=rpa_adapter.logger.name)
+        adapter, _backend = adapter_pair
+        adapter._on_rpa_status(
+            {
+                "MAINBOARD_VERSION": [22155418420, "RDC6442S"],
+                "MACHINE_FEATURES": [9, "MFeat:Focus"],
+            }
+        )
+        messages = [
+            r.message for r in caplog.records if r.levelno == logging.INFO
+        ]
+        assert any("mainboard_version=RDC6442S" in m for m in messages)
+        assert any("machine_features=MFeat:Focus" in m for m in messages)
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
     async def test_position_event_does_not_log_controller_info(
         self, adapter_pair, caplog
     ):

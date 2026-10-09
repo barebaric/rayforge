@@ -121,6 +121,19 @@ def _unwrap_mm(value: object) -> float | None:
     return None
 
 
+def _unwrap_field(value: object) -> str:
+    """Extract the formatted string from a StatusDict field.
+
+    Non-boolean StatusDict fields arrive as ``(decoded_value,
+    formatted_string)`` tuples in both direct and TUI RPC modes; RPC may
+    deliver the tuple as a list. Plain values are stringified for
+    forward compatibility.
+    """
+    if isinstance(value, (list, tuple)):
+        return str(value[1]) if len(value) > 1 else str(value[0])
+    return str(value)
+
+
 def _merged_machine_pos(
     current: Pos,
     pos_x: float | None,
@@ -903,11 +916,12 @@ class RuidaRPAAdapter(Driver):
         self.state_changed.send(self, state=self.state)
 
     def _log_controller_info(self, event: dict[str, Any]) -> None:
-        """Log controller identity / bed-size events.
+        """Log controller identity / capability / bed-size events.
 
-        StatusDict only carries keys that changed, so these are rare (card
-        swap, (re)connect). Values arrive as (value, str_description)
-        tuples.
+        Covers ``CARD_ID``, ``BED_SIZE_X``/``BED_SIZE_Y``,
+        ``MAINBOARD_VERSION``, and ``MACHINE_FEATURES``. StatusDict only
+        carries keys that changed, so these are rare (card swap,
+        (re)connect). Values arrive as (value, str_description) tuples.
         """
         card_id = event.get("CARD_ID")
         if card_id is not None:
@@ -930,6 +944,20 @@ class RuidaRPAAdapter(Driver):
                 "RPA controller info: bed_size_x=%s bed_size_y=%s",
                 bed_size_x,
                 bed_size_y,
+                extra=self._log_extra("TUI_RPC" if self._tui_mode else "RPA"),
+            )
+        mainboard_version = event.get("MAINBOARD_VERSION")
+        if mainboard_version is not None:
+            logger.info(
+                "RPA controller info: mainboard_version=%s",
+                _unwrap_field(mainboard_version),
+                extra=self._log_extra("TUI_RPC" if self._tui_mode else "RPA"),
+            )
+        machine_features = event.get("MACHINE_FEATURES")
+        if machine_features is not None:
+            logger.info(
+                "RPA controller info: machine_features=%s",
+                _unwrap_field(machine_features),
                 extra=self._log_extra("TUI_RPC" if self._tui_mode else "RPA"),
             )
 
