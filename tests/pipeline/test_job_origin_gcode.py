@@ -7,6 +7,7 @@ exported in every Start From mode; the expected files show exactly
 which coordinates reach the controller.
 """
 
+import asyncio
 import re
 from pathlib import Path
 
@@ -356,3 +357,41 @@ async def test_frame_refuses_job_in_nogo_zone(square_doc, mocker):
     await editor.wait_until_settled()
 
     frame_spy.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_no_new_job_while_returning_to_start(square_doc, mocker):
+    editor, machine = square_doc
+    _set_head(machine, *HEAD_POS[:2])
+    editor.doc.set_job_origin(
+        JobOrigin(StartFrom.CURRENT_POSITION, JobAnchor.BOTTOM_LEFT)
+    )
+    await editor.wait_until_settled()
+    cmd = MachineCmd(editor)
+    original_run = machine.driver.run
+
+    async def run_and_keep_busy(*args, **kwargs):
+        await original_run(*args, **kwargs)
+        # The controller still works through its buffer.
+        machine.device_state.status = DeviceStatus.RUN
+
+    mocker.patch.object(machine.driver, "run", side_effect=run_and_keep_busy)
+    move_spy = mocker.spy(machine.driver, "move_to")
+    messages: list[str] = []
+    editor.notification_requested.connect(
+        lambda sender, message, **kw: messages.append(message), weak=False
+    )
+
+    first = asyncio.create_task(cmd.send_job(machine))
+    while machine.device_state.status != DeviceStatus.RUN:
+        await asyncio.sleep(0.01)
+    # While the head has not returned yet, a new Current Position job
+    # is refused: the machine is not idle.
+    with pytest.raises(JobPlacementError):
+        await cmd.send_job(machine)
+    assert messages and "idle" in messages[-1]
+
+    machine.device_state.status = DeviceStatus.IDLE
+    await first
+    await editor.wait_until_settled()
+    move_spy.assert_called_once()
