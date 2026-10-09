@@ -282,3 +282,36 @@ msgstr "标签"
 #: post_processors/transformers/tabs_transformer.py
 msgid "Creates holding tabs by adding gaps or reducing power on cut paths"
 msgstr "通过添加间隙或降低切割路径上的功率来创建保持标签"
+
+#: post_processors/transformers/perforation_transformer.py
+msgid "Perforation"
+msgstr "穿孔"
+
+#: post_processors/transformers/perforation_transformer.py
+msgid ""
+"Cuts in dashes: the laser fires for the cut length and skips the skip length"
+msgstr "虚线切割：激光在切割长度内出光，并跳过跳过长度"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Cut Length"
+msgstr "切割长度"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance the laser fires before each gap"
+msgstr "每个间隙前激光出光的距离"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Skip Length"
+msgstr "跳过长度"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance travelled with the laser off between cuts"
+msgstr "两段切割之间关闭激光移动的距离"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation cut length"
+msgstr "更改穿孔切割长度"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation skip length"
+msgstr "更改穿孔跳过长度"

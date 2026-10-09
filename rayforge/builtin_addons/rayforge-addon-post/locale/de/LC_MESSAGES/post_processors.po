@@ -298,3 +298,39 @@ msgid "Creates holding tabs by adding gaps or reducing power on cut paths"
 msgstr ""
 "Erstellt Haltestege durch Hinzufügen von Lücken oder Reduzierung der "
 "Leistung auf Schneidpfaden"
+
+#: post_processors/transformers/perforation_transformer.py
+msgid "Perforation"
+msgstr "Perforation"
+
+#: post_processors/transformers/perforation_transformer.py
+msgid ""
+"Cuts in dashes: the laser fires for the cut length and skips the skip length"
+msgstr ""
+"Schneidet gestrichelt: Der Laser schneidet über die Schnittlänge und lässt "
+"die Auslasslänge aus"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Cut Length"
+msgstr "Schnittlänge"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance the laser fires before each gap"
+msgstr "Strecke, die der Laser vor jeder Lücke schneidet"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Skip Length"
+msgstr "Auslasslänge"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance travelled with the laser off between cuts"
+msgstr ""
+"Strecke, die zwischen den Schnitten mit ausgeschaltetem Laser gefahren wird"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation cut length"
+msgstr "Perforations-Schnittlänge ändern"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation skip length"
+msgstr "Perforations-Auslasslänge ändern"

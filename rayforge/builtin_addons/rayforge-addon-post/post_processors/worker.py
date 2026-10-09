@@ -14,6 +14,7 @@ from .transformers import (
     MultiPassTransformer,
     Optimize,
     OverscanTransformer,
+    PerforationTransformer,
     Smooth,
     TabOpsTransformer,
 )
@@ -33,5 +34,8 @@ def register_transformers(transformer_registry):
     transformer_registry.register(MultiPassTransformer, addon_name=ADDON_NAME)
     transformer_registry.register(Optimize, addon_name=ADDON_NAME)
     transformer_registry.register(OverscanTransformer, addon_name=ADDON_NAME)
+    transformer_registry.register(
+        PerforationTransformer, addon_name=ADDON_NAME
+    )
     transformer_registry.register(Smooth, addon_name=ADDON_NAME)
     transformer_registry.register(TabOpsTransformer, addon_name=ADDON_NAME)

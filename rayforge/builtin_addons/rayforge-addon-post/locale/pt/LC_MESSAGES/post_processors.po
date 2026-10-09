@@ -295,3 +295,38 @@ msgid "Creates holding tabs by adding gaps or reducing power on cut paths"
 msgstr ""
 "Cria abas de fixação adicionando lacunas ou reduzindo a potência em caminhos "
 "de corte"
+
+#: post_processors/transformers/perforation_transformer.py
+msgid "Perforation"
+msgstr "Perfuração"
+
+#: post_processors/transformers/perforation_transformer.py
+msgid ""
+"Cuts in dashes: the laser fires for the cut length and skips the skip length"
+msgstr ""
+"Corta em traços: o laser dispara pelo comprimento de corte e pula o "
+"comprimento de salto"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Cut Length"
+msgstr "Comprimento de corte"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance the laser fires before each gap"
+msgstr "Distância em que o laser dispara antes de cada intervalo"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Skip Length"
+msgstr "Comprimento de salto"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance travelled with the laser off between cuts"
+msgstr "Distância percorrida com o laser desligado entre os cortes"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation cut length"
+msgstr "Alterar comprimento de corte da perfuração"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation skip length"
+msgstr "Alterar comprimento de salto da perfuração"

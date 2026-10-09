@@ -283,3 +283,36 @@ msgstr ""
 #: post_processors/transformers/tabs_transformer.py
 msgid "Creates holding tabs by adding gaps or reducing power on cut paths"
 msgstr ""
+
+#: post_processors/transformers/perforation_transformer.py
+msgid "Perforation"
+msgstr ""
+
+#: post_processors/transformers/perforation_transformer.py
+msgid ""
+"Cuts in dashes: the laser fires for the cut length and skips the skip length"
+msgstr ""
+
+#: post_processors/widgets/perforation_group.py
+msgid "Cut Length"
+msgstr ""
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance the laser fires before each gap"
+msgstr ""
+
+#: post_processors/widgets/perforation_group.py
+msgid "Skip Length"
+msgstr ""
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance travelled with the laser off between cuts"
+msgstr ""
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation cut length"
+msgstr ""
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation skip length"
+msgstr ""

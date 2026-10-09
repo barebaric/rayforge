@@ -297,3 +297,38 @@ msgid "Creates holding tabs by adding gaps or reducing power on cut paths"
 msgstr ""
 "Crea pestañas de sujeción añadiendo huecos o reduciendo potencia en "
 "trayectorias de corte"
+
+#: post_processors/transformers/perforation_transformer.py
+msgid "Perforation"
+msgstr "Perforación"
+
+#: post_processors/transformers/perforation_transformer.py
+msgid ""
+"Cuts in dashes: the laser fires for the cut length and skips the skip length"
+msgstr ""
+"Corta en trazos: el láser dispara durante la longitud de corte y salta la "
+"longitud de salto"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Cut Length"
+msgstr "Longitud de corte"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance the laser fires before each gap"
+msgstr "Distancia que dispara el láser antes de cada hueco"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Skip Length"
+msgstr "Longitud de salto"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance travelled with the laser off between cuts"
+msgstr "Distancia recorrida con el láser apagado entre cortes"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation cut length"
+msgstr "Cambiar longitud de corte de perforación"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation skip length"
+msgstr "Cambiar longitud de salto de perforación"
