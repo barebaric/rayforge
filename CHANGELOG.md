@@ -49,6 +49,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fires for a Cut Length and is off for a Skip Length along every
   contour, starting with a full cut at the start of each contour; off
   by default (#525)
+- Tools: Interval Test and Focus Test generators next to the Material
+  Test Grid. The Interval Test engraves a row of squares, each with its
+  own line interval (labelled in mm and LPI); the Focus Test engraves
+  one line per focus offset, either with relative Z moves (machines
+  with a Z axis), with an M0 pause before each line to move the head
+  by hand, or as one long line over a tilted strip. Both are created as
+  an editable layer with one operation per cell or line (#519)
 - Sketcher: boolean operations. Union, Difference, Intersection and
   Exclude bake the selected closed regions into multi-ring polygons
   (outer contours counter-clockwise, hole contours clockwise), so
