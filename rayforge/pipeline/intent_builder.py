@@ -772,6 +772,7 @@ class IntentBuilder:
             ),
             "assembler_params": _canonical(self._assembler_params(step, wp)),
             "wpxf": _canonical(step.per_workpiece_transformers_dicts),
+            "bidir_offset": self._bidir_offset_params(step),
         }
         if pos_sensitive:
             payload["xf_rev"] = wp.transform_revision
@@ -897,6 +898,7 @@ class IntentBuilder:
         payload.transformers = self._build_transformer_specs(
             step.per_workpiece_transformers_dicts,
             workpiece=wp,
+            step=step,
         )
 
         if step.uses_global_state and step.layer:
@@ -940,6 +942,7 @@ class IntentBuilder:
         transformer_dicts: list[dict[str, Any]],
         *,
         workpiece: WorkPiece | None = None,
+        step: Step | None = None,
     ) -> list[Any]:
         """Build typed Rust ``*Spec`` pyclasses from a list of
         serialised transformer dicts.
@@ -948,7 +951,8 @@ class IntentBuilder:
         calls ``to_spec`` to produce the typed spec the Rust compute
         and aggregate stages consume.  ``workpiece`` is forwarded so
         that position-sensitive transformers (e.g. CropTransformer)
-        can resolve their regions.
+        can resolve their regions, and ``step`` provides the
+        step-specific settings (see :meth:`_transformer_settings`).
         """
         transformers: list[OpsTransformer] = []
         for t_dict in transformer_dicts:
@@ -974,7 +978,7 @@ class IntentBuilder:
         if not transformers:
             return []
         stock = self._resolve_stock_geometries()
-        settings = self._transformer_settings()
+        settings = self._transformer_settings(step)
 
         specs: list = []
         for t in transformers:
@@ -983,28 +987,47 @@ class IntentBuilder:
             specs.append(t.to_spec(workpiece, stock, settings))
         return specs
 
-    def _transformer_settings(self) -> dict[str, Any] | None:
+    def _bidir_offset_params(self, step: Step) -> list[Any]:
+        """The inputs of the bidirectional scan offset, which the
+        compute stage applies through the per-workpiece transformers."""
+        return [step.cut_speed, getattr(step, "bidir_x_offset_mm", 0.0)]
+
+    def _transformer_settings(
+        self, step: Step | None = None
+    ) -> dict[str, Any] | None:
         """Return the settings dict forwarded to ``to_spec``.
 
         Currently this carries the ``driver_native_overscan`` flag so
         :class:`OverscanTransformer` can short-circuit when the
-        machine driver handles overscan itself, and the machine
+        machine driver handles overscan itself, the machine
         kinematics so acceleration-aware transformers (e.g. the
         scanline merging inside :class:`Optimize`) can build their
-        specs from them.
+        specs from them. With a ``step`` it adds the step's speed and
+        its own bidirectional scan offset for
+        :class:`BidirScanOffsetTransformer`.
         """
-        if self._machine is None:
-            return None
-        try:
-            native = bool(self._machine.driver.native_overscan)
-        except AttributeError:
-            native = False
-        return {
-            "driver_native_overscan": native,
-            "machine_max_cut_speed": self._machine.max_cut_speed,
-            "machine_max_travel_speed": self._machine.max_travel_speed,
-            "machine_acceleration": self._machine.acceleration,
-        }
+        settings: dict[str, Any] = {}
+        if self._machine is not None:
+            try:
+                native = bool(self._machine.driver.native_overscan)
+            except AttributeError:
+                native = False
+            settings.update(
+                {
+                    "driver_native_overscan": native,
+                    "machine_max_cut_speed": self._machine.max_cut_speed,
+                    "machine_max_travel_speed": (
+                        self._machine.max_travel_speed
+                    ),
+                    "machine_acceleration": self._machine.acceleration,
+                }
+            )
+        if step is not None:
+            settings["cut_speed"] = step.cut_speed
+            settings["bidir_x_offset_mm"] = getattr(
+                step, "bidir_x_offset_mm", 0.0
+            )
+        return settings or None
 
     def _resolve_stock_geometries(self) -> list[Any] | None:
         """Return the world-space stock boundary geometries.
@@ -1129,7 +1152,8 @@ class IntentBuilder:
             wrap_end=[],
             machine=self._machine_params(),
             transformers=self._build_transformer_specs(
-                step.per_step_transformers_dicts
+                step.per_step_transformers_dicts,
+                step=step,
             ),
         )
         return StageSpec.Aggregate(spec=spec)

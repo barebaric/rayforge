@@ -30,6 +30,7 @@ from raygeo.ops.axis import Axis
 from raygeo.ops.convert import Encoder, GcodeSpec, PythonEncoder
 from raygeo.ops.material.spec import CylinderStock, MaterialFoldSpec
 from raygeo.ops.part import Part
+from raygeo.ops.transform.bidir_scan_offset import BidirScanOffsetSpec
 from raygeo.pipeline.execute import execute_stages
 from raygeo.pipeline.request import NodeRequest
 from raygeo.pipeline.stage import StageSpec
@@ -1291,6 +1292,34 @@ def test_disabled_per_workpiece_transformer_not_wired(
     wp_node = next(n for n in nodes if n.key == wpk)
     payload = wp_node.stage.params
     assert payload.transformers == []
+
+
+def _bidir_offset_spec(machine, step) -> BidirScanOffsetSpec:
+    wp = WorkPiece(name="wp")
+    wp.set_size(10.0, 10.0)
+    doc = _make_doc(step, wp)
+    nodes = IntentBuilder(machine=machine).build(doc)
+    wpk = workpiece_key(wp.uid, step.uid)
+    wp_node = next(n for n in nodes if n.key == wpk)
+    specs = [
+        t
+        for t in wp_node.stage.params.transformers
+        if isinstance(t, BidirScanOffsetSpec)
+    ]
+    assert len(specs) == 1
+    return specs[0]
+
+
+def test_engrave_step_bidir_offset_reaches_transformer(
+    engrave_step_class, test_machine_and_config
+):
+    """The per-step bidirectional scan offset must arrive in the
+    BidirScanOffset spec of the workpiece compute node."""
+    machine, context = test_machine_and_config
+    step = engrave_step_class.create(context, name="engrave")
+    step.bidir_x_offset_mm = 0.3
+
+    assert _bidir_offset_spec(machine, step).offset_mm == pytest.approx(0.3)
 
 
 # ----------------------------------------------------------------------
