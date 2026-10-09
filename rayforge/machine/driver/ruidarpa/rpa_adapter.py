@@ -130,7 +130,10 @@ def _unwrap_field(value: object) -> str:
     forward compatibility.
     """
     if isinstance(value, (list, tuple)):
-        return str(value[1]) if len(value) > 1 else str(value[0])
+        if len(value) > 1:
+            return str(value[1])
+        if value:
+            return str(value[0])
     return str(value)
 
 
