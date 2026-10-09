@@ -20,6 +20,8 @@ from .bmp.renderer import BMP_RENDERER
 from .dxf.exporter import GeometryDxfExporter
 from .dxf.importer import DxfImporter
 from .dxf.renderer import DXF_RENDERER
+from .hpgl.importer import HpglImporter
+from .hpgl.renderer import HPGL_RENDERER
 from .jpg.importer import JpgImporter
 from .jpg.renderer import JPG_RENDERER
 from .lightburn.importer import LightBurnImporter
@@ -230,6 +232,7 @@ _RENDERERS = [
     BITMAP_RENDERER,
     BMP_RENDERER,
     DXF_RENDERER,
+    HPGL_RENDERER,
     LIGHTBURN_RENDERER,
     PROCEDURAL_RENDERER,
     JPG_RENDERER,
@@ -258,6 +261,7 @@ __all__ = [
     "GeometryDxfExporter",
     "GeometrySvgExporter",
     "GifImporter",
+    "HpglImporter",
     "ImportManifest",
     "ImportPayload",
     "ImportResult",

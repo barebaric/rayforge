@@ -7,15 +7,16 @@ explica como importar arquivos e otimizá-los para obter os melhores resultados.
 
 ### Formatos vetoriais
 
-| Formato         | Extensão          | Método de importação                                | Ideal para                             |
-| --------------- | ----------------- | --------------------------------------------------- | -------------------------------------- |
-| **SVG**         | `.svg`            | Vetores diretos ou vetorização                      | Gráficos vetoriais, logos, designs     |
-| **DXF**         | `.dxf`            | Vetores diretos                                     | Desenhos CAD, projetos técnicos        |
-| **PDF**         | `.pdf`            | Vetores diretos ou vetorização                      | Documentos com conteúdo vetorial       |
-| **LightBurn**   | `.lbrn`, `.lbrn2` | Vetores diretos                                     | Projetos LightBurn                     |
-| **Ruida**       | `.rd`             | Vetores diretos                                     | Arquivos de trabalho controlador Ruida |
-| **Illustrator** | `.ai`             | Vetores diretos ou vetorização                      | Logotipos do Illustrator               |
-| **EPS**         | `.eps`, `.ps`     | Vetores diretos ou vetorização (requer Ghostscript) | Logotipos, arte para impressão         |
+| Formato         | Extensão          | Método de importação                                | Ideal para                               |
+| --------------- | ----------------- | --------------------------------------------------- | ---------------------------------------- |
+| **SVG**         | `.svg`            | Vetores diretos ou vetorização                      | Gráficos vetoriais, logos, designs       |
+| **DXF**         | `.dxf`            | Vetores diretos                                     | Desenhos CAD, projetos técnicos          |
+| **PDF**         | `.pdf`            | Vetores diretos ou vetorização                      | Documentos com conteúdo vetorial         |
+| **LightBurn**   | `.lbrn`, `.lbrn2` | Vetores diretos                                     | Projetos LightBurn                       |
+| **Ruida**       | `.rd`             | Vetores diretos                                     | Arquivos de trabalho controlador Ruida   |
+| **Illustrator** | `.ai`             | Vetores diretos ou vetorização                      | Logotipos do Illustrator                 |
+| **EPS**         | `.eps`, `.ps`     | Vetores diretos ou vetorização (requer Ghostscript) | Logotipos, arte para impressão           |
+| **HPGL**        | `.plt`, `.hpgl`   | Vetores diretos                                     | Arquivos de plotter e plotter de recorte |
 
 ### Formatos raster
 

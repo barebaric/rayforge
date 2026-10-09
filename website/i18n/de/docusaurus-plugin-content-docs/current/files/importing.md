@@ -7,15 +7,16 @@ Rasterformate. Diese Seite erklärt, wie du Dateien importierst und für beste E
 
 ### Vektorformate
 
-| Format          | Erweiterung       | Importmethode                                        | Am besten für                       |
-| --------------- | ----------------- | ---------------------------------------------------- | ----------------------------------- |
-| **SVG**         | `.svg`            | Direkte Vektoren oder Tracing                        | Vektorgrafiken, Logos, Designs      |
-| **DXF**         | `.dxf`            | Direkte Vektoren                                     | CAD-Zeichnungen, technische Designs |
-| **PDF**         | `.pdf`            | Direkte Vektoren oder Tracing                        | Dokumente mit Vektorinhalt          |
-| **LightBurn**   | `.lbrn`, `.lbrn2` | Direkte Vektoren                                     | LightBurn-Projekte                  |
-| **Ruida**       | `.rd`             | Direkte Vektoren                                     | Ruida-Controller-Auftragsdateien    |
-| **Illustrator** | `.ai`             | Direkte Vektoren oder Tracing                        | Logos aus Illustrator               |
-| **EPS**         | `.eps`, `.ps`     | Direkte Vektoren oder Tracing (benötigt Ghostscript) | Logos, Druckvorlagen                |
+| Format          | Erweiterung       | Importmethode                                        | Am besten für                        |
+| --------------- | ----------------- | ---------------------------------------------------- | ------------------------------------ |
+| **SVG**         | `.svg`            | Direkte Vektoren oder Tracing                        | Vektorgrafiken, Logos, Designs       |
+| **DXF**         | `.dxf`            | Direkte Vektoren                                     | CAD-Zeichnungen, technische Designs  |
+| **PDF**         | `.pdf`            | Direkte Vektoren oder Tracing                        | Dokumente mit Vektorinhalt           |
+| **LightBurn**   | `.lbrn`, `.lbrn2` | Direkte Vektoren                                     | LightBurn-Projekte                   |
+| **Ruida**       | `.rd`             | Direkte Vektoren                                     | Ruida-Controller-Auftragsdateien     |
+| **Illustrator** | `.ai`             | Direkte Vektoren oder Tracing                        | Logos aus Illustrator                |
+| **EPS**         | `.eps`, `.ps`     | Direkte Vektoren oder Tracing (benötigt Ghostscript) | Logos, Druckvorlagen                 |
+| **HPGL**        | `.plt`, `.hpgl`   | Direkte Vektoren                                     | Plotter- und Schneideplotter-Dateien |
 
 ### Rasterformate
 

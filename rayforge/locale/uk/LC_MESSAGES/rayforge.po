@@ -10374,3 +10374,18 @@ msgstr "Ghostscript не зміг перетворити {filename}: {error}"
 #: rayforge/image/postscript/importer.py
 msgid "This Illustrator file was saved without PDF compatibility. Rayforge can only read it with Ghostscript, which was not found. Install Ghostscript, or save the file again in Illustrator with \"Create PDF Compatible File\" enabled."
 msgstr "Цей файл Illustrator збережено без сумісності з PDF. Rayforge може прочитати його лише за допомогою Ghostscript, але його не знайдено. Встановіть Ghostscript або збережіть файл в Illustrator ще раз з увімкненим параметром «Створити PDF-сумісний файл»."
+
+#: rayforge/image/hpgl/importer.py
+#, python-brace-format
+msgid "Some HPGL instructions are not supported and were skipped: {names}"
+msgstr "Деякі інструкції HPGL не підтримуються і були пропущені: {names}"
+
+#: rayforge/image/hpgl/importer.py
+#, python-brace-format
+msgid "{filename} contains no HPGL drawing commands."
+msgstr "{filename} не містить команд малювання HPGL."
+
+#: rayforge/image/hpgl/importer.py
+#, python-brace-format
+msgid "Pen {number}"
+msgstr "Перо {number}"

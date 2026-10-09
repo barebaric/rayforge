@@ -13,24 +13,25 @@ capabilities, limitations, and recommendations.
 
 ### Quick Reference
 
-| Format               | Type    | Import           | Export          | Recommended Use               |
-| -------------------- | ------- | ---------------- | --------------- | ----------------------------- |
-| **SVG**              | Vector  | ✓ Direct / Trace | ✓ Object export | Primary design format         |
-| **DXF**              | Vector  | ✓ Direct         | ✓ Object export | CAD interchange               |
-| **PDF**              | Mixed   | ✓ Direct / Trace | –               | Documents with vector content |
-| **Illustrator**      | Vector  | ✓ Direct / Trace | –               | Logos from Illustrator        |
-| **EPS**              | Vector  | ✓ Direct / Trace | –               | Logos, print artwork          |
-| **LightBurn**        | Vector  | ✓ Direct         | –               | LightBurn project files       |
-| **Ruida**            | Vector  | ✓ Direct         | –               | Ruida controller job files    |
-| **PNG**              | Raster  | ✓ Trace          | –               | Photos, images                |
-| **JPEG**             | Raster  | ✓ Trace          | –               | Photos                        |
-| **BMP**              | Raster  | ✓ Trace          | –               | Simple graphics               |
-| **GIF**              | Raster  | ✓ Trace          | –               | Simple graphics, animations   |
-| **TIFF**             | Raster  | ✓ Trace          | –               | Scans, print artwork          |
-| **WebP**             | Raster  | ✓ Trace          | –               | Web images                    |
-| **RFS**              | Sketch  | ✓ Direct         | ✓ Object export | Parametric sketches           |
-| **G-code**           | Control | –                | ✓ Primary       | Machine output                |
-| **Rayforge Project** | Project | ✓                | ✓               | Save/load projects            |
+| Format               | Type    | Import           | Export          | Recommended Use                |
+| -------------------- | ------- | ---------------- | --------------- | ------------------------------ |
+| **SVG**              | Vector  | ✓ Direct / Trace | ✓ Object export | Primary design format          |
+| **DXF**              | Vector  | ✓ Direct         | ✓ Object export | CAD interchange                |
+| **PDF**              | Mixed   | ✓ Direct / Trace | –               | Documents with vector content  |
+| **Illustrator**      | Vector  | ✓ Direct / Trace | –               | Logos from Illustrator         |
+| **EPS**              | Vector  | ✓ Direct / Trace | –               | Logos, print artwork           |
+| **LightBurn**        | Vector  | ✓ Direct         | –               | LightBurn project files        |
+| **Ruida**            | Vector  | ✓ Direct         | –               | Ruida controller job files     |
+| **HPGL**             | Vector  | ✓ Direct         | –               | Plotter and vinyl cutter files |
+| **PNG**              | Raster  | ✓ Trace          | –               | Photos, images                 |
+| **JPEG**             | Raster  | ✓ Trace          | –               | Photos                         |
+| **BMP**              | Raster  | ✓ Trace          | –               | Simple graphics                |
+| **GIF**              | Raster  | ✓ Trace          | –               | Simple graphics, animations    |
+| **TIFF**             | Raster  | ✓ Trace          | –               | Scans, print artwork           |
+| **WebP**             | Raster  | ✓ Trace          | –               | Web images                     |
+| **RFS**              | Sketch  | ✓ Direct         | ✓ Object export | Parametric sketches            |
+| **G-code**           | Control | –                | ✓ Primary       | Machine output                 |
+| **Rayforge Project** | Project | ✓                | ✓               | Save/load projects             |
 
 ---
 
@@ -252,6 +253,23 @@ The EPS bounding box becomes the page size, and text is converted to outlines.
 package. On Windows and macOS, install it from the Ghostscript website. Without Ghostscript, the
 import dialog shows a message instead of a preview. The project stores the converted PDF, so a saved
 project also opens on a computer without Ghostscript.
+
+---
+
+### HPGL (.plt / .hpgl)
+
+**Extension:** `.plt`, `.hpgl`, `.hpg`, `.hgl` **MIME Type:** `application/vnd.hp-hpgl` **Import:**
+Direct vector parsing **Export:** Not supported
+
+HPGL is the plotter language of cutting plotters, vinyl cutters and older CAD programs. Rayforge
+reads the common drawing instructions: pen moves (PU, PD, PA, PR), circles and arcs (CI, AA, AR) and
+rectangles (EA, ER, RA, RR). Each pen becomes a layer that you can pick in the import dialog.
+
+**Limitations:**
+
+- ✗ Text labels (LB) are skipped; convert text to paths before plotting
+- ✗ Scaling (SC) and rotation (RO) are ignored; the import dialog lists any skipped instructions
+- Coordinates use the standard 40 plotter units per millimetre
 
 ---
 

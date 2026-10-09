@@ -7,24 +7,25 @@ Rayforge, y compris les capacités, les limitations et les recommandations.
 
 ### Référence rapide
 
-| Format              | Type      | Importation      | Exportation   | Utilisation recommandée              |
-| ------------------- | --------- | ---------------- | ------------- | ------------------------------------ |
-| **SVG**             | Vecteur   | ✓ Direct / Trace | ✓ Export obj. | Format de conception principal       |
-| **DXF**             | Vecteur   | ✓ Direct         | ✓ Export obj. | Échange CAO                          |
-| **PDF**             | Mixte     | ✓ Direct / Trace | –             | Documents avec contenu vectoriel     |
-| **Illustrator**     | Vecteur   | ✓ Direct / Trace | –             | Logos issus d'Illustrator            |
-| **EPS**             | Vecteur   | ✓ Direct / Trace | –             | Logos, fichiers d'impression         |
-| **LightBurn**       | Vecteur   | ✓ Direct         | –             | Projets LightBurn                    |
-| **Ruida**           | Vecteur   | ✓ Direct         | –             | Fichiers de tâches Ruida             |
-| **PNG**             | Matriciel | ✓ Trace          | –             | Photos, images                       |
-| **JPEG**            | Matriciel | ✓ Trace          | –             | Photos                               |
-| **BMP**             | Matriciel | ✓ Trace          | –             | Graphiques simples                   |
-| **GIF**             | Matriciel | ✓ Trace          | –             | Graphiques simples, animations       |
-| **TIFF**            | Matriciel | ✓ Trace          | –             | Numérisations, fichiers d'impression |
-| **WebP**            | Matriciel | ✓ Trace          | –             | Images web                           |
-| **RFS**             | Croquis   | ✓ Direct         | ✓ Export obj. | Croquis paramétriques                |
-| **G-code**          | Commande  | –                | ✓ Principal   | Sortie machine                       |
-| **Projet Rayforge** | Projet    | ✓                | ✓             | Enregistrer/charger projets          |
+| Format              | Type      | Importation      | Exportation   | Utilisation recommandée                      |
+| ------------------- | --------- | ---------------- | ------------- | -------------------------------------------- |
+| **SVG**             | Vecteur   | ✓ Direct / Trace | ✓ Export obj. | Format de conception principal               |
+| **DXF**             | Vecteur   | ✓ Direct         | ✓ Export obj. | Échange CAO                                  |
+| **PDF**             | Mixte     | ✓ Direct / Trace | –             | Documents avec contenu vectoriel             |
+| **Illustrator**     | Vecteur   | ✓ Direct / Trace | –             | Logos issus d'Illustrator                    |
+| **EPS**             | Vecteur   | ✓ Direct / Trace | –             | Logos, fichiers d'impression                 |
+| **LightBurn**       | Vecteur   | ✓ Direct         | –             | Projets LightBurn                            |
+| **Ruida**           | Vecteur   | ✓ Direct         | –             | Fichiers de tâches Ruida                     |
+| **HPGL**            | Vecteur   | ✓ Direct         | –             | Fichiers de traceur et de plotter de découpe |
+| **PNG**             | Matriciel | ✓ Trace          | –             | Photos, images                               |
+| **JPEG**            | Matriciel | ✓ Trace          | –             | Photos                                       |
+| **BMP**             | Matriciel | ✓ Trace          | –             | Graphiques simples                           |
+| **GIF**             | Matriciel | ✓ Trace          | –             | Graphiques simples, animations               |
+| **TIFF**            | Matriciel | ✓ Trace          | –             | Numérisations, fichiers d'impression         |
+| **WebP**            | Matriciel | ✓ Trace          | –             | Images web                                   |
+| **RFS**             | Croquis   | ✓ Direct         | ✓ Export obj. | Croquis paramétriques                        |
+| **G-code**          | Commande  | –                | ✓ Principal   | Sortie machine                               |
+| **Projet Rayforge** | Projet    | ✓                | ✓             | Enregistrer/charger projets                  |
 
 ---
 
@@ -252,6 +253,25 @@ votre distribution ; sous Windows et macOS, installez-le depuis le site de Ghost
 Ghostscript, la boîte de dialogue d'importation affiche un message au lieu d'un aperçu. Le projet
 enregistre le PDF converti : un projet enregistré s'ouvre donc aussi sur un ordinateur sans
 Ghostscript.
+
+---
+
+### HPGL (.plt / .hpgl)
+
+**Extension :** `.plt`, `.hpgl`, `.hpg`, `.hgl` **Type MIME :** `application/vnd.hp-hpgl`
+**Importation :** Analyse vectorielle directe **Exportation :** Non pris en charge
+
+HPGL est le langage des traceurs de découpe, des plotters de découpe vinyle et des anciens logiciels
+de CAO. Rayforge lit les instructions de tracé courantes : déplacements de plume (PU, PD, PA, PR),
+cercles et arcs (CI, AA, AR) et rectangles (EA, ER, RA, RR). Chaque plume devient un calque que vous
+pouvez choisir dans la boîte de dialogue d'importation.
+
+**Limitations :**
+
+- ✗ Les étiquettes de texte (LB) sont ignorées ; convertissez le texte en chemins avant le traçage
+- ✗ La mise à l'échelle (SC) et la rotation (RO) sont ignorées ; la boîte de dialogue d'importation
+  liste les instructions ignorées
+- Les coordonnées utilisent les 40 unités traceur par millimètre habituelles
 
 ---
 

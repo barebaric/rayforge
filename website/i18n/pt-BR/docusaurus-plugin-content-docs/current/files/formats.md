@@ -7,24 +7,25 @@ Rayforge, incluindo capacidades, limitações e recomendações.
 
 ### Referência rápida
 
-| Formato              | Tipo     | Importação        | Exportação      | Uso recomendado                     |
-| -------------------- | -------- | ----------------- | --------------- | ----------------------------------- |
-| **SVG**              | Vetor    | ✓ Direto / Traçar | ✓ Exportar obj. | Formato de design principal         |
-| **DXF**              | Vetor    | ✓ Direto          | ✓ Exportar obj. | Intercâmbio CAD                     |
-| **PDF**              | Misto    | ✓ Direto / Traçar | –               | Documentos com conteúdo vet.        |
-| **Illustrator**      | Vetor    | ✓ Direto / Traçar | –               | Logotipos do Illustrator            |
-| **EPS**              | Vetor    | ✓ Direto / Traçar | –               | Logotipos, arte para impressão      |
-| **LightBurn**        | Vetor    | ✓ Direto          | –               | Projetos LightBurn                  |
-| **Ruida**            | Vetor    | ✓ Direto          | –               | Arquivos de trabalho Ruida          |
-| **PNG**              | Raster   | ✓ Traçar          | –               | Fotos, imagens                      |
-| **JPEG**             | Raster   | ✓ Traçar          | –               | Fotos                               |
-| **BMP**              | Raster   | ✓ Traçar          | –               | Gráficos simples                    |
-| **GIF**              | Raster   | ✓ Traçar          | –               | Gráficos simples, animações         |
-| **TIFF**             | Raster   | ✓ Traçar          | –               | Digitalizações, arte para impressão |
-| **WebP**             | Raster   | ✓ Traçar          | –               | Imagens da web                      |
-| **RFS**              | Esboço   | ✓ Direto          | ✓ Exportar obj. | Esboços paramétricos                |
-| **G-code**           | Controle | –                 | ✓ Principal     | Saída da máquina                    |
-| **Projeto Rayforge** | Projeto  | ✓                 | ✓               | Salvar/carregar projetos            |
+| Formato              | Tipo     | Importação        | Exportação      | Uso recomendado                          |
+| -------------------- | -------- | ----------------- | --------------- | ---------------------------------------- |
+| **SVG**              | Vetor    | ✓ Direto / Traçar | ✓ Exportar obj. | Formato de design principal              |
+| **DXF**              | Vetor    | ✓ Direto          | ✓ Exportar obj. | Intercâmbio CAD                          |
+| **PDF**              | Misto    | ✓ Direto / Traçar | –               | Documentos com conteúdo vet.             |
+| **Illustrator**      | Vetor    | ✓ Direto / Traçar | –               | Logotipos do Illustrator                 |
+| **EPS**              | Vetor    | ✓ Direto / Traçar | –               | Logotipos, arte para impressão           |
+| **LightBurn**        | Vetor    | ✓ Direto          | –               | Projetos LightBurn                       |
+| **Ruida**            | Vetor    | ✓ Direto          | –               | Arquivos de trabalho Ruida               |
+| **HPGL**             | Vetor    | ✓ Direto          | –               | Arquivos de plotter e plotter de recorte |
+| **PNG**              | Raster   | ✓ Traçar          | –               | Fotos, imagens                           |
+| **JPEG**             | Raster   | ✓ Traçar          | –               | Fotos                                    |
+| **BMP**              | Raster   | ✓ Traçar          | –               | Gráficos simples                         |
+| **GIF**              | Raster   | ✓ Traçar          | –               | Gráficos simples, animações              |
+| **TIFF**             | Raster   | ✓ Traçar          | –               | Digitalizações, arte para impressão      |
+| **WebP**             | Raster   | ✓ Traçar          | –               | Imagens da web                           |
+| **RFS**              | Esboço   | ✓ Direto          | ✓ Exportar obj. | Esboços paramétricos                     |
+| **G-code**           | Controle | –                 | ✓ Principal     | Saída da máquina                         |
+| **Projeto Rayforge** | Projeto  | ✓                 | ✓               | Salvar/carregar projetos                 |
 
 ---
 
@@ -250,6 +251,25 @@ O **Ghostscript** é uma dependência opcional. No Linux, instale o pacote `ghos
 distribuição. No Windows e no macOS, instale-o pelo site do Ghostscript. Sem o Ghostscript, a caixa
 de diálogo de importação mostra uma mensagem em vez de uma prévia. O projeto guarda o PDF
 convertido, então um projeto salvo também abre em um computador sem Ghostscript.
+
+---
+
+### HPGL (.plt / .hpgl)
+
+**Extensão:** `.plt`, `.hpgl`, `.hpg`, `.hgl` **Tipo MIME:** `application/vnd.hp-hpgl`
+**Importação:** Análise vetorial direta **Exportação:** Não suportado
+
+HPGL é a linguagem dos plotters de corte, plotters de recorte de vinil e programas CAD antigos. O
+Rayforge lê as instruções de desenho comuns: movimentos da caneta (PU, PD, PA, PR), círculos e arcos
+(CI, AA, AR) e retângulos (EA, ER, RA, RR). Cada caneta vira uma camada que você pode escolher na
+caixa de diálogo de importação.
+
+**Limitações:**
+
+- ✗ Rótulos de texto (LB) são ignorados; converta o texto em caminhos antes de plotar
+- ✗ Escala (SC) e rotação (RO) são ignoradas; a caixa de diálogo de importação lista as instruções
+  ignoradas
+- As coordenadas usam as 40 unidades de plotter por milímetro padrão
 
 ---
 

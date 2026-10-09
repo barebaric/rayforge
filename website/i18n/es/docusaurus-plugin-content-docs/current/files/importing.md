@@ -16,6 +16,7 @@ bits. Esta página explica cómo importar archivos y optimizarlos para obtener l
 | **Ruida**       | `.rd`             | Vectores directos                                | Archivos de trabajo controlador Ruida |
 | **Illustrator** | `.ai`             | Vectores directos o trazo                        | Logotipos de Illustrator              |
 | **EPS**         | `.eps`, `.ps`     | Vectores directos o trazo (requiere Ghostscript) | Logotipos, arte para impresión        |
+| **HPGL**        | `.plt`, `.hpgl`   | Vectores directos                                | Archivos de plóter y plóter de corte  |
 
 ### Formatos de mapa de bits
 

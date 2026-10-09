@@ -15,6 +15,7 @@
 | **EPS**           | 矢量 | ✓ 直接/描摹 | –          | 标志、印刷稿            |
 | **LightBurn**     | 矢量 | ✓ 直接      | –          | LightBurn 项目文件      |
 | **Ruida**         | 矢量 | ✓ 直接      | –          | Ruida 控制器作业文件    |
+| **HPGL**          | 矢量 | ✓ 直接      | –          | 绘图仪和刻字机文件      |
 | **PNG**           | 栅格 | ✓ 描摹      | –          | 照片、图像              |
 | **JPEG**          | 栅格 | ✓ 描摹      | –          | 照片                    |
 | **BMP**           | 栅格 | ✓ 描摹      | –          | 简单图形                |
@@ -232,6 +233,21 @@ Rayforge 使用 Ghostscript 将 EPS 和 PostScript 文件转换为 PDF，然后�
 
 **Ghostscript** 是可选依赖。在 Linux 上，请安装发行版的 `ghostscript`
 软件包；在 Windows 和 macOS 上，请从 Ghostscript 官网安装。没有 Ghostscript 时，导入对话框会显示提示信息而不是预览。项目会保存转换后的 PDF，因此已保存的项目在没有 Ghostscript 的电脑上也能打开。
+
+---
+
+### HPGL（.plt / .hpgl）
+
+**扩展名：** `.plt`、`.hpgl`、`.hpg`、`.hgl` **MIME 类型：** `application/vnd.hp-hpgl` **导入：**
+直接矢量解析 **导出：** 不支持
+
+HPGL 是切割绘图仪、刻字机和较旧 CAD 软件使用的绘图语言。Rayforge 可读取常用的绘图指令：笔的移动（PU、PD、PA、PR）、圆和圆弧（CI、AA、AR）以及矩形（EA、ER、RA、RR）。每支笔都会成为一个图层，您可以在导入对话框中选择。
+
+**限制：**
+
+- ✗ 文字标签（LB）会被跳过；请在绘图前将文字转换为路径
+- ✗ 缩放（SC）和旋转（RO）会被忽略；导入对话框会列出被跳过的指令
+- 坐标采用标准的每毫米 40 个绘图仪单位
 
 ---
 

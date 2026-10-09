@@ -8,15 +8,16 @@ meilleurs résultats.
 
 ### Formats vectoriels
 
-| Format          | Extension         | Méthode d'importation                                     | Idéal pour                            |
-| --------------- | ----------------- | --------------------------------------------------------- | ------------------------------------- |
-| **SVG**         | `.svg`            | Vecteurs directs ou vectorisation                         | Graphiques vectoriels, logos, dessins |
-| **DXF**         | `.dxf`            | Vecteurs directs                                          | Dessins CAO, plans techniques         |
-| **PDF**         | `.pdf`            | Vecteurs directs ou vectorisation                         | Documents avec contenu vectoriel      |
-| **LightBurn**   | `.lbrn`, `.lbrn2` | Vecteurs directs                                          | Projets LightBurn                     |
-| **Ruida**       | `.rd`             | Vecteurs directs                                          | Fichiers de tâches contrôleur Ruida   |
-| **Illustrator** | `.ai`             | Vecteurs directs ou vectorisation                         | Logos issus d'Illustrator             |
-| **EPS**         | `.eps`, `.ps`     | Vecteurs directs ou vectorisation (nécessite Ghostscript) | Logos, fichiers d'impression          |
+| Format          | Extension         | Méthode d'importation                                     | Idéal pour                                   |
+| --------------- | ----------------- | --------------------------------------------------------- | -------------------------------------------- |
+| **SVG**         | `.svg`            | Vecteurs directs ou vectorisation                         | Graphiques vectoriels, logos, dessins        |
+| **DXF**         | `.dxf`            | Vecteurs directs                                          | Dessins CAO, plans techniques                |
+| **PDF**         | `.pdf`            | Vecteurs directs ou vectorisation                         | Documents avec contenu vectoriel             |
+| **LightBurn**   | `.lbrn`, `.lbrn2` | Vecteurs directs                                          | Projets LightBurn                            |
+| **Ruida**       | `.rd`             | Vecteurs directs                                          | Fichiers de tâches contrôleur Ruida          |
+| **Illustrator** | `.ai`             | Vecteurs directs ou vectorisation                         | Logos issus d'Illustrator                    |
+| **EPS**         | `.eps`, `.ps`     | Vecteurs directs ou vectorisation (nécessite Ghostscript) | Logos, fichiers d'impression                 |
+| **HPGL**        | `.plt`, `.hpgl`   | Vecteurs directs                                          | Fichiers de traceur et de plotter de découpe |
 
 ### Formats matriciels
 

@@ -22,6 +22,7 @@ import files and optimize them for best results.
 | **Ruida**       | `.rd`             | Direct vectors                              | Ruida controller job files      |
 | **Illustrator** | `.ai`             | Direct vectors or trace                     | Logos from Illustrator          |
 | **EPS**         | `.eps`, `.ps`     | Direct vectors or trace (needs Ghostscript) | Logos, print artwork            |
+| **HPGL**        | `.plt`, `.hpgl`   | Direct vectors                              | Plotter and vinyl cutter files  |
 
 ### Raster Formats
 

@@ -15,6 +15,7 @@ Rayforge 支持导入多种文件格式，包括矢量格式和光栅格式。�
 | **Ruida**       | `.rd`             | 直接矢量                           | Ruida 控制器作业文件    |
 | **Illustrator** | `.ai`             | 直接矢量或描摹                     | 来自 Illustrator 的标志 |
 | **EPS**         | `.eps`, `.ps`     | 直接矢量或描摹（需要 Ghostscript） | 标志、印刷稿            |
+| **HPGL**        | `.plt`, `.hpgl`   | 直接矢量                           | 绘图仪和刻字机文件      |
 
 ### 光栅格式
 

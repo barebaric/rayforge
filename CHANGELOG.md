@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Import: HPGL plot files (`.plt`, `.hpgl`) from cutting plotters and
+  CAD programs, with one selectable layer per pen. Pen moves, circles,
+  arcs and rectangles are supported; labels and other skipped
+  instructions are listed in the import dialog (#517)
 - Import: Adobe Illustrator (`.ai`) and EPS/PostScript files. AI files
   saved with PDF compatibility (the default since Illustrator 9) import
   like PDFs; EPS, PostScript and older AI files are converted to PDF

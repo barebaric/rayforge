@@ -7,24 +7,25 @@ einschließlich Fähigkeiten, Einschränkungen und Empfehlungen.
 
 ### Schnellreferenz
 
-| Format               | Typ       | Import             | Export          | Empfohlene Verwendung          |
-| -------------------- | --------- | ------------------ | --------------- | ------------------------------ |
-| **SVG**              | Vektor    | ✓ Direkt / Tracing | ✓ Objekt-Export | Primäres Design-Format         |
-| **DXF**              | Vektor    | ✓ Direkt           | ✓ Objekt-Export | CAD-Datenaustausch             |
-| **PDF**              | Gemischt  | ✓ Direkt / Tracing | –               | Dokumente mit Vektorinhalt     |
-| **Illustrator**      | Vektor    | ✓ Direkt / Tracing | –               | Logos aus Illustrator          |
-| **EPS**              | Vektor    | ✓ Direkt / Tracing | –               | Logos, Druckvorlagen           |
-| **LightBurn**        | Vektor    | ✓ Direkt           | –               | LightBurn-Projekte             |
-| **Ruida**            | Vektor    | ✓ Direkt           | –               | Ruida-Aufgabendateien          |
-| **PNG**              | Raster    | ✓ Tracing          | –               | Fotos, Bilder                  |
-| **JPEG**             | Raster    | ✓ Tracing          | –               | Fotos                          |
-| **BMP**              | Raster    | ✓ Tracing          | –               | Einfache Grafiken              |
-| **GIF**              | Raster    | ✓ Tracing          | –               | Einfache Grafiken, Animationen |
-| **TIFF**             | Raster    | ✓ Tracing          | –               | Scans, Druckvorlagen           |
-| **WebP**             | Raster    | ✓ Tracing          | –               | Webbilder                      |
-| **RFS**              | Skizze    | ✓ Direkt           | ✓ Objekt-Export | Parametrische Skizzen          |
-| **G-Code**           | Steuerung | –                  | ✓ Primär        | Maschinenausgabe               |
-| **Rayforge-Projekt** | Projekt   | ✓                  | ✓               | Projekte speichern/laden       |
+| Format               | Typ       | Import             | Export          | Empfohlene Verwendung                |
+| -------------------- | --------- | ------------------ | --------------- | ------------------------------------ |
+| **SVG**              | Vektor    | ✓ Direkt / Tracing | ✓ Objekt-Export | Primäres Design-Format               |
+| **DXF**              | Vektor    | ✓ Direkt           | ✓ Objekt-Export | CAD-Datenaustausch                   |
+| **PDF**              | Gemischt  | ✓ Direkt / Tracing | –               | Dokumente mit Vektorinhalt           |
+| **Illustrator**      | Vektor    | ✓ Direkt / Tracing | –               | Logos aus Illustrator                |
+| **EPS**              | Vektor    | ✓ Direkt / Tracing | –               | Logos, Druckvorlagen                 |
+| **LightBurn**        | Vektor    | ✓ Direkt           | –               | LightBurn-Projekte                   |
+| **Ruida**            | Vektor    | ✓ Direkt           | –               | Ruida-Aufgabendateien                |
+| **HPGL**             | Vektor    | ✓ Direkt           | –               | Plotter- und Schneideplotter-Dateien |
+| **PNG**              | Raster    | ✓ Tracing          | –               | Fotos, Bilder                        |
+| **JPEG**             | Raster    | ✓ Tracing          | –               | Fotos                                |
+| **BMP**              | Raster    | ✓ Tracing          | –               | Einfache Grafiken                    |
+| **GIF**              | Raster    | ✓ Tracing          | –               | Einfache Grafiken, Animationen       |
+| **TIFF**             | Raster    | ✓ Tracing          | –               | Scans, Druckvorlagen                 |
+| **WebP**             | Raster    | ✓ Tracing          | –               | Webbilder                            |
+| **RFS**              | Skizze    | ✓ Direkt           | ✓ Objekt-Export | Parametrische Skizzen                |
+| **G-Code**           | Steuerung | –                  | ✓ Primär        | Maschinenausgabe                     |
+| **Rayforge-Projekt** | Projekt   | ✓                  | ✓               | Projekte speichern/laden             |
 
 ---
 
@@ -249,6 +250,25 @@ deiner Distribution, unter Windows und macOS die Version von der Ghostscript-Web
 Ghostscript zeigt der Importdialog statt einer Vorschau einen Hinweis. Das Projekt speichert das
 umgewandelte PDF, daher lässt sich ein gespeichertes Projekt auch auf einem Rechner ohne Ghostscript
 öffnen.
+
+---
+
+### HPGL (.plt / .hpgl)
+
+**Erweiterung:** `.plt`, `.hpgl`, `.hpg`, `.hgl` **MIME-Typ:** `application/vnd.hp-hpgl` **Import:**
+Direkte Vektoranalyse **Export:** Nicht unterstützt
+
+HPGL ist die Plottersprache von Schneideplottern, Folienplottern und älteren CAD-Programmen.
+Rayforge liest die üblichen Zeichenbefehle: Stiftbewegungen (PU, PD, PA, PR), Kreise und Bögen (CI,
+AA, AR) sowie Rechtecke (EA, ER, RA, RR). Jeder Stift wird zu einer Ebene, die du im Importdialog
+auswählen kannst.
+
+**Einschränkungen:**
+
+- ✗ Textbeschriftungen (LB) werden übersprungen; wandle Text vor dem Plotten in Pfade um
+- ✗ Skalierung (SC) und Drehung (RO) werden ignoriert; der Importdialog listet übersprungene Befehle
+  auf
+- Koordinaten verwenden die üblichen 40 Plottereinheiten pro Millimeter
 
 ---
 
