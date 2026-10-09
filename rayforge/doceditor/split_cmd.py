@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from raygeo.geo import Geometry
 
 from ..core.item import DocItem
+from ..core.path_cleanup import split_contours
 from ..core.undo import ListItemCommand
 from ..core.workpiece import WorkPiece
 
@@ -49,6 +50,19 @@ class ConnectivitySplitStrategy(SplitStrategy):
         return workpiece.boundaries.split_into_components()
 
 
+class ContourSplitStrategy(SplitStrategy):
+    """
+    Splits a workpiece into one fragment per contour ("Break Apart").
+    Unlike the connectivity split, holes become separate pieces and open
+    paths are kept.
+    """
+
+    def calculate_fragments(self, workpiece: "WorkPiece") -> list[Geometry]:
+        if not workpiece.boundaries or workpiece.boundaries.is_empty():
+            return []
+        return split_contours(workpiece.boundaries)
+
+
 class SplitCmd:
     """Handles splitting of document items."""
 
@@ -59,6 +73,7 @@ class SplitCmd:
         self,
         items: list[WorkPiece],
         strategy: SplitStrategy | None = None,
+        name: str | None = None,
     ) -> list[DocItem]:
         """
         Splits the provided items into multiple fragments based on the given
@@ -69,6 +84,7 @@ class SplitCmd:
             items: The list of items to split.
             strategy: The strategy to use for calculating fragments.
                       Defaults to splitting disjoint components.
+            name: The name of the undo step. Defaults to "Split item(s)".
 
         Returns:
             A list of the newly created items.
@@ -81,7 +97,7 @@ class SplitCmd:
         history = self._editor.history_manager
         newly_created_items = []
 
-        with history.transaction(_("Split item(s)")) as t:
+        with history.transaction(name or _("Split item(s)")) as t:
             for item in items:
                 # Capture the parent before any modification/removal occurs.
                 # Executing remove_cmd may set item.parent to None.
