@@ -116,9 +116,7 @@ class ReplaceSourceDataCommand(Command):
         super().__init__(name)
         self.asset = asset
         self.new_values = new_values
-        self.old_values = {
-            key: getattr(asset, key) for key in _SOURCE_DATA_FIELDS
-        }
+        self.old_values = {key: getattr(asset, key) for key in new_values}
 
     def _apply(self, values: dict[str, Any]) -> None:
         for key, value in values.items():
@@ -261,6 +259,27 @@ class ReloadCmd:
             and wp.source_segment.source_asset_uid == asset.uid
         ]
 
+    def sources_of(self, items: list[DocItem]) -> list[SourceAsset]:
+        """Returns the distinct sources the given workpieces came from."""
+        sources: list[SourceAsset] = []
+        for item in items:
+            if not isinstance(item, WorkPiece) or not item.source_segment:
+                continue
+            asset = self._editor.doc.get_source_asset_by_uid(
+                item.source_segment.source_asset_uid
+            )
+            if asset is not None and all(
+                asset.uid != known.uid for known in sources
+            ):
+                sources.append(asset)
+        return sources
+
+    def can_relink(self, asset: SourceAsset) -> bool:
+        return bool(asset.metadata.get("_importer_class"))
+
+    def can_reload(self, asset: SourceAsset) -> bool:
+        return self.can_relink(asset) and asset.source_file.is_file()
+
     def reload_source(
         self, asset: SourceAsset, data: bytes | None = None
     ) -> ReloadReport:
@@ -269,13 +288,25 @@ class ReloadCmd:
         file on disk) and updates every workpiece made from it in place,
         as a single undoable step.
         """
+        return self._reload(asset, asset.source_file, data)
+
+    def relink_source(self, asset: SourceAsset, path: Path) -> ReloadReport:
+        """
+        Points a source at another file and reloads it from there, as a
+        single undoable step.
+        """
+        return self._reload(asset, path, None)
+
+    def _reload(
+        self, asset: SourceAsset, path: Path, data: bytes | None
+    ) -> ReloadReport:
         report = ReloadReport(source_name=asset.name)
         try:
             if data is None:
-                data = asset.source_file.read_bytes()
-            plan = self._plan(asset, data, report)
+                data = path.read_bytes()
+            plan = self._plan(asset, path, data, report)
         except Exception as e:
-            logger.exception(f"Reload of {asset.source_file} failed")
+            logger.exception(f"Reload of {path} failed")
             report.error = str(e)
             self._editor.notification_requested.send(
                 self, message=report.describe()
@@ -328,6 +359,7 @@ class ReloadCmd:
         self,
         importer_cls: type[Importer],
         asset: SourceAsset,
+        path: Path,
         data: bytes,
         spec: VectorizationSpec,
     ) -> VectorizationSpec:
@@ -337,7 +369,6 @@ class ReloadCmd:
         """
         if not isinstance(spec, PassthroughSpec) or not spec.active_layer_ids:
             return spec
-        path = asset.source_file
         old_ids = self._layer_ids(
             importer_cls, asset.original_data, path, spec
         )
@@ -347,7 +378,11 @@ class ReloadCmd:
         return replace(spec, active_layer_ids=new_ids)
 
     def _plan(
-        self, asset: SourceAsset, data: bytes, report: ReloadReport
+        self,
+        asset: SourceAsset,
+        path: Path,
+        data: bytes,
+        report: ReloadReport,
     ) -> _Plan:
         importer_cls = self._importer_class(asset)
         plan = _Plan()
@@ -362,12 +397,12 @@ class ReloadCmd:
         new_source = None
         for workpieces in groups.values():
             result = self._plan_group(
-                importer_cls, asset, data, workpieces, plan, report
+                importer_cls, asset, path, data, workpieces, plan, report
             )
             new_source = new_source or _source_of(result)
 
         if new_source is None:
-            result = self._run(importer_cls, data, asset.source_file, None)
+            result = self._run(importer_cls, data, path, None)
             new_source = _source_of(result)
 
         metadata = dict(new_source.metadata)
@@ -378,12 +413,17 @@ class ReloadCmd:
             key: getattr(new_source, key) for key in _SOURCE_DATA_FIELDS
         }
         plan.source_values["metadata"] = metadata
+        if path != asset.source_file:
+            plan.source_values["source_file"] = path
+            if asset.name == asset.source_file.name:
+                plan.source_values["name"] = path.name
         return plan
 
     def _plan_group(
         self,
         importer_cls: type[Importer],
         asset: SourceAsset,
+        path: Path,
         data: bytes,
         workpieces: list[WorkPiece],
         plan: _Plan,
@@ -392,8 +432,9 @@ class ReloadCmd:
         segment = workpieces[0].source_segment
         assert segment is not None
         spec = segment.vectorization_spec
-        path = asset.source_file
-        new_spec = self._spec_for_new_data(importer_cls, asset, data, spec)
+        new_spec = self._spec_for_new_data(
+            importer_cls, asset, path, data, spec
+        )
         old_result = self._run(importer_cls, asset.original_data, path, spec)
         new_result = self._run(importer_cls, data, path, new_spec)
         if not _fresh_items(new_result):

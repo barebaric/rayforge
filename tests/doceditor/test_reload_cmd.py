@@ -497,3 +497,97 @@ class TestReloadDxf:
         new_world = wp.get_world_geometry()
         assert new_world is not None
         _assert_contained(old_world, new_world)
+
+
+class TestRelink:
+    def test_relink_reads_new_path_and_keeps_placement(self, editor, tmp_path):
+        old_path = _write(tmp_path / "a.svg", PAGE_80, RED_RECT, BLUE_CIRCLE)
+        asset = _import(editor, old_path, _flatten_spec())
+        (wp,) = _workpieces_of(editor.doc, asset)
+        _transform(wp, Matrix.translation(9, 4) @ Matrix.rotation(10))
+        old_world = wp.get_world_geometry()
+        assert old_world is not None
+        (tmp_path / "moved").mkdir()
+        new_path = _write(
+            tmp_path / "moved" / "b.svg",
+            PAGE_80,
+            RED_RECT,
+            BLUE_CIRCLE,
+            GREEN_SQUARE,
+        )
+        old_path.unlink()
+
+        report = editor.reload.relink_source(asset, new_path)
+
+        assert report.error is None
+        assert report.updated == 1
+        assert asset.source_file == new_path
+        assert asset.name == "b.svg"
+        assert asset.original_data == new_path.read_bytes()
+        new_world = wp.get_world_geometry()
+        assert new_world is not None
+        _assert_contained(old_world, new_world)
+
+    def test_relink_is_undoable(self, editor, tmp_path):
+        old_path = _write(tmp_path / "a.svg", PAGE_80, RED_RECT)
+        asset = _import(editor, old_path, _flatten_spec())
+        old_data = asset.original_data
+        new_path = _write(tmp_path / "b.svg", PAGE_80, WIDE_RED_RECT)
+
+        editor.reload.relink_source(asset, new_path)
+        editor.history_manager.undo()
+
+        assert asset.source_file == old_path
+        assert asset.name == "a.svg"
+        assert asset.original_data == old_data
+
+    def test_relink_keeps_a_custom_name(self, editor, tmp_path):
+        old_path = _write(tmp_path / "a.svg", PAGE_80, RED_RECT)
+        asset = _import(editor, old_path, _flatten_spec())
+        asset.name = "Logo"
+        new_path = _write(tmp_path / "b.svg", PAGE_80, RED_RECT)
+
+        editor.reload.relink_source(asset, new_path)
+
+        assert asset.name == "Logo"
+
+    def test_relink_to_unreadable_path_changes_nothing(self, editor, tmp_path):
+        old_path = _write(tmp_path / "a.svg", PAGE_80, RED_RECT)
+        asset = _import(editor, old_path, _flatten_spec())
+        undo_depth = len(editor.history_manager.undo_stack)
+
+        report = editor.reload.relink_source(asset, tmp_path / "nope.svg")
+
+        assert report.error
+        assert asset.source_file == old_path
+        assert len(editor.history_manager.undo_stack) == undo_depth
+
+
+class TestSourceLookup:
+    def test_sources_of_selection_are_distinct(self, editor, tmp_path):
+        a = _import(
+            editor,
+            _write(tmp_path / "a.svg", PAGE_80, RED_RECT, BLUE_CIRCLE),
+            _color_spec(),
+        )
+        b = _import(
+            editor,
+            _write(tmp_path / "b.svg", PAGE_80, RED_RECT),
+            _flatten_spec(),
+        )
+        items = editor.doc.all_workpieces + [WorkPiece(name="plain")]
+
+        sources = editor.reload.sources_of(items)
+
+        assert sorted(s.uid for s in sources) == sorted([a.uid, b.uid])
+
+    def test_reloadable_needs_existing_file(self, editor, tmp_path):
+        path = _write(tmp_path / "a.svg", PAGE_80, RED_RECT)
+        asset = _import(editor, path, _flatten_spec())
+        assert editor.reload.can_reload(asset)
+        assert editor.reload.can_relink(asset)
+
+        path.unlink()
+
+        assert not editor.reload.can_reload(asset)
+        assert editor.reload.can_relink(asset)
