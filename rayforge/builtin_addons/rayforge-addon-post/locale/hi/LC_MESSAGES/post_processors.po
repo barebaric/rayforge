@@ -285,3 +285,26 @@ msgstr "टैब"
 #: post_processors/transformers/tabs_transformer.py
 msgid "Creates holding tabs by adding gaps or reducing power on cut paths"
 msgstr "कट पाथ पर अंतराल जोड़कर या शक्ति घटाकर होल्डिंग टैब बनाता है"
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Choose Best Start Point"
+msgstr "सर्वोत्तम प्रारंभ बिंदु चुनें"
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Enter closed paths at the vertex nearest the current position, hiding the seam of every loop."
+msgstr "बंद पथों को वर्तमान स्थिति के निकटतम शीर्ष से शुरू करें, प्रत्येक लूप की सीम को छिपाते हुए।"
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Prefer Corners"
+msgstr "कोनों को प्राथमिकता दें"
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Only start closed paths at sharp corners, when the path has any (circles fall back to any vertex)."
+msgstr "बंद पथों को केवल तीखे कोनों से शुरू करें, यदि कोई हों (वृत्त किसी भी शीर्ष का उपयोग करते हैं)।"
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Toggle Choose Best Start Point"
+msgstr "सर्वोत्तम प्रारंभ बिंदु चुनें टॉगल करें"
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Toggle Prefer Corners"
+msgstr "कोनों को प्राथमिकता दें टॉगल करें"

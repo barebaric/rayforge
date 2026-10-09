@@ -297,3 +297,26 @@ msgid "Creates holding tabs by adding gaps or reducing power on cut paths"
 msgstr ""
 "Crea pestañas de sujeción añadiendo huecos o reduciendo potencia en "
 "trayectorias de corte"
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Choose Best Start Point"
+msgstr "Elegir el mejor punto de inicio"
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Enter closed paths at the vertex nearest the current position, hiding the seam of every loop."
+msgstr "Iniciar los caminos cerrados en el vértice más cercano a la posición actual, ocultando la costura de cada bucle."
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Prefer Corners"
+msgstr "Preferir esquinas"
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Only start closed paths at sharp corners, when the path has any (circles fall back to any vertex)."
+msgstr "Iniciar los caminos cerrados solo en esquinas marcadas, si las hay (los círculos usan cualquier vértice)."
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Toggle Choose Best Start Point"
+msgstr "Alternar elegir el mejor punto de inicio"
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Toggle Prefer Corners"
+msgstr "Alternar preferir esquinas"

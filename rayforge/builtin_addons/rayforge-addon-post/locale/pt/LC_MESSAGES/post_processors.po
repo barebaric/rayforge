@@ -295,3 +295,26 @@ msgid "Creates holding tabs by adding gaps or reducing power on cut paths"
 msgstr ""
 "Cria abas de fixação adicionando lacunas ou reduzindo a potência em caminhos "
 "de corte"
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Choose Best Start Point"
+msgstr "Escolher o melhor ponto de início"
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Enter closed paths at the vertex nearest the current position, hiding the seam of every loop."
+msgstr "Começar caminhos fechados no vértice mais próximo da posição atual, ocultando a emenda de cada laço."
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Prefer Corners"
+msgstr "Preferir cantos"
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Only start closed paths at sharp corners, when the path has any (circles fall back to any vertex)."
+msgstr "Começar caminhos fechados apenas em cantos nítidos, se houver (círculos usam qualquer vértice)."
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Toggle Choose Best Start Point"
+msgstr "Alternar escolher o melhor ponto de início"
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Toggle Prefer Corners"
+msgstr "Alternar preferir cantos"
