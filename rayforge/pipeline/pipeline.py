@@ -15,7 +15,9 @@ from raygeo.pipeline.execute import Pipeline as RaygeoPipeline
 
 from ..core.capability import MachineCapability
 from ..core.doc import Doc
+from ..core.job_origin import StartFrom
 from ..core.workpiece import WorkPiece
+from ..machine.job_placement import JobPlacementError
 from ..machine.kinematic_mapping import KinematicMapping
 from .artifact import (
     BaseArtifactHandle,
@@ -27,6 +29,7 @@ from .artifact.store import ArtifactStore
 from .encoder.base import EncodedOutput, MachineCodeOpMap
 from .intent_builder import (
     UnsupportedRotaryPanelOrientationError,
+    validate_job_placement,
     validate_panel_configuration,
 )
 from .intent_controller import IntentController
@@ -538,10 +541,21 @@ class Pipeline:
 
         try:
             validate_panel_configuration(self._machine, self._doc)
-        except UnsupportedRotaryPanelOrientationError as exc:
+            validate_job_placement(self._machine, self._doc)
+        except (
+            UnsupportedRotaryPanelOrientationError,
+            JobPlacementError,
+        ) as exc:
             self.invalidate_job_output()
             when_done(None, exc)
             return
+
+        if self._doc.job_origin.start_from == StartFrom.CURRENT_POSITION:
+            # The placement depends on the live head position, which
+            # does not trigger a rebuild when it changes. Every request
+            # (send, frame, export, sanity check) therefore assembles
+            # the job afresh for the position the head has right now.
+            self.invalidate_job_output()
 
         if self._last_job_handle is not None:
             when_done(self._last_job_handle, None)

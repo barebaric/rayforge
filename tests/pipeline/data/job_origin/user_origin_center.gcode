@@ -1,0 +1,20 @@
+G21 ;Set units to mm
+G90 ;Absolute positioning
+G54
+T0
+G0 X-4.945 Y4.945
+M4 S500
+G1 X4.945 F3000
+G1 Y-4.945 F3000
+G1 X-4.945 F3000
+G1 Y4.945 F3000
+M5
+G0 X-5 Y5
+M4 S500
+G1 X5 F3000
+G1 Y-5 F3000
+G1 X-5 F3000
+G1 Y5 F3000
+M5
+M5 ;Ensure laser is off
+G0 X0 Y0 ;Return to origin

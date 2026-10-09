@@ -408,6 +408,13 @@ class IntentController:
                     self._emit_job_generation_failed
                 )
                 return
+            if builder.job_placement_error is not None:
+                # The job nodes were left out because the job origin
+                # cannot be resolved; complete anyone waiting for the
+                # job instead of leaving them blocked.
+                self._task_manager.schedule_on_main_thread(
+                    self._emit_job_generation_failed
+                )
             try:
                 self._refresh_key_to_item_map(nodes)
                 new_intent = create_intent_from_nodes(nodes)
