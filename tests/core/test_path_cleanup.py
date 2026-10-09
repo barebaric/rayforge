@@ -271,6 +271,20 @@ class TestRemoveDuplicateContours:
         _result, removed = remove_duplicate_contours(geo, 0.01)
         assert removed == 2
 
+    def test_many_scattered_duplicates(self):
+        pieces = []
+        for i in range(200):
+            x, y = (i * 37) % 290, (i * 53) % 290
+            pieces.append(_polyline([(x, y), (x + 5, y)]))
+        copies = [
+            _polyline(list(reversed([(x, y), (x + 5, y)])))
+            for x, y in (((i * 37) % 290, (i * 53) % 290) for i in range(200))
+        ]
+        geo = _concat(*pieces, *copies)
+        result, removed = remove_duplicate_contours(geo, 0.01)
+        assert removed == 200
+        assert len(_contours(result)) == 200
+
 
 class TestGeometriesMatch:
     def test_same_shapes_in_other_order_match(self):

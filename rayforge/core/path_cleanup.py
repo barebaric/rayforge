@@ -249,6 +249,30 @@ def _length_slack(tolerance: float) -> float:
     return 4.0 * tolerance + 1e-9
 
 
+class _CornerIndex:
+    """
+    A spatial hash of the lower-left bounding box corner of kept
+    contours. Duplicates have corners within the tolerance, so only
+    neighbouring cells need to be compared.
+    """
+
+    def __init__(self, tolerance: float):
+        self._cell = max(tolerance, 1e-9)
+        self._cells: dict[tuple[int, int], list[int]] = {}
+
+    def _key(self, x: float, y: float) -> tuple[int, int]:
+        return math.floor(x / self._cell), math.floor(y / self._cell)
+
+    def add(self, index: int, rect: tuple[float, float, float, float]):
+        self._cells.setdefault(self._key(rect[0], rect[1]), []).append(index)
+
+    def near(self, rect: tuple[float, float, float, float]) -> Iterator[int]:
+        kx, ky = self._key(rect[0], rect[1])
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                yield from self._cells.get((kx + dx, ky + dy), ())
+
+
 def remove_duplicate_contours(
     geo: Geometry, tolerance: float
 ) -> tuple[Geometry, int]:
@@ -266,24 +290,25 @@ def remove_duplicate_contours(
         A tuple of the new geometry and the number of removed contours.
     """
     contours = _drawn_contours(geo)
-    lengths = [c.distance() for c in contours]
-    order = sorted(range(len(contours)), key=lambda i: lengths[i])
-    duplicates: set[int] = set()
     slack = _length_slack(tolerance)
-    for pos, i in enumerate(order):
-        if i in duplicates:
+    index = _CornerIndex(tolerance)
+    lengths: list[float] = []
+    kept: list[Geometry] = []
+    removed = 0
+    for contour in contours:
+        rect = contour.rect()
+        length = contour.distance()
+        if any(
+            abs(lengths[k] - length) <= slack
+            and _contours_match(kept[k], contour, tolerance)
+            for k in index.near(rect)
+        ):
+            removed += 1
             continue
-        for j in order[pos + 1 :]:
-            if lengths[j] - lengths[i] > slack:
-                break
-            if j in duplicates:
-                continue
-            if _contours_match(contours[i], contours[j], tolerance):
-                duplicates.add(max(i, j))
-                if max(i, j) == i:
-                    break
-    kept = [c for i, c in enumerate(contours) if i not in duplicates]
-    return _concat(kept), len(duplicates)
+        index.add(len(kept), rect)
+        lengths.append(length)
+        kept.append(contour)
+    return _concat(kept), removed
 
 
 def geometries_match(a: Geometry, b: Geometry, tolerance: float) -> bool:
