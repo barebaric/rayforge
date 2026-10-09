@@ -802,3 +802,27 @@ msgstr "Laserkopf"
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Add Material Test"
 msgstr "Materialtest hinzufügen"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Serpentine"
+msgstr "Serpentinenmodus"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Alternate the dither direction on every row to avoid directional artifacts"
+msgstr "Ditherrichtung in jeder Zeile wechseln, um richtungsabhängige Artefakte zu vermeiden"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Halftone Cell Size"
+msgstr "Halbton-Zellgröße"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Distance between halftone dot centers"
+msgstr "Abstand zwischen den Mittelpunkten der Halbtonpunkte"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Halftone Angle"
+msgstr "Halbton-Winkel"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Rotation of the halftone dot grid"
+msgstr "Drehung des Halbton-Punktrasters"

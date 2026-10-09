@@ -784,3 +784,27 @@ msgstr "लेज़र हेड"
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Add Material Test"
 msgstr "सामग्री परीक्षण जोड़ें"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Serpentine"
+msgstr "सर्पाकार"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Alternate the dither direction on every row to avoid directional artifacts"
+msgstr "दिशात्मक दोषों से बचने के लिए हर पंक्ति में डाइदर की दिशा बदलें"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Halftone Cell Size"
+msgstr "हाफ़टोन सेल आकार"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Distance between halftone dot centers"
+msgstr "हाफ़टोन बिंदुओं के केंद्रों के बीच की दूरी"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Halftone Angle"
+msgstr "हाफ़टोन कोण"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Rotation of the halftone dot grid"
+msgstr "हाफ़टोन बिंदु ग्रिड का घुमाव"

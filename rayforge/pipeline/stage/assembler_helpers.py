@@ -27,6 +27,8 @@ from raygeo.ops.types import RasterMode
 
 from ...core.vectorization_spec import TraceSpec
 from ...image.dither import (
+    DEFAULT_HALFTONE_ANGLE,
+    DEFAULT_HALFTONE_CELL_MM,
     DitherAlgorithm,
     grayscale_to_dithered_array,
 )
@@ -48,7 +50,8 @@ class DepthMode(Enum):
 
     * ``POWER_MODULATION`` — variable power proportional to darkness.
     * ``CONSTANT_POWER`` — binary mask, constant-power scan lines.
-    * ``DITHER`` — Floyd-Steinberg / ordered dither to binary.
+    * ``DITHER`` — error-diffusion, ordered or halftone dither to
+      binary.
     * ``MULTI_PASS`` — repeated Z-stepped passes through the depth.
     """
 
@@ -298,6 +301,10 @@ def preprocess_raster_image(
     dither_algorithm: DitherAlgorithm | None = None,
     laser_spot_x_mm: float = 0.1,
     pixels_per_mm_x: float = 1.0,
+    pixels_per_mm_y: float | None = None,
+    dither_serpentine: bool = False,
+    halftone_cell_mm: float = DEFAULT_HALFTONE_CELL_MM,
+    halftone_angle: float = DEFAULT_HALFTONE_ANGLE,
 ) -> tuple[np.ndarray | None, np.ndarray | None]:
     """Convert a Cairo surface into an image array for a raster assembler.
 
@@ -327,6 +334,13 @@ def preprocess_raster_image(
             compute minimum feature size for dithering.
         pixels_per_mm_x: Rendered pixels-per-mm in X, used with
             ``laser_spot_x_mm`` for dither minimum feature size.
+        pixels_per_mm_y: Rendered pixels-per-mm in Y; defaults to
+            ``pixels_per_mm_x``. Screens use both to keep their cells
+            square in millimetres.
+        dither_serpentine: Alternate the scan direction per row for
+            the error-diffusion algorithms.
+        halftone_cell_mm: Dot spacing of the halftone screen in mm.
+        halftone_angle: Halftone screen angle in degrees.
 
     Returns:
         ``(image, alpha)`` where *image* is a 2-D ``uint8`` array
@@ -371,6 +385,13 @@ def preprocess_raster_image(
             gray_image,
             algo,
             min_feature_px=min_feature_px,
+            serpentine=dither_serpentine,
+            halftone_cell_mm=halftone_cell_mm,
+            halftone_angle=halftone_angle,
+            pixels_per_mm=(
+                pixels_per_mm_x,
+                pixels_per_mm_y or pixels_per_mm_x,
+            ),
         )
         return image, None
 

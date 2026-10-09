@@ -11,6 +11,7 @@ from raygeo.ops.part import Part
 from raygeo.ops.types import CommandCategory, CommandType
 
 from rayforge.core.step_registry import step_registry
+from rayforge.core.varset import LabeledChoiceVar
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.dither import DitherAlgorithm
 from rayforge.pipeline.transformer import OpsTransformer
@@ -543,3 +544,139 @@ class TestEngraveCropToStock:
         assert ops.endpoint(arcs[0]) == pytest.approx(
             (0.6, 0.5, 0.0), abs=1e-6
         )
+
+
+class TestEngraveDitherOptions:
+    """Serpentine and halftone settings of the Dither mode."""
+
+    def _var(self, key):
+        varset = EngraveStep.recipe_varset()
+        return next(v for v in varset.vars if v.key == key)
+
+    def test_defaults(self):
+        step = EngraveStep(name="engrave")
+        assert step.dither_serpentine is False
+        assert step.halftone_cell_mm == 0.5
+        assert step.halftone_angle == 45.0
+
+    def test_roundtrip_serialization(self):
+        step = EngraveStep(name="engrave")
+        step.depth_mode = "DITHER"
+        step.dither_algorithm = DitherAlgorithm.HALFTONE
+        step.dither_serpentine = True
+        step.halftone_cell_mm = 0.8
+        step.halftone_angle = 15.0
+        data = step.to_dict()
+        restored = EngraveStep.from_dict(data)
+        assert restored.dither_algorithm is DitherAlgorithm.HALFTONE
+        assert restored.dither_serpentine is True
+        assert restored.halftone_cell_mm == 0.8
+        assert restored.halftone_angle == 15.0
+        assert data == restored.to_dict()
+
+    def test_old_documents_get_defaults(self):
+        data = EngraveStep(name="engrave").to_dict()
+        for key in ("dither_serpentine", "halftone_cell_mm", "halftone_angle"):
+            data.pop(key)
+        restored = EngraveStep.from_dict(data)
+        assert restored.dither_serpentine is False
+        assert restored.halftone_cell_mm == 0.5
+        assert restored.halftone_angle == 45.0
+
+    def test_new_algorithms_load_by_value(self):
+        data = EngraveStep(name="engrave").to_dict()
+        data["dither_algorithm"] = "stucki"
+        restored = EngraveStep.from_dict(data)
+        assert restored.dither_algorithm is DitherAlgorithm.STUCKI
+
+    def test_cache_params_cover_the_new_settings(self):
+        step = EngraveStep(name="engrave")
+        before = step.get_cache_params()
+        for attr, value in (
+            ("dither_serpentine", True),
+            ("halftone_cell_mm", 1.2),
+            ("halftone_angle", 10.0),
+        ):
+            setattr(step, attr, value)
+            after = step.get_cache_params()
+            assert after[attr] == value
+            assert after != before
+            before = after
+
+    def test_varset_lists_every_algorithm(self):
+        var = self._var("dither_algorithm")
+        assert isinstance(var, LabeledChoiceVar)
+        names = [var.get_value_for_display(label) for label in var.choices]
+        assert names == [a.name for a in DitherAlgorithm]
+
+    @pytest.mark.parametrize(
+        "algo, visible",
+        [
+            ("FLOYD_STEINBERG", True),
+            ("STUCKI", True),
+            ("ATKINSON", True),
+            ("BAYER4", False),
+            ("NEWSPRINT", False),
+            ("HALFTONE", False),
+        ],
+    )
+    def test_serpentine_only_for_error_diffusion(self, algo, visible):
+        var = self._var("dither_serpentine")
+        values = {"depth_mode": "DITHER", "dither_algorithm": algo}
+        assert var.is_visible(values) is visible
+        values["depth_mode"] = "POWER_MODULATION"
+        assert var.is_visible(values) is False
+
+    @pytest.mark.parametrize("key", ["halftone_cell_mm", "halftone_angle"])
+    def test_halftone_rows_only_for_halftone(self, key):
+        var = self._var(key)
+        assert var.is_visible(
+            {"depth_mode": "DITHER", "dither_algorithm": "HALFTONE"}
+        )
+        assert not var.is_visible(
+            {"depth_mode": "DITHER", "dither_algorithm": "STUCKI"}
+        )
+        assert not var.is_visible(
+            {"depth_mode": "CONSTANT_POWER", "dither_algorithm": "HALFTONE"}
+        )
+
+    def test_apply_import_settings_sets_dither_mode(self):
+        step = EngraveStep(name="engrave")
+        step.apply_import_settings(
+            {
+                "depth_mode": "DITHER",
+                "dither_algorithm": "HALFTONE",
+                "halftone_cell_mm": 0.6,
+                "halftone_angle": 22.5,
+            }
+        )
+        assert step.depth_mode == "DITHER"
+        assert step.dither_algorithm is DitherAlgorithm.HALFTONE
+        assert step.halftone_cell_mm == 0.6
+        assert step.halftone_angle == 22.5
+
+    def test_build_raster_part_forwards_dither_options(self, machine):
+        step = EngraveStep(name="engrave")
+        step.depth_mode = "DITHER"
+        step.auto_levels = False
+        step.dither_algorithm = DitherAlgorithm.HALFTONE
+        step.dither_serpentine = True
+        step.halftone_cell_mm = 0.7
+        step.halftone_angle = 12.0
+        wp = WorkPiece(name="wp")
+        wp.set_size(10.0, 5.0)
+        surface = MagicMock()
+        target = "laser_essentials.steps.raster_step.preprocess_raster_image"
+        with (
+            patch.object(WorkPiece, "render_to_pixels", return_value=surface),
+            patch(target, return_value=(None, None)) as preprocess,
+        ):
+            step.build_compute_payload(machine, wp)
+
+        kwargs = preprocess.call_args.kwargs
+        assert kwargs["dither_algorithm"] is DitherAlgorithm.HALFTONE
+        assert kwargs["dither_serpentine"] is True
+        assert kwargs["halftone_cell_mm"] == 0.7
+        assert kwargs["halftone_angle"] == 12.0
+        assert kwargs["pixels_per_mm_x"] == pytest.approx(20.0)
+        assert kwargs["pixels_per_mm_y"] == pytest.approx(10.0)

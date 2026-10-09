@@ -9,7 +9,7 @@ import pytest
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
-from gi.repository import Adw
+from gi.repository import Adw, Gtk
 from laser_essentials.steps import EngraveStep, MaterialTestStep
 from laser_essentials.widgets.contour_page import ContourStepSettingsPage
 from laser_essentials.widgets.material_test_grid_page import (
@@ -463,6 +463,38 @@ def test_raster_page_mode_visibility(editor, laser_machine, ui_context):
 
 
 @pytest.mark.ui
+def test_raster_page_dither_option_visibility(
+    editor, laser_machine, ui_context
+):
+    """Serpentine follows the error-diffusion algorithms, the halftone
+    rows only show for Halftone."""
+    step_cls = step_registry.get("EngraveStep")
+    assert step_cls is not None
+    step = cast(EngraveStep, step_cls.create(ui_context))
+    step.depth_mode = "DITHER"
+    page = RasterSettingsPage(editor, step)
+
+    serpentine = _row(page, "dither_serpentine")
+    cell = _row(page, "halftone_cell_mm")
+    angle = _row(page, "halftone_angle")
+
+    step.set_dither_algorithm("STUCKI")
+    assert serpentine.get_visible() is True
+    assert cell.get_visible() is False
+    assert angle.get_visible() is False
+
+    step.set_dither_algorithm("HALFTONE")
+    assert serpentine.get_visible() is False
+    assert cell.get_visible() is True
+    assert angle.get_visible() is True
+
+    step.depth_mode = "POWER_MODULATION"
+    step.updated.send(step)
+    assert serpentine.get_visible() is False
+    assert cell.get_visible() is False
+
+
+@pytest.mark.ui
 def test_raster_page_shows_the_steps_dither_algorithm(
     editor, laser_machine, ui_context
 ):
@@ -481,6 +513,29 @@ def test_raster_page_shows_the_steps_dither_algorithm(
 
     step.set_dither_algorithm(DitherAlgorithm.STUCKI)
     assert adapter.get_value() == "STUCKI"
+
+
+@pytest.mark.ui
+def test_raster_page_dither_algorithm_lists_new_methods(
+    editor, laser_machine, ui_context
+):
+    step_cls = step_registry.get("EngraveStep")
+    assert step_cls is not None
+    step = cast(EngraveStep, step_cls.create(ui_context))
+    step.depth_mode = "DITHER"
+    page = RasterSettingsPage(editor, step)
+
+    adapter = page.engrave_widget.adapter_for("dither_algorithm")
+    assert isinstance(adapter, ComboAdapter)
+    row = cast(Adw.ComboRow, _row(page, "dither_algorithm"))
+    model = row.get_model()
+    assert model is not None
+    labels = [
+        cast(Gtk.StringObject, model.get_item(i)).get_string()
+        for i in range(model.get_n_items())
+    ]
+    for algo in DitherAlgorithm:
+        assert algo.display_name in labels
 
 
 def _depth_mode_adapter(page: RasterSettingsPage) -> ComboAdapter:
