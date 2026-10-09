@@ -302,3 +302,38 @@ msgid "Creates holding tabs by adding gaps or reducing power on cut paths"
 msgstr ""
 "Crée des languettes de maintien en ajoutant des espaces ou en réduisant la "
 "puissance sur les parcours de coupe"
+
+#: post_processors/transformers/perforation_transformer.py
+msgid "Perforation"
+msgstr "Perforation"
+
+#: post_processors/transformers/perforation_transformer.py
+msgid ""
+"Cuts in dashes: the laser fires for the cut length and skips the skip length"
+msgstr ""
+"Découpe en pointillés : le laser tire sur la longueur de coupe et saute la "
+"longueur de saut"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Cut Length"
+msgstr "Longueur de coupe"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance the laser fires before each gap"
+msgstr "Distance sur laquelle le laser tire avant chaque interruption"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Skip Length"
+msgstr "Longueur de saut"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance travelled with the laser off between cuts"
+msgstr "Distance parcourue laser éteint entre les coupes"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation cut length"
+msgstr "Modifier la longueur de coupe de la perforation"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation skip length"
+msgstr "Modifier la longueur de saut de la perforation"

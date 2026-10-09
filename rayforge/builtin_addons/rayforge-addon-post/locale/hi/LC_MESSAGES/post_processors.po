@@ -285,3 +285,36 @@ msgstr "टैब"
 #: post_processors/transformers/tabs_transformer.py
 msgid "Creates holding tabs by adding gaps or reducing power on cut paths"
 msgstr "कट पाथ पर अंतराल जोड़कर या शक्ति घटाकर होल्डिंग टैब बनाता है"
+
+#: post_processors/transformers/perforation_transformer.py
+msgid "Perforation"
+msgstr "परफोरेशन"
+
+#: post_processors/transformers/perforation_transformer.py
+msgid ""
+"Cuts in dashes: the laser fires for the cut length and skips the skip length"
+msgstr "डैश में काटता है: लेज़र कट लंबाई तक चलता है और स्किप लंबाई छोड़ देता है"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Cut Length"
+msgstr "कट लंबाई"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance the laser fires before each gap"
+msgstr "हर गैप से पहले लेज़र जितनी दूरी तक चलता है"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Skip Length"
+msgstr "स्किप लंबाई"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance travelled with the laser off between cuts"
+msgstr "कटों के बीच लेज़र बंद करके तय की गई दूरी"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation cut length"
+msgstr "परफोरेशन कट लंबाई बदलें"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation skip length"
+msgstr "परफोरेशन स्किप लंबाई बदलें"

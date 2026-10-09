@@ -260,6 +260,9 @@ class ContourStep(LaserStep):
         Smooth = transformer_registry.get("Smooth")
         LeadInOutTransformer = transformer_registry.get("LeadInOutTransformer")
         TabOpsTransformer = transformer_registry.get("TabOpsTransformer")
+        PerforationTransformer = transformer_registry.get(
+            "PerforationTransformer"
+        )
         CropTransformer = transformer_registry.get("CropTransformer")
         MergeLinesTransformer = transformer_registry.get(
             "MergeLinesTransformer"
@@ -269,6 +272,7 @@ class ContourStep(LaserStep):
         assert Smooth is not None
         assert LeadInOutTransformer is not None
         assert TabOpsTransformer is not None
+        assert PerforationTransformer is not None
         assert CropTransformer is not None
         assert MergeLinesTransformer is not None
         assert Optimize is not None
@@ -280,6 +284,7 @@ class ContourStep(LaserStep):
                 enabled=False, lead_in_mm=0, lead_out_mm=0, auto=True
             ).to_dict(),
             TabOpsTransformer().to_dict(),
+            PerforationTransformer(enabled=False).to_dict(),
             CropTransformer(enabled=False).to_dict(),
             optimize_dict,
         ], [
