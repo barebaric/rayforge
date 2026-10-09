@@ -59,8 +59,11 @@ from rayforge.machine.driver.ruidarpa.rpa_adapter import (
     DEFAULT_MAX_CUT_SPEED_MMPM,
     DEFAULT_MAX_TRAVEL_SPEED_MMPM,
     DEFAULT_RPC_TIMEOUT_S,
+    PROTOCOL_TCP,
+    PROTOCOL_UDP,
     RuidaRPAAdapter,
     _merged_machine_pos,
+    _resolve_protocol,
     _unwrap_mm,
 )
 from rayforge.machine.driver.ruidarpa.rpa_direct_driver import (
@@ -2918,6 +2921,137 @@ class TestConnectionMode:
             udp_host="192.168.1.10", timeout=9.5
         )
         assert accepted is True
+        await adapter.cleanup()
+        await isolated_machine.shutdown()
+
+
+class TestTcpProtocolSetup:
+    """The 'tcp_proto' var selects TCP over the network and resolves to
+    the backend protocol argument."""
+
+    def _setup_vars(self, isolated_context, isolated_machine):
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        return adapter.get_setup_vars()
+
+    def test_tcp_proto_var_is_bool_defaulting_to_udp(
+        self, isolated_context, isolated_machine
+    ):
+        """get_setup_vars must expose tcp_proto defaulting to False."""
+        varset = self._setup_vars(isolated_context, isolated_machine)
+        var = varset.get("tcp_proto")
+        assert var is not None
+        assert isinstance(var, BoolVar)
+        assert var.default is False
+
+    def test_tcp_proto_placed_immediately_after_connection(
+        self, isolated_context, isolated_machine
+    ):
+        """tcp_proto must sit directly after the connection choice."""
+        varset = self._setup_vars(isolated_context, isolated_machine)
+        keys = [var.key for var in varset]
+        assert keys.index("tcp_proto") == keys.index("connection") + 1
+
+    def test_tcp_proto_visible_in_network_and_auto(
+        self, isolated_context, isolated_machine
+    ):
+        """The TCP toggle hides in USB mode."""
+        varset = self._setup_vars(isolated_context, isolated_machine)
+        var = varset.get("tcp_proto")
+        assert var is not None
+        assert var.is_visible({"connection": CONNECTION_AUTO}) is True
+        assert var.is_visible({"connection": CONNECTION_NETWORK}) is True
+        assert var.is_visible({"connection": CONNECTION_USB}) is False
+
+    def test_resolve_protocol_tcp_for_network_and_auto(self):
+        """tcp_proto=True resolves to TCP in network and auto modes."""
+        assert _resolve_protocol({"tcp_proto": True}) == PROTOCOL_TCP
+        assert (
+            _resolve_protocol(
+                {
+                    "tcp_proto": True,
+                    "connection": CONNECTION_NETWORK,
+                }
+            )
+            == PROTOCOL_TCP
+        )
+        assert (
+            _resolve_protocol(
+                {"tcp_proto": True, "connection": CONNECTION_AUTO}
+            )
+            == PROTOCOL_TCP
+        )
+
+    def test_resolve_protocol_udp_by_default(self):
+        """Missing or disabled tcp_proto resolves to UDP."""
+        assert _resolve_protocol({}) == PROTOCOL_UDP
+        assert _resolve_protocol({"tcp_proto": False}) == PROTOCOL_UDP
+
+    def test_resolve_protocol_udp_in_usb_mode(self):
+        """USB mode has no network protocol, so tcp_proto is ignored."""
+        assert (
+            _resolve_protocol(
+                {"tcp_proto": True, "connection": CONNECTION_USB}
+            )
+            == PROTOCOL_UDP
+        )
+
+    @pytest.mark.asyncio
+    async def test_setup_stores_resolved_protocol(
+        self, isolated_context, isolated_machine
+    ):
+        """setup() must resolve and store the protocol from tcp_proto."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        adapter.setup(udp_host="192.168.1.10", tcp_proto=True)
+        assert adapter._protocol == PROTOCOL_TCP
+        await adapter.cleanup()
+        await isolated_machine.shutdown()
+
+    @pytest.mark.asyncio
+    async def test_update_settings_tcp_proto_change_requests_rebuild(
+        self, isolated_context, isolated_machine
+    ):
+        """Toggling tcp_proto must request a reconnect despite a same URI."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        adapter.setup(udp_host="192.168.1.10", timeout=1.0)
+        old_uri = adapter.resource_uri
+
+        accepted = adapter.update_settings(
+            udp_host="192.168.1.10", timeout=1.0, tcp_proto=True
+        )
+
+        assert accepted is False
+        assert adapter._protocol == PROTOCOL_TCP
+        assert adapter.resource_uri == old_uri
+        await adapter.cleanup()
+        await isolated_machine.shutdown()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "tui_mode", [DIRECT_MODE, RPC_MODE], ids=["direct", "rpc"]
+    )
+    async def test_connection_loop_passes_protocol(
+        self, isolated_context, isolated_machine, monkeypatch, tui_mode
+    ):
+        """The connect loop must forward the resolved protocol to start()."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        adapter.setup(udp_host="127.0.0.1", tui=tui_mode, tcp_proto=True)
+
+        backend_cls = RpcRdDriver if tui_mode else RpaDirectDriver
+        backend = Mock(spec=backend_cls)
+        backend.start.return_value = True
+        backend.is_connected = True
+        if tui_mode:
+            monkeypatch.setattr(
+                rpa_adapter, "RpcRdDriver", lambda **kw: backend
+            )
+        adapter._backend = backend
+
+        await _run_connect_cycle(adapter, lambda: backend.start.called)
+
+        backend.start.assert_called_once_with(
+            "127.0.0.1", None, None, PROTOCOL_TCP
+        )
+
         await adapter.cleanup()
         await isolated_machine.shutdown()
 

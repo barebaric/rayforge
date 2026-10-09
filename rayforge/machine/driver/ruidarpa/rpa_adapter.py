@@ -85,10 +85,15 @@ DEFAULT_RPC_TIMEOUT_S = 30.0
 
 # Values of the 'connection' setup var: which transport the controller
 # is reached through. 'auto' mirrors the backend behavior of opening
-# USB when available and falling back to UDP.
+# USB when available and falling back to the network.
 CONNECTION_AUTO = "auto"
 CONNECTION_NETWORK = "network"
 CONNECTION_USB = "usb"
+
+# Values of the backend start() 'protocol' argument: the network
+# transport used when the controller is reached over the network.
+PROTOCOL_UDP = "udp"
+PROTOCOL_TCP = "tcp"
 
 # Ruida test-hardware speed limits (mm/min base units): 400 mm/s cut,
 # 600 mm/s travel. Seeded into the machine only while it still holds the
@@ -131,6 +136,21 @@ def _merged_machine_pos(
     new_y = (current[1] or 0.0) if pos_y is None else pos_y
     new_z = (current[2] or 0.0) if pos_z is None else pos_z
     return (new_x, new_y, new_z)
+
+
+def _resolve_protocol(config: dict[str, Any]) -> str:
+    """Resolve the network protocol from the setup config.
+
+    TCP is used only when the user enabled ``tcp_proto`` and the
+    selected connection actually involves the network. USB mode has no
+    network protocol, so it always resolves to UDP.
+    """
+    if not config.get("tcp_proto", False):
+        return PROTOCOL_UDP
+    mode = config.get("connection", CONNECTION_AUTO)
+    if mode in (CONNECTION_NETWORK, CONNECTION_AUTO):
+        return PROTOCOL_TCP
+    return PROTOCOL_UDP
 
 
 class RuidaUsbDeviceVar(SerialPortVar):
@@ -194,6 +214,7 @@ class RuidaRPAAdapter(Driver):
         self._tui_mode: bool = False
         self._rpc_timeout: float = DEFAULT_RPC_TIMEOUT_S
         self._magic: int | None = None
+        self._protocol: str = PROTOCOL_UDP
         self._backend: _RpaBackend | None = None
         self._listeners_registered: bool = False
         self._unreachable_warned: bool = False
@@ -305,6 +326,26 @@ class RuidaRPAAdapter(Driver):
                         "when available and falls back to the network."
                     ),
                 ),
+                BoolVar(
+                    key="tcp_proto",
+                    label=_("TCP protocol"),
+                    description=_(
+                        "Use TCP instead of UDP for the network "
+                        "connection. Needed by controllers that do not "
+                        "respond over UDP."
+                    ),
+                    default=False,
+                    visible_when=lambda v: (
+                        v.get("connection", CONNECTION_AUTO)
+                        in (CONNECTION_NETWORK, CONNECTION_AUTO)
+                    ),
+                ),
+                # NOTE: 'udp_host' is a misnomer now that TCP is also
+                # supported — it holds the network host for both
+                # protocols. It will be renamed to 'network_host' in a
+                # future release; the rename must be coordinated with
+                # ruida-pa (RdDriver.start/RPC start also take this
+                # name) to avoid breaking either side.
                 HostnameVar(
                     key="udp_host",
                     label=_("Hostname"),
@@ -482,6 +523,7 @@ class RuidaRPAAdapter(Driver):
     def _setup_implementation(self, **kwargs: Any) -> None:
         self._config = self._apply_connection_mode(kwargs)
         self._tui_mode = bool(kwargs.get("tui", False))
+        self._protocol = _resolve_protocol(self._config)
 
         self._rpc_timeout = self._parse_rpc_timeout(
             kwargs.get("timeout", DEFAULT_RPC_TIMEOUT_S)
@@ -517,13 +559,14 @@ class RuidaRPAAdapter(Driver):
         Arguments that do not affect the connection endpoint (e.g. the
         RPC timeout) are stored on the instance and apply to subsequent
         RPCs and reconnection attempts without dropping the connection.
-        A change of the endpoint or the operating mode requests a
-        rebuild via the False return value, so the controller reconnects
-        to the new target.
+        A change of the endpoint, the operating mode, or the network
+        protocol requests a rebuild via the False return value, so the
+        controller reconnects to the new target.
         """
         old_uri = self.resource_uri
         old_tui_mode = self._tui_mode
         old_mode = self._config.get("connection", CONNECTION_AUTO)
+        old_protocol = self._protocol
 
         try:
             timeout = self._parse_rpc_timeout(
@@ -536,12 +579,14 @@ class RuidaRPAAdapter(Driver):
         self._config = self._apply_connection_mode(kwargs)
         self._rpc_timeout = timeout
         self._magic = magic
+        self._protocol = _resolve_protocol(self._config)
 
         tui_mode = bool(kwargs.get("tui", False))
         connection_mode = self._config.get("connection", CONNECTION_AUTO)
         return (
             tui_mode == old_tui_mode
             and connection_mode == old_mode
+            and self._protocol == old_protocol
             and self.resource_uri == old_uri
         )
 
@@ -616,7 +661,11 @@ class RuidaRPAAdapter(Driver):
                     started = await loop.run_in_executor(
                         None,
                         partial(
-                            backend.start, udp_host, usb_device, self._magic
+                            backend.start,
+                            udp_host,
+                            usb_device,
+                            self._magic,
+                            self._protocol,
                         ),
                     )
                     connected = started
@@ -660,7 +709,11 @@ class RuidaRPAAdapter(Driver):
                     connected = await loop.run_in_executor(
                         None,
                         partial(
-                            driver.start, udp_host, usb_device, self._magic
+                            driver.start,
+                            udp_host,
+                            usb_device,
+                            self._magic,
+                            self._protocol,
                         ),
                     )
                     if connected:

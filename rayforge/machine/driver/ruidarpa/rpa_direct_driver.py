@@ -43,6 +43,7 @@ class RpaDirectDriver:
         udp_host: str | None = None,
         usb_device: str | None = None,
         magic: int | None = None,
+        protocol: str | None = None,
     ) -> bool:
         """Start connection to the Ruida controller.
 
@@ -51,9 +52,10 @@ class RpaDirectDriver:
         the previously used value.
 
         Args:
-            udp_host: UDP hostname/IP (e.g. '192.168.1.100').
+            udp_host: Network hostname/IP (e.g. '192.168.1.100').
             usb_device: USB device path.
             magic: Optional controller magic number (0x00-0xFF).
+            protocol: Network protocol, 'udp' (default) or 'tcp'.
 
         Returns:
             True if connection succeeded.
@@ -62,12 +64,15 @@ class RpaDirectDriver:
         kwargs: dict = {"udp_host": udp_host, "usb_device": usb_device}
         if magic is not None:
             kwargs["magic"] = magic
+        if protocol is not None:
+            kwargs["protocol"] = protocol
         result = driver.start(**kwargs)
         if result:
             _logger.info(
-                "RPA direct driver connected; udp=%s, usb=%s",
+                "RPA direct driver connected; udp=%s, usb=%s, protocol=%s",
                 udp_host,
                 usb_device,
+                protocol,
             )
         else:
             # The adapter owns the user-facing warning and reports a
@@ -75,9 +80,11 @@ class RpaDirectDriver:
             # per-attempt warning here would only spam the log during
             # the reconnect backoff.
             _logger.debug(
-                "RPA direct driver failed to connect; udp=%s, usb=%s",
+                "RPA direct driver failed to connect; udp=%s, usb=%s, "
+                "protocol=%s",
                 udp_host,
                 usb_device,
+                protocol,
             )
         return result
 
