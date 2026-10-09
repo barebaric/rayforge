@@ -24,12 +24,14 @@ class _PostScriptImporter(PdfImporter):
     Imports files that are either PDF streams or PostScript. PDF data is
     handed to the PDF importer unchanged; PostScript is first converted
     to PDF with Ghostscript. The source asset keeps the PDF, so projects
-    render and re-import without Ghostscript.
+    render and re-import without Ghostscript, plus the SHA-256 and size
+    of the original file, so that file can still be recognised on disk.
     """
 
     def __init__(self, data: bytes, source_file: Path | None = None):
         super().__init__(data, source_file)
         self._pdf_ready: bool | None = None
+        self._converted_from: bytes | None = None
 
     def _missing_ghostscript_message(self) -> str:
         return _(
@@ -44,7 +46,9 @@ class _PostScriptImporter(PdfImporter):
             self._pdf_ready = True
             return True
         try:
-            self.raw_data = ghostscript.convert_to_pdf(self.raw_data)
+            original = self.raw_data
+            self.raw_data = ghostscript.convert_to_pdf(original)
+            self._converted_from = original
             self._pdf_ready = True
         except ghostscript.GhostscriptNotFound:
             self.add_error(self._missing_ghostscript_message())
@@ -85,7 +89,11 @@ class _PostScriptImporter(PdfImporter):
     ) -> ImportResult | None:
         if not self._ensure_pdf():
             return self._failed_result()
-        return super().get_doc_items(vectorization_spec)
+        result = super().get_doc_items(vectorization_spec)
+        source = result.payload.source if result and result.payload else None
+        if source is not None and self._converted_from is not None:
+            source.set_source_file_fingerprint(self._converted_from)
+        return result
 
     def get_doc_items_for_reimport(
         self,

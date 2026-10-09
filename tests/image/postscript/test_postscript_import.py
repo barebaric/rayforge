@@ -192,6 +192,36 @@ class TestEps:
         assert source.metadata["_importer_class"] == "EpsImporter"
 
     @needs_gs
+    def test_source_remembers_the_original_eps_file(self):
+        result = EpsImporter(EPS_DATA, Path("logo.eps")).get_doc_items(
+            PassthroughSpec()
+        )
+        source = _source(result)
+        assert source.original_data != EPS_DATA
+        assert source.matches_source_file(EPS_DATA)
+        assert source.source_file_size == len(EPS_DATA)
+        assert not source.matches_source_file(source.original_data)
+
+    @needs_gs
+    def test_reimport_keeps_the_original_fingerprint(self):
+        source = _source(
+            EpsImporter(EPS_DATA, Path("logo.eps")).get_doc_items(
+                PassthroughSpec()
+            )
+        )
+        importer = EpsImporter(source.original_data, Path("logo.eps"))
+        again = importer.get_doc_items_for_reimport(source, PassthroughSpec())
+        assert again is not None
+        assert source.matches_source_file(EPS_DATA)
+
+    def test_pdf_compatible_ai_fingerprint_is_the_file(self, no_ghostscript):
+        data = _pdf_compatible_ai()
+        source = _source(
+            AiImporter(data, Path("logo.ai")).get_doc_items(PassthroughSpec())
+        )
+        assert source.matches_source_file(data)
+
+    @needs_gs
     def test_reimport_does_not_need_ghostscript(self, monkeypatch):
         result = EpsImporter(EPS_DATA, Path("logo.eps")).get_doc_items(
             PassthroughSpec()
