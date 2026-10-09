@@ -35,6 +35,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 TAB_TOLERANCE_MM = 1.0
+MAX_LISTED_TABS = 5
 
 _SOURCE_DATA_FIELDS = (
     "original_data",
@@ -50,6 +51,21 @@ _SOURCE_DATA_FIELDS = (
 
 
 @dataclass
+class DroppedTab:
+    """A tab that no longer fits the reloaded outline."""
+
+    workpiece_name: str
+    x_mm: float
+    y_mm: float
+    distance_mm: float
+
+    def describe(self) -> str:
+        return _("{name} ({x:.1f}, {y:.1f} mm)").format(
+            name=self.workpiece_name, x=self.x_mm, y=self.y_mm
+        )
+
+
+@dataclass
 class ReloadReport:
     """Summary of what a reload changed in the document."""
 
@@ -58,8 +74,12 @@ class ReloadReport:
     added: int = 0
     removed: int = 0
     skipped: int = 0
-    tabs_dropped: int = 0
+    dropped_tabs: list[DroppedTab] = field(default_factory=list)
     error: str | None = None
+
+    @property
+    def tabs_dropped(self) -> int:
+        return len(self.dropped_tabs)
 
     def describe(self) -> str:
         if self.error:
@@ -93,15 +113,24 @@ class ReloadReport:
                     self.skipped,
                 ).format(n=self.skipped)
             )
-        if self.tabs_dropped:
-            parts.append(
-                ngettext(
-                    "{n} tab no longer fits and was removed",
-                    "{n} tabs no longer fit and were removed",
-                    self.tabs_dropped,
-                ).format(n=self.tabs_dropped)
-            )
+        if self.dropped_tabs:
+            parts.append(self._describe_dropped_tabs())
         return "; ".join(parts)
+
+    def _describe_dropped_tabs(self) -> str:
+        count = len(self.dropped_tabs)
+        places = ", ".join(
+            tab.describe() for tab in self.dropped_tabs[:MAX_LISTED_TABS]
+        )
+        if count > MAX_LISTED_TABS:
+            places += " " + _("and {n} more").format(n=count - MAX_LISTED_TABS)
+        return ngettext(
+            "{n} tab more than {limit:.1f} mm from the new outline was "
+            "removed: {places}",
+            "{n} tabs more than {limit:.1f} mm from the new outline were "
+            "removed: {places}",
+            count,
+        ).format(n=count, limit=TAB_TOLERANCE_MM, places=places)
 
 
 class ReplaceSourceDataCommand(Command):
@@ -237,6 +266,19 @@ def _anchor_shift(old: ImportResult, new: ImportResult) -> Matrix:
         return Matrix.identity()
     shift = _page_bottom_mm(old_parse) - _page_bottom_mm(new_parse)
     return Matrix.translation(0.0, shift)
+
+
+def _dropped_tab(
+    wp: WorkPiece,
+    boundaries: Geometry,
+    tab: Tab,
+    world: Matrix,
+    distance: float,
+) -> DroppedTab:
+    point = boundaries.get_point_at(tab.segment_index, tab.pos)
+    local = (point[0], point[1]) if point is not None else (0.0, 0.0)
+    x, y = world.transform_point(local)
+    return DroppedTab(wp.name, x, y, distance)
 
 
 def _local_geometry(boundaries: Geometry, matrix: Matrix) -> Geometry:
@@ -503,7 +545,13 @@ class ReloadCmd:
         matrix = delta @ fresh.matrix
         segment = self._adopt_segment(fresh, asset, spec, wp.source_segment)
         tabs, dropped = self._remap_tabs(wp, fresh, matrix)
-        report.tabs_dropped += dropped
+        for tab in dropped:
+            logger.info(
+                f"Reload dropped a tab of {tab.workpiece_name} at "
+                f"({tab.x_mm:.2f}, {tab.y_mm:.2f}) mm, "
+                f"{tab.distance_mm:.2f} mm from the new outline"
+            )
+        report.dropped_tabs.extend(dropped)
         return _WorkPieceState(
             segment=segment,
             matrix=matrix,
@@ -514,39 +562,53 @@ class ReloadCmd:
     @staticmethod
     def _remap_tabs(
         wp: WorkPiece, fresh: WorkPiece, matrix: Matrix
-    ) -> tuple[list[Tab], int]:
+    ) -> tuple[list[Tab], list[DroppedTab]]:
         """
         Moves each tab to the closest point of the new outline, measured
         in the workpiece's parent space. Tabs whose outline moved away are
-        dropped.
+        dropped and reported with their former world position.
         """
         if not wp.tabs:
-            return [], 0
+            return [], []
         old_boundaries = wp.boundaries
         new_boundaries = fresh.boundaries
+        world = wp.get_world_transform()
         if old_boundaries is None or new_boundaries is None:
-            return [], len(wp.tabs)
+            x, y = world.transform_point((0.0, 0.0))
+            return [], [
+                DroppedTab(wp.name, x, y, float("inf")) for _tab in wp.tabs
+            ]
         old_geo = _local_geometry(old_boundaries, wp.matrix)
         new_geo = _local_geometry(new_boundaries, matrix)
-        kept = []
+        kept: list[Tab] = []
+        dropped: list[DroppedTab] = []
         for tab in wp.tabs:
             point = old_geo.get_point_at(tab.segment_index, tab.pos)
-            if point is None:
-                continue
-            closest = new_geo.find_closest_point(point[0], point[1])
-            if closest is None:
-                continue
-            index, t, new_point = closest
-            distance = (
-                (new_point[0] - point[0]) ** 2 + (new_point[1] - point[1]) ** 2
-            ) ** 0.5
-            if distance <= TAB_TOLERANCE_MM:
-                kept.append(
-                    replace(
-                        tab, segment_index=index, pos=min(1.0, max(0.0, t))
+            closest = (
+                new_geo.find_closest_point(point[0], point[1])
+                if point is not None
+                else None
+            )
+            distance = float("inf")
+            if point is not None and closest is not None:
+                index, t, new_point = closest
+                distance = (
+                    (new_point[0] - point[0]) ** 2
+                    + (new_point[1] - point[1]) ** 2
+                ) ** 0.5
+                if distance <= TAB_TOLERANCE_MM:
+                    kept.append(
+                        replace(
+                            tab,
+                            segment_index=index,
+                            pos=min(1.0, max(0.0, t)),
+                        )
                     )
-                )
-        return kept, len(wp.tabs) - len(kept)
+                    continue
+            dropped.append(
+                _dropped_tab(wp, old_boundaries, tab, world, distance)
+            )
+        return kept, dropped
 
     def _plan_addition(
         self,

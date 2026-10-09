@@ -19,6 +19,12 @@ from rayforge.core.vectorization_spec import (
 )
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.editor import DocEditor
+from rayforge.doceditor.reload_cmd import (
+    MAX_LISTED_TABS,
+    TAB_TOLERANCE_MM,
+    DroppedTab,
+    ReloadReport,
+)
 from rayforge.image import importer_registry
 from rayforge.shared.tasker.manager import TaskManager
 
@@ -290,6 +296,49 @@ class TestReloadKeepsSettings:
 
         assert report.tabs_dropped == 1
         assert wp.tabs == []
+
+    def test_dropped_tab_reports_where_it_was(self, editor, tmp_path):
+        path = _write(tmp_path / "a.svg", PAGE_80, RED_RECT, BLUE_CIRCLE)
+        asset = _import(editor, path, _flatten_spec())
+        (wp,) = _workpieces_of(editor.doc, asset)
+        wp.name = "Lid"
+        _transform(wp, Matrix.translation(5, 7))
+        assert wp.boundaries is not None
+        closest = wp.boundaries.find_closest_point(0.0, 1.0)
+        assert closest is not None
+        tab = Tab(width=3.0, segment_index=closest[0], pos=closest[1])
+        wp.tabs = [tab]
+        x, y = _tab_world_point(wp, tab)
+
+        moved = RED_RECT.replace('x="10"', 'x="70"').replace(
+            'y="10"', 'y="60"'
+        )
+        _write(path, PAGE_80, moved, BLUE_CIRCLE)
+        report = editor.reload.reload_source(asset)
+
+        (dropped,) = report.dropped_tabs
+        assert dropped.workpiece_name == "Lid"
+        assert dropped.x_mm == pytest.approx(x, abs=1e-3)
+        assert dropped.y_mm == pytest.approx(y, abs=1e-3)
+        assert dropped.distance_mm > TAB_TOLERANCE_MM
+        message = report.describe()
+        assert f"Lid ({x:.1f}, {y:.1f} mm)" in message
+        assert f"{TAB_TOLERANCE_MM:.1f} mm" in message
+
+    def test_kept_tabs_are_not_reported(self, editor, tmp_path):
+        path = _write(tmp_path / "a.svg", PAGE_80, RED_RECT, BLUE_CIRCLE)
+        asset = _import(editor, path, _flatten_spec())
+        (wp,) = _workpieces_of(editor.doc, asset)
+        assert wp.boundaries is not None
+        closest = wp.boundaries.find_closest_point(0.0, 1.0)
+        assert closest is not None
+        wp.tabs = [Tab(width=3.0, segment_index=closest[0], pos=closest[1])]
+
+        _write(path, PAGE_80, RED_RECT, BLUE_CIRCLE, GREEN_SQUARE)
+        report = editor.reload.reload_source(asset)
+
+        assert report.dropped_tabs == []
+        assert "tab" not in report.describe()
 
     def test_split_pieces_are_left_alone(self, editor, tmp_path):
         path = _write(tmp_path / "a.svg", PAGE_80, RED_RECT, BLUE_CIRCLE)
@@ -591,3 +640,21 @@ class TestSourceLookup:
 
         assert not editor.reload.can_reload(asset)
         assert editor.reload.can_relink(asset)
+
+
+class TestReportText:
+    def test_long_tab_lists_are_shortened(self):
+        report = ReloadReport(
+            source_name="a.svg",
+            dropped_tabs=[
+                DroppedTab(f"Part {i}", float(i), 2.0, 3.0)
+                for i in range(MAX_LISTED_TABS + 2)
+            ],
+        )
+
+        message = report.describe()
+
+        assert f"{MAX_LISTED_TABS + 2} tabs" in message
+        assert f"Part {MAX_LISTED_TABS - 1} (" in message
+        assert f"Part {MAX_LISTED_TABS} (" not in message
+        assert "and 2 more" in message
