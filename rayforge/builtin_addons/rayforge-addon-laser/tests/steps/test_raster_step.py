@@ -1,5 +1,8 @@
 from unittest.mock import MagicMock, patch
 
+import cairo
+import cv2
+import numpy as np
 import pytest
 from laser_essentials.steps import EngraveStep
 from raygeo.cnc.execution.specs import ComputePayload
@@ -13,6 +16,7 @@ from raygeo.ops.types import CommandCategory, CommandType
 from rayforge.core.step_registry import step_registry
 from rayforge.core.varset import LabeledChoiceVar
 from rayforge.core.workpiece import WorkPiece
+from rayforge.image.adjust import ImageAdjustments
 from rayforge.image.dither import DitherAlgorithm
 from rayforge.pipeline.transformer import OpsTransformer
 from rayforge.pipeline.transformer.registry import transformer_registry
@@ -680,3 +684,180 @@ class TestEngraveDitherOptions:
         assert kwargs["halftone_angle"] == 12.0
         assert kwargs["pixels_per_mm_x"] == pytest.approx(20.0)
         assert kwargs["pixels_per_mm_y"] == pytest.approx(10.0)
+
+
+class TestEngraveImageAdjustments:
+    """Gamma, brightness, contrast and sharpen settings."""
+
+    _KEYS = (
+        "brightness",
+        "contrast",
+        "gamma",
+        "sharpen_amount",
+        "sharpen_radius_mm",
+    )
+
+    def _var(self, key):
+        varset = EngraveStep.recipe_varset()
+        return next(v for v in varset.vars if v.key == key)
+
+    def test_defaults_are_neutral(self):
+        step = EngraveStep(name="engrave")
+        assert step.brightness == 0
+        assert step.contrast == 0
+        assert step.gamma == 1.0
+        assert step.sharpen_amount == 0
+        assert step.sharpen_radius_mm == 0.2
+        assert step.image_adjustments == ImageAdjustments()
+        assert step.image_adjustments.is_neutral
+
+    def test_image_adjustments_mirror_the_settings(self):
+        step = EngraveStep(name="engrave")
+        step.brightness = 10
+        step.contrast = -20
+        step.gamma = 1.5
+        step.sharpen_amount = 80
+        step.sharpen_radius_mm = 0.3
+        assert step.image_adjustments == ImageAdjustments(
+            brightness=10,
+            contrast=-20,
+            gamma=1.5,
+            sharpen_amount=80,
+            sharpen_radius_mm=0.3,
+        )
+
+    def test_roundtrip_serialization(self):
+        step = EngraveStep(name="engrave")
+        step.brightness = 12
+        step.contrast = 34
+        step.gamma = 0.8
+        step.sharpen_amount = 150
+        step.sharpen_radius_mm = 0.5
+        data = step.to_dict()
+        restored = EngraveStep.from_dict(data)
+        for key in self._KEYS:
+            assert getattr(restored, key) == getattr(step, key)
+        assert data == restored.to_dict()
+
+    def test_old_documents_get_neutral_adjustments(self):
+        data = EngraveStep(name="engrave").to_dict()
+        for key in self._KEYS:
+            data.pop(key)
+        restored = EngraveStep.from_dict(data)
+        assert restored.image_adjustments == ImageAdjustments()
+
+    def test_cache_params_cover_the_adjustments(self):
+        step = EngraveStep(name="engrave")
+        before = step.get_cache_params()
+        for key, value in zip(self._KEYS, (5, 5, 1.3, 40, 0.4)):
+            setattr(step, key, value)
+            after = step.get_cache_params()
+            assert after[key] == value
+            assert after != before
+            before = after
+
+    @pytest.mark.parametrize("key", _KEYS)
+    def test_rows_follow_the_levels_modes(self, key):
+        var = self._var(key)
+        for mode in ("POWER_MODULATION", "MULTI_PASS", "DITHER"):
+            assert var.is_visible({"depth_mode": mode})
+        assert not var.is_visible({"depth_mode": "CONSTANT_POWER"})
+
+    def test_build_compute_payload_forwards_adjustments(self, machine):
+        step = EngraveStep(name="engrave")
+        step.depth_mode = "DITHER"
+        step.gamma = 1.8
+        step.sharpen_amount = 60
+        wp = WorkPiece(name="wp")
+        wp.set_size(10.0, 5.0)
+        module = "laser_essentials.steps.raster_step"
+        with (
+            patch.object(
+                WorkPiece, "render_to_pixels", return_value=MagicMock()
+            ),
+            patch(
+                f"{module}.preprocess_raster_image",
+                return_value=(None, None),
+            ) as preprocess,
+            patch(
+                f"{module}.compute_raster_auto_levels", return_value=None
+            ) as levels,
+        ):
+            step.build_compute_payload(machine, wp)
+
+        expected = step.image_adjustments
+        assert preprocess.call_args.kwargs["adjustments"] == expected
+        assert levels.call_args.kwargs["adjustments"] == expected
+
+
+def _gradient_workpiece(width_mm=10.0, height_mm=5.0):
+    """A workpiece whose render is a horizontal black-to-white ramp."""
+
+    def render(width, height):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+        ctx = cairo.Context(surface)
+        gradient = cairo.LinearGradient(0, 0, width, 0)
+        gradient.add_color_stop_rgb(0, 0, 0, 0)
+        gradient.add_color_stop_rgb(1, 1, 1, 1)
+        ctx.set_source(gradient)
+        ctx.paint()
+        return surface
+
+    wp = WorkPiece(name="wp")
+    wp.set_size(width_mm, height_mm)
+    return wp, render
+
+
+class TestProcessedPreview:
+    """The bitmap the assembler sees, as a viewable image."""
+
+    def test_dither_preview_is_black_and_white_with_square_pixels(
+        self, machine
+    ):
+        step = EngraveStep(name="engrave")
+        step.depth_mode = "DITHER"
+        step.auto_levels = False
+        wp, render = _gradient_workpiece()
+        with patch.object(WorkPiece, "render_to_pixels", side_effect=render):
+            preview = step.render_processed_preview(machine, wp)
+
+        assert preview is not None
+        assert preview.dtype == np.uint8
+        # Spot 0.1 mm: 20 px/mm along X, 10 px/mm along Y; the preview
+        # repeats rows so a pixel is square again.
+        assert preview.shape == (100, 200)
+        assert set(np.unique(preview)) <= {0, 255}
+        assert preview[:, :20].mean() < 64
+        assert preview[:, -20:].mean() > 192
+
+    def test_power_preview_shows_engraved_darkness(self, machine):
+        step = EngraveStep(name="engrave")
+        step.depth_mode = "POWER_MODULATION"
+        step.auto_levels = False
+        wp, render = _gradient_workpiece()
+        with patch.object(WorkPiece, "render_to_pixels", side_effect=render):
+            plain = step.render_processed_preview(machine, wp)
+            step.brightness = 30
+            brighter = step.render_processed_preview(machine, wp)
+
+        assert plain is not None and brighter is not None
+        assert brighter.astype(int).sum() > plain.astype(int).sum()
+
+    def test_preview_none_without_render(self, machine):
+        step = EngraveStep(name="engrave")
+        wp = WorkPiece(name="wp")
+        wp.set_size(10.0, 5.0)
+        with patch.object(WorkPiece, "render_to_pixels", return_value=None):
+            assert step.render_processed_preview(machine, wp) is None
+
+    def test_save_processed_preview_writes_png(self, machine, tmp_path):
+        step = EngraveStep(name="engrave")
+        step.depth_mode = "DITHER"
+        wp, render = _gradient_workpiece()
+        path = tmp_path / "processed.png"
+        with patch.object(WorkPiece, "render_to_pixels", side_effect=render):
+            assert step.save_processed_preview(machine, wp, path) is True
+
+        saved = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
+        assert saved is not None
+        assert saved.shape == (100, 200)

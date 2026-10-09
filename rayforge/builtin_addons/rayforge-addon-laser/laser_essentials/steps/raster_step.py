@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from gettext import gettext as _
+from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -8,6 +9,7 @@ from typing import (
     cast,
 )
 
+import cv2
 import numpy as np
 from raygeo.cnc.execution.specs import ComputePayload
 from raygeo.ops.assembly import Assembler
@@ -27,6 +29,7 @@ from rayforge.core.varset import (
     SliderIntVar,
     VarSet,
 )
+from rayforge.image.adjust import ImageAdjustments
 from rayforge.image.dither import (
     DEFAULT_HALFTONE_ANGLE,
     DEFAULT_HALFTONE_CELL_MM,
@@ -280,6 +283,64 @@ class EngraveStep(LaserStep):
                     max_val=255,
                     visible_when=uses_levels,
                 ),
+                SliderIntVar(
+                    key="brightness",
+                    label=_("Brightness"),
+                    description=_(
+                        "Lighten or darken the image before engraving"
+                    ),
+                    default=0,
+                    min_val=-100,
+                    max_val=100,
+                    visible_when=uses_levels,
+                ),
+                SliderIntVar(
+                    key="contrast",
+                    label=_("Contrast"),
+                    description=_(
+                        "Spread or compress the tones around mid-gray"
+                    ),
+                    default=0,
+                    min_val=-100,
+                    max_val=100,
+                    visible_when=uses_levels,
+                ),
+                SliderFloatVar(
+                    key="gamma",
+                    label=_("Gamma"),
+                    description=_(
+                        "Values above 1 lighten the midtones, values "
+                        "below 1 darken them"
+                    ),
+                    default=1.0,
+                    min_val=0.2,
+                    max_val=5.0,
+                    digits=2,
+                    visible_when=uses_levels,
+                ),
+                SliderIntVar(
+                    key="sharpen_amount",
+                    label=_("Sharpen"),
+                    description=_(
+                        "Strength of the unsharp mask that enhances "
+                        "edges before engraving"
+                    ),
+                    default=0,
+                    min_val=0,
+                    max_val=300,
+                    format_suffix="%",
+                    visible_when=uses_levels,
+                ),
+                LengthVar(
+                    key="sharpen_radius_mm",
+                    label=_("Sharpen Radius"),
+                    description=_("Size of the details that get sharpened"),
+                    default=0.2,
+                    min_val=0.01,
+                    max_val=5.0,
+                    digits=3,
+                    visible_when=uses_levels,
+                ),
                 SliderFloatVar(
                     key="min_power_level",
                     label=_("Min Power"),
@@ -358,6 +419,22 @@ class EngraveStep(LaserStep):
         self.halftone_cell_mm = DEFAULT_HALFTONE_CELL_MM
         self.halftone_angle = DEFAULT_HALFTONE_ANGLE
         self.bidir_x_offset_mm = 0.0
+        self.brightness = 0
+        self.contrast = 0
+        self.gamma = 1.0
+        self.sharpen_amount = 0
+        self.sharpen_radius_mm = 0.2
+
+    @property
+    def image_adjustments(self) -> ImageAdjustments:
+        """The step's tone and sharpen settings."""
+        return ImageAdjustments(
+            brightness=self.brightness,
+            contrast=self.contrast,
+            gamma=self.gamma,
+            sharpen_amount=self.sharpen_amount,
+            sharpen_radius_mm=self.sharpen_radius_mm,
+        )
 
     def set_dither_algorithm(self, algorithm: DitherAlgorithm | str | None):
         """Sets the dither algorithm, accepting the enum or its name
@@ -511,6 +588,38 @@ class EngraveStep(LaserStep):
         )
         return part, ComputePayload(assembler=Assembler(spec))
 
+    def render_processed_preview(
+        self,
+        machine: Machine,
+        workpiece: WorkPiece,
+    ) -> np.ndarray | None:
+        """The workpiece as this step will engrave it, as a uint8
+        grayscale image with square pixels (dark = engraved), or
+        ``None`` when there is nothing to raster."""
+        processed = _render_processed_image(self, machine, workpiece)
+        if processed is None:
+            return None
+        image, alpha, pixels_per_mm = processed
+        return processed_to_preview(
+            image, alpha, DepthMode[self.depth_mode], pixels_per_mm
+        )
+
+    def save_processed_preview(
+        self,
+        machine: Machine,
+        workpiece: WorkPiece,
+        path: str | Path,
+    ) -> bool:
+        """Write :meth:`render_processed_preview` to a PNG file.
+
+        Returns ``False`` when there is nothing to save or the file
+        could not be written.
+        """
+        preview = self.render_processed_preview(machine, workpiece)
+        if preview is None:
+            return False
+        return bool(cv2.imwrite(str(path), preview))
+
     def assembler_token_params(
         self,
         machine: Machine,
@@ -543,6 +652,11 @@ class EngraveStep(LaserStep):
                 "dither_serpentine": self.dither_serpentine,
                 "halftone_cell_mm": self.halftone_cell_mm,
                 "halftone_angle": self.halftone_angle,
+                "brightness": self.brightness,
+                "contrast": self.contrast,
+                "gamma": self.gamma,
+                "sharpen_amount": self.sharpen_amount,
+                "sharpen_radius_mm": self.sharpen_radius_mm,
             }
         )
         return params
@@ -576,6 +690,11 @@ class EngraveStep(LaserStep):
         result["halftone_cell_mm"] = self.halftone_cell_mm
         result["halftone_angle"] = self.halftone_angle
         result["bidir_x_offset_mm"] = self.bidir_x_offset_mm
+        result["brightness"] = self.brightness
+        result["contrast"] = self.contrast
+        result["gamma"] = self.gamma
+        result["sharpen_amount"] = self.sharpen_amount
+        result["sharpen_radius_mm"] = self.sharpen_radius_mm
         return result
 
     @classmethod
@@ -673,6 +792,11 @@ class EngraveStep(LaserStep):
             "halftone_angle", DEFAULT_HALFTONE_ANGLE
         )
         step.bidir_x_offset_mm = data.get("bidir_x_offset_mm", 0.0)
+        step.brightness = data.get("brightness", 0)
+        step.contrast = data.get("contrast", 0)
+        step.gamma = data.get("gamma", 1.0)
+        step.sharpen_amount = data.get("sharpen_amount", 0)
+        step.sharpen_radius_mm = data.get("sharpen_radius_mm", 0.2)
         return step
 
     @classmethod
@@ -704,6 +828,11 @@ class EngraveStep(LaserStep):
                 "halftone_cell_mm",
                 "halftone_angle",
                 "bidir_x_offset_mm",
+                "brightness",
+                "contrast",
+                "gamma",
+                "sharpen_amount",
+                "sharpen_radius_mm",
                 "min_power",
                 "max_power",
             }
@@ -791,6 +920,25 @@ def _build_raster_part(
     carrying a :class:`WholeImageSource`, and return the alpha
     channel separately so the caller can fold it into the
     :class:`RasterSpec`.
+    """
+    processed = _render_processed_image(step, machine, workpiece)
+    if processed is None:
+        return Part(size_mm=workpiece.size), None
+    image, alpha, pixels_per_mm = processed
+    part = Part(size_mm=workpiece.size, pixels_per_mm=pixels_per_mm)
+    part.image_source = WholeImageSource(image)
+    return part, alpha
+
+
+def _render_processed_image(
+    step: EngraveStep,
+    machine: Machine,
+    workpiece: WorkPiece,
+) -> tuple[np.ndarray, np.ndarray | None, tuple[float, float]] | None:
+    """Render the workpiece and run the step's image preprocessing.
+
+    Returns ``(image, alpha, (px_per_mm_x, px_per_mm_y))``, or
+    ``None`` when there is nothing to raster.
 
     The rendering resolution is clamped to
     :data:`MAX_RASTER_RENDER_PIXELS` to bound memory.  Auto-levels
@@ -799,7 +947,7 @@ def _build_raster_part(
     """
     size = workpiece.size
     if size[0] <= 0 or size[1] <= 0:
-        return Part(size_mm=size), None
+        return None
 
     spot_x, spot_y = LaserHead.get_spot_size(step.get_selected_laser(machine))
     px_per_mm_x = 1.0 / (step.sample_interval_mm or spot_x / 2.0)
@@ -822,9 +970,10 @@ def _build_raster_part(
 
     surface = workpiece.render_to_pixels(target_w, target_h)
     if surface is None:
-        return Part(size_mm=size), None
+        return None
 
     depth_mode = DepthMode[step.depth_mode]
+    adjustments = step.image_adjustments
 
     computed_auto_levels = None
     if step.auto_levels:
@@ -832,6 +981,7 @@ def _build_raster_part(
             workpiece,
             (px_per_mm_x, px_per_mm_y),
             invert=step.invert,
+            adjustments=adjustments,
         )
 
     image, alpha = preprocess_raster_image(
@@ -850,17 +1000,44 @@ def _build_raster_part(
         dither_serpentine=step.dither_serpentine,
         halftone_cell_mm=step.halftone_cell_mm,
         halftone_angle=step.halftone_angle,
+        adjustments=adjustments,
     )
     surface.flush()
     if image is None:
-        return Part(size_mm=size), None
+        return None
+    return image, alpha, (px_per_mm_x, px_per_mm_y)
 
-    part = Part(
-        size_mm=size,
-        pixels_per_mm=(px_per_mm_x, px_per_mm_y),
-    )
-    part.image_source = WholeImageSource(image)
-    return part, alpha
+
+def processed_to_preview(
+    image: np.ndarray,
+    alpha: np.ndarray | None,
+    depth_mode: DepthMode,
+    pixels_per_mm: tuple[float, float],
+) -> np.ndarray:
+    """Turn a preprocessed raster image into a viewable grayscale image.
+
+    Dark means engraved: binary modes become black on white, grayscale
+    modes keep their values with transparent areas white. Rows or
+    columns are repeated (nearest neighbour) so each preview pixel is
+    square in millimetres, which keeps dither patterns intact.
+    """
+    if depth_mode in (DepthMode.DITHER, DepthMode.CONSTANT_POWER):
+        preview = np.where(image > 0, 0, 255).astype(np.uint8)
+    else:
+        preview = image.astype(np.uint8, copy=True)
+        if alpha is not None:
+            preview[alpha <= 0] = 255
+    ppm_x, ppm_y = pixels_per_mm
+    height, width = preview.shape
+    if ppm_x > ppm_y:
+        height = max(1, round(height * ppm_x / ppm_y))
+    elif ppm_y > ppm_x:
+        width = max(1, round(width * ppm_y / ppm_x))
+    if (height, width) != preview.shape:
+        preview = cv2.resize(
+            preview, (width, height), interpolation=cv2.INTER_NEAREST
+        )
+    return preview
 
 
 MAX_RASTER_RENDER_PIXELS = 16 * 1024 * 1024

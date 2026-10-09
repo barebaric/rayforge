@@ -10,6 +10,7 @@ from rayforge.ui_gtk.varset.adapter.combo import ComboAdapter
 
 from .laser_step_page import LaserStepSettingsPage
 from .levels_adapter import LevelsAdapter
+from .processed_preview import ProcessedImagePreview
 from .raster_power_widget import RasterPowerWidget
 
 #: Engrave-section keys (mode, geometry, multi-pass) vs. Power-section
@@ -34,6 +35,15 @@ _ENGRAVE_KEYS = {
     "z_step_down",
     "angle_increment",
 }
+
+#: Image adjustments applied before levels, dithering and power mapping.
+_ADJUST_KEYS = [
+    "brightness",
+    "contrast",
+    "gamma",
+    "sharpen_amount",
+    "sharpen_radius_mm",
+]
 
 _POWER_KEYS = {
     "auto_levels",
@@ -67,10 +77,19 @@ class RasterSettingsPage(LaserStepSettingsPage):
             vars=[v for v in step_vars if v.key in _ENGRAVE_KEYS]
         )
         power_vs = VarSet(vars=[v for v in step_vars if v.key in _POWER_KEYS])
+        adjust_vs = self._varset_for_keys(VarSet(vars=step_vars), _ADJUST_KEYS)
         self.engrave_widget = self.add_varset_section(
             _("Engrave"),
             engrave_vs,
             description=_("Raster the image onto the material."),
+        )
+        self.adjust_widget = self.add_varset_section(
+            _("Image Adjustments"),
+            adjust_vs,
+            description=_(
+                "Tone and sharpness corrections applied to the image "
+                "before engraving."
+            ),
         )
         self.power_widget = self.add_varset_section(
             _("Power"),
@@ -97,7 +116,22 @@ class RasterSettingsPage(LaserStepSettingsPage):
             levels.set_histogram_source(step)
             GLib.idle_add(levels.compute_histogram)
 
+        self.processed_preview = ProcessedImagePreview(step, self.get_machine)
+        self.add_section(
+            _("Processed Image"),
+            self.processed_preview,
+            description=_(
+                "The bitmap as it will be engraved, for the first image "
+                "on this layer. Dark areas are engraved."
+            ),
+        )
+        GLib.idle_add(self._initial_preview)
+
         self._push_head_defaults()
+
+    def _initial_preview(self) -> bool:
+        self.processed_preview.refresh()
+        return GLib.SOURCE_REMOVE
 
     def _push_head_defaults(self):
         """Show head-derived values for the auto (None) interval rows.
@@ -120,14 +154,15 @@ class RasterSettingsPage(LaserStepSettingsPage):
             self.engrave_widget.set_values(values)
 
     def _sync_power_context(self):
-        """Feed the current depth_mode/invert into the Power section."""
+        """Feed the current depth_mode/invert into the Power and Image
+        Adjustments sections."""
         values = self.engrave_widget.get_values()
-        self.power_widget.set_context_values(
-            {
-                "depth_mode": values.get("depth_mode"),
-                "invert": values.get("invert"),
-            }
-        )
+        context = {
+            "depth_mode": values.get("depth_mode"),
+            "invert": values.get("invert"),
+        }
+        self.power_widget.set_context_values(context)
+        self.adjust_widget.set_context_values(context)
 
     def _on_varset_data_changed(self, widget, key):
         if key in ("min_power_level", "max_power_level"):

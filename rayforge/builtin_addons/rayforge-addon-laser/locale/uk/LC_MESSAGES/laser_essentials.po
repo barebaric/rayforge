@@ -821,3 +821,87 @@ msgstr "Кут півтону"
 #: laser_essentials/steps/raster_step.py
 msgid "Rotation of the halftone dot grid"
 msgstr "Поворот сітки півтонових точок"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Brightness"
+msgstr "Яскравість"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Lighten or darken the image before engraving"
+msgstr "Освітлити або затемнити зображення перед гравіюванням"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Contrast"
+msgstr "Контраст"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Spread or compress the tones around mid-gray"
+msgstr "Розтягнути або стиснути тони навколо середнього сірого"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Gamma"
+msgstr "Гамма"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Values above 1 lighten the midtones, values below 1 darken them"
+msgstr "Значення понад 1 освітлюють середні тони, значення менше 1 затемнюють їх"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Sharpen"
+msgstr "Різкість"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Strength of the unsharp mask that enhances edges before engraving"
+msgstr "Сила нерізкого маскування, що підсилює краї перед гравіюванням"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Sharpen Radius"
+msgstr "Радіус різкості"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Size of the details that get sharpened"
+msgstr "Розмір деталей, до яких застосовується різкість"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Image Adjustments"
+msgstr "Налаштування зображення"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Tone and sharpness corrections applied to the image before engraving."
+msgstr "Корекція тонів і різкості, що застосовується до зображення перед гравіюванням."
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Processed Image"
+msgstr "Оброблене зображення"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "The bitmap as it will be engraved, for the first image on this layer. Dark areas are engraved."
+msgstr "Растрове зображення в тому вигляді, в якому його буде вигравійовано, для першого зображення на цьому шарі. Темні ділянки гравіюються."
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Save Processed Bitmap…"
+msgstr "Зберегти оброблене растрове зображення…"
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Save Processed Bitmap"
+msgstr "Зберегти оброблене растрове зображення"
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "No image on this layer."
+msgstr "На цьому шарі немає зображення."
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Updating preview…"
+msgstr "Оновлення попереднього перегляду…"
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Nothing to engrave."
+msgstr "Немає чого гравіювати."
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "PNG images"
+msgstr "Зображення PNG"
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Could not save the processed bitmap."
+msgstr "Не вдалося зберегти оброблене растрове зображення."

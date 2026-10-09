@@ -2,8 +2,11 @@
 """UI tests for the laser step settings pages."""
 
 from typing import Any, cast
+from unittest.mock import patch
 
+import cairo
 import gi
+import numpy as np
 import pytest
 
 gi.require_version("Gtk", "4.0")
@@ -15,10 +18,12 @@ from laser_essentials.widgets.contour_page import ContourStepSettingsPage
 from laser_essentials.widgets.material_test_grid_page import (
     MaterialTestGridSettingsPage,
 )
+from laser_essentials.widgets.processed_preview import ProcessedImagePreview
 from laser_essentials.widgets.raster_page import RasterSettingsPage
 from laser_essentials.widgets.raster_power_widget import RasterPowerWidget
 
 from rayforge.core.step_registry import step_registry
+from rayforge.core.workpiece import WorkPiece
 from rayforge.image.dither import DitherAlgorithm
 from rayforge.pipeline.stage.assembler_helpers import DepthMode
 from rayforge.ui_gtk.doceditor.step_settings.dialog import StepSettingsDialog
@@ -811,3 +816,105 @@ def test_dialog_initial_laser_page(editor, laser_machine, ui_context):
     assert dialog._extra_buttons[0].get_active() is True
     assert dialog.btn_step_settings.get_active() is False
     dialog.close()
+
+
+def _ramp_render(width, height):
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+    ctx = cairo.Context(surface)
+    gradient = cairo.LinearGradient(0, 0, width, 0)
+    gradient.add_color_stop_rgb(0, 0, 0, 0)
+    gradient.add_color_stop_rgb(1, 1, 1, 1)
+    ctx.set_source(gradient)
+    ctx.paint()
+    return surface
+
+
+@pytest.mark.ui
+def test_raster_page_adjustment_rows_follow_depth_mode(
+    editor, laser_machine, ui_context
+):
+    """The Image Adjustments section hides for Constant Power, whose
+    depth_mode row lives in the Engrave section."""
+    step_cls = step_registry.get("EngraveStep")
+    assert step_cls is not None
+    step = cast(EngraveStep, step_cls.create(ui_context))
+    page = RasterSettingsPage(editor, step)
+
+    keys = (
+        "brightness",
+        "contrast",
+        "gamma",
+        "sharpen_amount",
+        "sharpen_radius_mm",
+    )
+    for key in keys:
+        assert _row(page, key).get_visible() is True
+
+    adapter = page.engrave_widget.adapter_for("depth_mode")
+    assert adapter is not None
+    adapter.set_value("CONSTANT_POWER")
+    adapter.changed.send(adapter)
+    for key in keys:
+        assert _row(page, key).get_visible() is False, key
+
+
+@pytest.mark.ui
+def test_raster_page_adjustment_change_updates_step(
+    editor, laser_machine, ui_context
+):
+    step_cls = step_registry.get("EngraveStep")
+    assert step_cls is not None
+    step = cast(EngraveStep, step_cls.create(ui_context))
+    page = RasterSettingsPage(editor, step)
+
+    page.set_step_property("gamma", 1.6)
+    assert step.gamma == 1.6
+    adapter = page.adjust_widget.adapter_for("gamma")
+    assert adapter is not None
+    assert adapter.get_value() == pytest.approx(1.6)
+
+
+@pytest.mark.ui
+def test_processed_preview_shows_the_processed_bitmap(
+    editor, laser_machine, ui_context, tmp_path
+):
+    step_cls = step_registry.get("EngraveStep")
+    assert step_cls is not None
+    step = cast(EngraveStep, step_cls.create(ui_context))
+    step.depth_mode = "DITHER"
+    page = RasterSettingsPage(editor, step)
+    preview = page.processed_preview
+    assert isinstance(preview, ProcessedImagePreview)
+
+    wp = WorkPiece(name="photo")
+    wp.set_size(10.0, 5.0)
+    preview.set_workpiece_provider(lambda: wp)
+    with patch.object(WorkPiece, "render_to_pixels", side_effect=_ramp_render):
+        preview.refresh(sync=True)
+
+    image = preview.preview
+    assert image is not None
+    assert set(np.unique(image)) <= {0, 255}
+    assert preview.picture.get_paintable() is not None
+    assert preview.save_button.get_sensitive() is True
+
+    path = tmp_path / "processed.png"
+    assert preview.save_to(path) is True
+    assert path.exists()
+
+
+@pytest.mark.ui
+def test_processed_preview_without_workpiece(
+    editor, laser_machine, ui_context
+):
+    step_cls = step_registry.get("EngraveStep")
+    assert step_cls is not None
+    step = cast(EngraveStep, step_cls.create(ui_context))
+    page = RasterSettingsPage(editor, step)
+    preview = page.processed_preview
+    preview.set_workpiece_provider(lambda: None)
+    preview.refresh(sync=True)
+
+    assert preview.preview is None
+    assert preview.save_button.get_sensitive() is False
+    assert preview.status_label.get_visible() is True

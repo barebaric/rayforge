@@ -800,3 +800,87 @@ msgstr "半色调角度"
 #: laser_essentials/steps/raster_step.py
 msgid "Rotation of the halftone dot grid"
 msgstr "半色调网点网格的旋转角度"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Brightness"
+msgstr "亮度"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Lighten or darken the image before engraving"
+msgstr "雕刻前调亮或调暗图像"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Contrast"
+msgstr "对比度"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Spread or compress the tones around mid-gray"
+msgstr "以中灰为中心拉开或压缩色调"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Gamma"
+msgstr "伽马"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Values above 1 lighten the midtones, values below 1 darken them"
+msgstr "大于 1 的值使中间调变亮，小于 1 的值使其变暗"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Sharpen"
+msgstr "锐化"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Strength of the unsharp mask that enhances edges before engraving"
+msgstr "雕刻前增强边缘的 USM 锐化强度"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Sharpen Radius"
+msgstr "锐化半径"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Size of the details that get sharpened"
+msgstr "被锐化细节的尺寸"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Image Adjustments"
+msgstr "图像调整"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Tone and sharpness corrections applied to the image before engraving."
+msgstr "雕刻前对图像进行的色调和锐度校正。"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Processed Image"
+msgstr "处理后的图像"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "The bitmap as it will be engraved, for the first image on this layer. Dark areas are engraved."
+msgstr "此图层第一张图像将被雕刻的位图。深色区域会被雕刻。"
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Save Processed Bitmap…"
+msgstr "保存处理后的位图…"
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Save Processed Bitmap"
+msgstr "保存处理后的位图"
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "No image on this layer."
+msgstr "此图层上没有图像。"
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Updating preview…"
+msgstr "正在更新预览…"
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Nothing to engrave."
+msgstr "没有可雕刻的内容。"
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "PNG images"
+msgstr "PNG 图像"
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Could not save the processed bitmap."
+msgstr "无法保存处理后的位图。"
