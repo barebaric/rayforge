@@ -803,3 +803,193 @@ msgstr "Tête laser"
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Add Material Test"
 msgstr "Ajouter un test de matériau"
+
+#: laser_essentials/calibration_tests.py
+msgid "A Focus Test needs at least two lines."
+msgstr "Un test de mise au point nécessite au moins deux lignes."
+
+#: laser_essentials/commands/calibration_test_cmd.py
+msgid "Add Focus Test"
+msgstr "Ajouter un test de mise au point"
+
+#: laser_essentials/commands/calibration_test_cmd.py
+msgid "Add Interval Test"
+msgstr "Ajouter un test d'intervalle"
+
+#: laser_essentials/calibration_tests.py
+msgid "An Interval Test needs at least two cells."
+msgstr "Un test d'intervalle nécessite au moins deux cellules."
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Cancel"
+msgstr "Annuler"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Cell Size"
+msgstr "Taille des cellules"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Cells"
+msgstr "Cellules"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Create"
+msgstr "Créer"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+#: laser_essentials/frontend.py
+msgid "Create Focus Test"
+msgstr "Créer un test de mise au point"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+#: laser_essentials/frontend.py
+msgid "Create Interval Test"
+msgstr "Créer un test d'intervalle"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Engraves a row of filled squares, each with its own line interval, at the same power and speed."
+msgstr "Grave une rangée de carrés remplis, chacun avec son propre intervalle de ligne, à la même puissance et vitesse."
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "First Offset"
+msgstr "Premier décalage"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Focus Steps"
+msgstr "Pas de mise au point"
+
+#: laser_essentials/commands/calibration_test_cmd.py
+msgid "Focus Test"
+msgstr "Test de mise au point"
+
+#: laser_essentials/commands/calibration_test_cmd.py
+msgid "Focus ramp"
+msgstr "Rampe de mise au point"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Focus the laser as usual first. The job moves the head to the first offset, engraves one line per offset and returns the head to the starting height. A positive offset means more distance between the head and the material."
+msgstr "Faites d'abord la mise au point du laser comme d'habitude. La tâche déplace la tête au premier décalage, grave une ligne par décalage et ramène la tête à la hauteur de départ. Un décalage positif signifie plus de distance entre la tête et le matériau."
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Focus the laser as usual first. The labels are engraved at that height. Before each line the job pauses: set the head to the first offset, then move it by one step at every following pause, and press Resume. A positive offset means more distance between the head and the material."
+msgstr "Faites d'abord la mise au point du laser comme d'habitude. Les étiquettes sont gravées à cette hauteur. Avant chaque ligne, la tâche se met en pause : placez la tête au premier décalage, puis déplacez-la d'un pas à chaque pause suivante et appuyez sur Reprendre. Un décalage positif signifie plus de distance entre la tête et le matériau."
+
+#: laser_essentials/commands/calibration_test_cmd.py
+#, python-brace-format
+msgid "Focus {offset} mm"
+msgstr "Mise au point {offset} mm"
+
+#: laser_essentials/commands/calibration_test_cmd.py
+msgid "Interval Test"
+msgstr "Test d'intervalle"
+
+#: laser_essentials/commands/calibration_test_cmd.py
+#, python-brace-format
+msgid "Interval {interval:.2f} mm"
+msgstr "Intervalle {interval:.2f} mm"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Label Power"
+msgstr "Puissance des étiquettes"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Label Speed"
+msgstr "Vitesse des étiquettes"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Largest Interval"
+msgstr "Plus grand intervalle"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Line Length"
+msgstr "Longueur de ligne"
+
+#: laser_essentials/calibration_tests.py
+msgid "Manual (pause between lines)"
+msgstr "Manuel (pause entre les lignes)"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Method"
+msgstr "Méthode"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Number of Cells"
+msgstr "Nombre de cellules"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Number of Lines"
+msgstr "Nombre de lignes"
+
+#: laser_essentials/calibration_tests.py
+#, python-brace-format
+msgid "Pause: move the head by {step} mm"
+msgstr "Pause : déplacer la tête de {step} mm"
+
+#: laser_essentials/calibration_tests.py
+#, python-brace-format
+msgid "Pause: set the head to {offset} mm from focus"
+msgstr "Pause : placer la tête à {offset} mm du point focal"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Percent of the maximum power"
+msgstr "Pourcentage de la puissance maximale"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Prop up one end of a flat strip so it rises evenly under the line. The thinnest part of the line marks the focus; the ticks show the distance along the line, so the height there follows from the rise."
+msgstr "Surélevez une extrémité d'une bande plate pour qu'elle monte régulièrement sous la ligne. La partie la plus fine de la ligne indique la mise au point ; les graduations donnent la distance le long de la ligne, d'où l'on déduit la hauteur à cet endroit."
+
+#: laser_essentials/calibration_tests.py
+msgid "Ramp (tilted material)"
+msgstr "Rampe (matériau incliné)"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Ramp Length"
+msgstr "Longueur de la rampe"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Smallest Interval"
+msgstr "Plus petit intervalle"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Speed"
+msgstr "Vitesse"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Step"
+msgstr "Pas"
+
+#: laser_essentials/calibration_tests.py
+#, python-brace-format
+msgid "The focus offsets must stay within ±{limit:g} mm of the starting height."
+msgstr "Les décalages de mise au point doivent rester à ±{limit:g} mm de la hauteur de départ."
+
+#: laser_essentials/calibration_tests.py
+msgid "The focus step must not be zero."
+msgstr "Le pas de mise au point ne doit pas être nul."
+
+#: laser_essentials/calibration_tests.py
+msgid "The minimum line interval must be above zero and below the maximum."
+msgstr "L'intervalle de ligne minimal doit être supérieur à zéro et inférieur au maximum."
+
+#: laser_essentials/commands/calibration_test_cmd.py
+#, python-brace-format
+msgid "This machine does not support the focus test mode {mode}."
+msgstr "Cette machine ne prend pas en charge le mode de test de mise au point {mode}."
+
+#: laser_essentials/calibration_tests.py
+msgid "Z axis steps"
+msgstr "Pas de l'axe Z"
+
+#: laser_essentials/calibration_tests.py
+msgid "Z back to the starting height"
+msgstr "Z retour à la hauteur de départ"
+
+#: laser_essentials/calibration_tests.py
+#, python-brace-format
+msgid "Z to {offset} mm"
+msgstr "Z à {offset} mm"
+
+#: laser_essentials/commands/calibration_test_cmd.py
+#, python-brace-format
+msgid "{lpi:.0f} LPI"
+msgstr "{lpi:.0f} LPI"
