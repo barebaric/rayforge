@@ -19,6 +19,7 @@ from laser_essentials.widgets.raster_page import RasterSettingsPage
 from laser_essentials.widgets.raster_power_widget import RasterPowerWidget
 
 from rayforge.core.step_registry import step_registry
+from rayforge.image.dither import DitherAlgorithm
 from rayforge.pipeline.stage.assembler_helpers import DepthMode
 from rayforge.ui_gtk.doceditor.step_settings.dialog import StepSettingsDialog
 from rayforge.ui_gtk.doceditor.step_settings.pages import StepSettingsPage
@@ -459,6 +460,27 @@ def test_raster_page_mode_visibility(editor, laser_machine, ui_context):
     step.updated.send(step)
     assert threshold.get_visible() is False
     assert sample_interval.get_visible() is True
+
+
+@pytest.mark.ui
+def test_raster_page_shows_the_steps_dither_algorithm(
+    editor, laser_machine, ui_context
+):
+    """The step stores the algorithm as an enum; the combo row must
+    still select it, on open and after an external change."""
+    step_cls = step_registry.get("EngraveStep")
+    assert step_cls is not None
+    step = cast(EngraveStep, step_cls.create(ui_context))
+    step.depth_mode = "DITHER"
+    step.dither_algorithm = DitherAlgorithm.BAYER4
+    page = RasterSettingsPage(editor, step)
+
+    adapter = page.engrave_widget.adapter_for("dither_algorithm")
+    assert adapter is not None
+    assert adapter.get_value() == "BAYER4"
+
+    step.set_dither_algorithm(DitherAlgorithm.STUCKI)
+    assert adapter.get_value() == "STUCKI"
 
 
 def _depth_mode_adapter(page: RasterSettingsPage) -> ComboAdapter:

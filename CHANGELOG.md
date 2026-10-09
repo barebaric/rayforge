@@ -55,6 +55,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Step settings: choice rows backed by an enum (such as the Engrave
+  step's dithering algorithm) now show the step's actual value when
+  the dialog opens and after undo, instead of the first entry
 - Ruida: the setup wizard no longer requires the optional USB device
   and Magic fields, so Next is enabled again once a valid hostname is
   entered; the Magic field is prefilled with the standard 0x88
