@@ -21,6 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the page size (#517)
 - Import: GIF, TIFF and WebP bitmaps, traced like PNG. Animated GIFs
   and multi-page TIFFs import their first frame or page (#517)
+- Engrave: more dithering algorithms for photos. The error-diffusion
+  kernels Atkinson, Stucki, Jarvis-Judice-Ninke, Sierra (3-row,
+  2-row, Lite) and Burkes, with an optional serpentine scan, plus a
+  clustered-dot Newsprint screen and a round-dot Halftone screen with
+  adjustable cell size and angle. LightBurn imports keep the image
+  layer's dither mode (#514)
 - Sketcher: boolean operations. Union, Difference, Intersection and
   Exclude bake the selected closed regions into multi-ring polygons
   (outer contours counter-clockwise, hole contours clockwise), so

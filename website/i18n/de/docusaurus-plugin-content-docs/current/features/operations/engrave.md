@@ -227,12 +227,19 @@ Dies ist besonders nützlich für:
 
 Wähle den Algorithmus, der am besten zu deinem Bild und Material passt:
 
-| Algorithmus     | Qualität | Geschwindigkeit | Am besten für                    |
-| --------------- | -------- | --------------- | -------------------------------- |
-| Floyd-Steinberg | Höchste  | Langsamste      | Fotos, Porträts, sanfte Verläufe |
-| Bayer 2x2       | Niedrig  | Schnellste      | Grober Halbton-Effekt            |
-| Bayer 4x4       | Mittel   | Schnell         | Ausgewogener Halbton             |
-| Bayer 8x8       | Hoch     | Mittel          | Feine Details, subtile Muster    |
+| Algorithmus                       | Qualität | Geschwindigkeit | Am besten für                              |
+| --------------------------------- | -------- | --------------- | ------------------------------------------ |
+| Floyd-Steinberg                   | Höchste  | Langsamste      | Fotos, Porträts, sanfte Verläufe           |
+| Bayer 2x2                         | Niedrig  | Schnellste      | Grober Halbton-Effekt                      |
+| Bayer 4x4                         | Mittel   | Schnell         | Ausgewogener Halbton                       |
+| Bayer 8x8                         | Hoch     | Mittel          | Feine Details, subtile Muster              |
+| Atkinson                          | Mittel   | Mittel          | Kontrastreiche Bilder, Holz                |
+| Stucki                            | Höchste  | Langsam         | Porträts, weiche Hauttöne                  |
+| Jarvis, Judice & Ninke            | Höchste  | Langsam         | Sanfte Verläufe, feine Körnung             |
+| Sierra (3-zeilig, 2-zeilig, Lite) | Hoch     | Mittel          | Leichtere Alternativen zu Stucki           |
+| Burkes                            | Hoch     | Mittel          | Fotos, schneller als Stucki                |
+| Zeitungsdruck                     | Mittel   | Schnellste      | Gruppierte Punkte wie im Zeitungsdruck     |
+| Halbton                           | Mittel   | Schnell         | Runde Punkte, Größe und Winkel einstellbar |
 
 **Floyd-Steinberg** ist Standard und empfohlen für die meisten Fotogravuren. Es verwendet
 Fehler-Diffusion, um Quantisierungsfehler auf benachbarte Pixel zu verteilen, was natürlich
@@ -240,6 +247,16 @@ aussehende Ergebnisse erzeugt.
 
 **Bayer-Dithering** erzeugt regelmäßige Muster, die künstlerische Effekte erzeugen können, die
 traditionellem Halbton-Druck ähneln.
+
+**Stucki, Jarvis, Sierra, Burkes und Atkinson** sind wie Floyd-Steinberg Fehler-Diffusionsverfahren,
+verteilen den Fehler aber über eine größere Umgebung. Das ergibt eine ruhigere Körnung in
+gleichmäßigen Flächen wie Hauttönen. Atkinson verteilt nur einen Teil des Fehlers und erhöht so den
+Kontrast. Schalte **Serpentinenmodus** ein, um die Abtastrichtung in jeder Zeile zu wechseln und
+richtungsabhängige Streifen zu vermeiden.
+
+**Zeitungsdruck** und **Halbton** fassen Pixel zu Punkten zusammen. Halbton setzt runde Punkte auf
+ein Raster, das du mit **Halbton-Zellgröße** (Abstand zwischen den Punktmittelpunkten) und
+**Halbton-Winkel** einstellst. Wähle eine Zellgröße von mindestens einigen Laserpunktbreiten.
 
 #### Mehrfach-Tiefen-Modus-Einstellungen
 
