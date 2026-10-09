@@ -1,4 +1,5 @@
 import logging
+import sys
 import threading
 import time
 from dataclasses import dataclass
@@ -32,6 +33,24 @@ _open_local_devices: set[str] = set()
 _OPEN_VALIDATION_ATTEMPTS = 3
 _OPEN_VALIDATION_DELAY = 0.1
 
+# Delay observed after a device reports isOpened() == True and before
+# its first read() attempt. On macOS this must be nonzero: OpenCV's
+# AVFoundation backend can segfault (EXC_BAD_ACCESS inside
+# -[CaptureDelegate grabImageUntilDate:]) when the first grab races the
+# capture session startup, so the session gets a moment to settle
+# before the first frame is grabbed.
+_FIRST_READ_WARMUP_DELAY = 0.5 if sys.platform == "darwin" else 0.0
+
+
+def _interruptible_wait(
+    delay: float, cancel_event: "threading.Event | None"
+) -> bool:
+    """Wait up to `delay` seconds. Returns True if cancelled."""
+    if cancel_event is not None:
+        return cancel_event.wait(delay)
+    time.sleep(delay)
+    return False
+
 
 def _to_videocapture_arg(target: str) -> int | str:
     """Convert a scan target for cv2.VideoCapture.
@@ -52,6 +71,11 @@ def _capture_has_initial_frame(
     cancel_event: "threading.Event | None" = None,
 ) -> bool:
     """Check whether an opened capture device actually delivers frames."""
+    if _FIRST_READ_WARMUP_DELAY > 0 and _interruptible_wait(
+        _FIRST_READ_WARMUP_DELAY, cancel_event
+    ):
+        return False
+
     for attempt in range(attempts):
         try:
             ret, frame = cap.read()
@@ -61,12 +85,8 @@ def _capture_has_initial_frame(
         if ret and frame is not None:
             return True
 
-        if attempt < attempts - 1:
-            if cancel_event is not None:
-                if cancel_event.wait(delay):
-                    return False
-            else:
-                time.sleep(delay)
+        if attempt < attempts - 1 and _interruptible_wait(delay, cancel_event):
+            return False
 
     return False
 
@@ -142,8 +162,6 @@ class LocalDeviceSource(CameraSource):
 
     @staticmethod
     def _scan_targets() -> list[str]:
-        import sys
-
         if sys.platform.startswith("linux"):
             return _get_linux_scan_targets()
         return [str(i) for i in range(10)]

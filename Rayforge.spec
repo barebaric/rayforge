@@ -83,5 +83,12 @@ app = BUNDLE(
     info_plist={
         **({'CFBundleIconName': 'rayforge'} if _use_car else {}),
         'LSMinimumSystemVersion': '12.0',
+        # Without this key, macOS TCC kills the process the moment any
+        # camera is opened (even just enumerating devices), so it must
+        # stay in sync with the camera sources in rayforge/camera.
+        'NSCameraUsageDescription': (
+            'Rayforge uses the camera to capture your work surface, '
+            'so it can align your design with the material.'
+        ),
     },
 )
