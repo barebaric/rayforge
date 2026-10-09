@@ -32,6 +32,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Duplicates (duplicate contours inside a workpiece and stacked copies
   of whole workpieces), and Break Apart (one workpiece per contour,
   holes and open paths included). Each is a single undo step (#516)
+- Start From: run a job at its canvas position (Absolute Coordinates),
+  on the zero point of the active WCS (User Origin) or at the laser
+  head (Current Position), with a 9-point Job Origin selector in the
+  Control Panel. The job is shifted as a whole before encoding, so the
+  G-code stays absolute in the active WCS (no G92/G10); framing, the
+  3D preview and the pre-flight checks use the shifted job, and a
+  shifted job that leaves the machine travel or enters a no-go zone is
+  refused (#518)
 - Sketcher: boolean operations. Union, Difference, Intersection and
   Exclude bake the selected closed regions into multi-ring polygons
   (outer contours counter-clockwise, hole contours clockwise), so

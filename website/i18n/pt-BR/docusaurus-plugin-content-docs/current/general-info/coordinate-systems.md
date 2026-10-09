@@ -186,6 +186,43 @@ de edição rápida ao lado do seletor permite ajustar os deslocamentos sem sair
 Camadas sem uma atribuição explícita de WCS usam o WCS ativo global do menu suspenso da barra de
 ferramentas.
 
+## Iniciar a partir de e origem do trabalho
+
+Por padrão, um trabalho é executado exatamente onde está posicionado na tela. A configuração
+**Iniciar a partir de** no painel de controle (salva com o projeto) permite posicioná-lo em outro
+lugar:
+
+| Modo                      | Onde o trabalho é executado                                                         |
+| ------------------------- | ----------------------------------------------------------------------------------- |
+| **Coordenadas absolutas** | Tal como posicionado na tela (padrão)                                               |
+| **Origem do usuário**     | A origem do trabalho fica no ponto zero do WCS ativo                                |
+| **Posição atual**         | A origem do trabalho fica onde a cabeça do laser está ao enquadrar ou iniciar       |
+
+O seletor **Origem do trabalho** ao lado escolhe qual dos nove pontos da caixa delimitadora do
+trabalho (um canto, o meio de uma borda ou o centro) é colocado nessa posição. A caixa delimitadora
+é a dos desenhos que você vê na tela, sem overscan nem entradas.
+
+Quando o modo não é Absoluto, a tela mostra um contorno azul tracejado onde o trabalho será
+realmente executado, com uma marca na origem do trabalho.
+
+Como funciona:
+
+- Todo o trabalho é deslocado como uma peça só antes de virar G-code. O G-code continua sendo G-code
+  absoluto comum no WCS ativo: o Rayforge não envia `G92` nem `G10` e não altera seus deslocamentos
+  WCS.
+- O enquadramento, a pré-visualização 3D e as verificações prévias usam o mesmo trabalho deslocado.
+  Se o trabalho deslocado sair do curso da máquina ou entrar em uma zona proibida, o envio e o
+  enquadramento são recusados.
+- **Origem do usuário** gera coordenadas relativas ao zero do WCS. Um arquivo G-code exportado assim
+  acompanha o WCS quando você o zera em outro lugar da máquina, o que o torna a escolha certa para
+  arquivos executados a partir de um cartão SD ou pen drive.
+- **Posição atual** requer uma máquina conectada e ociosa que informe sua posição. Com o
+  alinhamento por ponteiro ativado, o ponto do ponteiro é usado em vez do feixe. Após o
+  enquadramento, ou após um trabalho concluído, a cabeça volta à posição inicial, de modo que
+  enquadrar e depois iniciar termina no mesmo lugar. Um arquivo exportado contém a posição da cabeça
+  no momento da exportação.
+- Camadas que usam um módulo rotativo só suportam coordenadas absolutas.
+
 ## Fluxos de Trabalho Práticos
 
 ### Fluxo de Trabalho 1: Múltiplas Posições de Fixação

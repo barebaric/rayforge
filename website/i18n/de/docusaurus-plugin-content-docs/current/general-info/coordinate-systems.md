@@ -190,6 +190,43 @@ Dialog zu verlassen.
 Ebenen ohne explizite WCS-Zuweisung verwenden das global aktive WCS aus dem Dropdown in der
 Symbolleiste.
 
+## Starten ab und Job-Ursprung
+
+Standardmäßig läuft ein Job genau dort, wo er auf der Arbeitsfläche platziert ist. Mit der
+Einstellung **Starten ab** im Steuerungsfeld (wird mit dem Projekt gespeichert) kannst du ihn
+stattdessen woanders platzieren:
+
+| Modus                    | Wo der Job läuft                                                                     |
+| ------------------------ | ------------------------------------------------------------------------------------ |
+| **Absolute Koordinaten** | Wie auf der Arbeitsfläche platziert (Standard)                                       |
+| **Benutzerursprung**     | Der Job-Ursprung liegt auf dem Nullpunkt des aktiven WCS                             |
+| **Aktuelle Position**    | Der Job-Ursprung liegt dort, wo der Laserkopf beim Umranden oder Starten steht       |
+
+Mit der Auswahl **Job-Ursprung** daneben wählst du, welcher von neun Punkten des Begrenzungsrahmens
+des Jobs (eine Ecke, die Mitte einer Kante oder die Mitte) auf diese Position gelegt wird. Der
+Begrenzungsrahmen ist der der Designs auf der Arbeitsfläche, ohne Overscan oder Anfahrwege.
+
+Wenn der Modus nicht Absolut ist, zeigt die Arbeitsfläche einen gestrichelten blauen Rahmen dort, wo
+der Job tatsächlich läuft, mit einer Markierung auf dem Job-Ursprung.
+
+So funktioniert es:
+
+- Der ganze Job wird als Ganzes verschoben, bevor daraus G-Code wird. Der G-Code bleibt normaler
+  absoluter G-Code im aktiven WCS: Rayforge sendet kein `G92` oder `G10` und ändert deine
+  WCS-Offsets nicht.
+- Umranden, die 3D-Vorschau und die Prüfungen vor dem Senden verwenden denselben verschobenen Job.
+  Würde der verschobene Job den Verfahrweg der Maschine verlassen oder eine Sperrzone berühren,
+  werden Senden und Umranden abgelehnt.
+- **Benutzerursprung** erzeugt Koordinaten relativ zum WCS-Nullpunkt. Eine so exportierte G-Code-
+  Datei folgt dem WCS, wenn du es an der Maschine woanders nullst. Das ist die richtige Wahl für
+  Dateien, die du von einer SD-Karte oder einem USB-Stick ausführst.
+- **Aktuelle Position** benötigt eine verbundene, bereite Maschine, die ihre Position meldet. Mit
+  eingeschalteter Pointer-Ausrichtung wird der Pointer-Punkt statt des Strahls verwendet. Nach dem
+  Umranden oder einem abgeschlossenen Job fährt der Kopf zurück zur Startposition, sodass Umranden
+  gefolgt von Starten an derselben Stelle landet. Eine exportierte Datei enthält die Kopfposition
+  zum Zeitpunkt des Exports.
+- Ebenen mit einem Rotationsmodul unterstützen nur Absolute Koordinaten.
+
 ## Praktische Workflows
 
 ### Workflow 1: Mehrere Vorrichtungs-Positionen

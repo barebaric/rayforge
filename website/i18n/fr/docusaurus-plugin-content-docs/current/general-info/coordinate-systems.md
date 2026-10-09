@@ -189,6 +189,43 @@ boîte de dialogue.
 Les calques sans attribution explicite de WCS utilisent le WCS global actif du menu déroulant de la
 barre d'outils.
 
+## Démarrer depuis et origine de la tâche
+
+Par défaut, une tâche s'exécute exactement là où elle est placée sur le canevas. Le réglage
+**Démarrer depuis** du panneau de contrôle (enregistré avec le projet) permet de la placer
+ailleurs :
+
+| Mode                      | Où la tâche s'exécute                                                                 |
+| ------------------------- | ------------------------------------------------------------------------------------- |
+| **Coordonnées absolues**  | Tel que placé sur le canevas (par défaut)                                             |
+| **Origine utilisateur**   | L'origine de la tâche tombe sur le point zéro du WCS actif                            |
+| **Position actuelle**     | L'origine de la tâche tombe là où se trouve la tête laser au cadrage ou au démarrage  |
+
+Le sélecteur **Origine de la tâche** à côté choisit lequel des neuf points du cadre englobant de la
+tâche (un coin, le milieu d'un bord ou le centre) est placé sur cette position. Le cadre englobant
+est celui des motifs visibles sur le canevas, sans surbalayage ni entrées.
+
+Quand le mode n'est pas Absolu, le canevas affiche un contour bleu en pointillés là où la tâche
+s'exécutera réellement, avec un repère sur l'origine de la tâche.
+
+Fonctionnement :
+
+- Toute la tâche est déplacée d'un bloc avant d'être convertie en G-code. Le G-code reste du G-code
+  absolu ordinaire dans le WCS actif : Rayforge n'envoie ni `G92` ni `G10` et ne modifie pas vos
+  décalages WCS.
+- Le cadrage, l'aperçu 3D et les vérifications préalables utilisent la même tâche déplacée. Si la
+  tâche déplacée sortait de la course de la machine ou entrait dans une zone interdite, l'envoi et
+  le cadrage sont refusés.
+- **Origine utilisateur** produit des coordonnées relatives au zéro du WCS. Un fichier G-code
+  exporté ainsi suit le WCS lorsque vous le remettez à zéro ailleurs sur la machine : c'est le bon
+  choix pour les fichiers exécutés depuis une carte SD ou une clé USB.
+- **Position actuelle** nécessite une machine connectée et au repos qui signale sa position. Avec
+  l'alignement par pointeur activé, le point du pointeur est utilisé à la place du faisceau. Après
+  un cadrage, ou après une tâche terminée, la tête revient à la position de départ, de sorte que
+  cadrer puis démarrer aboutit au même endroit. Un fichier exporté contient la position de la tête
+  au moment de l'export.
+- Les calques qui utilisent un module rotatif ne prennent en charge que les coordonnées absolues.
+
 ## Flux de Travail Pratiques
 
 ### Flux de Travail 1 : Plusieurs Positions de Fixation
