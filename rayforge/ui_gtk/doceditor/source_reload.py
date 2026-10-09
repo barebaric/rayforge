@@ -34,7 +34,7 @@ class SourceReloadMonitor:
 
     def __init__(
         self,
-        parent: Gtk.Widget,
+        parent: Gtk.Window,
         editor: DocEditor,
         watcher: SourceWatcher | None = None,
         dialog_factory: Callable[..., Any] = SourceChangedDialog,
