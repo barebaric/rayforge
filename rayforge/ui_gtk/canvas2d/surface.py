@@ -11,13 +11,16 @@ from ...context import get_context
 from ...core.color import ColorRGBA, hex_to_rgba
 from ...core.group import Group
 from ...core.item import DocItem
+from ...core.job_origin import anchor_point
 from ...core.layer import Layer
 from ...core.stock import StockItem
 from ...core.stock_asset import StockAsset
 from ...core.workpiece import WorkPiece
+from ...machine.job_placement import JobPlacementError, compute_job_shift
 from ...machine.models.machine import Machine
 from ...machine.models.machine_panel import MachinePanel
 from ...pipeline.artifact import RenderContext
+from ...pipeline.intent_builder import job_design_rect
 from ...shared.units.formatter import get_preferred_unit_factor
 from ..canvas import Canvas, CanvasElement, WorldSurface
 from ..shared.keyboard import is_primary_modifier
@@ -29,6 +32,7 @@ from .elements.axis_extent_frame import (
 from .elements.camera_image import CameraImageElement
 from .elements.dot import DotElement
 from .elements.group import GroupElement
+from .elements.job_placement import JobPlacementElement
 from .elements.layer import LayerElement
 from .elements.nogo_zone import NogoZoneElement
 from .elements.stock import StockElement
@@ -164,6 +168,15 @@ class WorkSurface(WorldSurface):
         self._extent_frame_element = AxisExtentFrameElement()
         self._extent_frame_element.set_visible(False)
         self.root.add(self._extent_frame_element)
+
+        # Outline of a job placed via Start From (hidden for absolute)
+        self._job_placement_element = JobPlacementElement()
+        self._job_placement_element.set_visible(False)
+        self.root.add(self._job_placement_element)
+        self._job_design_rect_cache: (
+            tuple[float, float, float, float] | None
+        ) = None
+        self._job_design_rect_valid = False
 
         # Signals for clipboard and duplication operations
         self.cut_requested = Signal()
@@ -489,6 +502,7 @@ class WorkSurface(WorldSurface):
             f"History changed, synchronizing selection state. Sender: {sender}"
         )
         self._sync_selection_state()
+        self._invalidate_job_placement()
         self.queue_draw()
 
     def _on_pipeline_data_stale(self, sender, **kwargs):
@@ -511,6 +525,7 @@ class WorkSurface(WorldSurface):
         """Refreshes render context when layers are added/removed."""
         logger.debug(f"_on_doc_structure_changed fired: sender={sender}")
         self._update_pipeline_view_context()
+        self._invalidate_job_placement()
 
     def _on_document_changed(self, sender, **kwargs):
         """Reconnect all doc signals when a new doc is loaded."""
@@ -527,8 +542,10 @@ class WorkSurface(WorldSurface):
         doc.active_layer_changed.connect(self._on_active_layer_changed)
         doc.descendant_added.connect(self._on_doc_structure_changed)
         doc.descendant_removed.connect(self._on_doc_structure_changed)
+        doc.job_origin_changed.connect(self._on_job_origin_changed)
         self._connect_active_layer_wcs()
         self._connected_doc = doc
+        self._invalidate_job_placement()
 
     def _disconnect_doc_signals(self):
         self._disconnect_active_layer_wcs()
@@ -538,6 +555,7 @@ class WorkSurface(WorldSurface):
             doc.active_layer_changed.disconnect(self._on_active_layer_changed)
             doc.descendant_added.disconnect(self._on_doc_structure_changed)
             doc.descendant_removed.disconnect(self._on_doc_structure_changed)
+            doc.job_origin_changed.disconnect(self._on_job_origin_changed)
             self._connected_doc = None
 
     def _on_any_transform_begin(
@@ -819,6 +837,7 @@ class WorkSurface(WorldSurface):
         self._work_origin_element.set_pos(canvas_x, canvas_y)
         self._work_origin_element.set_visible(True)
         self._update_extent_frame()
+        self._update_job_placement()
         self.queue_draw()
 
     def _is_rotary_active(self):
@@ -879,6 +898,58 @@ class WorkSurface(WorldSurface):
         if m_pos and all(p is not None for p in m_pos):
             m_x, m_y = m_pos[0], m_pos[1]
             self.set_laser_dot_position(m_x, m_y)
+        if self.doc is not None and not self.doc.job_origin.is_absolute:
+            self._update_job_placement()
+
+    def _on_job_origin_changed(self, sender):
+        self._invalidate_job_placement()
+
+    def _invalidate_job_placement(self):
+        """Recomputes the job placement outline after a doc change."""
+        self._job_design_rect_valid = False
+        self._update_job_placement()
+
+    def _update_job_placement(self):
+        """
+        Shows where a job placed via Start From will run, or hides the
+        outline for absolute coordinates or when the start point is
+        unknown (e.g. "Current Position" without a connected machine).
+        """
+        element = self._job_placement_element
+        doc = self.doc
+        machine = self.machine
+        if doc is None or machine is None or doc.job_origin.is_absolute:
+            if element.visible:
+                element.set_visible(False)
+                self.queue_draw()
+            return
+        if not self._job_design_rect_valid:
+            self._job_design_rect_cache = job_design_rect(doc)
+            self._job_design_rect_valid = True
+        rect = self._job_design_rect_cache
+        try:
+            shift = compute_job_shift(machine, doc.job_origin, rect)
+        except JobPlacementError:
+            shift = None
+        if rect is None or shift is None:
+            element.set_visible(False)
+            self.queue_draw()
+            return
+        dx, dy = shift
+        placed = (rect[0] + dx, rect[1] + dy, rect[2] + dx, rect[3] + dy)
+        ax, ay = anchor_point(placed, doc.job_origin.anchor)
+        panel = machine.panel
+        anchor_rect = panel.world_bbox_to_panel((ax, ay, ax, ay))
+        element.set_placement(
+            panel.world_bbox_to_panel(placed), anchor_rect[:2]
+        )
+        element.set_visible(True)
+        self.queue_draw()
+
+    @property
+    def job_placement_element(self) -> JobPlacementElement:
+        """The outline of a job placed via Start From."""
+        return self._job_placement_element
 
     def do_snapshot(self, snapshot: Gtk.Snapshot) -> None:
         self._update_theme_colors()
@@ -1153,6 +1224,8 @@ class WorkSurface(WorldSurface):
             """
             if isinstance(element, DotElement):
                 return float("inf") - 1
+            if isinstance(element, JobPlacementElement):
+                return float("inf") - 2
             if isinstance(element, LayerElement):
                 # LayerElements are ordered according to the doc.layers list.
                 # Add a large offset to ensure all layers are above stock
@@ -1192,6 +1265,7 @@ class WorkSurface(WorldSurface):
                     NogoZoneElement,
                     WorkOriginElement,
                     AxisExtentFrameElement,
+                    JobPlacementElement,
                 ),
             )
         ]

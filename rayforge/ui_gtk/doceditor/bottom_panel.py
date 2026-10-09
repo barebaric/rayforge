@@ -16,6 +16,7 @@ from ...shared.tasker import task_mgr
 from ..doceditor.layers_tab import LayersTab
 from ..icons import get_icon
 from ..machine.console import Console
+from ..machine.job_origin_rows import JobOriginRows
 from ..machine.jog_widget import JogWidget
 from ..machine.laser_control_widget import LaserControlWidget
 from ..machine.move_to_popover import MoveToPopover
@@ -129,6 +130,7 @@ class BottomPanel(Gtk.Box):
         self._controls_widget.set_margin_top(9)
         self._controls_widget.set_margin_bottom(9)
 
+        self.job_origin_rows = JobOriginRows()
         if machine:
             self._setup_wcs_controls()
             self._connect_machine_signals()
@@ -244,6 +246,7 @@ class BottomPanel(Gtk.Box):
         self.doc = doc
         self.asset_browser.set_doc(doc)
         self.layers_tab.set_doc(doc)
+        self.job_origin_rows.set_doc(doc)
         if doc:
             doc.active_layer_changed.connect(self._on_active_layer_changed)
             self._connect_layer_signals()
@@ -341,6 +344,10 @@ class BottomPanel(Gtk.Box):
             "notify::selected", self._on_wcs_selection_changed
         )
         self.wcs_group.add(self.wcs_row)
+
+        self.job_origin_rows.set_machine(self.machine)
+        self.wcs_group.add(self.job_origin_rows.start_from_row)
+        self.wcs_group.add(self.job_origin_rows.anchor_row)
 
         self.offsets_row = Adw.ActionRow(title=_("Current Offsets"))
 
@@ -523,6 +530,7 @@ class BottomPanel(Gtk.Box):
         self.machine_cmd = machine_cmd
 
         self.console.set_machine(machine)
+        self.job_origin_rows.set_machine(machine)
 
         if self.machine:
             self._connect_machine_signals()
@@ -688,6 +696,7 @@ class BottomPanel(Gtk.Box):
         if not self.machine:
             return
 
+        self.job_origin_rows.update()
         self._sync_pointer_alignment_btn()
         self._sync_wcs_model()
 
