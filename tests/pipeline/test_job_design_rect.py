@@ -25,7 +25,9 @@ def test_aabb_of_workpiece_without_geometry():
 def test_aabb_of_rotated_workpiece_without_geometry():
     wp = _image_workpiece((0.0, 0.0), (20.0, 10.0))
     wp.angle = 90.0
-    min_x, min_y, max_x, max_y = workpiece_world_aabb(wp)
+    aabb = workpiece_world_aabb(wp)
+    assert aabb is not None
+    min_x, min_y, max_x, max_y = aabb
     assert (max_x - min_x, max_y - min_y) == pytest.approx((10.0, 20.0))
 
 
