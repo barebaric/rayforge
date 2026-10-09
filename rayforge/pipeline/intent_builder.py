@@ -990,7 +990,16 @@ class IntentBuilder:
     def _bidir_offset_params(self, step: Step) -> list[Any]:
         """The inputs of the bidirectional scan offset, which the
         compute stage applies through the per-workpiece transformers."""
-        return [step.cut_speed, getattr(step, "bidir_x_offset_mm", 0.0)]
+        table = (
+            [list(row) for row in self._machine.bidir_offset_table]
+            if self._machine is not None
+            else []
+        )
+        return [
+            step.cut_speed,
+            getattr(step, "bidir_x_offset_mm", 0.0),
+            table,
+        ]
 
     def _transformer_settings(
         self, step: Step | None = None
@@ -1002,9 +1011,9 @@ class IntentBuilder:
         machine driver handles overscan itself, the machine
         kinematics so acceleration-aware transformers (e.g. the
         scanline merging inside :class:`Optimize`) can build their
-        specs from them. With a ``step`` it adds the step's speed and
-        its own bidirectional scan offset for
-        :class:`BidirScanOffsetTransformer`.
+        specs from them, and the machine's bidirectional scan offset
+        table. With a ``step`` it adds the step's speed and its own
+        bidirectional scan offset for :class:`BidirScanOffsetTransformer`.
         """
         settings: dict[str, Any] = {}
         if self._machine is not None:
@@ -1020,6 +1029,9 @@ class IntentBuilder:
                         self._machine.max_travel_speed
                     ),
                     "machine_acceleration": self._machine.acceleration,
+                    "bidir_offset_table": [
+                        list(row) for row in self._machine.bidir_offset_table
+                    ],
                 }
             )
         if step is not None:
