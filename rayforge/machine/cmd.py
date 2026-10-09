@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import Awaitable, Callable, Coroutine
 from gettext import gettext as _
@@ -12,15 +13,18 @@ from raygeo.ops.axis import Axis
 from raygeo.ops.types import CommandType
 
 from ..context import get_context
+from ..core.job_origin import StartFrom
 from ..pipeline.artifact import JobArtifact
 from ..pipeline.artifact.handle import BaseArtifactHandle
 from ..pipeline.encoder.base import EncodedOutput
 from ..pipeline.encoder.context import GcodeContext, JobInfo
 from ..shared.util.template import TemplateFormatter
-from .driver.driver import FrameCorner
+from .driver.driver import DeviceStatus, FrameCorner
 from .job_monitor import JobMonitor
+from .job_placement import JobPlacementError
 from .kinematic_mapping import KinematicMapping
 from .models.coordspace import MachineSpace
+from .sanity import CheckMode, IssueSeverity, SanityChecker
 
 if TYPE_CHECKING:
     from ..core.layer import Layer
@@ -31,6 +35,11 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+# How long to wait for the machine to become idle after a framing or a
+# job before the head is moved back to the start position.
+RETURN_TO_START_TIMEOUT_S = 60.0
+_IDLE_POLL_INTERVAL_S = 0.1
 
 
 class JobAlreadyRunningError(RuntimeError):
@@ -52,6 +61,7 @@ class MachineCmd:
         self.job_started = Signal()
         self._current_monitor: JobMonitor | None = None
         self._on_progress_callback: Callable[[dict], None] | None = None
+        self._cancel_requested = False
 
     @property
     def is_job_running(self) -> bool:
@@ -342,6 +352,8 @@ class MachineCmd:
         artifact_store = self._editor.pipeline.artifact_store
         pipeline = self._editor.pipeline
         shift_used = False
+        self._cancel_requested = False
+        return_point = self._start_position_in_command_space(machine)
 
         try:
             if pointer_dry_run and machine.has_pointer_offset():
@@ -378,7 +390,12 @@ class MachineCmd:
                     # checkout keeps the artifact alive.
                     pipeline.invalidate_job_output()
 
+                if isinstance(artifact, JobArtifact):
+                    self._check_job_placement(artifact, machine)
                 await final_job_action(artifact, machine, on_progress)
+
+            if return_point is not None and not self._cancel_requested:
+                await self._return_to_start(machine, return_point)
 
         except JobAlreadyRunningError:
             # Already logged as a warning by the guard; not an error.
@@ -389,6 +406,87 @@ class MachineCmd:
             if handle and "artifact" not in locals():
                 artifact_store.release(handle)
             raise
+
+    def _start_position_in_command_space(
+        self, machine: Machine
+    ) -> tuple[float, float] | None:
+        """
+        The head position before a Start From "Current Position" job,
+        in command coordinates of the active WCS, or None in any other
+        mode or when the position is unknown.
+        """
+        job_origin = self._editor.doc.job_origin
+        if job_origin.start_from != StartFrom.CURRENT_POSITION:
+            return None
+        pos_x, pos_y = machine.device_state.machine_pos[:2]
+        if pos_x is None or pos_y is None:
+            return None
+        off_x, off_y, _z = machine.panel.get_command_offset(
+            wcs_offset=machine.get_active_wcs_offset(),
+            wcs_is_workarea_origin=machine.wcs_origin_is_workarea_origin,
+        )
+        return (pos_x - off_x, pos_y - off_y)
+
+    def _check_job_placement(self, artifact: JobArtifact, machine: Machine):
+        """
+        Refuse a job placed via Start From that leaves the machine
+        travel or enters a no-go zone.
+
+        The UI runs the same checks before sending and lets the user
+        override them; this is the backend guard for jobs whose
+        position depends on where the head or the WCS zero is, which
+        the user cannot see on the canvas.
+
+        Raises:
+            JobPlacementError: With the issues found.
+        """
+        if self._editor.doc.job_origin.is_absolute:
+            return
+        report = SanityChecker(machine).check(
+            artifact.ops, mode=CheckMode.FAST
+        )
+        errors = [
+            issue.message
+            for issue in report.issues
+            if issue.severity == IssueSeverity.ERROR
+        ]
+        if errors:
+            raise JobPlacementError(
+                _(
+                    "The job does not fit at the chosen start position: "
+                    "{issues}"
+                ).format(issues="; ".join(errors))
+            )
+
+    async def _return_to_start(
+        self, machine: Machine, point: tuple[float, float]
+    ):
+        """
+        Move the head back to where a "Current Position" job or frame
+        started, once the machine is idle again.
+
+        The dialect postscript usually returns to X0 Y0; without this,
+        Frame followed by Start would place the job at the WCS zero.
+        """
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + RETURN_TO_START_TIMEOUT_S
+        while machine.device_state.status != DeviceStatus.IDLE:
+            if loop.time() >= deadline or self._cancel_requested:
+                logger.warning(
+                    "Machine did not become idle; head not returned to "
+                    "the start position."
+                )
+                self._editor.notification_requested.send(
+                    self,
+                    message=_(
+                        "The head was not moved back to the start "
+                        "position. Check its position before the next "
+                        "Frame or Start."
+                    ),
+                )
+                return
+            await asyncio.sleep(_IDLE_POLL_INTERVAL_S)
+        await machine.driver.move_to(point[0], point[1])
 
     async def frame_job(
         self,
@@ -476,6 +574,7 @@ class MachineCmd:
 
     def cancel_job(self, machine: Machine):
         """Adds a task to cancel the currently running job on the machine."""
+        self._cancel_requested = True
         driver = machine.driver
         self._editor.task_manager.add_coroutine(
             lambda ctx: driver.cancel(), key="cancel-job"

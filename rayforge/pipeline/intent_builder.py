@@ -41,6 +41,7 @@ import json
 import logging
 import math
 from collections.abc import Callable, Mapping, Sequence
+from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -77,6 +78,7 @@ from raygeo.pipeline.stage import StageSpec
 
 from ..machine.driver import get_driver_cls
 from ..machine.driver.dummy import NoDeviceDriver
+from ..machine.job_placement import JobPlacementError, compute_job_shift
 from ..machine.kinematic_math import KinematicMath
 from ..machine.models.coordspace import MachineSpace
 from ..machine.models.dialect import GRBL_DIALECT
@@ -108,6 +110,92 @@ JOB_KEY = "job"
 JOB_ENCODE_KEY = "job:encode"
 JOB_MACHINEXFORM_KEY = "job:machinexform"
 STOCK_KEY_FMT = "stock:{stock_uid}"
+
+
+def workpiece_world_aabb(
+    wp: WorkPiece,
+) -> tuple[float, float, float, float] | None:
+    """The workpiece's world-space AABB (fold wiring, job origin).
+
+    Uses the resolved world geometry when available (vector
+    workpieces). Image/raster workpieces carry no vector geometry
+    (``get_world_geometry`` returns ``None``), so their AABB is
+    derived from the workpiece ``size`` transformed into world
+    space via its world transform. Returns ``None`` when neither
+    yields a usable rect (no geometry and no size).
+    """
+    geo = wp.get_world_geometry()
+    if geo is not None and not geo.is_empty():
+        return geo.rect()
+    if not wp.size:
+        return None
+    w, h = wp.size
+    if w <= 0 or h <= 0:
+        return None
+    # The world transform maps the unit square onto the workpiece; its
+    # scale already carries the size.
+    world = wp.get_world_transform()
+    corners = [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0)]
+    pts = [world.transform_point(x, y) for x, y in corners]
+    xs = [p[0] for p in pts]
+    ys = [p[1] for p in pts]
+    return (min(xs), min(ys), max(xs), max(ys))
+
+
+def job_design_rect(doc: Doc) -> tuple[float, float, float, float] | None:
+    """
+    The world-space bounding box of the design that makes up the job:
+    the union of the AABBs of all workpieces processed by a visible
+    step. The job origin anchor refers to this box, so it matches what
+    is seen on the canvas regardless of overscan, lead-ins or kerf.
+    Returns None when no workpiece contributes.
+    """
+    rects = []
+    for layer in doc.layers:
+        if not layer.workflow:
+            continue
+        workpieces = list(layer.all_workpieces)
+        for step in layer.workflow.steps:
+            if not step.visible or not step.needs_workpieces:
+                continue
+            for wp in IntentBuilder._workpieces_for_step(step, workpieces):
+                rect = workpiece_world_aabb(wp)
+                if rect is not None:
+                    rects.append(rect)
+    if not rects:
+        return None
+    return (
+        min(r[0] for r in rects),
+        min(r[1] for r in rects),
+        max(r[2] for r in rects),
+        max(r[3] for r in rects),
+    )
+
+
+def validate_job_placement(machine: Machine | None, doc: Doc) -> None:
+    """
+    Check that the document's job origin can be applied.
+
+    Start From "User Origin" and "Current Position" translate the
+    whole job in world space, which has no meaning for rotary layers
+    (their Y is mapped onto the rotary axis), and "Current Position"
+    needs a connected, idle machine that reports the head position.
+
+    Raises:
+        JobPlacementError: With a user-facing message.
+    """
+    job_origin = doc.job_origin
+    if job_origin.is_absolute or machine is None:
+        return
+    if doc.has_rotary_layer:
+        raise JobPlacementError(
+            _(
+                "Start From \u201c{mode}\u201d is not available while a "
+                "layer uses a rotary module. Use \u201cAbsolute "
+                "Coordinates\u201d."
+            ).format(mode=job_origin.start_from.label)
+        )
+    compute_job_shift(machine, job_origin, (0.0, 0.0, 0.0, 0.0))
 
 
 class UnsupportedRotaryPanelOrientationError(ValueError):
@@ -209,6 +297,8 @@ class IntentBuilder:
         self._generation_id = generation_id
         self._loop = loop
         self._doc: Doc | None = None
+        self._job_shift: tuple[float, float] | None = None
+        self.job_placement_error: JobPlacementError | None = None
 
     @property
     def generation_id(self) -> int:
@@ -265,6 +355,13 @@ class IntentBuilder:
         self._build_stock_fold_nodes(doc, wp_compute_keys, nodes)
         self._build_rotary_fold_nodes(doc, wp_compute_keys, nodes)
 
+        self._job_shift = None
+        placement_error: JobPlacementError | None = None
+        try:
+            self._job_shift = self._resolve_job_shift(doc)
+        except JobPlacementError as e:
+            placement_error = e
+
         for layer in doc.layers:
             if not layer.workflow:
                 continue
@@ -279,11 +376,43 @@ class IntentBuilder:
                     step, layer, upstream
                 )
 
+        self.job_placement_error = placement_error
+        if placement_error is not None:
+            logger.info("Job is not assembled: %s", placement_error)
+            return nodes
         if step_tokens:
             self._build_job_node(doc, nodes, step_tokens)
             self._build_machine_transform_node(doc, nodes, step_tokens)
             self._build_encoder_node(doc, nodes, step_tokens)
         return nodes
+
+    def _resolve_job_shift(self, doc: Doc) -> tuple[float, float] | None:
+        """
+        The world-space translation that applies the document's job
+        origin ("Start From") to the whole job, or None.
+        """
+        if doc.job_origin.is_absolute:
+            return None
+        validate_job_placement(self._machine, doc)
+        return compute_job_shift(
+            self._machine, doc.job_origin, job_design_rect(doc)
+        )
+
+    def _job_placement_matrix(self, wp: WorkPiece) -> list[list[float]]:
+        """
+        The workpiece's placement matrix in the assembled job: its
+        world placement, followed by the job origin translation.
+        """
+        placement = _workpiece_placement_matrix_obj(wp)
+        if self._job_shift is not None:
+            dx, dy = self._job_shift
+            placement = Matrix.translation(dx, dy) @ placement
+        return placement.to_4x4_list()
+
+    @property
+    def job_shift(self) -> tuple[float, float] | None:
+        """The job origin translation applied by the last build."""
+        return self._job_shift
 
     # ------------------------------------------------------------------
     # Workpiece compute nodes
@@ -480,29 +609,8 @@ class IntentBuilder:
     def _workpiece_world_aabb(
         self, wp: WorkPiece
     ) -> tuple[float, float, float, float] | None:
-        """The workpiece's world-space AABB for fold dependency wiring.
-
-        Uses the resolved world geometry when available (vector
-        workpieces). Image/raster workpieces carry no vector geometry
-        (``get_world_geometry`` returns ``None``), so their AABB is
-        derived from the workpiece ``size`` transformed into world
-        space via its world transform. Returns ``None`` when neither
-        yields a usable rect (no geometry and no size).
-        """
-        geo = wp.get_world_geometry()
-        if geo is not None and not geo.is_empty():
-            return geo.rect()
-        if not wp.size:
-            return None
-        w, h = wp.size
-        if w <= 0 or h <= 0:
-            return None
-        world = wp.get_world_transform()
-        corners = [(0.0, 0.0), (w, 0.0), (0.0, h), (w, h)]
-        pts = [world.transform_point(x, y) for x, y in corners]
-        xs = [p[0] for p in pts]
-        ys = [p[1] for p in pts]
-        return (min(xs), min(ys), max(xs), max(ys))
+        """The workpiece's world-space AABB for fold dependency wiring."""
+        return workpiece_world_aabb(wp)
 
     def _active_laser_physics(self) -> tuple[float, float]:
         """The active laser's ``(wavelength_nm, max_power_watts)``.
@@ -809,7 +917,7 @@ class IntentBuilder:
             else:
                 placements.append(
                     {
-                        "matrix": _workpiece_placement_matrix(wp),
+                        "matrix": self._job_placement_matrix(wp),
                         "size": list(wp.size) if wp.size else [0, 0],
                     }
                 )
@@ -854,7 +962,11 @@ class IntentBuilder:
                         "spxf": _canonical(step.per_step_transformers_dicts),
                     }
                 )
-        payload: dict[str, Any] = {"kind": "job", "steps": payloads}
+        payload: dict[str, Any] = {
+            "kind": "job",
+            "steps": payloads,
+            "job_shift": _canonical(self._job_shift),
+        }
         return _hash_int(payload)
 
     # ------------------------------------------------------------------
@@ -1100,7 +1212,7 @@ class IntentBuilder:
                     )
                 )
                 continue
-            placement = _workpiece_placement_matrix(wp)
+            placement = self._job_placement_matrix(wp)
             target = wp.size
             inp = AggregateInput(
                 source_key=wp_key,
