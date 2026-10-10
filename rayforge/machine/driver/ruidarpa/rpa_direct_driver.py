@@ -10,6 +10,7 @@ import logging
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
+from rpalib.version import __version__
 from ruidadriver.ruida_driver import RdDriver
 
 from rayforge.pipeline.encoder.base import EncodedOutput
@@ -43,6 +44,7 @@ class RpaDirectDriver:
         udp_host: str | None = None,
         usb_device: str | None = None,
         magic: int | None = None,
+        protocol: str | None = None,
     ) -> bool:
         """Start connection to the Ruida controller.
 
@@ -51,9 +53,10 @@ class RpaDirectDriver:
         the previously used value.
 
         Args:
-            udp_host: UDP hostname/IP (e.g. '192.168.1.100').
+            udp_host: Network hostname/IP (e.g. '192.168.1.100').
             usb_device: USB device path.
             magic: Optional controller magic number (0x00-0xFF).
+            protocol: Network protocol, 'udp' (default) or 'tcp'.
 
         Returns:
             True if connection succeeded.
@@ -62,12 +65,15 @@ class RpaDirectDriver:
         kwargs: dict = {"udp_host": udp_host, "usb_device": usb_device}
         if magic is not None:
             kwargs["magic"] = magic
+        if protocol is not None:
+            kwargs["protocol"] = protocol
         result = driver.start(**kwargs)
         if result:
             _logger.info(
-                "RPA direct driver connected; udp=%s, usb=%s",
+                "RPA direct driver connected; udp=%s, usb=%s, protocol=%s",
                 udp_host,
                 usb_device,
+                protocol,
             )
         else:
             # The adapter owns the user-facing warning and reports a
@@ -75,9 +81,11 @@ class RpaDirectDriver:
             # per-attempt warning here would only spam the log during
             # the reconnect backoff.
             _logger.debug(
-                "RPA direct driver failed to connect; udp=%s, usb=%s",
+                "RPA direct driver failed to connect; udp=%s, usb=%s, "
+                "protocol=%s",
                 udp_host,
                 usb_device,
+                protocol,
             )
         return result
 
@@ -97,6 +105,14 @@ class RpaDirectDriver:
     def is_connected(self) -> bool:
         """Whether the underlying driver is connected."""
         return self._driver is not None and self._driver.is_connected
+
+    def get_version(self) -> str:
+        """Return the ruida-pa version serving this session (direct mode).
+
+        Mirrors ``AppAdapter.get_version()``: direct mode has no remote
+        process, so the version is the locally installed ruida-pa.
+        """
+        return __version__
 
     # --- Run control ---
 
@@ -222,6 +238,17 @@ class RpaDirectDriver:
         home command is sent exactly once.
         """
         self._require_connected().home_z()
+
+    def focus_z(self) -> None:
+        """Run the Z auto-focus routine.
+
+        Probes until the focus sensor triggers, then moves to the
+        configured focus distance and sets Z to it (same as the panel's
+        Focus key). The wrapped RdDriver auto-sends the generated lines
+        when connected; the returned lines are deliberately discarded so
+        each command is sent exactly once.
+        """
+        self._require_connected().focus_z()
 
     def jog_xy_to(self, x: float, y: float) -> None:
         """Jog the XY axes to an absolute position in mm.

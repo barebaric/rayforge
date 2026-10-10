@@ -13,19 +13,25 @@ capabilities, limitations, and recommendations.
 
 ### Quick Reference
 
-| Format               | Type    | Import           | Export          | Recommended Use               |
-| -------------------- | ------- | ---------------- | --------------- | ----------------------------- |
-| **SVG**              | Vector  | ✓ Direct / Trace | ✓ Object export | Primary design format         |
-| **DXF**              | Vector  | ✓ Direct         | ✓ Object export | CAD interchange               |
-| **PDF**              | Mixed   | ✓ Direct / Trace | –               | Documents with vector content |
-| **LightBurn**        | Vector  | ✓ Direct         | –               | LightBurn project files       |
-| **Ruida**            | Vector  | ✓ Direct         | –               | Ruida controller job files    |
-| **PNG**              | Raster  | ✓ Trace          | –               | Photos, images                |
-| **JPEG**             | Raster  | ✓ Trace          | –               | Photos                        |
-| **BMP**              | Raster  | ✓ Trace          | –               | Simple graphics               |
-| **RFS**              | Sketch  | ✓ Direct         | ✓ Object export | Parametric sketches           |
-| **G-code**           | Control | –                | ✓ Primary       | Machine output                |
-| **Rayforge Project** | Project | ✓                | ✓               | Save/load projects            |
+| Format               | Type    | Import           | Export          | Recommended Use                |
+| -------------------- | ------- | ---------------- | --------------- | ------------------------------ |
+| **SVG**              | Vector  | ✓ Direct / Trace | ✓ Object export | Primary design format          |
+| **DXF**              | Vector  | ✓ Direct         | ✓ Object export | CAD interchange                |
+| **PDF**              | Mixed   | ✓ Direct / Trace | –               | Documents with vector content  |
+| **Illustrator**      | Vector  | ✓ Direct / Trace | –               | Logos from Illustrator         |
+| **EPS**              | Vector  | ✓ Direct / Trace | –               | Logos, print artwork           |
+| **LightBurn**        | Vector  | ✓ Direct         | –               | LightBurn project files        |
+| **Ruida**            | Vector  | ✓ Direct         | –               | Ruida controller job files     |
+| **HPGL**             | Vector  | ✓ Direct         | –               | Plotter and vinyl cutter files |
+| **PNG**              | Raster  | ✓ Trace          | –               | Photos, images                 |
+| **JPEG**             | Raster  | ✓ Trace          | –               | Photos                         |
+| **BMP**              | Raster  | ✓ Trace          | –               | Simple graphics                |
+| **GIF**              | Raster  | ✓ Trace          | –               | Simple graphics, animations    |
+| **TIFF**             | Raster  | ✓ Trace          | –               | Scans, print artwork           |
+| **WebP**             | Raster  | ✓ Trace          | –               | Web images                     |
+| **RFS**              | Sketch  | ✓ Direct         | ✓ Object export | Parametric sketches            |
+| **G-code**           | Control | –                | ✓ Primary       | Machine output                 |
+| **Rayforge Project** | Project | ✓                | ✓               | Save/load projects             |
 
 ---
 
@@ -220,6 +226,53 @@ and tracing.
 
 ---
 
+### Adobe Illustrator (.ai)
+
+**Extension:** `.ai` **MIME Type:** `application/illustrator` **Import:** Direct vectors or
+render-and-trace **Export:** Not supported
+
+Since version 9, Illustrator saves its files with an embedded PDF by default (the **Create PDF
+Compatible File** option). Rayforge reads that PDF, so these files import just like a PDF, layers
+included.
+
+Older Illustrator files, and files saved without PDF compatibility, are PostScript. Rayforge
+converts them with Ghostscript when it is installed. Otherwise the import dialog explains how to
+save the file again.
+
+---
+
+### EPS and PostScript (.eps / .ps)
+
+**Extension:** `.eps`, `.epsf`, `.ps` **MIME Type:** `image/x-eps`, `application/postscript`
+**Import:** Direct vectors or render-and-trace, through Ghostscript **Export:** Not supported
+
+Rayforge converts EPS and PostScript files to PDF with Ghostscript and then imports them like a PDF.
+The EPS bounding box becomes the page size, and text is converted to outlines.
+
+**Ghostscript** is an optional dependency. On Linux, install your distribution's `ghostscript`
+package. On Windows and macOS, install it from the Ghostscript website. Without Ghostscript, the
+import dialog shows a message instead of a preview. The project stores the converted PDF, so a saved
+project also opens on a computer without Ghostscript.
+
+---
+
+### HPGL (.plt / .hpgl)
+
+**Extension:** `.plt`, `.hpgl`, `.hpg`, `.hgl` **MIME Type:** `application/vnd.hp-hpgl` **Import:**
+Direct vector parsing **Export:** Not supported
+
+HPGL is the plotter language of cutting plotters, vinyl cutters and older CAD programs. Rayforge
+reads the common drawing instructions: pen moves (PU, PD, PA, PR), circles and arcs (CI, AA, AR) and
+rectangles (EA, ER, RA, RR). Each pen becomes a layer that you can pick in the import dialog.
+
+**Limitations:**
+
+- ✗ Text labels (LB) are skipped; convert text to paths before plotting
+- ✗ Scaling (SC) and rotation (RO) are ignored; the import dialog lists any skipped instructions
+- Coordinates use the standard 40 plotter units per millimetre
+
+---
+
 ## Raster Formats
 
 All raster formats are **imported by tracing** - converted to vector paths automatically.
@@ -284,6 +337,19 @@ supported
 
 - Convert to PNG for smaller file size (no quality difference)
 - Only use if source software can't export PNG/SVG
+
+---
+
+### GIF, TIFF and WebP
+
+**Extension:** `.gif`, `.tif`, `.tiff`, `.webp` **MIME Type:** `image/gif`, `image/tiff`,
+`image/webp` **Import:** Trace to vectors **Export:** Not supported
+
+These formats are traced in the same way as PNG.
+
+- **Animated GIFs** and **multi-page TIFFs** import only their first frame or page
+- **TIFF** files usually store their print resolution, which sets the physical size
+- Images without a resolution are imported at 96 DPI
 
 ---
 

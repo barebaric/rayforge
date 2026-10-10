@@ -9989,3 +9989,36 @@ msgstr "工作区域每侧可见区域的大小"
 #: rayforge/ui_gtk/camera/outside_view_widget.py
 msgid "Transparency outside the work area"
 msgstr "工作区域外的透明度"
+
+#: rayforge/image/bitmap/importer.py
+#, python-brace-format
+msgid "Could not read the {format} image: {error}"
+msgstr "无法读取 {format} 图像：{error}"
+
+#: rayforge/image/postscript/importer.py
+msgid "Importing EPS and PostScript files requires Ghostscript, which was not found. Install Ghostscript and try again."
+msgstr "导入 EPS 和 PostScript 文件需要 Ghostscript，但未找到。请安装 Ghostscript 后重试。"
+
+#: rayforge/image/postscript/importer.py
+#, python-brace-format
+msgid "Ghostscript could not convert {filename}: {error}"
+msgstr "Ghostscript 无法转换 {filename}：{error}"
+
+#: rayforge/image/postscript/importer.py
+msgid "This Illustrator file was saved without PDF compatibility. Rayforge can only read it with Ghostscript, which was not found. Install Ghostscript, or save the file again in Illustrator with \"Create PDF Compatible File\" enabled."
+msgstr "此 Illustrator 文件保存时未启用 PDF 兼容。Rayforge 只能借助 Ghostscript 读取它，但未找到 Ghostscript。请安装 Ghostscript，或在 Illustrator 中启用“创建 PDF 兼容文件”后重新保存该文件。"
+
+#: rayforge/image/hpgl/importer.py
+#, python-brace-format
+msgid "Some HPGL instructions are not supported and were skipped: {names}"
+msgstr "部分 HPGL 指令不受支持，已跳过：{names}"
+
+#: rayforge/image/hpgl/importer.py
+#, python-brace-format
+msgid "{filename} contains no HPGL drawing commands."
+msgstr "{filename} 不包含 HPGL 绘图命令。"
+
+#: rayforge/image/hpgl/importer.py
+#, python-brace-format
+msgid "Pen {number}"
+msgstr "笔 {number}"

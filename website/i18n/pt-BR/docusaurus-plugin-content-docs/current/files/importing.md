@@ -7,21 +7,27 @@ explica como importar arquivos e otimizá-los para obter os melhores resultados.
 
 ### Formatos vetoriais
 
-| Formato       | Extensão          | Método de importação           | Ideal para                             |
-| ------------- | ----------------- | ------------------------------ | -------------------------------------- |
-| **SVG**       | `.svg`            | Vetores diretos ou vetorização | Gráficos vetoriais, logos, designs     |
-| **DXF**       | `.dxf`            | Vetores diretos                | Desenhos CAD, projetos técnicos        |
-| **PDF**       | `.pdf`            | Vetores diretos ou vetorização | Documentos com conteúdo vetorial       |
-| **LightBurn** | `.lbrn`, `.lbrn2` | Vetores diretos                | Projetos LightBurn                     |
-| **Ruida**     | `.rd`             | Vetores diretos                | Arquivos de trabalho controlador Ruida |
+| Formato         | Extensão          | Método de importação                                | Ideal para                               |
+| --------------- | ----------------- | --------------------------------------------------- | ---------------------------------------- |
+| **SVG**         | `.svg`            | Vetores diretos ou vetorização                      | Gráficos vetoriais, logos, designs       |
+| **DXF**         | `.dxf`            | Vetores diretos                                     | Desenhos CAD, projetos técnicos          |
+| **PDF**         | `.pdf`            | Vetores diretos ou vetorização                      | Documentos com conteúdo vetorial         |
+| **LightBurn**   | `.lbrn`, `.lbrn2` | Vetores diretos                                     | Projetos LightBurn                       |
+| **Ruida**       | `.rd`             | Vetores diretos                                     | Arquivos de trabalho controlador Ruida   |
+| **Illustrator** | `.ai`             | Vetores diretos ou vetorização                      | Logotipos do Illustrator                 |
+| **EPS**         | `.eps`, `.ps`     | Vetores diretos ou vetorização (requer Ghostscript) | Logotipos, arte para impressão           |
+| **HPGL**        | `.plt`, `.hpgl`   | Vetores diretos                                     | Arquivos de plotter e plotter de recorte |
 
 ### Formatos raster
 
-| Formato  | Extensão        | Método de importação | Ideal para                         |
-| -------- | --------------- | -------------------- | ---------------------------------- |
-| **PNG**  | `.webp`         | Vetorização          | Fotos, imagens com transparência   |
-| **JPEG** | `.jpg`, `.jpeg` | Vetorização          | Fotos, imagens de tom contínuo     |
-| **BMP**  | `.bmp`          | Vetorização          | Gráficos simples, capturas de tela |
+| Formato  | Extensão        | Método de importação | Ideal para                          |
+| -------- | --------------- | -------------------- | ----------------------------------- |
+| **PNG**  | `.png`          | Vetorização          | Fotos, imagens com transparência    |
+| **JPEG** | `.jpg`, `.jpeg` | Vetorização          | Fotos, imagens de tom contínuo      |
+| **BMP**  | `.bmp`          | Vetorização          | Gráficos simples, capturas de tela  |
+| **GIF**  | `.gif`          | Vetorização          | Gráficos simples, animações         |
+| **TIFF** | `.tif`, `.tiff` | Vetorização          | Digitalizações, arte para impressão |
+| **WebP** | `.webp`         | Vetorização          | Imagens da web                      |
 
 <!-- prettier-ignore-start -->
 :::note[Importação de imagens raster]
@@ -354,7 +360,19 @@ configurações de laser ajustáveis.
 
 ---
 
-## Importação de imagens raster (PNG, JPG, BMP)
+## Importação de Illustrator e EPS
+
+Arquivos do Illustrator salvos com compatibilidade com PDF, o padrão desde o Illustrator 9, são
+importados exatamente como arquivos PDF, com a mesma seleção de camadas e as mesmas opções de
+vetorização.
+
+Arquivos EPS, PostScript e arquivos antigos do Illustrator são primeiro convertidos em PDF com o
+Ghostscript. Instale o Ghostscript se a caixa de diálogo de importação informar que ele está
+faltando. Se não puder instalá-lo, exporte o desenho como PDF ou SVG no programa que o criou.
+
+---
+
+## Importação de imagens raster (PNG, JPG, BMP, GIF, TIFF, WebP)
 
 As imagens raster são **vetorizadas** para criar caminhos vetoriais usando o diálogo de importação.
 

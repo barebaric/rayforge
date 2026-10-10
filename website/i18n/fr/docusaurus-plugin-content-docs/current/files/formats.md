@@ -7,19 +7,25 @@ Rayforge, y compris les capacités, les limitations et les recommandations.
 
 ### Référence rapide
 
-| Format              | Type      | Importation      | Exportation   | Utilisation recommandée          |
-| ------------------- | --------- | ---------------- | ------------- | -------------------------------- |
-| **SVG**             | Vecteur   | ✓ Direct / Trace | ✓ Export obj. | Format de conception principal   |
-| **DXF**             | Vecteur   | ✓ Direct         | ✓ Export obj. | Échange CAO                      |
-| **PDF**             | Mixte     | ✓ Direct / Trace | –             | Documents avec contenu vectoriel |
-| **LightBurn**       | Vecteur   | ✓ Direct         | –             | Projets LightBurn                |
-| **Ruida**           | Vecteur   | ✓ Direct         | –             | Fichiers de tâches Ruida         |
-| **PNG**             | Matriciel | ✓ Trace          | –             | Photos, images                   |
-| **JPEG**            | Matriciel | ✓ Trace          | –             | Photos                           |
-| **BMP**             | Matriciel | ✓ Trace          | –             | Graphiques simples               |
-| **RFS**             | Croquis   | ✓ Direct         | ✓ Export obj. | Croquis paramétriques            |
-| **G-code**          | Commande  | –                | ✓ Principal   | Sortie machine                   |
-| **Projet Rayforge** | Projet    | ✓                | ✓             | Enregistrer/charger projets      |
+| Format              | Type      | Importation      | Exportation   | Utilisation recommandée                      |
+| ------------------- | --------- | ---------------- | ------------- | -------------------------------------------- |
+| **SVG**             | Vecteur   | ✓ Direct / Trace | ✓ Export obj. | Format de conception principal               |
+| **DXF**             | Vecteur   | ✓ Direct         | ✓ Export obj. | Échange CAO                                  |
+| **PDF**             | Mixte     | ✓ Direct / Trace | –             | Documents avec contenu vectoriel             |
+| **Illustrator**     | Vecteur   | ✓ Direct / Trace | –             | Logos issus d'Illustrator                    |
+| **EPS**             | Vecteur   | ✓ Direct / Trace | –             | Logos, fichiers d'impression                 |
+| **LightBurn**       | Vecteur   | ✓ Direct         | –             | Projets LightBurn                            |
+| **Ruida**           | Vecteur   | ✓ Direct         | –             | Fichiers de tâches Ruida                     |
+| **HPGL**            | Vecteur   | ✓ Direct         | –             | Fichiers de traceur et de plotter de découpe |
+| **PNG**             | Matriciel | ✓ Trace          | –             | Photos, images                               |
+| **JPEG**            | Matriciel | ✓ Trace          | –             | Photos                                       |
+| **BMP**             | Matriciel | ✓ Trace          | –             | Graphiques simples                           |
+| **GIF**             | Matriciel | ✓ Trace          | –             | Graphiques simples, animations               |
+| **TIFF**            | Matriciel | ✓ Trace          | –             | Numérisations, fichiers d'impression         |
+| **WebP**            | Matriciel | ✓ Trace          | –             | Images web                                   |
+| **RFS**             | Croquis   | ✓ Direct         | ✓ Export obj. | Croquis paramétriques                        |
+| **G-code**          | Commande  | –                | ✓ Principal   | Sortie machine                               |
+| **Projet Rayforge** | Projet    | ✓                | ✓             | Enregistrer/charger projets                  |
 
 ---
 
@@ -218,6 +224,57 @@ rendu et au tracé.
 
 ---
 
+### Adobe Illustrator (.ai)
+
+**Extension :** `.ai` **Type MIME :** `application/illustrator` **Importation :** Vecteurs directs
+ou rendu et vectorisation **Exportation :** Non pris en charge
+
+Depuis la version 9, Illustrator enregistre par défaut ses fichiers avec un PDF intégré (option
+**Créer un fichier compatible PDF**). Rayforge lit ce PDF : ces fichiers s'importent donc comme un
+PDF, calques compris.
+
+Les fichiers Illustrator plus anciens, et ceux enregistrés sans compatibilité PDF, sont en
+PostScript. Rayforge les convertit avec Ghostscript lorsqu'il est installé. Sinon, la boîte de
+dialogue d'importation explique comment enregistrer à nouveau le fichier.
+
+---
+
+### EPS et PostScript (.eps / .ps)
+
+**Extension :** `.eps`, `.epsf`, `.ps` **Type MIME :** `image/x-eps`, `application/postscript`
+**Importation :** Vecteurs directs ou rendu et vectorisation, via Ghostscript **Exportation :** Non
+pris en charge
+
+Rayforge convertit les fichiers EPS et PostScript en PDF avec Ghostscript, puis les importe comme un
+PDF. La boîte englobante de l'EPS devient la taille de la page et le texte est converti en contours.
+
+**Ghostscript** est une dépendance facultative. Sous Linux, installez le paquet `ghostscript` de
+votre distribution ; sous Windows et macOS, installez-le depuis le site de Ghostscript. Sans
+Ghostscript, la boîte de dialogue d'importation affiche un message au lieu d'un aperçu. Le projet
+enregistre le PDF converti : un projet enregistré s'ouvre donc aussi sur un ordinateur sans
+Ghostscript.
+
+---
+
+### HPGL (.plt / .hpgl)
+
+**Extension :** `.plt`, `.hpgl`, `.hpg`, `.hgl` **Type MIME :** `application/vnd.hp-hpgl`
+**Importation :** Analyse vectorielle directe **Exportation :** Non pris en charge
+
+HPGL est le langage des traceurs de découpe, des plotters de découpe vinyle et des anciens logiciels
+de CAO. Rayforge lit les instructions de tracé courantes : déplacements de plume (PU, PD, PA, PR),
+cercles et arcs (CI, AA, AR) et rectangles (EA, ER, RA, RR). Chaque plume devient un calque que vous
+pouvez choisir dans la boîte de dialogue d'importation.
+
+**Limitations :**
+
+- ✗ Les étiquettes de texte (LB) sont ignorées ; convertissez le texte en chemins avant le traçage
+- ✗ La mise à l'échelle (SC) et la rotation (RO) sont ignorées ; la boîte de dialogue d'importation
+  liste les instructions ignorées
+- Les coordonnées utilisent les 40 unités traceur par millimètre habituelles
+
+---
+
 ## Formats matriciels
 
 Tous les formats matriciels sont **importés par tracé** — convertis automatiquement en chemins
@@ -284,6 +341,20 @@ vectoriels.
 
 - Convertissez en PNG pour une taille de fichier réduite (aucune différence de qualité)
 - À utiliser uniquement si le logiciel source ne peut pas exporter en PNG/SVG
+
+---
+
+### GIF, TIFF et WebP
+
+**Extension :** `.gif`, `.tif`, `.tiff`, `.webp` **Type MIME :** `image/gif`, `image/tiff`,
+`image/webp` **Importation :** Vectorisation **Exportation :** Non pris en charge
+
+Ces formats sont vectorisés de la même manière que le PNG.
+
+- Les **GIF animés** et les **TIFF multipages** n'importent que leur première image ou page
+- Les fichiers **TIFF** enregistrent généralement leur résolution d'impression, qui détermine la
+  taille physique
+- Les images sans résolution sont importées à 96 DPI
 
 ---
 

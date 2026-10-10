@@ -13,21 +13,27 @@ import files and optimize them for best results.
 
 ### Vector Formats
 
-| Format        | Extension         | Import Method           | Best For                        |
-| ------------- | ----------------- | ----------------------- | ------------------------------- |
-| **SVG**       | `.svg`            | Direct vectors or trace | Vector graphics, logos, designs |
-| **DXF**       | `.dxf`            | Direct vectors          | CAD drawings, technical designs |
-| **PDF**       | `.pdf`            | Direct vectors or trace | Documents with vector content   |
-| **LightBurn** | `.lbrn`, `.lbrn2` | Direct vectors          | LightBurn project files         |
-| **Ruida**     | `.rd`             | Direct vectors          | Ruida controller job files      |
+| Format          | Extension         | Import Method                               | Best For                        |
+| --------------- | ----------------- | ------------------------------------------- | ------------------------------- |
+| **SVG**         | `.svg`            | Direct vectors or trace                     | Vector graphics, logos, designs |
+| **DXF**         | `.dxf`            | Direct vectors                              | CAD drawings, technical designs |
+| **PDF**         | `.pdf`            | Direct vectors or trace                     | Documents with vector content   |
+| **LightBurn**   | `.lbrn`, `.lbrn2` | Direct vectors                              | LightBurn project files         |
+| **Ruida**       | `.rd`             | Direct vectors                              | Ruida controller job files      |
+| **Illustrator** | `.ai`             | Direct vectors or trace                     | Logos from Illustrator          |
+| **EPS**         | `.eps`, `.ps`     | Direct vectors or trace (needs Ghostscript) | Logos, print artwork            |
+| **HPGL**        | `.plt`, `.hpgl`   | Direct vectors                              | Plotter and vinyl cutter files  |
 
 ### Raster Formats
 
 | Format   | Extension       | Import Method    | Best For                         |
 | -------- | --------------- | ---------------- | -------------------------------- |
-| **PNG**  | `.webp`         | Trace to vectors | Photos, images with transparency |
+| **PNG**  | `.png`          | Trace to vectors | Photos, images with transparency |
 | **JPEG** | `.jpg`, `.jpeg` | Trace to vectors | Photos, continuous-tone images   |
 | **BMP**  | `.bmp`          | Trace to vectors | Simple graphics, screenshots     |
+| **GIF**  | `.gif`          | Trace to vectors | Simple graphics, animations      |
+| **TIFF** | `.tif`, `.tiff` | Trace to vectors | Scans, print artwork             |
+| **WebP** | `.webp`         | Trace to vectors | Web images                       |
 
 <!-- prettier-ignore-start -->
 :::note[Raster Import]
@@ -351,7 +357,18 @@ settings.
 
 ---
 
-## Raster Image Import (PNG, JPG, BMP)
+## Illustrator and EPS Import
+
+Illustrator files saved with PDF compatibility, the default since Illustrator 9, import exactly like
+PDF files, with the same layer selection and tracing options.
+
+EPS, PostScript and older Illustrator files are converted to PDF with Ghostscript first. Install
+Ghostscript if the import dialog reports that it is missing. If you cannot install it, export the
+design as PDF or SVG from the program that made it.
+
+---
+
+## Raster Image Import (PNG, JPG, BMP, GIF, TIFF, WebP)
 
 Raster images are **traced** to create vector paths using the import dialog.
 

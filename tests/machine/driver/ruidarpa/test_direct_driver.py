@@ -10,6 +10,7 @@ those lines would double-send every live command, so the tests pin
 from unittest.mock import Mock
 
 import pytest
+from rpalib.version import __version__
 from ruidadriver.ruida_driver import RdDriver
 
 from rayforge.machine.driver.ruidarpa.rpa_direct_driver import RpaDirectDriver
@@ -17,6 +18,7 @@ from rayforge.machine.driver.ruidarpa.rpa_direct_driver import RpaDirectDriver
 _LIVE_METHODS = [
     ("home", ()),
     ("home_z", ()),
+    ("focus_z", ()),
     ("jog_xy_to", (10.0, 20.0)),
     ("jog_xy_rel", (5.0, 5.0)),
     ("jog_x_rel", (5.0,)),
@@ -70,6 +72,58 @@ class TestLiveWrapperDelegation:
 
         with pytest.raises(RuntimeError, match="not connected"):
             getattr(driver, method)(*args)
+
+
+class TestStartDelegation:
+    """RpaDirectDriver.start forwards connection parameters to RdDriver."""
+
+    def test_start_forwards_protocol(self):
+        """A protocol argument must reach the wrapped RdDriver."""
+        driver = RpaDirectDriver()
+        mock_driver = Mock(spec=RdDriver)
+        mock_driver.start.return_value = True
+        driver._driver = mock_driver
+
+        result = driver.start("192.168.1.10", None, None, "tcp")
+
+        assert result is True
+        mock_driver.start.assert_called_once_with(
+            udp_host="192.168.1.10", usb_device=None, protocol="tcp"
+        )
+
+    def test_start_omits_protocol_when_none(self):
+        """Without a protocol the wrapped driver keeps its previous one."""
+        driver = RpaDirectDriver()
+        mock_driver = Mock(spec=RdDriver)
+        mock_driver.start.return_value = True
+        driver._driver = mock_driver
+
+        driver.start("192.168.1.10", None)
+
+        mock_driver.start.assert_called_once_with(
+            udp_host="192.168.1.10", usb_device=None
+        )
+
+    def test_start_forwards_magic_and_protocol_together(self):
+        """magic and protocol are independent optional kwargs."""
+        driver = RpaDirectDriver()
+        mock_driver = Mock(spec=RdDriver)
+        mock_driver.start.return_value = True
+        driver._driver = mock_driver
+
+        driver.start("192.168.1.10", None, 0x88, "udp")
+
+        mock_driver.start.assert_called_once_with(
+            udp_host="192.168.1.10",
+            usb_device=None,
+            magic=0x88,
+            protocol="udp",
+        )
+
+    def test_get_version_returns_installed_ruida_pa(self):
+        """get_version reflects the locally installed ruida-pa version."""
+        driver = RpaDirectDriver()
+        assert driver.get_version() == __version__
 
 
 class TestRequireConnected:
