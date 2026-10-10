@@ -797,3 +797,193 @@ msgstr "Лазерна голівка"
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Add Material Test"
 msgstr "Додати тест матеріалу"
+
+#: laser_essentials/calibration_tests.py
+msgid "A Focus Test needs at least two lines."
+msgstr "Тест фокусування потребує щонайменше двох ліній."
+
+#: laser_essentials/commands/calibration_test_cmd.py
+msgid "Add Focus Test"
+msgstr "Додати тест фокусування"
+
+#: laser_essentials/commands/calibration_test_cmd.py
+msgid "Add Interval Test"
+msgstr "Додати тест інтервалу"
+
+#: laser_essentials/calibration_tests.py
+msgid "An Interval Test needs at least two cells."
+msgstr "Тест інтервалу потребує щонайменше двох комірок."
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Cancel"
+msgstr "Скасувати"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Cell Size"
+msgstr "Розмір комірки"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Cells"
+msgstr "Комірки"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Create"
+msgstr "Створити"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+#: laser_essentials/frontend.py
+msgid "Create Focus Test"
+msgstr "Створити тест фокусування"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+#: laser_essentials/frontend.py
+msgid "Create Interval Test"
+msgstr "Створити тест інтервалу"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Engraves a row of filled squares, each with its own line interval, at the same power and speed."
+msgstr "Гравіює ряд заповнених квадратів, кожен зі своїм інтервалом ліній, з однаковою потужністю та швидкістю."
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "First Offset"
+msgstr "Перше зміщення"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Focus Steps"
+msgstr "Кроки фокусування"
+
+#: laser_essentials/commands/calibration_test_cmd.py
+msgid "Focus Test"
+msgstr "Тест фокусування"
+
+#: laser_essentials/commands/calibration_test_cmd.py
+msgid "Focus ramp"
+msgstr "Рампа фокусування"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Focus the laser as usual first. The job moves the head to the first offset, engraves one line per offset and returns the head to the starting height. A positive offset means more distance between the head and the material."
+msgstr "Спочатку сфокусуйте лазер як зазвичай. Завдання переміщує голівку на перше зміщення, гравіює по одній лінії для кожного зміщення та повертає голівку на початкову висоту. Додатне зміщення означає більшу відстань між голівкою і матеріалом."
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Focus the laser as usual first. The labels are engraved at that height. Before each line the job pauses: set the head to the first offset, then move it by one step at every following pause, and press Resume. A positive offset means more distance between the head and the material."
+msgstr "Спочатку сфокусуйте лазер як зазвичай. Підписи гравіюються на цій висоті. Перед кожною лінією завдання ставиться на паузу: встановіть голівку на перше зміщення, потім зсувайте її на один крок на кожній наступній паузі та натискайте «Продовжити». Додатне зміщення означає більшу відстань між голівкою і матеріалом."
+
+#: laser_essentials/commands/calibration_test_cmd.py
+#, python-brace-format
+msgid "Focus {offset} mm"
+msgstr "Фокус {offset} мм"
+
+#: laser_essentials/commands/calibration_test_cmd.py
+msgid "Interval Test"
+msgstr "Тест інтервалу"
+
+#: laser_essentials/commands/calibration_test_cmd.py
+#, python-brace-format
+msgid "Interval {interval:.2f} mm"
+msgstr "Інтервал {interval:.2f} мм"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Label Power"
+msgstr "Потужність підписів"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Label Speed"
+msgstr "Швидкість підписів"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Largest Interval"
+msgstr "Найбільший інтервал"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Line Length"
+msgstr "Довжина лінії"
+
+#: laser_essentials/calibration_tests.py
+msgid "Manual (pause between lines)"
+msgstr "Вручну (пауза між лініями)"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Method"
+msgstr "Метод"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Number of Cells"
+msgstr "Кількість комірок"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Number of Lines"
+msgstr "Кількість ліній"
+
+#: laser_essentials/calibration_tests.py
+#, python-brace-format
+msgid "Pause: move the head by {step} mm"
+msgstr "Пауза: змістити голівку на {step} мм"
+
+#: laser_essentials/calibration_tests.py
+#, python-brace-format
+msgid "Pause: set the head to {offset} mm from focus"
+msgstr "Пауза: встановити голівку на {offset} мм від фокуса"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Percent of the maximum power"
+msgstr "Відсоток від максимальної потужності"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Prop up one end of a flat strip so it rises evenly under the line. The thinnest part of the line marks the focus; the ticks show the distance along the line, so the height there follows from the rise."
+msgstr "Підніміть один кінець пласкої смуги, щоб вона рівномірно піднімалася під лінією. Найтонша частина лінії позначає фокус; позначки показують відстань уздовж лінії, з якої визначається висота в цьому місці."
+
+#: laser_essentials/calibration_tests.py
+msgid "Ramp (tilted material)"
+msgstr "Рампа (нахилений матеріал)"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Ramp Length"
+msgstr "Довжина рампи"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Smallest Interval"
+msgstr "Найменший інтервал"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Speed"
+msgstr "Швидкість"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Step"
+msgstr "Крок"
+
+#: laser_essentials/calibration_tests.py
+#, python-brace-format
+msgid "The focus offsets must stay within ±{limit:g} mm of the starting height."
+msgstr "Зміщення фокусування мають бути в межах ±{limit:g} мм від початкової висоти."
+
+#: laser_essentials/calibration_tests.py
+msgid "The focus step must not be zero."
+msgstr "Крок фокусування не може дорівнювати нулю."
+
+#: laser_essentials/calibration_tests.py
+msgid "The minimum line interval must be above zero and below the maximum."
+msgstr "Мінімальний інтервал ліній має бути більшим за нуль і меншим за максимальний."
+
+#: laser_essentials/commands/calibration_test_cmd.py
+#, python-brace-format
+msgid "This machine does not support the focus test mode {mode}."
+msgstr "Цей верстат не підтримує режим тесту фокусування {mode}."
+
+#: laser_essentials/calibration_tests.py
+msgid "Z axis steps"
+msgstr "Кроки осі Z"
+
+#: laser_essentials/calibration_tests.py
+msgid "Z back to the starting height"
+msgstr "Z назад на початкову висоту"
+
+#: laser_essentials/calibration_tests.py
+#, python-brace-format
+msgid "Z to {offset} mm"
+msgstr "Z на {offset} мм"
+
+#: laser_essentials/commands/calibration_test_cmd.py
+#, python-brace-format
+msgid "{lpi:.0f} LPI"
+msgstr "{lpi:.0f} LPI"

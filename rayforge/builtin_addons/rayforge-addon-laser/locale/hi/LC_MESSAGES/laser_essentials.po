@@ -784,3 +784,193 @@ msgstr "लेज़र हेड"
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Add Material Test"
 msgstr "सामग्री परीक्षण जोड़ें"
+
+#: laser_essentials/calibration_tests.py
+msgid "A Focus Test needs at least two lines."
+msgstr "फ़ोकस टेस्ट के लिए कम से कम दो रेखाएँ आवश्यक हैं।"
+
+#: laser_essentials/commands/calibration_test_cmd.py
+msgid "Add Focus Test"
+msgstr "फ़ोकस टेस्ट जोड़ें"
+
+#: laser_essentials/commands/calibration_test_cmd.py
+msgid "Add Interval Test"
+msgstr "इंटरवल टेस्ट जोड़ें"
+
+#: laser_essentials/calibration_tests.py
+msgid "An Interval Test needs at least two cells."
+msgstr "इंटरवल टेस्ट के लिए कम से कम दो सेल आवश्यक हैं।"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Cancel"
+msgstr "रद्द करें"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Cell Size"
+msgstr "सेल आकार"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Cells"
+msgstr "सेल"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Create"
+msgstr "बनाएँ"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+#: laser_essentials/frontend.py
+msgid "Create Focus Test"
+msgstr "फ़ोकस टेस्ट बनाएँ"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+#: laser_essentials/frontend.py
+msgid "Create Interval Test"
+msgstr "इंटरवल टेस्ट बनाएँ"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Engraves a row of filled squares, each with its own line interval, at the same power and speed."
+msgstr "भरे हुए वर्गों की एक पंक्ति उकेरता है, हर एक अपनी रेखा अंतराल के साथ, समान पावर और गति पर।"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "First Offset"
+msgstr "पहला ऑफ़सेट"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Focus Steps"
+msgstr "फ़ोकस चरण"
+
+#: laser_essentials/commands/calibration_test_cmd.py
+msgid "Focus Test"
+msgstr "फ़ोकस टेस्ट"
+
+#: laser_essentials/commands/calibration_test_cmd.py
+msgid "Focus ramp"
+msgstr "फ़ोकस रैंप"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Focus the laser as usual first. The job moves the head to the first offset, engraves one line per offset and returns the head to the starting height. A positive offset means more distance between the head and the material."
+msgstr "पहले लेज़र को हमेशा की तरह फ़ोकस करें। जॉब हेड को पहले ऑफ़सेट पर ले जाता है, हर ऑफ़सेट के लिए एक रेखा उकेरता है और हेड को शुरुआती ऊँचाई पर लौटा देता है। धनात्मक ऑफ़सेट का अर्थ है हेड और सामग्री के बीच अधिक दूरी।"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Focus the laser as usual first. The labels are engraved at that height. Before each line the job pauses: set the head to the first offset, then move it by one step at every following pause, and press Resume. A positive offset means more distance between the head and the material."
+msgstr "पहले लेज़र को हमेशा की तरह फ़ोकस करें। लेबल उसी ऊँचाई पर उकेरे जाते हैं। हर रेखा से पहले जॉब रुकता है: हेड को पहले ऑफ़सेट पर रखें, फिर हर अगले विराम पर उसे एक चरण खिसकाएँ, और फिर से शुरू करें दबाएँ। धनात्मक ऑफ़सेट का अर्थ है हेड और सामग्री के बीच अधिक दूरी।"
+
+#: laser_essentials/commands/calibration_test_cmd.py
+#, python-brace-format
+msgid "Focus {offset} mm"
+msgstr "फ़ोकस {offset} mm"
+
+#: laser_essentials/commands/calibration_test_cmd.py
+msgid "Interval Test"
+msgstr "इंटरवल टेस्ट"
+
+#: laser_essentials/commands/calibration_test_cmd.py
+#, python-brace-format
+msgid "Interval {interval:.2f} mm"
+msgstr "अंतराल {interval:.2f} mm"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Label Power"
+msgstr "लेबल पावर"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Label Speed"
+msgstr "लेबल गति"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Largest Interval"
+msgstr "सबसे बड़ा अंतराल"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Line Length"
+msgstr "रेखा लंबाई"
+
+#: laser_essentials/calibration_tests.py
+msgid "Manual (pause between lines)"
+msgstr "मैनुअल (रेखाओं के बीच विराम)"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Method"
+msgstr "विधि"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Number of Cells"
+msgstr "सेल की संख्या"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Number of Lines"
+msgstr "रेखाओं की संख्या"
+
+#: laser_essentials/calibration_tests.py
+#, python-brace-format
+msgid "Pause: move the head by {step} mm"
+msgstr "विराम: हेड को {step} mm खिसकाएँ"
+
+#: laser_essentials/calibration_tests.py
+#, python-brace-format
+msgid "Pause: set the head to {offset} mm from focus"
+msgstr "विराम: हेड को फ़ोकस से {offset} mm पर रखें"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Percent of the maximum power"
+msgstr "अधिकतम पावर का प्रतिशत"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Prop up one end of a flat strip so it rises evenly under the line. The thinnest part of the line marks the focus; the ticks show the distance along the line, so the height there follows from the rise."
+msgstr "किसी सपाट पट्टी का एक सिरा ऊपर उठाएँ ताकि वह रेखा के नीचे समान रूप से ऊपर उठे। रेखा का सबसे पतला भाग फ़ोकस दिखाता है; निशान रेखा के साथ दूरी दिखाते हैं, जिससे उस स्थान की ऊँचाई निकलती है।"
+
+#: laser_essentials/calibration_tests.py
+msgid "Ramp (tilted material)"
+msgstr "रैंप (झुकी हुई सामग्री)"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Ramp Length"
+msgstr "रैंप लंबाई"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Smallest Interval"
+msgstr "सबसे छोटा अंतराल"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Speed"
+msgstr "गति"
+
+#: laser_essentials/widgets/calibration_test_dialogs.py
+msgid "Step"
+msgstr "चरण"
+
+#: laser_essentials/calibration_tests.py
+#, python-brace-format
+msgid "The focus offsets must stay within ±{limit:g} mm of the starting height."
+msgstr "फ़ोकस ऑफ़सेट शुरुआती ऊँचाई से ±{limit:g} mm के भीतर रहने चाहिए।"
+
+#: laser_essentials/calibration_tests.py
+msgid "The focus step must not be zero."
+msgstr "फ़ोकस चरण शून्य नहीं हो सकता।"
+
+#: laser_essentials/calibration_tests.py
+msgid "The minimum line interval must be above zero and below the maximum."
+msgstr "न्यूनतम रेखा अंतराल शून्य से अधिक और अधिकतम से कम होना चाहिए।"
+
+#: laser_essentials/commands/calibration_test_cmd.py
+#, python-brace-format
+msgid "This machine does not support the focus test mode {mode}."
+msgstr "यह मशीन फ़ोकस टेस्ट मोड {mode} का समर्थन नहीं करती।"
+
+#: laser_essentials/calibration_tests.py
+msgid "Z axis steps"
+msgstr "Z अक्ष चरण"
+
+#: laser_essentials/calibration_tests.py
+msgid "Z back to the starting height"
+msgstr "Z वापस शुरुआती ऊँचाई पर"
+
+#: laser_essentials/calibration_tests.py
+#, python-brace-format
+msgid "Z to {offset} mm"
+msgstr "Z को {offset} mm पर"
+
+#: laser_essentials/commands/calibration_test_cmd.py
+#, python-brace-format
+msgid "{lpi:.0f} LPI"
+msgstr "{lpi:.0f} LPI"
