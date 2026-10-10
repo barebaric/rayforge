@@ -29,6 +29,7 @@ from ..driver.driver import DeviceState, Pos, PWMParams, pwm_varset
 from ..kinematics import HeadSpec, Kinematics, build_assembly
 from ..models.axis import AxisConfig, AxisDirection, AxisSet, AxisType
 from ..transport import TransportStatus
+from .bidir_offset import interpolate_bidir_offset
 from .coordspace import MachineSpace
 from .dialect import GcodeDialect
 from .head import Head, head_from_dict
@@ -181,6 +182,9 @@ class Machine:
         self.max_travel_speed: int = 3000  # in mm/min
         self.max_cut_speed: int = 1000  # in mm/min
         self.acceleration: int = 1000  # in mm/s²
+        #: (speed mm/min, offset mm) rows, sorted by speed. Engrave
+        #: steps without their own bidirectional scan offset use it.
+        self.bidir_offset_table: list[tuple[float, float]] = []
         self.axes: AxisSet = AxisSet(
             [
                 AxisConfig(
@@ -777,6 +781,23 @@ class Machine:
             return
         self.acceleration = acceleration
         self.changed.send(self)
+
+    def set_bidir_offset_table(self, table) -> None:
+        """Set the speed-dependent bidirectional scan offset table.
+
+        Rows are ``(speed mm/min, offset mm)`` pairs; they are sorted
+        by speed, and of rows with the same speed the last one wins.
+        """
+        rows = {float(speed): float(offset) for speed, offset in table}
+        normalized = sorted(rows.items())
+        if normalized == self.bidir_offset_table:
+            return
+        self.bidir_offset_table = normalized
+        self.changed.send(self)
+
+    def bidir_offset_for_speed(self, speed: float) -> float:
+        """The bidirectional scan offset in mm for a speed in mm/min."""
+        return interpolate_bidir_offset(self.bidir_offset_table, speed)
 
     @property
     def axis_extents(self) -> tuple[float, float]:
@@ -1806,6 +1827,10 @@ class Machine:
                     "max_travel_speed": self.max_travel_speed,
                     "acceleration": self.acceleration,
                 },
+                "bidir_offset_table": [
+                    [speed, offset]
+                    for speed, offset in self.bidir_offset_table
+                ],
                 "gcode": {
                     "gcode_precision": self.gcode_precision,
                 },
@@ -2098,6 +2123,10 @@ class Machine:
             "max_travel_speed", ma.max_travel_speed
         )
         ma.acceleration = speeds.get("acceleration", ma.acceleration)
+        ma.bidir_offset_table = sorted(
+            (float(speed), float(offset))
+            for speed, offset in ma_data.pop("bidir_offset_table", None) or []
+        )
         gcode = ma_data.pop("gcode", {})
         ma.gcode_precision = gcode.get("gcode_precision", ma.gcode_precision)
         ma.supports_arcs = ma_data.pop("supports_arcs", ma.supports_arcs)

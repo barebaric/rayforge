@@ -30,6 +30,7 @@ from raygeo.ops.axis import Axis
 from raygeo.ops.convert import Encoder, GcodeSpec, PythonEncoder
 from raygeo.ops.material.spec import CylinderStock, MaterialFoldSpec
 from raygeo.ops.part import Part
+from raygeo.ops.transform.bidir_scan_offset import BidirScanOffsetSpec
 from raygeo.pipeline.execute import execute_stages
 from raygeo.pipeline.request import NodeRequest
 from raygeo.pipeline.stage import StageSpec
@@ -1291,6 +1292,75 @@ def test_disabled_per_workpiece_transformer_not_wired(
     wp_node = next(n for n in nodes if n.key == wpk)
     payload = wp_node.stage.params
     assert payload.transformers == []
+
+
+def _bidir_offset_spec(machine, step) -> BidirScanOffsetSpec:
+    wp = WorkPiece(name="wp")
+    wp.set_size(10.0, 10.0)
+    doc = _make_doc(step, wp)
+    nodes = IntentBuilder(machine=machine).build(doc)
+    wpk = workpiece_key(wp.uid, step.uid)
+    wp_node = next(n for n in nodes if n.key == wpk)
+    specs = [
+        t
+        for t in wp_node.stage.params.transformers
+        if isinstance(t, BidirScanOffsetSpec)
+    ]
+    assert len(specs) == 1
+    return specs[0]
+
+
+def test_engrave_step_bidir_offset_reaches_transformer(
+    engrave_step_class, test_machine_and_config
+):
+    """The per-step bidirectional scan offset must arrive in the
+    BidirScanOffset spec of the workpiece compute node."""
+    machine, context = test_machine_and_config
+    step = engrave_step_class.create(context, name="engrave")
+    step.bidir_x_offset_mm = 0.3
+
+    assert _bidir_offset_spec(machine, step).offset_mm == pytest.approx(0.3)
+
+
+def test_engrave_step_falls_back_to_machine_offset_table(
+    engrave_step_class, test_machine_and_config
+):
+    """Without a per-step offset the machine's speed table decides,
+    interpolated at the step's engrave speed."""
+    machine, context = test_machine_and_config
+    machine.set_bidir_offset_table([(1000, 0.1), (3000, 0.3)])
+    step = engrave_step_class.create(context, name="engrave")
+    step.bidir_x_offset_mm = 0.0
+    step.cut_speed = 2000
+
+    assert _bidir_offset_spec(machine, step).offset_mm == pytest.approx(0.2)
+
+
+def test_bidir_offset_changes_invalidate_the_compute_node(
+    engrave_step_class, test_machine_and_config
+):
+    """The offset is applied inside the compute stage, so changing it
+    on the step or in the machine table must change the node token."""
+    machine, context = test_machine_and_config
+    step = engrave_step_class.create(context, name="engrave")
+    step.cut_speed = 2000
+    wp = WorkPiece(name="wp")
+    wp.set_size(10.0, 10.0)
+    doc = _make_doc(step, wp)
+    wpk = workpiece_key(wp.uid, step.uid)
+
+    def token():
+        nodes = IntentBuilder(machine=machine).build(doc)
+        return next(n for n in nodes if n.key == wpk).version_token
+
+    base = token()
+    step.bidir_x_offset_mm = 0.2
+    with_step_offset = token()
+    step.bidir_x_offset_mm = 0.0
+    machine.set_bidir_offset_table([(1000, 0.1), (3000, 0.3)])
+    with_table = token()
+
+    assert len({base, with_step_offset, with_table}) == 3
 
 
 # ----------------------------------------------------------------------

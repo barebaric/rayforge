@@ -55,6 +55,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Engrave: the step's Bidirectional Scan Offset had no effect since
+  the pipeline moved to raygeo intents, because the value no longer
+  reached the transformer; changing it now also refreshes the cached
+  toolpath (#307)
 - Ruida: the setup wizard no longer requires the optional USB device
   and Magic fields, so Next is enabled again once a valid hostname is
   entered; the Magic field is prefilled with the standard 0x88
