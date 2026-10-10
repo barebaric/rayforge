@@ -50,7 +50,7 @@ class _OverscanTransformer(OpsTransformer):
     def description(self) -> str:
         return ""
 
-    def to_spec(self, workpiece, stock_geometries, settings):
+    def to_spec(self, workpiece, stock_geometries, machine):
         return None
 
 
@@ -67,7 +67,7 @@ class _MultiPassTransformer(OpsTransformer):
     def description(self) -> str:
         return ""
 
-    def to_spec(self, workpiece, stock_geometries, settings):
+    def to_spec(self, workpiece, stock_geometries, machine):
         return None
 
 

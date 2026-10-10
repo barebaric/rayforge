@@ -15,6 +15,7 @@ from ...camera.models.camera import Camera
 from ...camera.v4l import migrate_camera_data
 from ...core.model import Model
 from ...machine.driver import get_driver_cls
+from ...machine.models.bed_mesh import BedMesh
 from ...machine.models.dialect import GcodeDialect
 from ...machine.models.head import head_from_dict
 from ...machine.models.machine import Machine, Origin
@@ -227,6 +228,12 @@ def _validate_machine_config(config: dict[str, Any], manifest_path: Path):
 
     if "nogo_zones" in config and not isinstance(config["nogo_zones"], list):
         raise ValueError(f"'nogo_zones' must be a list in {manifest_path}")
+    if (
+        "bed_mesh" in config
+        and config["bed_mesh"] is not None
+        and not isinstance(config["bed_mesh"], dict)
+    ):
+        raise ValueError(f"'bed_mesh' must be an object in {manifest_path}")
 
     if "cameras" in config and not isinstance(config["cameras"], list):
         raise ValueError(f"'cameras' must be a list in {manifest_path}")
@@ -470,6 +477,8 @@ class MachineConfig:
     hookmacros: list[dict[str, Any]] | None = None
     rotary_modules: list[dict[str, Any]] | None = None
     nogo_zones: list[dict[str, Any]] | None = None
+    bed_mesh: dict[str, Any] | None = None
+    default_post_processors_dicts: list[dict[str, Any]] | None = None
     cameras: list[dict[str, Any]] | None = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -514,6 +523,13 @@ class MachineConfig:
         nogo_zones = None
         if machine.nogo_zones:
             nogo_zones = [z.to_dict() for z in machine.nogo_zones.values()]
+
+        bed_mesh = machine.bed_mesh.to_dict() if machine.bed_mesh else None
+        default_post_processors_dicts = (
+            list(machine.default_post_processors_dicts)
+            if machine.default_post_processors_dicts
+            else None
+        )
 
         cameras = None
         if machine.cameras:
@@ -561,6 +577,8 @@ class MachineConfig:
             hookmacros=hookmacros,
             rotary_modules=rotary_modules,
             nogo_zones=nogo_zones,
+            bed_mesh=bed_mesh,
+            default_post_processors_dicts=default_post_processors_dicts,
             cameras=cameras,
         )
 
@@ -772,6 +790,13 @@ class DeviceProfile:
         if cfg.nogo_zones is not None:
             for z_data in cfg.nogo_zones:
                 m.add_nogo_zone(Zone.from_dict(z_data))
+
+        if cfg.bed_mesh is not None:
+            m.set_bed_mesh(BedMesh.from_dict(cfg.bed_mesh))
+        if cfg.default_post_processors_dicts is not None:
+            m.default_post_processors_dicts = list(
+                cfg.default_post_processors_dicts
+            )
 
         return m
 

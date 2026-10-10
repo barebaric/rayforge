@@ -117,7 +117,7 @@ class LeadInOutTransformer(OpsTransformer):
         self,
         workpiece: WorkPiece | None,
         stock_geometries: list[Geometry] | None,
-        settings: dict[str, Any] | None,
+        machine=None,
     ) -> LeadInOutSpec:
         return LeadInOutSpec(
             lead_in_mm=self.lead_in_mm, lead_out_mm=self.lead_out_mm

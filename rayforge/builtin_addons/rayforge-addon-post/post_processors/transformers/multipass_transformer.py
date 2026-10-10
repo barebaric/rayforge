@@ -85,7 +85,7 @@ class MultiPassTransformer(OpsTransformer):
         self,
         workpiece: WorkPiece | None,
         stock_geometries: list[Geometry] | None,
-        settings: dict[str, Any] | None,
+        machine=None,
     ) -> MultiPassSpec:
         return MultiPassSpec(passes=self.passes, z_step_down=self.z_step_down)
 

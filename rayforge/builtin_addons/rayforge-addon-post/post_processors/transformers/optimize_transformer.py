@@ -65,18 +65,17 @@ class Optimize(OpsTransformer):
         self,
         workpiece: WorkPiece | None,
         stock_geometries: list["Geometry"] | None,
-        settings: dict[str, Any] | None,
+        machine=None,
     ) -> OptimizeSpec:
-        settings = settings or {}
         merge = None
         if self.merge_scanlines:
             merge = MergeScanlinesSpec(
                 acceleration=float(
-                    settings.get("machine_acceleration", 1000.0)
+                    machine.acceleration if machine else 1000.0
                 ),
-                cut_speed=float(settings.get("machine_max_cut_speed", 1000.0)),
+                cut_speed=float(machine.max_cut_speed if machine else 1000.0),
                 rapid_speed=float(
-                    settings.get("machine_max_travel_speed", 1000.0)
+                    machine.max_travel_speed if machine else 1000.0
                 ),
                 max_gap_mm=self.merge_max_gap_mm,
                 tolerance=self.merge_tolerance,

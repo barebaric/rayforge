@@ -4,11 +4,11 @@ from raygeo.ops import Ops
 from raygeo.ops.types import CommandType
 
 
-def _apply(transformer, ops, settings=None):
+def _apply(transformer, ops):
     """Run a transformer through the Rust spec dispatch."""
     if not transformer.enabled:
         return
-    specs = [transformer.to_spec(None, None, settings)]
+    specs = [transformer.to_spec(None, None, None)]
     Ops.apply_transformers(ops, specs, progress_cb=None)
 
 
@@ -45,7 +45,8 @@ def test_no_op_when_disabled():
     original = [ops.endpoint(i) for i in range(ops.len())]
 
     transformer = BidirScanOffsetTransformer(enabled=False)
-    _apply(transformer, ops, settings={"bidir_x_offset_mm": 0.3})
+    transformer.offset_mm = 0.3
+    _apply(transformer, ops)
 
     assert [ops.endpoint(i) for i in range(ops.len())] == original
 
@@ -54,7 +55,7 @@ def test_no_op_with_zero_offset(transformer: BidirScanOffsetTransformer):
     ops = _build_zigzag()
     original = [ops.endpoint(i) for i in range(ops.len())]
 
-    _apply(transformer, ops, settings={"bidir_x_offset_mm": 0.0})
+    _apply(transformer, ops)
 
     assert [ops.endpoint(i) for i in range(ops.len())] == original
 
@@ -63,7 +64,7 @@ def test_no_op_without_settings(transformer: BidirScanOffsetTransformer):
     ops = _build_zigzag()
     original = [ops.endpoint(i) for i in range(ops.len())]
 
-    _apply(transformer, ops, settings=None)
+    _apply(transformer, ops)
 
     assert [ops.endpoint(i) for i in range(ops.len())] == original
 
@@ -73,7 +74,8 @@ def test_shifts_only_right_to_left_passes(
 ):
     ops = _build_zigzag()
 
-    _apply(transformer, ops, settings={"bidir_x_offset_mm": 0.3})
+    transformer.offset_mm = 0.3
+    _apply(transformer, ops)
 
     assert ops.len() == 6
     # Row 0 (LTR): untouched.
@@ -99,7 +101,8 @@ def test_shifts_only_right_to_left_passes(
 def test_negative_offset_shifts_left(transformer: BidirScanOffsetTransformer):
     ops = _build_zigzag()
 
-    _apply(transformer, ops, settings={"bidir_x_offset_mm": -0.5})
+    transformer.offset_mm = -0.5
+    _apply(transformer, ops)
 
     assert ops.endpoint(2) == pytest.approx((1.5, 0.5, 0.0))
     assert ops.endpoint(3) == pytest.approx((-0.5, 0.5, 0.0))
@@ -114,7 +117,8 @@ def test_preserves_intermediate_state_commands(
     ops.set_power(0.5)
     ops.scan_to(0.0, 0.5, 0.0, power_values=[210, 210, 210, 210])
 
-    _apply(transformer, ops, settings={"bidir_x_offset_mm": 0.3})
+    transformer.offset_mm = 0.3
+    _apply(transformer, ops)
 
     assert ops.len() == 3
     assert ops.command_type(0) == CommandType.MOVE_TO

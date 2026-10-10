@@ -11,6 +11,7 @@ from .transformers import (
     CropTransformer,
     LeadInOutTransformer,
     MergeLinesTransformer,
+    MeshCorrectionTransformer,
     MultiPassTransformer,
     Optimize,
     OverscanTransformer,
@@ -30,6 +31,9 @@ def register_transformers(transformer_registry):
     transformer_registry.register(CropTransformer, addon_name=ADDON_NAME)
     transformer_registry.register(LeadInOutTransformer, addon_name=ADDON_NAME)
     transformer_registry.register(MergeLinesTransformer, addon_name=ADDON_NAME)
+    transformer_registry.register(
+        MeshCorrectionTransformer, addon_name=ADDON_NAME
+    )
     transformer_registry.register(MultiPassTransformer, addon_name=ADDON_NAME)
     transformer_registry.register(Optimize, addon_name=ADDON_NAME)
     transformer_registry.register(OverscanTransformer, addon_name=ADDON_NAME)

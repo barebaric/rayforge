@@ -6,6 +6,7 @@ from ..transformers import (
     CropTransformer,
     LeadInOutTransformer,
     MergeLinesTransformer,
+    MeshCorrectionTransformer,
     MultiPassTransformer,
     Optimize,
     OverscanTransformer,
@@ -14,6 +15,7 @@ from ..transformers import (
 from .crop_group import CropSettingsGroup
 from .lead_in_out_group import LeadInOutSettingsGroup
 from .merge_lines_group import MergeLinesSettingsGroup
+from .mesh_correction_group import MeshCorrectionSettingsGroup
 from .multipass_group import MultiPassSettingsGroup
 from .optimize_group import OptimizeSettingsGroup
 from .overscan_group import OverscanSettingsGroup
@@ -23,6 +25,7 @@ TRANSFORMER_WIDGETS = {
     CropTransformer: CropSettingsGroup,
     LeadInOutTransformer: LeadInOutSettingsGroup,
     MergeLinesTransformer: MergeLinesSettingsGroup,
+    MeshCorrectionTransformer: MeshCorrectionSettingsGroup,
     MultiPassTransformer: MultiPassSettingsGroup,
     Optimize: OptimizeSettingsGroup,
     OverscanTransformer: OverscanSettingsGroup,

@@ -104,9 +104,13 @@ class OverscanTransformer(OpsTransformer):
         self,
         workpiece: WorkPiece | None,
         stock_geometries: list[Geometry] | None,
-        settings: dict[str, Any] | None,
+        machine=None,
     ) -> OverscanSpec:
-        if settings and settings.get("driver_native_overscan"):
+        try:
+            native = bool(machine and machine.driver.native_overscan)
+        except AttributeError:
+            native = False
+        if native:
             return OverscanSpec(distance_mm=0.0)
         return OverscanSpec(distance_mm=self.distance_mm)
 

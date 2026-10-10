@@ -33,8 +33,15 @@ class TabOpsTransformer(OpsTransformer):
 
     SPEC_NAME = "tabs"
 
-    def __init__(self, enabled: bool = True):
+    def __init__(
+        self,
+        enabled: bool = True,
+        tab_power: float = 0.0,
+        original_power: float = 1.0,
+    ):
         super().__init__(enabled=enabled)
+        self.tab_power = float(tab_power)
+        self.original_power = float(original_power)
 
     @property
     def label(self) -> str:
@@ -110,10 +117,10 @@ class TabOpsTransformer(OpsTransformer):
         self,
         workpiece: WorkPiece | None,
         stock_geometries: list[Geometry] | None,
-        settings: dict | None,
+        machine=None,
     ) -> TabsSpec:
-        tab_power = settings.get("tab_power", 0.0) if settings else 0.0
-        original_power = settings.get("power", 1.0) if settings else 1.0
+        tab_power = self.tab_power
+        original_power = self.original_power
 
         if not workpiece or not workpiece.tabs_enabled or not workpiece.tabs:
             return TabsSpec(
@@ -144,6 +151,13 @@ class TabOpsTransformer(OpsTransformer):
             clips=processed_clip_data,
         )
 
+    def to_dict(self) -> dict:
+        return {
+            **super().to_dict(),
+            "tab_power": self.tab_power,
+            "original_power": self.original_power,
+        }
+
     @classmethod
     def from_dict(cls, data: dict) -> TabOpsTransformer:
         if data.get("name") != cls.__name__:
@@ -151,4 +165,8 @@ class TabOpsTransformer(OpsTransformer):
                 f"Mismatched transformer name: expected {cls.__name__},"
                 f" got {data.get('name')}"
             )
-        return cls(enabled=data.get("enabled", True))
+        return cls(
+            enabled=data.get("enabled", True),
+            tab_power=data.get("tab_power", 0.0),
+            original_power=data.get("original_power", 1.0),
+        )
