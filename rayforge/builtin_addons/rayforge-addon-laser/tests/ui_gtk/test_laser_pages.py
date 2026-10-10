@@ -734,3 +734,19 @@ def test_dialog_initial_laser_page(editor, laser_machine, ui_context):
     assert dialog._extra_buttons[0].get_active() is True
     assert dialog.btn_step_settings.get_active() is False
     dialog.close()
+
+
+@pytest.mark.ui
+def test_offset_fill_page_shows_fill_rows(editor, laser_machine, ui_context):
+    from laser_essentials.steps import OffsetFillStep
+    from laser_essentials.widgets import ASSEMBLER_WIDGETS
+    from laser_essentials.widgets.offset_fill_page import (
+        OffsetFillStepSettingsPage,
+    )
+
+    assert ASSEMBLER_WIDGETS["offset_fill"] is OffsetFillStepSettingsPage
+    step = OffsetFillStep.create(ui_context)
+    page = OffsetFillStepSettingsPage(editor, step)
+    for key in ("line_interval_mm", "offset_mm", "fill_direction"):
+        _row(page, key)
+    assert isinstance(_row(page, "line_interval_mm"), LengthSpinRow)
