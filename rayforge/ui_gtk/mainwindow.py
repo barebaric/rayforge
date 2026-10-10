@@ -49,6 +49,7 @@ from .doceditor.import_handler import start_interactive_import
 from .doceditor.item_properties import DocItemPropertiesWidget
 from .doceditor.missing_features_dialog import MissingFeaturesDialog
 from .doceditor.property_providers import register_builtin_providers
+from .doceditor.source_reload import SourceReloadMonitor
 from .doceditor.workflow_view import WorkflowView
 from .machine.machine_dropdown import MachineDropdown
 from .machine.profile_review_dialog import (
@@ -195,6 +196,8 @@ class MainWindow(Adw.ApplicationWindow):
         # Instantiate UI-specific command handlers
         self.view_cmd = ViewModeCmd(self.doc_editor, self)
         self.project_cmd = ProjectCmd(self, self.doc_editor)
+        self.source_reload = SourceReloadMonitor(self, self.doc_editor)
+        self.source_reload.start()
 
         geometry = get_monitor_geometry()
         if geometry:
@@ -1620,6 +1623,8 @@ class MainWindow(Adw.ApplicationWindow):
         # Initialize new document
         self._initialize_document()
 
+        GLib.idle_add(self._check_changed_sources)
+
         # Check for missing step types and show dialog if needed
         missing_types = new_doc.missing_step_types
         if missing_types:
@@ -1631,6 +1636,10 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Update the UI with the new document's content
         self.on_doc_changed(new_doc)
+
+    def _check_changed_sources(self) -> bool:
+        self.source_reload.check_now()
+        return GLib.SOURCE_REMOVE
 
     def _on_editor_notification(
         self,

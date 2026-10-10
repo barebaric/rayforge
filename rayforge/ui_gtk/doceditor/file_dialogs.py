@@ -10,6 +10,7 @@ from ...image.registry import exporter_registry, importer_registry
 from ..shared.gtk import file_filter_to_gtk
 
 if TYPE_CHECKING:
+    from ...core.source_asset import SourceAsset
     from ...core.workpiece import WorkPiece
     from ...doceditor.editor import DocEditor
     from ..mainwindow import MainWindow
@@ -35,7 +36,31 @@ def show_import_dialog(
     """
     dialog = Gtk.FileDialog.new()
     dialog.set_title(_("Open File"))
+    _set_import_filters(dialog)
+    dialog.open(win, None, callback, user_data)
 
+
+def show_relink_dialog(
+    win: Gtk.Window,
+    asset: "SourceAsset",
+    callback: Callable,
+    user_data: Any = None,
+):
+    """
+    Shows the file chooser dialog for pointing an imported source at
+    another file.
+    """
+    dialog = Gtk.FileDialog.new()
+    dialog.set_title(_("Relink \u201c{name}\u201d").format(name=asset.name))
+    _set_import_filters(dialog)
+    folder = asset.source_file.parent
+    if folder.is_dir():
+        dialog.set_initial_folder(Gio.File.new_for_path(str(folder)))
+    dialog.open(win, None, callback, user_data)
+
+
+def _set_import_filters(dialog: Gtk.FileDialog):
+    """Offers every file type that an importer can read."""
     filter_list = Gio.ListStore.new(Gtk.FileFilter)
     all_supported = Gtk.FileFilter()
     all_supported.set_name(_("All supported"))
@@ -60,8 +85,6 @@ def show_import_dialog(
 
     dialog.set_filters(filter_list)
     dialog.set_default_filter(all_supported)
-
-    dialog.open(win, None, callback, user_data)
 
 
 def show_export_gcode_dialog(

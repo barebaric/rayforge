@@ -12,6 +12,7 @@ from ...core.asset import IAsset
 from ...core.asset_registry import asset_type_registry
 from ...core.doc import Doc
 from ...core.geometry_provider import IGeometryProvider
+from ...core.source_asset import SourceAsset
 from ...core.stock import StockItem
 from ...core.undo import ListItemCommand
 from ..icons import get_icon
@@ -543,6 +544,19 @@ class AssetBrowser(Gtk.Box):
                 Gio.MenuItem.new(
                     _("Create New Workpiece"),
                     "win.asset-create-workpiece",
+                )
+            )
+            menu.append_section(None, Gio.Menu.new())
+
+        if isinstance(asset, SourceAsset):
+            menu.append_item(
+                Gio.MenuItem.new(
+                    _("Reload from Disk"), "win.asset-reload-source"
+                )
+            )
+            menu.append_item(
+                Gio.MenuItem.new(
+                    _("Relink Source File\u2026"), "win.asset-relink-source"
                 )
             )
             menu.append_section(None, Gio.Menu.new())
