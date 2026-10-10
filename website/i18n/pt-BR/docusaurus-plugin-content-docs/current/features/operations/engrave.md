@@ -226,12 +226,19 @@ Isso é particularmente útil para:
 
 Escolha o algoritmo que melhor se adapta à sua imagem e material:
 
-| Algoritmo       | Qualidade | Velocidade  | Melhor Para                        |
-| --------------- | --------- | ----------- | ---------------------------------- |
-| Floyd-Steinberg | Mais Alta | Mais Lento  | Fotos, retratos, gradientes suaves |
-| Bayer 2x2       | Baixa     | Mais Rápido | Efeito meio-tom grosseiro          |
-| Bayer 4x4       | Média     | Rápido      | Meio-tom balanceado                |
-| Bayer 8x8       | Alta      | Médio       | Detalhe fino, padrões sutis        |
+| Algoritmo                         | Qualidade | Velocidade  | Melhor Para                                  |
+| --------------------------------- | --------- | ----------- | -------------------------------------------- |
+| Floyd-Steinberg                   | Mais Alta | Mais Lento  | Fotos, retratos, gradientes suaves           |
+| Bayer 2x2                         | Baixa     | Mais Rápido | Efeito meio-tom grosseiro                    |
+| Bayer 4x4                         | Média     | Rápido      | Meio-tom balanceado                          |
+| Bayer 8x8                         | Alta      | Médio       | Detalhe fino, padrões sutis                  |
+| Atkinson                          | Média     | Médio       | Imagens de alto contraste, madeira           |
+| Stucki                            | Mais Alta | Lento       | Retratos, tons de pele suaves                |
+| Jarvis, Judice e Ninke            | Mais Alta | Lento       | Gradientes suaves, grão fino                 |
+| Sierra (3 linhas, 2 linhas, Lite) | Alta      | Médio       | Alternativas mais leves ao Stucki            |
+| Burkes                            | Alta      | Médio       | Fotos, mais rápido que Stucki                |
+| Papel de jornal                   | Média     | Mais Rápido | Pontos agrupados no estilo jornal            |
+| Meio-tom                          | Média     | Rápido      | Pontos redondos, tamanho e ângulo ajustáveis |
 
 **Floyd-Steinberg** é padrão e recomendado para a maioria das gravações de fotos. Usa difusão de
 erro para distribuir erros de quantização para pixels vizinhos, criando resultados de aparência
@@ -239,6 +246,16 @@ natural.
 
 **Pontilhamento Bayer** cria padrões regulares que podem produzir efeitos artísticos lembrando
 impressão tradicional de meio-tom.
+
+**Stucki, Jarvis, Sierra, Burkes e Atkinson** são algoritmos de difusão de erro como o
+Floyd-Steinberg que espalham o erro por uma vizinhança maior, o que dá um grão mais uniforme em
+áreas planas como tons de pele. O Atkinson difunde só parte do erro, o que aumenta o contraste.
+Ative **Serpentina** para alternar a direção de varredura em cada linha e evitar listras
+direcionais.
+
+**Papel de jornal** e **Meio-tom** agrupam os pixels em pontos. O meio-tom desenha pontos redondos
+numa grade definida por **Tamanho da célula de meio-tom** (a distância entre os centros dos pontos)
+e **Ângulo do meio-tom**; use um tamanho de célula de pelo menos algumas larguras do ponto do laser.
 
 #### Configurações do Modo Múltiplas Profundidades
 

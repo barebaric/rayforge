@@ -11,6 +11,7 @@ from rayforge.core.layer import Layer
 from rayforge.core.step_registry import step_registry
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.image.assembler import ItemAssembler
+from rayforge.image.dither import DitherAlgorithm
 from rayforge.image.lightburn.importer import (
     LightBurnImporter,
     _apply_xform_to_geo,
@@ -232,6 +233,55 @@ class TestBuildStepConfig:
         config = _build_step_config(cs)
         assert config is not None
         assert config == {"passes": 3}
+
+    @pytest.mark.parametrize(
+        "mode, algorithm",
+        [
+            ("dithered", "FLOYD_STEINBERG"),
+            ("atkinson", "ATKINSON"),
+            ("stucki", "STUCKI"),
+            ("jarvis", "JARVIS_JUDICE_NINKE"),
+            ("ordered", "BAYER8"),
+            ("newsprint", "NEWSPRINT"),
+        ],
+    )
+    def test_dither_mode_mapping(self, mode, algorithm):
+        config = _build_step_config({"ditherMode": mode})
+        assert config == {
+            "depth_mode": "DITHER",
+            "dither_algorithm": algorithm,
+        }
+
+    def test_halftone_mapping_converts_cells_per_inch(self):
+        cs = {
+            "ditherMode": "halftone",
+            "cellsPerInch": 50,
+            "halftoneAngle": 22.5,
+        }
+        config = _build_step_config(cs)
+        assert config is not None
+        assert config["depth_mode"] == "DITHER"
+        assert config["dither_algorithm"] == "HALFTONE"
+        assert config["halftone_cell_mm"] == pytest.approx(25.4 / 50)
+        assert config["halftone_angle"] == 22.5
+
+    def test_halftone_settings_ignored_for_other_modes(self):
+        cs = {"ditherMode": "stucki", "cellsPerInch": 50, "halftoneAngle": 9}
+        config = _build_step_config(cs)
+        assert config is not None
+        assert "halftone_cell_mm" not in config
+        assert "halftone_angle" not in config
+
+    def test_threshold_mode_maps_to_constant_power(self):
+        config = _build_step_config({"ditherMode": "threshold"})
+        assert config == {"depth_mode": "CONSTANT_POWER", "threshold": 128}
+
+    def test_grayscale_mode_maps_to_variable_power(self):
+        config = _build_step_config({"ditherMode": "grayscale"})
+        assert config == {"depth_mode": "POWER_MODULATION"}
+
+    def test_unknown_dither_mode_is_ignored(self):
+        assert _build_step_config({"ditherMode": "sketch"}) is None
 
     def test_all_keys(self):
         cs = {"maxPower": 70, "speed": 6.66667, "kerf": 0.06, "numPasses": 2}
@@ -626,6 +676,25 @@ class TestLightBurnImporter:
         assert step.scan_angle == 45.0
         assert step.min_power_level == 0.1
         assert step.max_power_level == 0.5
+
+    def test_image_layer_import_keeps_dither_mode(self):
+        """images.lbrn2 engraves its bitmaps with LightBurn's
+        ``dithered`` (Floyd-Steinberg) mode; the step must follow."""
+        if step_registry.get("EngraveStep") is None:
+            pytest.skip("EngraveStep not registered")
+        importer = self._import("images.lbrn2")
+        result = importer.get_doc_items()
+        assert result is not None and result.payload is not None
+        steps = [
+            step
+            for item in result.payload.items
+            if isinstance(item, Layer) and item.workflow is not None
+            for step in item.workflow.steps
+        ]
+        assert steps
+        step = cast(Any, steps[0])
+        assert step.depth_mode == "DITHER"
+        assert step.dither_algorithm is DitherAlgorithm.FLOYD_STEINBERG
 
 
 class TestApplySettingsDispatch:

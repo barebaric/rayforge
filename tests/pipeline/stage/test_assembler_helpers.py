@@ -308,6 +308,79 @@ class TestPreprocessRasterImage:
         assert np.all(image[:, :5] == 1)
         assert np.all(image[:, 5:] == 0)
 
+    def _gradient_surface(self, width=120, height=60):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+        ctx = cairo.Context(surface)
+        gradient = cairo.LinearGradient(0, 0, width, 0)
+        gradient.add_color_stop_rgb(0, 0, 0, 0)
+        gradient.add_color_stop_rgb(1, 1, 1, 1)
+        ctx.set_source(gradient)
+        ctx.paint()
+        return surface
+
+    def test_dither_forwards_serpentine(self):
+        surface = self._gradient_surface()
+        kwargs = {
+            "mode": DepthMode.DITHER,
+            "auto_levels": False,
+            "dither_algorithm": DitherAlgorithm.STUCKI,
+            "laser_spot_x_mm": 0.1,
+            "pixels_per_mm_x": 10.0,
+        }
+        plain, _ = preprocess_raster_image(surface, **kwargs)
+        serpentine, _ = preprocess_raster_image(
+            surface, dither_serpentine=True, **kwargs
+        )
+
+        assert plain is not None and serpentine is not None
+        assert not np.array_equal(plain, serpentine)
+
+    def test_dither_forwards_halftone_settings(self):
+        surface = self._gradient_surface()
+        kwargs = {
+            "mode": DepthMode.DITHER,
+            "auto_levels": False,
+            "dither_algorithm": DitherAlgorithm.HALFTONE,
+            "laser_spot_x_mm": 0.1,
+            "pixels_per_mm_x": 10.0,
+            "pixels_per_mm_y": 10.0,
+        }
+        base, _ = preprocess_raster_image(
+            surface, halftone_cell_mm=1.0, halftone_angle=0.0, **kwargs
+        )
+        coarse, _ = preprocess_raster_image(
+            surface, halftone_cell_mm=2.0, halftone_angle=0.0, **kwargs
+        )
+        rotated, _ = preprocess_raster_image(
+            surface, halftone_cell_mm=1.0, halftone_angle=30.0, **kwargs
+        )
+
+        assert base is not None and coarse is not None
+        assert rotated is not None
+        assert not np.array_equal(base, coarse)
+        assert not np.array_equal(base, rotated)
+
+    def test_dither_halftone_uses_y_resolution(self):
+        surface = self._gradient_surface()
+        kwargs = {
+            "mode": DepthMode.DITHER,
+            "auto_levels": False,
+            "dither_algorithm": DitherAlgorithm.HALFTONE,
+            "laser_spot_x_mm": 0.1,
+            "pixels_per_mm_x": 10.0,
+            "halftone_cell_mm": 1.0,
+            "halftone_angle": 0.0,
+        }
+        square, _ = preprocess_raster_image(
+            surface, pixels_per_mm_y=10.0, **kwargs
+        )
+        squashed, _ = preprocess_raster_image(
+            surface, pixels_per_mm_y=5.0, **kwargs
+        )
+
+        assert square is not None and squashed is not None
+        assert not np.array_equal(square, squashed)
+
     def test_mask_scan_returns_binary_no_alpha(self):
         surface = self._black_surface()
         image, alpha = preprocess_raster_image(

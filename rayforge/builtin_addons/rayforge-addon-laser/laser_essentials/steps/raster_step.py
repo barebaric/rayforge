@@ -27,7 +27,11 @@ from rayforge.core.varset import (
     SliderIntVar,
     VarSet,
 )
-from rayforge.image.dither import DitherAlgorithm
+from rayforge.image.dither import (
+    DEFAULT_HALFTONE_ANGLE,
+    DEFAULT_HALFTONE_CELL_MM,
+    DitherAlgorithm,
+)
 from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.stage.assembler_helpers import (
     DepthMode,
@@ -76,6 +80,22 @@ class EngraveStep(LaserStep):
         def is_multi_pass(v):
             return v.get("depth_mode") == "MULTI_PASS"
 
+        def dither_algorithm(v):
+            name = v.get("dither_algorithm") or "FLOYD_STEINBERG"
+            return DitherAlgorithm.__members__.get(name)
+
+        def is_error_diffusion(v):
+            algo = dither_algorithm(v)
+            return (
+                is_dither(v) and algo is not None and algo.is_error_diffusion
+            )
+
+        def is_halftone(v):
+            return (
+                is_dither(v)
+                and dither_algorithm(v) is DitherAlgorithm.HALFTONE
+            )
+
         def uses_grayscale(v):
             return is_power(v) or is_multi_pass(v)
 
@@ -113,6 +133,35 @@ class EngraveStep(LaserStep):
                     default="FLOYD_STEINBERG",
                     visible_when=is_dither,
                     allow_none=False,
+                ),
+                BoolVar(
+                    key="dither_serpentine",
+                    label=_("Serpentine"),
+                    description=_(
+                        "Alternate the dither direction on every row to "
+                        "avoid directional artifacts"
+                    ),
+                    default=False,
+                    visible_when=is_error_diffusion,
+                ),
+                LengthVar(
+                    key="halftone_cell_mm",
+                    label=_("Halftone Cell Size"),
+                    description=_("Distance between halftone dot centers"),
+                    default=DEFAULT_HALFTONE_CELL_MM,
+                    min_val=0.01,
+                    max_val=50.0,
+                    digits=3,
+                    visible_when=is_halftone,
+                ),
+                AngleVar(
+                    key="halftone_angle",
+                    label=_("Halftone Angle"),
+                    description=_("Rotation of the halftone dot grid"),
+                    default=DEFAULT_HALFTONE_ANGLE,
+                    min_val=0.0,
+                    max_val=180.0,
+                    visible_when=is_halftone,
                 ),
                 ScanAngleVar(),
                 BoolVar(
@@ -305,6 +354,9 @@ class EngraveStep(LaserStep):
         self.z_step_down = 0.0
         self.angle_increment = 0.0
         self.dither_algorithm = None
+        self.dither_serpentine = False
+        self.halftone_cell_mm = DEFAULT_HALFTONE_CELL_MM
+        self.halftone_angle = DEFAULT_HALFTONE_ANGLE
         self.bidir_x_offset_mm = 0.0
 
     def set_dither_algorithm(self, algorithm: DitherAlgorithm | str | None):
@@ -394,9 +446,16 @@ class EngraveStep(LaserStep):
             "dot_width_correction_mm",
             "line_interval_mm",
             "scan_angle",
+            "depth_mode",
+            "threshold",
+            "dither_serpentine",
+            "halftone_cell_mm",
+            "halftone_angle",
         ):
             if key in settings:
                 setattr(self, key, settings[key])
+        if "dither_algorithm" in settings:
+            self.set_dither_algorithm(settings["dither_algorithm"])
 
     def build_compute_payload(
         self,
@@ -481,6 +540,9 @@ class EngraveStep(LaserStep):
                     if self.dither_algorithm is not None
                     else None
                 ),
+                "dither_serpentine": self.dither_serpentine,
+                "halftone_cell_mm": self.halftone_cell_mm,
+                "halftone_angle": self.halftone_angle,
             }
         )
         return params
@@ -510,6 +572,9 @@ class EngraveStep(LaserStep):
         result["dither_algorithm"] = (
             self.dither_algorithm.value if self.dither_algorithm else None
         )
+        result["dither_serpentine"] = self.dither_serpentine
+        result["halftone_cell_mm"] = self.halftone_cell_mm
+        result["halftone_angle"] = self.halftone_angle
         result["bidir_x_offset_mm"] = self.bidir_x_offset_mm
         return result
 
@@ -600,6 +665,13 @@ class EngraveStep(LaserStep):
                 step.dither_algorithm = DitherAlgorithm(dither_val)
             except ValueError:
                 step.dither_algorithm = DitherAlgorithm.FLOYD_STEINBERG
+        step.dither_serpentine = data.get("dither_serpentine", False)
+        step.halftone_cell_mm = data.get(
+            "halftone_cell_mm", DEFAULT_HALFTONE_CELL_MM
+        )
+        step.halftone_angle = data.get(
+            "halftone_angle", DEFAULT_HALFTONE_ANGLE
+        )
         step.bidir_x_offset_mm = data.get("bidir_x_offset_mm", 0.0)
         return step
 
@@ -628,6 +700,9 @@ class EngraveStep(LaserStep):
                 "z_step_down",
                 "angle_increment",
                 "dither_algorithm",
+                "dither_serpentine",
+                "halftone_cell_mm",
+                "halftone_angle",
                 "bidir_x_offset_mm",
                 "min_power",
                 "max_power",
@@ -771,6 +846,10 @@ def _build_raster_part(
         dither_algorithm=step.dither_algorithm,
         laser_spot_x_mm=spot_x,
         pixels_per_mm_x=px_per_mm_x,
+        pixels_per_mm_y=px_per_mm_y,
+        dither_serpentine=step.dither_serpentine,
+        halftone_cell_mm=step.halftone_cell_mm,
+        halftone_angle=step.halftone_angle,
     )
     surface.flush()
     if image is None:

@@ -361,11 +361,48 @@ def _shape_to_geometry(
     return (cut_index, geo)
 
 
+#: LightBurn image modes (``ditherMode``) that map onto a dither
+#: algorithm of the Engrave step.
+_LIGHTBURN_DITHER_ALGORITHMS = {
+    "dithered": "FLOYD_STEINBERG",
+    "atkinson": "ATKINSON",
+    "stucki": "STUCKI",
+    "jarvis": "JARVIS_JUDICE_NINKE",
+    "ordered": "BAYER8",
+    "newsprint": "NEWSPRINT",
+    "halftone": "HALFTONE",
+}
+
+
+def _build_image_mode_config(cs: dict[str, Any]) -> dict[str, Any]:
+    """Translate LightBurn's image mode to Engrave-step settings."""
+    mode = cs.get("ditherMode")
+    if mode == "threshold":
+        return {"depth_mode": "CONSTANT_POWER", "threshold": 128}
+    if mode == "grayscale":
+        return {"depth_mode": "POWER_MODULATION"}
+    algorithm = _LIGHTBURN_DITHER_ALGORITHMS.get(str(mode))
+    if algorithm is None:
+        return {}
+    config: dict[str, Any] = {
+        "depth_mode": "DITHER",
+        "dither_algorithm": algorithm,
+    }
+    if algorithm == "HALFTONE":
+        cells_per_inch = cs.get("cellsPerInch")
+        if cells_per_inch:
+            config["halftone_cell_mm"] = 25.4 / float(cells_per_inch)
+        angle = cs.get("halftoneAngle")
+        if angle is not None:
+            config["halftone_angle"] = float(angle)
+    return config
+
+
 def _build_step_config(
     cs: dict[str, Any],
 ) -> dict[str, Any] | None:
     """Translate LightBurn cut settings to generic step configuration."""
-    config: dict[str, Any] = {}
+    config: dict[str, Any] = _build_image_mode_config(cs)
     max_power = cs.get("maxPower")
     if max_power is not None:
         config["power"] = float(max_power) / 100.0

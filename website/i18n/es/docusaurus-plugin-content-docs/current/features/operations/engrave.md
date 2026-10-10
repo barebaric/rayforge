@@ -226,12 +226,19 @@ Esto es particularmente útil para:
 
 Elige el algoritmo que mejor se adapte a tu imagen y material:
 
-| Algoritmo       | Calidad | Velocidad  | Mejor Para                         |
-| --------------- | ------- | ---------- | ---------------------------------- |
-| Floyd-Steinberg | Máxima  | Más lento  | Fotos, retratos, degradados suaves |
-| Bayer 2x2       | Baja    | Más rápido | Efecto de media tinta grueso       |
-| Bayer 4x4       | Media   | Rápido     | Media tinta equilibrada            |
-| Bayer 8x8       | Alta    | Media      | Detalle fino, patrones sutiles     |
+| Algoritmo                       | Calidad | Velocidad  | Mejor Para                                  |
+| ------------------------------- | ------- | ---------- | ------------------------------------------- |
+| Floyd-Steinberg                 | Máxima  | Más lento  | Fotos, retratos, degradados suaves          |
+| Bayer 2x2                       | Baja    | Más rápido | Efecto de media tinta grueso                |
+| Bayer 4x4                       | Media   | Rápido     | Media tinta equilibrada                     |
+| Bayer 8x8                       | Alta    | Media      | Detalle fino, patrones sutiles              |
+| Atkinson                        | Media   | Media      | Imágenes de alto contraste, madera          |
+| Stucki                          | Máxima  | Lento      | Retratos, tonos de piel suaves              |
+| Jarvis, Judice y Ninke          | Máxima  | Lento      | Degradados suaves, grano fino               |
+| Sierra (3 filas, 2 filas, Lite) | Alta    | Media      | Alternativas más ligeras a Stucki           |
+| Burkes                          | Alta    | Media      | Fotos, más rápido que Stucki                |
+| Papel prensa                    | Media   | Más rápido | Puntos agrupados al estilo periódico        |
+| Semitono                        | Media   | Rápido     | Puntos redondos, tamaño y ángulo ajustables |
 
 **Floyd-Steinberg** es el predeterminado y el recomendado para la mayoría de los grabados de fotos.
 Usa difusión de error para distribuir los errores de cuantización a los píxeles vecinos, creando
@@ -239,6 +246,17 @@ resultados de aspecto natural.
 
 **El tramado Bayer** crea patrones regulares que pueden producir efectos artísticos que asemejan la
 impresión tradicional de media tinta.
+
+**Stucki, Jarvis, Sierra, Burkes y Atkinson** son algoritmos de difusión de error como
+Floyd-Steinberg que reparten el error en un entorno más amplio, lo que da un grano más uniforme en
+zonas planas como los tonos de piel. Atkinson solo difunde parte del error, lo que aumenta el
+contraste. Activa **Serpentina** para alternar la dirección de barrido en cada fila y evitar rayas
+direccionales.
+
+**Papel prensa** y **Semitono** agrupan los píxeles en puntos. Semitono dibuja puntos redondos sobre
+una cuadrícula definida por **Tamaño de celda del semitono** (la distancia entre los centros de los
+puntos) y **Ángulo del semitono**; usa un tamaño de celda de al menos varias veces el ancho del
+punto láser.
 
 #### Ajustes del Modo Múltiples Profundidades
 
