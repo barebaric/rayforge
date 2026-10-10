@@ -8,21 +8,27 @@ meilleurs résultats.
 
 ### Formats vectoriels
 
-| Format        | Extension         | Méthode d'importation             | Idéal pour                            |
-| ------------- | ----------------- | --------------------------------- | ------------------------------------- |
-| **SVG**       | `.svg`            | Vecteurs directs ou vectorisation | Graphiques vectoriels, logos, dessins |
-| **DXF**       | `.dxf`            | Vecteurs directs                  | Dessins CAO, plans techniques         |
-| **PDF**       | `.pdf`            | Vecteurs directs ou vectorisation | Documents avec contenu vectoriel      |
-| **LightBurn** | `.lbrn`, `.lbrn2` | Vecteurs directs                  | Projets LightBurn                     |
-| **Ruida**     | `.rd`             | Vecteurs directs                  | Fichiers de tâches contrôleur Ruida   |
+| Format          | Extension         | Méthode d'importation                                     | Idéal pour                                   |
+| --------------- | ----------------- | --------------------------------------------------------- | -------------------------------------------- |
+| **SVG**         | `.svg`            | Vecteurs directs ou vectorisation                         | Graphiques vectoriels, logos, dessins        |
+| **DXF**         | `.dxf`            | Vecteurs directs                                          | Dessins CAO, plans techniques                |
+| **PDF**         | `.pdf`            | Vecteurs directs ou vectorisation                         | Documents avec contenu vectoriel             |
+| **LightBurn**   | `.lbrn`, `.lbrn2` | Vecteurs directs                                          | Projets LightBurn                            |
+| **Ruida**       | `.rd`             | Vecteurs directs                                          | Fichiers de tâches contrôleur Ruida          |
+| **Illustrator** | `.ai`             | Vecteurs directs ou vectorisation                         | Logos issus d'Illustrator                    |
+| **EPS**         | `.eps`, `.ps`     | Vecteurs directs ou vectorisation (nécessite Ghostscript) | Logos, fichiers d'impression                 |
+| **HPGL**        | `.plt`, `.hpgl`   | Vecteurs directs                                          | Fichiers de traceur et de plotter de découpe |
 
 ### Formats matriciels
 
 | Format   | Extension       | Méthode d'importation | Idéal pour                           |
 | -------- | --------------- | --------------------- | ------------------------------------ |
-| **PNG**  | `.webp`         | Vectorisation         | Photos, images avec transparence     |
+| **PNG**  | `.png`          | Vectorisation         | Photos, images avec transparence     |
 | **JPEG** | `.jpg`, `.jpeg` | Vectorisation         | Photos, images à tons continus       |
 | **BMP**  | `.bmp`          | Vectorisation         | Graphiques simples, captures d'écran |
+| **GIF**  | `.gif`          | Vectorisation         | Graphiques simples, animations       |
+| **TIFF** | `.tif`, `.tiff` | Vectorisation         | Numérisations, fichiers d'impression |
+| **WebP** | `.webp`         | Vectorisation         | Images web                           |
 
 <!-- prettier-ignore-start -->
 :::note[Importation d'images matricielles]
@@ -362,7 +368,19 @@ colorés avec des paramètres laser configurables.
 
 ---
 
-## Importation d'images matricielles (PNG, JPG, BMP)
+## Importation d'Illustrator et d'EPS
+
+Les fichiers Illustrator enregistrés avec la compatibilité PDF, le réglage par défaut depuis
+Illustrator 9, s'importent exactement comme des fichiers PDF, avec la même sélection de calques et
+les mêmes options de vectorisation.
+
+Les fichiers EPS, PostScript et Illustrator plus anciens sont d'abord convertis en PDF avec
+Ghostscript. Installez Ghostscript si la boîte de dialogue d'importation indique qu'il manque. Si
+vous ne pouvez pas l'installer, exportez le dessin en PDF ou en SVG depuis le logiciel qui l'a créé.
+
+---
+
+## Importation d'images matricielles (PNG, JPG, BMP, GIF, TIFF, WebP)
 
 Les images matricielles sont **vectorisées** pour créer des tracés vectoriels via la boîte de
 dialogue d'importation.

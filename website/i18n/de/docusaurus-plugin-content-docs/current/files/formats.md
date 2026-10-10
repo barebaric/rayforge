@@ -7,19 +7,25 @@ einschließlich Fähigkeiten, Einschränkungen und Empfehlungen.
 
 ### Schnellreferenz
 
-| Format               | Typ       | Import             | Export          | Empfohlene Verwendung      |
-| -------------------- | --------- | ------------------ | --------------- | -------------------------- |
-| **SVG**              | Vektor    | ✓ Direkt / Tracing | ✓ Objekt-Export | Primäres Design-Format     |
-| **DXF**              | Vektor    | ✓ Direkt           | ✓ Objekt-Export | CAD-Datenaustausch         |
-| **PDF**              | Gemischt  | ✓ Direkt / Tracing | –               | Dokumente mit Vektorinhalt |
-| **LightBurn**        | Vektor    | ✓ Direkt           | –               | LightBurn-Projekte         |
-| **Ruida**            | Vektor    | ✓ Direkt           | –               | Ruida-Aufgabendateien      |
-| **PNG**              | Raster    | ✓ Tracing          | –               | Fotos, Bilder              |
-| **JPEG**             | Raster    | ✓ Tracing          | –               | Fotos                      |
-| **BMP**              | Raster    | ✓ Tracing          | –               | Einfache Grafiken          |
-| **RFS**              | Skizze    | ✓ Direkt           | ✓ Objekt-Export | Parametrische Skizzen      |
-| **G-Code**           | Steuerung | –                  | ✓ Primär        | Maschinenausgabe           |
-| **Rayforge-Projekt** | Projekt   | ✓                  | ✓               | Projekte speichern/laden   |
+| Format               | Typ       | Import             | Export          | Empfohlene Verwendung                |
+| -------------------- | --------- | ------------------ | --------------- | ------------------------------------ |
+| **SVG**              | Vektor    | ✓ Direkt / Tracing | ✓ Objekt-Export | Primäres Design-Format               |
+| **DXF**              | Vektor    | ✓ Direkt           | ✓ Objekt-Export | CAD-Datenaustausch                   |
+| **PDF**              | Gemischt  | ✓ Direkt / Tracing | –               | Dokumente mit Vektorinhalt           |
+| **Illustrator**      | Vektor    | ✓ Direkt / Tracing | –               | Logos aus Illustrator                |
+| **EPS**              | Vektor    | ✓ Direkt / Tracing | –               | Logos, Druckvorlagen                 |
+| **LightBurn**        | Vektor    | ✓ Direkt           | –               | LightBurn-Projekte                   |
+| **Ruida**            | Vektor    | ✓ Direkt           | –               | Ruida-Aufgabendateien                |
+| **HPGL**             | Vektor    | ✓ Direkt           | –               | Plotter- und Schneideplotter-Dateien |
+| **PNG**              | Raster    | ✓ Tracing          | –               | Fotos, Bilder                        |
+| **JPEG**             | Raster    | ✓ Tracing          | –               | Fotos                                |
+| **BMP**              | Raster    | ✓ Tracing          | –               | Einfache Grafiken                    |
+| **GIF**              | Raster    | ✓ Tracing          | –               | Einfache Grafiken, Animationen       |
+| **TIFF**             | Raster    | ✓ Tracing          | –               | Scans, Druckvorlagen                 |
+| **WebP**             | Raster    | ✓ Tracing          | –               | Webbilder                            |
+| **RFS**              | Skizze    | ✓ Direkt           | ✓ Objekt-Export | Parametrische Skizzen                |
+| **G-Code**           | Steuerung | –                  | ✓ Primär        | Maschinenausgabe                     |
+| **Rayforge-Projekt** | Projekt   | ✓                  | ✓               | Projekte speichern/laden             |
 
 ---
 
@@ -215,6 +221,57 @@ Tracing zurück.
 
 ---
 
+### Adobe Illustrator (.ai)
+
+**Erweiterung:** `.ai` **MIME-Typ:** `application/illustrator` **Import:** Direkte Vektoren oder
+Rendern und Tracing **Export:** Nicht unterstützt
+
+Seit Version 9 speichert Illustrator seine Dateien standardmäßig mit einem eingebetteten PDF (Option
+**PDF-kompatible Datei erstellen**). Rayforge liest dieses PDF, solche Dateien werden also genau wie
+ein PDF importiert, einschließlich Ebenen.
+
+Ältere Illustrator-Dateien und Dateien, die ohne PDF-Kompatibilität gespeichert wurden, sind
+PostScript. Rayforge wandelt sie mit Ghostscript um, wenn es installiert ist. Andernfalls erklärt
+der Importdialog, wie du die Datei erneut speichern kannst.
+
+---
+
+### EPS und PostScript (.eps / .ps)
+
+**Erweiterung:** `.eps`, `.epsf`, `.ps` **MIME-Typ:** `image/x-eps`, `application/postscript`
+**Import:** Direkte Vektoren oder Rendern und Tracing, über Ghostscript **Export:** Nicht
+unterstützt
+
+Rayforge wandelt EPS- und PostScript-Dateien mit Ghostscript in PDF um und importiert sie dann wie
+ein PDF. Die EPS-Bounding-Box wird zur Seitengröße, und Text wird in Konturen umgewandelt.
+
+**Ghostscript** ist eine optionale Abhängigkeit. Unter Linux installierst du das Paket `ghostscript`
+deiner Distribution, unter Windows und macOS die Version von der Ghostscript-Website. Ohne
+Ghostscript zeigt der Importdialog statt einer Vorschau einen Hinweis. Das Projekt speichert das
+umgewandelte PDF, daher lässt sich ein gespeichertes Projekt auch auf einem Rechner ohne Ghostscript
+öffnen.
+
+---
+
+### HPGL (.plt / .hpgl)
+
+**Erweiterung:** `.plt`, `.hpgl`, `.hpg`, `.hgl` **MIME-Typ:** `application/vnd.hp-hpgl` **Import:**
+Direkte Vektoranalyse **Export:** Nicht unterstützt
+
+HPGL ist die Plottersprache von Schneideplottern, Folienplottern und älteren CAD-Programmen.
+Rayforge liest die üblichen Zeichenbefehle: Stiftbewegungen (PU, PD, PA, PR), Kreise und Bögen (CI,
+AA, AR) sowie Rechtecke (EA, ER, RA, RR). Jeder Stift wird zu einer Ebene, die du im Importdialog
+auswählen kannst.
+
+**Einschränkungen:**
+
+- ✗ Textbeschriftungen (LB) werden übersprungen; wandle Text vor dem Plotten in Pfade um
+- ✗ Skalierung (SC) und Drehung (RO) werden ignoriert; der Importdialog listet übersprungene Befehle
+  auf
+- Koordinaten verwenden die üblichen 40 Plottereinheiten pro Millimeter
+
+---
+
 ## Rasterformate
 
 Alle Rasterformate werden **durch Tracing importiert** - automatisch in Vektorpfade konvertiert.
@@ -279,6 +336,19 @@ unterstützt
 
 - Zu PNG für kleinere Dateigröße konvertieren (kein Qualitätsunterschied)
 - Nur verwenden wenn Quellsoftware kein PNG/SVG exportieren kann
+
+---
+
+### GIF, TIFF und WebP
+
+**Erweiterung:** `.gif`, `.tif`, `.tiff`, `.webp` **MIME-Typ:** `image/gif`, `image/tiff`,
+`image/webp` **Import:** Tracing zu Vektoren **Export:** Nicht unterstützt
+
+Diese Formate werden genauso nachgezeichnet wie PNG.
+
+- **Animierte GIFs** und **mehrseitige TIFFs** importieren nur ihr erstes Bild bzw. ihre erste Seite
+- **TIFF**-Dateien speichern meist ihre Druckauflösung, die die physische Größe bestimmt
+- Bilder ohne Auflösung werden mit 96 DPI importiert
 
 ---
 

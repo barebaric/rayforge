@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import logging
 import uuid
 from collections import OrderedDict
@@ -15,6 +16,9 @@ from blinker import Signal
 from .asset import IAsset
 
 logger = logging.getLogger(__name__)
+
+SOURCE_FILE_SHA256_KEY = "source_file_sha256"
+SOURCE_FILE_SIZE_KEY = "source_file_size"
 
 if TYPE_CHECKING:
     from ..image.base_renderer import Renderer
@@ -81,6 +85,46 @@ class SourceAsset(IAsset):
 
     def clear_base_image_cache(self) -> None:
         self._base_image_cache.clear()
+
+    def set_source_file_fingerprint(self, data: bytes) -> None:
+        """
+        Records the SHA-256 and size of the file as it was on disk.
+
+        Importers that convert a file before embedding it (for example EPS
+        to PDF) call this with the original bytes, so the file on disk can
+        still be recognised although ``original_data`` holds the
+        converted data.
+        """
+        self.metadata[SOURCE_FILE_SHA256_KEY] = hashlib.sha256(
+            data
+        ).hexdigest()
+        self.metadata[SOURCE_FILE_SIZE_KEY] = len(data)
+
+    @property
+    def source_file_sha256(self) -> str:
+        """
+        The SHA-256 (hex) of the imported file as it was on disk. Falls
+        back to the embedded data, which is the file itself for every
+        source that was not converted, and for older projects.
+        """
+        digest = self.metadata.get(SOURCE_FILE_SHA256_KEY)
+        if isinstance(digest, str):
+            return digest
+        return hashlib.sha256(self.original_data).hexdigest()
+
+    @property
+    def source_file_size(self) -> int:
+        """The size in bytes of the imported file as it was on disk."""
+        size = self.metadata.get(SOURCE_FILE_SIZE_KEY)
+        if isinstance(size, int):
+            return size
+        return len(self.original_data)
+
+    def matches_source_file(self, data: bytes) -> bool:
+        """True if the bytes are those of the file this asset came from."""
+        if len(data) != self.source_file_size:
+            return False
+        return hashlib.sha256(data).hexdigest() == self.source_file_sha256
 
     @property
     def uid(self) -> str:

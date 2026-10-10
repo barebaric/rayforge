@@ -7,21 +7,27 @@ bits. Esta página explica cómo importar archivos y optimizarlos para obtener l
 
 ### Formatos vectoriales
 
-| Formato       | Extensión         | Método de importación     | Mejor para                            |
-| ------------- | ----------------- | ------------------------- | ------------------------------------- |
-| **SVG**       | `.svg`            | Vectores directos o trazo | Gráficos vectoriales, logos, diseños  |
-| **DXF**       | `.dxf`            | Vectores directos         | Planos CAD, diseños técnicos          |
-| **PDF**       | `.pdf`            | Vectores directos o trazo | Documentos con contenido vectorial    |
-| **LightBurn** | `.lbrn`, `.lbrn2` | Vectores directos         | Proyectos LightBurn                   |
-| **Ruida**     | `.rd`             | Vectores directos         | Archivos de trabajo controlador Ruida |
+| Formato         | Extensión         | Método de importación                            | Mejor para                            |
+| --------------- | ----------------- | ------------------------------------------------ | ------------------------------------- |
+| **SVG**         | `.svg`            | Vectores directos o trazo                        | Gráficos vectoriales, logos, diseños  |
+| **DXF**         | `.dxf`            | Vectores directos                                | Planos CAD, diseños técnicos          |
+| **PDF**         | `.pdf`            | Vectores directos o trazo                        | Documentos con contenido vectorial    |
+| **LightBurn**   | `.lbrn`, `.lbrn2` | Vectores directos                                | Proyectos LightBurn                   |
+| **Ruida**       | `.rd`             | Vectores directos                                | Archivos de trabajo controlador Ruida |
+| **Illustrator** | `.ai`             | Vectores directos o trazo                        | Logotipos de Illustrator              |
+| **EPS**         | `.eps`, `.ps`     | Vectores directos o trazo (requiere Ghostscript) | Logotipos, arte para impresión        |
+| **HPGL**        | `.plt`, `.hpgl`   | Vectores directos                                | Archivos de plóter y plóter de corte  |
 
 ### Formatos de mapa de bits
 
 | Formato  | Extensión       | Método de importación | Mejor para                             |
 | -------- | --------------- | --------------------- | -------------------------------------- |
-| **PNG**  | `.webp`         | Trazo a vectores      | Fotos, imágenes con transparencia      |
+| **PNG**  | `.png`          | Trazo a vectores      | Fotos, imágenes con transparencia      |
 | **JPEG** | `.jpg`, `.jpeg` | Trazo a vectores      | Fotos, imágenes de tono continuo       |
 | **BMP**  | `.bmp`          | Trazo a vectores      | Gráficos simples, capturas de pantalla |
+| **GIF**  | `.gif`          | Trazo a vectores      | Gráficos simples, animaciones          |
+| **TIFF** | `.tif`, `.tiff` | Trazo a vectores      | Escaneos, arte para impresión          |
+| **WebP** | `.webp`         | Trazo a vectores      | Imágenes web                           |
 
 <!-- prettier-ignore-start -->
 :::note[Importación de mapa de bits]
@@ -355,7 +361,19 @@ configuraciones láser ajustables.
 
 ---
 
-## Importación de imágenes de mapa de bits (PNG, JPG, BMP)
+## Importación de Illustrator y EPS
+
+Los archivos de Illustrator guardados con compatibilidad con PDF, lo predeterminado desde
+Illustrator 9, se importan igual que los archivos PDF, con la misma selección de capas y las mismas
+opciones de trazo.
+
+Los archivos EPS, PostScript y los de Illustrator más antiguos se convierten primero a PDF con
+Ghostscript. Instala Ghostscript si el diálogo de importación indica que falta. Si no puedes
+instalarlo, exporta el diseño como PDF o SVG desde el programa que lo creó.
+
+---
+
+## Importación de imágenes de mapa de bits (PNG, JPG, BMP, GIF, TIFF, WebP)
 
 Las imágenes de mapa de bits se **trazan** para crear trazados vectoriales utilizando el diálogo de
 importación.

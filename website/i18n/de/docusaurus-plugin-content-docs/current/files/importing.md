@@ -7,21 +7,27 @@ Rasterformate. Diese Seite erklärt, wie du Dateien importierst und für beste E
 
 ### Vektorformate
 
-| Format        | Erweiterung       | Importmethode                 | Am besten für                       |
-| ------------- | ----------------- | ----------------------------- | ----------------------------------- |
-| **SVG**       | `.svg`            | Direkte Vektoren oder Tracing | Vektorgrafiken, Logos, Designs      |
-| **DXF**       | `.dxf`            | Direkte Vektoren              | CAD-Zeichnungen, technische Designs |
-| **PDF**       | `.pdf`            | Direkte Vektoren oder Tracing | Dokumente mit Vektorinhalt          |
-| **LightBurn** | `.lbrn`, `.lbrn2` | Direkte Vektoren              | LightBurn-Projekte                  |
-| **Ruida**     | `.rd`             | Direkte Vektoren              | Ruida-Controller-Auftragsdateien    |
+| Format          | Erweiterung       | Importmethode                                        | Am besten für                        |
+| --------------- | ----------------- | ---------------------------------------------------- | ------------------------------------ |
+| **SVG**         | `.svg`            | Direkte Vektoren oder Tracing                        | Vektorgrafiken, Logos, Designs       |
+| **DXF**         | `.dxf`            | Direkte Vektoren                                     | CAD-Zeichnungen, technische Designs  |
+| **PDF**         | `.pdf`            | Direkte Vektoren oder Tracing                        | Dokumente mit Vektorinhalt           |
+| **LightBurn**   | `.lbrn`, `.lbrn2` | Direkte Vektoren                                     | LightBurn-Projekte                   |
+| **Ruida**       | `.rd`             | Direkte Vektoren                                     | Ruida-Controller-Auftragsdateien     |
+| **Illustrator** | `.ai`             | Direkte Vektoren oder Tracing                        | Logos aus Illustrator                |
+| **EPS**         | `.eps`, `.ps`     | Direkte Vektoren oder Tracing (benötigt Ghostscript) | Logos, Druckvorlagen                 |
+| **HPGL**        | `.plt`, `.hpgl`   | Direkte Vektoren                                     | Plotter- und Schneideplotter-Dateien |
 
 ### Rasterformate
 
 | Format   | Erweiterung     | Importmethode       | Am besten für                            |
 | -------- | --------------- | ------------------- | ---------------------------------------- |
-| **PNG**  | `.webp`         | Tracing zu Vektoren | Fotos, Bilder mit Transparenz            |
+| **PNG**  | `.png`          | Tracing zu Vektoren | Fotos, Bilder mit Transparenz            |
 | **JPEG** | `.jpg`, `.jpeg` | Tracing zu Vektoren | Fotos, Bilder mit kontinuierlichen Tönen |
 | **BMP**  | `.bmp`          | Tracing zu Vektoren | Einfache Grafiken, Screenshots           |
+| **GIF**  | `.gif`          | Tracing zu Vektoren | Einfache Grafiken, Animationen           |
+| **TIFF** | `.tif`, `.tiff` | Tracing zu Vektoren | Scans, Druckvorlagen                     |
+| **WebP** | `.webp`         | Tracing zu Vektoren | Webbilder                                |
 
 <!-- prettier-ignore-start -->
 :::note[Raster-Import]
@@ -357,7 +363,18 @@ farbcodierten Ebenen mit konfigurierbaren Laser-Einstellungen organisiert ist.
 
 ---
 
-## Rasterbild-Import (PNG, JPG, BMP)
+## Illustrator- und EPS-Import
+
+Illustrator-Dateien, die mit PDF-Kompatibilität gespeichert wurden (Standard seit Illustrator 9),
+werden genau wie PDF-Dateien importiert, mit derselben Ebenenauswahl und denselben Tracing-Optionen.
+
+EPS-, PostScript- und ältere Illustrator-Dateien werden zuerst mit Ghostscript in PDF umgewandelt.
+Installiere Ghostscript, wenn der Importdialog meldet, dass es fehlt. Wenn du es nicht installieren
+kannst, exportiere das Design im Ursprungsprogramm als PDF oder SVG.
+
+---
+
+## Rasterbild-Import (PNG, JPG, BMP, GIF, TIFF, WebP)
 
 Rasterbilder werden **traced**, um Vektorpfade über den Import-Dialog zu erstellen.
 

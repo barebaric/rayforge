@@ -10150,3 +10150,36 @@ msgstr "Bayer 4"
 #: rayforge/image/dither.py
 msgid "Bayer 8"
 msgstr "Bayer 8"
+
+#: rayforge/image/bitmap/importer.py
+#, python-brace-format
+msgid "Could not read the {format} image: {error}"
+msgstr "{format} छवि पढ़ी नहीं जा सकी: {error}"
+
+#: rayforge/image/postscript/importer.py
+msgid "Importing EPS and PostScript files requires Ghostscript, which was not found. Install Ghostscript and try again."
+msgstr "EPS और PostScript फ़ाइलें आयात करने के लिए Ghostscript ज़रूरी है, जो नहीं मिला. Ghostscript इंस्टॉल करें और फिर से कोशिश करें."
+
+#: rayforge/image/postscript/importer.py
+#, python-brace-format
+msgid "Ghostscript could not convert {filename}: {error}"
+msgstr "Ghostscript {filename} को परिवर्तित नहीं कर सका: {error}"
+
+#: rayforge/image/postscript/importer.py
+msgid "This Illustrator file was saved without PDF compatibility. Rayforge can only read it with Ghostscript, which was not found. Install Ghostscript, or save the file again in Illustrator with \"Create PDF Compatible File\" enabled."
+msgstr "यह Illustrator फ़ाइल PDF संगतता के बिना सहेजी गई थी. Rayforge इसे केवल Ghostscript से पढ़ सकता है, जो नहीं मिला. Ghostscript इंस्टॉल करें, या Illustrator में \"Create PDF Compatible File\" चालू करके फ़ाइल फिर से सहेजें."
+
+#: rayforge/image/hpgl/importer.py
+#, python-brace-format
+msgid "Some HPGL instructions are not supported and were skipped: {names}"
+msgstr "कुछ HPGL निर्देश समर्थित नहीं हैं और छोड़ दिए गए: {names}"
+
+#: rayforge/image/hpgl/importer.py
+#, python-brace-format
+msgid "{filename} contains no HPGL drawing commands."
+msgstr "{filename} में कोई HPGL ड्रॉइंग कमांड नहीं है."
+
+#: rayforge/image/hpgl/importer.py
+#, python-brace-format
+msgid "Pen {number}"
+msgstr "पेन {number}"

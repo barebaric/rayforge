@@ -13,11 +13,15 @@ from .base_importer import (
     ImporterFeature,
 )
 from .base_renderer import Renderer
+from .bitmap.importer import GifImporter, TiffImporter, WebpImporter
+from .bitmap.renderer import BITMAP_RENDERER
 from .bmp.importer import BmpImporter
 from .bmp.renderer import BMP_RENDERER
 from .dxf.exporter import GeometryDxfExporter
 from .dxf.importer import DxfImporter
 from .dxf.renderer import DXF_RENDERER
+from .hpgl.importer import HpglImporter
+from .hpgl.renderer import HPGL_RENDERER
 from .jpg.importer import JpgImporter
 from .jpg.renderer import JPG_RENDERER
 from .lightburn.importer import LightBurnImporter
@@ -28,6 +32,7 @@ from .pdf.importer import PdfImporter
 from .pdf.renderer import PDF_RENDERER
 from .png.importer import PngImporter
 from .png.renderer import PNG_RENDERER
+from .postscript.importer import AiImporter, EpsImporter
 from .procedural.renderer import PROCEDURAL_RENDERER
 from .registry import (
     exporter_registry,
@@ -224,8 +229,10 @@ def import_file(
 
 
 _RENDERERS = [
+    BITMAP_RENDERER,
     BMP_RENDERER,
     DXF_RENDERER,
+    HPGL_RENDERER,
     LIGHTBURN_RENDERER,
     PROCEDURAL_RENDERER,
     JPG_RENDERER,
@@ -247,10 +254,14 @@ def get_renderer_for_asset(asset_type: str) -> Renderer | None:
 
 
 __all__ = [
+    "AiImporter",
     "BmpImporter",
     "DxfImporter",
+    "EpsImporter",
     "GeometryDxfExporter",
     "GeometrySvgExporter",
+    "GifImporter",
+    "HpglImporter",
     "ImportManifest",
     "ImportPayload",
     "ImportResult",
@@ -263,6 +274,8 @@ __all__ = [
     "PngImporter",
     "RuidaImporter",
     "SvgImporter",
+    "TiffImporter",
+    "WebpImporter",
     "exporter_registry",
     "get_renderer_for_asset",
     "import_file",

@@ -31,7 +31,7 @@ We also have a [Discord](https://discord.gg/sTHNdTtpQJ).
 | **Multi-Layer Operations**   | Assign different operations (e.g., engrave then cut) to layers in your design.          |
 | **Stock Material System**    | Document-level stock with geometry, thickness, and material assignment.                 |
 | **Undo/Redo**                | Full undo/redo support across all document operations.                                  |
-| **Broad File Support**       | Import from SVG, DXF, PDF, JPEG, PNG, BMP, and Ruida (`.rd`). Export to SVG and DXF.    |
+| **Broad File Support**       | Import from SVG, DXF, PDF, Illustrator (`.ai`), EPS, HPGL (`.plt`), JPEG, PNG, BMP, GIF, TIFF, WebP, and Ruida (`.rd`). Export to SVG and DXF.    |
 | **Project Files (.ryp)**     | Compressed project format preserving all assets, layers, and configurations.            |
 
 ### Operations & Toolpaths
