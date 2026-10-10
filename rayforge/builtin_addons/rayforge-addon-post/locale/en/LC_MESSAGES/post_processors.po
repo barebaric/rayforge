@@ -283,3 +283,26 @@ msgstr "Tabs"
 #: post_processors/transformers/tabs_transformer.py
 msgid "Creates holding tabs by adding gaps or reducing power on cut paths"
 msgstr "Creates holding tabs by adding gaps or reducing power on cut paths"
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Choose Best Start Point"
+msgstr ""
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Enter closed paths at the vertex nearest the current position, hiding the seam of every loop."
+msgstr ""
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Prefer Corners"
+msgstr ""
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Only start closed paths at sharp corners, when the path has any (circles fall back to any vertex)."
+msgstr ""
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Toggle Choose Best Start Point"
+msgstr ""
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Toggle Prefer Corners"
+msgstr ""

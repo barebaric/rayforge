@@ -302,3 +302,26 @@ msgid "Creates holding tabs by adding gaps or reducing power on cut paths"
 msgstr ""
 "Crée des languettes de maintien en ajoutant des espaces ou en réduisant la "
 "puissance sur les parcours de coupe"
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Choose Best Start Point"
+msgstr "Choisir le meilleur point de départ"
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Enter closed paths at the vertex nearest the current position, hiding the seam of every loop."
+msgstr "Commencer les chemins fermés au sommet le plus proche de la position actuelle, en masquant la couture de chaque boucle."
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Prefer Corners"
+msgstr "Privilégier les coins"
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Only start closed paths at sharp corners, when the path has any (circles fall back to any vertex)."
+msgstr "Ne commencer les chemins fermés que sur des coins marqués, s'il y en a (les cercles retombent sur n'importe quel sommet)."
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Toggle Choose Best Start Point"
+msgstr "Basculer le choix du meilleur point de départ"
+
+#: rayforge/builtin_addons/rayforge-addon-post/post_processors/widgets/optimize_group.py
+msgid "Toggle Prefer Corners"
+msgstr "Basculer la préférence des coins"

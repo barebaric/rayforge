@@ -1030,3 +1030,72 @@ class TestMergeScanlines:
         assert restored.merge_scanlines is False
         assert restored.merge_max_gap_mm == 4.0
         assert restored.merge_tolerance == 0.1
+
+
+def _closed_loop(start, points):
+    """A closed MoveTo + LineTo loop returning to *start*."""
+    ops = Ops()
+    ops.move_to(*start)
+    for x, y in points:
+        ops.line_to(x, y)
+    ops.line_to(*start)
+    return ops
+
+
+def _loop_starts(ops):
+    return [
+        ops.endpoint(i)[:2]
+        for i in range(ops.len())
+        if ops.command_type(i) == CommandType.MOVE_TO
+    ]
+
+
+class TestCutPlannerOptions:
+    def test_serialization_defaults_off(self):
+        transformer = Optimize.from_dict({"name": "Optimize"})
+        assert transformer.best_start_point is False
+        assert transformer.prefer_corners is False
+
+    def test_serialization_roundtrip(self):
+        transformer = Optimize(
+            best_start_point=True, prefer_corners=True
+        )
+        restored = Optimize.from_dict(transformer.to_dict())
+        assert restored.best_start_point is True
+        assert restored.prefer_corners is True
+
+    def test_to_spec_passes_flags(self):
+        spec = Optimize(
+            best_start_point=True, prefer_corners=True
+        ).to_spec(None, None, None)
+        assert spec.best_start_point is True
+        assert spec.prefer_corners is True
+
+    def test_best_start_rotates_closed_path(self, mock_progress_context):
+        ops = _closed_loop((30, 5), [(32, 5), (32, 7), (30, 7)])
+        ops.extend(
+            _closed_loop(
+                (45, 5), [(30, 5), (25, 5), (25, 20), (45, 20)]
+            )
+        )
+        _apply(
+            Optimize(best_start_point=True),
+            ops,
+            mock_progress_context,
+        )
+        starts = _loop_starts(ops)
+        assert (30.0, 5.0) in starts
+        # the second loop is entered at the mid-edge vertex nearest the
+        # seed exit (30, 5), not at its drawn start (45, 5)
+        assert (45.0, 5.0) not in starts[1:]
+
+    def test_default_keeps_drawn_start(self, mock_progress_context):
+        ops = _closed_loop((30, 5), [(32, 5), (32, 7), (30, 7)])
+        ops.extend(
+            _closed_loop(
+                (45, 5), [(30, 5), (25, 5), (25, 20), (45, 20)]
+            )
+        )
+        _apply(Optimize(), ops, mock_progress_context)
+        starts = _loop_starts(ops)
+        assert starts[1] == (45.0, 5.0)

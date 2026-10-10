@@ -47,6 +47,33 @@ class OptimizeSettingsGroup(TransformerSettingsGroup):
             "notify::active", self._on_preserve_first_toggled
         )
 
+        self.best_start_row = Adw.SwitchRow(
+            title=_("Choose Best Start Point"),
+            subtitle=_(
+                "Enter closed paths at the vertex nearest the current "
+                "position, hiding the seam of every loop."
+            ),
+        )
+        self.best_start_row.set_active(transformer.best_start_point)
+        self.add(self.best_start_row)
+        self.best_start_row.connect(
+            "notify::active", self._on_best_start_toggled
+        )
+
+        self.prefer_corners_row = Adw.SwitchRow(
+            title=_("Prefer Corners"),
+            subtitle=_(
+                "Only start closed paths at sharp corners, when the "
+                "path has any (circles fall back to any vertex)."
+            ),
+        )
+        self.prefer_corners_row.set_active(transformer.prefer_corners)
+        self.prefer_corners_row.set_sensitive(transformer.best_start_point)
+        self.add(self.prefer_corners_row)
+        self.prefer_corners_row.connect(
+            "notify::active", self._on_prefer_corners_toggled
+        )
+
         self.merge_row = Adw.SwitchRow(
             title=_("Merge Scanlines"),
             subtitle=_(
@@ -92,6 +119,27 @@ class OptimizeSettingsGroup(TransformerSettingsGroup):
             key="preserve_first",
             value=row.get_active(),
             name=_("Toggle Preserve First Workpiece"),
+        )
+
+    def _on_best_start_toggled(
+        self, row: Adw.SwitchRow, _pspec: GObject.ParamSpec
+    ) -> None:
+        self.prefer_corners_row.set_sensitive(row.get_active())
+        self.param_changed.send(
+            self,
+            key="best_start_point",
+            value=row.get_active(),
+            name=_("Toggle Choose Best Start Point"),
+        )
+
+    def _on_prefer_corners_toggled(
+        self, row: Adw.SwitchRow, _pspec: GObject.ParamSpec
+    ) -> None:
+        self.param_changed.send(
+            self,
+            key="prefer_corners",
+            value=row.get_active(),
+            name=_("Toggle Prefer Corners"),
         )
 
     def _on_merge_toggled(
