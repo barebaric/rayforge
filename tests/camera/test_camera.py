@@ -489,3 +489,84 @@ def test_from_dict_naive_dates_become_aware():
     assert camera._alignment_date is not None
     assert camera._alignment_date.tzinfo is not None
     assert camera.alignment_valid is True
+
+
+def test_outside_view_defaults():
+    camera = Camera("Test Camera", "0")
+    assert camera.outside_view_enabled is False
+    assert camera.outside_view_margin_mm == 30.0
+    assert camera.outside_view_transparency == 0.65
+
+
+def test_outside_view_old_config_loads_with_defaults():
+    camera = Camera.from_dict({"name": "Old Camera", "device_id": "0"})
+    assert camera.outside_view_enabled is False
+    assert camera.outside_view_margin_mm == 30.0
+    assert camera.outside_view_transparency == 0.65
+    assert "outside_view_enabled" not in camera.extra
+
+
+def test_outside_view_round_trip():
+    camera = Camera("Test Camera", "0")
+    camera.outside_view_enabled = True
+    camera.outside_view_margin_mm = 42.5
+    camera.outside_view_transparency = 0.3
+
+    restored = Camera.from_json(camera.to_json())
+
+    assert restored.outside_view_enabled is True
+    assert restored.outside_view_margin_mm == 42.5
+    assert restored.outside_view_transparency == 0.3
+    assert not any(k.startswith("outside_view") for k in restored.extra)
+
+
+def test_outside_view_values_are_clamped():
+    camera = Camera("Test Camera", "0")
+    camera.outside_view_margin_mm = 150
+    assert camera.outside_view_margin_mm == 100.0
+    camera.outside_view_margin_mm = -5
+    assert camera.outside_view_margin_mm == 0.0
+    camera.outside_view_transparency = 1.5
+    assert camera.outside_view_transparency == 1.0
+    camera.outside_view_transparency = -0.5
+    assert camera.outside_view_transparency == 0.0
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), -float("inf")])
+def test_outside_view_rejects_nonfinite(value):
+    camera = Camera("Test Camera", "0")
+    with pytest.raises(ValueError):
+        camera.outside_view_margin_mm = value
+    with pytest.raises(ValueError):
+        camera.outside_view_transparency = value
+    assert camera.outside_view_margin_mm == 30.0
+    assert camera.outside_view_transparency == 0.65
+
+
+def test_outside_view_rejects_wrong_types():
+    camera = Camera("Test Camera", "0")
+    with pytest.raises(TypeError):
+        camera.outside_view_enabled = 1  # type: ignore[assignment]
+    with pytest.raises(TypeError):
+        camera.outside_view_margin_mm = "10"  # type: ignore[assignment]
+    with pytest.raises(TypeError):
+        camera.outside_view_transparency = None  # type: ignore[assignment]
+
+
+def test_outside_view_setters_emit_signals():
+    camera = Camera("Test Camera", "0")
+    changed = []
+    settings_changed = []
+    camera.changed.connect(changed.append, weak=False)
+    camera.settings_changed.connect(settings_changed.append, weak=False)
+
+    camera.outside_view_enabled = True
+    camera.outside_view_margin_mm = 10
+    camera.outside_view_transparency = 0.5
+    assert len(changed) == 3
+    assert len(settings_changed) == 3
+
+    camera.outside_view_enabled = True
+    camera.outside_view_margin_mm = 10.0
+    camera.outside_view_transparency = 0.5
+    assert len(changed) == 3
