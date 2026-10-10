@@ -190,6 +190,43 @@ de edición rápida junto al selector te permite ajustar los desplazamientos sin
 Las capas sin una asignación explícita de WCS usan el WCS activo global del menú desplegable de la
 barra de herramientas.
 
+## Iniciar desde y origen del trabajo
+
+De forma predeterminada, un trabajo se ejecuta exactamente donde está colocado en el lienzo. El
+ajuste **Iniciar desde** del panel de control (se guarda con el proyecto) te permite colocarlo en
+otro lugar:
+
+| Modo                      | Dónde se ejecuta el trabajo                                                         |
+| ------------------------- | ----------------------------------------------------------------------------------- |
+| **Coordenadas absolutas** | Tal como está en el lienzo (predeterminado)                                         |
+| **Origen de usuario**     | El origen del trabajo cae en el punto cero del WCS activo                           |
+| **Posición actual**       | El origen del trabajo cae donde está el cabezal láser al encuadrar o iniciar        |
+
+El selector **Origen del trabajo** que está al lado elige cuál de los nueve puntos del cuadro
+delimitador del trabajo (una esquina, el centro de un borde o el centro) se coloca en esa posición.
+El cuadro delimitador es el de los diseños que ves en el lienzo, sin sobrebarrido ni entradas.
+
+Cuando el modo no es Absoluto, el lienzo muestra un contorno azul discontinuo donde se ejecutará
+realmente el trabajo, con una marca en el origen del trabajo.
+
+Cómo funciona:
+
+- Todo el trabajo se desplaza como una sola pieza antes de convertirse en G-code. El G-code sigue
+  siendo G-code absoluto normal en el WCS activo: Rayforge no envía `G92` ni `G10` y no cambia tus
+  desplazamientos WCS.
+- El encuadre, la vista previa 3D y las comprobaciones previas usan el mismo trabajo desplazado. Si
+  el trabajo desplazado saliera del recorrido de la máquina o entrara en una zona prohibida, se
+  rechazan el envío y el encuadre.
+- **Origen de usuario** genera coordenadas relativas al cero del WCS. Un archivo G-code exportado
+  así sigue al WCS cuando lo pones a cero en otro lugar de la máquina, lo que lo convierte en la
+  opción adecuada para archivos que ejecutas desde una tarjeta SD o una memoria USB.
+- **Posición actual** requiere una máquina conectada e inactiva que informe su posición. Con la
+  alineación por puntero activada se usa el punto del puntero en lugar del rayo. Tras encuadrar, o
+  tras un trabajo terminado, el cabezal vuelve a la posición de inicio, de modo que encuadrar y
+  luego iniciar acaba en el mismo lugar. Un archivo exportado contiene la posición del cabezal en el
+  momento de la exportación.
+- Las capas que usan un módulo rotativo solo admiten coordenadas absolutas.
+
 ## Flujos de Trabajo Prácticos
 
 ### Flujo de Trabajo 1: Múltiples Posiciones de Fijación
