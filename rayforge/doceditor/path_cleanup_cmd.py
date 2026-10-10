@@ -6,12 +6,6 @@ from typing import TYPE_CHECKING
 from raygeo.geo import Geometry, Matrix
 
 from ..core.item import DocItem
-from ..core.path_cleanup import (
-    close_open_contours,
-    geometries_match,
-    join_open_contours,
-    remove_duplicate_contours,
-)
 from ..core.undo import ChangePropertyCommand, ListItemCommand
 from ..core.workpiece import WorkPiece
 from .split_cmd import ContourSplitStrategy
@@ -83,7 +77,10 @@ class PathCleanupCmd:
             The number of closed contours.
         """
         return self._apply(
-            workpieces, close_open_contours, tolerance_mm, _("Close paths")
+            workpieces,
+            Geometry.close_open_contours,
+            tolerance_mm,
+            _("Close paths"),
         )
 
     def join_paths(
@@ -96,7 +93,10 @@ class PathCleanupCmd:
             The number of joins made.
         """
         return self._apply(
-            workpieces, join_open_contours, tolerance_mm, _("Join paths")
+            workpieces,
+            Geometry.join_open_contours,
+            tolerance_mm,
+            _("Join paths"),
         )
 
     def delete_duplicates(
@@ -115,7 +115,7 @@ class PathCleanupCmd:
         duplicates = self._find_duplicate_workpieces(workpieces, tolerance_mm)
         remaining = [wp for wp in workpieces if wp not in duplicates]
         changes = self._compute_changes(
-            remaining, remove_duplicate_contours, tolerance_mm
+            remaining, Geometry.remove_duplicate_contours, tolerance_mm
         )
         if not duplicates and not changes:
             return 0
@@ -223,7 +223,7 @@ class PathCleanupCmd:
                 continue
             if any(
                 _rects_overlap(geo, other, tolerance_mm)
-                and geometries_match(geo, other, tolerance_mm)
+                and geo.matches(other, tolerance_mm)
                 for _wp, other in kept
             ):
                 duplicates.append(workpiece)

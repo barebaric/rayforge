@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 from raygeo.geo import Geometry
 
 from ..core.item import DocItem
-from ..core.path_cleanup import split_contours
 from ..core.undo import ListItemCommand
 from ..core.workpiece import WorkPiece
 
@@ -60,7 +59,7 @@ class ContourSplitStrategy(SplitStrategy):
     def calculate_fragments(self, workpiece: "WorkPiece") -> list[Geometry]:
         if not workpiece.boundaries or workpiece.boundaries.is_empty():
             return []
-        return split_contours(workpiece.boundaries)
+        return workpiece.boundaries.split_drawn_contours()
 
 
 class SplitCmd:
