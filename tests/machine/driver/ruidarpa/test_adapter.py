@@ -59,8 +59,11 @@ from rayforge.machine.driver.ruidarpa.rpa_adapter import (
     DEFAULT_MAX_CUT_SPEED_MMPM,
     DEFAULT_MAX_TRAVEL_SPEED_MMPM,
     DEFAULT_RPC_TIMEOUT_S,
+    PROTOCOL_TCP,
+    PROTOCOL_UDP,
     RuidaRPAAdapter,
     _merged_machine_pos,
+    _resolve_protocol,
     _unwrap_mm,
 )
 from rayforge.machine.driver.ruidarpa.rpa_direct_driver import (
@@ -133,6 +136,7 @@ async def adapter_pair(
     backend.start.return_value = True
     backend.is_connected = True
     backend.machine_status = {}
+    backend.get_version.return_value = "0.22.0"
     if tui_mode:
         # RpcRdDriver self-connects in its constructor; patch the class
         # so the connection loop builds our mock instead of a real one.
@@ -142,6 +146,9 @@ async def adapter_pair(
         backend.unregister_status_listener = Mock()
         backend.unregister_error_listener = Mock()
         backend.unregister_reply_listener = Mock()
+        # Spec exposure returns a truthy Mock for this property; default
+        # it to no-mismatch so connect-path tests stay quiet.
+        backend.version_mismatch = False
     adapter._backend = backend
 
     yield adapter, backend
@@ -788,11 +795,12 @@ class TestLiveBridgeRpc:
     @pytest.mark.parametrize(
         "adapter_pair", [RPC_MODE], ids=["rpc"], indirect=True
     )
-    async def test_home_z_uses_client_home_z(self, adapter_pair):
-        """home(Axis.Z) must call client.home_z only."""
+    async def test_home_z_uses_client_focus_z(self, adapter_pair):
+        """home(Axis.Z) must call client.focus_z only."""
         adapter, client = adapter_pair
         await adapter.home(Axis.Z)
-        client.home_z.assert_called_once()
+        client.focus_z.assert_called_once()
+        client.home_z.assert_not_called()
         client.home.assert_not_called()
         client.run.assert_not_called()
 
@@ -933,11 +941,12 @@ class TestLiveBridgeDirect:
     @pytest.mark.parametrize(
         "adapter_pair", [DIRECT_MODE], ids=["direct"], indirect=True
     )
-    async def test_home_z_calls_backend_home_z(self, adapter_pair):
-        """home(Axis.Z) must call backend.home_z only."""
+    async def test_home_z_calls_backend_focus_z(self, adapter_pair):
+        """home(Axis.Z) must call backend.focus_z only."""
         adapter, backend = adapter_pair
         await adapter.home(Axis.Z)
-        backend.home_z.assert_called_once()
+        backend.focus_z.assert_called_once()
+        backend.home_z.assert_not_called()
         backend.home.assert_not_called()
         backend.run.assert_not_called()
 
@@ -1617,6 +1626,75 @@ class TestStatusMmFix:
         ids=["direct", "rpc"],
         indirect=True,
     )
+    async def test_mainboard_version_event_is_logged(
+        self, adapter_pair, caplog
+    ):
+        """A MAINBOARD_VERSION event must log the decoded version string."""
+        caplog.set_level(logging.INFO, logger=rpa_adapter.logger.name)
+        adapter, _backend = adapter_pair
+        adapter._on_rpa_status(
+            {"MAINBOARD_VERSION": (22155418420, "RDC6442S")}
+        )
+        info_records = [r for r in caplog.records if r.levelno == logging.INFO]
+        assert len(info_records) == 1
+        assert "RPA controller info: mainboard_version=RDC6442S" in (
+            info_records[0].message
+        )
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_machine_features_event_is_logged(
+        self, adapter_pair, caplog
+    ):
+        """A MACHINE_FEATURES event must log the decoded feature string."""
+        caplog.set_level(logging.INFO, logger=rpa_adapter.logger.name)
+        adapter, _backend = adapter_pair
+        features = "MFeat:Focus, Z Return to Docking, Air Assist Mode: Mode 0"
+        adapter._on_rpa_status({"MACHINE_FEATURES": (9, features)})
+        info_records = [r for r in caplog.records if r.levelno == logging.INFO]
+        assert len(info_records) == 1
+        assert (
+            f"RPA controller info: machine_features={features}"
+            in info_records[0].message
+        )
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_capability_fields_accept_list_encoding(
+        self, adapter_pair, caplog
+    ):
+        """RPC mode may deliver the field tuple as a list."""
+        caplog.set_level(logging.INFO, logger=rpa_adapter.logger.name)
+        adapter, _backend = adapter_pair
+        adapter._on_rpa_status(
+            {
+                "MAINBOARD_VERSION": [22155418420, "RDC6442S"],
+                "MACHINE_FEATURES": [9, "MFeat:Focus"],
+            }
+        )
+        messages = [
+            r.message for r in caplog.records if r.levelno == logging.INFO
+        ]
+        assert any("mainboard_version=RDC6442S" in m for m in messages)
+        assert any("machine_features=MFeat:Focus" in m for m in messages)
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
     async def test_position_event_does_not_log_controller_info(
         self, adapter_pair, caplog
     ):
@@ -2033,6 +2111,57 @@ class TestConnectClearsServerHeadTail:
         await _run_connect_cycle(adapter, lambda: adapter._is_connected)
         backend.gluescript.set_head_script.assert_any_call([])
         backend.gluescript.set_tail_script.assert_any_call([])
+
+
+class TestVersionLogging:
+    """The ruida-pa version is logged once at connect time."""
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_connection_logs_ruidapa_version(self, adapter_pair, caplog):
+        """A successful connect must log the serving ruida-pa version."""
+        caplog.set_level(logging.INFO, logger=rpa_adapter.logger.name)
+        adapter, backend = adapter_pair
+        await _run_connect_cycle(adapter, lambda: adapter._is_connected)
+
+        assert "RPA controller info: ruidapa_version=0.22.0" in caplog.text
+        backend.get_version.assert_called()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair", [RPC_MODE], ids=["rpc"], indirect=True
+    )
+    async def test_tui_version_mismatch_warns(self, adapter_pair, caplog):
+        """A TUI server/client mismatch must log a one-time warning."""
+        caplog.set_level(logging.WARNING, logger=rpa_adapter.logger.name)
+        adapter, backend = adapter_pair
+        backend.version_mismatch = True
+        await _run_connect_cycle(adapter, lambda: adapter._is_connected)
+
+        assert "version mismatch" in caplog.text
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_connection_info_not_logged_when_disconnected(
+        self, adapter_pair, caplog
+    ):
+        """A failed connect must not log the ruida-pa version."""
+        caplog.set_level(logging.INFO, logger=rpa_adapter.logger.name)
+        adapter, backend = adapter_pair
+        backend.start.return_value = False
+        await _run_connect_cycle(adapter, lambda: backend.stop.called)
+
+        assert "ruidapa_version=" not in caplog.text
 
 
 class TestHealthPoll:
@@ -2918,6 +3047,137 @@ class TestConnectionMode:
             udp_host="192.168.1.10", timeout=9.5
         )
         assert accepted is True
+        await adapter.cleanup()
+        await isolated_machine.shutdown()
+
+
+class TestTcpProtocolSetup:
+    """The 'tcp_proto' var selects TCP over the network and resolves to
+    the backend protocol argument."""
+
+    def _setup_vars(self, isolated_context, isolated_machine):
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        return adapter.get_setup_vars()
+
+    def test_tcp_proto_var_is_bool_defaulting_to_udp(
+        self, isolated_context, isolated_machine
+    ):
+        """get_setup_vars must expose tcp_proto defaulting to False."""
+        varset = self._setup_vars(isolated_context, isolated_machine)
+        var = varset.get("tcp_proto")
+        assert var is not None
+        assert isinstance(var, BoolVar)
+        assert var.default is False
+
+    def test_tcp_proto_placed_immediately_after_connection(
+        self, isolated_context, isolated_machine
+    ):
+        """tcp_proto must sit directly after the connection choice."""
+        varset = self._setup_vars(isolated_context, isolated_machine)
+        keys = [var.key for var in varset]
+        assert keys.index("tcp_proto") == keys.index("connection") + 1
+
+    def test_tcp_proto_visible_in_network_and_auto(
+        self, isolated_context, isolated_machine
+    ):
+        """The TCP toggle hides in USB mode."""
+        varset = self._setup_vars(isolated_context, isolated_machine)
+        var = varset.get("tcp_proto")
+        assert var is not None
+        assert var.is_visible({"connection": CONNECTION_AUTO}) is True
+        assert var.is_visible({"connection": CONNECTION_NETWORK}) is True
+        assert var.is_visible({"connection": CONNECTION_USB}) is False
+
+    def test_resolve_protocol_tcp_for_network_and_auto(self):
+        """tcp_proto=True resolves to TCP in network and auto modes."""
+        assert _resolve_protocol({"tcp_proto": True}) == PROTOCOL_TCP
+        assert (
+            _resolve_protocol(
+                {
+                    "tcp_proto": True,
+                    "connection": CONNECTION_NETWORK,
+                }
+            )
+            == PROTOCOL_TCP
+        )
+        assert (
+            _resolve_protocol(
+                {"tcp_proto": True, "connection": CONNECTION_AUTO}
+            )
+            == PROTOCOL_TCP
+        )
+
+    def test_resolve_protocol_udp_by_default(self):
+        """Missing or disabled tcp_proto resolves to UDP."""
+        assert _resolve_protocol({}) == PROTOCOL_UDP
+        assert _resolve_protocol({"tcp_proto": False}) == PROTOCOL_UDP
+
+    def test_resolve_protocol_udp_in_usb_mode(self):
+        """USB mode has no network protocol, so tcp_proto is ignored."""
+        assert (
+            _resolve_protocol(
+                {"tcp_proto": True, "connection": CONNECTION_USB}
+            )
+            == PROTOCOL_UDP
+        )
+
+    @pytest.mark.asyncio
+    async def test_setup_stores_resolved_protocol(
+        self, isolated_context, isolated_machine
+    ):
+        """setup() must resolve and store the protocol from tcp_proto."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        adapter.setup(udp_host="192.168.1.10", tcp_proto=True)
+        assert adapter._protocol == PROTOCOL_TCP
+        await adapter.cleanup()
+        await isolated_machine.shutdown()
+
+    @pytest.mark.asyncio
+    async def test_update_settings_tcp_proto_change_requests_rebuild(
+        self, isolated_context, isolated_machine
+    ):
+        """Toggling tcp_proto must request a reconnect despite a same URI."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        adapter.setup(udp_host="192.168.1.10", timeout=1.0)
+        old_uri = adapter.resource_uri
+
+        accepted = adapter.update_settings(
+            udp_host="192.168.1.10", timeout=1.0, tcp_proto=True
+        )
+
+        assert accepted is False
+        assert adapter._protocol == PROTOCOL_TCP
+        assert adapter.resource_uri == old_uri
+        await adapter.cleanup()
+        await isolated_machine.shutdown()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "tui_mode", [DIRECT_MODE, RPC_MODE], ids=["direct", "rpc"]
+    )
+    async def test_connection_loop_passes_protocol(
+        self, isolated_context, isolated_machine, monkeypatch, tui_mode
+    ):
+        """The connect loop must forward the resolved protocol to start()."""
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        adapter.setup(udp_host="127.0.0.1", tui=tui_mode, tcp_proto=True)
+
+        backend_cls = RpcRdDriver if tui_mode else RpaDirectDriver
+        backend = Mock(spec=backend_cls)
+        backend.start.return_value = True
+        backend.is_connected = True
+        if tui_mode:
+            monkeypatch.setattr(
+                rpa_adapter, "RpcRdDriver", lambda **kw: backend
+            )
+        adapter._backend = backend
+
+        await _run_connect_cycle(adapter, lambda: backend.start.called)
+
+        backend.start.assert_called_once_with(
+            "127.0.0.1", None, None, PROTOCOL_TCP
+        )
+
         await adapter.cleanup()
         await isolated_machine.shutdown()
 
