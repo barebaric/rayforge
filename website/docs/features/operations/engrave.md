@@ -287,6 +287,20 @@ at least a few laser spot widths.
 
 Use invert for lithophanes (light areas should be thin) or embossing (raised areas).
 
+### Image Adjustments
+
+The **Image Adjustments** section corrects the photo before it is converted, so you no longer need
+to prepare it in an image editor. It applies to the Variable Power, Dither and Multiple Depths
+modes; the default values leave the image unchanged.
+
+- **Brightness** and **Contrast** (-100 to 100) shift and spread the tones around mid-gray
+- **Gamma** above 1 lightens the midtones, below 1 darkens them
+- **Sharpen** (unsharp mask, in percent) and **Sharpen Radius** bring out edges and fine detail
+
+The adjustments are applied before Invert and the brightness range, and Auto Levels takes them into
+account. The **Processed Image** section shows the first image on the layer exactly as it will be
+engraved (dark areas are engraved), and **Save Processed Bitmap…** writes that image to a PNG file.
+
 ### Scan Pattern
 
 #### Line Interval

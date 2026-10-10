@@ -826,3 +826,87 @@ msgstr "Halbton-Winkel"
 #: laser_essentials/steps/raster_step.py
 msgid "Rotation of the halftone dot grid"
 msgstr "Drehung des Halbton-Punktrasters"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Brightness"
+msgstr "Helligkeit"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Lighten or darken the image before engraving"
+msgstr "Bild vor dem Gravieren aufhellen oder abdunkeln"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Contrast"
+msgstr "Kontrast"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Spread or compress the tones around mid-gray"
+msgstr "Tonwerte um das mittlere Grau spreizen oder stauchen"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Gamma"
+msgstr "Gamma"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Values above 1 lighten the midtones, values below 1 darken them"
+msgstr "Werte über 1 hellen die Mitteltöne auf, Werte unter 1 dunkeln sie ab"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Sharpen"
+msgstr "Schärfen"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Strength of the unsharp mask that enhances edges before engraving"
+msgstr "Stärke der Unscharfmaskierung, die Kanten vor dem Gravieren betont"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Sharpen Radius"
+msgstr "Schärferadius"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Size of the details that get sharpened"
+msgstr "Größe der Details, die geschärft werden"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Image Adjustments"
+msgstr "Bildanpassungen"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Tone and sharpness corrections applied to the image before engraving."
+msgstr "Ton- und Schärfekorrekturen, die vor dem Gravieren auf das Bild angewendet werden."
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Processed Image"
+msgstr "Verarbeitetes Bild"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "The bitmap as it will be engraved, for the first image on this layer. Dark areas are engraved."
+msgstr "Die Bitmap, wie sie graviert wird, für das erste Bild auf dieser Ebene. Dunkle Bereiche werden graviert."
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Save Processed Bitmap…"
+msgstr "Verarbeitete Bitmap speichern…"
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Save Processed Bitmap"
+msgstr "Verarbeitete Bitmap speichern"
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "No image on this layer."
+msgstr "Kein Bild auf dieser Ebene."
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Updating preview…"
+msgstr "Vorschau wird aktualisiert…"
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Nothing to engrave."
+msgstr "Nichts zu gravieren."
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "PNG images"
+msgstr "PNG-Bilder"
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Could not save the processed bitmap."
+msgstr "Die verarbeitete Bitmap konnte nicht gespeichert werden."

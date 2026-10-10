@@ -27,6 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   clustered-dot Newsprint screen and a round-dot Halftone screen with
   adjustable cell size and angle. LightBurn imports keep the image
   layer's dither mode (#514)
+- Engrave: image adjustments before engraving. Brightness, Contrast,
+  Gamma and Sharpen (unsharp mask with a radius in mm) correct the
+  photo for the Variable Power, Dither and Multiple Depths modes, and
+  a Processed Image preview shows the bitmap as it will be engraved,
+  with a button to save it as PNG (#515)
 - Sketcher: boolean operations. Union, Difference, Intersection and
   Exclude bake the selected closed regions into multi-ring polygons
   (outer contours counter-clockwise, hole contours clockwise), so

@@ -26,6 +26,11 @@ from raygeo.ops.part import Part
 from raygeo.ops.types import RasterMode
 
 from ...core.vectorization_spec import TraceSpec
+from ...image.adjust import (
+    ImageAdjustments,
+    adjust_tone,
+    apply_image_adjustments,
+)
 from ...image.dither import (
     DEFAULT_HALFTONE_ANGLE,
     DEFAULT_HALFTONE_CELL_MM,
@@ -305,6 +310,7 @@ def preprocess_raster_image(
     dither_serpentine: bool = False,
     halftone_cell_mm: float = DEFAULT_HALFTONE_CELL_MM,
     halftone_angle: float = DEFAULT_HALFTONE_ANGLE,
+    adjustments: ImageAdjustments | None = None,
 ) -> tuple[np.ndarray | None, np.ndarray | None]:
     """Convert a Cairo surface into an image array for a raster assembler.
 
@@ -341,6 +347,9 @@ def preprocess_raster_image(
             the error-diffusion algorithms.
         halftone_cell_mm: Dot spacing of the halftone screen in mm.
         halftone_angle: Halftone screen angle in degrees.
+        adjustments: Sharpen and tone adjustments, applied to the
+            grayscale image before inversion and levels (grayscale
+            and dither modes).
 
     Returns:
         ``(image, alpha)`` where *image* is a 2-D ``uint8`` array
@@ -348,11 +357,11 @@ def preprocess_raster_image(
         ``float32`` alpha array (grayscale modes) or ``None``
         (dither / constant-power modes).
     """
+    pixels_per_mm = (pixels_per_mm_x, pixels_per_mm_y or pixels_per_mm_x)
     if mode in (DepthMode.MULTI_PASS, DepthMode.POWER_MODULATION):
-        gray_image, alpha = surface_to_grayscale(surface)
-        if invert:
-            alpha_mask = alpha > 0
-            gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
+        gray_image, alpha = _adjusted_grayscale(
+            surface, invert, adjustments, pixels_per_mm
+        )
         gray_image = _apply_raster_levels(
             gray_image,
             alpha,
@@ -369,10 +378,9 @@ def preprocess_raster_image(
             round(laser_spot_x_mm * pixels_per_mm_x),
         )
         algo = dither_algorithm or DitherAlgorithm.FLOYD_STEINBERG
-        gray_image, alpha = surface_to_grayscale(surface)
-        if invert:
-            alpha_mask = alpha > 0
-            gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
+        gray_image, alpha = _adjusted_grayscale(
+            surface, invert, adjustments, pixels_per_mm
+        )
         gray_image = _apply_raster_levels(
             gray_image,
             alpha,
@@ -388,10 +396,7 @@ def preprocess_raster_image(
             serpentine=dither_serpentine,
             halftone_cell_mm=halftone_cell_mm,
             halftone_angle=halftone_angle,
-            pixels_per_mm=(
-                pixels_per_mm_x,
-                pixels_per_mm_y or pixels_per_mm_x,
-            ),
+            pixels_per_mm=pixels_per_mm,
         )
         return image, None
 
@@ -404,6 +409,24 @@ def preprocess_raster_image(
         return image, None
 
     return None, None
+
+
+def _adjusted_grayscale(
+    surface: cairo.ImageSurface,
+    invert: bool,
+    adjustments: ImageAdjustments | None,
+    pixels_per_mm: tuple[float, float],
+) -> tuple[np.ndarray, np.ndarray]:
+    """Grayscale and alpha of the surface, adjusted, then inverted."""
+    gray_image, alpha = surface_to_grayscale(surface)
+    if adjustments is not None and not adjustments.is_neutral:
+        gray_image = apply_image_adjustments(
+            gray_image, adjustments, pixels_per_mm=pixels_per_mm, alpha=alpha
+        )
+    if invert:
+        alpha_mask = alpha > 0
+        gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
+    return gray_image, alpha
 
 
 def _apply_raster_levels(
@@ -438,6 +461,7 @@ def compute_raster_auto_levels(
     *,
     invert: bool = False,
     max_preview_pixels: int = 512,
+    adjustments: ImageAdjustments | None = None,
 ) -> tuple[int, int] | None:
     """Compute auto-levels from a low-resolution preview render.
 
@@ -455,6 +479,8 @@ def compute_raster_auto_levels(
         invert: If True, invert the grayscale before computing
             levels.
         max_preview_pixels: Maximum preview dimension in pixels.
+        adjustments: Image adjustments of the step; their tone part
+            (brightness, contrast, gamma) is applied to the preview.
 
     Returns:
         ``(black_point, white_point)`` tuple, or ``None`` if the
@@ -477,6 +503,9 @@ def compute_raster_auto_levels(
         return None
 
     gray_image, alpha = surface_to_grayscale(surface)
+
+    if adjustments is not None:
+        gray_image = adjust_tone(gray_image, adjustments)
 
     if invert:
         alpha_mask = alpha > 0

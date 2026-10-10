@@ -12,6 +12,7 @@ from rayforge.core.source_asset import SourceAsset
 from rayforge.core.source_asset_segment import SourceAssetSegment
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.core.workpiece import WorkPiece
+from rayforge.image.adjust import ImageAdjustments
 from rayforge.image.dither import DitherAlgorithm
 from rayforge.pipeline.stage.assembler_helpers import (
     DepthMode,
@@ -381,6 +382,75 @@ class TestPreprocessRasterImage:
         assert square is not None and squashed is not None
         assert not np.array_equal(square, squashed)
 
+    def test_adjustments_darken_the_dither(self):
+        surface = self._gradient_surface()
+        kwargs = {
+            "mode": DepthMode.DITHER,
+            "auto_levels": False,
+            "dither_algorithm": DitherAlgorithm.STUCKI,
+            "laser_spot_x_mm": 0.1,
+            "pixels_per_mm_x": 10.0,
+        }
+        plain, _ = preprocess_raster_image(surface, **kwargs)
+        darker, _ = preprocess_raster_image(
+            surface,
+            adjustments=ImageAdjustments(brightness=-30),
+            **kwargs,
+        )
+
+        assert plain is not None and darker is not None
+        assert darker.sum() > plain.sum()
+
+    @pytest.mark.parametrize(
+        "mode", [DepthMode.POWER_MODULATION, DepthMode.MULTI_PASS]
+    )
+    def test_adjustments_apply_to_grayscale_modes(self, mode):
+        surface = self._gradient_surface()
+        plain, _ = preprocess_raster_image(
+            surface, mode=mode, auto_levels=False
+        )
+        lighter, _ = preprocess_raster_image(
+            surface,
+            mode=mode,
+            auto_levels=False,
+            adjustments=ImageAdjustments(gamma=2.0),
+        )
+
+        assert plain is not None and lighter is not None
+        assert lighter.astype(int).sum() > plain.astype(int).sum()
+
+    def test_adjustments_come_before_invert(self):
+        """Brightening the photo must mean less engraving, also when
+        the step engraves the inverted image."""
+        surface = self._gradient_surface()
+        kwargs = {
+            "mode": DepthMode.POWER_MODULATION,
+            "auto_levels": False,
+            "invert": True,
+        }
+        plain, _ = preprocess_raster_image(surface, **kwargs)
+        brighter, _ = preprocess_raster_image(
+            surface, adjustments=ImageAdjustments(brightness=20), **kwargs
+        )
+
+        assert plain is not None and brighter is not None
+        assert brighter.astype(int).sum() < plain.astype(int).sum()
+
+    def test_adjustments_ignored_for_constant_power(self):
+        surface = self._gradient_surface()
+        plain, _ = preprocess_raster_image(
+            surface, mode=DepthMode.CONSTANT_POWER, threshold=128
+        )
+        adjusted, _ = preprocess_raster_image(
+            surface,
+            mode=DepthMode.CONSTANT_POWER,
+            threshold=128,
+            adjustments=ImageAdjustments(brightness=-50),
+        )
+
+        assert plain is not None and adjusted is not None
+        np.testing.assert_array_equal(plain, adjusted)
+
     def test_mask_scan_returns_binary_no_alpha(self):
         surface = self._black_surface()
         image, alpha = preprocess_raster_image(
@@ -533,3 +603,28 @@ class TestComputeRasterAutoLevels:
         call_args = mock_wp.render_to_pixels.call_args
         assert call_args[0][0] <= 50
         assert call_args[0][1] <= 50
+
+    def test_tone_adjustments_shape_the_levels(self):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 20, 10)
+        ctx = cairo.Context(surface)
+        ctx.set_source_rgb(0.3, 0.3, 0.3)
+        ctx.rectangle(0, 0, 10, 10)
+        ctx.fill()
+        ctx.set_source_rgb(0.6, 0.6, 0.6)
+        ctx.rectangle(10, 0, 10, 10)
+        ctx.fill()
+
+        mock_wp = MagicMock()
+        mock_wp.size = (20.0, 10.0)
+        mock_wp.render_to_pixels.return_value = surface
+
+        plain = compute_raster_auto_levels(mock_wp, (1.0, 1.0))
+        brighter = compute_raster_auto_levels(
+            mock_wp,
+            (1.0, 1.0),
+            adjustments=ImageAdjustments(brightness=20),
+        )
+
+        assert plain is not None and brighter is not None
+        assert brighter[0] > plain[0]
+        assert brighter[1] > plain[1]

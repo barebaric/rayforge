@@ -286,6 +286,20 @@ e **Ângulo do meio-tom**; use um tamanho de célula de pelo menos algumas largu
 
 Use inverter para litofanias (áreas claras devem ser finas) ou embossing (áreas elevadas).
 
+### Ajustes de imagem
+
+A seção **Ajustes de imagem** corrige a foto antes da conversão, então não é mais preciso prepará-la
+num editor de imagens. Ela vale para os modos Potência Variável, Pontilhado e Múltiplas
+Profundidades; os valores padrão deixam a imagem inalterada.
+
+- **Brilho** e **Contraste** (-100 a 100) deslocam e expandem os tons em torno do cinza médio
+- **Gama** acima de 1 clareia os tons médios, abaixo de 1 os escurece
+- **Nitidez** (máscara de nitidez, em porcentagem) e **Raio de nitidez** realçam bordas e detalhes finos
+
+Os ajustes são aplicados antes de Inverter e da faixa de brilho, e os Níveis Automáticos os levam em
+conta. A seção **Imagem processada** mostra a primeira imagem da camada exatamente como será gravada
+(as áreas escuras são gravadas), e **Salvar bitmap processado…** grava essa imagem num arquivo PNG.
+
 ### Padrão de Varredura
 
 #### Intervalo de Linha

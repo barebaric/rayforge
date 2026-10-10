@@ -808,3 +808,87 @@ msgstr "हाफ़टोन कोण"
 #: laser_essentials/steps/raster_step.py
 msgid "Rotation of the halftone dot grid"
 msgstr "हाफ़टोन बिंदु ग्रिड का घुमाव"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Brightness"
+msgstr "चमक"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Lighten or darken the image before engraving"
+msgstr "उत्कीर्णन से पहले छवि को हल्का या गहरा करें"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Contrast"
+msgstr "कंट्रास्ट"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Spread or compress the tones around mid-gray"
+msgstr "मध्य-धूसर के आसपास टोन को फैलाएँ या संकुचित करें"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Gamma"
+msgstr "गामा"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Values above 1 lighten the midtones, values below 1 darken them"
+msgstr "1 से अधिक मान मध्य टोन को हल्का करते हैं, 1 से कम मान उन्हें गहरा करते हैं"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Sharpen"
+msgstr "तीक्ष्णता"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Strength of the unsharp mask that enhances edges before engraving"
+msgstr "अनशार्प मास्क की तीव्रता, जो उत्कीर्णन से पहले किनारों को उभारता है"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Sharpen Radius"
+msgstr "तीक्ष्णता त्रिज्या"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Size of the details that get sharpened"
+msgstr "तीक्ष्ण किए जाने वाले विवरणों का आकार"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Image Adjustments"
+msgstr "छवि समायोजन"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Tone and sharpness corrections applied to the image before engraving."
+msgstr "उत्कीर्णन से पहले छवि पर लागू टोन और तीक्ष्णता सुधार."
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Processed Image"
+msgstr "संसाधित छवि"
+
+#: laser_essentials/widgets/raster_page.py
+msgid "The bitmap as it will be engraved, for the first image on this layer. Dark areas are engraved."
+msgstr "इस परत की पहली छवि का बिटमैप, जैसा वह उत्कीर्ण होगा. गहरे क्षेत्र उत्कीर्ण होते हैं."
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Save Processed Bitmap…"
+msgstr "संसाधित बिटमैप सहेजें…"
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Save Processed Bitmap"
+msgstr "संसाधित बिटमैप सहेजें"
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "No image on this layer."
+msgstr "इस परत पर कोई छवि नहीं है."
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Updating preview…"
+msgstr "पूर्वावलोकन अपडेट हो रहा है…"
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Nothing to engrave."
+msgstr "उत्कीर्ण करने के लिए कुछ नहीं है."
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "PNG images"
+msgstr "PNG छवियाँ"
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Could not save the processed bitmap."
+msgstr "संसाधित बिटमैप सहेजा नहीं जा सका."

@@ -287,6 +287,21 @@ punto láser.
 
 Usa invertir para litofanías (las áreas claras deben ser delgadas) o repujado (áreas elevadas).
 
+### Ajustes de imagen
+
+La sección **Ajustes de imagen** corrige la foto antes de convertirla, así que ya no hace falta
+prepararla en un editor de imágenes. Se aplica a los modos Potencia Variable, Trama y Múltiples
+Profundidades; los valores predeterminados dejan la imagen sin cambios.
+
+- **Brillo** y **Contraste** (-100 a 100) desplazan y expanden los tonos alrededor del gris medio
+- **Gamma** mayor que 1 aclara los tonos medios y menor que 1 los oscurece
+- **Enfocar** (máscara de enfoque, en porcentaje) y **Radio de enfoque** realzan los bordes y los detalles finos
+
+Los ajustes se aplican antes de Invertir y del rango de brillo, y los Niveles Automáticos los tienen
+en cuenta. La sección **Imagen procesada** muestra la primera imagen de la capa tal como se grabará
+(las zonas oscuras se graban), y **Guardar mapa de bits procesado…** guarda esa imagen en un archivo
+PNG.
+
 ### Patrón de Escaneo
 
 #### Intervalo de Línea

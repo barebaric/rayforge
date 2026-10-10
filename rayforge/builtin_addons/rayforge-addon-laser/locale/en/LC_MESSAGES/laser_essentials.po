@@ -794,3 +794,87 @@ msgstr ""
 #: laser_essentials/steps/raster_step.py
 msgid "Rotation of the halftone dot grid"
 msgstr ""
+
+#: laser_essentials/steps/raster_step.py
+msgid "Brightness"
+msgstr ""
+
+#: laser_essentials/steps/raster_step.py
+msgid "Lighten or darken the image before engraving"
+msgstr ""
+
+#: laser_essentials/steps/raster_step.py
+msgid "Contrast"
+msgstr ""
+
+#: laser_essentials/steps/raster_step.py
+msgid "Spread or compress the tones around mid-gray"
+msgstr ""
+
+#: laser_essentials/steps/raster_step.py
+msgid "Gamma"
+msgstr ""
+
+#: laser_essentials/steps/raster_step.py
+msgid "Values above 1 lighten the midtones, values below 1 darken them"
+msgstr ""
+
+#: laser_essentials/steps/raster_step.py
+msgid "Sharpen"
+msgstr ""
+
+#: laser_essentials/steps/raster_step.py
+msgid "Strength of the unsharp mask that enhances edges before engraving"
+msgstr ""
+
+#: laser_essentials/steps/raster_step.py
+msgid "Sharpen Radius"
+msgstr ""
+
+#: laser_essentials/steps/raster_step.py
+msgid "Size of the details that get sharpened"
+msgstr ""
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Image Adjustments"
+msgstr ""
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Tone and sharpness corrections applied to the image before engraving."
+msgstr ""
+
+#: laser_essentials/widgets/raster_page.py
+msgid "Processed Image"
+msgstr ""
+
+#: laser_essentials/widgets/raster_page.py
+msgid "The bitmap as it will be engraved, for the first image on this layer. Dark areas are engraved."
+msgstr ""
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Save Processed Bitmap…"
+msgstr ""
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Save Processed Bitmap"
+msgstr ""
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "No image on this layer."
+msgstr ""
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Updating preview…"
+msgstr ""
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Nothing to engrave."
+msgstr ""
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "PNG images"
+msgstr ""
+
+#: laser_essentials/widgets/processed_preview.py
+msgid "Could not save the processed bitmap."
+msgstr ""
