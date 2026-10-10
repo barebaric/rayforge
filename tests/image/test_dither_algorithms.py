@@ -6,18 +6,13 @@ import numpy as np
 import pytest
 from raygeo.image.dither import (
     apply_floyd_steinberg_dither,
+    apply_halftone_dither,
     apply_minimum_run_length,
 )
+from raygeo.image.srgb import srgb_to_linear
 from scipy import ndimage
 
-from rayforge.image.dither import (
-    ERROR_DIFFUSION_KERNELS,
-    DitherAlgorithm,
-    apply_error_diffusion,
-    apply_halftone,
-    grayscale_to_dithered_array,
-    srgb_to_linear,
-)
+from rayforge.image.dither import DitherAlgorithm, grayscale_to_dithered_array
 
 ERROR_DIFFUSION = [
     DitherAlgorithm.FLOYD_STEINBERG,
@@ -43,36 +38,9 @@ NEW_ALGORITHMS = [
 ]
 
 
-def _reference_diffusion(values, kernel, serpentine):
-    """Straightforward per-pixel error diffusion used as an oracle."""
-    divisor, taps = kernel
-    work = values.astype(np.float64).copy()
-    height, width = work.shape
-    out = np.zeros((height, width), dtype=np.uint8)
-    for y in range(height):
-        reverse = serpentine and y % 2 == 1
-        xs = range(width - 1, -1, -1) if reverse else range(width)
-        for x in xs:
-            old = work[y, x]
-            new = 0.0 if old < 0.5 else 1.0
-            out[y, x] = 1 if new == 0.0 else 0
-            err = old - new
-            for dx, dy, weight in taps:
-                tx = x - dx if reverse else x + dx
-                ty = y + dy
-                if 0 <= tx < width and ty < height:
-                    work[ty, tx] += err * weight / divisor
-    return out
-
-
 def _label(image: np.ndarray) -> tuple[np.ndarray, int]:
     """Connected dots of a binary image and their count."""
     return cast(tuple[np.ndarray, int], ndimage.label(image))
-
-
-def _dyadic_image(rng, shape):
-    """Values k/16 keep every diffused error exactly representable."""
-    return rng.integers(0, 17, shape).astype(np.float64) / 16.0
 
 
 class TestAlgorithmCatalogue:
@@ -94,74 +62,6 @@ class TestAlgorithmCatalogue:
     def test_error_diffusion_flag(self):
         for algo in DitherAlgorithm:
             assert algo.is_error_diffusion == (algo in ERROR_DIFFUSION)
-
-    @pytest.mark.parametrize("algo", ERROR_DIFFUSION)
-    def test_kernel_weights_sum_to_divisor(self, algo):
-        divisor, taps = ERROR_DIFFUSION_KERNELS[algo]
-        total = sum(weight for _dx, _dy, weight in taps)
-        if algo is DitherAlgorithm.ATKINSON:
-            assert total == 6 and divisor == 8
-        else:
-            assert total == divisor
-
-    @pytest.mark.parametrize("algo", ERROR_DIFFUSION)
-    def test_kernels_only_push_error_forward(self, algo):
-        _divisor, taps = ERROR_DIFFUSION_KERNELS[algo]
-        for dx, dy, _weight in taps:
-            assert dy > 0 or (dy == 0 and dx > 0)
-
-    def test_stucki_kernel(self):
-        divisor, taps = ERROR_DIFFUSION_KERNELS[DitherAlgorithm.STUCKI]
-        assert divisor == 42
-        assert sorted(taps) == sorted(
-            [
-                (1, 0, 8),
-                (2, 0, 4),
-                (-2, 1, 2),
-                (-1, 1, 4),
-                (0, 1, 8),
-                (1, 1, 4),
-                (2, 1, 2),
-                (-2, 2, 1),
-                (-1, 2, 2),
-                (0, 2, 4),
-                (1, 2, 2),
-                (2, 2, 1),
-            ]
-        )
-
-
-class TestErrorDiffusionCore:
-    @pytest.mark.parametrize("algo", ERROR_DIFFUSION)
-    @pytest.mark.parametrize("serpentine", [False, True])
-    def test_matches_reference_implementation(self, algo, serpentine):
-        rng = np.random.default_rng(7)
-        kernel = ERROR_DIFFUSION_KERNELS[algo]
-        for shape in [(1, 1), (1, 6), (5, 1), (4, 6), (6, 5)]:
-            values = _dyadic_image(rng, shape)
-            expected = _reference_diffusion(values, kernel, serpentine)
-            result = apply_error_diffusion(values, kernel, serpentine)
-            np.testing.assert_array_equal(result, expected)
-
-    def test_serpentine_reverses_odd_rows(self):
-        kernel = ERROR_DIFFUSION_KERNELS[DitherAlgorithm.SIERRA_LITE]
-        values = np.tile(np.linspace(0.0, 1.0, 8), (4, 1))
-        plain = apply_error_diffusion(values, kernel, False)
-        serpentine = apply_error_diffusion(values, kernel, True)
-        np.testing.assert_array_equal(plain[:2], serpentine[:2])
-        assert not np.array_equal(plain, serpentine)
-
-    def test_does_not_modify_input(self):
-        kernel = ERROR_DIFFUSION_KERNELS[DitherAlgorithm.STUCKI]
-        values = np.full((5, 5), 0.3)
-        original = values.copy()
-        apply_error_diffusion(values, kernel, True)
-        np.testing.assert_array_equal(values, original)
-
-    def test_empty_image(self):
-        kernel = ERROR_DIFFUSION_KERNELS[DitherAlgorithm.STUCKI]
-        result = apply_error_diffusion(np.zeros((0, 4)), kernel, False)
-        assert result.shape == (0, 4)
 
 
 class TestGrayscaleToDitheredArray:
@@ -239,6 +139,13 @@ class TestGrayscaleToDitheredArray:
         assert not np.array_equal(plain, serpentine)
         assert serpentine.mean() == pytest.approx(plain.mean(), abs=0.02)
 
+    def test_enum_values_translate_to_raygeo_kernels(self):
+        """The enum values are not raygeo kernel names (Jarvis, Judice
+        & Ninke in particular); the dispatch must translate them."""
+        img = np.full((16, 16), 100, dtype=np.uint8)
+        for algo in ERROR_DIFFUSION:
+            assert grayscale_to_dithered_array(img, algo).shape == (16, 16)
+
     @pytest.mark.parametrize("algo", ERROR_DIFFUSION[1:])
     def test_minimum_feature_size_removes_short_runs(self, algo):
         img = np.full((32, 64), 200, dtype=np.uint8)
@@ -259,12 +166,19 @@ class TestGrayscaleToDitheredArray:
 
 
 class TestHalftone:
+    def _halftone(self, img, cell_mm, angle_deg, pixels_per_mm):
+        return grayscale_to_dithered_array(
+            img,
+            DitherAlgorithm.HALFTONE,
+            halftone_cell_mm=cell_mm,
+            halftone_angle=angle_deg,
+            pixels_per_mm=pixels_per_mm,
+        )
+
     @pytest.mark.parametrize("gray", [30, 100, 160, 220])
     def test_coverage_follows_darkness(self, gray):
         img = np.full((200, 200), gray, dtype=np.uint8)
-        result = apply_halftone(
-            img, cell_mm=1.0, angle_deg=45.0, pixels_per_mm=(10.0, 10.0)
-        )
+        result = self._halftone(img, 1.0, 45.0, (10.0, 10.0))
         assert result.mean() == pytest.approx(1.0 - gray / 255.0, abs=0.03)
 
     def test_dot_count_follows_cell_size(self):
@@ -272,12 +186,7 @@ class TestHalftone:
         a 20 mm square holds 21 x 21 (partly clipped) dots at 1 mm."""
         img = np.full((200, 200), 230, dtype=np.uint8)
         for cell_mm, expected in ((1.0, 441), (2.0, 121)):
-            result = apply_halftone(
-                img,
-                cell_mm=cell_mm,
-                angle_deg=0.0,
-                pixels_per_mm=(10.0, 10.0),
-            )
+            result = self._halftone(img, cell_mm, 0.0, (10.0, 10.0))
             _labels, count = _label(result)
             assert count == pytest.approx(expected, rel=0.1)
 
@@ -285,9 +194,7 @@ class TestHalftone:
         """X is sampled twice as densely as Y; the dots must still be
         round in millimetres, so twice as wide in pixels."""
         img = np.full((100, 200), 220, dtype=np.uint8)
-        result = apply_halftone(
-            img, cell_mm=2.0, angle_deg=0.0, pixels_per_mm=(20.0, 10.0)
-        )
+        result = self._halftone(img, 2.0, 0.0, (20.0, 10.0))
         labels, _count = _label(result)
         boxes = ndimage.find_objects(labels)
         interior = [
@@ -306,32 +213,23 @@ class TestHalftone:
 
     def test_angle_rotates_the_screen(self):
         img = np.full((120, 120), 200, dtype=np.uint8)
-        kwargs = {"cell_mm": 1.0, "pixels_per_mm": (10.0, 10.0)}
-        straight = apply_halftone(img, angle_deg=0.0, **kwargs)
-        rotated = apply_halftone(img, angle_deg=45.0, **kwargs)
+        straight = self._halftone(img, 1.0, 0.0, (10.0, 10.0))
+        rotated = self._halftone(img, 1.0, 45.0, (10.0, 10.0))
         assert not np.array_equal(straight, rotated)
         assert rotated.mean() == pytest.approx(straight.mean(), abs=0.03)
 
     def test_invalid_cell_size_falls_back_to_one_pixel_cells(self):
         img = np.full((10, 10), 0, dtype=np.uint8)
-        result = apply_halftone(
-            img, cell_mm=0.0, angle_deg=0.0, pixels_per_mm=(10.0, 10.0)
-        )
+        result = self._halftone(img, 0.0, 0.0, (10.0, 10.0))
         assert result.all()
 
-    def test_dispatch_through_grayscale_to_dithered_array(self):
+    def test_dispatch_forwards_the_screen_settings_to_raygeo(self):
         img = np.full((100, 100), 128, dtype=np.uint8)
-        direct = apply_halftone(
-            img, cell_mm=0.8, angle_deg=30.0, pixels_per_mm=(10.0, 10.0)
+        dispatched = self._halftone(img, 0.8, 30.0, (10.0, 10.0))
+        expected = apply_halftone_dither(
+            img, 0.8, 30.0, pixels_per_mm=(10.0, 10.0)
         )
-        dispatched = grayscale_to_dithered_array(
-            img,
-            DitherAlgorithm.HALFTONE,
-            halftone_cell_mm=0.8,
-            halftone_angle=30.0,
-            pixels_per_mm=(10.0, 10.0),
-        )
-        np.testing.assert_array_equal(direct, dispatched)
+        np.testing.assert_array_equal(dispatched, expected)
 
 
 class TestNewsprint:
