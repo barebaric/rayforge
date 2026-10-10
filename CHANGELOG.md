@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the page size (#517)
 - Import: GIF, TIFF and WebP bitmaps, traced like PNG. Animated GIFs
   and multi-page TIFFs import their first frame or page (#517)
+- Contour: Perforation post-processor for dashed cuts. The laser
+  fires for a Cut Length and is off for a Skip Length along every
+  contour, starting with a full cut at the start of each contour; off
+  by default (#525)
 - Sketcher: boolean operations. Union, Difference, Intersection and
   Exclude bake the selected closed regions into multi-ring polygons
   (outer contours counter-clockwise, hole contours clockwise), so

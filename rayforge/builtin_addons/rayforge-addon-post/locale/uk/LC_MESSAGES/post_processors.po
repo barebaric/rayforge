@@ -295,3 +295,37 @@ msgid "Creates holding tabs by adding gaps or reducing power on cut paths"
 msgstr ""
 "Створює утримувальні закладки шляхом додавання проміжків або зменшення "
 "потужності на контурах різання"
+
+#: post_processors/transformers/perforation_transformer.py
+msgid "Perforation"
+msgstr "Перфорація"
+
+#: post_processors/transformers/perforation_transformer.py
+msgid ""
+"Cuts in dashes: the laser fires for the cut length and skips the skip length"
+msgstr ""
+"Ріже пунктиром: лазер ріже на довжині різу й пропускає довжину пропуску"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Cut Length"
+msgstr "Довжина різу"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance the laser fires before each gap"
+msgstr "Відстань, на якій лазер ріже перед кожним проміжком"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Skip Length"
+msgstr "Довжина пропуску"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance travelled with the laser off between cuts"
+msgstr "Відстань, яку лазер проходить вимкненим між різами"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation cut length"
+msgstr "Змінити довжину різу перфорації"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation skip length"
+msgstr "Змінити довжину пропуску перфорації"
