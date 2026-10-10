@@ -168,6 +168,9 @@ vous pouvez sélectionner et supprimer des segments vectoriels individuels de la
 Pour quitter le mode d'édition vectorielle, cliquez en dehors de la pièce ou appuyez sur
 <kbd>Échap</kbd>.
 
+Pour fermer des écarts, joindre des morceaux ouverts, supprimer des chemins en double ou décomposer
+une pièce, utilisez les outils de [Nettoyage des chemins](../features/path-cleanup).
+
 ---
 
 **Suivant** : [Prévisualisation 3D →](3d-preview)

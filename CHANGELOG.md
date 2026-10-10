@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the page size (#517)
 - Import: GIF, TIFF and WebP bitmaps, traced like PNG. Animated GIFs
   and multi-page TIFFs import their first frame or page (#517)
+- Path clean-up tools in the Object menu and canvas context menu:
+  Close Paths and Join Open Paths with a tolerance in mm, Delete
+  Duplicates (duplicate contours inside a workpiece and stacked copies
+  of whole workpieces), and Break Apart (one workpiece per contour,
+  holes and open paths included). Each is a single undo step (#516)
 - Sketcher: boolean operations. Union, Difference, Intersection and
   Exclude bake the selected closed regions into multi-ring polygons
   (outer contours counter-clockwise, hole contours clockwise), so

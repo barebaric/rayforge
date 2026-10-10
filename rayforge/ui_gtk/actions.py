@@ -1,9 +1,10 @@
 import logging
 from collections.abc import Callable
 from gettext import gettext as _
+from gettext import ngettext
 from typing import TYPE_CHECKING, cast
 
-from gi.repository import Gio, GLib, Gtk
+from gi.repository import Adw, Gio, GLib, Gtk
 
 from ..context import get_context
 from ..core.group import Group
@@ -20,6 +21,7 @@ from .array_dialog import (
     PointRotationArrayDialog,
 )
 from .doceditor.add_tabs_popover import AddTabsPopover
+from .doceditor.path_tolerance_dialog import PathToleranceDialog
 from .doceditor.stock_properties_dialog import StockPropertiesDialog
 from .shared.keyboard import PRIMARY_ACCEL
 
@@ -423,6 +425,12 @@ class ActionManager:
         # Split Action
         self._add_action("split", self.on_split_action)
 
+        # Path Clean-Up Actions
+        self._add_action("break-apart", self.on_break_apart)
+        self._add_action("close-paths", self.on_close_paths)
+        self._add_action("join-paths", self.on_join_paths)
+        self._add_action("delete-duplicates", self.on_delete_duplicates)
+
         # Convert to Stock Action
         self._add_action("convert-to-stock", self.on_convert_to_stock)
 
@@ -550,6 +558,13 @@ class ActionManager:
             layout_info.action.set_enabled(has_workpieces)
 
         self.actions["split"].set_enabled(bool(selected_wps))
+        for name in (
+            "break-apart",
+            "close-paths",
+            "join-paths",
+            "delete-duplicates",
+        ):
+            self.actions[name].set_enabled(bool(selected_wps))
         self.actions["export-object"].set_enabled(len(selected_wps) == 1)
 
         action_extension_registry.invoke_state_update_handlers(self)
@@ -797,6 +812,90 @@ class ActionManager:
         new_items = self.editor.split.split_items(selected_workpieces)
         if new_items:
             self.win.surface.select_items(new_items)
+
+    def on_break_apart(self, action, param):
+        """Handler for the 'break-apart' action."""
+        selected_workpieces = self.win.surface.get_selected_workpieces()
+        if not selected_workpieces:
+            return
+
+        new_items = self.editor.path_cleanup.break_apart(selected_workpieces)
+        if new_items:
+            self.win.surface.select_items(new_items)
+        else:
+            self._show_toast(_("Nothing to break apart"))
+
+    def on_close_paths(self, action, param):
+        """Handler for the 'close-paths' action: asks for a tolerance."""
+        workpieces = self.win.surface.get_selected_workpieces()
+        if not workpieces:
+            return
+
+        def _apply(tolerance: float):
+            count = self.editor.path_cleanup.close_paths(workpieces, tolerance)
+            self._show_toast(
+                ngettext(
+                    "Closed {count} path",
+                    "Closed {count} paths",
+                    count,
+                ).format(count=count)
+            )
+
+        PathToleranceDialog(
+            heading=_("Close Paths"),
+            body=_(
+                "Closes open paths whose start and end point are closer "
+                "than the tolerance."
+            ),
+            apply_label=_("Close Paths"),
+            key="close-paths",
+            on_apply=_apply,
+        ).present(self.win)
+
+    def on_join_paths(self, action, param):
+        """Handler for the 'join-paths' action: asks for a tolerance."""
+        workpieces = self.win.surface.get_selected_workpieces()
+        if not workpieces:
+            return
+
+        def _apply(tolerance: float):
+            count = self.editor.path_cleanup.join_paths(workpieces, tolerance)
+            self._show_toast(
+                ngettext(
+                    "Made {count} join",
+                    "Made {count} joins",
+                    count,
+                ).format(count=count)
+            )
+
+        PathToleranceDialog(
+            heading=_("Join Open Paths"),
+            body=_(
+                "Joins open paths whose end points are closer than the "
+                "tolerance. Paths whose ends then meet are closed."
+            ),
+            apply_label=_("Join Paths"),
+            key="join-paths",
+            on_apply=_apply,
+        ).present(self.win)
+
+    def on_delete_duplicates(self, action, param):
+        """Handler for the 'delete-duplicates' action."""
+        workpieces = self.win.surface.get_selected_workpieces()
+        if not workpieces:
+            return
+
+        count = self.editor.path_cleanup.delete_duplicates(workpieces)
+        self._show_toast(
+            ngettext(
+                "Deleted {count} duplicate",
+                "Deleted {count} duplicates",
+                count,
+            ).format(count=count)
+        )
+
+    def _show_toast(self, message: str):
+        self.win.toast_overlay.add_toast(Adw.Toast.new(message))
 
     def on_convert_to_stock(self, action, param):
         """Handler for the 'convert-to-stock' action."""
