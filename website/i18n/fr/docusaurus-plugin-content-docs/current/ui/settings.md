@@ -32,6 +32,11 @@ la barre d'outils.
 Rayforge peut **Vérifier les mises à jour** automatiquement au démarrage. Lorsqu'activé, tu seras
 informé lorsqu'une nouvelle version est disponible.
 
+Lorsque **Surveiller les fichiers importés** est activé, Rayforge surveille les fichiers derrière
+les pièces importées et propose de les recharger lorsqu'ils changent sur le disque. Voir
+[Garder les fichiers importés synchronisés](../files/importing.md#garder-les-fichiers-importés-synchronisés)
+pour plus de détails.
+
 Tu peux aussi configurer le **Comportement au démarrage** — démarrer avec un espace de travail vide,
 rouvrir le dernier projet ou toujours ouvrir un fichier de projet spécifique. Note que les fichiers
 spécifiés en ligne de commande remplaceront toujours ces paramètres.

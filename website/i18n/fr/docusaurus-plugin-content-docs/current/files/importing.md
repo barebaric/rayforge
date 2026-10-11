@@ -114,6 +114,54 @@ La notification de redimensionnement apparaît sous forme de message toast :
 Cela garantit que tes dessins s'adaptent toujours aux capacités de ta machine tout en t'offrant la
 flexibilité de restaurer la taille d'origine si nécessaire.
 
+### Garder les fichiers importés synchronisés
+
+Lors de l'importation, Rayforge conserve un lien vers le fichier sur le disque. Si le fichier change
+plus tard — par exemple après l'avoir modifié et réenregistré dans Inkscape ou dans ton logiciel de
+CAO — Rayforge propose de recharger le contenu importé, afin que ton projet ne conserve pas une
+géométrie obsolète.
+
+![La boîte de dialogue « Fichier importé modifié »](/screenshots/source-changed-dialog.webp)
+
+Cette fonction est contrôlée par l'option **Surveiller les fichiers importés** dans Paramètres →
+Général. Lorsqu'elle est activée (valeur par défaut), Rayforge vérifie les fichiers liés tant que le
+projet est ouvert — y compris juste après son ouverture — et affiche une boîte de dialogue pour
+chaque fichier modifié sur le disque :
+
+- **Recharger** remplace le contenu importé par la nouvelle version. La position, la taille et les
+  réglages des pièces concernées sont conservés, et l'ensemble du rechargement constitue une seule
+  étape d'annulation.
+- **Ignorer** conserve le contenu actuel. Tu seras à nouveau consulté la prochaine fois que le
+  fichier changera.
+- Active **Toujours recharger ce fichier sans demander** pour recharger ce fichier automatiquement à
+  partir de maintenant. Les fichiers ainsi marqués sont rechargés sans demander.
+
+Lorsque plusieurs fichiers liés ont changé en même temps, la boîte de dialogue les liste et te
+permet de choisir ceux à recharger.
+
+<!-- prettier-ignore-start -->
+:::note[Le rechargement ajuste le document]
+Le rechargement remet le document en accord avec le fichier : les éléments qui y ont été ajoutés
+apparaissent dans le projet, les éléments qui n'en font plus partie sont supprimés, et les ponts de
+maintien qui se retrouvent à plus de 1 mm du nouveau contour sont abandonnés. Les éléments que tu
+as modifiés dans Rayforge restent inchangés. Une notification résume ce que le rechargement a
+modifié.
+:::
+<!-- prettier-ignore-end -->
+
+### Rechargement et reliaison manuels
+
+Tu peux aussi recharger ou relier manuellement à tout moment via **Fichier → Recharger depuis le
+disque** et **Fichier → Relier le fichier source…**, ou via le menu contextuel de la sélection sur
+le canevas, de la liste des calques ou du navigateur d'actifs. **Recharger depuis le disque** relit
+les fichiers derrière les pièces sélectionnées. Lorsque le fichier lié est introuvable, Rayforge
+propose de le relier à la place.
+
+**Relier le fichier source…** fait pointer une source importée vers un autre fichier. C'est utile
+lorsqu'un fichier a été déplacé ou renommé, ou lorsqu'un projet est ouvert sur un autre ordinateur
+et que le fichier lié est absent. Les pièces conservent leur position et leurs réglages et affichent
+le contenu du nouveau fichier.
+
 ---
 
 ## Importation SVG

@@ -110,6 +110,52 @@ A notificação de redimensionamento aparece como uma mensagem toast:
 Isso garante que seus designs sempre se ajustem às capacidades da sua máquina, dando-lhe a
 flexibilidade de restaurar o tamanho original, se necessário.
 
+### Mantendo os arquivos importados sincronizados
+
+Ao importar um arquivo, o Rayforge mantém um link para ele no disco. Se o arquivo mudar mais tarde —
+por exemplo, depois de editá-lo e salvá-lo novamente no Inkscape ou no seu programa de CAD — o
+Rayforge oferece recarregar o conteúdo importado, para que seu projeto não mantenha geometria
+desatualizada.
+
+![O diálogo de arquivo importado alterado](/screenshots/source-changed-dialog.webp)
+
+Esse comportamento é controlado pela opção **Vigiar arquivos importados** em Configurações → Geral.
+Quando ativada (o padrão), o Rayforge verifica os arquivos vinculados enquanto o projeto está aberto
+— inclusive logo após abri-lo — e mostra um diálogo para cada arquivo que mudou no disco:
+
+- **Recarregar** substitui o conteúdo importado pela nova versão. A posição, o tamanho e as
+  configurações das peças de trabalho afetadas são mantidos, e toda a recarga é uma única etapa de
+  desfazer.
+- **Ignorar** mantém o conteúdo atual. Você será perguntado novamente na próxima vez que o arquivo
+  mudar.
+- Ative **Sempre recarregar este arquivo sem perguntar** para recarregar esse arquivo
+  automaticamente de agora em diante. Arquivos marcados assim são recarregados sem perguntar.
+
+Quando vários arquivos vinculados mudaram ao mesmo tempo, o diálogo os lista e permite escolher
+quais recarregar.
+
+<!-- prettier-ignore-start -->
+:::note[A recarga ajusta o documento]
+Recarregar traz o documento de volta em linha com o arquivo: elementos que foram adicionados a ele
+aparecem no projeto, elementos que não estão mais nele são removidos, e abas de fixação que
+acabarem a mais de 1 mm do novo contorno são descartadas. Elementos que você editou no Rayforge
+ficam inalterados. Uma notificação resume o que a recarga alterou.
+:::
+<!-- prettier-ignore-end -->
+
+### Recarga e revinculação manuais
+
+Você também pode recarregar ou revincular manualmente a qualquer momento via **Arquivo → Recarregar
+do disco** e **Arquivo → Revincular arquivo de origem…**, ou pelo menu de contexto da seleção na
+tela, da lista de camadas ou do navegador de ativos. **Recarregar do disco** relê os arquivos por
+trás das peças de trabalho selecionadas. Quando o arquivo vinculado não pode ser encontrado, o
+Rayforge sugere revinculá-lo em vez disso.
+
+**Revincular arquivo de origem…** aponta uma fonte importada para um arquivo diferente. Isso é útil
+quando um arquivo foi movido ou renomeado, ou quando um projeto é aberto em outro computador e o
+arquivo vinculado está ausente. As peças de trabalho mantêm sua posição e configurações e mostram o
+conteúdo do novo arquivo.
+
 ---
 
 ## Importação SVG

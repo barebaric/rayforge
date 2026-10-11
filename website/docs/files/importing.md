@@ -115,6 +115,47 @@ The resize notification appears as a toast message:
 This ensures your designs always fit within your machine's capabilities while giving you the
 flexibility to restore the original size if needed.
 
+### Keeping Imported Files in Sync
+
+When you import a file, Rayforge keeps a link to it on disk. If the file changes later — for example
+after editing and re-saving it in Inkscape or your CAD program — Rayforge offers to reload the
+imported content, so your project does not keep outdated geometry.
+
+![The Imported File Changed dialog](/screenshots/source-changed-dialog.webp)
+
+Watching is controlled by the **Watch imported files** option in Settings → General. When it is on
+(the default), Rayforge checks the linked files while the project is open — including right after
+opening it — and shows a dialog for each file that changed on disk:
+
+- **Reload** replaces the imported content with the new version. Position, size and the settings of
+  the affected workpieces are kept, and the whole reload is a single undo step.
+- **Ignore** keeps the current content. You will be asked again the next time the file changes.
+- Enable **Always reload this file without asking** to reload that file automatically from now on.
+  Files marked this way are reloaded without asking.
+
+When several linked files changed at once, the dialog lists them and lets you choose which ones to
+reload.
+
+<!-- prettier-ignore-start -->
+:::note[Reload Adjusts the Document]
+Reloading brings the document back in line with the file: elements that were added to it appear in
+the project, elements that are no longer in it are removed, and holding tabs that end up more than
+1 mm away from the new outline are dropped. Elements you edited in Rayforge are left unchanged. A
+notification summarizes what the reload changed.
+:::
+<!-- prettier-ignore-end -->
+
+### Manual Reload and Relinking
+
+You can also reload or relink manually at any time via **File → Reload from Disk** and **File →
+Relink Source File…**, or through the context menu of the canvas selection, the layer list, or the
+asset browser. **Reload from Disk** re-reads the files behind the selected workpieces. When the
+linked file cannot be found, Rayforge suggests relinking it instead.
+
+**Relink Source File…** points an imported source at a different file. This is useful when a file
+was moved or renamed, or when a project is opened on another computer and the linked file is
+missing. The workpieces keep their position and settings and show the content of the new file.
+
 ---
 
 ## SVG Import
