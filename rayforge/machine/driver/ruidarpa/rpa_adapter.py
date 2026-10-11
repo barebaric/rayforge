@@ -1250,8 +1250,13 @@ class RuidaRPAAdapter(Driver):
         # Live homing commands auto-send server-side (and the direct
         # backend auto-sends via the wrapped RdDriver); the returned
         # lines must not be run() again.
-        if axes is None or (axes & (Axis.X | Axis.Y)):
+        xy_axes = Axis.X | Axis.Y
+        if axes is None or (axes & xy_axes) == xy_axes:
             await loop.run_in_executor(None, self._backend.home)
+        elif axes & Axis.X:
+            await loop.run_in_executor(None, self._backend.jog_x_to, 0.0)
+        elif axes & Axis.Y:
+            await loop.run_in_executor(None, self._backend.jog_y_to, 0.0)
         if axes is not None and (axes & Axis.Z):
             await loop.run_in_executor(None, self._backend.focus_z)
 
