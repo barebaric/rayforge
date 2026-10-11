@@ -227,12 +227,19 @@ C'est particulièrement utile pour :
 
 Choisissez l'algorithme qui convient le mieux à votre image et à votre matériau :
 
-| Algorithme      | Qualité        | Vitesse        | Idéal Pour                         |
-| --------------- | -------------- | -------------- | ---------------------------------- |
-| Floyd-Steinberg | La plus élevée | La plus lente  | Photos, portraits, dégradés lisses |
-| Bayer 2x2       | Basse          | La plus rapide | Effet demi-teinte grossier         |
-| Bayer 4x4       | Moyenne        | Rapide         | Demi-teinte équilibrée             |
-| Bayer 8x8       | Élevée         | Moyenne        | Détails fins, motifs subtils       |
+| Algorithme                        | Qualité        | Vitesse        | Idéal Pour                              |
+| --------------------------------- | -------------- | -------------- | --------------------------------------- |
+| Floyd-Steinberg                   | La plus élevée | La plus lente  | Photos, portraits, dégradés lisses      |
+| Bayer 2x2                         | Basse          | La plus rapide | Effet demi-teinte grossier              |
+| Bayer 4x4                         | Moyenne        | Rapide         | Demi-teinte équilibrée                  |
+| Bayer 8x8                         | Élevée         | Moyenne        | Détails fins, motifs subtils            |
+| Atkinson                          | Moyenne        | Moyenne        | Images contrastées, bois                |
+| Stucki                            | La plus élevée | Lente          | Portraits, tons chair doux              |
+| Jarvis, Judice et Ninke           | La plus élevée | Lente          | Dégradés doux, grain fin                |
+| Sierra (3 lignes, 2 lignes, Lite) | Élevée         | Moyenne        | Alternatives plus légères à Stucki      |
+| Burkes                            | Élevée         | Moyenne        | Photos, plus rapide que Stucki          |
+| Papier journal                    | Moyenne        | La plus rapide | Points groupés façon journal            |
+| Demi-teinte                       | Moyenne        | Rapide         | Points ronds, taille et angle réglables |
 
 **Floyd-Steinberg** est le défaut et recommandé pour la plupart des gravures photo. Il utilise la
 diffusion d'erreur pour distribuer les erreurs de quantification aux pixels voisins, créant des
@@ -240,6 +247,17 @@ résultats d'apparence naturelle.
 
 **Le tramage Bayer** crée des motifs réguliers qui peuvent produire des effets artistiques
 ressemblant à l'impression demi-teinte traditionnelle.
+
+**Stucki, Jarvis, Sierra, Burkes et Atkinson** sont des algorithmes de diffusion d'erreur comme
+Floyd-Steinberg qui répartissent l'erreur sur un voisinage plus large, ce qui donne un grain plus
+régulier dans les zones uniformes comme les tons chair. Atkinson ne diffuse qu'une partie de
+l'erreur, ce qui augmente le contraste. Active **Serpentin** pour alterner le sens de balayage à
+chaque ligne et éviter les stries directionnelles.
+
+**Papier journal** et **Demi-teinte** regroupent les pixels en points. Demi-teinte trace des points
+ronds sur une grille définie par **Taille de cellule de demi-teinte** (la distance entre les centres
+des points) et **Angle de demi-teinte** ; choisis une taille de cellule d'au moins quelques largeurs
+de point laser.
 
 #### Paramètres du Mode Profondeurs Multiples
 

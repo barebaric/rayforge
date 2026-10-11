@@ -38,7 +38,7 @@ rust = "==1.98.1"
 patchelf = "==0.19.2"
 
 [feature.app.pypi-dependencies]
-raygeo = "==1.61.0"
+raygeo = "==1.62.0"
 raydriver = "==0.3.0"
 rayforge = { editable = true, path = "." }
 ruida-pa = "==0.22.0"

@@ -803,3 +803,27 @@ msgstr "Tête laser"
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Add Material Test"
 msgstr "Ajouter un test de matériau"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Serpentine"
+msgstr "Serpentin"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Alternate the dither direction on every row to avoid directional artifacts"
+msgstr "Alterner le sens du tramage à chaque ligne pour éviter les artefacts directionnels"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Halftone Cell Size"
+msgstr "Taille de cellule de demi-teinte"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Distance between halftone dot centers"
+msgstr "Distance entre les centres des points de demi-teinte"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Halftone Angle"
+msgstr "Angle de demi-teinte"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Rotation of the halftone dot grid"
+msgstr "Rotation de la grille de points de demi-teinte"
