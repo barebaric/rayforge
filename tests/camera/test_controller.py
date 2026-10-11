@@ -1098,6 +1098,30 @@ def test_stop_capture_stream_marks_stuck_thread_and_blocks_future_starts():
     assert controller._running is False
 
 
+def test_frame_failure_clears_both_frame_buffers():
+    """The raw frame must not outlive the processed one, or the paired
+    render API could combine frames from different points in time."""
+    camera = Camera("Test Camera", "0")
+    controller = CameraController(camera)
+    with controller._frame_lock:
+        controller._image_data = np.zeros((4, 4, 3), dtype=np.uint8)
+        controller._raw_image_data = np.zeros((4, 4, 3), dtype=np.uint8)
+
+    controller._handle_frame_failure()
+
+    assert controller._image_data is None
+    assert controller._raw_image_data is None
+
+    with controller._frame_lock:
+        controller._image_data = np.zeros((4, 4, 3), dtype=np.uint8)
+        controller._raw_image_data = np.zeros((4, 4, 3), dtype=np.uint8)
+
+    controller._clear_image_data()
+
+    assert controller._image_data is None
+    assert controller._raw_image_data is None
+
+
 def test_dispose_disconnects_config_signals_and_stops_stream():
     """dispose() must fully detach the controller from its camera config
     so a config mutation after teardown can never resurrect it, and must

@@ -84,6 +84,7 @@ class CameraController:
         self._disposed: bool = False
         # Cached outside view coverage and remap tables, which only
         # change with calibration, alignment, and display geometry.
+        # Accessed from the GLib main loop only, like its callers.
         self._outside_cache: dict[str, tuple] = {}
 
         # Stream lifecycle: _lifecycle_lock serializes start/stop so that
@@ -712,6 +713,7 @@ class CameraController:
         self._consecutive_failures += 1
         with self._frame_lock:
             self._image_data = None
+            self._raw_image_data = None
         return self._consecutive_failures >= self.MAX_CONSECUTIVE_FAILURES
 
     def _log_frame_failure(self, source) -> None:
@@ -921,9 +923,10 @@ class CameraController:
         self._capture_thread = None
 
     def _clear_image_data(self) -> None:
-        """Drops the processed frame under the frame lock."""
+        """Drops the captured frames under the frame lock."""
         with self._frame_lock:
             self._image_data = None
+            self._raw_image_data = None
 
     def capture_image(self, *, apply_settings: bool = True):
         """
