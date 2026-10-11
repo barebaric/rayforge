@@ -10022,3 +10022,21 @@ msgstr "{filename} 不包含 HPGL 绘图命令。"
 #, python-brace-format
 msgid "Pen {number}"
 msgstr "笔 {number}"
+
+#: rayforge/machine/driver/driver.py
+msgid "Home Switch"
+msgstr "原点开关"
+
+#: rayforge/machine/driver/driver.py
+msgid "Probe"
+msgstr "探针"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Z Homing"
+msgstr "Z轴回原点"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid ""
+"How the Z axis finds its reference: a home switch, "
+"or the auto-focus probe"
+msgstr "Z轴如何找到参考位置：通过原点开关，或通过自动对焦探针"

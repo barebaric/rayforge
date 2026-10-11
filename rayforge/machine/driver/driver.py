@@ -86,6 +86,19 @@ DRIVER_MATURITY_LABELS = {
 }
 
 
+class ZHomingMode(Enum):
+    """How the Z axis finds its reference position when homed."""
+
+    SWITCH = "switch"
+    PROBE = "probe"
+
+
+Z_HOMING_MODE_LABELS = {
+    ZHomingMode.SWITCH: _("Home Switch"),
+    ZHomingMode.PROBE: _("Probe"),
+}
+
+
 class DeviceStatus(Enum):
     UNKNOWN = auto()
     IDLE = auto()
@@ -289,6 +302,25 @@ class Driver(ABC):
     # rayforge.machine.discovery). Serial-only drivers declare only
     # the serial recognizer; network drivers only the mDNS one.
     DISCOVERY: ClassVar[DiscoverySpec | None] = None
+    # The Z homing modes the driver can perform. The first entry is
+    # the default for machines that have not chosen a mode.
+    z_homing_modes: ClassVar[tuple[ZHomingMode, ...]] = (ZHomingMode.SWITCH,)
+
+    @classmethod
+    def resolve_z_homing_mode(cls, mode: ZHomingMode | None) -> ZHomingMode:
+        """
+        Returns the Z homing mode to use for a machine's chosen mode.
+
+        Falls back to the driver's default when no mode was chosen or
+        the driver does not support the chosen one.
+        """
+        if mode is not None and mode in cls.z_homing_modes:
+            return mode
+        return cls.z_homing_modes[0]
+
+    def get_z_homing_mode(self) -> ZHomingMode:
+        """Returns the Z homing mode configured for this machine."""
+        return self.resolve_z_homing_mode(self._machine.z_homing_mode)
 
     @classmethod
     def supports_travel_speed(cls, dialect: "GcodeDialect | None") -> bool:

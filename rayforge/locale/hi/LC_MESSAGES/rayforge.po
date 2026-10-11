@@ -10215,3 +10215,21 @@ msgstr "{filename} में कोई HPGL ड्रॉइंग कमां�
 #, python-brace-format
 msgid "Pen {number}"
 msgstr "पेन {number}"
+
+#: rayforge/machine/driver/driver.py
+msgid "Home Switch"
+msgstr "होम स्विच"
+
+#: rayforge/machine/driver/driver.py
+msgid "Probe"
+msgstr "प्रोब"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Z Homing"
+msgstr "Z होमिंग"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid ""
+"How the Z axis finds its reference: a home switch, "
+"or the auto-focus probe"
+msgstr "Z अक्ष अपना संदर्भ कैसे ढूँढता है: होम स्विच से, या ऑटो-फ़ोकस प्रोब से"

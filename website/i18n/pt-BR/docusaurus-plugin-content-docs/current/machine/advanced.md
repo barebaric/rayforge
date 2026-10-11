@@ -29,6 +29,15 @@ Quando habilitado, você pode fazer homing de eixos individuais independentement
 de requerer todos os eixos juntos. Isso é útil para máquinas onde um eixo já pode estar posicionado
 corretamente.
 
+### Referenciação de Z
+
+Escolhe como o eixo Z encontra sua posição de referência ao fazer homing. Esta configuração só
+aparece quando o driver da máquina suporta mais de um método.
+
+- **Interruptor de Referência**: Z se move até seu interruptor de referência, como os eixos X e Y
+- **Sonda**: Z usa a sonda de foco automático do controlador para encontrar a superfície de trabalho
+  e depois se move para a distância de foco configurada
+
 ## Configurações de Arcos e Curvas
 
 Configurações para controlar como caminhos curvos são convertidos em movimentos de G-code.

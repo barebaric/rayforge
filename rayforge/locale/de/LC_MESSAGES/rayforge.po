@@ -10535,3 +10535,21 @@ msgstr "{filename} enthält keine HPGL-Zeichenbefehle."
 #, python-brace-format
 msgid "Pen {number}"
 msgstr "Stift {number}"
+
+#: rayforge/machine/driver/driver.py
+msgid "Home Switch"
+msgstr "Referenzschalter"
+
+#: rayforge/machine/driver/driver.py
+msgid "Probe"
+msgstr "Taster"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Z Homing"
+msgstr "Z-Referenzfahrt"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid ""
+"How the Z axis finds its reference: a home switch, "
+"or the auto-focus probe"
+msgstr "Wie die Z-Achse ihre Referenz findet: über einen Referenzschalter oder den Autofokus-Taster"

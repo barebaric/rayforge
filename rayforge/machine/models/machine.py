@@ -25,7 +25,13 @@ from ...shared.tasker import task_mgr
 from ...shared.units.system import UnitSystem
 from ..assembly import Assembly
 from ..driver import get_driver_cls
-from ..driver.driver import DeviceState, Pos, PWMParams, pwm_varset
+from ..driver.driver import (
+    DeviceState,
+    Pos,
+    PWMParams,
+    ZHomingMode,
+    pwm_varset,
+)
 from ..kinematics import HeadSpec, Kinematics, build_assembly
 from ..models.axis import AxisConfig, AxisDirection, AxisSet, AxisType
 from ..transport import TransportStatus
@@ -165,6 +171,8 @@ class Machine:
         # keeps the app usable before the user sets up a real machine.
         self.placeholder: bool = False
         self.single_axis_homing_enabled: bool = True
+        # None leaves the choice to the driver's default Z homing mode.
+        self.z_homing_mode: ZHomingMode | None = None
         self.dialect_uid: str | None = "grbl"
         self.dialect_migrated: bool = False
         self._hydrated_dialect: GcodeDialect | None = None
@@ -758,6 +766,12 @@ class Machine:
         if self.single_axis_homing_enabled == enabled:
             return
         self.single_axis_homing_enabled = enabled
+        self.changed.send(self)
+
+    def set_z_homing_mode(self, mode: ZHomingMode | None):
+        if self.z_homing_mode == mode:
+            return
+        self.z_homing_mode = mode
         self.changed.send(self)
 
     def set_max_travel_speed(self, speed: int):
@@ -1747,6 +1761,9 @@ class Machine:
                 "placeholder": self.placeholder,
                 "home_on_start": self.home_on_start,
                 "single_axis_homing_enabled": self.single_axis_homing_enabled,
+                "z_homing_mode": (
+                    self.z_homing_mode.value if self.z_homing_mode else None
+                ),
                 "dialect_uid": self.dialect_uid,
                 "active_wcs": self.active_wcs,
                 "coordinate_systems": [
@@ -1932,6 +1949,13 @@ class Machine:
             "single_axis_homing_enabled",
             ma.single_axis_homing_enabled,
         )
+        z_homing_mode = ma_data.pop("z_homing_mode", None)
+        try:
+            ma.z_homing_mode = (
+                ZHomingMode(z_homing_mode) if z_homing_mode else None
+            )
+        except ValueError:
+            logger.warning(f"Unknown Z homing mode '{z_homing_mode}'")
 
         dialect_uid = ma_data.pop("dialect_uid", None)
         legacy_dialect = ma_data.pop("dialect", None)
