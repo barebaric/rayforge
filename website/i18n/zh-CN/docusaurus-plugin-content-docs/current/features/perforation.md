@@ -1,5 +1,5 @@
 ---
-description: 
+description: "使用穿孔后处理器在 Rayforge 中切割虚线：为折线、撕线和缝线孔设置切割长度和跳过长度。"
 ---
 
 # 穿孔
