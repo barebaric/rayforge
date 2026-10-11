@@ -52,6 +52,7 @@ class SourceAsset(IAsset):
     height_px: int | None = None
     width_mm: float = 0.0
     height_mm: float = 0.0
+    auto_reload: bool = False
     _uid: str = field(init=False, default_factory=lambda: str(uuid.uuid4()))
     _name: str = field(init=False, repr=False)
     _hidden: bool = field(init=False, default=False)
@@ -209,6 +210,7 @@ class SourceAsset(IAsset):
             "width_mm": self.width_mm,
             "height_mm": self.height_mm,
             "hidden": self._hidden,
+            "auto_reload": self.auto_reload,
         }
         result.update(self.extra)
         return result
@@ -234,6 +236,7 @@ class SourceAsset(IAsset):
             "width_mm",
             "height_mm",
             "hidden",
+            "auto_reload",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
 
@@ -268,6 +271,7 @@ class SourceAsset(IAsset):
             height_px=data.get("height_px"),
             width_mm=data.get("width_mm", 0.0),
             height_mm=data.get("height_mm", 0.0),
+            auto_reload=data.get("auto_reload", False),
         )
         if "uid" in data:
             instance._uid = data["uid"]

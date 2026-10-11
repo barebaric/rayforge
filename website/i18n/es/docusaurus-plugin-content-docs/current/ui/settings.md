@@ -30,6 +30,11 @@ operaciones** y activar el recálculo manualmente vía el botón de la barra de 
 Rayforge puede **Buscar actualizaciones** automáticamente al inicio. Cuando está habilitado, se te
 notificará cuando haya una nueva versión disponible.
 
+Con **Vigilar archivos importados** activado, Rayforge supervisa los archivos detrás de las piezas
+de trabajo importadas y ofrece recargarlas cuando cambian en el disco. Consulta
+[Mantener los archivos importados sincronizados](../files/importing.md#mantener-los-archivos-importados-sincronizados)
+para más detalles.
+
 También puedes configurar el **Comportamiento de inicio** — iniciar con un espacio de trabajo vacío,
 reabrir el último proyecto o abrir siempre un archivo de proyecto específico. Ten en cuenta que los
 archivos especificados en la línea de comandos siempre anularán estos ajustes.

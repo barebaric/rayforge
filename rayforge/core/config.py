@@ -101,6 +101,9 @@ class Config:
         self.auto_pipeline: bool = True
         self.ops_color_mode: OpsColorMode = OpsColorMode.LASER
         self.check_for_app_updates: bool = True
+        # Whether to watch imported files and offer to reload them when
+        # they change on disk.
+        self.watch_source_files: bool = True
         # Usage tracking consent date: None = not asked, "" = declined,
         # ISO date string = consent given on that date
         self.usage_consent_date: str | None = None
@@ -219,6 +222,13 @@ class Config:
         if self.check_for_app_updates == enabled:
             return
         self.check_for_app_updates = enabled
+        self.changed.send(self)
+
+    def set_watch_source_files(self, enabled: bool):
+        """Sets whether imported files are watched for changes."""
+        if self.watch_source_files == enabled:
+            return
+        self.watch_source_files = enabled
         self.changed.send(self)
 
     def set_ops_color_mode(self, mode: OpsColorMode):
@@ -342,6 +352,7 @@ class Config:
             "canvas_view": self.canvas_view.to_dict(),
             "auto_pipeline": self.auto_pipeline,
             "check_for_app_updates": self.check_for_app_updates,
+            "watch_source_files": self.watch_source_files,
             "ops_color_mode": self.ops_color_mode.value,
             "usage_consent_date": self.usage_consent_date,
             "import_dpi": self.import_dpi,
@@ -406,6 +417,7 @@ class Config:
         )
         config.auto_pipeline = data.get("auto_pipeline", True)
         config.check_for_app_updates = data.get("check_for_app_updates", True)
+        config.watch_source_files = data.get("watch_source_files", True)
 
         ops_color_mode_str = data.get(
             "ops_color_mode", OpsColorMode.LASER.value

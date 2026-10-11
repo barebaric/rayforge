@@ -9,6 +9,7 @@ from ..context import get_context
 from ..core.group import Group
 from ..core.item import DocItem
 from ..core.layer import Layer
+from ..core.source_asset import SourceAsset
 from ..core.stock import StockItem
 from ..core.workpiece import WorkPiece
 from ..doceditor.array import ArrayMode
@@ -411,6 +412,12 @@ class ActionManager:
             "asset-create-workpiece",
             self.on_asset_create_workpiece,
         )
+        self._add_action("asset-reload-source", self.on_asset_reload_source)
+        self._add_action("asset-relink-source", self.on_asset_relink_source)
+
+        # Imported Source Actions
+        self._add_action("reload-source", self.on_reload_source)
+        self._add_action("relink-source", self.on_relink_source)
 
         # Layer Management Actions
         self._add_action("layer-move-up", self.on_layer_move_up)
@@ -552,6 +559,14 @@ class ActionManager:
         self.actions["split"].set_enabled(bool(selected_wps))
         self.actions["export-object"].set_enabled(len(selected_wps) == 1)
 
+        sources = self.editor.reload.sources_of(list(selected_wps))
+        self.actions["reload-source"].set_enabled(
+            any(self.editor.reload.can_reload(s) for s in sources)
+        )
+        self.actions["relink-source"].set_enabled(
+            len(sources) == 1 and self.editor.reload.can_relink(sources[0])
+        )
+
         action_extension_registry.invoke_state_update_handlers(self)
 
     def on_add_stock(self, action, param):
@@ -601,6 +616,44 @@ class ActionManager:
     def on_asset_create_workpiece(self, action, param):
         browser = self.win.bottom_panel.asset_browser
         browser.create_workpiece_from_selected()
+
+    def _selected_sources(self) -> list[SourceAsset]:
+        selected = self.win.surface.get_selected_workpieces()
+        return self.editor.reload.sources_of(list(selected))
+
+    def _browser_sources(self) -> list[SourceAsset]:
+        browser = self.win.bottom_panel.asset_browser
+        return [
+            asset
+            for asset in browser.get_selected_assets()
+            if isinstance(asset, SourceAsset)
+        ]
+
+    def _reload_sources(self, sources: list[SourceAsset]):
+        reloadable = [s for s in sources if self.editor.reload.can_reload(s)]
+        if reloadable:
+            self.win.source_reload.reload_assets(reloadable)
+        elif sources:
+            message = _(
+                "The file of {name} cannot be found. Use Relink to pick it."
+            ).format(name=sources[0].name)
+            self.editor.notification_requested.send(self, message=message)
+
+    def _relink_sources(self, sources: list[SourceAsset]):
+        if len(sources) == 1 and self.editor.reload.can_relink(sources[0]):
+            self.win.source_reload.choose_relink(sources[0])
+
+    def on_reload_source(self, action, param):
+        self._reload_sources(self._selected_sources())
+
+    def on_relink_source(self, action, param):
+        self._relink_sources(self._selected_sources())
+
+    def on_asset_reload_source(self, action, param):
+        self._reload_sources(self._browser_sources())
+
+    def on_asset_relink_source(self, action, param):
+        self._relink_sources(self._browser_sources())
 
     def _update_asset_action_states(self):
         browser = self.win.bottom_panel.asset_browser

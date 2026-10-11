@@ -121,6 +121,16 @@ def _populate_standard_items(menu: Gio.Menu):
     # Separator
     menu.append_section(None, Gio.Menu.new())
 
+    menu.append_item(
+        Gio.MenuItem.new(_("Reload from Disk"), "win.reload-source")
+    )
+    menu.append_item(
+        Gio.MenuItem.new(_("Relink Source File\u2026"), "win.relink-source")
+    )
+
+    # Separator
+    menu.append_section(None, Gio.Menu.new())
+
     menu.append_item(Gio.MenuItem.new(_("Remove"), "win.remove"))
 
 
