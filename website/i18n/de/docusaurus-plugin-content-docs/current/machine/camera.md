@@ -298,6 +298,26 @@ Klicken auf das Kamerasymbol in der Hauptfenster-Symbolleiste ein oder aus.
 
 ---
 
+### Ansicht außerhalb des Arbeitsbereichs
+
+Die Kamera sieht meist mehr als nur den Arbeitsbereich. Unter Maschineneinstellungen → Kamera →
+Ansicht außerhalb des Arbeitsbereichs kannst du einen zusätzlichen halbtransparenten Rand aus
+Kamerabild um den Arbeitsbereich anzeigen lassen, der das Positionieren von Werkstücken erleichtert.
+
+![Kameraansicht außerhalb des Arbeitsbereichs](/screenshots/main-camera-outside-view.webp)
+
+- **Außerhalb des Arbeitsbereichs anzeigen** schaltet den Rand ein oder aus. Er ist standardmäßig
+  deaktiviert und erfordert eine ausgerichtete Kamera.
+- **Rand** legt fest, wie weit der Rand über den Arbeitsbereich hinausgeht, bis zu 100 mm.
+- **Transparenz** steuert, wie gut der Rand sichtbar ist.
+
+Bereiche, die die Kamera nicht sieht, bleiben transparent, statt schwarz zu erscheinen, und der Rand
+endet an der Kante dessen, was die Kamera tatsächlich abdeckt. Objekte, die über das Bett ragen, wie
+der Portalrahmen, können im Rand verschoben erscheinen, da das Kamerabild auf die Bettebene
+ausgerichtet ist.
+
+---
+
 ### Mehrere Kameras
 
 Rayforge unterstützt mehrere Kameras für verschiedene Ansichten oder Maschinen:

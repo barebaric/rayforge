@@ -1262,7 +1262,9 @@ class WorkSurface(WorldSurface):
 
         # Add elements for new controllers
         for controller in new_controllers - current_controllers:
-            element = CameraImageElement(controller)
+            element = CameraImageElement(
+                controller, outside_view_supported=True
+            )
             element.set_visible(
                 self._cam_visible and controller.config.enabled
             )

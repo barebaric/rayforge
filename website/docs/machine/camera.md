@@ -356,6 +356,25 @@ icon in the main window toolbar.
 
 ---
 
+### View Outside the Workspace
+
+The camera usually sees more than just the work area. In Machine settings → Camera → View Outside
+Workspace, you can show an additional semi-transparent border of camera image around the workspace,
+which makes it easier to position workpieces.
+
+![Camera view outside the workspace](/screenshots/main-camera-outside-view.webp)
+
+- **Show Outside Workspace** turns the border on or off. It is off by default and requires an
+  aligned camera.
+- **Margin** controls how far the border extends beyond the work area, up to 100 mm.
+- **Transparency** controls how visible the border is.
+
+Areas the camera cannot see stay transparent instead of showing black, and the border ends at the
+edge of what the camera actually covers. Objects sticking up above the bed, such as the gantry, can
+appear shifted in the border, because the camera image is aligned to the bed plane.
+
+---
+
 ### Multiple Cameras
 
 Rayforge supports multiple cameras for different views or machines:

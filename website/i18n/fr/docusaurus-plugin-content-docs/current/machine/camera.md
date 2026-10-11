@@ -305,6 +305,27 @@ en cliquant sur l'icône caméra dans la barre d'outils de la fenêtre principal
 
 ---
 
+### Vue hors de la zone de travail
+
+La caméra voit généralement plus que la seule zone de travail. Dans Paramètres de la machine →
+Caméra → Vue hors de la zone de travail, tu peux afficher une bordure supplémentaire
+semi-transparente de l'image caméra autour de la zone de travail, ce qui facilite le positionnement
+des pièces.
+
+![Vue caméra hors de la zone de travail](/screenshots/main-camera-outside-view.webp)
+
+- **Afficher hors de la zone de travail** active ou désactive la bordure. Elle est désactivée par
+  défaut et nécessite une caméra alignée.
+- **Marge** contrôle la distance dont la bordure dépasse de la zone de travail, jusqu'à 100 mm.
+- **Transparence** contrôle la visibilité de la bordure.
+
+Les zones que la caméra ne voit pas restent transparentes au lieu d'apparaître en noir, et la
+bordure s'arrête à la limite de ce que la caméra couvre réellement. Les objets dépassant au-dessus
+du lit, comme le portique, peuvent sembler décalés dans la bordure, car l'image caméra est alignée
+sur le plan du lit.
+
+---
+
 ### Caméras Multiples
 
 Rayforge supporte plusieurs caméras pour différentes vues ou machines :

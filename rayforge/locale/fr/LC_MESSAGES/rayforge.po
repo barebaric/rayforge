@@ -10492,6 +10492,38 @@ msgstr "Bayer 4"
 msgid "Bayer 8"
 msgstr "Bayer 8"
 
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "View Outside Workspace"
+msgstr "Vue hors de la zone de travail"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Show the camera image in a margin around the work area to help position workpieces. Requires image alignment."
+msgstr "Affiche l’image de la caméra dans une marge autour de la zone de travail pour aider à positionner les pièces. Nécessite l’alignement de l’image."
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Show Outside Workspace"
+msgstr "Afficher hors de la zone de travail"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Draw the camera image around the work area"
+msgstr "Dessiner l’image de la caméra autour de la zone de travail"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Not shown until the camera image is aligned"
+msgstr "Non affichée tant que l’image de la caméra n’est pas alignée"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Margin"
+msgstr "Marge"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Size of the visible area on each side of the work area"
+msgstr "Taille de la zone visible de chaque côté de la zone de travail"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Transparency outside the work area"
+msgstr "Transparence hors de la zone de travail"
+
 #: rayforge/image/bitmap/importer.py
 #, python-brace-format
 msgid "Could not read the {format} image: {error}"
