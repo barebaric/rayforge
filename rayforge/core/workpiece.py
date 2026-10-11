@@ -220,6 +220,14 @@ class WorkPiece(DocItem):
             self.updated.send(self)
 
     @property
+    def has_edited_boundaries(self) -> bool:
+        """
+        True if the shape no longer comes straight from the source, e.g.
+        because the workpiece was split.
+        """
+        return self._edited_boundaries is not None
+
+    @property
     def natural_size(self) -> tuple[float, float]:
         """
         Returns the natural (untransformed) size of the content in mm.

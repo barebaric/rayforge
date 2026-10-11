@@ -4,7 +4,7 @@
 [![Launchpad PPA](https://img.shields.io/badge/PPA-blue)](https://launchpad.net/~knipknap/+archive/ubuntu/rayforge)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-[![Get it from the Snap Store](https://snapcraft.io/en/light/install.svg)](https://snapcraft.io/rayforge)
+<a href="https://snapcraft.io/rayforge"><img alt="Get it from the Snap Store" src="https://snapcraft.io/en/light/install.svg" height="55"/></a>
 <a href="https://flathub.org/apps/org.rayforge.rayforge"><img alt="Get it from Flathub" src="website/static/images/flathub-badge.svg" height="55"/></a>
 <a href="https://www.patreon.com/c/knipknap"><img src="https://c5.patreon.com/external/logo/become_a_patron_button.png" alt="Become a Patron" height="55"/></a>
 

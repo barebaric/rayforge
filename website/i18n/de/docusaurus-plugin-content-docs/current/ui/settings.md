@@ -32,6 +32,11 @@ Symbolleisten-Schaltfläche auslösen.
 Rayforge kann beim Start **automatisch nach Updates suchen**. Wenn aktiviert, wirst du
 benachrichtigt, wenn eine neue Version verfügbar ist.
 
+Ist **Importierte Dateien beobachten** aktiviert, überwacht Rayforge die Dateien hinter importierten
+Werkstücken und bietet an, sie neu zu laden, wenn sie sich auf der Festplatte ändern. Details
+findest du unter
+[Importierte Dateien synchron halten](../files/importing.md#importierte-dateien-synchron-halten).
+
 Du kannst auch das **Startverhalten** konfigurieren — mit einem leeren Arbeitsbereich starten, das
 letzte Projekt erneut öffnen oder immer eine bestimmte Projektdatei öffnen. Beachte, dass auf der
 Kommandozeile angegebene Dateien diese Einstellungen immer außer Kraft setzen.

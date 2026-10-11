@@ -148,3 +148,36 @@ class TestGestureBindings:
         assert restored.gesture_bindings == {
             "canvas3d": {"pan": "drag+middle"}
         }
+
+
+class TestWatchSourceFiles:
+    def test_defaults_to_true(self):
+        assert Config().watch_source_files is True
+
+    def test_setter_emits_changed_once(self):
+        config = Config()
+        calls = []
+
+        def on_changed(sender, **kwargs):
+            calls.append(sender)
+
+        config.changed.connect(on_changed, weak=False)
+
+        config.set_watch_source_files(False)
+        config.set_watch_source_files(False)
+
+        assert len(calls) == 1
+
+    def test_round_trip(self):
+        config = Config()
+        config.set_watch_source_files(False)
+        data = config.to_dict()
+
+        restored = Config.from_dict(data, get_machine_by_id=lambda mid: None)
+
+        assert data["watch_source_files"] is False
+        assert restored.watch_source_files is False
+
+    def test_absent_key_falls_back_to_true(self):
+        restored = Config.from_dict({}, get_machine_by_id=lambda mid: None)
+        assert restored.watch_source_files is True

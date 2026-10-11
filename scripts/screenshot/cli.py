@@ -51,6 +51,7 @@ TARGETS = {
     "config-wizard:review": "config_wizard",
     "config-wizard:rotary": "config_wizard",
     "import-dialog": "import_dialog",
+    "source-changed-dialog": "source_changed_dialog",
     "machine-settings:general": "machine_settings_general",
     "machine-settings:hardware": "machine_settings_hardware",
     "machine-settings:advanced": "machine_settings_advanced",

@@ -36,6 +36,10 @@ recalculation manually via the toolbar button instead.
 Rayforge can **Check for updates** automatically on startup. When enabled, you will be notified when
 a new version is available.
 
+With **Watch imported files** enabled, Rayforge monitors the files behind imported workpieces and
+offers to reload them when they change on disk. See
+[Keeping Imported Files in Sync](../files/importing.md#keeping-imported-files-in-sync) for details.
+
 You can also configure **Startup behavior** — start with an empty workspace, reopen your last
 project, or always open a specific project file. Note that files specified on the command line will
 always override these settings.

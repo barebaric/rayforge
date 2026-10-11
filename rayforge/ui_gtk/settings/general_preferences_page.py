@@ -317,6 +317,18 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         )
         startup_group.add(self.check_updates_row)
 
+        self.watch_sources_row = Adw.SwitchRow(
+            title=_("Watch imported files"),
+            subtitle=_(
+                "Offer to reload imported files when they change on disk"
+            ),
+        )
+        self.watch_sources_row.set_active(config.watch_source_files)
+        self.watch_sources_row.connect(
+            "notify::active", self.on_watch_sources_changed
+        )
+        startup_group.add(self.watch_sources_row)
+
         # Startup behavior selector
         self.startup_behavior_row = Adw.ComboRow(
             title=_("Startup behavior"),
@@ -566,3 +578,8 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         """Called when the user toggles the update check setting."""
         enabled = switch_row.get_active()
         get_context().config.set_check_for_app_updates(enabled)
+
+    def on_watch_sources_changed(self, switch_row, _):
+        """Called when the user toggles watching imported files."""
+        enabled = switch_row.get_active()
+        get_context().config.set_watch_source_files(enabled)
