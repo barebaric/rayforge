@@ -10,6 +10,8 @@ Les outils de nettoyage des chemins corrigent cela sur les pièces sélectionné
 dans le menu **Objet** et sous **Nettoyer les chemins** dans le menu contextuel du canevas. Chaque
 outil correspond à une seule étape d'annulation.
 
+![La boîte de dialogue Fermer les chemins](/screenshots/main-path-cleanup.webp)
+
 ## Fermer les chemins
 
 **Fermer les chemins…** ferme chaque chemin ouvert dont le point de départ et le point d'arrivée
@@ -34,7 +36,8 @@ pièces, une pièce qui est la copie exacte d'une autre pièce sélectionnée à
 également retirée.
 
 Les chemins qui ne se chevauchent que sur une partie de leur longueur sont conservés. Le
-post-processeur [Fusionner les lignes](merge-lines) s'en charge lors de la génération de la tâche.
+post-processeur [Fusionner les lignes](./merge-lines.md) s'en charge lors de la génération de la
+tâche.
 
 ## Décomposer
 
@@ -42,10 +45,10 @@ post-processeur [Fusionner les lignes](merge-lines) s'en charge lors de la gén�
 compris. C'est différent de **Scinder**, qui garde un îlot avec ses trous.
 
 Le nettoyage des chemins ne fonctionne que sur les pièces importées et vectorisées. Les pièces
-issues d'une esquisse se modifient dans le [Sketcher](sketcher/index).
+issues d'une esquisse se modifient dans le [Sketcher](./sketcher/index.md).
 
 ## Pages connexes
 
-- [Fusionner les lignes](merge-lines) - Ne découper qu'une fois les segments qui se chevauchent
-- [Outils du canevas](../ui/canvas-tools) - Sélectionner et supprimer des segments individuels
-- [Importer des fichiers](../files/importing) - Importer des dessins dans Rayforge
+- [Fusionner les lignes](./merge-lines.md) - Ne découper qu'une fois les segments qui se chevauchent
+- [Outils du canevas](../ui/canvas-tools.md) - Sélectionner et supprimer des segments individuels
+- [Importer des fichiers](../files/importing.md) - Importer des dessins dans Rayforge

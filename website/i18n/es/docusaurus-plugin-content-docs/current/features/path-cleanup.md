@@ -10,6 +10,8 @@ Las herramientas de limpieza de rutas corrigen esto en las piezas de trabajo sel
 encontrarás en el menú **Objeto** y en **Limpiar rutas** del menú contextual del lienzo. Cada
 herramienta es un solo paso de deshacer.
 
+![El diálogo de cerrar rutas](/screenshots/main-path-cleanup.webp)
+
 ## Cerrar rutas
 
 **Cerrar rutas…** cierra cada ruta abierta cuyo punto inicial y final están más cerca que la
@@ -33,7 +35,7 @@ de trabajo, sin importar su dirección o punto inicial. Si seleccionas varias pi
 también se quita una pieza que sea una copia exacta de otra pieza seleccionada en la misma posición.
 
 Las rutas que solo se superponen en parte de su longitud se mantienen. De ellas se encarga el
-posprocesador [Fusionar líneas](merge-lines) al generar el trabajo.
+posprocesador [Fusionar líneas](./merge-lines.md) al generar el trabajo.
 
 ## Separar
 
@@ -41,10 +43,10 @@ posprocesador [Fusionar líneas](merge-lines) al generar el trabajo.
 y las rutas abiertas. Esto es distinto de **Dividir**, que mantiene una isla junto con sus agujeros.
 
 La limpieza de rutas solo funciona en piezas de trabajo importadas y trazadas. Las piezas que vienen
-de un boceto se editan en el [Sketcher](sketcher/index).
+de un boceto se editan en el [Sketcher](./sketcher/index.md).
 
 ## Páginas relacionadas
 
-- [Fusionar líneas](merge-lines) - Cortar los segmentos superpuestos una sola vez
-- [Herramientas del lienzo](../ui/canvas-tools) - Seleccionar y eliminar segmentos individuales
-- [Importar archivos](../files/importing) - Llevar diseños a Rayforge
+- [Fusionar líneas](./merge-lines.md) - Cortar los segmentos superpuestos una sola vez
+- [Herramientas del lienzo](../ui/canvas-tools.md) - Seleccionar y eliminar segmentos individuales
+- [Importar archivos](../files/importing.md) - Llevar diseños a Rayforge

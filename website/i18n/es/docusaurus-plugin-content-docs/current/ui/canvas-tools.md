@@ -167,7 +167,7 @@ Para salir del modo de edición de vectores, haz clic fuera de la pieza de traba
 <kbd>Escape</kbd>.
 
 Para cerrar huecos, unir piezas abiertas, eliminar rutas duplicadas o separar una pieza de trabajo,
-usa las herramientas de [Limpieza de rutas](../features/path-cleanup).
+usa las herramientas de [Limpieza de rutas](../features/path-cleanup.md).
 
 ---
 

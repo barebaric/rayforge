@@ -14,6 +14,8 @@ closed is treated as open, and a doubled path is cut twice.
 The path clean-up tools fix this on the selected workpieces. You find them in the **Object** menu
 and under **Clean Up Paths** in the canvas context menu. Each tool is a single undo step.
 
+![The Close Paths dialog](/screenshots/main-path-cleanup.webp)
+
 ## Close Paths
 
 **Close Paths…** closes every open path whose start and end point are closer than the tolerance you
@@ -36,7 +38,7 @@ regardless of their direction or start point. When you select several workpieces
 is an exact copy of another selected workpiece at the same position is removed too.
 
 Overlapping paths that only share part of their length are left alone. The
-[Merge Lines](merge-lines) post-processor takes care of those when the job is generated.
+[Merge Lines](./merge-lines.md) post-processor takes care of those when the job is generated.
 
 ## Break Apart
 
@@ -44,10 +46,10 @@ Overlapping paths that only share part of their length are left alone. The
 included. This differs from **Split**, which keeps an island together with its holes.
 
 Path clean-up only works on imported and traced workpieces. Workpieces that come from a sketch are
-edited in the [Sketcher](sketcher/index) instead.
+edited in the [Sketcher](./sketcher/index.md) instead.
 
 ## Related Pages
 
-- [Merge Lines](merge-lines) - Cutting overlapping segments only once
-- [Canvas Tools](../ui/canvas-tools) - Selecting and deleting individual segments
-- [Importing Files](../files/importing) - Bringing designs into Rayforge
+- [Merge Lines](./merge-lines.md) - Cutting overlapping segments only once
+- [Canvas Tools](../ui/canvas-tools.md) - Selecting and deleting individual segments
+- [Importing Files](../files/importing.md) - Bringing designs into Rayforge

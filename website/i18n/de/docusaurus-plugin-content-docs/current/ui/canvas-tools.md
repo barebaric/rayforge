@@ -167,7 +167,7 @@ Um den Vektorbearbeitungsmodus zu verlassen, klicke außerhalb des Werkstücks o
 <kbd>Escape</kbd>.
 
 Um Lücken zu schließen, offene Teile zu verbinden, doppelte Pfade zu löschen oder ein Werkstück zu
-zerlegen, verwende die Werkzeuge unter [Pfade bereinigen](../features/path-cleanup).
+zerlegen, verwende die Werkzeuge unter [Pfade bereinigen](../features/path-cleanup.md).
 
 ---
 

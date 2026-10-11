@@ -10,6 +10,8 @@ As ferramentas de limpeza de caminhos corrigem isso nas peças de trabalho selec
 encontra no menu **Objeto** e em **Limpar caminhos** no menu de contexto da tela. Cada ferramenta é
 um único passo de desfazer.
 
+![O diálogo de fechar caminhos](/screenshots/main-path-cleanup.webp)
+
 ## Fechar caminhos
 
 **Fechar caminhos…** fecha cada caminho aberto cujos pontos inicial e final estão mais próximos do
@@ -34,7 +36,7 @@ trabalho, uma peça que seja cópia exata de outra peça selecionada na mesma po
 removida.
 
 Caminhos que se sobrepõem apenas em parte do comprimento são mantidos. O pós-processador
-[Mesclar linhas](merge-lines) cuida deles quando o trabalho é gerado.
+[Mesclar linhas](./merge-lines.md) cuida deles quando o trabalho é gerado.
 
 ## Separar
 
@@ -42,10 +44,10 @@ Caminhos que se sobrepõem apenas em parte do comprimento são mantidos. O pós-
 caminhos abertos. Isso é diferente de **Dividir**, que mantém uma ilha junto com seus furos.
 
 A limpeza de caminhos só funciona em peças de trabalho importadas e vetorizadas. Peças que vêm de um
-esboço são editadas no [Sketcher](sketcher/index).
+esboço são editadas no [Sketcher](./sketcher/index.md).
 
 ## Páginas relacionadas
 
-- [Mesclar linhas](merge-lines) - Cortar segmentos sobrepostos apenas uma vez
-- [Ferramentas de tela](../ui/canvas-tools) - Selecionar e excluir segmentos individuais
-- [Importando arquivos](../files/importing) - Trazer desenhos para o Rayforge
+- [Mesclar linhas](./merge-lines.md) - Cortar segmentos sobrepostos apenas uma vez
+- [Ferramentas de tela](../ui/canvas-tools.md) - Selecionar e excluir segmentos individuais
+- [Importando arquivos](../files/importing.md) - Trazer desenhos para o Rayforge

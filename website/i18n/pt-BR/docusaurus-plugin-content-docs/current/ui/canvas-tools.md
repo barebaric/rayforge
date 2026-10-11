@@ -167,7 +167,7 @@ Para sair do modo de edição de vetores, clique fora da peça de trabalho ou pr
 <kbd>Escape</kbd>.
 
 Para fechar lacunas, unir partes abertas, excluir caminhos duplicados ou separar uma peça de
-trabalho, use as ferramentas de [Limpeza de caminhos](../features/path-cleanup).
+trabalho, use as ferramentas de [Limpeza de caminhos](../features/path-cleanup.md).
 
 ---
 

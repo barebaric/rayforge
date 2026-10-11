@@ -10,6 +10,8 @@ Die Werkzeuge zum Bereinigen von Pfaden beheben das bei den ausgewählten Werkst
 im Menü **Objekt** und im Kontextmenü der Arbeitsfläche unter **Pfade bereinigen**. Jedes Werkzeug
 ist ein einzelner Rückgängig-Schritt.
 
+![Der Dialog „Pfade schließen“](/screenshots/main-path-cleanup.webp)
+
 ## Pfade schließen
 
 **Pfade schließen…** schließt jeden offenen Pfad, dessen Anfangs- und Endpunkt näher beieinander
@@ -34,7 +36,8 @@ ein Werkstück entfernt, das eine exakte Kopie eines anderen ausgewählten Werks
 Position ist.
 
 Überlappende Pfade, die nur einen Teil ihrer Länge gemeinsam haben, bleiben erhalten. Um diese
-kümmert sich der Postprozessor [Linien zusammenführen](merge-lines), wenn der Auftrag erzeugt wird.
+kümmert sich der Postprozessor [Linien zusammenführen](./merge-lines.md), wenn der Auftrag erzeugt
+wird.
 
 ## Zerlegen
 
@@ -42,10 +45,10 @@ kümmert sich der Postprozessor [Linien zusammenführen](merge-lines), wenn der 
 offener Pfade. Das unterscheidet sich von **Teilen**, das eine Insel mit ihren Löchern zusammenhält.
 
 Das Bereinigen von Pfaden funktioniert nur bei importierten und nachgezeichneten Werkstücken.
-Werkstücke aus einer Skizze bearbeitest du stattdessen im [Sketcher](sketcher/index).
+Werkstücke aus einer Skizze bearbeitest du stattdessen im [Sketcher](./sketcher/index.md).
 
 ## Verwandte Seiten
 
-- [Linien zusammenführen](merge-lines) - Überlappende Segmente nur einmal schneiden
-- [Canvas-Werkzeuge](../ui/canvas-tools) - Einzelne Segmente auswählen und löschen
-- [Dateien importieren](../files/importing) - Designs in Rayforge laden
+- [Linien zusammenführen](./merge-lines.md) - Überlappende Segmente nur einmal schneiden
+- [Canvas-Werkzeuge](../ui/canvas-tools.md) - Einzelne Segmente auswählen und löschen
+- [Dateien importieren](../files/importing.md) - Designs in Rayforge laden
