@@ -54,6 +54,9 @@ TARGETS = {
     "machine-settings:general": "machine_settings_general",
     "machine-settings:hardware": "machine_settings_hardware",
     "machine-settings:advanced": "machine_settings_advanced",
+    "machine-settings:advanced:bidir-offset-table": (
+        "machine_settings_advanced"
+    ),
     "machine-settings:gcode": "machine_settings_gcode",
     "machine-settings:hooks-macros": "machine_settings_hooks-macros",
     "machine-settings:hooks-macros:editor": "macro_editor",
