@@ -53,6 +53,7 @@ class PathToleranceDialog(Adw.AlertDialog):
         )
         group = Adw.PreferencesGroup()
         group.add(self.tolerance_row)
+        group.set_size_request(430, -1)
         self.set_extra_child(group)
 
         self.connect("response", self._on_response)
