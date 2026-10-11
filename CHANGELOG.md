@@ -21,6 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the page size (#517)
 - Import: GIF, TIFF and WebP bitmaps, traced like PNG. Animated GIFs
   and multi-page TIFFs import their first frame or page (#517)
+- Engrave: more dithering algorithms for photos. The error-diffusion
+  kernels Atkinson, Stucki, Jarvis-Judice-Ninke, Sierra (3-row,
+  2-row, Lite) and Burkes, with an optional serpentine scan, plus a
+  clustered-dot Newsprint screen and a round-dot Halftone screen with
+  adjustable cell size and angle. LightBurn imports keep the image
+  layer's dither mode (#514)
 - Path clean-up tools in the Object menu and canvas context menu:
   Close Paths and Join Open Paths with a tolerance in mm, Delete
   Duplicates (duplicate contours inside a workpiece and stacked copies
@@ -60,6 +66,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Step settings: choice rows backed by an enum (such as the Engrave
+  step's dithering algorithm) now show the step's actual value when
+  the dialog opens and after undo, instead of the first entry
 - Ruida: the setup wizard no longer requires the optional USB device
   and Magic fields, so Next is enabled again once a valid hostname is
   entered; the Magic field is prefilled with the standard 0x88

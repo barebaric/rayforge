@@ -799,3 +799,27 @@ msgstr "Cabeça de Laser"
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Add Material Test"
 msgstr "Adicionar Teste de Material"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Serpentine"
+msgstr "Serpentina"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Alternate the dither direction on every row to avoid directional artifacts"
+msgstr "Alternar a direção do pontilhado em cada linha para evitar artefatos direcionais"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Halftone Cell Size"
+msgstr "Tamanho da célula de meio-tom"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Distance between halftone dot centers"
+msgstr "Distância entre os centros dos pontos de meio-tom"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Halftone Angle"
+msgstr "Ângulo do meio-tom"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Rotation of the halftone dot grid"
+msgstr "Rotação da grade de pontos de meio-tom"

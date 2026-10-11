@@ -776,3 +776,27 @@ msgstr "激光头"
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Add Material Test"
 msgstr "添加材料测试"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Serpentine"
+msgstr "蛇形扫描"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Alternate the dither direction on every row to avoid directional artifacts"
+msgstr "每行交替抖动方向，以避免方向性伪影"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Halftone Cell Size"
+msgstr "半色调网格尺寸"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Distance between halftone dot centers"
+msgstr "半色调网点中心之间的距离"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Halftone Angle"
+msgstr "半色调角度"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Rotation of the halftone dot grid"
+msgstr "半色调网点网格的旋转角度"

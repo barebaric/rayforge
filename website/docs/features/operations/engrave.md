@@ -229,18 +229,34 @@ This is particularly useful for:
 
 Choose the algorithm that best suits your image and material:
 
-| Algorithm       | Quality | Speed   | Best For                            |
-| --------------- | ------- | ------- | ----------------------------------- |
-| Floyd-Steinberg | Highest | Slowest | Photos, portraits, smooth gradients |
-| Bayer 2x2       | Low     | Fastest | Coarse halftone effect              |
-| Bayer 4x4       | Medium  | Fast    | Balanced halftone                   |
-| Bayer 8x8       | High    | Medium  | Fine detail, subtle patterns        |
+| Algorithm                   | Quality | Speed   | Best For                              |
+| --------------------------- | ------- | ------- | ------------------------------------- |
+| Floyd-Steinberg             | Highest | Slowest | Photos, portraits, smooth gradients   |
+| Bayer 2x2                   | Low     | Fastest | Coarse halftone effect                |
+| Bayer 4x4                   | Medium  | Fast    | Balanced halftone                     |
+| Bayer 8x8                   | High    | Medium  | Fine detail, subtle patterns          |
+| Atkinson                    | Medium  | Medium  | High-contrast images, wood            |
+| Stucki                      | Highest | Slow    | Portraits, smooth skin tones          |
+| Jarvis, Judice & Ninke      | Highest | Slow    | Soft gradients, fine grain            |
+| Sierra (3-row, 2-row, Lite) | High    | Medium  | Lighter alternatives to Stucki        |
+| Burkes                      | High    | Medium  | Photos, faster than Stucki            |
+| Newsprint                   | Medium  | Fastest | Clustered newspaper-style dots        |
+| Halftone                    | Medium  | Fast    | Round dots, adjustable size and angle |
 
 **Floyd-Steinberg** is default and recommended for most photo engravings. It uses error diffusion to
 distribute quantization errors to neighboring pixels, creating natural-looking results.
 
 **Bayer dithering** creates regular patterns that can produce artistic effects resembling
 traditional halftone printing.
+
+**Stucki, Jarvis, Sierra, Burkes and Atkinson** are error-diffusion algorithms like Floyd-Steinberg
+that spread the error over a wider neighborhood, which gives a smoother grain in flat areas such as
+skin tones. Atkinson diffuses only part of the error, which raises contrast. Turn on **Serpentine**
+to alternate the scan direction on every row and avoid directional streaks.
+
+**Newsprint** and **Halftone** group pixels into dots. Halftone draws round dots on a grid set by
+**Halftone Cell Size** (the distance between dot centers) and **Halftone Angle**; use a cell size of
+at least a few laser spot widths.
 
 #### Multiple Depths Mode Settings
 

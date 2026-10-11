@@ -44,7 +44,7 @@ We also have a [Discord](https://discord.gg/sTHNdTtpQJ).
 | **Animated 3D Simulation**   | Simulate toolpaths in 3D with animated playback, scrubber, and speed control.                        |
 | **Holding Tabs**             | Add tabs to contour cuts. Supports manual and automatic placement.                                   |
 | **Overscan & Kerf Comp.**    | Improve engraving quality with overscan; ensure dimensional accuracy with kerf compensation.         |
-| **Dithering Algorithms**     | Floyd-Steinberg and Bayer ordered dithering for high-quality raster engraving.                       |
+| **Dithering Algorithms**     | Floyd-Steinberg, Stucki, Jarvis, Atkinson, Sierra, Burkes, Bayer, newsprint and halftone screens.    |
 | **Post-Processors**          | Lead-in/lead-out, merge overlapping lines, and crop toolpaths to stock boundary.                     |
 | **Advanced Path Generation** | Image tracing, travel time optimization, path smoothing, and spot size interpolation.                |
 

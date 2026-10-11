@@ -797,3 +797,27 @@ msgstr "Лазерна голівка"
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Add Material Test"
 msgstr "Додати тест матеріалу"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Serpentine"
+msgstr "Змійкою"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Alternate the dither direction on every row to avoid directional artifacts"
+msgstr "Змінювати напрямок дизерингу в кожному рядку, щоб уникнути спрямованих артефактів"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Halftone Cell Size"
+msgstr "Розмір комірки півтону"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Distance between halftone dot centers"
+msgstr "Відстань між центрами півтонових точок"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Halftone Angle"
+msgstr "Кут півтону"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Rotation of the halftone dot grid"
+msgstr "Поворот сітки півтонових точок"
