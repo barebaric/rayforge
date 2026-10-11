@@ -1,4 +1,7 @@
+import gzip
 import logging
+from gettext import gettext as _
+from pathlib import Path
 from typing import ClassVar
 
 from ...core.source_asset import SourceAsset
@@ -36,7 +39,7 @@ class SvgImporter(Importer):
 
     label = "SVG files"
     mime_types = ("image/svg+xml",)
-    extensions = (".svg",)
+    extensions = (".svg", ".svgz")
     features: ClassVar[set[ImporterFeature]] = {
         ImporterFeature.DIRECT_VECTOR,
         ImporterFeature.BITMAP_TRACING,
@@ -44,9 +47,28 @@ class SvgImporter(Importer):
         ImporterFeature.COLOR_LAYERS,
     }
 
+    def __init__(self, data: bytes, source_file: Path | None = None):
+        """
+        Unpacks gzip-compressed SVG (Inkscape's "Compressed SVG",
+        .svgz) here, so every phase below and both delegates always
+        see plain SVG bytes.
+        """
+        super().__init__(data, source_file)
+        if data[:2] == b"\x1f\x8b":
+            try:
+                self.raw_data = gzip.decompress(data)
+            except (OSError, EOFError):
+                self.add_error(
+                    _("This SVGZ file's gzip data could not be decompressed.")
+                )
+                self.raw_data = b""
+
     def scan(self) -> ImportManifest:
         # Use Vector importer for scanning as it's lightweight/standard
-        return SvgVectorImporter(self.raw_data, self.source_file).scan()
+        manifest = SvgVectorImporter(self.raw_data, self.source_file).scan()
+        manifest.warnings.extend(self._warnings)
+        manifest.errors.extend(self._errors)
+        return manifest
 
     def get_doc_items(
         self, vectorization_spec: VectorizationSpec | None = None
