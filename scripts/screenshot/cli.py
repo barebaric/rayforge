@@ -84,6 +84,7 @@ TARGETS = {
     "main:array:grid": "array_grid",
     "main:array:point-rotation": "array_point_rotation",
     "main:array:circular": "array_circular",
+    "main:path-cleanup": "path_cleanup",
     "addons:sketcher:conflicts": "sketcher_constraints",
     "addons:sketcher:constraints": "sketcher_editor",
     "addons:sketcher:constraint:angle": "sketcher_constraints",

@@ -27,6 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   clustered-dot Newsprint screen and a round-dot Halftone screen with
   adjustable cell size and angle. LightBurn imports keep the image
   layer's dither mode (#514)
+- Path clean-up tools in the Object menu and canvas context menu:
+  Close Paths and Join Open Paths with a tolerance in mm, Delete
+  Duplicates (duplicate contours inside a workpiece and stacked copies
+  of whole workpieces), and Break Apart (one workpiece per contour,
+  holes and open paths included). Each is a single undo step (#516)
 - Sketcher: boolean operations. Union, Difference, Intersection and
   Exclude bake the selected closed regions into multi-ring polygons
   (outer contours counter-clockwise, hole contours clockwise), so

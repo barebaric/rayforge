@@ -114,6 +114,24 @@ def _populate_standard_items(menu: Gio.Menu):
     # Separator
     menu.append_section(None, Gio.Menu.new())
 
+    cleanup_menu = Gio.Menu.new()
+    cleanup_menu.append_item(
+        Gio.MenuItem.new(_("Break Apart"), "win.break-apart")
+    )
+    cleanup_menu.append_item(
+        Gio.MenuItem.new(_("Close Paths…"), "win.close-paths")
+    )
+    cleanup_menu.append_item(
+        Gio.MenuItem.new(_("Join Open Paths…"), "win.join-paths")
+    )
+    cleanup_menu.append_item(
+        Gio.MenuItem.new(_("Delete Duplicates"), "win.delete-duplicates")
+    )
+    menu.append_submenu(_("Clean Up Paths"), cleanup_menu)
+
+    # Separator
+    menu.append_section(None, Gio.Menu.new())
+
     menu.append_item(
         Gio.MenuItem.new(_("Convert to Stock"), "win.convert-to-stock")
     )

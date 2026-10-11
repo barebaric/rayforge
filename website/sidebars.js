@@ -102,6 +102,7 @@ module.exports = {
               ],
             },
             'features/arrays',
+            'features/path-cleanup',
             'features/multi-layer',
             'features/stock-handling',
             'features/framing-your-job',
