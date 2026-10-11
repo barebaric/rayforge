@@ -341,15 +341,16 @@ banding visible sur certaines machines. Si vous constatez ce phénomène, calibr
 Balayage Bidirectionnel** ci-dessous pour le corriger directement, plutôt que de perdre l'avantage
 de vitesse.
 
-#### Décalage de Balayage Bidirectionnel
+#### Décalage de Balayage Bidirectionnel {#bidirectional-scan-offset}
 
 Corrige un décalage fixe mécanique ou de délai de tir entre les passes raster de gauche à droite et
 de droite à gauche, qui autrement désalignerait les rangées de balayage alternées (visible sous
 forme de banding, en particulier dans les gravures photo).
 
 - Défini en millimètres, positif ou négatif selon la direction qui doit être décalée
-- Applique un décalage constant quelle que soit la vitesse ; si le décalage varie avec la vitesse,
-  calibrez pour votre vitesse de gravure typique
+- Une valeur non nulle ici gagne toujours ; lorsqu'elle vaut 0, l'étape revient au tableau
+  [Décalage de Balayage Bidirectionnel par Vitesse](../../machine/advanced.md#bidirectional-scan-offset-by-speed)
+  de la machine, qui interpole un décalage pour la vitesse de cette étape
 - Par défaut à 0 (aucune correction)
 
 **Calibrage du décalage :**
@@ -359,6 +360,11 @@ forme de banding, en particulier dans les gravures photo).
 2. Comparez les rangées alternées pour trouver la direction et l'ampleur du désalignement
 3. Ajustez le décalage par petits incréments (0.01-0.05mm) et retestez jusqu'à ce que les rangées
    alternées s'alignent
+
+Si le désalignement varie nettement entre vos vitesses de gravure habituelles, un seul décalage ne
+peut pas corriger tous les travaux. Laissez le décalage de l'étape à 0 et saisissez plutôt un
+tableau de décalage dépendant de la vitesse dans
+[Paramètres Machine - Avancé](../../machine/advanced.md#bidirectional-scan-offset-by-speed).
 
 ## Paramètres Laser
 

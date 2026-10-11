@@ -338,15 +338,16 @@ Pequeñas diferencias mecánicas o de retardo de disparo entre las dos direccion
 bandas visibles en algunas máquinas. Si ves esto, calibra el **Desplazamiento de Escaneo
 Bidireccional** de abajo para corregirlo directamente, en lugar de perder el beneficio de velocidad.
 
-#### Desplazamiento de Escaneo Bidireccional
+#### Desplazamiento de Escaneo Bidireccional {#bidirectional-scan-offset}
 
 Corrige un sesgo fijo mecánico o de retardo de disparo entre las pasadas raster de izquierda a
 derecha y de derecha a izquierda, que de otro modo desalinea filas de escaneo alternas (visible como
 bandas, especialmente en grabados de fotos).
 
 - Se configura en milímetros, positivo o negativo dependiendo de qué dirección necesita desplazarse
-- Aplica un desplazamiento constante independientemente de la velocidad; si el sesgo varía con la
-  velocidad, calibra para tu velocidad de grabado típica
+- Un valor distinto de cero aquí siempre gana; cuando es 0, el paso recurre a la tabla
+  [Desplazamiento de Escaneo Bidireccional por Velocidad](../../machine/advanced.md#bidirectional-scan-offset-by-speed)
+  de la máquina, que interpola un desplazamiento para la velocidad de este paso
 - El valor predeterminado es 0 (sin corrección)
 
 **Calibrando el desplazamiento:**
@@ -356,6 +357,11 @@ bandas, especialmente en grabados de fotos).
 2. Compara las filas alternas para encontrar la dirección y la cantidad de desalineación
 3. Ajusta el desplazamiento en pequeños incrementos (0.01-0.05mm) y vuelve a probar hasta que las
    filas alternas se alineen
+
+Si la desalineación cambia notablemente entre tus velocidades de grabado habituales, un único
+desplazamiento no puede corregir todos los trabajos. Deja el desplazamiento del paso en 0 y
+configura en su lugar una tabla de desplazamiento dependiente de la velocidad en
+[Ajustes de Máquina - Avanzado](../../machine/advanced.md#bidirectional-scan-offset-by-speed).
 
 ## Ajustes del Láser
 

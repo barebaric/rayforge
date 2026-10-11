@@ -309,7 +309,8 @@ Use invert for lithophanes (light areas should be thin) or embossing (raised are
 <!-- prettier-ignore-start -->
 :::tip[Resolution Match]
 For images, line interval should match or exceed image resolution. If your image is 10 pixels/mm
-(254 DPI), use 0.1mm line interval or smaller.:::
+(254 DPI), use 0.1mm line interval or smaller.
+:::
 <!-- prettier-ignore-end -->
 
 #### Scan Direction
@@ -343,8 +344,9 @@ passes, which otherwise misaligns alternate scan rows (visible as banding, espec
 engraves).
 
 - Set in millimeters, positive or negative depending on which direction needs to shift
-- Applies a constant shift regardless of speed; if the skew varies with speed, calibrate for your
-  typical engraving speed
+- A non-zero value here always wins; when it is 0, the step falls back to the machine's
+  [Bidirectional Scan Offset by Speed](../../machine/advanced.md#bidirectional-scan-offset-by-speed)
+  table, which interpolates an offset for this step's speed
 - Defaults to 0 (no correction)
 
 **Calibrating the offset:**
@@ -353,6 +355,10 @@ engraves).
    scanning
 2. Compare alternate rows to find the direction and amount of misalignment
 3. Adjust the offset in small increments (0.01-0.05mm) and re-test until alternating rows line up
+
+If the misalignment changes noticeably across your usual engraving speeds, a single offset cannot
+fix every job. Leave the step offset at 0 and enter a speed-dependent offset table in
+[Machine Settings - Advanced](../../machine/advanced.md#bidirectional-scan-offset-by-speed) instead.
 
 ## Laser settings
 

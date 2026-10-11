@@ -59,6 +59,43 @@ Befehle erfordern. Ein größerer Wert erlaubt mehr Abweichung, generiert aber w
 
 Typische Werte reichen von 0,01mm für Präzisionsarbeit bis 0,1mm für schnellere Verarbeitung.
 
+## Bidirektionaler Scan-Offset nach Geschwindigkeit {#bidirectional-scan-offset-by-speed}
+
+Die Tabelle für den bidirektionalen Scan-Offset nach Geschwindigkeit korrigiert die horizontale
+Fehlausrichtung zwischen Links-nach-rechts- und Rechts-nach-links-Rasterdurchgängen. Auf vielen
+Maschinen ist diese Versetzung nicht konstant: Je schneller sich der Laserkopf bewegt, desto weiter
+driften die Rechts-nach-links-Durchgänge aus der Ausrichtung, was als Bänderung sichtbar wird, die
+bei höheren Gravurgeschwindigkeiten schlimmer wird.
+
+![Bidirektionaler Scan-Offset nach Geschwindigkeit](/screenshots/machine-settings-advanced-bidir-offset-table.webp)
+
+Jede Zeile der Tabelle verknüpft eine Gravurgeschwindigkeit mit dem Offset in Millimetern, den
+Rechts-nach-links-Durchgänge bei dieser Geschwindigkeit benötigen:
+
+- Mit **Zeile hinzufügen** fügst du eine Zeile hinzu, mit dem Papierkorb-Symbol einer Zeile
+  entfernst du sie
+- Positive Werte verschieben Rechts-nach-links-Durchgänge nach rechts, negative nach links
+- Zeilen werden nach Geschwindigkeit sortiert gehalten; haben zwei Zeilen dieselbe Geschwindigkeit,
+  zählt die letzte
+
+Läuft ein Gravurschritt, schlägt Rayforge die Geschwindigkeit des Schritts in dieser Tabelle nach
+und interpoliert den Offset linear zwischen den benachbarten Zeilen. Geschwindigkeiten unterhalb der
+ersten oder oberhalb der letzten Zeile verwenden den Offset der jeweils nächsten Zeile, und eine
+leere Tabelle bedeutet, dass jede Geschwindigkeit einen Offset von 0 verwendet.
+
+**Ohne Korrektur** – die Fehlausrichtung wächst mit der Gravurgeschwindigkeit:
+
+![Fehlausgerichtete Rasterdurchgänge bei 1000, 4000 und 8000 mm/min](/images/bidir-scan-offset-uncorrected.webp)
+
+**Mit angewandter Offset-Tabelle:**
+
+![Ausgerichtete Rasterdurchgänge bei jeder Geschwindigkeit](/images/bidir-scan-offset-table-applied.webp)
+
+Die Tabelle gilt nur für Gravurschritte, deren eigener **Bidirektionaler Scan-Offset** auf 0 steht;
+ein nicht nuller Offset am Schritt hat immer Vorrang. Unter
+[Bidirektionaler Scan-Offset](../features/operations/engrave.md#bidirectional-scan-offset) erfährst
+du, wie die Fehlausrichtung aussieht und wie man sie kalibriert.
+
 ## Siehe auch
 
 - [Hardware-Einstellungen](hardware) - Achsenursprung und Umkehreinstellungen
