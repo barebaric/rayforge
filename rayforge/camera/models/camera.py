@@ -345,7 +345,6 @@ class Camera:
         )
         self._outside_view_enabled = value
         self.changed.send(self)
-        self.settings_changed.send(self)
 
     @property
     def outside_view_margin_mm(self) -> float:
@@ -374,7 +373,6 @@ class Camera:
         )
         self._outside_view_margin_mm = value
         self.changed.send(self)
-        self.settings_changed.send(self)
 
     @property
     def outside_view_transparency(self) -> float:
@@ -402,7 +400,6 @@ class Camera:
         )
         self._outside_view_transparency = value
         self.changed.send(self)
-        self.settings_changed.send(self)
 
     @property
     def resolution(self) -> tuple[int, int] | None:

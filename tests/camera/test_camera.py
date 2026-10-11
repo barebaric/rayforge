@@ -564,9 +564,12 @@ def test_outside_view_setters_emit_signals():
     camera.outside_view_margin_mm = 10
     camera.outside_view_transparency = 0.5
     assert len(changed) == 3
-    assert len(settings_changed) == 3
+    # The outside view is display-only; it must not invalidate capture
+    # or processing settings.
+    assert len(settings_changed) == 0
 
     camera.outside_view_enabled = True
     camera.outside_view_margin_mm = 10.0
     camera.outside_view_transparency = 0.5
     assert len(changed) == 3
+    assert len(settings_changed) == 0

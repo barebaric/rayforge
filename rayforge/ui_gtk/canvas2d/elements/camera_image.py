@@ -76,6 +76,9 @@ class CameraImageElement(CanvasElement):
         self.camera = controller.config  # Convenience alias for the data model
         self.controller.image_captured.connect(self._on_state_changed)
         self.camera.changed.connect(self._on_camera_model_changed)
+        # Display-only settings (e.g. the outside view) emit `changed`
+        # only, so both signals must invalidate the cache.
+        self.camera.changed.connect(self._on_state_changed)
         self.camera.settings_changed.connect(self._on_state_changed)
         self.set_visible(self.camera.enabled)
 
@@ -116,6 +119,7 @@ class CameraImageElement(CanvasElement):
         """
         self.controller.image_captured.disconnect(self._on_state_changed)
         self.camera.changed.disconnect(self._on_camera_model_changed)
+        self.camera.changed.disconnect(self._on_state_changed)
         self.camera.settings_changed.disconnect(self._on_state_changed)
         super().remove()
 

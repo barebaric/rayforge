@@ -118,7 +118,7 @@ class CameraController:
         self.resolutions_probed = Signal()
 
         self.config.changed.connect(self._on_config_changed)
-        self.config.settings_changed.connect(self._on_config_changed)
+        self.config.settings_changed.connect(self._on_capture_settings_changed)
 
     def _source_key(self) -> tuple:
         """A tuple identifying which physical source is being captured.
@@ -136,9 +136,6 @@ class CameraController:
             return
         if not self.config.outside_view_enabled:
             self._outside_cache.clear()
-        self._settings_dirty = True
-        with self._frame_lock:
-            self._accumulator = None  # Reset smoothing if settings change
         new_source_key = self._source_key()
         source_changed = new_source_key != self._last_source_key
         self._last_source_key = new_source_key
@@ -152,6 +149,14 @@ class CameraController:
         elif not self.config.enabled:
             # Also stop if it's disabled, regardless of subscribers
             self._stop_capture_stream()
+
+    def _on_capture_settings_changed(self, sender):
+        """Reacts to changes that affect capturing or frame processing."""
+        if self._disposed:
+            return
+        self._settings_dirty = True
+        with self._frame_lock:
+            self._accumulator = None  # Reset smoothing if settings change
 
     @staticmethod
     def list_available_devices() -> list[str]:

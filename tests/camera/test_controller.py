@@ -702,6 +702,29 @@ def test_unrelated_setting_change_does_not_restart_capture_stream():
     assert calls == ["start"]
 
 
+def test_outside_view_change_does_not_dirty_capture_settings():
+    """Outside view settings are display-only: they must not re-apply
+    hardware settings or reset the denoising accumulator."""
+    camera = Camera("Test Camera", "0")
+    camera.denoise = 0.5
+    controller = CameraController(camera)
+    controller._settings_dirty = False
+    with controller._frame_lock:
+        controller._accumulator = np.zeros((4, 4, 3), dtype=np.float32)
+
+    camera.outside_view_margin_mm = 60
+    camera.outside_view_transparency = 0.3
+    camera.outside_view_enabled = True
+
+    assert controller._settings_dirty is False
+    assert controller._accumulator is not None
+
+    camera.contrast = 2.0
+
+    assert controller._settings_dirty is True
+    assert controller._accumulator is None
+
+
 def test_local_device_source_sets_read_timeout_when_supported():
     camera = Camera("Local Camera", "0")
     set_calls = []

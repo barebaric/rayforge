@@ -154,6 +154,22 @@ def test_draw_does_not_schedule_duplicate_jobs():
     assert glib.idle_add.call_count == 1
 
 
+def test_outside_view_change_invalidates_cached_surface():
+    """Outside view settings emit `changed` only, which must still
+    invalidate the element's caches and queue a redraw."""
+    controller = _controller()
+    controller.config.outside_view_enabled = True
+    element = _element(controller)
+    _process(element)
+    assert element._cached_key is not None
+
+    with patch.object(element, "canvas") as canvas:
+        controller.config.outside_view_transparency = 0.4
+        assert canvas.queue_draw.called
+
+    assert element._cached_key is None
+
+
 def test_element_without_outside_support_keeps_its_clip():
     controller = _controller()
     controller.config.outside_view_enabled = True
