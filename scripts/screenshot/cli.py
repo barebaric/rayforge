@@ -79,6 +79,7 @@ TARGETS = {
     "main:3d": "main_3d",
     "main:3d-bee": "main_3d_bee",
     "main:3d-rotary": "main_3d_rotary",
+    "main:camera-outside-view": "main_camera_outside_view",
     "main:array:grid": "array_grid",
     "main:array:point-rotation": "array_point_rotation",
     "main:array:circular": "array_circular",
