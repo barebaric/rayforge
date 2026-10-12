@@ -1,0 +1,12 @@
+name: image_editing
+display_name: "Image Editing"
+description: "Non-destructive image editing tools for workpieces"
+api_version: 22
+author:
+  name: "Rayforge Team"
+  email: "noreply@rayforge.org"
+provides:
+  worker: "image_editing.worker"
+  frontend: "image_editing.frontend"
+license:
+  name: "MIT"
