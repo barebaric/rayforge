@@ -1,0 +1,13 @@
+name: barcodes
+display_name: "Barcodes"
+description: "QR codes and barcodes generated from templates"
+api_version: 21
+requires:
+  - sketcher
+author:
+  name: "Rayforge Team"
+  email: "noreply@rayforge.org"
+provides:
+  worker: "barcodes.worker"
+license:
+  name: "MIT"
