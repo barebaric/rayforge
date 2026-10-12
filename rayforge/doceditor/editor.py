@@ -33,6 +33,7 @@ from .step_cmd import StepCmd
 from .stock_cmd import StockCmd
 from .tab_cmd import TabCmd
 from .transform_cmd import TransformCmd
+from .variable_text_cmd import VariableTextCmd
 
 if TYPE_CHECKING:
     from ..context import RayforgeContext
@@ -160,6 +161,7 @@ class DocEditor:
         self.step = StepCmd(self)
         self.tab = TabCmd(self)
         self.transform = TransformCmd(self)
+        self.variable_text = VariableTextCmd(self)
 
         # Instantiate addon-registered commands.
         for name, cmd_class in command_registry.all_commands().items():

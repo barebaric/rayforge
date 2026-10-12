@@ -1,0 +1,163 @@
+"""
+VariableTextCmd: undoable edits of the document's template variables
+(serial counter) and of the per-workpiece variable offsets.
+"""
+
+from __future__ import annotations
+
+import logging
+from collections.abc import Sequence
+from gettext import gettext as _
+from typing import TYPE_CHECKING
+
+from ..core.item import DocItem
+from ..core.undo import ChangePropertyCommand
+from ..core.variable_text import SerialSettings
+from ..core.workpiece import WorkPiece
+from .layout.base import LayoutStrategy
+
+if TYPE_CHECKING:
+    from .editor import DocEditor
+
+logger = logging.getLogger(__name__)
+
+
+class VariableTextCmd:
+    """Handles changes to the document's variable text settings."""
+
+    def __init__(self, editor: DocEditor):
+        self._editor = editor
+
+    @property
+    def serial(self) -> SerialSettings:
+        return self._editor.doc.variable_text.serial
+
+    def set_serial(
+        self, settings: SerialSettings, name: str | None = None
+    ) -> None:
+        """Replaces the serial counter settings in one undoable step."""
+        variable_text = self._editor.doc.variable_text
+        if settings == variable_text.serial:
+            return
+        cmd = ChangePropertyCommand(
+            target=variable_text,
+            property_name="serial",
+            new_value=settings,
+            name=name or _("Change serial number"),
+        )
+        self._editor.history_manager.execute(cmd)
+
+    def next_serial(self) -> None:
+        """Moves the counter forward by one job."""
+        copies = max(self._editor.doc.variable_text_copies(), 1)
+        self.set_serial(self.serial.advanced(copies), _("Next serial number"))
+
+    def previous_serial(self) -> None:
+        """Moves the counter back by one job."""
+        copies = max(self._editor.doc.variable_text_copies(), 1)
+        self.set_serial(
+            self.serial.advanced(-copies), _("Previous serial number")
+        )
+
+    def reset_serial(self) -> None:
+        """Puts the counter back at its start value."""
+        self.set_serial(self.serial.reset(), _("Reset serial number"))
+
+    def preview_serial_values(self) -> list[int]:
+        """The serial numbers the next job uses, one per copy."""
+        copies = max(self._editor.doc.variable_text_copies(), 1)
+        return self.serial.values_for(copies)
+
+    def advance_after_job(self, exported: bool = False) -> bool:
+        """
+        Moves the counter on after a finished job (or a G-code export,
+        if *exported*), by one value per copy in the job.
+
+        Returns:
+            True if the counter was advanced.
+        """
+        serial = self.serial
+        enabled = serial.advance_on_export if exported else serial.auto_advance
+        copies = self._editor.doc.variable_text_copies()
+        if not enabled or copies == 0:
+            return False
+        self.set_serial(
+            serial.advanced(copies), _("Advance serial number after job")
+        )
+        logger.info(
+            f"Serial number advanced by {copies} to "
+            f"{self._editor.doc.variable_text.serial.current}"
+        )
+        return True
+
+    def set_variable_offset(
+        self, workpieces: Sequence[WorkPiece], offset: int
+    ) -> None:
+        """Sets the same variable offset on all *workpieces*."""
+        self._apply_offsets(
+            [(wp, offset) for wp in workpieces], _("Set variable offset")
+        )
+
+    def number_copies(self, items: Sequence[DocItem]) -> None:
+        """
+        Gives *items* the offsets 0, 1, 2, ... in reading order: rows
+        from top to bottom, each row from left to right. All workpieces
+        inside a group share the group's offset.
+        """
+        changes = []
+        for index, item in enumerate(_reading_order(items)):
+            changes.extend((wp, index) for wp in _workpieces_of(item))
+        self._apply_offsets(changes, _("Number copies"))
+
+    def _apply_offsets(
+        self, changes: list[tuple[WorkPiece, int]], name: str
+    ) -> None:
+        history = self._editor.history_manager
+        with history.transaction(name) as t:
+            for wp, offset in changes:
+                if wp.variable_offset == offset:
+                    continue
+                t.execute(
+                    ChangePropertyCommand(
+                        target=wp,
+                        property_name="variable_offset",
+                        new_value=offset,
+                        name=name,
+                    )
+                )
+
+
+def _workpieces_of(item: DocItem) -> list[WorkPiece]:
+    if isinstance(item, WorkPiece):
+        return [item]
+    return item.get_descendants(of_type=WorkPiece)
+
+
+def _reading_order(items: Sequence[DocItem]) -> list[DocItem]:
+    """Sorts items into rows (top first), then left to right."""
+    boxes = []
+    for item in items:
+        bbox = LayoutStrategy._get_item_world_bbox(item)
+        if bbox is None:
+            x, y = item.pos
+            bbox = (x, y, x, y)
+        x_min, y_min, x_max, y_max = bbox
+        boxes.append(
+            (item, (x_min + x_max) / 2, (y_min + y_max) / 2, y_max - y_min)
+        )
+    boxes.sort(key=lambda b: -b[2])
+
+    rows: list[list[tuple[DocItem, float, float, float]]] = []
+    for box in boxes:
+        if rows:
+            first = rows[-1][0]
+            tolerance = max(min(first[3], box[3]) / 2, 1e-6)
+            if abs(first[2] - box[2]) <= tolerance:
+                rows[-1].append(box)
+                continue
+        rows.append([box])
+
+    ordered: list[DocItem] = []
+    for row in rows:
+        ordered.extend(b[0] for b in sorted(row, key=lambda b: b[1]))
+    return ordered
