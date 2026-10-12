@@ -8,7 +8,9 @@ layers, with correct positions, and that everything is undoable.
 
 import pytest
 
+from rayforge.core.group import Group
 from rayforge.core.layer import Layer
+from rayforge.core.variable_text import SerialSettings
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.array import (
     ArrayMode,
@@ -19,6 +21,7 @@ from rayforge.doceditor.array import (
     SpacingMode,
 )
 from rayforge.doceditor.array_cmd import ArrayCmd
+from tests.core.template_provider import TemplateProvider, place
 
 
 @pytest.fixture
@@ -224,3 +227,53 @@ def test_compute_plan_is_pure(array_cmd, multilayer_selection):
     assert deltas[0].is_identity()
     # No mutation happened.
     assert len(sel["layer_a"].get_content_items()) == before_count
+
+
+@pytest.mark.asyncio
+async def test_grid_array_numbers_copies(doc_editor, array_cmd):
+    """Copies get increasing variable offsets in array order, so
+    serial numbers count up across the sheet."""
+    doc = doc_editor.doc
+    doc.variable_text.serial = SerialSettings(current=11)
+    wp = place(doc, "{serial}", offset=2)
+    params = ArrayParams(
+        mode=ArrayMode.GRID,
+        grid=GridArrayParams(
+            rows=2,
+            cols=2,
+            spacing_mode=SpacingMode.DISPLACEMENT,
+            col_spacing_mm=20.0,
+            row_spacing_mm=15.0,
+        ),
+    )
+    created = array_cmd.create_array([wp], params)
+    assert [c.variable_offset for c in created] == [3, 4, 5]
+    last = created[-1]
+    provider = last.get_geometry_provider()
+    assert isinstance(provider, TemplateProvider)
+    assert last.template_values() == {"serial": 16}
+    assert provider.rendered[-1] == "16"
+
+
+@pytest.mark.asyncio
+async def test_array_of_group_numbers_member_workpieces(doc_editor, array_cmd):
+    doc = doc_editor.doc
+    wp = place(doc, "{serial}")
+    group = Group(name="plate")
+    layer = doc.active_layer
+    layer.remove_child(wp)
+    group.add_child(wp)
+    layer.add_child(group)
+    params = ArrayParams(
+        mode=ArrayMode.GRID,
+        grid=GridArrayParams(
+            rows=1,
+            cols=3,
+            spacing_mode=SpacingMode.DISPLACEMENT,
+            col_spacing_mm=20.0,
+            row_spacing_mm=15.0,
+        ),
+    )
+    created = array_cmd.create_array([group], params)
+    offsets = [g.all_workpieces[0].variable_offset for g in created]
+    assert offsets == [1, 2]
