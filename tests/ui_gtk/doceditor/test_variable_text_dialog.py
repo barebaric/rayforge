@@ -125,9 +125,9 @@ def test_property_provider_sets_offset(editor):
     provider = VariableTextPropertyProvider()
     provider.create_widgets()
     provider.update_widgets(editor, [wp])
-    assert "10" in provider.offset_row.get_subtitle()
+    assert "10" in (provider.offset_row.get_subtitle() or "")
     provider.offset_row.set_value(3)
     provider.offset_row.value_changed.send(provider.offset_row)
     assert wp.variable_offset == 3
     provider.update_widgets(editor, [wp])
-    assert "13" in provider.offset_row.get_subtitle()
+    assert "13" in (provider.offset_row.get_subtitle() or "")
