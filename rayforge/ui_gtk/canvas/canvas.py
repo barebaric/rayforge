@@ -39,6 +39,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 DRAG_THRESHOLD = 5.0
+_EDIT_MODE_KEYS = (Gdk.KEY_i, Gdk.KEY_I, Gdk.KEY_c, Gdk.KEY_C)
 
 
 class SelectionMode(Enum):
@@ -1357,6 +1358,8 @@ class Canvas(Gtk.DrawingArea):
         elif is_primary_keyval(keyval):
             self._ctrl_pressed = True
             # Allow propagation for accelerators
+        elif keyval in _EDIT_MODE_KEYS and self.edit_context:
+            return self.edit_context.handle_edit_key(keyval)
         elif keyval in (Gdk.KEY_Delete, Gdk.KEY_BackSpace):
             if self.edit_context and self.edit_context.handle_edit_key(keyval):
                 return True

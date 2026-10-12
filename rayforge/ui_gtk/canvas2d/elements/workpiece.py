@@ -16,6 +16,18 @@ from ....pipeline.artifact import (
 )
 from ...canvas import CanvasElement
 from ..ops_cache_registry import registry
+from .node_editing import (
+    NODE_HIT_PX,
+    Handle,
+    NodeDrag,
+    draw_handles,
+    draw_nodes,
+    handle_positions,
+    nearest,
+    node_positions,
+    visible_handles,
+    visible_nodes,
+)
 from .tab_handle import TabHandleElement
 
 if TYPE_CHECKING:
@@ -77,6 +89,9 @@ class VectorEditState:
         self.geometry = geometry
         self.selected_segments: set[int] = set()
         self.hovered_segment: int | None = None
+        self.hovered_t: float = 0.5
+        self.selected_node: int | None = None
+        self.drag: NodeDrag | None = None
         self.frame_start: tuple[float, float] | None = None
         self.frame_end: tuple[float, float] | None = None
         self.frame_drag_start_world: tuple[float, float] | None = None
@@ -797,8 +812,40 @@ class WorkPieceElement(CanvasElement):
 
         ctx.restore()
 
+        self._draw_nodes_and_handles(ctx, screen_transform)
+
         if self._edit_state.frame_start and self._edit_state.frame_end:
             self._draw_selection_frame(ctx, screen_transform)
+
+    def _shown_nodes(self) -> list[int]:
+        state = self._edit_state
+        if not state:
+            return []
+        return visible_nodes(
+            state.geometry.data, state.selected_segments, state.selected_node
+        )
+
+    def _shown_handles(self) -> list[Handle]:
+        state = self._edit_state
+        if not state:
+            return []
+        return visible_handles(
+            state.geometry.data, state.selected_segments, state.selected_node
+        )
+
+    def _draw_nodes_and_handles(self, ctx: cairo.Context, screen_transform):
+        state = self._edit_state
+        if not state:
+            return
+        data = state.geometry.data
+
+        def to_screen(point):
+            return screen_transform.transform_point(point)
+
+        draw_handles(ctx, to_screen, self._shown_handles())
+        draw_nodes(
+            ctx, to_screen, data, self._shown_nodes(), state.selected_node
+        )
 
     def _draw_selection_frame(self, ctx, screen_transform):
         if not self._edit_state:
@@ -820,6 +867,33 @@ class WorkPieceElement(CanvasElement):
         ctx.set_dash((4, 4))
         ctx.stroke()
         ctx.restore()
+
+    def _local_tolerance(self, pixels: float) -> tuple[float, float]:
+        """A screen distance in pixels, in boundary units per axis."""
+        work_surface = cast("WorkSurface", self.canvas)
+        ppm_x, ppm_y = work_surface.get_view_scale()
+        world_w, world_h = self.data.size
+        if min(ppm_x, ppm_y, world_w, world_h) < 1e-9:
+            return (0.0, 0.0)
+        return (pixels / (ppm_x * world_w), pixels / (ppm_y * world_h))
+
+    def _hit_test_node_or_handle(
+        self, world_x: float, world_y: float
+    ) -> int | Handle | None:
+        local = self._world_to_local(world_x, world_y)
+        if not self._edit_state or not self.canvas or local is None:
+            return None
+        tolerance = self._local_tolerance(NODE_HIT_PX)
+        handle = nearest(
+            handle_positions(self._shown_handles()), local, tolerance
+        )
+        if isinstance(handle, Handle):
+            return handle
+        data = self._edit_state.geometry.data
+        node = nearest(
+            node_positions(data, self._shown_nodes()), local, tolerance
+        )
+        return node if isinstance(node, int) else None
 
     def _hit_test_segment(self, world_x: float, world_y: float) -> int | None:
         if not self._edit_state or not self.canvas:
@@ -847,10 +921,11 @@ class WorkPieceElement(CanvasElement):
         if result is None:
             return None
 
-        seg_idx, _, closest_pt = result
+        seg_idx, t, closest_pt = result
         dx = local_x - closest_pt[0]
         dy = local_y - closest_pt[1]
         if dx * dx + dy * dy <= threshold_sq:
+            self._edit_state.hovered_t = t
             return seg_idx
         return None
 
@@ -879,6 +954,12 @@ class WorkPieceElement(CanvasElement):
         if n_press >= 2:
             return False
 
+        target = self._hit_test_node_or_handle(world_x, world_y)
+        if target is not None:
+            self._start_node_drag(target)
+            return True
+
+        self._edit_state.selected_node = None
         hit = self._hit_test_segment(world_x, world_y)
 
         if hit is None:
@@ -906,8 +987,104 @@ class WorkPieceElement(CanvasElement):
             self.canvas.queue_draw()
         return True
 
+    def _start_node_drag(self, target: int | Handle) -> None:
+        state = self._edit_state
+        if not state:
+            return
+        if isinstance(target, Handle):
+            state.drag = NodeDrag(
+                target.index, state.geometry, handle=target.which
+            )
+        else:
+            state.selected_node = target
+            state.drag = NodeDrag(target, state.geometry)
+        state.frame_drag_start_world = None
+        if self.canvas:
+            self.canvas.queue_draw()
+
+    def _drag_point(self, world_dx: float, world_dy: float):
+        """The dragged point's new position in boundary space."""
+        state = self._edit_state
+        if not state or not state.drag or not self.canvas:
+            return None
+        drag = state.drag
+        data = drag.original.data
+        cmd = data[drag.index]
+        if drag.handle == 1:
+            start = (cmd.control1[0], cmd.control1[1])
+        elif drag.handle == 2:
+            start = (cmd.control2[0], cmd.control2[1])
+        else:
+            start = (cmd.end[0], cmd.end[1])
+        transform = self.get_world_transform()
+        wx, wy = transform.transform_point(start)
+        return self._world_to_local(wx + world_dx, wy + world_dy)
+
+    def _preview_drag(self, world_dx: float, world_dy: float) -> None:
+        state = self._edit_state
+        point = self._drag_point(world_dx, world_dy)
+        if not state or not state.drag or point is None:
+            return
+        drag = state.drag
+        x, y = point
+        if drag.handle is None:
+            state.geometry, _ = drag.original.move_node(drag.index, x, y)
+        else:
+            state.geometry = drag.original.move_handle(
+                drag.index, drag.handle, x, y
+            )
+        drag.moved = True
+        if self.canvas:
+            self.canvas.queue_draw()
+
+    def _commit_drag(self) -> None:
+        state = self._edit_state
+        if not state or not state.drag:
+            return
+        drag = state.drag
+        state.drag = None
+        if not drag.moved:
+            return
+        cmd = state.geometry.data[drag.index]
+        work_surface = cast("WorkSurface", self.canvas)
+        node_edit = work_surface.editor.node_edit
+        if drag.handle is None:
+            x, y = cmd.end[0], cmd.end[1]
+            index = node_edit.move_node(self.data, drag.index, x, y)
+            self._resnapshot(selected_node=index)
+            return
+        control = cmd.control1 if drag.handle == 1 else cmd.control2
+        node_edit.move_handle(
+            self.data, drag.index, drag.handle, control[0], control[1]
+        )
+        self._resnapshot(selected_node=state.selected_node)
+
+    def _resnapshot(self, selected_node: int | None = None) -> None:
+        """Takes the edited boundaries as the new edit state."""
+        boundaries = self.data.boundaries
+        if boundaries is None or boundaries.is_empty():
+            self.clear_all_ops_caches()
+            if self.canvas:
+                self.canvas.leave_edit_mode()
+            return
+        selected = (
+            self._edit_state.selected_segments if self._edit_state else set()
+        )
+        self._edit_state = VectorEditState(boundaries)
+        data = boundaries.data
+        self._edit_state.selected_segments = {
+            i for i in selected if i < len(data)
+        }
+        if selected_node is not None and selected_node < len(data):
+            self._edit_state.selected_node = selected_node
+        if self.canvas:
+            self.canvas.queue_draw()
+
     def handle_edit_drag(self, world_dx: float, world_dy: float):
         if not self._edit_state or not self.canvas:
+            return
+        if self._edit_state.drag is not None:
+            self._preview_drag(world_dx, world_dy)
             return
         if self._edit_state.frame_drag_start_world is None:
             return
@@ -930,6 +1107,9 @@ class WorkPieceElement(CanvasElement):
 
     def handle_edit_release(self, world_x: float, world_y: float):
         if not self._edit_state:
+            return
+        if self._edit_state.drag is not None:
+            self._commit_drag()
             return
         if self._edit_state.frame_start and self._edit_state.frame_end:
             x1, y1 = self._edit_state.frame_start
@@ -966,10 +1146,29 @@ class WorkPieceElement(CanvasElement):
         if not self._edit_state:
             return False
 
+        work_surface = cast("WorkSurface", self.canvas)
+        node_edit = work_surface.editor.node_edit
+        state = self._edit_state
+        if keyval in (Gdk.KEY_i, Gdk.KEY_I):
+            if state.hovered_segment is None:
+                return True
+            index = node_edit.insert_node(
+                self.data, state.hovered_segment, state.hovered_t
+            )
+            self._resnapshot(selected_node=index)
+            return True
+        if keyval in (Gdk.KEY_c, Gdk.KEY_C):
+            self._toggle_selected_curves()
+            return True
+        if keyval in (Gdk.KEY_Delete, Gdk.KEY_BackSpace) and (
+            state.selected_node is not None
+        ):
+            index = node_edit.delete_node(self.data, state.selected_node)
+            self._resnapshot(selected_node=index)
+            return True
         if keyval in (Gdk.KEY_Delete, Gdk.KEY_BackSpace):
             if not self._edit_state.selected_segments:
                 return True
-            work_surface = cast("WorkSurface", self.canvas)
             work_surface.editor.edit.delete_segments(
                 self.data, self._edit_state.selected_segments
             )
@@ -985,6 +1184,20 @@ class WorkPieceElement(CanvasElement):
             return True
 
         return False
+
+    def _toggle_selected_curves(self) -> None:
+        state = self._edit_state
+        if not state or not state.selected_segments:
+            return
+        data = state.geometry.data
+        curve = any(
+            not isinstance(data[i], Bezier) for i in state.selected_segments
+        )
+        work_surface = cast("WorkSurface", self.canvas)
+        work_surface.editor.node_edit.set_segments_curve(
+            self.data, state.selected_segments, curve
+        )
+        self._resnapshot()
 
     def handle_edit_select_all(self) -> bool:
         if not self._edit_state:
