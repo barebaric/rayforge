@@ -24,6 +24,7 @@ from ..machine.models.spindle import SpindleHead
 from ..pipeline.transformer.registry import transformer_registry
 from ..shared.units.formatter import format_value
 from .capability import MachineCapability
+from .image_edit import ImageEditStep
 from .item import DocItem
 from .step_registry import step_registry
 from .varset import SpeedVar, VarSet
@@ -546,6 +547,14 @@ class Step(DocItem, ABC):
         cut_speed = settings.get("cut_speed")
         if cut_speed is not None:
             self.set_cut_speed(cut_speed)
+
+    def pop_legacy_image_edits(self) -> list[ImageEditStep]:
+        """
+        Image edits that an older file stored as a setting of this step.
+        They are handed over once, after the document is loaded, to the
+        workpieces of the step's layer; later calls return nothing.
+        """
+        return []
 
     def to_dict(self) -> dict:
         """Serializes the step and its configuration to a dictionary."""

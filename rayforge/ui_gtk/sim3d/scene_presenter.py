@@ -79,7 +79,7 @@ def _workpiece_image_pixels(wp: WorkPiece) -> np.ndarray | None:
     width_px = max(1, round(width_px * scale))
     height_px = max(1, round(height_px * scale))
     try:
-        vips_image = wp.get_vips_image(width_px, height_px)
+        vips_image = wp.get_processed_image(width_px, height_px)
         if vips_image is None:
             return None
         from ...image.util.vips import normalize_to_rgba
