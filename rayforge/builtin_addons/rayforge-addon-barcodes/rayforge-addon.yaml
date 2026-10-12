@@ -9,5 +9,6 @@ author:
   email: "noreply@rayforge.org"
 provides:
   worker: "barcodes.worker"
+  frontend: "barcodes.frontend"
 license:
   name: "MIT"
