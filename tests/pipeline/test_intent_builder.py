@@ -37,6 +37,7 @@ from raygeo.pipeline.stage import StageSpec
 
 import rayforge.machine.driver as driver_module
 from rayforge.core.doc import Doc
+from rayforge.core.image_edit import ImageEditStep
 from rayforge.core.layer import Layer
 from rayforge.core.step import Step
 from rayforge.core.stock import StockItem
@@ -1455,7 +1456,6 @@ def test_raster_step_is_position_sensitive(engrave_step_class):
 @pytest.mark.parametrize(
     "attr,value",
     [
-        ("invert", True),
         ("auto_levels", False),
         ("black_point", 80),
         ("white_point", 200),
@@ -1472,7 +1472,7 @@ def test_raster_compute_token_changes_on_image_preprocess_params(
     """Changing any raster image-preprocessing setting must invalidate
     the workpiece compute cache.
 
-    The levels (black/white points), inversion, threshold and dither
+    The levels (black/white points), threshold and dither
     are baked into the preprocessed image the assembler consumes, so a
     token that omits them would replay the exact same ops regardless of
     the brightness settings.
@@ -1491,6 +1491,28 @@ def test_raster_compute_token_changes_on_image_preprocess_params(
         step.set_dither_algorithm(value)
     else:
         setattr(step, attr, value)
+    after = IntentBuilder(machine=machine).build(doc)
+    after_t = next(n.version_token for n in after if n.key == wpk)
+    assert before_t != after_t
+
+
+def test_compute_token_changes_on_workpiece_image_edits(
+    engrave_step_class, test_machine_and_config
+):
+    """Image edits live on the workpiece and are baked into the image
+    every raster step consumes, so changing them must invalidate the
+    workpiece compute cache."""
+    machine, context = test_machine_and_config
+    step = engrave_step_class.create(context, name="engrave")
+    wp = WorkPiece(name="wp")
+    wp.set_size(20.0, 20.0)
+    doc = _make_doc(step, wp)
+
+    before = IntentBuilder(machine=machine).build(doc)
+    wpk = workpiece_key(wp.uid, step.uid)
+    before_t = next(n.version_token for n in before if n.key == wpk)
+
+    wp.image_edits = [ImageEditStep("invert")]
     after = IntentBuilder(machine=machine).build(doc)
     after_t = next(n.version_token for n in after if n.key == wpk)
     assert before_t != after_t
