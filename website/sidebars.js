@@ -118,6 +118,7 @@ module.exports = {
       label: 'Addons',
       items: [
         'addons/ai-workpiece-generator',
+        'addons/barcodes',
         'addons/deepnest',
         'addons/image-editing',
         'addons/print-and-cut',
