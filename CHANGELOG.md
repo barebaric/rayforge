@@ -56,6 +56,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   operations). The first edit is Tools > Invert Image (#515)
 - Addons: the `register_image_edits` hook and image edit registry
   (plugin API 23) let addons provide their own image edits
+- Sketcher: Polygon tool (G+X) for regular polygons and stars, made of
+  plain points and lines that constraints keep regular (#522)
 
 ### Changed
 

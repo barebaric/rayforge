@@ -95,6 +95,7 @@ Each drawing and modification tool additionally has a two-key shortcut, document
 | [Ellipse](arc-ellipse.md)         | `G+C`    |
 | [Rectangle](rectangle.md)         | `G+R`    |
 | [Rounded Rectangle](rectangle.md) | `G+O`    |
+| [Polygon](polygon.md)             | `G+X`    |
 | [Fill Area](fill.md)              | `G+F`    |
 | [Text Box](text-box.md)           | `G+T`    |
 | [Circular Array](arrays.md)       | `G+Y`    |
@@ -144,6 +145,7 @@ they get in the way.
 
 The drawing tools are each documented on their own page: [Path](path.md) (lines and bezier curves),
 [Arc and Ellipse](arc-ellipse.md), [Rectangle](rectangle.md) (and rounded rectangles),
+[Polygon](polygon.md) (and stars),
 [Fill Areas](fill.md), [Text Box](text-box.md), and [Grid](grid.md). Modifications such as
 [Offset](offset.md) and [Chamfer and Fillet](chamfer-fillet.md) reshape existing geometry,
 [Arrays](arrays.md) copies it along a circle or a curve, and

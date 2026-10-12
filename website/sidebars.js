@@ -91,6 +91,7 @@ module.exports = {
                 'features/sketcher/path',
                 'features/sketcher/arc-ellipse',
                 'features/sketcher/rectangle',
+                'features/sketcher/polygon',
                 'features/sketcher/chamfer-fillet',
                 'features/sketcher/fill',
                 'features/sketcher/text-box',
