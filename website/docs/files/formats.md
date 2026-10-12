@@ -39,8 +39,11 @@ capabilities, limitations, and recommendations.
 
 ### SVG (Scalable Vector Graphics)
 
-**Extension:** `.svg` **MIME Type:** `image/svg+xml` **Import:** Direct vector parsing or bitmap
-trace **Export:** Object export (geometry only)
+**Extension:** `.svg`, `.svgz` **MIME Type:** `image/svg+xml`, `image/svg+xml-compressed`
+**Import:** Direct vector parsing or bitmap trace **Export:** Object export (geometry only)
+
+Compressed SVG (`.svgz`, Inkscape's "Compressed SVG") is unpacked on import and then behaves
+exactly like a plain SVG file.
 
 **What is SVG?**
 

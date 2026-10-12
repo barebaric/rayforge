@@ -38,7 +38,7 @@ class SvgImporter(Importer):
     """
 
     label = "SVG files"
-    mime_types = ("image/svg+xml",)
+    mime_types = ("image/svg+xml", "image/svg+xml-compressed")
     extensions = (".svg", ".svgz")
     features: ClassVar[set[ImporterFeature]] = {
         ImporterFeature.DIRECT_VECTOR,

@@ -21,6 +21,17 @@ def test_registry_resolves_svgz():
     assert importer_registry.get_by_extension(".svgz") is SvgImporter
 
 
+def test_registry_resolves_compressed_svg_mime_type():
+    assert (
+        importer_registry.get_by_mime_type("image/svg+xml-compressed")
+        is SvgImporter
+    )
+
+
+def test_plain_svg_stays_the_primary_mime_type():
+    assert SvgImporter.mime_types[0] == "image/svg+xml"
+
+
 def test_extensions_include_svgz():
     assert ".svgz" in SvgImporter.extensions
 
