@@ -230,8 +230,7 @@ class FocusTestDialog(_CalibrationTestDialog):
             title=_("Method"),
             model=Gtk.StringList.new([m.label for m in modes]),
         )
-        if d.mode in modes:
-            self.mode_row.set_selected(modes.index(d.mode))
+        self.mode_row.set_selected(0)
         self.mode_row.connect("notify::selected", lambda *_a: self._sync())
         group.add(self.mode_row)
 

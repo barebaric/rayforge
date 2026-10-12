@@ -35,7 +35,8 @@ means more distance between the head and the material. The thinnest line marks t
 
 Z axis steps are only offered on machines with a Z axis, and both Z axis steps and the manual method
 need a G-code controller, because they use [Command](command.md) operations between the lines. The
-offsets are limited to ±10 mm from the starting height.
+offsets are limited to ±10 mm from the starting height. The dialog starts on the first method the
+machine supports, in the order of the table above.
 
 For the manual method, focus the laser as usual first. The labels are engraved at that height.
 At the first pause, set the head to the first offset; at every following pause, move it by one

@@ -64,3 +64,14 @@ def test_focus_dialog_modes(ui_context):
 def test_focus_dialog_without_manual_mode(ui_context):
     dialog = FocusTestDialog(None, lambda p: None, [FocusMode.RAMP])
     assert dialog.mode == FocusMode.RAMP
+
+
+@pytest.mark.ui
+def test_focus_dialog_defaults_to_z_axis_when_available(ui_context):
+    dialog = FocusTestDialog(
+        None,
+        lambda p: None,
+        [FocusMode.Z_AXIS, FocusMode.MANUAL, FocusMode.RAMP],
+    )
+    assert dialog.mode == FocusMode.Z_AXIS
+    assert dialog.step_row.get_visible()
