@@ -42,8 +42,8 @@ capabilities, limitations, and recommendations.
 **Extension:** `.svg`, `.svgz` **MIME Type:** `image/svg+xml`, `image/svg+xml-compressed`
 **Import:** Direct vector parsing or bitmap trace **Export:** Object export (geometry only)
 
-Compressed SVG (`.svgz`, Inkscape's "Compressed SVG") is unpacked on import and then behaves
-exactly like a plain SVG file.
+Compressed SVG (`.svgz`, Inkscape's "Compressed SVG") is unpacked on import and then behaves exactly
+like a plain SVG file.
 
 **What is SVG?**
 
