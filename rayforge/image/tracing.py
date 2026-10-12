@@ -25,11 +25,11 @@ BORDER_SIZE = 2
 # If the generates more paths than this, we fall back to convex hulls.
 MAX_VECTORS_LIMIT = 25000
 # A pixel count limit to prevent integer overflows in the underlying vtracer
-# native library.
-VTRACER_PIXEL_LIMIT = 1_220_000
-# On Windows, we use a dedicated thread with increased stack size (8MB)
-# allowing us to maintain high resolution without stack overflows.
-VTRACER_WINDOWS_SAFE_LIMIT = 1_000_000
+# native library.  On Windows vtracer can access-violate on slightly larger
+# images, so this is the conservative limit that is safe everywhere.  It must
+# not depend on the platform: a smaller Windows limit would make the trace
+# downscale by a different factor there and yield different geometry.
+VTRACER_PIXEL_LIMIT = 1_000_000
 
 
 class ColorMode(Enum):
@@ -339,11 +339,7 @@ def _handle_oversized_image(
     returning the new image, upscaling factors, and new content height.
     """
     h_bordered, w_bordered = image.shape
-    pixel_limit = (
-        VTRACER_WINDOWS_SAFE_LIMIT
-        if sys.platform == "win32"
-        else VTRACER_PIXEL_LIMIT
-    )
+    pixel_limit = VTRACER_PIXEL_LIMIT
     if h_bordered * w_bordered <= pixel_limit:
         return image, 1.0, 1.0, original_height
 
@@ -529,11 +525,7 @@ def trace_color_image(
 
     height, width = color_image.shape[:2]
 
-    pixel_limit = (
-        VTRACER_WINDOWS_SAFE_LIMIT
-        if sys.platform == "win32"
-        else VTRACER_PIXEL_LIMIT
-    )
+    pixel_limit = VTRACER_PIXEL_LIMIT
 
     if height * width > pixel_limit:
         scale = (pixel_limit / (height * width)) ** 0.5

@@ -18,7 +18,11 @@ from ..base_importer import (
 )
 from ..engine import NormalizationEngine
 from ..structures import LayerGeometry, ParsingResult, VectorizationResult
-from ..tracing import VTRACER_PIXEL_LIMIT, trace_surface
+from ..tracing import (
+    BORDER_SIZE,
+    VTRACER_PIXEL_LIMIT,
+    trace_surface,
+)
 from .renderer import SVG_RENDERER
 from .svg_base import SvgImporterBase
 from .svgutil import trim_svg
@@ -123,7 +127,11 @@ class SvgTraceImporter(SvgImporterBase):
             return VectorizationResult({}, parse_result)
 
         aspect = w_mm / h_mm if h_mm > 0 else 1.0
-        TARGET_DIM = math.sqrt(VTRACER_PIXEL_LIMIT)
+        # Size the render so that the image with the border added by the
+        # tracer stays within the vtracer pixel limit.  Otherwise tracing
+        # would silently downscale the render, and a platform-dependent
+        # downscale factor would leak into the traced geometry.
+        TARGET_DIM = math.isqrt(VTRACER_PIXEL_LIMIT) - 2 * BORDER_SIZE
 
         if aspect >= 1.0:
             w_px = int(TARGET_DIM)
