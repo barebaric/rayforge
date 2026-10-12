@@ -22,11 +22,6 @@ jobs:
           pixi-version: v0.76.2
           run-install: false
 
-      - name: Generate dependency diff
-        run: |
-          set -o pipefail
-          pixi update --json | pixi exec pixi-diff-to-markdown >> diff.md
-
       - name: Upgrade dependencies
         run: |
           : > requirements.txt
@@ -36,6 +31,13 @@ jobs:
           python3 scripts/sync_requirements.py
           pixi clean cache -y
           pixi update
+
+      - name: Generate dependency diff
+        run: |
+          set -o pipefail
+          git show HEAD:pixi.lock \
+            | pixi exec pixi-diff --after pixi.lock --manifest-path pixi.toml \
+            | pixi exec pixi-diff-to-markdown > diff.md
 
       - name: Create pull request
         uses: peter-evans/create-pull-request@v8
