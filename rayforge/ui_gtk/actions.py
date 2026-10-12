@@ -24,6 +24,7 @@ from .array_dialog import (
 from .doceditor.add_tabs_popover import AddTabsPopover
 from .doceditor.path_tolerance_dialog import PathToleranceDialog
 from .doceditor.stock_properties_dialog import StockPropertiesDialog
+from .doceditor.variable_text_dialog import VariableTextDialog
 from .shared.keyboard import PRIMARY_ACCEL
 
 if TYPE_CHECKING:
@@ -477,6 +478,10 @@ class ActionManager:
         self._add_action("array-point-rotation", self.on_array_point_rotation)
         self._add_action("array-circular", self.on_array_circular)
 
+        # Variable text (serial numbers)
+        self._add_action("variable-text", self.on_variable_text)
+        self._add_action("number-copies", self.on_number_copies)
+
         # Macro Actions
         self._add_action(
             "execute-macro",
@@ -576,6 +581,9 @@ class ActionManager:
             "delete-duplicates",
         ):
             self.actions[name].set_enabled(bool(selected_wps))
+        self.actions["number-copies"].set_enabled(
+            len(self.win.surface.get_selected_items()) > 1
+        )
         self.actions["export-object"].set_enabled(len(selected_wps) == 1)
 
         sources = self.editor.reload.sources_of(list(selected_wps))
@@ -1041,6 +1049,18 @@ class ActionManager:
         """Handler for the 'array-circular' action: opens the circular
         dialog."""
         self._open_array_dialog(ArrayMode.CIRCULAR)
+
+    def on_variable_text(self, action, param):
+        """Handler for 'variable-text': opens the serial number dialog."""
+        dialog = VariableTextDialog(self.win, self.editor)
+        dialog.present()
+
+    def on_number_copies(self, action, param):
+        """Handler for 'number-copies': numbers the selected items in
+        reading order, so their serial numbers count up."""
+        items = list(self.win.surface.get_selected_items())
+        if items:
+            self.editor.variable_text.number_copies(items)
 
     def _open_array_dialog(self, mode: ArrayMode) -> None:
         items = list(self.win.surface.get_selected_items())
