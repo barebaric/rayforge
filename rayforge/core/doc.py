@@ -195,22 +195,28 @@ class Doc(DocItem):
         value.changed.connect(self._on_variable_text_changed)
         self._on_variable_text_changed(value)
 
-    def _template_workpieces(self) -> list[WorkPiece]:
-        """Workpieces whose templates read a document variable."""
-        names = self._variable_text.names
+    def _template_workpieces(
+        self, names: set[str] | None = None
+    ) -> list[WorkPiece]:
+        """Workpieces whose templates read a document variable, or one
+        of *names* if given."""
+        if names is None:
+            names = self._variable_text.names
         return [
             wp
             for wp in self.all_workpieces
             if wp.references_template_names(names)
         ]
 
-    def variable_text_copies(self) -> int:
+    def variable_text_copies(self, names: set[str] | None = None) -> int:
         """
         How many consecutive variable values one job uses: the highest
         variable offset of a template workpiece plus one, or 0 if no
-        workpiece uses a document variable.
+        workpiece uses a document variable (or one of *names*).
         """
-        offsets = [wp.variable_offset for wp in self._template_workpieces()]
+        offsets = [
+            wp.variable_offset for wp in self._template_workpieces(names)
+        ]
         if not offsets:
             return 0
         return max(offsets) + 1

@@ -1,6 +1,7 @@
 """
 VariableTextCmd: undoable edits of the document's template variables
-(serial counter) and of the per-workpiece variable offsets.
+(serial counter, merged CSV rows) and of the per-workpiece variable
+offsets.
 """
 
 from __future__ import annotations
@@ -12,7 +13,14 @@ from typing import TYPE_CHECKING
 
 from ..core.item import DocItem
 from ..core.undo import ChangePropertyCommand
-from ..core.variable_text import SerialSettings
+from ..core.variable_text import (
+    CSV_NAME,
+    ROW_NAME,
+    SERIAL_NAME,
+    CsvMerge,
+    SerialSettings,
+    read_csv_file,
+)
 from ..core.workpiece import WorkPiece
 from .layout.base import LayoutStrategy
 
@@ -70,25 +78,149 @@ class VariableTextCmd:
 
     def advance_after_job(self, exported: bool = False) -> bool:
         """
-        Moves the counter on after a finished job (or a G-code export,
-        if *exported*), by one value per copy in the job.
+        Moves the variables on after a finished job (or a G-code export,
+        if *exported*), by one value per copy in the job, in one undo
+        step. The serial counter and the CSV row only move when a
+        workpiece uses them; the CSV row is not moved by an export.
 
         Returns:
-            True if the counter was advanced.
+            True if anything was advanced.
         """
-        serial = self.serial
-        enabled = serial.advance_on_export if exported else serial.auto_advance
-        copies = self._editor.doc.variable_text_copies()
-        if not enabled or copies == 0:
+        variables = self._editor.doc.variable_text
+        serial, merge = variables.serial, variables.csv
+        new_serial = self._advanced_serial(serial, exported)
+        new_merge = None if exported else self._advanced_csv(merge)
+        if new_serial is None and new_merge is None:
             return False
-        self.set_serial(
-            serial.advanced(copies), _("Advance serial number after job")
-        )
+        history = self._editor.history_manager
+        with history.transaction(_("Advance variable text after job")) as t:
+            if new_serial is not None:
+                t.execute(self._change("serial", new_serial))
+            if new_merge is not None:
+                t.execute(self._change("csv", new_merge))
+        if new_merge is not None and new_merge.is_exhausted:
+            self._notify(
+                _("All {count} CSV rows have been used.").format(
+                    count=new_merge.row_count
+                )
+            )
         logger.info(
-            f"Serial number advanced by {copies} to "
-            f"{self._editor.doc.variable_text.serial.current}"
+            f"Variables advanced after job: serial {serial.current} -> "
+            f"{variables.serial.current}, CSV row {merge.current} -> "
+            f"{variables.csv.current}"
         )
         return True
+
+    def _advanced_serial(
+        self, serial: SerialSettings, exported: bool
+    ) -> SerialSettings | None:
+        enabled = serial.advance_on_export if exported else serial.auto_advance
+        copies = self._editor.doc.variable_text_copies({SERIAL_NAME})
+        if not enabled or copies == 0:
+            return None
+        return serial.advanced(copies)
+
+    def _advanced_csv(self, merge: CsvMerge) -> CsvMerge | None:
+        copies = self._csv_copies()
+        if not merge.is_loaded or not merge.auto_advance or copies == 0:
+            return None
+        advanced = merge.advanced(copies)
+        return None if advanced == merge else advanced
+
+    def _change(self, prop: str, value: object) -> ChangePropertyCommand:
+        return ChangePropertyCommand(
+            target=self._editor.doc.variable_text,
+            property_name=prop,
+            new_value=value,
+        )
+
+    def _notify(self, message: str) -> None:
+        self._editor.notification_requested.send(self, message=message)
+
+    @property
+    def csv(self) -> CsvMerge:
+        return self._editor.doc.variable_text.csv
+
+    def _csv_copies(self) -> int:
+        return self._editor.doc.variable_text_copies({CSV_NAME, ROW_NAME})
+
+    def set_csv(self, merge: CsvMerge, name: str | None = None) -> None:
+        """Replaces the merged CSV in one undoable step."""
+        variable_text = self._editor.doc.variable_text
+        if merge == variable_text.csv:
+            return
+        cmd = ChangePropertyCommand(
+            target=variable_text,
+            property_name="csv",
+            new_value=merge,
+            name=name or _("Change CSV merge"),
+        )
+        self._editor.history_manager.execute(cmd)
+
+    def _read(self, path: str) -> CsvMerge | None:
+        try:
+            return read_csv_file(path)
+        except (OSError, ValueError) as e:
+            logger.warning(f"Could not read CSV file {path}: {e}")
+            self._notify(
+                _("Could not read the CSV file {path}: {error}").format(
+                    path=path, error=e
+                )
+            )
+            return None
+
+    def load_csv(self, path: str) -> bool:
+        """Links a CSV file and stores its rows in the project."""
+        loaded = self._read(path)
+        if loaded is None:
+            return False
+        merge = self.csv
+        self.set_csv(
+            CsvMerge(
+                header=loaded.header,
+                rows=loaded.rows,
+                path=path,
+                auto_advance=merge.auto_advance,
+            ),
+            _("Load CSV file"),
+        )
+        return True
+
+    def reload_csv(self) -> bool:
+        """Reads the linked file again, keeping the current row."""
+        merge = self.csv
+        if not merge.path:
+            return False
+        loaded = self._read(merge.path)
+        if loaded is None:
+            return False
+        self.set_csv(
+            merge.with_rows(loaded.header, loaded.rows), _("Reload CSV file")
+        )
+        return True
+
+    def first_row(self) -> None:
+        """Goes back to the first row."""
+        self.set_csv(self.csv.with_current(1), _("First CSV row"))
+
+    def next_row(self) -> None:
+        """Moves the row forward by one job."""
+        copies = max(self._csv_copies(), 1)
+        self.set_csv(self.csv.advanced(copies), _("Next CSV row"))
+
+    def previous_row(self) -> None:
+        """Moves the row back by one job."""
+        copies = max(self._csv_copies(), 1)
+        self.set_csv(self.csv.advanced(-copies), _("Previous CSV row"))
+
+    def preview_rows(self) -> list[int]:
+        """The 1-based rows the next job uses, one per copy."""
+        copies = max(self._csv_copies(), 1)
+        return [self.csv.row_number(i) for i in range(copies)]
+
+    def copies_needed(self) -> int:
+        """How many copies cover the rows that are left."""
+        return self.csv.remaining
 
     def set_variable_offset(
         self, workpieces: Sequence[WorkPiece], offset: int
