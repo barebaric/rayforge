@@ -4,12 +4,22 @@ hookspec = pluggy.HookspecMarker("rayforge")
 hookimpl = pluggy.HookimplMarker("rayforge")
 
 MINIMUM_API_VERSION = 16
-PLUGIN_API_VERSION = 21
+PLUGIN_API_VERSION = 22
 
 
 """
 API Changelog
 =============
+
+Version 22
+----------
+``action_registry.register()`` accepts an ``enabled_when`` predicate that
+receives the ``ActionManager`` and is evaluated on every action state
+update. Addons that used ``action_extension_registry`` only to enable and
+disable their action can now register directly in the
+``register_actions`` hook. That hook is also invoked again when an addon
+is enabled while the window exists, so runtime-enabled addons no longer
+need ``action_extension_registry`` to have their actions created.
 
 Version 21
 ----------

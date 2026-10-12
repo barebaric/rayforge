@@ -1,8 +1,13 @@
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from blinker import Signal
 from gi.repository import Gio, Gtk
+
+if TYPE_CHECKING:
+    from .actions import ActionManager
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +34,7 @@ class ActionInfo:
     addon_name: str | None = None
     menu: MenuPlacement | None = None
     toolbar: ToolbarPlacement | None = None
+    enabled_when: 'Callable[["ActionManager"], bool] | None' = None
 
 
 class ActionRegistry:
@@ -64,6 +70,7 @@ class ActionRegistry:
         shortcut: str | None = None,
         menu: MenuPlacement | None = None,
         toolbar: ToolbarPlacement | None = None,
+        enabled_when: 'Callable[["ActionManager"], bool] | None' = None,
     ) -> None:
         """
         Register an action with the window and track it by addon.
@@ -78,6 +85,9 @@ class ActionRegistry:
             menu: Menu placement info if this action should appear in a menu.
             toolbar: Toolbar placement info if this action should appear in
                 the toolbar.
+            enabled_when: Predicate receiving the ActionManager,
+                evaluated on every action state update to set whether
+                the action is enabled.
         """
         if self._window is None:
             logger.warning("Cannot register action: window not set")
@@ -102,6 +112,7 @@ class ActionRegistry:
             addon_name=addon_name or "",
             menu=menu,
             toolbar=toolbar,
+            enabled_when=enabled_when,
         )
         self._actions[action_name] = info
 
@@ -215,6 +226,15 @@ class ActionRegistry:
         return sorted(
             items, key=lambda x: x.toolbar.priority if x.toolbar else 100
         )
+
+    def get_all(self) -> list[ActionInfo]:
+        """
+        Get all registered actions.
+
+        Returns:
+            List of all ActionInfo objects.
+        """
+        return list(self._actions.values())
 
     def get_all_with_shortcuts(self) -> list[ActionInfo]:
         """

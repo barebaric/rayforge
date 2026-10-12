@@ -62,11 +62,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   existing machine configurations continue to work unchanged.
   Machines saved while the driver carried its experimental name keep
   working through a compatibility alias
+- Addon API 22: actions registered via the `register_actions` hook
+  accept an `enabled_when` predicate for their enabled state, and the
+  hook is invoked again when an addon is enabled while the window
+  exists, so addons no longer need `action_extension_registry` for
+  either
 - Updated translations
 
 ### Fixed
 
-- Engrave: the step's Bidirectional Scan Offset had no effect since
+- Addon API: disabling an addon did not reliably remove its
+  `action_extension_registry` handlers when several addons registered
+  same-named handlers, which could leave stale handlers behind or
+  strip other addons' handlers- Engrave: the step's Bidirectional Scan Offset had no effect since
   the pipeline moved to raygeo intents, because the value no longer
   reached the transformer; changing it now also refreshes the cached
   toolpath (#307)
