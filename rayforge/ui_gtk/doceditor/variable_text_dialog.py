@@ -7,6 +7,7 @@ from gi.repository import Adw, Gtk
 from ...core.variable_text import SerialSettings, VariableText
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.pref_rows import SpinRow
+from .variable_text_csv_group import CsvMergeGroup
 
 if TYPE_CHECKING:
     from ...core.doc import Doc
@@ -29,8 +30,8 @@ def format_preview(values: list[int]) -> str:
 
 class VariableTextDialog(PatchedDialogWindow):
     """
-    A non-modal window for the document's serial number: its settings,
-    Previous/Next/Reset buttons and a preview of the next job.
+    A non-modal window for the document's serial number and CSV merge:
+    their settings, navigation buttons and a preview of the next job.
     """
 
     def __init__(self, parent: Gtk.Window, editor: "DocEditor"):
@@ -53,6 +54,8 @@ class VariableTextDialog(PatchedDialogWindow):
 
         page.add(self._build_serial_group())
         page.add(self._build_job_group())
+        self.csv_group = CsvMergeGroup(editor)
+        page.add(self.csv_group)
 
         self._doc.variable_text.changed.connect(self._on_model_changed)
         self._doc.descendant_updated.connect(self._on_doc_items_changed)
@@ -196,6 +199,7 @@ class VariableTextDialog(PatchedDialogWindow):
 
     def _on_doc_items_changed(self, sender, **kwargs) -> None:
         self._update_preview()
+        self.csv_group.update_preview()
 
     def _update_from_model(self) -> None:
         serial = self._doc.variable_text.serial
@@ -215,6 +219,7 @@ class VariableTextDialog(PatchedDialogWindow):
         finally:
             self._in_update = False
         self._update_preview()
+        self.csv_group.update()
 
     def _update_preview(self) -> None:
         values = self.editor.variable_text.preview_serial_values()
