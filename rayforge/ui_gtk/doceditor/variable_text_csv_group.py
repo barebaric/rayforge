@@ -217,5 +217,6 @@ class CsvMergeGroup(Adw.PreferencesGroup):
         except GLib.Error as e:
             logger.debug(f"CSV file choice cancelled: {e.message}")
             return
-        if file is not None and file.get_path():
-            self.editor.variable_text.load_csv(file.get_path())
+        path = file.get_path() if file is not None else None
+        if path:
+            self.editor.variable_text.load_csv(path)
