@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+import pytest_asyncio
 
 from rayforge.core.variable_text import CsvMerge, SerialSettings
 from rayforge.doceditor.variable_text_cmd import VariableTextCmd
@@ -9,9 +10,10 @@ from tests.core.template_provider import place
 ROWS = "Name,City\nAnn,Gent\nBob,Hasselt\nCas,Tongeren\nDirk,Genk\n"
 
 
-@pytest.fixture
-def cmd(doc_editor):
-    return VariableTextCmd(doc_editor)
+@pytest_asyncio.fixture
+async def cmd(doc_editor):
+    yield VariableTextCmd(doc_editor)
+    await doc_editor.wait_until_settled()
 
 
 @pytest.fixture
