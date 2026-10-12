@@ -21,7 +21,9 @@ def _doc_with(step: Step, *workpieces: WorkPiece) -> Doc:
     doc = Doc()
     for wp in workpieces:
         doc.active_layer.add_child(wp)
-    doc.active_layer.workflow.add_step(step)
+    workflow = doc.active_layer.workflow
+    assert workflow is not None
+    workflow.add_step(step)
     return doc
 
 
