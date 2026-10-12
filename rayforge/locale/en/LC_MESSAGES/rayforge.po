@@ -9893,3 +9893,21 @@ msgstr ""
 #, python-brace-format
 msgid "Pen {number}"
 msgstr ""
+
+#: rayforge/machine/driver/driver.py
+msgid "Home Switch"
+msgstr ""
+
+#: rayforge/machine/driver/driver.py
+msgid "Probe"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Z Homing"
+msgstr ""
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid ""
+"How the Z axis finds its reference: a home switch, "
+"or the auto-focus probe"
+msgstr ""

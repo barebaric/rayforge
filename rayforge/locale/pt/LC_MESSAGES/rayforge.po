@@ -10461,3 +10461,21 @@ msgstr "{filename} não contém comandos de desenho HPGL."
 #, python-brace-format
 msgid "Pen {number}"
 msgstr "Caneta {number}"
+
+#: rayforge/machine/driver/driver.py
+msgid "Home Switch"
+msgstr "Interruptor de Referência"
+
+#: rayforge/machine/driver/driver.py
+msgid "Probe"
+msgstr "Sonda"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Z Homing"
+msgstr "Referenciação de Z"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid ""
+"How the Z axis finds its reference: a home switch, "
+"or the auto-focus probe"
+msgstr "Como o eixo Z encontra sua referência: um interruptor de referência ou a sonda de foco automático"

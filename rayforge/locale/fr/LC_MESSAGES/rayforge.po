@@ -10556,3 +10556,21 @@ msgstr "{filename} ne contient aucune commande de tracé HPGL."
 #, python-brace-format
 msgid "Pen {number}"
 msgstr "Plume {number}"
+
+#: rayforge/machine/driver/driver.py
+msgid "Home Switch"
+msgstr "Interrupteur d'origine"
+
+#: rayforge/machine/driver/driver.py
+msgid "Probe"
+msgstr "Palpeur"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Z Homing"
+msgstr "Prise d'origine Z"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid ""
+"How the Z axis finds its reference: a home switch, "
+"or the auto-focus probe"
+msgstr "Comment l'axe Z trouve sa référence : un interrupteur d'origine ou le palpeur d'autofocus"

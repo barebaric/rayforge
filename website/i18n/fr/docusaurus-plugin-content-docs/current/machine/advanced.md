@@ -31,6 +31,15 @@ Lorsqu'activé, vous pouvez effectuer le homing d'axes individuels indépendamme
 de requiring tous les axes ensemble. Ceci est utile pour les machines où un axe peut déjà être
 correctement positionné.
 
+### Prise d'origine Z
+
+Choisit comment l'axe Z trouve sa position de référence lors du homing. Ce paramètre n'apparaît que
+si le pilote de la machine prend en charge plusieurs méthodes.
+
+- **Interrupteur d'origine** : Z rejoint son interrupteur d'origine, comme les axes X et Y
+- **Palpeur** : Z utilise le palpeur d'autofocus du contrôleur pour trouver la surface de travail,
+  puis se place à la distance de mise au point configurée
+
 ## Paramètres d'Arcs et de Courbes
 
 Paramètres pour contrôler comment les chemins courbes sont convertis en mouvements G-code.

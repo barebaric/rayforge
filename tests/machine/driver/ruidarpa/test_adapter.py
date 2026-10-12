@@ -50,6 +50,7 @@ from rayforge.machine.driver.driver import (
     Driver,
     DriverPrecheckError,
     DriverSetupError,
+    ZHomingMode,
 )
 from rayforge.machine.driver.ruidarpa import rpa_adapter
 from rayforge.machine.driver.ruidarpa.rpa_adapter import (
@@ -972,6 +973,46 @@ class TestSingleAxisHome:
         backend.jog_x_to.assert_called_once_with(0.0)
         backend.focus_z.assert_called_once()
         backend.home.assert_not_called()
+
+
+class TestZHomingMode:
+    """home(Axis.Z) follows the machine's Z homing mode."""
+
+    def test_probe_is_the_default(self):
+        """Machines without a chosen mode keep homing Z with the probe."""
+        assert RuidaRPAAdapter.resolve_z_homing_mode(None) is (
+            ZHomingMode.PROBE
+        )
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_switch_mode_uses_home_z(self, adapter_pair):
+        """The home switch mode sends HOME_Z instead of auto-focus."""
+        adapter, backend = adapter_pair
+        adapter._machine.set_z_homing_mode(ZHomingMode.SWITCH)
+        await adapter.home(Axis.Z)
+        backend.home_z.assert_called_once()
+        backend.focus_z.assert_not_called()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "adapter_pair",
+        [DIRECT_MODE, RPC_MODE],
+        ids=["direct", "rpc"],
+        indirect=True,
+    )
+    async def test_probe_mode_uses_focus_z(self, adapter_pair):
+        """The probe mode runs the controller's auto-focus routine."""
+        adapter, backend = adapter_pair
+        adapter._machine.set_z_homing_mode(ZHomingMode.PROBE)
+        await adapter.home(Axis.Z)
+        backend.focus_z.assert_called_once()
+        backend.home_z.assert_not_called()
 
 
 class TestLiveBridgeDirect:

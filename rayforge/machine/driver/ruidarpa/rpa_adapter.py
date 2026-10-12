@@ -49,6 +49,7 @@ from rayforge.machine.driver.driver import (
     FrameCorner,
     Pos,
     PWMParams,
+    ZHomingMode,
 )
 from rayforge.machine.driver.ruidarpa.rpa_direct_driver import RpaDirectDriver
 from rayforge.machine.driver.ruidarpa.rpa_encoder import (
@@ -217,6 +218,7 @@ class RuidaRPAAdapter(Driver):
     supports_probing = False
     native_overscan = True
     supports_multi_depth_raster = False
+    z_homing_modes = (ZHomingMode.PROBE, ZHomingMode.SWITCH)
 
     # --- Reconnect constants ---
     CONNECTION_POLL_INTERVAL = 0.5
@@ -1258,7 +1260,10 @@ class RuidaRPAAdapter(Driver):
         elif axes & Axis.Y:
             await loop.run_in_executor(None, self._backend.jog_y_to, 0.0)
         if axes is not None and (axes & Axis.Z):
-            await loop.run_in_executor(None, self._backend.focus_z)
+            if self.get_z_homing_mode() is ZHomingMode.SWITCH:
+                await loop.run_in_executor(None, self._backend.home_z)
+            else:
+                await loop.run_in_executor(None, self._backend.focus_z)
 
     async def move_to(
         self,
