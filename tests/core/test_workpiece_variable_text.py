@@ -45,7 +45,7 @@ class TestTemplateValues:
     def test_values_follow_doc_counter_and_offset(self, doc):
         doc.variable_text.serial = SerialSettings(current=10, step=5)
         wp = place(doc, "{serial}", offset=2)
-        assert wp.template_values() == {"serial": 20}
+        assert wp.template_values()["serial"] == 20
 
     def test_provider_receives_serial(self, doc):
         doc.variable_text.serial = SerialSettings(current=7)

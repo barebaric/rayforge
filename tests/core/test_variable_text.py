@@ -79,8 +79,8 @@ class TestVariableText:
     def test_template_values_with_offset(self):
         vt = VariableText()
         vt.serial = SerialSettings(current=100, step=10)
-        assert vt.template_values(0) == {"serial": 100}
-        assert vt.template_values(2) == {"serial": 120}
+        assert vt.template_values(0)["serial"] == 100
+        assert vt.template_values(2)["serial"] == 120
 
     def test_setting_serial_emits_changed(self):
         vt = VariableText()

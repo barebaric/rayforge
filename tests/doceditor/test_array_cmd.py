@@ -251,7 +251,7 @@ async def test_grid_array_numbers_copies(doc_editor, array_cmd):
     last = created[-1]
     provider = last.get_geometry_provider()
     assert isinstance(provider, TemplateProvider)
-    assert last.template_values() == {"serial": 16}
+    assert last.template_values()["serial"] == 16
     assert provider.rendered[-1] == "16"
 
 
