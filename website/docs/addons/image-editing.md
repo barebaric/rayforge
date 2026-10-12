@@ -18,6 +18,10 @@ what the laser engraves.
 Select one or more workpieces and choose **Tools - Invert Image**. Light areas become dark and dark
 areas become light; transparent areas stay transparent, so the background is still not engraved.
 
+![A grayscale photo of mountains and a lake, as imported](/images/image-edit-invert-before.webp)
+
+![The same photo after Invert Image](/images/image-edit-invert-after.webp)
+
 Choose it again to remove the inversion. With a mixed selection, the workpieces that are not
 inverted yet get inverted, so the whole selection ends up the same.
 
@@ -32,6 +36,6 @@ same.
 
 ## When the Addon Is Disabled
 
-A project keeps its image edits when the addon is disabled or not installed. Rayforge tells you
-that the project uses features that are not available and shows the images without those edits
-until the addon is enabled again.
+A project keeps its image edits when the addon is disabled or not installed. Rayforge tells you that
+the project uses features that are not available and shows the images without those edits until the
+addon is enabled again.

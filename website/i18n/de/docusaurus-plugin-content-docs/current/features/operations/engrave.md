@@ -178,13 +178,11 @@ Einstellungen, die unten beschrieben werden.
 | 10% | 60% | Mittlere Tiefe, sicher      |
 | 20% | 80% | Tiefes, dramatisches Relief |
 
-**Invertieren:**
+**Bild invertieren:**
 
-- **Aus** (Standard): Weiß = flach, Schwarz = tief
-- **Ein**: Weiß = tief, Schwarz = flach
-
-Invertieren für Lithophanen verwenden (helle Bereiche sollten dünn sein) oder Prägen (erhabene
-Bereiche).
+Schwarz wird tief graviert und Weiß bleibt flach. Um sie zu tauschen, etwa für Lithophanen (helle
+Bereiche sollten dünn sein) oder Prägen (erhabene Bereiche), wähle das Werkstück aus und verwende
+**Tools - Invert Image**. Siehe [Bildbearbeitung](../../addons/image-editing.md).
 
 **Helligkeitsbereich:**
 
@@ -280,13 +278,11 @@ ein Raster, das du mit **Halbton-Zellgröße** (Abstand zwischen den Punktmittel
 - Erzeugt kreuzschraffur-ähnlichen 3D-Effekt
 - Typisch: 0-45 Grad
 
-**Invertieren:**
+**Bild invertieren:**
 
-- **Aktiviert:** Weiß = tief, Schwarz = flach
-- **Deaktiviert:** Schwarz = tief, Weiß = flach
-
-Invertieren für Lithophanen verwenden (helle Bereiche sollten dünn sein) oder Prägen (erhabene
-Bereiche).
+Schwarz wird tief graviert und Weiß bleibt flach. Um sie zu tauschen, etwa für Lithophanen (helle
+Bereiche sollten dünn sein) oder Prägen (erhabene Bereiche), wähle das Werkstück aus und verwende
+**Tools - Invert Image**. Siehe [Bildbearbeitung](../../addons/image-editing.md).
 
 ### Scan-Muster
 

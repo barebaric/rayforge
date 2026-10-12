@@ -178,12 +178,11 @@ diferentes, descritas abaixo.
 | 10% | 60% | Profundidade média, seguro |
 | 20% | 80% | Relevo profundo, dramático |
 
-**Inverter:**
+**Invertendo a imagem:**
 
-- **Desligado** (padrão): Branco = raso, Preto = profundo
-- **Ligado**: Branco = profundo, Preto = raso
-
-Use inverter para litofanias (áreas claras devem ser finas) ou embossing (áreas elevadas).
+O preto é gravado em profundidade e o branco fica raso. Para inverter, para litofanias (áreas claras
+devem ser finas) ou embossing (áreas elevadas), selecione a peça e use **Tools - Invert Image**.
+Consulte [Edição de imagens](../../addons/image-editing.md).
 
 **Faixa de Brilho:**
 
@@ -279,12 +278,11 @@ e **Ângulo do meio-tom**; use um tamanho de célula de pelo menos algumas largu
 - Cria efeito 3D estilo malha cruzada
 - Típico: 0-45 graus
 
-**Inverter:**
+**Invertendo a imagem:**
 
-- **Habilitado:** Branco = profundo, Preto = raso
-- **Desabilitado:** Preto = profundo, Branco = raso
-
-Use inverter para litofanias (áreas claras devem ser finas) ou embossing (áreas elevadas).
+O preto é gravado em profundidade e o branco fica raso. Para inverter, para litofanias (áreas claras
+devem ser finas) ou embossing (áreas elevadas), selecione a peça e use **Tools - Invert Image**.
+Consulte [Edição de imagens](../../addons/image-editing.md).
 
 ### Padrão de Varredura
 
