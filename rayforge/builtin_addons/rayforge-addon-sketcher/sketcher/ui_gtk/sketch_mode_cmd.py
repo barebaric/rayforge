@@ -1,7 +1,7 @@
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, Optional
 
 from gi.repository import GLib
 
@@ -12,6 +12,7 @@ from rayforge.ui_gtk.doceditor import file_dialogs
 from rayforge.usage import get_usage_tracker
 
 from ..core.sketch import Sketch
+from ..core.workpieces import is_sketch_workpiece
 
 if TYPE_CHECKING:
     from rayforge.doceditor.editor import DocEditor
@@ -97,16 +98,8 @@ class SketchModeCmd:
         self, workpiece: WorkPiece, is_new_sketch: bool = False
     ):
         """Switches the view to the SketchStudio to edit a workpiece."""
-        sketch = None
-        if workpiece.geometry_provider_uid:
-            sketch = cast(
-                Sketch | None,
-                self._editor.doc.get_asset_by_uid(
-                    workpiece.geometry_provider_uid
-                ),
-            )
-
-        if not sketch:
+        sketch = workpiece.get_geometry_provider()
+        if not isinstance(sketch, Sketch):
             logger.warning("Attempted to edit a non-sketch workpiece.")
             return
 
@@ -228,7 +221,7 @@ class SketchModeCmd:
             selected_items[0], WorkPiece
         ):
             wp = selected_items[0]
-            if wp.geometry_provider_uid:
+            if is_sketch_workpiece(wp):
                 self.enter_sketch_mode(wp)
             else:
                 self._win._on_editor_notification(
@@ -255,7 +248,8 @@ class SketchModeCmd:
         """Action handler for editing a sketch-based workpiece."""
         item_uid = param.get_string()
         item = self._editor.doc.find_descendant_by_uid(item_uid)
-        if isinstance(item, WorkPiece) and item.geometry_provider_uid:
+        if is_sketch_workpiece(item):
+            assert isinstance(item, WorkPiece)
             self.enter_sketch_mode(item)
 
     def on_export_object(self, action, param):
