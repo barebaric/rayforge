@@ -973,6 +973,10 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_addon_state_changed(self, sender, addon_name):
         """Handle addon enable/disable to refresh action handlers."""
+        if addon_name in sender.loaded_addons:
+            call_registration_hooks(
+                get_context().plugin_mgr, window_required=True
+            )
         action_extension_registry.invoke_setup_handlers(self.action_manager)
         self.action_manager.update_action_states()
 

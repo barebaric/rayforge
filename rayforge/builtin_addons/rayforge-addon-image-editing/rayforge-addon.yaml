@@ -1,7 +1,7 @@
 name: image_editing
 display_name: "Image Editing"
 description: "Non-destructive image editing tools for workpieces"
-api_version: 22
+api_version: 23
 author:
   name: "Rayforge Team"
   email: "noreply@rayforge.org"

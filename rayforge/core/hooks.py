@@ -4,14 +4,14 @@ hookspec = pluggy.HookspecMarker("rayforge")
 hookimpl = pluggy.HookimplMarker("rayforge")
 
 MINIMUM_API_VERSION = 16
-PLUGIN_API_VERSION = 22
+PLUGIN_API_VERSION = 23
 
 
 """
 API Changelog
 =============
 
-Version 22
+Version 23
 ----------
 Added the ``register_image_edits`` hook and the global
 ``image_edit_registry`` (``rayforge.core.image_edit``). Addons register
@@ -20,6 +20,16 @@ Added the ``register_image_edits`` hook and the global
 ``WorkPiece.get_vips_image()`` is now the private
 ``_get_vips_image()`` and returns the unedited render; callers that
 want what the user sees use ``get_processed_image()``.
+
+Version 22
+----------
+``action_registry.register()`` accepts an ``enabled_when`` predicate that
+receives the ``ActionManager`` and is evaluated on every action state
+update. Addons that used ``action_extension_registry`` only to enable and
+disable their action can now register directly in the
+``register_actions`` hook. That hook is also invoked again when an addon
+is enabled while the window exists, so runtime-enabled addons no longer
+need ``action_extension_registry`` to have their actions created.
 
 Version 21
 ----------
