@@ -62,6 +62,44 @@ génère moins de commandes.
 Les valeurs typiques vont de 0,01mm pour un travail de précision à 0,1mm pour un traitement plus
 rapide.
 
+## Décalage de Balayage Bidirectionnel par Vitesse {#bidirectional-scan-offset-by-speed}
+
+Le tableau de décalage de balayage bidirectionnel par vitesse corrige le désalignement horizontal
+entre les passes raster de gauche à droite et de droite à gauche. Sur beaucoup de machines, ce
+décalage n'est pas constant : plus la tête laser se déplace vite, plus les passes de droite à gauche
+dérivent hors de l'alignement, ce qui se manifeste par un banding qui s'aggrave aux vitesses de
+gravure élevées.
+
+![Décalage de Balayage Bidirectionnel par Vitesse](/screenshots/machine-settings-advanced-bidir-offset-table.webp)
+
+Chaque ligne du tableau associe une vitesse de gravure au décalage, en millimètres, dont les passes
+de droite à gauche ont besoin à cette vitesse :
+
+- Utilisez **Ajouter une Ligne** pour ajouter une ligne et le bouton de corbeille d'une ligne pour
+  la supprimer
+- Les valeurs positives décalent les passes de droite à gauche vers la droite, les valeurs négatives
+  vers la gauche
+- Les lignes sont conservées triées par vitesse ; si deux lignes ont la même vitesse, la dernière
+  gagne
+
+Lorsqu'une étape de gravure s'exécute, Rayforge y recherche la vitesse de l'étape et interpole le
+décalage linéairement entre les lignes adjacentes. Les vitesses inférieures à la première ligne ou
+supérieures à la dernière utilisent le décalage de la ligne la plus proche, et un tableau vide
+signifie que toutes les vitesses utilisent un décalage de 0.
+
+**Sans correction** — le désalignement augmente avec la vitesse de gravure :
+
+![Passes raster désalignées à 1000, 4000 et 8000 mm/min](/images/bidir-scan-offset-uncorrected.webp)
+
+**Avec le tableau de décalage appliqué :**
+
+![Passes raster alignées à toutes les vitesses](/images/bidir-scan-offset-table-applied.webp)
+
+Le tableau ne s'applique qu'aux étapes de gravure dont le propre **Décalage de Balayage
+Bidirectionnel** vaut 0 ; un décalage par étape non nul a toujours la priorité. Consultez
+[Décalage de Balayage Bidirectionnel](../features/operations/engrave.md#bidirectional-scan-offset)
+pour voir à quoi ressemble le désalignement et comment le calibrer.
+
 ## Voir Aussi
 
 - [Paramètres Matériels](hardware) - Configuration de l'origine des axes et inversion

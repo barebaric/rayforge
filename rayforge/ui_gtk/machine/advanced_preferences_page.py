@@ -5,6 +5,7 @@ from gi.repository import Adw
 
 from ..shared.pref_rows.length_spin_row import LengthSpinRow
 from ..shared.preferences_page import TrackedPreferencesPage
+from .bidir_offset_table import BidirOffsetTableGroup
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +68,9 @@ class AdvancedPreferencesPage(TrackedPreferencesPage):
             self.on_arc_tolerance_changed
         )
         path_group.add(self.arc_tolerance_row)
+
+        self.bidir_offset_group = BidirOffsetTableGroup(self.machine)
+        self.add(self.bidir_offset_group)
 
         homing_group = Adw.PreferencesGroup(title=_("Homing and Startup"))
         homing_group.set_description(

@@ -66,6 +66,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Engrave: the step's Bidirectional Scan Offset had no effect since
+  the pipeline moved to raygeo intents, because the value no longer
+  reached the transformer; changing it now also refreshes the cached
+  toolpath (#307)
 - Step settings: choice rows backed by an enum (such as the Engrave
   step's dithering algorithm) now show the step's actual value when
   the dialog opens and after undo, instead of the first entry

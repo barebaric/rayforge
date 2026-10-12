@@ -340,15 +340,16 @@ auf einigen Maschinen sichtbare Bänderung verursachen. Falls du das siehst, kal
 beschriebenen **Bidirektionalen Scan-Offset**, um es direkt zu korrigieren, anstatt den
 Geschwindigkeitsvorteil zu verlieren.
 
-#### Bidirektionaler Scan-Offset
+#### Bidirektionaler Scan-Offset {#bidirectional-scan-offset}
 
 Korrigiert eine feste mechanische oder schaltzeitbedingte Versetzung zwischen Links-nach-rechts- und
 Rechts-nach-links-Rasterdurchgängen, die ansonsten abwechselnde Scan-Zeilen verschiebt (als
 Bänderung sichtbar, besonders bei Fotogravuren).
 
 - In Millimetern angeben, positiv oder negativ, je nachdem welche Richtung verschoben werden muss
-- Wendet eine konstante Verschiebung unabhängig von der Geschwindigkeit an; wenn die Versetzung mit
-  der Geschwindigkeit variiert, kalibriere für deine typische Gravurgeschwindigkeit
+- Ein Wert ungleich 0 hier gewinnt immer; ist er 0, greift für den Schritt die Tabelle
+  [Bidirektionaler Scan-Offset nach Geschwindigkeit](../../machine/advanced.md#bidirectional-scan-offset-by-speed)
+  der Maschine, die für die Geschwindigkeit dieses Schritts einen Offset interpoliert
 - Standard ist 0 (keine Korrektur)
 
 **Offset kalibrieren:**
@@ -358,6 +359,11 @@ Bänderung sichtbar, besonders bei Fotogravuren).
 2. Vergleiche abwechselnde Zeilen, um Richtung und Ausmaß der Fehlausrichtung zu ermitteln
 3. Passe den Offset in kleinen Schritten an (0.01-0.05mm) und teste erneut, bis abwechselnde Zeilen
    ausgerichtet sind
+
+Wenn die Fehlausrichtung über deinen üblichen Gravurgeschwindigkeiten deutlich variiert, kann ein
+einzelner Offset nicht jeden Job korrigieren. Lasse den Offset des Schritts auf 0 und hinterlege
+stattdessen eine geschwindigkeitsabhängige Offset-Tabelle in den
+[Maschineneinstellungen - Erweitert](../../machine/advanced.md#bidirectional-scan-offset-by-speed).
 
 ## Laser-Einstellungen
 

@@ -337,15 +337,16 @@ Pequenas diferenças mecânicas ou de atraso de disparo entre as duas direções
 visíveis em algumas máquinas. Se você vir isso, calibre o **Deslocamento de Varredura Bidirecional**
 abaixo para corrigir diretamente, em vez de perder o benefício de velocidade.
 
-#### Deslocamento de Varredura Bidirecional
+#### Deslocamento de Varredura Bidirecional {#bidirectional-scan-offset}
 
 Corrige um desalinhamento fixo mecânico ou de atraso de disparo entre passagens raster da esquerda
 para a direita e da direita para a esquerda, que de outra forma desalinha linhas de varredura
 alternadas (visível como faixas, especialmente em gravações de fotos).
 
 - Defina em milímetros, positivo ou negativo dependendo de qual direção precisa ser deslocada
-- Aplica um deslocamento constante independentemente da velocidade; se o desalinhamento varia com a
-  velocidade, calibre para sua velocidade de gravação típica
+- Um valor diferente de zero aqui sempre prevalece; quando é 0, a etapa recorre à tabela
+  [Deslocamento de Varredura Bidirecional por Velocidade](../../machine/advanced.md#bidirectional-scan-offset-by-speed)
+  da máquina, que interpola um deslocamento para a velocidade desta etapa
 - Padrão é 0 (sem correção)
 
 **Calibrando o deslocamento:**
@@ -355,6 +356,11 @@ alternadas (visível como faixas, especialmente em gravações de fotos).
 2. Compare linhas alternadas para encontrar a direção e a quantidade do desalinhamento
 3. Ajuste o deslocamento em pequenos incrementos (0.01-0.05mm) e teste novamente até que as linhas
    alternadas se alinhem
+
+Se o desalinhamento varia notavelmente entre suas velocidades de gravação habituais, um único
+deslocamento não consegue corrigir todos os trabalhos. Deixe o deslocamento da etapa em 0 e preencha
+em vez disso uma tabela de deslocamento dependente da velocidade em
+[Configurações da Máquina - Avançado](../../machine/advanced.md#bidirectional-scan-offset-by-speed).
 
 ## Configurações do Laser
 

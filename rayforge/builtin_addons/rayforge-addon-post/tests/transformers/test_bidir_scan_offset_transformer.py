@@ -123,3 +123,56 @@ def test_preserves_intermediate_state_commands(
     assert ops.power(1) == pytest.approx(0.5)
     assert ops.command_type(2) == CommandType.SCAN_LINE
     assert ops.endpoint(2) == pytest.approx((0.3, 0.5, 0.0))
+
+
+TABLE = [[1000.0, 0.1], [3000.0, 0.3]]
+
+
+@pytest.mark.parametrize(
+    "settings, expected",
+    [
+        ({"bidir_x_offset_mm": 0.25}, 0.25),
+        (
+            {
+                "bidir_x_offset_mm": 0.25,
+                "bidir_offset_table": TABLE,
+                "cut_speed": 2000,
+            },
+            0.25,
+        ),
+        (
+            {
+                "bidir_x_offset_mm": 0.0,
+                "bidir_offset_table": TABLE,
+                "cut_speed": 2000,
+            },
+            0.2,
+        ),
+        (
+            {"bidir_offset_table": TABLE, "cut_speed": 500},
+            0.1,
+        ),
+        ({"bidir_offset_table": TABLE}, 0.0),
+        ({"bidir_offset_table": [], "cut_speed": 2000}, 0.0),
+    ],
+)
+def test_step_offset_overrides_machine_table(
+    transformer: BidirScanOffsetTransformer, settings, expected
+):
+    spec = transformer.to_spec(None, None, settings)
+    assert spec.offset_mm == pytest.approx(expected)
+
+
+def test_machine_table_shifts_right_to_left_passes(
+    transformer: BidirScanOffsetTransformer,
+):
+    ops = _build_zigzag()
+
+    _apply(
+        transformer,
+        ops,
+        settings={"bidir_offset_table": TABLE, "cut_speed": 3000},
+    )
+
+    assert ops.endpoint(2) == pytest.approx((2.3, 0.5, 0.0))
+    assert ops.endpoint(3) == pytest.approx((0.3, 0.5, 0.0))
