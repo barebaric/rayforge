@@ -13,6 +13,7 @@ from gi.repository import Gio
 from rayforge.core.hooks import hookimpl
 from rayforge.ui_gtk.action_registry import MenuPlacement
 
+from .adjust_dialog import AdjustImageDialog
 from .commands import toggle_image_edit
 from .ops import INVERT
 
@@ -21,6 +22,7 @@ if TYPE_CHECKING:
 
 ADDON_NAME = "image_editing"
 INVERT_ACTION = "invert-image"
+ADJUST_ACTION = "adjust-image"
 
 
 def _has_selection(action_manager: "ActionManager") -> bool:
@@ -30,6 +32,11 @@ def _has_selection(action_manager: "ActionManager") -> bool:
 @hookimpl
 def register_actions(action_registry):
     """Register actions with menu placement."""
+    _register_invert(action_registry)
+    _register_adjust(action_registry)
+
+
+def _register_invert(action_registry):
     action = Gio.SimpleAction.new(INVERT_ACTION, None)
 
     def on_activate(action, param):
@@ -48,5 +55,28 @@ def register_actions(action_registry):
         addon_name=ADDON_NAME,
         label=_("Invert Image"),
         menu=MenuPlacement(menu_id="tools", priority=60),
+        enabled_when=_has_selection,
+    )
+
+
+def _register_adjust(action_registry):
+    action = Gio.SimpleAction.new(ADJUST_ACTION, None)
+
+    def on_activate(action, param):
+        window = action_registry.window
+        dialog = AdjustImageDialog(
+            window,
+            window.doc_editor.history_manager,
+            window.surface.get_selected_workpieces(),
+        )
+        dialog.present()
+
+    action.connect("activate", on_activate)
+    action_registry.register(
+        action_name=ADJUST_ACTION,
+        action=action,
+        addon_name=ADDON_NAME,
+        label=_("Adjust Image..."),
+        menu=MenuPlacement(menu_id="tools", priority=61),
         enabled_when=_has_selection,
     )

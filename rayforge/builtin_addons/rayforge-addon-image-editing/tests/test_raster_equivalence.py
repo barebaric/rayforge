@@ -1,11 +1,12 @@
 """
 The Invert edit replaces the Engrave step's old Invert setting; these
-tests pin the behaviour that setting had.
+tests pin the behaviour that setting had, and that the other edits reach
+the Engrave step the same way.
 """
 
 import numpy as np
 import pyvips
-from image_editing.ops import InvertOp
+from image_editing.ops import InvertOp, ToneOp
 
 from rayforge.image.dither import DitherAlgorithm
 from rayforge.image.util import normalize_to_rgba, vips_rgba_to_cairo_surface
@@ -49,4 +50,19 @@ def test_inverted_power_modulation_flips_visible_pixels_only():
     )
     assert gray is not None and alpha is not None
     assert np.all(gray[:, :5] == 0)
+    assert np.all(alpha[:, 5:] == 0)
+
+
+def test_tone_edit_reaches_power_modulation():
+    pixels = np.zeros((10, 10, 4), dtype=np.uint8)
+    pixels[:, :5] = (128, 128, 128, 255)
+    image = pyvips.Image.new_from_array(pixels).copy(interpretation="srgb")
+    darker = ToneOp.apply(image, {"gamma": 0.5})
+    gray, alpha = preprocess_raster_image(
+        _surface(darker),
+        mode=DepthMode.POWER_MODULATION,
+        auto_levels=False,
+    )
+    assert gray is not None and alpha is not None
+    assert np.all(gray[:, :5] == round(255 * (128 / 255) ** 2))
     assert np.all(alpha[:, 5:] == 0)
