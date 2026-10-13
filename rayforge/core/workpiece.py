@@ -47,6 +47,22 @@ logger = logging.getLogger(__name__)
 CAIRO_MAX_DIMENSION = 16384
 
 
+def _with_resolution(
+    image: pyvips.Image, size_mm: tuple[float, float]
+) -> pyvips.Image:
+    """
+    Tags the image with its resolution in pixels per mm, so edits with
+    physical sizes (like a sharpen radius) do not depend on the render
+    size.
+    """
+    width_mm, height_mm = size_mm
+    if width_mm <= 0 or height_mm <= 0:
+        return image
+    return image.copy(
+        xres=image.width / width_mm, yres=image.height / height_mm
+    )
+
+
 class RenderContext(NamedTuple):
     """Encapsulates the resources required for rendering."""
 
@@ -91,9 +107,11 @@ class WorkPiece(DocItem):
         self._render_cache: dict[tuple[int, int], pyvips.Image] = {}
 
         # The non-destructive image edit stack and the cache of rendered
-        # images with that stack applied. Key is (width, height).
+        # images with that stack applied. Key is (width, height, size).
         self._image_edits: tuple[ImageEditStep, ...] = ()
-        self._processed_cache: dict[tuple[int, int], pyvips.Image] = {}
+        self._processed_cache: dict[
+            tuple[int, int, tuple[float, float]], pyvips.Image
+        ] = {}
 
         # Transient attributes for deserialized instances in subprocesses
         self._data: bytes | None = None
@@ -846,10 +864,13 @@ class WorkPiece(DocItem):
         image = self._get_vips_image(width, height)
         if image is None or not self._image_edits:
             return image
-        key = (width, height)
+        size = self.size
+        key = (width, height, size)
         processed = self._processed_cache.get(key)
         if processed is None:
-            processed = apply_image_edits(image, self._image_edits)
+            processed = apply_image_edits(
+                _with_resolution(image, size), self._image_edits
+            )
             self._processed_cache[key] = processed
         return processed
 

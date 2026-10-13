@@ -1,6 +1,6 @@
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, ClassVar, cast
 
 import pytest
 import pyvips
@@ -136,3 +136,43 @@ def test_old_documents_load_without_edits(workpiece):
 def test_in_world_copies_the_edits(workpiece):
     workpiece.image_edits = [ImageEditStep("test_blank")]
     assert workpiece.in_world().image_edits == workpiece.image_edits
+
+
+class _ResolutionOp(ImageEditOp):
+    NAME = "test_resolution"
+    LABEL = "Resolution"
+    seen: ClassVar[list[tuple[float, float]]] = []
+
+    @classmethod
+    def apply(
+        cls, image: pyvips.Image, params: Mapping[str, Any]
+    ) -> pyvips.Image:
+        cls.seen.append((image.xres, image.yres))
+        return image
+
+
+@pytest.fixture
+def resolution_op():
+    image_edit_registry.register(_ResolutionOp, addon_name="test_wp_res")
+    _ResolutionOp.seen = []
+    yield _ResolutionOp
+    image_edit_registry.unregister_all_from_addon("test_wp_res")
+
+
+def test_edits_see_the_resolution_in_pixels_per_mm(workpiece, resolution_op):
+    workpiece.set_size(10.0, 5.0)
+    workpiece.image_edits = [ImageEditStep(resolution_op.NAME)]
+    workpiece.get_processed_image(40, 10)
+    assert resolution_op.seen == [pytest.approx((4.0, 2.0))]
+
+
+def test_resizing_reapplies_the_edits(workpiece, resolution_op):
+    workpiece.image_edits = [ImageEditStep(resolution_op.NAME)]
+    workpiece.set_size(10.0, 10.0)
+    workpiece.get_processed_image(20, 20)
+    workpiece.set_size(20.0, 20.0)
+    workpiece.get_processed_image(20, 20)
+    assert resolution_op.seen == [
+        pytest.approx((2.0, 2.0)),
+        pytest.approx((1.0, 1.0)),
+    ]
