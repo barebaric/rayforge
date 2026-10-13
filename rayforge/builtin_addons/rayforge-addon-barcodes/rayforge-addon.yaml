@@ -1,7 +1,7 @@
 name: barcodes
 display_name: "Barcodes"
 description: "QR codes and barcodes generated from templates"
-api_version: 21
+api_version: 22
 requires:
   - sketcher
 author:

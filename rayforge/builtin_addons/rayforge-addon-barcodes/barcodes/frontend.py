@@ -8,8 +8,7 @@ from gettext import gettext as _
 from gi.repository import Gio
 
 from rayforge.core.hooks import hookimpl
-from rayforge.ui_gtk.action_registry import MenuPlacement, action_registry
-from rayforge.ui_gtk.actions import action_extension_registry
+from rayforge.ui_gtk.action_registry import MenuPlacement
 from rayforge.ui_gtk.doceditor.property_providers import (
     property_provider_registry,
 )
@@ -21,18 +20,17 @@ ADDON_NAME = "barcodes"
 ADD_ACTION = "add-barcode"
 
 
-def _register_actions(action_manager):
+@hookimpl
+def register_actions(action_registry):
     action = Gio.SimpleAction.new(ADD_ACTION, None)
 
     def on_activate(action, param):
-        window = action_manager.win
+        window = action_registry.window
         editor = window.doc_editor
         workpiece = add_barcode(editor, default_position(editor))
         window.surface.select_items([workpiece])
 
     action.connect("activate", on_activate)
-    action_manager.win.add_action(action)
-    action_manager.actions[ADD_ACTION] = action
     action_registry.register(
         action_name=ADD_ACTION,
         action=action,
@@ -40,11 +38,6 @@ def _register_actions(action_manager):
         label=_("Add Barcode"),
         menu=MenuPlacement(menu_id="object", priority=60),
     )
-
-
-@hookimpl
-def register_actions(action_registry):
-    action_extension_registry.register_setup(_register_actions, ADDON_NAME)
 
 
 @hookimpl
