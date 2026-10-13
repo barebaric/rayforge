@@ -6,6 +6,11 @@ import pytest
 import pyvips
 
 from rayforge.core.doc import Doc
+from rayforge.core.image_cache import (
+    IMAGE_CACHE_MAX_BYTES,
+    IMAGE_CACHE_MAX_ENTRIES,
+    image_nbytes,
+)
 from rayforge.core.image_edit import (
     ImageEditOp,
     ImageEditStep,
@@ -176,3 +181,58 @@ def test_resizing_reapplies_the_edits(workpiece, resolution_op):
         pytest.approx((2.0, 2.0)),
         pytest.approx((1.0, 1.0)),
     ]
+
+
+def test_slider_changes_keep_one_processed_image(workpiece, blank_op):
+    for value in range(20):
+        workpiece.image_edits = [ImageEditStep(blank_op.NAME, {"v": value})]
+        workpiece.get_processed_image(20, 20)
+    assert len(workpiece._processed_cache) == 1
+
+
+def test_zooming_keeps_a_bounded_number_of_images(workpiece, blank_op):
+    workpiece.image_edits = [ImageEditStep(blank_op.NAME)]
+    for zoom in range(1, 11):
+        workpiece.get_processed_image(10 * zoom, 10 * zoom)
+    assert len(workpiece._render_cache) == IMAGE_CACHE_MAX_ENTRIES
+    assert len(workpiece._processed_cache) == IMAGE_CACHE_MAX_ENTRIES
+    assert (100, 100) in workpiece._render_cache
+    assert (10, 10) not in workpiece._render_cache
+
+
+def test_resizing_keeps_a_bounded_number_of_images(workpiece, blank_op):
+    workpiece.image_edits = [ImageEditStep(blank_op.NAME)]
+    for step in range(1, 11):
+        workpiece.set_size(10.0 * step, 10.0)
+        workpiece.get_processed_image(20, 20)
+    assert len(workpiece._processed_cache) <= IMAGE_CACHE_MAX_ENTRIES
+
+
+def test_image_caches_have_a_byte_budget(workpiece):
+    for cache in (workpiece._render_cache, workpiece._processed_cache):
+        assert cache.max_bytes == IMAGE_CACHE_MAX_BYTES
+
+
+def test_byte_budget_evicts_the_least_recently_used(workpiece):
+    workpiece._render_cache.max_bytes = 3600
+    workpiece._get_vips_image(20, 20)
+    workpiece._get_vips_image(10, 10)
+    workpiece._get_vips_image(20, 20)
+    workpiece._get_vips_image(22, 22)
+    assert set(workpiece._render_cache.keys()) == {(20, 20), (22, 22)}
+    assert workpiece._render_cache.nbytes <= 3600
+
+
+def test_cached_size_is_the_uncompressed_pixel_size():
+    image = pyvips.Image.black(30, 20, bands=4).cast("ushort")
+    assert image_nbytes(image) == 30 * 20 * 4 * 2
+
+
+def test_source_base_images_have_a_byte_budget(workpiece):
+    source = workpiece.source
+    assert source is not None
+    assert source._base_image_cache.max_bytes == IMAGE_CACHE_MAX_BYTES
+    big = pyvips.Image.black(4000, 3000, bands=4)
+    for step in range(10):
+        source.cache_base_image(step, 4000, 3000, big)
+    assert source._base_image_cache.nbytes <= IMAGE_CACHE_MAX_BYTES

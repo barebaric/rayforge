@@ -26,8 +26,10 @@ from raygeo.geo.types import Point, Rect
 from raygeo.ops.part import Part
 
 from ..context import get_context
+from ..shared.util.cache import LruCache
 from .asset_registry import asset_type_registry
 from .geometry_provider import IGeometryProvider
+from .image_cache import new_image_cache
 from .image_edit import ImageEditStep, apply_image_edits
 from .item import DocItem
 from .source_asset_segment import SourceAssetSegment
@@ -104,14 +106,16 @@ class WorkPiece(DocItem):
         self._edited_boundaries: Geometry | None = None
 
         # The cache for rendered vips images. Key is (width, height).
-        self._render_cache: dict[tuple[int, int], pyvips.Image] = {}
+        self._render_cache: LruCache[tuple[int, int], pyvips.Image] = (
+            new_image_cache()
+        )
 
         # The non-destructive image edit stack and the cache of rendered
         # images with that stack applied. Key is (width, height, size).
         self._image_edits: tuple[ImageEditStep, ...] = ()
-        self._processed_cache: dict[
+        self._processed_cache: LruCache[
             tuple[int, int, tuple[float, float]], pyvips.Image
-        ] = {}
+        ] = new_image_cache()
 
         # Transient attributes for deserialized instances in subprocesses
         self._data: bytes | None = None
@@ -871,7 +875,7 @@ class WorkPiece(DocItem):
             processed = apply_image_edits(
                 _with_resolution(image, size), self._image_edits
             )
-            self._processed_cache[key] = processed
+            self._processed_cache.put(key, processed)
         return processed
 
     def _get_vips_image(self, width: int, height: int) -> pyvips.Image | None:
@@ -880,8 +884,9 @@ class WorkPiece(DocItem):
         Orchestrates data retrieval, rendering, cropping, and masking.
         """
         key = (width, height)
-        if key in self._render_cache:
-            return self._render_cache[key]
+        cached = self._render_cache.get(key)
+        if cached is not None:
+            return cached
 
         # 1. Resolve Context
         ctx = self._resolve_render_context()
@@ -923,7 +928,7 @@ class WorkPiece(DocItem):
         )
 
         if final_image:
-            self._render_cache[key] = final_image
+            self._render_cache.put(key, final_image)
 
         return final_image
 

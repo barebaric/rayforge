@@ -3,6 +3,7 @@
 
 import gi
 import pytest
+import pyvips
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
@@ -80,3 +81,27 @@ def test_reset_removes_the_adjustments(dialog, workpieces):
     dialog.apply()
     assert workpieces[0].image_edits == ()
     assert workpieces[1].image_edits == (INVERT,)
+
+
+def _cache_a_render(wp: WorkPiece) -> None:
+    wp._processed_cache.put((10, 10, wp.size), pyvips.Image.black(10, 10))
+
+
+@pytest.mark.ui
+def test_previews_do_not_accumulate_cached_images(dialog, workpieces):
+    for value in range(10):
+        for wp in workpieces:
+            _cache_a_render(wp)
+        dialog.brightness_row.set_value(value)
+        dialog.preview()
+    assert all(len(wp._processed_cache) == 0 for wp in workpieces)
+
+
+@pytest.mark.ui
+def test_closing_drops_the_preview_images(dialog, workpieces):
+    dialog.sharpen_row.set_value(100)
+    dialog.preview()
+    for wp in workpieces:
+        _cache_a_render(wp)
+    dialog.close()
+    assert all(len(wp._processed_cache) == 0 for wp in workpieces)

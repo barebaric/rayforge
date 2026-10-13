@@ -4,7 +4,6 @@ import base64
 import hashlib
 import logging
 import uuid
-from collections import OrderedDict
 from dataclasses import dataclass, field
 from gettext import gettext as _
 from pathlib import Path
@@ -13,7 +12,9 @@ from typing import TYPE_CHECKING, Any, ClassVar
 import pyvips
 from blinker import Signal
 
+from ..shared.util.cache import LruCache
 from .asset import IAsset
+from .image_cache import new_image_cache
 
 logger = logging.getLogger(__name__)
 
@@ -58,8 +59,12 @@ class SourceAsset(IAsset):
     _hidden: bool = field(init=False, default=False)
     _updated: Signal = field(init=False, default_factory=Signal)
     extra: dict[str, Any] = field(default_factory=dict)
-    _base_image_cache: OrderedDict = field(
-        init=False, default_factory=OrderedDict, repr=False
+    _base_image_cache: LruCache = field(
+        init=False,
+        default_factory=lambda: new_image_cache(
+            SourceAsset._BASE_IMAGE_CACHE_MAX_SIZE
+        ),
+        repr=False,
     )
 
     _BASE_IMAGE_CACHE_MAX_SIZE: ClassVar[int] = 10
@@ -77,12 +82,8 @@ class SourceAsset(IAsset):
         self, data_id: int, width: int, height: int, image: pyvips.Image
     ) -> None:
         key = (data_id, width, height)
-        if key in self._base_image_cache:
-            self._base_image_cache.move_to_end(key)
-        else:
-            self._base_image_cache[key] = image
-        while len(self._base_image_cache) > self._BASE_IMAGE_CACHE_MAX_SIZE:
-            self._base_image_cache.popitem(last=False)
+        if self._base_image_cache.get(key) is None:
+            self._base_image_cache.put(key, image)
 
     def clear_base_image_cache(self) -> None:
         self._base_image_cache.clear()
