@@ -9,6 +9,7 @@ from itertools import pairwise
 from pathlib import Path
 
 import pytest
+import pytest_asyncio
 
 from rayforge.context import get_context
 from rayforge.core.workpiece import WorkPiece
@@ -37,6 +38,12 @@ def machine(context_initializer):
     machine.set_origin(Origin.BOTTOM_LEFT)
     machine.set_axis_extents(400, 400)
     return machine
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def settle_editor(doc_editor):
+    yield
+    await doc_editor.wait_until_settled()
 
 
 async def _gcode(editor) -> str:
