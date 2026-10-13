@@ -55,7 +55,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   one line per focus offset, either with relative Z moves (machines
   with a Z axis), with an M0 pause before each line to move the head
   by hand, or as one long line over a tilted strip. Both are created as
-  an editable layer with one operation per cell or line (#519)
+  an editable layer with one operation per cell or line. The Focus
+  Test opens on Z axis steps when the machine has a Z axis (#519,
+  #550)
 - Sketcher: boolean operations. Union, Difference, Intersection and
   Exclude bake the selected closed regions into multi-ring polygons
   (outer contours counter-clockwise, hole contours clockwise), so
