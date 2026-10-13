@@ -1629,8 +1629,10 @@ class MainWindow(Adw.ApplicationWindow):
 
         GLib.idle_add(self._check_changed_sources)
 
-        # Check for missing step types and show dialog if needed
-        missing_types = new_doc.missing_step_types
+        # Check for missing step types and image edits and show a dialog
+        missing_types = (
+            new_doc.missing_step_types | new_doc.missing_image_edit_ops
+        )
         if missing_types:
             dialog = MissingFeaturesDialog(self, missing_types)
             dialog.present()

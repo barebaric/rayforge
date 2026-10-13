@@ -117,6 +117,7 @@ module.exports = {
       items: [
         'addons/ai-workpiece-generator',
         'addons/deepnest',
+        'addons/image-editing',
         'addons/print-and-cut',
         'addons/projector-mode',
         'addons/smart-stock',
