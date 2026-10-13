@@ -129,7 +129,9 @@ class TestLruCache:
         assert set(cache.keys()) == {"a", "c"}
 
     def test_byte_budget_evicts_least_recently_used(self):
-        cache = LruCache(max_entries=10, max_bytes=100, sizeof=lambda v: v)
+        cache = LruCache[str, int](
+            max_entries=10, max_bytes=100, sizeof=lambda v: v
+        )
         cache.put("a", 40)
         cache.put("b", 40)
         cache.get("a")
@@ -138,21 +140,27 @@ class TestLruCache:
         assert cache.nbytes == 80
 
     def test_keeps_newest_entry_even_over_budget(self):
-        cache = LruCache(max_entries=10, max_bytes=100, sizeof=lambda v: v)
+        cache = LruCache[str, int](
+            max_entries=10, max_bytes=100, sizeof=lambda v: v
+        )
         cache.put("a", 40)
         cache.put("big", 500)
         assert list(cache.keys()) == ["big"]
         assert cache.nbytes == 500
 
     def test_replacing_a_key_updates_the_size(self):
-        cache = LruCache(max_entries=10, max_bytes=100, sizeof=lambda v: v)
+        cache = LruCache[str, int](
+            max_entries=10, max_bytes=100, sizeof=lambda v: v
+        )
         cache.put("a", 40)
         cache.put("a", 10)
         assert len(cache) == 1
         assert cache.nbytes == 10
 
     def test_clear_empties_the_cache(self):
-        cache = LruCache(max_entries=10, max_bytes=100, sizeof=lambda v: v)
+        cache = LruCache[str, int](
+            max_entries=10, max_bytes=100, sizeof=lambda v: v
+        )
         cache.put("a", 40)
         cache.clear()
         assert len(cache) == 0
