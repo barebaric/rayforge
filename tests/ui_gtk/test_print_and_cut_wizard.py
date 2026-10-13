@@ -14,6 +14,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from rayforge.core.doc import Doc
+from rayforge.core.job_origin import JobAnchor, JobOrigin, StartFrom
+
 _REPO_ROOT = Path(__file__).parents[2]
 _ADDON_ROOT = (
     _REPO_ROOT / "rayforge" / "builtin_addons" / "rayforge-addon-print-and-cut"
@@ -223,3 +226,26 @@ def test_sync_alignment_row_state_mirrors_machine(wizard_stub):
     wizard_stub._alignment_row.handler_unblock.assert_called_once_with(
         wizard_stub._alignment_handler_id
     )
+
+
+@pytest.mark.ui
+def test_apply_switches_start_from_to_absolute(wizard_stub):
+    doc = Doc()
+    doc.set_job_origin(JobOrigin(StartFrom.USER_ORIGIN, JobAnchor.CENTER))
+    wizard_stub._editor.doc = doc
+
+    PrintAndCutWizard._use_absolute_job_origin(wizard_stub)
+
+    assert doc.job_origin == JobOrigin()
+    wizard_stub._editor.notification_requested.send.assert_called_once()
+
+
+@pytest.mark.ui
+def test_apply_keeps_absolute_start_from_silently(wizard_stub):
+    doc = Doc()
+    wizard_stub._editor.doc = doc
+
+    PrintAndCutWizard._use_absolute_job_origin(wizard_stub)
+
+    assert doc.job_origin == JobOrigin()
+    wizard_stub._editor.notification_requested.send.assert_not_called()

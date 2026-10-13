@@ -6,6 +6,7 @@ from gi.repository import Adw, Gtk
 from ...core.job_origin import JobAnchor, JobOrigin, StartFrom
 from ...core.undo import ChangePropertyCommand
 from ...machine.job_placement import JobPlacementError, resolve_start_point
+from ...pipeline.intent_builder import check_job_origin_supported
 from ..shared.gtk import apply_css
 
 if TYPE_CHECKING:
@@ -126,8 +127,12 @@ class JobOriginRows:
     def _describe_start(self, job_origin: JobOrigin) -> str:
         if job_origin.is_absolute:
             return _("As placed on the canvas")
-        if self.machine is None:
+        if self.machine is None or self.doc is None:
             return ""
+        try:
+            check_job_origin_supported(self.machine, self.doc)
+        except JobPlacementError as e:
+            return str(e)
         if job_origin.start_from == StartFrom.USER_ORIGIN:
             if self.machine.wcs_origin_is_workarea_origin:
                 return _("On the work area origin")

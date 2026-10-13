@@ -39,7 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   G-code stays absolute in the active WCS (no G92/G10); framing, the
   3D preview and the pre-flight checks use the shifted job, and a
   shifted job that leaves the machine travel or enters a no-go zone is
-  refused (#518)
+  refused. Rotary layers and layers with their own WCS keep Absolute
+  Coordinates, the Job Origin follows a rotated panel, and applying a
+  Print & Cut alignment switches back to Absolute Coordinates (#518)
 - Sketcher: boolean operations. Union, Difference, Intersection and
   Exclude bake the selected closed regions into multi-ring polygons
   (outer contours counter-clockwise, hole contours clockwise), so

@@ -6,6 +6,7 @@ from gi.repository import Adw, Gtk
 from raygeo.geo import Matrix
 
 from rayforge.core.group import Group
+from rayforge.core.job_origin import JobOrigin
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.editor import DocEditor
 from rayforge.machine.cmd import MachineCmd
@@ -870,10 +871,31 @@ class PrintAndCutWizard(PatchedDialogWindow):
         self._editor.transform.create_transform_transaction(
             [(self._item, old_matrix, new_matrix)]
         )
+        self._use_absolute_job_origin()
 
         toast = Adw.Toast(title=_("Alignment applied"))
         self.toast_overlay.add_toast(toast)
         self.close()
+
+    def _use_absolute_job_origin(self):
+        """
+        Switch Start From back to Absolute Coordinates.
+
+        The alignment places the design on the printed marks in machine
+        coordinates; any other Start From would move the job away from
+        them again.
+        """
+        doc = self._editor.doc
+        if doc.job_origin.is_absolute:
+            return
+        doc.set_job_origin(JobOrigin())
+        self._editor.notification_requested.send(
+            self,
+            message=_(
+                "Start From was set to \u201cAbsolute Coordinates\u201d "
+                "so that the job is cut on the printed marks."
+            ),
+        )
 
     def close(self):
         self._disable_focus()

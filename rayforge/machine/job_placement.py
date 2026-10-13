@@ -17,9 +17,17 @@ from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point
 
-from ..core.job_origin import BBox, JobOrigin, StartFrom, placement_offset
+from ..core.job_origin import (
+    AnchorFractions,
+    BBox,
+    JobAnchor,
+    JobOrigin,
+    StartFrom,
+    placement_offset,
+)
 from .driver.driver import DeviceStatus
 from .models.coordspace import MachineSpace
+from .models.machine_panel import PanelOrientation
 
 if TYPE_CHECKING:
     from .models.machine import Machine
@@ -67,7 +75,24 @@ def compute_job_shift(
     start_point = resolve_start_point(machine, job_origin.start_from)
     if start_point is None:
         return None
-    return placement_offset(design_rect, job_origin.anchor, start_point)
+    anchor = world_anchor(machine, job_origin.anchor)
+    return placement_offset(design_rect, anchor, start_point)
+
+
+def world_anchor(machine: "Machine", anchor: JobAnchor) -> AnchorFractions:
+    """
+    The world-space fractions of *anchor*, which is chosen as seen on
+    the canvas. A rotated panel shows the bed turned by 90 degrees, so
+    e.g. the top-left corner on screen is another corner in world
+    space.
+    """
+    fx, fy = anchor.value
+    orientation = machine.panel_orientation
+    if orientation == PanelOrientation.ROTATED_LEFT:
+        return (fy, 1.0 - fx)
+    if orientation == PanelOrientation.ROTATED_RIGHT:
+        return (1.0 - fy, fx)
+    return (fx, fy)
 
 
 def _user_origin(machine: "Machine") -> Point:

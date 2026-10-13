@@ -101,15 +101,22 @@ class JobOrigin:
         return cls(start_from=start_from, anchor=anchor)
 
 
-def anchor_point(rect: BBox, anchor: JobAnchor) -> Point:
-    """The world-space position of *anchor* on the bounding box."""
+# Fractions along X and Y of a bounding box, as in JobAnchor values.
+AnchorFractions = tuple[float, float]
+
+
+def anchor_point(rect: BBox, anchor: JobAnchor | AnchorFractions) -> Point:
+    """
+    The world-space position of *anchor* on the bounding box. The
+    anchor is a JobAnchor or its (x, y) fractions in world space.
+    """
     min_x, min_y, max_x, max_y = rect
-    fx, fy = anchor.value
+    fx, fy = anchor.value if isinstance(anchor, JobAnchor) else anchor
     return (min_x + fx * (max_x - min_x), min_y + fy * (max_y - min_y))
 
 
 def placement_offset(
-    rect: BBox, anchor: JobAnchor, start_point: Point
+    rect: BBox, anchor: JobAnchor | AnchorFractions, start_point: Point
 ) -> Point:
     """The translation that moves *anchor* of *rect* onto *start_point*."""
     ax, ay = anchor_point(rect, anchor)

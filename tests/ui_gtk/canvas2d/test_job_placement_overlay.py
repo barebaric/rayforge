@@ -6,6 +6,7 @@ from rayforge.core.doc import Doc
 from rayforge.core.job_origin import JobAnchor, JobOrigin, StartFrom
 from rayforge.machine.driver.driver import DeviceState, DeviceStatus
 from rayforge.machine.models.machine import Machine, Origin
+from rayforge.machine.models.machine_panel import PanelOrientation
 from rayforge.machine.transport import TransportStatus
 from rayforge.ui_gtk.canvas2d import surface as surface_module
 from rayforge.ui_gtk.canvas2d.surface import WorkSurface
@@ -68,4 +69,31 @@ def test_current_position_outline_follows_head(surface):
     assert anchor == pytest.approx((0.0, 0.0))
 
     surface.doc.set_job_origin(JobOrigin())
+    assert not surface.job_placement_element.visible
+
+
+@pytest.mark.ui
+@pytest.mark.parametrize(
+    "orientation",
+    [
+        PanelOrientation.NATIVE,
+        PanelOrientation.ROTATED_LEFT,
+        PanelOrientation.ROTATED_RIGHT,
+    ],
+)
+def test_anchor_marker_is_where_chosen_on_screen(surface, orientation):
+    surface.machine.set_panel_orientation(orientation, align_cameras=False)
+    surface.doc.set_job_origin(
+        JobOrigin(StartFrom.USER_ORIGIN, JobAnchor.TOP_LEFT)
+    )
+    rect, anchor = _placed(surface)
+    assert anchor == pytest.approx((0.0, rect[3] - rect[1]))
+
+
+@pytest.mark.ui
+def test_unsupported_layer_shows_no_outline(surface):
+    surface.doc.active_layer.set_rotary_enabled(True)
+    surface.doc.set_job_origin(
+        JobOrigin(StartFrom.USER_ORIGIN, JobAnchor.CENTER)
+    )
     assert not surface.job_placement_element.visible

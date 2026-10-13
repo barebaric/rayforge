@@ -65,3 +65,11 @@ def test_current_position_subtitle(rows):
     assert rows.start_from_row.get_subtitle() == (
         "At the laser head: X 20.00  Y 30.00"
     )
+
+
+@pytest.mark.ui
+def test_subtitle_explains_unsupported_layer(rows):
+    doc = rows.doc
+    doc.active_layer.set_rotary_enabled(True)
+    doc.set_job_origin(JobOrigin(StartFrom.USER_ORIGIN, JobAnchor.CENTER))
+    assert "rotary" in rows.start_from_row.get_subtitle()

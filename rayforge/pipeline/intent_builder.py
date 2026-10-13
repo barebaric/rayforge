@@ -172,14 +172,15 @@ def job_design_rect(doc: Doc) -> tuple[float, float, float, float] | None:
     )
 
 
-def validate_job_placement(machine: Machine | None, doc: Doc) -> None:
+def check_job_origin_supported(machine: Machine | None, doc: Doc) -> None:
     """
-    Check that the document's job origin can be applied.
+    Check that the document's job origin fits its layers.
 
     Start From "User Origin" and "Current Position" translate the
-    whole job in world space, which has no meaning for rotary layers
-    (their Y is mapped onto the rotary axis), and "Current Position"
-    needs a connected, idle machine that reports the head position.
+    whole job in world space onto one start point. That has no meaning
+    for rotary layers (their Y is mapped onto the rotary axis), and a
+    layer with its own WCS would be emitted relative to another zero
+    point than the one the job is placed on.
 
     Raises:
         JobPlacementError: With a user-facing message.
@@ -187,14 +188,57 @@ def validate_job_placement(machine: Machine | None, doc: Doc) -> None:
     job_origin = doc.job_origin
     if job_origin.is_absolute or machine is None:
         return
+    mode = job_origin.start_from.label
     if doc.has_rotary_layer:
         raise JobPlacementError(
             _(
                 "Start From \u201c{mode}\u201d is not available while a "
                 "layer uses a rotary module. Use \u201cAbsolute "
                 "Coordinates\u201d."
-            ).format(mode=job_origin.start_from.label)
+            ).format(mode=mode)
         )
+    layer = _layer_with_own_wcs(machine, doc)
+    if layer is not None:
+        raise JobPlacementError(
+            _(
+                "Start From \u201c{mode}\u201d is not available while "
+                "layer \u201c{layer}\u201d uses its own WCS ({wcs}). "
+                "Use \u201cAbsolute Coordinates\u201d, or let the layer "
+                "use the active WCS."
+            ).format(mode=mode, layer=layer.name, wcs=layer.wcs)
+        )
+
+
+def _layer_with_own_wcs(machine: Machine, doc: Doc) -> Layer | None:
+    """
+    The first layer with workpieces whose WCS differs from the active
+    one, or None. When the work area origin is the zero point, the WCS
+    offsets are not used at all.
+    """
+    if machine.wcs_origin_is_workarea_origin:
+        return None
+    for layer in doc.layers:
+        if not layer.all_workpieces:
+            continue
+        if layer.get_effective_wcs(machine) != machine.active_wcs:
+            return layer
+    return None
+
+
+def validate_job_placement(machine: Machine | None, doc: Doc) -> None:
+    """
+    Check that the document's job origin can be applied: it must fit
+    the layers (see check_job_origin_supported), and "Current
+    Position" needs a connected, idle machine that reports the head
+    position.
+
+    Raises:
+        JobPlacementError: With a user-facing message.
+    """
+    job_origin = doc.job_origin
+    if job_origin.is_absolute or machine is None:
+        return
+    check_job_origin_supported(machine, doc)
     compute_job_shift(machine, job_origin, (0.0, 0.0, 0.0, 0.0))
 
 

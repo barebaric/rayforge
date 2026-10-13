@@ -16,11 +16,18 @@ from ...core.layer import Layer
 from ...core.stock import StockItem
 from ...core.stock_asset import StockAsset
 from ...core.workpiece import WorkPiece
-from ...machine.job_placement import JobPlacementError, compute_job_shift
+from ...machine.job_placement import (
+    JobPlacementError,
+    compute_job_shift,
+    world_anchor,
+)
 from ...machine.models.machine import Machine
 from ...machine.models.machine_panel import MachinePanel
 from ...pipeline.artifact import RenderContext
-from ...pipeline.intent_builder import job_design_rect
+from ...pipeline.intent_builder import (
+    check_job_origin_supported,
+    job_design_rect,
+)
 from ...shared.units.formatter import get_preferred_unit_factor
 from ..canvas import Canvas, CanvasElement, WorldSurface
 from ..shared.keyboard import is_primary_modifier
@@ -912,32 +919,19 @@ class WorkSurface(WorldSurface):
     def _update_job_placement(self):
         """
         Shows where a job placed via Start From will run, or hides the
-        outline for absolute coordinates or when the start point is
-        unknown (e.g. "Current Position" without a connected machine).
+        outline for absolute coordinates, when the start point is
+        unknown (e.g. "Current Position" without a connected machine)
+        or when the layers do not support the chosen Start From.
         """
         element = self._job_placement_element
-        doc = self.doc
         machine = self.machine
-        if doc is None or machine is None or doc.job_origin.is_absolute:
+        placement = self._placed_job()
+        if placement is None or machine is None:
             if element.visible:
                 element.set_visible(False)
                 self.queue_draw()
             return
-        if not self._job_design_rect_valid:
-            self._job_design_rect_cache = job_design_rect(doc)
-            self._job_design_rect_valid = True
-        rect = self._job_design_rect_cache
-        try:
-            shift = compute_job_shift(machine, doc.job_origin, rect)
-        except JobPlacementError:
-            shift = None
-        if rect is None or shift is None:
-            element.set_visible(False)
-            self.queue_draw()
-            return
-        dx, dy = shift
-        placed = (rect[0] + dx, rect[1] + dy, rect[2] + dx, rect[3] + dy)
-        ax, ay = anchor_point(placed, doc.job_origin.anchor)
+        placed, (ax, ay) = placement
         panel = machine.panel
         anchor_rect = panel.world_bbox_to_panel((ax, ay, ax, ay))
         element.set_placement(
@@ -945,6 +939,33 @@ class WorkSurface(WorldSurface):
         )
         element.set_visible(True)
         self.queue_draw()
+
+    def _placed_job(
+        self,
+    ) -> tuple[tuple[float, float, float, float], tuple[float, float]] | None:
+        """
+        The world-space bounding box of the job placed via Start From
+        and its anchor point, or None when no outline applies.
+        """
+        doc = self.doc
+        machine = self.machine
+        if doc is None or machine is None or doc.job_origin.is_absolute:
+            return None
+        if not self._job_design_rect_valid:
+            self._job_design_rect_cache = job_design_rect(doc)
+            self._job_design_rect_valid = True
+        rect = self._job_design_rect_cache
+        try:
+            check_job_origin_supported(machine, doc)
+            shift = compute_job_shift(machine, doc.job_origin, rect)
+        except JobPlacementError:
+            return None
+        if rect is None or shift is None:
+            return None
+        dx, dy = shift
+        placed = (rect[0] + dx, rect[1] + dy, rect[2] + dx, rect[3] + dy)
+        anchor = world_anchor(machine, doc.job_origin.anchor)
+        return placed, anchor_point(placed, anchor)
 
     @property
     def job_placement_element(self) -> JobPlacementElement:
