@@ -196,11 +196,11 @@ Standardmäßig läuft ein Job genau dort, wo er auf der Arbeitsfläche platzier
 Einstellung **Starten ab** im Steuerungsfeld (wird mit dem Projekt gespeichert) kannst du ihn
 stattdessen woanders platzieren:
 
-| Modus                    | Wo der Job läuft                                                                     |
-| ------------------------ | ------------------------------------------------------------------------------------ |
-| **Absolute Koordinaten** | Wie auf der Arbeitsfläche platziert (Standard)                                       |
-| **Benutzerursprung**     | Der Job-Ursprung liegt auf dem Nullpunkt des aktiven WCS                             |
-| **Aktuelle Position**    | Der Job-Ursprung liegt dort, wo der Laserkopf beim Umranden oder Starten steht       |
+| Modus                    | Wo der Job läuft                                                               |
+| ------------------------ | ------------------------------------------------------------------------------ |
+| **Absolute Koordinaten** | Wie auf der Arbeitsfläche platziert (Standard)                                 |
+| **Benutzerursprung**     | Der Job-Ursprung liegt auf dem Nullpunkt des aktiven WCS                       |
+| **Aktuelle Position**    | Der Job-Ursprung liegt dort, wo der Laserkopf beim Umranden oder Starten steht |
 
 Mit der Auswahl **Job-Ursprung** daneben wählst du, welcher von neun Punkten des Begrenzungsrahmens
 des Jobs (eine Ecke, die Mitte einer Kante oder die Mitte) auf diese Position gelegt wird. Der
@@ -225,7 +225,12 @@ So funktioniert es:
   Umranden oder einem abgeschlossenen Job fährt der Kopf zurück zur Startposition, sodass Umranden
   gefolgt von Starten an derselben Stelle landet. Eine exportierte Datei enthält die Kopfposition
   zum Zeitpunkt des Exports.
-- Ebenen mit einem Rotationsmodul unterstützen nur Absolute Koordinaten.
+- Ebenen mit einem Rotationsmodul oder mit einem anderen als dem aktiven WCS unterstützen nur
+  Absolute Koordinaten. Starten ab zeigt dann den Grund an, und es wird kein Umriss gezeichnet.
+- Der Job-Ursprung wird so gewählt, wie der Job auf der Arbeitsfläche zu sehen ist, auch bei
+  gedrehter Ansicht.
+- Das Anwenden einer Print-&-Cut-Ausrichtung setzt Starten ab auf Absolute Koordinaten zurück, weil
+  die Ausrichtung das Design auf die gedruckten Marken legt.
 
 ## Praktische Workflows
 

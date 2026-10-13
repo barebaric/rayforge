@@ -196,11 +196,11 @@ De forma predeterminada, un trabajo se ejecuta exactamente donde está colocado 
 ajuste **Iniciar desde** del panel de control (se guarda con el proyecto) te permite colocarlo en
 otro lugar:
 
-| Modo                      | Dónde se ejecuta el trabajo                                                         |
-| ------------------------- | ----------------------------------------------------------------------------------- |
-| **Coordenadas absolutas** | Tal como está en el lienzo (predeterminado)                                         |
-| **Origen de usuario**     | El origen del trabajo cae en el punto cero del WCS activo                           |
-| **Posición actual**       | El origen del trabajo cae donde está el cabezal láser al encuadrar o iniciar        |
+| Modo                      | Dónde se ejecuta el trabajo                                                  |
+| ------------------------- | ---------------------------------------------------------------------------- |
+| **Coordenadas absolutas** | Tal como está en el lienzo (predeterminado)                                  |
+| **Origen de usuario**     | El origen del trabajo cae en el punto cero del WCS activo                    |
+| **Posición actual**       | El origen del trabajo cae donde está el cabezal láser al encuadrar o iniciar |
 
 El selector **Origen del trabajo** que está al lado elige cuál de los nueve puntos del cuadro
 delimitador del trabajo (una esquina, el centro de un borde o el centro) se coloca en esa posición.
@@ -225,7 +225,12 @@ Cómo funciona:
   tras un trabajo terminado, el cabezal vuelve a la posición de inicio, de modo que encuadrar y
   luego iniciar acaba en el mismo lugar. Un archivo exportado contiene la posición del cabezal en el
   momento de la exportación.
-- Las capas que usan un módulo rotativo solo admiten coordenadas absolutas.
+- Las capas que usan un módulo rotativo, o un WCS distinto del activo, solo admiten coordenadas
+  absolutas. Iniciar desde muestra el motivo y no se dibuja ningún contorno.
+- El punto de origen del trabajo se elige tal como se ve el trabajo en el lienzo, también con el
+  panel girado.
+- Aplicar una alineación de Print & Cut devuelve Iniciar desde a coordenadas absolutas, porque la
+  alineación coloca el diseño sobre las marcas impresas.
 
 ## Flujos de Trabajo Prácticos
 

@@ -221,7 +221,11 @@ How it works:
   alignment on, the pointer dot is used instead of the beam. After framing, or after a finished job,
   the head is moved back to the start position, so Frame followed by Start lands in the same place.
   An exported file contains the head position at the time of the export.
-- Layers that use a rotary module only support Absolute Coordinates.
+- Layers that use a rotary module, or a WCS other than the active one, only support Absolute
+  Coordinates. Start From shows why it is not available, and no outline is drawn.
+- The Job Origin point is picked as you see the job on the canvas, also when the panel is rotated.
+- Applying a Print & Cut alignment switches Start From back to Absolute Coordinates, because the
+  alignment places the design on the printed marks.
 
 ## Practical Workflows
 

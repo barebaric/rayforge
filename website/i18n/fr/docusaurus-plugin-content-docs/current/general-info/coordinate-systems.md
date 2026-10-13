@@ -192,14 +192,14 @@ barre d'outils.
 ## Démarrer depuis et origine de la tâche
 
 Par défaut, une tâche s'exécute exactement là où elle est placée sur le canevas. Le réglage
-**Démarrer depuis** du panneau de contrôle (enregistré avec le projet) permet de la placer
-ailleurs :
+**Démarrer depuis** du panneau de contrôle (enregistré avec le projet) permet de la placer ailleurs
+:
 
-| Mode                      | Où la tâche s'exécute                                                                 |
-| ------------------------- | ------------------------------------------------------------------------------------- |
-| **Coordonnées absolues**  | Tel que placé sur le canevas (par défaut)                                             |
-| **Origine utilisateur**   | L'origine de la tâche tombe sur le point zéro du WCS actif                            |
-| **Position actuelle**     | L'origine de la tâche tombe là où se trouve la tête laser au cadrage ou au démarrage  |
+| Mode                     | Où la tâche s'exécute                                                                |
+| ------------------------ | ------------------------------------------------------------------------------------ |
+| **Coordonnées absolues** | Tel que placé sur le canevas (par défaut)                                            |
+| **Origine utilisateur**  | L'origine de la tâche tombe sur le point zéro du WCS actif                           |
+| **Position actuelle**    | L'origine de la tâche tombe là où se trouve la tête laser au cadrage ou au démarrage |
 
 Le sélecteur **Origine de la tâche** à côté choisit lequel des neuf points du cadre englobant de la
 tâche (un coin, le milieu d'un bord ou le centre) est placé sur cette position. Le cadre englobant
@@ -224,7 +224,13 @@ Fonctionnement :
   un cadrage, ou après une tâche terminée, la tête revient à la position de départ, de sorte que
   cadrer puis démarrer aboutit au même endroit. Un fichier exporté contient la position de la tête
   au moment de l'export.
-- Les calques qui utilisent un module rotatif ne prennent en charge que les coordonnées absolues.
+- Les calques qui utilisent un module rotatif, ou un WCS autre que celui actif, ne prennent en
+  charge que les coordonnées absolues. Démarrer depuis en indique la raison et aucun contour n'est
+  dessiné.
+- Le point d'origine du travail se choisit tel que le travail apparaît sur le canevas, y compris
+  avec un panneau pivoté.
+- Appliquer un alignement Print & Cut remet Démarrer depuis sur les coordonnées absolues, car
+  l'alignement place le dessin sur les repères imprimés.
 
 ## Flux de Travail Pratiques
 

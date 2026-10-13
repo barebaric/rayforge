@@ -192,11 +192,11 @@ Por padrão, um trabalho é executado exatamente onde está posicionado na tela.
 **Iniciar a partir de** no painel de controle (salva com o projeto) permite posicioná-lo em outro
 lugar:
 
-| Modo                      | Onde o trabalho é executado                                                         |
-| ------------------------- | ----------------------------------------------------------------------------------- |
-| **Coordenadas absolutas** | Tal como posicionado na tela (padrão)                                               |
-| **Origem do usuário**     | A origem do trabalho fica no ponto zero do WCS ativo                                |
-| **Posição atual**         | A origem do trabalho fica onde a cabeça do laser está ao enquadrar ou iniciar       |
+| Modo                      | Onde o trabalho é executado                                                   |
+| ------------------------- | ----------------------------------------------------------------------------- |
+| **Coordenadas absolutas** | Tal como posicionado na tela (padrão)                                         |
+| **Origem do usuário**     | A origem do trabalho fica no ponto zero do WCS ativo                          |
+| **Posição atual**         | A origem do trabalho fica onde a cabeça do laser está ao enquadrar ou iniciar |
 
 O seletor **Origem do trabalho** ao lado escolhe qual dos nove pontos da caixa delimitadora do
 trabalho (um canto, o meio de uma borda ou o centro) é colocado nessa posição. A caixa delimitadora
@@ -216,12 +216,16 @@ Como funciona:
 - **Origem do usuário** gera coordenadas relativas ao zero do WCS. Um arquivo G-code exportado assim
   acompanha o WCS quando você o zera em outro lugar da máquina, o que o torna a escolha certa para
   arquivos executados a partir de um cartão SD ou pen drive.
-- **Posição atual** requer uma máquina conectada e ociosa que informe sua posição. Com o
-  alinhamento por ponteiro ativado, o ponto do ponteiro é usado em vez do feixe. Após o
-  enquadramento, ou após um trabalho concluído, a cabeça volta à posição inicial, de modo que
-  enquadrar e depois iniciar termina no mesmo lugar. Um arquivo exportado contém a posição da cabeça
-  no momento da exportação.
-- Camadas que usam um módulo rotativo só suportam coordenadas absolutas.
+- **Posição atual** requer uma máquina conectada e ociosa que informe sua posição. Com o alinhamento
+  por ponteiro ativado, o ponto do ponteiro é usado em vez do feixe. Após o enquadramento, ou após
+  um trabalho concluído, a cabeça volta à posição inicial, de modo que enquadrar e depois iniciar
+  termina no mesmo lugar. Um arquivo exportado contém a posição da cabeça no momento da exportação.
+- Camadas que usam um módulo rotativo, ou um WCS diferente do ativo, só suportam coordenadas
+  absolutas. Iniciar a partir de mostra o motivo e nenhum contorno é desenhado.
+- O ponto de origem do trabalho é escolhido como o trabalho aparece na tela, também com o painel
+  girado.
+- Aplicar um alinhamento de Print & Cut volta Iniciar a partir de para coordenadas absolutas, porque
+  o alinhamento coloca o design sobre as marcas impressas.
 
 ## Fluxos de Trabalho Práticos
 
