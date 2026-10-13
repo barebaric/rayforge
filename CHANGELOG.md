@@ -54,6 +54,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Image Editing addon: non-destructive image edits stored per
   workpiece and applied wherever its image is used (canvas, 3D preview,
   operations). The first edit is Tools > Invert Image (#515)
+- Image Editing: Tools > Adjust Image... corrects the brightness,
+  contrast and gamma of the selected images and sharpens them with an
+  unsharp mask whose radius is in mm. The canvas shows the result while
+  editing, and Apply is a single undo step (#515)
 - Addons: the `register_image_edits` hook and image edit registry
   (plugin API 23) let addons provide their own image edits
 

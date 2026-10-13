@@ -28,6 +28,26 @@ inverted yet get inverted, so the whole selection ends up the same.
 Use it for lithophanes and embossing in an Engrave operation, where light areas should be engraved
 deep, or to engrave light artwork on a dark background.
 
+## Adjust Image
+
+Select one or more workpieces and choose **Tools - Adjust Image...** to correct a photo before
+engraving or tracing it:
+
+- **Brightness** lightens or darkens the image.
+- **Contrast** spreads the tones away from mid-gray, or pulls them towards it.
+- **Gamma** above 1 lightens the midtones, below 1 darkens them; black and white stay as they are.
+- **Sharpen** strengthens edges and fine details (an unsharp mask). **Sharpen Radius** sets the size
+  of the details it works on, in millimeters, so the result is the same at any line interval or
+  canvas zoom.
+
+The canvas shows the changes while you edit. **Apply** keeps them as a single undo step; closing the
+dialog without applying discards them, and **Reset** sets every value back to neutral. Transparent
+areas stay transparent.
+
+The dialog opens with the values of the first selected workpiece, and Apply gives every selected
+workpiece the same values. Sharpening runs before the tone corrections, and other edits such as
+Invert Image keep their place.
+
 ## Older Projects
 
 Before this addon, Invert was a setting of the Engrave operation. When you open an older project
