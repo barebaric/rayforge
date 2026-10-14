@@ -43,8 +43,13 @@ def test_opens_with_the_first_workpiece_values(dialog):
 
 
 @pytest.mark.ui
+def test_is_not_modal(dialog):
+    assert not dialog.get_modal()
+
+
+@pytest.mark.ui
 def test_preview_shows_without_undo(dialog, workpieces):
-    dialog.contrast_row.set_value(20)
+    dialog.contrast_scale.set_value(20)
     dialog.preview()
     a, b = workpieces
     assert a.image_edits[0].params["contrast"] == 20
@@ -55,7 +60,7 @@ def test_preview_shows_without_undo(dialog, workpieces):
 
 @pytest.mark.ui
 def test_closing_without_apply_restores_the_edits(dialog, workpieces):
-    dialog.sharpen_row.set_value(100)
+    dialog.sharpen_scale.set_value(100)
     dialog.preview()
     dialog.close()
     assert workpieces[0].image_edits == (TONE,)
@@ -65,7 +70,7 @@ def test_closing_without_apply_restores_the_edits(dialog, workpieces):
 @pytest.mark.ui
 def test_apply_is_one_undo_step(dialog, workpieces):
     history = dialog._history
-    dialog.gamma_row.set_value(1.5)
+    dialog.gamma_scale.set_value(1.5)
     dialog.preview()
     dialog.apply()
     assert workpieces[0].image_edits[0].params["gamma"] == 1.5
@@ -92,14 +97,14 @@ def test_previews_do_not_accumulate_cached_images(dialog, workpieces):
     for value in range(10):
         for wp in workpieces:
             _cache_a_render(wp)
-        dialog.brightness_row.set_value(value)
+        dialog.brightness_scale.set_value(value)
         dialog.preview()
     assert all(len(wp._processed_cache) == 0 for wp in workpieces)
 
 
 @pytest.mark.ui
 def test_closing_drops_the_preview_images(dialog, workpieces):
-    dialog.sharpen_row.set_value(100)
+    dialog.sharpen_scale.set_value(100)
     dialog.preview()
     for wp in workpieces:
         _cache_a_render(wp)
