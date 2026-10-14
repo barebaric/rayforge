@@ -10233,3 +10233,12 @@ msgid ""
 "How the Z axis finds its reference: a home switch, "
 "or the auto-focus probe"
 msgstr "Z अक्ष अपना संदर्भ कैसे ढूँढता है: होम स्विच से, या ऑटो-फ़ोकस प्रोब से"
+
+#: rayforge/ui_gtk/doceditor/frame_popover.py
+msgid "Include Overscan Margin"
+msgstr "ओवरस्कैन मार्जिन शामिल करें"
+
+#: rayforge/ui_gtk/doceditor/frame_popover.py
+msgid ""
+"Frame the full machine path, including the extra engraving travel"
+msgstr "अतिरिक्त उत्कीर्णन यात्रा सहित मशीन के पूरे पथ का फ़्रेम बनाएं"

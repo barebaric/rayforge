@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Awaitable, Callable, Coroutine
+from functools import partial
 from gettext import gettext as _
 from typing import TYPE_CHECKING
 
@@ -209,6 +210,7 @@ class MachineCmd:
         artifact: JobArtifact,
         machine: Machine,
         on_progress: Callable[[dict], None] | None,
+        include_overscan: bool = False,
     ):
         """The specific machine action for a framing job.
 
@@ -216,6 +218,11 @@ class MachineCmd:
         transforms a job gets — and hands the corners to the driver,
         which frames in whatever way fits the controller (see
         Driver.frame()).
+
+        With *include_overscan* the frame traces the whole machine
+        path; otherwise it is built from the envelope the laser
+        actually burns, so raster overscan margins stay outside the
+        framed area (issue #563).
         """
         if not isinstance(artifact, JobArtifact):
             raise TypeError("_run_frame_action received a non-JobArtifact")
@@ -233,7 +240,8 @@ class MachineCmd:
 
         # A moves-only trace carrying the outline through the same
         # transforms a job gets.
-        frame_ops = _build_frame_trace(artifact.ops.rect(), repeat_count)
+        frame_rect = _job_frame_rect(artifact.ops, include_overscan)
+        frame_ops = _build_frame_trace(frame_rect, repeat_count)
 
         # Apply the active layer's rotary mapping so the frame drives
         # the rotary axis instead of the physical Y axis (issue #356).
@@ -281,7 +289,7 @@ class MachineCmd:
             )
 
         corners = _frame_trace_corners(
-            frame_ops, len(_frame_rect_corners(artifact.ops.rect()))
+            frame_ops, len(_frame_rect_corners(frame_rect))
         )
 
         async def execute(
@@ -394,15 +402,23 @@ class MachineCmd:
         self,
         machine: Machine,
         on_progress: Callable[[dict], None] | None = None,
+        include_overscan: bool = False,
     ):
         """
         Asynchronously generates ops and runs a framing job.
         This is an awaitable coroutine.
+
+        When *include_overscan* is set, the frame traces the full
+        machine path including the overscan acceleration margins;
+        otherwise it traces the area the laser actually burns.
         """
         try:
             await self._start_job(
                 machine,
-                final_job_action=self._run_frame_action,
+                final_job_action=partial(
+                    self._run_frame_action,
+                    include_overscan=include_overscan,
+                ),
                 on_progress=on_progress,
             )
         except JobAlreadyRunningError as e:
@@ -667,6 +683,20 @@ def _apply_frame_rotary_mapping(
     if mapping is not None:
         mapping.apply(frame_ops)
     return module
+
+
+def _job_frame_rect(
+    ops: Ops, include_overscan: bool
+) -> tuple[float, float, float, float]:
+    """The job-area rect the frame outline is built from.
+
+    Overscan extends raster lines with zero-power lead-in and lead-out
+    moves, so the burning envelope excludes them while the plain ops
+    rect includes them.
+    """
+    if include_overscan:
+        return ops.rect()
+    return ops.powered_rect()
 
 
 def _frame_rect_corners(

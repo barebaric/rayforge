@@ -1,6 +1,6 @@
 import asyncio
 from functools import partial
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import AsyncMock, MagicMock, PropertyMock
 
 import pytest
 import pytest_asyncio
@@ -16,6 +16,7 @@ from rayforge.machine.cmd import (
     _build_frame_trace,
     _frame_rect_corners,
     _frame_trace_corners,
+    _job_frame_rect,
 )
 from rayforge.machine.driver.driver import (
     FRAME_LAYER_UID,
@@ -762,6 +763,92 @@ class TestFrameTrace:
             (10.0, 0.0, None),
             (0.0, 0.0, None),
         ]
+
+
+class TestFrameOverscan:
+    """The frame traces the burned area, not the overscan margin."""
+
+    @pytest.fixture
+    def overscan_artifact(self, machine):
+        """A job artifact whose ops carry overscan-style lead-out.
+
+        The powered content spans x 10..30; a zero-power move extends
+        the path to x 35, the way the overscan transformer does.
+        """
+        ops = Ops()
+        ops.move_to(10, 10, 0)
+        ops.set_power(0.8)
+        ops.line_to(30, 10, 0)
+        ops.set_power(0.0)
+        ops.move_to(30, 10, 0)
+        ops.line_to(35, 10, 0)
+        encoded = machine.driver.get_encoder().encode(ops, machine, None)
+        return JobArtifact(
+            ops=ops,
+            distance=ops.distance(),
+            generation_id=1,
+            encoded_output=encoded,
+        )
+
+    async def _run_and_capture_corners(
+        self, machine_cmd, machine, artifact, mocker, include_overscan
+    ):
+        frame_mock = mocker.patch.object(
+            machine.driver, "frame", new_callable=AsyncMock
+        )
+        await machine_cmd._run_frame_action(
+            artifact,
+            machine,
+            on_progress=None,
+            include_overscan=include_overscan,
+        )
+        await asyncio.sleep(0)
+        assert frame_mock.await_count == 1
+        return frame_mock.await_args.args[0]
+
+    @pytest.mark.asyncio
+    async def test_frame_excludes_overscan_by_default(
+        self, machine_cmd, doc_editor, machine, overscan_artifact, mocker
+    ):
+        corners = await self._run_and_capture_corners(
+            machine_cmd,
+            machine,
+            overscan_artifact,
+            mocker,
+            include_overscan=False,
+        )
+
+        xs = [corner[0] for corner in corners]
+        assert min(xs) == pytest.approx(10.0)
+        assert max(xs) == pytest.approx(30.0)
+
+    @pytest.mark.asyncio
+    async def test_frame_includes_overscan_when_requested(
+        self, machine_cmd, doc_editor, machine, overscan_artifact, mocker
+    ):
+        corners = await self._run_and_capture_corners(
+            machine_cmd,
+            machine,
+            overscan_artifact,
+            mocker,
+            include_overscan=True,
+        )
+
+        xs = [corner[0] for corner in corners]
+        assert min(xs) == pytest.approx(10.0)
+        assert max(xs) == pytest.approx(35.0)
+
+    def test_job_frame_rect_includes_full_rect_when_requested(self):
+        ops = MagicMock(spec=["rect"])
+        ops.rect.return_value = (0.0, 0.0, 50.0, 40.0)
+
+        assert _job_frame_rect(ops, include_overscan=True) == (
+            0.0,
+            0.0,
+            50.0,
+            40.0,
+        )
+        ops.rect.assert_called_with()
 
 
 class TestDriverFrameDefault:

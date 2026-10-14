@@ -10553,3 +10553,12 @@ msgid ""
 "How the Z axis finds its reference: a home switch, "
 "or the auto-focus probe"
 msgstr "Wie die Z-Achse ihre Referenz findet: über einen Referenzschalter oder den Autofokus-Taster"
+
+#: rayforge/ui_gtk/doceditor/frame_popover.py
+msgid "Include Overscan Margin"
+msgstr "Overscan-Marge einschließen"
+
+#: rayforge/ui_gtk/doceditor/frame_popover.py
+msgid ""
+"Frame the full machine path, including the extra engraving travel"
+msgstr "Den vollständigen Maschinenpfad umrahmen, einschließlich des zusätzlichen Gravierwegs"
