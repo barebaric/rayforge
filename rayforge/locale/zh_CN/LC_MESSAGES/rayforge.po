@@ -10040,3 +10040,12 @@ msgid ""
 "How the Z axis finds its reference: a home switch, "
 "or the auto-focus probe"
 msgstr "Z轴如何找到参考位置：通过原点开关，或通过自动对焦探针"
+
+#: rayforge/ui_gtk/doceditor/frame_popover.py
+msgid "Include Overscan Margin"
+msgstr "包含过冲边距"
+
+#: rayforge/ui_gtk/doceditor/frame_popover.py
+msgid ""
+"Frame the full machine path, including the extra engraving travel"
+msgstr "沿整个机器路径走边框，包括额外的雕刻行程"

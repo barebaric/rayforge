@@ -10439,3 +10439,12 @@ msgid ""
 "How the Z axis finds its reference: a home switch, "
 "or the auto-focus probe"
 msgstr "Як вісь Z знаходить свою точку відліку: за кінцевим вимикачем або зондом автофокусу"
+
+#: rayforge/ui_gtk/doceditor/frame_popover.py
+msgid "Include Overscan Margin"
+msgstr "Урахувати межі overscan"
+
+#: rayforge/ui_gtk/doceditor/frame_popover.py
+msgid ""
+"Frame the full machine path, including the extra engraving travel"
+msgstr "Окреслює повний шлях верстата, включно з додатковим ходом гравіювання"
