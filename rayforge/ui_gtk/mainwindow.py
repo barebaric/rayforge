@@ -18,7 +18,7 @@ from ..core.item import DocItem
 from ..core.registration import call_registration_hooks
 from ..core.undo import Command, HistoryManager
 from ..doceditor.editor import DocEditor
-from ..doceditor.frame_popover import FramePopover
+from .doceditor.frame_popover import FramePopover
 from ..machine.cmd import MachineCmd
 from ..machine.driver.driver import DeviceState, DeviceStatus
 from ..machine.driver.dummy import NoDeviceDriver
