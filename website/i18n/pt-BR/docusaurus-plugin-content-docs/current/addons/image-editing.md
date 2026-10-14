@@ -36,6 +36,8 @@ gravá-la ou vetorizá-la:
   define o tamanho desses detalhes em milímetros, então o resultado é o mesmo em qualquer intervalo
   de linha ou zoom.
 
+![A caixa de diálogo Ajustar imagem com os controles deslizantes de tom e nitidez](/screenshots/addon-image-editing-adjust.webp)
+
 A tela mostra as alterações enquanto você edita. **Apply** as mantém como uma única etapa de
 desfazer; fechar a caixa de diálogo sem aplicar as descarta, e **Reset** volta todos os valores ao
 neutro. As áreas transparentes continuam transparentes.

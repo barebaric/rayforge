@@ -36,6 +36,8 @@ photo avant de la graver ou de la vectoriser :
   Radius** fixe la taille de ces détails en millimètres, si bien que le résultat est le même quel
   que soit l'intervalle de ligne ou le zoom.
 
+![La boîte de dialogue Ajuster l'image avec les curseurs de tonalité et de netteté](/screenshots/addon-image-editing-adjust.webp)
+
 Le canevas affiche les modifications pendant l'édition. **Apply** les conserve en une seule étape
 d'annulation ; fermer la boîte de dialogue sans appliquer les abandonne, et **Reset** remet toutes
 les valeurs au neutre. Les zones transparentes restent transparentes.

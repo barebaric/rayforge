@@ -38,6 +38,8 @@ Gravieren oder Nachzeichnen zu korrigieren:
   Radius** legt die Größe der Details in Millimetern fest, sodass das Ergebnis bei jedem
   Zeilenabstand und jeder Zoomstufe gleich ist.
 
+![Der Dialog „Bild anpassen“ mit den Reglern für Tonwert und Schärfe](/screenshots/addon-image-editing-adjust.webp)
+
 Die Leinwand zeigt die Änderungen schon während der Bearbeitung. **Apply** übernimmt sie als einen
 einzigen Rückgängig-Schritt; wenn du den Dialog ohne Übernehmen schließt, werden sie verworfen, und
 **Reset** setzt alle Werte auf neutral zurück. Transparente Bereiche bleiben transparent.

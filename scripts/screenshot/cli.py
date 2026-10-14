@@ -22,6 +22,7 @@ TEST_CONFIG_DIR = PROJECT_ROOT / "tests" / "config"
 TARGETS = {
     "addon:ai-workpiece-generator": "ai_workpiece_generator",
     "addon:deepnest": "deepnest",
+    "addon:image-editing:adjust": "adjust_image_dialog",
     "addon:print-and-cut:pick": "print_and_cut",
     "addon:print-and-cut:jog": "print_and_cut",
     "addon:print-and-cut:apply": "print_and_cut",

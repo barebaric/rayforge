@@ -36,6 +36,8 @@ antes de grabarla o vectorizarla:
   Radius** fija el tamaño de esos detalles en milímetros, de modo que el resultado es el mismo con
   cualquier intervalo de línea o nivel de zoom.
 
+![El diálogo de Ajustar imagen con los controles deslizantes de tono y nitidez](/screenshots/addon-image-editing-adjust.webp)
+
 El lienzo muestra los cambios mientras editas. **Apply** los conserva como un único paso de
 deshacer; si cierras el diálogo sin aplicar, se descartan, y **Reset** devuelve todos los valores a
 neutro. Las zonas transparentes siguen siendo transparentes.

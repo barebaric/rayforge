@@ -40,6 +40,8 @@ engraving or tracing it:
   of the details it works on, in millimeters, so the result is the same at any line interval or
   canvas zoom.
 
+![The Adjust Image dialog with the tone and sharpness sliders](/screenshots/addon-image-editing-adjust.webp)
+
 The canvas shows the changes while you edit. **Apply** keeps them as a single undo step; closing the
 dialog without applying discards them, and **Reset** sets every value back to neutral. Transparent
 areas stay transparent.
