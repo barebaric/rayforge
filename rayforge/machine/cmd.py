@@ -692,19 +692,11 @@ def _job_frame_rect(
 
     Overscan extends raster lines with zero-power lead-in and lead-out
     moves, so the burning envelope excludes them while the plain ops
-    rect includes them. The plain rect is also used when raygeo has no
-    burning envelope (older releases) or when nothing burns at all, so
-    an empty job still frames its travel area.
+    rect includes them.
     """
     if include_overscan:
         return ops.rect()
-    burning_rect = getattr(ops, "burning_rect", None)
-    if burning_rect is None:
-        return ops.rect()
-    rect = burning_rect()
-    if rect == (0.0, 0.0, 0.0, 0.0):
-        return ops.rect()
-    return rect
+    return ops.powered_rect()
 
 
 def _frame_rect_corners(

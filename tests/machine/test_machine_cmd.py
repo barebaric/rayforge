@@ -807,11 +807,6 @@ class TestFrameOverscan:
         return frame_mock.await_args.args[0]
 
     @pytest.mark.asyncio
-    @pytest.mark.skipif(
-        not hasattr(Ops, "burning_rect"),
-        reason="raygeo < 1.65 has no burning_rect; the frame falls "
-        "back to the plain rect",
-    )
     async def test_frame_excludes_overscan_by_default(
         self, machine_cmd, doc_editor, machine, overscan_artifact, mocker
     ):
@@ -843,32 +838,17 @@ class TestFrameOverscan:
         assert min(xs) == pytest.approx(10.0)
         assert max(xs) == pytest.approx(35.0)
 
-    def test_job_frame_rect_without_burning_envelope(self):
+    def test_job_frame_rect_includes_full_rect_when_requested(self):
         ops = MagicMock(spec=["rect"])
         ops.rect.return_value = (0.0, 0.0, 50.0, 40.0)
 
-        assert _job_frame_rect(ops, include_overscan=False) == (
+        assert _job_frame_rect(ops, include_overscan=True) == (
             0.0,
             0.0,
             50.0,
             40.0,
         )
         ops.rect.assert_called_with()
-
-    def test_job_frame_rect_when_nothing_burns(self, simple_ops):
-        """Unpowered ops burn nothing; both modes use the plain rect."""
-        assert _job_frame_rect(simple_ops, include_overscan=False) == (
-            10.0,
-            10.0,
-            20.0,
-            20.0,
-        )
-        assert _job_frame_rect(simple_ops, include_overscan=True) == (
-            10.0,
-            10.0,
-            20.0,
-            20.0,
-        )
 
 
 class TestDriverFrameDefault:
