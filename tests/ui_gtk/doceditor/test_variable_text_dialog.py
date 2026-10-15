@@ -5,7 +5,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
 import pytest
-from gi.repository import Gtk
+from gi.repository import Adw, Gtk
 
 from rayforge.core.variable_text import SerialSettings
 from rayforge.doceditor.editor import DocEditor
@@ -13,6 +13,7 @@ from rayforge.ui_gtk.doceditor.property_providers.variable_text import (
     VariableTextPropertyProvider,
 )
 from rayforge.ui_gtk.doceditor.variable_text_dialog import (
+    DEFAULT_WIDTH,
     VariableTextDialog,
     format_preview,
 )
@@ -131,3 +132,10 @@ def test_property_provider_sets_offset(editor):
     assert wp.variable_offset == 3
     provider.update_widgets(editor, [wp])
     assert "13" in (provider.offset_row.get_subtitle() or "")
+
+
+@pytest.mark.ui
+def test_dialog_layout_matches_settings_dialogs(dialog):
+    assert dialog.get_modal() is False
+    assert isinstance(dialog.get_content(), Adw.ToolbarView)
+    assert dialog.get_default_size()[0] == DEFAULT_WIDTH
