@@ -17,6 +17,9 @@ logger = logging.getLogger(__name__)
 _PREVIEW_LIST_MAX = 5
 _INT_LIMIT = 999_999_999
 
+#: The dialog width, matching the step settings dialog.
+DEFAULT_WIDTH = 600
+
 
 def format_preview(values: list[int]) -> str:
     """A short text for the serial numbers of the next job."""
@@ -40,19 +43,25 @@ class VariableTextDialog(PatchedDialogWindow):
         self._in_update = False
 
         self.set_title(_("Variable Text"))
-        self.set_default_size(520, -1)
+        self.set_default_size(DEFAULT_WIDTH, -1)
         self.set_modal(False)
 
-        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        main_box.append(Adw.HeaderBar())
-        self.set_content(main_box)
-
+        main_view = Adw.ToolbarView()
+        main_view.add_top_bar(Adw.HeaderBar())
+        scrolled = Gtk.ScrolledWindow(
+            hscrollbar_policy=Gtk.PolicyType.NEVER,
+            vscrollbar_policy=Gtk.PolicyType.AUTOMATIC,
+        )
         page = Adw.PreferencesPage()
-        page.set_vexpand(True)
-        main_box.append(page)
-
         page.add(self._build_serial_group())
         page.add(self._build_job_group())
+        scrolled.set_child(page)
+        natural_height = page.measure(Gtk.Orientation.VERTICAL, DEFAULT_WIDTH)[
+            1
+        ]
+        scrolled.set_min_content_height(natural_height)
+        main_view.set_content(scrolled)
+        self.set_content(main_view)
 
         self._doc.variable_text.changed.connect(self._on_model_changed)
         self._doc.descendant_updated.connect(self._on_doc_items_changed)
@@ -133,8 +142,7 @@ class VariableTextDialog(PatchedDialogWindow):
         self.preview_row.add_css_class("property")
         group.add(self.preview_row)
 
-        button_box = Gtk.Box(spacing=6, halign=Gtk.Align.END)
-        button_box.set_margin_top(12)
+        button_box = Gtk.Box(spacing=6, valign=Gtk.Align.CENTER)
         self.previous_button = Gtk.Button(label=_("Previous"))
         self.previous_button.set_tooltip_text(
             _("Go back by the numbers of one job")
@@ -154,7 +162,7 @@ class VariableTextDialog(PatchedDialogWindow):
             self.next_button,
         ):
             button_box.append(button)
-        group.add(button_box)
+        self.preview_row.add_suffix(button_box)
         return group
 
     def _settings_from_widgets(self) -> SerialSettings:
