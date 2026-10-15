@@ -10,9 +10,9 @@ The **polygon** tool (`G+X`) draws a regular polygon, such as a hexagon for a co
 
 ## Drawing a Polygon
 
-Click where the center should be, move the pointer and click again, or press at the center, drag
-and release. The pointer sets the first corner, so it sets both the size and the rotation. A new
-polygon has 6 corners.
+Click where the center should be, move the pointer and click again, or press at the center, drag and
+release. The pointer sets the first corner, so it sets both the size and the rotation. A new polygon
+has 6 corners.
 
 - Hold `Ctrl` to draw a star instead: it adds an inner corner between every two outer corners, at
   half the outer radius.

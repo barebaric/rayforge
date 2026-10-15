@@ -145,10 +145,10 @@ they get in the way.
 
 The drawing tools are each documented on their own page: [Path](path.md) (lines and bezier curves),
 [Arc and Ellipse](arc-ellipse.md), [Rectangle](rectangle.md) (and rounded rectangles),
-[Polygon](polygon.md) (and stars),
-[Fill Areas](fill.md), [Text Box](text-box.md), and [Grid](grid.md). Modifications such as
-[Offset](offset.md) and [Chamfer and Fillet](chamfer-fillet.md) reshape existing geometry,
-[Arrays](arrays.md) copies it along a circle or a curve, and
-[Parameters and Expressions](expressions.md) explains how to add and edit parameters, drive geometry
-and text boxes with them, and assign values per sketch instance. Sketches can be saved and
-re-imported with all constraints intact — see [Import and Export](import-export.md).
+[Polygon](polygon.md) (and stars), [Fill Areas](fill.md), [Text Box](text-box.md), and
+[Grid](grid.md). Modifications such as [Offset](offset.md) and
+[Chamfer and Fillet](chamfer-fillet.md) reshape existing geometry, [Arrays](arrays.md) copies it
+along a circle or a curve, and [Parameters and Expressions](expressions.md) explains how to add and
+edit parameters, drive geometry and text boxes with them, and assign values per sketch instance.
+Sketches can be saved and re-imported with all constraints intact — see
+[Import and Export](import-export.md).
