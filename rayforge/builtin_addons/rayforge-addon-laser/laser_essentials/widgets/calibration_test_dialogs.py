@@ -6,12 +6,17 @@ from typing import Any
 
 from gi.repository import Adw, Gtk
 
-from rayforge.ui_gtk.shared.patched_dialog_window import PatchedDialogWindow
-from rayforge.ui_gtk.shared.pref_rows import (
-    LengthSpinRow,
-    SpeedSpinRow,
-    SpinRow,
+from rayforge.core.varset import (
+    BoolVar,
+    IntVar,
+    LabeledChoiceVar,
+    LengthVar,
+    SliderFloatVar,
+    SpeedVar,
+    VarSet,
 )
+from rayforge.ui_gtk.shared.patched_dialog_window import PatchedDialogWindow
+from rayforge.ui_gtk.varset.varsetwidget import VarSetWidget
 
 from ..calibration_tests import (
     MAX_FOCUS_OFFSET_MM,
@@ -19,6 +24,8 @@ from ..calibration_tests import (
     FocusTestParams,
     IntervalTestParams,
 )
+
+DEFAULT_WIDTH = 600
 
 _FOCUS_HELP = {
     FocusMode.Z_AXIS: _(
@@ -43,6 +50,186 @@ _FOCUS_HELP = {
 }
 
 
+def _labels_active(values: dict[str, Any]) -> bool:
+    return bool(values.get("include_labels"))
+
+
+def _is_ramp(values: dict[str, Any]) -> bool:
+    return values.get("mode") == FocusMode.RAMP.value
+
+
+def _is_not_ramp(values: dict[str, Any]) -> bool:
+    return not _is_ramp(values)
+
+
+def _laser_varset(defaults) -> VarSet:
+    return VarSet(
+        title=_("Laser"),
+        vars=[
+            SliderFloatVar(
+                key="power_percent",
+                label=_("Power"),
+                default=defaults.power_percent,
+                min_val=0.0,
+                max_val=100.0,
+                show_value=True,
+                format_suffix="%",
+            ),
+            SpeedVar(
+                key="speed",
+                label=_("Speed"),
+                default=int(defaults.speed),
+                min_val=1,
+            ),
+        ],
+    )
+
+
+def _labels_varset(defaults) -> VarSet:
+    return VarSet(
+        title=_("Labels"),
+        vars=[
+            BoolVar(
+                key="include_labels",
+                label=_("Include Labels"),
+                default=defaults.include_labels,
+            ),
+            SliderFloatVar(
+                key="label_power_percent",
+                label=_("Label Engrave Power (%)"),
+                default=defaults.label_power_percent,
+                min_val=0.0,
+                max_val=100.0,
+                show_value=True,
+                format_suffix="%",
+                sensitive_when=_labels_active,
+            ),
+            SpeedVar(
+                key="label_speed",
+                label=_("Label Engrave Speed"),
+                default=int(defaults.label_speed),
+                min_val=1,
+                sensitive_when=_labels_active,
+            ),
+        ],
+    )
+
+
+def _interval_varset(defaults: IntervalTestParams) -> VarSet:
+    return VarSet(
+        title=_("Cells"),
+        description=_(
+            "Engraves a row of filled squares, each with its own line "
+            "interval, at the same power and speed."
+        ),
+        vars=[
+            IntVar(
+                key="count",
+                label=_("Number of Cells"),
+                default=defaults.count,
+                min_val=2,
+                max_val=20,
+            ),
+            LengthVar(
+                key="min_interval",
+                label=_("Smallest Interval"),
+                default=defaults.min_interval,
+                min_val=0.01,
+                max_val=5.0,
+                digits=3,
+            ),
+            LengthVar(
+                key="max_interval",
+                label=_("Largest Interval"),
+                default=defaults.max_interval,
+                min_val=0.01,
+                max_val=5.0,
+                digits=3,
+            ),
+            LengthVar(
+                key="cell_size",
+                label=_("Cell Size"),
+                default=defaults.cell_size,
+                min_val=1.0,
+                max_val=100.0,
+            ),
+            LengthVar(
+                key="spacing",
+                label=_("Spacing"),
+                default=defaults.spacing,
+                min_val=0.0,
+                max_val=50.0,
+            ),
+        ],
+    )
+
+
+def _focus_varset(defaults: FocusTestParams, modes: list[FocusMode]) -> VarSet:
+    limit = MAX_FOCUS_OFFSET_MM
+    return VarSet(
+        title=_("Focus Steps"),
+        vars=[
+            LabeledChoiceVar(
+                key="mode",
+                label=_("Method"),
+                choices=[(m.label, m.value) for m in modes],
+                default=modes[0].value,
+                allow_none=False,
+            ),
+            LengthVar(
+                key="start_offset",
+                label=_("First Offset"),
+                default=defaults.start_offset,
+                min_val=-limit,
+                max_val=limit,
+                digits=2,
+                visible_when=_is_not_ramp,
+            ),
+            LengthVar(
+                key="step",
+                label=_("Step"),
+                default=defaults.step,
+                min_val=-limit,
+                max_val=limit,
+                digits=2,
+                visible_when=_is_not_ramp,
+            ),
+            IntVar(
+                key="count",
+                label=_("Number of Lines"),
+                default=defaults.count,
+                min_val=2,
+                max_val=41,
+                visible_when=_is_not_ramp,
+            ),
+            LengthVar(
+                key="line_length",
+                label=_("Line Length"),
+                default=defaults.line_length,
+                min_val=1.0,
+                max_val=200.0,
+                visible_when=_is_not_ramp,
+            ),
+            LengthVar(
+                key="spacing",
+                label=_("Spacing"),
+                default=defaults.spacing,
+                min_val=0.5,
+                max_val=50.0,
+                visible_when=_is_not_ramp,
+            ),
+            LengthVar(
+                key="ramp_length",
+                label=_("Ramp Length"),
+                default=defaults.ramp_length,
+                min_val=10.0,
+                max_val=1000.0,
+                visible_when=_is_ramp,
+            ),
+        ],
+    )
+
+
 class _CalibrationTestDialog(PatchedDialogWindow):
     """Shared frame: a header with Cancel/Create and one page."""
 
@@ -51,10 +238,11 @@ class _CalibrationTestDialog(PatchedDialogWindow):
         parent: Gtk.Window | None,
         title: str,
         on_create: Callable[[Any], object],
+        varsets: list[VarSet],
     ):
         super().__init__(transient_for=parent, modal=True)
         self.set_title(title)
-        self.set_default_size(520, 640)
+        self.set_default_size(DEFAULT_WIDTH, -1)
         self._on_create = on_create
 
         toolbar = Adw.ToolbarView()
@@ -72,8 +260,22 @@ class _CalibrationTestDialog(PatchedDialogWindow):
 
         self.banner = Adw.Banner()
         toolbar.add_top_bar(self.banner)
-        self.page = Adw.PreferencesPage()
-        toolbar.set_content(self.page)
+        page = Adw.PreferencesPage()
+        toolbar.set_content(page)
+
+        self.varset_widgets: list[VarSetWidget] = []
+        for var_set in varsets:
+            widget = VarSetWidget()
+            widget.populate(var_set)
+            page.add(widget)
+            self.varset_widgets.append(widget)
+
+    def values(self) -> dict[str, Any]:
+        """The values of every row, keyed like the params fields."""
+        values: dict[str, Any] = {}
+        for widget in self.varset_widgets:
+            values.update(widget.get_values())
+        return values
 
     def params(self) -> object:
         raise NotImplementedError
@@ -87,45 +289,6 @@ class _CalibrationTestDialog(PatchedDialogWindow):
             return
         self.close()
 
-    @staticmethod
-    def _power_row(title: str, value: float) -> SpinRow:
-        return SpinRow(
-            title,
-            _("Percent of the maximum power"),
-            lower=0.1,
-            upper=100.0,
-            step_increment=1.0,
-            digits=1,
-            value=value,
-        )
-
-    def _add_label_group(self, defaults) -> None:
-        group = Adw.PreferencesGroup(title=_("Labels"))
-        self.labels_row = Adw.SwitchRow(title=_("Include Labels"))
-        self.labels_row.set_active(defaults.include_labels)
-        group.add(self.labels_row)
-        self.label_power_row = self._power_row(
-            _("Label Power"), defaults.label_power_percent
-        )
-        group.add(self.label_power_row)
-        self.label_speed_row = SpeedSpinRow(
-            _("Label Speed"),
-            lower=1,
-            upper=60000,
-            value_in_base=defaults.label_speed,
-        )
-        group.add(self.label_speed_row)
-        self.labels_row.connect(
-            "notify::active", lambda *_a: self._sync_label_rows()
-        )
-        self._sync_label_rows()
-        self.page.add(group)
-
-    def _sync_label_rows(self):
-        active = self.labels_row.get_active()
-        self.label_power_row.set_sensitive(active)
-        self.label_speed_row.set_sensitive(active)
-
 
 class IntervalTestDialog(_CalibrationTestDialog):
     """Asks for the settings of an Interval Test."""
@@ -134,81 +297,21 @@ class IntervalTestDialog(_CalibrationTestDialog):
         self,
         parent: Gtk.Window | None,
         on_create: Callable[[IntervalTestParams], object],
-        max_speed: float = 60000.0,
     ):
-        super().__init__(parent, _("Create Interval Test"), on_create)
-        d = IntervalTestParams()
-        group = Adw.PreferencesGroup(
-            title=_("Cells"),
-            description=_(
-                "Engraves a row of filled squares, each with its own line "
-                "interval, at the same power and speed."
-            ),
+        defaults = IntervalTestParams()
+        super().__init__(
+            parent,
+            _("Create Interval Test"),
+            on_create,
+            [
+                _interval_varset(defaults),
+                _laser_varset(defaults),
+                _labels_varset(defaults),
+            ],
         )
-        self.count_row = SpinRow(
-            _("Number of Cells"), lower=2, upper=20, value=d.count
-        )
-        self.min_row = LengthSpinRow(
-            _("Smallest Interval"),
-            lower=0.01,
-            upper=5.0,
-            step_increment=0.01,
-            digits=3,
-            value_in_base=d.min_interval,
-        )
-        self.max_row = LengthSpinRow(
-            _("Largest Interval"),
-            lower=0.01,
-            upper=5.0,
-            step_increment=0.01,
-            digits=3,
-            value_in_base=d.max_interval,
-        )
-        self.size_row = LengthSpinRow(
-            _("Cell Size"),
-            lower=1.0,
-            upper=100.0,
-            value_in_base=d.cell_size,
-        )
-        self.spacing_row = LengthSpinRow(
-            _("Spacing"), lower=0.0, upper=50.0, value_in_base=d.spacing
-        )
-        for row in (
-            self.count_row,
-            self.min_row,
-            self.max_row,
-            self.size_row,
-            self.spacing_row,
-        ):
-            group.add(row)
-        self.page.add(group)
-
-        laser = Adw.PreferencesGroup(title=_("Laser"))
-        self.power_row = self._power_row(_("Power"), d.power_percent)
-        self.speed_row = SpeedSpinRow(
-            _("Speed"),
-            lower=1,
-            upper=max_speed,
-            value_in_base=min(d.speed, max_speed),
-        )
-        laser.add(self.power_row)
-        laser.add(self.speed_row)
-        self.page.add(laser)
-        self._add_label_group(d)
 
     def params(self) -> IntervalTestParams:
-        return IntervalTestParams(
-            min_interval=self.min_row.get_value_in_base_units(),
-            max_interval=self.max_row.get_value_in_base_units(),
-            count=self.count_row.get_int_value(),
-            cell_size=self.size_row.get_value_in_base_units(),
-            spacing=self.spacing_row.get_value_in_base_units(),
-            power_percent=self.power_row.get_value(),
-            speed=self.speed_row.get_value_in_base_units(),
-            include_labels=self.labels_row.get_active(),
-            label_power_percent=self.label_power_row.get_value(),
-            label_speed=self.label_speed_row.get_value_in_base_units(),
-        )
+        return IntervalTestParams(**self.values())
 
 
 class FocusTestDialog(_CalibrationTestDialog):
@@ -219,108 +322,34 @@ class FocusTestDialog(_CalibrationTestDialog):
         parent: Gtk.Window | None,
         on_create: Callable[[FocusTestParams], object],
         modes: list[FocusMode],
-        max_speed: float = 60000.0,
     ):
-        super().__init__(parent, _("Create Focus Test"), on_create)
-        d = FocusTestParams()
-        self._modes = modes
-        group = Adw.PreferencesGroup(title=_("Focus Steps"))
-        self.steps_group = group
-        self.mode_row = Adw.ComboRow(
-            title=_("Method"),
-            model=Gtk.StringList.new([m.label for m in modes]),
+        defaults = FocusTestParams()
+        super().__init__(
+            parent,
+            _("Create Focus Test"),
+            on_create,
+            [
+                _focus_varset(defaults, modes),
+                _laser_varset(defaults),
+                _labels_varset(defaults),
+            ],
         )
-        self.mode_row.set_selected(0)
-        self.mode_row.connect("notify::selected", lambda *_a: self._sync())
-        group.add(self.mode_row)
-
-        limit = MAX_FOCUS_OFFSET_MM
-        self.start_row = LengthSpinRow(
-            _("First Offset"),
-            lower=-limit,
-            upper=limit,
-            step_increment=0.1,
-            digits=2,
-            value_in_base=d.start_offset,
-        )
-        self.step_row = LengthSpinRow(
-            _("Step"),
-            lower=-limit,
-            upper=limit,
-            step_increment=0.1,
-            digits=2,
-            value_in_base=d.step,
-        )
-        self.count_row = SpinRow(
-            _("Number of Lines"), lower=2, upper=41, value=d.count
-        )
-        self.length_row = LengthSpinRow(
-            _("Line Length"),
-            lower=1.0,
-            upper=200.0,
-            value_in_base=d.line_length,
-        )
-        self.spacing_row = LengthSpinRow(
-            _("Spacing"), lower=0.5, upper=50.0, value_in_base=d.spacing
-        )
-        self.ramp_row = LengthSpinRow(
-            _("Ramp Length"),
-            lower=10.0,
-            upper=1000.0,
-            value_in_base=d.ramp_length,
-        )
-        self._step_rows = (
-            self.start_row,
-            self.step_row,
-            self.count_row,
-            self.length_row,
-            self.spacing_row,
-        )
-        for row in (*self._step_rows, self.ramp_row):
-            group.add(row)
-        self.page.add(group)
-
-        laser = Adw.PreferencesGroup(title=_("Laser"))
-        self.power_row = self._power_row(_("Power"), d.power_percent)
-        self.speed_row = SpeedSpinRow(
-            _("Speed"),
-            lower=1,
-            upper=max_speed,
-            value_in_base=min(d.speed, max_speed),
-        )
-        laser.add(self.power_row)
-        laser.add(self.speed_row)
-        self.page.add(laser)
-        self._add_label_group(d)
-        self._sync()
+        self.steps_widget = self.varset_widgets[0]
+        self.steps_widget.data_changed.connect(self._on_steps_changed)
+        self._update_help()
 
     @property
     def mode(self) -> FocusMode:
-        index = self.mode_row.get_selected()
-        if 0 <= index < len(self._modes):
-            return self._modes[index]
-        return FocusMode.RAMP
+        return FocusMode(self.steps_widget.get_values()["mode"])
 
-    def _sync(self):
-        mode = self.mode
-        self.steps_group.set_description(_FOCUS_HELP[mode])
-        is_ramp = mode == FocusMode.RAMP
-        for row in self._step_rows:
-            row.set_visible(not is_ramp)
-        self.ramp_row.set_visible(is_ramp)
+    def _on_steps_changed(self, sender, key: str):
+        if key == "mode":
+            self._update_help()
+
+    def _update_help(self):
+        self.steps_widget.set_description(_FOCUS_HELP[self.mode])
 
     def params(self) -> FocusTestParams:
-        return FocusTestParams(
-            mode=self.mode,
-            start_offset=self.start_row.get_value_in_base_units(),
-            step=self.step_row.get_value_in_base_units(),
-            count=self.count_row.get_int_value(),
-            line_length=self.length_row.get_value_in_base_units(),
-            spacing=self.spacing_row.get_value_in_base_units(),
-            ramp_length=self.ramp_row.get_value_in_base_units(),
-            power_percent=self.power_row.get_value(),
-            speed=self.speed_row.get_value_in_base_units(),
-            include_labels=self.labels_row.get_active(),
-            label_power_percent=self.label_power_row.get_value(),
-            label_speed=self.label_speed_row.get_value_in_base_units(),
-        )
+        values = self.values()
+        values["mode"] = FocusMode(values["mode"])
+        return FocusTestParams(**values)

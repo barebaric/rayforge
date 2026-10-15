@@ -63,10 +63,6 @@ def register_actions(action_registry):
         menu=MenuPlacement(menu_id="tools", priority=100),
     )
 
-    def _max_speed(window) -> float:
-        machine = window.doc_editor.context.machine
-        return float(machine.max_cut_speed) if machine else 60000.0
-
     interval_action = Gio.SimpleAction.new("interval_test", None)
 
     def on_interval_test(action, param):
@@ -75,7 +71,6 @@ def register_actions(action_registry):
         IntervalTestDialog(
             window,
             editor.calibration_tests.create_interval_test,
-            max_speed=_max_speed(window),
         ).present()
 
     interval_action.connect("activate", on_interval_test)
@@ -97,7 +92,6 @@ def register_actions(action_registry):
             window,
             cmd.create_focus_test,
             cmd.available_focus_modes(),
-            max_speed=_max_speed(window),
         ).present()
 
     focus_action.connect("activate", on_focus_test)
