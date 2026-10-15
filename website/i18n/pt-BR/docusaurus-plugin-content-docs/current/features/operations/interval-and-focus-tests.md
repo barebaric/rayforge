@@ -37,7 +37,8 @@ o melhor foco.
 
 Os passos do eixo Z só são oferecidos em máquinas com eixo Z, e tanto os passos do eixo Z quanto o
 método manual precisam de um controlador G-code, porque usam operações de [Comando](command.md)
-entre as linhas. Os deslocamentos são limitados a ±10 mm da altura inicial.
+entre as linhas. Os deslocamentos são limitados a ±10 mm da altura inicial. O diálogo começa no
+primeiro método que a máquina suporta, na ordem da tabela acima.
 
 No método manual, primeiro foque o laser como de costume. Os rótulos são gravados nessa altura. Na
 primeira pausa, coloque a cabeça no primeiro deslocamento; em cada pausa seguinte, mova-a um passo.

@@ -38,7 +38,8 @@ fine indique la meilleure mise au point.
 Les pas de l'axe Z ne sont proposés que sur les machines dotées d'un axe Z, et les pas de l'axe Z
 comme la méthode manuelle nécessitent un contrôleur G-code, car ils utilisent des opérations
 [Commande](command.md) entre les lignes. Les décalages sont limités à ±10 mm de la hauteur de
-départ.
+départ. La boîte de dialogue démarre sur la première méthode prise en charge par la machine, dans
+l'ordre du tableau ci-dessus.
 
 Avec la méthode manuelle, faites d'abord la mise au point du laser comme d'habitude. Les étiquettes
 sont gravées à cette hauteur. À la première pause, placez la tête au premier décalage ; à chaque

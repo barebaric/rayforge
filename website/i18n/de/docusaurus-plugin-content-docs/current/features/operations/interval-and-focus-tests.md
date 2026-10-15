@@ -38,7 +38,8 @@ besten Fokus.
 Z-Achsen-Schritte werden nur bei Maschinen mit Z-Achse angeboten, und sowohl Z-Achsen-Schritte als
 auch die manuelle Methode benötigen einen G-Code-Controller, weil sie zwischen den Linien
 [Befehls](command.md)-Operationen verwenden. Die Versätze sind auf ±10 mm von der Ausgangshöhe
-begrenzt.
+begrenzt. Der Dialog beginnt mit der ersten Methode, die die Maschine unterstützt, in der
+Reihenfolge der Tabelle oben.
 
 Fokussiere den Laser bei der manuellen Methode zuerst wie gewohnt. Die Beschriftungen werden in
 dieser Höhe graviert. Stelle den Kopf bei der ersten Pause auf den ersten Versatz und verschiebe ihn

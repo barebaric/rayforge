@@ -37,7 +37,8 @@ marca el mejor enfoque.
 
 Los pasos del eje Z solo se ofrecen en máquinas con eje Z, y tanto los pasos del eje Z como el
 método manual necesitan un controlador G-code, porque usan operaciones de [Comando](command.md)
-entre las líneas. Los desplazamientos están limitados a ±10 mm de la altura inicial.
+entre las líneas. Los desplazamientos están limitados a ±10 mm de la altura inicial. El diálogo
+empieza con el primer método que admite la máquina, en el orden de la tabla anterior.
 
 Con el método manual, enfoca primero el láser como de costumbre. Las etiquetas se graban a esa
 altura. En la primera pausa, coloca el cabezal en el primer desplazamiento; en cada pausa siguiente,
