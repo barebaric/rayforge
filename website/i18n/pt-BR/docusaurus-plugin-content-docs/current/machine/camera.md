@@ -296,6 +296,25 @@ clicando no ícone da câmera na barra de ferramentas da janela principal.
 
 ---
 
+### Visualização fora da área de trabalho
+
+A câmera geralmente vê mais do que apenas a área de trabalho. Em Configurações da máquina → Câmera →
+Visualização fora da área de trabalho, você pode exibir uma borda adicional semitransparente com a
+imagem da câmera ao redor da área de trabalho, o que facilita posicionar as peças.
+
+![Visualização da câmera fora da área de trabalho](/screenshots/main-camera-outside-view.webp)
+
+- **Mostrar fora da área de trabalho** liga ou desliga a borda. Ela fica desligada por padrão e
+  exige uma câmera alinhada.
+- **Margem** controla até onde a borda se estende além da área de trabalho, até 100 mm.
+- **Transparência** controla a visibilidade da borda.
+
+As áreas que a câmera não consegue ver permanecem transparentes em vez de aparecer em preto, e a
+borda termina no limite do que a câmera realmente cobre. Objetos que se elevam acima da mesa, como o
+pórtico, podem aparecer deslocados na borda, porque a imagem da câmera é alinhada ao plano da mesa.
+
+---
+
 ### Múltiplas Câmeras
 
 O Rayforge suporta múltiplas câmeras para diferentes visões ou máquinas:

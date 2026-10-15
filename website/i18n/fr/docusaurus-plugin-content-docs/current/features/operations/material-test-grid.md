@@ -73,6 +73,16 @@ La section **Paramètres** contient les plages que la grille fait varier — vit
 ou décalage, selon le mode sélectionné. Les modes qui gardent un paramètre fixe (par exemple la
 vitesse dans Puissance vs Passes) te permettent également de définir cette constante ici.
 
+## La Pièce Liée
+
+Normalement, une opération traite toutes les pièces de son calque, et l'onglet **Pièces** de sa
+boîte de dialogue de paramètres les liste toutes comme incluses. La Grille de Test de Matériau fait
+exception : son opération est liée à la pièce qu'elle a générée et ne traite que celle-ci. Dans
+l'onglet Pièces, la grille générée apparaît comme la seule pièce incluse, tout le reste du calque
+étant marqué comme exclu.
+
+![Onglet Pièces des paramètres de la Grille de Test de Matériau](/screenshots/step-settings-material-test-grid-workpieces.webp)
+
 ## Comprendre la Disposition
 
 Dans le mode Puissance vs Vitesse par défaut, la puissance augmente de gauche à droite et la vitesse

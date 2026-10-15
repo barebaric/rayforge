@@ -7,21 +7,27 @@ Rasterformate. Diese Seite erklärt, wie du Dateien importierst und für beste E
 
 ### Vektorformate
 
-| Format        | Erweiterung       | Importmethode                 | Am besten für                       |
-| ------------- | ----------------- | ----------------------------- | ----------------------------------- |
-| **SVG**       | `.svg`            | Direkte Vektoren oder Tracing | Vektorgrafiken, Logos, Designs      |
-| **DXF**       | `.dxf`            | Direkte Vektoren              | CAD-Zeichnungen, technische Designs |
-| **PDF**       | `.pdf`            | Direkte Vektoren oder Tracing | Dokumente mit Vektorinhalt          |
-| **LightBurn** | `.lbrn`, `.lbrn2` | Direkte Vektoren              | LightBurn-Projekte                  |
-| **Ruida**     | `.rd`             | Direkte Vektoren              | Ruida-Controller-Auftragsdateien    |
+| Format          | Erweiterung       | Importmethode                                        | Am besten für                        |
+| --------------- | ----------------- | ---------------------------------------------------- | ------------------------------------ |
+| **SVG**         | `.svg`, `.svgz`   | Direkte Vektoren oder Tracing                        | Vektorgrafiken, Logos, Designs       |
+| **DXF**         | `.dxf`            | Direkte Vektoren                                     | CAD-Zeichnungen, technische Designs  |
+| **PDF**         | `.pdf`            | Direkte Vektoren oder Tracing                        | Dokumente mit Vektorinhalt           |
+| **LightBurn**   | `.lbrn`, `.lbrn2` | Direkte Vektoren                                     | LightBurn-Projekte                   |
+| **Ruida**       | `.rd`             | Direkte Vektoren                                     | Ruida-Controller-Auftragsdateien     |
+| **Illustrator** | `.ai`             | Direkte Vektoren oder Tracing                        | Logos aus Illustrator                |
+| **EPS**         | `.eps`, `.ps`     | Direkte Vektoren oder Tracing (benötigt Ghostscript) | Logos, Druckvorlagen                 |
+| **HPGL**        | `.plt`, `.hpgl`   | Direkte Vektoren                                     | Plotter- und Schneideplotter-Dateien |
 
 ### Rasterformate
 
 | Format   | Erweiterung     | Importmethode       | Am besten für                            |
 | -------- | --------------- | ------------------- | ---------------------------------------- |
-| **PNG**  | `.webp`         | Tracing zu Vektoren | Fotos, Bilder mit Transparenz            |
+| **PNG**  | `.png`          | Tracing zu Vektoren | Fotos, Bilder mit Transparenz            |
 | **JPEG** | `.jpg`, `.jpeg` | Tracing zu Vektoren | Fotos, Bilder mit kontinuierlichen Tönen |
 | **BMP**  | `.bmp`          | Tracing zu Vektoren | Einfache Grafiken, Screenshots           |
+| **GIF**  | `.gif`          | Tracing zu Vektoren | Einfache Grafiken, Animationen           |
+| **TIFF** | `.tif`, `.tiff` | Tracing zu Vektoren | Scans, Druckvorlagen                     |
+| **WebP** | `.webp`         | Tracing zu Vektoren | Webbilder                                |
 
 <!-- prettier-ignore-start -->
 :::note[Raster-Import]
@@ -106,6 +112,54 @@ Die Größenänderungs-Benachrichtigung erscheint als Toast-Meldung:
 
 Dies stellt sicher, dass deine Designs immer in die Fähigkeiten deiner Maschine passen, während du
 die Flexibilität hast, die Originalgröße bei Bedarf wiederherzustellen.
+
+### Importierte Dateien synchron halten
+
+Beim Importieren behält Rayforge eine Verknüpfung zur Datei auf der Festplatte. Ändert sich die
+Datei später — etwa nach dem Bearbeiten und erneuten Speichern in Inkscape oder deinem CAD-Programm
+— bietet Rayforge an, den importierten Inhalt neu zu laden, damit dein Projekt nicht veraltete
+Geometrie behält.
+
+![Der Dialog „Importierte Datei geändert“](/screenshots/source-changed-dialog.webp)
+
+Gesteuert wird das über die Option **Importierte Dateien beobachten** in den Einstellungen unter
+Allgemein. Ist sie aktiviert (die Voreinstellung), prüft Rayforge die verknüpften Dateien, solange
+das Projekt geöffnet ist — auch direkt nach dem Öffnen — und zeigt für jede geänderte Datei einen
+Dialog an:
+
+- **Neu laden** ersetzt den importierten Inhalt durch die neue Version. Position, Größe und die
+  Einstellungen der betroffenen Werkstücke bleiben erhalten, und das gesamte Neuladen ist ein
+  einziger Undo-Schritt.
+- **Ignorieren** behält den aktuellen Inhalt. Beim nächsten Ändern der Datei wirst du erneut
+  gefragt.
+- Aktiviere **Diese Datei immer ohne Nachfrage neu laden**, um diese Datei künftig automatisch neu
+  zu laden. So markierte Dateien werden ohne Nachfrage neu geladen.
+
+Haben sich mehrere verknüpfte Dateien gleichzeitig geändert, listet der Dialog alle auf, und du
+wählst, welche neu geladen werden sollen.
+
+<!-- prettier-ignore-start -->
+:::note[Neu laden passt das Dokument an]
+Beim Neuladen wird das Dokument wieder mit der Datei abgeglichen: Elemente, die neu dazugekommen
+sind, erscheinen im Projekt, Elemente, die nicht mehr in der Datei sind, werden entfernt, und
+Halte-Laschen, die mehr als 1 mm von der neuen Kontur entfernt liegen, werden gelöscht. In Rayforge
+bearbeitete Elemente bleiben unverändert. Eine Benachrichtigung fasst zusammen, was das Neuladen
+geändert hat.
+:::
+<!-- prettier-ignore-end -->
+
+### Manuelles Neuladen und Neuverknüpfen
+
+Du kannst jederzeit auch manuell neu laden oder neu verknüpfen — über **Datei → Von Festplatte neu
+laden** und **Datei → Quelldatei neu verknüpfen …** oder über das Kontextmenü der Auswahl auf der
+Zeichenfläche, der Ebenenliste oder des Asset-Browsers. **Von Festplatte neu laden** liest die
+Dateien hinter den ausgewählten Werkstücken erneut ein. Ist die verknüpfte Datei nicht auffindbar,
+schlägt Rayforge stattdessen das Neuverknüpfen vor.
+
+**Quelldatei neu verknüpfen …** weist eine importierte Quelle einer anderen Datei zu. Das ist
+nützlich, wenn eine Datei verschoben oder umbenannt wurde oder wenn ein Projekt auf einem anderen
+Computer geöffnet wird und die verknüpfte Datei dort fehlt. Die Werkstücke behalten Position und
+Einstellungen und zeigen den Inhalt der neuen Datei.
 
 ---
 
@@ -357,7 +411,18 @@ farbcodierten Ebenen mit konfigurierbaren Laser-Einstellungen organisiert ist.
 
 ---
 
-## Rasterbild-Import (PNG, JPG, BMP)
+## Illustrator- und EPS-Import
+
+Illustrator-Dateien, die mit PDF-Kompatibilität gespeichert wurden (Standard seit Illustrator 9),
+werden genau wie PDF-Dateien importiert, mit derselben Ebenenauswahl und denselben Tracing-Optionen.
+
+EPS-, PostScript- und ältere Illustrator-Dateien werden zuerst mit Ghostscript in PDF umgewandelt.
+Installiere Ghostscript, wenn der Importdialog meldet, dass es fehlt. Wenn du es nicht installieren
+kannst, exportiere das Design im Ursprungsprogramm als PDF oder SVG.
+
+---
+
+## Rasterbild-Import (PNG, JPG, BMP, GIF, TIFF, WebP)
 
 Rasterbilder werden **traced**, um Vektorpfade über den Import-Dialog zu erstellen.
 

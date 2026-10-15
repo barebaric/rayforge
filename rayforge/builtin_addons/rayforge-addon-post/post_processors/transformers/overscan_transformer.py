@@ -105,6 +105,7 @@ class OverscanTransformer(OpsTransformer):
         workpiece: WorkPiece | None,
         stock_geometries: list[Geometry] | None,
         machine=None,
+        settings=None,
     ) -> OverscanSpec:
         try:
             native = bool(machine and machine.driver.native_overscan)

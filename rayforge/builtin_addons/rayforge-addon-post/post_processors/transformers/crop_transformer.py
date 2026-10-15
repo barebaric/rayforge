@@ -71,6 +71,7 @@ class CropTransformer(OpsTransformer):
         workpiece: WorkPiece | None,
         stock_geometries: list[Geometry] | None,
         machine=None,
+        settings=None,
     ) -> CropSpec:
         if not stock_geometries or workpiece is None:
             return CropSpec(

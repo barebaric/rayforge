@@ -101,6 +101,9 @@ class Config:
         self.auto_pipeline: bool = True
         self.ops_color_mode: OpsColorMode = OpsColorMode.LASER
         self.check_for_app_updates: bool = True
+        # Whether to watch imported files and offer to reload them when
+        # they change on disk.
+        self.watch_source_files: bool = True
         # Usage tracking consent date: None = not asked, "" = declined,
         # ISO date string = consent given on that date
         self.usage_consent_date: str | None = None
@@ -120,6 +123,11 @@ class Config:
         # (or dismissed). Absent in older configs; the wizard itself
         # only triggers while placeholder machines are the only ones.
         self.setup_completed: bool = False
+        # Mouse gesture bindings: maps context_id -> (slot_id ->
+        # binding spec string). A value of None marks the slot as
+        # unassigned. Absent entries fall back to the slot defaults
+        # declared in the gesture registry.
+        self.gesture_bindings: dict[str, dict[str, str | None]] = {}
         self.changed = Signal()
 
     def set_machine(self, machine: Machine | None):
@@ -216,6 +224,13 @@ class Config:
         self.check_for_app_updates = enabled
         self.changed.send(self)
 
+    def set_watch_source_files(self, enabled: bool):
+        """Sets whether imported files are watched for changes."""
+        if self.watch_source_files == enabled:
+            return
+        self.watch_source_files = enabled
+        self.changed.send(self)
+
     def set_ops_color_mode(self, mode: OpsColorMode):
         """Sets the ops color mode."""
         if self.ops_color_mode == mode:
@@ -269,6 +284,34 @@ class Config:
         self.usage_consent_date = new_value
         self.changed.send(self)
 
+    def set_gesture_binding(
+        self, context_id: str, slot_id: str, value: str | None
+    ):
+        """
+        Stores a custom gesture binding for a slot.
+
+        Args:
+            context_id: The gesture context the slot belongs to.
+            slot_id: The gesture slot to bind.
+            value: The serialized gesture spec, or None to mark the
+                slot as unassigned.
+        """
+        per_context = self.gesture_bindings.setdefault(context_id, {})
+        if slot_id in per_context and per_context[slot_id] == value:
+            return
+        per_context[slot_id] = value
+        self.changed.send(self)
+
+    def reset_gesture_binding(self, context_id: str, slot_id: str):
+        """Removes a custom gesture binding, restoring the default."""
+        per_context = self.gesture_bindings.get(context_id)
+        if not per_context or slot_id not in per_context:
+            return
+        del per_context[slot_id]
+        if not per_context:
+            del self.gesture_bindings[context_id]
+        self.changed.send(self)
+
     @property
     def has_consented_tracking(self) -> bool:
         """Returns True if user has consented to usage tracking after
@@ -309,6 +352,7 @@ class Config:
             "canvas_view": self.canvas_view.to_dict(),
             "auto_pipeline": self.auto_pipeline,
             "check_for_app_updates": self.check_for_app_updates,
+            "watch_source_files": self.watch_source_files,
             "ops_color_mode": self.ops_color_mode.value,
             "usage_consent_date": self.usage_consent_date,
             "import_dpi": self.import_dpi,
@@ -317,6 +361,7 @@ class Config:
             "default_stock_material_uid": self.default_stock_material_uid,
             "default_stock_thickness_mm": self.default_stock_thickness_mm,
             "setup_completed": self.setup_completed,
+            "gesture_bindings": self.gesture_bindings,
         }
 
     @classmethod
@@ -372,6 +417,7 @@ class Config:
         )
         config.auto_pipeline = data.get("auto_pipeline", True)
         config.check_for_app_updates = data.get("check_for_app_updates", True)
+        config.watch_source_files = data.get("watch_source_files", True)
 
         ops_color_mode_str = data.get(
             "ops_color_mode", OpsColorMode.LASER.value
@@ -408,6 +454,11 @@ class Config:
         # Load first-run setup flag
         config.setup_completed = data.get("setup_completed", False)
 
+        # Load custom mouse gesture bindings
+        config.gesture_bindings = cls._load_gesture_bindings(
+            data.get("gesture_bindings", {})
+        )
+
         # Get the machine by ID. add fallbacks in case the machines
         # no longer exist.
         machine_id = data.get("machine")
@@ -421,6 +472,38 @@ class Config:
             config.set_machine(machine)
 
         return config
+
+    @staticmethod
+    def _load_gesture_bindings(data: Any) -> dict[str, dict[str, str | None]]:
+        """
+        Validates the stored gesture bindings, dropping malformed
+        entries. Binding specs are validated against the gesture
+        registry at lookup time, because unknown contexts and slots
+        are legal in the config (e.g. written by an addon that is
+        currently disabled).
+        """
+        if not isinstance(data, dict):
+            logger.warning("Invalid gesture bindings in config, ignoring.")
+            return {}
+        bindings: dict[str, dict[str, str | None]] = {}
+        for context_id, per_context in data.items():
+            if not isinstance(per_context, dict):
+                logger.warning(
+                    f"Invalid gesture bindings for '{context_id}', ignoring."
+                )
+                continue
+            valid: dict[str, str | None] = {}
+            for slot_id, value in per_context.items():
+                if value is None or isinstance(value, str):
+                    valid[str(slot_id)] = value
+                else:
+                    logger.warning(
+                        f"Invalid gesture binding '{slot_id}' for "
+                        f"'{context_id}', ignoring."
+                    )
+            if valid:
+                bindings[str(context_id)] = valid
+        return bindings
 
 
 class ConfigManager:

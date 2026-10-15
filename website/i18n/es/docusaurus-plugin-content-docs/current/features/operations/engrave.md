@@ -178,12 +178,11 @@ descritos a continuación.
 | 10% | 60% | Profundidad media, seguro   |
 | 20% | 80% | Profundo, relieve dramático |
 
-**Invertir:**
+**Invertir la imagen:**
 
-- **Apagado** (predeterminado): Blanco = superficial, Negro = profundo
-- **Encendido**: Blanco = profundo, Negro = superficial
-
-Usa invertir para litofanías (las áreas claras deben ser delgadas) o repujado (áreas elevadas).
+El negro se graba en profundidad y el blanco queda superficial. Para invertirlos, para litofanías
+(las áreas claras deben ser delgadas) o repujado (áreas elevadas), selecciona la pieza y usa
+**Tools - Invert Image**. Consulta [Edición de imágenes](../../addons/image-editing.md).
 
 **Rango de Brillo:**
 
@@ -226,12 +225,19 @@ Esto es particularmente útil para:
 
 Elige el algoritmo que mejor se adapte a tu imagen y material:
 
-| Algoritmo       | Calidad | Velocidad  | Mejor Para                         |
-| --------------- | ------- | ---------- | ---------------------------------- |
-| Floyd-Steinberg | Máxima  | Más lento  | Fotos, retratos, degradados suaves |
-| Bayer 2x2       | Baja    | Más rápido | Efecto de media tinta grueso       |
-| Bayer 4x4       | Media   | Rápido     | Media tinta equilibrada            |
-| Bayer 8x8       | Alta    | Media      | Detalle fino, patrones sutiles     |
+| Algoritmo                       | Calidad | Velocidad  | Mejor Para                                  |
+| ------------------------------- | ------- | ---------- | ------------------------------------------- |
+| Floyd-Steinberg                 | Máxima  | Más lento  | Fotos, retratos, degradados suaves          |
+| Bayer 2x2                       | Baja    | Más rápido | Efecto de media tinta grueso                |
+| Bayer 4x4                       | Media   | Rápido     | Media tinta equilibrada                     |
+| Bayer 8x8                       | Alta    | Media      | Detalle fino, patrones sutiles              |
+| Atkinson                        | Media   | Media      | Imágenes de alto contraste, madera          |
+| Stucki                          | Máxima  | Lento      | Retratos, tonos de piel suaves              |
+| Jarvis, Judice y Ninke          | Máxima  | Lento      | Degradados suaves, grano fino               |
+| Sierra (3 filas, 2 filas, Lite) | Alta    | Media      | Alternativas más ligeras a Stucki           |
+| Burkes                          | Alta    | Media      | Fotos, más rápido que Stucki                |
+| Papel prensa                    | Media   | Más rápido | Puntos agrupados al estilo periódico        |
+| Semitono                        | Media   | Rápido     | Puntos redondos, tamaño y ángulo ajustables |
 
 **Floyd-Steinberg** es el predeterminado y el recomendado para la mayoría de los grabados de fotos.
 Usa difusión de error para distribuir los errores de cuantización a los píxeles vecinos, creando
@@ -239,6 +245,17 @@ resultados de aspecto natural.
 
 **El tramado Bayer** crea patrones regulares que pueden producir efectos artísticos que asemejan la
 impresión tradicional de media tinta.
+
+**Stucki, Jarvis, Sierra, Burkes y Atkinson** son algoritmos de difusión de error como
+Floyd-Steinberg que reparten el error en un entorno más amplio, lo que da un grano más uniforme en
+zonas planas como los tonos de piel. Atkinson solo difunde parte del error, lo que aumenta el
+contraste. Activa **Serpentina** para alternar la dirección de barrido en cada fila y evitar rayas
+direccionales.
+
+**Papel prensa** y **Semitono** agrupan los píxeles en puntos. Semitono dibuja puntos redondos sobre
+una cuadrícula definida por **Tamaño de celda del semitono** (la distancia entre los centros de los
+puntos) y **Ángulo del semitono**; usa un tamaño de celda de al menos varias veces el ancho del
+punto láser.
 
 #### Ajustes del Modo Múltiples Profundidades
 
@@ -262,12 +279,11 @@ impresión tradicional de media tinta.
 - Crea un efecto 3D tipo entramado cruzado
 - Típico: 0-45 grados
 
-**Invertir:**
+**Invertir la imagen:**
 
-- **Habilitado:** Blanco = profundo, Negro = superficial
-- **Deshabilitado:** Negro = profundo, Blanco = superficial
-
-Usa invertir para litofanías (las áreas claras deben ser delgadas) o repujado (áreas elevadas).
+El negro se graba en profundidad y el blanco queda superficial. Para invertirlos, para litofanías
+(las áreas claras deben ser delgadas) o repujado (áreas elevadas), selecciona la pieza y usa
+**Tools - Invert Image**. Consulta [Edición de imágenes](../../addons/image-editing.md).
 
 ### Patrón de Escaneo
 
@@ -320,15 +336,16 @@ Pequeñas diferencias mecánicas o de retardo de disparo entre las dos direccion
 bandas visibles en algunas máquinas. Si ves esto, calibra el **Desplazamiento de Escaneo
 Bidireccional** de abajo para corregirlo directamente, en lugar de perder el beneficio de velocidad.
 
-#### Desplazamiento de Escaneo Bidireccional
+#### Desplazamiento de Escaneo Bidireccional {#bidirectional-scan-offset}
 
 Corrige un sesgo fijo mecánico o de retardo de disparo entre las pasadas raster de izquierda a
 derecha y de derecha a izquierda, que de otro modo desalinea filas de escaneo alternas (visible como
 bandas, especialmente en grabados de fotos).
 
 - Se configura en milímetros, positivo o negativo dependiendo de qué dirección necesita desplazarse
-- Aplica un desplazamiento constante independientemente de la velocidad; si el sesgo varía con la
-  velocidad, calibra para tu velocidad de grabado típica
+- Un valor distinto de cero aquí siempre gana; cuando es 0, el paso recurre a la tabla
+  [Desplazamiento de Escaneo Bidireccional por Velocidad](../../machine/advanced.md#bidirectional-scan-offset-by-speed)
+  de la máquina, que interpola un desplazamiento para la velocidad de este paso
 - El valor predeterminado es 0 (sin corrección)
 
 **Calibrando el desplazamiento:**
@@ -338,6 +355,11 @@ bandas, especialmente en grabados de fotos).
 2. Compara las filas alternas para encontrar la dirección y la cantidad de desalineación
 3. Ajusta el desplazamiento en pequeños incrementos (0.01-0.05mm) y vuelve a probar hasta que las
    filas alternas se alineen
+
+Si la desalineación cambia notablemente entre tus velocidades de grabado habituales, un único
+desplazamiento no puede corregir todos los trabajos. Deja el desplazamiento del paso en 0 y
+configura en su lugar una tabla de desplazamiento dependiente de la velocidad en
+[Ajustes de Máquina - Avanzado](../../machine/advanced.md#bidirectional-scan-offset-by-speed).
 
 ## Ajustes del Láser
 

@@ -70,17 +70,20 @@ class OpsTransformer(ABC):
         workpiece: WorkPiece | None,
         stock_geometries: list[Geometry] | None,
         machine: Machine | None,
+        settings: dict[str, Any] | None = None,
     ) -> Any:
         """Return the typed Rust spec for this transformer.
 
         The transformer is self-sufficient: it queries whatever state
         it needs from *machine* (the resolved
         :class:`~rayforge.machine.models.machine.Machine`, or ``None``
-        when unavailable). The returned object is one of the ``*Spec``
-        pyclasses defined in :mod:`raygeo.ops.transform`.
-        Implementations must not return ``None``: if the transformer
-        cannot run, raise an exception describing the
-        misconfiguration instead.
+        when unavailable). *settings* additionally carries step-specific
+        values such as the step's cut speed and its bidirectional scan
+        offset; transformers that need none ignore it. The returned
+        object is one of the ``*Spec`` pyclasses defined in
+        :mod:`raygeo.ops.transform`. Implementations must not return
+        ``None``: if the transformer cannot run, raise an exception
+        describing the misconfiguration instead.
         """
 
     def to_dict(self) -> dict[str, Any]:

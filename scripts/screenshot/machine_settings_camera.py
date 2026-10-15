@@ -3,12 +3,12 @@
 import logging
 import subprocess
 import time
-from pathlib import Path
 
-import cv2
-from gi.repository import GLib
+from gi.repository import GLib, Gtk
 from utils import (
+    align_mock_camera,
     get_target,
+    inject_mock_image,
     open_machine_settings,
     restore_config,
     run_on_main_thread,
@@ -31,14 +31,6 @@ logger = logging.getLogger(__name__)
 
 PAGE = "camera"
 TARGET = get_target(f"machine-settings:{PAGE}")
-
-MOCK_IMAGE_PATH = (
-    Path(__file__).parent.parent.parent
-    / "website"
-    / "static"
-    / "images"
-    / "work-surface.png"
-)
 
 WIZARD_PAGES = ("card", "capture")
 
@@ -68,30 +60,6 @@ def parse_target(target: str) -> dict | None:
         return {"type": "dialog", "key": sub}
     logger.error(f"Unknown target: {target}")
     return None
-
-
-def load_mock_image():
-    """Load the mock camera image as a BGR numpy array."""
-    img = cv2.imread(str(MOCK_IMAGE_PATH), cv2.IMREAD_COLOR)
-    if img is None:
-        logger.error("Failed to load mock image from %s", MOCK_IMAGE_PATH)
-        return None
-    logger.info("Loaded mock image: %s (%s)", MOCK_IMAGE_PATH, img.shape)
-    return img
-
-
-def inject_mock_image(controller):
-    """Inject mock image data into the controller and trigger redraw."""
-    img = load_mock_image()
-    if img is None:
-        return False
-    controller._raw_image_data = img.copy()
-    controller._image_data = img.copy()
-    GLib.idle_add(controller.image_captured.send, controller)
-    # Prevent the real capture loop from starting (mock device can't open)
-    controller._running = True
-    time.sleep(0.25)
-    return True
 
 
 def add_mock_camera(dialog):
@@ -138,6 +106,47 @@ def setup_camera_page(dialog):
     if controller:
         inject_mock_image(controller)
     return None, controller
+
+
+def _iter_descendants(widget):
+    """Yield widget and all of its descendants, depth-first."""
+    child = widget.get_first_child()
+    while child:
+        yield child
+        yield from _iter_descendants(child)
+        child = child.get_next_sibling()
+
+
+def _scroll_camera_page_to_bottom(dialog):
+    """Scroll the camera page so its bottommost group is visible.
+
+    The value is pinned repeatedly rather than set once, because the
+    page scrolls smoothly and a single set is only captured in-flight.
+    """
+
+    def _find_adjustment():
+        for widget in _iter_descendants(dialog.camera_page):
+            if isinstance(widget, Gtk.ScrolledWindow):
+                adjustment = widget.get_vadjustment()
+                if adjustment.get_upper() > adjustment.get_page_size():
+                    return adjustment
+        return None
+
+    def _scroll():
+        adjustment = _find_adjustment()
+        if adjustment is None:
+            logger.warning("No scroll adjustment found for the camera page")
+            return
+        remaining = [30]
+
+        def _pin():
+            adjustment.set_value(adjustment.get_upper())
+            remaining[0] -= 1
+            return remaining[0] > 0
+
+        GLib.timeout_add(50, _pin)
+
+    run_on_main_thread(_scroll)
 
 
 def take_wizard_screenshot(parent_dialog, wizard_page: str):
@@ -208,8 +217,15 @@ def main():
     time.sleep(0.25)
 
     if target_info is None:
-        setup_camera_page(dialog)
-        time.sleep(0.25)
+        camera, controller = setup_camera_page(dialog)
+        camera = camera or (controller.config if controller else None)
+        if camera is not None:
+            width_mm, height_mm = dialog.machine.axis_extents
+            align_mock_camera(camera, width_mm, height_mm)
+            # Show the outside-workspace settings in their enabled state.
+            camera.outside_view_enabled = True
+        _scroll_camera_page_to_bottom(dialog)
+        time.sleep(1.8)
         take_screenshot()
         time.sleep(0.25)
         app.quit_idle()

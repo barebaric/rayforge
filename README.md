@@ -4,7 +4,7 @@
 [![Launchpad PPA](https://img.shields.io/badge/PPA-blue)](https://launchpad.net/~knipknap/+archive/ubuntu/rayforge)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-[![Get it from the Snap Store](https://snapcraft.io/en/light/install.svg)](https://snapcraft.io/rayforge)
+<a href="https://snapcraft.io/rayforge"><img alt="Get it from the Snap Store" src="https://snapcraft.io/en/light/install.svg" height="55"/></a>
 <a href="https://flathub.org/apps/org.rayforge.rayforge"><img alt="Get it from Flathub" src="website/static/images/flathub-badge.svg" height="55"/></a>
 <a href="https://www.patreon.com/c/knipknap"><img src="https://c5.patreon.com/external/logo/become_a_patron_button.png" alt="Become a Patron" height="55"/></a>
 
@@ -31,7 +31,7 @@ We also have a [Discord](https://discord.gg/sTHNdTtpQJ).
 | **Multi-Layer Operations**   | Assign different operations (e.g., engrave then cut) to layers in your design.          |
 | **Stock Material System**    | Document-level stock with geometry, thickness, and material assignment.                 |
 | **Undo/Redo**                | Full undo/redo support across all document operations.                                  |
-| **Broad File Support**       | Import from SVG, DXF, PDF, JPEG, PNG, BMP, and Ruida (`.rd`). Export to SVG and DXF.    |
+| **Broad File Support**       | Import from SVG, DXF, PDF, Illustrator (`.ai`), EPS, HPGL (`.plt`), JPEG, PNG, BMP, GIF, TIFF, WebP, and Ruida (`.rd`). Export to SVG and DXF.    |
 | **Project Files (.ryp)**     | Compressed project format preserving all assets, layers, and configurations.            |
 
 ### Operations & Toolpaths
@@ -44,7 +44,7 @@ We also have a [Discord](https://discord.gg/sTHNdTtpQJ).
 | **Animated 3D Simulation**   | Simulate toolpaths in 3D with animated playback, scrubber, and speed control.                        |
 | **Holding Tabs**             | Add tabs to contour cuts. Supports manual and automatic placement.                                   |
 | **Overscan & Kerf Comp.**    | Improve engraving quality with overscan; ensure dimensional accuracy with kerf compensation.         |
-| **Dithering Algorithms**     | Floyd-Steinberg and Bayer ordered dithering for high-quality raster engraving.                       |
+| **Dithering Algorithms**     | Floyd-Steinberg, Stucki, Jarvis, Atkinson, Sierra, Burkes, Bayer, newsprint and halftone screens.    |
 | **Post-Processors**          | Lead-in/lead-out, merge overlapping lines, and crop toolpaths to stock boundary.                     |
 | **Advanced Path Generation** | Image tracing, travel time optimization, path smoothing, and spot size interpolation.                |
 

@@ -622,6 +622,15 @@ class LayerColumn(Gtk.Box):
         menu.append_section(None, Gio.Menu.new())
         menu.append_item(Gio.MenuItem.new(_("Duplicate"), "win.duplicate"))
         menu.append_section(None, Gio.Menu.new())
+        menu.append_item(
+            Gio.MenuItem.new(_("Reload from Disk"), "win.reload-source")
+        )
+        menu.append_item(
+            Gio.MenuItem.new(
+                _("Relink Source File\u2026"), "win.relink-source"
+            )
+        )
+        menu.append_section(None, Gio.Menu.new())
         menu.append_item(Gio.MenuItem.new(_("Copy"), "win.copy"))
         menu.append_item(Gio.MenuItem.new(_("Cut"), "win.cut"))
         menu.append_section(None, Gio.Menu.new())

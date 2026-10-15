@@ -66,6 +66,7 @@ class Optimize(OpsTransformer):
         workpiece: WorkPiece | None,
         stock_geometries: list["Geometry"] | None,
         machine=None,
+        settings=None,
     ) -> OptimizeSpec:
         merge = None
         if self.merge_scanlines:

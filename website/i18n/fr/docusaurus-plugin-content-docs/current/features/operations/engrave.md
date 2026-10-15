@@ -178,13 +178,11 @@ paramètres, décrits ci-dessous.
 | 10% | 60% | Profondeur moyenne, sûr    |
 | 20% | 80% | Profond, relief dramatique |
 
-**Inverser :**
+**Inversion de l'image :**
 
-- **Off** (défaut) : Blanc = peu profond, Noir = profond
-- **On** : Blanc = profond, Noir = peu profond
-
-Utilisez inverser pour les lithophanes (les zones claires doivent être fines) ou le gaufrage (zones
-en relief).
+Le noir est gravé en profondeur et le blanc reste peu profond. Pour les inverser, pour les
+lithophanes (les zones claires doivent être fines) ou le gaufrage (zones en relief), sélectionnez la
+pièce et utilisez **Tools - Invert Image**. Voir [Édition d'images](../../addons/image-editing.md).
 
 **Plage de Luminosité :**
 
@@ -227,12 +225,19 @@ C'est particulièrement utile pour :
 
 Choisissez l'algorithme qui convient le mieux à votre image et à votre matériau :
 
-| Algorithme      | Qualité        | Vitesse        | Idéal Pour                         |
-| --------------- | -------------- | -------------- | ---------------------------------- |
-| Floyd-Steinberg | La plus élevée | La plus lente  | Photos, portraits, dégradés lisses |
-| Bayer 2x2       | Basse          | La plus rapide | Effet demi-teinte grossier         |
-| Bayer 4x4       | Moyenne        | Rapide         | Demi-teinte équilibrée             |
-| Bayer 8x8       | Élevée         | Moyenne        | Détails fins, motifs subtils       |
+| Algorithme                        | Qualité        | Vitesse        | Idéal Pour                              |
+| --------------------------------- | -------------- | -------------- | --------------------------------------- |
+| Floyd-Steinberg                   | La plus élevée | La plus lente  | Photos, portraits, dégradés lisses      |
+| Bayer 2x2                         | Basse          | La plus rapide | Effet demi-teinte grossier              |
+| Bayer 4x4                         | Moyenne        | Rapide         | Demi-teinte équilibrée                  |
+| Bayer 8x8                         | Élevée         | Moyenne        | Détails fins, motifs subtils            |
+| Atkinson                          | Moyenne        | Moyenne        | Images contrastées, bois                |
+| Stucki                            | La plus élevée | Lente          | Portraits, tons chair doux              |
+| Jarvis, Judice et Ninke           | La plus élevée | Lente          | Dégradés doux, grain fin                |
+| Sierra (3 lignes, 2 lignes, Lite) | Élevée         | Moyenne        | Alternatives plus légères à Stucki      |
+| Burkes                            | Élevée         | Moyenne        | Photos, plus rapide que Stucki          |
+| Papier journal                    | Moyenne        | La plus rapide | Points groupés façon journal            |
+| Demi-teinte                       | Moyenne        | Rapide         | Points ronds, taille et angle réglables |
 
 **Floyd-Steinberg** est le défaut et recommandé pour la plupart des gravures photo. Il utilise la
 diffusion d'erreur pour distribuer les erreurs de quantification aux pixels voisins, créant des
@@ -240,6 +245,17 @@ résultats d'apparence naturelle.
 
 **Le tramage Bayer** crée des motifs réguliers qui peuvent produire des effets artistiques
 ressemblant à l'impression demi-teinte traditionnelle.
+
+**Stucki, Jarvis, Sierra, Burkes et Atkinson** sont des algorithmes de diffusion d'erreur comme
+Floyd-Steinberg qui répartissent l'erreur sur un voisinage plus large, ce qui donne un grain plus
+régulier dans les zones uniformes comme les tons chair. Atkinson ne diffuse qu'une partie de
+l'erreur, ce qui augmente le contraste. Active **Serpentin** pour alterner le sens de balayage à
+chaque ligne et éviter les stries directionnelles.
+
+**Papier journal** et **Demi-teinte** regroupent les pixels en points. Demi-teinte trace des points
+ronds sur une grille définie par **Taille de cellule de demi-teinte** (la distance entre les centres
+des points) et **Angle de demi-teinte** ; choisis une taille de cellule d'au moins quelques largeurs
+de point laser.
 
 #### Paramètres du Mode Profondeurs Multiples
 
@@ -263,13 +279,11 @@ ressemblant à l'impression demi-teinte traditionnelle.
 - Crée un effet 3D type croisé
 - Typique : 0-45 degrés
 
-**Inverser :**
+**Inversion de l'image :**
 
-- **Activé :** Blanc = profond, Noir = peu profond
-- **Désactivé :** Noir = profond, Blanc = peu profond
-
-Utilisez inverser pour les lithophanes (les zones claires doivent être fines) ou le gaufrage (zones
-en relief).
+Le noir est gravé en profondeur et le blanc reste peu profond. Pour les inverser, pour les
+lithophanes (les zones claires doivent être fines) ou le gaufrage (zones en relief), sélectionnez la
+pièce et utilisez **Tools - Invert Image**. Voir [Édition d'images](../../addons/image-editing.md).
 
 ### Motif de Balayage
 
@@ -323,15 +337,16 @@ banding visible sur certaines machines. Si vous constatez ce phénomène, calibr
 Balayage Bidirectionnel** ci-dessous pour le corriger directement, plutôt que de perdre l'avantage
 de vitesse.
 
-#### Décalage de Balayage Bidirectionnel
+#### Décalage de Balayage Bidirectionnel {#bidirectional-scan-offset}
 
 Corrige un décalage fixe mécanique ou de délai de tir entre les passes raster de gauche à droite et
 de droite à gauche, qui autrement désalignerait les rangées de balayage alternées (visible sous
 forme de banding, en particulier dans les gravures photo).
 
 - Défini en millimètres, positif ou négatif selon la direction qui doit être décalée
-- Applique un décalage constant quelle que soit la vitesse ; si le décalage varie avec la vitesse,
-  calibrez pour votre vitesse de gravure typique
+- Une valeur non nulle ici gagne toujours ; lorsqu'elle vaut 0, l'étape revient au tableau
+  [Décalage de Balayage Bidirectionnel par Vitesse](../../machine/advanced.md#bidirectional-scan-offset-by-speed)
+  de la machine, qui interpole un décalage pour la vitesse de cette étape
 - Par défaut à 0 (aucune correction)
 
 **Calibrage du décalage :**
@@ -341,6 +356,11 @@ forme de banding, en particulier dans les gravures photo).
 2. Comparez les rangées alternées pour trouver la direction et l'ampleur du désalignement
 3. Ajustez le décalage par petits incréments (0.01-0.05mm) et retestez jusqu'à ce que les rangées
    alternées s'alignent
+
+Si le désalignement varie nettement entre vos vitesses de gravure habituelles, un seul décalage ne
+peut pas corriger tous les travaux. Laissez le décalage de l'étape à 0 et saisissez plutôt un
+tableau de décalage dépendant de la vitesse dans
+[Paramètres Machine - Avancé](../../machine/advanced.md#bidirectional-scan-offset-by-speed).
 
 ## Paramètres Laser
 

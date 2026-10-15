@@ -25,11 +25,18 @@ from ...shared.tasker import task_mgr
 from ...shared.units.system import UnitSystem
 from ..assembly import Assembly
 from ..driver import get_driver_cls
-from ..driver.driver import DeviceState, Pos, PWMParams, pwm_varset
+from ..driver.driver import (
+    DeviceState,
+    Pos,
+    PWMParams,
+    ZHomingMode,
+    pwm_varset,
+)
 from ..kinematics import HeadSpec, Kinematics, build_assembly
 from ..models.axis import AxisConfig, AxisDirection, AxisSet, AxisType
 from ..transport import TransportStatus
 from .bed_mesh import BedMesh
+from .bidir_offset import interpolate_bidir_offset
 from .coordspace import MachineSpace
 from .dialect import GcodeDialect
 from .head import Head, head_from_dict
@@ -166,6 +173,8 @@ class Machine:
         # keeps the app usable before the user sets up a real machine.
         self.placeholder: bool = False
         self.single_axis_homing_enabled: bool = True
+        # None leaves the choice to the driver's default Z homing mode.
+        self.z_homing_mode: ZHomingMode | None = None
         self.dialect_uid: str | None = "grbl"
         self.dialect_migrated: bool = False
         self._hydrated_dialect: GcodeDialect | None = None
@@ -182,6 +191,9 @@ class Machine:
         self.max_travel_speed: int = 3000  # in mm/min
         self.max_cut_speed: int = 1000  # in mm/min
         self.acceleration: int = 1000  # in mm/s²
+        #: (speed mm/min, offset mm) rows, sorted by speed. Engrave
+        #: steps without their own bidirectional scan offset use it.
+        self.bidir_offset_table: list[tuple[float, float]] = []
         self.axes: AxisSet = AxisSet(
             [
                 AxisConfig(
@@ -766,6 +778,12 @@ class Machine:
         self.single_axis_homing_enabled = enabled
         self.changed.send(self)
 
+    def set_z_homing_mode(self, mode: ZHomingMode | None):
+        if self.z_homing_mode == mode:
+            return
+        self.z_homing_mode = mode
+        self.changed.send(self)
+
     def set_max_travel_speed(self, speed: int):
         if self.max_travel_speed == speed:
             return
@@ -783,6 +801,23 @@ class Machine:
             return
         self.acceleration = acceleration
         self.changed.send(self)
+
+    def set_bidir_offset_table(self, table) -> None:
+        """Set the speed-dependent bidirectional scan offset table.
+
+        Rows are ``(speed mm/min, offset mm)`` pairs; they are sorted
+        by speed, and of rows with the same speed the last one wins.
+        """
+        rows = {float(speed): float(offset) for speed, offset in table}
+        normalized = sorted(rows.items())
+        if normalized == self.bidir_offset_table:
+            return
+        self.bidir_offset_table = normalized
+        self.changed.send(self)
+
+    def bidir_offset_for_speed(self, speed: float) -> float:
+        """The bidirectional scan offset in mm for a speed in mm/min."""
+        return interpolate_bidir_offset(self.bidir_offset_table, speed)
 
     @property
     def axis_extents(self) -> tuple[float, float]:
@@ -1778,6 +1813,9 @@ class Machine:
                 "placeholder": self.placeholder,
                 "home_on_start": self.home_on_start,
                 "single_axis_homing_enabled": self.single_axis_homing_enabled,
+                "z_homing_mode": (
+                    self.z_homing_mode.value if self.z_homing_mode else None
+                ),
                 "dialect_uid": self.dialect_uid,
                 "active_wcs": self.active_wcs,
                 "coordinate_systems": [
@@ -1843,6 +1881,10 @@ class Machine:
                     "max_travel_speed": self.max_travel_speed,
                     "acceleration": self.acceleration,
                 },
+                "bidir_offset_table": [
+                    [speed, offset]
+                    for speed, offset in self.bidir_offset_table
+                ],
                 "gcode": {
                     "gcode_precision": self.gcode_precision,
                 },
@@ -1969,6 +2011,13 @@ class Machine:
             "single_axis_homing_enabled",
             ma.single_axis_homing_enabled,
         )
+        z_homing_mode = ma_data.pop("z_homing_mode", None)
+        try:
+            ma.z_homing_mode = (
+                ZHomingMode(z_homing_mode) if z_homing_mode else None
+            )
+        except ValueError:
+            logger.warning(f"Unknown Z homing mode '{z_homing_mode}'")
 
         dialect_uid = ma_data.pop("dialect_uid", None)
         legacy_dialect = ma_data.pop("dialect", None)
@@ -2141,6 +2190,10 @@ class Machine:
             "max_travel_speed", ma.max_travel_speed
         )
         ma.acceleration = speeds.get("acceleration", ma.acceleration)
+        ma.bidir_offset_table = sorted(
+            (float(speed), float(offset))
+            for speed, offset in ma_data.pop("bidir_offset_table", None) or []
+        )
         gcode = ma_data.pop("gcode", {})
         ma.gcode_precision = gcode.get("gcode_precision", ma.gcode_precision)
         ma.supports_arcs = ma_data.pop("supports_arcs", ma.supports_arcs)

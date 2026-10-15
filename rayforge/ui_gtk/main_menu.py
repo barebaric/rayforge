@@ -37,6 +37,10 @@ class MainMenu(Gio.Menu):
 
         import_export_group = Gio.Menu()
         import_export_group.append(_("Import..."), "win.import")
+        import_export_group.append(_("Reload from Disk"), "win.reload-source")
+        import_export_group.append(
+            _("Relink Source File..."), "win.relink-source"
+        )
         import_export_group.append(_("Export G-code..."), "win.export")
         import_export_group.append(
             _("Export Document..."), "win.export_document"
@@ -108,8 +112,15 @@ class MainMenu(Gio.Menu):
 
         other_group = Gio.Menu()
         other_group.append(_("Split"), "win.split")
+        other_group.append(_("Break Apart"), "win.break-apart")
         other_group.append(_("Export Object..."), "win.export-object")
         object_menu.append_section(None, other_group)
+
+        cleanup_group = Gio.Menu()
+        cleanup_group.append(_("Close Paths…"), "win.close-paths")
+        cleanup_group.append(_("Join Open Paths…"), "win.join-paths")
+        cleanup_group.append(_("Delete Duplicates"), "win.delete-duplicates")
+        object_menu.append_section(None, cleanup_group)
 
         # Addon section for Object menu
         self._addon_sections["object"] = Gio.Menu()

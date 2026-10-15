@@ -26,6 +26,7 @@ from typing import (
     TypeVar,
 )
 
+import cv2
 import numpy as np
 import pyvips
 from gi.repository import Adw, GdkX11, GLib, Gtk
@@ -1084,6 +1085,58 @@ def load_project(win: "MainWindow", project_name: str) -> None:
 
     run_on_main_thread(_load)
     logger.info(f"Loaded project: {project_name}")
+
+
+MOCK_IMAGE_PATH = (
+    PROJECT_ROOT / "website" / "static" / "images" / "work-surface.png"
+)
+
+# The region of the mock image that maps onto the machine bed. The
+# surrounding image content becomes the camera view outside the
+# workspace.
+MOCK_BED_REGION = (120, 60, 520, 420)
+
+
+def load_mock_image() -> "np.ndarray | None":
+    """Load the mock camera image as a BGR numpy array."""
+    img = cv2.imread(str(MOCK_IMAGE_PATH), cv2.IMREAD_COLOR)
+    if img is None:
+        logger.error("Failed to load mock image from %s", MOCK_IMAGE_PATH)
+        return None
+    logger.info("Loaded mock image: %s (%s)", MOCK_IMAGE_PATH, img.shape)
+    return img
+
+
+def inject_mock_image(controller) -> bool:
+    """Inject mock image data into the controller and trigger redraw."""
+    img = load_mock_image()
+    if img is None:
+        return False
+    controller._raw_image_data = img.copy()
+    controller._image_data = img.copy()
+    GLib.idle_add(controller.image_captured.send, controller)
+    # Prevent the real capture loop from starting (mock device can't open)
+    controller._running = True
+    time.sleep(0.25)
+    return True
+
+
+def align_mock_camera(camera, bed_width_mm: float, bed_height_mm: float):
+    """Align a mock camera so the mock image covers the whole bed.
+
+    Maps an inset region of the mock image onto the bed rectangle, so
+    the remaining image content shows up outside the workspace.
+    """
+    x0, y0, x1, y1 = MOCK_BED_REGION
+    camera.image_to_world = (
+        [(x0, y0), (x1, y0), (x1, y1), (x0, y1)],
+        [
+            (0, bed_height_mm),
+            (bed_width_mm, bed_height_mm),
+            (bed_width_mm, 0),
+            (0, 0),
+        ],
+    )
 
 
 def set_window_size(

@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 from raygeo.ops.transform.bidir_scan_offset import BidirScanOffsetSpec
 
+from rayforge.machine.models.bidir_offset import interpolate_bidir_offset
 from rayforge.pipeline.transformer.base import OpsTransformer
 
 if TYPE_CHECKING:
@@ -24,6 +25,11 @@ class BidirScanOffsetTransformer(OpsTransformer):
     endpoint are shifted along X by the configured offset. Left-to-right
     passes are left untouched. Running after overscan means any lead-in/
     lead-out already baked into the pass is shifted along with it.
+
+    An explicit ``offset_mm`` on the transformer wins when set; otherwise
+    the step's own ``bidir_x_offset_mm`` wins when it is non-zero, and
+    failing that the offset comes from the machine's speed table
+    (``bidir_offset_table``), looked up at the step's ``cut_speed``.
     """
 
     SPEC_NAME = "bidir_scan_offset"
@@ -48,8 +54,11 @@ class BidirScanOffsetTransformer(OpsTransformer):
         workpiece: WorkPiece | None,
         stock_geometries: list[Geometry] | None,
         machine=None,
+        settings: dict[str, Any] | None = None,
     ) -> BidirScanOffsetSpec:
-        return BidirScanOffsetSpec(offset_mm=self.offset_mm)
+        if self.offset_mm:
+            return BidirScanOffsetSpec(offset_mm=self.offset_mm)
+        return BidirScanOffsetSpec(offset_mm=_resolve_offset(settings))
 
     def to_dict(self) -> dict[str, Any]:
         return {**super().to_dict(), "offset_mm": self.offset_mm}
@@ -60,3 +69,18 @@ class BidirScanOffsetTransformer(OpsTransformer):
             enabled=data.get("enabled", True),
             offset_mm=data.get("offset_mm", 0.0),
         )
+
+
+def _resolve_offset(settings: dict[str, Any] | None) -> float:
+    """Per-step offset, else the machine table at the step's speed."""
+    if not settings:
+        return 0.0
+    offset = settings.get("bidir_x_offset_mm") or 0.0
+    if offset:
+        return offset
+    speed = settings.get("cut_speed")
+    table = settings.get("bidir_offset_table")
+    if speed is None or not table:
+        return 0.0
+    rows = sorted((float(s), float(o)) for s, o in table)
+    return interpolate_bidir_offset(rows, float(speed))

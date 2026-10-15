@@ -54,6 +54,7 @@ class MeshCorrectionTransformer(OpsTransformer):
         workpiece: WorkPiece | None,
         stock_geometries: list[Geometry] | None,
         machine=None,
+        settings=None,
     ) -> MeshCorrectionSpec:
         mesh = machine.bed_mesh if machine is not None else None
         if mesh is None:

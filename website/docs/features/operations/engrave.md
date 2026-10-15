@@ -182,12 +182,11 @@ described below.
 | 10% | 60% | Medium depth, safe    |
 | 20% | 80% | Deep, dramatic relief |
 
-**Invert:**
+**Inverting the image:**
 
-- **Off** (default): White = shallow, Black = deep
-- **On**: White = deep, Black = shallow
-
-Use invert for lithophanes (light areas should be thin) or embossing (raised areas).
+Black engraves deep and white stays shallow. To swap them, for lithophanes (light areas should be
+thin) or embossing (raised areas), select the workpiece and use **Tools - Invert Image**. See
+[Image Editing](../../addons/image-editing.md).
 
 **Brightness Range:**
 
@@ -229,18 +228,34 @@ This is particularly useful for:
 
 Choose the algorithm that best suits your image and material:
 
-| Algorithm       | Quality | Speed   | Best For                            |
-| --------------- | ------- | ------- | ----------------------------------- |
-| Floyd-Steinberg | Highest | Slowest | Photos, portraits, smooth gradients |
-| Bayer 2x2       | Low     | Fastest | Coarse halftone effect              |
-| Bayer 4x4       | Medium  | Fast    | Balanced halftone                   |
-| Bayer 8x8       | High    | Medium  | Fine detail, subtle patterns        |
+| Algorithm                   | Quality | Speed   | Best For                              |
+| --------------------------- | ------- | ------- | ------------------------------------- |
+| Floyd-Steinberg             | Highest | Slowest | Photos, portraits, smooth gradients   |
+| Bayer 2x2                   | Low     | Fastest | Coarse halftone effect                |
+| Bayer 4x4                   | Medium  | Fast    | Balanced halftone                     |
+| Bayer 8x8                   | High    | Medium  | Fine detail, subtle patterns          |
+| Atkinson                    | Medium  | Medium  | High-contrast images, wood            |
+| Stucki                      | Highest | Slow    | Portraits, smooth skin tones          |
+| Jarvis, Judice & Ninke      | Highest | Slow    | Soft gradients, fine grain            |
+| Sierra (3-row, 2-row, Lite) | High    | Medium  | Lighter alternatives to Stucki        |
+| Burkes                      | High    | Medium  | Photos, faster than Stucki            |
+| Newsprint                   | Medium  | Fastest | Clustered newspaper-style dots        |
+| Halftone                    | Medium  | Fast    | Round dots, adjustable size and angle |
 
 **Floyd-Steinberg** is default and recommended for most photo engravings. It uses error diffusion to
 distribute quantization errors to neighboring pixels, creating natural-looking results.
 
 **Bayer dithering** creates regular patterns that can produce artistic effects resembling
 traditional halftone printing.
+
+**Stucki, Jarvis, Sierra, Burkes and Atkinson** are error-diffusion algorithms like Floyd-Steinberg
+that spread the error over a wider neighborhood, which gives a smoother grain in flat areas such as
+skin tones. Atkinson diffuses only part of the error, which raises contrast. Turn on **Serpentine**
+to alternate the scan direction on every row and avoid directional streaks.
+
+**Newsprint** and **Halftone** group pixels into dots. Halftone draws round dots on a grid set by
+**Halftone Cell Size** (the distance between dot centers) and **Halftone Angle**; use a cell size of
+at least a few laser spot widths.
 
 #### Multiple Depths Mode Settings
 
@@ -264,12 +279,11 @@ traditional halftone printing.
 - Creates crosshatch-like 3D effect
 - Typical: 0-45 degrees
 
-**Invert:**
+**Inverting the image:**
 
-- **Enabled:** White = deep, Black = shallow
-- **Disabled:** Black = deep, White = shallow
-
-Use invert for lithophanes (light areas should be thin) or embossing (raised areas).
+Black engraves deep and white stays shallow. To swap them, for lithophanes (light areas should be
+thin) or embossing (raised areas), select the workpiece and use **Tools - Invert Image**. See
+[Image Editing](../../addons/image-editing.md).
 
 ### Scan Pattern
 
@@ -293,7 +307,8 @@ Use invert for lithophanes (light areas should be thin) or embossing (raised are
 <!-- prettier-ignore-start -->
 :::tip[Resolution Match]
 For images, line interval should match or exceed image resolution. If your image is 10 pixels/mm
-(254 DPI), use 0.1mm line interval or smaller.:::
+(254 DPI), use 0.1mm line interval or smaller.
+:::
 <!-- prettier-ignore-end -->
 
 #### Scan Direction
@@ -327,8 +342,9 @@ passes, which otherwise misaligns alternate scan rows (visible as banding, espec
 engraves).
 
 - Set in millimeters, positive or negative depending on which direction needs to shift
-- Applies a constant shift regardless of speed; if the skew varies with speed, calibrate for your
-  typical engraving speed
+- A non-zero value here always wins; when it is 0, the step falls back to the machine's
+  [Bidirectional Scan Offset by Speed](../../machine/advanced.md#bidirectional-scan-offset-by-speed)
+  table, which interpolates an offset for this step's speed
 - Defaults to 0 (no correction)
 
 **Calibrating the offset:**
@@ -337,6 +353,10 @@ engraves).
    scanning
 2. Compare alternate rows to find the direction and amount of misalignment
 3. Adjust the offset in small increments (0.01-0.05mm) and re-test until alternating rows line up
+
+If the misalignment changes noticeably across your usual engraving speeds, a single offset cannot
+fix every job. Leave the step offset at 0 and enter a speed-dependent offset table in
+[Machine Settings - Advanced](../../machine/advanced.md#bidirectional-scan-offset-by-speed) instead.
 
 ## Laser settings
 

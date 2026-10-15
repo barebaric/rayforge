@@ -642,9 +642,13 @@ class ImportDialog(PatchedDialogWindow):
             or not self._preview_result.payload.items
         )
         can_trace = ImporterFeature.BITMAP_TRACING in self.features
+        unreadable = bool(self._manifest and self._manifest.errors)
         # Only show warning if switching to trace mode is possible
         self.warning_banner.set_revealed(
-            is_direct_vector and failed_generation and can_trace
+            is_direct_vector
+            and failed_generation
+            and can_trace
+            and not unreadable
         )
 
     def _draw_checkerboard_background(

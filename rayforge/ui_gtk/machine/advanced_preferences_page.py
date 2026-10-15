@@ -1,10 +1,13 @@
 import logging
 from gettext import gettext as _
 
-from gi.repository import Adw
+from gi.repository import Adw, Gtk
 
+from ...machine.driver import get_driver_cls
+from ...machine.driver.driver import Z_HOMING_MODE_LABELS
 from ..shared.pref_rows.length_spin_row import LengthSpinRow
 from ..shared.preferences_page import TrackedPreferencesPage
+from .bidir_offset_table import BidirOffsetTableGroup
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +71,9 @@ class AdvancedPreferencesPage(TrackedPreferencesPage):
         )
         path_group.add(self.arc_tolerance_row)
 
+        self.bidir_offset_group = BidirOffsetTableGroup(self.machine)
+        self.add(self.bidir_offset_group)
+
         homing_group = Adw.PreferencesGroup(title=_("Homing and Startup"))
         homing_group.set_description(
             _(
@@ -99,6 +105,21 @@ class AdvancedPreferencesPage(TrackedPreferencesPage):
         )
         homing_group.add(single_axis_homing_row)
 
+        self.z_homing_row = Adw.ComboRow(
+            title=_("Z Homing"),
+            subtitle=_(
+                "How the Z axis finds its reference: a home switch, "
+                "or the auto-focus probe"
+            ),
+        )
+        self._z_homing_modes = ()
+        self._z_homing_driver_name = None
+        self._z_homing_handler = self.z_homing_row.connect(
+            "notify::selected", self.on_z_homing_mode_changed
+        )
+        self._update_z_homing_row()
+        homing_group.add(self.z_homing_row)
+
         clear_alarm_row = Adw.SwitchRow()
         clear_alarm_row.set_title(_("Clear Alarm On Connect"))
         clear_alarm_row.set_subtitle(
@@ -112,6 +133,9 @@ class AdvancedPreferencesPage(TrackedPreferencesPage):
             "notify::active", self.on_clear_alarm_on_connect_changed
         )
         homing_group.add(clear_alarm_row)
+
+        self.machine.changed.connect(self._on_machine_changed)
+        self.connect("destroy", self._on_destroy)
 
     def on_arcs_changed(self, switch_row, _param):
         """Update the machine's arcs support when the value changes."""
@@ -133,3 +157,34 @@ class AdvancedPreferencesPage(TrackedPreferencesPage):
 
     def on_clear_alarm_on_connect_changed(self, row, _):
         self.machine.set_clear_alarm_on_connect(row.get_active())
+
+    def on_z_homing_mode_changed(self, row, _):
+        index = row.get_selected()
+        if 0 <= index < len(self._z_homing_modes):
+            self.machine.set_z_homing_mode(self._z_homing_modes[index])
+
+    def _on_machine_changed(self, machine):
+        if machine.driver_name != self._z_homing_driver_name:
+            self._update_z_homing_row()
+
+    def _update_z_homing_row(self):
+        """
+        Lists the driver's Z homing modes, and only shows the row when
+        there is a choice to make.
+        """
+        self._z_homing_driver_name = self.machine.driver_name
+        driver_cls = get_driver_cls(self.machine.driver_name or "")
+        self._z_homing_modes = driver_cls.z_homing_modes
+        store = Gtk.StringList()
+        for mode in self._z_homing_modes:
+            store.append(Z_HOMING_MODE_LABELS[mode])
+        mode = driver_cls.resolve_z_homing_mode(self.machine.z_homing_mode)
+        self.z_homing_row.handler_block(self._z_homing_handler)
+        self.z_homing_row.set_model(store)
+        self.z_homing_row.set_selected(self._z_homing_modes.index(mode))
+        self.z_homing_row.handler_unblock(self._z_homing_handler)
+        self.z_homing_row.set_visible(len(self._z_homing_modes) > 1)
+
+    def _on_destroy(self, *args):
+        """Disconnects signals to prevent memory leaks."""
+        self.machine.changed.disconnect(self._on_machine_changed)

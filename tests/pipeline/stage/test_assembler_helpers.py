@@ -286,27 +286,78 @@ class TestPreprocessRasterImage:
         assert np.sum(image_auto_levels) == 5000
         assert np.sum(image_auto_levels) != np.sum(image_no_levels)
 
-    def test_dither_invert_engraves_light_areas_only(self):
-        """Inverted dithering engraves light content but keeps the
-        transparent background clear."""
-        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
+    def _gradient_surface(self, width=120, height=60):
+        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
         ctx = cairo.Context(surface)
-        ctx.set_source_rgba(1, 1, 1, 1)
-        ctx.rectangle(0, 0, 5, 10)
-        ctx.fill()
-        image, _ = preprocess_raster_image(
-            surface,
-            mode=DepthMode.DITHER,
-            invert=True,
-            auto_levels=False,
-            dither_algorithm=DitherAlgorithm.BAYER2,
-            laser_spot_x_mm=0.1,
-            pixels_per_mm_x=10.0,
+        gradient = cairo.LinearGradient(0, 0, width, 0)
+        gradient.add_color_stop_rgb(0, 0, 0, 0)
+        gradient.add_color_stop_rgb(1, 1, 1, 1)
+        ctx.set_source(gradient)
+        ctx.paint()
+        return surface
+
+    def test_dither_forwards_serpentine(self):
+        surface = self._gradient_surface()
+        kwargs = {
+            "mode": DepthMode.DITHER,
+            "auto_levels": False,
+            "dither_algorithm": DitherAlgorithm.STUCKI,
+            "laser_spot_x_mm": 0.1,
+            "pixels_per_mm_x": 10.0,
+        }
+        plain, _ = preprocess_raster_image(surface, **kwargs)
+        serpentine, _ = preprocess_raster_image(
+            surface, dither_serpentine=True, **kwargs
         )
 
-        assert image is not None
-        assert np.all(image[:, :5] == 1)
-        assert np.all(image[:, 5:] == 0)
+        assert plain is not None and serpentine is not None
+        assert not np.array_equal(plain, serpentine)
+
+    def test_dither_forwards_halftone_settings(self):
+        surface = self._gradient_surface()
+        kwargs = {
+            "mode": DepthMode.DITHER,
+            "auto_levels": False,
+            "dither_algorithm": DitherAlgorithm.HALFTONE,
+            "laser_spot_x_mm": 0.1,
+            "pixels_per_mm_x": 10.0,
+            "pixels_per_mm_y": 10.0,
+        }
+        base, _ = preprocess_raster_image(
+            surface, halftone_cell_mm=1.0, halftone_angle=0.0, **kwargs
+        )
+        coarse, _ = preprocess_raster_image(
+            surface, halftone_cell_mm=2.0, halftone_angle=0.0, **kwargs
+        )
+        rotated, _ = preprocess_raster_image(
+            surface, halftone_cell_mm=1.0, halftone_angle=30.0, **kwargs
+        )
+
+        assert base is not None and coarse is not None
+        assert rotated is not None
+        assert not np.array_equal(base, coarse)
+        assert not np.array_equal(base, rotated)
+
+    def test_dither_halftone_uses_y_resolution(self):
+        surface = self._gradient_surface()
+        kwargs = {
+            "mode": DepthMode.DITHER,
+            "auto_levels": False,
+            "dither_algorithm": DitherAlgorithm.HALFTONE,
+            "laser_spot_x_mm": 0.1,
+            "pixels_per_mm_x": 10.0,
+            "halftone_cell_mm": 1.0,
+            "halftone_angle": 0.0,
+        }
+        square, _ = preprocess_raster_image(
+            surface, pixels_per_mm_y=10.0, **kwargs
+        )
+        squashed, _ = preprocess_raster_image(
+            surface, pixels_per_mm_y=5.0, **kwargs
+        )
+
+        assert square is not None and squashed is not None
+        assert not np.array_equal(square, squashed)
 
     def test_mask_scan_returns_binary_no_alpha(self):
         surface = self._black_surface()
@@ -317,25 +368,6 @@ class TestPreprocessRasterImage:
         assert image is not None
         assert alpha is None
         assert set(np.unique(image)).issubset({0, 1})
-
-    def test_invert_flips_grayscale(self):
-        surface = self._black_surface()
-        image_normal, _ = preprocess_raster_image(
-            surface,
-            mode=DepthMode.POWER_MODULATION,
-            invert=False,
-            auto_levels=False,
-        )
-        image_inverted, _ = preprocess_raster_image(
-            surface,
-            mode=DepthMode.POWER_MODULATION,
-            invert=True,
-            auto_levels=False,
-        )
-
-        assert image_normal is not None
-        assert image_inverted is not None
-        assert np.mean(image_inverted) > np.mean(image_normal)
 
     def test_auto_levels_normalizes_grayscale(self):
         surface = self._gray_surface()
@@ -420,27 +452,6 @@ class TestComputeRasterAutoLevels:
 
         result = compute_raster_auto_levels(mock_wp, (10.0, 10.0))
         assert result is None
-
-    def test_invert_affects_levels(self):
-        surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 10, 10)
-        ctx = cairo.Context(surface)
-        ctx.set_source_rgb(0.2, 0.2, 0.2)
-        ctx.paint()
-
-        mock_wp = MagicMock()
-        mock_wp.size = (10.0, 10.0)
-        mock_wp.render_to_pixels.return_value = surface
-
-        result_normal = compute_raster_auto_levels(
-            mock_wp, (10.0, 10.0), invert=False
-        )
-        result_inverted = compute_raster_auto_levels(
-            mock_wp, (10.0, 10.0), invert=True
-        )
-
-        assert result_normal is not None
-        assert result_inverted is not None
-        assert result_normal != result_inverted
 
     def test_preview_size_limited_by_max_preview_pixels(self):
         surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 100, 100)

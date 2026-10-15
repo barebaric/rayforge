@@ -116,8 +116,8 @@ def test_pan_in_grazing_view_falls_back_to_pixel_pan(
     assert cam is not None
     before = cam.position.copy()
 
-    ctrl.on_drag_begin(_FakeGesture(shift=True), 320.0, 240.0)
-    ctrl.on_drag_update(_FakeGesture(shift=True), 10.0, 5.0)
+    ctrl.on_pan_begin(_FakeGesture(shift=True), 320.0, 240.0)
+    ctrl.on_pan_update(_FakeGesture(shift=True), 10.0, 5.0)
 
     shift = np.linalg.norm(cam.position - before)
     # The far-plane anchoring is disabled, so a 10px drag must stay small
@@ -347,8 +347,8 @@ def test_drag_update_pans_with_shift(ui_context_initializer):
     cam = ctrl.camera
     assert cam is not None
     before = cam.position.copy()
-    ctrl.on_drag_begin(_FakeGesture(shift=True), 0.0, 0.0)
-    ctrl.on_drag_update(_FakeGesture(shift=True), 10.0, 5.0)
+    ctrl.on_pan_begin(_FakeGesture(shift=True), 0.0, 0.0)
+    ctrl.on_pan_update(_FakeGesture(shift=True), 10.0, 5.0)
     assert not np.array_equal(cam.position, before)
 
 
@@ -364,10 +364,10 @@ def test_pan_tracks_cursor_point_1_to_1(ui_context_initializer):
     grabbed = ctrl.get_world_coords_on_plane(*start)
     assert grabbed is not None
 
-    ctrl.on_drag_begin(_FakeGesture(shift=True), *start)
+    ctrl.on_pan_begin(_FakeGesture(shift=True), *start)
 
     end = (450.0, 260.0)
-    ctrl.on_drag_update(
+    ctrl.on_pan_update(
         _FakeGesture(shift=True), end[0] - start[0], end[1] - start[1]
     )
 
@@ -411,7 +411,7 @@ class _FakeEvent:
 def test_drag_begin_sets_orbit_state(ui_context_initializer):
     ctrl = _make_ctrl()
     ctrl.create_camera(640, 480)
-    ctrl.on_drag_begin(_FakeGesture(shift=False), 100.0, 100.0)
+    ctrl.on_orbit_begin(_FakeGesture(shift=False), 100.0, 100.0)
     assert ctrl._is_orbiting is True
     assert ctrl._rotation_pivot is not None
 
@@ -428,7 +428,7 @@ def test_drag_begin_orbits_around_plane_point(ui_context_initializer):
     assert expected is not None
     assert not np.allclose(expected, cam.target, atol=1e-3)
 
-    ctrl.on_drag_begin(_FakeGesture(shift=False), *cursor)
+    ctrl.on_orbit_begin(_FakeGesture(shift=False), *cursor)
     assert ctrl._rotation_pivot is not None
     assert np.allclose(ctrl._rotation_pivot, expected, atol=1e-6)
 
@@ -447,7 +447,7 @@ def test_drag_begin_orbits_around_plane_point_perspective(
     expected = ctrl.get_world_coords_on_plane(*cursor)
     assert expected is not None
 
-    ctrl.on_drag_begin(_FakeGesture(shift=False), *cursor)
+    ctrl.on_orbit_begin(_FakeGesture(shift=False), *cursor)
     assert ctrl._rotation_pivot is not None
     assert np.allclose(ctrl._rotation_pivot, expected, atol=1e-6)
 
@@ -496,7 +496,7 @@ def test_drag_begin_orbits_around_object_point(ui_context_initializer):
     assert plane_point is not None
     assert plane_point[2] == pytest.approx(0.0, abs=1e-6)
 
-    ctrl.on_drag_begin(_FakeGesture(shift=False), *cursor)
+    ctrl.on_orbit_begin(_FakeGesture(shift=False), *cursor)
     pivot = ctrl._rotation_pivot
     assert pivot is not None
     assert pivot[0] == pytest.approx(plane_point[0], abs=1e-5)
@@ -516,7 +516,7 @@ def test_drag_begin_orbits_around_object_point_perspective(
     cam.is_perspective = True
 
     cursor = (320.0, 240.0)
-    ctrl.on_drag_begin(_FakeGesture(shift=False), *cursor)
+    ctrl.on_orbit_begin(_FakeGesture(shift=False), *cursor)
     pivot = ctrl._rotation_pivot
     assert pivot is not None
     assert pivot[0] == pytest.approx(50.0, abs=1e-5)
@@ -538,7 +538,7 @@ def test_drag_begin_falls_back_to_plane_without_pick_scene(
     expected = ctrl.get_world_coords_on_plane(*cursor)
     assert expected is not None
 
-    ctrl.on_drag_begin(_FakeGesture(shift=False), *cursor)
+    ctrl.on_orbit_begin(_FakeGesture(shift=False), *cursor)
     assert ctrl._rotation_pivot is not None
     assert np.allclose(ctrl._rotation_pivot, expected, atol=1e-6)
 
@@ -562,16 +562,16 @@ def test_ortho_orbit_keeps_pivot_fixed_on_screen(ui_context_initializer):
     pivot = ctrl.get_world_coords_on_plane(*cursor)
     assert pivot is not None
 
-    ctrl.on_drag_begin(_FakeGesture(shift=False), *cursor)
-    ctrl.on_drag_update(_FakeGesture(event=_FakeEvent(cursor)), 0.0, 0.0)
+    ctrl.on_orbit_begin(_FakeGesture(shift=False), *cursor)
+    ctrl.on_orbit_update(_FakeGesture(event=_FakeEvent(cursor)), 0.0, 0.0)
     before = _screen_pos(cam, pivot)
 
-    ctrl.on_drag_update(
+    ctrl.on_orbit_update(
         _FakeGesture(event=_FakeEvent((420.0, 200.0))), 0.0, 0.0
     )
     after_yaw = _screen_pos(cam, pivot)
 
-    ctrl.on_drag_update(
+    ctrl.on_orbit_update(
         _FakeGesture(event=_FakeEvent((420.0, 180.0))), 0.0, 0.0
     )
     after_pitch = _screen_pos(cam, pivot)
@@ -591,13 +591,13 @@ def test_perspective_yaw_orbits_around_world_z(ui_context_initializer):
     cam.is_perspective = True
 
     cursor = (400.0, 200.0)
-    ctrl.on_drag_begin(_FakeGesture(shift=False), *cursor)
+    ctrl.on_orbit_begin(_FakeGesture(shift=False), *cursor)
     z_before = cam.position[2]
 
     # A pure horizontal drag must yaw around the world Z axis, keeping
     # the camera's height above the pivot constant.
-    ctrl.on_drag_update(_FakeGesture(event=_FakeEvent(cursor)), 0.0, 0.0)
-    ctrl.on_drag_update(
+    ctrl.on_orbit_update(_FakeGesture(event=_FakeEvent(cursor)), 0.0, 0.0)
+    ctrl.on_orbit_update(
         _FakeGesture(event=_FakeEvent((420.0, 200.0))), 0.0, 0.0
     )
 
@@ -616,11 +616,11 @@ def test_perspective_orbit_keeps_pivot_fixed_on_screen(ui_context_initializer):
     pivot = ctrl.get_world_coords_on_plane(*cursor)
     assert pivot is not None
 
-    ctrl.on_drag_begin(_FakeGesture(shift=False), *cursor)
-    ctrl.on_drag_update(_FakeGesture(event=_FakeEvent(cursor)), 0.0, 0.0)
+    ctrl.on_orbit_begin(_FakeGesture(shift=False), *cursor)
+    ctrl.on_orbit_update(_FakeGesture(event=_FakeEvent(cursor)), 0.0, 0.0)
     before = _screen_pos(cam, pivot)
 
-    ctrl.on_drag_update(
+    ctrl.on_orbit_update(
         _FakeGesture(event=_FakeEvent((420.0, 200.0))), 0.0, 0.0
     )
 
@@ -750,7 +750,7 @@ def test_orbit_fallback_pivot_is_clamped_to_grid(ui_context_initializer):
     picked = ctrl._pick_pivot(320.0, 430.0)
     assert picked is None
 
-    ctrl.on_drag_begin(_FakeGesture(shift=False), 320.0, 430.0)
+    ctrl.on_orbit_begin(_FakeGesture(shift=False), 320.0, 430.0)
     pivot = ctrl._rotation_pivot
     assert pivot is not None
     # The fallback must lie on the grid plane and inside the grid bounds.

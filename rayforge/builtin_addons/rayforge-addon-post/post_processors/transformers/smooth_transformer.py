@@ -87,6 +87,7 @@ class Smooth(OpsTransformer):
         workpiece: WorkPiece | None,
         stock_geometries: list["Geometry"] | None,
         machine=None,
+        settings=None,
     ) -> SmoothSpec:
         return SmoothSpec(
             amount=self.amount,

@@ -30,12 +30,14 @@ from raygeo.ops.axis import Axis
 from raygeo.ops.convert import Encoder, GcodeSpec, PythonEncoder
 from raygeo.ops.material.spec import CylinderStock, MaterialFoldSpec
 from raygeo.ops.part import Part
+from raygeo.ops.transform.bidir_scan_offset import BidirScanOffsetSpec
 from raygeo.pipeline.execute import execute_stages
 from raygeo.pipeline.request import NodeRequest
 from raygeo.pipeline.stage import StageSpec
 
 import rayforge.machine.driver as driver_module
 from rayforge.core.doc import Doc
+from rayforge.core.image_edit import ImageEditStep
 from rayforge.core.layer import Layer
 from rayforge.core.step import Step
 from rayforge.core.stock import StockItem
@@ -111,13 +113,13 @@ def test_builds_one_node_per_workpiece_plus_step_and_job(isolated_machine):
     assert len(keys) == 6
 
 
-def test_step_with_generated_workpiece_only_applies_to_that_workpiece(
+def test_step_with_workpiece_filter_only_applies_to_listed_workpieces(
     isolated_machine,
 ):
-    """A step that generated a workpiece (e.g. material test) must not
-    be applied to the other workpieces in its layer."""
+    """A step with a workpiece filter (e.g. material test) must not be
+    applied to the other workpieces in its layer."""
     step = _TestStep(name="s1")
-    step.generated_workpiece_uid = "wp-gen"
+    step.workpiece_uids = ["wp-gen"]
     wp_gen = WorkPiece(name="wp-gen")
     wp_gen.uid = "wp-gen"
     wp_other = WorkPiece(name="wp-other")
@@ -129,13 +131,13 @@ def test_step_with_generated_workpiece_only_applies_to_that_workpiece(
     assert workpiece_key("wp-other", step.uid) not in keys
 
 
-def test_step_with_missing_generated_workpiece_emits_no_nodes(
+def test_step_with_missing_filtered_workpiece_emits_no_nodes(
     isolated_machine,
 ):
-    """When a step's generated workpiece is not in the layer, the step
+    """When a step's filter matches no workpiece in the layer, the step
     emits no workpiece or step aggregate nodes."""
     step = _TestStep(name="s1")
-    step.generated_workpiece_uid = "wp-gone"
+    step.workpiece_uids = ["wp-gone"]
     doc = _make_doc(step, WorkPiece(name="wp-other"))
 
     nodes = IntentBuilder(machine=isolated_machine).build(doc)
@@ -1293,6 +1295,75 @@ def test_disabled_per_workpiece_transformer_not_wired(
     assert payload.transformers == []
 
 
+def _bidir_offset_spec(machine, step) -> BidirScanOffsetSpec:
+    wp = WorkPiece(name="wp")
+    wp.set_size(10.0, 10.0)
+    doc = _make_doc(step, wp)
+    nodes = IntentBuilder(machine=machine).build(doc)
+    wpk = workpiece_key(wp.uid, step.uid)
+    wp_node = next(n for n in nodes if n.key == wpk)
+    specs = [
+        t
+        for t in wp_node.stage.params.transformers
+        if isinstance(t, BidirScanOffsetSpec)
+    ]
+    assert len(specs) == 1
+    return specs[0]
+
+
+def test_engrave_step_bidir_offset_reaches_transformer(
+    engrave_step_class, test_machine_and_config
+):
+    """The per-step bidirectional scan offset must arrive in the
+    BidirScanOffset spec of the workpiece compute node."""
+    machine, context = test_machine_and_config
+    step = engrave_step_class.create(context, name="engrave")
+    step.bidir_x_offset_mm = 0.3
+
+    assert _bidir_offset_spec(machine, step).offset_mm == pytest.approx(0.3)
+
+
+def test_engrave_step_falls_back_to_machine_offset_table(
+    engrave_step_class, test_machine_and_config
+):
+    """Without a per-step offset the machine's speed table decides,
+    interpolated at the step's engrave speed."""
+    machine, context = test_machine_and_config
+    machine.set_bidir_offset_table([(1000, 0.1), (3000, 0.3)])
+    step = engrave_step_class.create(context, name="engrave")
+    step.bidir_x_offset_mm = 0.0
+    step.cut_speed = 2000
+
+    assert _bidir_offset_spec(machine, step).offset_mm == pytest.approx(0.2)
+
+
+def test_bidir_offset_changes_invalidate_the_compute_node(
+    engrave_step_class, test_machine_and_config
+):
+    """The offset is applied inside the compute stage, so changing it
+    on the step or in the machine table must change the node token."""
+    machine, context = test_machine_and_config
+    step = engrave_step_class.create(context, name="engrave")
+    step.cut_speed = 2000
+    wp = WorkPiece(name="wp")
+    wp.set_size(10.0, 10.0)
+    doc = _make_doc(step, wp)
+    wpk = workpiece_key(wp.uid, step.uid)
+
+    def token():
+        nodes = IntentBuilder(machine=machine).build(doc)
+        return next(n for n in nodes if n.key == wpk).version_token
+
+    base = token()
+    step.bidir_x_offset_mm = 0.2
+    with_step_offset = token()
+    step.bidir_x_offset_mm = 0.0
+    machine.set_bidir_offset_table([(1000, 0.1), (3000, 0.3)])
+    with_table = token()
+
+    assert len({base, with_step_offset, with_table}) == 3
+
+
 # ----------------------------------------------------------------------
 # Workpiece-move cache invalidation (regression: 3D canvas stale)
 # ----------------------------------------------------------------------
@@ -1385,7 +1456,6 @@ def test_raster_step_is_position_sensitive(engrave_step_class):
 @pytest.mark.parametrize(
     "attr,value",
     [
-        ("invert", True),
         ("auto_levels", False),
         ("black_point", 80),
         ("white_point", 200),
@@ -1402,7 +1472,7 @@ def test_raster_compute_token_changes_on_image_preprocess_params(
     """Changing any raster image-preprocessing setting must invalidate
     the workpiece compute cache.
 
-    The levels (black/white points), inversion, threshold and dither
+    The levels (black/white points), threshold and dither
     are baked into the preprocessed image the assembler consumes, so a
     token that omits them would replay the exact same ops regardless of
     the brightness settings.
@@ -1421,6 +1491,28 @@ def test_raster_compute_token_changes_on_image_preprocess_params(
         step.set_dither_algorithm(value)
     else:
         setattr(step, attr, value)
+    after = IntentBuilder(machine=machine).build(doc)
+    after_t = next(n.version_token for n in after if n.key == wpk)
+    assert before_t != after_t
+
+
+def test_compute_token_changes_on_workpiece_image_edits(
+    engrave_step_class, test_machine_and_config
+):
+    """Image edits live on the workpiece and are baked into the image
+    every raster step consumes, so changing them must invalidate the
+    workpiece compute cache."""
+    machine, context = test_machine_and_config
+    step = engrave_step_class.create(context, name="engrave")
+    wp = WorkPiece(name="wp")
+    wp.set_size(20.0, 20.0)
+    doc = _make_doc(step, wp)
+
+    before = IntentBuilder(machine=machine).build(doc)
+    wpk = workpiece_key(wp.uid, step.uid)
+    before_t = next(n.version_token for n in before if n.key == wpk)
+
+    wp.image_edits = [ImageEditStep("invert")]
     after = IntentBuilder(machine=machine).build(doc)
     after_t = next(n.version_token for n in after if n.key == wpk)
     assert before_t != after_t

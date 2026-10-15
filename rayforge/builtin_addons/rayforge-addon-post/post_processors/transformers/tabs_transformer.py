@@ -118,6 +118,7 @@ class TabOpsTransformer(OpsTransformer):
         workpiece: WorkPiece | None,
         stock_geometries: list[Geometry] | None,
         machine=None,
+        settings=None,
     ) -> TabsSpec:
         tab_power = self.tab_power
         original_power = self.original_power

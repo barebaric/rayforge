@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Import: HPGL plot files (`.plt`, `.hpgl`) from cutting plotters and
+  CAD programs, with one selectable layer per pen. Pen moves, circles,
+  arcs and rectangles are supported; labels and other skipped
+  instructions are listed in the import dialog (#517)
+- Import: Adobe Illustrator (`.ai`) and EPS/PostScript files. AI files
+  saved with PDF compatibility (the default since Illustrator 9) import
+  like PDFs; EPS, PostScript and older AI files are converted to PDF
+  with Ghostscript, an optional dependency, with a clear message when
+  it is missing. Text becomes outlines and the EPS bounding box sets
+  the page size (#517)
+- Import: GIF, TIFF and WebP bitmaps, traced like PNG. Animated GIFs
+  and multi-page TIFFs import their first frame or page (#517)
+- Import: compressed SVG (`.svgz`, Inkscape's "Compressed SVG"), with
+  the same options as plain SVG. The file type is registered with the
+  desktop, AppStream and the Windows installer (#546)
+- Engrave: more dithering algorithms for photos. The error-diffusion
+  kernels Atkinson, Stucki, Jarvis-Judice-Ninke, Sierra (3-row,
+  2-row, Lite) and Burkes, with an optional serpentine scan, plus a
+  clustered-dot Newsprint screen and a round-dot Halftone screen with
+  adjustable cell size and angle. LightBurn imports keep the image
+  layer's dither mode (#514)
+- Path clean-up tools in the Object menu and canvas context menu:
+  Close Paths and Join Open Paths with a tolerance in mm, Delete
+  Duplicates (duplicate contours inside a workpiece and stacked copies
+  of whole workpieces), and Break Apart (one workpiece per contour,
+  holes and open paths included). Each is a single undo step (#516)
 - Sketcher: boolean operations. Union, Difference, Intersection and
   Exclude bake the selected closed regions into multi-ring polygons
   (outer contours counter-clockwise, hole contours clockwise), so
@@ -28,8 +54,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   back to the network
 - Linux: official AppImage builds are attached to GitHub releases
 - Windows: Publish Rayforge through WinGet ("winget install rayforge")
+- Image Editing addon: non-destructive image edits stored per
+  workpiece and applied wherever its image is used (canvas, 3D preview,
+  operations). The first edit is Tools > Invert Image (#515)
+- Image Editing: Tools > Adjust Image... corrects the brightness,
+  contrast and gamma of the selected images and sharpens them with an
+  unsharp mask whose radius is in mm. The canvas shows the result while
+  editing, and Apply is a single undo step (#515)
+- Addons: the `register_image_edits` hook and image edit registry
+  (plugin API 23) let addons provide their own image edits
+- Step settings: a new Workpieces tab shows which workpieces a step
+  processes on its layer. A step normally processes every workpiece of
+  its layer; generated content like the Material Test Grid restricts
+  its step to the workpiece it creates, and that selection is now
+  visible instead of hidden
 
 ### Changed
+
+- Engrave: Invert moved from the operation to the workpiece, as the
+  Invert Image edit. Older projects are converted when they are opened,
+  so their output stays the same (#515)
 
 - Machines: the GRBL Serial driver now runs its entire protocol stack
   (handshake, character-counting flow control, streaming, stall
@@ -39,10 +83,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   existing machine configurations continue to work unchanged.
   Machines saved while the driver carried its experimental name keep
   working through a compatibility alias
+- Addon API 22: actions registered via the `register_actions` hook
+  accept an `enabled_when` predicate for their enabled state, and the
+  hook is invoked again when an addon is enabled while the window
+  exists, so addons no longer need `action_extension_registry` for
+  either
 - Updated translations
 
 ### Fixed
 
+- Addon API: disabling an addon did not reliably remove its
+  `action_extension_registry` handlers when several addons registered
+  same-named handlers, which could leave stale handlers behind or
+  strip other addons' handlers- Engrave: the step's Bidirectional Scan Offset had no effect since
+  the pipeline moved to raygeo intents, because the value no longer
+  reached the transformer; changing it now also refreshes the cached
+  toolpath (#307)
+- Step settings: choice rows backed by an enum (such as the Engrave
+  step's dithering algorithm) now show the step's actual value when
+  the dialog opens and after undo, instead of the first entry
 - Ruida: the setup wizard no longer requires the optional USB device
   and Magic fields, so Next is enabled again once a valid hostname is
   entered; the Magic field is prefilled with the standard 0x88

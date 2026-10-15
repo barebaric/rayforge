@@ -1,4 +1,5 @@
 import base64
+import hashlib
 from pathlib import Path
 from unittest.mock import patch
 
@@ -109,3 +110,41 @@ class TestSourceAsset:
         assert restored_asset.base_render_data == basic_asset.base_render_data
         assert isinstance(restored_asset.renderer, SvgRenderer)
         assert restored_asset.metadata == basic_asset.metadata
+
+
+class TestSourceFileFingerprint:
+    """The fingerprint identifies the file on disk an asset came from."""
+
+    def test_defaults_to_the_embedded_data(self, basic_asset):
+        data = basic_asset.original_data
+        assert (
+            basic_asset.source_file_sha256 == hashlib.sha256(data).hexdigest()
+        )
+        assert basic_asset.source_file_size == len(data)
+        assert basic_asset.matches_source_file(data)
+        assert not basic_asset.matches_source_file(data + b" ")
+
+    def test_converted_source_remembers_the_original_file(self, basic_asset):
+        original = b"%!PS-Adobe-3.0 EPSF-3.0\n...original eps bytes..."
+        basic_asset.set_source_file_fingerprint(original)
+
+        assert (
+            basic_asset.source_file_sha256
+            == hashlib.sha256(original).hexdigest()
+        )
+        assert basic_asset.source_file_size == len(original)
+        assert basic_asset.matches_source_file(original)
+        assert not basic_asset.matches_source_file(basic_asset.original_data)
+
+    def test_fingerprint_survives_serialization(self, basic_asset):
+        original = b"original file bytes"
+        basic_asset.set_source_file_fingerprint(original)
+        restored = SourceAsset.from_dict(basic_asset.to_dict())
+        assert restored.matches_source_file(original)
+        assert restored.source_file_size == len(original)
+
+    def test_projects_without_fingerprint_still_load(self, basic_asset):
+        data = basic_asset.to_dict()
+        data["metadata"] = {}
+        restored = SourceAsset.from_dict(data)
+        assert restored.matches_source_file(basic_asset.original_data)

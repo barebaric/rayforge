@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-24 21:41+0200\n"
+"POT-Creation-Date: 2026-10-12 18:45+0200\n"
 "PO-Revision-Date: 2026-03-01 19:25+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -202,30 +202,22 @@ msgid "Load common test configurations"
 msgstr "Load common test configurations"
 
 #: laser_essentials/widgets/raster_power_widget.py
+msgid "Min Power (White)"
+msgstr "Min Power (White)"
+
+#: laser_essentials/widgets/raster_power_widget.py
 #: laser_essentials/steps/raster_step.py
 msgid "Power for lightest areas, as a percentage of the step's main power"
 msgstr "Power for lightest areas, as a percentage of the step's main power"
 
 #: laser_essentials/widgets/raster_power_widget.py
+msgid "Max Power (Black)"
+msgstr "Max Power (Black)"
+
+#: laser_essentials/widgets/raster_power_widget.py
 #: laser_essentials/steps/raster_step.py
 msgid "Power for darkest areas, as a percentage of the step's main power"
 msgstr "Power for darkest areas, as a percentage of the step's main power"
-
-#: laser_essentials/widgets/raster_power_widget.py
-msgid "Min Power (Black)"
-msgstr "Min Power (Black)"
-
-#: laser_essentials/widgets/raster_power_widget.py
-msgid "Max Power (White)"
-msgstr "Max Power (White)"
-
-#: laser_essentials/widgets/raster_power_widget.py
-msgid "Min Power (White)"
-msgstr "Min Power (White)"
-
-#: laser_essentials/widgets/raster_power_widget.py
-msgid "Max Power (Black)"
-msgstr "Max Power (Black)"
 
 #: laser_essentials/widgets/raster_page.py
 msgid "Engrave Speed"
@@ -407,6 +399,31 @@ msgid "Algorithm for converting grayscale to binary"
 msgstr "Algorithm for converting grayscale to binary"
 
 #: laser_essentials/steps/raster_step.py
+msgid "Serpentine"
+msgstr ""
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Alternate the dither direction on every row to avoid directional artifacts"
+msgstr ""
+
+#: laser_essentials/steps/raster_step.py
+msgid "Halftone Cell Size"
+msgstr ""
+
+#: laser_essentials/steps/raster_step.py
+msgid "Distance between halftone dot centers"
+msgstr ""
+
+#: laser_essentials/steps/raster_step.py
+msgid "Halftone Angle"
+msgstr ""
+
+#: laser_essentials/steps/raster_step.py
+msgid "Rotation of the halftone dot grid"
+msgstr ""
+
+#: laser_essentials/steps/raster_step.py
 msgid "Cross-Hatch"
 msgstr "Cross-Hatch"
 
@@ -467,14 +484,6 @@ msgstr ""
 msgid ""
 "Corrects X misalignment between left-to-right and right-to-left raster passes"
 msgstr ""
-
-#: laser_essentials/steps/raster_step.py
-msgid "Invert"
-msgstr "Invert"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Engrave white areas instead of black areas"
-msgstr "Engrave white areas instead of black areas"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Number of Depth Levels"

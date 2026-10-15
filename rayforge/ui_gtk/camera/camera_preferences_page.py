@@ -11,6 +11,7 @@ from ..icons import get_icon
 from ..shared.preferences_group import PreferencesGroupWithButton
 from ..shared.preferences_page import TrackedPreferencesPage
 from ..shared.slider import create_slider
+from .outside_view_widget import CameraOutsideViewGroup
 from .properties_widget import CameraProperties
 from .selection_dialog import CameraSelectionDialog
 
@@ -342,6 +343,10 @@ class CameraPreferencesPage(TrackedPreferencesPage):
         self.camera_properties_widget = CameraProperties(None)
         self.add(self.camera_properties_widget)
 
+        # Display of the camera image around the workspace.
+        self.camera_outside_view_widget = CameraOutsideViewGroup()
+        self.add(self.camera_outside_view_widget)
+
         # Connect signals
         self.camera_list_editor.add_requested.connect(self.on_add_camera)
         self.camera_list_editor.remove_requested.connect(self.on_remove_camera)
@@ -421,6 +426,8 @@ class CameraPreferencesPage(TrackedPreferencesPage):
             )
             self.selected_controller = selected_controller
             self.camera_properties_widget.set_controller(selected_controller)
+            self.camera_outside_view_widget.set_controller(selected_controller)
         else:
             self.selected_controller = None
             self.camera_properties_widget.set_controller(None)
+            self.camera_outside_view_widget.set_controller(None)

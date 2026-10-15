@@ -51,6 +51,7 @@ class PlaceholderTransformer(OpsTransformer):
         workpiece: WorkPiece | None,
         stock_geometries: list[Geometry] | None,
         machine,
+        settings=None,
     ):
         raise RuntimeError(
             f"Transformer '{self._original_name}' is not available "

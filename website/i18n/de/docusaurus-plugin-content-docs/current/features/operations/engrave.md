@@ -178,13 +178,11 @@ Einstellungen, die unten beschrieben werden.
 | 10% | 60% | Mittlere Tiefe, sicher      |
 | 20% | 80% | Tiefes, dramatisches Relief |
 
-**Invertieren:**
+**Bild invertieren:**
 
-- **Aus** (Standard): Weiß = flach, Schwarz = tief
-- **Ein**: Weiß = tief, Schwarz = flach
-
-Invertieren für Lithophanen verwenden (helle Bereiche sollten dünn sein) oder Prägen (erhabene
-Bereiche).
+Schwarz wird tief graviert und Weiß bleibt flach. Um sie zu tauschen, etwa für Lithophanen (helle
+Bereiche sollten dünn sein) oder Prägen (erhabene Bereiche), wähle das Werkstück aus und verwende
+**Tools - Invert Image**. Siehe [Bildbearbeitung](../../addons/image-editing.md).
 
 **Helligkeitsbereich:**
 
@@ -227,12 +225,19 @@ Dies ist besonders nützlich für:
 
 Wähle den Algorithmus, der am besten zu deinem Bild und Material passt:
 
-| Algorithmus     | Qualität | Geschwindigkeit | Am besten für                    |
-| --------------- | -------- | --------------- | -------------------------------- |
-| Floyd-Steinberg | Höchste  | Langsamste      | Fotos, Porträts, sanfte Verläufe |
-| Bayer 2x2       | Niedrig  | Schnellste      | Grober Halbton-Effekt            |
-| Bayer 4x4       | Mittel   | Schnell         | Ausgewogener Halbton             |
-| Bayer 8x8       | Hoch     | Mittel          | Feine Details, subtile Muster    |
+| Algorithmus                       | Qualität | Geschwindigkeit | Am besten für                              |
+| --------------------------------- | -------- | --------------- | ------------------------------------------ |
+| Floyd-Steinberg                   | Höchste  | Langsamste      | Fotos, Porträts, sanfte Verläufe           |
+| Bayer 2x2                         | Niedrig  | Schnellste      | Grober Halbton-Effekt                      |
+| Bayer 4x4                         | Mittel   | Schnell         | Ausgewogener Halbton                       |
+| Bayer 8x8                         | Hoch     | Mittel          | Feine Details, subtile Muster              |
+| Atkinson                          | Mittel   | Mittel          | Kontrastreiche Bilder, Holz                |
+| Stucki                            | Höchste  | Langsam         | Porträts, weiche Hauttöne                  |
+| Jarvis, Judice & Ninke            | Höchste  | Langsam         | Sanfte Verläufe, feine Körnung             |
+| Sierra (3-zeilig, 2-zeilig, Lite) | Hoch     | Mittel          | Leichtere Alternativen zu Stucki           |
+| Burkes                            | Hoch     | Mittel          | Fotos, schneller als Stucki                |
+| Zeitungsdruck                     | Mittel   | Schnellste      | Gruppierte Punkte wie im Zeitungsdruck     |
+| Halbton                           | Mittel   | Schnell         | Runde Punkte, Größe und Winkel einstellbar |
 
 **Floyd-Steinberg** ist Standard und empfohlen für die meisten Fotogravuren. Es verwendet
 Fehler-Diffusion, um Quantisierungsfehler auf benachbarte Pixel zu verteilen, was natürlich
@@ -240,6 +245,16 @@ aussehende Ergebnisse erzeugt.
 
 **Bayer-Dithering** erzeugt regelmäßige Muster, die künstlerische Effekte erzeugen können, die
 traditionellem Halbton-Druck ähneln.
+
+**Stucki, Jarvis, Sierra, Burkes und Atkinson** sind wie Floyd-Steinberg Fehler-Diffusionsverfahren,
+verteilen den Fehler aber über eine größere Umgebung. Das ergibt eine ruhigere Körnung in
+gleichmäßigen Flächen wie Hauttönen. Atkinson verteilt nur einen Teil des Fehlers und erhöht so den
+Kontrast. Schalte **Serpentinenmodus** ein, um die Abtastrichtung in jeder Zeile zu wechseln und
+richtungsabhängige Streifen zu vermeiden.
+
+**Zeitungsdruck** und **Halbton** fassen Pixel zu Punkten zusammen. Halbton setzt runde Punkte auf
+ein Raster, das du mit **Halbton-Zellgröße** (Abstand zwischen den Punktmittelpunkten) und
+**Halbton-Winkel** einstellst. Wähle eine Zellgröße von mindestens einigen Laserpunktbreiten.
 
 #### Mehrfach-Tiefen-Modus-Einstellungen
 
@@ -263,13 +278,11 @@ traditionellem Halbton-Druck ähneln.
 - Erzeugt kreuzschraffur-ähnlichen 3D-Effekt
 - Typisch: 0-45 Grad
 
-**Invertieren:**
+**Bild invertieren:**
 
-- **Aktiviert:** Weiß = tief, Schwarz = flach
-- **Deaktiviert:** Schwarz = tief, Weiß = flach
-
-Invertieren für Lithophanen verwenden (helle Bereiche sollten dünn sein) oder Prägen (erhabene
-Bereiche).
+Schwarz wird tief graviert und Weiß bleibt flach. Um sie zu tauschen, etwa für Lithophanen (helle
+Bereiche sollten dünn sein) oder Prägen (erhabene Bereiche), wähle das Werkstück aus und verwende
+**Tools - Invert Image**. Siehe [Bildbearbeitung](../../addons/image-editing.md).
 
 ### Scan-Muster
 
@@ -323,15 +336,16 @@ auf einigen Maschinen sichtbare Bänderung verursachen. Falls du das siehst, kal
 beschriebenen **Bidirektionalen Scan-Offset**, um es direkt zu korrigieren, anstatt den
 Geschwindigkeitsvorteil zu verlieren.
 
-#### Bidirektionaler Scan-Offset
+#### Bidirektionaler Scan-Offset {#bidirectional-scan-offset}
 
 Korrigiert eine feste mechanische oder schaltzeitbedingte Versetzung zwischen Links-nach-rechts- und
 Rechts-nach-links-Rasterdurchgängen, die ansonsten abwechselnde Scan-Zeilen verschiebt (als
 Bänderung sichtbar, besonders bei Fotogravuren).
 
 - In Millimetern angeben, positiv oder negativ, je nachdem welche Richtung verschoben werden muss
-- Wendet eine konstante Verschiebung unabhängig von der Geschwindigkeit an; wenn die Versetzung mit
-  der Geschwindigkeit variiert, kalibriere für deine typische Gravurgeschwindigkeit
+- Ein Wert ungleich 0 hier gewinnt immer; ist er 0, greift für den Schritt die Tabelle
+  [Bidirektionaler Scan-Offset nach Geschwindigkeit](../../machine/advanced.md#bidirectional-scan-offset-by-speed)
+  der Maschine, die für die Geschwindigkeit dieses Schritts einen Offset interpoliert
 - Standard ist 0 (keine Korrektur)
 
 **Offset kalibrieren:**
@@ -341,6 +355,11 @@ Bänderung sichtbar, besonders bei Fotogravuren).
 2. Vergleiche abwechselnde Zeilen, um Richtung und Ausmaß der Fehlausrichtung zu ermitteln
 3. Passe den Offset in kleinen Schritten an (0.01-0.05mm) und teste erneut, bis abwechselnde Zeilen
    ausgerichtet sind
+
+Wenn die Fehlausrichtung über deinen üblichen Gravurgeschwindigkeiten deutlich variiert, kann ein
+einzelner Offset nicht jeden Job korrigieren. Lasse den Offset des Schritts auf 0 und hinterlege
+stattdessen eine geschwindigkeitsabhängige Offset-Tabelle in den
+[Maschineneinstellungen - Erweitert](../../machine/advanced.md#bidirectional-scan-offset-by-speed).
 
 ## Laser-Einstellungen
 

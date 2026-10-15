@@ -10,11 +10,16 @@ from raygeo.ops.assembly.raster import RasterSpec
 from raygeo.ops.part import Part
 from raygeo.ops.types import CommandCategory, CommandType
 
+from rayforge.core.doc import Doc
+from rayforge.core.image_edit import ImageEditStep
 from rayforge.core.step_registry import step_registry
+from rayforge.core.varset import LabeledChoiceVar
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.dither import DitherAlgorithm
 from rayforge.pipeline.transformer import OpsTransformer
 from rayforge.pipeline.transformer.registry import transformer_registry
+
+LEGACY_INVERT = ImageEditStep("invert")
 
 
 @pytest.fixture
@@ -203,7 +208,7 @@ class TestEngraveStep:
         assert restored.num_depth_levels == 3
         assert restored.num_power_levels == 10
         assert restored.z_step_down == 0.5
-        assert restored.invert is True
+        assert restored.pop_legacy_image_edits() == [LEGACY_INVERT]
         assert restored.auto_levels is False
         assert restored.black_point == 20
         assert restored.white_point == 200
@@ -543,3 +548,198 @@ class TestEngraveCropToStock:
         assert ops.endpoint(arcs[0]) == pytest.approx(
             (0.6, 0.5, 0.0), abs=1e-6
         )
+
+
+class TestEngraveDitherOptions:
+    """Serpentine and halftone settings of the Dither mode."""
+
+    def _var(self, key):
+        varset = EngraveStep.recipe_varset()
+        return next(v for v in varset.vars if v.key == key)
+
+    def test_defaults(self):
+        step = EngraveStep(name="engrave")
+        assert step.dither_serpentine is False
+        assert step.halftone_cell_mm == 0.5
+        assert step.halftone_angle == 45.0
+
+    def test_roundtrip_serialization(self):
+        step = EngraveStep(name="engrave")
+        step.depth_mode = "DITHER"
+        step.dither_algorithm = DitherAlgorithm.HALFTONE
+        step.dither_serpentine = True
+        step.halftone_cell_mm = 0.8
+        step.halftone_angle = 15.0
+        data = step.to_dict()
+        restored = EngraveStep.from_dict(data)
+        assert restored.dither_algorithm is DitherAlgorithm.HALFTONE
+        assert restored.dither_serpentine is True
+        assert restored.halftone_cell_mm == 0.8
+        assert restored.halftone_angle == 15.0
+        assert data == restored.to_dict()
+
+    def test_old_documents_get_defaults(self):
+        data = EngraveStep(name="engrave").to_dict()
+        for key in ("dither_serpentine", "halftone_cell_mm", "halftone_angle"):
+            data.pop(key)
+        restored = EngraveStep.from_dict(data)
+        assert restored.dither_serpentine is False
+        assert restored.halftone_cell_mm == 0.5
+        assert restored.halftone_angle == 45.0
+
+    def test_new_algorithms_load_by_value(self):
+        data = EngraveStep(name="engrave").to_dict()
+        data["dither_algorithm"] = "stucki"
+        restored = EngraveStep.from_dict(data)
+        assert restored.dither_algorithm is DitherAlgorithm.STUCKI
+
+    def test_cache_params_cover_the_new_settings(self):
+        step = EngraveStep(name="engrave")
+        before = step.get_cache_params()
+        for attr, value in (
+            ("dither_serpentine", True),
+            ("halftone_cell_mm", 1.2),
+            ("halftone_angle", 10.0),
+        ):
+            setattr(step, attr, value)
+            after = step.get_cache_params()
+            assert after[attr] == value
+            assert after != before
+            before = after
+
+    def test_varset_lists_every_algorithm(self):
+        var = self._var("dither_algorithm")
+        assert isinstance(var, LabeledChoiceVar)
+        names = [var.get_value_for_display(label) for label in var.choices]
+        assert names == [a.name for a in DitherAlgorithm]
+
+    @pytest.mark.parametrize(
+        "algo, visible",
+        [
+            ("FLOYD_STEINBERG", True),
+            ("STUCKI", True),
+            ("ATKINSON", True),
+            ("BAYER4", False),
+            ("NEWSPRINT", False),
+            ("HALFTONE", False),
+        ],
+    )
+    def test_serpentine_only_for_error_diffusion(self, algo, visible):
+        var = self._var("dither_serpentine")
+        values = {"depth_mode": "DITHER", "dither_algorithm": algo}
+        assert var.is_visible(values) is visible
+        values["depth_mode"] = "POWER_MODULATION"
+        assert var.is_visible(values) is False
+
+    @pytest.mark.parametrize("key", ["halftone_cell_mm", "halftone_angle"])
+    def test_halftone_rows_only_for_halftone(self, key):
+        var = self._var(key)
+        assert var.is_visible(
+            {"depth_mode": "DITHER", "dither_algorithm": "HALFTONE"}
+        )
+        assert not var.is_visible(
+            {"depth_mode": "DITHER", "dither_algorithm": "STUCKI"}
+        )
+        assert not var.is_visible(
+            {"depth_mode": "CONSTANT_POWER", "dither_algorithm": "HALFTONE"}
+        )
+
+    def test_apply_import_settings_sets_dither_mode(self):
+        step = EngraveStep(name="engrave")
+        step.apply_import_settings(
+            {
+                "depth_mode": "DITHER",
+                "dither_algorithm": "HALFTONE",
+                "halftone_cell_mm": 0.6,
+                "halftone_angle": 22.5,
+            }
+        )
+        assert step.depth_mode == "DITHER"
+        assert step.dither_algorithm is DitherAlgorithm.HALFTONE
+        assert step.halftone_cell_mm == 0.6
+        assert step.halftone_angle == 22.5
+
+    def test_build_raster_part_forwards_dither_options(self, machine):
+        step = EngraveStep(name="engrave")
+        step.depth_mode = "DITHER"
+        step.auto_levels = False
+        step.dither_algorithm = DitherAlgorithm.HALFTONE
+        step.dither_serpentine = True
+        step.halftone_cell_mm = 0.7
+        step.halftone_angle = 12.0
+        wp = WorkPiece(name="wp")
+        wp.set_size(10.0, 5.0)
+        surface = MagicMock()
+        target = "laser_essentials.steps.raster_step.preprocess_raster_image"
+        with (
+            patch.object(WorkPiece, "render_to_pixels", return_value=surface),
+            patch(target, return_value=(None, None)) as preprocess,
+        ):
+            step.build_compute_payload(machine, wp)
+
+        kwargs = preprocess.call_args.kwargs
+        assert kwargs["dither_algorithm"] is DitherAlgorithm.HALFTONE
+        assert kwargs["dither_serpentine"] is True
+        assert kwargs["halftone_cell_mm"] == 0.7
+        assert kwargs["halftone_angle"] == 12.0
+        assert kwargs["pixels_per_mm_x"] == pytest.approx(20.0)
+        assert kwargs["pixels_per_mm_y"] == pytest.approx(10.0)
+
+
+def _engrave_step_dicts(data) -> list[dict]:
+    found = []
+    if isinstance(data, dict):
+        if data.get("step_type") == "EngraveStep":
+            found.append(data)
+        for value in data.values():
+            found += _engrave_step_dicts(value)
+    elif isinstance(data, list):
+        for value in data:
+            found += _engrave_step_dicts(value)
+    return found
+
+
+class TestLegacyInvert:
+    """Invert moved from the step to the workpieces' image edits."""
+
+    def _saved(self, invert: bool) -> dict:
+        data = EngraveStep(name="Engrave").to_dict()
+        data["invert"] = invert
+        return data
+
+    def test_invert_is_no_longer_a_step_setting(self):
+        step = EngraveStep()
+        assert "invert" not in step.to_dict()
+        assert "invert" not in step.get_cache_params()
+        assert not hasattr(step, "invert")
+
+    def test_saved_invert_is_handed_over_once(self):
+        step = EngraveStep.from_dict(self._saved(True))
+        assert "invert" not in step.extra
+        assert step.pop_legacy_image_edits() == [LEGACY_INVERT]
+        assert step.pop_legacy_image_edits() == []
+
+    def test_saved_invert_false_hands_over_nothing(self):
+        step = EngraveStep.from_dict(self._saved(False))
+        assert step.pop_legacy_image_edits() == []
+
+    def test_saved_invert_is_not_written_back(self):
+        step = EngraveStep.from_dict(self._saved(True))
+        assert "invert" not in step.to_dict()
+
+    def test_loading_a_document_moves_invert_to_the_workpieces(self):
+        doc = Doc()
+        wp = WorkPiece("photo")
+        doc.active_layer.add_child(wp)
+        workflow = doc.active_layer.workflow
+        assert workflow is not None
+        workflow.add_step(EngraveStep(name="Engrave"))
+        data = doc.to_dict()
+        _engrave_step_dicts(data)[0]["invert"] = True
+
+        restored = Doc.from_dict(data)
+
+        (restored_wp,) = restored.all_workpieces
+        assert restored_wp.image_edits == (LEGACY_INVERT,)
+        again = Doc.from_dict(restored.to_dict())
+        assert again.all_workpieces[0].image_edits == (LEGACY_INVERT,)

@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import math
 import warnings
-from collections.abc import Generator
+from collections.abc import Generator, Iterable
 from copy import deepcopy
 from dataclasses import asdict
 from pathlib import Path
@@ -26,8 +26,11 @@ from raygeo.geo.types import Point, Rect
 from raygeo.ops.part import Part
 
 from ..context import get_context
+from ..shared.util.cache import LruCache
 from .asset_registry import asset_type_registry
 from .geometry_provider import IGeometryProvider
+from .image_cache import new_image_cache
+from .image_edit import ImageEditStep, apply_image_edits
 from .item import DocItem
 from .source_asset_segment import SourceAssetSegment
 from .tab import Tab
@@ -44,6 +47,22 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 CAIRO_MAX_DIMENSION = 16384
+
+
+def _with_resolution(
+    image: pyvips.Image, size_mm: tuple[float, float]
+) -> pyvips.Image:
+    """
+    Tags the image with its resolution in pixels per mm, so edits with
+    physical sizes (like a sharpen radius) do not depend on the render
+    size.
+    """
+    width_mm, height_mm = size_mm
+    if width_mm <= 0 or height_mm <= 0:
+        return image
+    return image.copy(
+        xres=image.width / width_mm, yres=image.height / height_mm
+    )
 
 
 class RenderContext(NamedTuple):
@@ -87,7 +106,16 @@ class WorkPiece(DocItem):
         self._edited_boundaries: Geometry | None = None
 
         # The cache for rendered vips images. Key is (width, height).
-        self._render_cache: dict[tuple[int, int], pyvips.Image] = {}
+        self._render_cache: LruCache[tuple[int, int], pyvips.Image] = (
+            new_image_cache()
+        )
+
+        # The non-destructive image edit stack and the cache of rendered
+        # images with that stack applied. Key is (width, height, size).
+        self._image_edits: tuple[ImageEditStep, ...] = ()
+        self._processed_cache: LruCache[
+            tuple[int, int, tuple[float, float]], pyvips.Image
+        ] = new_image_cache()
 
         # Transient attributes for deserialized instances in subprocesses
         self._data: bytes | None = None
@@ -220,6 +248,28 @@ class WorkPiece(DocItem):
             self.updated.send(self)
 
     @property
+    def image_edits(self) -> tuple[ImageEditStep, ...]:
+        """The image edits applied, in order, on top of the render."""
+        return self._image_edits
+
+    @image_edits.setter
+    def image_edits(self, edits: Iterable[ImageEditStep]):
+        new_edits = tuple(edits)
+        if new_edits == self._image_edits:
+            return
+        self._image_edits = new_edits
+        self._processed_cache.clear()
+        self.updated.send(self)
+
+    @property
+    def has_edited_boundaries(self) -> bool:
+        """
+        True if the shape no longer comes straight from the source, e.g.
+        because the workpiece was split.
+        """
+        return self._edited_boundaries is not None
+
+    @property
     def natural_size(self) -> tuple[float, float]:
         """
         Returns the natural (untransformed) size of the content in mm.
@@ -243,6 +293,7 @@ class WorkPiece(DocItem):
             f"WP {self.uid[:8]}: Clearing all caches (render and boundaries)."
         )
         self._render_cache.clear()
+        self._processed_cache.clear()
         self._boundaries_cache = None
         self._fills_cache = None
 
@@ -575,6 +626,8 @@ class WorkPiece(DocItem):
         world_wp.source_asset_uid = self.source_asset_uid
         world_wp._resolved_text_cache = dict(self._resolved_text_cache)
 
+        world_wp._image_edits = self._image_edits
+
         # Ensure any edited boundaries are carried over.
         if self._edited_boundaries is not None:
             world_wp._edited_boundaries = self._edited_boundaries.copy()
@@ -804,14 +857,36 @@ class WorkPiece(DocItem):
 
         return processed_image
 
-    def get_vips_image(self, width: int, height: int) -> pyvips.Image | None:
+    def get_processed_image(
+        self, width: int, height: int
+    ) -> pyvips.Image | None:
         """
-        The central hub for rendering a vips image for this workpiece.
+        The image as the user sees it: the render with the image edit
+        stack applied. Everything that consumes the workpiece's pixels
+        (canvas, pipeline, previews) goes through here.
+        """
+        image = self._get_vips_image(width, height)
+        if image is None or not self._image_edits:
+            return image
+        size = self.size
+        key = (width, height, size)
+        processed = self._processed_cache.get(key)
+        if processed is None:
+            processed = apply_image_edits(
+                _with_resolution(image, size), self._image_edits
+            )
+            self._processed_cache.put(key, processed)
+        return processed
+
+    def _get_vips_image(self, width: int, height: int) -> pyvips.Image | None:
+        """
+        Renders the unedited vips image for this workpiece.
         Orchestrates data retrieval, rendering, cropping, and masking.
         """
         key = (width, height)
-        if key in self._render_cache:
-            return self._render_cache[key]
+        cached = self._render_cache.get(key)
+        if cached is not None:
+            return cached
 
         # 1. Resolve Context
         ctx = self._resolve_render_context()
@@ -853,7 +928,7 @@ class WorkPiece(DocItem):
         )
 
         if final_image:
-            self._render_cache[key] = final_image
+            self._render_cache.put(key, final_image)
 
         return final_image
 
@@ -887,6 +962,7 @@ class WorkPiece(DocItem):
                 if self._edited_boundaries is not None
                 else None
             ),
+            "image_edits": [edit.to_dict() for edit in self._image_edits],
             "geometry_provider_uid": self.geometry_provider_uid,
             "geometry_provider_params": self._geometry_provider_params,
             "source_asset_uid": self.source_asset_uid,
@@ -931,6 +1007,7 @@ class WorkPiece(DocItem):
             "tabs_enabled",
             "source_segment",
             "edited_boundaries",
+            "image_edits",
             "geometry_provider_uid",
             "geometry_provider_params",
             "source_asset_uid",
@@ -971,6 +1048,9 @@ class WorkPiece(DocItem):
             wp._edited_boundaries = Geometry.from_dict(
                 data["edited_boundaries"]
             )
+        wp._image_edits = tuple(
+            ImageEditStep.from_dict(d) for d in data.get("image_edits", [])
+        )
 
         wp.geometry_provider_uid = data.get(
             "geometry_provider_uid"
@@ -1077,7 +1157,7 @@ class WorkPiece(DocItem):
         from ..image import util
 
         # This now uses the central hub for rendering.
-        final_image = self.get_vips_image(width, height)
+        final_image = self.get_processed_image(width, height)
         if not final_image:
             return None
         normalized_image = util.normalize_to_rgba(final_image)
@@ -1168,7 +1248,9 @@ class WorkPiece(DocItem):
                 "or max_memory_size must be provided."
             )
 
-        vips_image = self.get_vips_image(round(width_px), round(height_px))
+        vips_image = self.get_processed_image(
+            round(width_px), round(height_px)
+        )
         if not vips_image or not isinstance(vips_image, pyvips.Image):
             logger.warning("Failed to load image for chunking.")
             return

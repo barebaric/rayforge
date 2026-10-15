@@ -48,8 +48,9 @@ Usa el corte de contorno para:
 
 ## Ajustes Principales
 
-El diálogo de ajustes de paso tiene tres pestañas: **Ajustes de Paso**, **Láser** y
-**Post-Procesamiento**. Los ajustes se describen en orden de pestañas a continuación.
+El diálogo de ajustes de paso tiene cuatro pestañas: **Ajustes de Paso**, **Láser**,
+**Post-Procesamiento** y **Piezas de trabajo**. Los ajustes se describen en orden de pestañas a
+continuación.
 
 ### Ajustes de Contorno
 
