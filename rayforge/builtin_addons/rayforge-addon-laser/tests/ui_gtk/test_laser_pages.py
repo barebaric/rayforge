@@ -10,10 +10,18 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
 from gi.repository import Adw, Gtk
-from laser_essentials.steps import EngraveStep, MaterialTestStep
+from laser_essentials.steps import (
+    EngraveStep,
+    MaterialTestStep,
+    OffsetFillStep,
+)
+from laser_essentials.widgets import ASSEMBLER_WIDGETS
 from laser_essentials.widgets.contour_page import ContourStepSettingsPage
 from laser_essentials.widgets.material_test_grid_page import (
     MaterialTestGridSettingsPage,
+)
+from laser_essentials.widgets.offset_fill_page import (
+    OffsetFillStepSettingsPage,
 )
 from laser_essentials.widgets.raster_page import RasterSettingsPage
 from laser_essentials.widgets.raster_power_widget import RasterPowerWidget
@@ -815,12 +823,6 @@ def test_dialog_initial_laser_page(editor, laser_machine, ui_context):
 
 @pytest.mark.ui
 def test_offset_fill_page_shows_fill_rows(editor, laser_machine, ui_context):
-    from laser_essentials.steps import OffsetFillStep
-    from laser_essentials.widgets import ASSEMBLER_WIDGETS
-    from laser_essentials.widgets.offset_fill_page import (
-        OffsetFillStepSettingsPage,
-    )
-
     assert ASSEMBLER_WIDGETS["offset_fill"] is OffsetFillStepSettingsPage
     step = OffsetFillStep.create(ui_context)
     page = OffsetFillStepSettingsPage(editor, step)
