@@ -54,8 +54,8 @@ Use contour cutting for:
 
 ## Key Settings
 
-The step settings dialog has three tabs: **Step Settings**, **Laser**, and **Post Processing**.
-Settings are described in tab order below.
+The step settings dialog has four tabs: **Step Settings**, **Laser**, **Post Processing**, and
+**Workpieces**. Settings are described in tab order below.
 
 ### Contour Settings
 

@@ -133,6 +133,9 @@ TARGETS = {
     "recipe-editor:post-processing": "recipe_editor_settings",
     "sanity-check": "sanity_check",
     "step-settings:command:general": "step_settings_command",
+    "step-settings:material-test-grid:workpieces": (
+        "step_settings_workpieces"
+    ),
     "step-settings:contour:general": "step_settings",
     "step-settings:contour:laser": "step_settings",
     "step-settings:contour:post": "step_settings",

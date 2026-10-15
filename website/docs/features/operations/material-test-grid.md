@@ -67,6 +67,16 @@ The **Parameters** section holds the ranges the grid varies — speed, power, pa
 depending on the selected mode. Modes that keep a parameter fixed (for example the speed in Power vs
 Passes) let you set that constant here as well.
 
+## The Linked Workpiece
+
+Every operation normally processes all workpieces on its layer, and the **Workpieces** tab of its
+settings dialog lists them all as included. The Material Test Grid is the exception: its operation
+is linked to the workpiece it generated and processes that workpiece only. On the Workpieces tab the
+generated grid appears as the only included workpiece, while everything else on the layer is marked
+as excluded.
+
+![Workpieces tab of the Material Test Grid settings](/screenshots/step-settings-material-test-grid-workpieces.webp)
+
 ## Understanding the Layout
 
 In the default Power vs Speed mode, power increases from left to right and speed from top to bottom:

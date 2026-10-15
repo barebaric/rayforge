@@ -70,6 +70,16 @@ La sección **Parámetros** contiene los rangos que varía la cuadrícula — ve
 o desfase, según el modo seleccionado. Los modos que mantienen un parámetro fijo (por ejemplo la
 velocidad en Potencia vs Pasadas) también te permiten establecer esa constante aquí.
 
+## La Pieza de Trabajo Vinculada
+
+Normalmente una operación procesa todas las piezas de trabajo de su capa, y la pestaña **Piezas de
+trabajo** de su diálogo de ajustes las lista todas como incluidas. La Cuadrícula de Prueba de
+Material es la excepción: su operación está vinculada a la pieza de trabajo que generó y procesa
+solamente esa. En la pestaña Piezas de trabajo, la cuadrícula generada aparece como la única pieza
+incluida, mientras que el resto de la capa aparece marcado como excluido.
+
+![Pestaña Piezas de trabajo de la Cuadrícula de Prueba de Material](/screenshots/step-settings-material-test-grid-workpieces.webp)
+
 ## Entendiendo el Diseño
 
 En el modo predeterminado Potencia vs Velocidad, la potencia aumenta de izquierda a derecha y la
