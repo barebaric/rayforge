@@ -34,12 +34,11 @@ def barcode_of(item: DocItem | None) -> BarcodeAsset | None:
 
 
 def default_position(editor: Any) -> tuple[float, float]:
-    """The centre of the machine's work area, or a fixed fallback."""
-    machine = getattr(getattr(editor, "context", None), "machine", None)
+    """The centre of the machine's work area in world coordinates."""
+    machine = editor.context.machine
     if machine is None:
         return DEFAULT_POSITION_MM
-    x, y, w, h = machine.work_area
-    return (x + w / 2.0, y + h / 2.0)
+    return machine.panel.work_area_center()
 
 
 def add_barcode(

@@ -4,8 +4,10 @@ import pytest
 from barcodes.asset import BarcodeAsset
 from barcodes.commands import (
     DEFAULT_CONTENT,
+    DEFAULT_POSITION_MM,
     add_barcode,
     barcode_of,
+    default_position,
     set_barcode_setting,
 )
 from barcodes.encoders import Symbology
@@ -80,3 +82,13 @@ def test_unchanged_setting_adds_no_undo_step(editor):
 def test_barcode_of_other_items():
     assert barcode_of(WorkPiece("plain")) is None
     assert barcode_of(None) is None
+
+
+def test_default_position_without_machine(editor):
+    assert default_position(editor) == DEFAULT_POSITION_MM
+
+
+def test_default_position_is_the_panel_work_area_center(editor):
+    panel = SimpleNamespace(work_area_center=lambda: (120.0, 80.0))
+    editor.context.machine = SimpleNamespace(panel=panel)
+    assert default_position(editor) == (120.0, 80.0)
