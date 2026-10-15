@@ -60,8 +60,9 @@ Ajustez le pas et le décalage en fonction de votre matériau et de la finition 
 
 ## Paramètres Clés
 
-La boîte de dialogue des paramètres d'étape comporte trois onglets : **Paramètres d'étape**,
-**Laser** et **Post-Traitement**. Les paramètres sont décrits ci-dessous dans l'ordre des onglets.
+La boîte de dialogue des paramètres d'étape comporte quatre onglets : **Paramètres d'étape**,
+**Laser**, **Post-Traitement** et **Pièces**. Les paramètres sont décrits ci-dessous dans l'ordre
+des onglets.
 
 ### Paramètres de Front d'Onde
 

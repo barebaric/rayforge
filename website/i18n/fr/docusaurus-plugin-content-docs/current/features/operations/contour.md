@@ -49,8 +49,9 @@ Utilisez la coupe de contour pour :
 
 ## Paramètres Clés
 
-La boîte de dialogue des paramètres d'étape comporte trois onglets : **Paramètres d'étape**,
-**Laser** et **Post-Traitement**. Les paramètres sont décrits ci-dessous dans l'ordre des onglets.
+La boîte de dialogue des paramètres d'étape comporte quatre onglets : **Paramètres d'étape**,
+**Laser**, **Post-Traitement** et **Pièces**. Les paramètres sont décrits ci-dessous dans l'ordre
+des onglets.
 
 ### Paramètres de Contour
 

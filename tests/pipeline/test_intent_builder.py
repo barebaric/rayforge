@@ -113,13 +113,13 @@ def test_builds_one_node_per_workpiece_plus_step_and_job(isolated_machine):
     assert len(keys) == 6
 
 
-def test_step_with_generated_workpiece_only_applies_to_that_workpiece(
+def test_step_with_workpiece_filter_only_applies_to_listed_workpieces(
     isolated_machine,
 ):
-    """A step that generated a workpiece (e.g. material test) must not
-    be applied to the other workpieces in its layer."""
+    """A step with a workpiece filter (e.g. material test) must not be
+    applied to the other workpieces in its layer."""
     step = _TestStep(name="s1")
-    step.generated_workpiece_uid = "wp-gen"
+    step.workpiece_uids = ["wp-gen"]
     wp_gen = WorkPiece(name="wp-gen")
     wp_gen.uid = "wp-gen"
     wp_other = WorkPiece(name="wp-other")
@@ -131,13 +131,13 @@ def test_step_with_generated_workpiece_only_applies_to_that_workpiece(
     assert workpiece_key("wp-other", step.uid) not in keys
 
 
-def test_step_with_missing_generated_workpiece_emits_no_nodes(
+def test_step_with_missing_filtered_workpiece_emits_no_nodes(
     isolated_machine,
 ):
-    """When a step's generated workpiece is not in the layer, the step
+    """When a step's filter matches no workpiece in the layer, the step
     emits no workpiece or step aggregate nodes."""
     step = _TestStep(name="s1")
-    step.generated_workpiece_uid = "wp-gone"
+    step.workpiece_uids = ["wp-gone"]
     doc = _make_doc(step, WorkPiece(name="wp-other"))
 
     nodes = IntentBuilder(machine=isolated_machine).build(doc)
