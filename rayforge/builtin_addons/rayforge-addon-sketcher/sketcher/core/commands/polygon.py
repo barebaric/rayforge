@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import math
 from collections.abc import Iterator
 from gettext import gettext as _
@@ -146,7 +147,7 @@ class PolygonPreviewState(PreviewState):
         self.locked_radius = radius
         center = registry.get_point(self.center_id)
         first = registry.get_point(self.radius_id)
-        _place_at_radius(center, first, first.x, first.y, radius)
+        first.x, first.y = _at_radius(center, first.x, first.y, radius)
         self.reposition(registry)
 
     def get_dimensions(self, registry: EntityRegistry) -> list[DimensionData]:
@@ -173,15 +174,15 @@ class PolygonPreviewState(PreviewState):
         ]
 
 
-def _place_at_radius(
-    center: Point, point: Point, x: float, y: float, radius: float
-) -> None:
+def _at_radius(center: Point, x: float, y: float, radius: float) -> GeoPoint:
     dx, dy = x - center.x, y - center.y
     length = math.hypot(dx, dy)
     if length < 1e-9:
         dx, dy, length = 1.0, 0.0, 1.0
-    point.x = center.x + dx / length * radius
-    point.y = center.y + dy / length * radius
+    return (
+        center.x + dx / length * radius,
+        center.y + dy / length * radius,
+    )
 
 
 class PolygonCommand(SketchChangeCommand):
@@ -196,6 +197,7 @@ class PolygonCommand(SketchChangeCommand):
         sketch: Sketch,
         center_id: EntityID,
         end_pos: GeoPoint,
+        end_pid: EntityID | None = None,
         sides: int = DEFAULT_SIDES,
         star_ratio: float | None = None,
         is_center_temp: bool = False,
@@ -205,6 +207,7 @@ class PolygonCommand(SketchChangeCommand):
         super().__init__(sketch, _("Add Polygon"))
         self.center_id = center_id
         self.end_pos = end_pos
+        self.end_pid = end_pid if fixed_radius is None else None
         self.sides = sides
         self.star_ratio = star_ratio
         self.is_center_temp = is_center_temp
@@ -252,7 +255,8 @@ class PolygonCommand(SketchChangeCommand):
         except IndexError:
             return
         if preview_state.locked_radius is not None:
-            _place_at_radius(center, first, x, y, preview_state.locked_radius)
+            radius = preview_state.locked_radius
+            first.x, first.y = _at_radius(center, x, y, radius)
         else:
             first.x, first.y = x, y
         preview_state.reposition(registry)
@@ -272,26 +276,27 @@ class PolygonCommand(SketchChangeCommand):
             p for p in registry.points if p.id != preview_state.radius_id
         ]
 
-    def _shape(
-        self, center: Point
-    ) -> tuple[list[Point], list[Entity], list[Constraint]]:
-        temp_ids = iter(range(-2, -10_000, -1))
-        vertices = polygon_vertices(
-            (center.x, center.y), self.end_pos, self.sides, self.star_ratio
-        )
+    def _first_corner(self, center: Point) -> GeoPoint:
+        x, y = self.end_pos
+        if self.end_pid is not None:
+            end = self.sketch.registry.get_point(self.end_pid)
+            x, y = end.x, end.y
         if self.fixed_radius is not None:
-            first = Point(0, *vertices[0])
-            _place_at_radius(
-                center, first, first.x, first.y, self.fixed_radius
-            )
-            vertices = polygon_vertices(
-                (center.x, center.y),
-                (first.x, first.y),
-                self.sides,
-                self.star_ratio,
-            )
+            return _at_radius(center, x, y, self.fixed_radius)
+        return x, y
+
+    def _shape(
+        self, center: Point, first: GeoPoint
+    ) -> tuple[list[Point], list[Entity], list[Constraint]]:
+        temp_ids = itertools.count(-2, -1)
+        vertices = polygon_vertices(
+            (center.x, center.y), first, self.sides, self.star_ratio
+        )
         points = [Point(next(temp_ids), x, y) for x, y in vertices]
         ids = [p.id for p in points]
+        if self.end_pid is not None:
+            points.pop(0)
+            ids[0] = self.end_pid
         lines = [Line(next(temp_ids), a, b) for a, b in _ring(ids)]
         stride = 1 if self.star_ratio is None else 2
         rings = [ids[0::stride]]
@@ -326,15 +331,15 @@ class PolygonCommand(SketchChangeCommand):
         registry = self.sketch.registry
         try:
             center = registry.get_point(self.center_id)
+            first = self._first_corner(center)
         except IndexError:
             return
-        if math.hypot(
-            self.end_pos[0] - center.x, self.end_pos[1] - center.y
-        ) < 1e-9 and (self.fixed_radius is None):
+        radius = math.hypot(first[0] - center.x, first[1] - center.y)
+        if radius < 1e-9 or self.end_pid == self.center_id:
             if self.is_center_temp:
                 self.sketch.remove_point_if_unused(self.center_id)
             return
-        points, entities, constraints = self._shape(center)
+        points, entities, constraints = self._shape(center, first)
         if self.is_center_temp:
             registry.points.remove(center)
             points.append(center)

@@ -149,6 +149,30 @@ class TestPolygonCommand:
         ]
         assert radii == pytest.approx([radii[0]] * 6, rel=1e-4)
 
+    def test_snapped_first_corner_is_reused(self):
+        sketch = Sketch()
+        center = sketch.add_point(0, 0)
+        target = sketch.add_point(0, 10)
+        cmd = PolygonCommand(sketch, center, (0.0, 9.0), end_pid=target)
+        cmd.execute()
+        assert _lines(sketch)[0].p1_idx == target
+        assert _corner_positions(sketch)[1] == pytest.approx(
+            (-10 * math.sin(math.pi / 3), 5.0)
+        )
+        assert len(sketch.registry.points) == 8
+        cmd.undo()
+        assert sketch.registry.get_point(target) is not None
+
+    def test_typed_radius_ignores_the_snapped_point(self):
+        sketch = Sketch()
+        center = sketch.add_point(0, 0)
+        target = sketch.add_point(0, 10)
+        PolygonCommand(
+            sketch, center, (0.0, 10.0), end_pid=target, fixed_radius=4.0
+        ).execute()
+        assert _lines(sketch)[0].p1_idx != target
+        assert _corner_positions(sketch)[0] == pytest.approx((0.0, 4.0))
+
     def test_rejects_fewer_than_three_sides(self):
         with pytest.raises(ValueError):
             _execute(sides=2)

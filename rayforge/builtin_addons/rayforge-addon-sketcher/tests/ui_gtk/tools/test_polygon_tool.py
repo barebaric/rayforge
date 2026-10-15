@@ -74,6 +74,17 @@ def test_two_clicks_create_the_polygon(tool, element):
 
 
 @pytest.mark.ui
+def test_first_corner_joins_a_snapped_point(tool, element, monkeypatch):
+    target = element.sketch.add_point(0.0, 8.0)
+    tool.on_press(0.0, 0.0, 1)
+    tool.on_release(0.5, 0.0)
+    tool.on_hover_motion(0.0, 8.0)
+    monkeypatch.setattr(tool, "get_snapped_point_id", lambda: target)
+    tool.on_press(0.0, 8.0, 1)
+    assert _outline(element.sketch)[0].p1_idx == target
+
+
+@pytest.mark.ui
 def test_ctrl_makes_a_star(tool, element):
     tool.on_press(0.0, 0.0, 1)
     tool.on_modifier_change(ctrl=True)

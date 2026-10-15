@@ -111,8 +111,16 @@ class PolygonTool(SnapMixin, SketchTool):
             self.element.preview_changed.send(self.element)
             self.element.mark_dirty()
         else:
-            self._commit()
+            self._commit(end_pid=self._snapped_corner_id())
         return True
+
+    def _snapped_corner_id(self) -> int | None:
+        """The snapped point the first corner lands on, if any."""
+        pid = self.get_snapped_point_id()
+        state = self._preview_state
+        if state is None or pid in state.get_preview_point_ids():
+            return None
+        return pid
 
     def on_release(self, world_x: float, world_y: float):
         self._in_press = False
@@ -122,7 +130,7 @@ class PolygonTool(SnapMixin, SketchTool):
         dy = world_y - self._press_world_pos[1]
         if math.hypot(dx, dy) < self.DRAG_THRESHOLD:
             return
-        self._commit()
+        self._commit(end_pid=self._snapped_corner_id())
 
     def on_hover_motion(self, world_x: float, world_y: float):
         """Updates the live preview of the polygon."""
@@ -165,7 +173,11 @@ class PolygonTool(SnapMixin, SketchTool):
         if self._preview_state is not None:
             self.draw_snap_feedback(ctx, self.element)
 
-    def _commit(self, fixed_radius: float | None = None) -> None:
+    def _commit(
+        self,
+        fixed_radius: float | None = None,
+        end_pid: int | None = None,
+    ) -> None:
         """Create the polygon the preview shows."""
         state = self._preview_state
         if state is None:
@@ -189,6 +201,7 @@ class PolygonTool(SnapMixin, SketchTool):
             self.element.sketch,
             state.center_id,
             end_pos,
+            end_pid=end_pid,
             sides=sides,
             star_ratio=star_ratio,
             is_center_temp=state.center_temp,
