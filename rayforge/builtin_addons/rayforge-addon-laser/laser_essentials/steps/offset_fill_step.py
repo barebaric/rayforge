@@ -27,11 +27,19 @@ if TYPE_CHECKING:
     from rayforge.machine.models.machine import Machine
 
 
-def _fill_direction_choices() -> list[tuple[str, str]]:
-    return [
-        (_("Outside → Inside"), CutOrder.OUTSIDE_INSIDE.name),
-        (_("Inside → Outside"), CutOrder.INSIDE_OUTSIDE.name),
-    ]
+def _part_rings(
+    part: Part, step: float, offset: float, inside_out: bool
+) -> list[Geometry]:
+    rings: list[Geometry] = []
+    for face_id in part.face_ids:
+        face = part.face(face_id)
+        if face is None or face.geometry is None:
+            continue
+        face_rings = offset_fill_rings(face.geometry, step, offset)
+        if inside_out:
+            face_rings.reverse()
+        rings.extend(face_rings)
+    return rings
 
 
 class OffsetFillStep(LaserStep):
@@ -72,7 +80,7 @@ class OffsetFillStep(LaserStep):
                     key="fill_direction",
                     label=_("Fill Direction"),
                     description=_("Order in which the rings are cut"),
-                    choices=_fill_direction_choices(),
+                    choices=[(co.label(), co.name) for co in CutOrder],
                     default=CutOrder.OUTSIDE_INSIDE.name,
                     allow_none=False,
                 ),
@@ -122,25 +130,13 @@ class OffsetFillStep(LaserStep):
             workpiece, self.pixels_per_mm
         )
         kwargs = self.get_assembler_kwargs(machine, workpiece)
-        inside_out = kwargs["cut_order"] == "inside_outside"
+        rings = _part_rings(
+            source,
+            kwargs["line_interval_mm"],
+            kwargs["offset_mm"],
+            kwargs["cut_order"] == "inside_outside",
+        )
         part = Part(size_mm=workpiece.size)
-        rings: list[Geometry] = []
-        if source is not None and source.has_geometry():
-            for face_id in source.face_ids:
-                face = source.face(face_id)
-                if face is None:
-                    continue
-                face_geo = face.geometry
-                if face_geo is None or face_geo.is_empty():
-                    continue
-                face_rings = offset_fill_rings(
-                    face_geo,
-                    step=kwargs["line_interval_mm"],
-                    offset=kwargs["offset_mm"],
-                )
-                if inside_out:
-                    face_rings.reverse()
-                rings.extend(face_rings)
         for index, ring in enumerate(rings):
             part.add_face(f"ring-{index}", ring)
         spec = ContourSpec(
