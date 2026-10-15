@@ -205,6 +205,13 @@ async def test_focus_modes_without_z_axis(doc_editor, machine):
 
 
 @pytest.mark.asyncio
+async def test_focus_modes_without_gcode_driver(doc_editor, machine, mocker):
+    mocker.patch.object(machine, "driver_name", "RuidaRPAAdapter")
+    cmd = CalibrationTestCmd(doc_editor)
+    assert cmd.available_focus_modes() == [FocusMode.RAMP]
+
+
+@pytest.mark.asyncio
 async def test_focus_manual_pauses_between_lines(doc_editor, machine):
     cmd = CalibrationTestCmd(doc_editor)
     layer = cmd.create_focus_test(_focus(FocusMode.MANUAL))

@@ -26,7 +26,7 @@ from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.layer_cmd import AddLayerAndSetActiveCommand
 from rayforge.image.svg.exporter import GeometrySvgExporter
 from rayforge.image.svg.importer import SvgImporter
-from rayforge.pipeline.intent_builder import _driver_uses_gcode
+from rayforge.machine.driver import get_driver_cls
 from rayforge.pipeline.transformer.registry import transformer_registry
 
 from ..calibration_tests import (
@@ -125,7 +125,7 @@ class CalibrationTestCmd:
         machine = self._editor.context.machine
         if machine is None or step_registry.get("CommandStep") is None:
             return modes
-        if not _driver_uses_gcode(machine):
+        if not get_driver_cls(machine.driver_name or "").uses_gcode:
             return modes
         modes.insert(0, FocusMode.MANUAL)
         if machine.has_z_axis:
