@@ -42,6 +42,14 @@ def _current(doc_editor) -> int:
     return doc_editor.doc.variable_text.serial.current
 
 
+def _machine_cmd(doc_editor) -> MachineCmd:
+    machine_cmd = MachineCmd(doc_editor)
+    machine_cmd.job_completed.connect(
+        doc_editor.variable_text.on_job_completed
+    )
+    return machine_cmd
+
+
 async def _settle(doc_editor):
     await doc_editor.wait_until_settled()
     # Let callbacks scheduled on the main loop run.
@@ -58,7 +66,7 @@ async def test_send_job_advances_by_copies(
     machine = get_context().machine
     assert machine is not None
 
-    await MachineCmd(doc_editor).send_job(machine)
+    await _machine_cmd(doc_editor).send_job(machine)
     await _settle(doc_editor)
 
     assert _current(doc_editor) == 8
@@ -73,7 +81,7 @@ async def test_frame_job_does_not_advance(
     machine = get_context().machine
     assert machine is not None
 
-    await MachineCmd(doc_editor).frame_job(machine)
+    await _machine_cmd(doc_editor).frame_job(machine)
     await _settle(doc_editor)
 
     assert _current(doc_editor) == 5
@@ -88,7 +96,7 @@ async def test_pointer_dry_run_does_not_advance(
     machine = get_context().machine
     assert machine is not None
 
-    await MachineCmd(doc_editor).send_job(machine, pointer_dry_run=True)
+    await _machine_cmd(doc_editor).send_job(machine, pointer_dry_run=True)
     await _settle(doc_editor)
 
     assert _current(doc_editor) == 5
@@ -102,7 +110,7 @@ async def test_cancelled_job_does_not_advance(
     await doc_editor.wait_until_settled()
     machine = get_context().machine
     assert machine is not None
-    machine_cmd = MachineCmd(doc_editor)
+    machine_cmd = _machine_cmd(doc_editor)
 
     async def run_and_cancel(*args, **kwargs):
         machine_cmd.cancel_job(machine)
@@ -160,3 +168,28 @@ async def test_gcode_export_keeps_counter_by_default(
 
     assert out.exists()
     assert _current(doc_editor) == 5
+
+
+@pytest.mark.asyncio
+async def test_job_completed_only_after_real_send(
+    context_initializer, doc_editor, contour_step_class
+):
+    _setup(doc_editor, contour_step_class, context_initializer)
+    await doc_editor.wait_until_settled()
+    machine = get_context().machine
+    assert machine is not None
+    machine_cmd = MachineCmd(doc_editor)
+    completed = []
+
+    def on_completed(sender):
+        completed.append(sender)
+
+    machine_cmd.job_completed.connect(on_completed)
+    await machine_cmd.frame_job(machine)
+    await machine_cmd.send_job(machine, pointer_dry_run=True)
+    await _settle(doc_editor)
+    assert completed == []
+
+    await machine_cmd.send_job(machine)
+    await _settle(doc_editor)
+    assert completed == [machine_cmd]

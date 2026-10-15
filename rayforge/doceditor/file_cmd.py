@@ -19,6 +19,7 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
     import pyvips
 
+from blinker import Signal
 from raygeo.geo import Geometry, Matrix
 from raygeo.geo.types import Point, Rect
 from raygeo.ops.state import CoolantMode
@@ -118,6 +119,7 @@ class FileCmd:
     ):
         self._editor = editor
         self._task_manager = task_manager
+        self.gcode_exported = Signal()
 
     def get_importer_info(
         self, file_path: Path, mime_type: str | None
@@ -1063,8 +1065,7 @@ class FileCmd:
                     )
                     self._editor.notification_requested.send(self, message=msg)
                 self._editor.task_manager.schedule_on_main_thread(
-                    self._editor.variable_text.advance_after_job,
-                    exported=True,
+                    self.gcode_exported.send, self
                 )
 
             except Exception as e:
