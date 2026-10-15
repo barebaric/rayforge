@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the page size (#517)
 - Import: GIF, TIFF and WebP bitmaps, traced like PNG. Animated GIFs
   and multi-page TIFFs import their first frame or page (#517)
+- Import: compressed SVG (`.svgz`, Inkscape's "Compressed SVG"), with
+  the same options as plain SVG. The file type is registered with the
+  desktop, AppStream and the Windows installer (#546)
 - Engrave: more dithering algorithms for photos. The error-diffusion
   kernels Atkinson, Stucki, Jarvis-Judice-Ninke, Sierra (3-row,
   2-row, Lite) and Burkes, with an optional serpentine scan, plus a

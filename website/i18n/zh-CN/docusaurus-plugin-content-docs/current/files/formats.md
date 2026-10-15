@@ -32,8 +32,10 @@
 
 ### SVG（可缩放矢量图形）
 
-**扩展名：** `.svg` **MIME 类型：** `image/svg+xml` **导入：** 直接矢量解析或位图描摹 **导出：**
-对象导出（仅几何图形）
+**扩展名：** `.svg`, `.svgz` **MIME 类型：** `image/svg+xml`, `image/svg+xml-compressed` **导入：**
+直接矢量解析或位图描摹 **导出：** 对象导出（仅几何图形）
+
+压缩 SVG（`.svgz`，Inkscape 的"压缩 SVG"）会在导入时解压，之后的行为与普通 SVG 文件完全相同。
 
 **什么是 SVG？**
 

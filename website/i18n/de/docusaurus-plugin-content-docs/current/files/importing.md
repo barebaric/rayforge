@@ -9,7 +9,7 @@ Rasterformate. Diese Seite erklärt, wie du Dateien importierst und für beste E
 
 | Format          | Erweiterung       | Importmethode                                        | Am besten für                        |
 | --------------- | ----------------- | ---------------------------------------------------- | ------------------------------------ |
-| **SVG**         | `.svg`            | Direkte Vektoren oder Tracing                        | Vektorgrafiken, Logos, Designs       |
+| **SVG**         | `.svg`, `.svgz`   | Direkte Vektoren oder Tracing                        | Vektorgrafiken, Logos, Designs       |
 | **DXF**         | `.dxf`            | Direkte Vektoren                                     | CAD-Zeichnungen, technische Designs  |
 | **PDF**         | `.pdf`            | Direkte Vektoren oder Tracing                        | Dokumente mit Vektorinhalt           |
 | **LightBurn**   | `.lbrn`, `.lbrn2` | Direkte Vektoren                                     | LightBurn-Projekte                   |

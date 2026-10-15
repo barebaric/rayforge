@@ -33,8 +33,12 @@ Rayforge, y compris les capacités, les limitations et les recommandations.
 
 ### SVG (Scalable Vector Graphics)
 
-**Extension :** `.svg` **Type MIME :** `image/svg+xml` **Importation :** Analyse vectorielle directe
-ou tracé bitmap **Exportation :** Export d'objet (géométrie uniquement)
+**Extension :** `.svg`, `.svgz` **Type MIME :** `image/svg+xml`, `image/svg+xml-compressed`
+**Importation :** Analyse vectorielle directe ou tracé bitmap **Exportation :** Export d'objet
+(géométrie uniquement)
+
+Le SVG compressé (`.svgz`, "SVG compressé" d'Inkscape) est décompressé lors de l'importation et se
+comporte ensuite exactement comme un fichier SVG ordinaire.
 
 **Qu'est-ce que le SVG ?**
 

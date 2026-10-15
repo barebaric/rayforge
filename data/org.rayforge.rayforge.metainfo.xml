@@ -52,6 +52,7 @@
     <mediatype>image/bmp</mediatype>
     <mediatype>image/jpeg</mediatype>
     <mediatype>image/svg+xml</mediatype>
+    <mediatype>image/svg+xml-compressed</mediatype>
     <mediatype>image/vnd.dxf</mediatype>
   </provides>
 
