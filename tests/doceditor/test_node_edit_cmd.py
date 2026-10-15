@@ -107,3 +107,13 @@ async def test_sketch_workpieces_are_left_alone(doc_editor, node_edit):
     wp.geometry_provider_uid = "some-sketch"
     assert node_edit.move_node(wp, 2, 0.5, 0.5) is None
     assert wp._edited_boundaries is None
+
+
+@pytest.mark.asyncio
+async def test_does_not_merge_into_a_segment_deletion(doc_editor, node_edit):
+    wp = _add(doc_editor, _square())
+    doc_editor.edit.delete_segments(wp, {4})
+    after_delete = _ends(wp)
+    node_edit.delete_node(wp, 1)
+    doc_editor.history_manager.undo()
+    assert _ends(wp) == after_delete

@@ -15,19 +15,11 @@ from typing import TYPE_CHECKING
 
 from raygeo.geo import Geometry
 
-from ..core.undo import ChangePropertyCommand, Command
+from ..core.undo import ChangePropertyCommand
 from ..core.workpiece import WorkPiece
 
 if TYPE_CHECKING:
     from .editor import DocEditor
-
-
-class _NodeEditCommand(ChangePropertyCommand):
-    """A boundary edit that stays its own undo step, however quickly
-    the next edit follows."""
-
-    def can_coalesce_with(self, next_command: Command) -> bool:
-        return False
 
 
 class NodeEditCmd:
@@ -55,13 +47,14 @@ class NodeEditCmd:
             workpiece.updated.send(workpiece)
 
         self._editor.history_manager.execute(
-            _NodeEditCommand(
+            ChangePropertyCommand(
                 target=workpiece,
                 property_name="_edited_boundaries",
                 new_value=new_geo,
                 old_value=workpiece._edited_boundaries,
                 on_change_callback=_on_changed,
                 name=name,
+                coalesce=False,
             )
         )
         return index
