@@ -9,6 +9,7 @@ from rayforge.ui_gtk.doceditor.post_processor.groups import (
 from rayforge.ui_gtk.shared.pref_rows import LengthSpinRow
 
 from ..transformers import PerforationTransformer
+from ..transformers.perforation_transformer import MIN_LENGTH
 
 if TYPE_CHECKING:
     from rayforge.core.step import Step
@@ -31,7 +32,7 @@ class PerforationSettingsGroup(DebounceMixin, TransformerSettingsGroup):
         self.cut_row = LengthSpinRow(
             _("Cut Length"),
             _("Distance the laser fires before each gap"),
-            lower=0.01,
+            lower=MIN_LENGTH,
             upper=1000.0,
             value_in_base=transformer.cut_length,
         )
@@ -43,7 +44,7 @@ class PerforationSettingsGroup(DebounceMixin, TransformerSettingsGroup):
         self.skip_row = LengthSpinRow(
             _("Skip Length"),
             _("Distance travelled with the laser off between cuts"),
-            lower=0.01,
+            lower=MIN_LENGTH,
             upper=1000.0,
             value_in_base=transformer.skip_length,
         )
