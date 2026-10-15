@@ -45,7 +45,6 @@ class SketchPropertyProvider(PropertyProvider):
         for item in items:
             if not is_sketch_workpiece(item):
                 return False
-            assert isinstance(item, WorkPiece)
 
             if first_sketch_uid is None:
                 first_sketch_uid = item.geometry_provider_uid

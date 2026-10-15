@@ -249,7 +249,6 @@ class SketchModeCmd:
         item_uid = param.get_string()
         item = self._editor.doc.find_descendant_by_uid(item_uid)
         if is_sketch_workpiece(item):
-            assert isinstance(item, WorkPiece)
             self.enter_sketch_mode(item)
 
     def on_export_object(self, action, param):
