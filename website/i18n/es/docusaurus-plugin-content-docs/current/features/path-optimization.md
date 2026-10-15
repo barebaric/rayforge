@@ -20,6 +20,19 @@ distancia total más corta entre cortes.
 Activa o desactiva la optimización de trayectoria. Habilitada por defecto para la mayoría de
 operaciones.
 
+### Elegir el Mejor Punto de Inicio
+
+Inicia cada trayectoria cerrada en el vértice más cercano al cabezal láser en lugar de donde se
+dibujó. Esto acorta los desplazamientos en vacío. Las trayectorias abiertas y las que tienen
+entradas, sobrecorte o pestañas de sujeción conservan su punto de inicio. Desactivado por defecto.
+
+### Preferir Esquinas
+
+Solo disponible cuando **Elegir el Mejor Punto de Inicio** está activado. Las trayectorias cerradas
+empiezan en una esquina aguda si la tienen, lo que hace que la costura sea menos visible. Las
+trayectorias sin esquinas, como los círculos, empiezan en el vértice más cercano. Desactivado por
+defecto.
+
 ## Cuándo Usar Optimización
 
 **Habilitar para:**
