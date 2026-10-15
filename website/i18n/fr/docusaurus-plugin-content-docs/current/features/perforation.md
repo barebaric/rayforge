@@ -6,40 +6,66 @@ description:
 
 # Perforation
 
-Le post-traitement **Perforation** transforme une découpe continue en découpe en pointillés. Le
-laser tire sur la **Longueur de coupe**, puis se déplace laser éteint sur la **Longueur de saut**,
-et répète cela le long de chaque contour de la pièce.
+Tous les traits ne servent pas à détacher une pièce du matériau. Certains existent pour que le
+matériau se plie le long d'eux, se déchire proprement, ou pour marquer le passage de l'aiguille.
+C'est le rôle du post-traitement **Perforation** : il transforme une coupe continue en coupe en
+pointillés. Au lieu de laisser le laser allumé du début à la fin, il tire sur la **Longueur de
+coupe**, parcourt la **Longueur de saut** laser éteint, et répète ce rythme le long de chaque
+contour de la pièce. Il reste une ligne de petites coupes qui maintient le matériau — jusqu'à ce que
+vous décidiez de le plier ou de le déchirer.
 
-## Quand l'utiliser
+![Les réglages de la Perforation sur la page de post-traitement d'une étape de Contour](/screenshots/step-settings-contour-post-perforation.webp)
 
-- Lignes de pliage dans le carton et le carton ondulé
-- Lignes prédécoupées (billets, coupons, emballages)
-- Trous de couture dans le cuir
-- Pointillés décoratifs
+## Quelques cas d'usage
 
-## Réglages
+Chaque fois qu'un trait doit affaiblir le matériau sans le couper, une coupe perforée a du sens. Les
+grands classiques :
 
-La perforation est disponible dans les réglages de post-traitement des opérations **Contour**. Elle
-est désactivée par défaut.
+- **Les lignes de pliage** dans le carton et le carton ondulé se plient net le long d'une coupe en
+  pointillés — boîtes, cartes et créations pop-up, par exemple.
+- **Les lignes prédécoupées** ouvrent billets, bons et emballages sans ciseaux.
+- **Les trous de couture** dans le cuir marquent le passage de l'aiguille avant la couture.
+- **Les contours en pointillés** sont en eux-mêmes un effet décoratif, sur le bois, le papier ou
+  l'acrylique.
 
-- **Longueur de coupe** : la distance sur laquelle le laser tire avant chaque interruption.
-- **Longueur de saut** : la distance parcourue laser éteint entre deux coupes.
+## Activer la perforation
 
-Le motif est mesuré le long de chaque contour de la pièce et recommence au début de chaque contour,
-toujours par une coupe complète. Un contour plus court qu'une coupe plus un saut est découpé en
-entier.
+La perforation se trouve sur la page **Post-traitement** des réglages d'une étape de
+[Contour](operations/contour), aux côtés des autres post-traitements. Elle est désactivée par défaut
+; dès que vous basculez l'interrupteur, deux valeurs apparaissent :
+
+- La **Longueur de coupe** est la distance pendant laquelle le laser reste allumé avant chaque
+  interruption.
+- La **Longueur de saut** est la distance parcourue laser éteint entre deux coupes.
+
+Le motif recommence au début de chaque contour, toujours par une coupe complète, pour que toutes les
+lignes en pointillés de la pièce démarrent de la même façon. Un contour trop court pour ne serait-ce
+qu'une coupe et un saut est simplement découpé d'un seul tenant.
+
+## Le résultat
+
+Sur le canevas, la ligne en pointillés remplace le contour de coupe plein : chaque interruption du
+tracé sera aussi une interruption dans la pièce finie.
+
+![Un rectangle et un cercle découpés en pointillés dans une planche de contreplaqué](/screenshots/operations-perforation.webp)
 
 ## Conseils
 
-- Pour une ligne de pliage qui ne doit pas traverser, commencez avec une longueur de saut proche de
-  la longueur de coupe et baissez la puissance.
-- Des longueurs très courtes (quelques dixièmes de millimètre) font s'allumer et s'éteindre le laser
-  rapidement, ce qui réduit la puissance effective.
-- La perforation fonctionne avec les [Ponts de maintien](holding-tabs),
-  l'[Entrée/Sortie](lead-in-out) et les [Passes multiples](multi-pass).
+Pour une ligne de pliage qui ne doit pas traverser le matériau, commencez avec une longueur de saut
+proche de la longueur de coupe et baissez la puissance : une rainure peu profonde plie aussi bien
+qu'une coupe pointillée profonde, et l'envers reste propre.
+
+Les longueurs très courtes (quelques dixièmes de millimètre) font allumer et éteindre le laser à
+grande cadence, ce qui réduit la puissance effective et peut laisser des traces irrégulières. Si le
+motif paraît inégal, essayez des valeurs plus longues.
+
+La perforation se combine bien avec le reste du post-traitement : les
+[Ponts de Maintien](holding-tabs), l'[Approche / Sortie](lead-in-out) et la
+[Passe Multiple](multi-pass) continuent de fonctionner comme d'habitude.
 
 ## Pages associées
 
-- [Découpe de contour](operations/contour) - L'opération de découpe qui utilise la perforation
-- [Ponts de maintien](holding-tabs) - Interruptions placées à la main pour garder les pièces
+- [Coupe de Contour](operations/contour) — l'opération de coupe à laquelle appartient ce
+  post-traitement
+- [Ponts de Maintien](holding-tabs) — interruptions placées à la main pour garder les pièces
   attachées

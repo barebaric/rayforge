@@ -6,38 +6,60 @@ description:
 
 # Perforation
 
-The **Perforation** post-processor turns a continuous cut into a dashed one. The laser fires for the
-**Cut Length**, then travels with the laser off for the **Skip Length**, and repeats this along
-every contour of the workpiece.
+Not every cut is meant to free a part from the material. Some lines are there so the material can
+fold along them, tear apart cleanly, or show where the needle goes. That is what the **Perforation**
+post-processor is for: it turns a continuous cut into a dashed one. Instead of keeping the laser on
+from start to finish, it fires for the **Cut Length**, travels the **Skip Length** with the laser
+off, and repeats that rhythm along every contour of the workpiece. What remains is a line of small
+cuts that holds the material together — until you want it to give way.
 
-## When to Use It
+![The Perforation settings on the post-processing page of a Contour step](/screenshots/step-settings-contour-post-perforation.webp)
 
-- Fold lines in card stock and corrugated cardboard
-- Tear-off lines (tickets, coupons, packaging)
-- Stitch holes in leather
-- Dashed lines for decoration
+## Typical Uses
 
-## Settings
+Whenever a line should weaken the material without cutting it free, a perforation cut is worth
+considering. The classics:
 
-Perforation is available in the post-processing settings of **Contour** operations. It is off by
-default.
+- **Fold lines** in card stock and corrugated cardboard fold crisply along a dashed cut — think
+  boxes, cards and pop-up designs.
+- **Tear-off lines** let tickets, coupons and packaging open without scissors.
+- **Stitch holes** in leather mark the path of the needle before sewing.
+- **Dashed outlines** are a decorative effect in their own right, on wood, paper and acrylic.
 
-- **Cut Length**: the distance the laser fires before each gap.
-- **Skip Length**: the distance travelled with the laser off between two cuts.
+## Enabling Perforation
 
-The pattern is measured along each contour of the workpiece and starts again at the start of every
-contour, beginning with a full cut. A contour shorter than one cut plus one skip is cut in full.
+Perforation lives on the **Post Processing** page of a [Contour](operations/contour) step's
+settings, alongside the other post-processors. It is off by default — flip the switch and two values
+appear:
+
+- **Cut Length** is how far the laser stays on before each gap.
+- **Skip Length** is how far it travels with the laser off between two cuts.
+
+The pattern starts at the beginning of each contour with a full cut and restarts from there on every
+contour, so all dashed lines on the workpiece begin the same way. A contour too short to fit even
+one cut and one skip is simply cut in one piece.
+
+## The Result
+
+On the canvas, the dashed line replaces the solid cut outline — every gap in the toolpath is a gap
+in the finished part.
+
+![A rectangle and a circle cut as dashed lines into a sheet of plywood](/screenshots/operations-perforation.webp)
 
 ## Tips
 
-- For a fold line that should not cut through, start with a skip length about as long as the cut
-  length and lower the power.
-- Very short lengths (a few tenths of a millimetre) make the laser switch on and off rapidly, which
-  lowers the effective power.
-- Perforation works together with [Holding Tabs](holding-tabs), [Lead-In/Out](lead-in-out) and
-  [Multi-Pass](multi-pass).
+For a fold line that must not cut through, start with a skip length about as long as the cut length
+and lower the power — a shallow groove folds just as well as a deep dashed cut, and the underside
+stays clean.
+
+Very short lengths (a few tenths of a millimetre) make the laser switch on and off in rapid
+succession, which lowers the effective power and can leave uneven marks. If the pattern looks
+inconsistent, try longer lengths.
+
+Perforation plays well with the rest of the post-processing stack: [Holding Tabs](holding-tabs),
+[Lead-In/Out](lead-in-out) and [Multi-Pass](multi-pass) all keep working as usual.
 
 ## Related Pages
 
-- [Contour Cutting](operations/contour) - The cutting operation that uses perforation
-- [Holding Tabs](holding-tabs) - Gaps placed by hand to keep parts attached
+- [Contour Cutting](operations/contour) — the cutting operation this post-processor belongs to
+- [Holding Tabs](holding-tabs) — gaps placed by hand to keep parts attached
