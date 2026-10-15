@@ -51,11 +51,9 @@ class MachineCmd:
         self._editor = editor
         self._scheduler = editor.task_manager.schedule_on_main_thread
         self.job_started = Signal()
+        self.job_completed = Signal()
         self._current_monitor: JobMonitor | None = None
         self._on_progress_callback: Callable[[dict], None] | None = None
-        # Set when the running job is cancelled, and whether the last
-        # send job ran to its end; a finished send advances the
-        # document's serial counter.
         self._cancel_requested = False
         self._send_completed = False
 
@@ -470,7 +468,7 @@ class MachineCmd:
                 pointer_dry_run=pointer_dry_run,
             )
             if self._send_completed and not pointer_dry_run:
-                self._scheduler(self._editor.variable_text.advance_after_job)
+                self._scheduler(self.job_completed.send, self)
         except JobAlreadyRunningError as e:
             # An expected refusal, not a failure: the guard's message
             # already tells the user what to do.

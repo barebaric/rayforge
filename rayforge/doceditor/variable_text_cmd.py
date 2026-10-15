@@ -27,6 +27,7 @@ class VariableTextCmd:
 
     def __init__(self, editor: DocEditor):
         self._editor = editor
+        editor.file.gcode_exported.connect(self._on_gcode_exported)
 
     @property
     def serial(self) -> SerialSettings:
@@ -89,6 +90,13 @@ class VariableTextCmd:
             f"{self._editor.doc.variable_text.serial.current}"
         )
         return True
+
+    def on_job_completed(self, sender) -> None:
+        """Advances the counter after a job sent to the machine."""
+        self.advance_after_job()
+
+    def _on_gcode_exported(self, sender) -> None:
+        self.advance_after_job(exported=True)
 
     def set_variable_offset(
         self, workpieces: Sequence[WorkPiece], offset: int
