@@ -221,6 +221,9 @@ class StepSettingsDialog(PatchedDialogWindow):
         if page == "post-processing":
             self.btn_post_processing.set_active(True)
             return
+        if page == "workpieces" and self.btn_workpieces is not None:
+            self.btn_workpieces.set_active(True)
+            return
         for index, (page_title, extra_page, icon_name) in enumerate(
             self._extra_pages
         ):
