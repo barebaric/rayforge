@@ -30,7 +30,6 @@ class PerforationTransformer(OpsTransformer):
     them out of the nearest toolpath.
     """
 
-    SPEC_NAME = "tabs"
     DEFAULT_CUT_LENGTH = 2.0
     DEFAULT_SKIP_LENGTH = 1.0
 

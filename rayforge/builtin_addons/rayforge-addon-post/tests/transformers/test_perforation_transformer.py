@@ -1,13 +1,17 @@
 from unittest.mock import MagicMock
 
 import pytest
-from post_processors.transformers import PerforationTransformer
+from post_processors.transformers import (
+    PerforationTransformer,
+    TabOpsTransformer,
+)
 from raygeo.geo import Geometry
 from raygeo.ops import Ops
 from raygeo.ops.transform.tabs import TabsSpec
 from raygeo.ops.types import CommandType, SectionType
 
 from rayforge.core.workpiece import WorkPiece
+from rayforge.pipeline.transformer.registry import TransformerRegistry
 
 
 def _unit_square(x0=0.0, y0=0.0, x1=1.0, y1=1.0) -> Geometry:
@@ -183,3 +187,11 @@ class TestPerforationOnOps:
         ops.preload_state()
         assert ops.cut_distance() == pytest.approx(60.0, abs=1e-6)
         assert _cut_runs(ops) == 40
+
+
+class TestPerforationProgressLabel:
+    def test_tabs_progress_keeps_the_tabs_label(self):
+        registry = TransformerRegistry()
+        registry.register(PerforationTransformer)
+        registry.register(TabOpsTransformer)
+        assert registry.progress_label("tabs") == TabOpsTransformer().label
