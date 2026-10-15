@@ -131,6 +131,7 @@ class RuidaRPAEncoder(OpsEncoder):
         self._power_fraction: float = 0.0
         self._power_min_fraction: float = 0.0
         self._emitted_min_fraction: float = 0.0
+        self._last_requested_power: float | None = None
         self._job_power_cap: float | None = None
         self._power_floor: float = DEFAULT_POWER_FLOOR / 100.0
         self._power_floor_enabled: bool = False
@@ -568,7 +569,9 @@ class RuidaRPAEncoder(OpsEncoder):
 
     def _handle_set_power(self, ops: Ops, idx: int) -> None:
         """Set laser power for the remaining cuts on this layer."""
-        self._emit_power(ops.power(idx))
+        power = ops.power(idx)
+        self._last_requested_power = power
+        self._emit_power(power)
 
     def _handle_set_power_mode(self, ops: Ops, idx: int) -> None:
         """Enable/disable effective-min power scaling from PowerMode.
@@ -726,6 +729,7 @@ class RuidaRPAEncoder(OpsEncoder):
         self._layer_uid = ops.layer_uid(idx)
         self._layer_key += 1
         self._layer_declared = False
+        self._last_requested_power = None
 
     @staticmethod
     def _section_layer_mode(
@@ -915,6 +919,22 @@ class RuidaRPAEncoder(OpsEncoder):
             max_power_1=max_power_1,
         )
         self._layer_declared = True
+        self._reapply_last_power()
+
+    def _reapply_last_power(self) -> None:
+        """Re-apply the last requested power after a layer declaration.
+
+        The path optimizer hoists duplicate SET_POWER commands to the
+        first workpiece, so later workpieces start without a power op.
+        Each workpiece maps to its own Ruida layer whose power context
+        resets at the boundary, so the last known power must be re-emitted
+        or the controller cuts the workpiece with the laser off.
+        """
+        if self._last_requested_power is None:
+            return
+        self._power_fraction = 0.0
+        self._emitted_min_fraction = 0.0
+        self._emit_power(self._last_requested_power)
 
     def _handle_workpiece_end(self) -> None:
         """Emit a workpiece end marker and reset per-workpiece state."""
