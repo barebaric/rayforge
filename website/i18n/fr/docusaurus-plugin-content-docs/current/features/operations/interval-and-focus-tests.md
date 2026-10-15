@@ -14,8 +14,8 @@ modifier les réglages de chaque cellule ou ligne dans son opération.
 ## Test d'intervalle
 
 **Outils → Créer un test d'intervalle** grave une rangée de carrés remplis. Chaque carré a sa propre
-opération **Graver** avec son propre intervalle de ligne, réparti régulièrement du plus petit au plus
-grand intervalle saisi, tandis que la puissance et la vitesse restent les mêmes pour tous. Les
+opération **Graver** avec son propre intervalle de ligne, réparti régulièrement du plus petit au
+plus grand intervalle saisi, tandis que la puissance et la vitesse restent les mêmes pour tous. Les
 étiquettes sous chaque carré indiquent l'intervalle en millimètres et la densité de lignes
 correspondante en lignes par pouce (LPI).
 
@@ -29,15 +29,16 @@ carrés avec une opération séparée à faible puissance.
 net. Un décalage positif signifie plus de distance entre la tête et le matériau. La ligne la plus
 fine indique la meilleure mise au point.
 
-| Méthode                                | Comment la hauteur change                                                                       |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| **Pas de l'axe Z**                     | La tête rejoint chaque décalage par des mouvements Z relatifs et revient à la hauteur de départ |
-| **Manuel (pause entre les lignes)**    | La tâche se met en pause (`M0`) avant chaque ligne ; vous déplacez la tête et appuyez Reprendre |
-| **Rampe (matériau incliné)**           | Une longue ligne graduée ; vous surélevez une extrémité d'une bande plate                       |
+| Méthode                             | Comment la hauteur change                                                                       |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **Pas de l'axe Z**                  | La tête rejoint chaque décalage par des mouvements Z relatifs et revient à la hauteur de départ |
+| **Manuel (pause entre les lignes)** | La tâche se met en pause (`M0`) avant chaque ligne ; vous déplacez la tête et appuyez Reprendre |
+| **Rampe (matériau incliné)**        | Une longue ligne graduée ; vous surélevez une extrémité d'une bande plate                       |
 
 Les pas de l'axe Z ne sont proposés que sur les machines dotées d'un axe Z, et les pas de l'axe Z
 comme la méthode manuelle nécessitent un contrôleur G-code, car ils utilisent des opérations
-[Commande](command.md) entre les lignes. Les décalages sont limités à ±10 mm de la hauteur de départ.
+[Commande](command.md) entre les lignes. Les décalages sont limités à ±10 mm de la hauteur de
+départ.
 
 Avec la méthode manuelle, faites d'abord la mise au point du laser comme d'habitude. Les étiquettes
 sont gravées à cette hauteur. À la première pause, placez la tête au premier décalage ; à chaque
@@ -46,5 +47,5 @@ bouton Reprendre poursuit la tâche avant de vous y fier, par exemple avec un es
 puissance.
 
 Pour la rampe, la hauteur sous chaque point de la ligne découle de la pente de la bande : à une
-distance _d_ le long d'une ligne de longueur _L_ sur une bande qui monte de _h_, le matériau est
-_h_ × _d_ / _L_ plus haut qu'au départ.
+distance _d_ le long d'une ligne de longueur _L_ sur une bande qui monte de _h_, le matériau est _h_
+× _d_ / _L_ plus haut qu'au départ.

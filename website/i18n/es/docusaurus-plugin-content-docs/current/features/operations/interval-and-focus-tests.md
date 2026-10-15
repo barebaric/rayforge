@@ -7,9 +7,9 @@ description:
 # Pruebas de intervalo y de enfoque
 
 Junto a la [cuadrícula de prueba de material](material-test-grid.md), el menú Herramientas ofrece
-dos trabajos de calibración más. Ambos se crean como una capa normal con piezas y operaciones: puedes
-moverla, encuadrarla y previsualizarla como cualquier otro contenido, y cambiar después los ajustes
-de cada celda o línea en su operación.
+dos trabajos de calibración más. Ambos se crean como una capa normal con piezas y operaciones:
+puedes moverla, encuadrarla y previsualizarla como cualquier otro contenido, y cambiar después los
+ajustes de cada celda o línea en su operación.
 
 ## Prueba de intervalo
 
@@ -29,11 +29,11 @@ una operación propia de baja potencia.
 desplazamiento positivo significa más distancia entre el cabezal y el material. La línea más fina
 marca el mejor enfoque.
 
-| Método                            | Cómo cambia la altura                                                                              |
-| --------------------------------- | -------------------------------------------------------------------------------------------------- |
-| **Pasos del eje Z**               | El cabezal va a cada desplazamiento con movimientos Z relativos y vuelve a la altura inicial      |
-| **Manual (pausa entre líneas)**   | El trabajo se pausa (`M0`) antes de cada línea; mueves el cabezal a mano y pulsas Reanudar        |
-| **Rampa (material inclinado)**    | Una línea larga con marcas de distancia; levantas un extremo de una tira plana                    |
+| Método                          | Cómo cambia la altura                                                                        |
+| ------------------------------- | -------------------------------------------------------------------------------------------- |
+| **Pasos del eje Z**             | El cabezal va a cada desplazamiento con movimientos Z relativos y vuelve a la altura inicial |
+| **Manual (pausa entre líneas)** | El trabajo se pausa (`M0`) antes de cada línea; mueves el cabezal a mano y pulsas Reanudar   |
+| **Rampa (material inclinado)**  | Una línea larga con marcas de distancia; levantas un extremo de una tira plana               |
 
 Los pasos del eje Z solo se ofrecen en máquinas con eje Z, y tanto los pasos del eje Z como el
 método manual necesitan un controlador G-code, porque usan operaciones de [Comando](command.md)

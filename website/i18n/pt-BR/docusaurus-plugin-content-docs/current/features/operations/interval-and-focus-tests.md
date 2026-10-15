@@ -29,11 +29,11 @@ operação separada de baixa potência.
 deslocamento positivo significa mais distância entre a cabeça e o material. A linha mais fina marca
 o melhor foco.
 
-| Método                           | Como a altura muda                                                                                |
-| -------------------------------- | ------------------------------------------------------------------------------------------------- |
-| **Passos do eixo Z**             | A cabeça vai a cada deslocamento com movimentos Z relativos e volta à altura inicial no final    |
-| **Manual (pausa entre linhas)**  | O trabalho pausa (`M0`) antes de cada linha; você move a cabeça à mão e pressiona Retomar        |
-| **Rampa (material inclinado)**   | Uma linha longa com marcas de distância; você levanta uma extremidade de uma tira plana          |
+| Método                          | Como a altura muda                                                                            |
+| ------------------------------- | --------------------------------------------------------------------------------------------- |
+| **Passos do eixo Z**            | A cabeça vai a cada deslocamento com movimentos Z relativos e volta à altura inicial no final |
+| **Manual (pausa entre linhas)** | O trabalho pausa (`M0`) antes de cada linha; você move a cabeça à mão e pressiona Retomar     |
+| **Rampa (material inclinado)**  | Uma linha longa com marcas de distância; você levanta uma extremidade de uma tira plana       |
 
 Os passos do eixo Z só são oferecidos em máquinas com eixo Z, e tanto os passos do eixo Z quanto o
 método manual precisam de um controlador G-code, porque usam operações de [Comando](command.md)
