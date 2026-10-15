@@ -122,6 +122,9 @@ Funktionen bereit, und es können benutzerdefinierte Funktionen für sie registr
 | `{uuid8()}`     | `str`       | Alias für `uuid4()`                              |
 | `{uuid()}`      | `str`       | Vollständiger UUID v4-String (36 Zeichen)        |
 
+Für Seriennummern, die nach jedem Auftrag weiterzählen, verwende die Projektvariable `{serial}`
+(siehe [Variabler Text](../variable-text.md)).
+
 Typische Anwendungen sind eindeutige Seriennummern pro Lösung (`Part # {uuid4()}`), live
 Maßbeschriftungen (`W={width:.1f} H={height:.1f}`), Datumsstempel (`Date: {today()}`),
 Produktionszähler (`{name} - {count:.0f}pcs`) oder Unix-Zeitstempel für die

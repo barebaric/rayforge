@@ -124,6 +124,9 @@ funciones integradas de abajo, y se pueden registrar funciones personalizadas pa
 | `{uuid8()}`     | `str`        | Alias de `uuid4()`                                   |
 | `{uuid()}`      | `str`        | Cadena UUID v4 completa (36 caracteres)              |
 
+Para números de serie que avanzan tras cada trabajo, usa la variable del proyecto `{serial}`
+(consulta [Texto variable](../variable-text.md)).
+
 Entre los usos típicos se incluyen números de serie únicos en cada resolución (`Pieza #{uuid4()}`),
 etiquetas de dimensiones en vivo (`W={width:.1f} H={height:.1f}`), fechas en cada pieza
 (`Fecha: {today()}`), contadores de producción (`{name} - {count:.0f}uds`) o marcas de tiempo Unix
