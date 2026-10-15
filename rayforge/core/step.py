@@ -1,5 +1,6 @@
 import logging
 from abc import ABC
+from collections.abc import Sequence
 from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
@@ -94,7 +95,7 @@ class Step(DocItem, ABC):
         self.typelabel = typelabel
         self.visible = True
         self.selected_head_uid: str | None = None
-        self.generated_workpiece_uid: str | None = None
+        self.workpiece_uids: list[str] = []
         self.applied_recipe_uid: str | None = None
 
         per_wp_defaults, per_sp_defaults = (
@@ -572,7 +573,12 @@ class Step(DocItem, ABC):
             "typelabel": self.typelabel,
             "visible": self.visible,
             "selected_head_uid": self.selected_head_uid,
-            "generated_workpiece_uid": self.generated_workpiece_uid,
+            "workpiece_uids": self.workpiece_uids,
+            "generated_workpiece_uid": (
+                self.workpiece_uids[0]
+                if len(self.workpiece_uids) == 1
+                else None
+            ),
             "applied_recipe_uid": self.applied_recipe_uid,
             "per_workpiece_transformers_dicts": (
                 self.per_workpiece_transformers_dicts
@@ -609,6 +615,7 @@ class Step(DocItem, ABC):
                 "visible",
                 "selected_laser_uid",
                 "selected_head_uid",
+                "workpiece_uids",
                 "generated_workpiece_uid",
                 "applied_recipe_uid",
                 "modifiers_dicts",
@@ -675,7 +682,11 @@ class Step(DocItem, ABC):
         step.selected_head_uid = data.get(
             "selected_head_uid", data.get("selected_laser_uid")
         )
-        step.generated_workpiece_uid = data.get("generated_workpiece_uid")
+        step.workpiece_uids = list(data.get("workpiece_uids") or [])
+        if not step.workpiece_uids:
+            legacy = data.get("generated_workpiece_uid")
+            if legacy:
+                step.workpiece_uids = [legacy]
         step.applied_recipe_uid = data.get("applied_recipe_uid")
 
         default_per_wp, default_per_step = (
@@ -809,6 +820,32 @@ class Step(DocItem, ABC):
         if self.selected_head_uid != uid:
             self.selected_head_uid = uid
             self.updated.send(self)
+
+    def selected_workpieces(
+        self, workpieces: Sequence["WorkPiece"]
+    ) -> list["WorkPiece"]:
+        """
+        The given workpieces this step applies to, in input order.
+
+        An empty ``workpiece_uids`` filter matches every workpiece; a
+        set filter matches only the workpieces whose uid it lists, and
+        silently skips uids that are not present.
+        """
+        if not self.workpiece_uids:
+            return list(workpieces)
+        uids = set(self.workpiece_uids)
+        return [wp for wp in workpieces if wp.uid in uids]
+
+    def set_workpiece_uids(self, uids: list[str]):
+        """
+        Sets the workpieces this step applies to (empty means all of
+        the layer's workpieces) and notifies listeners of the change.
+        """
+        normalized = list(dict.fromkeys(uids))
+        if self.workpiece_uids == normalized:
+            return
+        self.workpiece_uids = normalized
+        self.updated.send(self)
 
     def set_name(self, name: str):
         """Sets the step name and notifies listeners of the change."""

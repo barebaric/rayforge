@@ -197,7 +197,6 @@ class LaserStep(Step):
             "tab_power": self.tab_power,
             "frequency": self.frequency,
             "pulse_width": self.pulse_width,
-            "generated_workpiece_uid": self.generated_workpiece_uid,
         }
 
     def apply_import_settings(self, settings: dict[str, Any]) -> None:

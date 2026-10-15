@@ -124,7 +124,7 @@ class MaterialTestCmd:
             assert isinstance(workpiece, WorkPiece)
 
             self._doc.add_asset(source)
-            step.generated_workpiece_uid = workpiece.uid  # Link step to WP
+            step.workpiece_uids = [workpiece.uid]  # Link step to WP
             width_mm, height_mm = workpiece.size
 
             machine_dims = self._editor.machine_dimensions
@@ -167,10 +167,10 @@ class MaterialTestCmd:
         self.sync_preview_from_step(origin)
 
     def sync_preview_from_step(self, step: Step):
-        if not step.generated_workpiece_uid:
+        if not step.workpiece_uids:
             return
 
-        item = self._doc.find_descendant_by_uid(step.generated_workpiece_uid)
+        item = self._doc.find_descendant_by_uid(step.workpiece_uids[0])
         if not isinstance(item, WorkPiece):
             logger.warning("Could not find workpiece owned by step.")
             return
