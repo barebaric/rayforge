@@ -4,6 +4,7 @@ the Object menu and the Barcode group in the properties panel.
 """
 
 from gettext import gettext as _
+from pathlib import Path
 
 from gi.repository import Gio
 
@@ -12,12 +13,16 @@ from rayforge.ui_gtk.action_registry import MenuPlacement
 from rayforge.ui_gtk.doceditor.property_providers import (
     property_provider_registry,
 )
+from rayforge.ui_gtk.icons import register_icon_path
 
 from .commands import add_barcode, default_position
 from .property_provider import BarcodePropertyProvider
 
 ADDON_NAME = "barcodes"
 ADD_ACTION = "add-barcode"
+_ICONS_DIR = Path(__file__).parent / "resources" / "icons"
+
+register_icon_path(_ICONS_DIR)
 
 
 @hookimpl
