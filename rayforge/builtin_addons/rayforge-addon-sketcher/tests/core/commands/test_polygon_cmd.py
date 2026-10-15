@@ -194,6 +194,18 @@ class TestPolygonPreview:
         assert registry.entities == []
         assert {p.id for p in registry.points} == {0, state.center_id}
 
+    def test_rebuilding_keeps_point_usage_counts(self):
+        sketch = Sketch()
+        registry = sketch.registry
+        state = PolygonCommand.start_preview(registry, 0.0, 0.0)
+        PolygonCommand.update_preview(registry, state, 10.0, 0.0)
+        old_corners = list(state.corner_ids)
+        state.set_shape(registry, sides=5, star_ratio=None)
+        assert not any(registry.is_point_used(p) for p in old_corners)
+        preview_ids = state.get_preview_point_ids()
+        PolygonCommand.cleanup_preview(registry, state)
+        assert not any(registry.is_point_used(p) for p in preview_ids)
+
     def test_radius_input_scales_the_preview(self):
         sketch = Sketch()
         registry = sketch.registry

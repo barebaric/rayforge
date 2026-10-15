@@ -109,10 +109,8 @@ class PolygonPreviewState(PreviewState):
         )
 
     def _remove_outline(self, registry: EntityRegistry) -> None:
-        lines = set(self.line_ids)
         corners = set(self.corner_ids)
-        registry.entities = [e for e in registry.entities if e.id not in lines]
-        registry._entity_map = {e.id: e for e in registry.entities}
+        registry.remove_entities_by_id(self.line_ids)
         registry.points = [p for p in registry.points if p.id not in corners]
         self.line_ids = []
         self.corner_ids = []
