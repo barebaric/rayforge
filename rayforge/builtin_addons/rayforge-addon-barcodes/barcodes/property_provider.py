@@ -3,13 +3,13 @@
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
-from gi.repository import Adw, GLib, Gtk
+from gi.repository import Adw, Gtk
 
 from rayforge.core.item import DocItem
 from rayforge.ui_gtk.doceditor.property_providers.base import (
     PropertyProvider,
 )
-from rayforge.ui_gtk.shared.pref_rows import SpinRow
+from rayforge.ui_gtk.shared.pref_rows import LengthSpinRow, SpinRow
 
 from .asset import BarcodeAsset
 from .commands import barcode_of, set_barcode_setting
@@ -58,17 +58,17 @@ class BarcodePropertyProvider(PropertyProvider):
         self.error_row = _combo(
             _("Error Correction"), [ERROR_LABELS[e] for e in ERROR_LEVELS]
         )
-        self.module_row = SpinRow(
+        self.module_row = LengthSpinRow(
             _("Module Size"),
-            _("Width of the narrowest bar or one QR square, in mm"),
+            _("Width of the narrowest bar or one QR square"),
             lower=0.05,
             upper=20.0,
             step_increment=0.05,
             digits=2,
         )
-        self.bar_height_row = SpinRow(
+        self.bar_height_row = LengthSpinRow(
             _("Bar Height"),
-            _("Height of the bars, in mm"),
+            _("Height of the bars"),
             lower=1.0,
             upper=500.0,
             step_increment=0.5,
@@ -92,10 +92,12 @@ class BarcodePropertyProvider(PropertyProvider):
         self.symbology_row.connect("notify::selected", self._on_symbology)
         self.error_row.connect("notify::selected", self._on_error)
         self.module_row.value_changed.connect(
-            lambda row: self._set("module_mm", row.get_value())
+            lambda row: self._set("module_mm", row.get_value_in_base_units())
         )
         self.bar_height_row.value_changed.connect(
-            lambda row: self._set("bar_height_mm", row.get_value())
+            lambda row: self._set(
+                "bar_height_mm", row.get_value_in_base_units()
+            )
         )
         self.quiet_zone_row.value_changed.connect(
             lambda row: self._set("quiet_zone", row.get_int_value())
@@ -137,8 +139,8 @@ class BarcodePropertyProvider(PropertyProvider):
             self.error_row.set_selected(
                 ERROR_LEVELS.index(asset.error_correction)
             )
-            self.module_row.set_value(asset.module_mm)
-            self.bar_height_row.set_value(asset.bar_height_mm)
+            self.module_row.set_value_in_base_units(asset.module_mm)
+            self.bar_height_row.set_value_in_base_units(asset.bar_height_mm)
             self.quiet_zone_row.set_value(asset.effective_quiet_zone)
             self.text_row.set_active(asset.show_text)
             self.invert_row.set_active(asset.invert)
@@ -160,9 +162,7 @@ class BarcodePropertyProvider(PropertyProvider):
         else:
             self.content_row.remove_css_class("error")
             self.content_row.set_tooltip_text(
-                GLib.markup_escape_text(
-                    _("Templates work here too, e.g. SN-{serial:04d}")
-                )
+                _("Templates work here too, e.g. SN-{serial:04d}")
             )
 
     def _set(self, setting: str, value: Any) -> None:
