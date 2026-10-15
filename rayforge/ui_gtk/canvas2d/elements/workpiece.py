@@ -1046,8 +1046,7 @@ class WorkPieceElement(CanvasElement):
         if not drag.moved:
             return
         cmd = state.geometry.data[drag.index]
-        work_surface = cast("WorkSurface", self.canvas)
-        node_edit = work_surface.editor.node_edit
+        node_edit = self._node_edit()
         if drag.handle is None:
             x, y = cmd.end[0], cmd.end[1]
             index = node_edit.move_node(self.data, drag.index, x, y)
@@ -1059,7 +1058,9 @@ class WorkPieceElement(CanvasElement):
         )
         self._resnapshot(selected_node=state.selected_node)
 
-    def _resnapshot(self, selected_node: int | None = None) -> None:
+    def _resnapshot(
+        self, selected_node: int | None = None, keep_segments: bool = True
+    ) -> None:
         """Takes the edited boundaries as the new edit state."""
         boundaries = self.data.boundaries
         if boundaries is None or boundaries.is_empty():
@@ -1067,9 +1068,9 @@ class WorkPieceElement(CanvasElement):
             if self.canvas:
                 self.canvas.leave_edit_mode()
             return
-        selected = (
-            self._edit_state.selected_segments if self._edit_state else set()
-        )
+        selected: set[int] = set()
+        if keep_segments and self._edit_state:
+            selected = self._edit_state.selected_segments
         self._edit_state = VectorEditState(boundaries)
         data = boundaries.data
         self._edit_state.selected_segments = {
@@ -1145,45 +1146,46 @@ class WorkPieceElement(CanvasElement):
     def handle_edit_key(self, keyval: int) -> bool:
         if not self._edit_state:
             return False
-
-        work_surface = cast("WorkSurface", self.canvas)
-        node_edit = work_surface.editor.node_edit
-        state = self._edit_state
         if keyval in (Gdk.KEY_i, Gdk.KEY_I):
-            if state.hovered_segment is None:
-                return True
-            index = node_edit.insert_node(
-                self.data, state.hovered_segment, state.hovered_t
-            )
-            self._resnapshot(selected_node=index)
+            self._insert_node_at_hover()
             return True
         if keyval in (Gdk.KEY_c, Gdk.KEY_C):
             self._toggle_selected_curves()
             return True
-        if keyval in (Gdk.KEY_Delete, Gdk.KEY_BackSpace) and (
-            state.selected_node is not None
-        ):
-            index = node_edit.delete_node(self.data, state.selected_node)
-            self._resnapshot(selected_node=index)
-            return True
         if keyval in (Gdk.KEY_Delete, Gdk.KEY_BackSpace):
-            if not self._edit_state.selected_segments:
-                return True
-            work_surface.editor.edit.delete_segments(
-                self.data, self._edit_state.selected_segments
-            )
-            boundaries = self.data.boundaries
-            if boundaries is None or boundaries.is_empty():
-                self.clear_all_ops_caches()
-                if self.canvas:
-                    self.canvas.leave_edit_mode()
-                return True
-            self._edit_state = VectorEditState(boundaries)
-            if self.canvas:
-                self.canvas.queue_draw()
+            self._delete_selection()
             return True
-
         return False
+
+    def _node_edit(self):
+        return cast("WorkSurface", self.canvas).editor.node_edit
+
+    def _insert_node_at_hover(self) -> None:
+        state = self._edit_state
+        if not state or state.hovered_segment is None:
+            return
+        index = self._node_edit().insert_node(
+            self.data, state.hovered_segment, state.hovered_t
+        )
+        self._resnapshot(selected_node=index, keep_segments=False)
+
+    def _delete_selection(self) -> None:
+        state = self._edit_state
+        if not state:
+            return
+        if state.selected_node is not None:
+            index = self._node_edit().delete_node(
+                self.data, state.selected_node
+            )
+            self._resnapshot(selected_node=index, keep_segments=False)
+            return
+        if not state.selected_segments:
+            return
+        work_surface = cast("WorkSurface", self.canvas)
+        work_surface.editor.edit.delete_segments(
+            self.data, state.selected_segments
+        )
+        self._resnapshot(keep_segments=False)
 
     def _toggle_selected_curves(self) -> None:
         state = self._edit_state
@@ -1193,8 +1195,7 @@ class WorkPieceElement(CanvasElement):
         curve = any(
             not isinstance(data[i], Bezier) for i in state.selected_segments
         )
-        work_surface = cast("WorkSurface", self.canvas)
-        work_surface.editor.node_edit.set_segments_curve(
+        self._node_edit().set_segments_curve(
             self.data, state.selected_segments, curve
         )
         self._resnapshot()
