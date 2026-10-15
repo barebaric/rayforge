@@ -1182,13 +1182,9 @@ class WorkPiece(DocItem):
         """The raw template strings the geometry provider renders."""
         provider = self.get_geometry_provider()
         get_sources = getattr(provider, "get_template_sources", None)
-        if callable(get_sources):
-            return [str(source) for source in cast(list, get_sources())]
-        return [
-            entry[0]
-            for entry in self._resolved_text_cache.values()
-            if isinstance(entry, (tuple, list)) and entry
-        ]
+        if get_sources is None:
+            return []
+        return list(get_sources())
 
     def references_template_names(self, names: set[str]) -> bool:
         """Whether any template of this workpiece reads one of *names*."""
