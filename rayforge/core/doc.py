@@ -18,7 +18,7 @@ from .item import DocItem
 from .layer import Layer
 from .source_asset import SourceAsset
 from .variable_text import VariableText
-from .workpiece import WorkPiece
+from .workpiece import WorkPiece, workpieces_in
 
 if TYPE_CHECKING:
     from .stock import StockItem
@@ -222,11 +222,7 @@ class Doc(DocItem):
     def _on_item_added_for_templates(
         self, sender: DocItem, *, origin: DocItem, parent_of_origin: DocItem
     ) -> None:
-        if isinstance(origin, WorkPiece):
-            added = [origin]
-        else:
-            added = origin.get_descendants(of_type=WorkPiece)
-        for wp in added:
+        for wp in workpieces_in(origin):
             if wp.references_template_names(self._variable_text.names):
                 wp.sync_template_values()
 

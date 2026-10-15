@@ -1777,3 +1777,10 @@ class WorkPiece(DocItem):
 
         # Send updated signal to trigger UI updates
         self.updated.send(self)
+
+
+def workpieces_in(item: DocItem) -> list[WorkPiece]:
+    """The item itself if it is a workpiece, else its workpieces."""
+    if isinstance(item, WorkPiece):
+        return [item]
+    return item.get_descendants(of_type=WorkPiece)
