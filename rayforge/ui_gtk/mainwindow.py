@@ -18,7 +18,6 @@ from ..core.item import DocItem
 from ..core.registration import call_registration_hooks
 from ..core.undo import Command, HistoryManager
 from ..doceditor.editor import DocEditor
-from .doceditor.frame_popover import FramePopover
 from ..machine.cmd import MachineCmd
 from ..machine.driver.driver import DeviceState, DeviceStatus
 from ..machine.driver.dummy import NoDeviceDriver
@@ -46,6 +45,7 @@ from .canvas2d.surface import WorkSurface
 from .debug_log_dialog import DebugLogDialog
 from .doceditor import file_dialogs
 from .doceditor.bottom_panel import BottomPanel
+from .doceditor.frame_popover import FramePopover
 from .doceditor.import_handler import start_interactive_import
 from .doceditor.item_properties import DocItemPropertiesWidget
 from .doceditor.missing_features_dialog import MissingFeaturesDialog
