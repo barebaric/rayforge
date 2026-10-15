@@ -69,9 +69,7 @@ def test_one_dimensional_bars_get_the_bar_height():
 
 def test_text_goes_below_and_ean_guards_reach_into_it():
     encoded = encode(Symbology.EAN13, "590123412345")
-    plain = _loops(
-        encoded, Symbology.EAN13, BarcodeStyle(module_mm=0.33)
-    )
+    plain = _loops(encoded, Symbology.EAN13, BarcodeStyle(module_mm=0.33))
     with_text = _loops(
         encoded, Symbology.EAN13, BarcodeStyle(module_mm=0.33, show_text=True)
     )
