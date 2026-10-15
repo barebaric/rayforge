@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 from ..core.item import DocItem
 from ..core.undo import ChangePropertyCommand
 from ..core.variable_text import SerialSettings
-from ..core.workpiece import WorkPiece
+from ..core.workpiece import WorkPiece, workpieces_in
 from .layout.base import LayoutStrategy
 
 if TYPE_CHECKING:
@@ -114,7 +114,7 @@ class VariableTextCmd:
         """
         changes = []
         for index, item in enumerate(_reading_order(items)):
-            changes.extend((wp, index) for wp in _workpieces_of(item))
+            changes.extend((wp, index) for wp in workpieces_in(item))
         self._apply_offsets(changes, _("Number copies"))
 
     def _apply_offsets(
@@ -133,12 +133,6 @@ class VariableTextCmd:
                         name=name,
                     )
                 )
-
-
-def _workpieces_of(item: DocItem) -> list[WorkPiece]:
-    if isinstance(item, WorkPiece):
-        return [item]
-    return item.get_descendants(of_type=WorkPiece)
 
 
 def _reading_order(items: Sequence[DocItem]) -> list[DocItem]:

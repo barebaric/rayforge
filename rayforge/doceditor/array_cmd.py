@@ -20,7 +20,7 @@ from raygeo.geo.types import Rect
 from ..core.group import Group
 from ..core.item import DocItem
 from ..core.undo import ListItemCommand
-from ..core.workpiece import WorkPiece
+from ..core.workpiece import WorkPiece, workpieces_in
 from .array import ArrayParams, make_array_strategy
 from .layout.base import LayoutStrategy
 from .transform_cmd import TransformCmd
@@ -177,11 +177,7 @@ class ArrayCmd:
 def _shift_variable_offsets(item: DocItem, shift: int) -> None:
     """Numbers an array copy: its workpieces show the template values
     ``shift`` copies after the original's."""
-    if isinstance(item, WorkPiece):
-        workpieces = [item]
-    else:
-        workpieces = item.get_descendants(of_type=WorkPiece)
-    for wp in workpieces:
+    for wp in workpieces_in(item):
         wp.variable_offset += shift
 
 
