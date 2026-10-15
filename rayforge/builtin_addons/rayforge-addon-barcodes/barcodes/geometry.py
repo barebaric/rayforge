@@ -1,17 +1,14 @@
 """
 Turns encoded modules into closed outlines in millimetres (Y up).
 
-Dark modules are merged into polygons with holes. Every loop is then
-oriented by its nesting depth, so even-odd and non-zero filling agree.
+Dark modules are merged into polygons with holes. The winding of every
+contour is then normalized, so even-odd and non-zero filling agree.
 """
 
 from dataclasses import dataclass
 
-from raygeo.geo.shape.polygon import (
-    get_polygon_signed_area,
-    get_polygons_union,
-    is_point_inside_polygon,
-)
+from raygeo.geo import Geometry
+from raygeo.geo.shape.polygon import get_polygons_union
 from raygeo.geo.shape.text import FontConfig, text_to_geometry
 
 from .encoders import Encoded, Symbology
@@ -41,30 +38,16 @@ class BarcodeStyle:
     invert: bool = False
 
 
-def _probe(loop: Loop) -> tuple[float, float]:
-    (x1, y1), (x2, y2) = loop[0], loop[1]
-    return ((x1 + x2) / 2.0, (y1 + y2) / 2.0)
-
-
-def orient_by_nesting(loops: list[Loop]) -> list[Loop]:
-    """
-    Orients each loop counter-clockwise at even nesting depth and
-    clockwise at odd depth, so nested loops alternate between solid and
-    hole however they were drawn.
-    """
-    oriented = []
-    for index, loop in enumerate(loops):
-        probe = _probe(loop)
-        depth = sum(
-            1
-            for other_index, other in enumerate(loops)
-            if other_index != index and is_point_inside_polygon(probe, other)
-        )
-        counter_clockwise = get_polygon_signed_area(loop) > 0
-        if counter_clockwise != (depth % 2 == 0):
-            loop = loop[::-1]
-        oriented.append(loop)
-    return oriented
+def loops_to_geometry(loops: list[Loop]) -> Geometry:
+    """Closed contours from a list of loops."""
+    geometry = Geometry()
+    for loop in loops:
+        x, y = loop[0]
+        geometry.move_to(x, y)
+        for x, y in loop[1:]:
+            geometry.line_to(x, y)
+        geometry.close_path()
+    return geometry
 
 
 def _rect(x: float, y: float, w: float, h: float) -> Loop:
@@ -147,10 +130,10 @@ def _module_rects(
     return rects, text_space + bars
 
 
-def barcode_loops(
+def barcode_geometry(
     encoded: Encoded, symbology: Symbology, style: BarcodeStyle
-) -> list[Loop]:
-    """The dark areas of a symbol as oriented loops, in mm."""
+) -> Geometry:
+    """The dark areas of a symbol as closed contours, in mm."""
     rects, height = _module_rects(encoded, symbology, style)
     loops: list[Loop] = [
         [(float(x), float(y)) for x, y in polygon]
@@ -163,4 +146,4 @@ def barcode_loops(
         width = encoded.width * style.module_mm
         loops = [[(x + q, y + q) for x, y in loop] for loop in loops]
         loops.append(_rect(0.0, 0.0, width + 2 * q, height + 2 * q))
-    return orient_by_nesting(loops)
+    return loops_to_geometry(loops).normalize_winding_orders()

@@ -25,7 +25,11 @@ from .encoders import (
     Symbology,
     encode,
 )
-from .geometry import BarcodeStyle, Loop, barcode_loops
+from .geometry import (
+    BarcodeStyle,
+    barcode_geometry,
+    loops_to_geometry,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -54,17 +58,6 @@ class _Setting:
         updated = getattr(obj, "updated", None)
         if updated is not None:
             updated.send(obj)
-
-
-def _loops_to_geometry(loops: list[Loop]) -> Geometry:
-    geometry = Geometry()
-    for loop in loops:
-        x, y = loop[0]
-        geometry.move_to(x, y)
-        for x, y in loop[1:]:
-            geometry.line_to(x, y)
-        geometry.close_path()
-    return geometry
 
 
 class BarcodeAsset(IAsset, IGeometryProvider):
@@ -202,11 +195,9 @@ class BarcodeAsset(IAsset, IGeometryProvider):
             logger.info(f"Barcode {self.uid[:8]}: {e}")
             size = PLACEHOLDER_MM
             outline = [(0.0, 0.0), (size, 0.0), (size, size), (0.0, size)]
-            return _loops_to_geometry([outline]), []
+            return loops_to_geometry([outline]), []
         self._error = None
-        geometry = _loops_to_geometry(
-            barcode_loops(encoded, self.symbology, self._style())
-        )
+        geometry = barcode_geometry(encoded, self.symbology, self._style())
         fill = FillRenderData(
             geometry=geometry.copy(), style=FillStyle.SOLID, color=_BLACK
         )
