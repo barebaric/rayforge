@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 from blinker import Signal
 from laser_essentials import worker
-from laser_essentials.offset_fill import offset_fill_faces, offset_fill_rings
+from laser_essentials.offset_fill import offset_fill_rings
 from laser_essentials.steps import OffsetFillStep
 from raygeo.cnc.execution.specs import ComputePayload
 from raygeo.geo import Geometry
@@ -80,6 +80,10 @@ class TestOffsetFillRings:
         lengths = [round(r.distance(), 6) for r in rings]
         assert lengths == [40.0, 32.0, 24.0, 16.0, 8.0]
 
+    def test_small_shapes_fill_up_to_the_centre(self):
+        rings = offset_fill_rings(_square(1.0), step=0.1)
+        assert len(rings) == 5
+
     def test_first_ring_is_the_outline(self):
         rings = offset_fill_rings(_square(), step=1.0)
         assert rings[0].rect() == pytest.approx((0.0, 0.0, 10.0, 10.0))
@@ -126,33 +130,6 @@ class TestOffsetFillRings:
 def _two_squares():
     geo = _rect(Geometry(), 0.0, 0.0, 10.0, 10.0)
     return _rect(geo, 20.0, 0.0, 26.0, 6.0)
-
-
-class TestOffsetFillFaces:
-    def test_every_shape_is_filled(self):
-        faces = offset_fill_faces(_two_squares(), step=1.0)
-        total = sum(f.distance() for f in faces)
-        assert total == pytest.approx(120.0 + 24.0 + 16.0 + 8.0)
-
-    def test_each_face_is_one_shape(self):
-        faces = offset_fill_faces(_two_squares(), step=1.0)
-        for face in faces:
-            assert len(face.split_into_components()) == 1
-
-    def test_shapes_are_filled_one_after_the_other(self):
-        faces = offset_fill_faces(_two_squares(), step=1.0)
-        sides = [face.rect()[0] >= 20.0 for face in faces]
-        assert sides == sorted(sides) or sides == sorted(sides)[::-1]
-
-    def test_outside_inside_starts_with_the_outline(self):
-        faces = offset_fill_faces(_square(), step=1.0)
-        assert faces[0].distance() == pytest.approx(40.0)
-        assert faces[-1].distance() == pytest.approx(8.0)
-
-    def test_inside_outside_ends_with_the_outline(self):
-        faces = offset_fill_faces(_square(), step=1.0, inside_out=True)
-        assert faces[0].distance() == pytest.approx(8.0)
-        assert faces[-1].distance() == pytest.approx(40.0)
 
 
 class TestOffsetFillStep:
