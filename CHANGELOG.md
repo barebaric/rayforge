@@ -35,6 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Duplicates (duplicate contours inside a workpiece and stacked copies
   of whole workpieces), and Break Apart (one workpiece per contour,
   holes and open paths included). Each is a single undo step (#516)
+- Contour: Perforation post-processor for dashed cuts. The laser
+  fires for a Cut Length and is off for a Skip Length along every
+  contour, starting with a full cut at the start of each contour; off
+  by default (#525)
 - Sketcher: boolean operations. Union, Difference, Intersection and
   Exclude bake the selected closed regions into multi-ring polygons
   (outer contours counter-clockwise, hole contours clockwise), so

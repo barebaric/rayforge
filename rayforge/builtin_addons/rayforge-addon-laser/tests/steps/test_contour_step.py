@@ -37,13 +37,25 @@ class TestContourStep:
         step = ContourStep.create(mock_context, name="Created")
         assert isinstance(step, ContourStep)
         assert step.name == "Created"
-        assert len(step.per_workpiece_transformers_dicts) == 5
+        assert len(step.per_workpiece_transformers_dicts) == 6
         assert len(step.per_step_transformers_dicts) == 3
         assert step.selected_head_uid == "test-laser-uid"
 
     def test_create_without_optimize(self, mock_context):
         step = ContourStep.create(mock_context, optimize=False)
-        assert len(step.per_workpiece_transformers_dicts) == 4
+        assert len(step.per_workpiece_transformers_dicts) == 5
+
+    def test_create_adds_disabled_perforation_after_tabs(self, mock_context):
+        step = ContourStep.create(mock_context)
+        names = [t["name"] for t in step.per_workpiece_transformers_dicts]
+        assert "PerforationTransformer" in names
+        assert names.index("PerforationTransformer") == (
+            names.index("TabOpsTransformer") + 1
+        )
+        perforation = step.per_workpiece_transformers_dicts[
+            names.index("PerforationTransformer")
+        ]
+        assert perforation["enabled"] is False
 
     def test_serialization_includes_step_type(self):
         step = ContourStep(name="Test")
@@ -88,6 +100,7 @@ class TestContourStep:
             t["name"] for t in restored.per_workpiece_transformers_dicts
         ]
         assert "TabOpsTransformer" in wp_names
+        assert "PerforationTransformer" in wp_names
         assert "Smooth" in wp_names
         assert "CropTransformer" in wp_names
         assert "Optimize" in wp_names
