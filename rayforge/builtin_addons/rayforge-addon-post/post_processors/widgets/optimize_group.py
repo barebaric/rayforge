@@ -50,8 +50,8 @@ class OptimizeSettingsGroup(TransformerSettingsGroup):
         self.best_start_row = Adw.SwitchRow(
             title=_("Choose Best Start Point"),
             subtitle=_(
-                "Enter closed paths at the vertex nearest the current "
-                "position, hiding the seam of every loop."
+                "Start closed paths at the vertex nearest the laser "
+                "head to shorten travel moves."
             ),
         )
         self.best_start_row.set_active(transformer.best_start_point)
@@ -63,8 +63,8 @@ class OptimizeSettingsGroup(TransformerSettingsGroup):
         self.prefer_corners_row = Adw.SwitchRow(
             title=_("Prefer Corners"),
             subtitle=_(
-                "Only start closed paths at sharp corners, when the "
-                "path has any (circles fall back to any vertex)."
+                "Start closed paths at a sharp corner where the path "
+                "has one, which makes the seam less visible."
             ),
         )
         self.prefer_corners_row.set_active(transformer.prefer_corners)
