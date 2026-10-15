@@ -170,7 +170,9 @@ class BarcodePropertyProvider(PropertyProvider):
         if self._in_update or asset is None:
             return
         set_barcode_setting(self.editor, asset, setting, value)
-        self._update_visibility(asset)
+        changed = self.asset
+        if changed is not None:
+            self._update_visibility(changed)
 
     def _on_content_applied(self, row: Adw.EntryRow) -> None:
         self._set("content", row.get_text())

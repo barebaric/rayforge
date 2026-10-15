@@ -37,27 +37,6 @@ RENDERER_NAME = "SketchRenderer"
 CACHE_KEY = 0
 PLACEHOLDER_MM = 10.0
 _BLACK = (0.0, 0.0, 0.0, 1.0)
-_UNSET = object()
-
-
-class _Setting:
-    """An attribute that sends the owner's ``updated`` when it changes."""
-
-    def __set_name__(self, owner: type, name: str) -> None:
-        self.attr = "_" + name
-
-    def __get__(self, obj: Any, owner: type | None = None) -> Any:
-        if obj is None:
-            return self
-        return getattr(obj, self.attr)
-
-    def __set__(self, obj: Any, value: Any) -> None:
-        if getattr(obj, self.attr, _UNSET) == value:
-            return
-        setattr(obj, self.attr, value)
-        updated = getattr(obj, "updated", None)
-        if updated is not None:
-            updated.send(obj)
 
 
 class BarcodeAsset(IAsset, IGeometryProvider):
@@ -78,15 +57,6 @@ class BarcodeAsset(IAsset, IGeometryProvider):
     add_action: ClassVar[str | None] = None
     activate_action: ClassVar[str | None] = None
     edit_item_action: ClassVar[str | None] = None
-
-    content = _Setting()
-    symbology = _Setting()
-    error_correction = _Setting()
-    module_mm = _Setting()
-    bar_height_mm = _Setting()
-    quiet_zone = _Setting()
-    show_text = _Setting()
-    invert = _Setting()
 
     def __init__(
         self,

@@ -63,7 +63,11 @@ def test_switching_symbology(editor):
     asset = barcode_of(wp)
     assert asset is not None
     set_barcode_setting(editor, asset, "content", "590123412345")
+    asset = barcode_of(wp)
+    assert asset is not None
     set_barcode_setting(editor, asset, "symbology", Symbology.EAN13)
+    asset = barcode_of(wp)
+    assert asset is not None
     assert asset.error is None
     width, height = wp.size
     assert width == pytest.approx(95 * asset.module_mm)

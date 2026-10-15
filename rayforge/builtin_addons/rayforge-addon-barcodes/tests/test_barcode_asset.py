@@ -80,15 +80,6 @@ def test_default_quiet_zone_is_the_symbology_minimum():
     assert BarcodeAsset(quiet_zone=2).effective_quiet_zone == 2
 
 
-def test_changing_a_setting_signals_updated():
-    asset = BarcodeAsset(content="x")
-    seen = []
-    asset.updated.connect(seen.append, weak=False)
-    asset.module_mm = 1.0
-    asset.module_mm = 1.0
-    assert seen == [asset]
-
-
 def test_workpiece_from_barcode():
     doc = Doc()
     asset = BarcodeAsset(content="hello", module_mm=0.5)

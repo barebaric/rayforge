@@ -7,12 +7,9 @@ from typing import Any, Protocol
 
 from rayforge.core.doc import Doc
 from rayforge.core.item import DocItem
-from rayforge.core.undo import (
-    ChangePropertyCommand,
-    HistoryManager,
-    ListItemCommand,
-)
+from rayforge.core.undo import HistoryManager, ListItemCommand
 from rayforge.core.workpiece import WorkPiece
+from rayforge.doceditor.asset_cmd import UpdateAssetCommand
 
 from .asset import BarcodeAsset
 
@@ -73,26 +70,22 @@ def add_barcode(
     return workpiece
 
 
-def _resize_instances(doc: Doc, asset: BarcodeAsset) -> None:
-    """Gives every workpiece of *asset* the symbol's true size."""
-    for workpiece in doc.all_workpieces:
-        if workpiece.geometry_provider_uid == asset.uid:
-            workpiece.regenerate_from_geometry_provider()
-
-
 def set_barcode_setting(
     editor: _Editor, asset: BarcodeAsset, setting: str, value: Any
 ) -> None:
-    """Changes one barcode setting as an undo step."""
+    """
+    Changes one barcode setting as an undo step. The asset is replaced
+    and its workpieces are resized by the generic asset update.
+    """
     if getattr(asset, setting) == value:
         return
-    doc = editor.doc
+    changed = BarcodeAsset.from_dict(asset.to_dict())
+    setattr(changed, setting, value)
     editor.history_manager.execute(
-        ChangePropertyCommand(
-            target=asset,
-            property_name=setting,
-            new_value=value,
-            on_change_callback=lambda: _resize_instances(doc, asset),
+        UpdateAssetCommand(
+            doc=editor.doc,
+            asset_uid=asset.uid,
+            new_data=changed.to_dict(),
             name=_("Change Barcode"),
         )
     )
