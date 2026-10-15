@@ -49,11 +49,20 @@ git rebase upstream/main
    git push origin feature/your-feature-name
    ```
 
-2. 在 GitHub 上创建 pull request，包含：
-   - 描述更改的清晰标题
-   - 详细说明您更改了什么以及为什么
+2. 在 GitHub 上创建 pull request 并填写 pull request 模板：
+   - 清晰的标题，以及说明更改内容及其所解决的问题
+   - 为什么选择这种特定的架构方案，以及否决了哪些备选方案
+   - 本地测试该更改的确切步骤
    - 引用任何相关问题
    - 如果更改影响 UI，附上截图
+   - 勾选模板清单中的所有复选框
+
+<!-- prettier-ignore-start -->
+:::warning[模板强制执行]
+未填写模板的 pull request 会被机器人自动关闭。编辑 pull request 描述，回答每个部分并勾选每个
+复选框后，pull request 会自动重新打开。
+:::
+<!-- prettier-ignore-end -->
 
 ## 代码审查流程
 
@@ -70,6 +79,13 @@ Pull request 在以下情况下合并：
 - [ ] 为新功能包含适当的测试
 - [ ] 如需要更新文档
 - [ ] 至少获得一位维护者的批准
+
+## AI 辅助代码
+
+我们欢迎使用 AI 工具来辅助编写代码。但是，你提交的代码完全由你负责。你必须完全理解这些代码，并且能够解释其中的架构决策。
+
+AI 生成的代码常常引入隐蔽的 bug、架构不匹配和安全漏洞。看起来是未经审查的原始 AI 输出的 pull
+request 将被关闭，以尊重维护者的时间。
 
 ## 其他指南
 
