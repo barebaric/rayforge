@@ -57,4 +57,8 @@ class ImageEditOp(ABC):
     def apply(
         cls, image: pyvips.Image, params: Mapping[str, Any]
     ) -> pyvips.Image:
-        """Returns the edited image; ``image`` is left untouched."""
+        """
+        Returns the edited image; ``image`` is left untouched. Its
+        ``xres``/``yres`` give the resolution in pixels per mm, for
+        edits with physical sizes.
+        """

@@ -25,6 +25,29 @@ ist.
 Verwende es für Lithophanen und Prägen in einer Gravur-Operation, bei der helle Bereiche tief
 graviert werden sollen, oder um helle Motive auf dunklem Hintergrund zu gravieren.
 
+## Bild anpassen
+
+Wähle ein oder mehrere Werkstücke aus und wähle **Tools - Adjust Image...**, um ein Foto vor dem
+Gravieren oder Nachzeichnen zu korrigieren:
+
+- **Brightness** (Helligkeit) hellt das Bild auf oder dunkelt es ab.
+- **Contrast** (Kontrast) zieht die Tonwerte vom mittleren Grau weg oder zu ihm hin.
+- **Gamma** über 1 hellt die Mitteltöne auf, unter 1 dunkelt es sie ab; Schwarz und Weiß bleiben,
+  wie sie sind.
+- **Sharpen** (Schärfen) verstärkt Kanten und feine Details (eine Unscharfmaskierung). **Sharpen
+  Radius** legt die Größe der Details in Millimetern fest, sodass das Ergebnis bei jedem
+  Zeilenabstand und jeder Zoomstufe gleich ist.
+
+![Der Dialog „Bild anpassen“ mit den Reglern für Tonwert und Schärfe](/screenshots/addon-image-editing-adjust.webp)
+
+Die Leinwand zeigt die Änderungen schon während der Bearbeitung. **Apply** übernimmt sie als einen
+einzigen Rückgängig-Schritt; wenn du den Dialog ohne Übernehmen schließt, werden sie verworfen, und
+**Reset** setzt alle Werte auf neutral zurück. Transparente Bereiche bleiben transparent.
+
+Der Dialog öffnet sich mit den Werten des ersten ausgewählten Werkstücks, und Apply gibt jedem
+ausgewählten Werkstück dieselben Werte. Das Schärfen erfolgt vor den Tonwertkorrekturen, und andere
+Bearbeitungen wie Invert Image behalten ihren Platz.
+
 ## Ältere Projekte
 
 Vor diesem Addon war Invertieren eine Einstellung der Gravur-Operation. Wenn du ein älteres Projekt
