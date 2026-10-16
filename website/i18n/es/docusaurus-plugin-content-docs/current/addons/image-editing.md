@@ -23,6 +23,29 @@ invertidas se invierten, de modo que toda la selección acaba igual.
 Úsalo para litofanías y repujado en una operación de grabado, donde las áreas claras deben grabarse
 en profundidad, o para grabar dibujos claros sobre un fondo oscuro.
 
+## Ajustar imagen
+
+Selecciona una o más piezas de trabajo y elige **Tools - Adjust Image...** para corregir una foto
+antes de grabarla o vectorizarla:
+
+- **Brightness** (brillo) aclara u oscurece la imagen.
+- **Contrast** (contraste) aleja los tonos del gris medio o los acerca a él.
+- **Gamma** por encima de 1 aclara los tonos medios y por debajo de 1 los oscurece; el negro y el
+  blanco no cambian.
+- **Sharpen** (enfocar) refuerza los bordes y los detalles finos (una máscara de enfoque). **Sharpen
+  Radius** fija el tamaño de esos detalles en milímetros, de modo que el resultado es el mismo con
+  cualquier intervalo de línea o nivel de zoom.
+
+![El diálogo de Ajustar imagen con los controles deslizantes de tono y nitidez](/screenshots/addon-image-editing-adjust.webp)
+
+El lienzo muestra los cambios mientras editas. **Apply** los conserva como un único paso de
+deshacer; si cierras el diálogo sin aplicar, se descartan, y **Reset** devuelve todos los valores a
+neutro. Las zonas transparentes siguen siendo transparentes.
+
+El diálogo se abre con los valores de la primera pieza seleccionada, y Apply da los mismos valores a
+todas las piezas seleccionadas. El enfoque se aplica antes de las correcciones de tono, y otras
+ediciones como Invert Image mantienen su lugar.
+
 ## Proyectos antiguos
 
 Antes de este complemento, Invertir era un ajuste de la operación de grabado. Cuando abres un

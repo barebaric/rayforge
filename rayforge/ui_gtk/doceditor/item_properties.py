@@ -132,6 +132,7 @@ class DocItemPropertiesWidget(Gtk.Box):
         for item in self.items:
             item.updated.disconnect(self._on_item_data_changed)
             item.transform_changed.disconnect(self._on_item_data_changed)
+            item.renamed.disconnect(self._on_item_data_changed)
 
         self.items = items or []
 
@@ -148,6 +149,7 @@ class DocItemPropertiesWidget(Gtk.Box):
         for item in self.items:
             item.updated.connect(self._on_item_data_changed)
             item.transform_changed.connect(self._on_item_data_changed)
+            item.renamed.connect(self._on_item_data_changed)
 
         self._update_ui()
 

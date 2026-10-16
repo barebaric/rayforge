@@ -59,10 +59,10 @@ class WorkpieceRow(Gtk.Box):
 
         self._update_ui()
 
-        workpiece.updated.connect(self._on_workpiece_updated)
+        workpiece.renamed.connect(self._on_workpiece_renamed)
 
     def do_destroy(self):
-        self.workpiece.updated.disconnect(self._on_workpiece_updated)
+        self.workpiece.renamed.disconnect(self._on_workpiece_renamed)
         self._remove_rename_click_controller()
 
     def get_drag_content(self) -> Gdk.ContentProvider:
@@ -86,7 +86,7 @@ class WorkpieceRow(Gtk.Box):
     def _update_ui(self):
         self.name_label.set_text(self._get_display_name())
 
-    def _on_workpiece_updated(self, sender, **kwargs):
+    def _on_workpiece_renamed(self, sender):
         self._update_ui()
 
     def _on_drag_prepare(self, drag_source, x, y):

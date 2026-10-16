@@ -49,11 +49,21 @@ git rebase upstream/main
    git push origin feature/nombre-de-tu-feature
    ```
 
-2. Crea un pull request en GitHub con:
-   - Un título claro describiendo el cambio
-   - Una descripción detallada de qué cambiaste y por qué
+2. Crea un pull request en GitHub y rellena la plantilla de pull request:
+   - Un título claro y una descripción del cambio y del problema que resuelve
+   - Por qué elegiste tu enfoque arquitectónico concreto y qué alternativas descartaste
+   - Los pasos exactos que seguiste para probar el cambio localmente
    - Referencia a cualquier issue relacionado
    - Capturas de pantalla si el cambio afecta la UI
+   - Todas las casillas de la checklist de la plantilla marcadas
+
+<!-- prettier-ignore-start -->
+:::warning[La plantilla se aplica]
+Los pull requests que no rellenan la plantilla se cierran automáticamente por un bot. Edita la
+descripción del pull request para responder cada sección y marcar cada casilla; el pull request se
+reabre automáticamente.
+:::
+<!-- prettier-ignore-end -->
 
 ## Proceso de Revisión de Código
 
@@ -70,6 +80,16 @@ Los pull requests se mergean cuando:
 - [ ] Incluyen pruebas apropiadas para nueva funcionalidad
 - [ ] Tienen actualizaciones de documentación si es necesario
 - [ ] Son aprobados por al menos un maintainer
+
+## Código Asistido por IA
+
+Agradecemos el uso de herramientas de IA para ayudar a escribir código. Sin embargo, eres
+estrictamente responsable del código que envías. DEBES entenderlo completamente y debes poder
+explicar las decisiones arquitectónicas.
+
+El código generado por IA a menudo introduce errores sutiles, desajustes arquitectónicos y fallos de
+seguridad. Los pull requests que parezcan salida de IA sin revisar se cerrarán para respetar el
+tiempo de los maintainers.
 
 ## Directrices Adicionales
 

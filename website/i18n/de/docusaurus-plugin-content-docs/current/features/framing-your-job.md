@@ -28,6 +28,12 @@ Den Job-Grenzrahmen nachzeichnen, ohne den Laser einzuschalten:
 4. **Den Laserkopf beobachten**, wie er das Begrenzungsrechteck nachzeichnet
 5. **Positionierung verifizieren** und Material bei Bedarf anpassen
 
+Die Rahmen-Taste öffnet ein kleines Popover mit dem Schalter **Overscan-Marge einschließen**. Der
+vollständige Maschinenpfad enthält die Raster-Overscan-Marge – die Anlauf- und Auslaufbewegungen mit
+null Leistung, die dem Kopf Platz zum Beschleunigen geben –, daher kann der nachgezeichnete Umriss
+über dein Design hinausragen, hauptsächlich in X. Schalte den Schalter aus, um nur die Hülle
+nachzuzeichnen, die der Laser tatsächlich brennt.
+
 ### Methode 2: Niedrigleistungs-Vorschau
 
 Einige Maschinen unterstützen Niederleistungs-Einrahmen mit sichtbarem Strahl:

@@ -45,6 +45,7 @@ from .canvas2d.surface import WorkSurface
 from .debug_log_dialog import DebugLogDialog
 from .doceditor import file_dialogs
 from .doceditor.bottom_panel import BottomPanel
+from .doceditor.frame_popover import FramePopover
 from .doceditor.import_handler import start_interactive_import
 from .doceditor.item_properties import DocItemPropertiesWidget
 from .doceditor.missing_features_dialog import MissingFeaturesDialog
@@ -2526,6 +2527,18 @@ class MainWindow(Adw.ApplicationWindow):
         if not config.machine:
             return
 
+        # Let the user choose the frame extent before the job starts.
+        popover = FramePopover(on_frame=self._start_frame_job)
+        popover.connect("closed", lambda p: p.unparent())
+        popover.set_parent(self.toolbar.frame_button)
+        popover.popup()
+
+    def _start_frame_job(self, include_overscan: bool):
+        config = get_context().config
+        machine = config.machine
+        if not machine:
+            return
+
         # Disable focus mode when framing
         focus_action = self.action_manager.get_action("toggle-focus")
         focus_state = focus_action.get_state()
@@ -2534,7 +2547,9 @@ class MainWindow(Adw.ApplicationWindow):
 
         # Get the coroutine object for the framing job
         job_coro = self.machine_cmd.frame_job(
-            config.machine, on_progress=self._on_job_progress_updated
+            machine,
+            on_progress=self._on_job_progress_updated,
+            include_overscan=include_overscan,
         )
         # Run the job using the helper
         self._run_machine_job(job_coro)

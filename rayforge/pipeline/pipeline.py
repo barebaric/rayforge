@@ -373,7 +373,15 @@ class Pipeline:
         if self._is_shutting_down or output is None:
             return
         source_dims = output.source_dimensions
-        gen_size = workpiece.size if workpiece else (0.0, 0.0)
+        # generation_size must be the size the ops were generated at:
+        # an output built before a resize can arrive on the main thread
+        # after the resize was committed, and consumers scale the ops
+        # by current_size / generation_size.
+        gen_size = (
+            source_dims
+            if source_dims
+            else (workpiece.size if workpiece else (0.0, 0.0))
+        )
         artifact = WorkPieceArtifact(
             ops=output.ops,
             is_scalable=output.is_scalable,

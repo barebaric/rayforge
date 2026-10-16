@@ -33,6 +33,11 @@ Trace the job boundary without turning on the laser:
 4. **Watch the laser head** trace the boundary rectangle
 5. **Verify positioning** and adjust material if needed
 
+The Frame button opens a small popover with an **Include Overscan Margin** switch. The full machine
+path includes the raster overscan margin — the zero-power lead-in and lead-out moves that give the
+head room to accelerate — so the traced outline can extend past your artwork, mainly in X. Turn the
+switch off to trace only the envelope the laser actually burns.
+
 ### Method 2: Low Power Preview
 
 Some machines support low-power framing with a visible beam:

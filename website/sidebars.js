@@ -78,6 +78,7 @@ module.exports = {
                 'features/crop-to-stock',
                 'features/overscan',
                 'features/holding-tabs',
+                'features/perforation',
                 'features/merge-lines',
                 'features/lead-in-out',
               ],

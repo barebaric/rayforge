@@ -141,6 +141,17 @@ export default function Contributing() {
                   <span className={styles.panelLinkLabel}>Browse source</span>
                   <span className={styles.panelLinkMeta}>GitHub repository</span>
                 </a>
+                <a
+                  href="https://github.com/barebaric/rayforge/blob/main/CONTRIBUTING.md"
+                  className={styles.panelLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className={styles.panelLinkLabel}>
+                    Contribution rules
+                  </span>
+                  <span className={styles.panelLinkMeta}>CONTRIBUTING.md</span>
+                </a>
                 <Link to="/sponsor" className={styles.panelLink}>
                   <span className={styles.panelLinkLabel}>
                     Become a Sponsor
