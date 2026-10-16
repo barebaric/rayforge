@@ -28,6 +28,12 @@ Traçar o limite do trabalho sem ligar o laser:
 4. **Observe a cabeça do laser** traçar o retângulo delimitador
 5. **Verifique o posicionamento** e ajuste o material se necessário
 
+O botão Enquadrar abre um pequeno popover com a chave **Incluir a margem de overscan**. O caminho
+completo da máquina inclui a margem de overscan do raster — os movimentos de entrada e saída com
+potência zero que dão espaço à cabeça para acelerar —, portanto o contorno traçado pode ultrapassar
+o seu design, principalmente em X. Desative a chave para traçar apenas o envelope que o laser
+realmente queima.
+
 ### Método 2: Visualização em baixa potência
 
 Algumas máquinas suportam enquadramento em baixa potência com um feixe visível:

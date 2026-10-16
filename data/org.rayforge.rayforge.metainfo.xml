@@ -77,6 +77,147 @@
   </screenshots>
 
   <releases>
+    <release version="1.13.0~beta1" date="2026-10-16">
+      <description>
+        <p>More import formats and a new dithering engine, the Rust
+        GRBL driver as the default, reloadable sources, sketcher
+        booleans, configurable mouse gestures, and Ruida networking</p>
+        <p>New Features:</p>
+        <ul>
+          <li>Import Adobe Illustrator, EPS/PostScript and HPGL plot
+          files, GIF/TIFF/WebP bitmaps, and compressed SVG (svgz);
+          EPS and PostScript are converted to PDF with Ghostscript, an
+          optional dependency, and the page size comes from the EPS
+          bounding box (#517, #546, by switch87)</li>
+          <li>Imported sources can be reloaded from disk in place and
+          relinked to another file, updating every workpiece made from
+          them as one undo step. Rayforge watches imported files and
+          offers to reload those that changed, with an Auto-reload
+          option and a General preference to turn watching off (#513,
+          #537)</li>
+          <li>A dithering engine for photos: eight error-diffusion
+          kernels (Atkinson, Stucki, Jarvis-Judice-Ninke, three Sierra
+          variants and Burkes), an optional serpentine scan, a
+          clustered-dot Newsprint screen and a round-dot Halftone
+          screen with adjustable cell size and angle; LightBurn
+          imports keep the image layer's dither mode (#514, by
+          switch87)</li>
+          <li>The Frame button opens a popover with an Include Overscan
+          Margin switch; when it is off the frame traces only the
+          envelope the laser burns instead of the full machine path,
+          so it no longer overshoots the artwork (#563)</li>
+          <li>Path clean-up tools in the Object menu and canvas
+          context menu: Close Paths and Join Open Paths with a
+          tolerance in mm, Delete Duplicates, and Break Apart, each a
+          single undo step (#516, by switch87)</li>
+          <li>A Perforation post-processor on Contour steps cuts in
+          dashes: the laser fires for a Cut Length and travels a Skip
+          Length with the laser off along every contour, restarting
+          with a full cut at each contour's start. Useful for fold
+          lines, tear-off lines and stitch holes; off by default
+          (#525, by switch87)</li>
+          <li>Sketcher: boolean operations. Union, Difference,
+          Intersection and Exclude bake the selected closed regions
+          into multi-ring polygons, so difference results cut
+          correctly; undo/redo restores the original entities and
+          fills (#398)</li>
+          <li>Optimize: acceleration-aware scanline merging bridges
+          parallel cut lines at zero power when the machine's motion
+          profile makes the merged sweep faster, with a Merge
+          Scanlines switch and a manual max-gap override
+          (raygeo 1.60.0)</li>
+          <li>Ruida: the setup wizard gains a Connection mode selector
+          (Auto, Network, USB), and network connections can use TCP
+          alongside UDP; ruida-pa was upgraded to 0.22.0 (#520, by
+          StevenIsaacs and medoix)</li>
+          <li>A Z homing mode lets machines choose between a Home
+          Switch and the auto-focus Probe routine where the driver
+          supports both; the Ruida driver routes Z home to its
+          auto-focus routine by default (#548)</li>
+          <li>A speed-dependent bidirectional scan offset table in the
+          Advanced settings interpolates the raster offset for each
+          step's speed, for lasers whose skew grows with speed (#307)</li>
+          <li>The camera view can extend beyond the work area, with
+          adjustable margins and border transparency (#543, by
+          atkaper)</li>
+          <li>A new Mouse Gestures settings page rebinds the 2D and 3D
+          canvas and sketch-editor navigation gestures (#390)</li>
+          <li>Official AppImage builds are attached to GitHub
+          releases, and Rayforge is published through WinGet</li>
+          <li>Image Editing addon: non-destructive image edits stored
+          per workpiece, with Tools &gt; Invert Image and Tools &gt;
+          Adjust Image for brightness, contrast, gamma and unsharp
+          mask; the register_image_edits hook (plugin API 23) lets
+          addons provide their own edits (#515)</li>
+          <li>A new Workpieces tab in step settings shows which
+          workpieces a step processes on its layer, including the
+          selection that generated content like the Material Test Grid
+          used to hide</li>
+        </ul>
+        <p>Changes:</p>
+        <ul>
+          <li>Engrave's Invert moved from the operation to the
+          workpiece, as the Invert Image edit; older projects are
+          converted when they are opened, so their output stays the
+          same (#515)</li>
+          <li>The GRBL Serial driver now runs its entire protocol stack
+          in Rust through the raydriver library; the experimental
+          "GRBL (Rust)" driver replaces the old Python implementation
+          under the familiar "GRBL (Serial)" name, so existing machine
+          configurations keep working unchanged</li>
+          <li>Addon API 22: actions registered via register_actions
+          accept an enabled_when predicate, and the hook is invoked
+          again when an addon is enabled while the window exists</li>
+          <li>Upgrade raygeo to 1.66.0: full-sweep raster passes are
+          limited to each scan line's own content extent, so a shape
+          that narrows in X (for example an hourglass) no longer sweeps
+          the widest extent on every row (#565)</li>
+          <li>Updated translations</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Disabling an addon now reliably removes its
+          action_extension_registry handlers even when several addons
+          registered same-named handlers</li>
+          <li>The Engrave step's Bidirectional Scan Offset had no
+          effect since the pipeline moved to raygeo intents; changing
+          it now also refreshes the cached toolpath (#307)</li>
+          <li>Choice rows backed by an enum now show the step's actual
+          value when the dialog opens and after undo</li>
+          <li>The running job ETA is derived from the modeled time
+          remaining instead of the recent command speed, so it no
+          longer swings on jobs that mix fast and slow phases (#496)</li>
+          <li>Ruida: homing a single X or Y axis jogs only that axis
+          instead of moving both to the origin (#545, by medoix)</li>
+          <li>The Crop to Stock post-processor is now offered on
+          Engrave steps, so raster content can be clipped to the
+          stock boundary (#508)</li>
+          <li>The Sculpfun S30 focus laser uses constant power (M3),
+          so it lights while the head is stationary; a dedicated
+          Sculpfun S9 profile was added (#512)</li>
+          <li>The Ruida setup wizard no longer requires the optional
+          USB device and Magic fields, so Next is enabled again once
+          a valid hostname is entered (#501, #504)</li>
+          <li>GRBL (Network): a new FluidNC protocol variant uses
+          FluidNC's native command endpoint over its WebSocket,
+          replacing the confusing "did not receive a valid HTTP
+          response" error on ESP3D-style handshakes (#490)</li>
+          <li>Zipping a machine export no longer fails with "ZIP does
+          not support timestamps before 1980" for 3D models that carry
+          such timestamps (#500)</li>
+          <li>On-canvas text is drawn through Pango instead of Cairo's
+          toy font API, fixing garbled text and wrong sizes,
+          especially for non-Latin languages (#507, by atkaper)</li>
+          <li>macOS: adding a camera no longer crashes Rayforge; the
+          app bundle declares NSCameraUsageDescription, and the first
+          frame waits for the capture session to settle (#510)</li>
+          <li>Material test: resizing the workpiece no longer leaves
+          the grid's cells and labels misaligned with the workpiece
+          image until the next rebuild; toolpath outputs are stamped
+          with the size their ops were generated at (#568)</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.12.0" date="2026-10-02">
       <description>
         <p>A Command step for injecting custom machine code, plus fixes

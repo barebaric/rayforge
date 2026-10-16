@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-15 02:25+0200\n"
+"POT-Creation-Date: 2026-10-15 13:51+0200\n"
 "PO-Revision-Date: 2026-09-27 22:58\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -8535,6 +8535,24 @@ msgstr "स्टेप नाम और रेसिपी सेटिंग�
 msgid "Change {key}"
 msgstr "{key} बदलें"
 
+#: rayforge/ui_gtk/doceditor/step_settings/pages/workpieces.py
+#: rayforge/ui_gtk/doceditor/step_settings/dialog.py
+msgid "Workpieces"
+msgstr "वर्कपीस"
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/workpieces.py
+msgid "The workpieces this step processes."
+msgstr "वे वर्कपीस जिन्हें यह स्टेप प्रोसेस करता है।"
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/workpieces.py
+msgid "All workpieces on this layer"
+msgstr "इस लेयर की सभी वर्कपीस"
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/workpieces.py
+#, python-brace-format
+msgid "Processes {count} of {total} workpieces"
+msgstr "{total} में से {count} वर्कपीस प्रोसेस करता है"
+
 #: rayforge/ui_gtk/doceditor/step_settings/pages/post_processing.py
 msgid "Transformers applied to this step's generated toolpath."
 msgstr "इस स्टेप के जनरेट किए गए टूलपाथ पर लागू ट्रांसफ़ॉर्मर."
@@ -10396,7 +10414,7 @@ msgstr "छवि डेटा सामान्यीकृत करने �
 
 #: rayforge/image/svg/importer.py
 msgid "This SVGZ file's gzip data could not be decompressed."
-msgstr ""
+msgstr "इस SVGZ फ़ाइल का gzip डेटा डीकंप्रेस नहीं किया जा सका।"
 
 #: rayforge/image/bitmap/importer.py
 #, python-brace-format

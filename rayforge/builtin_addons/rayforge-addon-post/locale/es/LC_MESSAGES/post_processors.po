@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-03 16:38+0200\n"
+"POT-Creation-Date: 2026-10-15 05:47+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -207,6 +207,30 @@ msgstr "Cambiar distancia de entrada"
 msgid "Change Lead-Out Distance"
 msgstr "Cambiar distancia de salida"
 
+#: post_processors/widgets/perforation_group.py
+msgid "Cut Length"
+msgstr "Longitud de corte"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance the laser fires before each gap"
+msgstr "Distancia que el láser permanece encendido antes de cada espacio"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Skip Length"
+msgstr "Longitud de omisión"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance travelled with the laser off between cuts"
+msgstr "Distancia recorrida con el láser apagado entre cortes"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation cut length"
+msgstr "Cambiar longitud de corte de perforación"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation skip length"
+msgstr "Cambiar longitud de omisión de perforación"
+
 #: post_processors/widgets/merge_lines_group.py
 msgid "Tolerance"
 msgstr "Tolerancia"
@@ -263,6 +287,17 @@ msgstr "Fusionar líneas"
 #: post_processors/transformers/merge_lines_transformer.py
 msgid "Merges overlapping lines to avoid double passing."
 msgstr "Fusiona líneas superpuestas para evitar pases dobles."
+
+#: post_processors/transformers/perforation_transformer.py
+msgid "Perforation"
+msgstr "Perforación"
+
+#: post_processors/transformers/perforation_transformer.py
+msgid ""
+"Cuts in dashes: the laser fires for the cut length and skips the skip length"
+msgstr ""
+"Corta a trazos: el láser se enciende durante la longitud de corte y se apaga "
+"durante la longitud de omisión"
 
 #: post_processors/transformers/overscan_transformer.py
 msgid "Overscan"

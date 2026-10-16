@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-15 02:25+0200\n"
+"POT-Creation-Date: 2026-10-15 13:51+0200\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -8767,6 +8767,24 @@ msgstr "Nome do passo e definições da receita."
 msgid "Change {key}"
 msgstr "Alterar {key}"
 
+#: rayforge/ui_gtk/doceditor/step_settings/pages/workpieces.py
+#: rayforge/ui_gtk/doceditor/step_settings/dialog.py
+msgid "Workpieces"
+msgstr "Peças de trabalho"
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/workpieces.py
+msgid "The workpieces this step processes."
+msgstr "As peças de trabalho que esta etapa processa."
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/workpieces.py
+msgid "All workpieces on this layer"
+msgstr "Todas as peças de trabalho desta camada"
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/workpieces.py
+#, python-brace-format
+msgid "Processes {count} of {total} workpieces"
+msgstr "Processa {count} de {total} peças de trabalho"
+
 #: rayforge/ui_gtk/doceditor/step_settings/pages/post_processing.py
 msgid "Transformers applied to this step's generated toolpath."
 msgstr ""
@@ -10656,7 +10674,7 @@ msgstr "Falha ao normalizar dados de imagem."
 
 #: rayforge/image/svg/importer.py
 msgid "This SVGZ file's gzip data could not be decompressed."
-msgstr ""
+msgstr "Não foi possível descomprimir os dados gzip deste arquivo SVGZ."
 
 #: rayforge/image/bitmap/importer.py
 #, python-brace-format

@@ -5,7 +5,7 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## UNRELEASED
+## 1.13.0-beta1
 
 ### Added
 
@@ -24,12 +24,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Import: compressed SVG (`.svgz`, Inkscape's "Compressed SVG"), with
   the same options as plain SVG. The file type is registered with the
   desktop, AppStream and the Windows installer (#546)
+- Import: sources can be reloaded from disk in place and relinked to
+  another file, updating every workpiece made from them as one undo
+  step. Rayforge watches imported files and offers to reload those
+  that changed, with an Auto-reload option and a General preference
+  to turn watching off (#513, #537)
 - Engrave: more dithering algorithms for photos. The error-diffusion
   kernels Atkinson, Stucki, Jarvis-Judice-Ninke, Sierra (3-row,
   2-row, Lite) and Burkes, with an optional serpentine scan, plus a
   clustered-dot Newsprint screen and a round-dot Halftone screen with
   adjustable cell size and angle. LightBurn imports keep the image
   layer's dither mode (#514)
+- Laser: the Frame button opens a popover with an "Include Overscan
+  Margin" switch. When it is off the frame traces only the envelope
+  the laser burns instead of the full machine path, so it no longer
+  overshoots the artwork by the raster overscan margin (raygeo 1.65.0,
+  #563)
 - Path clean-up tools in the Object menu and canvas context menu:
   Close Paths and Join Open Paths with a tolerance in mm, Delete
   Duplicates (duplicate contours inside a workpiece and stacked copies
@@ -56,6 +66,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   selector (Auto, Network, USB) that shows only the fields relevant
   to the chosen transport; Auto opens USB when available and falls
   back to the network
+- Ruida: network connections can use TCP alongside UDP; ruida-pa was
+  upgraded to 0.22.0 (thanks to @medoix, #520)
+- Machine: a Z homing mode lets machines choose between a Home Switch
+  and the auto-focus Probe routine where the driver supports both.
+  The Ruida driver routes Z home to its auto-focus routine by default,
+  so existing machines keep homing Z as before (#548)
+- Machine: a speed-dependent bidirectional scan offset table in the
+  Advanced settings interpolates the raster offset for each step's
+  speed, for lasers whose left-to-right/right-to-left skew grows with
+  speed; a per-step offset still overrides the table (#307)
+- Camera: the camera view can extend beyond the work area, with
+  adjustable margins and border transparency (#543)
+- Settings: a new Mouse Gestures page rebinds the 2D and 3D canvas
+  and sketch-editor navigation gestures, helping with setups where
+  specific mouse buttons are not delivered (#390)
 - Linux: official AppImage builds are attached to GitHub releases
 - Windows: Publish Rayforge through WinGet ("winget install rayforge")
 - Image Editing addon: non-destructive image edits stored per
@@ -78,7 +103,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Engrave: Invert moved from the operation to the workpiece, as the
   Invert Image edit. Older projects are converted when they are opened,
   so their output stays the same (#515)
-
 - Machines: the GRBL Serial driver now runs its entire protocol stack
   (handshake, character-counting flow control, streaming, stall
   detection and deadlock recovery) in Rust through the raydriver
@@ -92,6 +116,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   hook is invoked again when an addon is enabled while the window
   exists, so addons no longer need `action_extension_registry` for
   either
+- Upgrade raygeo to 1.66.0: full-sweep raster passes are limited to
+  each scan line's own content extent, so a shape that narrows in X
+  (for example an hourglass) no longer sweeps the widest extent on
+  every row (#565)
 - Updated translations
 
 ### Fixed
@@ -99,13 +127,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Addon API: disabling an addon did not reliably remove its
   `action_extension_registry` handlers when several addons registered
   same-named handlers, which could leave stale handlers behind or
-  strip other addons' handlers- Engrave: the step's Bidirectional Scan Offset had no effect since
+  strip other addons' handlers
+- Engrave: the step's Bidirectional Scan Offset had no effect since
   the pipeline moved to raygeo intents, because the value no longer
   reached the transformer; changing it now also refreshes the cached
   toolpath (#307)
 - Step settings: choice rows backed by an enum (such as the Engrave
   step's dithering algorithm) now show the step's actual value when
   the dialog opens and after undo, instead of the first entry
+- Machine: the running job ETA is derived from the modeled time
+  remaining at the acknowledged command frontier instead of the recent
+  command speed, so it no longer collapses during buffered bursts or
+  swings on jobs that mix fast and slow phases (#496)
+- Ruida: homing a single X or Y axis now jogs only that axis instead
+  of moving both to the origin (#545)
+- Engrave: the Crop to Stock post-processor is now offered on Engrave
+  steps, so raster content can be clipped to the stock boundary (#508)
+- Devices: the Sculpfun S30 focus laser uses constant power (M3), so
+  it lights while the head is stationary; a dedicated Sculpfun S9
+  profile was added (#512)
 - Ruida: the setup wizard no longer requires the optional USB device
   and Magic fields, so Next is enabled again once a valid hostname is
   entered; the Magic field is prefilled with the standard 0x88
@@ -123,6 +163,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   placeholder now pick fonts with proper fallback, fixing garbled
   text and wrong sizes, especially for non-Latin languages (thanks
   to @atkaper, #507)
+- macOS: adding a camera no longer crashes Rayforge; the app bundle
+  now declares `NSCameraUsageDescription`, and the first frame waits
+  for the capture session to settle before reading (#510)
+- Material test: resizing the workpiece no longer leaves the grid's
+  cells and labels misaligned with the workpiece image until the next
+  rebuild; toolpath outputs are stamped with the size their ops were
+  generated at instead of the workpiece's live size (#568)
 
 ## 1.12.0
 

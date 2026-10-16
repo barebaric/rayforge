@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-15 02:25+0200\n"
+"POT-Creation-Date: 2026-10-15 13:51+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -8358,6 +8358,24 @@ msgstr "步骤名称和配方设置。"
 msgid "Change {key}"
 msgstr "更改{key}"
 
+#: rayforge/ui_gtk/doceditor/step_settings/pages/workpieces.py
+#: rayforge/ui_gtk/doceditor/step_settings/dialog.py
+msgid "Workpieces"
+msgstr "工件"
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/workpieces.py
+msgid "The workpieces this step processes."
+msgstr "此步骤处理的工件。"
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/workpieces.py
+msgid "All workpieces on this layer"
+msgstr "此图层上的全部工件"
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/workpieces.py
+#, python-brace-format
+msgid "Processes {count} of {total} workpieces"
+msgstr "处理 {total} 个工件中的 {count} 个"
+
 #: rayforge/ui_gtk/doceditor/step_settings/pages/post_processing.py
 msgid "Transformers applied to this step's generated toolpath."
 msgstr "应用于此步骤生成的刀具路径的转换器。"
@@ -10183,7 +10201,7 @@ msgstr "归一化图像数据失败。"
 
 #: rayforge/image/svg/importer.py
 msgid "This SVGZ file's gzip data could not be decompressed."
-msgstr ""
+msgstr "无法解压缩此 SVGZ 文件的 gzip 数据。"
 
 #: rayforge/image/bitmap/importer.py
 #, python-brace-format
