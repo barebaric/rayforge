@@ -8,6 +8,8 @@ description:
 
 The **polygon** tool (`G+X`) draws a regular polygon, such as a hexagon for a coaster, or a star.
 
+![A hexagon and a five-point star](/screenshots/addons-sketcher-tool-polygon.webp)
+
 ## Drawing a Polygon
 
 Click where the center should be, move the pointer and click again, or press at the center, drag and

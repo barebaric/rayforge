@@ -117,6 +117,7 @@ TARGETS = {
     "addons:sketcher:tool:path-pie-menu": "sketcher_tools",
     "addons:sketcher:tool:arc-ellipse": "sketcher_tools",
     "addons:sketcher:tool:rectangle": "sketcher_tools",
+    "addons:sketcher:tool:polygon": "sketcher_tools",
     "addons:sketcher:tool:chamfer-fillet": "sketcher_tools",
     "addons:sketcher:tool:fill": "sketcher_tools",
     "addons:sketcher:tool:grid": "sketcher_tools",

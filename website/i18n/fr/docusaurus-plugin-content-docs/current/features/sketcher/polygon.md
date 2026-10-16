@@ -9,6 +9,8 @@ description:
 L'outil **polygone** (`G+X`) dessine un polygone régulier, par exemple un hexagone pour un
 sous-verre, ou une étoile.
 
+![Un hexagone et une étoile à cinq branches](/screenshots/addons-sketcher-tool-polygon.webp)
+
 ## Dessiner un polygone
 
 Cliquez à l'endroit du centre, déplacez le pointeur et cliquez à nouveau, ou appuyez au centre,
