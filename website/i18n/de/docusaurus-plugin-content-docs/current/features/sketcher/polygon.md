@@ -9,6 +9,8 @@ description:
 Das **Polygon**-Werkzeug (`G+X`) zeichnet ein regelmäßiges Polygon, etwa ein Sechseck für einen
 Untersetzer, oder einen Stern.
 
+![Ein Sechseck und ein fünfzackiger Stern](/screenshots/addons-sketcher-tool-polygon.webp)
+
 ## Ein Polygon zeichnen
 
 Klicke dorthin, wo der Mittelpunkt liegen soll, bewege den Zeiger und klicke erneut, oder drücke am

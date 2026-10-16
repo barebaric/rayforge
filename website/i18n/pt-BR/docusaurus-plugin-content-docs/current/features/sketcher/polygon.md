@@ -9,6 +9,8 @@ description:
 A ferramenta de **polígono** (`G+X`) desenha um polígono regular, como um hexágono para um
 porta-copos, ou uma estrela.
 
+![Um hexágono e uma estrela de cinco pontas](/screenshots/addons-sketcher-tool-polygon.webp)
+
 ## Desenhar um polígono
 
 Clique onde o centro deve ficar, mova o ponteiro e clique novamente, ou pressione no centro, arraste

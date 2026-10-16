@@ -9,6 +9,8 @@ description:
 La herramienta **polígono** (`G+X`) dibuja un polígono regular, como un hexágono para un posavasos,
 o una estrella.
 
+![Un hexágono y una estrella de cinco puntas](/screenshots/addons-sketcher-tool-polygon.webp)
+
 ## Dibujar un polígono
 
 Haga clic donde debe estar el centro, mueva el puntero y vuelva a hacer clic, o pulse en el centro,
