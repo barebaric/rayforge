@@ -90,6 +90,7 @@ class StepBox(Gtk.Box):
         button.connect("clicked", self.on_button_delete_clicked)
 
         self.step.updated.connect(self.on_step_changed)
+        self.step.renamed.connect(self.on_step_renamed)
         self.step.visibility_changed.connect(self.on_step_changed)
         get_context().config.changed.connect(self.on_step_changed)
         self.on_step_changed(self.step)
@@ -97,6 +98,7 @@ class StepBox(Gtk.Box):
     def do_destroy(self):
         """Overrides GObject.Object.do_destroy to disconnect signals."""
         self.step.updated.disconnect(self.on_step_changed)
+        self.step.renamed.disconnect(self.on_step_renamed)
         self.step.visibility_changed.disconnect(self.on_step_changed)
         get_context().config.changed.disconnect(self.on_step_changed)
 
@@ -120,6 +122,9 @@ class StepBox(Gtk.Box):
         self.badge.set_dimmed(not is_visible)
         self._update_badge_color()
         self._update_speed_warning()
+
+    def on_step_renamed(self, sender):
+        self.title_label.set_text(self.step.name)
 
     def _update_speed_warning(self):
         """Warn when the step has configuration issues.

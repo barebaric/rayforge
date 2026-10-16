@@ -60,10 +60,10 @@ def test_transform_revision_does_not_bump_on_updated():
     assert item.geometry_revision == 1
 
 
-def test_name_setter_bumps_geometry_revision():
+def test_name_setter_does_not_bump_geometry_revision():
     item = LeafItem(name="leaf")
     item.name = "renamed"
-    assert item.geometry_revision == 1
+    assert item.geometry_revision == 0
     assert item.transform_revision == 0
 
 
@@ -127,11 +127,13 @@ def test_workpiece_revision_bumps():
     assert doc.geometry_revision == 0
 
 
-def test_step_name_change_bumps_geometry_revision():
-    """A real Step's name setter should bump geometry_revision.
+def test_step_name_change_does_not_bump_geometry_revision():
+    """A real Step's name setter must not bump geometry_revision.
 
-    Step extends DocItem so it inherits the revision machinery.  We use
-    a minimal concrete Step subclass to avoid pulling in addon loading.
+    Renaming is a pure label change; bumping the revision would fold
+    the rename into pipeline compute tokens and trigger a full
+    re-render of every workpiece. ``set_name`` is the setter the undo
+    commands use, so it must behave like the plain ``name`` property.
     """
     from typing import Any
 
@@ -147,9 +149,62 @@ def test_step_name_change_bumps_geometry_revision():
 
     step = _DummyStep(typelabel="dummy", name="step")
     assert step.geometry_revision == 0
-    step.name = "renamed"
-    assert step.geometry_revision == 1
+    step.set_name("renamed")
+    assert step.name == "renamed"
+    assert step.geometry_revision == 0
     assert step.transform_revision == 0
+
+
+def test_layer_name_change_does_not_bump_geometry_revision():
+    """A Layer rename (including the derived workflow rename) must not
+    bump any revision counter."""
+    doc = Doc()
+    layer = doc.active_layer
+    assert layer.workflow is not None
+    assert layer.geometry_revision == 0
+    layer.set_name("renamed")
+    assert layer.name == "renamed"
+    assert layer.geometry_revision == 0
+    assert layer.workflow.name == "renamed Workflow"
+    assert layer.workflow.geometry_revision == 0
+
+
+def test_name_setter_sends_renamed_signal():
+    """Renaming fires ``renamed`` — not ``updated`` — and the rename
+    bubbles to ancestors as ``descendant_renamed``."""
+    from typing import Any
+
+    from rayforge.core.step import Step
+
+    class _DummyStep(Step):
+        def to_dict(self) -> dict[str, Any]:
+            return {}
+
+        @classmethod
+        def from_dict(cls, data: dict[str, Any]) -> "_DummyStep":
+            return cls(typelabel="dummy")
+
+    renamed: list[DocItem] = []
+    updated: list[DocItem] = []
+    descendant_renamed: list[DocItem] = []
+
+    parent = Group(name="parent")
+    step = _DummyStep(typelabel="dummy", name="step")
+    parent.add_child(step)
+    step.renamed.connect(lambda s: renamed.append(s), weak=False)
+    step.updated.connect(lambda s: updated.append(s), weak=False)
+    parent.descendant_renamed.connect(
+        lambda s, *, origin, parent_of_origin: descendant_renamed.append(
+            origin
+        ),
+        weak=False,
+    )
+
+    step.name = "renamed"
+    assert step.name == "renamed"
+    assert renamed == [step]
+    assert updated == []
+    assert descendant_renamed == [step]
 
 
 def test_signal_is_still_a_blinker_signal():

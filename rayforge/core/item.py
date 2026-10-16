@@ -94,6 +94,11 @@ class DocItem(ABC):
         self.transform_changed = _RevisionSignal(
             owner_ref, lambda o: o._bump_transform_revision()
         )
+        # Fired when only the item's name changes. A rename is a pure
+        # label change: it must not bump revision counters or trigger
+        # re-rendering, so it gets a dedicated signal instead of riding
+        # on ``updated``.
+        self.renamed = Signal()
 
         # Bubbled Signals
         # Fired when a descendant is added anywhere in the subtree.
@@ -104,6 +109,8 @@ class DocItem(ABC):
         self.descendant_updated = Signal()
         # Fired when a descendant's `transform_changed` signal is fired.
         self.descendant_transform_changed = Signal()
+        # Fired when a descendant's `renamed` signal is fired.
+        self.descendant_renamed = Signal()
 
         self._natural_size: tuple[float, float] = (0.0, 0.0)
 
@@ -148,10 +155,16 @@ class DocItem(ABC):
 
     @name.setter
     def name(self, new_name: str):
-        """Sets the item name and sends an update signal if changed."""
+        """
+        Sets the item name and sends the ``renamed`` signal if changed.
+
+        A rename is a pure label change. It deliberately does not fire
+        ``updated`` so receivers keep render caches and pipeline
+        rebuilds untouched.
+        """
         if self._name != new_name:
             self._name = new_name
-            self.updated.send(self)
+            self.renamed.send(self)
 
     def depends_on_asset(self, asset: IAsset) -> bool:
         """
@@ -784,22 +797,26 @@ class DocItem(ABC):
     def _connect_child_signals(self, child: DocItem):
         child.updated.connect(self._on_child_updated)
         child.transform_changed.connect(self._on_child_transform_changed)
+        child.renamed.connect(self._on_child_renamed)
         child.descendant_added.connect(self._on_descendant_added)
         child.descendant_removed.connect(self._on_descendant_removed)
         child.descendant_updated.connect(self._on_descendant_updated)
         child.descendant_transform_changed.connect(
             self._on_descendant_transform_changed
         )
+        child.descendant_renamed.connect(self._on_descendant_renamed)
 
     def _disconnect_child_signals(self, child: DocItem):
         child.updated.disconnect(self._on_child_updated)
         child.transform_changed.disconnect(self._on_child_transform_changed)
+        child.renamed.disconnect(self._on_child_renamed)
         child.descendant_added.disconnect(self._on_descendant_added)
         child.descendant_removed.disconnect(self._on_descendant_removed)
         child.descendant_updated.disconnect(self._on_descendant_updated)
         child.descendant_transform_changed.disconnect(
             self._on_descendant_transform_changed
         )
+        child.descendant_renamed.disconnect(self._on_descendant_renamed)
 
     def _on_child_updated(self, sender: DocItem):
         self.descendant_updated.send(
@@ -811,6 +828,11 @@ class DocItem(ABC):
     ):
         self.descendant_transform_changed.send(
             self, origin=sender, parent_of_origin=self, old_matrix=old_matrix
+        )
+
+    def _on_child_renamed(self, sender: DocItem):
+        self.descendant_renamed.send(
+            self, origin=sender, parent_of_origin=self
         )
 
     def _on_descendant_added(
@@ -831,6 +853,13 @@ class DocItem(ABC):
         self, sender: DocItem, *, origin: DocItem, parent_of_origin: DocItem
     ):
         self.descendant_updated.send(
+            self, origin=origin, parent_of_origin=parent_of_origin
+        )
+
+    def _on_descendant_renamed(
+        self, sender: DocItem, *, origin: DocItem, parent_of_origin: DocItem
+    ):
+        self.descendant_renamed.send(
             self, origin=origin, parent_of_origin=parent_of_origin
         )
 
