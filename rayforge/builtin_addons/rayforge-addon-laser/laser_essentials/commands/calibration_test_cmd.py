@@ -2,8 +2,8 @@
 Creates Interval Tests and Focus Tests as ordinary project content.
 
 Each test becomes its own layer. Every cell or line is a workpiece
-with its own step, linked through ``Step.generated_workpiece_uid`` the
-same way the Material Test Grid links its step, so each one keeps its
+with its own step, linked through ``Step.workpiece_uids`` the same
+way the Material Test Grid links its step, so each one keeps its
 own settings and stays editable in the step settings. Labels share one
 workpiece with one low-power contour step. The Focus Test puts Command
 steps (``M0`` pauses or relative Z moves) between its lines.
@@ -334,7 +334,7 @@ class CalibrationTestCmd:
 
     @staticmethod
     def _link(layer: Layer, step: Step, wp: WorkPiece):
-        step.generated_workpiece_uid = wp.uid
+        step.workpiece_uids = [wp.uid]
         assert layer.workflow is not None
         layer.workflow.add_step(step)
 

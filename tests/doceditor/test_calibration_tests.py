@@ -120,7 +120,8 @@ async def test_interval_test_layer(doc_editor, machine):
     workpieces = {wp.uid: wp for wp in layer.all_workpieces}
     assert len(workpieces) == 4
     for step in steps:
-        assert step.generated_workpiece_uid in workpieces
+        assert step.workpiece_uids
+        assert step.workpiece_uids[0] in workpieces
     intervals = [s.line_interval_mm for s in steps[1:]]
     assert intervals == pytest.approx([0.05, 0.15, 0.25])
     assert [s.power for s in steps[1:]] == pytest.approx([0.3] * 3)
