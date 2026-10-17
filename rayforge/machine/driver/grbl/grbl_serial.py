@@ -5,11 +5,12 @@ from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
+    assert_never,
     cast,
 )
 
 import serial
-from raydriver.grbl import GrblSession
+from raydriver.grbl import GrblSession, SessionEvent
 from raydriver.grbl.parser import (
     error_code_to_device_error,
     extract_device_name_from_output,
@@ -54,6 +55,7 @@ from .grbl_util import (
 )
 
 if TYPE_CHECKING:
+    from raydriver.grbl.types import DeviceState as SessionDeviceState
     from raygeo.ops import Ops
 
     from ....core.doc import Doc
@@ -62,6 +64,18 @@ if TYPE_CHECKING:
     from ...models.machine import Machine
 
 logger = logging.getLogger(__name__)
+
+AnySessionEvent = (
+    SessionEvent.StateChanged
+    | SessionEvent.ConnectionStatusChanged
+    | SessionEvent.CommandStatusChanged
+    | SessionEvent.JobFinished
+    | SessionEvent.ProbeStatusChanged
+    | SessionEvent.WcsUpdated
+    | SessionEvent.ConfigChanged
+    | SessionEvent.RawRx
+    | SessionEvent.RawTx
+)
 
 
 class GrblSerialDriver(Driver):
@@ -265,53 +279,67 @@ class GrblSerialDriver(Driver):
             event_callback=self._on_session_event,
         )
 
-    def _on_session_event(self, name: str, payload: Any) -> None:
+    def _on_session_event(self, event: AnySessionEvent) -> None:
         """Re-emit Rust session events as Rayforge blinker signals."""
-        if name == "state_changed":
-            state = from_session_state(payload)
-            old_status = self.state.status
-            self.state = state
-            if state.status != old_status:
-                logger.info(
-                    f"Device state changed: {state.status.name}",
-                    extra=self._log_extra("STATE_CHANGE"),
-                )
-            self.state_changed.send(self, state=state)
-        elif name == "connection_status_changed":
-            status_str, message = payload
+        match event:
+            case SessionEvent.StateChanged():
+                self._on_state_changed(event.state)
+            case SessionEvent.ConnectionStatusChanged():
+                self._on_connection_status_changed(event.status, event.message)
+            case SessionEvent.CommandStatusChanged():
+                self._on_command_status_changed(event.status, event.message)
+            case SessionEvent.JobFinished():
+                self.job_finished.send(self)
+            case SessionEvent.ProbeStatusChanged():
+                self.probe_status_changed.send(self, message=event.message)
+            case SessionEvent.WcsUpdated():
+                self.wcs_updated.send(self, offsets=event.offsets)
+            case SessionEvent.ConfigChanged():
+                self._on_config_changed(event.key, event.value)
+            case SessionEvent.RawRx():
+                self._log_raw_line(event.line, received=True)
+            case SessionEvent.RawTx():
+                self._log_raw_line(event.line, received=False)
+            case _:
+                assert_never(event)
+
+    def _on_state_changed(self, session_state: "SessionDeviceState") -> None:
+        state = from_session_state(session_state)
+        old_status = self.state.status
+        self.state = state
+        if state.status != old_status:
             logger.info(
-                f"Connection status: {status_str}"
-                + (f" - {message}" if message else ""),
-                extra=self._log_extra("MACHINE_EVENT"),
+                f"Device state changed: {state.status.name}",
+                extra=self._log_extra("STATE_CHANGE"),
             )
-            self.connection_status_changed.send(
-                self,
-                status=TransportStatus[status_str],
-                message=message,
-            )
-        elif name == "command_status_changed":
-            status_str, message = payload
-            self.command_status_changed.send(
-                self,
-                status=TransportStatus[status_str],
-                message=message,
-            )
-        elif name == "job_finished":
-            self.job_finished.send(self)
-        elif name == "probe_status_changed":
-            self.probe_status_changed.send(self, message=payload)
-        elif name == "wcs_updated":
-            self.wcs_updated.send(self, offsets=payload)
-        elif name == "config_changed":
-            key, value = payload
-            self.config[key] = value
-            self.config_changed.send(self)
-        elif name == "raw_rx":
-            self._log_raw_line(payload, received=True)
-        elif name == "raw_tx":
-            self._log_raw_line(payload, received=False)
-        else:  # pragma: no cover - unknown events are ignored
-            logger.debug(f"Ignoring session event: {name}")
+        self.state_changed.send(self, state=state)
+
+    def _on_connection_status_changed(
+        self, status_str: str, message: str | None
+    ) -> None:
+        logger.info(
+            f"Connection status: {status_str}"
+            + (f" - {message}" if message else ""),
+            extra=self._log_extra("MACHINE_EVENT"),
+        )
+        self.connection_status_changed.send(
+            self,
+            status=TransportStatus[status_str],
+            message=message,
+        )
+
+    def _on_command_status_changed(
+        self, status_str: str, message: str | None
+    ) -> None:
+        self.command_status_changed.send(
+            self,
+            status=TransportStatus[status_str],
+            message=message,
+        )
+
+    def _on_config_changed(self, key: str, value: int) -> None:
+        self.config[key] = value
+        self.config_changed.send(self)
 
     def _log_raw_line(self, line: str, received: bool) -> None:
         """Log a raw line from the session's communication so the
