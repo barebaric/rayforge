@@ -17,7 +17,7 @@ on regardless.
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
-from gi.repository import Adw, GLib, Gtk
+from gi.repository import Adw, Gtk
 
 from ....machine.device.profile import DeviceProfile
 from ....shared.util.permissions import (
@@ -25,60 +25,11 @@ from ....shared.util.permissions import (
     check_permissions,
 )
 from ...icons import get_icon
+from ...shared.command_row import CommandRow
 from . import WizardPage, _makePreferencesGroup
 
 if TYPE_CHECKING:
     from ..unified_wizard import UnifiedWizard
-
-_COPY_FEEDBACK_MS = 2000
-
-
-class _CommandRow(Adw.ActionRow):
-    """A terminal command that copies itself on a single click.
-
-    The command text is the row title (monospace via Pango markup);
-    a copy icon sits in the suffix slot and flips to a check mark
-    briefly after copying.
-    """
-
-    def __init__(self, command: str, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
-        self._command = command
-        self._feedback_source_id: int | None = None
-
-        escaped = GLib.markup_escape_text(command, -1)
-        self.set_use_markup(True)
-        self.set_title(f'<span font_family="monospace">{escaped}</span>')
-        self.set_activatable(True)
-
-        self._icon = get_icon("copy-symbolic")
-        self._icon.set_valign(Gtk.Align.CENTER)
-        self.add_suffix(self._icon)
-
-        self.connect("activated", self._on_activated)
-        self.connect("destroy", self._on_destroy)
-
-    def _on_activated(self, _row: Adw.ActionRow) -> None:
-        display = self.get_display()
-        if display is None:
-            return
-        display.get_clipboard().set(self._command)
-        self._icon.set_from_icon_name("check-symbolic")
-        if self._feedback_source_id is not None:
-            GLib.source_remove(self._feedback_source_id)
-        self._feedback_source_id = GLib.timeout_add(
-            _COPY_FEEDBACK_MS, self._restore_icon
-        )
-
-    def _restore_icon(self) -> bool:
-        self._feedback_source_id = None
-        self._icon.set_from_icon_name("copy-symbolic")
-        return GLib.SOURCE_REMOVE
-
-    def _on_destroy(self, _widget: Gtk.Widget) -> None:
-        if self._feedback_source_id is not None:
-            GLib.source_remove(self._feedback_source_id)
-            self._feedback_source_id = None
 
 
 class PermissionsPage(WizardPage):
@@ -91,7 +42,7 @@ class PermissionsPage(WizardPage):
 
     def __init__(self, wizard: "UnifiedWizard", **kwargs: Any) -> None:
         self._sections: list[Gtk.Widget] = []
-        self._command_rows: list[_CommandRow] = []
+        self._command_rows: list[CommandRow] = []
         super().__init__(wizard, **kwargs)
 
     def build_ui(self) -> None:
@@ -173,7 +124,7 @@ class PermissionsPage(WizardPage):
             description=issue.summary,
         )
         for command in issue.commands:
-            row = _CommandRow(command)
+            row = CommandRow(command)
             group.add(row)
             self._command_rows.append(row)
         box.append(group)

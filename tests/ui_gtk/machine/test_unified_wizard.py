@@ -253,6 +253,42 @@ def test_probe_page_footer_buttons(ui_context_initializer):
 
 
 @pytest.mark.ui
+def test_probe_page_offers_error_commands_as_copy_rows(
+    ui_context_initializer,
+):
+    """A precheck failure that hands out terminal commands must not be
+    a wall of text: the prose stays in the status row, each command
+    becomes a one-click copy row underneath it."""
+    wizard = _make_wizard(ui_context_initializer)
+    wizard._navigate_to("probe")
+    page = wizard._get_page("probe")
+    assert isinstance(page, ProbePage)
+
+    page._show_error(
+        "Serial ports found, but none are accessible. Please ensure "
+        "your Snap has the 'serial-port' interface connected by "
+        "running:\n"
+        "\n"
+        "sudo snap set system experimental.hotplug=true\n"
+        "sudo snap connect rayforge:serial-port"
+    )
+
+    assert page.status_row.get_subtitle() == (
+        "Serial ports found, but none are accessible. Please ensure "
+        "your Snap has the 'serial-port' interface connected by "
+        "running:"
+    )
+    assert [r._command for r in page._command_rows] == [
+        "sudo snap set system experimental.hotplug=true",
+        "sudo snap connect rayforge:serial-port",
+    ]
+
+    # Resetting the status takes the command rows with it.
+    page._reset_status()
+    assert page._command_rows == []
+
+
+@pytest.mark.ui
 def test_wizard_step_order_declared():
     from rayforge.ui_gtk.machine.unified_wizard import _STEP_ORDER
 

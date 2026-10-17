@@ -922,6 +922,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cells and labels misaligned with the workpiece image until the next
   rebuild; toolpath outputs are stamped with the size their ops were
   generated at instead of the workpiece's live size (#568)
+- Errors that hand you terminal commands no longer present them as a
+  wall of text: the explanation stays where it was and every command
+  becomes a one-click copy row, in the setup wizard's probe page and
+  under the machine settings' error banner (#544)
 
 ## 1.12.0
 
