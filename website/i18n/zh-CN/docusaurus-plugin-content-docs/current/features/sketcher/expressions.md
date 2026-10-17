@@ -97,6 +97,8 @@ W = {width}, H = {height}
 | `{uuid8()}`     | `str`      | `uuid4()` 的别名                            |
 | `{uuid()}`      | `str`      | 完整 UUID v4 字符串（36 字符）              |
 
+如需每次任务后自动递增的序列号，请使用项目变量 `{serial}`（参见[可变文本](../variable-text.md)）。
+
 典型用途包括每次求解生成唯一序列号（`零件 #{uuid4()}`）、实时尺寸标签（`宽={width:.1f} 高={height:.1f}`）、日期戳（`日期：{today()}`）、生产计数器（`{name} - {count:.0f}个`），或用于生产日志的 Unix 时间戳（`{timestamp():.0f}`）。
 
 ## 自定义模板函数 {#custom-template-functions}
