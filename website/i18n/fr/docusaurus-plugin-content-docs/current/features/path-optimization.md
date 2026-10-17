@@ -19,6 +19,18 @@ déplace séquentiellement de coupe en coupe
 
 Activez ou désactivez l'optimisation de parcours. Activée par défaut pour la plupart des opérations.
 
+### Choisir le Meilleur Point de Départ
+
+Démarre chaque parcours fermé au sommet le plus proche de la tête laser au lieu de l'endroit où il a
+été dessiné. Cela raccourcit les déplacements à vide. Les parcours ouverts, et ceux avec entrées,
+surcoupe ou languettes, gardent leur point de départ. Désactivé par défaut.
+
+### Préférer les Coins
+
+Disponible uniquement lorsque **Choisir le Meilleur Point de Départ** est activé. Les parcours
+fermés démarrent sur un angle vif s'ils en ont un, ce qui rend la jonction moins visible. Les
+parcours sans angle, comme les cercles, démarrent au sommet le plus proche. Désactivé par défaut.
+
 ## Quand Utiliser l'Optimisation
 
 **Activer pour :**

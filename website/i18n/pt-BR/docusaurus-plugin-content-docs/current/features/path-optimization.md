@@ -18,6 +18,18 @@ O laser se move sequencialmente de corte para corte
 
 Ativa ou desativa a otimização de caminho. Habilitada por padrão para a maioria das operações.
 
+### Escolher o Melhor Ponto de Início
+
+Inicia cada caminho fechado no vértice mais próximo da cabeça do laser, em vez de onde o caminho foi
+desenhado. Isso encurta os deslocamentos. Caminhos abertos, e caminhos com entradas, sobrecorte ou
+abas de fixação, mantêm seu ponto de início. Desativado por padrão.
+
+### Preferir Cantos
+
+Disponível apenas quando **Escolher o Melhor Ponto de Início** está ativado. Caminhos fechados
+começam em um canto vivo quando o caminho tem um, o que deixa a emenda menos visível. Caminhos sem
+cantos, como círculos, começam no vértice mais próximo. Desativado por padrão.
+
 ## Quando Usar Otimização
 
 **Habilitar para:**

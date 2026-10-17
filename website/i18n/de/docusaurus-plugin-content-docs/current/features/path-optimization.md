@@ -19,6 +19,18 @@ kürzeste Gesamtdistanz zwischen Schnitten zurücklegt.
 Aktiviert oder deaktiviert die Pfad-Optimierung. Standardmäßig für die meisten Operationen
 aktiviert.
 
+### Besten Startpunkt wählen
+
+Startet jeden geschlossenen Pfad am Eckpunkt, der dem Laserkopf am nächsten liegt, statt dort, wo
+der Pfad gezeichnet wurde. Das verkürzt die Leerfahrten. Offene Pfade sowie Pfade mit Ein- und
+Ausfahrten, Überschnitt oder Haltestegen behalten ihren Startpunkt. Standardmäßig deaktiviert.
+
+### Ecken bevorzugen
+
+Nur verfügbar, wenn **Besten Startpunkt wählen** aktiviert ist. Geschlossene Pfade beginnen an einer
+scharfen Ecke, sofern der Pfad eine hat, damit die Nahtstelle weniger sichtbar ist. Pfade ohne
+Ecken, etwa Kreise, beginnen am nächstgelegenen Eckpunkt. Standardmäßig deaktiviert.
+
 ## Wann Optimierung verwenden
 
 **Aktivieren für:**

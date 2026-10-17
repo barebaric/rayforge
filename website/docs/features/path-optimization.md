@@ -24,6 +24,18 @@ between cuts.
 
 Toggle path optimization on or off. Enabled by default for most operations.
 
+### Choose Best Start Point
+
+Starts each closed path at the vertex nearest the laser head instead of where the path was drawn.
+This shortens travel moves. Open paths, and paths with lead-ins, overcut or tabs, keep their start
+point. Off by default.
+
+### Prefer Corners
+
+Only available when **Choose Best Start Point** is on. Closed paths start at a sharp corner where
+the path has one, which makes the seam less visible. Paths without corners, such as circles, fall
+back to the nearest vertex. Off by default.
+
 ## When to Use Optimization
 
 **Enable for:**
