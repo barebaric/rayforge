@@ -1,8 +1,13 @@
+from typing import cast
+
 import pytest
+from helpers import FakeMachine
 from post_processors.transformers import Optimize
 from raygeo.ops import Ops
 from raygeo.ops.state import AirAssistMode
 from raygeo.ops.types import CommandCategory, CommandType
+
+from rayforge.machine.models.machine import Machine
 
 
 class _ProgressCallback:
@@ -944,15 +949,22 @@ def test_mixed_lines_and_bezier(mock_progress_context):
     assert len(line_indices) == 2
 
 
-MACHINE_SETTINGS = {
-    "machine_max_cut_speed": 6000,
-    "machine_max_travel_speed": 12000,
-    "machine_acceleration": 500,
-}
+def _make_machine(
+    max_cut_speed=6000.0, max_travel_speed=12000.0, acceleration=500.0
+):
+    return FakeMachine(
+        max_cut_speed=max_cut_speed,
+        max_travel_speed=max_travel_speed,
+        acceleration=acceleration,
+    )
 
 
-def _apply_with_machine(optimizer, ops, settings=MACHINE_SETTINGS):
-    specs = [optimizer.to_spec(None, None, settings)]
+def _apply_with_machine(optimizer, ops, machine=None):
+    specs = [
+        optimizer.to_spec(
+            None, None, cast(Machine, machine or _make_machine())
+        )
+    ]
     Ops.apply_transformers(ops, specs, progress_cb=None)
 
 
@@ -982,7 +994,7 @@ class TestMergeScanlines:
 
     def test_to_spec_bakes_machine_settings(self):
         spec = Optimize(merge_max_gap_mm=3.0, merge_tolerance=0.2).to_spec(
-            None, None, MACHINE_SETTINGS
+            None, None, cast(Machine, _make_machine())
         )
         assert spec.merge_scanlines is not None
         merge = spec.merge_scanlines
@@ -994,7 +1006,7 @@ class TestMergeScanlines:
 
     def test_to_spec_without_merge(self):
         spec = Optimize(merge_scanlines=False).to_spec(
-            None, None, MACHINE_SETTINGS
+            None, None, cast(Machine, _make_machine())
         )
         assert spec.merge_scanlines is None
 
@@ -1007,12 +1019,8 @@ class TestMergeScanlines:
         ops.scan_to(25, 0, 0, power_values=[128] * 25)
         ops.move_to(26, 0)
         ops.scan_to(51, 0, 0, power_values=[128] * 25)
-        settings = dict(
-            MACHINE_SETTINGS,
-            machine_max_cut_speed=1010,
-            machine_acceleration=1000,
-        )
-        _apply_with_machine(Optimize(merge_max_gap_mm=2.0), ops, settings)
+        machine = _make_machine(max_cut_speed=1010, acceleration=1000)
+        _apply_with_machine(Optimize(merge_max_gap_mm=2.0), ops, machine)
         assert len(ops.indices_of(CommandType.SCAN_LINE)) == 1
 
     def test_serialization_defaults_to_enabled(self):

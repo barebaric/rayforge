@@ -9,6 +9,7 @@ from ..icons import get_icon
 from ..machine.wcs_dialog import WcsDialog
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.pref_rows.length_spin_row import LengthSpinRow
+from .layer_post_processors import LayerPostProcessorGroup
 from .material_selector import MaterialRow
 
 if TYPE_CHECKING:
@@ -156,6 +157,9 @@ class LayerSettingsDialog(PatchedDialogWindow):
         self.stock_material_row.set_material(layer.stock_material)
 
         self._is_initializing = False
+
+        self.post_processor_group = LayerPostProcessorGroup(layer, editor)
+        content.add(self.post_processor_group)
 
         has_modules = bool(self._module_uids)
         if not has_modules:
