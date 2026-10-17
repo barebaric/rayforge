@@ -306,8 +306,27 @@ class GrblSerialDriver(Driver):
             key, value = payload
             self.config[key] = value
             self.config_changed.send(self)
+        elif name == "raw_rx":
+            self._log_raw_line(payload, received=True)
+        elif name == "raw_tx":
+            self._log_raw_line(payload, received=False)
         else:  # pragma: no cover - unknown events are ignored
             logger.debug(f"Ignoring session event: {name}")
+
+    def _log_raw_line(self, line: str, received: bool) -> None:
+        """Log a raw line from the session's communication so the
+        console (with 'Show verbose' enabled) shows the full
+        conversation with the device."""
+        if received:
+            if line.startswith("<") and line.endswith(">"):
+                category = "STATUS_POLL"
+            elif line == "ok" or line.startswith("error:"):
+                category = "MACHINE_RESPONSE"
+            else:
+                category = "MACHINE_EVENT"
+        else:
+            category = "RAW_IO"
+        logger.info(line, extra=self._log_extra(category))
 
     async def cleanup(self):
         logger.debug("Cleanup initiated.")
