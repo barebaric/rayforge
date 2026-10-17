@@ -106,6 +106,13 @@ def _clamp_jog_distance(
     return target - pos
 
 
+def _shift_pos(pos: float | None, offset: float) -> float | None:
+    """Convert a machine position into work coordinates."""
+    if pos is None:
+        return None
+    return pos - offset
+
+
 def _raise_error(*args, **kwargs):
     raise RuntimeError("Cannot schedule from worker process")
 
@@ -1198,7 +1205,9 @@ class Machine:
             return distance
 
         current_pos = self.device_state.machine_pos
-        x_pos, y_pos = current_pos[0], current_pos[1]
+        off_x, off_y, _ = self.get_active_wcs_offset()
+        x_pos = _shift_pos(current_pos[0], off_x)
+        y_pos = _shift_pos(current_pos[1], off_y)
         x_min, y_min, x_max, y_max = self.get_soft_limits()
         adjusted_distance = distance
 

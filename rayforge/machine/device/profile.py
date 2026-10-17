@@ -361,6 +361,15 @@ class MachineConfig:
             lambda m, v: m.set_soft_limits(*v),
         ),
     )
+    soft_limits_enabled: bool | None = field(
+        default=None,
+        metadata=_binding(
+            _("Hardware"),
+            _("Enable Soft Limits"),
+            lambda m: m.soft_limits_enabled,
+            lambda m, v: m.set_soft_limits_enabled(v),
+        ),
+    )
     origin: Origin | None = field(
         default=None,
         metadata=_binding(
@@ -537,6 +546,9 @@ class MachineConfig:
             axis_extents=machine.axis_extents,
             work_margins=work_margins,
             soft_limits=machine.soft_limits,
+            soft_limits_enabled=(
+                None if machine.soft_limits_enabled else False
+            ),
             origin=machine.origin,
             panel_orientation=machine.panel.orientation,
             max_travel_speed=machine.max_travel_speed,
@@ -717,6 +729,8 @@ class DeviceProfile:
             m.set_work_margins(*cfg.work_margins)
         if cfg.soft_limits is not None:
             m.set_soft_limits(*cfg.soft_limits)
+        if cfg.soft_limits_enabled is not None:
+            m.set_soft_limits_enabled(cfg.soft_limits_enabled)
         if cfg.origin is not None:
             m.origin = cfg.origin
         if cfg.panel_orientation is not None:
