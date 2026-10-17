@@ -173,7 +173,7 @@ def has_write_access(repo, login):
 
 
 def has_label(pr, name):
-    return any(l.get("name") == name for l in pr.get("labels", []))
+    return any(c.get("name") == name for c in pr.get("labels", []))
 
 
 def is_enforced(pr):
