@@ -245,6 +245,7 @@ if [[ "$1" == "pip" || -z "$1" ]]; then
         "trimesh$(req_version trimesh)" \
         "zeroconf$(req_version zeroconf)" \
         "ruida-pa$(req_version ruida-pa)" \
+        "segno$(req_version segno)" \
         --break-system-packages
 
     echo "✅ Windows MSYS2 dependency setup complete."
