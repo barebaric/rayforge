@@ -1,12 +1,15 @@
 # flake8: noqa: E402
 """UI tests for the Interval Test and Focus Test dialogs."""
 
+from typing import cast
+
 import gi
 import pytest
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
+from gi.repository import Adw
 from laser_essentials.calibration_tests import (
     FocusMode,
     FocusTestParams,
@@ -72,7 +75,7 @@ def test_focus_dialog_modes(laser_machine):
     assert not _row(dialog, "ramp_length").get_visible()
     manual_help = dialog.steps_widget.get_description()
 
-    _row(dialog, "mode").set_selected(1)
+    cast(Adw.ComboRow, _row(dialog, "mode")).set_selected(1)
     assert dialog.mode == FocusMode.RAMP
     assert not _row(dialog, "step").get_visible()
     assert _row(dialog, "ramp_length").get_visible()
