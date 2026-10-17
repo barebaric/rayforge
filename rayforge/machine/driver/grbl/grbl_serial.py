@@ -5,7 +5,6 @@ from gettext import gettext as _
 from typing import (
     TYPE_CHECKING,
     Any,
-    assert_never,
     cast,
 )
 
@@ -64,18 +63,6 @@ if TYPE_CHECKING:
     from ...models.machine import Machine
 
 logger = logging.getLogger(__name__)
-
-AnySessionEvent = (
-    SessionEvent.StateChanged
-    | SessionEvent.ConnectionStatusChanged
-    | SessionEvent.CommandStatusChanged
-    | SessionEvent.JobFinished
-    | SessionEvent.ProbeStatusChanged
-    | SessionEvent.WcsUpdated
-    | SessionEvent.ConfigChanged
-    | SessionEvent.RawRx
-    | SessionEvent.RawTx
-)
 
 
 class GrblSerialDriver(Driver):
@@ -279,7 +266,7 @@ class GrblSerialDriver(Driver):
             event_callback=self._on_session_event,
         )
 
-    def _on_session_event(self, event: AnySessionEvent) -> None:
+    def _on_session_event(self, event: SessionEvent) -> None:
         """Re-emit Rust session events as Rayforge blinker signals."""
         match event:
             case SessionEvent.StateChanged():
@@ -301,7 +288,7 @@ class GrblSerialDriver(Driver):
             case SessionEvent.RawTx():
                 self._log_raw_line(event.line, received=False)
             case _:
-                assert_never(event)
+                logger.debug(f"Ignoring session event: {event!r}")
 
     def _on_state_changed(self, session_state: "SessionDeviceState") -> None:
         state = from_session_state(session_state)
