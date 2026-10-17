@@ -117,6 +117,9 @@ registered for them (see [below](#custom-template-functions)).
 | `{uuid8()}`     | `str`       | Alias for `uuid4()`                              |
 | `{uuid()}`      | `str`       | Full UUID v4 string (36 chars)                   |
 
+For serial numbers that advance after every job, use the project variable `{serial}` (see
+[Variable Text](../variable-text.md)).
+
 Typical uses include unique serial numbers per solve (`Part # {uuid4()}`), live dimension labels
 (`W={width:.1f} H={height:.1f}`), date stamps (`Date: {today()}`), production counters
 (`{name} - {count:.0f}pcs`), or Unix timestamps for production logging (`{timestamp():.0f}`).

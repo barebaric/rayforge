@@ -17,6 +17,7 @@ from .image_edit import ImageEditStep, missing_image_edit_ops
 from .item import DocItem
 from .layer import Layer
 from .source_asset import SourceAsset
+from .variable_text import VariableText
 from .workpiece import WorkPiece
 
 if TYPE_CHECKING:
@@ -44,6 +45,11 @@ class Doc(DocItem):
         # Asset Management
         self.assets: dict[str, IAsset] = {}
         self.asset_order: list[str] = []
+
+        # Variables for text templates (serial number, ...)
+        self._variable_text = VariableText()
+        self._variable_text.changed.connect(self._on_variable_text_changed)
+        self.descendant_added.connect(self._on_item_added_for_templates)
 
         # A new document starts with three empty workpiece layers
         for i in range(3):
@@ -90,6 +96,7 @@ class Doc(DocItem):
 
         doc = cls()
         doc.uid = data.get("uid", doc.uid)
+        doc.variable_text = VariableText.from_dict(data.get("variable_text"))
 
         # Clear the default layer created by __init__
         doc.set_children([])
@@ -173,7 +180,61 @@ class Doc(DocItem):
             "active_layer_index": self._active_layer_index,
             "children": [child.to_dict() for child in self.children],
             "assets": [asset.to_dict() for asset in self.get_all_assets()],
+            "variable_text": self._variable_text.to_dict(),
         }
+
+    @property
+    def variable_text(self) -> VariableText:
+        """The variables offered to text templates."""
+        return self._variable_text
+
+    @variable_text.setter
+    def variable_text(self, value: VariableText) -> None:
+        self._variable_text.changed.disconnect(self._on_variable_text_changed)
+        self._variable_text = value
+        value.changed.connect(self._on_variable_text_changed)
+        self._on_variable_text_changed(value)
+
+    def _template_workpieces(
+        self, names: set[str] | None = None
+    ) -> list[WorkPiece]:
+        """Workpieces whose templates read a document variable, or one
+        of *names* if given."""
+        if names is None:
+            names = self._variable_text.names
+        return [
+            wp
+            for wp in self.all_workpieces
+            if wp.references_template_names(names)
+        ]
+
+    def variable_text_copies(self, names: set[str] | None = None) -> int:
+        """
+        How many consecutive variable values one job uses: the highest
+        variable offset of a template workpiece plus one, or 0 if no
+        workpiece uses a document variable (or one of *names*).
+        """
+        offsets = [
+            wp.variable_offset for wp in self._template_workpieces(names)
+        ]
+        if not offsets:
+            return 0
+        return max(offsets) + 1
+
+    def _on_variable_text_changed(self, sender: VariableText) -> None:
+        for wp in self._template_workpieces():
+            wp.refresh_template_values()
+
+    def _on_item_added_for_templates(
+        self, sender: DocItem, *, origin: DocItem, parent_of_origin: DocItem
+    ) -> None:
+        if isinstance(origin, WorkPiece):
+            added = [origin]
+        else:
+            added = origin.get_descendants(of_type=WorkPiece)
+        for wp in added:
+            if wp.references_template_names(self._variable_text.names):
+                wp.sync_template_values()
 
     def add_asset(
         self, asset: IAsset, index: int | None = None, silent: bool = False

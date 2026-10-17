@@ -1062,6 +1062,10 @@ class FileCmd:
                         name=file_path.name
                     )
                     self._editor.notification_requested.send(self, message=msg)
+                self._editor.task_manager.schedule_on_main_thread(
+                    self._editor.variable_text.advance_after_job,
+                    exported=True,
+                )
 
             except Exception as e:
                 logger.error(

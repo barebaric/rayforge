@@ -173,6 +173,7 @@ class MainMenu(Gio.Menu):
         array_submenu.append(_("Grid"), "win.array-grid")
         array_submenu.append(_("Point Rotation"), "win.array-point-rotation")
         array_submenu.append(_("Circular"), "win.array-circular")
+        array_submenu.append(_("Number Copies"), "win.number-copies")
         arrange_menu.append_submenu(_("Array"), array_submenu)
 
         self._layout_group = Gio.Menu()
@@ -182,6 +183,9 @@ class MainMenu(Gio.Menu):
 
         # Tools Menu
         tools_menu = Gio.Menu()
+        variable_text_group = Gio.Menu()
+        variable_text_group.append(_("Variable Text…"), "win.variable-text")
+        tools_menu.append_section(None, variable_text_group)
 
         # Addon section for Tools menu
         self._addon_sections["tools"] = Gio.Menu()
