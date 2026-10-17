@@ -75,6 +75,7 @@ jobs:
         run: |
           xvfb-run -a ./dist/Rayforge-*.AppImage --version
           xvfb-run -a ./dist/Rayforge-*.AppImage --exit
+          ./dist/Rayforge-*.AppImage --apprun-selfcheck
 
   release:
     name: Attach AppImage to GitHub Release
