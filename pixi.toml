@@ -169,6 +169,9 @@ cmd = "xvfb-run -a pytest -v -m ui"
 env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
 cmd = "scripts/with_gdk.sh scripts/screenshot/cli.py"
 
+[tasks.figures]
+cmd = "python -m scripts.figures"
+
 [tasks.wheel]
 cmd = "python3 -m build"
 depends-on = ["compile-translations"]
