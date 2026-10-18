@@ -24,7 +24,7 @@ from .array_dialog import (
 from .doceditor.add_tabs_popover import AddTabsPopover
 from .doceditor.path_tolerance_dialog import PathToleranceDialog
 from .doceditor.stock_properties_dialog import StockPropertiesDialog
-from .doceditor.variable_text_dialog import VariableTextDialog
+from .doceditor.job_counter_dialog import JobCounterDialog
 from .shared.keyboard import PRIMARY_ACCEL
 
 if TYPE_CHECKING:
@@ -479,7 +479,7 @@ class ActionManager:
         self._add_action("array-circular", self.on_array_circular)
 
         # Variable text (counter values)
-        self._add_action("variable-text", self.on_variable_text)
+        self._add_action("job-counter", self.on_job_counter)
         self._add_action("number-copies", self.on_number_copies)
 
         # Macro Actions
@@ -1050,9 +1050,9 @@ class ActionManager:
         dialog."""
         self._open_array_dialog(ArrayMode.CIRCULAR)
 
-    def on_variable_text(self, action, param):
-        """Handler for 'variable-text': opens the job counter dialog."""
-        dialog = VariableTextDialog(self.win, self.editor)
+    def on_job_counter(self, action, param):
+        """Handler for 'job-counter': opens the job counter dialog."""
+        dialog = JobCounterDialog(self.win, self.editor)
         dialog.present()
 
     def on_number_copies(self, action, param):
@@ -1060,7 +1060,7 @@ class ActionManager:
         reading order, so their counter values count up."""
         items = list(self.win.surface.get_selected_items())
         if items:
-            self.editor.variable_text.number_copies(items)
+            self.editor.job_counter.number_copies(items)
 
     def _open_array_dialog(self, mode: ArrayMode) -> None:
         items = list(self.win.surface.get_selected_items())

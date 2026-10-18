@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from gi.repository import Gtk
 
 from ....core.item import DocItem
-from ....core.variable_text import COUNTER_NAME
+from ....core.job_counter import COUNTER_NAME
 from ....core.workpiece import WorkPiece
 from ...icons import get_icon
 from ...shared.pref_rows import SpinRow
@@ -22,11 +22,11 @@ def _uses_variables(item: DocItem) -> bool:
     return (
         isinstance(item, WorkPiece)
         and doc is not None
-        and item.references_template_names(doc.variable_text.names)
+        and item.references_template_names(doc.job_counter.names)
     )
 
 
-class VariableTextPropertyProvider(PropertyProvider):
+class JobCounterPropertyProvider(PropertyProvider):
     """
     Shows the variable offset of workpieces whose text templates use a
     document variable such as ``{counter}``.
@@ -34,7 +34,7 @@ class VariableTextPropertyProvider(PropertyProvider):
 
     priority = 30
     separate_group = True
-    group_title = _("Variable Text")
+    group_title = _("Job Counter")
 
     def can_handle(self, items: list[DocItem]) -> bool:
         return bool(items) and all(_uses_variables(i) for i in items)
@@ -57,8 +57,8 @@ class VariableTextPropertyProvider(PropertyProvider):
         self.settings_button = Gtk.Button(
             child=get_icon("settings-symbolic"),
             valign=Gtk.Align.CENTER,
-            tooltip_text=_("Variable Text Settings"),
-            action_name="win.variable-text",
+            tooltip_text=_("Job Counter Settings"),
+            action_name="win.job-counter",
         )
         self.offset_row.add_suffix(self.settings_button)
         self._rows = [self.offset_row]
@@ -89,6 +89,6 @@ class VariableTextPropertyProvider(PropertyProvider):
         if self._in_update:
             return
         workpieces = [i for i in self.items if isinstance(i, WorkPiece)]
-        self.editor.variable_text.set_variable_offset(
+        self.editor.job_counter.set_variable_offset(
             workpieces, row.get_int_value()
         )

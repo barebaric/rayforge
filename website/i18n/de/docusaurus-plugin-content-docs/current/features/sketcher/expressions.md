@@ -123,7 +123,7 @@ Funktionen bereit, und es können benutzerdefinierte Funktionen für sie registr
 | `{uuid()}`      | `str`       | Vollständiger UUID v4-String (36 Zeichen)        |
 
 Für einen Auftragszähler, der nach jedem Auftrag weiterzählt, verwende die Projektvariable `{counter}`
-(siehe [Variabler Text](../variable-text.md)).
+(siehe [Auftragszähler](../variable-text.md)).
 
 Typische Anwendungen sind eindeutige Seriennummern pro Lösung (`Part # {uuid4()}`), live
 Maßbeschriftungen (`W={width:.1f} H={height:.1f}`), Datumsstempel (`Date: {today()}`),

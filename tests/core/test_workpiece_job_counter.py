@@ -1,7 +1,7 @@
 import pytest
 
 from rayforge.core.doc import Doc
-from rayforge.core.variable_text import CounterSettings
+from rayforge.core.job_counter import CounterSettings
 from rayforge.core.workpiece import WorkPiece
 from tests.core.template_provider import TemplateProvider, place
 
@@ -43,12 +43,12 @@ class TestTemplateValues:
         assert WorkPiece("wp").template_values() == {}
 
     def test_values_follow_doc_counter_and_offset(self, doc):
-        doc.variable_text.counter = CounterSettings(current=10, step=5)
+        doc.job_counter.counter = CounterSettings(current=10, step=5)
         wp = place(doc, "{counter}", offset=2)
         assert wp.template_values() == {"counter": 20}
 
     def test_provider_receives_counter(self, doc):
-        doc.variable_text.counter = CounterSettings(current=7)
+        doc.job_counter.counter = CounterSettings(current=7)
         wp = place(doc, "No. {counter:03d}")
         wp.clear_render_cache()
         assert wp.boundaries is not None
@@ -57,7 +57,7 @@ class TestTemplateValues:
         assert provider.rendered[-1] == "No. 007"
 
     def test_instance_params_win_over_doc_values(self, doc):
-        doc.variable_text.counter = CounterSettings(current=7)
+        doc.job_counter.counter = CounterSettings(current=7)
         wp = place(doc, "{counter}")
         wp._geometry_provider_params = {"counter": 99}
         wp.clear_render_cache()
@@ -67,13 +67,13 @@ class TestTemplateValues:
         assert provider.rendered[-1] == "99"
 
     def test_in_world_bakes_values(self, doc):
-        doc.variable_text.counter = CounterSettings(current=3)
+        doc.job_counter.counter = CounterSettings(current=3)
         wp = place(doc, "{counter}", offset=1)
         world = wp.in_world()
         assert world.geometry_provider_params["counter"] == 4
 
     def test_in_world_leaves_plain_templates_alone(self, doc):
-        doc.variable_text.counter = CounterSettings(current=3)
+        doc.job_counter.counter = CounterSettings(current=3)
         wp = place(doc, "Hello")
         assert "counter" not in wp.in_world().geometry_provider_params
 
@@ -89,14 +89,14 @@ class TestRefreshOnChange:
         wp = place(doc, "{counter}")
         provider = wp.get_geometry_provider()
         assert isinstance(provider, TemplateProvider)
-        doc.variable_text.counter = CounterSettings(current=1234)
+        doc.job_counter.counter = CounterSettings(current=1234)
         assert provider.rendered[-1] == "1234"
 
     def test_counter_change_keeps_scale(self, doc):
-        doc.variable_text.counter = CounterSettings(current=9)
+        doc.job_counter.counter = CounterSettings(current=9)
         wp = place(doc, "{counter}")
         wp.set_size(4.0, 10.0)
-        doc.variable_text.counter = CounterSettings(current=10)
+        doc.job_counter.counter = CounterSettings(current=10)
         width, height = wp.size
         # The text doubled in length; the 2x scale of the
         # workpiece is preserved.
@@ -111,7 +111,7 @@ class TestRefreshOnChange:
             received.append(sender)
 
         wp.updated.connect(on_updated)
-        doc.variable_text.counter = CounterSettings(current=5)
+        doc.job_counter.counter = CounterSettings(current=5)
         assert wp in received
 
     def test_unrelated_workpiece_is_not_regenerated(self, doc):
@@ -119,11 +119,11 @@ class TestRefreshOnChange:
         provider = wp.get_geometry_provider()
         assert isinstance(provider, TemplateProvider)
         calls = len(provider.calls)
-        doc.variable_text.counter = CounterSettings(current=5)
+        doc.job_counter.counter = CounterSettings(current=5)
         assert len(provider.calls) == calls
 
     def test_offset_change_regenerates(self, doc):
-        doc.variable_text.counter = CounterSettings(current=1)
+        doc.job_counter.counter = CounterSettings(current=1)
         wp = place(doc, "{counter}")
         provider = wp.get_geometry_provider()
         assert isinstance(provider, TemplateProvider)
@@ -133,15 +133,15 @@ class TestRefreshOnChange:
 
 class TestDocSerialization:
     def test_doc_round_trip_keeps_counter(self, doc):
-        doc.variable_text.counter = CounterSettings(current=12, step=3)
+        doc.job_counter.counter = CounterSettings(current=12, step=3)
         restored = Doc.from_dict(doc.to_dict())
-        assert restored.variable_text.counter == doc.variable_text.counter
+        assert restored.job_counter.counter == doc.job_counter.counter
 
     def test_old_documents_get_default_counter(self, doc):
         data = doc.to_dict()
-        data.pop("variable_text", None)
+        data.pop("job_counter", None)
         restored = Doc.from_dict(data)
-        assert restored.variable_text.counter == CounterSettings()
+        assert restored.job_counter.counter == CounterSettings()
 
     def test_restored_doc_refreshes_on_change(self, doc):
         restored = Doc.from_dict(doc.to_dict())
@@ -150,16 +150,16 @@ class TestDocSerialization:
         def on_changed(sender):
             received.append(sender)
 
-        restored.variable_text.changed.connect(on_changed)
-        restored.variable_text.counter = CounterSettings(current=2)
-        assert received == [restored.variable_text]
+        restored.job_counter.changed.connect(on_changed)
+        restored.job_counter.counter = CounterSettings(current=2)
+        assert received == [restored.job_counter]
 
     def test_copies_count_uses_highest_offset(self, doc):
         place(doc, "{counter}", offset=0)
         place(doc, "{counter}", offset=5)
         place(doc, "Hello", offset=9)
-        assert doc.variable_text_copies() == 6
+        assert doc.job_counter_copies() == 6
 
     def test_copies_count_without_template_users(self, doc):
         place(doc, "Hello")
-        assert doc.variable_text_copies() == 0
+        assert doc.job_counter_copies() == 0

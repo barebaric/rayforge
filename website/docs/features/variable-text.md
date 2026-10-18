@@ -4,7 +4,7 @@ description:
   consecutive numbers for array copies."
 ---
 
-# Variable Text
+# Job Counter
 
 Text boxes resolve `{...}` templates (see
 [Parameters and Expressions](sketcher/expressions.md#template-expressions-in-text-boxes)). On top of
@@ -19,7 +19,7 @@ Use `{counter}` in a text box. It is a whole number, so format specs control its
 - `{counter:04d}` — `0007`, four digits with leading zeros
 - `No. {counter:03d}` — `No. 007`
 
-Open **Tools → Variable Text…** to set up the counter:
+Open **Tools → Job Counter…** to set up the counter:
 
 - **Current Value** — the number the next job starts with.
 - **Start Value** — where **Reset** returns to.
@@ -37,7 +37,7 @@ advance, is part of the undo history and is saved in the project.
 
 ## Numbering copies
 
-Each workpiece has a **Variable Offset** (in the properties panel, under **Variable Text**). A copy
+Each workpiece has a **Variable Offset** (in the properties panel, under **Job Counter**). A copy
 with offset _n_ shows the number _n_ copies after the current one. A
 [grid or circular array](arrays.md) gives its copies increasing offsets automatically, so one array
 of 20 plates engraves 20 consecutive numbers, and the next job continues with the 21st.

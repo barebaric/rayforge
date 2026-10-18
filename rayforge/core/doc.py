@@ -17,7 +17,7 @@ from .image_edit import ImageEditStep, missing_image_edit_ops
 from .item import DocItem
 from .layer import Layer
 from .source_asset import SourceAsset
-from .variable_text import VariableText
+from .job_counter import JobCounter
 from .workpiece import WorkPiece, workpieces_in
 
 if TYPE_CHECKING:
@@ -47,8 +47,8 @@ class Doc(DocItem):
         self.asset_order: list[str] = []
 
         # Variables for text templates (counter value, ...)
-        self._variable_text = VariableText()
-        self._variable_text.changed.connect(self._on_variable_text_changed)
+        self._job_counter = JobCounter()
+        self._job_counter.changed.connect(self._on_job_counter_changed)
         self.descendant_added.connect(self._on_item_added_for_templates)
 
         # A new document starts with three empty workpiece layers
@@ -96,7 +96,7 @@ class Doc(DocItem):
 
         doc = cls()
         doc.uid = data.get("uid", doc.uid)
-        doc.variable_text = VariableText.from_dict(data.get("variable_text"))
+        doc.job_counter = JobCounter.from_dict(data.get("job_counter"))
 
         # Clear the default layer created by __init__
         doc.set_children([])
@@ -180,31 +180,31 @@ class Doc(DocItem):
             "active_layer_index": self._active_layer_index,
             "children": [child.to_dict() for child in self.children],
             "assets": [asset.to_dict() for asset in self.get_all_assets()],
-            "variable_text": self._variable_text.to_dict(),
+            "job_counter": self._job_counter.to_dict(),
         }
 
     @property
-    def variable_text(self) -> VariableText:
+    def job_counter(self) -> JobCounter:
         """The variables offered to text templates."""
-        return self._variable_text
+        return self._job_counter
 
-    @variable_text.setter
-    def variable_text(self, value: VariableText) -> None:
-        self._variable_text.changed.disconnect(self._on_variable_text_changed)
-        self._variable_text = value
-        value.changed.connect(self._on_variable_text_changed)
-        self._on_variable_text_changed(value)
+    @job_counter.setter
+    def job_counter(self, value: JobCounter) -> None:
+        self._job_counter.changed.disconnect(self._on_job_counter_changed)
+        self._job_counter = value
+        value.changed.connect(self._on_job_counter_changed)
+        self._on_job_counter_changed(value)
 
     def _template_workpieces(self) -> list[WorkPiece]:
         """Workpieces whose templates read a document variable."""
-        names = self._variable_text.names
+        names = self._job_counter.names
         return [
             wp
             for wp in self.all_workpieces
             if wp.references_template_names(names)
         ]
 
-    def variable_text_copies(self) -> int:
+    def job_counter_copies(self) -> int:
         """
         How many consecutive variable values one job uses: the highest
         variable offset of a template workpiece plus one, or 0 if no
@@ -215,7 +215,7 @@ class Doc(DocItem):
             return 0
         return max(offsets) + 1
 
-    def _on_variable_text_changed(self, sender: VariableText) -> None:
+    def _on_job_counter_changed(self, sender: JobCounter) -> None:
         for wp in self._template_workpieces():
             wp.refresh_template_values()
 
@@ -223,7 +223,7 @@ class Doc(DocItem):
         self, sender: DocItem, *, origin: DocItem, parent_of_origin: DocItem
     ) -> None:
         for wp in workpieces_in(origin):
-            if wp.references_template_names(self._variable_text.names):
+            if wp.references_template_names(self._job_counter.names):
                 wp.sync_template_values()
 
     def add_asset(

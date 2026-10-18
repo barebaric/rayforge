@@ -7,14 +7,14 @@ gi.require_version("Adw", "1")
 import pytest
 from gi.repository import Adw, Gtk
 
-from rayforge.core.variable_text import CounterSettings
+from rayforge.core.job_counter import CounterSettings
 from rayforge.doceditor.editor import DocEditor
-from rayforge.ui_gtk.doceditor.property_providers.variable_text import (
-    VariableTextPropertyProvider,
+from rayforge.ui_gtk.doceditor.property_providers.job_counter import (
+    JobCounterPropertyProvider,
 )
-from rayforge.ui_gtk.doceditor.variable_text_dialog import (
+from rayforge.ui_gtk.doceditor.job_counter_dialog import (
     DEFAULT_WIDTH,
-    VariableTextDialog,
+    JobCounterDialog,
     format_preview,
 )
 from tests.core.template_provider import place
@@ -32,13 +32,13 @@ def editor(ui_context_initializer, ui_task_mgr):
 @pytest.fixture
 def dialog(editor):
     parent = Gtk.Window()
-    dlg = VariableTextDialog(parent, editor)
+    dlg = JobCounterDialog(parent, editor)
     yield dlg
     dlg.destroy()
 
 
 def _counter(editor) -> CounterSettings:
-    return editor.doc.variable_text.counter
+    return editor.doc.job_counter.counter
 
 
 @pytest.mark.ui
@@ -50,10 +50,10 @@ def test_format_preview():
 
 @pytest.mark.ui
 def test_dialog_shows_current_settings(editor):
-    editor.doc.variable_text.counter = CounterSettings(
+    editor.doc.job_counter.counter = CounterSettings(
         current=42, start=10, step=2, auto_advance=False
     )
-    dlg = VariableTextDialog(Gtk.Window(), editor)
+    dlg = JobCounterDialog(Gtk.Window(), editor)
     assert dlg.current_row.get_int_value() == 42
     assert dlg.start_row.get_int_value() == 10
     assert dlg.step_row.get_int_value() == 2
@@ -88,7 +88,7 @@ def test_next_previous_reset_buttons(editor, dialog):
     assert _counter(editor).current == 3
     dialog.previous_button.emit("clicked")
     assert _counter(editor).current == 1
-    editor.doc.variable_text.counter = CounterSettings(current=50, start=4)
+    editor.doc.job_counter.counter = CounterSettings(current=50, start=4)
     dialog.reset_button.emit("clicked")
     assert _counter(editor).current == 4
 
@@ -96,7 +96,7 @@ def test_next_previous_reset_buttons(editor, dialog):
 @pytest.mark.ui
 def test_preview_follows_model(editor, dialog):
     place(editor.doc, "{counter}", offset=2)
-    editor.doc.variable_text.counter = CounterSettings(current=5)
+    editor.doc.job_counter.counter = CounterSettings(current=5)
     assert dialog.preview_row.get_subtitle() == "5, 6, 7"
     assert dialog.current_row.get_int_value() == 5
 
@@ -113,7 +113,7 @@ def test_switches_update_model(editor, dialog):
 def test_property_provider_handles_template_workpieces(editor):
     wp = place(editor.doc, "{counter:03d}")
     plain = place(editor.doc, "Hello")
-    provider = VariableTextPropertyProvider()
+    provider = JobCounterPropertyProvider()
     assert provider.can_handle([wp])
     assert not provider.can_handle([plain])
     assert not provider.can_handle([])
@@ -121,9 +121,9 @@ def test_property_provider_handles_template_workpieces(editor):
 
 @pytest.mark.ui
 def test_property_provider_sets_offset(editor):
-    editor.doc.variable_text.counter = CounterSettings(current=10)
+    editor.doc.job_counter.counter = CounterSettings(current=10)
     wp = place(editor.doc, "{counter}")
-    provider = VariableTextPropertyProvider()
+    provider = JobCounterPropertyProvider()
     provider.create_widgets()
     provider.update_widgets(editor, [wp])
     assert "10" in (provider.offset_row.get_subtitle() or "")

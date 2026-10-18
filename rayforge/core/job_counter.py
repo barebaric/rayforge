@@ -1,7 +1,7 @@
 """
 Document-level variables for text templates.
 
-A document carries a :class:`VariableText` instance whose values are
+A document carries a :class:`JobCounter` instance whose values are
 injected into the ``{...}`` templates of every geometry provider (for
 example the text boxes of a sketch). Each workpiece adds its own
 *variable offset*, so copies of the same design can show consecutive
@@ -105,7 +105,7 @@ class CounterSettings:
         )
 
 
-class VariableText:
+class JobCounter:
     """
     The variables a document offers to text templates.
 
@@ -141,7 +141,7 @@ class VariableText:
         return {"counter": self._counter.to_dict()}
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any] | None) -> VariableText:
+    def from_dict(cls, data: dict[str, Any] | None) -> JobCounter:
         instance = cls()
         if data:
             counter = data.get("counter")

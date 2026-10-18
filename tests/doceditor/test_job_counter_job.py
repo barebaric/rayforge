@@ -10,7 +10,7 @@ import pytest
 from raygeo.geo import Geometry
 
 from rayforge.context import get_context
-from rayforge.core.variable_text import CounterSettings
+from rayforge.core.job_counter import CounterSettings
 from rayforge.machine.cmd import MachineCmd
 from tests.core.template_provider import place
 
@@ -35,17 +35,17 @@ def _setup(doc_editor, contour_step_class, context, copies: int = 1):
         wp._edited_boundaries = _rect()
         wp.set_size(10.0, 10.0)
         wp.pos = (offset * 20.0, 0.0)
-    doc_editor.doc.variable_text.counter = CounterSettings(current=5)
+    doc_editor.doc.job_counter.counter = CounterSettings(current=5)
 
 
 def _current(doc_editor) -> int:
-    return doc_editor.doc.variable_text.counter.current
+    return doc_editor.doc.job_counter.counter.current
 
 
 def _machine_cmd(doc_editor) -> MachineCmd:
     machine_cmd = MachineCmd(doc_editor)
     machine_cmd.job_completed.connect(
-        doc_editor.variable_text.on_job_completed
+        doc_editor.job_counter.on_job_completed
     )
     return machine_cmd
 
@@ -133,7 +133,7 @@ async def test_gcode_export_advances_when_enabled(
     context_initializer, doc_editor, contour_step_class, tmp_path
 ):
     _setup(doc_editor, contour_step_class, context_initializer)
-    doc_editor.doc.variable_text.counter = CounterSettings(
+    doc_editor.doc.job_counter.counter = CounterSettings(
         current=5, advance_on_export=True
     )
     await doc_editor.wait_until_settled()

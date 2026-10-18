@@ -118,7 +118,7 @@ registered for them (see [below](#custom-template-functions)).
 | `{uuid()}`      | `str`       | Full UUID v4 string (36 chars)                   |
 
 For a job counter that advances after every job, use the project variable `{counter}` (see
-[Variable Text](../variable-text.md)).
+[Job Counter](../variable-text.md)).
 
 Typical uses include unique serial numbers per solve (`Part # {uuid4()}`), live dimension labels
 (`W={width:.1f} H={height:.1f}`), date stamps (`Date: {today()}`), production counters

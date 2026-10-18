@@ -4,7 +4,7 @@ description:
   con números consecutivos para las copias de una matriz."
 ---
 
-# Texto variable
+# Contador de trabajos
 
 Los cuadros de texto resuelven plantillas `{...}` (consulta
 [Parámetros y expresiones](sketcher/expressions.md#template-expressions-in-text-boxes)). Además de
@@ -21,7 +21,7 @@ controlan su aspecto:
 - `{counter:04d}` — `0007`, cuatro dígitos con ceros a la izquierda
 - `No. {counter:03d}` — `No. 007`
 
-Abre **Herramientas → Texto variable…** para configurar el contador:
+Abre **Herramientas → Contador de trabajos…** para configurar el contador:
 
 - **Valor actual** — el número con el que empieza el próximo trabajo.
 - **Valor inicial** — adonde vuelve **Restablecer**.
@@ -41,8 +41,7 @@ proyecto.
 
 ## Numerar copias
 
-Cada pieza tiene un **Desplazamiento de variable** (en el panel de propiedades, en **Texto
-variable**). Una copia con desplazamiento _n_ muestra el número _n_ copias después del actual. Una
+Cada pieza tiene un **Desplazamiento de variable** (en el panel de propiedades, en **Contador de trabajos**). Una copia con desplazamiento _n_ muestra el número _n_ copias después del actual. Una
 [matriz en cuadrícula o circular](arrays.md) da a sus copias desplazamientos crecientes de forma
 automática, así que una matriz de 20 placas graba 20 números consecutivos y el siguiente trabajo
 continúa con el 21.

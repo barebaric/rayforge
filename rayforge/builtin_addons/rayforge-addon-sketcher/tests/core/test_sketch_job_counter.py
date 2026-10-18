@@ -5,7 +5,7 @@ from sketcher.core import Sketch
 from sketcher.core.entities.text_box import TextBoxEntity
 
 from rayforge.core.doc import Doc
-from rayforge.core.variable_text import CounterSettings
+from rayforge.core.job_counter import CounterSettings
 from rayforge.core.workpiece import WorkPiece
 
 
@@ -40,7 +40,7 @@ def test_template_sources_lists_text_box_contents():
 
 def test_counter_is_resolved_in_document():
     doc = Doc()
-    doc.variable_text.counter = CounterSettings(current=7)
+    doc.job_counter.counter = CounterSettings(current=7)
     sketch, box = _sketch_with_text("No. {counter:03d}")
     wp = _place(doc, sketch)
     assert _resolved(wp, box) == "No. 007"
@@ -48,7 +48,7 @@ def test_counter_is_resolved_in_document():
 
 def test_copies_show_consecutive_numbers():
     doc = Doc()
-    doc.variable_text.counter = CounterSettings(current=41)
+    doc.job_counter.counter = CounterSettings(current=41)
     sketch, box = _sketch_with_text("{counter}")
     first = _place(doc, sketch)
     second = first.duplicate()
@@ -63,13 +63,13 @@ def test_counter_change_updates_text():
     doc = Doc()
     sketch, box = _sketch_with_text("{counter:04d}")
     wp = _place(doc, sketch)
-    doc.variable_text.counter = CounterSettings(current=12)
+    doc.job_counter.counter = CounterSettings(current=12)
     assert _resolved(wp, box) == "0012"
 
 
 def test_saved_text_is_kept_on_load():
     doc = Doc()
-    doc.variable_text.counter = CounterSettings(current=5)
+    doc.job_counter.counter = CounterSettings(current=5)
     sketch, box = _sketch_with_text("{counter}-{uuid8()}")
     wp = _place(doc, sketch)
     before = _resolved(wp, box)

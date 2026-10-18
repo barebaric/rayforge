@@ -10,7 +10,7 @@ import pytest
 
 from rayforge.core.group import Group
 from rayforge.core.layer import Layer
-from rayforge.core.variable_text import CounterSettings
+from rayforge.core.job_counter import CounterSettings
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.array import (
     ArrayMode,
@@ -234,7 +234,7 @@ async def test_grid_array_numbers_copies(doc_editor, array_cmd):
     """Copies get increasing variable offsets in array order, so
     counter values count up across the sheet."""
     doc = doc_editor.doc
-    doc.variable_text.counter = CounterSettings(current=11)
+    doc.job_counter.counter = CounterSettings(current=11)
     wp = place(doc, "{counter}", offset=2)
     params = ArrayParams(
         mode=ArrayMode.GRID,

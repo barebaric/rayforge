@@ -1,5 +1,5 @@
 """
-VariableTextCmd: undoable edits of the document's template variables
+JobCounterCmd: undoable edits of the document's template variables
 (job counter) and of the per-workpiece variable offsets.
 """
 
@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 from ..core.item import DocItem
 from ..core.undo import ChangePropertyCommand
-from ..core.variable_text import CounterSettings
+from ..core.job_counter import CounterSettings
 from ..core.workpiece import WorkPiece, workpieces_in
 from .layout.base import LayoutStrategy
 
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class VariableTextCmd:
+class JobCounterCmd:
     """Handles changes to the document's variable text settings."""
 
     def __init__(self, editor: DocEditor):
@@ -31,17 +31,17 @@ class VariableTextCmd:
 
     @property
     def counter(self) -> CounterSettings:
-        return self._editor.doc.variable_text.counter
+        return self._editor.doc.job_counter.counter
 
     def set_counter(
         self, settings: CounterSettings, name: str | None = None
     ) -> None:
         """Replaces the job counter settings in one undoable step."""
-        variable_text = self._editor.doc.variable_text
-        if settings == variable_text.counter:
+        job_counter = self._editor.doc.job_counter
+        if settings == job_counter.counter:
             return
         cmd = ChangePropertyCommand(
-            target=variable_text,
+            target=job_counter,
             property_name="counter",
             new_value=settings,
             name=name or _("Change counter value"),
@@ -50,12 +50,12 @@ class VariableTextCmd:
 
     def next_counter(self) -> None:
         """Moves the counter forward by one job."""
-        copies = max(self._editor.doc.variable_text_copies(), 1)
+        copies = max(self._editor.doc.job_counter_copies(), 1)
         self.set_counter(self.counter.advanced(copies), _("Next counter value"))
 
     def previous_counter(self) -> None:
         """Moves the counter back by one job."""
-        copies = max(self._editor.doc.variable_text_copies(), 1)
+        copies = max(self._editor.doc.job_counter_copies(), 1)
         self.set_counter(
             self.counter.advanced(-copies), _("Previous counter value")
         )
@@ -66,7 +66,7 @@ class VariableTextCmd:
 
     def preview_counter_values(self) -> list[int]:
         """The counter values the next job uses, one per copy."""
-        copies = max(self._editor.doc.variable_text_copies(), 1)
+        copies = max(self._editor.doc.job_counter_copies(), 1)
         return self.counter.values_for(copies)
 
     def advance_after_job(self, exported: bool = False) -> bool:
@@ -79,7 +79,7 @@ class VariableTextCmd:
         """
         counter = self.counter
         enabled = counter.advance_on_export if exported else counter.auto_advance
-        copies = self._editor.doc.variable_text_copies()
+        copies = self._editor.doc.job_counter_copies()
         if not enabled or copies == 0:
             return False
         self.set_counter(
@@ -87,7 +87,7 @@ class VariableTextCmd:
         )
         logger.info(
             f"Job counter advanced by {copies} to "
-            f"{self._editor.doc.variable_text.counter.current}"
+            f"{self._editor.doc.job_counter.counter.current}"
         )
         return True
 

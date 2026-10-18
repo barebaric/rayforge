@@ -34,7 +34,7 @@ from .image_edit import ImageEditStep, apply_image_edits
 from .item import DocItem
 from .source_asset_segment import SourceAssetSegment
 from .tab import Tab
-from .variable_text import referenced_template_names
+from .job_counter import referenced_template_names
 from .vectorization_spec import TraceSpec
 
 if TYPE_CHECKING:
@@ -1155,7 +1155,7 @@ class WorkPiece(DocItem):
         doc = self.doc
         if doc is None:
             return {}
-        return doc.variable_text.template_values(self._variable_offset)
+        return doc.job_counter.template_values(self._variable_offset)
 
     def _provider_params(self) -> dict[str, Any]:
         """
@@ -1173,7 +1173,7 @@ class WorkPiece(DocItem):
         """
         doc = self.doc
         if doc is not None and self.references_template_names(
-            doc.variable_text.names
+            doc.job_counter.names
         ):
             return self._provider_params()
         return dict(self._geometry_provider_params or {})
@@ -1204,7 +1204,7 @@ class WorkPiece(DocItem):
         """
         doc = self.doc
         if doc is None or not self.references_template_names(
-            doc.variable_text.names
+            doc.job_counter.names
         ):
             return
         old_w, old_h = self.natural_width_mm, self.natural_height_mm

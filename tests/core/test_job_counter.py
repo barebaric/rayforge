@@ -1,6 +1,6 @@
-from rayforge.core.variable_text import (
+from rayforge.core.job_counter import (
     CounterSettings,
-    VariableText,
+    JobCounter,
     referenced_template_names,
 )
 
@@ -75,15 +75,15 @@ class TestCounterSettings:
         assert s.end is None
 
 
-class TestVariableText:
+class TestJobCounter:
     def test_template_values_with_offset(self):
-        vt = VariableText()
+        vt = JobCounter()
         vt.counter = CounterSettings(current=100, step=10)
         assert vt.template_values(0) == {"counter": 100}
         assert vt.template_values(2) == {"counter": 120}
 
     def test_setting_counter_emits_changed(self):
-        vt = VariableText()
+        vt = JobCounter()
         received = []
 
         def on_changed(sender):
@@ -94,7 +94,7 @@ class TestVariableText:
         assert received == [vt]
 
     def test_setting_equal_counter_is_silent(self):
-        vt = VariableText()
+        vt = JobCounter()
         received = []
 
         def on_changed(sender):
@@ -105,16 +105,16 @@ class TestVariableText:
         assert received == []
 
     def test_names(self):
-        assert "counter" in VariableText().names
+        assert "counter" in JobCounter().names
 
     def test_round_trip(self):
-        vt = VariableText()
+        vt = JobCounter()
         vt.counter = CounterSettings(current=3, start=2, step=4)
-        restored = VariableText.from_dict(vt.to_dict())
+        restored = JobCounter.from_dict(vt.to_dict())
         assert restored.counter == vt.counter
 
     def test_from_dict_none(self):
-        assert VariableText.from_dict(None).counter == CounterSettings()
+        assert JobCounter.from_dict(None).counter == CounterSettings()
 
 
 class TestReferencedTemplateNames:

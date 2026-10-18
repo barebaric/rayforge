@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gtk
 
-from ...core.variable_text import CounterSettings, VariableText
+from ...core.job_counter import CounterSettings, JobCounter
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.pref_rows import SpinRow
 
@@ -30,7 +30,7 @@ def format_preview(values: list[int]) -> str:
     )
 
 
-class VariableTextDialog(PatchedDialogWindow):
+class JobCounterDialog(PatchedDialogWindow):
     """
     A non-modal window for the document's counter value: its settings,
     Previous/Next/Reset buttons and a preview of the next job.
@@ -42,7 +42,7 @@ class VariableTextDialog(PatchedDialogWindow):
         self._doc: Doc = editor.doc
         self._in_update = False
 
-        self.set_title(_("Variable Text"))
+        self.set_title(_("Job Counter"))
         self.set_default_size(DEFAULT_WIDTH, -1)
         self.set_modal(False)
 
@@ -63,7 +63,7 @@ class VariableTextDialog(PatchedDialogWindow):
         main_view.set_content(scrolled)
         self.set_content(main_view)
 
-        self._doc.variable_text.changed.connect(self._on_model_changed)
+        self._doc.job_counter.changed.connect(self._on_model_changed)
         self._doc.descendant_updated.connect(self._on_doc_items_changed)
         self._doc.descendant_added.connect(self._on_doc_items_changed)
         self._doc.descendant_removed.connect(self._on_doc_items_changed)
@@ -181,7 +181,7 @@ class VariableTextDialog(PatchedDialogWindow):
     def _commit(self) -> None:
         if self._in_update:
             return
-        self.editor.variable_text.set_counter(self._settings_from_widgets())
+        self.editor.job_counter.set_counter(self._settings_from_widgets())
 
     def _on_value_row_changed(self, row: SpinRow) -> None:
         self._commit()
@@ -191,22 +191,22 @@ class VariableTextDialog(PatchedDialogWindow):
         self._commit()
 
     def _on_previous_clicked(self, button: Gtk.Button) -> None:
-        self.editor.variable_text.previous_counter()
+        self.editor.job_counter.previous_counter()
 
     def _on_next_clicked(self, button: Gtk.Button) -> None:
-        self.editor.variable_text.next_counter()
+        self.editor.job_counter.next_counter()
 
     def _on_reset_clicked(self, button: Gtk.Button) -> None:
-        self.editor.variable_text.reset_counter()
+        self.editor.job_counter.reset_counter()
 
-    def _on_model_changed(self, sender: VariableText) -> None:
+    def _on_model_changed(self, sender: JobCounter) -> None:
         self._update_from_model()
 
     def _on_doc_items_changed(self, sender, **kwargs) -> None:
         self._update_preview()
 
     def _update_from_model(self) -> None:
-        counter = self._doc.variable_text.counter
+        counter = self._doc.job_counter.counter
         self._in_update = True
         try:
             self.current_row.set_value(counter.current)
@@ -225,12 +225,12 @@ class VariableTextDialog(PatchedDialogWindow):
         self._update_preview()
 
     def _update_preview(self) -> None:
-        values = self.editor.variable_text.preview_counter_values()
+        values = self.editor.job_counter.preview_counter_values()
         self.preview_row.set_subtitle(format_preview(values))
 
     def _on_destroy(self, widget) -> None:
-        variable_text = self._doc.variable_text
-        variable_text.changed.disconnect(self._on_model_changed)
+        job_counter = self._doc.job_counter
+        job_counter.changed.disconnect(self._on_model_changed)
         self._doc.descendant_updated.disconnect(self._on_doc_items_changed)
         self._doc.descendant_added.disconnect(self._on_doc_items_changed)
         self._doc.descendant_removed.disconnect(self._on_doc_items_changed)

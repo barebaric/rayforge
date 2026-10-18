@@ -1,22 +1,22 @@
 import pytest
 
-from rayforge.core.variable_text import CounterSettings
-from rayforge.doceditor.variable_text_cmd import VariableTextCmd
+from rayforge.core.job_counter import CounterSettings
+from rayforge.doceditor.job_counter_cmd import JobCounterCmd
 from tests.core.template_provider import place
 
 
 @pytest.fixture
 def cmd(doc_editor):
-    return VariableTextCmd(doc_editor)
+    return JobCounterCmd(doc_editor)
 
 
 def _counter(doc_editor) -> CounterSettings:
-    return doc_editor.doc.variable_text.counter
+    return doc_editor.doc.job_counter.counter
 
 
 @pytest.mark.asyncio
 async def test_editor_exposes_command(doc_editor):
-    assert isinstance(doc_editor.variable_text, VariableTextCmd)
+    assert isinstance(doc_editor.job_counter, JobCounterCmd)
 
 
 @pytest.mark.asyncio

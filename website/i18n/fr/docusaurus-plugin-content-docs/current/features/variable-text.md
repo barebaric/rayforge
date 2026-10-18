@@ -4,7 +4,7 @@ description:
   travail, avec des numéros consécutifs pour les copies d'un réseau."
 ---
 
-# Texte variable
+# Compteur de tâches
 
 Les zones de texte résolvent les modèles `{...}` (voir
 [Paramètres et expressions](sketcher/expressions.md#template-expressions-in-text-boxes)). En plus
@@ -21,7 +21,7 @@ format contrôlent son apparence :
 - `{counter:04d}` — `0007`, quatre chiffres avec des zéros en tête
 - `No. {counter:03d}` — `No. 007`
 
-Ouvrez **Outils → Texte variable…** pour configurer le compteur :
+Ouvrez **Outils → Compteur de tâches…** pour configurer le compteur :
 
 - **Valeur actuelle** — le numéro par lequel commence le prochain travail.
 - **Valeur de départ** — là où **Réinitialiser** revient.
@@ -41,8 +41,7 @@ d'annulation et est enregistrée dans le projet.
 
 ## Numéroter des copies
 
-Chaque pièce a un **Décalage de variable** (dans le panneau des propriétés, sous **Texte
-variable**). Une copie avec le décalage _n_ affiche le numéro situé _n_ copies après le numéro
+Chaque pièce a un **Décalage de variable** (dans le panneau des propriétés, sous **Compteur de tâches**). Une copie avec le décalage _n_ affiche le numéro situé _n_ copies après le numéro
 actuel. Un [réseau en grille ou circulaire](arrays.md) donne automatiquement à ses copies des
 décalages croissants : un réseau de 20 plaques grave ainsi 20 numéros consécutifs, et le travail
 suivant continue avec le 21e.

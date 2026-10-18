@@ -183,9 +183,9 @@ class MainMenu(Gio.Menu):
 
         # Tools Menu
         tools_menu = Gio.Menu()
-        variable_text_group = Gio.Menu()
-        variable_text_group.append(_("Variable Text…"), "win.variable-text")
-        tools_menu.append_section(None, variable_text_group)
+        job_counter_group = Gio.Menu()
+        job_counter_group.append(_("Job Counter…"), "win.job-counter")
+        tools_menu.append_section(None, job_counter_group)
 
         # Addon section for Tools menu
         self._addon_sections["tools"] = Gio.Menu()

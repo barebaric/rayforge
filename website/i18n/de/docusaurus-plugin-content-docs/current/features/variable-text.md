@@ -4,7 +4,7 @@ description:
   fortlaufenden Nummern für Array-Kopien."
 ---
 
-# Variabler Text
+# Auftragszähler
 
 Textfelder lösen `{...}`-Vorlagen auf (siehe
 [Parameter und Ausdrücke](sketcher/expressions.md#template-expressions-in-text-boxes)). Zusätzlich
@@ -21,7 +21,7 @@ Aussehen:
 - `{counter:04d}` — `0007`, vier Stellen mit führenden Nullen
 - `No. {counter:03d}` — `No. 007`
 
-Öffne **Werkzeuge → Variabler Text…**, um den Zähler einzurichten:
+Öffne **Werkzeuge → Auftragszähler…**, um den Zähler einzurichten:
 
 - **Aktueller Wert** — die Nummer, mit der der nächste Auftrag beginnt.
 - **Startwert** — wohin **Zurücksetzen** zurückkehrt.
@@ -39,7 +39,7 @@ Rückgängig-Verlaufs und wird im Projekt gespeichert.
 
 ## Kopien nummerieren
 
-Jedes Werkstück hat einen **Variablen-Versatz** (im Eigenschaftenbereich unter **Variabler Text**).
+Jedes Werkstück hat einen **Variablen-Versatz** (im Eigenschaftenbereich unter **Auftragszähler**).
 Eine Kopie mit Versatz _n_ zeigt die Nummer _n_ Kopien nach der aktuellen. Ein
 [Gitter- oder Kreis-Array](arrays.md) gibt seinen Kopien automatisch steigende Versätze, sodass ein
 Array aus 20 Schildern 20 fortlaufende Nummern graviert und der nächste Auftrag mit der 21.
