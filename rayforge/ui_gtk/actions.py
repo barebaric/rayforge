@@ -478,7 +478,7 @@ class ActionManager:
         self._add_action("array-point-rotation", self.on_array_point_rotation)
         self._add_action("array-circular", self.on_array_circular)
 
-        # Variable text (serial numbers)
+        # Variable text (counter values)
         self._add_action("variable-text", self.on_variable_text)
         self._add_action("number-copies", self.on_number_copies)
 
@@ -1051,13 +1051,13 @@ class ActionManager:
         self._open_array_dialog(ArrayMode.CIRCULAR)
 
     def on_variable_text(self, action, param):
-        """Handler for 'variable-text': opens the serial number dialog."""
+        """Handler for 'variable-text': opens the job counter dialog."""
         dialog = VariableTextDialog(self.win, self.editor)
         dialog.present()
 
     def on_number_copies(self, action, param):
         """Handler for 'number-copies': numbers the selected items in
-        reading order, so their serial numbers count up."""
+        reading order, so their counter values count up."""
         items = list(self.win.surface.get_selected_items())
         if items:
             self.editor.variable_text.number_copies(items)

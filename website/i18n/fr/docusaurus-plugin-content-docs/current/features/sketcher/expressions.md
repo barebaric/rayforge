@@ -124,8 +124,8 @@ fonctions intégrées ci-dessous, et des fonctions personnalisées peuvent leur 
 | `{uuid8()}`     | `str`       | Alias de `uuid4()`                                    |
 | `{uuid()}`      | `str`       | Chaîne UUID v4 complète (36 caractères)               |
 
-Pour des numéros de série qui avancent après chaque travail, utilisez la variable de projet
-`{serial}` (voir [Texte variable](../variable-text.md)).
+Pour un compteur de tâches qui avance après chaque travail, utilisez la variable de projet
+`{counter}` (voir [Texte variable](../variable-text.md)).
 
 Les utilisations typiques comprennent les numéros de série uniques à chaque résolution
 (`Pièce #{uuid4()}`), les étiquettes de dimensions dynamiques (`W={width:.1f} H={height:.1f}`), les

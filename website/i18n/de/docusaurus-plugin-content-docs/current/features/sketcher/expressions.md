@@ -122,7 +122,7 @@ Funktionen bereit, und es können benutzerdefinierte Funktionen für sie registr
 | `{uuid8()}`     | `str`       | Alias für `uuid4()`                              |
 | `{uuid()}`      | `str`       | Vollständiger UUID v4-String (36 Zeichen)        |
 
-Für Seriennummern, die nach jedem Auftrag weiterzählen, verwende die Projektvariable `{serial}`
+Für einen Auftragszähler, der nach jedem Auftrag weiterzählt, verwende die Projektvariable `{counter}`
 (siehe [Variabler Text](../variable-text.md)).
 
 Typische Anwendungen sind eindeutige Seriennummern pro Lösung (`Part # {uuid4()}`), live

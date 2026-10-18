@@ -10,7 +10,7 @@ import pytest
 
 from rayforge.core.group import Group
 from rayforge.core.layer import Layer
-from rayforge.core.variable_text import SerialSettings
+from rayforge.core.variable_text import CounterSettings
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.array import (
     ArrayMode,
@@ -232,10 +232,10 @@ def test_compute_plan_is_pure(array_cmd, multilayer_selection):
 @pytest.mark.asyncio
 async def test_grid_array_numbers_copies(doc_editor, array_cmd):
     """Copies get increasing variable offsets in array order, so
-    serial numbers count up across the sheet."""
+    counter values count up across the sheet."""
     doc = doc_editor.doc
-    doc.variable_text.serial = SerialSettings(current=11)
-    wp = place(doc, "{serial}", offset=2)
+    doc.variable_text.counter = CounterSettings(current=11)
+    wp = place(doc, "{counter}", offset=2)
     params = ArrayParams(
         mode=ArrayMode.GRID,
         grid=GridArrayParams(
@@ -251,14 +251,14 @@ async def test_grid_array_numbers_copies(doc_editor, array_cmd):
     last = created[-1]
     provider = last.get_geometry_provider()
     assert isinstance(provider, TemplateProvider)
-    assert last.template_values() == {"serial": 16}
+    assert last.template_values() == {"counter": 16}
     assert provider.rendered[-1] == "16"
 
 
 @pytest.mark.asyncio
 async def test_array_of_group_numbers_member_workpieces(doc_editor, array_cmd):
     doc = doc_editor.doc
-    wp = place(doc, "{serial}")
+    wp = place(doc, "{counter}")
     group = Group(name="plate")
     layer = doc.active_layer
     layer.remove_child(wp)

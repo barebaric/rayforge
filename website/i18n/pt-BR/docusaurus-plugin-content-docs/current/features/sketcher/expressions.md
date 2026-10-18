@@ -121,7 +121,7 @@ integradas abaixo, e funções personalizadas podem ser registradas para eles (v
 | `{uuid8()}`     | `str`           | Alias de `uuid4()`                                   |
 | `{uuid()}`      | `str`           | String UUID v4 completa (36 caracteres)              |
 
-Para números de série que avançam após cada trabalho, use a variável do projeto `{serial}` (veja
+Para um contador de trabalhos que avança após cada trabalho, use a variável do projeto `{counter}` (veja
 [Texto variável](../variable-text.md)).
 
 Usos típicos incluem números de série únicos a cada resolução (`Peça #{uuid4()}`), rótulos de

@@ -1,6 +1,6 @@
 ---
 description:
-  "Serial numbers in text templates: a project-level counter that advances after every job, with
+  "A job counter in text templates: one project-level number that advances after every job, with
   consecutive numbers for array copies."
 ---
 
@@ -11,13 +11,13 @@ Text boxes resolve `{...}` templates (see
 the sketch parameters and the built-in functions, the project offers variables that change from job
 to job, so you can engrave numbered plates, tags and labels without editing the text each time.
 
-## Serial numbers
+## The job counter
 
-Use `{serial}` in a text box. It is a whole number, so format specs control its appearance:
+Use `{counter}` in a text box. It is a whole number, so format specs control its appearance:
 
-- `{serial}` — `7`
-- `{serial:04d}` — `0007`, four digits with leading zeros
-- `No. {serial:03d}` — `No. 007`
+- `{counter}` — `7`
+- `{counter:04d}` — `0007`, four digits with leading zeros
+- `No. {counter:03d}` — `No. 007`
 
 Open **Tools → Variable Text…** to set up the counter:
 

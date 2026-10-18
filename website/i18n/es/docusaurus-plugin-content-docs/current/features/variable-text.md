@@ -1,6 +1,6 @@
 ---
 description:
-  "Números de serie en plantillas de texto: un contador del proyecto que avanza tras cada trabajo,
+  "Un contador de trabajos en plantillas de texto: un número del proyecto que avanza tras cada trabajo,
   con números consecutivos para las copias de una matriz."
 ---
 
@@ -14,12 +14,12 @@ cada vez.
 
 ## Números de serie
 
-Usa `{serial}` en un cuadro de texto. Es un número entero, así que los especificadores de formato
+Usa `{counter}` en un cuadro de texto. Es un número entero, así que los especificadores de formato
 controlan su aspecto:
 
-- `{serial}` — `7`
-- `{serial:04d}` — `0007`, cuatro dígitos con ceros a la izquierda
-- `No. {serial:03d}` — `No. 007`
+- `{counter}` — `7`
+- `{counter:04d}` — `0007`, cuatro dígitos con ceros a la izquierda
+- `No. {counter:03d}` — `No. 007`
 
 Abre **Herramientas → Texto variable…** para configurar el contador:
 

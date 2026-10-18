@@ -1,6 +1,6 @@
 ---
 description:
-  "Numéros de série dans les modèles de texte : un compteur de projet qui avance après chaque
+  "Un compteur de tâches dans les modèles de texte : un nombre de projet qui avance après chaque
   travail, avec des numéros consécutifs pour les copies d'un réseau."
 ---
 
@@ -14,12 +14,12 @@ modifier le texte à chaque fois.
 
 ## Numéros de série
 
-Utilisez `{serial}` dans une zone de texte. C'est un nombre entier, donc les spécifications de
+Utilisez `{counter}` dans une zone de texte. C'est un nombre entier, donc les spécifications de
 format contrôlent son apparence :
 
-- `{serial}` — `7`
-- `{serial:04d}` — `0007`, quatre chiffres avec des zéros en tête
-- `No. {serial:03d}` — `No. 007`
+- `{counter}` — `7`
+- `{counter:04d}` — `0007`, quatre chiffres avec des zéros en tête
+- `No. {counter:03d}` — `No. 007`
 
 Ouvrez **Outils → Texte variable…** pour configurer le compteur :
 

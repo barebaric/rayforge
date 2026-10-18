@@ -124,7 +124,7 @@ funciones integradas de abajo, y se pueden registrar funciones personalizadas pa
 | `{uuid8()}`     | `str`        | Alias de `uuid4()`                                   |
 | `{uuid()}`      | `str`        | Cadena UUID v4 completa (36 caracteres)              |
 
-Para números de serie que avanzan tras cada trabajo, usa la variable del proyecto `{serial}`
+Para un contador de trabajos que avanza tras cada trabajo, usa la variable del proyecto `{counter}`
 (consulta [Texto variable](../variable-text.md)).
 
 Entre los usos típicos se incluyen números de serie únicos en cada resolución (`Pieza #{uuid4()}`),

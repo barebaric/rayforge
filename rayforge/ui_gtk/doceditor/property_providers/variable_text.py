@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from gi.repository import Gtk
 
 from ....core.item import DocItem
-from ....core.variable_text import SERIAL_NAME
+from ....core.variable_text import COUNTER_NAME
 from ....core.workpiece import WorkPiece
 from ...icons import get_icon
 from ...shared.pref_rows import SpinRow
@@ -29,7 +29,7 @@ def _uses_variables(item: DocItem) -> bool:
 class VariableTextPropertyProvider(PropertyProvider):
     """
     Shows the variable offset of workpieces whose text templates use a
-    document variable such as ``{serial}``.
+    document variable such as ``{counter}``.
     """
 
     priority = 30
@@ -80,9 +80,9 @@ class VariableTextPropertyProvider(PropertyProvider):
         if len(workpieces) > 1:
             self.offset_row.set_subtitle(_("Applies to all selected items"))
             return
-        serial = first.template_values().get(SERIAL_NAME)
+        counter = first.template_values().get(COUNTER_NAME)
         self.offset_row.set_subtitle(
-            _("Serial number: {value}").format(value=serial)
+            _("Job counter: {value}").format(value=counter)
         )
 
     def _on_offset_changed(self, row: SpinRow) -> None:

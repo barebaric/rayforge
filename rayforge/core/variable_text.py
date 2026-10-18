@@ -5,7 +5,7 @@ A document carries a :class:`VariableText` instance whose values are
 injected into the ``{...}`` templates of every geometry provider (for
 example the text boxes of a sketch). Each workpiece adds its own
 *variable offset*, so copies of the same design can show consecutive
-serial numbers.
+counter values.
 """
 
 from __future__ import annotations
@@ -18,16 +18,16 @@ from typing import Any
 
 from blinker import Signal
 
-SERIAL_NAME = "serial"
+COUNTER_NAME = "counter"
 
 _PLACEHOLDER_RE = re.compile(r"\{([^{}]+)\}")
 _IDENTIFIER_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
 
 @dataclass(frozen=True)
-class SerialSettings:
+class CounterSettings:
     """
-    An immutable serial counter.
+    An immutable job counter.
 
     Attributes:
         current: The value the next job starts with.
@@ -66,11 +66,11 @@ class SerialSettings:
         """The values of *copies* consecutive copies."""
         return [self.value_at(i) for i in range(max(copies, 0))]
 
-    def advanced(self, copies: int = 1) -> SerialSettings:
+    def advanced(self, copies: int = 1) -> CounterSettings:
         """A counter moved on (or back, if negative) by *copies*."""
         return replace(self, current=self.value_at(copies))
 
-    def reset(self) -> SerialSettings:
+    def reset(self) -> CounterSettings:
         """A counter whose current value is back at ``start``."""
         return replace(self, current=self.start)
 
@@ -85,7 +85,7 @@ class SerialSettings:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> SerialSettings:
+    def from_dict(cls, data: dict[str, Any]) -> CounterSettings:
         default = cls()
         start = int(data.get("start", default.start))
         end = data.get("end")
@@ -115,38 +115,38 @@ class VariableText:
 
     def __init__(self):
         self.changed = Signal()
-        self._serial = SerialSettings()
+        self._counter = CounterSettings()
 
     @property
-    def serial(self) -> SerialSettings:
-        return self._serial
+    def counter(self) -> CounterSettings:
+        return self._counter
 
-    @serial.setter
-    def serial(self, value: SerialSettings) -> None:
-        if value == self._serial:
+    @counter.setter
+    def counter(self, value: CounterSettings) -> None:
+        if value == self._counter:
             return
-        self._serial = value
+        self._counter = value
         self.changed.send(self)
 
     @property
     def names(self) -> set[str]:
         """The template names this object provides."""
-        return {SERIAL_NAME}
+        return {COUNTER_NAME}
 
     def template_values(self, offset: int = 0) -> dict[str, Any]:
         """The template values for a copy with the given offset."""
-        return {SERIAL_NAME: self._serial.value_at(offset)}
+        return {COUNTER_NAME: self._counter.value_at(offset)}
 
     def to_dict(self) -> dict[str, Any]:
-        return {"serial": self._serial.to_dict()}
+        return {"counter": self._counter.to_dict()}
 
     @classmethod
     def from_dict(cls, data: dict[str, Any] | None) -> VariableText:
         instance = cls()
         if data:
-            serial = data.get("serial")
-            if isinstance(serial, dict):
-                instance._serial = SerialSettings.from_dict(serial)
+            counter = data.get("counter")
+            if isinstance(counter, dict):
+                instance._counter = CounterSettings.from_dict(counter)
         return instance
 
 

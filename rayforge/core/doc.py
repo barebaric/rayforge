@@ -46,7 +46,7 @@ class Doc(DocItem):
         self.assets: dict[str, IAsset] = {}
         self.asset_order: list[str] = []
 
-        # Variables for text templates (serial number, ...)
+        # Variables for text templates (counter value, ...)
         self._variable_text = VariableText()
         self._variable_text.changed.connect(self._on_variable_text_changed)
         self.descendant_added.connect(self._on_item_added_for_templates)

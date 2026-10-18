@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from gi.repository import Adw, Gtk
 
-from ...core.variable_text import SerialSettings, VariableText
+from ...core.variable_text import CounterSettings, VariableText
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from ..shared.pref_rows import SpinRow
 
@@ -22,7 +22,7 @@ DEFAULT_WIDTH = 600
 
 
 def format_preview(values: list[int]) -> str:
-    """A short text for the serial numbers of the next job."""
+    """A short text for the counter values of the next job."""
     if len(values) <= _PREVIEW_LIST_MAX:
         return ", ".join(str(v) for v in values)
     return _("{first} … {last} ({count} copies)").format(
@@ -32,7 +32,7 @@ def format_preview(values: list[int]) -> str:
 
 class VariableTextDialog(PatchedDialogWindow):
     """
-    A non-modal window for the document's serial number: its settings,
+    A non-modal window for the document's counter value: its settings,
     Previous/Next/Reset buttons and a preview of the next job.
     """
 
@@ -53,7 +53,7 @@ class VariableTextDialog(PatchedDialogWindow):
             vscrollbar_policy=Gtk.PolicyType.AUTOMATIC,
         )
         page = Adw.PreferencesPage()
-        page.add(self._build_serial_group())
+        page.add(self._build_counter_group())
         page.add(self._build_job_group())
         scrolled.set_child(page)
         natural_height = page.measure(Gtk.Orientation.VERTICAL, DEFAULT_WIDTH)[
@@ -70,11 +70,11 @@ class VariableTextDialog(PatchedDialogWindow):
         self.connect("destroy", self._on_destroy)
         self._update_from_model()
 
-    def _build_serial_group(self) -> Adw.PreferencesGroup:
+    def _build_counter_group(self) -> Adw.PreferencesGroup:
         group = Adw.PreferencesGroup(
             title=_("Serial Number"),
             description=_(
-                "Use {serial} in a text box, e.g. No. {serial:04d} "
+                "Use {counter} in a text box, e.g. No. {counter:04d} "
                 "for four digits with leading zeros."
             ),
         )
@@ -165,11 +165,11 @@ class VariableTextDialog(PatchedDialogWindow):
         self.preview_row.add_suffix(button_box)
         return group
 
-    def _settings_from_widgets(self) -> SerialSettings:
+    def _settings_from_widgets(self) -> CounterSettings:
         start = self.start_row.get_int_value()
         end = self.end_row.get_int_value()
         limited = self.limit_row.get_active() and end >= start
-        return SerialSettings(
+        return CounterSettings(
             current=self.current_row.get_int_value(),
             start=start,
             step=self.step_row.get_int_value(),
@@ -181,7 +181,7 @@ class VariableTextDialog(PatchedDialogWindow):
     def _commit(self) -> None:
         if self._in_update:
             return
-        self.editor.variable_text.set_serial(self._settings_from_widgets())
+        self.editor.variable_text.set_counter(self._settings_from_widgets())
 
     def _on_value_row_changed(self, row: SpinRow) -> None:
         self._commit()
@@ -191,13 +191,13 @@ class VariableTextDialog(PatchedDialogWindow):
         self._commit()
 
     def _on_previous_clicked(self, button: Gtk.Button) -> None:
-        self.editor.variable_text.previous_serial()
+        self.editor.variable_text.previous_counter()
 
     def _on_next_clicked(self, button: Gtk.Button) -> None:
-        self.editor.variable_text.next_serial()
+        self.editor.variable_text.next_counter()
 
     def _on_reset_clicked(self, button: Gtk.Button) -> None:
-        self.editor.variable_text.reset_serial()
+        self.editor.variable_text.reset_counter()
 
     def _on_model_changed(self, sender: VariableText) -> None:
         self._update_from_model()
@@ -206,26 +206,26 @@ class VariableTextDialog(PatchedDialogWindow):
         self._update_preview()
 
     def _update_from_model(self) -> None:
-        serial = self._doc.variable_text.serial
+        counter = self._doc.variable_text.counter
         self._in_update = True
         try:
-            self.current_row.set_value(serial.current)
-            self.start_row.set_value(serial.start)
-            self.step_row.set_value(serial.step)
-            self.limit_row.set_active(serial.end is not None)
-            if serial.end is not None:
-                self.end_row.set_value(serial.end)
-            elif self.end_row.get_int_value() < serial.start:
-                self.end_row.set_value(serial.start)
-            self.end_row.set_sensitive(serial.end is not None)
-            self.auto_advance_row.set_active(serial.auto_advance)
-            self.export_row.set_active(serial.advance_on_export)
+            self.current_row.set_value(counter.current)
+            self.start_row.set_value(counter.start)
+            self.step_row.set_value(counter.step)
+            self.limit_row.set_active(counter.end is not None)
+            if counter.end is not None:
+                self.end_row.set_value(counter.end)
+            elif self.end_row.get_int_value() < counter.start:
+                self.end_row.set_value(counter.start)
+            self.end_row.set_sensitive(counter.end is not None)
+            self.auto_advance_row.set_active(counter.auto_advance)
+            self.export_row.set_active(counter.advance_on_export)
         finally:
             self._in_update = False
         self._update_preview()
 
     def _update_preview(self) -> None:
-        values = self.editor.variable_text.preview_serial_values()
+        values = self.editor.variable_text.preview_counter_values()
         self.preview_row.set_subtitle(format_preview(values))
 
     def _on_destroy(self, widget) -> None:

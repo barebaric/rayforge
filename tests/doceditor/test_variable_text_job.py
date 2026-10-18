@@ -1,5 +1,5 @@
 """
-The serial counter advances after a finished job (and, if enabled,
+The job counter advances after a finished job (and, if enabled,
 after a G-code export), but not after framing, pointer dry runs or a
 cancelled job.
 """
@@ -10,7 +10,7 @@ import pytest
 from raygeo.geo import Geometry
 
 from rayforge.context import get_context
-from rayforge.core.variable_text import SerialSettings
+from rayforge.core.variable_text import CounterSettings
 from rayforge.machine.cmd import MachineCmd
 from tests.core.template_provider import place
 
@@ -31,15 +31,15 @@ def _setup(doc_editor, contour_step_class, context, copies: int = 1):
     assert workflow is not None
     workflow.add_child(step)
     for offset in range(copies):
-        wp = place(doc_editor.doc, "{serial}", offset=offset)
+        wp = place(doc_editor.doc, "{counter}", offset=offset)
         wp._edited_boundaries = _rect()
         wp.set_size(10.0, 10.0)
         wp.pos = (offset * 20.0, 0.0)
-    doc_editor.doc.variable_text.serial = SerialSettings(current=5)
+    doc_editor.doc.variable_text.counter = CounterSettings(current=5)
 
 
 def _current(doc_editor) -> int:
-    return doc_editor.doc.variable_text.serial.current
+    return doc_editor.doc.variable_text.counter.current
 
 
 def _machine_cmd(doc_editor) -> MachineCmd:
@@ -133,7 +133,7 @@ async def test_gcode_export_advances_when_enabled(
     context_initializer, doc_editor, contour_step_class, tmp_path
 ):
     _setup(doc_editor, contour_step_class, context_initializer)
-    doc_editor.doc.variable_text.serial = SerialSettings(
+    doc_editor.doc.variable_text.counter = CounterSettings(
         current=5, advance_on_export=True
     )
     await doc_editor.wait_until_settled()

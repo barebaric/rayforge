@@ -1,6 +1,6 @@
 ---
 description:
-  "Seriennummern in Textvorlagen: ein Projektzähler, der nach jedem Auftrag weiterzählt, mit
+  "Ein Auftragszähler in Textvorlagen: eine Zahl, der nach jedem Auftrag weiterzählt, mit
   fortlaufenden Nummern für Array-Kopien."
 ---
 
@@ -14,12 +14,12 @@ Text jedes Mal zu bearbeiten.
 
 ## Seriennummern
 
-Verwende `{serial}` in einem Textfeld. Es ist eine ganze Zahl, daher bestimmen Formatangaben ihr
+Verwende `{counter}` in einem Textfeld. Es ist eine ganze Zahl, daher bestimmen Formatangaben ihr
 Aussehen:
 
-- `{serial}` — `7`
-- `{serial:04d}` — `0007`, vier Stellen mit führenden Nullen
-- `No. {serial:03d}` — `No. 007`
+- `{counter}` — `7`
+- `{counter:04d}` — `0007`, vier Stellen mit führenden Nullen
+- `No. {counter:03d}` — `No. 007`
 
 Öffne **Werkzeuge → Variabler Text…**, um den Zähler einzurichten:
 

@@ -1,6 +1,6 @@
 ---
 description:
-  "Números de série em modelos de texto: um contador do projeto que avança após cada trabalho, com
+  "Um contador de trabalhos em modelos de texto: um número do projeto que avança após cada trabalho, com
   números consecutivos para as cópias de uma matriz."
 ---
 
@@ -13,12 +13,12 @@ para outro, para você gravar placas, etiquetas e rótulos numerados sem editar 
 
 ## Números de série
 
-Use `{serial}` em uma caixa de texto. É um número inteiro, então os especificadores de formato
+Use `{counter}` em uma caixa de texto. É um número inteiro, então os especificadores de formato
 controlam sua aparência:
 
-- `{serial}` — `7`
-- `{serial:04d}` — `0007`, quatro dígitos com zeros à esquerda
-- `No. {serial:03d}` — `No. 007`
+- `{counter}` — `7`
+- `{counter:04d}` — `0007`, quatro dígitos com zeros à esquerda
+- `No. {counter:03d}` — `No. 007`
 
 Abra **Ferramentas → Texto variável…** para configurar o contador:
 

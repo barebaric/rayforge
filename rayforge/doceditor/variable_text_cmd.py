@@ -1,6 +1,6 @@
 """
 VariableTextCmd: undoable edits of the document's template variables
-(serial counter) and of the per-workpiece variable offsets.
+(job counter) and of the per-workpiece variable offsets.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 from ..core.item import DocItem
 from ..core.undo import ChangePropertyCommand
-from ..core.variable_text import SerialSettings
+from ..core.variable_text import CounterSettings
 from ..core.workpiece import WorkPiece, workpieces_in
 from .layout.base import LayoutStrategy
 
@@ -30,44 +30,44 @@ class VariableTextCmd:
         editor.file.gcode_exported.connect(self._on_gcode_exported)
 
     @property
-    def serial(self) -> SerialSettings:
-        return self._editor.doc.variable_text.serial
+    def counter(self) -> CounterSettings:
+        return self._editor.doc.variable_text.counter
 
-    def set_serial(
-        self, settings: SerialSettings, name: str | None = None
+    def set_counter(
+        self, settings: CounterSettings, name: str | None = None
     ) -> None:
-        """Replaces the serial counter settings in one undoable step."""
+        """Replaces the job counter settings in one undoable step."""
         variable_text = self._editor.doc.variable_text
-        if settings == variable_text.serial:
+        if settings == variable_text.counter:
             return
         cmd = ChangePropertyCommand(
             target=variable_text,
-            property_name="serial",
+            property_name="counter",
             new_value=settings,
-            name=name or _("Change serial number"),
+            name=name or _("Change counter value"),
         )
         self._editor.history_manager.execute(cmd)
 
-    def next_serial(self) -> None:
+    def next_counter(self) -> None:
         """Moves the counter forward by one job."""
         copies = max(self._editor.doc.variable_text_copies(), 1)
-        self.set_serial(self.serial.advanced(copies), _("Next serial number"))
+        self.set_counter(self.counter.advanced(copies), _("Next counter value"))
 
-    def previous_serial(self) -> None:
+    def previous_counter(self) -> None:
         """Moves the counter back by one job."""
         copies = max(self._editor.doc.variable_text_copies(), 1)
-        self.set_serial(
-            self.serial.advanced(-copies), _("Previous serial number")
+        self.set_counter(
+            self.counter.advanced(-copies), _("Previous counter value")
         )
 
-    def reset_serial(self) -> None:
+    def reset_counter(self) -> None:
         """Puts the counter back at its start value."""
-        self.set_serial(self.serial.reset(), _("Reset serial number"))
+        self.set_counter(self.counter.reset(), _("Reset counter value"))
 
-    def preview_serial_values(self) -> list[int]:
-        """The serial numbers the next job uses, one per copy."""
+    def preview_counter_values(self) -> list[int]:
+        """The counter values the next job uses, one per copy."""
         copies = max(self._editor.doc.variable_text_copies(), 1)
-        return self.serial.values_for(copies)
+        return self.counter.values_for(copies)
 
     def advance_after_job(self, exported: bool = False) -> bool:
         """
@@ -77,17 +77,17 @@ class VariableTextCmd:
         Returns:
             True if the counter was advanced.
         """
-        serial = self.serial
-        enabled = serial.advance_on_export if exported else serial.auto_advance
+        counter = self.counter
+        enabled = counter.advance_on_export if exported else counter.auto_advance
         copies = self._editor.doc.variable_text_copies()
         if not enabled or copies == 0:
             return False
-        self.set_serial(
-            serial.advanced(copies), _("Advance serial number after job")
+        self.set_counter(
+            counter.advanced(copies), _("Advance counter value after job")
         )
         logger.info(
-            f"Serial number advanced by {copies} to "
-            f"{self._editor.doc.variable_text.serial.current}"
+            f"Job counter advanced by {copies} to "
+            f"{self._editor.doc.variable_text.counter.current}"
         )
         return True
 

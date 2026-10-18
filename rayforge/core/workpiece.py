@@ -132,7 +132,7 @@ class WorkPiece(DocItem):
         self._resolved_text_cache: dict = {}
 
         # Shifts the document's template variables for this copy, so
-        # e.g. array copies show consecutive serial numbers.
+        # e.g. array copies show consecutive counter values.
         self._variable_offset: int = 0
         # The template variables the cached geometry was generated with.
         self._template_values_used: dict[str, Any] = {}
@@ -1138,7 +1138,7 @@ class WorkPiece(DocItem):
         The copy offset applied to the document's template variables.
 
         A copy with offset ``n`` shows the values ``n`` copies after
-        the current ones, e.g. serial number ``current + n * step``.
+        the current ones, e.g. counter value ``current + n * step``.
         """
         return self._variable_offset
 
