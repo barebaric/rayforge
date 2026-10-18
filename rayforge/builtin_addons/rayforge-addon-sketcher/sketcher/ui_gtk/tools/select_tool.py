@@ -650,7 +650,7 @@ class SelectTool(SnapMixin, SketchTool):
                 target_x,
                 target_y,
                 dragged_point_ids=(
-                    coincident_group
+                    (self.drag_scope_point_ids or coincident_group)
                     | self.element.sketch.get_derived_point_ids()
                 ),
                 initial_positions=self.drag_initial_positions,
@@ -832,7 +832,7 @@ class SelectTool(SnapMixin, SketchTool):
                     ref_target_x,
                     ref_target_y,
                     dragged_point_ids=(
-                        points_to_drag
+                        (self.drag_scope_point_ids or points_to_drag)
                         | self.element.sketch.get_derived_point_ids()
                     ),
                     dragged_entity_ids=set(self.element.selection.entity_ids),
@@ -902,7 +902,7 @@ class SelectTool(SnapMixin, SketchTool):
             self._refresh_drag_snap_feedback(
                 point_id=first_entity_point,
                 dragged_point_ids=(
-                    points_to_drag
+                    (self.drag_scope_point_ids or points_to_drag)
                     | self.element.sketch.get_derived_point_ids()
                 ),
                 dragged_entity_ids=set(self.element.selection.entity_ids),
