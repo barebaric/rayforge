@@ -377,3 +377,15 @@ class SnapEngine:
         self.rebuild_index(registry, position, drag_context)
 
         return self._get_all_lines()
+
+    def invalidate_index(self) -> None:
+        """Drops the cached snap line index so the next query rebuilds
+        it from scratch.
+
+        Callers that temporarily distort engine state for their own
+        queries (the debug overlay queries with an unbounded
+        threshold) must call this afterwards; otherwise the polluted
+        index would feed real queries until the geometry changes."""
+        self._cached_fingerprint = None
+        self._cached_full_fingerprint = None
+        self._cached_drag_context_key = None

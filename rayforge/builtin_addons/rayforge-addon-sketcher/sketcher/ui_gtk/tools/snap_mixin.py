@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import TYPE_CHECKING, Any
 
@@ -29,6 +30,8 @@ DEBUG_SNAPPING = os.environ.get("DEBUG_SNAPPING", "").lower() in (
     "true",
     "yes",
 )
+
+logger = logging.getLogger(__name__)
 
 
 class SnapMixin:
@@ -167,6 +170,16 @@ class SnapMixin:
         snap_result = element.snap_engine.query(
             element.sketch.registry, position, context
         )
+        if snap_result.primary_snap_point is not None:
+            sp = snap_result.primary_snap_point
+            source = sp.source.id if sp.source is not None else None
+            logger.debug(
+                "Snap: %s at (%.2f, %.2f) source=%s",
+                sp.line_type.name,
+                sp.x,
+                sp.y,
+                source,
+            )
         return snap_result
 
     def build_snap_constraints(
@@ -584,6 +597,9 @@ class SnapMixin:
             DragContext(),
         )
         element.snap_engine.threshold = old_threshold
+        # The rebuild above ran with an unbounded threshold: drop the
+        # cached index so real queries rebuild it with the real one.
+        element.snap_engine.invalidate_index()
 
         ctx.save()
         for snap_line in snap_lines:
