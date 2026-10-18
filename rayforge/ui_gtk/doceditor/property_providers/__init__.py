@@ -1,6 +1,6 @@
 from .base import PropertyProvider, property_provider_registry
-from .transform import TransformPropertyProvider
 from .job_counter import JobCounterPropertyProvider
+from .transform import TransformPropertyProvider
 from .workpiece import TabsPropertyProvider, WorkpieceInfoProvider
 
 
@@ -13,10 +13,10 @@ def register_builtin_providers():
 
 
 __all__ = [
+    "JobCounterPropertyProvider",
     "PropertyProvider",
     "TabsPropertyProvider",
     "TransformPropertyProvider",
-    "JobCounterPropertyProvider",
     "WorkpieceInfoProvider",
     "property_provider_registry",
     "register_builtin_providers",

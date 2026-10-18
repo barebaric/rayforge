@@ -32,9 +32,9 @@ from .geometry_provider import IGeometryProvider
 from .image_cache import new_image_cache
 from .image_edit import ImageEditStep, apply_image_edits
 from .item import DocItem
+from .job_counter import referenced_template_names
 from .source_asset_segment import SourceAssetSegment
 from .tab import Tab
-from .job_counter import referenced_template_names
 from .vectorization_spec import TraceSpec
 
 if TYPE_CHECKING:

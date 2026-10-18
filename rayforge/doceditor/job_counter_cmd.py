@@ -11,8 +11,8 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING
 
 from ..core.item import DocItem
-from ..core.undo import ChangePropertyCommand
 from ..core.job_counter import CounterSettings
+from ..core.undo import ChangePropertyCommand
 from ..core.workpiece import WorkPiece, workpieces_in
 from .layout.base import LayoutStrategy
 

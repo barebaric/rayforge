@@ -22,9 +22,9 @@ from .array_dialog import (
     PointRotationArrayDialog,
 )
 from .doceditor.add_tabs_popover import AddTabsPopover
+from .doceditor.job_counter_dialog import JobCounterDialog
 from .doceditor.path_tolerance_dialog import PathToleranceDialog
 from .doceditor.stock_properties_dialog import StockPropertiesDialog
-from .doceditor.job_counter_dialog import JobCounterDialog
 from .shared.keyboard import PRIMARY_ACCEL
 
 if TYPE_CHECKING:

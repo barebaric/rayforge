@@ -24,6 +24,7 @@ from .command_registry import command_registry
 from .edit_cmd import EditCmd
 from .file_cmd import FileCmd
 from .group_cmd import GroupCmd
+from .job_counter_cmd import JobCounterCmd
 from .layer_cmd import LayerCmd
 from .layout_cmd import LayoutCmd
 from .path_cleanup_cmd import PathCleanupCmd
@@ -33,7 +34,6 @@ from .step_cmd import StepCmd
 from .stock_cmd import StockCmd
 from .tab_cmd import TabCmd
 from .transform_cmd import TransformCmd
-from .job_counter_cmd import JobCounterCmd
 
 if TYPE_CHECKING:
     from ..context import RayforgeContext

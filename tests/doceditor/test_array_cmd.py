@@ -9,8 +9,8 @@ layers, with correct positions, and that everything is undoable.
 import pytest
 
 from rayforge.core.group import Group
-from rayforge.core.layer import Layer
 from rayforge.core.job_counter import CounterSettings
+from rayforge.core.layer import Layer
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.array import (
     ArrayMode,

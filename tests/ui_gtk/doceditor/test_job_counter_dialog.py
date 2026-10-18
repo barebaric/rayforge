@@ -9,13 +9,13 @@ from gi.repository import Adw, Gtk
 
 from rayforge.core.job_counter import CounterSettings
 from rayforge.doceditor.editor import DocEditor
-from rayforge.ui_gtk.doceditor.property_providers.job_counter import (
-    JobCounterPropertyProvider,
-)
 from rayforge.ui_gtk.doceditor.job_counter_dialog import (
     DEFAULT_WIDTH,
     JobCounterDialog,
     format_preview,
+)
+from rayforge.ui_gtk.doceditor.property_providers.job_counter import (
+    JobCounterPropertyProvider,
 )
 from tests.core.template_provider import place
 

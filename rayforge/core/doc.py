@@ -15,9 +15,9 @@ from .asset import IAsset, UnknownAsset
 from .color import COLOR_PALETTE
 from .image_edit import ImageEditStep, missing_image_edit_ops
 from .item import DocItem
+from .job_counter import JobCounter
 from .layer import Layer
 from .source_asset import SourceAsset
-from .job_counter import JobCounter
 from .workpiece import WorkPiece, workpieces_in
 
 if TYPE_CHECKING:
