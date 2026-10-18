@@ -1453,27 +1453,6 @@ class Sketch(IAsset, IGeometryProvider):
             self._solved_ctx = ctx.copy()
             self._solved_ctx.update(get_template_functions())
 
-            # --- Solver Stabilization ---
-            # Add weak, temporary constraints to every non-fixed point,
-            # pulling it towards its current location. This acts as an
-            # "inertia" term, encouraging the solver to find the solution
-            # closest to the current state and preventing large, unexpected
-            # geometric jumps.
-            stabilizer_constraints = []
-            hold_weight = 1e-4
-            for p in self.registry.points:
-                if p.fixed or (scope is not None and p.id not in scope):
-                    continue
-                stabilizer_constraints.append(
-                    DragConstraint(
-                        p.id,
-                        p.x,
-                        p.y,
-                        weight=hold_weight,
-                        user_visible=False,
-                    )
-                )
-
             # Step 4: Update constraints with the final, resolved values.
             excluded = excluded_constraints or set()
             kept_indices = [
@@ -1502,6 +1481,36 @@ class Sketch(IAsset, IGeometryProvider):
             for c in all_constraints:
                 if hasattr(c, "update_from_context"):
                     c.update_from_context(ctx)
+
+            # --- Solver Stabilization ---
+            # Add weak, temporary constraints to every non-fixed point
+            # the solve references, pulling it towards its current
+            # location. This acts as an "inertia" term, encouraging the
+            # solver to find the solution closest to the current state
+            # and preventing large, unexpected geometric jumps. Points
+            # no constraint references cannot move anyway; pinning them
+            # would only grow the solver's state vector.
+            touched: set[EntityID] = set()
+            for c in all_constraints:
+                touched |= get_referenced_points(self.registry, c)
+            stabilizer_constraints = []
+            hold_weight = 1e-4
+            for p in self.registry.points:
+                if (
+                    p.fixed
+                    or p.id not in touched
+                    or (scope is not None and p.id not in scope)
+                ):
+                    continue
+                stabilizer_constraints.append(
+                    DragConstraint(
+                        p.id,
+                        p.x,
+                        p.y,
+                        weight=hold_weight,
+                        user_visible=False,
+                    )
+                )
 
             # Step 5: Run the solver with the disposable, correctly
             # evaluated context.

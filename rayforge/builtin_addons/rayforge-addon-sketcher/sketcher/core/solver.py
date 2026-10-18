@@ -4,6 +4,7 @@ import numpy as np
 import scipy.linalg
 from scipy.optimize import least_squares
 
+from .components import get_referenced_points
 from .constraints import Constraint
 from .entities import Point
 from .params import ParameterContext
@@ -39,11 +40,20 @@ class Solver:
         only be passed for constraints that reference filtered points,
         and update_dof must be False.
         """
-        # 1. Identify mutable points (degrees of freedom)
+        # 1. Identify mutable points (degrees of freedom). Points that
+        # no constraint references cannot move; they stay out of the
+        # state vector entirely.
+        touched: set[EntityID] = set()
+        for const in self.constraints:
+            touched |= get_referenced_points(self.registry, const)
+        for const in self.auxiliary_constraints:
+            touched |= get_referenced_points(self.registry, const)
+
         mutable_points: list[Point] = [
             p
             for p in self.registry.points
             if not p.fixed
+            and p.id in touched
             and (self.point_filter is None or p.id in self.point_filter)
         ]
 
