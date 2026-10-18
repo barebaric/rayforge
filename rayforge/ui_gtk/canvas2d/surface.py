@@ -875,10 +875,9 @@ class WorkSurface(WorldSurface):
 
     def _on_machine_state_changed(self, machine: Machine, state):
         """Handles machine state changes including position updates."""
-        m_pos = state.machine_pos
-        if m_pos and all(p is not None for p in m_pos):
-            m_x, m_y = m_pos[0], m_pos[1]
-            self.set_laser_dot_position(m_x, m_y)
+        pos = machine.get_beam_position()
+        if pos is not None:
+            self.set_laser_dot_position(*pos)
 
     def do_snapshot(self, snapshot: Gtk.Snapshot) -> None:
         self._update_theme_colors()
