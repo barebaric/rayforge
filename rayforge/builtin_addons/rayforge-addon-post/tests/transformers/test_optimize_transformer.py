@@ -1048,9 +1048,7 @@ def _seed_and_loop():
     that has a vertex at the seed's exit point.
     """
     ops = _closed_loop((30, 5), [(32, 5), (32, 7), (30, 7)])
-    ops.extend(
-        _closed_loop((45, 5), [(30, 5), (25, 5), (25, 20), (45, 20)])
-    )
+    ops.extend(_closed_loop((45, 5), [(30, 5), (25, 5), (25, 20), (45, 20)]))
     return ops
 
 
@@ -1075,9 +1073,9 @@ class TestCutPlannerOptions:
         assert restored.prefer_corners is True
 
     def test_to_spec_passes_flags(self):
-        spec = Optimize(
-            best_start_point=True, prefer_corners=True
-        ).to_spec(None, None, None)
+        spec = Optimize(best_start_point=True, prefer_corners=True).to_spec(
+            None, None, None
+        )
         assert spec.best_start_point is True
         assert spec.prefer_corners is True
 
