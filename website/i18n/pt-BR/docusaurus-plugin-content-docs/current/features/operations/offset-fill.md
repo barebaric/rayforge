@@ -50,12 +50,17 @@ Use o preenchimento por deslocamento para:
 Ajuste o intervalo de linha, o deslocamento e a direção de preenchimento conforme seu material e o
 acabamento desejado.
 
+![Resultado da operação de Preenchimento por Deslocamento](/screenshots/operations-offset-fill.webp)
+
 ## Configurações Principais
 
-O diálogo de configurações da etapa tem três abas: **Configurações da Etapa**, **Laser** e
-**Pós-processamento**. As configurações são descritas abaixo na ordem das abas.
+O diálogo de configurações de etapa tem quatro abas: **Configurações de Etapa**, **Laser**,
+**Pós-Processamento** e **Peças de trabalho**. As configurações são descritas em ordem de aba
+abaixo.
 
 ### Configurações de Preenchimento por Deslocamento
+
+![Configurações da etapa de Preenchimento por Deslocamento](/screenshots/step-settings-offset-fill-general.webp)
 
 O grupo **Preenchimento por Deslocamento** na aba _Configurações da Etapa_ controla o padrão de
 preenchimento.
@@ -86,6 +91,8 @@ A ordem em que os anéis são cortados:
 
 ### Configurações do Laser
 
+![Configurações do Laser](/screenshots/step-settings-offset-fill-laser.webp)
+
 Potência, velocidade e seleção do cabeçote laser ficam na página **Laser** do diálogo de
 configurações da etapa. Uma nova etapa de preenchimento por deslocamento começa com 80% de potência.
 
@@ -111,6 +118,8 @@ configurações da etapa. Uma nova etapa de preenchimento por deslocamento come�
    escolhida
 
 ## Pós-Processamento
+
+![Configurações de pós-processamento de Preenchimento por Deslocamento](/screenshots/step-settings-offset-fill-post.webp)
 
 As operações de preenchimento por deslocamento suportam:
 

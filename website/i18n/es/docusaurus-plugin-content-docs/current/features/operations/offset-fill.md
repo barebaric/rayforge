@@ -50,12 +50,17 @@ Usa el relleno por desplazamiento para:
 Ajusta el intervalo de línea, el desplazamiento y la dirección de relleno según tu material y el
 acabado deseado.
 
+![Resultado de la operación de Relleno por Desplazamiento](/screenshots/operations-offset-fill.webp)
+
 ## Ajustes Clave
 
-El diálogo de ajustes del paso tiene tres pestañas: **Ajustes del paso**, **Láser** y
-**Postprocesamiento**. Los ajustes se describen a continuación en el orden de las pestañas.
+El diálogo de ajustes del paso tiene cuatro pestañas: **Ajustes de Paso**, **Láser**,
+**Post-Procesamiento** y **Piezas de trabajo**. Los ajustes se describen en orden de pestañas a
+continuación.
 
 ### Ajustes de Relleno por Desplazamiento
+
+![Ajustes del paso de Relleno por Desplazamiento](/screenshots/step-settings-offset-fill-general.webp)
 
 El grupo **Relleno por Desplazamiento** de la pestaña _Ajustes del paso_ controla el patrón de
 relleno.
@@ -86,6 +91,8 @@ El orden en que se cortan los anillos:
 
 ### Ajustes del Láser
 
+![Ajustes del Láser](/screenshots/step-settings-offset-fill-laser.webp)
+
 La potencia, la velocidad y la selección del cabezal láser están en la página **Láser** del diálogo
 de ajustes del paso. Un nuevo paso de relleno por desplazamiento empieza con un 80 % de potencia.
 
@@ -111,6 +118,8 @@ de ajustes del paso. Un nuevo paso de relleno por desplazamiento empieza con un 
    elegida
 
 ## Post-Procesamiento
+
+![Ajustes de post-procesamiento de Relleno por Desplazamiento](/screenshots/step-settings-offset-fill-post.webp)
 
 Las operaciones de relleno por desplazamiento admiten:
 

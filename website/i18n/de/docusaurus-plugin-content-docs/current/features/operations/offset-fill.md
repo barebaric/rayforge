@@ -49,12 +49,17 @@ Verwende die Offset-Füllung für:
 
 Linienabstand, Offset und Füllrichtung an dein Material und das gewünschte Finish anpassen.
 
+![Offset-Füllung-Operation Ergebnis](/screenshots/operations-offset-fill.webp)
+
 ## Haupt-Einstellungen
 
-Der Schritt-Einstellungen-Dialog hat drei Registerkarten: **Schritt-Einstellungen**, **Laser** und
-**Nachbearbeitung**. Die Einstellungen werden unten in Registerkarten-Reihenfolge beschrieben.
+Der Schritt-Einstellungen-Dialog hat vier Registerkarten: **Schritt-Einstellungen**, **Laser**,
+**Nachbearbeitung** und **Werkstücke**. Die Einstellungen werden unten in Registerkarten-Reihenfolge
+beschrieben.
 
 ### Offset-Füllung-Einstellungen
+
+![Offset-Füllung-Schritt-Einstellungen](/screenshots/step-settings-offset-fill-general.webp)
 
 Die Gruppe **Offset-Füllung** auf der Registerkarte _Schritt-Einstellungen_ steuert das Füllmuster.
 
@@ -85,6 +90,8 @@ Die Reihenfolge, in der die Ringe geschnitten werden:
 
 ### Laser-Einstellungen
 
+![Laser-Einstellungen](/screenshots/step-settings-offset-fill-laser.webp)
+
 Leistung, Geschwindigkeit und Laserkopf-Auswahl befinden sich auf der Seite **Laser** des
 Schritt-Einstellungen-Dialogs. Ein neuer Offset-Füllung-Schritt beginnt mit 80 % Leistung.
 
@@ -110,6 +117,8 @@ Schritt-Einstellungen-Dialogs. Ein neuer Offset-Füllung-Schritt beginnt mit 80 
    geschnitten
 
 ## Nachbearbeitung
+
+![Offset-Füllung-Nachbearbeitungseinstellungen](/screenshots/step-settings-offset-fill-post.webp)
 
 Offset-Füllung-Operationen unterstützen:
 

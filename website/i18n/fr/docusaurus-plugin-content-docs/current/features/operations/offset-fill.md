@@ -51,12 +51,17 @@ Utilisez le remplissage par décalage pour :
 Ajustez l'intervalle de ligne, le décalage et la direction de remplissage selon votre matériau et la
 finition souhaitée.
 
+![Résultat de l'opération de Remplissage par Décalage](/screenshots/operations-offset-fill.webp)
+
 ## Paramètres Clés
 
-La boîte de dialogue des paramètres de l'étape comporte trois onglets : **Paramètres de l'étape**,
-**Laser** et **Post-traitement**. Les paramètres sont décrits ci-dessous dans l'ordre des onglets.
+La boîte de dialogue des paramètres d'étape comporte quatre onglets : **Paramètres d'étape**,
+**Laser**, **Post-Traitement** et **Pièces**. Les paramètres sont décrits ci-dessous dans l'ordre
+des onglets.
 
 ### Paramètres de Remplissage par Décalage
+
+![Paramètres de l'étape de Remplissage par Décalage](/screenshots/step-settings-offset-fill-general.webp)
 
 Le groupe **Remplissage par Décalage** de l'onglet _Paramètres de l'étape_ contrôle le motif de
 remplissage.
@@ -88,6 +93,8 @@ L'ordre dans lequel les anneaux sont coupés :
 
 ### Paramètres Laser
 
+![Paramètres Laser](/screenshots/step-settings-offset-fill-laser.webp)
+
 La puissance, la vitesse et la sélection de la tête laser se trouvent sur la page **Laser** de la
 boîte de dialogue des paramètres de l'étape. Une nouvelle étape de remplissage par décalage démarre
 à 80 % de puissance.
@@ -115,6 +122,8 @@ boîte de dialogue des paramètres de l'étape. Une nouvelle étape de remplissa
    remplissage choisie
 
 ## Post-Traitement
+
+![Paramètres de post-traitement de Remplissage par Décalage](/screenshots/step-settings-offset-fill-post.webp)
 
 Les opérations de remplissage par décalage prennent en charge :
 

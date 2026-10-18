@@ -53,12 +53,16 @@ Use Offset Fill for:
 
 Adjust the line interval, offset and fill direction to match your material and desired finish.
 
+![Offset Fill operation result](/screenshots/operations-offset-fill.webp)
+
 ## Key Settings
 
-The step settings dialog has three tabs: **Step Settings**, **Laser**, and **Post Processing**.
-Settings are described in tab order below.
+The step settings dialog has four tabs: **Step Settings**, **Laser**, **Post Processing**, and
+**Workpieces**. Settings are described in tab order below.
 
 ### Offset Fill Settings
+
+![Offset Fill step settings](/screenshots/step-settings-offset-fill-general.webp)
 
 The **Offset Fill** group on the _Step Settings_ tab controls the fill pattern.
 
@@ -86,6 +90,8 @@ The order in which the rings are cut:
 
 ### Laser settings
 
+![Laser settings](/screenshots/step-settings-offset-fill-laser.webp)
+
 Power, speed, and laser head selection live on the **Laser** page of the step settings dialog. A new
 Offset Fill step starts at 80% power.
 
@@ -109,6 +115,8 @@ Offset Fill step starts at 80% power.
 5. **Cutting** — The rings are cut along their center line in the chosen fill direction
 
 ## Post-Processing
+
+![Offset Fill post-processing settings](/screenshots/step-settings-offset-fill-post.webp)
 
 Offset Fill operations support:
 
