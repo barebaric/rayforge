@@ -10,15 +10,42 @@ Sin optimización, las trayectorias se cortan en el orden en que aparecen en tu 
 optimización analiza todos los segmentos de trayectoria y los reorganiza para que el láser viaje la
 distancia total más corta entre cortes.
 
-**Antes de optimización:** El láser salta de un lado a otro a través del material  
-**Después de optimización:** El láser se mueve secuencialmente de corte a corte
+**Antes de la optimización** — el láser salta de un lado a otro a través del material:
+
+![Los desplazamientos saltan entre cortes en el orden dibujado](/images/path-optimization-before.webp)
+
+**Después de la optimización** — el láser se mueve secuencialmente de corte a corte:
+
+![Los desplazamientos conectan cortes cercanos](/images/path-optimization-after.webp)
 
 ## Ajustes
+
+![Los ajustes de Optimización en la página de posprocesamiento de un paso de contorno](/screenshots/step-settings-contour-post-optimize.webp)
 
 ### Habilitar Optimización
 
 Activa o desactiva la optimización de trayectoria. Habilitada por defecto para la mayoría de
 operaciones.
+
+### Elegir el Mejor Punto de Inicio
+
+Inicia cada trayectoria cerrada en el vértice más cercano al cabezal láser en lugar de donde se
+dibujó. Esto acorta los desplazamientos en vacío. Las trayectorias abiertas y las que tienen
+entradas, sobrecorte o pestañas de sujeción conservan su punto de inicio. Desactivado por defecto.
+
+### Preferir Esquinas
+
+Solo disponible cuando **Elegir el Mejor Punto de Inicio** está activado. Las trayectorias cerradas
+empiezan en una esquina aguda si la tienen, lo que hace que la costura sea menos visible. Las
+trayectorias sin esquinas, como los círculos, empiezan en el vértice más cercano. Desactivado por
+defecto.
+
+La misma trayectoria cerrada iniciada donde se dibujó (1), en el vértice más cercano al cabezal
+láser con **Elegir el Mejor Punto de Inicio** (2), y en la esquina aguda más cercana con **Preferir
+Esquinas** (3):
+
+![Puntos de inicio de una trayectoria cerrada: como se dibujó, en el vértice más cercano, en la
+esquina más cercana](/images/path-optimization-start-point.webp)
 
 ## Cuándo Usar Optimización
 
