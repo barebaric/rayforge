@@ -714,7 +714,9 @@ class Sketch(IAsset, IGeometryProvider):
         origin, other geometry) are global and excluded — and so are
         world-anchored orientation constraints (horizontal/vertical):
         they pin the shape to the world axes and would fight any
-        array rotation.
+        array rotation. The exception is a horizontal+vertical pair
+        on the same two points: the pair is a coincidence and holds
+        the shape together, so it stays internal.
         """
         wanted = set(entity_ids)
         group_pids: set[int] = set()
@@ -732,12 +734,13 @@ class Sketch(IAsset, IGeometryProvider):
                     pass
 
         internal: list[Constraint] = []
+        paired_axes = self._find_axis_coincidence_pairs()
         for constr in self.constraints:
-            if constr.is_world_anchored():
-                continue
             # Constraints pinned to the sketch origin are world-anchored.
             pids = constr.get_referenced_point_ids()
             if pids & {self.origin_id}:
+                continue
+            if constr.is_world_anchored() and id(constr) not in paired_axes:
                 continue
             eids = constr.get_referenced_entity_ids()
             if not (pids & group_pids or eids & wanted):
@@ -745,6 +748,29 @@ class Sketch(IAsset, IGeometryProvider):
             if pids <= group_pids and eids <= wanted:
                 internal.append(constr)
         return internal
+
+    def _find_axis_coincidence_pairs(self) -> set[int]:
+        """Returns the IDs of horizontal/vertical constraints that
+        have a perpendicular partner on the same two points.
+
+        Such a pair is a coincidence in disguise: together the two
+        constraints pin one point onto the other instead of anchoring
+        the shape to the world axes, so they survive rotation and must
+        not be stripped from array templates — dropping them would
+        open closed shapes whose only closure is the pair.
+        """
+        verticals: dict[frozenset[EntityID], VerticalConstraint] = {}
+        for constr in self.constraints:
+            if isinstance(constr, VerticalConstraint):
+                verticals[frozenset((constr.p1, constr.p2))] = constr
+        paired: set[int] = set()
+        for constr in self.constraints:
+            if isinstance(constr, HorizontalConstraint):
+                partner = verticals.get(frozenset((constr.p1, constr.p2)))
+                if partner is not None:
+                    paired.add(id(constr))
+                    paired.add(id(partner))
+        return paired
 
     @classmethod
     def from_file(cls, file_path: str | Path) -> "Sketch":
