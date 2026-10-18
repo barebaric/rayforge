@@ -3,7 +3,6 @@
 import logging
 import time
 
-from gi.repository import Adw
 from utils import (
     find_step_by_type,
     get_target,
@@ -24,56 +23,25 @@ TARGET = get_target("step-settings:contour:post:optimize")
 TRANSFORMER_NAME = "Optimize"
 
 
-def find_post_page(widget):
-    """Find the post-processing page in the widget tree."""
-    if hasattr(widget, "_group_dicts"):
-        return widget
-    child = widget.get_first_child()
-    while child is not None:
-        found = find_post_page(child)
-        if found is not None:
-            return found
-        child = child.get_next_sibling()
-    return None
+def enable_cut_planner(step) -> None:
+    """Turn on the cut planner switches of the step's Optimize."""
+    dicts = [
+        t_dict
+        for t_dict in (
+            step.per_step_transformers_dicts
+            + step.per_workpiece_transformers_dicts
+        )
+        if t_dict.get("name") == TRANSFORMER_NAME
+    ]
+    if not dicts:
+        raise RuntimeError(f"Step has no {TRANSFORMER_NAME} transformer")
+    dicts[0]["best_start_point"] = True
+    dicts[0]["prefer_corners"] = True
 
 
-def find_expander_row(widget, title: str):
-    """Find the expander row with the given title in the widget tree."""
-    if isinstance(widget, Adw.ExpanderRow) and widget.get_title() == title:
-        return widget
-    child = widget.get_first_child()
-    while child is not None:
-        found = find_expander_row(child, title)
-        if found is not None:
-            return found
-        child = child.get_next_sibling()
-    return None
-
-
-def stage_optimize_group(dialog) -> bool:
-    """Expand the Optimize group and turn on the cut planner."""
-
-    def _stage() -> bool:
-        page = find_post_page(dialog)
-        if page is None:
-            return False
-        for group, t_dict in page._group_dicts.items():
-            if t_dict.get("name") != TRANSFORMER_NAME:
-                continue
-            group.enable_switch.set_active(True)
-            expander = find_expander_row(page, group.get_title())
-            if expander is None:
-                return False
-            expander.set_expanded(True)
-            group.best_start_row.set_active(True)
-            group.prefer_corners_row.set_active(True)
-            return True
-        return False
-
-    staged = run_on_main_thread(_stage)
-    if not staged:
-        logger.error(f"No {TRANSFORMER_NAME} found on the post page")
-    return staged
+def expand_optimize_group(dialog) -> None:
+    expander = dialog.post_processing_view.get_expander_row(TRANSFORMER_NAME)
+    expander.set_expanded(True)
 
 
 @restore_config
@@ -83,27 +51,25 @@ def main():
     load_project(win, "allsteps.ryp")
     time.sleep(0.25)
 
-    step_type, page, _mode = "contour", "post-processing", None
-    logger.info(f"Target: {TARGET} -> type={step_type}, page={page}")
+    logger.info(f"Target: {TARGET} -> contour, post-processing page")
 
-    found = find_step_by_type(win, step_type)
-    if found is None or found[0] is None:
-        logger.error(f"No step found with type: {step_type}")
-        app.quit_idle()
-        return
-
-    step, step_index = found
+    step, step_index = find_step_by_type(win, "contour")
+    if step is None:
+        raise RuntimeError("No contour step found in allsteps.ryp")
     logger.info(f"Found step: {step.name} at index {step_index}")
 
-    dialog = open_step_settings(win, step_index=step_index, page=page)
+    enable_cut_planner(step)
+
+    dialog = open_step_settings(
+        win, step_index=step_index, page="post-processing"
+    )
     time.sleep(0.5)
 
-    if not stage_optimize_group(dialog):
-        app.quit_idle()
-        return
+    run_on_main_thread(lambda: expand_optimize_group(dialog))
     time.sleep(0.5)
 
-    take_screenshot()
+    if not take_screenshot():
+        raise RuntimeError("Failed to capture the screenshot")
     time.sleep(0.25)
     app.quit_idle()
 
