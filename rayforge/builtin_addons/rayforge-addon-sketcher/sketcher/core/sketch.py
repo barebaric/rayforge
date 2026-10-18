@@ -374,10 +374,10 @@ class Sketch(IAsset, IGeometryProvider):
         # Shallow-copy the registry: new Point objects (solver mutates x/y),
         # copied entity list (sync_arrays may rebuild it).
         clone.registry = EntityRegistry()
-        clone.registry.points = [
+        clone.registry.set_points(
             Point(p.id, p.x, p.y, p.fixed, p.waypoint_type)
             for p in self.registry.points
-        ]
+        )
         clone.registry.entities = list(self.registry.entities)
         clone.registry._entity_map = dict(self.registry._entity_map)
         clone.registry._id_counter = self.registry._id_counter
@@ -910,9 +910,7 @@ class Sketch(IAsset, IGeometryProvider):
         if pid is None:
             return False
         if not self.registry.is_point_used(pid):
-            self.registry.points = [
-                p for p in self.registry.points if p.id != pid
-            ]
+            self.registry.remove_points([pid])
             return True
         return False
 

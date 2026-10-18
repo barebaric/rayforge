@@ -178,7 +178,7 @@ def test_rectangle_command_execute_temp_start():
     sketch = Sketch()
     # Manually add a "temp" point to the registry
     start_pid = 100
-    sketch.registry.points.append(Point(start_pid, 0, 0))
+    sketch.registry.add_points([Point(start_pid, 0, 0)])
     assert len(sketch.registry.points) == 2  # Origin + temp start
 
     cmd = RectangleCommand(sketch, start_pid, (100, 50), is_start_temp=True)
@@ -505,7 +505,7 @@ def test_rectangle_preview_get_dimensions_missing_point():
     state = RectangleCommand.start_preview(
         sketch.registry, 0, 0, snapped_pid=None
     )
-    sketch.registry.points.clear()
+    sketch.registry.set_points([])
 
     dims = state.get_dimensions(sketch.registry)
 

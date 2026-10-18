@@ -409,7 +409,7 @@ def test_rounded_rect_preview_get_dimensions_missing_point():
     state = RoundedRectCommand.start_preview(
         sketch.registry, 0, 0, snapped_pid=None, radius=10.0
     )
-    sketch.registry.points.clear()
+    sketch.registry.set_points([])
 
     dims = state.get_dimensions(sketch.registry)
 
