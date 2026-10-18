@@ -531,3 +531,116 @@ def test_auto_constraint_skips_self_constraint(path_tool, mock_element):
             if isinstance(c, (HorizontalConstraint, VerticalConstraint))
         ]
         assert len(axis) == 0
+
+
+def _real_sketch_element():
+    """Mock element wiring a real Sketch and snap engine into the tool."""
+    from sketcher.core.sketch import Sketch
+    from sketcher.core.snap.engine import SnapEngine
+    from sketcher.core.snap.producers import (
+        CentersProducer,
+        EntityPointsProducer,
+        EquidistantLinesProducer,
+        IntersectionsProducer,
+        MidpointsProducer,
+        OnEntityProducer,
+    )
+
+    sketch = Sketch("test")
+    element = Mock()
+    element.sketch = sketch
+    engine = SnapEngine()
+    for producer in (
+        EntityPointsProducer(),
+        OnEntityProducer(),
+        MidpointsProducer(),
+        IntersectionsProducer(),
+        EquidistantLinesProducer(),
+        CentersProducer(),
+    ):
+        engine.register_producer(producer)
+    element.snap_engine = engine
+    element.canvas = None
+    element.hittester.screen_to_model = Mock(
+        side_effect=lambda wx, wy, e=None: (wx, wy)
+    )
+    element.hittester.get_hit_data = Mock(return_value=(None, None))
+    element.preview_changed = Mock()
+    element.mark_dirty = Mock()
+    element.editor = None
+    element.remove_point_if_unused = Mock(
+        side_effect=sketch.remove_point_if_unused
+    )
+    element.selection = Mock()
+    element.selection.entity_ids = []
+    element.selection.point_ids = []
+    element.selection.clear = Mock()
+    element.execute_command = Mock(side_effect=lambda cmd: cmd.execute())
+    return sketch, element
+
+
+@pytest.mark.ui
+def test_path_tool_near_miss_close_reuses_start_point():
+    """Dropping the closing segment just outside the point snap but
+    within snap range of the path start reuses the start point instead
+    of committing a duplicate loose corner."""
+    sketch, element = _real_sketch_element()
+    tool = PathTool(element)
+
+    def hover(x, y):
+        tool.on_hover_motion(x, y)
+
+    def click(x, y):
+        tool.on_press(x, y, 1)
+        tool.on_release(x, y)
+
+    click(30.0, 30.0)
+    hover(120.0, 30.0)
+    click(120.0, 30.0)
+    hover(70.0, 100.0)
+    click(70.0, 100.0)
+
+    start_id = tool._path_start_id
+    assert start_id is not None
+
+    # Drop just past the point-snap radius of the start (5.59 > 5)
+    # but on its horizontal axis, so the committed end lands within
+    # snap range of the start point.
+    constraints_before = list(sketch.constraints)
+    hover(35.0, 27.5)
+    click(35.0, 27.5)
+
+    closing = [e for e in sketch.registry.entities if e.type == "line"][-1]
+    assert closing.get_point_ids()[1] == start_id
+    assert tool._preview_state is None
+    assert sketch.constraints == constraints_before
+
+
+@pytest.mark.ui
+def test_path_tool_close_finishes_editing():
+    """After the closing segment, no follow-up preview stays active."""
+    sketch, element = _real_sketch_element()
+    tool = PathTool(element)
+
+    tool.on_press(30.0, 30.0, 1)
+    tool.on_release(30.0, 30.0)
+    tool.on_hover_motion(120.0, 30.0)
+    tool.on_press(120.0, 30.0, 1)
+    tool.on_release(120.0, 30.0)
+
+    assert tool._preview_state is not None
+    start_id = tool._path_start_id
+
+    tool.on_hover_motion(70.0, 100.0)
+    tool.on_press(70.0, 100.0, 1)
+    tool.on_release(70.0, 100.0)
+
+    # Close by clicking back onto the start point itself.
+    tool.on_hover_motion(30.0, 30.0)
+    tool.on_press(30.0, 30.0, 1)
+
+    assert tool._preview_state is None
+    lines = [e for e in sketch.registry.entities if e.type == "line"]
+    assert len(lines) == 3
+    closing = lines[-1]
+    assert closing.get_point_ids()[1] == start_id

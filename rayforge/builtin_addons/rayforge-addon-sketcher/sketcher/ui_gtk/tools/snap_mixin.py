@@ -96,6 +96,7 @@ class SnapMixin:
             dragged_point_ids=exclude_points or set(),
             dragged_entity_ids=set(),
             initial_positions={},
+            suppress_coincident_points=False,
         )
 
         snap_result = self._query_snap_engine(
