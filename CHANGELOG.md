@@ -5,6 +5,45 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.13.0-beta2
+
+### Added
+
+- Laser: a new Offset Fill step fills closed shapes with rings that run
+  parallel to the outline, one Line Interval apart (defaulting to the
+  laser spot size). An Offset sets the distance of the first ring from
+  the outline and Fill Direction cuts Outside-Inside or Inside-Outside;
+  holes stay free and open paths are ignored. Path Optimization, Smooth,
+  Multi-Pass and Crop to Stock apply as on Contour (#524)
+- Optimize: the path optimizer gains Choose Best Start Point, which
+  starts each closed path at the vertex nearest the laser head, and
+  Prefer Corners, which starts at a sharp corner when the path has one
+  so the seam is less visible. Both are off by default (#523)
+- Sketcher: Polygon tool (G+X) for regular polygons and stars, made of
+  plain points and lines that constraints keep regular (#522)
+- Vector editing: edit the nodes of imported paths: drag nodes and curve
+  handles, delete and insert nodes, and turn segments into curves or
+  lines (#521)
+
+### Fixed
+
+- Console: raw machine communication is shown again with Show verbose;
+  since the GRBL protocol moved into the Rust driver, only high-level
+  state changes were displayed (#573)
+- Machine: jog limits are evaluated in work coordinates, so jogs toward
+  the origin no longer clamp to zero on machines whose machine
+  coordinates are offset from the work origin; the soft limits toggle
+  now disables jog limit checks as a whole and persists (#574)
+- Canvas: the laser position dot follows the work position, so it no
+  longer lands outside the work area when the controller carries a work
+  coordinate offset (#580)
+- Renaming a workpiece, group, step, layer or stock item no longer
+  triggers a full re-render, which could crash GTK in large projects
+  (#571)
+- AppImage: TLS certificate verification for update and addon registry
+  checks works, and GTK can compile keymaps on Wayland instead of
+  crashing (#578)
+
 ## 1.13.0-beta1
 
 ### Added
@@ -92,16 +131,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   editing, and Apply is a single undo step (#515)
 - Addons: the `register_image_edits` hook and image edit registry
   (plugin API 23) let addons provide their own image edits
-- Sketcher: Polygon tool (G+X) for regular polygons and stars, made of
-  plain points and lines that constraints keep regular (#522)
 - Step settings: a new Workpieces tab shows which workpieces a step
   processes on its layer. A step normally processes every workpiece of
   its layer; generated content like the Material Test Grid restricts
   its step to the workpiece it creates, and that selection is now
   visible instead of hidden
-- Vector editing: edit the nodes of imported paths: drag nodes and curve
-  handles, delete and insert nodes, and turn segments into curves or
-  lines (#521)
 
 ### Changed
 

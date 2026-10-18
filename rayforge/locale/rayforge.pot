@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-15 13:51+0200\n"
+"POT-Creation-Date: 2026-10-18 21:09+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1692,6 +1692,11 @@ msgstr ""
 #: rayforge/machine/device/profile.py rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Soft Limits"
+msgstr ""
+
+#: rayforge/machine/device/profile.py rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Enable Soft Limits"
 msgstr ""
 
 #: rayforge/machine/device/profile.py
@@ -5562,17 +5567,13 @@ msgstr ""
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid ""
-"Configurable safety bounds for jogging. Leave disabled to use work surface "
-"bounds."
+"Configurable safety bounds for jogging. Leave disabled to jog without limit "
+"checks."
 msgstr ""
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Enable Custom Soft Limits"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Override work surface bounds with custom limits"
+msgid "Limit jogging to custom bounds instead of the work surface"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/hardware_page.py
@@ -6248,10 +6249,6 @@ msgstr ""
 
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Enable if +Z moves head down"
-msgstr ""
-
-#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Override work-surface bounds with custom limits"
 msgstr ""
 
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
@@ -9927,6 +9924,30 @@ msgstr ""
 
 #: rayforge/doceditor/array_cmd.py
 msgid "Create array copy"
+msgstr ""
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Move node"
+msgstr ""
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Delete node"
+msgstr ""
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Insert node"
+msgstr ""
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Make curve"
+msgstr ""
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Make line"
+msgstr ""
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Move handle"
 msgstr ""
 
 #: rayforge/doceditor/path_cleanup_cmd.py

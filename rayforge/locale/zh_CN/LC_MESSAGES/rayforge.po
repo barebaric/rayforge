@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-15 13:51+0200\n"
+"POT-Creation-Date: 2026-10-18 21:09+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -1717,6 +1717,11 @@ msgstr "工作边距"
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Soft Limits"
 msgstr "软限位"
+
+#: rayforge/machine/device/profile.py rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Enable Soft Limits"
+msgstr "启用软限位"
 
 #: rayforge/machine/device/profile.py
 msgid "Coordinate Origin"
@@ -5631,18 +5636,14 @@ msgstr "将工作区原点视为坐标零点。隐藏WCS控制并使用工作区
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid ""
-"Configurable safety bounds for jogging. Leave disabled to use work surface "
-"bounds."
-msgstr "手动移动的可配置安全边界。保持禁用以使用工作面边界。"
+"Configurable safety bounds for jogging. Leave disabled to jog without limit "
+"checks."
+msgstr "用于点动移动的可配置安全边界。保持禁用则点动时不进行限位检查。"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Enable Custom Soft Limits"
-msgstr "启用自定义软限位"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Override work surface bounds with custom limits"
-msgstr "使用自定义限位覆盖工作面边界"
+msgid "Limit jogging to custom bounds instead of the work surface"
+msgstr "将点动移动限制在自定义边界内，而非工作台面"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
@@ -6333,10 +6334,6 @@ msgstr "归位后坐标为零的物理角"
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Enable if +Z moves head down"
 msgstr "如果 +Z 使机头下移则启用"
-
-#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Override work-surface bounds with custom limits"
-msgstr "使用自定义限制覆盖工作台边界"
 
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Limits in machine units per minute."
@@ -10049,6 +10046,30 @@ msgstr "创建阵列"
 #: rayforge/doceditor/array_cmd.py
 msgid "Create array copy"
 msgstr "创建阵列副本"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Move node"
+msgstr "移动节点"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Delete node"
+msgstr "删除节点"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Insert node"
+msgstr "插入节点"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Make curve"
+msgstr "转为曲线"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Make line"
+msgstr "转为直线"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Move handle"
+msgstr "移动手柄"
 
 #: rayforge/doceditor/path_cleanup_cmd.py
 msgid "Close paths"

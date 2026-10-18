@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-12 18:45+0200\n"
+"POT-Creation-Date: 2026-10-18 04:42+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -244,6 +244,15 @@ msgstr "Modulation de puissance et plage de luminosité."
 msgid "Change Power Range"
 msgstr "Modifier la plage de puissance"
 
+#: laser_essentials/widgets/offset_fill_page.py
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Offset Fill"
+msgstr "Remplissage par décalage"
+
+#: laser_essentials/widgets/offset_fill_page.py
+msgid "Fill closed shapes with rings that follow the outline."
+msgstr "Remplit les formes fermées avec des anneaux qui suivent le contour."
+
 #: laser_essentials/widgets/levels_adapter.py
 msgid "Auto-adjusted based on image content"
 msgstr "Ajusté automatiquement en fonction du contenu de l'image"
@@ -342,7 +351,9 @@ msgstr "Côté de coupe"
 
 #: laser_essentials/steps/shrinkwrap_step.py
 #: laser_essentials/steps/wavefront_step.py
-#: laser_essentials/steps/frame_step.py laser_essentials/steps/contour_step.py
+#: laser_essentials/steps/frame_step.py
+#: laser_essentials/steps/offset_fill_step.py
+#: laser_essentials/steps/contour_step.py
 msgid "Offset"
 msgstr "Décalage"
 
@@ -393,6 +404,30 @@ msgstr "Rayon des coins"
 #: laser_essentials/steps/frame_step.py
 msgid "Radius used to round the frame's corners"
 msgstr "Rayon utilisé pour arrondir les coins du cadre"
+
+#: laser_essentials/steps/offset_fill_step.py
+#: laser_essentials/steps/material_test.py
+msgid "Line Interval"
+msgstr "Intervalle de ligne"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid ""
+"Distance between neighbouring fill rings. Defaults to the laser spot size"
+msgstr ""
+"Distance entre les anneaux de remplissage voisins. Par défaut, la "
+"taille du point laser est utilisée"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Distance of the first ring inside the outline"
+msgstr "Distance du premier anneau à l'intérieur du contour"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Fill Direction"
+msgstr "Direction de remplissage"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Order in which the rings are cut"
+msgstr "Ordre de découpe des anneaux"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Mode"
@@ -662,10 +697,6 @@ msgstr "Espacement"
 #: laser_essentials/steps/material_test.py
 msgid "Gap between test squares"
 msgstr "Espace entre les carrés de test"
-
-#: laser_essentials/steps/material_test.py
-msgid "Line Interval"
-msgstr "Intervalle de ligne"
 
 #: laser_essentials/steps/material_test.py
 msgid ""

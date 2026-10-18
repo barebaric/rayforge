@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-15 05:47+0200\n"
+"POT-Creation-Date: 2026-10-18 02:42+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -33,6 +33,30 @@ msgstr "Зберегти першу деталь"
 #: post_processors/widgets/optimize_group.py
 msgid "Keep the first workpiece at its original position"
 msgstr "Залишити першу деталь на її початковій позиції"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Choose Best Start Point"
+msgstr "Вибрати найкращу початкову точку"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Start closed paths at the vertex nearest the laser head to shorten travel "
+"moves."
+msgstr ""
+"Починає замкнені шляхи з вершини, найближчої до лазерної головки, щоб "
+"скоротити переміщення."
+
+#: post_processors/widgets/optimize_group.py
+msgid "Prefer Corners"
+msgstr "Надавати перевагу кутам"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Start closed paths at a sharp corner where the path has one, which makes the "
+"seam less visible."
+msgstr ""
+"Починає замкнені шляхи з гострого кута, якщо такий є, що робить шов "
+"менш помітним."
 
 #: post_processors/widgets/optimize_group.py
 msgid "Merge Scanlines"
@@ -65,6 +89,14 @@ msgstr "Перемкнути перевертання"
 #: post_processors/widgets/optimize_group.py
 msgid "Toggle Preserve First Workpiece"
 msgstr "Перемкнути збереження першої деталі"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Choose Best Start Point"
+msgstr "Перемкнути вибір найкращої початкової точки"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Prefer Corners"
+msgstr "Перемкнути перевагу кутам"
 
 #: post_processors/widgets/optimize_group.py
 msgid "Change maximum bridged gap"

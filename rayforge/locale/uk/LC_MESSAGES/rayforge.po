@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-15 13:51+0200\n"
+"POT-Creation-Date: 2026-10-18 21:09+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Ukrainian\n"
@@ -1858,6 +1858,11 @@ msgstr "Робочі поля"
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Soft Limits"
 msgstr "М'які обмеження"
+
+#: rayforge/machine/device/profile.py rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Enable Soft Limits"
+msgstr "Увімкнути м'які обмеження"
 
 #: rayforge/machine/device/profile.py
 msgid "Coordinate Origin"
@@ -5911,20 +5916,16 @@ msgstr ""
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid ""
-"Configurable safety bounds for jogging. Leave disabled to use work surface "
-"bounds."
+"Configurable safety bounds for jogging. Leave disabled to jog without limit "
+"checks."
 msgstr ""
-"Налаштовувані межі безпеки для переміщення. Залиште вимкненим, щоб "
-"використовувати межі робочої поверхні."
+"Налаштовувані межі безпеки для ручного переміщення. Якщо залишити "
+"вимкненим, переміщення виконуватиметься без перевірки обмежень."
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Enable Custom Soft Limits"
-msgstr "Увімкнути власні м'які обмеження"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Override work surface bounds with custom limits"
-msgstr "Замінити межі робочої поверхні власними обмеженнями"
+msgid "Limit jogging to custom bounds instead of the work surface"
+msgstr "Обмежити ручне переміщення власними межами замість робочої поверхні"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
@@ -6651,10 +6652,6 @@ msgstr "Фізичний кут, де координати дорівнюють 
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Enable if +Z moves head down"
 msgstr "Увімкніть, якщо +Z опускає голівку вниз"
-
-#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Override work-surface bounds with custom limits"
-msgstr "Перевизначити межі робочої поверхні власними обмеженнями"
 
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Limits in machine units per minute."
@@ -10490,6 +10487,30 @@ msgstr "Створити масив"
 #: rayforge/doceditor/array_cmd.py
 msgid "Create array copy"
 msgstr "Створити копію масиву"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Move node"
+msgstr "Перемістити вузол"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Delete node"
+msgstr "Видалити вузол"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Insert node"
+msgstr "Вставити вузол"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Make curve"
+msgstr "Перетворити на криву"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Make line"
+msgstr "Перетворити на лінію"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Move handle"
+msgstr "Перемістити важіль"
 
 #: rayforge/doceditor/path_cleanup_cmd.py
 msgid "Close paths"

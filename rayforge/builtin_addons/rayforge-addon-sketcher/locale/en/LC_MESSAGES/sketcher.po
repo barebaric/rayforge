@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-04 18:52+0200\n"
+"POT-Creation-Date: 2026-10-15 05:49+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: English\n"
@@ -299,6 +299,10 @@ msgstr ""
 msgid "Exclude"
 msgstr ""
 
+#: sketcher/core/commands/polygon.py
+msgid "Add Polygon"
+msgstr ""
+
 #: sketcher/core/commands/point.py
 msgid "Move Point"
 msgstr ""
@@ -433,7 +437,7 @@ msgstr ""
 
 #: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/tools/path_tool.py
 #: sketcher/ui_gtk/tools/rectangle_tool.py sketcher/ui_gtk/tools/arc_tool.py
-#: sketcher/ui_gtk/tools/circle_tool.py
+#: sketcher/ui_gtk/tools/circle_tool.py sketcher/ui_gtk/tools/polygon_tool.py
 msgid "Toggle Magnetic Snap"
 msgstr ""
 
@@ -686,6 +690,7 @@ msgid "Rounded Rectangle"
 msgstr ""
 
 #: sketcher/ui_gtk/tools/rounded_rect_tool.py
+#: sketcher/ui_gtk/tools/polygon_tool.py
 msgid "R"
 msgstr ""
 
@@ -721,6 +726,26 @@ msgstr ""
 
 #: sketcher/ui_gtk/tools/diameter_constraint_tool.py
 msgid "Add Diameter Constraint"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/polygon_tool.py sketcher/ui_gtk/menu.py
+msgid "Polygon"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/polygon_tool.py
+msgid "N"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/polygon_tool.py
+msgid "Star"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/polygon_tool.py
+msgid "Type radius, corners and star ratio (R N Star)"
+msgstr ""
+
+#: sketcher/ui_gtk/tools/polygon_tool.py
+msgid "Set first corner"
 msgstr ""
 
 #: sketcher/ui_gtk/tools/waypoint_smooth_tool.py

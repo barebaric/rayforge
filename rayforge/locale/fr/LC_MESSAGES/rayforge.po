@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-15 13:51+0200\n"
+"POT-Creation-Date: 2026-10-18 21:09+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -1887,6 +1887,11 @@ msgstr "Marges de travail"
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Soft Limits"
 msgstr "Limites logicielles"
+
+#: rayforge/machine/device/profile.py rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Enable Soft Limits"
+msgstr "Activer les limites logicielles"
 
 #: rayforge/machine/device/profile.py
 msgid "Coordinate Origin"
@@ -5990,21 +5995,18 @@ msgstr ""
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid ""
-"Configurable safety bounds for jogging. Leave disabled to use work surface "
-"bounds."
+"Configurable safety bounds for jogging. Leave disabled to jog without limit "
+"checks."
 msgstr ""
-"Limites de sécurité configurables pour le déplacement manuel. Laisser "
-"désactivé pour utiliser les limites de la surface de travail."
+"Limites de sécurité configurables pour les déplacements manuels. "
+"Laissez désactivé pour vous déplacer sans vérification des limites."
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Enable Custom Soft Limits"
-msgstr "Activer les limites logicielles personnalisées"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Override work surface bounds with custom limits"
+msgid "Limit jogging to custom bounds instead of the work surface"
 msgstr ""
-"Remplacer les limites de la surface de travail par des limites personnalisées"
+"Limiter les déplacements manuels à des limites personnalisées plutôt "
+"qu'à la surface de travail"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
@@ -6742,11 +6744,6 @@ msgstr ""
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Enable if +Z moves head down"
 msgstr "Activer si +Z abaisse la tête"
-
-#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Override work-surface bounds with custom limits"
-msgstr ""
-"Remplacer les limites de la surface de travail par des limites personnalisées"
 
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Limits in machine units per minute."
@@ -10622,6 +10619,30 @@ msgstr "Créer un tableau"
 #: rayforge/doceditor/array_cmd.py
 msgid "Create array copy"
 msgstr "Créer une copie du tableau"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Move node"
+msgstr "Déplacer le nœud"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Delete node"
+msgstr "Supprimer le nœud"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Insert node"
+msgstr "Insérer un nœud"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Make curve"
+msgstr "Convertir en courbe"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Make line"
+msgstr "Convertir en ligne"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Move handle"
+msgstr "Déplacer la poignée"
 
 #: rayforge/doceditor/path_cleanup_cmd.py
 msgid "Close paths"

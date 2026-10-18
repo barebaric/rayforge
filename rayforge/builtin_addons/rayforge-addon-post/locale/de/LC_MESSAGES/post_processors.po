@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-15 05:47+0200\n"
+"POT-Creation-Date: 2026-10-18 02:42+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -32,6 +32,30 @@ msgstr "Erstes Werkstück beibehalten"
 #: post_processors/widgets/optimize_group.py
 msgid "Keep the first workpiece at its original position"
 msgstr "Erstes Werkstück an seiner ursprünglichen Position behalten"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Choose Best Start Point"
+msgstr "Besten Startpunkt wählen"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Start closed paths at the vertex nearest the laser head to shorten travel "
+"moves."
+msgstr ""
+"Beginnt geschlossene Pfade am nächstgelegenen Punkt zum Laserkopf, um "
+"Verfahrwege zu verkürzen."
+
+#: post_processors/widgets/optimize_group.py
+msgid "Prefer Corners"
+msgstr "Ecken bevorzugen"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Start closed paths at a sharp corner where the path has one, which makes the "
+"seam less visible."
+msgstr ""
+"Beginnt geschlossene Pfade an einer scharfen Ecke, sofern der Pfad "
+"eine hat; das macht die Naht weniger sichtbar."
 
 #: post_processors/widgets/optimize_group.py
 msgid "Merge Scanlines"
@@ -64,6 +88,14 @@ msgstr "Umkehrung umschalten"
 #: post_processors/widgets/optimize_group.py
 msgid "Toggle Preserve First Workpiece"
 msgstr "Erstes Werkstück beibehalten umschalten"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Choose Best Start Point"
+msgstr "Besten Startpunkt wählen umschalten"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Prefer Corners"
+msgstr "Ecken bevorzugen umschalten"
 
 #: post_processors/widgets/optimize_group.py
 msgid "Change maximum bridged gap"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-15 13:51+0200\n"
+"POT-Creation-Date: 2026-10-18 21:09+0200\n"
 "PO-Revision-Date: 2026-09-27 22:58\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -1791,6 +1791,11 @@ msgstr "कार्य मार्जिन"
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Soft Limits"
 msgstr "सॉफ़्ट लिमिट"
+
+#: rayforge/machine/device/profile.py rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Enable Soft Limits"
+msgstr "सॉफ़्ट लिमिट सक्षम करें"
 
 #: rayforge/machine/device/profile.py
 msgid "Coordinate Origin"
@@ -5770,20 +5775,16 @@ msgstr ""
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid ""
-"Configurable safety bounds for jogging. Leave disabled to use work surface "
-"bounds."
+"Configurable safety bounds for jogging. Leave disabled to jog without limit "
+"checks."
 msgstr ""
-"जॉगिंग के लिए कॉन्फ़िगर योग्य सुरक्षा सीमाएँ. कार्य सतह सीमाएँ उपयोग करने के लिए अक्षम "
-"छोड़ें."
+"जॉगिंग के लिए कॉन्फ़िगर करने योग्य सुरक्षा सीमाएँ. सीमा जाँच के बिना "
+"जॉग करने के लिए इसे अक्षम छोड़ें."
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Enable Custom Soft Limits"
-msgstr "कस्टम सॉफ़्ट लिमिट सक्षम करें"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Override work surface bounds with custom limits"
-msgstr "कार्य सतह सीमाओं को कस्टम लिमिट से बदलें"
+msgid "Limit jogging to custom bounds instead of the work surface"
+msgstr "जॉगिंग को कार्य सतह के बजाय कस्टम सीमाओं तक सीमित करें"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
@@ -6493,10 +6494,6 @@ msgstr "होमिंग के बाद निर्देशांक श�
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Enable if +Z moves head down"
 msgstr "सक्षम करें यदि +Z हेड को नीचे ले जाता है"
-
-#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Override work-surface bounds with custom limits"
-msgstr "कार्य सतह सीमाओं को कस्टम लिमिट से बदलें"
 
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Limits in machine units per minute."
@@ -10262,6 +10259,30 @@ msgstr "ऐरे बनाएँ"
 #: rayforge/doceditor/array_cmd.py
 msgid "Create array copy"
 msgstr "ऐरे प्रतिलिपि बनाएँ"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Move node"
+msgstr "नोड ले जाएँ"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Delete node"
+msgstr "नोड हटाएँ"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Insert node"
+msgstr "नोड डालें"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Make curve"
+msgstr "वक्र बनाएँ"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Make line"
+msgstr "रेखा बनाएँ"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Move handle"
+msgstr "हैंडल ले जाएँ"
 
 #: rayforge/doceditor/path_cleanup_cmd.py
 msgid "Close paths"

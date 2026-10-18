@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-12 18:45+0200\n"
+"POT-Creation-Date: 2026-10-18 04:42+0200\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -245,6 +245,15 @@ msgstr "Modulación de potencia y rango de brillo."
 msgid "Change Power Range"
 msgstr "Cambiar rango de potencia"
 
+#: laser_essentials/widgets/offset_fill_page.py
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Offset Fill"
+msgstr "Relleno por desplazamiento"
+
+#: laser_essentials/widgets/offset_fill_page.py
+msgid "Fill closed shapes with rings that follow the outline."
+msgstr "Rellena formas cerradas con anillos que siguen el contorno."
+
 #: laser_essentials/widgets/levels_adapter.py
 msgid "Auto-adjusted based on image content"
 msgstr "Ajustado automáticamente según el contenido de la imagen"
@@ -344,7 +353,9 @@ msgstr "Lado de corte"
 
 #: laser_essentials/steps/shrinkwrap_step.py
 #: laser_essentials/steps/wavefront_step.py
-#: laser_essentials/steps/frame_step.py laser_essentials/steps/contour_step.py
+#: laser_essentials/steps/frame_step.py
+#: laser_essentials/steps/offset_fill_step.py
+#: laser_essentials/steps/contour_step.py
 msgid "Offset"
 msgstr "Desplazamiento"
 
@@ -395,6 +406,30 @@ msgstr "Radio de las esquinas"
 #: laser_essentials/steps/frame_step.py
 msgid "Radius used to round the frame's corners"
 msgstr "Radio usado para redondear las esquinas del marco"
+
+#: laser_essentials/steps/offset_fill_step.py
+#: laser_essentials/steps/material_test.py
+msgid "Line Interval"
+msgstr "Intervalo de línea"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid ""
+"Distance between neighbouring fill rings. Defaults to the laser spot size"
+msgstr ""
+"Distancia entre anillos de relleno vecinos. De forma predeterminada, "
+"se usa el tamaño del punto láser"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Distance of the first ring inside the outline"
+msgstr "Distancia del primer anillo dentro del contorno"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Fill Direction"
+msgstr "Dirección de relleno"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Order in which the rings are cut"
+msgstr "Orden en el que se cortan los anillos"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Mode"
@@ -665,10 +700,6 @@ msgstr "Espaciado"
 #: laser_essentials/steps/material_test.py
 msgid "Gap between test squares"
 msgstr "Separación entre cuadrados de prueba"
-
-#: laser_essentials/steps/material_test.py
-msgid "Line Interval"
-msgstr "Intervalo de línea"
 
 #: laser_essentials/steps/material_test.py
 msgid ""
