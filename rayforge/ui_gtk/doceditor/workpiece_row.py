@@ -109,6 +109,10 @@ class WorkpieceRow(Gtk.Box):
             return
         self.start_rename()
 
+    def is_renaming(self) -> bool:
+        """Whether the row's in-place name editor is currently active."""
+        return self._rename_entry is not None
+
     def start_rename(self):
         """Starts in-place editing of the item name."""
         if self._rename_entry is not None:
