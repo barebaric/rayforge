@@ -163,9 +163,10 @@ class SnapMixin:
             scale_x, _ = element.canvas.view_transform.get_scale()
             if scale_x > 0:
                 element.snap_engine.threshold = 5.0 / scale_x
-        return element.snap_engine.query(
+        snap_result = element.snap_engine.query(
             element.sketch.registry, position, context
         )
+        return snap_result
 
     def build_snap_constraints(
         self,
@@ -259,26 +260,57 @@ class SnapMixin:
                         max(ec.p1, ec.p2),
                     )
                 )
+            elif isinstance(ec, CoincidentConstraint):
+                seen.add(
+                    (
+                        "CoincidentConstraint",
+                        min(ec.p1, ec.p2),
+                        max(ec.p1, ec.p2),
+                    )
+                )
 
+        # The point an ENTITY_POINT snap already pins the endpoint to
+        # needs no axis constraints on top of its coincidence.
+        primary_pid = None
+        sp = result.primary_snap_point
+        if (
+            sp is not None
+            and sp.line_type == SnapLineType.ENTITY_POINT
+            and isinstance(sp.source, Point)
+        ):
+            primary_pid = sp.source.id
+
+        axes: dict[int, set[str]] = {}
         for sl in result.snap_lines:
             if not isinstance(sl.source, Point):
                 continue
             src_id = sl.source.id
-            if src_id == end_pid:
+            if src_id == end_pid or src_id == primary_pid:
                 continue
-            key = (
-                "HorizontalConstraint"
-                if sl.is_horizontal
-                else "VerticalConstraint",
-                min(src_id, end_pid),
-                max(src_id, end_pid),
+            axes.setdefault(src_id, set()).add(
+                "h" if sl.is_horizontal else "v"
             )
-            if key in seen:
+
+        for src_id, kinds in axes.items():
+            lo, hi = min(src_id, end_pid), max(src_id, end_pid)
+            h_key = ("HorizontalConstraint", lo, hi)
+            v_key = ("VerticalConstraint", lo, hi)
+            if kinds == {"h", "v"} and h_key not in seen and v_key not in seen:
+                # Axis snaps in both directions onto the same point
+                # pin the endpoint onto it completely: that is a
+                # coincidence, so record one CoincidentConstraint
+                # instead of two orientation constraints that mean
+                # the same thing.
+                coincident_key = ("CoincidentConstraint", lo, hi)
+                if coincident_key not in seen:
+                    seen.add(coincident_key)
+                    constraints.append(CoincidentConstraint(src_id, end_pid))
                 continue
-            seen.add(key)
-            if sl.is_horizontal:
+            if "h" in kinds and h_key not in seen:
+                seen.add(h_key)
                 constraints.append(HorizontalConstraint(src_id, end_pid))
-            else:
+            if "v" in kinds and v_key not in seen:
+                seen.add(v_key)
                 constraints.append(VerticalConstraint(src_id, end_pid))
 
         return constraints
