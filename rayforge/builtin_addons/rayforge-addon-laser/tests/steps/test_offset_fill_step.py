@@ -50,6 +50,12 @@ class _FakeProvider:
     def renderer(self):
         return None
 
+    def get_template_sources(self) -> list[str]:
+        return []
+
+    def variables_used(self) -> set[str]:
+        return set()
+
     def get_geometry(self, params=None, *, resolved_text_cache=None):
         return self._geometry.copy(), []
 
