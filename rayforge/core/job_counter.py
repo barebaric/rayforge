@@ -10,18 +10,12 @@ counter values.
 
 from __future__ import annotations
 
-import ast
-import re
-from collections.abc import Iterable
 from dataclasses import dataclass, replace
 from typing import Any
 
 from blinker import Signal
 
 COUNTER_NAME = "counter"
-
-_PLACEHOLDER_RE = re.compile(r"\{([^{}]+)\}")
-_IDENTIFIER_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
 
 @dataclass(frozen=True)
@@ -107,10 +101,10 @@ class CounterSettings:
 
 class JobCounter:
     """
-    The variables a document offers to text templates.
+    The document's job counter.
 
-    Emits :attr:`changed` whenever a value changes, so workpieces whose
-    templates reference a variable can regenerate.
+    Emits :attr:`changed` whenever a value changes; the document then
+    regenerates the geometry that shows counter values.
     """
 
     def __init__(self):
@@ -148,25 +142,3 @@ class JobCounter:
             if isinstance(counter, dict):
                 instance._counter = CounterSettings.from_dict(counter)
         return instance
-
-
-def _names_in_expression(expression: str) -> set[str]:
-    """Names an expression reads, ignoring string literals."""
-    try:
-        tree = ast.parse(expression.strip(), mode="eval")
-    except SyntaxError:
-        return set(_IDENTIFIER_RE.findall(expression))
-    return {node.id for node in ast.walk(tree) if isinstance(node, ast.Name)}
-
-
-def referenced_template_names(templates: Iterable[str]) -> set[str]:
-    """
-    Collects the names used inside the ``{...}`` placeholders of
-    *templates*. A format spec after the first colon is ignored.
-    """
-    names: set[str] = set()
-    for template in templates:
-        for match in _PLACEHOLDER_RE.finditer(template or ""):
-            expression, _sep, _spec = match.group(1).partition(":")
-            names |= _names_in_expression(expression)
-    return names

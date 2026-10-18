@@ -32,7 +32,6 @@ from .geometry_provider import IGeometryProvider
 from .image_cache import new_image_cache
 from .image_edit import ImageEditStep, apply_image_edits
 from .item import DocItem
-from .job_counter import referenced_template_names
 from .source_asset_segment import SourceAssetSegment
 from .tab import Tab
 from .vectorization_spec import TraceSpec
@@ -628,9 +627,7 @@ class WorkPiece(DocItem):
         world_wp.tabs = deepcopy(self.tabs)
         world_wp.tabs_enabled = self.tabs_enabled
         world_wp.geometry_provider_uid = self.geometry_provider_uid
-        world_wp._geometry_provider_params = deepcopy(
-            self._world_provider_params()
-        )
+        world_wp._geometry_provider_params = deepcopy(self._provider_params())
         world_wp._variable_offset = self._variable_offset
         world_wp._template_values_used = deepcopy(self._template_values_used)
         world_wp.source_asset_uid = self.source_asset_uid
@@ -1166,47 +1163,13 @@ class WorkPiece(DocItem):
         params.update(self._geometry_provider_params or {})
         return params
 
-    def _world_provider_params(self) -> dict[str, Any]:
-        """
-        Parameters for a detached copy: the template variables are baked
-        in only when this workpiece's templates read them.
-        """
-        doc = self.doc
-        if doc is not None and self.references_template_names(
-            doc.job_counter.names
-        ):
-            return self._provider_params()
-        return dict(self._geometry_provider_params or {})
-
-    def template_sources(self) -> list[str]:
-        """The raw template strings the geometry provider renders."""
-        provider = self.get_geometry_provider()
-        get_sources = getattr(provider, "get_template_sources", None)
-        if get_sources is None:
-            return []
-        return list(get_sources())
-
-    def references_template_names(self, names: set[str]) -> bool:
-        """Whether any template of this workpiece reads one of *names*."""
-        if not self.geometry_provider_uid:
-            return False
-        used = referenced_template_names(self.template_sources())
-        return bool(used & names)
-
     def refresh_template_values(self) -> None:
         """
         Regenerates the geometry after a template variable changed.
 
-        Only workpieces whose templates read one of the document's
-        variables are affected. The current scale relative to the
-        natural size is kept, so a longer text grows instead of being
-        squeezed into the old box.
+        The current scale relative to the natural size is kept, so a
+        longer text grows instead of being squeezed into the old box.
         """
-        doc = self.doc
-        if doc is None or not self.references_template_names(
-            doc.job_counter.names
-        ):
-            return
         old_w, old_h = self.natural_width_mm, self.natural_height_mm
         size_w, size_h = self.size
         self._resolved_text_cache = {}
@@ -1224,6 +1187,8 @@ class WorkPiece(DocItem):
         values than the document offers now, e.g. after the workpiece
         was created outside the document or copied with a new offset.
         """
+        if not self.geometry_provider_uid:
+            return
         if self._template_values_used != self.template_values():
             self.refresh_template_values()
 

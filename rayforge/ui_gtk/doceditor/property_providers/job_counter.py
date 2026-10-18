@@ -17,19 +17,10 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _uses_variables(item: DocItem) -> bool:
-    doc = item.doc
-    return (
-        isinstance(item, WorkPiece)
-        and doc is not None
-        and item.references_template_names(doc.job_counter.names)
-    )
-
-
 class JobCounterPropertyProvider(PropertyProvider):
     """
-    Shows the variable offset of workpieces whose text templates use a
-    document variable such as ``{counter}``.
+    Shows the variable offset of the selected workpieces, with a
+    shortcut to the counter settings.
     """
 
     priority = 30
@@ -37,7 +28,9 @@ class JobCounterPropertyProvider(PropertyProvider):
     group_title = _("Job Counter")
 
     def can_handle(self, items: list[DocItem]) -> bool:
-        return bool(items) and all(_uses_variables(i) for i in items)
+        return bool(items) and all(
+            isinstance(i, WorkPiece) for i in items
+        )
 
     def create_widgets(self) -> list[Gtk.Widget]:
         self.offset_row = SpinRow(

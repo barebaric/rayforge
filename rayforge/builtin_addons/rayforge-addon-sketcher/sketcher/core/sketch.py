@@ -19,7 +19,7 @@ from raygeo.geo.shape.polygon import is_point_inside_polygon
 
 from rayforge.core.asset import IAsset
 from rayforge.core.color import ColorRGBA
-from rayforge.core.expression import ExpressionMap
+from rayforge.core.expression import ExpressionMap, referenced_template_names
 from rayforge.core.geometry_provider import IGeometryProvider
 from rayforge.core.varset import VarSet
 from rayforge.image.geo_renderer import render_geometry_to_png
@@ -57,6 +57,8 @@ from .registry import EntityRegistry
 from .solver import Solver
 from .template_functions import get_template_functions
 from .types import EntityID
+
+_GEOMETRY_CACHE_SIZE = 8
 
 DEFAULT_FILL_COLOR: ColorRGBA = (0.85, 0.85, 0.85, 0.7)
 FORMAT_VERSION = 1
@@ -184,6 +186,14 @@ class Sketch(IAsset, IGeometryProvider):
         self._last_solve_values: dict[str, Any] = {}
         self._resolved_text_cache: dict[EntityID, tuple[str, str | None]] = {}
         self._solved_ctx: dict[str, Any] | None = None
+
+        # Geometry of the last calls, keyed by effective parameter
+        # values; cleared whenever the sketch itself changes.
+        self._geometry_cache: dict[
+            tuple[tuple[str, str], ...],
+            tuple[Geometry, list[FillRenderData], dict],
+        ] = {}
+        self._updated.connect(self._invalidate_geometry_cache)
 
         # Cache for coincident-point groups. Keys are point IDs,
         # values are frozensets of all points in the same group.
@@ -316,7 +326,10 @@ class Sketch(IAsset, IGeometryProvider):
         Generate geometry with optional parameter overrides.
 
         Creates a clone, solves it with the given parameters, and returns
-        the stroke and fill geometries.
+        the stroke and fill geometries. An unchanged sketch reuses the
+        result of an earlier call when the effective parameter values
+        are the same, so a change to a document-wide variable does not
+        re-solve sketches that do not read it.
 
         When *resolved_text_cache* is supplied the clone is seeded with
         those values so that volatile template expressions (e.g.
@@ -332,6 +345,13 @@ class Sketch(IAsset, IGeometryProvider):
         Returns:
             A tuple of (stroke_geometry, fill_render_data).
         """
+        key = self._geometry_cache_key(params)
+        cached = self._geometry_cache.get(key)
+        if cached is not None:
+            geo, fills, resolved = cached
+            if resolved_text_cache is not None:
+                resolved_text_cache.update(resolved)
+            return geo, fills
         clone = self._clone_for_geometry()
         if resolved_text_cache is not None:
             clone._resolved_text_cache = dict(resolved_text_cache)
@@ -344,6 +364,7 @@ class Sketch(IAsset, IGeometryProvider):
         fills = clone.get_fill_render_data()
         if resolved_text_cache is not None:
             resolved_text_cache.update(clone._resolved_text_cache)
+        self._remember_geometry(key, geo, fills, clone._resolved_text_cache)
         return geo, fills
 
     def get_template_sources(self) -> list[str]:
@@ -353,6 +374,41 @@ class Sketch(IAsset, IGeometryProvider):
             for e in self.registry.entities
             if isinstance(e, TextBoxEntity) and e.content
         ]
+
+    def variables_used(self) -> set[str]:
+        """The template variable names this sketch's text boxes read."""
+        return referenced_template_names(self.get_template_sources())
+
+    def _geometry_cache_key(
+        self, params: dict[str, Any] | None
+    ) -> tuple[tuple[str, str], ...]:
+        """
+        The effective parameter values of a geometry request. Two
+        requests with the same values produce the same geometry as
+        long as the sketch itself does not change.
+        """
+        values = dict(self.input_parameters.get_values())
+        if params:
+            values.update(params)
+        return tuple(
+            sorted((name, repr(value)) for name, value in values.items())
+        )
+
+    def _remember_geometry(
+        self,
+        key: tuple[tuple[str, str], ...],
+        geo: Geometry,
+        fills: list[FillRenderData],
+        resolved: dict,
+    ) -> None:
+        """Caches a result, evicting the oldest when it grows too big."""
+        self._geometry_cache[key] = (geo, fills, dict(resolved))
+        while len(self._geometry_cache) > _GEOMETRY_CACHE_SIZE:
+            self._geometry_cache.pop(next(iter(self._geometry_cache)))
+
+    def _invalidate_geometry_cache(self, sender) -> None:
+        """Drops cached geometry when the sketch itself changes."""
+        self._geometry_cache.clear()
 
     def _clone_for_geometry(self) -> "Sketch":
         """

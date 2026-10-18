@@ -195,36 +195,31 @@ class Doc(DocItem):
         value.changed.connect(self._on_job_counter_changed)
         self._on_job_counter_changed(value)
 
-    def _template_workpieces(self) -> list[WorkPiece]:
-        """Workpieces whose templates read a document variable."""
-        names = self._job_counter.names
-        return [
-            wp
-            for wp in self.all_workpieces
-            if wp.references_template_names(names)
-        ]
-
     def job_counter_copies(self) -> int:
         """
-        How many consecutive variable values one job uses: the highest
-        variable offset of a template workpiece plus one, or 0 if no
-        workpiece uses a document variable.
+        How many consecutive counter values one job uses: the highest
+        variable offset of a workpiece that reads the counter plus
+        one, or 0 if no workpiece reads it.
         """
-        offsets = [wp.variable_offset for wp in self._template_workpieces()]
+        names = self._job_counter.names
+        offsets = []
+        for wp in self.all_workpieces:
+            provider = wp.get_geometry_provider()
+            if provider is not None and names & provider.variables_used():
+                offsets.append(wp.variable_offset)
         if not offsets:
             return 0
         return max(offsets) + 1
 
     def _on_job_counter_changed(self, sender: JobCounter) -> None:
-        for wp in self._template_workpieces():
+        for wp in self.all_workpieces:
             wp.refresh_template_values()
 
     def _on_item_added_for_templates(
         self, sender: DocItem, *, origin: DocItem, parent_of_origin: DocItem
     ) -> None:
         for wp in workpieces_in(origin):
-            if wp.references_template_names(self._job_counter.names):
-                wp.sync_template_values()
+            wp.sync_template_values()
 
     def add_asset(
         self, asset: IAsset, index: int | None = None, silent: bool = False

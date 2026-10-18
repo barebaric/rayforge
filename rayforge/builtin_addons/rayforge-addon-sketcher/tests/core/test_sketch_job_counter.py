@@ -38,6 +38,33 @@ def test_template_sources_lists_text_box_contents():
     assert sketch.get_template_sources() == ["No. {counter:03d}"]
 
 
+def test_variables_used_reports_read_names():
+    sketch, _box = _sketch_with_text("No. {counter:03d}")
+    assert sketch.variables_used() == {"counter"}
+
+
+def test_plain_sketch_uses_no_variables():
+    sketch, _box = _sketch_with_text("Hello")
+    assert sketch.variables_used() == set()
+
+
+def test_geometry_is_reused_for_same_values():
+    sketch, _box = _sketch_with_text("{counter}")
+    first, _fills = sketch.get_geometry({"counter": 1})
+    again, _fills = sketch.get_geometry({"counter": 1})
+    assert again is first
+    other, _fills = sketch.get_geometry({"counter": 2})
+    assert other is not first
+
+
+def test_sketch_change_drops_cached_geometry():
+    sketch, _box = _sketch_with_text("{counter}")
+    first, _fills = sketch.get_geometry({"counter": 1})
+    sketch.notify_update()
+    again, _fills = sketch.get_geometry({"counter": 1})
+    assert again is not first
+
+
 def test_counter_is_resolved_in_document():
     doc = Doc()
     doc.job_counter.counter = CounterSettings(current=7)

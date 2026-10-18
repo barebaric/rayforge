@@ -125,7 +125,7 @@ funciones integradas de abajo, y se pueden registrar funciones personalizadas pa
 | `{uuid()}`      | `str`        | Cadena UUID v4 completa (36 caracteres)              |
 
 Para un contador de trabajos que avanza tras cada trabajo, usa la variable del proyecto `{counter}`
-(consulta [Contador de trabajos](../variable-text.md)).
+(consulta [Contador de trabajos](../job-counter.md)).
 
 Entre los usos típicos se incluyen números de serie únicos en cada resolución (`Pieza #{uuid4()}`),
 etiquetas de dimensiones en vivo (`W={width:.1f} H={height:.1f}`), fechas en cada pieza

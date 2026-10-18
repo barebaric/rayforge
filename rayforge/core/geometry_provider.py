@@ -65,6 +65,21 @@ class IGeometryProvider(Protocol):
         """
         ...
 
+    def get_template_sources(self) -> list[str]:
+        """
+        The raw contents of all template strings this provider renders,
+        e.g. the text of the sketch's text boxes.
+        """
+        ...
+
+    def variables_used(self) -> set[str]:
+        """
+        The template variable names these templates read. Callers use
+        this to know which variables this provider depends on; the
+        provider itself decides what its templates reference.
+        """
+        ...
+
     def to_dict(self) -> dict[str, Any]:
         """Serialize the provider to a dictionary."""
         ...

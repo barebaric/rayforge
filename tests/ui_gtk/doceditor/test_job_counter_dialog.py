@@ -110,12 +110,12 @@ def test_switches_update_model(editor, dialog):
 
 
 @pytest.mark.ui
-def test_property_provider_handles_template_workpieces(editor):
+def test_property_provider_handles_workpieces(editor):
     wp = place(editor.doc, "{counter:03d}")
     plain = place(editor.doc, "Hello")
     provider = JobCounterPropertyProvider()
     assert provider.can_handle([wp])
-    assert not provider.can_handle([plain])
+    assert provider.can_handle([plain])
     assert not provider.can_handle([])
 
 

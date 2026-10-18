@@ -7,7 +7,10 @@ from blinker import Signal
 from raygeo.geo import Geometry
 
 from rayforge.core.doc import Doc
-from rayforge.core.expression import ExpressionMap
+from rayforge.core.expression import (
+    ExpressionMap,
+    referenced_template_names,
+)
 from rayforge.core.workpiece import WorkPiece
 
 
@@ -49,6 +52,9 @@ class TemplateProvider:
 
     def get_template_sources(self) -> list[str]:
         return [self.template]
+
+    def variables_used(self) -> set[str]:
+        return referenced_template_names(self.get_template_sources())
 
     def get_geometry(self, params=None, *, resolved_text_cache=None):
         params = dict(params or {})

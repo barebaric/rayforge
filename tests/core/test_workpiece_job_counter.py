@@ -72,16 +72,20 @@ class TestTemplateValues:
         world = wp.in_world()
         assert world.geometry_provider_params["counter"] == 4
 
-    def test_in_world_leaves_plain_templates_alone(self, doc):
+    def test_in_world_bakes_values_for_plain_templates(self, doc):
         doc.job_counter.counter = CounterSettings(current=3)
         wp = place(doc, "Hello")
-        assert "counter" not in wp.in_world().geometry_provider_params
+        assert wp.in_world().geometry_provider_params["counter"] == 3
 
-    def test_references_variables(self, doc):
+    def test_provider_reports_used_variables(self, doc):
         wp = place(doc, "{counter:04d}")
         plain = place(doc, "Hello")
-        assert wp.references_template_names({"counter"})
-        assert not plain.references_template_names({"counter"})
+        counter_provider = wp.get_geometry_provider()
+        plain_provider = plain.get_geometry_provider()
+        assert isinstance(counter_provider, TemplateProvider)
+        assert isinstance(plain_provider, TemplateProvider)
+        assert counter_provider.variables_used() == {"counter"}
+        assert plain_provider.variables_used() == set()
 
 
 class TestRefreshOnChange:
@@ -114,13 +118,12 @@ class TestRefreshOnChange:
         doc.job_counter.counter = CounterSettings(current=5)
         assert wp in received
 
-    def test_unrelated_workpiece_is_not_regenerated(self, doc):
+    def test_unrelated_workpiece_keeps_its_text(self, doc):
         wp = place(doc, "Hello")
         provider = wp.get_geometry_provider()
         assert isinstance(provider, TemplateProvider)
-        calls = len(provider.calls)
         doc.job_counter.counter = CounterSettings(current=5)
-        assert len(provider.calls) == calls
+        assert provider.rendered[-1] == "Hello"
 
     def test_offset_change_regenerates(self, doc):
         doc.job_counter.counter = CounterSettings(current=1)
