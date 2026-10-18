@@ -12,7 +12,7 @@ from typing import (
 )
 
 from blinker import Signal
-from raygeo.geo.types import Point3D, Rect
+from raygeo.geo.types import Point, Point3D, Rect
 from raygeo.ops.axis import Axis
 
 from ...camera.models.camera import Camera
@@ -1162,6 +1162,28 @@ class Machine:
     def get_current_position(self) -> Pos:
         """Get the current work position of the machine."""
         return self.device_state.work_pos
+
+    def get_beam_position(self) -> Point | None:
+        """
+        Returns the position of the laser beam in machine coordinates,
+        or None when the position is unknown.
+
+        On machines whose work origin is the workarea origin, the
+        canvas and the emitted G-code are anchored to the work origin,
+        so the beam is located from the controller's work position.
+        Otherwise the canvas is machine-aligned and the machine
+        position is used directly.
+        """
+        m_pos = self.device_state.machine_pos
+        if not m_pos or m_pos[0] is None or m_pos[1] is None:
+            return None
+        if self.wcs_origin_is_workarea_origin:
+            w_pos = self.device_state.work_pos
+            if w_pos and w_pos[0] is not None and w_pos[1] is not None:
+                return self.get_coordinate_space().command_point_to_machine(
+                    w_pos[0], w_pos[1], wcs_is_workarea_origin=True
+                )
+        return m_pos[0], m_pos[1]
 
     def get_soft_limits(self) -> Rect:
         """Get the soft limits as (x_min, y_min, x_max, y_max)."""

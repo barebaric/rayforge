@@ -39,7 +39,7 @@ patchelf = "==0.19.2"
 
 [feature.app.pypi-dependencies]
 raygeo = "==1.67.0"
-raydriver = "==0.3.0"
+raydriver = "==0.5.1"
 rayforge = { editable = true, path = "." }
 ruida-pa = "==0.22.0"
 aiohttp = "==3.14.5"
@@ -168,6 +168,9 @@ cmd = "xvfb-run -a pytest -v -m ui"
 [tasks.screenshot]
 env = { GI_TYPELIB_PATH = "$(pkgconf --variable=typelibdir gobject-introspection-1.0)"}
 cmd = "scripts/with_gdk.sh scripts/screenshot/cli.py"
+
+[tasks.figures]
+cmd = "python -m scripts.figures"
 
 [tasks.wheel]
 cmd = "python3 -m build"

@@ -260,6 +260,28 @@ class MachineSpace(CoordinateSpace):
         matrix[1, 3] = -off_y
         return matrix
 
+    def command_point_to_machine(
+        self,
+        x: float,
+        y: float,
+        wcs_offset: Point3D = (0.0, 0.0, 0.0),
+        wcs_is_workarea_origin: bool = False,
+    ) -> Point:
+        """
+        Transform a point from command space (G-code output) to machine
+        space.
+
+        Inverse of get_machine_to_command_matrix(): the command offset
+        returned by get_command_offset() is added back, so the result
+        is the machine position at which the controller arrives when it
+        receives the given command coordinate.
+        """
+        off_x, off_y, _ = self.get_command_offset(
+            wcs_offset=wcs_offset,
+            wcs_is_workarea_origin=wcs_is_workarea_origin,
+        )
+        return x + off_x, y + off_y
+
     def get_machine_to_world_matrix(self) -> np.ndarray:
         """
         Returns the inverse of get_world_to_machine_matrix().
