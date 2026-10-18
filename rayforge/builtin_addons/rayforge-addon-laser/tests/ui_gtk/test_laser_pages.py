@@ -692,29 +692,20 @@ def test_raster_page_power_section_levels_visible_in_dither(
 
 
 @pytest.mark.ui
-def test_raster_power_widget_flips_labels_on_invert(
+def test_raster_power_widget_titles_rows_by_area(
     editor, laser_machine, ui_context
 ):
-    """The Power widget re-titles min/max rows when invert changes."""
+    """The min/max rows are titled after the areas they drive, and
+    the Engrave section no longer offers Invert."""
     step_cls = step_registry.get("EngraveStep")
     assert step_cls is not None
     step = cast(EngraveStep, step_cls.create(ui_context))
     page = RasterSettingsPage(editor, step)
 
     assert isinstance(page.power_widget, RasterPowerWidget)
-
-    min_row = _row(page, "min_power_level")
-    max_row = _row(page, "max_power_level")
-    assert min_row.get_title() == "Min Power (White)"
-    assert max_row.get_title() == "Max Power (Black)"
-
-    invert_adapter = page.engrave_widget.adapter_for("invert")
-    assert invert_adapter is not None
-    invert_adapter.set_value(True)
-    page._sync_power_context()
-
-    assert min_row.get_title() == "Min Power (Black)"
-    assert max_row.get_title() == "Max Power (White)"
+    assert _row(page, "min_power_level").get_title() == "Min Power (White)"
+    assert _row(page, "max_power_level").get_title() == "Max Power (Black)"
+    assert page.engrave_widget.adapter_for("invert") is None
 
 
 @pytest.mark.ui

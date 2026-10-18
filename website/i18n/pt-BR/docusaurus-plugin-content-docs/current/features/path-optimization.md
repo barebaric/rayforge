@@ -9,14 +9,40 @@ Sem otimização, caminhos são cortados na ordem em que aparecem no seu arquivo
 otimização analisa todos os segmentos de caminho e os reorganiza para que o laser viaje a menor
 distância total entre cortes.
 
-**Antes da otimização:** O laser salta de um lado para outro pelo material **Depois da otimização:**
-O laser se move sequencialmente de corte para corte
+**Antes da otimização** — o laser salta de um lado para outro pelo material:
+
+![Os deslocamentos saltam entre cortes na ordem desenhada](/images/path-optimization-before.webp)
+
+**Depois da otimização** — o laser se move sequencialmente de corte para corte:
+
+![Os deslocamentos conectam cortes vizinhos](/images/path-optimization-after.webp)
 
 ## Configurações
+
+![As configurações de Otimizar na página de pós-processamento de uma etapa de Contorno](/screenshots/step-settings-contour-post-optimize.webp)
 
 ### Habilitar Otimização
 
 Ativa ou desativa a otimização de caminho. Habilitada por padrão para a maioria das operações.
+
+### Escolher o Melhor Ponto de Início
+
+Inicia cada caminho fechado no vértice mais próximo da cabeça do laser, em vez de onde o caminho foi
+desenhado. Isso encurta os deslocamentos. Caminhos abertos, e caminhos com entradas, sobrecorte ou
+abas de fixação, mantêm seu ponto de início. Desativado por padrão.
+
+### Preferir Cantos
+
+Disponível apenas quando **Escolher o Melhor Ponto de Início** está ativado. Caminhos fechados
+começam em um canto vivo quando o caminho tem um, o que deixa a emenda menos visível. Caminhos sem
+cantos, como círculos, começam no vértice mais próximo. Desativado por padrão.
+
+O mesmo caminho fechado iniciado onde foi desenhado (1), no vértice mais próximo da cabeça do laser
+com **Escolher o Melhor Ponto de Início** (2), e no canto vivo mais próximo com **Preferir Cantos**
+(3):
+
+![Pontos de início de um caminho fechado: como desenhado, no vértice mais próximo, no canto mais
+próximo](/images/path-optimization-start-point.webp)
 
 ## Quando Usar Otimização
 

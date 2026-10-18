@@ -30,6 +30,15 @@ Cuando está habilitado, puedes hacer homing de ejes individuales independientem
 lugar de requerir que todos los ejes hagan homing juntos. Esto es útil para máquinas donde un eje ya
 puede estar posicionado correctamente.
 
+### Referenciado de Z
+
+Elige cómo encuentra el eje Z su posición de referencia al hacer homing. Este ajuste solo aparece
+cuando el controlador de la máquina admite más de un método.
+
+- **Interruptor de origen**: Z se mueve a su interruptor de origen, igual que los ejes X e Y
+- **Sonda**: Z usa la sonda de autoenfoque del controlador para encontrar la superficie de trabajo y
+  luego se mueve a la distancia de enfoque configurada
+
 ## Ajustes de Arcos y Curvas
 
 Ajustes para controlar cómo las rutas curvas se convierten en movimientos de G-code.

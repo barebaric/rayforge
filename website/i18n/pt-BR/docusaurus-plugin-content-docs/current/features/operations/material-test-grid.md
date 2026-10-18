@@ -71,6 +71,16 @@ A seção **Parâmetros** contém as faixas que a grade varia — velocidade, po
 deslocamento, dependendo do modo selecionado. Os modos que mantêm um parâmetro fixo (por exemplo, a
 velocidade em Potência vs Passagens) permitem definir essa constante aqui também.
 
+## A Peça de Trabalho Vinculada
+
+Normalmente uma operação processa todas as peças de trabalho da sua camada, e a aba **Peças de
+trabalho** do seu diálogo de configurações as lista todas como incluídas. A Grade de Teste de
+Material é a exceção: a operação dela está vinculada à peça de trabalho que ela gerou e processa
+somente essa. Na aba Peças de trabalho, a grade gerada aparece como a única peça incluída, enquanto
+todo o resto da camada é marcado como excluído.
+
+![Aba Peças de trabalho da Grade de Teste de Material](/screenshots/step-settings-material-test-grid-workpieces.webp)
+
 ## Entendendo o Layout
 
 No modo padrão Potência vs Velocidade, a potência aumenta da esquerda para a direita e a velocidade

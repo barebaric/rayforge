@@ -178,13 +178,11 @@ paramètres, décrits ci-dessous.
 | 10% | 60% | Profondeur moyenne, sûr    |
 | 20% | 80% | Profond, relief dramatique |
 
-**Inverser :**
+**Inversion de l'image :**
 
-- **Off** (défaut) : Blanc = peu profond, Noir = profond
-- **On** : Blanc = profond, Noir = peu profond
-
-Utilisez inverser pour les lithophanes (les zones claires doivent être fines) ou le gaufrage (zones
-en relief).
+Le noir est gravé en profondeur et le blanc reste peu profond. Pour les inverser, pour les
+lithophanes (les zones claires doivent être fines) ou le gaufrage (zones en relief), sélectionnez la
+pièce et utilisez **Tools - Invert Image**. Voir [Édition d'images](../../addons/image-editing.md).
 
 **Plage de Luminosité :**
 
@@ -281,13 +279,11 @@ de point laser.
 - Crée un effet 3D type croisé
 - Typique : 0-45 degrés
 
-**Inverser :**
+**Inversion de l'image :**
 
-- **Activé :** Blanc = profond, Noir = peu profond
-- **Désactivé :** Noir = profond, Blanc = peu profond
-
-Utilisez inverser pour les lithophanes (les zones claires doivent être fines) ou le gaufrage (zones
-en relief).
+Le noir est gravé en profondeur et le blanc reste peu profond. Pour les inverser, pour les
+lithophanes (les zones claires doivent être fines) ou le gaufrage (zones en relief), sélectionnez la
+pièce et utilisez **Tools - Invert Image**. Voir [Édition d'images](../../addons/image-editing.md).
 
 ### Motif de Balayage
 

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-03 16:38+0200\n"
+"POT-Creation-Date: 2026-10-15 05:47+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -198,6 +198,30 @@ msgstr "更改导入距离"
 msgid "Change Lead-Out Distance"
 msgstr "更改导出距离"
 
+#: post_processors/widgets/perforation_group.py
+msgid "Cut Length"
+msgstr "切割长度"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance the laser fires before each gap"
+msgstr "激光在每个间隙前保持出光的距离"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Skip Length"
+msgstr "跳过长度"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance travelled with the laser off between cuts"
+msgstr "两次切割之间激光关闭时的行进距离"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation cut length"
+msgstr "更改穿孔切割长度"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation skip length"
+msgstr "更改穿孔跳过长度"
+
 #: post_processors/widgets/merge_lines_group.py
 msgid "Tolerance"
 msgstr "容差"
@@ -250,6 +274,15 @@ msgstr "合并线条"
 #: post_processors/transformers/merge_lines_transformer.py
 msgid "Merges overlapping lines to avoid double passing."
 msgstr "合并重叠线条以避免重复通过。"
+
+#: post_processors/transformers/perforation_transformer.py
+msgid "Perforation"
+msgstr "穿孔"
+
+#: post_processors/transformers/perforation_transformer.py
+msgid ""
+"Cuts in dashes: the laser fires for the cut length and skips the skip length"
+msgstr "以虚线方式切割：激光在切割长度内出光，在跳过长度内关闭"
 
 #: post_processors/transformers/overscan_transformer.py
 msgid "Overscan"

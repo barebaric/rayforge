@@ -28,6 +28,12 @@ Tracer la limite du travail sans allumer le laser :
 4. **Observez la tête laser** tracer le rectangle de délimitation
 5. **Vérifiez le positionnement** et ajustez le matériau si nécessaire
 
+Le bouton Cadrer ouvre une petite fenêtre contextuelle avec le commutateur **Inclure la marge
+d'overscan**. Le trajet complet de la machine inclut la marge d'overscan du raster — les mouvements
+d'entrée et de sortie à puissance nulle qui laissent à la tête la place d'accélérer —, de sorte que
+le contour tracé peut dépasser votre design, principalement en X. Désactivez le commutateur pour ne
+tracer que l'enveloppe que le laser brûle réellement.
+
 ### Méthode 2 : Aperçu à faible puissance
 
 Certaines machines prennent en charge le cadrage à faible puissance avec un faisceau visible :

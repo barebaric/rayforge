@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-03 16:38+0200\n"
+"POT-Creation-Date: 2026-10-15 05:47+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -207,6 +207,32 @@ msgstr "Einlaufabstand ändern"
 msgid "Change Lead-Out Distance"
 msgstr "Auslaufabstand ändern"
 
+#: post_processors/widgets/perforation_group.py
+msgid "Cut Length"
+msgstr "Schnittlänge"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance the laser fires before each gap"
+msgstr "Strecke, die der Laser vor jeder Lücke eingeschaltet bleibt"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Skip Length"
+msgstr "Sprunglänge"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance travelled with the laser off between cuts"
+msgstr ""
+"Strecke, die mit ausgeschaltetem Laser zwischen den Schnitten zurückgelegt "
+"wird"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation cut length"
+msgstr "Perforations-Schnittlänge ändern"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation skip length"
+msgstr "Perforations-Sprunglänge ändern"
+
 #: post_processors/widgets/merge_lines_group.py
 msgid "Tolerance"
 msgstr "Toleranz"
@@ -262,6 +288,17 @@ msgstr "Linien zusammenführen"
 msgid "Merges overlapping lines to avoid double passing."
 msgstr ""
 "Führt überlappende Linien zusammen, um doppeltes Bearbeiten zu vermeiden."
+
+#: post_processors/transformers/perforation_transformer.py
+msgid "Perforation"
+msgstr "Perforation"
+
+#: post_processors/transformers/perforation_transformer.py
+msgid ""
+"Cuts in dashes: the laser fires for the cut length and skips the skip length"
+msgstr ""
+"Schneidet gestrichelt: Der Laser ist für die Schnittlänge eingeschaltet und "
+"für die Sprunglänge ausgeschaltet"
 
 #: post_processors/transformers/overscan_transformer.py
 msgid "Overscan"

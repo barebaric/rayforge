@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-06 22:41+0200\n"
+"POT-Creation-Date: 2026-10-15 13:51+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -450,6 +450,18 @@ msgstr ""
 "verfügbar, und greift andernfalls auf das Netzwerk zurück."
 
 #: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid "TCP protocol"
+msgstr "TCP-Protokoll"
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
+msgid ""
+"Use TCP instead of UDP for the network connection. Needed by controllers "
+"that do not respond over UDP."
+msgstr ""
+"TCP statt UDP für die Netzwerkverbindung verwenden. Wird von Controllern "
+"benötigt, die nicht über UDP antworten."
+
+#: rayforge/machine/driver/ruidarpa/rpa_adapter.py
 #: rayforge/machine/driver/octoprint/octoprint_driver.py
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 #: rayforge/machine/driver/grbl/grbl_network.py
@@ -633,6 +645,14 @@ msgid ""
 msgstr ""
 "Dieser Treiber ist experimentell und höchstwahrscheinlich fehlerhaft. Er "
 "funktioniert möglicherweise nicht zuverlässig. Verwendung auf eigenes Risiko."
+
+#: rayforge/machine/driver/driver.py
+msgid "Home Switch"
+msgstr "Referenzschalter"
+
+#: rayforge/machine/driver/driver.py
+msgid "Probe"
+msgstr "Taster"
 
 #: rayforge/machine/driver/driver.py rayforge/machine/transport/transport.py
 #: rayforge/ui_gtk/machine/machine_dropdown.py
@@ -2692,6 +2712,7 @@ msgstr ""
 #: rayforge/ui_gtk/doceditor/step_settings/recipe_control_widget.py
 #: rayforge/ui_gtk/doceditor/material_library_list.py
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
+#: rayforge/ui_gtk/doceditor/path_tolerance_dialog.py
 #: rayforge/ui_gtk/doceditor/step_type_selection_dialog.py
 #: rayforge/ui_gtk/doceditor/material_selector.py
 #: rayforge/ui_gtk/doceditor/material_list.py
@@ -2924,16 +2945,16 @@ msgstr "Erweiterungen installieren, aktualisieren und entfernen."
 
 #: rayforge/ui_gtk/settings/gesture_preferences_page.py
 msgid "Mouse Gestures"
-msgstr ""
+msgstr "Mausgesten"
 
 #: rayforge/ui_gtk/settings/gesture_preferences_page.py
 #, python-format
 msgid "Default: %s"
-msgstr ""
+msgstr "Standard: %s"
 
 #: rayforge/ui_gtk/settings/gesture_preferences_page.py
 msgid "Unassigned"
-msgstr ""
+msgstr "Nicht zugewiesen"
 
 #: rayforge/ui_gtk/settings/recipe_manager_page.py
 msgid "Recipes"
@@ -3217,6 +3238,7 @@ msgid "Length"
 msgstr "Länge"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+#: rayforge/ui_gtk/machine/bidir_offset_table.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Speed"
 msgstr "Geschwindigkeit"
@@ -3253,6 +3275,16 @@ msgstr "Nach Updates suchen"
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Automatically check for new Rayforge versions on startup"
 msgstr "Automatisch beim Start nach neuen Rayforge-Versionen suchen"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Watch imported files"
+msgstr "Importierte Dateien überwachen"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Offer to reload imported files when they change on disk"
+msgstr ""
+"Anbieten, importierte Dateien neu zu laden, wenn sie sich auf der Festplatte "
+"ändern"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Startup behavior"
@@ -3433,9 +3465,41 @@ msgstr "Gruppieren"
 msgid "Ungroup"
 msgstr "Gruppierung aufheben"
 
+#: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/ui_gtk/main_menu.py
+msgid "Break Apart"
+msgstr "Auseinanderbrechen"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/ui_gtk/main_menu.py
+msgid "Close Paths…"
+msgstr "Pfade schließen…"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/ui_gtk/main_menu.py
+msgid "Join Open Paths…"
+msgstr "Offene Pfade verbinden…"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/ui_gtk/main_menu.py
+msgid "Delete Duplicates"
+msgstr "Duplikate löschen"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+msgid "Clean Up Paths"
+msgstr "Pfade bereinigen"
+
 #: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/doceditor/stock_cmd.py
 msgid "Convert to Stock"
 msgstr "In Material umwandeln"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+#: rayforge/ui_gtk/doceditor/layer_column.py
+msgid "Reload from Disk"
+msgstr "Von Festplatte neu laden"
+
+#: rayforge/ui_gtk/canvas2d/context_menu.py
+#: rayforge/ui_gtk/doceditor/asset_browser.py
+#: rayforge/ui_gtk/doceditor/layer_column.py
+msgid "Relink Source File…"
+msgstr "Quelldatei neu verknüpfen…"
 
 #: rayforge/ui_gtk/canvas2d/context_menu.py
 msgid "Add Tab Here"
@@ -3502,6 +3566,66 @@ msgstr "Material hinzufügen"
 #: rayforge/ui_gtk/actions.py
 msgid "Auto Layout (Simple)"
 msgstr "Automatische Anordnung (Einfach)"
+
+#: rayforge/ui_gtk/actions.py
+#, python-brace-format
+msgid "The file of {name} cannot be found. Use Relink to pick it."
+msgstr ""
+"Die Datei von {name} kann nicht gefunden werden. Verwende „Neu verknüpfen“, "
+"um sie auszuwählen."
+
+#: rayforge/ui_gtk/actions.py
+msgid "Nothing to break apart"
+msgstr "Nichts zum Auseinanderbrechen"
+
+#: rayforge/ui_gtk/actions.py
+#, python-brace-format
+msgid "Closed {count} path"
+msgid_plural "Closed {count} paths"
+msgstr[0] "{count} Pfad geschlossen"
+msgstr[1] "{count} Pfade geschlossen"
+
+#: rayforge/ui_gtk/actions.py
+msgid "Close Paths"
+msgstr "Pfade schließen"
+
+#: rayforge/ui_gtk/actions.py
+msgid ""
+"Closes open paths whose start and end point are closer than the tolerance."
+msgstr ""
+"Schließt offene Pfade, deren Start- und Endpunkt näher als die Toleranz "
+"beieinanderliegen."
+
+#: rayforge/ui_gtk/actions.py
+#, python-brace-format
+msgid "Made {count} join"
+msgid_plural "Made {count} joins"
+msgstr[0] "{count} Verbindung hergestellt"
+msgstr[1] "{count} Verbindungen hergestellt"
+
+#: rayforge/ui_gtk/actions.py
+msgid "Join Open Paths"
+msgstr "Offene Pfade verbinden"
+
+#: rayforge/ui_gtk/actions.py
+msgid ""
+"Joins open paths whose end points are closer than the tolerance. Paths whose "
+"ends then meet are closed."
+msgstr ""
+"Verbindet offene Pfade, deren Endpunkte näher als die Toleranz "
+"beieinanderliegen. Pfade, deren Enden danach aufeinandertreffen, werden "
+"geschlossen."
+
+#: rayforge/ui_gtk/actions.py
+msgid "Join Paths"
+msgstr "Pfade verbinden"
+
+#: rayforge/ui_gtk/actions.py
+#, python-brace-format
+msgid "Deleted {count} duplicate"
+msgid_plural "Deleted {count} duplicates"
+msgstr[0] "{count} Duplikat gelöscht"
+msgstr[1] "{count} Duplikate gelöscht"
 
 #: rayforge/ui_gtk/camera/lens_calibration_dialog.py
 #, python-brace-format
@@ -3598,6 +3722,7 @@ msgid "Temporal averaging, higher values cause trailing"
 msgstr "Zeitliche Mittelung, höhere Werte verursachen Schlieren"
 
 #: rayforge/ui_gtk/camera/image_settings_widget.py
+#: rayforge/ui_gtk/camera/outside_view_widget.py
 msgid "Transparency"
 msgstr "Transparenz"
 
@@ -4337,6 +4462,42 @@ msgstr "Kameras"
 #: rayforge/ui_gtk/camera/camera_preferences_page.py
 msgid "Stream a camera image directly onto the work surface."
 msgstr "Ein Kamerabild direkt auf die Arbeitsfläche streamen."
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "View Outside Workspace"
+msgstr "Ansicht außerhalb des Arbeitsbereichs"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid ""
+"Show the camera image in a margin around the work area to help position "
+"workpieces. Requires image alignment."
+msgstr ""
+"Das Kamerabild in einem Rand um den Arbeitsbereich anzeigen, um Werkstücke "
+"zu positionieren. Erfordert eine Bildausrichtung."
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Show Outside Workspace"
+msgstr "Außerhalb des Arbeitsbereichs anzeigen"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Draw the camera image around the work area"
+msgstr "Das Kamerabild um den Arbeitsbereich herum zeichnen"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Margin"
+msgstr "Rand"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Size of the visible area on each side of the work area"
+msgstr "Größe des sichtbaren Bereichs auf jeder Seite des Arbeitsbereichs"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Transparency outside the work area"
+msgstr "Transparenz außerhalb des Arbeitsbereichs"
+
+#: rayforge/ui_gtk/camera/outside_view_widget.py
+msgid "Not shown until the camera image is aligned"
+msgstr "Wird erst angezeigt, wenn das Kamerabild ausgerichtet ist"
 
 #: rayforge/ui_gtk/camera/alignment_widget.py
 msgid ""
@@ -5445,6 +5606,17 @@ msgstr ""
 "Steuerungsdialog aktivieren"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Z Homing"
+msgstr "Z-Referenzfahrt"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid ""
+"How the Z axis finds its reference: a home switch, or the auto-focus probe"
+msgstr ""
+"Wie die Z-Achse ihre Referenz findet: über einen Referenzschalter oder den "
+"Autofokus-Taster"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "Clear Alarm On Connect"
 msgstr "Alarm bei Verbindung löschen"
 
@@ -5896,6 +6068,45 @@ msgid ""
 msgstr ""
 "Diese Notizen werden mit dieser Maschine gespeichert und niemals durch "
 "Geräteprofil-Aktualisierungen überschrieben."
+
+#: rayforge/ui_gtk/machine/bidir_offset_table.py
+msgid "Offset"
+msgstr "Versatz"
+
+#: rayforge/ui_gtk/machine/bidir_offset_table.py
+msgid "Positive values shift right-to-left passes to the right"
+msgstr "Positive Werte verschieben Rechts-nach-links-Durchläufe nach rechts"
+
+#: rayforge/ui_gtk/machine/bidir_offset_table.py
+msgid "Remove Row"
+msgstr "Zeile entfernen"
+
+#: rayforge/ui_gtk/machine/bidir_offset_table.py
+#, python-brace-format
+msgid "{speed}: {offset}"
+msgstr "{speed}: {offset}"
+
+#: rayforge/ui_gtk/machine/bidir_offset_table.py
+msgid "Bidirectional Scan Offset by Speed"
+msgstr "Bidirektionaler Scan-Versatz nach Geschwindigkeit"
+
+#: rayforge/ui_gtk/machine/bidir_offset_table.py
+msgid ""
+"Shift of right-to-left raster passes at each engrave speed, interpolated "
+"between rows. Engrave steps use it when their own Bidirectional Scan Offset "
+"is 0."
+msgstr ""
+"Verschiebung der Rechts-nach-links-Rasterdurchläufe bei jeder "
+"Graviergeschwindigkeit, zwischen den Zeilen interpoliert. Gravurschritte "
+"verwenden sie, wenn ihr eigener bidirektionaler Scan-Versatz 0 ist."
+
+#: rayforge/ui_gtk/machine/bidir_offset_table.py
+msgid "Add Row"
+msgstr "Zeile hinzufügen"
+
+#: rayforge/ui_gtk/machine/bidir_offset_table.py
+msgid "No rows: all speeds use an offset of 0"
+msgstr "Keine Zeilen: Alle Geschwindigkeiten verwenden einen Versatz von 0"
 
 #: rayforge/ui_gtk/machine/wizard_pages/camera_page.py
 msgid ""
@@ -7737,6 +7948,10 @@ msgid "Import..."
 msgstr "Importieren..."
 
 #: rayforge/ui_gtk/main_menu.py
+msgid "Relink Source File..."
+msgstr "Quelldatei neu verknüpfen..."
+
+#: rayforge/ui_gtk/main_menu.py
 msgid "Export G-code..."
 msgstr "G-Code exportieren..."
 
@@ -7931,7 +8146,7 @@ msgstr "Anordnen"
 msgid "_Tools"
 msgstr "_Werkzeuge"
 
-#: rayforge/ui_gtk/main_menu.py
+#: rayforge/ui_gtk/main_menu.py rayforge/ui_gtk/doceditor/frame_popover.py
 msgid "Frame"
 msgstr "Umrandung fahren"
 
@@ -8175,79 +8390,79 @@ msgstr "Ein unerwarteter Fehler ist aufgetreten: {error}"
 
 #: rayforge/ui_gtk/gestures/model.py
 msgid "Click"
-msgstr ""
+msgstr "Klicken"
 
 #: rayforge/ui_gtk/gestures/model.py
 msgid "Double-click"
-msgstr ""
+msgstr "Doppelklick"
 
 #: rayforge/ui_gtk/gestures/model.py
 msgid "Drag"
-msgstr ""
+msgstr "Ziehen"
 
 #: rayforge/ui_gtk/gestures/model.py
 msgid "Scroll"
-msgstr ""
+msgstr "Scrollen"
 
 #: rayforge/ui_gtk/gestures/model.py
 msgid "Middle"
-msgstr ""
+msgstr "Mitte"
 
 #: rayforge/ui_gtk/gestures/model.py
 msgid "Shift"
-msgstr ""
+msgstr "Umschalt"
 
 #: rayforge/ui_gtk/gestures/model.py
 msgid "Ctrl"
-msgstr ""
+msgstr "Strg"
 
 #: rayforge/ui_gtk/gestures/model.py
 msgid "Alt"
-msgstr ""
+msgstr "Alt"
 
 #: rayforge/ui_gtk/gestures/builtin.py
 msgid "2D Canvas"
-msgstr ""
+msgstr "2D-Arbeitsfläche"
 
 #: rayforge/ui_gtk/gestures/builtin.py
 msgid "Navigation gestures on the 2D work surface."
-msgstr ""
+msgstr "Navigationsgesten auf der 2D-Arbeitsfläche."
 
 #: rayforge/ui_gtk/gestures/builtin.py
 msgid "3D Canvas"
-msgstr ""
+msgstr "3D-Arbeitsfläche"
 
 #: rayforge/ui_gtk/gestures/builtin.py
 msgid "Navigation gestures on the 3D preview."
-msgstr ""
+msgstr "Navigationsgesten in der 3D-Vorschau."
 
 #: rayforge/ui_gtk/gestures/builtin.py
 msgid "Pan the view"
-msgstr ""
+msgstr "Ansicht verschieben"
 
 #: rayforge/ui_gtk/gestures/builtin.py
 msgid "Hold the mouse button down and move to pan the view."
-msgstr ""
+msgstr "Maustaste gedrückt halten und bewegen, um die Ansicht zu verschieben."
 
 #: rayforge/ui_gtk/gestures/builtin.py
 msgid "Orbit the camera"
-msgstr ""
+msgstr "Kamera umkreisen"
 
 #: rayforge/ui_gtk/gestures/builtin.py
 msgid "Hold the mouse button down and move to orbit around the scene."
-msgstr ""
+msgstr "Maustaste gedrückt halten und bewegen, um die Szene zu umkreisen."
 
 #: rayforge/ui_gtk/gestures/builtin.py
 msgid "Pan the camera"
-msgstr ""
+msgstr "Kamera verschieben"
 
 #: rayforge/ui_gtk/gestures/builtin.py
 msgid "Hold the mouse button down and move to pan the scene."
-msgstr ""
+msgstr "Maustaste gedrückt halten und bewegen, um die Szene zu verschieben."
 
 #: rayforge/ui_gtk/gestures/builtin.py
 msgid "Rotate around the Z axis"
-msgstr ""
+msgstr "Um die Z-Achse drehen"
 
 #: rayforge/ui_gtk/project_cmd.py
 msgid "Unsaved Changes"
@@ -8616,6 +8831,24 @@ msgstr "Schrittname und Rezepteinstellungen."
 msgid "Change {key}"
 msgstr "{key} ändern"
 
+#: rayforge/ui_gtk/doceditor/step_settings/pages/workpieces.py
+#: rayforge/ui_gtk/doceditor/step_settings/dialog.py
+msgid "Workpieces"
+msgstr "Werkstücke"
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/workpieces.py
+msgid "The workpieces this step processes."
+msgstr "Die Werkstücke, die dieser Schritt verarbeitet."
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/workpieces.py
+msgid "All workpieces on this layer"
+msgstr "Alle Werkstücke auf dieser Ebene"
+
+#: rayforge/ui_gtk/doceditor/step_settings/pages/workpieces.py
+#, python-brace-format
+msgid "Processes {count} of {total} workpieces"
+msgstr "Verarbeitet {count} von {total} Werkstücken"
+
 #: rayforge/ui_gtk/doceditor/step_settings/pages/post_processing.py
 msgid "Transformers applied to this step's generated toolpath."
 msgstr ""
@@ -8728,9 +8961,24 @@ msgstr ""
 "Fehler beim Erstellen der Bibliothek. Ein Ordner mit diesem Namen existiert "
 "möglicherweise bereits."
 
+#: rayforge/ui_gtk/doceditor/frame_popover.py
+msgid "Include Overscan Margin"
+msgstr "Overscan-Marge einschließen"
+
+#: rayforge/ui_gtk/doceditor/frame_popover.py
+msgid "Frame the full machine path, including the extra engraving travel"
+msgstr ""
+"Den vollständigen Maschinenpfad umrahmen, einschließlich des zusätzlichen "
+"Gravierwegs"
+
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 msgid "Open File"
 msgstr "Datei öffnen"
+
+#: rayforge/ui_gtk/doceditor/file_dialogs.py
+#, python-brace-format
+msgid "Relink “{name}”"
+msgstr "„{name}“ neu verknüpfen"
 
 #: rayforge/ui_gtk/doceditor/file_dialogs.py
 msgid "All supported"
@@ -8851,6 +9099,10 @@ msgstr "Benutzerdefiniert"
 #: rayforge/ui_gtk/doceditor/layers_tab.py
 msgid "Add New Layer"
 msgstr "Neue Ebene hinzufügen"
+
+#: rayforge/ui_gtk/doceditor/path_tolerance_dialog.py
+msgid "Tolerance"
+msgstr "Toleranz"
 
 #: rayforge/ui_gtk/doceditor/stock_properties_dialog.py
 #: rayforge/ui_gtk/doceditor/item_properties.py
@@ -8990,6 +9242,43 @@ msgstr "Maschine muss verbunden sein, um Hier Null zu setzen"
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
 msgid "Set current position as 0"
 msgstr "Aktuelle Position als 0 setzen"
+
+#: rayforge/ui_gtk/doceditor/source_changed_dialog.py
+msgid "Imported File Changed"
+msgid_plural "Imported Files Changed"
+msgstr[0] "Importierte Datei geändert"
+msgstr[1] "Importierte Dateien geändert"
+
+#: rayforge/ui_gtk/doceditor/source_changed_dialog.py
+#, python-brace-format
+msgid ""
+"\"{name}\" was changed on disk. Reload it? Position, size and settings are "
+"kept."
+msgstr ""
+"„{name}“ wurde auf der Festplatte geändert. Neu laden? Position, Größe und "
+"Einstellungen bleiben erhalten."
+
+#: rayforge/ui_gtk/doceditor/source_changed_dialog.py
+msgid ""
+"These imported files were changed on disk. Reload them? Position, size and "
+"settings are kept."
+msgstr ""
+"Diese importierten Dateien wurden auf der Festplatte geändert. Neu laden? "
+"Position, Größe und Einstellungen bleiben erhalten."
+
+#: rayforge/ui_gtk/doceditor/source_changed_dialog.py
+msgid "_Ignore"
+msgstr "_Ignorieren"
+
+#: rayforge/ui_gtk/doceditor/source_changed_dialog.py
+msgid "_Reload"
+msgstr "_Neu laden"
+
+#: rayforge/ui_gtk/doceditor/source_changed_dialog.py
+msgid "Always reload this file without asking"
+msgid_plural "Always reload the selected files without asking"
+msgstr[0] "Diese Datei immer ohne Nachfrage neu laden"
+msgstr[1] "Die ausgewählten Dateien immer ohne Nachfrage neu laden"
 
 #: rayforge/ui_gtk/doceditor/step_type_selection_dialog.py
 msgid "Select Step Types"
@@ -10229,6 +10518,77 @@ msgstr "Werkstücke neu anordnen"
 msgid "Reorder items"
 msgstr "Elemente neu anordnen"
 
+#: rayforge/doceditor/reload_cmd.py
+#, python-brace-format
+msgid "{name} ({x:.1f}, {y:.1f} mm)"
+msgstr "{name} ({x:.1f}, {y:.1f} mm)"
+
+#: rayforge/doceditor/reload_cmd.py
+#, python-brace-format
+msgid "Could not reload {name}: {error}"
+msgstr "{name} konnte nicht neu geladen werden: {error}"
+
+#: rayforge/doceditor/reload_cmd.py
+#, python-brace-format
+msgid "Reloaded {name}"
+msgstr "{name} neu geladen"
+
+#: rayforge/doceditor/reload_cmd.py
+#, python-brace-format
+msgid "{n} new element added"
+msgid_plural "{n} new elements added"
+msgstr[0] "{n} neues Element hinzugefügt"
+msgstr[1] "{n} neue Elemente hinzugefügt"
+
+#: rayforge/doceditor/reload_cmd.py
+#, python-brace-format
+msgid "{n} element no longer in the file was removed"
+msgid_plural "{n} elements no longer in the file were removed"
+msgstr[0] "{n} nicht mehr in der Datei enthaltenes Element wurde entfernt"
+msgstr[1] "{n} nicht mehr in der Datei enthaltene Elemente wurden entfernt"
+
+#: rayforge/doceditor/reload_cmd.py
+#, python-brace-format
+msgid "{n} edited element was left unchanged"
+msgid_plural "{n} edited elements were left unchanged"
+msgstr[0] "{n} bearbeitetes Element wurde unverändert gelassen"
+msgstr[1] "{n} bearbeitete Elemente wurden unverändert gelassen"
+
+#: rayforge/doceditor/reload_cmd.py
+#, python-brace-format
+msgid "and {n} more"
+msgstr "und {n} weitere"
+
+#: rayforge/doceditor/reload_cmd.py
+#, python-brace-format
+msgid ""
+"{n} tab more than {limit:.1f} mm from the new outline was removed: {places}"
+msgid_plural ""
+"{n} tabs more than {limit:.1f} mm from the new outline were removed: {places}"
+msgstr[0] ""
+"{n} Haltesteg, der mehr als {limit:.1f} mm von der neuen Kontur entfernt "
+"war, wurde entfernt: {places}"
+msgstr[1] ""
+"{n} Haltestege, die mehr als {limit:.1f} mm von der neuen Kontur entfernt "
+"waren, wurden entfernt: {places}"
+
+#: rayforge/doceditor/reload_cmd.py
+msgid "the file type is not known"
+msgstr "der Dateityp ist unbekannt"
+
+#: rayforge/doceditor/reload_cmd.py
+msgid "the file could not be read"
+msgstr "die Datei konnte nicht gelesen werden"
+
+#: rayforge/doceditor/reload_cmd.py
+msgid "the file contains nothing to import"
+msgstr "die Datei enthält nichts zum Importieren"
+
+#: rayforge/doceditor/reload_cmd.py
+#, python-brace-format
+msgid "Reload {name}"
+msgstr "{name} neu laden"
+
 #: rayforge/doceditor/array_cmd.py
 msgid "Create Array"
 msgstr "Array erstellen"
@@ -10236,6 +10596,22 @@ msgstr "Array erstellen"
 #: rayforge/doceditor/array_cmd.py
 msgid "Create array copy"
 msgstr "Array-Kopie erstellen"
+
+#: rayforge/doceditor/path_cleanup_cmd.py
+msgid "Close paths"
+msgstr "Pfade schließen"
+
+#: rayforge/doceditor/path_cleanup_cmd.py
+msgid "Join paths"
+msgstr "Pfade verbinden"
+
+#: rayforge/doceditor/path_cleanup_cmd.py
+msgid "Delete duplicates"
+msgstr "Duplikate löschen"
+
+#: rayforge/doceditor/path_cleanup_cmd.py
+msgid "Break apart"
+msgstr "Auseinanderbrechen"
 
 #: rayforge/doceditor/editor.py
 #, python-brace-format
@@ -10314,11 +10690,28 @@ msgstr "An Punkt positionieren"
 msgid "Auto Layout"
 msgstr "Automatisches Layout"
 
+#: rayforge/image/hpgl/importer.py
+#, python-brace-format
+msgid "Some HPGL instructions are not supported and were skipped: {names}"
+msgstr ""
+"Einige HPGL-Befehle werden nicht unterstützt und wurden übersprungen: {names}"
+
+#: rayforge/image/hpgl/importer.py
+#, python-brace-format
+msgid "{filename} contains no HPGL drawing commands."
+msgstr "{filename} enthält keine HPGL-Zeichenbefehle."
+
+#: rayforge/image/hpgl/importer.py
+#, python-brace-format
+msgid "Pen {number}"
+msgstr "Stift {number}"
+
 #: rayforge/image/png/importer.py
 msgid "Failed to scan PNG file: {}"
 msgstr "Fehler beim Scannen der PNG-Datei: {}"
 
-#: rayforge/image/png/importer.py rayforge/image/jpg/importer.py
+#: rayforge/image/png/importer.py rayforge/image/bitmap/importer.py
+#: rayforge/image/jpg/importer.py
 msgid "Failed to process image data."
 msgstr "Verarbeitung der Bilddaten fehlgeschlagen."
 
@@ -10354,6 +10747,15 @@ msgstr "Rasterisierung des SVG für das Nachzeichnen fehlgeschlagen."
 #: rayforge/image/svg/svg_trace.py
 msgid "Failed to normalize image data."
 msgstr "Normalisierung der Bilddaten fehlgeschlagen."
+
+#: rayforge/image/svg/importer.py
+msgid "This SVGZ file's gzip data could not be decompressed."
+msgstr "Die gzip-Daten dieser SVGZ-Datei konnten nicht dekomprimiert werden."
+
+#: rayforge/image/bitmap/importer.py
+#, python-brace-format
+msgid "Could not read the {format} image: {error}"
+msgstr "Das {format}-Bild konnte nicht gelesen werden: {error}"
 
 #: rayforge/image/pdf/pdf_trace.py rayforge/image/pdf/pdf_vector.py
 msgid "PDF file contains no pages."
@@ -10460,6 +10862,34 @@ msgid "Floyd Steinberg"
 msgstr "Floyd Steinberg"
 
 #: rayforge/image/dither.py
+msgid "Atkinson"
+msgstr "Atkinson"
+
+#: rayforge/image/dither.py
+msgid "Stucki"
+msgstr "Stucki"
+
+#: rayforge/image/dither.py
+msgid "Jarvis, Judice & Ninke"
+msgstr "Jarvis, Judice & Ninke"
+
+#: rayforge/image/dither.py
+msgid "Sierra"
+msgstr "Sierra"
+
+#: rayforge/image/dither.py
+msgid "Sierra 2-Row"
+msgstr "Sierra 2-Row"
+
+#: rayforge/image/dither.py
+msgid "Sierra Lite"
+msgstr "Sierra Lite"
+
+#: rayforge/image/dither.py
+msgid "Burkes"
+msgstr "Burkes"
+
+#: rayforge/image/dither.py
 msgid "Bayer 2"
 msgstr "Bayer 2"
 
@@ -10471,46 +10901,21 @@ msgstr "Bayer 4"
 msgid "Bayer 8"
 msgstr "Bayer 8"
 
-#: rayforge/ui_gtk/camera/outside_view_widget.py
-msgid "View Outside Workspace"
-msgstr "Ansicht außerhalb des Arbeitsbereichs"
+#: rayforge/image/dither.py
+msgid "Newsprint"
+msgstr "Zeitungsraster"
 
-#: rayforge/ui_gtk/camera/outside_view_widget.py
-msgid "Show the camera image in a margin around the work area to help position workpieces. Requires image alignment."
-msgstr "Das Kamerabild in einem Rand um den Arbeitsbereich anzeigen, um Werkstücke zu positionieren. Erfordert eine Bildausrichtung."
-
-#: rayforge/ui_gtk/camera/outside_view_widget.py
-msgid "Show Outside Workspace"
-msgstr "Außerhalb des Arbeitsbereichs anzeigen"
-
-#: rayforge/ui_gtk/camera/outside_view_widget.py
-msgid "Draw the camera image around the work area"
-msgstr "Das Kamerabild um den Arbeitsbereich herum zeichnen"
-
-#: rayforge/ui_gtk/camera/outside_view_widget.py
-msgid "Not shown until the camera image is aligned"
-msgstr "Wird erst angezeigt, wenn das Kamerabild ausgerichtet ist"
-
-#: rayforge/ui_gtk/camera/outside_view_widget.py
-msgid "Margin"
-msgstr "Rand"
-
-#: rayforge/ui_gtk/camera/outside_view_widget.py
-msgid "Size of the visible area on each side of the work area"
-msgstr "Größe des sichtbaren Bereichs auf jeder Seite des Arbeitsbereichs"
-
-#: rayforge/ui_gtk/camera/outside_view_widget.py
-msgid "Transparency outside the work area"
-msgstr "Transparenz außerhalb des Arbeitsbereichs"
-
-#: rayforge/image/bitmap/importer.py
-#, python-brace-format
-msgid "Could not read the {format} image: {error}"
-msgstr "Das {format}-Bild konnte nicht gelesen werden: {error}"
+#: rayforge/image/dither.py
+msgid "Halftone"
+msgstr "Halbton"
 
 #: rayforge/image/postscript/importer.py
-msgid "Importing EPS and PostScript files requires Ghostscript, which was not found. Install Ghostscript and try again."
-msgstr "Für den Import von EPS- und PostScript-Dateien wird Ghostscript benötigt, das nicht gefunden wurde. Installiere Ghostscript und versuche es erneut."
+msgid ""
+"Importing EPS and PostScript files requires Ghostscript, which was not "
+"found. Install Ghostscript and try again."
+msgstr ""
+"Für den Import von EPS- und PostScript-Dateien wird Ghostscript benötigt, "
+"das nicht gefunden wurde. Installiere Ghostscript und versuche es erneut."
 
 #: rayforge/image/postscript/importer.py
 #, python-brace-format
@@ -10518,20 +10923,12 @@ msgid "Ghostscript could not convert {filename}: {error}"
 msgstr "Ghostscript konnte {filename} nicht umwandeln: {error}"
 
 #: rayforge/image/postscript/importer.py
-msgid "This Illustrator file was saved without PDF compatibility. Rayforge can only read it with Ghostscript, which was not found. Install Ghostscript, or save the file again in Illustrator with \"Create PDF Compatible File\" enabled."
-msgstr "Diese Illustrator-Datei wurde ohne PDF-Kompatibilität gespeichert. Rayforge kann sie nur mit Ghostscript lesen, das nicht gefunden wurde. Installiere Ghostscript oder speichere die Datei in Illustrator erneut mit aktivierter Option „PDF-kompatible Datei erstellen“."
-
-#: rayforge/image/hpgl/importer.py
-#, python-brace-format
-msgid "Some HPGL instructions are not supported and were skipped: {names}"
-msgstr "Einige HPGL-Befehle werden nicht unterstützt und wurden übersprungen: {names}"
-
-#: rayforge/image/hpgl/importer.py
-#, python-brace-format
-msgid "{filename} contains no HPGL drawing commands."
-msgstr "{filename} enthält keine HPGL-Zeichenbefehle."
-
-#: rayforge/image/hpgl/importer.py
-#, python-brace-format
-msgid "Pen {number}"
-msgstr "Stift {number}"
+msgid ""
+"This Illustrator file was saved without PDF compatibility. Rayforge can only "
+"read it with Ghostscript, which was not found. Install Ghostscript, or save "
+"the file again in Illustrator with \"Create PDF Compatible File\" enabled."
+msgstr ""
+"Diese Illustrator-Datei wurde ohne PDF-Kompatibilität gespeichert. Rayforge "
+"kann sie nur mit Ghostscript lesen, das nicht gefunden wurde. Installiere "
+"Ghostscript oder speichere die Datei in Illustrator erneut mit aktivierter "
+"Option „PDF-kompatible Datei erstellen“."

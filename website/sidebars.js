@@ -79,6 +79,7 @@ module.exports = {
                 'features/crop-to-stock',
                 'features/overscan',
                 'features/holding-tabs',
+                'features/perforation',
                 'features/merge-lines',
                 'features/lead-in-out',
               ],
@@ -92,6 +93,7 @@ module.exports = {
                 'features/sketcher/path',
                 'features/sketcher/arc-ellipse',
                 'features/sketcher/rectangle',
+                'features/sketcher/polygon',
                 'features/sketcher/chamfer-fillet',
                 'features/sketcher/fill',
                 'features/sketcher/text-box',
@@ -118,6 +120,7 @@ module.exports = {
       items: [
         'addons/ai-workpiece-generator',
         'addons/deepnest',
+        'addons/image-editing',
         'addons/print-and-cut',
         'addons/projector-mode',
         'addons/smart-stock',

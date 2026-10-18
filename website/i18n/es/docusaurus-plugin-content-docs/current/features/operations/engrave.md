@@ -178,12 +178,11 @@ descritos a continuación.
 | 10% | 60% | Profundidad media, seguro   |
 | 20% | 80% | Profundo, relieve dramático |
 
-**Invertir:**
+**Invertir la imagen:**
 
-- **Apagado** (predeterminado): Blanco = superficial, Negro = profundo
-- **Encendido**: Blanco = profundo, Negro = superficial
-
-Usa invertir para litofanías (las áreas claras deben ser delgadas) o repujado (áreas elevadas).
+El negro se graba en profundidad y el blanco queda superficial. Para invertirlos, para litofanías
+(las áreas claras deben ser delgadas) o repujado (áreas elevadas), selecciona la pieza y usa
+**Tools - Invert Image**. Consulta [Edición de imágenes](../../addons/image-editing.md).
 
 **Rango de Brillo:**
 
@@ -280,12 +279,11 @@ punto láser.
 - Crea un efecto 3D tipo entramado cruzado
 - Típico: 0-45 grados
 
-**Invertir:**
+**Invertir la imagen:**
 
-- **Habilitado:** Blanco = profundo, Negro = superficial
-- **Deshabilitado:** Negro = profundo, Blanco = superficial
-
-Usa invertir para litofanías (las áreas claras deben ser delgadas) o repujado (áreas elevadas).
+El negro se graba en profundidad y el blanco queda superficial. Para invertirlos, para litofanías
+(las áreas claras deben ser delgadas) o repujado (áreas elevadas), selecciona la pieza y usa
+**Tools - Invert Image**. Consulta [Edición de imágenes](../../addons/image-editing.md).
 
 ### Patrón de Escaneo
 

@@ -418,12 +418,14 @@ class LayerColumn(Gtk.Box):
 
     def _connect_signals(self):
         self.layer.updated.connect(self._on_layer_updated)
+        self.layer.renamed.connect(self._on_layer_renamed)
         self.layer.descendant_added.connect(self._on_layer_structure_changed)
         self.layer.descendant_removed.connect(self._on_layer_structure_changed)
         self.doc.active_layer_changed.connect(self._on_active_layer_changed)
 
     def do_destroy(self):
         self.layer.updated.disconnect(self._on_layer_updated)
+        self.layer.renamed.disconnect(self._on_layer_renamed)
         self.layer.descendant_added.disconnect(
             self._on_layer_structure_changed
         )
@@ -435,6 +437,9 @@ class LayerColumn(Gtk.Box):
     def _on_layer_updated(self, sender, **kwargs):
         self._update_ui()
         self._rebuild_workpiece_list()
+
+    def _on_layer_renamed(self, sender):
+        self._update_ui()
 
     def _on_layer_structure_changed(self, sender, **kwargs):
         self.workflow_row.refresh()

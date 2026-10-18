@@ -220,19 +220,19 @@ class HardwarePage(TrackedPreferencesPage):
         soft_limits_group.set_description(
             _(
                 "Configurable safety bounds for jogging. "
-                "Leave disabled to use work surface bounds."
+                "Leave disabled to jog without limit checks."
             )
         )
         self.add(soft_limits_group)
 
         self.soft_limits_enabled_row = Adw.SwitchRow()
-        self.soft_limits_enabled_row.set_title(_("Enable Custom Soft Limits"))
+        self.soft_limits_enabled_row.set_title(_("Enable Soft Limits"))
         self.soft_limits_enabled_row.set_subtitle(
-            _("Override work surface bounds with custom limits")
+            _("Limit jogging to custom bounds instead of the work surface")
         )
-        has_custom_limits = self.machine.soft_limits is not None
+        limits_enabled = self.machine.soft_limits_enabled
         limits = self.machine.soft_limits or (0, 0, *self.machine.axis_extents)
-        self.soft_limits_enabled_row.set_active(has_custom_limits)
+        self.soft_limits_enabled_row.set_active(limits_enabled)
         self.soft_limits_enabled_row.connect(
             "notify::active", self.on_soft_limits_enabled_changed
         )
@@ -245,7 +245,7 @@ class HardwarePage(TrackedPreferencesPage):
             value_in_base=limits[0],
         )
         self.soft_x_min_row.value_changed.connect(self.on_soft_limits_changed)
-        self.soft_x_min_row.set_sensitive(has_custom_limits)
+        self.soft_x_min_row.set_sensitive(limits_enabled)
         soft_limits_group.add(self.soft_x_min_row)
 
         self.soft_y_min_row = LengthSpinRow(
@@ -255,7 +255,7 @@ class HardwarePage(TrackedPreferencesPage):
             value_in_base=limits[1],
         )
         self.soft_y_min_row.value_changed.connect(self.on_soft_limits_changed)
-        self.soft_y_min_row.set_sensitive(has_custom_limits)
+        self.soft_y_min_row.set_sensitive(limits_enabled)
         soft_limits_group.add(self.soft_y_min_row)
 
         self.soft_x_max_row = LengthSpinRow(
@@ -265,7 +265,7 @@ class HardwarePage(TrackedPreferencesPage):
             value_in_base=limits[2],
         )
         self.soft_x_max_row.value_changed.connect(self.on_soft_limits_changed)
-        self.soft_x_max_row.set_sensitive(has_custom_limits)
+        self.soft_x_max_row.set_sensitive(limits_enabled)
         soft_limits_group.add(self.soft_x_max_row)
 
         self.soft_y_max_row = LengthSpinRow(
@@ -275,7 +275,7 @@ class HardwarePage(TrackedPreferencesPage):
             value_in_base=limits[3],
         )
         self.soft_y_max_row.value_changed.connect(self.on_soft_limits_changed)
-        self.soft_y_max_row.set_sensitive(has_custom_limits)
+        self.soft_y_max_row.set_sensitive(limits_enabled)
         soft_limits_group.add(self.soft_y_max_row)
 
         self.machine.changed.connect(self._on_machine_changed)
@@ -380,6 +380,7 @@ class HardwarePage(TrackedPreferencesPage):
 
     def on_soft_limits_enabled_changed(self, row, _):
         enabled = row.get_active()
+        self.machine.set_soft_limits_enabled(enabled)
         self.soft_x_min_row.set_sensitive(enabled)
         self.soft_y_min_row.set_sensitive(enabled)
         self.soft_x_max_row.set_sensitive(enabled)

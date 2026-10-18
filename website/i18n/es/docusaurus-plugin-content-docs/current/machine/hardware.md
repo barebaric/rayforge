@@ -93,15 +93,18 @@ extensión de los ejes menos los márgenes.
 ## Límites Suaves
 
 Límites de seguridad configurables para desplazar la cabeza de la máquina. Cuando están habilitados,
-los controles de desplazamiento impedirán el movimiento fuera de estos límites.
+los controles de desplazamiento impedirán el movimiento fuera de estos límites. Cuando están
+deshabilitados, el desplazamiento no está limitado.
 
-- **Habilitar Límites Suaves Personalizados**: Alternar para usar límites personalizados en lugar de
-  los límites de la superficie de trabajo
+- **Habilitar Límites Suaves**: Activa o desactiva la comprobación de límites de desplazamiento
 - **X/Y Mín**: Coordenada mínima para cada eje
 - **X/Y Máx**: Coordenada máxima para cada eje
 
-Los límites suaves se restringen automáticamente para permanecer dentro de la extensión de los ejes
-(0 al valor de extensión).
+Los límites suaves se evalúan en el sistema de coordenadas de trabajo que muestra el indicador de
+posición, por lo que se mantienen en su lugar cuando el origen de trabajo se mueve. Sin límites
+personalizados, al habilitarlos se usan los límites de la superficie de trabajo. Los límites se
+restringen automáticamente para permanecer dentro de la extensión de los ejes (0 al valor de
+extensión).
 
 <!-- prettier-ignore-start -->
 :::tip

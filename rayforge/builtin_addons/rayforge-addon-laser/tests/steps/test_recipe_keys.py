@@ -48,7 +48,6 @@ class TestRecipeKeys:
         for key in (
             "scan_angle",
             "depth_mode",
-            "invert",
             "min_power_level",
             "max_power_level",
         ):

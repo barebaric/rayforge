@@ -10,7 +10,7 @@ meilleurs résultats.
 
 | Format          | Extension         | Méthode d'importation                                     | Idéal pour                                   |
 | --------------- | ----------------- | --------------------------------------------------------- | -------------------------------------------- |
-| **SVG**         | `.svg`            | Vecteurs directs ou vectorisation                         | Graphiques vectoriels, logos, dessins        |
+| **SVG**         | `.svg`, `.svgz`   | Vecteurs directs ou vectorisation                         | Graphiques vectoriels, logos, dessins        |
 | **DXF**         | `.dxf`            | Vecteurs directs                                          | Dessins CAO, plans techniques                |
 | **PDF**         | `.pdf`            | Vecteurs directs ou vectorisation                         | Documents avec contenu vectoriel             |
 | **LightBurn**   | `.lbrn`, `.lbrn2` | Vecteurs directs                                          | Projets LightBurn                            |

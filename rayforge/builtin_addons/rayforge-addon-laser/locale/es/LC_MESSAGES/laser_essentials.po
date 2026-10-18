@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-24 21:41+0200\n"
+"POT-Creation-Date: 2026-10-12 18:45+0200\n"
 "PO-Revision-Date: 2025-08-08 10:00+0200\n"
 "Last-Translator: Samuel Abels\n"
 "Language-Team: Spanish <LL@li.org>\n"
@@ -204,6 +204,10 @@ msgid "Load common test configurations"
 msgstr "Cargar configuraciones de prueba comunes"
 
 #: laser_essentials/widgets/raster_power_widget.py
+msgid "Min Power (White)"
+msgstr "Potencia mín. (Blanco)"
+
+#: laser_essentials/widgets/raster_power_widget.py
 #: laser_essentials/steps/raster_step.py
 msgid "Power for lightest areas, as a percentage of the step's main power"
 msgstr ""
@@ -211,27 +215,15 @@ msgstr ""
 "del paso."
 
 #: laser_essentials/widgets/raster_power_widget.py
+msgid "Max Power (Black)"
+msgstr "Potencia máx. (Negro)"
+
+#: laser_essentials/widgets/raster_power_widget.py
 #: laser_essentials/steps/raster_step.py
 msgid "Power for darkest areas, as a percentage of the step's main power"
 msgstr ""
 "Potencia para las áreas más oscuras, como porcentaje de la potencia "
 "principal del paso."
-
-#: laser_essentials/widgets/raster_power_widget.py
-msgid "Min Power (Black)"
-msgstr "Potencia mínima (Negro)"
-
-#: laser_essentials/widgets/raster_power_widget.py
-msgid "Max Power (White)"
-msgstr "Potencia máxima (Blanco)"
-
-#: laser_essentials/widgets/raster_power_widget.py
-msgid "Min Power (White)"
-msgstr "Potencia mín. (Blanco)"
-
-#: laser_essentials/widgets/raster_power_widget.py
-msgid "Max Power (Black)"
-msgstr "Potencia máx. (Negro)"
 
 #: laser_essentials/widgets/raster_page.py
 msgid "Engrave Speed"
@@ -425,6 +417,33 @@ msgid "Algorithm for converting grayscale to binary"
 msgstr "Algoritmo para convertir escala de grises a binario"
 
 #: laser_essentials/steps/raster_step.py
+msgid "Serpentine"
+msgstr "Serpentina"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Alternate the dither direction on every row to avoid directional artifacts"
+msgstr ""
+"Alternar la dirección del difuminado en cada fila para evitar artefactos "
+"direccionales"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Halftone Cell Size"
+msgstr "Tamaño de celda del semitono"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Distance between halftone dot centers"
+msgstr "Distancia entre los centros de los puntos del semitono"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Halftone Angle"
+msgstr "Ángulo del semitono"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Rotation of the halftone dot grid"
+msgstr "Rotación de la cuadrícula de puntos del semitono"
+
+#: laser_essentials/steps/raster_step.py
 msgid "Cross-Hatch"
 msgstr "Trama cruzada"
 
@@ -493,14 +512,6 @@ msgid ""
 msgstr ""
 "Corrige la desalineación en X entre pasadas de rasterizado de izquierda "
 "aderecha y de derecha a izquierda"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Invert"
-msgstr "Invertir"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Engrave white areas instead of black areas"
-msgstr "Grabar áreas blancas en lugar de áreas negras"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Number of Depth Levels"
@@ -806,27 +817,3 @@ msgstr "Cabezal láser"
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Add Material Test"
 msgstr "Añadir prueba de material"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Serpentine"
-msgstr "Serpentina"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Alternate the dither direction on every row to avoid directional artifacts"
-msgstr "Alternar la dirección del difuminado en cada fila para evitar artefactos direccionales"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Halftone Cell Size"
-msgstr "Tamaño de celda del semitono"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Distance between halftone dot centers"
-msgstr "Distancia entre los centros de los puntos del semitono"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Halftone Angle"
-msgstr "Ángulo del semitono"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Rotation of the halftone dot grid"
-msgstr "Rotación de la cuadrícula de puntos del semitono"

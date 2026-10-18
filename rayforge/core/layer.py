@@ -242,8 +242,9 @@ class Layer(DocItem):
     def set_name(self, name: str):
         """Sets the name of the layer.
 
-        Args:
-            name: The new name for the layer.
+        Also syncs the workflow name, which is derived from the layer
+        name. Both fire ``renamed``; neither is a content change, so
+        ``updated`` stays untouched.
         """
         if self.name == name:
             return
@@ -251,7 +252,6 @@ class Layer(DocItem):
         wf = self.workflow
         if wf:
             wf.name = _("{name} Workflow").format(name=name)
-        self.updated.send(self)
 
     def set_visible(self, visible: bool):
         """Sets the visibility of the layer.

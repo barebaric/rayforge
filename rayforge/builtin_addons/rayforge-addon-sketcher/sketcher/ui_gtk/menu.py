@@ -39,6 +39,7 @@ class SketchMenu(Gio.Menu):
         tools_group.append(_("Path"), "sketch.tool_path")
         tools_group.append(_("Rectangle"), "sketch.tool_rectangle")
         tools_group.append(_("Rounded Rectangle"), "sketch.tool_rounded_rect")
+        tools_group.append(_("Polygon"), "sketch.tool_polygon")
         tools_group.append(_("Fill Area"), "sketch.tool_fill")
         tools_menu.append_section(_("Tools"), tools_group)
 

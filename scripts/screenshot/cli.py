@@ -22,6 +22,7 @@ TEST_CONFIG_DIR = PROJECT_ROOT / "tests" / "config"
 TARGETS = {
     "addon:ai-workpiece-generator": "ai_workpiece_generator",
     "addon:deepnest": "deepnest",
+    "addon:image-editing:adjust": "adjust_image_dialog",
     "addon:print-and-cut:pick": "print_and_cut",
     "addon:print-and-cut:jog": "print_and_cut",
     "addon:print-and-cut:apply": "print_and_cut",
@@ -116,6 +117,7 @@ TARGETS = {
     "addons:sketcher:tool:path-pie-menu": "sketcher_tools",
     "addons:sketcher:tool:arc-ellipse": "sketcher_tools",
     "addons:sketcher:tool:rectangle": "sketcher_tools",
+    "addons:sketcher:tool:polygon": "sketcher_tools",
     "addons:sketcher:tool:chamfer-fillet": "sketcher_tools",
     "addons:sketcher:tool:fill": "sketcher_tools",
     "addons:sketcher:tool:grid": "sketcher_tools",
@@ -124,6 +126,7 @@ TARGETS = {
     "addons:sketcher:array:circular": "sketcher_array",
     "addons:sketcher:array:curve-along": "sketcher_array",
     "material-test": "material_test",
+    "operations:perforation": "perforation",
     "operations:wavefront": "wavefront",
     "recipe-editor:general": "recipe_editor_general",
     "recipe-editor:applicability": "recipe_editor_applicability",
@@ -132,9 +135,14 @@ TARGETS = {
     "recipe-editor:post-processing": "recipe_editor_settings",
     "sanity-check": "sanity_check",
     "step-settings:command:general": "step_settings_command",
+    "step-settings:material-test-grid:workpieces": (
+        "step_settings_workpieces"
+    ),
     "step-settings:contour:general": "step_settings",
     "step-settings:contour:laser": "step_settings",
     "step-settings:contour:post": "step_settings",
+    "step-settings:contour:post:optimize": "step_settings_optimize",
+    "step-settings:contour:post:perforation": "step_settings_perforation",
     "step-settings:engrave:general:constant_power": "step_settings",
     "step-settings:engrave:general:dither": "step_settings",
     "step-settings:engrave:general:multi_pass": "step_settings",

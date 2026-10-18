@@ -151,10 +151,12 @@ class StockItem(DocItem):
         return new_item
 
     def set_name(self, name: str):
-        """Setter method for use with undo commands."""
-        if self.name != name:
-            self.name = name
-            self.updated.send(self)
+        """Setter method for use with undo commands.
+
+        The ``name`` property sends ``renamed``; a rename is not a
+        content change, so ``updated`` stays untouched.
+        """
+        self.name = name
 
     # --- Delegated Properties for backward compatibility and convenience ---
 

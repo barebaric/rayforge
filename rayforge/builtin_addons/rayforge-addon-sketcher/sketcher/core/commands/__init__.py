@@ -35,6 +35,11 @@ from .point import (
     MovePointCommand,
     UnstickJunctionCommand,
 )
+from .polygon import (
+    PolygonCommand,
+    PolygonPreviewState,
+    polygon_vertices,
+)
 from .rectangle import RectangleCommand, RectanglePreviewState
 from .rounded_rect import RoundedRectCommand, RoundedRectPreviewState
 from .straighten import StraightenBezierCommand
@@ -88,6 +93,8 @@ __all__ = [
     "MoveEntitiesCommand",
     "MovePointCommand",
     "OffsetCommand",
+    "PolygonCommand",
+    "PolygonPreviewState",
     "PreviewState",
     "RectangleCommand",
     "RectanglePreviewState",
@@ -106,4 +113,5 @@ __all__ = [
     "TextBoxCommand",
     "ToggleConstructionCommand",
     "UnstickJunctionCommand",
+    "polygon_vertices",
 ]

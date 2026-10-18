@@ -48,10 +48,10 @@ class GroupRow(Gtk.Box):
 
         self._update_ui()
 
-        group.updated.connect(self._on_group_updated)
+        group.renamed.connect(self._on_group_renamed)
 
     def do_destroy(self):
-        self.group.updated.disconnect(self._on_group_updated)
+        self.group.renamed.disconnect(self._on_group_renamed)
         self._remove_rename_click_controller()
 
     def get_drag_content(self) -> Gdk.ContentProvider:
@@ -60,7 +60,7 @@ class GroupRow(Gtk.Box):
     def _update_ui(self):
         self.name_label.set_text(self.group.name)
 
-    def _on_group_updated(self, sender, **kwargs):
+    def _on_group_renamed(self, sender):
         self._update_ui()
 
     def _on_drag_prepare(self, drag_source, x, y):

@@ -34,6 +34,15 @@ When enabled, Rayforge automatically clears any alarm state when connecting.
 When enabled, you can home individual axes independently (X, Y, or Z) rather than requiring all axes
 to home together. This is useful for machines where one axis may already be positioned correctly.
 
+### Z Homing
+
+Chooses how the Z axis finds its reference position when you home it. This setting only appears when
+the machine's driver supports more than one method.
+
+- **Home Switch**: Z moves to its home switch, like the X and Y axes
+- **Probe**: Z uses the controller's auto-focus probe to find the work surface, then moves to the
+  configured focus distance
+
 ## Arc and Curve Settings
 
 Settings for controlling how curved paths are converted to G-code movements.

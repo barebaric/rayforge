@@ -93,15 +93,16 @@ dos eixos menos as margens.
 ## Limites de Software
 
 Limites de segurança configuráveis para mover a cabeça da máquina. Quando habilitados, os controles
-de jog impedirão movimento fora desses limites.
+de jog impedirão movimento fora desses limites. Quando desabilitados, o jog não é limitado.
 
-- **Habilitar Limites de Software Personalizados**: Alternar para usar limites personalizados em vez
-  dos limites da superfície de trabalho
+- **Habilitar Limites de Software**: Ativa ou desativa a verificação dos limites de jog
 - **X/Y Mín**: Coordenada mínima para cada eixo
 - **X/Y Máx**: Coordenada máxima para cada eixo
 
-Os limites de software são automaticamente restringidos para ficar dentro da extensão dos eixos (0
-ao valor de extensão).
+Os limites de software são avaliados no sistema de coordenadas de trabalho mostrado no indicador de
+posição, por isso permanecem no lugar quando a origem de trabalho se move. Sem limites
+personalizados, ao habilitar são usados os limites da superfície de trabalho. Os limites são
+automaticamente restringidos para ficar dentro da extensão dos eixos (0 ao valor de extensão).
 
 <!-- prettier-ignore-start -->
 :::tip

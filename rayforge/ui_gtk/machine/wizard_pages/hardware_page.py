@@ -163,14 +163,16 @@ class HardwarePage(WizardPage):
             title=_("Soft Limits"),
             description=_(
                 "Configurable safety bounds for jogging. "
-                "Leave disabled to use work surface bounds."
+                "Leave disabled to jog without limit checks."
             ),
         )
         self.content.append(self.soft_limits_group)
 
         self.soft_limits_enabled_row = Adw.SwitchRow(
-            title=_("Enable Custom Soft Limits"),
-            subtitle=_("Override work-surface bounds with custom limits"),
+            title=_("Enable Soft Limits"),
+            subtitle=_(
+                "Limit jogging to custom bounds instead of the work surface"
+            ),
         )
         self.soft_limits_enabled_row.connect(
             "notify::active", self._on_soft_limits_toggle
@@ -336,14 +338,17 @@ class HardwarePage(WizardPage):
         self.margin_bottom_row.set_value_in_base_units(margins[3])
 
         soft = mc.soft_limits
+        if mc.soft_limits_enabled is not None:
+            enabled = mc.soft_limits_enabled
+        else:
+            enabled = soft is not None
+        self.soft_limits_enabled_row.set_active(enabled)
         if soft:
-            self.soft_limits_enabled_row.set_active(True)
             self.soft_x_min_row.set_value_in_base_units(soft[0])
             self.soft_y_min_row.set_value_in_base_units(soft[1])
             self.soft_x_max_row.set_value_in_base_units(soft[2])
             self.soft_y_max_row.set_value_in_base_units(soft[3])
         else:
-            self.soft_limits_enabled_row.set_active(False)
             self.soft_x_min_row.set_value_in_base_units(0.0)
             self.soft_y_min_row.set_value_in_base_units(0.0)
             self.soft_x_max_row.set_value_in_base_units(
@@ -410,6 +415,7 @@ class HardwarePage(WizardPage):
             mc.work_margins = None
 
         if self.soft_limits_enabled_row.get_active():
+            mc.soft_limits_enabled = True
             mc.soft_limits = (
                 self.soft_x_min_row.get_value_in_base_units(),
                 self.soft_y_min_row.get_value_in_base_units(),
@@ -417,6 +423,7 @@ class HardwarePage(WizardPage):
                 self.soft_y_max_row.get_value_in_base_units(),
             )
         else:
+            mc.soft_limits_enabled = False
             mc.soft_limits = None
 
         travel = self.travel_speed_row.get_value_in_base_units()
