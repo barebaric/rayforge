@@ -272,3 +272,77 @@ def test_sketch_solve_with_unconstrained_geometry():
         point = sketch.registry.get_point(pid)
         assert point.pos() == (float(i), float(i * 2))
         assert point.constrained is False
+
+
+def test_partition_constraints_separates_islands():
+    """Global solves split into one sub-problem per connected
+    constraint island."""
+    reg = EntityRegistry()
+    p1 = reg.add_point(0, 0, fixed=True)
+    p2 = reg.add_point(5, 0)
+    p3 = reg.add_point(200, 0, fixed=True)
+    p4 = reg.add_point(205, 0)
+
+    solver = Solver(
+        reg,
+        ParameterContext(),
+        [DistanceConstraint(p1, p2, 10.0), DistanceConstraint(p3, p4, 50.0)],
+    )
+
+    parts = solver._partition_constraints()
+    point_sets = sorted(sorted(part[2]) for part in parts)
+    assert point_sets == [
+        sorted({p1, p2}),
+        sorted({p3, p4}),
+    ]
+
+
+def test_partition_constraints_merges_bridged_islands():
+    """A constraint coupling two islands merges them into one
+    sub-problem."""
+    reg = EntityRegistry()
+    p1 = reg.add_point(0, 0, fixed=True)
+    p2 = reg.add_point(5, 0)
+    p3 = reg.add_point(200, 0, fixed=True)
+    p4 = reg.add_point(205, 0)
+
+    solver = Solver(
+        reg,
+        ParameterContext(),
+        [
+            DistanceConstraint(p1, p2, 10.0),
+            DistanceConstraint(p3, p4, 50.0),
+            DistanceConstraint(p1, p3, 200.0),
+        ],
+    )
+
+    parts = solver._partition_constraints()
+    assert len(parts) == 1
+    assert parts[0][2] == {p1, p2, p3, p4}
+
+
+def test_solver_conflict_isolated_to_its_island():
+    """A conflicting island fails the solve without poisoning the
+    other island: it still reaches its constraint, and its fully
+    constrained points get flagged even though the global result is a
+    failure."""
+    reg = EntityRegistry()
+    params = ParameterContext()
+    p1 = reg.add_point(0, 0, fixed=True)
+    p2 = reg.add_point(5, 0)
+    p3 = reg.add_point(200, 0, fixed=True)
+    p4 = reg.add_point(205, 0)
+
+    constraints = [
+        HorizontalConstraint(p1, p2),
+        DistanceConstraint(p1, p2, 10.0),
+        DistanceConstraint(p3, p4, 50.0),
+        DistanceConstraint(p3, p4, 60.0),
+    ]
+    solver = Solver(reg, params, constraints)
+    assert solver.solve() is False
+
+    assert reg.get_point(p2).x == pytest.approx(10.0, abs=1e-4)
+    assert reg.get_point(p2).constrained is True
+    assert reg.get_point(p4).x == pytest.approx(255.0, abs=1e-2)
+    assert reg.get_point(p4).constrained is False

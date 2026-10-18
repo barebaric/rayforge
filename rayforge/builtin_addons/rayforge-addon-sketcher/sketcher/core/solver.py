@@ -4,7 +4,7 @@ import numpy as np
 import scipy.linalg
 from scipy.optimize import least_squares
 
-from .components import get_referenced_points
+from .components import compute_constraint_components, get_referenced_points
 from .constraints import Constraint
 from .entities import Point
 from .params import ParameterContext
@@ -33,13 +33,107 @@ class Solver:
         """
         Runs the least_squares optimizer to satisfy constraints.
         Returns True if successful.
-        If update_dof is False, it will skip re-calculating the constrained
-        status of points and entities, which is useful for interactive updates.
-        If point_filter is set, only the listed points are optimized;
-        all other points keep their positions. Constraints must then
-        only be passed for constraints that reference filtered points,
-        and update_dof must be False.
+
+        A global solve (no point_filter) partitions the constraints
+        into independent connected components and solves each one
+        separately, so least_squares work and the DOF analysis scale
+        with the constraint islands instead of the whole sketch.
+        Success is the conjunction of the component results, and the
+        DOF analysis runs per component on its own small Jacobian.
+
+        If update_dof is False, the constrained status of points and
+        entities is left untouched, which is useful for interactive
+        updates.
+
+        If point_filter is set, only the listed points are optimized
+        and the DOF analysis is restricted to them; all other points
+        keep their positions.
         """
+        if update_dof:
+            for p in self.registry.points:
+                p.constrained = p.fixed
+
+        if self.point_filter is None:
+            return self._solve_decomposed(tolerance, update_dof)
+        return self._solve_scoped(tolerance, update_dof)
+
+    def _solve_decomposed(self, tolerance: float, update_dof: bool) -> bool:
+        """Solves each connected constraint component independently.
+
+        The constrained-status reset already ran in solve(); each part
+        analyzes its own DOF, and the entity statuses are updated once
+        for the whole sketch after every component succeeded."""
+        parts = self._partition_constraints()
+        if not parts:
+            if update_dof:
+                self._update_entity_constraints()
+            return True
+
+        success = True
+        for constraints, auxiliary, point_filter in parts:
+            part_solver = Solver(
+                self.registry,
+                self.params,
+                constraints,
+                auxiliary_constraints=auxiliary,
+                point_filter=point_filter,
+            )
+            if not part_solver._solve_scoped(tolerance, update_dof):
+                success = False
+
+        if update_dof and success:
+            self._update_entity_constraints()
+        return success
+
+    def _partition_constraints(
+        self,
+    ) -> list[tuple[list[Constraint], list[Constraint], set[EntityID]]]:
+        """Splits the hard and auxiliary constraints into one
+        sub-problem per connected component of the constraint graph.
+        The components are the graph's connected components, so every
+        constraint's referenced points lie in exactly one of them.
+
+        Returns (constraints, auxiliary_constraints, point_filter)
+        tuples, one per non-empty part."""
+        all_constraints = list(self.constraints) + list(
+            self.auxiliary_constraints
+        )
+        components = compute_constraint_components(
+            self.registry, all_constraints
+        )
+        component_of: dict[EntityID, int] = {}
+        for index, component in enumerate(components):
+            for pid in component:
+                component_of[pid] = index
+
+        hard_parts: list[list[Constraint]] = [[] for _ in components]
+        aux_parts: list[list[Constraint]] = [[] for _ in components]
+
+        def assign(constraint: Constraint, parts: list[list[Constraint]]):
+            for pid in get_referenced_points(self.registry, constraint):
+                index = component_of.get(pid)
+                if index is not None:
+                    parts[index].append(constraint)
+                    return
+
+        for constraint in self.constraints:
+            assign(constraint, hard_parts)
+        for constraint in self.auxiliary_constraints:
+            assign(constraint, aux_parts)
+
+        return [
+            (hard, aux, component)
+            for hard, aux, component in zip(hard_parts, aux_parts, components)
+            if hard or aux
+        ]
+
+    def _solve_scoped(self, tolerance: float, update_dof: bool) -> bool:
+        """Solves this solver's own constraint set.
+
+        The constrained-status reset and the entity status update are
+        the caller's responsibility: a decomposed run resets once up
+        front, analyzes each component's DOF on its own small
+        Jacobian, and updates the entity statuses once at the end."""
         # 1. Identify mutable points (degrees of freedom). Points that
         # no constraint references cannot move; they stay out of the
         # state vector entirely.
@@ -57,18 +151,11 @@ class Solver:
             and (self.point_filter is None or p.id in self.point_filter)
         ]
 
+        if not mutable_points:
+            return True  # Nothing to solve
+
         # Map point_id -> index in state vector (0, 2, 4...)
         point_indices = {p.id: i * 2 for i, p in enumerate(mutable_points)}
-
-        # Only reset if we are doing a full DOF update
-        if update_dof:
-            for p in self.registry.points:
-                p.constrained = p.fixed
-
-        if not mutable_points:
-            if update_dof:
-                self._update_entity_constraints()
-            return True  # Nothing to solve
 
         all_constraints = list(self.constraints) + list(
             self.auxiliary_constraints
@@ -181,19 +268,17 @@ class Solver:
 
         success = bool(result.success and result.cost <= tolerance)
 
-        # 7. Analyze Degrees of Freedom (DOF) - CONDITIONALLY
+        # 7. Analyze Degrees of Freedom (DOF) - CONDITIONALLY, scoped
+        # to this problem's own points and constraints.
         if success and update_dof:
             # Re-compute Jacobian using ONLY hard constraints for DOF
             # analysis. Stabilizer constraints (auxiliary) should not count
-            # towards DOF.
+            # towards DOF. A component without hard constraints keeps its
+            # points unconstrained from the reset; no null space analysis
+            # is needed for that.
             hard_rows = build_jacobian_rows(self.constraints, len(x0))
             if hard_rows:
-                hard_jac = np.vstack(hard_rows)
-            else:
-                hard_jac = np.zeros((1, len(x0)))
-
-            self._analyze_dof(hard_jac, mutable_points)
-            self._update_entity_constraints()
+                self._analyze_dof(np.vstack(hard_rows), mutable_points)
 
         return success
 
