@@ -3,7 +3,9 @@ Helpers for editing the nodes of a workpiece's vector path: which nodes
 and Bezier handles are shown, hit testing them, and drawing them.
 
 Indices are command indices into the boundaries geometry; a node is the
-end point of a command. Positions are in boundary space (0..1).
+end point of a command. In a closed contour the start and end node are
+one node, shown once at its Move index. Positions are in boundary space
+(0..1).
 """
 
 import math
@@ -11,7 +13,7 @@ from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 
 import cairo
-from raygeo.geo import Bezier, Geometry, Move
+from raygeo.geo import Bezier, Geometry
 
 NODE_HIT_PX = 7.0
 NODE_SIZE_PX = 7.0
@@ -45,38 +47,36 @@ def _end(cmd) -> Point2:
     return (cmd.end[0], cmd.end[1])
 
 
-def contour_span(data: Sequence, index: int) -> tuple[int, int]:
-    """The (Move index, last command index) of the contour at index."""
-    start = index
-    while start > 0 and not isinstance(data[start], Move):
-        start -= 1
-    end = max(index, start)
-    while end + 1 < len(data) and not isinstance(data[end + 1], Move):
-        end += 1
-    return start, end
-
-
 def visible_nodes(
-    data: Sequence, segments: Iterable[int], node: int | None
+    geometry: Geometry, segments: Iterable[int], node: int | None
 ) -> list[int]:
     """Nodes of every contour holding a selected segment or node."""
     anchors = set(segments)
     if node is not None:
         anchors.add(node)
-    spans = {contour_span(data, i) for i in anchors if 0 <= i < len(data)}
+    infos = {
+        geometry.contour_info(i)
+        for i in anchors
+        if 0 <= i < len(geometry.data)
+    }
     nodes: list[int] = []
-    for start, end in sorted(spans):
-        nodes.extend(range(start, end + 1))
+    for start, end, closed in sorted(infos):
+        nodes.extend(range(start, end) if closed else range(start, end + 1))
     return nodes
 
 
 def visible_handles(
-    data: Sequence, segments: Iterable[int], node: int | None
+    geometry: Geometry, segments: Iterable[int], node: int | None
 ) -> list[Handle]:
     """Handles of the selected Beziers and of those meeting at the node."""
+    data = geometry.data
     indices = set(segments)
     if node is not None:
         indices.update((node, node + 1))
+        if 0 <= node < len(data):
+            start, end, closed = geometry.contour_info(node)
+            if closed and node in (start, end):
+                indices.update((start + 1, end))
     handles = []
     for index in sorted(indices):
         if not 0 < index < len(data):
@@ -84,10 +84,10 @@ def visible_handles(
         cmd = data[index]
         if not isinstance(cmd, Bezier):
             continue
-        start = _end(data[index - 1])
+        node_start = _end(data[index - 1])
         c1 = (cmd.control1[0], cmd.control1[1])
         c2 = (cmd.control2[0], cmd.control2[1])
-        handles.append(Handle(index, 1, c1, start))
+        handles.append(Handle(index, 1, c1, node_start))
         handles.append(Handle(index, 2, c2, _end(cmd)))
     return handles
 

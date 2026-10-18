@@ -117,3 +117,16 @@ async def test_does_not_merge_into_a_segment_deletion(doc_editor, node_edit):
     node_edit.delete_node(wp, 1)
     doc_editor.history_manager.undo()
     assert _ends(wp) == after_delete
+
+
+@pytest.mark.asyncio
+async def test_two_segment_deletions_stay_two_undo_steps(doc_editor):
+    wp = _add(doc_editor, _square())
+    doc_editor.edit.delete_segments(wp, {4})
+    after_first = _ends(wp)
+    doc_editor.edit.delete_segments(wp, {3})
+    assert len(_ends(wp)) == 3
+    doc_editor.history_manager.undo()
+    assert _ends(wp) == after_first
+    doc_editor.history_manager.undo()
+    assert wp._edited_boundaries is None

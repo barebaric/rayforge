@@ -15,8 +15,8 @@ from typing import TYPE_CHECKING
 
 from raygeo.geo import Geometry
 
-from ..core.undo import ChangePropertyCommand
 from ..core.workpiece import WorkPiece
+from .boundaries import edited_boundaries_command
 
 if TYPE_CHECKING:
     from .editor import DocEditor
@@ -41,21 +41,8 @@ class NodeEditCmd:
         if boundaries is None or boundaries.is_empty():
             return None
         new_geo, index = edit(boundaries)
-
-        def _on_changed():
-            workpiece.clear_render_cache()
-            workpiece.updated.send(workpiece)
-
         self._editor.history_manager.execute(
-            ChangePropertyCommand(
-                target=workpiece,
-                property_name="_edited_boundaries",
-                new_value=new_geo,
-                old_value=workpiece._edited_boundaries,
-                on_change_callback=_on_changed,
-                name=name,
-                coalesce=False,
-            )
+            edited_boundaries_command(workpiece, new_geo, name)
         )
         return index
 

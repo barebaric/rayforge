@@ -15,8 +15,7 @@ from ....pipeline.artifact import (
     WorkPieceArtifact,
 )
 from ...canvas import CanvasElement
-from ..ops_cache_registry import registry
-from .node_editing import (
+from ..node_editing import (
     NODE_HIT_PX,
     Handle,
     NodeDrag,
@@ -28,6 +27,7 @@ from .node_editing import (
     visible_handles,
     visible_nodes,
 )
+from ..ops_cache_registry import registry
 from .tab_handle import TabHandleElement
 
 if TYPE_CHECKING:
@@ -822,7 +822,7 @@ class WorkPieceElement(CanvasElement):
         if not state:
             return []
         return visible_nodes(
-            state.geometry.data, state.selected_segments, state.selected_node
+            state.geometry, state.selected_segments, state.selected_node
         )
 
     def _shown_handles(self) -> list[Handle]:
@@ -830,7 +830,7 @@ class WorkPieceElement(CanvasElement):
         if not state:
             return []
         return visible_handles(
-            state.geometry.data, state.selected_segments, state.selected_node
+            state.geometry, state.selected_segments, state.selected_node
         )
 
     def _draw_nodes_and_handles(self, ctx: cairo.Context, screen_transform):
