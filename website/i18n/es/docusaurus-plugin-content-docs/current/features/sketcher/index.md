@@ -101,6 +101,7 @@ página:
 | [Elipse](arc-ellipse.md)                 | `G+C` |
 | [Rectángulo](rectangle.md)               | `G+R` |
 | [Rectángulo redondeado](rectangle.md)    | `G+O` |
+| [Polígono](polygon.md)                   | `G+X` |
 | [Rellenar área](fill.md)                 | `G+F` |
 | [Cuadro de texto](text-box.md)           | `G+T` |
 | [Arreglo Circular](arrays.md)            | `G+Y` |
@@ -152,9 +153,10 @@ estorban.
 
 Las herramientas de dibujo están documentadas cada una en su propia página: [Trazado](path.md)
 (líneas y curvas Bézier), [Arco y elipse](arc-ellipse.md), [Rectángulo](rectangle.md) (y rectángulos
-redondeados), [Rellenar áreas](fill.md), [Cuadro de texto](text-box.md) y [Cuadrícula](grid.md). Las
-modificaciones como [Desplazamiento](offset.md) y [Chaflán y redondeo](chamfer-fillet.md) dan nueva
-forma a la geometría existente, [Arreglos](arrays.md) la copia a lo largo de un círculo o una curva,
-y [Expresiones](expressions.md) explica los parámetros, las expresiones y los cuadros de texto
+redondeados), [Polígono](polygon.md) (y estrellas), [Rellenar áreas](fill.md),
+[Cuadro de texto](text-box.md) y [Cuadrícula](grid.md). Las modificaciones como
+[Desplazamiento](offset.md) y [Chaflán y redondeo](chamfer-fillet.md) dan nueva forma a la geometría
+existente, [Arreglos](arrays.md) la copia a lo largo de un círculo o una curva, y
+[Expresiones](expressions.md) explica los parámetros, las expresiones y los cuadros de texto
 paramétricos. Los bocetos se pueden guardar y volver a importar con todas las restricciones
 intactas; consulte [Importación y exportación](import-export.md).

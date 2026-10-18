@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-03 16:38+0200\n"
+"POT-Creation-Date: 2026-10-15 05:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -199,6 +199,30 @@ msgstr ""
 msgid "Change Lead-Out Distance"
 msgstr ""
 
+#: post_processors/widgets/perforation_group.py
+msgid "Cut Length"
+msgstr ""
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance the laser fires before each gap"
+msgstr ""
+
+#: post_processors/widgets/perforation_group.py
+msgid "Skip Length"
+msgstr ""
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance travelled with the laser off between cuts"
+msgstr ""
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation cut length"
+msgstr ""
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation skip length"
+msgstr ""
+
 #: post_processors/widgets/merge_lines_group.py
 msgid "Tolerance"
 msgstr ""
@@ -250,6 +274,15 @@ msgstr ""
 
 #: post_processors/transformers/merge_lines_transformer.py
 msgid "Merges overlapping lines to avoid double passing."
+msgstr ""
+
+#: post_processors/transformers/perforation_transformer.py
+msgid "Perforation"
+msgstr ""
+
+#: post_processors/transformers/perforation_transformer.py
+msgid ""
+"Cuts in dashes: the laser fires for the cut length and skips the skip length"
 msgstr ""
 
 #: post_processors/transformers/overscan_transformer.py

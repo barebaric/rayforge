@@ -125,6 +125,12 @@ Section "MainSection" SEC01
   WriteRegStr HKCR "Rayforge.SvgFile\DefaultIcon" "" "$INSTDIR\${EXECUTABLE_NAME},0"
   WriteRegStr HKCR "Rayforge.SvgFile\shell\open\command" "" '"$INSTDIR\${EXECUTABLE_NAME}" "%1"'
 
+  ; Register .svgz file type
+  WriteRegStr HKCR ".svgz" "" "Rayforge.SvgzFile"
+  WriteRegStr HKCR "Rayforge.SvgzFile" "" "Compressed SVG Image"
+  WriteRegStr HKCR "Rayforge.SvgzFile\DefaultIcon" "" "$INSTDIR\${EXECUTABLE_NAME},0"
+  WriteRegStr HKCR "Rayforge.SvgzFile\shell\open\command" "" '"$INSTDIR\${EXECUTABLE_NAME}" "%1"'
+
   ; Register .dxf file type
   WriteRegStr HKCR ".dxf" "" "Rayforge.DxfFile"
   WriteRegStr HKCR "Rayforge.DxfFile" "" "DXF Drawing"
@@ -176,6 +182,10 @@ Section "Uninstall"
   ; Unregister .svg file type
   DeleteRegKey HKCR ".svg"
   DeleteRegKey HKCR "Rayforge.SvgFile"
+
+  ; Unregister .svgz file type
+  DeleteRegKey HKCR ".svgz"
+  DeleteRegKey HKCR "Rayforge.SvgzFile"
 
   ; Unregister .dxf file type
   DeleteRegKey HKCR ".dxf"

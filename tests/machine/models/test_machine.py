@@ -2561,6 +2561,92 @@ class TestJogDelegation:
             is expected
         )
 
+    @pytest.mark.parametrize(
+        "work_pos, axis, distance, expected",
+        [
+            # Work position X 100, Y 170, far from every edge: all
+            # four directions jog freely (issue #574)
+            ((100, 170), Axis.X, -10.0, -10.0),
+            ((100, 170), Axis.X, 10.0, 10.0),
+            ((100, 170), Axis.Y, -10.0, -10.0),
+            ((100, 170), Axis.Y, 10.0, 10.0),
+            # Near the max edge: outward shortens, inward is untouched
+            ((390, 170), Axis.X, 10.0, 5.0),
+            ((390, 170), Axis.X, -10.0, -10.0),
+            # Near the origin: negative jogs shorten
+            ((3, 170), Axis.X, -10.0, -3.0),
+            ((100, 3), Axis.Y, -10.0, -3.0),
+        ],
+    )
+    def test_adjust_jog_distance_uses_work_coordinates(
+        self, isolated_machine: Machine, work_pos, axis, distance, expected
+    ):
+        """
+        Soft limits are work-area bounds, so the jog check must run in
+        the work coordinate space the position display uses - not in
+        raw machine coordinates, which differ by the active WCS offset
+        (issue #574).
+
+        The machine coordinates simulate a GRBL that homes at the max
+        end and reports negative machine positions: the G54 offset is
+        (-387, -387), so work = machine + 387.
+        """
+        isolated_machine.set_axis_extents(395, 395)
+        isolated_machine.update_wcs_offsets_batch(
+            {"G54": (-387.0, -387.0, 0.0)}
+        )
+        isolated_machine.device_state.machine_pos = (
+            work_pos[0] - 387.0,
+            work_pos[1] - 387.0,
+            0.0,
+        )
+
+        assert isolated_machine._adjust_jog_distance_for_limits(
+            axis, distance
+        ) == pytest.approx(expected)
+
+    def test_would_jog_exceed_limits_uses_work_coordinates(
+        self, isolated_machine: Machine
+    ):
+        """
+        The orange jog warning keys off the work position, so a machine
+        well inside the work area is not flagged even when its raw
+        machine coordinates sit outside the work-area bounds (issue
+        #574).
+        """
+        isolated_machine.set_axis_extents(395, 395)
+        isolated_machine.update_wcs_offsets_batch(
+            {"G54": (-387.0, -387.0, 0.0)}
+        )
+        isolated_machine.device_state.machine_pos = (-287.0, -217.0, 0.0)
+
+        assert isolated_machine.would_jog_exceed_limits(Axis.X, -10.0) is False
+        assert isolated_machine.would_jog_exceed_limits(Axis.X, 10.0) is False
+
+        isolated_machine.device_state.machine_pos = (-384.0, -217.0, 0.0)
+        assert isolated_machine.would_jog_exceed_limits(Axis.X, -10.0) is True
+        assert isolated_machine.would_jog_exceed_limits(Axis.X, 10.0) is False
+
+    def test_disabled_soft_limits_skip_work_coordinate_check(
+        self, isolated_machine: Machine
+    ):
+        """
+        With the soft limits toggle off, no jog is clamped or flagged
+        no matter where the machine coordinates sit (issue #574).
+        """
+        isolated_machine.set_axis_extents(395, 395)
+        isolated_machine.set_soft_limits_enabled(False)
+        isolated_machine.update_wcs_offsets_batch(
+            {"G54": (-387.0, -387.0, 0.0)}
+        )
+        isolated_machine.device_state.machine_pos = (-287.0, -217.0, 0.0)
+
+        assert (
+            isolated_machine._adjust_jog_distance_for_limits(Axis.X, -10.0)
+            == -10.0
+        )
+        assert isolated_machine.would_jog_exceed_limits(Axis.X, -10.0) is False
+
     def test_set_z_extents_updates_travel_range(
         self, isolated_machine: Machine
     ):

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-24 21:41+0200\n"
+"POT-Creation-Date: 2026-10-12 18:45+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -204,6 +204,10 @@ msgid "Load common test configurations"
 msgstr "Häufige Testkonfigurationen laden"
 
 #: laser_essentials/widgets/raster_power_widget.py
+msgid "Min Power (White)"
+msgstr "Minimale Leistung (Weiß)"
+
+#: laser_essentials/widgets/raster_power_widget.py
 #: laser_essentials/steps/raster_step.py
 msgid "Power for lightest areas, as a percentage of the step's main power"
 msgstr ""
@@ -211,27 +215,15 @@ msgstr ""
 "Schritts"
 
 #: laser_essentials/widgets/raster_power_widget.py
+msgid "Max Power (Black)"
+msgstr "Maximale Leistung (Schwarz)"
+
+#: laser_essentials/widgets/raster_power_widget.py
 #: laser_essentials/steps/raster_step.py
 msgid "Power for darkest areas, as a percentage of the step's main power"
 msgstr ""
 "Leistung für die dunkelsten Bereiche, als Prozent der Hauptleistung des "
 "Schritts"
-
-#: laser_essentials/widgets/raster_power_widget.py
-msgid "Min Power (Black)"
-msgstr "Min. Leistung (Schwarz)"
-
-#: laser_essentials/widgets/raster_power_widget.py
-msgid "Max Power (White)"
-msgstr "Max. Leistung (Weiß)"
-
-#: laser_essentials/widgets/raster_power_widget.py
-msgid "Min Power (White)"
-msgstr "Minimale Leistung (Weiß)"
-
-#: laser_essentials/widgets/raster_power_widget.py
-msgid "Max Power (Black)"
-msgstr "Maximale Leistung (Schwarz)"
 
 #: laser_essentials/widgets/raster_page.py
 msgid "Engrave Speed"
@@ -423,6 +415,33 @@ msgid "Algorithm for converting grayscale to binary"
 msgstr "Algorithmus zum Konvertieren von Graustufen in Binär"
 
 #: laser_essentials/steps/raster_step.py
+msgid "Serpentine"
+msgstr "Serpentinenmodus"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Alternate the dither direction on every row to avoid directional artifacts"
+msgstr ""
+"Ditherrichtung in jeder Zeile wechseln, um richtungsabhängige Artefakte zu "
+"vermeiden"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Halftone Cell Size"
+msgstr "Halbton-Zellgröße"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Distance between halftone dot centers"
+msgstr "Abstand zwischen den Mittelpunkten der Halbtonpunkte"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Halftone Angle"
+msgstr "Halbton-Winkel"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Rotation of the halftone dot grid"
+msgstr "Drehung des Halbton-Punktrasters"
+
+#: laser_essentials/steps/raster_step.py
 msgid "Cross-Hatch"
 msgstr "Kreuzschraffur"
 
@@ -491,14 +510,6 @@ msgid ""
 msgstr ""
 "Korrigiert die X-Ausrichtung zwischen Rasterdurchgängen von links nachrechts "
 "und von rechts nach links"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Invert"
-msgstr "Invertieren"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Engrave white areas instead of black areas"
-msgstr "Weiße Bereiche anstelle von schwarzen Bereichen gravieren"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Number of Depth Levels"
@@ -802,27 +813,3 @@ msgstr "Laserkopf"
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Add Material Test"
 msgstr "Materialtest hinzufügen"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Serpentine"
-msgstr "Serpentinenmodus"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Alternate the dither direction on every row to avoid directional artifacts"
-msgstr "Ditherrichtung in jeder Zeile wechseln, um richtungsabhängige Artefakte zu vermeiden"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Halftone Cell Size"
-msgstr "Halbton-Zellgröße"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Distance between halftone dot centers"
-msgstr "Abstand zwischen den Mittelpunkten der Halbtonpunkte"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Halftone Angle"
-msgstr "Halbton-Winkel"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Rotation of the halftone dot grid"
-msgstr "Drehung des Halbton-Punktrasters"

@@ -29,10 +29,12 @@ def mock_workpiece_with_signals():
     # DocItem base class expects these signals to exist for connection
     mock_wp.updated = Signal()
     mock_wp.transform_changed = Signal()
+    mock_wp.renamed = Signal()
     mock_wp.descendant_added = Signal()
     mock_wp.descendant_removed = Signal()
     mock_wp.descendant_updated = Signal()
     mock_wp.descendant_transform_changed = Signal()
+    mock_wp.descendant_renamed = Signal()
     mock_wp.parent = None
     mock_wp.name = "Mock WP"
     mock_wp.natural_size = (10.0, 10.0)

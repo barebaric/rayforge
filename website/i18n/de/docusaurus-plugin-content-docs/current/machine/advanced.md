@@ -30,6 +30,15 @@ Wenn aktiviert, kannst du einzelne Achsen unabhängig referenzieren (X, Y oder Z
 Achsen gleichzeitig zu referenzieren. Dies ist nützlich für Maschinen, bei denen eine Achse bereits
 korrekt positioniert ist.
 
+### Z-Referenzfahrt
+
+Legt fest, wie die Z-Achse beim Referenzieren ihre Referenzposition findet. Diese Einstellung
+erscheint nur, wenn der Treiber der Maschine mehr als eine Methode unterstützt.
+
+- **Referenzschalter**: Z fährt wie die X- und Y-Achse zu ihrem Referenzschalter
+- **Taster**: Z findet die Werkstückoberfläche mit dem Autofokus-Taster der Steuerung und fährt dann
+  auf den eingestellten Fokusabstand
+
 ## Bogen- und Kurveneinstellungen
 
 Einstellungen zur Steuerung, wie gekrümmte Pfade in G-Code-Bewegungen umgewandelt werden.

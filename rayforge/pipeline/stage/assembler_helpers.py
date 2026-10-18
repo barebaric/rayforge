@@ -292,7 +292,6 @@ def preprocess_raster_image(
     surface: cairo.ImageSurface,
     *,
     mode: DepthMode,
-    invert: bool = False,
     auto_levels: bool = True,
     computed_auto_levels: tuple[int, int] | None = None,
     black_point: int = 0,
@@ -316,7 +315,6 @@ def preprocess_raster_image(
     Args:
         surface: The rendered Cairo ARGB32 surface.
         mode: The rasterisation depth mode.
-        invert: If True, invert grayscale before further processing.
         auto_levels: If True, auto-compute black/white points from
             the image histogram.
         computed_auto_levels: Pre-computed ``(black, white)`` points
@@ -350,9 +348,6 @@ def preprocess_raster_image(
     """
     if mode in (DepthMode.MULTI_PASS, DepthMode.POWER_MODULATION):
         gray_image, alpha = surface_to_grayscale(surface)
-        if invert:
-            alpha_mask = alpha > 0
-            gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
         gray_image = _apply_raster_levels(
             gray_image,
             alpha,
@@ -370,9 +365,6 @@ def preprocess_raster_image(
         )
         algo = dither_algorithm or DitherAlgorithm.FLOYD_STEINBERG
         gray_image, alpha = surface_to_grayscale(surface)
-        if invert:
-            alpha_mask = alpha > 0
-            gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
         gray_image = _apply_raster_levels(
             gray_image,
             alpha,
@@ -396,11 +388,7 @@ def preprocess_raster_image(
         return image, None
 
     if mode == DepthMode.CONSTANT_POWER:
-        image = surface_to_binary(
-            surface,
-            threshold=threshold,
-            invert=invert,
-        )
+        image = surface_to_binary(surface, threshold=threshold)
         return image, None
 
     return None, None
@@ -436,7 +424,6 @@ def compute_raster_auto_levels(
     workpiece: WorkPiece,
     pixels_per_mm: tuple[float, float],
     *,
-    invert: bool = False,
     max_preview_pixels: int = 512,
 ) -> tuple[int, int] | None:
     """Compute auto-levels from a low-resolution preview render.
@@ -452,8 +439,6 @@ def compute_raster_auto_levels(
     Args:
         workpiece: The WorkPiece to render a preview of.
         pixels_per_mm: The ``(x, y)`` resolution of the full render.
-        invert: If True, invert the grayscale before computing
-            levels.
         max_preview_pixels: Maximum preview dimension in pixels.
 
     Returns:
@@ -477,10 +462,6 @@ def compute_raster_auto_levels(
         return None
 
     gray_image, alpha = surface_to_grayscale(surface)
-
-    if invert:
-        alpha_mask = alpha > 0
-        gray_image[alpha_mask] = 255 - gray_image[alpha_mask]
 
     surface.flush()
 

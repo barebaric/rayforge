@@ -9,7 +9,7 @@ bits. Esta página explica cómo importar archivos y optimizarlos para obtener l
 
 | Formato         | Extensión         | Método de importación                            | Mejor para                            |
 | --------------- | ----------------- | ------------------------------------------------ | ------------------------------------- |
-| **SVG**         | `.svg`            | Vectores directos o trazo                        | Gráficos vectoriales, logos, diseños  |
+| **SVG**         | `.svg`, `.svgz`   | Vectores directos o trazo                        | Gráficos vectoriales, logos, diseños  |
 | **DXF**         | `.dxf`            | Vectores directos                                | Planos CAD, diseños técnicos          |
 | **PDF**         | `.pdf`            | Vectores directos o trazo                        | Documentos con contenido vectorial    |
 | **LightBurn**   | `.lbrn`, `.lbrn2` | Vectores directos                                | Proyectos LightBurn                   |

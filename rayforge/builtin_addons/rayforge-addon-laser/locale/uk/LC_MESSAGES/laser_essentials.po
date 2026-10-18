@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-24 21:41+0200\n"
+"POT-Creation-Date: 2026-10-12 18:45+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Ukrainian\n"
@@ -203,6 +203,10 @@ msgid "Load common test configurations"
 msgstr "Завантажити типові конфігурації тестування"
 
 #: laser_essentials/widgets/raster_power_widget.py
+msgid "Min Power (White)"
+msgstr "Мін. потужність (біле)"
+
+#: laser_essentials/widgets/raster_power_widget.py
 #: laser_essentials/steps/raster_step.py
 msgid "Power for lightest areas, as a percentage of the step's main power"
 msgstr ""
@@ -210,26 +214,14 @@ msgstr ""
 "кроку"
 
 #: laser_essentials/widgets/raster_power_widget.py
+msgid "Max Power (Black)"
+msgstr "Макс. потужність (чорне)"
+
+#: laser_essentials/widgets/raster_power_widget.py
 #: laser_essentials/steps/raster_step.py
 msgid "Power for darkest areas, as a percentage of the step's main power"
 msgstr ""
 "Потужність для найтемніших ділянок, у відсотках від основної потужності кроку"
-
-#: laser_essentials/widgets/raster_power_widget.py
-msgid "Min Power (Black)"
-msgstr "Мін. потужність (чорне)"
-
-#: laser_essentials/widgets/raster_power_widget.py
-msgid "Max Power (White)"
-msgstr "Макс. потужність (біле)"
-
-#: laser_essentials/widgets/raster_power_widget.py
-msgid "Min Power (White)"
-msgstr "Мін. потужність (біле)"
-
-#: laser_essentials/widgets/raster_power_widget.py
-msgid "Max Power (Black)"
-msgstr "Макс. потужність (чорне)"
 
 #: laser_essentials/widgets/raster_page.py
 msgid "Engrave Speed"
@@ -422,6 +414,33 @@ msgid "Algorithm for converting grayscale to binary"
 msgstr "Алгоритм перетворення відтінків сірого у двійковий формат"
 
 #: laser_essentials/steps/raster_step.py
+msgid "Serpentine"
+msgstr "Змійкою"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Alternate the dither direction on every row to avoid directional artifacts"
+msgstr ""
+"Змінювати напрямок дизерингу в кожному рядку, щоб уникнути спрямованих "
+"артефактів"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Halftone Cell Size"
+msgstr "Розмір комірки півтону"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Distance between halftone dot centers"
+msgstr "Відстань між центрами півтонових точок"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Halftone Angle"
+msgstr "Кут півтону"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Rotation of the halftone dot grid"
+msgstr "Поворот сітки півтонових точок"
+
+#: laser_essentials/steps/raster_step.py
 msgid "Cross-Hatch"
 msgstr "Перехресна штриховка"
 
@@ -489,14 +508,6 @@ msgid ""
 "Corrects X misalignment between left-to-right and right-to-left raster passes"
 msgstr ""
 "Виправляє зміщення по X між растрними проходами зліва направо та справаналіво"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Invert"
-msgstr "Інвертувати"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Engrave white areas instead of black areas"
-msgstr "Гравіювати білі ділянки замість чорних"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Number of Depth Levels"
@@ -797,27 +808,3 @@ msgstr "Лазерна голівка"
 #: laser_essentials/commands/material_test_cmd.py
 msgid "Add Material Test"
 msgstr "Додати тест матеріалу"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Serpentine"
-msgstr "Змійкою"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Alternate the dither direction on every row to avoid directional artifacts"
-msgstr "Змінювати напрямок дизерингу в кожному рядку, щоб уникнути спрямованих артефактів"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Halftone Cell Size"
-msgstr "Розмір комірки півтону"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Distance between halftone dot centers"
-msgstr "Відстань між центрами півтонових точок"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Halftone Angle"
-msgstr "Кут півтону"
-
-#: laser_essentials/steps/raster_step.py
-msgid "Rotation of the halftone dot grid"
-msgstr "Поворот сітки півтонових точок"

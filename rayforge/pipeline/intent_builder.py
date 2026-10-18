@@ -246,7 +246,7 @@ class IntentBuilder:
                         step, nodes
                     )
                     continue
-                step_workpieces = self._workpieces_for_step(step, workpieces)
+                step_workpieces = step.selected_workpieces(workpieces)
                 if not step_workpieces:
                     continue
                 inputs = self._build_workpiece_nodes(
@@ -288,25 +288,6 @@ class IntentBuilder:
     # ------------------------------------------------------------------
     # Workpiece compute nodes
     # ------------------------------------------------------------------
-
-    @staticmethod
-    def _workpieces_for_step(
-        step: Step, workpieces: Sequence[WorkPiece]
-    ) -> list[WorkPiece]:
-        """The workpieces a step applies to.
-
-        A step that generated a specific workpiece (see
-        ``Step.generated_workpiece_uid``) only processes that workpiece;
-        every other step processes all workpieces in the layer. Returns
-        an empty list when the generated workpiece is not present.
-        """
-        generated_uid = step.generated_workpiece_uid
-        if generated_uid is None:
-            return list(workpieces)
-        for wp in workpieces:
-            if wp.uid == generated_uid:
-                return [wp]
-        return []
 
     def _build_workpiece_nodes(
         self,

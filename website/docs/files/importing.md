@@ -15,7 +15,7 @@ import files and optimize them for best results.
 
 | Format          | Extension         | Import Method                               | Best For                        |
 | --------------- | ----------------- | ------------------------------------------- | ------------------------------- |
-| **SVG**         | `.svg`            | Direct vectors or trace                     | Vector graphics, logos, designs |
+| **SVG**         | `.svg`, `.svgz`   | Direct vectors or trace                     | Vector graphics, logos, designs |
 | **DXF**         | `.dxf`            | Direct vectors                              | CAD drawings, technical designs |
 | **PDF**         | `.pdf`            | Direct vectors or trace                     | Documents with vector content   |
 | **LightBurn**   | `.lbrn`, `.lbrn2` | Direct vectors                              | LightBurn project files         |

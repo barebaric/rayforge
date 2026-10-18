@@ -103,6 +103,7 @@ seiner Seite dokumentiert ist:
 | [Ellipse](arc-ellipse.md)             | `G+C`      |
 | [Rechteck](rectangle.md)              | `G+R`      |
 | [Abgerundetes Rechteck](rectangle.md) | `G+O`      |
+| [Polygon](polygon.md)                 | `G+X`      |
 | [Bereiche füllen](fill.md)            | `G+F`      |
 | [Textfeld](text-box.md)               | `G+T`      |
 | [Kreisförmiges Array](arrays.md)      | `G+Y`      |
@@ -155,9 +156,9 @@ im Weg sind.
 
 Die Zeichenwerkzeuge sind jeweils auf ihrer eigenen Seite dokumentiert: [Pfad](path.md) (Linien und
 Bezier-Kurven), [Bogen und Ellipse](arc-ellipse.md), [Rechteck](rectangle.md) (und abgerundete
-Rechtecke), [Bereiche füllen](fill.md), [Textfeld](text-box.md) und [Raster](grid.md).
-Modifikationen wie [Versatz](offset.md) und [Fase und Verrundung](chamfer-fillet.md) formen
-bestehende Geometrie um, [Arrays](arrays.md) kopiert sie entlang eines Kreises oder einer Kurve, und
-[Ausdrücke](expressions.md) erklärt Parameter, Ausdrücke und parametrische Textfelder. Skizzen
-können mit allen Einschränkungen intakt gespeichert und erneut importiert werden — siehe
-[Import und Export](import-export.md).
+Rechtecke), [Polygon](polygon.md) (und Sterne), [Bereiche füllen](fill.md), [Textfeld](text-box.md)
+und [Raster](grid.md). Modifikationen wie [Versatz](offset.md) und
+[Fase und Verrundung](chamfer-fillet.md) formen bestehende Geometrie um, [Arrays](arrays.md) kopiert
+sie entlang eines Kreises oder einer Kurve, und [Ausdrücke](expressions.md) erklärt Parameter,
+Ausdrücke und parametrische Textfelder. Skizzen können mit allen Einschränkungen intakt gespeichert
+und erneut importiert werden — siehe [Import und Export](import-export.md).

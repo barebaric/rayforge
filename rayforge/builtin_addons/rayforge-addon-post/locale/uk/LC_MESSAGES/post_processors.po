@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-03 16:38+0200\n"
+"POT-Creation-Date: 2026-10-15 05:47+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -205,6 +205,30 @@ msgstr "Змінити відстань в'їзду"
 msgid "Change Lead-Out Distance"
 msgstr "Змінити відстань виїзду"
 
+#: post_processors/widgets/perforation_group.py
+msgid "Cut Length"
+msgstr "Довжина різання"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance the laser fires before each gap"
+msgstr "Відстань, яку лазер залишається увімкненим перед кожним проміжком"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Skip Length"
+msgstr "Довжина пропуску"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance travelled with the laser off between cuts"
+msgstr "Відстань, пройдена з вимкненим лазером між різаннями"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation cut length"
+msgstr "Змінити довжину різання перфорації"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation skip length"
+msgstr "Змінити довжину пропуску перфорації"
+
 #: post_processors/widgets/merge_lines_group.py
 msgid "Tolerance"
 msgstr "Допуск"
@@ -260,6 +284,17 @@ msgstr "Об'єднати лінії"
 #: post_processors/transformers/merge_lines_transformer.py
 msgid "Merges overlapping lines to avoid double passing."
 msgstr "Об'єднує лінії, що перекриваються, щоб уникнути подвійного проходу."
+
+#: post_processors/transformers/perforation_transformer.py
+msgid "Perforation"
+msgstr "Перфорація"
+
+#: post_processors/transformers/perforation_transformer.py
+msgid ""
+"Cuts in dashes: the laser fires for the cut length and skips the skip length"
+msgstr ""
+"Ріже пунктиром: лазер увімкнений на довжину різання та вимкнений на довжину "
+"пропуску"
 
 #: post_processors/transformers/overscan_transformer.py
 msgid "Overscan"

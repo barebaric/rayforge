@@ -4,12 +4,32 @@ hookspec = pluggy.HookspecMarker("rayforge")
 hookimpl = pluggy.HookimplMarker("rayforge")
 
 MINIMUM_API_VERSION = 16
-PLUGIN_API_VERSION = 21
+PLUGIN_API_VERSION = 23
 
 
 """
 API Changelog
 =============
+
+Version 23
+----------
+Added the ``register_image_edits`` hook and the global
+``image_edit_registry`` (``rayforge.core.image_edit``). Addons register
+``ImageEditOp`` subclasses there; a workpiece applies its
+``image_edits`` stack in ``WorkPiece.get_processed_image()``.
+``WorkPiece.get_vips_image()`` is now the private
+``_get_vips_image()`` and returns the unedited render; callers that
+want what the user sees use ``get_processed_image()``.
+
+Version 22
+----------
+``action_registry.register()`` accepts an ``enabled_when`` predicate that
+receives the ``ActionManager`` and is evaluated on every action state
+update. Addons that used ``action_extension_registry`` only to enable and
+disable their action can now register directly in the
+``register_actions`` hook. That hook is also invoked again when an addon
+is enabled while the window exists, so runtime-enabled addons no longer
+need ``action_extension_registry`` to have their actions created.
 
 Version 21
 ----------
@@ -231,6 +251,17 @@ class RayforgeSpecs:
 
         Args:
             step_registry: The global StepRegistry instance.
+        """
+
+    @hookspec
+    def register_image_edits(self, image_edit_registry):
+        """
+        Called to allow addons to register image editing operations.
+
+        .. versionadded:: 22
+
+        Args:
+            image_edit_registry: The global ImageEditRegistry instance.
         """
 
     @hookspec

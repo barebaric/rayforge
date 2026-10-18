@@ -20,6 +20,7 @@ from rayforge import config
 from rayforge import context as context_module
 from rayforge.context import get_context
 from rayforge.core.doc import Doc
+from rayforge.machine.driver.driver import Driver, ZHomingMode
 from rayforge.machine.models.dialect_manager import DialectManager
 from rayforge.machine.models.machine import Machine, Origin
 from rayforge.machine.models.rotary_module import RotaryModule
@@ -559,6 +560,55 @@ class TestSupportsCurves:
         data = machine.to_dict()
         restored = Machine.from_dict(data, context=lite_context)
         assert restored.supports_curves is True
+
+
+class TestZHomingMode:
+    def test_default_is_driver_default(self, lite_context):
+        machine = Machine(lite_context)
+        assert machine.z_homing_mode is None
+
+    def test_no_signal_on_same_value(self, lite_context):
+        machine = Machine(lite_context)
+        signals = []
+        machine.changed.connect(lambda m: signals.append(m))
+        machine.set_z_homing_mode(None)
+        assert len(signals) == 0
+
+    def test_signal_on_change(self, lite_context):
+        machine = Machine(lite_context)
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        machine.set_z_homing_mode(ZHomingMode.PROBE)
+        assert len(signals) == 1
+
+    def test_serialization_round_trip(self, lite_context):
+        machine = Machine(lite_context)
+        machine.set_z_homing_mode(ZHomingMode.PROBE)
+        data = machine.to_dict()
+        restored = Machine.from_dict(data, context=lite_context)
+        assert restored.z_homing_mode is ZHomingMode.PROBE
+
+    def test_unknown_mode_falls_back_to_driver_default(self, lite_context):
+        data = Machine(lite_context).to_dict()
+        data["machine"]["z_homing_mode"] = "laser-eye"
+        restored = Machine.from_dict(data, context=lite_context)
+        assert restored.z_homing_mode is None
+
+
+class TestDriverZHomingModes:
+    def test_drivers_default_to_switch_only(self):
+        assert Driver.z_homing_modes == (ZHomingMode.SWITCH,)
+
+    def test_unset_mode_resolves_to_first_supported(self):
+        assert Driver.resolve_z_homing_mode(None) is ZHomingMode.SWITCH
+
+    def test_unsupported_mode_resolves_to_default(self):
+        resolved = Driver.resolve_z_homing_mode(ZHomingMode.PROBE)
+        assert resolved is ZHomingMode.SWITCH
 
 
 class TestSetSupportsArcs:

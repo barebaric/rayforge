@@ -29,7 +29,6 @@ _ENGRAVE_KEYS = {
     "sample_interval_mm",
     "dot_width_correction_mm",
     "bidir_x_offset_mm",
-    "invert",
     "num_depth_levels",
     "z_step_down",
     "angle_increment",
@@ -79,18 +78,16 @@ class RasterSettingsPage(LaserStepSettingsPage):
             widget_cls=RasterPowerWidget,
         )
 
-        # The Power section's visible_when predicates and histogram
-        # depend on depth_mode and invert, whose rows live in the
-        # Engrave section. Feed them in as context; the adapters fire
-        # changed synchronously on user interaction and on resync.
+        # The Power section's visible_when predicates depend on
+        # depth_mode, whose row lives in the Engrave section. Feed it in
+        # as context; the adapter fires changed synchronously on user
+        # interaction and on resync.
         self._sync_power_context()
-        for key in ("depth_mode", "invert"):
-            adapter = self.engrave_widget.adapter_for(key)
-            if adapter is not None:
-                adapter.changed.connect(
-                    lambda sender, k=key: self._sync_power_context(),
-                    weak=False,
-                )
+        adapter = self.engrave_widget.adapter_for("depth_mode")
+        if adapter is not None:
+            adapter.changed.connect(
+                lambda sender: self._sync_power_context(), weak=False
+            )
 
         levels = self.power_widget.adapter_for("black_point")
         if isinstance(levels, LevelsAdapter):
@@ -120,13 +117,10 @@ class RasterSettingsPage(LaserStepSettingsPage):
             self.engrave_widget.set_values(values)
 
     def _sync_power_context(self):
-        """Feed the current depth_mode/invert into the Power section."""
+        """Feed the current depth_mode into the Power section."""
         values = self.engrave_widget.get_values()
         self.power_widget.set_context_values(
-            {
-                "depth_mode": values.get("depth_mode"),
-                "invert": values.get("invert"),
-            }
+            {"depth_mode": values.get("depth_mode")}
         )
 
     def _on_varset_data_changed(self, widget, key):

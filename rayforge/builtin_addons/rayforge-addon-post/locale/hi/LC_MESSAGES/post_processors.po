@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-03 16:38+0200\n"
+"POT-Creation-Date: 2026-10-15 05:47+0200\n"
 "PO-Revision-Date: 2026-09-27 22:58\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -201,6 +201,30 @@ msgstr "लीड-इन दूरी बदलें"
 msgid "Change Lead-Out Distance"
 msgstr "लीड-आउट दूरी बदलें"
 
+#: post_processors/widgets/perforation_group.py
+msgid "Cut Length"
+msgstr "कट लंबाई"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance the laser fires before each gap"
+msgstr "प्रत्येक अंतर से पहले लेज़र जितनी दूरी तक चालू रहता है"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Skip Length"
+msgstr "स्किप लंबाई"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Distance travelled with the laser off between cuts"
+msgstr "कटों के बीच लेज़र बंद रहने पर तय की गई दूरी"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation cut length"
+msgstr "परफ़ोरेशन कट लंबाई बदलें"
+
+#: post_processors/widgets/perforation_group.py
+msgid "Change perforation skip length"
+msgstr "परफ़ोरेशन स्किप लंबाई बदलें"
+
 #: post_processors/widgets/merge_lines_group.py
 msgid "Tolerance"
 msgstr "सहनशीलता"
@@ -253,6 +277,15 @@ msgstr "रेखाएँ मर्ज करें"
 #: post_processors/transformers/merge_lines_transformer.py
 msgid "Merges overlapping lines to avoid double passing."
 msgstr "दोहरे पास से बचने के लिए ओवरलैपिंग रेखाएँ मर्ज करता है."
+
+#: post_processors/transformers/perforation_transformer.py
+msgid "Perforation"
+msgstr "परफ़ोरेशन"
+
+#: post_processors/transformers/perforation_transformer.py
+msgid ""
+"Cuts in dashes: the laser fires for the cut length and skips the skip length"
+msgstr "डैश में काटता है: लेज़र कट लंबाई तक चालू रहता है और स्किप लंबाई तक बंद रहता है"
 
 #: post_processors/transformers/overscan_transformer.py
 msgid "Overscan"

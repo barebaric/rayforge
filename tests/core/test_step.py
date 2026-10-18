@@ -6,6 +6,7 @@ from raygeo.ops.state import CoolantMode
 
 from rayforge.core.doc import Doc
 from rayforge.core.step import Step
+from rayforge.core.workpiece import WorkPiece
 from rayforge.machine.models.laser import LaserHead
 from rayforge.machine.models.spindle import SpindleHead
 
@@ -34,7 +35,7 @@ def test_step_initialization(step):
     assert step.name == "Test Step"
     assert step.visible is True
     assert step.selected_head_uid is None
-    assert step.generated_workpiece_uid is None
+    assert step.workpiece_uids == []
     assert step.applied_recipe_uid is None
     assert step.per_workpiece_transformers_dicts == []
     assert step.per_step_transformers_dicts == []
@@ -79,30 +80,36 @@ def test_set_visible_fires_signals(step):
     visibility_handler.assert_called_once_with(step)
 
 
-def test_set_name_fires_updated(step):
-    """Tests that set_name fires the 'updated' signal (issue #343)."""
-    handler = MagicMock()
-    step.updated.connect(handler)
+def test_set_name_fires_renamed(step):
+    """Tests that set_name fires the 'renamed' signal (issue #343)."""
+    renamed_handler = MagicMock()
+    updated_handler = MagicMock()
+    step.renamed.connect(renamed_handler)
+    step.updated.connect(updated_handler)
 
     step.set_name("Renamed Step")
     assert step.name == "Renamed Step"
-    handler.assert_called_with(step)
+    renamed_handler.assert_called_with(step)
+    updated_handler.assert_not_called()
 
 
 def test_set_name_no_signal_when_unchanged(step):
     """set_name must not fire when the name is identical."""
-    handler = MagicMock()
-    step.updated.connect(handler)
+    renamed_handler = MagicMock()
+    updated_handler = MagicMock()
+    step.renamed.connect(renamed_handler)
+    step.updated.connect(updated_handler)
 
     step.set_name(step.name)
-    handler.assert_not_called()
+    renamed_handler.assert_not_called()
+    updated_handler.assert_not_called()
 
 
 def test_set_name_propagates_to_workflow(step_in_doc):
-    """Renaming a step bubbles 'descendant_updated' to the workflow."""
+    """Renaming a step bubbles 'descendant_renamed' to the workflow."""
     _doc, _layer, workflow, step = step_in_doc
     handler = MagicMock()
-    workflow.descendant_updated.connect(handler)
+    workflow.descendant_renamed.connect(handler)
 
     step.set_name("New Workflow Name")
     assert step.name == "New Workflow Name"
@@ -159,7 +166,7 @@ def test_serialization_to_dict_all_properties(step):
     step.matrix = Matrix.translation(1, 2)
     step.visible = False
     step.selected_head_uid = "laser-abc"
-    step.generated_workpiece_uid = "wp-xyz"
+    step.workpiece_uids = ["wp-xyz"]
     step.applied_recipe_uid = "recipe-123"
     step.per_step_transformers_dicts = [{"type": "CoolingPause"}]
     step.pixels_per_mm = (100, 100)
@@ -175,7 +182,7 @@ def test_serialization_to_dict_all_properties(step):
     assert data["typelabel"] == "TestType"
     assert data["visible"] is False
     assert data["selected_head_uid"] == "laser-abc"
-    assert data["generated_workpiece_uid"] == "wp-xyz"
+    assert data["workpiece_uids"] == ["wp-xyz"]
     assert data["applied_recipe_uid"] == "recipe-123"
     assert data["per_step_transformers_dicts"] == [{"type": "CoolingPause"}]
     assert data["pixels_per_mm"] == (100, 100)
@@ -193,7 +200,7 @@ def test_deserialization_from_dict(step):
         "typelabel": "RestoredType",
         "visible": False,
         "selected_head_uid": "laser-def",
-        "generated_workpiece_uid": "wp-123",
+        "workpiece_uids": ["wp-123"],
         "applied_recipe_uid": "recipe-456",
         "per_workpiece_transformers_dicts": [],
         "per_step_transformers_dicts": [],
@@ -213,7 +220,7 @@ def test_deserialization_from_dict(step):
     assert restored.typelabel == "RestoredType"
     assert restored.visible is False
     assert restored.selected_head_uid == "laser-def"
-    assert restored.generated_workpiece_uid == "wp-123"
+    assert restored.workpiece_uids == ["wp-123"]
     assert restored.applied_recipe_uid == "recipe-456"
     assert restored.pixels_per_mm == (20, 20)
     assert restored.cut_speed == 2500
@@ -288,7 +295,7 @@ def test_step_forward_compatibility_with_extra_fields():
         "typelabel": "FutureType",
         "visible": True,
         "selected_head_uid": None,
-        "generated_workpiece_uid": None,
+        "workpiece_uids": [],
         "applied_recipe_uid": None,
         "per_workpiece_transformers_dicts": [],
         "per_step_transformers_dicts": [],
@@ -335,7 +342,7 @@ def test_step_backward_compatibility_with_missing_optional_fields():
     step = Step.from_dict(minimal_dict)
 
     assert step.selected_head_uid is None
-    assert step.generated_workpiece_uid is None
+    assert step.workpiece_uids == []
     assert step.applied_recipe_uid is None
     assert step.pixels_per_mm == (100, 100)
     assert step.cut_speed == 500
@@ -368,6 +375,89 @@ def test_legacy_selected_laser_uid_key_migrates():
     data = step.to_dict()
     assert data["selected_head_uid"] == "old-laser-uid"
     assert "selected_laser_uid" not in data
+
+
+def test_legacy_generated_workpiece_uid_key_migrates():
+    """
+    Old project files keyed the workpiece filter as a single
+    "generated_workpiece_uid". It must load into workpiece_uids and not
+    pollute extra.
+    """
+    step_dict = {
+        "uid": "step-legacy-wp",
+        "type": "step",
+        "typelabel": "LegacyType",
+        "visible": True,
+        "matrix": Matrix.identity().to_list(),
+        "per_workpiece_transformers_dicts": [],
+        "per_step_transformers_dicts": [],
+        "generated_workpiece_uid": "old-wp-uid",
+    }
+
+    step = Step.from_dict(step_dict)
+
+    assert step.workpiece_uids == ["old-wp-uid"]
+    assert "generated_workpiece_uid" not in step.extra
+
+    data = step.to_dict()
+    assert data["workpiece_uids"] == ["old-wp-uid"]
+    assert data["generated_workpiece_uid"] == "old-wp-uid"
+
+
+def test_workpiece_uids_key_wins_over_legacy_key():
+    """A present-day workpiece_uids key beats a stale legacy key."""
+    step_dict = {
+        "uid": "step-both-wp",
+        "type": "step",
+        "typelabel": "BothType",
+        "visible": True,
+        "matrix": Matrix.identity().to_list(),
+        "per_workpiece_transformers_dicts": [],
+        "per_step_transformers_dicts": [],
+        "workpiece_uids": ["new-wp-uid"],
+        "generated_workpiece_uid": "old-wp-uid",
+    }
+
+    step = Step.from_dict(step_dict)
+
+    assert step.workpiece_uids == ["new-wp-uid"]
+
+
+def test_selected_workpieces_empty_filter_matches_all():
+    """An empty filter matches every given workpiece, in order."""
+    step = Step(typelabel="Test")
+    wp_a = WorkPiece(name="a")
+    wp_b = WorkPiece(name="b")
+
+    assert step.selected_workpieces([wp_a, wp_b]) == [wp_a, wp_b]
+
+
+def test_selected_workpieces_filter_matches_listed_uids():
+    """A set filter matches only the listed uids, in input order."""
+    step = Step(typelabel="Test")
+    wp_a = WorkPiece(name="a")
+    wp_b = WorkPiece(name="b")
+    wp_c = WorkPiece(name="c")
+    wp_a.uid = "wp-a"
+    wp_b.uid = "wp-b"
+    wp_c.uid = "wp-c"
+    step.workpiece_uids = ["wp-c", "wp-a"]
+
+    assert step.selected_workpieces([wp_a, wp_b, wp_c]) == [wp_a, wp_c]
+
+
+def test_set_workpiece_uids_normalizes_and_signals(step):
+    """set_workpiece_uids dedupes and fires updated only on change."""
+    handler = MagicMock()
+    step.updated.connect(handler)
+
+    step.set_workpiece_uids(["wp-a", "wp-b", "wp-a"])
+    assert step.workpiece_uids == ["wp-a", "wp-b"]
+    handler.assert_called_once_with(step)
+    handler.reset_mock()
+
+    step.set_workpiece_uids(["wp-a", "wp-b"])
+    handler.assert_not_called()
 
 
 def test_capability_defaults_applied_in_constructor():

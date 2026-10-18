@@ -3,9 +3,11 @@
 from .base import StepSettingsPage
 from .general import GeneralStepSettingsPage
 from .post_processing import PostProcessingPage
+from .workpieces import WorkpiecesPage
 
 __all__ = [
     "GeneralStepSettingsPage",
     "PostProcessingPage",
     "StepSettingsPage",
+    "WorkpiecesPage",
 ]

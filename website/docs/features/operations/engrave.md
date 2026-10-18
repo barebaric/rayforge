@@ -182,12 +182,11 @@ described below.
 | 10% | 60% | Medium depth, safe    |
 | 20% | 80% | Deep, dramatic relief |
 
-**Invert:**
+**Inverting the image:**
 
-- **Off** (default): White = shallow, Black = deep
-- **On**: White = deep, Black = shallow
-
-Use invert for lithophanes (light areas should be thin) or embossing (raised areas).
+Black engraves deep and white stays shallow. To swap them, for lithophanes (light areas should be
+thin) or embossing (raised areas), select the workpiece and use **Tools - Invert Image**. See
+[Image Editing](../../addons/image-editing.md).
 
 **Brightness Range:**
 
@@ -280,12 +279,11 @@ at least a few laser spot widths.
 - Creates crosshatch-like 3D effect
 - Typical: 0-45 degrees
 
-**Invert:**
+**Inverting the image:**
 
-- **Enabled:** White = deep, Black = shallow
-- **Disabled:** Black = deep, White = shallow
-
-Use invert for lithophanes (light areas should be thin) or embossing (raised areas).
+Black engraves deep and white stays shallow. To swap them, for lithophanes (light areas should be
+thin) or embossing (raised areas), select the workpiece and use **Tools - Invert Image**. See
+[Image Editing](../../addons/image-editing.md).
 
 ### Scan Pattern
 

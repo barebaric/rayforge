@@ -46,7 +46,7 @@ jobs:
           echo "Version: $VERSION"
 
       - name: Install Pixi
-        uses: prefix-dev/setup-pixi@v0.10.2
+        uses: prefix-dev/setup-pixi@v0.11.0
         with:
           pixi-version: v0.68.1
           frozen: true
@@ -75,6 +75,7 @@ jobs:
         run: |
           xvfb-run -a ./dist/Rayforge-*.AppImage --version
           xvfb-run -a ./dist/Rayforge-*.AppImage --exit
+          ./dist/Rayforge-*.AppImage --apprun-selfcheck
 
   release:
     name: Attach AppImage to GitHub Release

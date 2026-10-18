@@ -9,7 +9,7 @@ explica como importar arquivos e otimizá-los para obter os melhores resultados.
 
 | Formato         | Extensão          | Método de importação                                | Ideal para                               |
 | --------------- | ----------------- | --------------------------------------------------- | ---------------------------------------- |
-| **SVG**         | `.svg`            | Vetores diretos ou vetorização                      | Gráficos vetoriais, logos, designs       |
+| **SVG**         | `.svg`, `.svgz`   | Vetores diretos ou vetorização                      | Gráficos vetoriais, logos, designs       |
 | **DXF**         | `.dxf`            | Vetores diretos                                     | Desenhos CAD, projetos técnicos          |
 | **PDF**         | `.pdf`            | Vetores diretos ou vetorização                      | Documentos com conteúdo vetorial         |
 | **LightBurn**   | `.lbrn`, `.lbrn2` | Vetores diretos                                     | Projetos LightBurn                       |

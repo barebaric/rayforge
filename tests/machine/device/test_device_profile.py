@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 import yaml
+from raygeo.ops.axis import Axis
 
 import rayforge
 from rayforge.machine.device.manager import DeviceProfileManager
@@ -632,6 +633,18 @@ class TestExportToZip:
         assert pkg2.meta.notes == "Profile setup notes."
         assert pkg2.machine_config.axis_extents == (400, 300)
 
+    def test_soft_limits_disabled_loads(self, tmp_path):
+        _make_device(
+            tmp_path,
+            name="Toggle",
+            machine_extra={"soft_limits_enabled": False},
+        )
+        mgr = DeviceProfileManager([tmp_path])
+        mgr.discover()
+        pkg = mgr.get("Toggle")
+        assert pkg is not None
+        assert pkg.machine_config.soft_limits_enabled is False
+
 
 FALCON_BOUNDS_LINE = (
     "; Bounds: X{job.extents[0]} Y{job.extents[1]} "
@@ -831,6 +844,24 @@ machine:
 
 
 class TestCreateMachine:
+    @pytest.mark.asyncio
+    async def test_create_machine_applies_soft_limits_toggle(
+        self, tmp_path, lite_context, task_mgr
+    ):
+        """A profile with the soft limits toggle off must produce a
+        machine that does not clamp or flag jogs (issue #574)."""
+        device_dir = _make_device(
+            tmp_path,
+            name="No Soft Limits",
+            machine_extra={"soft_limits_enabled": False},
+        )
+        pkg = DeviceProfile.from_path(device_dir)
+        m = pkg.create_machine(lite_context)
+        await _wait_for_tasks(task_mgr)
+
+        assert m.soft_limits_enabled is False
+        assert m.would_jog_exceed_limits(Axis.X, 9999.0) is False
+
     @pytest.mark.asyncio
     async def test_create_machine_gcode_has_dialect(
         self, tmp_path, lite_context, task_mgr

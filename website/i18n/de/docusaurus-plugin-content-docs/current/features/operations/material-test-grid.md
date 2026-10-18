@@ -73,6 +73,16 @@ Der Bereich **Parameter** enthält die Bereiche, die das Raster variiert — Ges
 Durchgänge oder Versatz, je nach gewähltem Modus. Modi, die einen Parameter festhalten (zum Beispiel
 die Geschwindigkeit bei Leistung vs. Durchgänge), lassen diese Konstante hier ebenfalls einstellen.
 
+## Das verknüpfte Werkstück
+
+Normalerweise verarbeitet eine Operation alle Werkstücke ihrer Ebene, und der **Werkstücke**-Reiter
+ihres Einstellungs-Dialogs listet alle als einbezogen auf. Das Materialtest-Raster ist die Ausnahme:
+Seine Operation ist mit dem Werkstück verknüpft, das sie erzeugt hat, und verarbeitet ausschließlich
+dieses. Im Werkstücke-Reiter erscheint das erzeugte Raster als einziges einbezogenes Werkstück,
+alles Übrige auf der Ebene als ausgeschlossen.
+
+![Werkstücke-Reiter der Materialtest-Raster-Einstellungen](/screenshots/step-settings-material-test-grid-workpieces.webp)
+
 ## Das Raster-Layout verstehen
 
 Im Standardmodus Leistung vs. Geschwindigkeit nimmt die Leistung von links nach rechts zu und die
