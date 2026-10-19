@@ -19,7 +19,11 @@ from raygeo.geo.shape.polygon import is_point_inside_polygon
 
 from rayforge.core.asset import IAsset
 from rayforge.core.color import ColorRGBA
-from rayforge.core.expression import ExpressionMap, referenced_template_names
+from rayforge.core.expression import (
+    ExpressionMap,
+    names_in_expression,
+    referenced_template_names,
+)
 from rayforge.core.geometry_provider import IGeometryProvider
 from rayforge.core.varset import VarSet
 from rayforge.image.geo_renderer import render_geometry_to_png
@@ -390,16 +394,23 @@ class Sketch(IAsset, IGeometryProvider):
         self, params: dict[str, Any] | None, texts: dict
     ) -> _GeometryKey:
         """
-        The effective parameter values and the seeded text of a
-        geometry request. Two requests with the same key produce the
-        same geometry as long as the sketch itself does not change.
+        The effective values of the names this sketch reads and the
+        seeded text of a geometry request. Two requests with the same
+        key produce the same geometry as long as the sketch itself does
+        not change, so a variable the sketch does not read never causes
+        a re-solve.
         """
         values = dict(self.input_parameters.get_values())
         if params:
             values.update(params)
+        read = self._names_read()
         return (
             tuple(
-                sorted((name, repr(value)) for name, value in values.items())
+                sorted(
+                    (name, repr(value))
+                    for name, value in values.items()
+                    if name in read
+                )
             ),
             tuple(
                 sorted(
@@ -408,6 +419,20 @@ class Sketch(IAsset, IGeometryProvider):
                 )
             ),
         )
+
+    def _names_read(self) -> set[str]:
+        """
+        The variable names that can influence this sketch's geometry:
+        its input parameters, its parameter expressions, its constraint
+        expressions and its text templates.
+        """
+        expressions = self.params.to_dict()["expressions"]
+        sources = list(expressions.values())
+        sources.extend(c.expression for c in self.constraints if c.expression)
+        names = set(self.input_parameters.keys()) | set(expressions)
+        for source in sources:
+            names |= names_in_expression(source)
+        return names | self.variables_used()
 
     def _is_reproducible(self, seed: dict, resolved: dict) -> bool:
         """

@@ -57,6 +57,31 @@ def test_geometry_is_reused_for_same_values():
     assert other is not first
 
 
+def test_unread_variable_does_not_regenerate():
+    sketch, _box = _sketch_with_text("Hello")
+    first, _fills = sketch.get_geometry({"counter": 1})
+    again, _fills = sketch.get_geometry({"counter": 2})
+    assert again is first
+
+
+def test_variable_read_by_a_parameter_regenerates():
+    sketch, _box = _sketch_with_text("Hello")
+    sketch.params.set("gap", "counter * 2")
+    first, _fills = sketch.get_geometry({"counter": 1})
+    again, _fills = sketch.get_geometry({"counter": 2})
+    assert again is not first
+
+
+def test_variable_read_by_a_constraint_regenerates():
+    sketch, _box = _sketch_with_text("Hello")
+    start = sketch.add_point(0, 20)
+    end = sketch.add_point(10, 20)
+    sketch.constrain_distance(start, end, "counter * 10")
+    first, _fills = sketch.get_geometry({"counter": 1})
+    again, _fills = sketch.get_geometry({"counter": 2})
+    assert again is not first
+
+
 def test_sketch_change_drops_cached_geometry():
     sketch, _box = _sketch_with_text("{counter}")
     first, _fills = sketch.get_geometry({"counter": 1})
