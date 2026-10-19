@@ -4,6 +4,7 @@ import logging
 import math
 import uuid
 from collections import defaultdict
+from dataclasses import replace
 from gettext import gettext as _
 from pathlib import Path
 from typing import Any, ClassVar
@@ -64,6 +65,12 @@ from .types import EntityID
 
 _GEOMETRY_CACHE_SIZE = 8
 _GeometryKey = tuple[tuple[tuple[str, str], ...], ...]
+
+
+def _copy_fills(fills: list[FillRenderData]) -> list[FillRenderData]:
+    """Copies fills deep enough that callers may transform them."""
+    return [replace(fill, geometry=fill.geometry.copy()) for fill in fills]
+
 
 DEFAULT_FILL_COLOR: ColorRGBA = (0.85, 0.85, 0.85, 0.7)
 FORMAT_VERSION = 1
@@ -357,7 +364,7 @@ class Sketch(IAsset, IGeometryProvider):
             geo, fills, resolved = cached
             if resolved_text_cache is not None:
                 resolved_text_cache.update(resolved)
-            return geo, fills
+            return geo.copy(), _copy_fills(fills)
         clone = self._clone_for_geometry()
         if resolved_text_cache is not None:
             clone._resolved_text_cache = dict(resolved_text_cache)
@@ -456,7 +463,11 @@ class Sketch(IAsset, IGeometryProvider):
         resolved: dict,
     ) -> None:
         """Caches a result, evicting the oldest when it grows too big."""
-        self._geometry_cache[key] = (geo, fills, dict(resolved))
+        self._geometry_cache[key] = (
+            geo.copy(),
+            _copy_fills(fills),
+            dict(resolved),
+        )
         while len(self._geometry_cache) > _GEOMETRY_CACHE_SIZE:
             self._geometry_cache.pop(next(iter(self._geometry_cache)))
 

@@ -1,5 +1,6 @@
 from typing import cast
 
+import numpy as np
 from raygeo.geo.shape.text import FontConfig
 from sketcher.core import Sketch
 from sketcher.core.entities.text_box import TextBoxEntity
@@ -48,73 +49,105 @@ def test_plain_sketch_uses_no_variables():
     assert sketch.variables_used() == set()
 
 
-def test_geometry_is_reused_for_same_values():
+def _count_solves(monkeypatch, sketch: Sketch) -> list[Sketch]:
+    """Records every clone the sketch solves for a geometry request."""
+    clones: list[Sketch] = []
+    clone_for_geometry = sketch._clone_for_geometry
+
+    def counting_clone() -> Sketch:
+        clone = clone_for_geometry()
+        clones.append(clone)
+        return clone
+
+    monkeypatch.setattr(sketch, "_clone_for_geometry", counting_clone)
+    return clones
+
+
+def test_geometry_is_reused_for_same_values(monkeypatch):
+    sketch, _box = _sketch_with_text("{counter}")
+    solves = _count_solves(monkeypatch, sketch)
+    sketch.get_geometry({"counter": 1})
+    sketch.get_geometry({"counter": 1})
+    assert len(solves) == 1
+    sketch.get_geometry({"counter": 2})
+    assert len(solves) == 2
+
+
+def test_reused_geometry_is_a_copy():
     sketch, _box = _sketch_with_text("{counter}")
     first, _fills = sketch.get_geometry({"counter": 1})
+    rect = first.rect()
+    first.transform(np.diag([0.5, 0.5, 1.0, 1.0]))
     again, _fills = sketch.get_geometry({"counter": 1})
-    assert again is first
-    other, _fills = sketch.get_geometry({"counter": 2})
-    assert other is not first
+    assert again is not first
+    assert again.rect() == rect
 
 
-def test_unread_variable_does_not_regenerate():
+def test_unread_variable_does_not_regenerate(monkeypatch):
     sketch, _box = _sketch_with_text("Hello")
-    first, _fills = sketch.get_geometry({"counter": 1})
-    again, _fills = sketch.get_geometry({"counter": 2})
-    assert again is first
+    solves = _count_solves(monkeypatch, sketch)
+    sketch.get_geometry({"counter": 1})
+    sketch.get_geometry({"counter": 2})
+    assert len(solves) == 1
 
 
-def test_variable_read_by_a_parameter_regenerates():
+def test_variable_read_by_a_parameter_regenerates(monkeypatch):
     sketch, _box = _sketch_with_text("Hello")
     sketch.params.set("gap", "counter * 2")
-    first, _fills = sketch.get_geometry({"counter": 1})
-    again, _fills = sketch.get_geometry({"counter": 2})
-    assert again is not first
+    solves = _count_solves(monkeypatch, sketch)
+    sketch.get_geometry({"counter": 1})
+    sketch.get_geometry({"counter": 2})
+    assert len(solves) == 2
 
 
-def test_variable_read_by_a_constraint_regenerates():
+def test_variable_read_by_a_constraint_regenerates(monkeypatch):
     sketch, _box = _sketch_with_text("Hello")
     start = sketch.add_point(0, 20)
     end = sketch.add_point(10, 20)
     sketch.constrain_distance(start, end, "counter * 10")
-    first, _fills = sketch.get_geometry({"counter": 1})
-    again, _fills = sketch.get_geometry({"counter": 2})
-    assert again is not first
+    solves = _count_solves(monkeypatch, sketch)
+    sketch.get_geometry({"counter": 1})
+    sketch.get_geometry({"counter": 2})
+    assert len(solves) == 2
 
 
-def test_sketch_change_drops_cached_geometry():
+def test_sketch_change_drops_cached_geometry(monkeypatch):
     sketch, _box = _sketch_with_text("{counter}")
-    first, _fills = sketch.get_geometry({"counter": 1})
+    solves = _count_solves(monkeypatch, sketch)
+    sketch.get_geometry({"counter": 1})
     sketch.notify_update()
-    again, _fills = sketch.get_geometry({"counter": 1})
-    assert again is not first
+    sketch.get_geometry({"counter": 1})
+    assert len(solves) == 2
 
 
-def test_solve_drops_cached_geometry():
+def test_solve_drops_cached_geometry(monkeypatch):
     sketch, box = _sketch_with_text("{counter}")
-    first, _fills = sketch.get_geometry({"counter": 1})
+    solves = _count_solves(monkeypatch, sketch)
+    sketch.get_geometry({"counter": 1})
     box.content = "{counter}{counter}"
     sketch.solve()
-    again, _fills = sketch.get_geometry({"counter": 1})
-    assert again is not first
+    sketch.get_geometry({"counter": 1})
+    assert len(solves) == 2
 
 
-def test_volatile_text_is_not_shared_between_callers():
+def test_volatile_text_is_not_shared_between_callers(monkeypatch):
     sketch, box = _sketch_with_text("{uuid8()}")
+    solves = _count_solves(monkeypatch, sketch)
     first: dict = {}
     second: dict = {}
-    geo_a, _fills = sketch.get_geometry(resolved_text_cache=first)
-    geo_b, _fills = sketch.get_geometry(resolved_text_cache=second)
+    sketch.get_geometry(resolved_text_cache=first)
+    sketch.get_geometry(resolved_text_cache=second)
     assert first[box.id] != second[box.id]
-    assert geo_b is not geo_a
+    assert len(solves) == 2
 
 
-def test_volatile_text_reuses_geometry_for_its_caller():
+def test_volatile_text_reuses_geometry_for_its_caller(monkeypatch):
     sketch, _box = _sketch_with_text("{uuid8()}")
+    solves = _count_solves(monkeypatch, sketch)
     cache: dict = {}
-    first, _fills = sketch.get_geometry(resolved_text_cache=cache)
-    again, _fills = sketch.get_geometry(resolved_text_cache=cache)
-    assert again is first
+    sketch.get_geometry(resolved_text_cache=cache)
+    sketch.get_geometry(resolved_text_cache=cache)
+    assert len(solves) == 1
 
 
 def test_counter_is_resolved_in_document():
