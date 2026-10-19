@@ -26,7 +26,7 @@ poppler = "==26.7.0"
 python = "==3.15.0"
 librsvg = "==2.62.4"
 svgelements = "==1.9.6"
-pluggy = "==1.6.0"
+pluggy = "==1.7.0"
 scipy = "==1.18.1"
 numpy = "==2.5.4"
 pycairo = "==1.29.2"
@@ -47,10 +47,10 @@ asyncudp = "==0.11.0"
 blinker = "==1.9.0"
 build = "==1.6.1"
 cairosvg = "==2.9.1"
-ezdxf = "==1.4.4"
-GitPython = "==3.2.0"
-platformdirs = "==4.13.0"
-pypdf = "==6.20.0"
+ezdxf = "==1.4.5"
+GitPython = "==3.2.1"
+platformdirs = "==4.13.5"
+pypdf = "==6.21.1"
 pymupdf = "==1.28.2"
 pyserial = "==3.5"
 pyvips = "==3.2.0"
@@ -83,18 +83,18 @@ gettext = "==0.25.1"
 
 [feature.test.dependencies]
 pytest = "==9.1.1"
-appstream = "==1.1.1"
+appstream = "==1.1.1|==1.2.1"
 
 [feature.test.pypi-dependencies]
 pytest-asyncio = "==1.4.0"
-pytest-mock = "==3.16.0"
+pytest-mock = "==3.17.0"
 pytest-cov = "==7.1.0"
-pygobject-stubs = "==2.17.0"
+pygobject-stubs = "==2.19.0"
 flake8 = "==7.4.1"
 pyflakes = "==4.0.3"
 pyright = "==1.1.414"
-ruff = "==0.17.0"
-pre-commit = "==4.6.2"
+ruff = "==0.17.1"
+pre-commit = "==4.7.0"
 
 [feature.website.dependencies]
 nodejs = "==26.10.0"
@@ -103,7 +103,7 @@ ffmpeg = "==9.0.2"
 python = "==3.15.0"
 
 [feature.video-tools.pypi-dependencies]
-pillow = "==12.3.0"
+pillow = "==13.0.0"
 
 [tool.pixi]
 workdir = "."
@@ -193,7 +193,7 @@ depends-on = ["compile-translations"]
 
 [dependencies]
 libadwaita = "==1.10.0"
-threadpoolctl = ">=3.7.0,<4"
+threadpoolctl = "==3.7.0"
 
 # Keep the conda solve from backtracking pygobject below the
 # pygobject>=3.55.0 floor required by the pygobject-stubs pypi
