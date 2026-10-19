@@ -1,4 +1,5 @@
 import logging
+import time
 from collections.abc import Callable
 from gettext import gettext as _
 from typing import (
@@ -806,6 +807,9 @@ class SelectTool(SnapMixin, SketchTool):
 
     def _handle_entity_drag(self, world_dx: float, world_dy: float):
         """Logic for dragging one or more selected entities."""
+        frame_started = time.perf_counter()
+        snap_done = frame_started
+        solve_done = frame_started
         mdx, mdy = self._get_model_delta(world_dx, world_dy)
         if mdx == 0 and mdy == 0:
             return
@@ -846,6 +850,7 @@ class SelectTool(SnapMixin, SketchTool):
                     mdy = snapped_y - initial_pos[1]
         else:
             self.current_snap_result = None
+        snap_done = time.perf_counter()
 
         drag_constraints = []
         strong_drag_weight = 1.0
@@ -893,6 +898,7 @@ class SelectTool(SnapMixin, SketchTool):
             update_constraint_status=False,
             point_scope=scope,
         )
+        solve_done = time.perf_counter()
         self._refresh_hold_positions(points_to_drag)
 
         # The solve and sync_arrays ran after the snap query: refresh
@@ -908,6 +914,15 @@ class SelectTool(SnapMixin, SketchTool):
                 dragged_entity_ids=set(self.element.selection.entity_ids),
             )
 
+        logger.debug(
+            "EntityDrag: dragged=%d scope=%d snap=%.1fms solve=%.1fms "
+            "total=%.1fms",
+            len(points_to_drag),
+            len(scope) if scope is not None else None,
+            (snap_done - frame_started) * 1000.0,
+            (solve_done - snap_done) * 1000.0,
+            (time.perf_counter() - frame_started) * 1000.0,
+        )
         self.element.mark_dirty()
 
     def _refresh_drag_snap_feedback(

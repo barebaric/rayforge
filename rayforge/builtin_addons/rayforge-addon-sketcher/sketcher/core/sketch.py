@@ -2,6 +2,7 @@ import copy
 import json
 import logging
 import math
+import time
 import uuid
 from collections import defaultdict
 from gettext import gettext as _
@@ -1438,16 +1439,18 @@ class Sketch(IAsset, IGeometryProvider):
         if self._solving:
             return True
         self._solving = True
+        solve_started = time.perf_counter()
+        params_done = prep_done = solver_done = arrays_done = solve_started
         success = False
         solver: Solver | None = None
         all_constraints: list[Constraint] = []
         update_status = False
         solve_completed = False
+        scope = point_scope
         try:
             # A scope referencing deleted points (e.g. after an array
             # re-apply removed geometry mid-drag) cannot be honored;
             # solve globally instead.
-            scope = point_scope
             if scope is not None:
                 existing = {p.id for p in self.registry.points}
                 if not scope.issubset(existing):
@@ -1478,6 +1481,7 @@ class Sketch(IAsset, IGeometryProvider):
             # ParameterContext rebuilds per text box.
             self._solved_ctx = ctx.copy()
             self._solved_ctx.update(get_template_functions())
+            params_done = time.perf_counter()
 
             # Step 4: Update constraints with the final, resolved values.
             excluded = excluded_constraints or set()
@@ -1538,6 +1542,8 @@ class Sketch(IAsset, IGeometryProvider):
                     )
                 )
 
+            prep_done = time.perf_counter()
+
             # Step 5: Run the solver with the disposable, correctly
             # evaluated context.
             solver = Solver(
@@ -1550,6 +1556,7 @@ class Sketch(IAsset, IGeometryProvider):
             update_status = update_constraint_status and scope is None
             success = solver.solve(update_dof=update_status)
             solve_completed = True
+            solver_done = time.perf_counter()
 
         except (np.linalg.LinAlgError, ValueError):
             logger.exception("Sketch solve failed")
@@ -1564,6 +1571,7 @@ class Sketch(IAsset, IGeometryProvider):
             self.sync_arrays()
         finally:
             self._solving = False
+        arrays_done = time.perf_counter()
 
         # Step 6: Update constraint conflict status. This must happen
         # AFTER the array sync: re-anchoring an array template can
@@ -1583,6 +1591,20 @@ class Sketch(IAsset, IGeometryProvider):
             }
             self._apply_conflict_status(mapped)
 
+        logger.debug(
+            "Sketch.solve: points=%d constraints=%d scope=%s "
+            "params=%.1fms prep=%.1fms solver=%.1fms arrays=%.1fms "
+            "total=%.1fms ok=%s",
+            len(self.registry.points),
+            len(all_constraints),
+            len(scope) if scope is not None else None,
+            (params_done - solve_started) * 1000.0,
+            (prep_done - params_done) * 1000.0,
+            (solver_done - prep_done) * 1000.0,
+            (arrays_done - solver_done) * 1000.0,
+            (time.perf_counter() - solve_started) * 1000.0,
+            success,
+        )
         return success
 
     def _apply_conflict_status(self, conflicting_indices: set[int]) -> None:
