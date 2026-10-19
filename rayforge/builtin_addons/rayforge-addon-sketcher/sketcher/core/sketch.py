@@ -59,6 +59,7 @@ from .template_functions import get_template_functions
 from .types import EntityID
 
 _GEOMETRY_CACHE_SIZE = 8
+_GeometryKey = tuple[tuple[tuple[str, str], ...], ...]
 
 DEFAULT_FILL_COLOR: ColorRGBA = (0.85, 0.85, 0.85, 0.7)
 FORMAT_VERSION = 1
@@ -190,8 +191,7 @@ class Sketch(IAsset, IGeometryProvider):
         # Geometry of the last calls, keyed by effective parameter
         # values; cleared whenever the sketch itself changes.
         self._geometry_cache: dict[
-            tuple[tuple[str, str], ...],
-            tuple[Geometry, list[FillRenderData], dict],
+            _GeometryKey, tuple[Geometry, list[FillRenderData], dict]
         ] = {}
         self._updated.connect(self._invalidate_geometry_cache)
 
@@ -255,6 +255,7 @@ class Sketch(IAsset, IGeometryProvider):
             a = by_uid.get(uid)
             if a is not None:
                 a.restore(astate)
+        self._invalidate_geometry_cache()
 
     def _validate_and_cleanup_fills(self):
         """
@@ -345,7 +346,8 @@ class Sketch(IAsset, IGeometryProvider):
         Returns:
             A tuple of (stroke_geometry, fill_render_data).
         """
-        key = self._geometry_cache_key(params)
+        seed = dict(resolved_text_cache or {})
+        key = self._geometry_cache_key(params, seed)
         cached = self._geometry_cache.get(key)
         if cached is not None:
             geo, fills, resolved = cached
@@ -364,7 +366,12 @@ class Sketch(IAsset, IGeometryProvider):
         fills = clone.get_fill_render_data()
         if resolved_text_cache is not None:
             resolved_text_cache.update(clone._resolved_text_cache)
-        self._remember_geometry(key, geo, fills, clone._resolved_text_cache)
+        resolved = clone._resolved_text_cache
+        self._remember_geometry(
+            self._geometry_cache_key(params, resolved), geo, fills, resolved
+        )
+        if self._is_reproducible(seed, resolved):
+            self._remember_geometry(key, geo, fills, resolved)
         return geo, fills
 
     def get_template_sources(self) -> list[str]:
@@ -380,23 +387,45 @@ class Sketch(IAsset, IGeometryProvider):
         return referenced_template_names(self.get_template_sources())
 
     def _geometry_cache_key(
-        self, params: dict[str, Any] | None
-    ) -> tuple[tuple[str, str], ...]:
+        self, params: dict[str, Any] | None, texts: dict
+    ) -> _GeometryKey:
         """
-        The effective parameter values of a geometry request. Two
-        requests with the same values produce the same geometry as
-        long as the sketch itself does not change.
+        The effective parameter values and the seeded text of a
+        geometry request. Two requests with the same key produce the
+        same geometry as long as the sketch itself does not change.
         """
         values = dict(self.input_parameters.get_values())
         if params:
             values.update(params)
-        return tuple(
-            sorted((name, repr(value)) for name, value in values.items())
+        return (
+            tuple(
+                sorted((name, repr(value)) for name, value in values.items())
+            ),
+            tuple(
+                sorted(
+                    (str(eid), repr(tuple(entry)))
+                    for eid, entry in texts.items()
+                )
+            ),
+        )
+
+    def _is_reproducible(self, seed: dict, resolved: dict) -> bool:
+        """
+        Whether a geometry request seeded with *seed* always resolves
+        to *resolved*: true unless a text was newly resolved from a
+        template that calls a template function, as those (uuids,
+        timestamps) give every caller a fresh value.
+        """
+        functions = set(get_template_functions())
+        return not any(
+            referenced_template_names([entry[0]]) & functions
+            for eid, entry in resolved.items()
+            if tuple(seed.get(eid, ())) != tuple(entry)
         )
 
     def _remember_geometry(
         self,
-        key: tuple[tuple[str, str], ...],
+        key: _GeometryKey,
         geo: Geometry,
         fills: list[FillRenderData],
         resolved: dict,
@@ -406,7 +435,7 @@ class Sketch(IAsset, IGeometryProvider):
         while len(self._geometry_cache) > _GEOMETRY_CACHE_SIZE:
             self._geometry_cache.pop(next(iter(self._geometry_cache)))
 
-    def _invalidate_geometry_cache(self, sender) -> None:
+    def _invalidate_geometry_cache(self, sender=None) -> None:
         """Drops cached geometry when the sketch itself changes."""
         self._geometry_cache.clear()
 
@@ -464,6 +493,7 @@ class Sketch(IAsset, IGeometryProvider):
         clone._last_solve_values = {}
         clone._resolved_text_cache = {}
         clone._solved_ctx = None
+        clone._geometry_cache = {}
         # Build coincident cache so geometry generation is fast.
         clone._coincident_cache = {}
         clone._coincident_dirty = False
@@ -1478,6 +1508,7 @@ class Sketch(IAsset, IGeometryProvider):
         if self._solving:
             return True
         self._solving = True
+        self._invalidate_geometry_cache()
         success = False
         solver: Solver | None = None
         all_constraints: list[Constraint] = []

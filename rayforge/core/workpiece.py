@@ -627,9 +627,11 @@ class WorkPiece(DocItem):
         world_wp.tabs = deepcopy(self.tabs)
         world_wp.tabs_enabled = self.tabs_enabled
         world_wp.geometry_provider_uid = self.geometry_provider_uid
-        world_wp._geometry_provider_params = deepcopy(self._provider_params())
+        world_wp.geometry_provider_params = deepcopy(
+            self._geometry_provider_params
+        )
         world_wp._variable_offset = self._variable_offset
-        world_wp._template_values_used = deepcopy(self._template_values_used)
+        world_wp._template_values_used = self.template_values()
         world_wp.source_asset_uid = self.source_asset_uid
         world_wp._resolved_text_cache = dict(self._resolved_text_cache)
 
@@ -1148,10 +1150,14 @@ class WorkPiece(DocItem):
         self.refresh_template_values()
 
     def template_values(self) -> dict[str, Any]:
-        """The document's template variables as seen by this copy."""
+        """
+        The document's template variables as seen by this copy. A
+        workpiece outside a document keeps the values its geometry was
+        generated with, so a detached copy renders the same text.
+        """
         doc = self.doc
         if doc is None:
-            return {}
+            return dict(self._template_values_used)
         return doc.job_counter.template_values(self._variable_offset)
 
     def _provider_params(self) -> dict[str, Any]:

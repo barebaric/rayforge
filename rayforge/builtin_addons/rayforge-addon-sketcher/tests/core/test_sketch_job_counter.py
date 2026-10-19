@@ -65,6 +65,33 @@ def test_sketch_change_drops_cached_geometry():
     assert again is not first
 
 
+def test_solve_drops_cached_geometry():
+    sketch, box = _sketch_with_text("{counter}")
+    first, _fills = sketch.get_geometry({"counter": 1})
+    box.content = "{counter}{counter}"
+    sketch.solve()
+    again, _fills = sketch.get_geometry({"counter": 1})
+    assert again is not first
+
+
+def test_volatile_text_is_not_shared_between_callers():
+    sketch, box = _sketch_with_text("{uuid8()}")
+    first: dict = {}
+    second: dict = {}
+    geo_a, _fills = sketch.get_geometry(resolved_text_cache=first)
+    geo_b, _fills = sketch.get_geometry(resolved_text_cache=second)
+    assert first[box.id] != second[box.id]
+    assert geo_b is not geo_a
+
+
+def test_volatile_text_reuses_geometry_for_its_caller():
+    sketch, _box = _sketch_with_text("{uuid8()}")
+    cache: dict = {}
+    first, _fills = sketch.get_geometry(resolved_text_cache=cache)
+    again, _fills = sketch.get_geometry(resolved_text_cache=cache)
+    assert again is first
+
+
 def test_counter_is_resolved_in_document():
     doc = Doc()
     doc.job_counter.counter = CounterSettings(current=7)
