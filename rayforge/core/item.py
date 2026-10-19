@@ -314,10 +314,16 @@ class DocItem(ABC):
         """
         return self.get_world_transform().get_abs_scale()
 
-    def set_size(self, width_mm: float, height_mm: float):
+    def set_size(
+        self,
+        width_mm: float,
+        height_mm: float,
+        anchor: tuple[float, float] = (0.5, 0.5),
+    ):
         """
-        Sets the item size in mm while preserving its world-space center
-        point. This manipulates the existing matrix.
+        Sets the item size in mm while keeping the item's local ``anchor``
+        point (in the normalized 0-1 space) at its current world position.
+        Defaults to the center point. This manipulates the existing matrix.
         """
         # Guard against zero dimensions to prevent singular matrices in Cairo
         width_mm = max(abs(width_mm), 1e-9)
@@ -342,23 +348,23 @@ class DocItem(ABC):
         # Compose a new world matrix with the new scale, but without its
         # translation corrected yet.
         # We use (0,0) for translation initially, as we will correct the
-        # center point manually.
+        # anchor point manually.
         world_transform_new_uncorrected = Matrix.compose(
             0, 0, angle, new_sx, new_sy, skew
         )
 
-        # The old center point that we must maintain
-        center_world_old = world_transform_old.transform_point((0.5, 0.5))
+        # The old position of the anchor point that we must maintain
+        anchor_world_old = world_transform_old.transform_point(anchor)
 
-        # The center point of our newly composed matrix (before translation)
-        center_world_new_uncorrected = (
-            world_transform_new_uncorrected.transform_point((0.5, 0.5))
+        # The anchor point of our newly composed matrix (before translation)
+        anchor_world_new_uncorrected = (
+            world_transform_new_uncorrected.transform_point(anchor)
         )
 
-        # Calculate the required translation to move the new center to the old
-        # center's position.
-        final_tx = center_world_old[0] - center_world_new_uncorrected[0]
-        final_ty = center_world_old[1] - center_world_new_uncorrected[1]
+        # Calculate the required translation to move the new anchor to the
+        # old anchor's position.
+        final_tx = anchor_world_old[0] - anchor_world_new_uncorrected[0]
+        final_ty = anchor_world_old[1] - anchor_world_new_uncorrected[1]
 
         # Create the final desired world matrix
         world_transform_new = world_transform_new_uncorrected.set_translation(

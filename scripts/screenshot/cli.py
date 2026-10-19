@@ -53,6 +53,7 @@ TARGETS = {
     "config-wizard:rotary": "config_wizard",
     "import-dialog": "import_dialog",
     "source-changed-dialog": "source_changed_dialog",
+    "main:item-properties": "item_properties",
     "machine-settings:general": "machine_settings_general",
     "machine-settings:hardware": "machine_settings_hardware",
     "machine-settings:advanced": "machine_settings_advanced",

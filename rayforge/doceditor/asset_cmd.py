@@ -89,20 +89,13 @@ class UpdateAssetCommand(Command):
             geometry, _ = provider.get_geometry(params=params)
 
             if geometry.is_empty():
-                new_width = 0.0
-                new_height = 0.0
+                workpiece.natural_width_mm = 0.0
+                workpiece.natural_height_mm = 0.0
+                workpiece.set_size(0.0, 0.0)
             else:
-                min_x, min_y, max_x, max_y = geometry.rect()
-                new_width = max(max_x - min_x, 1e-9)
-                new_height = max(max_y - min_y, 1e-9)
-
-            # Update the workpiece's own dimension attributes
-            workpiece.natural_width_mm = new_width
-            workpiece.natural_height_mm = new_height
-
-            # This resizes the workpiece's matrix while preserving its
-            # center
-            workpiece.set_size(new_width, new_height)
+                # Adopts the new size while keeping the workpiece's
+                # anchor point (see WorkPiece.anchor_mode) in place
+                workpiece.apply_provider_geometry(provider, geometry)
 
             # This clears _boundaries_cache and _render_cache
             workpiece.clear_render_cache()
