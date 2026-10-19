@@ -13,17 +13,19 @@ the deferred GTK change notification is not mistaken for a user edit.
 
 import faulthandler
 import os
+import sys
 import time
 
 import pytest
 
 from rayforge.core.workpiece import WorkPiece
 
-if not os.environ.get("DISPLAY"):
-    pytest.skip(
-        "DISPLAY not set on Linux, skipping UI tests. Run with xvfb-run.",
-        allow_module_level=False,
-    )
+if sys.platform.startswith("linux"):
+    if not os.environ.get("DISPLAY"):
+        pytest.skip(
+            "DISPLAY not set on Linux, skipping UI tests. Run with xvfb-run.",
+            allow_module_level=True,
+        )
 
 import gi
 
