@@ -50,6 +50,10 @@ _DEFAULT_JOB_LABEL = "Rayforge Job"
 DEFAULT_POWER_FLOOR = 8.0  # percent, i.e. 8%
 DEFAULT_IMAGE_POWER_BIAS = 8.0  # percent, i.e. 8%
 
+# The declare_layer() argument list as a comparable tuple: label, color,
+# mode, overscan, speed, frequency, min power, max power.
+_DeclaredLayer = tuple[str, str, str, str, float, float, float, float]
+
 
 @runtime_checkable
 class _LaserProcessStep(Protocol):
@@ -124,6 +128,7 @@ class RuidaRPAEncoder(OpsEncoder):
         self._layer_key: int = 0
         self._layer_uid: str | None = None
         self._layer_declared: bool = False
+        self._declared_layer: _DeclaredLayer | None = None
         self._section_type: SectionType | None = None
         self._section_raster_mode: RasterMode | None = None
         self._layer_mode: str = "VECTOR"
@@ -131,6 +136,7 @@ class RuidaRPAEncoder(OpsEncoder):
         self._power_fraction: float = 0.0
         self._power_min_fraction: float = 0.0
         self._emitted_min_fraction: float = 0.0
+        self._last_requested_power: float | None = None
         self._job_power_cap: float | None = None
         self._power_floor: float = DEFAULT_POWER_FLOOR / 100.0
         self._power_floor_enabled: bool = False
@@ -568,7 +574,9 @@ class RuidaRPAEncoder(OpsEncoder):
 
     def _handle_set_power(self, ops: Ops, idx: int) -> None:
         """Set laser power for the remaining cuts on this layer."""
-        self._emit_power(ops.power(idx))
+        power = ops.power(idx)
+        self._last_requested_power = power
+        self._emit_power(power)
 
     def _handle_set_power_mode(self, ops: Ops, idx: int) -> None:
         """Enable/disable effective-min power scaling from PowerMode.
@@ -720,12 +728,16 @@ class RuidaRPAEncoder(OpsEncoder):
         """Record the active layer uid for the next WORKPIECE_START.
 
         LAYER_START emits nothing; the layer is declared when the first
-        workpiece of the layer begins, so each Rayforge workpiece maps
-        to its own Ruida layer.
+        workpiece of the layer begins. GlueScript closes the previous
+        Ruida layer implicitly at the boundary, so the recorded
+        declaration is dropped and the new Rayforge layer always opens
+        one of its own.
         """
         self._layer_uid = ops.layer_uid(idx)
         self._layer_key += 1
         self._layer_declared = False
+        self._declared_layer = None
+        self._last_requested_power = None
 
     @staticmethod
     def _section_layer_mode(
@@ -865,10 +877,13 @@ class RuidaRPAEncoder(OpsEncoder):
     def _handle_workpiece_start(self, ops: Ops, idx: int) -> None:
         """Declare the Ruida layer for this workpiece.
 
-        Each Rayforge workpiece becomes its own Ruida layer, so the
-        layer attribute block is emitted here (not at LAYER_START) using
-        the active layer's settings and the mode/overscan derived from
-        this workpiece's sections.
+        The layer attribute block is emitted here (not at LAYER_START)
+        using the active layer's settings and the mode/overscan derived
+        from this workpiece's sections. A workpiece whose block matches
+        the already-declared layer reuses it: controllers limit the
+        number of layers, so duplicated workpieces must not multiply
+        them, and within an open layer the power context persists
+        across workpiece boundaries.
         """
         if self._layer_uid is None:
             raise ValueError(
@@ -904,6 +919,18 @@ class RuidaRPAEncoder(OpsEncoder):
         else:
             min_power_1 = power_pct
             max_power_1 = power_pct
+        attributes: _DeclaredLayer = (
+            label,
+            color,
+            layer_mode,
+            overscan,
+            speed_mms,
+            frequency_khz,
+            min_power_1,
+            max_power_1,
+        )
+        if attributes == self._declared_layer:
+            return
         self._gluescript.declare_layer(
             label=label,
             color=color,
@@ -914,7 +941,26 @@ class RuidaRPAEncoder(OpsEncoder):
             min_power_1=min_power_1,
             max_power_1=max_power_1,
         )
+        self._declared_layer = attributes
         self._layer_declared = True
+        self._reapply_last_power()
+
+    def _reapply_last_power(self) -> None:
+        """Re-apply the last requested power after a layer declaration.
+
+        Declaring a Ruida layer resets the controller's power context
+        at the boundary. A workpiece that reuses the open layer keeps
+        its power, but one that opens a new layer may carry no
+        SET_POWER of its own — the path optimizer hoists duplicate
+        power commands to the first workpiece — so the last known
+        power must be re-emitted or the controller cuts the workpiece
+        with the wrong power (issue #564).
+        """
+        if self._last_requested_power is None:
+            return
+        self._power_fraction = 0.0
+        self._emitted_min_fraction = 0.0
+        self._emit_power(self._last_requested_power)
 
     def _handle_workpiece_end(self) -> None:
         """Emit a workpiece end marker and reset per-workpiece state."""
