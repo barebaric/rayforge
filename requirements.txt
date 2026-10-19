@@ -22,6 +22,7 @@ ruida-pa==0.22.0
 scipy==1.18.1
 semver==3.1.0
 svgelements==1.9.6
+threadpoolctl==3.7.0
 trimesh==5.1.1
 vtracer==0.6.15
 websockets==17.2

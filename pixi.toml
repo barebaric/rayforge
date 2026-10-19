@@ -193,6 +193,7 @@ depends-on = ["compile-translations"]
 
 [dependencies]
 libadwaita = "==1.10.0"
+threadpoolctl = ">=3.7.0,<4"
 
 # Keep the conda solve from backtracking pygobject below the
 # pygobject>=3.55.0 floor required by the pygobject-stubs pypi

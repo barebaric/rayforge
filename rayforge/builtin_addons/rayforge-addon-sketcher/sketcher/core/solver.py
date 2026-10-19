@@ -1,8 +1,11 @@
+import logging
+import time
 from collections.abc import Sequence
 
 import numpy as np
 import scipy.linalg
 from scipy.optimize import least_squares
+from threadpoolctl import ThreadpoolController
 
 from .components import compute_constraint_components, get_referenced_points
 from .constraints import Constraint
@@ -12,6 +15,22 @@ from .registry import EntityRegistry
 from .types import EntityID
 
 CONFLICT_ERROR_THRESHOLD = 1e-3
+
+logger = logging.getLogger(__name__)
+
+_blas_controller = ThreadpoolController()
+
+
+def _blas_limiter():
+    """Returns a context manager that runs BLAS-backed code
+    single-threaded.
+
+    The solver's matrices are small; multithreaded OpenBLAS spends
+    far more on thread synchronization around their factorizations
+    than on the factorizations themselves. The controller is scanned
+    once and reused — constructing a limiter per call rescans the
+    process maps, which costs more than the solves."""
+    return _blas_controller.limit(limits=1)
 
 
 class Solver:
@@ -134,6 +153,8 @@ class Solver:
         the caller's responsibility: a decomposed run resets once up
         front, analyzes each component's DOF on its own small
         Jacobian, and updates the entity statuses once at the end."""
+        solve_started = time.perf_counter()
+
         # 1. Identify mutable points (degrees of freedom). Points that
         # no constraint references cannot move; they stay out of the
         # state vector entirely.
@@ -253,15 +274,22 @@ class Solver:
         # We pass the analytical jacobian. An iteration limit protects
         # against pathological constraint graphs that would stall the
         # solver indefinitely.
-        result = least_squares(
-            objective,
-            x0,
-            jac=jacobian,  # type: ignore
-            method="trf",
-            ftol=tolerance,
-            xtol=1e-8,
-            max_nfev=5000,
-        )
+        # 5. Solve
+        # 'trf' is robust for under-constrained problems (m < n).
+        # We pass the analytical jacobian. An iteration limit protects
+        # against pathological constraint graphs that would stall the
+        # solver indefinitely. The optimizer runs single-threaded
+        # (see _blas_limiter).
+        with _blas_limiter():
+            result = least_squares(
+                objective,
+                x0,
+                jac=jacobian,  # type: ignore
+                method="trf",
+                ftol=tolerance,
+                xtol=1e-8,
+                max_nfev=5000,
+            )
 
         # 6. Final Update to ensure registry matches result
         update_registry(result.x)
@@ -278,7 +306,19 @@ class Solver:
             # is needed for that.
             hard_rows = build_jacobian_rows(self.constraints, len(x0))
             if hard_rows:
-                self._analyze_dof(np.vstack(hard_rows), mutable_points)
+                with _blas_limiter():
+                    self._analyze_dof(np.vstack(hard_rows), mutable_points)
+
+        logger.debug(
+            "Solver.solve: mutable=%d hard=%d aux=%d iters=%d ms=%.1f "
+            "success=%s",
+            len(mutable_points),
+            len(self.constraints),
+            len(self.auxiliary_constraints),
+            result.nfev,
+            (time.perf_counter() - solve_started) * 1000.0,
+            success,
+        )
 
         return success
 
