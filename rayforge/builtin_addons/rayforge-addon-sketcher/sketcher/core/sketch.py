@@ -307,6 +307,15 @@ class Sketch(IAsset, IGeometryProvider):
 
         return SKETCH_RENDERER
 
+    def get_reference_point(self) -> tuple[float, float]:
+        """
+        The sketch origin, in sketch coordinates. The origin is a fixed
+        solver anchor, so geometry constrained to it stays registered
+        when parameters change.
+        """
+        origin = self.registry.get_point(self.origin_id)
+        return (origin.x, origin.y)
+
     def get_geometry(
         self,
         params: dict[str, Any] | None = None,
