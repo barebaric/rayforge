@@ -10,7 +10,7 @@ import logging
 import tempfile
 from gettext import gettext as _
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 from raygeo.geo import Matrix
@@ -353,7 +353,7 @@ class DragDropCmd:
         files = []
         if isinstance(value, Gdk.FileList):
             files = value.get_files()
-        elif isinstance(value, Gio.File):
+        elif isinstance(value, cast(type[Gio.File], Gio.File)):
             files = [value]
         else:
             logger.warning(f"Unexpected drop value type: {type(value)}")

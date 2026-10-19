@@ -1337,7 +1337,7 @@ class WorkPieceElement(CanvasElement):
         if workpiece is not self.data:
             return
 
-        artifact = self.view_manager.store.get(handle)
+        artifact = cast(WorkPieceArtifact, self.view_manager.store.get(handle))
         GLib.idle_add(
             self._on_source_artifact_ready_main_thread,
             step,
