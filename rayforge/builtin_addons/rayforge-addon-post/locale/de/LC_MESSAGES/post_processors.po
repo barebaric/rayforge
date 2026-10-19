@@ -54,8 +54,8 @@ msgid ""
 "Start closed paths at a sharp corner where the path has one, which makes the "
 "seam less visible."
 msgstr ""
-"Beginnt geschlossene Pfade an einer scharfen Ecke, sofern der Pfad "
-"eine hat; das macht die Naht weniger sichtbar."
+"Beginnt geschlossene Pfade an einer scharfen Ecke, sofern der Pfad eine hat; "
+"das macht die Naht weniger sichtbar."
 
 #: post_processors/widgets/optimize_group.py
 msgid "Merge Scanlines"

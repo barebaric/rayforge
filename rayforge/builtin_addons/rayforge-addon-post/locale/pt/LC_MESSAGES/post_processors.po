@@ -42,8 +42,8 @@ msgid ""
 "Start closed paths at the vertex nearest the laser head to shorten travel "
 "moves."
 msgstr ""
-"Inicia os percursos fechados no vértice mais próximo da cabeça do "
-"laser para encurtar os movimentos de deslocação."
+"Inicia os percursos fechados no vértice mais próximo da cabeça do laser para "
+"encurtar os movimentos de deslocação."
 
 #: post_processors/widgets/optimize_group.py
 msgid "Prefer Corners"
@@ -54,8 +54,8 @@ msgid ""
 "Start closed paths at a sharp corner where the path has one, which makes the "
 "seam less visible."
 msgstr ""
-"Inicia os percursos fechados num canto pronunciado quando o percurso "
-"tem um, o que torna a costura menos visível."
+"Inicia os percursos fechados num canto pronunciado quando o percurso tem um, "
+"o que torna a costura menos visível."
 
 #: post_processors/widgets/optimize_group.py
 msgid "Merge Scanlines"

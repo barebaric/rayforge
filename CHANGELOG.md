@@ -24,6 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Vector editing: edit the nodes of imported paths: drag nodes and curve
   handles, delete and insert nodes, and turn segments into curves or
   lines (#521)
+- Workpieces: the X/Y position can refer to the bounding box corner,
+  the box center, or the geometry provider's reference point, which is
+  the fixed origin for sketches. When parameters change or a sketch is
+  edited, the chosen point stays fixed, so parametric cut and engrave
+  sketches keep their alignment (#587)
 
 ### Fixed
 
@@ -43,6 +48,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AppImage: TLS certificate verification for update and addon registry
   checks works, and GTK can compile keymaps on Wayland instead of
   crashing (#578)
+- Properties: stepping the X/Y position spin row with several items
+  selected no longer hangs the application in a move loop between the
+  old and the new position (#594)
+- Layers: double-clicking a word while renaming a sketch or workpiece
+  no longer opens the sketch editor and hangs GTK's focus handling
+  (#582)
+- Recent files: file names containing underscores, ampersands and other
+  special characters are shown correctly (#583)
+- Ruida: identical workpieces are collapsed into one Ruida layer, and
+  the last requested power is re-applied at genuine layer boundaries,
+  so duplicated workpieces are no longer cut with the laser off (#564)
+- Sketcher: the path tool closes a path onto its start point and ends
+  editing instead of leaving a duplicate loose corner
+- Sketcher: drag snapping no longer flickers on geometry coupled to the
+  drag, both-axis snaps are recorded as a single coincident constraint,
+  and array templates keep the coincident pairs that close their shapes
+
+### Performance
+
+- Sketcher: constraint solving and drags are much faster. The solver
+  partitions constraints into independent components, leaves points no
+  constraint references out of the solve, uses constant-time point
+  lookups, and runs single-threaded to avoid BLAS synchronization
+  overhead. A 60-rectangle sketch solves in about 11 ms instead of
+  720 ms, and drag frames on large sketches drop from hundreds of
+  milliseconds to under one.
 
 ## 1.13.0-beta1
 

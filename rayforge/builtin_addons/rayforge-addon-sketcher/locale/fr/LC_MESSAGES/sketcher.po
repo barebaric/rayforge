@@ -751,8 +751,7 @@ msgstr "Étoile"
 #: sketcher/ui_gtk/tools/polygon_tool.py
 msgid "Type radius, corners and star ratio (R N Star)"
 msgstr ""
-"Saisir le rayon, le nombre de sommets et le rapport d'étoile (R N "
-"Étoile)"
+"Saisir le rayon, le nombre de sommets et le rapport d'étoile (R N Étoile)"
 
 #: sketcher/ui_gtk/tools/polygon_tool.py
 msgid "Set first corner"

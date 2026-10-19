@@ -405,8 +405,7 @@ msgstr "रेखा अंतराल"
 msgid ""
 "Distance between neighbouring fill rings. Defaults to the laser spot size"
 msgstr ""
-"आस-पास के भराव छल्लों के बीच की दूरी. डिफ़ॉल्ट रूप से लेज़र स्पॉट आकार "
-"का उपयोग होता है"
+"आस-पास के भराव छल्लों के बीच की दूरी. डिफ़ॉल्ट रूप से लेज़र स्पॉट आकार का उपयोग होता है"
 
 #: laser_essentials/steps/offset_fill_step.py
 msgid "Distance of the first ring inside the outline"

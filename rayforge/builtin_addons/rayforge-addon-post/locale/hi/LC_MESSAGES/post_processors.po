@@ -42,8 +42,7 @@ msgid ""
 "Start closed paths at the vertex nearest the laser head to shorten travel "
 "moves."
 msgstr ""
-"यात्रा हरकतों को छोटा करने हेतु बंद पाथ को लेज़र हेड के सबसे नज़दीकी "
-"शीर्ष बिंदु से शुरू करें."
+"यात्रा हरकतों को छोटा करने हेतु बंद पाथ को लेज़र हेड के सबसे नज़दीकी शीर्ष बिंदु से शुरू करें."
 
 #: post_processors/widgets/optimize_group.py
 msgid "Prefer Corners"
@@ -54,8 +53,7 @@ msgid ""
 "Start closed paths at a sharp corner where the path has one, which makes the "
 "seam less visible."
 msgstr ""
-"जहाँ पाथ में कोई नुकीला कोना हो, वहाँ बंद पाथ को उसी से शुरू करें, "
-"जिससे सीवन कम दिखाई दे."
+"जहाँ पाथ में कोई नुकीला कोना हो, वहाँ बंद पाथ को उसी से शुरू करें, जिससे सीवन कम दिखाई दे."
 
 #: post_processors/widgets/optimize_group.py
 msgid "Merge Scanlines"

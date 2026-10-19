@@ -77,11 +77,12 @@
   </screenshots>
 
   <releases>
-    <release version="1.13.0~beta2" date="2026-10-18">
+    <release version="1.13.0~beta2" date="2026-10-19">
       <description>
         <p>An Offset Fill step, smarter path start points, a Polygon
-        tool, node editing for imported vectors, and fixes for jog
-        limits, the Console and AppImage</p>
+        tool, node editing for imported vectors, workpiece position
+        anchors, and fixes for jog limits, the Console, Ruida and
+        AppImage</p>
         <p>New Features:</p>
         <ul>
           <li>A new Offset Fill step fills closed shapes with rings
@@ -104,6 +105,12 @@
           dragging nodes and curve handles, deleting and inserting
           nodes, and turning segments into curves or lines (#521, by
           switch87)</li>
+          <li>Workpieces can choose which local point their X/Y
+          position refers to: the bounding box corner, the box center,
+          or the geometry provider's reference point, which is the
+          fixed origin for sketches. Parameters and sketch edits keep
+          the chosen point fixed, so parametric cut and engrave
+          sketches stay aligned (#587)</li>
         </ul>
         <p>Bug Fixes:</p>
         <ul>
@@ -125,6 +132,34 @@
           <li>AppImage: TLS certificate verification for update and
           addon registry checks works, and GTK can compile keymaps on
           Wayland instead of crashing (#578)</li>
+          <li>Stepping the X/Y position with several items selected no
+          longer hangs the application in a move loop between the old
+          and new position (#594)</li>
+          <li>Double-clicking a word while renaming a sketch or
+          workpiece no longer opens the sketch editor and hangs GTK's
+          focus handling (#582)</li>
+          <li>File names containing underscores, ampersands and other
+          special characters are shown correctly in Open Recent
+          (#583)</li>
+          <li>Ruida: identical workpieces are collapsed into one layer
+          and the last requested power is re-applied at genuine layer
+          boundaries, so duplicated workpieces no longer cut with the
+          laser off (#564)</li>
+          <li>Sketcher: the path tool closes onto its start point and
+          ends editing, drag snapping no longer flickers on geometry
+          coupled to the drag, both-axis snaps become one coincident
+          constraint, and array templates keep the coincident pairs
+          that close their shapes</li>
+        </ul>
+        <p>Performance:</p>
+        <ul>
+          <li>Sketcher: constraint solving and drags are much faster.
+          Constraints solve as independent components, unreferenced
+          points stay out of the solve, point lookups are
+          constant-time, and the solver runs single-threaded to avoid
+          BLAS overhead. A 60-rectangle sketch solves in about 11 ms
+          instead of 720 ms, and drag frames drop from hundreds of
+          milliseconds to under one.</li>
         </ul>
       </description>
     </release>

@@ -413,8 +413,8 @@ msgstr "Інтервал ліній"
 msgid ""
 "Distance between neighbouring fill rings. Defaults to the laser spot size"
 msgstr ""
-"Відстань між сусідніми кільцями заливки. Типово використовується "
-"розмір лазерної плями"
+"Відстань між сусідніми кільцями заливки. Типово використовується розмір "
+"лазерної плями"
 
 #: laser_essentials/steps/offset_fill_step.py
 msgid "Distance of the first ring inside the outline"

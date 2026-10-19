@@ -414,8 +414,8 @@ msgstr "Intervalle de ligne"
 msgid ""
 "Distance between neighbouring fill rings. Defaults to the laser spot size"
 msgstr ""
-"Distance entre les anneaux de remplissage voisins. Par défaut, la "
-"taille du point laser est utilisée"
+"Distance entre les anneaux de remplissage voisins. Par défaut, la taille du "
+"point laser est utilisée"
 
 #: laser_essentials/steps/offset_fill_step.py
 msgid "Distance of the first ring inside the outline"

@@ -55,8 +55,8 @@ msgid ""
 "Start closed paths at a sharp corner where the path has one, which makes the "
 "seam less visible."
 msgstr ""
-"Починає замкнені шляхи з гострого кута, якщо такий є, що робить шов "
-"менш помітним."
+"Починає замкнені шляхи з гострого кута, якщо такий є, що робить шов менш "
+"помітним."
 
 #: post_processors/widgets/optimize_group.py
 msgid "Merge Scanlines"
