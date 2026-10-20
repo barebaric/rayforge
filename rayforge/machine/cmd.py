@@ -372,6 +372,10 @@ class MachineCmd:
 
             if not handle:
                 logger.warning("Job has no operations.")
+                self._editor.notification_requested.send(
+                    self,
+                    message=_("The document produces no toolpath."),
+                )
                 return
 
             # 2. Use the safe context manager to acquire and release the
