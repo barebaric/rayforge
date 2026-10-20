@@ -289,6 +289,7 @@ class TestPipelineGeneration:
                 pipeline.generate_job_artifact_async(), timeout=10
             )
 
+        await pipeline.wait_until_idle()
         await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
 
     @pytest.mark.asyncio
@@ -335,6 +336,7 @@ class TestPipelineGeneration:
                 pipeline.generate_job_artifact_async(), timeout=10
             )
 
+        await pipeline.wait_until_idle()
         await asyncio.to_thread(task_mgr.wait_until_settled, 5000)
 
     @pytest.mark.asyncio
