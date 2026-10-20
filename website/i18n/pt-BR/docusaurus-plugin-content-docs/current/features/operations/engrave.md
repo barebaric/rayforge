@@ -462,7 +462,7 @@ Veja [Overscan](../overscan.md) para detalhes.
 
 **Faixas (listras escuras/claras):**
 
-- Calibre o [Deslocamento de Varredura Bidirecional](#deslocamento-de-varredura-bidirecional)
+- Calibre o [Deslocamento de Varredura Bidirecional](#bidirectional-scan-offset)
 - Verifique tensão das correias
 - Reduza velocidade
 - Tente ângulo de varredura diferente
