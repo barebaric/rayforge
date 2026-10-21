@@ -56,8 +56,9 @@ comparables.
 
 ## Configuration de la Grille
 
-Les Test Settings affichent d'abord les paramètres de la grille, puis les étiquettes, puis les plages
-de paramètres. La tête laser et le post-traitement restent dans les paramètres de l'opération.
+Les Test Settings affichent d'abord les paramètres de la grille, puis les étiquettes, puis les
+plages de paramètres. La tête laser et le post-traitement restent dans les paramètres de
+l'opération.
 
 Les paramètres de **grille** contrôlent le test lui-même. Le type de test détermine si chaque
 cellule découpe le contour d'un carré ou le remplit de lignes raster. Les dimensions de la grille
