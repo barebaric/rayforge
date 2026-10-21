@@ -435,6 +435,27 @@ async def test_deleting_the_layer_removes_the_record(doc_editor, machine):
 
 
 @pytest.mark.asyncio
+async def test_deleting_the_layer_keeps_assets_a_moved_cell_uses(
+    doc_editor, machine
+):
+    sync = CalibrationSync(doc_editor)
+    cmd = CalibrationCmd(doc_editor)
+    record = cmd.create("interval_test", {"count": 2})
+    moved = cmd.workpieces(record)[-1]
+    other = doc_editor.doc.layers[0]
+    other.add_child(moved)
+
+    doc_editor.layer.delete_layer(_layer(doc_editor, record))
+
+    assert moved.source is not None
+    assert record.uid not in doc_editor.doc.assets
+    doc_editor.history_manager.undo()
+    assert record.uid in doc_editor.doc.assets
+    assert moved.source is not None
+    assert sync is not None
+
+
+@pytest.mark.asyncio
 async def test_undoing_a_new_test_leaves_nothing(doc_editor, machine):
     sync = CalibrationSync(doc_editor)
     assets = set(doc_editor.doc.assets)

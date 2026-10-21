@@ -19,6 +19,7 @@ from rayforge.core.layer import Layer
 from rayforge.core.step import Step
 from rayforge.core.workpiece import WorkPiece
 
+from ..calibration.lookup import unused_assets
 from ..calibration.material_test_grid import (
     MaterialTestGridGenerator,
     params_from_step,
@@ -72,7 +73,7 @@ class CalibrationSync:
         assets = [
             asset
             for record in _records(self._doc, origin.uid)
-            for asset in [record, *_assets(self._doc, record)]
+            for asset in [record, *unused_assets(self._doc, record)]
         ]
         if not assets:
             return
@@ -98,11 +99,6 @@ def _records(doc: "Doc", layer_uid: str) -> list[CalibrationRecord]:
         if asset.asset_type_name == CalibrationRecord.asset_type_name
         and cast(CalibrationRecord, asset).layer_uid == layer_uid
     ]
-
-
-def _assets(doc: "Doc", record: CalibrationRecord) -> list[IAsset]:
-    found = (doc.get_asset_by_uid(uid) for uid in record.state.asset_uids)
-    return [asset for asset in found if asset is not None]
 
 
 def sync_grid_preview(doc: "Doc", step: Step):

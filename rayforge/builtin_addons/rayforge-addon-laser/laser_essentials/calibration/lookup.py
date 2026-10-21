@@ -1,5 +1,6 @@
 """Finds the calibration test that selected workpieces belong to."""
 
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, cast
 
 from rayforge.core.item import DocItem
@@ -14,6 +15,7 @@ from .material_test_grid import (
 from .record import CalibrationRecord, CalibrationState
 
 if TYPE_CHECKING:
+    from rayforge.core.asset import IAsset
     from rayforge.core.doc import Doc
 
 
@@ -85,3 +87,25 @@ def _record_from_step(
         state=state,
         name=step.name,
     )
+
+
+def unused_assets(
+    doc: "Doc", record: CalibrationRecord, removed: Iterable[str] = ()
+) -> list["IAsset"]:
+    """
+    The record's assets that no workpiece in the document uses, leaving
+    out the workpieces with uids in *removed*. A cell the user moved to
+    another layer keeps its asset.
+    """
+    gone = set(removed)
+    in_use = {
+        wp.source_segment.source_asset_uid
+        for wp in doc.all_workpieces
+        if wp.uid not in gone and wp.source_segment is not None
+    }
+    found = (
+        doc.get_asset_by_uid(uid)
+        for uid in record.state.asset_uids
+        if uid not in in_use
+    )
+    return [asset for asset in found if asset is not None]

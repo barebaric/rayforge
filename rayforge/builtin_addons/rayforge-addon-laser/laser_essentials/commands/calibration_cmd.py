@@ -26,7 +26,7 @@ from rayforge.doceditor.layer_cmd import AddLayerAndSetActiveCommand
 
 from ..calibration import GENERATORS, CalibrationGenerator
 from ..calibration.builder import BuiltTest, CalibrationBuilder, bounds_of
-from ..calibration.lookup import record_for_items
+from ..calibration.lookup import record_for_items, unused_assets
 from ..calibration.record import CalibrationRecord, CalibrationState
 
 if TYPE_CHECKING:
@@ -131,7 +131,7 @@ class CalibrationCmd:
         old = GeneratedItems(
             old_wps,
             old_steps,
-            self._unused_assets(record, old_wps),
+            unused_assets(self._doc, record, (wp.uid for wp in old_wps)),
             record.state,
         )
         new = GeneratedItems(
@@ -189,23 +189,6 @@ class CalibrationCmd:
         built.move_to(min_x, min_y)
         if dims:
             built.keep_inside(*dims)
-
-    def _unused_assets(
-        self, record: CalibrationRecord, removed: list[WorkPiece]
-    ) -> list[IAsset]:
-        """Assets of the old test that no remaining workpiece uses."""
-        removed_uids = {wp.uid for wp in removed}
-        in_use = {
-            wp.source_segment.source_asset_uid
-            for wp in self._doc.all_workpieces
-            if wp.uid not in removed_uids and wp.source_segment is not None
-        }
-        found = (
-            self._doc.get_asset_by_uid(uid)
-            for uid in record.state.asset_uids
-            if uid not in in_use
-        )
-        return [asset for asset in found if asset is not None]
 
     def _build(
         self, generator: CalibrationGenerator, params: dict[str, Any]
