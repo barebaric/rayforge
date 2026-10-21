@@ -150,6 +150,7 @@ def _max_speed(context: "RayforgeContext") -> float | None:
 
 class MaterialTestGridGenerator(CalibrationGenerator):
     id = "material_test_grid"
+    keeps_steps = True
 
     @property
     def title(self) -> str:
@@ -220,10 +221,21 @@ class MaterialTestGridGenerator(CalibrationGenerator):
             "the settings of its operation."
         )
 
+    def step_settings(self, step: Step) -> dict[str, Any]:
+        return {key: getattr(step, key) for key in PARAM_KEYS}
+
+    def params_from_steps(
+        self, params: dict[str, Any], steps: list[Step]
+    ) -> dict[str, Any]:
+        """The grid settings live on the step, where recipes apply."""
+        if not steps:
+            return params
+        return {**params, **params_from_step(steps[0])}
+
     def layout(
         self, params: dict[str, Any], context: "RayforgeContext"
     ) -> CalibrationLayout:
-        grid_params = self._grid_params(params)
+        grid_params = self.grid_params(params)
         step = MaterialTestStep.create(context)
         step.name = self.title
         for key, value in grid_params.items():
@@ -238,7 +250,7 @@ class MaterialTestGridGenerator(CalibrationGenerator):
         return CalibrationLayout([CellEntry(self.title, shape, step)])
 
     @staticmethod
-    def _grid_params(params: dict[str, Any]) -> dict[str, Any]:
+    def grid_params(params: dict[str, Any]) -> dict[str, Any]:
         """
         The step attributes for *params*. Counts are whole numbers even
         when a spin row or a saved project gives them as floats.

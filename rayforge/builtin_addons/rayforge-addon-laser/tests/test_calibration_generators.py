@@ -317,7 +317,7 @@ class TestMaterialTestGrid:
         params = self.generator.defaults(self._context())
         params["grid_dimensions"] = [3.0, 4.0]
         params["passes_range"] = (1.0, 5.0)
-        grid = self.generator._grid_params(params)
+        grid = self.generator.grid_params(params)
         assert grid["grid_dimensions"] == (3, 4)
         assert grid["passes_range"] == (1, 5)
         assert all(isinstance(v, int) for v in grid["passes_range"])
@@ -326,7 +326,7 @@ class TestMaterialTestGrid:
         params = self.generator.defaults(self._context())
         params["grid_dimensions"] = (1, 4)
         with pytest.raises(ValueError):
-            self.generator._grid_params(params)
+            self.generator.grid_params(params)
 
 
 class TestHelpers:

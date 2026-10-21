@@ -10,6 +10,7 @@ A generator is pure: from its parameters and the machine it computes a
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol, cast
 
+from rayforge.core.step import Step
 from rayforge.core.varset import VarSet
 from rayforge.pipeline.transformer.registry import transformer_registry
 
@@ -36,6 +37,11 @@ class CalibrationGenerator(ABC):
 
     id: ClassVar[str]
 
+    #: Whether a rebuild keeps the existing steps and only changes the
+    #: settings in :meth:`step_settings`, so what the user set in a
+    #: step's own settings (laser head, post-processing) stays.
+    keeps_steps: ClassVar[bool] = False
+
     @property
     @abstractmethod
     def title(self) -> str:
@@ -53,6 +59,12 @@ class CalibrationGenerator(ABC):
         The test for *params*. Raises ``ValueError`` with a message for
         the user when the parameters do not make a valid test.
         """
+
+    def settings_varset(
+        self, params: dict[str, Any], context: "RayforgeContext"
+    ) -> VarSet:
+        """The settings shown for an existing test with *params*."""
+        return self.varset(context)
 
     def defaults(self, context: "RayforgeContext") -> dict[str, Any]:
         """The parameters of a new test."""
@@ -81,6 +93,28 @@ class CalibrationGenerator(ABC):
     def help_text(self, params: dict[str, Any]) -> str:
         """Instructions shown with the settings."""
         return ""
+
+    def warning(
+        self, params: dict[str, Any], context: "RayforgeContext"
+    ) -> str:
+        """Why the test cannot run as it is on the current machine."""
+        return ""
+
+    def step_settings(self, step: Step) -> dict[str, Any]:
+        """
+        The step attributes this generator controls, for a rebuild that
+        keeps the existing steps (see :attr:`keeps_steps`).
+        """
+        return {}
+
+    def params_from_steps(
+        self, params: dict[str, Any], steps: list[Step]
+    ) -> dict[str, Any]:
+        """
+        The parameters of a test whose steps may have changed outside
+        the Test Settings, for example by applying a recipe.
+        """
+        return params
 
 
 def contour_step(

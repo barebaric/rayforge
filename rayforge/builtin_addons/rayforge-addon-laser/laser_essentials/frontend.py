@@ -7,7 +7,7 @@ Registers UI widgets and actions with the main application.
 from gettext import gettext as _
 from pathlib import Path
 
-from gi.repository import Gio, GLib
+from gi.repository import Gio
 
 from rayforge.core.hooks import hookimpl
 from rayforge.ui_gtk.action_registry import MenuPlacement
@@ -16,7 +16,7 @@ from rayforge.ui_gtk.doceditor.property_providers import (
 )
 from rayforge.ui_gtk.icons import register_icon_path
 
-from .commands import CalibrationCmd
+from .commands import CalibrationCmd, CalibrationSync
 from .widgets import ASSEMBLER_WIDGETS
 from .widgets.calibration_provider import (
     CalibrationPropertyProvider,
@@ -27,7 +27,6 @@ ADDON_NAME = "laser_essentials"
 _ICONS_DIR = Path(__file__).parent / "resources" / "icons"
 
 register_icon_path(_ICONS_DIR)
-property_provider_registry.register(CalibrationPropertyProvider, ADDON_NAME)
 
 
 @hookimpl
@@ -41,8 +40,16 @@ def register_step_settings_pages(step_settings_page_registry):
 
 @hookimpl
 def register_commands(command_registry):
-    """Register editor command handlers."""
+    """
+    Register editor command handlers, and the Test Settings they are
+    edited with. The main window creates its property panels after the
+    commands are registered.
+    """
     command_registry.register("calibration", CalibrationCmd, ADDON_NAME)
+    property_provider_registry.register(
+        CalibrationPropertyProvider, ADDON_NAME
+    )
+    command_registry.register("calibration_sync", CalibrationSync, ADDON_NAME)
 
 
 def _create_test(action_registry, generator_id: str):
@@ -54,7 +61,7 @@ def _create_test(action_registry, generator_id: str):
     except ValueError as e:
         editor.notification_requested.send(editor, message=str(e))
         return
-    GLib.idle_add(show_new_test, window, cmd.workpieces(record))
+    show_new_test(window, cmd.workpieces(record))
 
 
 @hookimpl

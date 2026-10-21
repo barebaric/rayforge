@@ -1,13 +1,15 @@
 """
 Turns a :class:`CalibrationLayout` into workpieces, steps and assets.
 
-The builder creates the items but does not add them to the document;
-their source assets are hidden, since they belong to the test and are
-replaced when it is rebuilt;
-``CalibrationCmd`` does that in one undoable transaction. Items are
-created at their test-local position and then moved together, so the
-conversion from test-local to world coordinates happens in one place
-(:meth:`BuiltTest.move_to`).
+The builder creates the items; ``CalibrationCmd`` adds them to the
+document in one undoable transaction. Their source assets are hidden,
+since they belong to the test and are replaced when it is rebuilt.
+Items are created at their test-local position and then moved
+together by :meth:`BuiltTest.move_to`.
+
+Vector cells go through the SVG importer: core has no other way to
+turn geometry into a workpiece with a source asset that the renderer
+and the Engrave step can rasterize.
 """
 
 import logging

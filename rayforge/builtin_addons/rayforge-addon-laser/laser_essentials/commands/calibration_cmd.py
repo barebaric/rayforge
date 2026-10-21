@@ -21,7 +21,6 @@ from rayforge.core.item import DocItem
 from rayforge.core.layer import Layer
 from rayforge.core.step import Step
 from rayforge.core.undo import Command, ListItemCommand
-from rayforge.core.workflow import Workflow
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.layer_cmd import AddLayerAndSetActiveCommand
 
@@ -49,8 +48,6 @@ class CalibrationCmd:
     @staticmethod
     def generator(generator_id: str) -> CalibrationGenerator:
         return GENERATORS[generator_id]
-
-    # -- Creating ---------------------------------------------------------
 
     def create(
         self, generator_id: str, params: dict[str, Any] | None = None
@@ -107,14 +104,10 @@ class CalibrationCmd:
         )
         return layer
 
-    # -- Finding ----------------------------------------------------------
-
     @staticmethod
     def record_for_items(items: list[DocItem]) -> CalibrationRecord | None:
         """The record of the test all *items* belong to, or None."""
         return record_for_items(items)
-
-    # -- Updating ---------------------------------------------------------
 
     def update_params(
         self, record: CalibrationRecord, params: dict[str, Any]
@@ -124,7 +117,7 @@ class CalibrationCmd:
         where it is now. Steps the user added to the layer stay. Raises
         ``ValueError`` when the parameters do not make a valid test.
         """
-        if params == record.params and record.uid in self._doc.assets:
+        if params == self.params(record) and record.uid in self._doc.assets:
             return self.workpieces(record)
         generator = self.generator(record.generator_id)
         layer = self._doc.find_descendant_by_uid(record.layer_uid)
@@ -133,9 +126,11 @@ class CalibrationCmd:
         built = self._build(generator, params)
         old_wps = self.workpieces(record)
         self._place(built, old_wps)
+        old_steps = self._steps(record)
+        changes = _reuse_steps(generator, old_steps, built)
         old = GeneratedItems(
             old_wps,
-            self._steps(layer.workflow, record),
+            old_steps,
             self._unused_assets(record, old_wps),
             record.state,
         )
@@ -151,15 +146,26 @@ class CalibrationCmd:
                 t.execute(self._add_asset_cmd(record))
             t.execute(
                 RebuildCalibrationCommand(
-                    self._editor, layer, record, old, new, label
+                    self._editor, layer, record, (old, new), changes, label
                 )
             )
         return built.workpieces
 
-    @staticmethod
-    def _steps(workflow: Workflow, record: CalibrationRecord) -> list[Step]:
-        generated = set(record.state.step_uids)
-        return [s for s in workflow.steps if s.uid in generated]
+    def params(self, record: CalibrationRecord) -> dict[str, Any]:
+        """
+        The parameters of the test, including changes made to its steps
+        outside the Test Settings, such as an applied recipe.
+        """
+        generator = self.generator(record.generator_id)
+        return generator.params_from_steps(record.params, self._steps(record))
+
+    def _steps(self, record: CalibrationRecord) -> list[Step]:
+        """The generated steps that are still in the document."""
+        found = (
+            self._doc.find_descendant_by_uid(uid)
+            for uid in record.state.step_uids
+        )
+        return [step for step in found if isinstance(step, Step)]
 
     def workpieces(self, record: CalibrationRecord) -> list[WorkPiece]:
         """The workpieces of the test that are still in the document."""
@@ -201,8 +207,6 @@ class CalibrationCmd:
         )
         return [asset for asset in found if asset is not None]
 
-    # -- Building blocks --------------------------------------------------
-
     def _build(
         self, generator: CalibrationGenerator, params: dict[str, Any]
     ) -> BuiltTest:
@@ -221,6 +225,43 @@ def _state(params: dict[str, Any], built: BuiltTest) -> CalibrationState:
         step_uids=tuple(step.uid for step in built.steps),
         asset_uids=tuple(asset.uid for asset in built.assets),
     )
+
+
+@dataclass
+class StepChange:
+    """Settings of a kept step before and after a rebuild."""
+
+    step: Step
+    before: dict[str, Any]
+    after: dict[str, Any]
+
+    def apply(self, values: dict[str, Any]):
+        for key, value in values.items():
+            setattr(self.step, key, value)
+
+
+def _reuse_steps(
+    generator: CalibrationGenerator, old: list[Step], built: BuiltTest
+) -> list[StepChange]:
+    """
+    For a generator that keeps its steps, puts the old steps in place of
+    the new ones and returns the settings to change on them. The steps
+    are kept only when they match the new ones one to one.
+    """
+    if not generator.keeps_steps or len(old) != len(built.steps):
+        return []
+    if any(type(a) is not type(b) for a, b in zip(old, built.steps)):
+        return []
+    changes = []
+    for index, (kept, fresh) in enumerate(zip(old, built.steps)):
+        after = {
+            **generator.step_settings(fresh),
+            "workpiece_uids": list(fresh.workpiece_uids),
+        }
+        before = {key: getattr(kept, key) for key in after}
+        changes.append(StepChange(kept, before, after))
+        built.steps[index] = kept
+    return changes
 
 
 @dataclass
@@ -246,34 +287,38 @@ class RebuildCalibrationCommand(Command):
         editor: "DocEditor",
         layer: Layer,
         record: CalibrationRecord,
-        old: GeneratedItems,
-        new: GeneratedItems,
+        items: tuple[GeneratedItems, GeneratedItems],
+        changes: list[StepChange],
         name: str,
     ):
         super().__init__(name)
         self._editor = editor
         self._layer = layer
         self._record = record
-        self._old = old
-        self._new = new
-        self._parents = {wp.uid: wp.parent for wp in old.workpieces}
+        self._old, self._new = items
+        self._changes = changes
+        self._parents = {wp.uid: wp.parent for wp in self._old.workpieces}
 
     def execute(self) -> None:
-        self._swap(self._old, self._new)
+        self._swap(self._old, self._new, forward=True)
 
     def undo(self) -> None:
-        self._swap(self._new, self._old)
+        self._swap(self._new, self._old, forward=False)
 
-    def _swap(self, out: GeneratedItems, into: GeneratedItems):
+    def _swap(self, out: GeneratedItems, into: GeneratedItems, forward: bool):
         doc = self._editor.doc
         with self._editor.pipeline.paused():
+            self._record.set_state(into.state)
+            for change in self._changes:
+                change.apply(change.after if forward else change.before)
             self._swap_workpieces(out.workpieces, into.workpieces)
             self._swap_steps(out.steps, into.steps)
             for asset in into.assets:
                 doc.add_asset(asset, silent=True)
             for asset in out.assets:
                 doc.remove_asset_by_uid(asset.uid, silent=True)
-            self._record.set_state(into.state)
+            for change in self._changes:
+                change.step.updated.send(change.step)
         doc.updated.send(doc)
 
     def _swap_workpieces(self, out: list[WorkPiece], into: list[WorkPiece]):

@@ -8,12 +8,14 @@ import importlib
 import re
 from itertools import pairwise
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 import pytest_asyncio
 
 from rayforge.context import get_context
 from rayforge.core.group import Group
+from rayforge.core.undo import ChangePropertyCommand
 from rayforge.core.vectorization_spec import ProceduralSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.procedural import ProceduralImporter
@@ -28,6 +30,13 @@ _calibration = importlib.import_module("laser_essentials.calibration")
 _command = importlib.import_module("laser_essentials.commands.calibration_cmd")
 FocusMode = _calibration.FocusMode
 CalibrationCmd = _command.CalibrationCmd
+_sync = importlib.import_module("laser_essentials.commands.calibration_sync")
+CalibrationSync = _sync.CalibrationSync
+sync_grid_preview = _sync.sync_grid_preview
+
+
+def _steps_module():
+    return importlib.import_module("laser_essentials.steps")
 
 
 @pytest.fixture
@@ -401,6 +410,105 @@ async def test_record_survives_save_and_load(doc_editor, machine):
 
 
 @pytest.mark.asyncio
+async def test_deleting_the_layer_removes_the_record(doc_editor, machine):
+    """The record and hidden assets of a test leave with its layer, are
+    not saved, and come back when the deletion is undone."""
+    sync = CalibrationSync(doc_editor)
+    cmd = CalibrationCmd(doc_editor)
+    record = cmd.create("interval_test", {"count": 2})
+    owned = {record.uid, *record.state.asset_uids}
+    assert owned <= set(doc_editor.doc.assets)
+
+    doc_editor.layer.delete_layer(_layer(doc_editor, record))
+
+    assert owned.isdisjoint(doc_editor.doc.assets)
+    saved = doc_editor.doc.to_dict()["assets"]
+    assert owned.isdisjoint(a["uid"] for a in saved)
+
+    doc_editor.history_manager.undo()
+    assert owned <= set(doc_editor.doc.assets)
+    workpieces = cmd.workpieces(record)
+    assert cmd.record_for_items(workpieces) is record
+    doc_editor.history_manager.redo()
+    assert owned.isdisjoint(doc_editor.doc.assets)
+    assert sync is not None
+
+
+@pytest.mark.asyncio
+async def test_undoing_a_new_test_leaves_nothing(doc_editor, machine):
+    sync = CalibrationSync(doc_editor)
+    assets = set(doc_editor.doc.assets)
+    record = CalibrationCmd(doc_editor).create("focus_test")
+    doc_editor.history_manager.undo()
+    assert set(doc_editor.doc.assets) == assets
+    doc_editor.history_manager.redo()
+    assert record.uid in doc_editor.doc.assets
+    assert set(record.state.asset_uids) <= set(doc_editor.doc.assets)
+    assert sync is not None
+
+
+@pytest.mark.asyncio
+async def test_sync_follows_a_new_document(doc_editor, machine):
+    sync = CalibrationSync(doc_editor)
+    old_doc = doc_editor.doc
+    doc_editor.set_doc(type(old_doc)())
+    record = CalibrationCmd(doc_editor).create("interval_test")
+    doc_editor.layer.delete_layer(_layer(doc_editor, record))
+    assert record.uid not in doc_editor.doc.assets
+    assert sync is not None
+
+
+@pytest.mark.asyncio
+async def test_sync_ignores_other_changes(doc_editor, machine):
+    """Removing a layer without a test, or a workpiece, leaves the assets
+    alone; a grid step without a preview is not touched."""
+    sync = CalibrationSync(doc_editor)
+    cmd = CalibrationCmd(doc_editor)
+    record = cmd.create("material_test_grid")
+    assets = set(doc_editor.doc.assets)
+    (wp,) = cmd.workpieces(record)
+    other = doc_editor.doc.layers[0]
+
+    doc_editor.layer.delete_layer(other)
+    _layer(doc_editor, record).remove_child(wp)
+    assert set(doc_editor.doc.assets) == assets
+
+    (step,) = _steps(_layer(doc_editor, record))
+    step.grid_dimensions = (3, 3)
+    step.updated.send(step)
+    step.workpiece_uids = []
+    step.updated.send(step)
+    assert sync is not None
+
+
+@pytest.mark.asyncio
+async def test_grid_preview_with_broken_settings_is_left_alone(
+    doc_editor, machine
+):
+    cmd = CalibrationCmd(doc_editor)
+    record = cmd.create("material_test_grid")
+    (wp,) = cmd.workpieces(record)
+    (step,) = _steps(_layer(doc_editor, record))
+    wp.source.original_data = b"not json"
+    step.grid_dimensions = (3, 3)
+    sync_grid_preview(doc_editor.doc, step)
+    assert wp.size == pytest.approx((73.0, 73.0))
+
+
+@pytest.mark.asyncio
+async def test_steps_are_replaced_when_they_do_not_match(doc_editor, machine):
+    reuse = _command._reuse_steps
+    generator = CalibrationCmd.generator("material_test_grid")
+    contour = importlib.import_module("laser_essentials.steps").ContourStep()
+    built = SimpleNamespace(steps=[_steps_module().MaterialTestStep()])
+    assert reuse(generator, [contour], built) == []
+    assert reuse(generator, [], built) == []
+    interval = CalibrationCmd.generator("interval_test")
+    assert interval.step_settings(contour) == {}
+    assert generator.params_from_steps({"a": 1}, []) == {"a": 1}
+
+
+@pytest.mark.asyncio
 async def test_record_for_items(doc_editor, machine):
     cmd = CalibrationCmd(doc_editor)
     interval = cmd.create("interval_test")
@@ -505,6 +613,74 @@ async def test_material_test_grid_gcode_matches_the_old_grid(
     old = await _gcode(doc_editor)
     assert generated.count("M4") > 6
     assert generated.splitlines() == old.splitlines()
+
+
+def _apply_recipe_values(editor, step, values):
+    """Change step settings the way the recipe control does."""
+    with editor.history_manager.transaction("Apply Recipe") as t:
+        for key, value in values.items():
+            t.execute(
+                ChangePropertyCommand(
+                    target=step,
+                    property_name=key,
+                    new_value=value,
+                    on_change_callback=lambda: step.updated.send(step),
+                )
+            )
+
+
+@pytest.mark.asyncio
+async def test_material_test_grid_follows_a_recipe(doc_editor, machine):
+    """A recipe applied to the grid's step resizes the preview, shows in
+    the Test Settings, and stays when another setting changes."""
+    sync = CalibrationSync(doc_editor)
+    cmd = CalibrationCmd(doc_editor)
+    record = cmd.create("material_test_grid")
+    (step,) = _steps(_layer(doc_editor, record))
+    (wp,) = cmd.workpieces(record)
+    assert wp.size == pytest.approx((73.0, 73.0))
+
+    _apply_recipe_values(doc_editor, step, {"grid_dimensions": [6, 6]})
+
+    (wp,) = cmd.workpieces(record)
+    assert wp.size == pytest.approx((6 * 10 + 5 * 2 + 15,) * 2)
+    params = cmd.params(record)
+    assert tuple(params["grid_dimensions"]) == (6, 6)
+
+    cmd.update_params(record, {**params, "spacing": 3.0})
+    assert tuple(step.grid_dimensions) == (6, 6)
+    (wp,) = cmd.workpieces(record)
+    assert wp.size == pytest.approx((6 * 10 + 5 * 3 + 15,) * 2)
+
+    doc_editor.history_manager.undo()
+    doc_editor.history_manager.undo()
+    (wp,) = cmd.workpieces(record)
+    assert tuple(step.grid_dimensions) == (5, 5)
+    assert wp.size == pytest.approx((73.0, 73.0))
+    assert sync is not None
+
+
+@pytest.mark.asyncio
+async def test_material_test_grid_keeps_its_operation(doc_editor, machine):
+    """Changing the grid keeps the step and what was set in its own
+    settings, such as air assist."""
+    cmd = CalibrationCmd(doc_editor)
+    record = cmd.create("material_test_grid")
+    layer = _layer(doc_editor, record)
+    (step,) = _steps(layer)
+    step.air_assist = True
+
+    cmd.update_params(record, {**cmd.params(record), "shape_size": 8.0})
+
+    assert _steps(layer) == [step]
+    assert step.air_assist is True
+    assert step.shape_size == 8.0
+    (wp,) = cmd.workpieces(record)
+    assert step.workpiece_uids == [wp.uid]
+    doc_editor.history_manager.undo()
+    assert step.shape_size == 10.0
+    (old_wp,) = cmd.workpieces(record)
+    assert step.workpiece_uids == [old_wp.uid]
 
 
 @pytest.mark.asyncio
