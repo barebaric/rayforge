@@ -28,6 +28,12 @@ class _OtherProvider:
     def get_reference_point(self):
         return None
 
+    def get_template_sources(self) -> list[str]:
+        return []
+
+    def variables_used(self) -> set[str]:
+        return set()
+
     def to_dict(self) -> dict[str, Any]:
         return {"uid": self.uid, "type": "other"}
 
