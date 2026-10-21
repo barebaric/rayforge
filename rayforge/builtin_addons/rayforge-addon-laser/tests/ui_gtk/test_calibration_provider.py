@@ -379,3 +379,20 @@ def test_provider_is_registered_once_at_init():
         assert registry.all().count(CalibrationPropertyProvider) == 1
     finally:
         registry.unregister(CalibrationPropertyProvider)
+
+
+@pytest.mark.ui
+def test_rejected_value_is_kept_for_the_next_change(provider, editor, cmd):
+    """A value that made the test invalid is not dropped when another
+    setting then makes it valid."""
+    record = _show(provider, editor, cmd, "interval_test")
+    _set(provider, "min_interval", 0.3)
+    provider.apply_now()
+    assert provider.error_row.get_visible()
+
+    _set(provider, "max_interval", 0.5)
+    provider.apply_now()
+
+    assert not provider.error_row.get_visible()
+    assert record.params["min_interval"] == pytest.approx(0.3)
+    assert record.params["max_interval"] == pytest.approx(0.5)

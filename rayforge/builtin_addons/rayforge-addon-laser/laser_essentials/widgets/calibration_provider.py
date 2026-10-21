@@ -81,6 +81,7 @@ class CalibrationPropertyProvider(PropertyProvider):
             self._record = record_for_items(items)
             if self._record is not previous:
                 self.stop_following()
+                self._pending_keys.clear()
             generator = self.generator
             if self._record is None or generator is None:
                 return
@@ -217,6 +218,7 @@ class CalibrationPropertyProvider(PropertyProvider):
             workpieces = cmd.update_params(record, params)
         except ValueError as e:
             _show_text(self.error_row, str(e))
+            self._pending_keys |= keys
             return
         self.error_row.set_visible(False)
         self._reselect(workpieces, offset)
