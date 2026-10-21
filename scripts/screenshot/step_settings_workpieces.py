@@ -5,6 +5,7 @@ import time
 
 from utils import (
     find_step_by_type,
+    get_all_steps,
     get_target,
     load_project,
     open_step_settings,
@@ -23,8 +24,13 @@ TARGET = get_target("step-settings:material-test-grid:workpieces")
 
 def _create_material_test() -> None:
     """Create the grid through the editor's own command so the step is
-    linked to its generated workpiece like in the real flow."""
+    linked to its generated workpiece like in the real flow, and move
+    another workpiece onto the grid's layer, so the tab shows one
+    workpiece the grid's step leaves out."""
+    doc = win.doc_editor.doc
+    other = doc.layers[0].all_workpieces[0]
     win.doc_editor.calibration.create("material_test_grid")
+    doc.active_layer.add_child(other)
 
 
 @restore_config
@@ -43,7 +49,8 @@ def main():
         app.quit_idle()
         return
 
-    step, step_index = found
+    step = found[0]
+    step_index = get_all_steps(win).index(step)
     logger.info("Found step: %s at index %s", step.name, step_index)
 
     open_step_settings(win, step_index=step_index, page="workpieces")
