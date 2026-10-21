@@ -160,8 +160,24 @@ Combina o sustrae formas:
 
 ## Edición de Vectores
 
-Haz doble clic en una pieza de trabajo en el lienzo para entrar al modo de edición de vectores. En
-este modo, puedes seleccionar y eliminar segmentos de vector individuales de la pieza de trabajo.
+Haz doble clic en una pieza de trabajo importada en el lienzo para entrar al modo de edición de
+vectores. En este modo, puedes seleccionar y eliminar segmentos de vector individuales de la pieza
+de trabajo, y editar sus nodos.
+
+Haz clic en un segmento para seleccionarlo, o arrastra un marco alrededor de varios. Los nodos del
+contorno seleccionado aparecen como pequeños cuadrados, y los manejadores de las curvas
+seleccionadas como puntos redondos:
+
+- **Arrastra un nodo** para moverlo; los manejadores de curva contiguos se mueven con él. En una
+  ruta cerrada, el nodo inicial y el final son un solo nodo.
+- **Arrastra un manejador** para cambiar la forma de una curva.
+- Haz clic en un nodo y presiona <kbd>Supr</kbd> para eliminarlo; los segmentos de ambos lados se
+  unen en uno. Sin ningún nodo seleccionado, <kbd>Supr</kbd> elimina los segmentos seleccionados.
+- Apunta a un segmento y presiona <kbd>I</kbd> para insertar un nodo allí.
+- Presiona <kbd>C</kbd> para convertir los segmentos seleccionados en curvas, o de nuevo en líneas
+  rectas cuando ya son todos curvas.
+
+Cada cambio se puede deshacer. Los bocetos se editan en el diseñador paramétrico.
 
 Para salir del modo de edición de vectores, haz clic fuera de la pieza de trabajo o presiona
 <kbd>Escape</kbd>.

@@ -218,6 +218,9 @@ class GrblSerialDriver(Driver):
         if self._session is not None:
             self._session.update_dialect(self._dialect_templates())
 
+    def refresh_dialect(self) -> None:
+        self._update_session_dialect()
+
     def _setup_implementation(self, **kwargs: Any) -> None:
         port = cast(str, kwargs.get("port", ""))
         baudrate = kwargs.get("baudrate", 115200)

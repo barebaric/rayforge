@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-15 13:51+0200\n"
+"POT-Creation-Date: 2026-10-21 14:24+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Ukrainian\n"
@@ -361,6 +361,18 @@ msgstr "Невідома змінна або функція: '{name}'"
 #, python-brace-format
 msgid "Cannot use operator '{op}' between types '{left}' and '{right}'"
 msgstr "Неможливо використати оператор '{op}' між типами '{left}' та '{right}'"
+
+#: rayforge/core/workpiece.py
+msgid "Corner"
+msgstr "Кут"
+
+#: rayforge/core/workpiece.py
+msgid "Center"
+msgstr "Центр"
+
+#: rayforge/core/workpiece.py
+msgid "Reference point"
+msgstr "Опорна точка"
 
 #: rayforge/camera/source/base.py
 #, python-brace-format
@@ -1859,6 +1871,11 @@ msgstr "Робочі поля"
 msgid "Soft Limits"
 msgstr "М'які обмеження"
 
+#: rayforge/machine/device/profile.py rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Enable Soft Limits"
+msgstr "Увімкнути м'які обмеження"
+
 #: rayforge/machine/device/profile.py
 msgid "Coordinate Origin"
 msgstr "Початок координат"
@@ -2520,6 +2537,10 @@ msgid ""
 msgstr ""
 "Завдання вже виконується. Дочекайтеся його завершення або натисніть «Стоп», "
 "щоб скасувати його."
+
+#: rayforge/machine/cmd.py
+msgid "The document produces no toolpath."
+msgstr "Документ не створює жодного шляху інструмента."
 
 #: rayforge/machine/cmd.py
 #, python-brace-format
@@ -4878,8 +4899,8 @@ msgid "Calibrate this camera later from the machine settings page."
 msgstr "Відкалібруйте цю камеру пізніше на сторінці налаштувань машини."
 
 #: rayforge/ui_gtk/machine/console.py
-msgid "Show verbose output (status polls)"
-msgstr "Показати детальний вивід (опитування статусу)"
+msgid "Show verbose output (status polls, raw I/O)"
+msgstr "Показати докладний вивід (опитування статусу, необроблений ввід/вивід)"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
 msgid "Rectangle"
@@ -5911,20 +5932,16 @@ msgstr ""
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid ""
-"Configurable safety bounds for jogging. Leave disabled to use work surface "
-"bounds."
+"Configurable safety bounds for jogging. Leave disabled to jog without limit "
+"checks."
 msgstr ""
-"Налаштовувані межі безпеки для переміщення. Залиште вимкненим, щоб "
-"використовувати межі робочої поверхні."
+"Налаштовувані межі безпеки для ручного переміщення. Якщо залишити вимкненим, "
+"переміщення виконуватиметься без перевірки обмежень."
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Enable Custom Soft Limits"
-msgstr "Увімкнути власні м'які обмеження"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-msgid "Override work surface bounds with custom limits"
-msgstr "Замінити межі робочої поверхні власними обмеженнями"
+msgid "Limit jogging to custom bounds instead of the work surface"
+msgstr "Обмежити ручне переміщення власними межами замість робочої поверхні"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
@@ -6651,10 +6668,6 @@ msgstr "Фізичний кут, де координати дорівнюють 
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Enable if +Z moves head down"
 msgstr "Увімкніть, якщо +Z опускає голівку вниз"
-
-#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Override work-surface bounds with custom limits"
-msgstr "Перевизначити межі робочої поверхні власними обмеженнями"
 
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Limits in machine units per minute."
@@ -9278,6 +9291,10 @@ msgid "Reset Y position to 0"
 msgstr "Скинути позицію Y до 0"
 
 #: rayforge/ui_gtk/doceditor/property_providers/transform.py
+msgid "Position relative to"
+msgstr "Позиція відносно"
+
+#: rayforge/ui_gtk/doceditor/property_providers/transform.py
 msgid "Fixed Ratio"
 msgstr "Фіксоване співвідношення"
 
@@ -9321,6 +9338,10 @@ msgstr "Скинути нахил до 0°"
 #, python-brace-format
 msgid "Natural: {val}"
 msgstr "Натуральний: {val}"
+
+#: rayforge/ui_gtk/doceditor/property_providers/transform.py
+msgid "Change position origin"
+msgstr "Змінити початок позиції"
 
 #: rayforge/ui_gtk/doceditor/property_providers/workpiece.py
 msgid "Source File"
@@ -10490,6 +10511,30 @@ msgstr "Створити масив"
 #: rayforge/doceditor/array_cmd.py
 msgid "Create array copy"
 msgstr "Створити копію масиву"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Move node"
+msgstr "Перемістити вузол"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Delete node"
+msgstr "Видалити вузол"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Insert node"
+msgstr "Вставити вузол"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Make curve"
+msgstr "Перетворити на криву"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Make line"
+msgstr "Перетворити на лінію"
+
+#: rayforge/doceditor/node_edit_cmd.py
+msgid "Move handle"
+msgstr "Перемістити важіль"
 
 #: rayforge/doceditor/path_cleanup_cmd.py
 msgid "Close paths"

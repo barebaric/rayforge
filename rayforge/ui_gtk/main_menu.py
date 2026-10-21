@@ -1,9 +1,21 @@
 from gettext import gettext as _
 
-from gi.repository import Gio, GLib, Gtk
+from gi.repository import Gio, Gtk
 
 from ..machine.models.macro import Macro
 from .action_registry import action_registry
+
+
+def _escape_menu_label(text: str) -> str:
+    """Make text that GtkModelButton renders literally.
+
+    Menu items are built from a GMenu model and rendered by
+    GtkModelButton, which always treats underscores as mnemonics. GMenu
+    offers no way to turn that off, so every underscore is doubled to make
+    it show up as a literal underscore. Labels are plain text rather than
+    Pango markup, so characters such as ``&`` and ``<`` need no escaping.
+    """
+    return text.replace("_", "__")
 
 
 class MainMenu(Gio.Menu):
@@ -299,9 +311,7 @@ class MainMenu(Gio.Menu):
             return
 
         for info in recent_infos:
-            # Use Glib.markup_escape to prevent issues with special chars
-            # in filenames.
-            display_name = GLib.markup_escape_text(info.get_display_name())
+            display_name = _escape_menu_label(info.get_display_name())
             uri = info.get_uri()
             action_name = f"win.open-recent('{uri}')"
             self.dynamic_recent_files_section.append(display_name, action_name)

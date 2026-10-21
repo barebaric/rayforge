@@ -231,9 +231,7 @@ class UnstickJunctionCommand(SketchChangeCommand):
         # Remove the added point
         if self.new_point:
             registry = self.sketch.registry
-            registry.points = [
-                p for p in registry.points if p.id != self.new_point.id
-            ]
+            registry.remove_points([self.new_point.id])
 
 
 class MoveEntitiesCommand(SketchChangeCommand):

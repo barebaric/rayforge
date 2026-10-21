@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-15 05:47+0200\n"
+"POT-Creation-Date: 2026-10-18 02:42+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -31,6 +31,26 @@ msgstr "保留第一个工件"
 #: post_processors/widgets/optimize_group.py
 msgid "Keep the first workpiece at its original position"
 msgstr "将第一个工件保持在原始位置"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Choose Best Start Point"
+msgstr "选择最佳起点"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Start closed paths at the vertex nearest the laser head to shorten travel "
+"moves."
+msgstr "从最靠近激光头的顶点开始闭合路径，以缩短移动路径。"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Prefer Corners"
+msgstr "优先选择拐角"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Start closed paths at a sharp corner where the path has one, which makes the "
+"seam less visible."
+msgstr "路径存在尖锐拐角时，从该拐角开始闭合路径，使接缝更不明显。"
 
 #: post_processors/widgets/optimize_group.py
 msgid "Merge Scanlines"
@@ -59,6 +79,14 @@ msgstr "切换翻转"
 #: post_processors/widgets/optimize_group.py
 msgid "Toggle Preserve First Workpiece"
 msgstr "切换保留第一个工件"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Choose Best Start Point"
+msgstr "切换选择最佳起点"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Prefer Corners"
+msgstr "切换优先选择拐角"
 
 #: post_processors/widgets/optimize_group.py
 msgid "Change maximum bridged gap"

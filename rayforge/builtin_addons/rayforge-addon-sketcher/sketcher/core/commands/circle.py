@@ -224,9 +224,7 @@ class CircleCommand(SketchChangeCommand):
             registry._entity_map = {e.id: e for e in registry.entities}
 
         if preview_state.radius_id is not None:
-            registry.points = [
-                p for p in registry.points if p.id != preview_state.radius_id
-            ]
+            registry.remove_points([preview_state.radius_id])
 
     def _do_execute(self) -> None:
         if self.add_cmd:
@@ -268,7 +266,7 @@ class CircleCommand(SketchChangeCommand):
         if self.is_center_temp:
             try:
                 p = registry.get_point(self.center_id)
-                registry.points.remove(p)
+                registry.remove_points([p.id])
                 points_to_add.append(p)
             except (IndexError, ValueError):
                 pass

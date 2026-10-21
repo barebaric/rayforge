@@ -38,7 +38,7 @@ def test_circle_command_execute_temp_center():
     """Test command execution when the center point was temporary."""
     sketch = Sketch()
     center_pid = 100
-    sketch.registry.points.append(Point(center_pid, 0, 0))
+    sketch.registry.add_points([Point(center_pid, 0, 0)])
     assert len(sketch.registry.points) == 2
 
     cmd = CircleCommand(sketch, center_pid, (100, 50), is_center_temp=True)
@@ -329,7 +329,7 @@ def test_circle_preview_get_dimensions_missing_point():
     state = CircleCommand.start_preview(
         sketch.registry, 0, 0, snapped_pid=None
     )
-    sketch.registry.points.clear()
+    sketch.registry.set_points([])
 
     dims = state.get_dimensions(sketch.registry)
 

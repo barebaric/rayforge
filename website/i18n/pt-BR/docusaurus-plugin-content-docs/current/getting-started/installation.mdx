@@ -24,6 +24,26 @@ Projetos simples podem precisar de pouco além do instalado, enquanto projetos
 complexos podem facilmente consumir 10 GB de RAM ou mais e exigir espaço em
 disco adicional significativo.
 
+## Requisito de CPU no Linux (x86-64-v2)
+
+Os pacotes Linux trazem seu próprio NumPy, que exige o nível de conjunto de
+instruções x86-64-v2 (SSE4.2 e POPCNT). Isso vale para os pacotes Snap,
+Flatpak e AppImage, além de instalações via pip a partir do PyPI. Em CPUs
+x86-64 mais antigas (Intel Core 2 ou anteriores, AMD Phenom ou anteriores),
+o Rayforge não inicia, geralmente sem mensagem de erro. CPUs Intel a
+partir de Nehalem (2008) e AMD a partir de Bulldozer (2011) suportam
+x86-64-v2.
+
+Para verificar se a sua CPU atende ao requisito, execute:
+
+```bash
+grep -m1 flags /proc/cpuinfo | grep -o -w -E 'sse4_2|popcnt' | sort -u
+```
+
+Se o comando não exibir as duas flags, instale o Rayforge pelo PPA do
+Ubuntu ou pelo repositório de pacotes da sua distribuição. Essas versões
+usam o NumPy fornecido pela distribuição e funcionam em CPUs mais antigas.
+
 ## Próximos Passos
 
 Agora que o Rayforge está instalado, prossiga para

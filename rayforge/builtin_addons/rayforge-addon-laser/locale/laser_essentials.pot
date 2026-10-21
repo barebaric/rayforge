@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-12 18:45+0200\n"
+"POT-Creation-Date: 2026-10-18 04:42+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -240,6 +240,15 @@ msgstr ""
 msgid "Change Power Range"
 msgstr ""
 
+#: laser_essentials/widgets/offset_fill_page.py
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Offset Fill"
+msgstr ""
+
+#: laser_essentials/widgets/offset_fill_page.py
+msgid "Fill closed shapes with rings that follow the outline."
+msgstr ""
+
 #: laser_essentials/widgets/levels_adapter.py
 msgid "Auto-adjusted based on image content"
 msgstr ""
@@ -333,6 +342,7 @@ msgstr ""
 #: laser_essentials/steps/shrinkwrap_step.py
 #: laser_essentials/steps/wavefront_step.py
 #: laser_essentials/steps/frame_step.py
+#: laser_essentials/steps/offset_fill_step.py
 #: laser_essentials/steps/contour_step.py
 msgid "Offset"
 msgstr ""
@@ -379,6 +389,28 @@ msgstr ""
 
 #: laser_essentials/steps/frame_step.py
 msgid "Radius used to round the frame's corners"
+msgstr ""
+
+#: laser_essentials/steps/offset_fill_step.py
+#: laser_essentials/steps/material_test.py
+msgid "Line Interval"
+msgstr ""
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid ""
+"Distance between neighbouring fill rings. Defaults to the laser spot size"
+msgstr ""
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Distance of the first ring inside the outline"
+msgstr ""
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Fill Direction"
+msgstr ""
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Order in which the rings are cut"
 msgstr ""
 
 #: laser_essentials/steps/raster_step.py
@@ -632,10 +664,6 @@ msgstr ""
 
 #: laser_essentials/steps/material_test.py
 msgid "Gap between test squares"
-msgstr ""
-
-#: laser_essentials/steps/material_test.py
-msgid "Line Interval"
 msgstr ""
 
 #: laser_essentials/steps/material_test.py

@@ -112,7 +112,7 @@ class PolygonPreviewState(PreviewState):
     def _remove_outline(self, registry: EntityRegistry) -> None:
         corners = set(self.corner_ids)
         registry.remove_entities_by_id(self.line_ids)
-        registry.points = [p for p in registry.points if p.id not in corners]
+        registry.remove_points(corners)
         self.line_ids = []
         self.corner_ids = []
 
@@ -272,9 +272,7 @@ class PolygonCommand(SketchChangeCommand):
         if not isinstance(preview_state, PolygonPreviewState):
             raise TypeError("Expected PolygonPreviewState")
         preview_state._remove_outline(registry)
-        registry.points = [
-            p for p in registry.points if p.id != preview_state.radius_id
-        ]
+        registry.remove_points([preview_state.radius_id])
 
     def _first_corner(self, center: Point) -> GeoPoint:
         x, y = self.end_pos
@@ -341,7 +339,7 @@ class PolygonCommand(SketchChangeCommand):
             return
         points, entities, constraints = self._shape(center, first)
         if self.is_center_temp:
-            registry.points.remove(center)
+            registry.remove_points([center.id])
             points.append(center)
         self.add_cmd = AddItemsCommand(
             self.sketch,
