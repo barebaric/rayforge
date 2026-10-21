@@ -72,7 +72,7 @@ class JobCounterDialog(PatchedDialogWindow):
 
     def _build_counter_group(self) -> Adw.PreferencesGroup:
         group = Adw.PreferencesGroup(
-            title=_("Serial Number"),
+            title=_("Counter"),
             description=_(
                 "Use {counter} in a text box, e.g. No. {counter:04d} "
                 "for four digits with leading zeros."
@@ -138,7 +138,7 @@ class JobCounterDialog(PatchedDialogWindow):
 
     def _build_job_group(self) -> Adw.PreferencesGroup:
         group = Adw.PreferencesGroup(title=_("Next Job"))
-        self.preview_row = Adw.ActionRow(title=_("Serial Numbers"))
+        self.preview_row = Adw.ActionRow(title=_("Counter Values"))
         self.preview_row.add_css_class("property")
         group.add(self.preview_row)
 
