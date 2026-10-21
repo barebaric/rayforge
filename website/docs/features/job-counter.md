@@ -37,10 +37,10 @@ advance, is part of the undo history and is saved in the project.
 
 ## Numbering copies
 
-Each workpiece has a **Variable Offset**. A copy with offset _n_ shows the number _n_ copies after
-the current one. A [grid or circular array](arrays.md) gives its copies increasing offsets
-automatically, so one array of 20 plates engraves 20 consecutive numbers, and the next job continues
-with the 21st.
+Each workpiece has an offset. A copy with offset _n_ shows the number _n_ copies after the current
+one. A [grid or circular array](arrays.md) and **Arrange → Array → Number Copies** give the copies
+increasing offsets, so one array of 20 plates engraves 20 consecutive numbers, and the next job
+continues with the 21st.
 
 Arrays made inside a sketch are different: their copies belong to one workpiece and all show the
 same number. Make the array on the canvas instead to number the copies.
