@@ -16,7 +16,12 @@ from gi.repository import GLib
 from raygeo.geo import Matrix
 
 from .hittest import check_pixel_hit
-from .region import ElementRegion, check_region_hit, get_region_rect
+from .region import (
+    ElementRegion,
+    check_region_hit,
+    flat_axis_padding,
+    get_region_rect,
+)
 
 if TYPE_CHECKING:
     from raygeo.geo.types import Point, Rect
@@ -29,12 +34,6 @@ logger = logging.getLogger(__name__)
 max_workers = max(1, (os.cpu_count() or 1) - 2)
 # Define a maximum dimension for our rendering buffers to prevent cairo errors.
 MAX_BUFFER_DIM = 8192
-# An axis whose on-screen extent is smaller than this many pixels is treated
-# as flat for hit-testing, e.g. a perfectly horizontal line has zero height.
-FLAT_HIT_THRESHOLD_PX = 1.0
-# Screen-space tolerance applied to flat axes so that zero-height or
-# zero-width elements behave like very thin rectangles and stay selectable.
-FLAT_HIT_TOLERANCE_PX = 4.0
 
 
 class CanvasElement:
@@ -1093,19 +1092,9 @@ class CanvasElement:
             transform = self.canvas.view_transform @ transform
         scale_x, scale_y = transform.get_abs_scale()
 
-        flat_x = self.width * scale_x < FLAT_HIT_THRESHOLD_PX
-        flat_y = self.height * scale_y < FLAT_HIT_THRESHOLD_PX
-        tol_x = (
-            FLAT_HIT_TOLERANCE_PX / scale_x
-            if flat_x and scale_x > 1e-12
-            else 0.0
-        )
-        tol_y = (
-            FLAT_HIT_TOLERANCE_PX / scale_y
-            if flat_y and scale_y > 1e-12
-            else 0.0
-        )
-        return tol_x, tol_y, flat_x, flat_y
+        tol_x = flat_axis_padding(self.width, scale_x)
+        tol_y = flat_axis_padding(self.height, scale_y)
+        return tol_x, tol_y, tol_x > 0.0, tol_y > 0.0
 
     def is_pixel_opaque(self, local_x: float, local_y: float) -> bool:
         """
