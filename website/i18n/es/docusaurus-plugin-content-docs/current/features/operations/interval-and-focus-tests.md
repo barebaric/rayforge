@@ -23,6 +23,8 @@ entre el intervalo menor y el mayor que indiques, mientras la potencia y la velo
 para todos. Las etiquetas bajo cada cuadrado muestran el intervalo en milímetros y la densidad de
 líneas correspondiente en líneas por pulgada (LPI).
 
+![Prueba de intervalo](/screenshots/interval-test.webp)
+
 Elige el cuadrado que esté relleno de forma uniforme, sin líneas visibles y sin quemarse demasiado,
 y usa su intervalo para grabar en ese material. Las etiquetas se cortan antes que los cuadrados con
 una operación propia de baja potencia.
@@ -32,6 +34,8 @@ una operación propia de baja potencia.
 **Herramientas → Crear prueba de enfoque** encuentra la altura a la que el haz es más nítido. Un
 desplazamiento positivo significa más distancia entre el cabezal y el material. La línea más fina
 marca el mejor enfoque.
+
+![Prueba de enfoque](/screenshots/focus-test.webp)
 
 | Método                          | Cómo cambia la altura                                                                        |
 | ------------------------------- | -------------------------------------------------------------------------------------------- |

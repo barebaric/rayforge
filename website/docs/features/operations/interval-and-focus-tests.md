@@ -21,6 +21,8 @@ hand, but a later change in the Test Settings rebuilds those operations.
 interval you enter, while power and speed stay the same for all of them. The labels under each
 square show the interval in millimeters and the matching line density in lines per inch (LPI).
 
+![Interval Test](/screenshots/interval-test.webp)
+
 Pick the square that is filled evenly without visible lines and without burning too deep, and use
 its interval for engravings on that material. The labels are cut with a separate low-power operation
 before the squares.
@@ -29,6 +31,8 @@ before the squares.
 
 **Tools → Create Focus Test** finds the height at which the beam is sharpest. A positive offset
 means more distance between the head and the material. The thinnest line marks the best focus.
+
+![Focus Test](/screenshots/focus-test.webp)
 
 | Method                           | How the height changes                                                                            |
 | -------------------------------- | ------------------------------------------------------------------------------------------------- |

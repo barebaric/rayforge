@@ -24,6 +24,8 @@ bis zum größten eingegebenen Abstand, während Leistung und Geschwindigkeit f�
 Die Beschriftungen unter jedem Quadrat zeigen den Abstand in Millimetern und die passende
 Liniendichte in Linien pro Zoll (LPI).
 
+![Intervalltest](/screenshots/interval-test.webp)
+
 Wähle das Quadrat, das gleichmäßig ohne sichtbare Linien und ohne zu tiefes Einbrennen gefüllt ist,
 und verwende seinen Abstand für Gravuren auf diesem Material. Die Beschriftungen werden vor den
 Quadraten mit einer eigenen Operation mit geringer Leistung geschnitten.
@@ -33,6 +35,8 @@ Quadraten mit einer eigenen Operation mit geringer Leistung geschnitten.
 **Werkzeuge → Fokustest erstellen** findet die Höhe, in der der Strahl am schärfsten ist. Ein
 positiver Versatz bedeutet mehr Abstand zwischen Kopf und Material. Die dünnste Linie markiert den
 besten Fokus.
+
+![Fokustest](/screenshots/focus-test.webp)
 
 | Methode                             | Wie sich die Höhe ändert                                                                         |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------ |

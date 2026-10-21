@@ -24,6 +24,8 @@ plus grand intervalle saisi, tandis que la puissance et la vitesse restent les m
 étiquettes sous chaque carré indiquent l'intervalle en millimètres et la densité de lignes
 correspondante en lignes par pouce (LPI).
 
+![Test d'intervalle](/screenshots/interval-test.webp)
+
 Choisissez le carré rempli de façon homogène, sans lignes visibles et sans brûlure trop profonde, et
 utilisez son intervalle pour les gravures sur ce matériau. Les étiquettes sont découpées avant les
 carrés avec une opération séparée à faible puissance.
@@ -33,6 +35,8 @@ carrés avec une opération séparée à faible puissance.
 **Outils → Créer un test de mise au point** trouve la hauteur à laquelle le faisceau est le plus
 net. Un décalage positif signifie plus de distance entre la tête et le matériau. La ligne la plus
 fine indique la meilleure mise au point.
+
+![Test de mise au point](/screenshots/focus-test.webp)
 
 | Méthode                             | Comment la hauteur change                                                                       |
 | ----------------------------------- | ----------------------------------------------------------------------------------------------- |

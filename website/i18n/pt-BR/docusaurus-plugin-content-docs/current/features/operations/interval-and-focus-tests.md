@@ -23,6 +23,8 @@ menor ao maior intervalo informado, enquanto a potência e a velocidade são as 
 rótulos abaixo de cada quadrado mostram o intervalo em milímetros e a densidade de linhas
 correspondente em linhas por polegada (LPI).
 
+![Teste de intervalo](/screenshots/interval-test.webp)
+
 Escolha o quadrado preenchido de forma uniforme, sem linhas visíveis e sem queimar demais, e use o
 seu intervalo para gravações nesse material. Os rótulos são cortados antes dos quadrados com uma
 operação separada de baixa potência.
@@ -32,6 +34,8 @@ operação separada de baixa potência.
 **Ferramentas → Criar teste de foco** encontra a altura em que o feixe é mais nítido. Um
 deslocamento positivo significa mais distância entre a cabeça e o material. A linha mais fina marca
 o melhor foco.
+
+![Teste de foco](/screenshots/focus-test.webp)
 
 | Método                          | Como a altura muda                                                                            |
 | ------------------------------- | --------------------------------------------------------------------------------------------- |
