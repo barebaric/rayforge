@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-19 17:42+0200\n"
+"POT-Creation-Date: 2026-10-21 14:24+0200\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -2558,6 +2558,10 @@ msgstr ""
 "cancelar."
 
 #: rayforge/machine/cmd.py
+msgid "The document produces no toolpath."
+msgstr "O documento não gera nenhum caminho de ferramenta."
+
+#: rayforge/machine/cmd.py
 #, python-brace-format
 msgid "Framing failed: {error}"
 msgstr "A moldagem falhou: {error}"
@@ -4917,8 +4921,8 @@ msgstr ""
 "Calibre esta câmara mais tarde a partir da página de definições da máquina."
 
 #: rayforge/ui_gtk/machine/console.py
-msgid "Show verbose output (status polls)"
-msgstr "Mostrar saída detalhada (consultas de estado)"
+msgid "Show verbose output (status polls, raw I/O)"
+msgstr "Mostrar saída detalhada (consultas de status, E/S bruta)"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
 msgid "Rectangle"

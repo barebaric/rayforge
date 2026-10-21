@@ -5,6 +5,42 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.13.0-beta4
+
+### Changed
+
+- Republished 1.13.0-beta3 with its changelog and AppStream release
+  notes included, so the Flatpak build can ship it. There are no
+  functional changes.
+
+## 1.13.0-beta3
+
+### Fixed
+
+- Machine: the focus laser now lights on GRBL firmware that applies the
+  spindle PWM at motion start (confirmed on Creality Falcon and
+  Sculpfun iCube) by arming it with a zero-distance move
+- Machine: dialect edits apply to the connected session immediately
+  instead of waiting for the next reconnect or job
+- Laser control: the on/off toggle returns to its previous state when
+  the command fails or times out instead of drifting out of sync
+- Console: commands sent to the machine appear with verbose output, not
+  only the device's replies
+- Job generation: a step whose workpiece selection matches nothing now
+  fails with a clear error instead of making Send and Frame wait
+  forever without feedback (#596)
+- Usage reporting: machine reports no longer raise a TypeError in the
+  usage tracker
+- macOS: closing a dialog while the main window is in native full
+  screen no longer leaves a blank window behind
+
+### Documentation
+
+- Document the x86-64-v2 CPU requirement of the Linux packages, with a
+  command to check and alternatives for older CPUs
+- Fix the translated Bidirectional Scan Offset links to point at the
+  explicit anchor used by the machine settings page
+
 ## 1.13.0-beta2
 
 ### Added

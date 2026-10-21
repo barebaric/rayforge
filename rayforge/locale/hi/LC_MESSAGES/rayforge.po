@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-19 17:42+0200\n"
+"POT-Creation-Date: 2026-10-21 14:24+0200\n"
 "PO-Revision-Date: 2026-09-27 22:58\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -2466,6 +2466,10 @@ msgstr ""
 "दबाएँ."
 
 #: rayforge/machine/cmd.py
+msgid "The document produces no toolpath."
+msgstr "दस्तावेज़ कोई टूलपाथ उत्पन्न नहीं करता."
+
+#: rayforge/machine/cmd.py
 #, python-brace-format
 msgid "Framing failed: {error}"
 msgstr "फ़्रेमिंग विफल रही: {error}"
@@ -4775,8 +4779,8 @@ msgid "Calibrate this camera later from the machine settings page."
 msgstr "इस कैमरे को बाद में मशीन सेटिंग्स पृष्ठ से कैलिब्रेट करें."
 
 #: rayforge/ui_gtk/machine/console.py
-msgid "Show verbose output (status polls)"
-msgstr "वर्बोज़ आउटपुट दिखाएँ (स्टेटस पोल)"
+msgid "Show verbose output (status polls, raw I/O)"
+msgstr "विस्तृत आउटपुट दिखाएँ (स्थिति पोल, रॉ I/O)"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
 msgid "Rectangle"

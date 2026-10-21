@@ -77,6 +77,47 @@
   </screenshots>
 
   <releases>
+    <release version="1.13.0~beta4" date="2026-10-21">
+      <description>
+        <p>Republished 1.13.0-beta3 with its release notes and AppStream
+        metadata included. This release has no functional changes.</p>
+      </description>
+    </release>
+    <release version="1.13.0~beta3" date="2026-10-21">
+      <description>
+        <p>Fixes for the focus laser, GRBL dialect changes, the Console,
+        laser toggle, job generation and macOS dialogs</p>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Machine: the focus laser lights on GRBL firmware that
+          applies the spindle PWM at motion start (confirmed on Creality
+          Falcon and Sculpfun iCube) by arming it with a zero-distance
+          move</li>
+          <li>Machine: dialect edits apply to the connected session
+          immediately instead of waiting for the next reconnect or
+          job</li>
+          <li>Laser control: the on/off toggle returns to its previous
+          state when the command fails or times out instead of drifting
+          out of sync</li>
+          <li>Console: commands sent to the machine appear with verbose
+          output, not only the device's replies</li>
+          <li>Job generation: a step whose workpiece selection matches
+          nothing fails with a clear error instead of making Send and
+          Frame wait forever without feedback (#596)</li>
+          <li>Usage reporting: machine reports no longer raise a
+          TypeError in the usage tracker</li>
+          <li>macOS: closing a dialog while the main window is in native
+          full screen no longer leaves a blank window behind</li>
+        </ul>
+        <p>Changes:</p>
+        <ul>
+          <li>The documentation states that the Snap, Flatpak, AppImage
+          and pip packages require an x86-64-v2 CPU because of the
+          bundled NumPy, with a command to check and alternatives for
+          older CPUs</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.13.0~beta2" date="2026-10-19">
       <description>
         <p>An Offset Fill step, smarter path start points, a Polygon

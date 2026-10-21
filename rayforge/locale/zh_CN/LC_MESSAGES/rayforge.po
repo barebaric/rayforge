@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-19 17:42+0200\n"
+"POT-Creation-Date: 2026-10-21 14:24+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -2387,6 +2387,10 @@ msgid ""
 msgstr "已有任务正在运行。请等待其完成，或按“停止”以取消它。"
 
 #: rayforge/machine/cmd.py
+msgid "The document produces no toolpath."
+msgstr "该文档不生成刀具路径。"
+
+#: rayforge/machine/cmd.py
 #, python-brace-format
 msgid "Framing failed: {error}"
 msgstr "取景失败：{error}"
@@ -4657,8 +4661,8 @@ msgid "Calibrate this camera later from the machine settings page."
 msgstr "稍后可从机器设置页面校准此相机。"
 
 #: rayforge/ui_gtk/machine/console.py
-msgid "Show verbose output (status polls)"
-msgstr "显示详细输出（状态轮询）"
+msgid "Show verbose output (status polls, raw I/O)"
+msgstr "显示详细输出（状态轮询、原始 I/O）"
 
 #: rayforge/ui_gtk/machine/nogo_zones_page.py
 msgid "Rectangle"
