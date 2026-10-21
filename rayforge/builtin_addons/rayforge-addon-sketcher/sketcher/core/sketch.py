@@ -68,6 +68,39 @@ _GEOMETRY_CACHE_SIZE = 8
 _GeometryKey = tuple[tuple[tuple[str, str], ...], ...]
 
 
+# A text box's resolved text: its source, the result and the values of
+# the variables it was resolved with (absent in older entries).
+_ResolvedText = (
+    tuple[str, str | None] | tuple[str, str | None, list[list[str]]]
+)
+
+
+def _value_stamp(content: str, ctx: dict[str, Any]) -> list[list[str]]:
+    """
+    The values of the variables a template reads, as far as *ctx*
+    has them. Template functions are left out: their result is meant
+    to stay the same once resolved.
+    """
+    functions = get_template_functions()
+    names = referenced_template_names([content]) - set(functions)
+    return [[name, repr(ctx[name])] for name in sorted(names) if name in ctx]
+
+
+def _is_current(cached, content: str, stamp: list[list[str]]) -> bool:
+    """
+    Whether a cached text was resolved from *content* with the values
+    of *stamp*. A variable missing when the text was resolved, or one
+    with another value now, makes it stale; one missing now does not,
+    so a detached copy keeps the text it was given.
+    """
+    if cached[0] != content:
+        return False
+    if len(cached) < 3:
+        return True
+    resolved_with = {tuple(pair) for pair in cached[2]}
+    return all(tuple(pair) in resolved_with for pair in stamp)
+
+
 def _copy_fills(fills: list[FillRenderData]) -> list[FillRenderData]:
     """Copies fills deep enough that callers may transform them."""
     return [replace(fill, geometry=fill.geometry.copy()) for fill in fills]
@@ -197,7 +230,7 @@ class Sketch(IAsset, IGeometryProvider):
         self._updated = Signal()
         self._hidden: bool = False
         self._last_solve_values: dict[str, Any] = {}
-        self._resolved_text_cache: dict[EntityID, tuple[str, str | None]] = {}
+        self._resolved_text_cache: dict[EntityID, _ResolvedText] = {}
         self._solved_ctx: dict[str, Any] | None = None
 
         # Geometry of the last calls, keyed by effective parameter
@@ -1774,32 +1807,19 @@ class Sketch(IAsset, IGeometryProvider):
         longer matches the entity's current content is re-resolved,
         otherwise reverting an edit would keep rendering stale text.
         """
-        cached = self._resolved_text_cache.get(entity.id)
-        if isinstance(cached, (tuple, list)):
-            source, resolved = cached
-            if source == entity.content:
-                return resolved
-
         if not entity.content:
             self._resolved_text_cache[entity.id] = ("", None)
             return None
 
-        try:
-            # Use the cached context from solve() when available,
-            # avoiding a fresh ParameterContext per text box.
-            if self._solved_ctx is not None:
-                ctx = self._solved_ctx
-            else:
-                solve_params = ParameterContext.from_dict(
-                    self.params.to_dict()
-                )
-                initial_values = dict(self._last_solve_values)
-                if not initial_values and self.input_parameters:
-                    initial_values.update(self.input_parameters.get_values())
-                solve_params.evaluate_all(initial_values=initial_values)
-                ctx = solve_params.get_all_values()
-                ctx.update(get_template_functions())
+        ctx = self._text_context()
+        stamp = _value_stamp(entity.content, ctx)
+        cached = self._resolved_text_cache.get(entity.id)
+        if isinstance(cached, (tuple, list)) and _is_current(
+            cached, entity.content, stamp
+        ):
+            return cached[1]
 
+        try:
             expr_map = ExpressionMap(ctx)
             resolved = expr_map.format(entity.content)
             logger.debug(
@@ -1807,20 +1827,33 @@ class Sketch(IAsset, IGeometryProvider):
                 f"{entity.content!r} -> {resolved!r} "
                 f"values={list(ctx.keys())[:5]}"
             )
-            self._resolved_text_cache[entity.id] = (
-                entity.content,
-                resolved,
-            )
-            return resolved
         except (KeyError, IndexError, ValueError) as e:
             logger.debug(
                 f"Template resolution failed for '{entity.content}': {e}"
             )
-            self._resolved_text_cache[entity.id] = (
-                entity.content,
-                None,
-            )
-            return None
+            resolved = None
+        self._resolved_text_cache[entity.id] = (
+            entity.content,
+            resolved,
+            stamp,
+        )
+        return resolved
+
+    def _text_context(self) -> dict[str, Any]:
+        """
+        The values text templates are resolved with: the context of
+        the last solve, or a freshly evaluated one.
+        """
+        if self._solved_ctx is not None:
+            return self._solved_ctx
+        solve_params = ParameterContext.from_dict(self.params.to_dict())
+        initial_values = dict(self._last_solve_values)
+        if not initial_values and self.input_parameters:
+            initial_values.update(self.input_parameters.get_values())
+        solve_params.evaluate_all(initial_values=initial_values)
+        ctx = solve_params.get_all_values()
+        ctx.update(get_template_functions())
+        return ctx
 
     def to_geometry(self) -> Geometry:
         """

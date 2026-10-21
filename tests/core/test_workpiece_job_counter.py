@@ -39,13 +39,23 @@ class TestVariableOffset:
 
 
 class TestTemplateValues:
-    def test_unparented_workpiece_has_no_values(self):
-        assert WorkPiece("wp").template_values() == {}
-
     def test_values_follow_doc_counter_and_offset(self, doc):
         doc.job_counter.counter = CounterSettings(current=10, step=5)
         wp = place(doc, "{counter}", offset=2)
-        assert wp.template_values() == {"counter": 20}
+        provider = wp.get_geometry_provider()
+        assert isinstance(provider, TemplateProvider)
+        assert provider.rendered[-1] == "20"
+
+    def test_copy_added_with_new_offset_shows_its_value(self, doc):
+        doc.job_counter.counter = CounterSettings(current=7)
+        wp = place(doc, "{counter}")
+        copy = wp.duplicate()
+        assert isinstance(copy, WorkPiece)
+        copy._variable_offset = 1
+        doc.active_layer.add_child(copy)
+        provider = wp.get_geometry_provider()
+        assert isinstance(provider, TemplateProvider)
+        assert provider.rendered[-1] == "8"
 
     def test_provider_receives_counter(self, doc):
         doc.job_counter.counter = CounterSettings(current=7)
@@ -66,38 +76,10 @@ class TestTemplateValues:
         assert isinstance(provider, TemplateProvider)
         assert provider.rendered[-1] == "99"
 
-    def test_in_world_bakes_values(self, doc):
-        doc.job_counter.counter = CounterSettings(current=3)
-        wp = place(doc, "{counter}", offset=1)
-        world = wp.in_world()
-        assert world.template_values() == {"counter": 4}
-
-    def test_in_world_bakes_values_for_plain_templates(self, doc):
-        doc.job_counter.counter = CounterSettings(current=3)
-        wp = place(doc, "Hello")
-        assert wp.in_world().template_values() == {"counter": 3}
-
     def test_in_world_keeps_instance_params(self, doc):
         wp = place(doc, "{counter}")
         wp._geometry_provider_params = {"width": 5.0}
         assert wp.in_world().geometry_provider_params == {"width": 5.0}
-
-    def test_in_world_renders_baked_values(self, doc):
-        doc.job_counter.counter = CounterSettings(current=3)
-        wp = place(doc, "No. {counter}", offset=1)
-        world = wp.in_world()
-        world.clear_render_cache()
-        provider = wp.get_geometry_provider()
-        world._transient_geometry_provider = provider
-        assert world.boundaries is not None
-        assert isinstance(provider, TemplateProvider)
-        assert provider.rendered[-1] == "No. 4"
-
-    def test_in_world_survives_serialization(self, doc):
-        doc.job_counter.counter = CounterSettings(current=8)
-        wp = place(doc, "{counter}")
-        world = WorkPiece.from_dict(wp.in_world().to_dict())
-        assert world.template_values() == {"counter": 8}
 
     def test_provider_reports_used_variables(self, doc):
         wp = place(doc, "{counter:04d}")

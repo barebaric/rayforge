@@ -7,6 +7,7 @@ from sketcher.core.entities.text_box import TextBoxEntity
 
 from rayforge.core.doc import Doc
 from rayforge.core.job_counter import CounterSettings
+from rayforge.core.undo import ChangePropertyCommand
 from rayforge.core.workpiece import WorkPiece
 
 
@@ -189,3 +190,66 @@ def test_saved_text_is_kept_on_load():
     restored_wp = restored.all_workpieces[0]
     assert restored_wp.boundaries is not None
     assert _resolved(restored_wp, box) == before
+
+
+def _sketch_with_boxes(*contents: str) -> tuple[Sketch, list[TextBoxEntity]]:
+    sketch = Sketch(name="plate")
+    boxes = []
+    for i, content in enumerate(contents):
+        origin = sketch.add_point(0, i * 20)
+        width_pt = sketch.add_point(10, i * 20)
+        height_pt = sketch.add_point(0, i * 20 + 10)
+        box_id = sketch.registry.add_text_box(
+            origin, width_pt, height_pt, content, FontConfig()
+        )
+        boxes.append(cast(TextBoxEntity, sketch.registry.get_entity(box_id)))
+    return sketch, boxes
+
+
+def test_counter_change_keeps_uuid_of_other_sketch():
+    doc = Doc()
+    counter_sketch, _counter_box = _sketch_with_text("{counter}")
+    _place(doc, counter_sketch)
+    sketch, box = _sketch_with_text("ID {uuid8()}")
+    wp = _place(doc, sketch)
+    before = _resolved(wp, box)
+    doc.job_counter.counter = CounterSettings(current=2)
+    assert _resolved(wp, box) == before
+    doc.job_counter.counter = CounterSettings(current=1)
+    assert _resolved(wp, box) == before
+
+
+def test_counter_change_keeps_uuid_next_to_counter():
+    doc = Doc()
+    sketch, (counter_box, uuid_box) = _sketch_with_boxes(
+        "{counter}", "ID {uuid8()}"
+    )
+    wp = _place(doc, sketch)
+    before = _resolved(wp, uuid_box)
+    doc.job_counter.counter = CounterSettings(current=5)
+    assert _resolved(wp, counter_box) == "5"
+    assert _resolved(wp, uuid_box) == before
+    doc.job_counter.counter = CounterSettings(current=1)
+    assert _resolved(wp, counter_box) == "1"
+    assert _resolved(wp, uuid_box) == before
+
+
+def test_uuid_survives_next_and_undo():
+    doc = Doc()
+    counter_sketch, counter_box = _sketch_with_text("{counter}")
+    counter_wp = _place(doc, counter_sketch)
+    sketch, box = _sketch_with_text("ID {uuid8()}")
+    wp = _place(doc, sketch)
+    before = _resolved(wp, box)
+    doc.history_manager.execute(
+        ChangePropertyCommand(
+            target=doc.job_counter,
+            property_name="counter",
+            new_value=doc.job_counter.counter.advanced(1),
+        )
+    )
+    assert _resolved(counter_wp, counter_box) == "2"
+    assert _resolved(wp, box) == before
+    doc.history_manager.undo()
+    assert _resolved(counter_wp, counter_box) == "1"
+    assert _resolved(wp, box) == before

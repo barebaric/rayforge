@@ -434,7 +434,7 @@ def test_undo_reverts_rendered_text_not_just_size(doc):
     # Regeneration must use the REVERTED text: the stale cache entry
     # (whose source is "abcdef") must not be trusted.
     _ = wp.boundaries
-    source, resolved = wp._resolved_text_cache[box_id]
+    source, resolved = wp._resolved_text_cache[box_id][:2]
     assert source == "ab"
     assert resolved == "ab"
 

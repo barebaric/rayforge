@@ -201,25 +201,35 @@ class Doc(DocItem):
         variable offset of a workpiece that reads the counter plus
         one, or 0 if no workpiece reads it.
         """
-        names = self._job_counter.names
-        offsets = []
-        for wp in self.all_workpieces:
-            provider = wp.get_geometry_provider()
-            if provider is not None and names & provider.variables_used():
-                offsets.append(wp.variable_offset)
+        offsets = [
+            wp.variable_offset
+            for wp in self._counter_readers(self.all_workpieces)
+        ]
         if not offsets:
             return 0
         return max(offsets) + 1
 
+    def _counter_readers(
+        self, workpieces: Iterable[WorkPiece]
+    ) -> list[WorkPiece]:
+        """The workpieces whose geometry provider reads the counter."""
+        names = self._job_counter.names
+        readers = []
+        for wp in workpieces:
+            provider = wp.get_geometry_provider()
+            if provider is not None and names & provider.variables_used():
+                readers.append(wp)
+        return readers
+
     def _on_job_counter_changed(self, sender: JobCounter) -> None:
-        for wp in self.all_workpieces:
+        for wp in self._counter_readers(self.all_workpieces):
             wp.refresh_template_values()
 
     def _on_item_added_for_templates(
         self, sender: DocItem, *, origin: DocItem, parent_of_origin: DocItem
     ) -> None:
-        for wp in workpieces_in(origin):
-            wp.sync_template_values()
+        for wp in self._counter_readers(workpieces_in(origin)):
+            wp.refresh_template_values()
 
     def add_asset(
         self, asset: IAsset, index: int | None = None, silent: bool = False

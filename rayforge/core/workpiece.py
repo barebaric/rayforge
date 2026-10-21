@@ -163,11 +163,9 @@ class WorkPiece(DocItem):
 
         self._resolved_text_cache: dict = {}
 
-        # Shifts the document's template variables for this copy, so
-        # e.g. array copies show consecutive counter values.
+        # Shifts the document's job counter for this copy, so array
+        # copies show consecutive counter values.
         self._variable_offset: int = 0
-        # The template variables the cached geometry was generated with.
-        self._template_values_used: dict[str, Any] = {}
 
         self.source_asset_uid: str | None = None
 
@@ -518,7 +516,6 @@ class WorkPiece(DocItem):
                 f"WP {self.uid[:8]}: Getting geometry with "
                 f"params: {self._geometry_provider_params}"
             )
-            self._template_values_used = self.template_values()
             unnormalized_geo, unnormalized_fills = provider.get_geometry(
                 self._provider_params(),
                 resolved_text_cache=self._resolved_text_cache,
@@ -723,8 +720,6 @@ class WorkPiece(DocItem):
         world_wp.geometry_provider_params = deepcopy(
             self._geometry_provider_params
         )
-        world_wp._variable_offset = self._variable_offset
-        world_wp._template_values_used = self.template_values()
         world_wp.source_asset_uid = self.source_asset_uid
         world_wp._anchor_mode = self._anchor_mode
         world_wp._reference_anchor = self._reference_anchor
@@ -1082,8 +1077,6 @@ class WorkPiece(DocItem):
                 state["resolved_text_cache"] = cache
         if self._variable_offset:
             state["variable_offset"] = self._variable_offset
-        if self._template_values_used:
-            state["template_values"] = self._template_values_used
         if self._data is not None:
             state["data"] = self._data
         if self._original_data is not None:
@@ -1123,7 +1116,6 @@ class WorkPiece(DocItem):
             "source_asset_uid",
             "resolved_text_cache",
             "variable_offset",
-            "template_values",
             "data",
             "original_data",
             "source_px_dims",
@@ -1176,7 +1168,6 @@ class WorkPiece(DocItem):
         ) or data.get("sketch_params", {})
         wp.source_asset_uid = data.get("source_asset_uid")
         wp._variable_offset = int(data.get("variable_offset", 0))
-        wp._template_values_used = dict(data.get("template_values") or {})
         raw_cache = data.get("resolved_text_cache")
         if raw_cache:
             wp._resolved_text_cache = {
@@ -1235,10 +1226,10 @@ class WorkPiece(DocItem):
     @property
     def variable_offset(self) -> int:
         """
-        The copy offset applied to the document's template variables.
+        The copy offset applied to the document's job counter.
 
-        A copy with offset ``n`` shows the values ``n`` copies after
-        the current ones, e.g. counter value ``current + n * step``.
+        A copy with offset ``n`` shows the counter value ``n`` copies
+        after the current one, i.e. ``current + n * step``.
         """
         return self._variable_offset
 
@@ -1250,29 +1241,24 @@ class WorkPiece(DocItem):
         self._variable_offset = value
         self.refresh_template_values()
 
-    def template_values(self) -> dict[str, Any]:
-        """
-        The document's template variables as seen by this copy. A
-        workpiece outside a document keeps the values its geometry was
-        generated with, so a detached copy renders the same text.
-        """
-        doc = self.doc
-        if doc is None:
-            return dict(self._template_values_used)
-        return doc.job_counter.template_values(self._variable_offset)
-
     def _provider_params(self) -> dict[str, Any]:
         """
-        Parameters for the geometry provider: the document's template
-        variables, overridden by this instance's own parameters.
+        Parameters for the geometry provider: the document's job counter
+        as seen by this copy, overridden by this instance's own
+        parameters.
         """
-        params = self.template_values()
+        doc = self.doc
+        params = (
+            doc.job_counter.template_values(self._variable_offset)
+            if doc is not None
+            else {}
+        )
         params.update(self._geometry_provider_params or {})
         return params
 
     def refresh_template_values(self) -> None:
         """
-        Regenerates the geometry after a template variable changed.
+        Regenerates the geometry after the job counter changed.
 
         The current scale relative to the natural size is kept, so a
         longer text grows instead of being squeezed into the old box,
@@ -1281,7 +1267,6 @@ class WorkPiece(DocItem):
         old_w, old_h = self.natural_width_mm, self.natural_height_mm
         size_w, size_h = self.size
         anchor_world = self.get_anchor_world()
-        self._resolved_text_cache = {}
         self.clear_render_cache()
         if self.boundaries is not None and old_w > 1e-9 and old_h > 1e-9:
             self.set_size(
@@ -1291,17 +1276,6 @@ class WorkPiece(DocItem):
             )
             self._move_anchor_to(anchor_world)
         self.updated.send(self)
-
-    def sync_template_values(self) -> None:
-        """
-        Refreshes the geometry if it was generated with other template
-        values than the document offers now, e.g. after the workpiece
-        was created outside the document or copied with a new offset.
-        """
-        if not self.geometry_provider_uid:
-            return
-        if self._template_values_used != self.template_values():
-            self.refresh_template_values()
 
     def get_natural_aspect_ratio(self) -> float | None:
         size = self.natural_size
@@ -1856,7 +1830,6 @@ class WorkPiece(DocItem):
 
         # Get geometry with current parameter overrides.
         variable_overrides = self._provider_params()
-        self._template_values_used = self.template_values()
         logger.debug(
             f"WP {self.uid[:8]}: Getting geometry with params: "
             f"{variable_overrides}"
