@@ -70,6 +70,9 @@ class TemplateProvider:
         geo.close_path()
         return geo, []
 
+    def get_reference_point(self):
+        return None
+
     def to_dict(self) -> dict[str, Any]:
         return {"type": "template-test", "uid": self._uid}
 
