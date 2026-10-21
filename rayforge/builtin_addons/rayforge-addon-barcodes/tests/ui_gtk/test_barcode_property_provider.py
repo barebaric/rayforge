@@ -6,6 +6,7 @@ gi.require_version("Adw", "1")
 
 from types import SimpleNamespace
 
+import barcodes.frontend  # noqa: F401
 import pytest
 from barcodes.commands import add_barcode, barcode_of
 from barcodes.encoders import Symbology
@@ -13,6 +14,9 @@ from barcodes.property_provider import SYMBOLOGIES, BarcodePropertyProvider
 
 from rayforge.core.doc import Doc
 from rayforge.core.workpiece import WorkPiece
+from rayforge.ui_gtk.doceditor.property_providers import (
+    property_provider_registry,
+)
 
 
 @pytest.fixture
@@ -84,3 +88,11 @@ def test_invalid_content_is_flagged(editor, provider):
     assert asset is not None
     assert asset.error is not None
     assert provider.content_row.has_css_class("error")
+
+
+@pytest.mark.ui
+def test_provider_is_registered_before_the_main_window():
+    assert any(
+        isinstance(p, BarcodePropertyProvider)
+        for p in property_provider_registry.create_instances()
+    )

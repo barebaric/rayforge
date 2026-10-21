@@ -1,6 +1,10 @@
 """
 Frontend entry point for the barcodes addon: the Add Barcode action in
 the Object menu and the Barcode group in the properties panel.
+
+The property provider is registered on import, like the sketcher's: the
+properties panel creates its providers when the main window is built,
+before main_window_ready runs.
 """
 
 from gettext import gettext as _
@@ -23,6 +27,7 @@ ADD_ACTION = "add-barcode"
 _ICONS_DIR = Path(__file__).parent / "resources" / "icons"
 
 register_icon_path(_ICONS_DIR)
+property_provider_registry.register(BarcodePropertyProvider, ADDON_NAME)
 
 
 @hookimpl
@@ -43,8 +48,3 @@ def register_actions(action_registry):
         label=_("Add Barcode"),
         menu=MenuPlacement(menu_id="object", priority=60),
     )
-
-
-@hookimpl
-def main_window_ready(main_window):
-    property_provider_registry.register(BarcodePropertyProvider, ADDON_NAME)
