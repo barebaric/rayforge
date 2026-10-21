@@ -435,16 +435,33 @@ class TestRawLogging:
         assert any(message.startswith("$") for message in messages)
         assert "ok" in messages
 
-    async def test_outgoing_command_is_logged(self, connected_driver, caplog):
+    async def test_outgoing_command_is_logged_at_debug_level(
+        self, connected_driver, caplog
+    ):
         drv, _mock, _emulator, _recorder = connected_driver
         with caplog.at_level(
-            logging.INFO,
+            logging.DEBUG,
             logger="rayforge.machine.driver.grbl.grbl_serial",
         ):
             await drv._require_session().execute_interactive_command("$$")
         assert any(
             record.getMessage() == "$$"
             and record.__dict__.get("log_category") == "RAW_IO"
+            and record.levelno == logging.DEBUG
+            for record in caplog.records
+        )
+
+    async def test_outgoing_command_hidden_at_info_level(
+        self, connected_driver, caplog
+    ):
+        drv, _mock, _emulator, _recorder = connected_driver
+        with caplog.at_level(
+            logging.INFO,
+            logger="rayforge.machine.driver.grbl.grbl_serial",
+        ):
+            await drv._require_session().execute_interactive_command("$$")
+        assert not any(
+            record.__dict__.get("log_category") == "RAW_IO"
             for record in caplog.records
         )
 

@@ -339,9 +339,9 @@ class GrblSerialDriver(Driver):
                 category = "MACHINE_RESPONSE"
             else:
                 category = "MACHINE_EVENT"
+            logger.info(line, extra=self._log_extra(category))
         else:
-            category = "RAW_IO"
-        logger.info(line, extra=self._log_extra(category))
+            logger.debug(line, extra=self._log_extra("RAW_IO"))
 
     async def cleanup(self):
         logger.debug("Cleanup initiated.")

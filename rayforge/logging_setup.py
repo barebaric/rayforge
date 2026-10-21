@@ -88,16 +88,6 @@ class ConsoleFormatter(logging.Formatter):
             return f"{timestamp} {message}"
 
 
-class ConsoleLogFilter(logging.Filter):
-    """
-    This filter rejects log records that are categorized as 'RAW_IO'
-    to prevent spamming the console with low-level communication data.
-    """
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        return record.__dict__.get("log_category") != "RAW_IO"
-
-
 class SessionFileFormatter(logging.Formatter):
     """
     Formatter for the session log file that enriches each line with extra
@@ -211,7 +201,6 @@ def setup_logging(loglevel_str: str):
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
     console_handler.setFormatter(console_formatter)
-    console_handler.addFilter(ConsoleLogFilter())
     root_logger.addHandler(console_handler)
 
     # Now it is safe to run functions that might log things.
@@ -232,7 +221,10 @@ def setup_logging(loglevel_str: str):
 
     # 3. UI Log Handler (for the MachineLogDialog)
     ui_handler = UILogHandler()
-    ui_handler.setLevel(logging.INFO)  # Don't show DEBUG messages in UI log
+    # Keep DEBUG records flowing so sent commands (RAW_IO, logged at
+    # DEBUG) reach the console widget; UILogFilter decides by category
+    # what is actually displayed.
+    ui_handler.setLevel(logging.DEBUG)
     ui_handler.addFilter(UILogFilter())
     # Create the formatter and store it in our global instance
     _ui_formatter_instance = ConsoleFormatter(datefmt="%Y-%m-%d %H:%M:%S")
