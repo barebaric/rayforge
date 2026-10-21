@@ -11,15 +11,12 @@ from gi.repository import Gio
 
 from rayforge.core.hooks import hookimpl
 from rayforge.ui_gtk.action_registry import MenuPlacement
-from rayforge.ui_gtk.doceditor.property_providers import (
-    property_provider_registry,
-)
 from rayforge.ui_gtk.icons import register_icon_path
 
 from .commands import CalibrationCmd, CalibrationSync
 from .widgets import ASSEMBLER_WIDGETS
 from .widgets.calibration_provider import (
-    CalibrationPropertyProvider,
+    register_test_settings,
     show_new_test,
 )
 
@@ -39,16 +36,15 @@ def register_step_settings_pages(step_settings_page_registry):
 
 
 @hookimpl
+def rayforge_init(context):
+    """Register the Test Settings with the item properties panel."""
+    register_test_settings(ADDON_NAME)
+
+
+@hookimpl
 def register_commands(command_registry):
-    """
-    Register editor command handlers, and the Test Settings they are
-    edited with. The main window creates its property panels after the
-    commands are registered.
-    """
+    """Register editor command handlers."""
     command_registry.register("calibration", CalibrationCmd, ADDON_NAME)
-    property_provider_registry.register(
-        CalibrationPropertyProvider, ADDON_NAME
-    )
     command_registry.register("calibration_sync", CalibrationSync, ADDON_NAME)
 
 

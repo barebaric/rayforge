@@ -12,6 +12,7 @@ import pytest
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
+from laser_essentials import frontend
 from laser_essentials.commands import CalibrationCmd
 from laser_essentials.frontend import _create_test
 from laser_essentials.widgets.calibration_provider import (
@@ -19,6 +20,9 @@ from laser_essentials.widgets.calibration_provider import (
 )
 
 from rayforge.core.workpiece import WorkPiece
+from rayforge.ui_gtk.doceditor.property_providers import (
+    property_provider_registry,
+)
 from rayforge.ui_gtk.shared.pref_rows import SpeedSpinRow
 
 
@@ -361,3 +365,17 @@ def test_unavailable_method_is_kept_and_explained(
     provider.apply_now()
     assert record.params["mode"] == "z_axis"
     assert provider.error_row.get_visible()
+
+
+@pytest.mark.ui
+def test_provider_is_registered_once_at_init():
+    """Importing the frontend registers nothing; the init hook registers
+    the Test Settings once, however often it runs."""
+    registry = property_provider_registry
+    assert CalibrationPropertyProvider not in registry.all()
+    try:
+        frontend.rayforge_init(context=None)
+        frontend.rayforge_init(context=None)
+        assert registry.all().count(CalibrationPropertyProvider) == 1
+    finally:
+        registry.unregister(CalibrationPropertyProvider)

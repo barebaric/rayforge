@@ -16,6 +16,7 @@ from rayforge.core.item import DocItem
 from rayforge.core.workpiece import WorkPiece
 from rayforge.ui_gtk.doceditor.property_providers.base import (
     PropertyProvider,
+    property_provider_registry,
 )
 from rayforge.ui_gtk.mainwindow import MainWindow
 from rayforge.ui_gtk.shared.expander import Expander
@@ -231,6 +232,17 @@ class CalibrationPropertyProvider(PropertyProvider):
             return
         root.surface.select_items(workpieces)
         self._scroll_to(offset)
+
+
+def register_test_settings(addon_name: str):
+    """
+    Registers the Test Settings, like the sketcher registers its own
+    parameters. Called from the addon's init hook, not on import, so a
+    module imported under two names does not register a second copy.
+    """
+    property_provider_registry.register(
+        CalibrationPropertyProvider, addon_name
+    )
 
 
 def show_new_test(window: MainWindow, items: list[WorkPiece]):
