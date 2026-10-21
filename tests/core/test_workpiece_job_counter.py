@@ -2,7 +2,7 @@ import pytest
 
 from rayforge.core.doc import Doc
 from rayforge.core.job_counter import CounterSettings
-from rayforge.core.workpiece import WorkPiece
+from rayforge.core.workpiece import AnchorMode, WorkPiece
 from tests.core.template_provider import TemplateProvider, place
 
 
@@ -128,6 +128,24 @@ class TestRefreshOnChange:
         # workpiece is preserved.
         assert width == pytest.approx(8.0)
         assert height == pytest.approx(10.0)
+
+    def test_counter_change_keeps_corner_in_place(self, doc):
+        doc.job_counter.counter = CounterSettings(current=9)
+        wp = place(doc, "{counter}")
+        wp.pos = (10.0, 20.0)
+        doc.job_counter.counter = CounterSettings(current=10)
+        assert wp.pos == pytest.approx((10.0, 20.0))
+        assert wp.size[0] == pytest.approx(4.0)
+
+    def test_counter_change_keeps_center_in_place(self, doc):
+        doc.job_counter.counter = CounterSettings(current=9)
+        wp = place(doc, "{counter}")
+        wp.anchor_mode = AnchorMode.CENTER
+        wp.pos = (10.0, 20.0)
+        center = wp.get_anchor_world()
+        doc.job_counter.counter = CounterSettings(current=10)
+        assert wp.get_anchor_world() == pytest.approx(center)
+        assert wp.pos == pytest.approx((9.0, 20.0))
 
     def test_counter_change_emits_updated(self, doc):
         wp = place(doc, "{counter}")

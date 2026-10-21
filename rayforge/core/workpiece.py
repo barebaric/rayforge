@@ -1275,17 +1275,21 @@ class WorkPiece(DocItem):
         Regenerates the geometry after a template variable changed.
 
         The current scale relative to the natural size is kept, so a
-        longer text grows instead of being squeezed into the old box.
+        longer text grows instead of being squeezed into the old box,
+        and the anchor point (see `anchor_mode`) stays where it was.
         """
         old_w, old_h = self.natural_width_mm, self.natural_height_mm
         size_w, size_h = self.size
+        anchor_world = self.get_anchor_world()
         self._resolved_text_cache = {}
         self.clear_render_cache()
         if self.boundaries is not None and old_w > 1e-9 and old_h > 1e-9:
             self.set_size(
                 self.natural_width_mm * size_w / old_w,
                 self.natural_height_mm * size_h / old_h,
+                anchor=self.anchor_point,
             )
+            self._move_anchor_to(anchor_world)
         self.updated.send(self)
 
     def sync_template_values(self) -> None:
@@ -1804,10 +1808,17 @@ class WorkPiece(DocItem):
             f"WP {self.uid[:8]}: New natural size: {width:.2f}x{height:.2f}mm"
         )
         self.set_size(width, height, anchor=self.anchor_point)
+        self._move_anchor_to(anchor_world_before)
 
+    def _move_anchor_to(self, anchor_world: Point) -> None:
+        """
+        Moves the workpiece so its anchor point lies at *anchor_world*.
+        Needed after new geometry, because the anchor's normalized
+        position shifts when the bounding box moves relative to it.
+        """
         anchor_world_after = self.get_anchor_world()
-        dx = anchor_world_before[0] - anchor_world_after[0]
-        dy = anchor_world_before[1] - anchor_world_after[1]
+        dx = anchor_world[0] - anchor_world_after[0]
+        dy = anchor_world[1] - anchor_world_after[1]
         if abs(dx) > 1e-9 or abs(dy) > 1e-9:
             pos = self.pos
             self.pos = (pos[0] + dx, pos[1] + dy)
