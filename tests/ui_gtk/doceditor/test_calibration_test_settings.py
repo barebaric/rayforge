@@ -147,3 +147,25 @@ def test_change_rebuilds_and_keeps_the_selection(app_and_window):
     win.doc_editor.history_manager.undo()
     process_events_for_duration(0.5)
     assert len(layer.all_workpieces) == 6
+
+
+@pytest.mark.ui
+@pytest.mark.parametrize("deselect", ["nothing", "other"])
+def test_scrolling_stops_when_the_test_is_deselected(app_and_window, deselect):
+    _app, win = app_and_window
+    win.lookup_action("interval_test").activate(None)
+    process_events_for_duration(1.5)
+    provider, _expander = _provider(win)
+    assert provider._scroll_handlers
+
+    if deselect == "nothing":
+        win.surface.unselect_all()
+    else:
+        other = WorkPiece("Other")
+        other.set_size(5.0, 5.0)
+        win.doc_editor.doc.layers[0].add_child(other)
+        process_events_for_duration(0.3)
+        win.surface.select_items([other])
+    process_events_for_duration(1.0)
+
+    assert provider._scroll_handlers == []

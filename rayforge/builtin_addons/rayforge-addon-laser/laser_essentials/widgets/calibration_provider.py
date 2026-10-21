@@ -10,7 +10,7 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
-from gi.repository import Adw, GLib, Graphene, Gtk
+from gi.repository import Adw, GLib, GObject, Graphene, Gtk
 
 from rayforge.core.item import DocItem
 from rayforge.core.workpiece import WorkPiece
@@ -56,7 +56,7 @@ class CalibrationPropertyProvider(PropertyProvider):
         self._generator_id: str | None = None
         self._pending_keys: set[str] = set()
         self._timer_id = 0
-        self._scroll_handlers: list[tuple[Gtk.Adjustment, int]] = []
+        self._scroll_handlers: list[tuple[GObject.Object, int]] = []
         return [
             self.help_row,
             self.warning_row,
@@ -103,17 +103,19 @@ class CalibrationPropertyProvider(PropertyProvider):
         The card comes after the workflows and the item properties, so
         it is often below the visible part of the panel. While the panel
         is still being laid out, the card is followed each time the
-        panel's size changes, until a setting is edited or another test
-        is selected.
+        panel's size changes, until a setting is edited, another test is
+        selected or the card is hidden.
         """
         scrolled = self._scrolled_window()
-        if scrolled is None:
+        card = self.varset_widget.get_ancestor(Expander)
+        if scrolled is None or card is None:
             return
         self._follow_card(scrolled.get_vadjustment())
         if not self._scroll_handlers:
             adjustment = scrolled.get_vadjustment()
             self._scroll_handlers = [
-                (adjustment, adjustment.connect("changed", self._follow_card))
+                (adjustment, adjustment.connect("changed", self._follow_card)),
+                (card, card.connect("notify::visible", self._on_card_shown)),
             ]
 
     def _follow_card(self, adjustment: Gtk.Adjustment):
@@ -122,10 +124,14 @@ class CalibrationPropertyProvider(PropertyProvider):
         if offset is not None:
             self._scroll_to(offset)
 
+    def _on_card_shown(self, card: Gtk.Widget, _pspec):
+        if not card.get_visible():
+            self.stop_following()
+
     def stop_following(self):
         """Leaves the scroll position to the user."""
-        for adjustment, handler in self._scroll_handlers:
-            adjustment.disconnect(handler)
+        for source, handler in self._scroll_handlers:
+            source.disconnect(handler)
         self._scroll_handlers = []
 
     def _card_offset(self, scrolled: Gtk.ScrolledWindow) -> float | None:
