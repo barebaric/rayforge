@@ -83,15 +83,6 @@ async def test_advance_is_undoable(doc_editor, cmd):
 
 
 @pytest.mark.asyncio
-async def test_set_variable_offset_is_undoable(doc_editor, cmd):
-    wp = place(doc_editor.doc, "{counter}")
-    cmd.set_variable_offset([wp], 4)
-    assert wp.variable_offset == 4
-    doc_editor.history_manager.undo()
-    assert wp.variable_offset == 0
-
-
-@pytest.mark.asyncio
 async def test_number_copies_in_reading_order(doc_editor, cmd):
     doc = doc_editor.doc
     wps = []
@@ -118,3 +109,4 @@ async def test_preview_values(doc_editor, cmd):
 async def test_preview_without_copies_shows_current(doc_editor, cmd):
     cmd.set_counter(CounterSettings(current=7))
     assert cmd.preview_counter_values() == [7]
+

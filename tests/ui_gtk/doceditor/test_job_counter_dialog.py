@@ -14,9 +14,6 @@ from rayforge.ui_gtk.doceditor.job_counter_dialog import (
     JobCounterDialog,
     format_preview,
 )
-from rayforge.ui_gtk.doceditor.property_providers.job_counter import (
-    JobCounterPropertyProvider,
-)
 from tests.core.template_provider import place
 
 
@@ -107,31 +104,6 @@ def test_switches_update_model(editor, dialog):
     dialog.export_row.set_active(True)
     assert _counter(editor).auto_advance is False
     assert _counter(editor).advance_on_export is True
-
-
-@pytest.mark.ui
-def test_property_provider_handles_workpieces(editor):
-    wp = place(editor.doc, "{counter:03d}")
-    plain = place(editor.doc, "Hello")
-    provider = JobCounterPropertyProvider()
-    assert provider.can_handle([wp])
-    assert provider.can_handle([plain])
-    assert not provider.can_handle([])
-
-
-@pytest.mark.ui
-def test_property_provider_sets_offset(editor):
-    editor.doc.job_counter.counter = CounterSettings(current=10)
-    wp = place(editor.doc, "{counter}")
-    provider = JobCounterPropertyProvider()
-    provider.create_widgets()
-    provider.update_widgets(editor, [wp])
-    assert "10" in (provider.offset_row.get_subtitle() or "")
-    provider.offset_row.set_value(3)
-    provider.offset_row.value_changed.send(provider.offset_row)
-    assert wp.variable_offset == 3
-    provider.update_widgets(editor, [wp])
-    assert "13" in (provider.offset_row.get_subtitle() or "")
 
 
 @pytest.mark.ui

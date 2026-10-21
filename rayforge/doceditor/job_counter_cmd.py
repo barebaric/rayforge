@@ -102,14 +102,6 @@ class JobCounterCmd:
     def _on_gcode_exported(self, sender) -> None:
         self.advance_after_job(exported=True)
 
-    def set_variable_offset(
-        self, workpieces: Sequence[WorkPiece], offset: int
-    ) -> None:
-        """Sets the same variable offset on all *workpieces*."""
-        self._apply_offsets(
-            [(wp, offset) for wp in workpieces], _("Set variable offset")
-        )
-
     def number_copies(self, items: Sequence[DocItem]) -> None:
         """
         Gives *items* the offsets 0, 1, 2, ... in reading order: rows
