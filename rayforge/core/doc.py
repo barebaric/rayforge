@@ -15,9 +15,10 @@ from .asset import IAsset, UnknownAsset
 from .color import COLOR_PALETTE
 from .image_edit import ImageEditStep, missing_image_edit_ops
 from .item import DocItem
+from .job_counter import JobCounter
 from .layer import Layer
 from .source_asset import SourceAsset
-from .workpiece import WorkPiece
+from .workpiece import WorkPiece, workpieces_in
 
 if TYPE_CHECKING:
     from .stock import StockItem
@@ -44,6 +45,11 @@ class Doc(DocItem):
         # Asset Management
         self.assets: dict[str, IAsset] = {}
         self.asset_order: list[str] = []
+
+        # The job counter, passed to text templates as {counter}
+        self._job_counter = JobCounter()
+        self._job_counter.changed.connect(self._on_job_counter_changed)
+        self.descendant_added.connect(self._on_item_added_for_templates)
 
         # A new document starts with three empty workpiece layers
         for i in range(3):
@@ -90,6 +96,7 @@ class Doc(DocItem):
 
         doc = cls()
         doc.uid = data.get("uid", doc.uid)
+        doc.job_counter = JobCounter.from_dict(data.get("job_counter"))
 
         # Clear the default layer created by __init__
         doc.set_children([])
@@ -173,7 +180,56 @@ class Doc(DocItem):
             "active_layer_index": self._active_layer_index,
             "children": [child.to_dict() for child in self.children],
             "assets": [asset.to_dict() for asset in self.get_all_assets()],
+            "job_counter": self._job_counter.to_dict(),
         }
+
+    @property
+    def job_counter(self) -> JobCounter:
+        """The document's job counter."""
+        return self._job_counter
+
+    @job_counter.setter
+    def job_counter(self, value: JobCounter) -> None:
+        self._job_counter.changed.disconnect(self._on_job_counter_changed)
+        self._job_counter = value
+        value.changed.connect(self._on_job_counter_changed)
+        self._on_job_counter_changed(value)
+
+    def job_counter_copies(self) -> int:
+        """
+        How many consecutive counter values one job uses: the highest
+        variable offset of a workpiece that reads the counter plus
+        one, or 0 if no workpiece reads it.
+        """
+        offsets = [
+            wp.variable_offset
+            for wp in self._counter_readers(self.all_workpieces)
+        ]
+        if not offsets:
+            return 0
+        return max(offsets) + 1
+
+    def _counter_readers(
+        self, workpieces: Iterable[WorkPiece]
+    ) -> list[WorkPiece]:
+        """The workpieces whose geometry provider reads the counter."""
+        names = self._job_counter.names
+        readers = []
+        for wp in workpieces:
+            provider = wp.get_geometry_provider()
+            if provider is not None and names & provider.variables_used():
+                readers.append(wp)
+        return readers
+
+    def _on_job_counter_changed(self, sender: JobCounter) -> None:
+        for wp in self._counter_readers(self.all_workpieces):
+            wp.refresh_template_values()
+
+    def _on_item_added_for_templates(
+        self, sender: DocItem, *, origin: DocItem, parent_of_origin: DocItem
+    ) -> None:
+        for wp in self._counter_readers(workpieces_in(origin)):
+            wp.refresh_template_values()
 
     def add_asset(
         self, asset: IAsset, index: int | None = None, silent: bool = False

@@ -22,6 +22,7 @@ from .array_dialog import (
     PointRotationArrayDialog,
 )
 from .doceditor.add_tabs_popover import AddTabsPopover
+from .doceditor.job_counter_dialog import JobCounterDialog
 from .doceditor.path_tolerance_dialog import PathToleranceDialog
 from .doceditor.stock_properties_dialog import StockPropertiesDialog
 from .shared.keyboard import PRIMARY_ACCEL
@@ -477,6 +478,10 @@ class ActionManager:
         self._add_action("array-point-rotation", self.on_array_point_rotation)
         self._add_action("array-circular", self.on_array_circular)
 
+        # Job counter
+        self._add_action("job-counter", self.on_job_counter)
+        self._add_action("number-copies", self.on_number_copies)
+
         # Macro Actions
         self._add_action(
             "execute-macro",
@@ -576,6 +581,9 @@ class ActionManager:
             "delete-duplicates",
         ):
             self.actions[name].set_enabled(bool(selected_wps))
+        self.actions["number-copies"].set_enabled(
+            len(self.win.surface.get_selected_items()) > 1
+        )
         self.actions["export-object"].set_enabled(len(selected_wps) == 1)
 
         sources = self.editor.reload.sources_of(list(selected_wps))
@@ -1041,6 +1049,18 @@ class ActionManager:
         """Handler for the 'array-circular' action: opens the circular
         dialog."""
         self._open_array_dialog(ArrayMode.CIRCULAR)
+
+    def on_job_counter(self, action, param):
+        """Handler for 'job-counter': opens the job counter dialog."""
+        dialog = JobCounterDialog(self.win, self.editor)
+        dialog.present()
+
+    def on_number_copies(self, action, param):
+        """Handler for 'number-copies': numbers the selected items in
+        reading order, so their counter values count up."""
+        items = list(self.win.surface.get_selected_items())
+        if items:
+            self.editor.job_counter.number_copies(items)
 
     def _open_array_dialog(self, mode: ArrayMode) -> None:
         items = list(self.win.surface.get_selected_items())

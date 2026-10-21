@@ -163,6 +163,10 @@ class WorkPiece(DocItem):
 
         self._resolved_text_cache: dict = {}
 
+        # Shifts the document's job counter for this copy, so array
+        # copies show consecutive counter values.
+        self._variable_offset: int = 0
+
         self.source_asset_uid: str | None = None
 
         self._tabs: list[Tab] = []
@@ -513,7 +517,7 @@ class WorkPiece(DocItem):
                 f"params: {self._geometry_provider_params}"
             )
             unnormalized_geo, unnormalized_fills = provider.get_geometry(
-                self._geometry_provider_params,
+                self._provider_params(),
                 resolved_text_cache=self._resolved_text_cache,
             )
 
@@ -1071,6 +1075,8 @@ class WorkPiece(DocItem):
             }
             if cache:
                 state["resolved_text_cache"] = cache
+        if self._variable_offset:
+            state["variable_offset"] = self._variable_offset
         if self._data is not None:
             state["data"] = self._data
         if self._original_data is not None:
@@ -1109,6 +1115,7 @@ class WorkPiece(DocItem):
             "geometry_provider_params",
             "source_asset_uid",
             "resolved_text_cache",
+            "variable_offset",
             "data",
             "original_data",
             "source_px_dims",
@@ -1160,6 +1167,7 @@ class WorkPiece(DocItem):
             "geometry_provider_params", {}
         ) or data.get("sketch_params", {})
         wp.source_asset_uid = data.get("source_asset_uid")
+        wp._variable_offset = int(data.get("variable_offset", 0))
         raw_cache = data.get("resolved_text_cache")
         if raw_cache:
             wp._resolved_text_cache = {
@@ -1214,6 +1222,60 @@ class WorkPiece(DocItem):
             if self.geometry_provider_uid:
                 # Regenerate the internal geometry and natural size
                 self.regenerate_from_geometry_provider()
+
+    @property
+    def variable_offset(self) -> int:
+        """
+        The copy offset applied to the document's job counter.
+
+        A copy with offset ``n`` shows the counter value ``n`` copies
+        after the current one, i.e. ``current + n * step``.
+        """
+        return self._variable_offset
+
+    @variable_offset.setter
+    def variable_offset(self, value: int) -> None:
+        value = int(value)
+        if value == self._variable_offset:
+            return
+        self._variable_offset = value
+        self.refresh_template_values()
+
+    def _provider_params(self) -> dict[str, Any]:
+        """
+        Parameters for the geometry provider: the document's job counter
+        as seen by this copy, overridden by this instance's own
+        parameters.
+        """
+        doc = self.doc
+        params = (
+            doc.job_counter.template_values(self._variable_offset)
+            if doc is not None
+            else {}
+        )
+        params.update(self._geometry_provider_params or {})
+        return params
+
+    def refresh_template_values(self) -> None:
+        """
+        Regenerates the geometry after the job counter changed.
+
+        The current scale relative to the natural size is kept, so a
+        longer text grows instead of being squeezed into the old box,
+        and the anchor point (see `anchor_mode`) stays where it was.
+        """
+        old_w, old_h = self.natural_width_mm, self.natural_height_mm
+        size_w, size_h = self.size
+        anchor_world = self.get_anchor_world()
+        self.clear_render_cache()
+        if self.boundaries is not None and old_w > 1e-9 and old_h > 1e-9:
+            self.set_size(
+                self.natural_width_mm * size_w / old_w,
+                self.natural_height_mm * size_h / old_h,
+                anchor=self.anchor_point,
+            )
+            self._move_anchor_to(anchor_world)
+        self.updated.send(self)
 
     def get_natural_aspect_ratio(self) -> float | None:
         size = self.natural_size
@@ -1720,10 +1782,17 @@ class WorkPiece(DocItem):
             f"WP {self.uid[:8]}: New natural size: {width:.2f}x{height:.2f}mm"
         )
         self.set_size(width, height, anchor=self.anchor_point)
+        self._move_anchor_to(anchor_world_before)
 
+    def _move_anchor_to(self, anchor_world: Point) -> None:
+        """
+        Moves the workpiece so its anchor point lies at *anchor_world*.
+        Needed after new geometry, because the anchor's normalized
+        position shifts when the bounding box moves relative to it.
+        """
         anchor_world_after = self.get_anchor_world()
-        dx = anchor_world_before[0] - anchor_world_after[0]
-        dy = anchor_world_before[1] - anchor_world_after[1]
+        dx = anchor_world[0] - anchor_world_after[0]
+        dy = anchor_world[1] - anchor_world_after[1]
         if abs(dx) > 1e-9 or abs(dy) > 1e-9:
             pos = self.pos
             self.pos = (pos[0] + dx, pos[1] + dy)
@@ -1760,7 +1829,7 @@ class WorkPiece(DocItem):
         )
 
         # Get geometry with current parameter overrides.
-        variable_overrides = self._geometry_provider_params or {}
+        variable_overrides = self._provider_params()
         logger.debug(
             f"WP {self.uid[:8]}: Getting geometry with params: "
             f"{variable_overrides}"
@@ -1784,3 +1853,10 @@ class WorkPiece(DocItem):
 
         # Send updated signal to trigger UI updates
         self.updated.send(self)
+
+
+def workpieces_in(item: DocItem) -> list[WorkPiece]:
+    """The item itself if it is a workpiece, else its workpieces."""
+    if isinstance(item, WorkPiece):
+        return [item]
+    return item.get_descendants(of_type=WorkPiece)

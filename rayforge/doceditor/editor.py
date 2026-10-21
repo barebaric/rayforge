@@ -24,6 +24,7 @@ from .command_registry import command_registry
 from .edit_cmd import EditCmd
 from .file_cmd import FileCmd
 from .group_cmd import GroupCmd
+from .job_counter_cmd import JobCounterCmd
 from .layer_cmd import LayerCmd
 from .layout_cmd import LayoutCmd
 from .node_edit_cmd import NodeEditCmd
@@ -162,6 +163,7 @@ class DocEditor:
         self.step = StepCmd(self)
         self.tab = TabCmd(self)
         self.transform = TransformCmd(self)
+        self.job_counter = JobCounterCmd(self)
 
         # Instantiate addon-registered commands.
         for name, cmd_class in command_registry.all_commands().items():

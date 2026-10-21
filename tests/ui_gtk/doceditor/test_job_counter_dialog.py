@@ -1,0 +1,113 @@
+# flake8: noqa: E402
+import gi
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+
+import pytest
+from gi.repository import Adw, Gtk
+
+from rayforge.core.job_counter import CounterSettings
+from rayforge.doceditor.editor import DocEditor
+from rayforge.ui_gtk.doceditor.job_counter_dialog import (
+    DEFAULT_WIDTH,
+    JobCounterDialog,
+    format_preview,
+)
+from tests.core.template_provider import place
+
+
+@pytest.fixture
+def editor(ui_context_initializer, ui_task_mgr):
+    editor = DocEditor(
+        task_manager=ui_task_mgr, context=ui_context_initializer
+    )
+    yield editor
+    editor.cleanup()
+
+
+@pytest.fixture
+def dialog(editor):
+    parent = Gtk.Window()
+    dlg = JobCounterDialog(parent, editor)
+    yield dlg
+    dlg.destroy()
+
+
+def _counter(editor) -> CounterSettings:
+    return editor.doc.job_counter.counter
+
+
+@pytest.mark.ui
+def test_format_preview():
+    assert format_preview([7]) == "7"
+    assert format_preview([7, 8, 9]) == "7, 8, 9"
+    assert format_preview(list(range(1, 21))) == "1 … 20 (20 copies)"
+
+
+@pytest.mark.ui
+def test_dialog_shows_current_settings(editor):
+    editor.doc.job_counter.counter = CounterSettings(
+        current=42, start=10, step=2, auto_advance=False
+    )
+    dlg = JobCounterDialog(Gtk.Window(), editor)
+    assert dlg.current_row.get_int_value() == 42
+    assert dlg.start_row.get_int_value() == 10
+    assert dlg.step_row.get_int_value() == 2
+    assert dlg.auto_advance_row.get_active() is False
+    dlg.destroy()
+
+
+@pytest.mark.ui
+def test_editing_current_value_is_undoable(editor, dialog):
+    dialog.current_row.set_value(77)
+    dialog.current_row.value_changed.send(dialog.current_row)
+    assert _counter(editor).current == 77
+    editor.history_manager.undo()
+    assert _counter(editor).current == 1
+
+
+@pytest.mark.ui
+def test_end_value_only_applies_when_enabled(editor, dialog):
+    dialog.end_row.set_value(9)
+    dialog.end_row.value_changed.send(dialog.end_row)
+    assert _counter(editor).end is None
+    dialog.limit_row.set_active(True)
+    assert _counter(editor).end == 9
+    dialog.limit_row.set_active(False)
+    assert _counter(editor).end is None
+
+
+@pytest.mark.ui
+def test_next_previous_reset_buttons(editor, dialog):
+    place(editor.doc, "{counter}", offset=1)
+    dialog.next_button.emit("clicked")
+    assert _counter(editor).current == 3
+    dialog.previous_button.emit("clicked")
+    assert _counter(editor).current == 1
+    editor.doc.job_counter.counter = CounterSettings(current=50, start=4)
+    dialog.reset_button.emit("clicked")
+    assert _counter(editor).current == 4
+
+
+@pytest.mark.ui
+def test_preview_follows_model(editor, dialog):
+    place(editor.doc, "{counter}", offset=2)
+    editor.doc.job_counter.counter = CounterSettings(current=5)
+    assert dialog.preview_row.get_subtitle() == "5, 6, 7"
+    assert dialog.current_row.get_int_value() == 5
+
+
+@pytest.mark.ui
+def test_switches_update_model(editor, dialog):
+    dialog.auto_advance_row.set_active(False)
+    dialog.export_row.set_active(True)
+    assert _counter(editor).auto_advance is False
+    assert _counter(editor).advance_on_export is True
+
+
+@pytest.mark.ui
+def test_dialog_layout_matches_settings_dialogs(dialog):
+    assert dialog.get_modal() is False
+    assert isinstance(dialog.get_content(), Adw.ToolbarView)
+    assert dialog.get_default_size()[0] == DEFAULT_WIDTH

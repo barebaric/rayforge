@@ -52,8 +52,11 @@ class MachineCmd:
         self._editor = editor
         self._scheduler = editor.task_manager.schedule_on_main_thread
         self.job_started = Signal()
+        self.job_completed = Signal()
         self._current_monitor: JobMonitor | None = None
         self._on_progress_callback: Callable[[dict], None] | None = None
+        self._cancel_requested = False
+        self._send_completed = False
 
     @property
     def is_job_running(self) -> bool:
@@ -95,10 +98,13 @@ class MachineCmd:
             Coroutine,
         ]
         | None = None,
-    ):
+    ) -> bool:
         """
         Internal helper to execute a job on a driver while managing
         a JobMonitor for progress reporting.
+
+        Returns True if the job ran to its end, False if it had no
+        operations or was cancelled.
 
         The job runs the encoded pipeline output, unless *execute* is
         given: then it calls ``execute(on_command_done)`` instead, which
@@ -117,7 +123,7 @@ class MachineCmd:
             logger.warning("Job has no operations. Skipping execution.")
             if machine.driver:
                 machine.driver.job_finished.send(machine.driver)
-            return
+            return False
 
         # Store the callback
         self._on_progress_callback = on_progress
@@ -160,6 +166,7 @@ class MachineCmd:
                 )
 
             # Signal that the job has started.
+            self._cancel_requested = False
             self._scheduler(self.job_started.send, self)
 
             if execute is not None:
@@ -203,6 +210,7 @@ class MachineCmd:
                 f"Job completed. Estimated time: {estimated_hours:.3f}h "
                 f"added to machine hours."
             )
+            return not self._cancel_requested
         finally:
             cleanup_monitor()
 
@@ -329,7 +337,7 @@ class MachineCmd:
         if not isinstance(artifact, JobArtifact):
             raise TypeError("_run_send_action received a non-JobArtifact")
 
-        await self._execute_monitored_job(
+        self._send_completed = await self._execute_monitored_job(
             artifact.ops,
             machine,
             on_progress=on_progress,
@@ -457,12 +465,15 @@ class MachineCmd:
         trace does not burn the material.
         """
         try:
+            self._send_completed = False
             await self._start_job(
                 machine,
                 final_job_action=self._run_send_action,
                 on_progress=on_progress,
                 pointer_dry_run=pointer_dry_run,
             )
+            if self._send_completed and not pointer_dry_run:
+                self._scheduler(self.job_completed.send, self)
         except JobAlreadyRunningError as e:
             # An expected refusal, not a failure: the guard's message
             # already tells the user what to do.
@@ -497,6 +508,8 @@ class MachineCmd:
 
     def cancel_job(self, machine: Machine):
         """Adds a task to cancel the currently running job on the machine."""
+        if self._current_monitor is not None:
+            self._cancel_requested = True
         driver = machine.driver
         self._editor.task_manager.add_coroutine(
             lambda ctx: driver.cancel(), key="cancel-job"

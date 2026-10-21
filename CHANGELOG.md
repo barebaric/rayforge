@@ -5,6 +5,14 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## UNRELEASED
+
+### Added
+
+- Job Counter: a `{counter}` variable for text templates, with a
+  project counter that advances after every finished job and consecutive
+  numbers for array copies (Tools > Job Counter) (#527)
+
 ## 1.13.0-beta4
 
 ### Changed

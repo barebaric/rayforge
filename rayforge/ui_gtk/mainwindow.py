@@ -181,6 +181,9 @@ class MainWindow(Adw.ApplicationWindow):
         )
         self.machine_cmd = MachineCmd(self.doc_editor)
         self.machine_cmd.job_started.connect(self._on_job_started)
+        self.machine_cmd.job_completed.connect(
+            self.doc_editor.job_counter.on_job_completed
+        )
 
         # Instantiate and connect the UpdateCommand's notification signal
         self.update_cmd = UpdateCommand(task_mgr, context)

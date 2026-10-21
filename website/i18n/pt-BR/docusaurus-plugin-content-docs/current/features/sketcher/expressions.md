@@ -121,6 +121,9 @@ integradas abaixo, e funções personalizadas podem ser registradas para eles (v
 | `{uuid8()}`     | `str`           | Alias de `uuid4()`                                   |
 | `{uuid()}`      | `str`           | String UUID v4 completa (36 caracteres)              |
 
+Para um contador de trabalhos que avança após cada trabalho, use a variável do projeto `{counter}` (veja
+[Contador de trabalhos](../job-counter.md)).
+
 Usos típicos incluem números de série únicos a cada resolução (`Peça #{uuid4()}`), rótulos de
 dimensões em tempo real (`L={width:.1f} A={height:.1f}`), datar cada peça (`Data: {today()}`),
 contadores de produção (`{name} - {count:.0f}un`) ou marcas temporais Unix para registro de produção

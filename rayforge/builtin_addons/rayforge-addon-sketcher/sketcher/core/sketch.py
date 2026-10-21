@@ -5,6 +5,7 @@ import math
 import time
 import uuid
 from collections import defaultdict
+from dataclasses import replace
 from gettext import gettext as _
 from pathlib import Path
 from typing import Any, ClassVar
@@ -20,7 +21,11 @@ from raygeo.geo.shape.polygon import is_point_inside_polygon
 
 from rayforge.core.asset import IAsset
 from rayforge.core.color import ColorRGBA
-from rayforge.core.expression import ExpressionMap
+from rayforge.core.expression import (
+    ExpressionMap,
+    names_in_expression,
+    referenced_template_names,
+)
 from rayforge.core.geometry_provider import IGeometryProvider
 from rayforge.core.varset import VarSet
 from rayforge.image.geo_renderer import render_geometry_to_png
@@ -58,6 +63,48 @@ from .registry import EntityRegistry
 from .solver import Solver
 from .template_functions import get_template_functions
 from .types import EntityID
+
+_GEOMETRY_CACHE_SIZE = 8
+_GeometryKey = tuple[tuple[tuple[str, str], ...], ...]
+
+
+# A text box's resolved text: its source, the result and the values of
+# the variables it was resolved with (absent in older entries).
+_ResolvedText = (
+    tuple[str, str | None] | tuple[str, str | None, list[list[str]]]
+)
+
+
+def _value_stamp(content: str, ctx: dict[str, Any]) -> list[list[str]]:
+    """
+    The values of the variables a template reads, as far as *ctx*
+    has them. Template functions are left out: their result is meant
+    to stay the same once resolved.
+    """
+    functions = get_template_functions()
+    names = referenced_template_names([content]) - set(functions)
+    return [[name, repr(ctx[name])] for name in sorted(names) if name in ctx]
+
+
+def _is_current(cached, content: str, stamp: list[list[str]]) -> bool:
+    """
+    Whether a cached text was resolved from *content* with the values
+    of *stamp*. A variable missing when the text was resolved, or one
+    with another value now, makes it stale; one missing now does not,
+    so a detached copy keeps the text it was given.
+    """
+    if cached[0] != content:
+        return False
+    if len(cached) < 3:
+        return True
+    resolved_with = {tuple(pair) for pair in cached[2]}
+    return all(tuple(pair) in resolved_with for pair in stamp)
+
+
+def _copy_fills(fills: list[FillRenderData]) -> list[FillRenderData]:
+    """Copies fills deep enough that callers may transform them."""
+    return [replace(fill, geometry=fill.geometry.copy()) for fill in fills]
+
 
 DEFAULT_FILL_COLOR: ColorRGBA = (0.85, 0.85, 0.85, 0.7)
 FORMAT_VERSION = 1
@@ -183,8 +230,15 @@ class Sketch(IAsset, IGeometryProvider):
         self._updated = Signal()
         self._hidden: bool = False
         self._last_solve_values: dict[str, Any] = {}
-        self._resolved_text_cache: dict[EntityID, tuple[str, str | None]] = {}
+        self._resolved_text_cache: dict[EntityID, _ResolvedText] = {}
         self._solved_ctx: dict[str, Any] | None = None
+
+        # Geometry of the last calls, keyed by effective parameter
+        # values; cleared whenever the sketch itself changes.
+        self._geometry_cache: dict[
+            _GeometryKey, tuple[Geometry, list[FillRenderData], dict]
+        ] = {}
+        self._updated.connect(self._invalidate_geometry_cache)
 
         # Cache for coincident-point groups. Keys are point IDs,
         # values are frozensets of all points in the same group.
@@ -246,6 +300,7 @@ class Sketch(IAsset, IGeometryProvider):
             a = by_uid.get(uid)
             if a is not None:
                 a.restore(astate)
+        self._invalidate_geometry_cache()
 
     def _validate_and_cleanup_fills(self):
         """
@@ -326,7 +381,10 @@ class Sketch(IAsset, IGeometryProvider):
         Generate geometry with optional parameter overrides.
 
         Creates a clone, solves it with the given parameters, and returns
-        the stroke and fill geometries.
+        the stroke and fill geometries. An unchanged sketch reuses the
+        result of an earlier call when the effective parameter values
+        are the same, so a change to a document-wide variable does not
+        re-solve sketches that do not read it.
 
         When *resolved_text_cache* is supplied the clone is seeded with
         those values so that volatile template expressions (e.g.
@@ -342,6 +400,14 @@ class Sketch(IAsset, IGeometryProvider):
         Returns:
             A tuple of (stroke_geometry, fill_render_data).
         """
+        seed = dict(resolved_text_cache or {})
+        key = self._geometry_cache_key(params, seed)
+        cached = self._geometry_cache.get(key)
+        if cached is not None:
+            geo, fills, resolved = cached
+            if resolved_text_cache is not None:
+                resolved_text_cache.update(resolved)
+            return geo.copy(), _copy_fills(fills)
         clone = self._clone_for_geometry()
         if resolved_text_cache is not None:
             clone._resolved_text_cache = dict(resolved_text_cache)
@@ -354,7 +420,103 @@ class Sketch(IAsset, IGeometryProvider):
         fills = clone.get_fill_render_data()
         if resolved_text_cache is not None:
             resolved_text_cache.update(clone._resolved_text_cache)
+        resolved = clone._resolved_text_cache
+        self._remember_geometry(
+            self._geometry_cache_key(params, resolved), geo, fills, resolved
+        )
+        if self._is_reproducible(seed, resolved):
+            self._remember_geometry(key, geo, fills, resolved)
         return geo, fills
+
+    def get_template_sources(self) -> list[str]:
+        """The raw contents of all text boxes, including templates."""
+        return [
+            e.content
+            for e in self.registry.entities
+            if isinstance(e, TextBoxEntity) and e.content
+        ]
+
+    def variables_used(self) -> set[str]:
+        """The template variable names this sketch's text boxes read."""
+        return referenced_template_names(self.get_template_sources())
+
+    def _geometry_cache_key(
+        self, params: dict[str, Any] | None, texts: dict
+    ) -> _GeometryKey:
+        """
+        The effective values of the names this sketch reads and the
+        seeded text of a geometry request. Two requests with the same
+        key produce the same geometry as long as the sketch itself does
+        not change, so a variable the sketch does not read never causes
+        a re-solve.
+        """
+        values = dict(self.input_parameters.get_values())
+        if params:
+            values.update(params)
+        read = self._names_read()
+        return (
+            tuple(
+                sorted(
+                    (name, repr(value))
+                    for name, value in values.items()
+                    if name in read
+                )
+            ),
+            tuple(
+                sorted(
+                    (str(eid), repr(tuple(entry)))
+                    for eid, entry in texts.items()
+                )
+            ),
+        )
+
+    def _names_read(self) -> set[str]:
+        """
+        The variable names that can influence this sketch's geometry:
+        its input parameters, its parameter expressions, its constraint
+        expressions and its text templates.
+        """
+        expressions = self.params.to_dict()["expressions"]
+        sources = list(expressions.values())
+        sources.extend(c.expression for c in self.constraints if c.expression)
+        names = set(self.input_parameters.keys()) | set(expressions)
+        for source in sources:
+            names |= names_in_expression(source)
+        return names | self.variables_used()
+
+    def _is_reproducible(self, seed: dict, resolved: dict) -> bool:
+        """
+        Whether a geometry request seeded with *seed* always resolves
+        to *resolved*: true unless a text was newly resolved from a
+        template that calls a template function, as those (uuids,
+        timestamps) give every caller a fresh value.
+        """
+        functions = set(get_template_functions())
+        return not any(
+            referenced_template_names([entry[0]]) & functions
+            for eid, entry in resolved.items()
+            if tuple(seed.get(eid, ())) != tuple(entry)
+        )
+
+    def _remember_geometry(
+        self,
+        key: _GeometryKey,
+        geo: Geometry,
+        fills: list[FillRenderData],
+        resolved: dict,
+    ) -> None:
+        """Caches a result, evicting the oldest when it grows too big."""
+        self._geometry_cache[key] = (
+            geo.copy(),
+            _copy_fills(fills),
+            dict(resolved),
+        )
+        while len(self._geometry_cache) > _GEOMETRY_CACHE_SIZE:
+            self._geometry_cache.pop(next(iter(self._geometry_cache)))
+
+    def _invalidate_geometry_cache(self, sender=None) -> None:
+        """Drops cached geometry when the sketch itself changes."""
+        self._geometry_cache.clear()
 
     def _clone_for_geometry(self) -> "Sketch":
         """
@@ -410,6 +572,7 @@ class Sketch(IAsset, IGeometryProvider):
         clone._last_solve_values = {}
         clone._resolved_text_cache = {}
         clone._solved_ctx = None
+        clone._geometry_cache = {}
         # Build coincident cache so geometry generation is fast.
         clone._coincident_cache = {}
         clone._coincident_dirty = False
@@ -1448,6 +1611,7 @@ class Sketch(IAsset, IGeometryProvider):
         if self._solving:
             return True
         self._solving = True
+        self._invalidate_geometry_cache()
         solve_started = time.perf_counter()
         params_done = prep_done = solver_done = arrays_done = solve_started
         success = False
@@ -1643,32 +1807,19 @@ class Sketch(IAsset, IGeometryProvider):
         longer matches the entity's current content is re-resolved,
         otherwise reverting an edit would keep rendering stale text.
         """
-        cached = self._resolved_text_cache.get(entity.id)
-        if isinstance(cached, (tuple, list)):
-            source, resolved = cached
-            if source == entity.content:
-                return resolved
-
         if not entity.content:
             self._resolved_text_cache[entity.id] = ("", None)
             return None
 
-        try:
-            # Use the cached context from solve() when available,
-            # avoiding a fresh ParameterContext per text box.
-            if self._solved_ctx is not None:
-                ctx = self._solved_ctx
-            else:
-                solve_params = ParameterContext.from_dict(
-                    self.params.to_dict()
-                )
-                initial_values = dict(self._last_solve_values)
-                if not initial_values and self.input_parameters:
-                    initial_values.update(self.input_parameters.get_values())
-                solve_params.evaluate_all(initial_values=initial_values)
-                ctx = solve_params.get_all_values()
-                ctx.update(get_template_functions())
+        ctx = self._text_context()
+        stamp = _value_stamp(entity.content, ctx)
+        cached = self._resolved_text_cache.get(entity.id)
+        if isinstance(cached, (tuple, list)) and _is_current(
+            cached, entity.content, stamp
+        ):
+            return cached[1]
 
+        try:
             expr_map = ExpressionMap(ctx)
             resolved = expr_map.format(entity.content)
             logger.debug(
@@ -1676,20 +1827,33 @@ class Sketch(IAsset, IGeometryProvider):
                 f"{entity.content!r} -> {resolved!r} "
                 f"values={list(ctx.keys())[:5]}"
             )
-            self._resolved_text_cache[entity.id] = (
-                entity.content,
-                resolved,
-            )
-            return resolved
         except (KeyError, IndexError, ValueError) as e:
             logger.debug(
                 f"Template resolution failed for '{entity.content}': {e}"
             )
-            self._resolved_text_cache[entity.id] = (
-                entity.content,
-                None,
-            )
-            return None
+            resolved = None
+        self._resolved_text_cache[entity.id] = (
+            entity.content,
+            resolved,
+            stamp,
+        )
+        return resolved
+
+    def _text_context(self) -> dict[str, Any]:
+        """
+        The values text templates are resolved with: the context of
+        the last solve, or a freshly evaluated one.
+        """
+        if self._solved_ctx is not None:
+            return self._solved_ctx
+        solve_params = ParameterContext.from_dict(self.params.to_dict())
+        initial_values = dict(self._last_solve_values)
+        if not initial_values and self.input_parameters:
+            initial_values.update(self.input_parameters.get_values())
+        solve_params.evaluate_all(initial_values=initial_values)
+        ctx = solve_params.get_all_values()
+        ctx.update(get_template_functions())
+        return ctx
 
     def to_geometry(self) -> Geometry:
         """

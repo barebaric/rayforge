@@ -124,6 +124,9 @@ fonctions intégrées ci-dessous, et des fonctions personnalisées peuvent leur 
 | `{uuid8()}`     | `str`       | Alias de `uuid4()`                                    |
 | `{uuid()}`      | `str`       | Chaîne UUID v4 complète (36 caractères)               |
 
+Pour un compteur de tâches qui avance après chaque travail, utilisez la variable de projet
+`{counter}` (voir [Compteur de tâches](../job-counter.md)).
+
 Les utilisations typiques comprennent les numéros de série uniques à chaque résolution
 (`Pièce #{uuid4()}`), les étiquettes de dimensions dynamiques (`W={width:.1f} H={height:.1f}`), les
 dates (`Date : {today()}`), les compteurs de production (`{name} - {count:.0f}pcs`) ou les
