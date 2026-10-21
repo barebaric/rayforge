@@ -29,6 +29,12 @@ logger = logging.getLogger(__name__)
 max_workers = max(1, (os.cpu_count() or 1) - 2)
 # Define a maximum dimension for our rendering buffers to prevent cairo errors.
 MAX_BUFFER_DIM = 8192
+# An axis whose on-screen extent is smaller than this many pixels is treated
+# as flat for hit-testing, e.g. a perfectly horizontal line has zero height.
+FLAT_HIT_THRESHOLD_PX = 1.0
+# Screen-space tolerance applied to flat axes so that zero-height or
+# zero-width elements behave like very thin rectangles and stay selectable.
+FLAT_HIT_TOLERANCE_PX = 4.0
 
 
 class CanvasElement:
@@ -1044,23 +1050,62 @@ class CanvasElement:
             )
 
         # 3. Now, perform a simple bounding box check in our own geometry
-        # space.
+        # space. Flat axes are widened by a few screen pixels so that
+        # perfectly horizontal or vertical elements remain selectable.
+        tol_x, tol_y, flat_x, flat_y = self._get_hit_tolerances()
         if not (
-            0 <= local_geom_x < self.width and 0 <= local_geom_y < self.height
+            -tol_x <= local_geom_x < self.width + tol_x
+            and -tol_y <= local_geom_y < self.height + tol_y
         ):
             return None
 
         # 4. Optional: If inside the bounding box, perform pixel-perfect check.
         # Draggable elements should be hittable anywhere within their bbox.
+        # Flat elements are skipped: their rendered buffer has no height (or
+        # width), so a pixel lookup can never succeed.
         if (
             self.pixel_perfect_hit
             and not self.draggable
+            and not (flat_x or flat_y)
             and not self.is_pixel_opaque(local_geom_x, local_geom_y)
         ):
             return None
 
         # 5. If all checks pass, we have a hit on this element.
         return self
+
+    def _get_hit_tolerances(self) -> tuple[float, float, bool, bool]:
+        """
+        Calculates a local-space hit tolerance for each axis.
+
+        A perfectly flat element, such as a horizontal line with zero
+        height, would otherwise be infinitely thin and impossible to
+        click. Each axis that is degenerate on screen is widened by a
+        small number of screen pixels so the element behaves like a very
+        thin rectangle.
+
+        Returns:
+            A tuple ``(tol_x, tol_y, flat_x, flat_y)``. The tolerances
+            are in the element's local geometry space.
+        """
+        transform = self.get_world_transform()
+        if self.canvas:
+            transform = self.canvas.view_transform @ transform
+        scale_x, scale_y = transform.get_abs_scale()
+
+        flat_x = self.width * scale_x < FLAT_HIT_THRESHOLD_PX
+        flat_y = self.height * scale_y < FLAT_HIT_THRESHOLD_PX
+        tol_x = (
+            FLAT_HIT_TOLERANCE_PX / scale_x
+            if flat_x and scale_x > 1e-12
+            else 0.0
+        )
+        tol_y = (
+            FLAT_HIT_TOLERANCE_PX / scale_y
+            if flat_y and scale_y > 1e-12
+            else 0.0
+        )
+        return tol_x, tol_y, flat_x, flat_y
 
     def is_pixel_opaque(self, local_x: float, local_y: float) -> bool:
         """
