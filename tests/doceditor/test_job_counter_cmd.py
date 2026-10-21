@@ -1,5 +1,6 @@
 import pytest
 
+from rayforge.core.group import Group
 from rayforge.core.job_counter import CounterSettings
 from rayforge.doceditor.job_counter_cmd import JobCounterCmd
 from tests.core.template_provider import place
@@ -110,3 +111,21 @@ async def test_preview_without_copies_shows_current(doc_editor, cmd):
     cmd.set_counter(CounterSettings(current=7))
     assert cmd.preview_counter_values() == [7]
 
+
+@pytest.mark.asyncio
+async def test_number_copies_orders_groups_by_their_bounds(doc_editor, cmd):
+    doc = doc_editor.doc
+    layer = doc.active_layer
+    plain = place(doc, "{counter}")
+    plain.pos = (0.0, 0.0)
+    member = place(doc, "{counter}")
+    member.pos = (40.0, 0.0)
+    result = Group.create_from_items([member], layer)
+    assert result is not None
+    group = result.new_group
+    layer.add_child(group)
+    member.matrix = result.child_matrices[member.uid]
+    group.add_child(member)
+    cmd.number_copies([group, plain])
+    assert plain.variable_offset == 0
+    assert member.variable_offset == 1

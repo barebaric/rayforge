@@ -14,7 +14,6 @@ from ..core.item import DocItem
 from ..core.job_counter import CounterSettings
 from ..core.undo import ChangePropertyCommand
 from ..core.workpiece import WorkPiece, workpieces_in
-from .layout.base import LayoutStrategy
 
 if TYPE_CHECKING:
     from .editor import DocEditor
@@ -135,14 +134,8 @@ def _reading_order(items: Sequence[DocItem]) -> list[DocItem]:
     """Sorts items into rows (top first), then left to right."""
     boxes = []
     for item in items:
-        bbox = LayoutStrategy._get_item_world_bbox(item)
-        if bbox is None:
-            x, y = item.pos
-            bbox = (x, y, x, y)
-        x_min, y_min, x_max, y_max = bbox
-        boxes.append(
-            (item, (x_min + x_max) / 2, (y_min + y_max) / 2, y_max - y_min)
-        )
+        x, y, width, height = item.bbox
+        boxes.append((item, x + width / 2, y + height / 2, height))
     boxes.sort(key=lambda b: -b[2])
 
     rows: list[list[tuple[DocItem, float, float, float]]] = []
