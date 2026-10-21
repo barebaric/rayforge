@@ -9,11 +9,21 @@ from blinker import Signal
 from raygeo.geo.types import Point3D
 from raygeo.ops.types import CommandCategory
 
+from ..shared.tasker import task_mgr
+from .driver.driver import DeviceStatus
+from .job_status import JobKind, JobOutcome, JobPhase, JobStatus
+
 if TYPE_CHECKING:
     from raygeo.ops import Ops
 
+    from ..context import RayforgeContext
+    from .models.machine import Machine
+
 
 logger = logging.getLogger(__name__)
+
+# Minimum wall-clock time between two on_job_updated hook dispatches.
+PROGRESS_HOOK_INTERVAL_SECONDS: float = 1.0
 
 
 class JobMonitor:
@@ -23,6 +33,11 @@ class JobMonitor:
     This class calculates the total distance of a job from an Ops object and
     updates the progress as individual operations complete. It emits a signal
     with detailed metrics whenever the progress changes.
+
+    Between begin() and end() it is also the addon-facing job surface:
+    it dispatches the job monitoring hooks (see rayforge.core.hooks)
+    with JobStatus snapshots, and registers itself on the machine so
+    Machine.current_job serves live snapshots.
 
     The ETA counts down the modeled time remaining at the acknowledged
     command frontier. A pace correction is blended in after a warmup
@@ -58,6 +73,9 @@ class JobMonitor:
     def __init__(
         self,
         ops: Ops,
+        machine: Machine | None = None,
+        kind: JobKind = JobKind.SEND,
+        context: RayforgeContext | None = None,
         estimated_seconds: float | None = None,
         default_feed_rate: float = 1000.0,
         default_rapid_rate: float = 3000.0,
@@ -69,6 +87,11 @@ class JobMonitor:
 
         Args:
             ops: The Ops object representing the job to be monitored.
+            machine: The machine the job runs on, used for pause
+                detection and the Machine.current_job pull API.
+            kind: Whether the job is a send or frame job.
+            context: The application context, providing the plugin
+                manager the monitoring hooks are dispatched through.
             estimated_seconds: Total estimated job duration in seconds,
                 as produced by ops.estimate_time() with the parameters
                 below. Counts down as the ETA while no progress has
@@ -85,6 +108,9 @@ class JobMonitor:
             clock: Monotonic time source; defaults to time.monotonic.
         """
         self.ops = ops
+        self.machine = machine
+        self.kind = kind
+        self._context = context
         self.total_distance = ops.distance()
         self.estimated_seconds = estimated_seconds
         self.traveled_distance = 0.0
@@ -95,6 +121,10 @@ class JobMonitor:
             default_rapid_rate,
             acceleration,
         )
+        self._phase = JobPhase.RUNNING
+        self._started_wall = time.time()
+        self._last_hook_time = 0.0
+        self._active = False
 
         # Modeled execution time (seconds) of the commands up to and
         # including the last acknowledged one.
@@ -112,19 +142,115 @@ class JobMonitor:
         self.progress_updated = Signal()
 
     @property
-    def metrics(self) -> dict[str, Any]:
-        """Returns the current progress metrics as a dictionary."""
+    def status(self) -> JobStatus:
+        """Returns an immutable snapshot of the current job status."""
         progress_fraction = (
             self.traveled_distance / self.total_distance
             if self.total_distance > 0
             else 1.0
         )
+        return JobStatus(
+            machine_id=self.machine.id if self.machine else "",
+            machine_name=self.machine.name if self.machine else "",
+            kind=self.kind,
+            phase=self._phase,
+            started_at=self._started_wall,
+            elapsed_seconds=self._clock() - self.start_time,
+            total_distance=self.total_distance,
+            traveled_distance=self.traveled_distance,
+            progress_fraction=progress_fraction,
+            eta_seconds=self._eta_seconds(),
+            estimated_seconds=self.estimated_seconds,
+        )
+
+    @property
+    def metrics(self) -> dict[str, Any]:
+        """Returns the current progress metrics as a dictionary."""
+        status = self.status
         return {
-            "total_distance": self.total_distance,
-            "traveled_distance": self.traveled_distance,
-            "progress_fraction": progress_fraction,
-            "eta_seconds": self._eta_seconds(),
+            "total_distance": status.total_distance,
+            "traveled_distance": status.traveled_distance,
+            "progress_fraction": status.progress_fraction,
+            "eta_seconds": status.eta_seconds,
         }
+
+    def begin(self) -> None:
+        """
+        Reports the job as started and starts monitoring.
+
+        Registers the monitor on the machine so Machine.current_job
+        serves live snapshots, watches the device state for pause and
+        resume transitions, and dispatches the on_job_started hook.
+        """
+        if self._active:
+            return
+        self._active = True
+        self._started_wall = time.time()
+        self._last_hook_time = self._clock() - PROGRESS_HOOK_INTERVAL_SECONDS
+        if self.machine is not None:
+            self.machine.state_changed.connect(self._on_machine_state_changed)
+            self.machine.set_current_job(self)
+        self._dispatch("on_job_started", status=self.status)
+
+    def end(
+        self,
+        outcome: JobOutcome,
+        message: str = "",
+    ) -> None:
+        """
+        Reports the job as finished and stops monitoring.
+
+        For a COMPLETED outcome the final snapshot is forced to 100%
+        progress. Does nothing when the job was never begun or has
+        already ended.
+
+        Args:
+            outcome: How the job ended.
+            message: Error details when outcome is FAILED.
+        """
+        if not self._active:
+            return
+        self._active = False
+        if self.machine is not None:
+            self.machine.state_changed.disconnect(
+                self._on_machine_state_changed
+            )
+            self.machine.clear_current_job(self)
+        if outcome == JobOutcome.COMPLETED:
+            self.mark_as_complete()
+        self._dispatch(
+            "on_job_finished",
+            status=self.status,
+            outcome=outcome,
+            message=message,
+        )
+
+    def set_paused(self, paused: bool) -> None:
+        """
+        Reports the job entering or leaving a feed hold.
+
+        Args:
+            paused: True when the job is paused, False when resumed.
+        """
+        phase = JobPhase.PAUSED if paused else JobPhase.RUNNING
+        if not self._active or self._phase == phase:
+            return
+        self._phase = phase
+        self._dispatch(
+            "on_job_paused" if paused else "on_job_resumed",
+            status=self.status,
+        )
+
+    def _on_machine_state_changed(
+        self, sender=None, state=None, **kwargs
+    ) -> None:
+        """Translates device status reports into pause/resume events."""
+        if state is None:
+            return
+        if state.status == DeviceStatus.HOLD:
+            self.set_paused(True)
+        elif state.status == DeviceStatus.RUN:
+            self.set_paused(False)
 
     def _eta_seconds(self) -> float | None:
         """Estimates the remaining job duration in seconds."""
@@ -183,6 +309,30 @@ class JobMonitor:
         )
         # Always emit the signal, even for operations with 0 distance
         self.progress_updated.send(self, metrics=self.metrics)
+        self._maybe_report_progress()
+
+    def _maybe_report_progress(self) -> None:
+        """Dispatches on_job_updated at a limited rate."""
+        if not self._active:
+            return
+        now = self._clock()
+        if now - self._last_hook_time < PROGRESS_HOOK_INTERVAL_SECONDS:
+            return
+        self._last_hook_time = now
+        self._dispatch("on_job_updated", status=self.status)
+
+    def _dispatch(self, hook_name: str, **kwargs: Any) -> None:
+        """Schedules an addon hook call on the main thread."""
+        task_mgr.schedule_on_main_thread(self._call_hooks, hook_name, **kwargs)
+
+    def _call_hooks(self, hook_name: str, **kwargs: Any) -> None:
+        """Calls an addon hook, isolating the job from addon errors."""
+        if self._context is None:
+            return
+        try:
+            getattr(self._context.plugin_mgr.hook, hook_name)(**kwargs)
+        except Exception:
+            logger.exception(f"JobMonitor: addon hook '{hook_name}' failed")
 
     def mark_as_complete(self) -> None:
         """
