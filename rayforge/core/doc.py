@@ -199,13 +199,16 @@ class Doc(DocItem):
         """
         How many consecutive counter values one job uses: the highest
         variable offset of a workpiece that reads the counter plus
-        one, or 0 if no workpiece reads it.
+        one, or 0 if no workpiece reads it. A provider whose
+        variables_used() gives None reads no variables.
         """
         names = self._job_counter.names
         offsets = []
         for wp in self.all_workpieces:
             provider = wp.get_geometry_provider()
-            if provider is not None and names & provider.variables_used():
+            if provider is None:
+                continue
+            if names & (provider.variables_used() or set()):
                 offsets.append(wp.variable_offset)
         if not offsets:
             return 0
