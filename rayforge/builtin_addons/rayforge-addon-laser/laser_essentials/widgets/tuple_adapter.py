@@ -170,6 +170,10 @@ class TupleAdapter(RowAdapter):
             cast(Adw.ActionRow, self._extra).set_subtitle(
                 escape_title(subtitles[1])
             )
+        self.set_bounds(
+            var.min_val if var.min_val is not None else 0.0,
+            var.max_val if var.max_val is not None else 1e9,
+        )
 
     def set_bounds(self, lower: float, upper: float) -> None:
         """Apply machine-dependent bounds to every component spin."""
