@@ -478,7 +478,7 @@ class ActionManager:
         self._add_action("array-point-rotation", self.on_array_point_rotation)
         self._add_action("array-circular", self.on_array_circular)
 
-        # Variable text (counter values)
+        # Job counter
         self._add_action("job-counter", self.on_job_counter)
         self._add_action("number-copies", self.on_number_copies)
 

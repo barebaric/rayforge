@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 class JobCounterCmd:
-    """Handles changes to the document's variable text settings."""
+    """Handles changes to the document's job counter."""
 
     def __init__(self, editor: DocEditor):
         self._editor = editor
