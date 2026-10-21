@@ -49,6 +49,8 @@ from .zone import Zone
 if TYPE_CHECKING:
     from ...core.varset import VarSet
     from ..driver.driver import Driver
+    from ..job_monitor import JobMonitor
+    from ..job_status import JobStatus
     from .controller import MachineController
 from .coordinate_system import CoordinateSystem
 
@@ -166,6 +168,7 @@ class Machine:
 
         self.connection_status: TransportStatus = TransportStatus.DISCONNECTED
         self.device_state: DeviceState = DeviceState()
+        self._current_job_monitor = None
 
         self.driver_name: str | None = None
         self.driver_args: dict[str, Any] = {}
@@ -413,6 +416,27 @@ class Machine:
 
     def set_precheck_error(self, error: str | None):
         self.precheck_error = error
+
+    def set_current_job(self, monitor: "JobMonitor") -> None:
+        """Registers the monitor of the job now running on this
+        machine."""
+        self._current_job_monitor = monitor
+
+    def clear_current_job(self, monitor: "JobMonitor") -> None:
+        """Unregisters the job monitor if it is still the active one."""
+        if self._current_job_monitor is monitor:
+            self._current_job_monitor = None
+
+    @property
+    def current_job(self) -> Optional["JobStatus"]:
+        """
+        Returns a snapshot of the job currently running on this
+        machine, or None when no monitored job is active.
+        """
+        monitor = self._current_job_monitor
+        if monitor is None:
+            return None
+        return monitor.status
 
     def set_unit_system(self, unit_system: UnitSystem) -> None:
         """

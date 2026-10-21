@@ -1,10 +1,15 @@
 import itertools
 from unittest.mock import MagicMock
 
+import pluggy
 import pytest
+from blinker import Signal
 from raygeo.ops import Ops
 
+from rayforge.core.hooks import RayforgeSpecs
+from rayforge.machine.driver.driver import DeviceState, DeviceStatus
 from rayforge.machine.job_monitor import JobMonitor
+from rayforge.machine.job_status import JobKind, JobOutcome, JobPhase
 
 FEED = 600.0  # mm/min => 10 mm/s
 RAPID = 3000.0
@@ -326,3 +331,301 @@ class TestJobMonitor:
                 continue
             ratio = eta / remaining
             assert 1.0 - 1e-6 <= ratio <= 1.5 + 1e-6
+
+
+hookimpl = pluggy.HookimplMarker("rayforge")
+
+
+class HookRecorder:
+    """A rayforge plugin that records every job monitoring hook call."""
+
+    def __init__(self, fail_on: str | None = None):
+        self.events: list[tuple] = []
+        self.fail_on = fail_on
+
+    def _record(self, name, *args):
+        if name == self.fail_on:
+            raise RuntimeError("broken addon")
+        self.events.append((name, *args))
+
+    @hookimpl
+    def on_job_started(self, status):
+        self._record("on_job_started", status)
+
+    @hookimpl
+    def on_job_updated(self, status):
+        self._record("on_job_updated", status)
+
+    @hookimpl
+    def on_job_paused(self, status):
+        self._record("on_job_paused", status)
+
+    @hookimpl
+    def on_job_resumed(self, status):
+        self._record("on_job_resumed", status)
+
+    @hookimpl
+    def on_job_finished(self, status, outcome, message=""):
+        self._record("on_job_finished", status, outcome, message)
+
+
+class SyncScheduler:
+    """Runs main-thread callbacks synchronously, like the tests need."""
+
+    def schedule_on_main_thread(self, callback, *args, **kwargs):
+        callback(*args, **kwargs)
+
+
+class FakeMachine:
+    """Mimics the Machine surface the JobMonitor interacts with."""
+
+    def __init__(self):
+        self.id = "fake-machine-id"
+        self.name = "Fake Machine"
+        self.state_changed = Signal()
+        self.current_monitor = None
+
+    def set_current_job(self, monitor):
+        self.current_monitor = monitor
+
+    def clear_current_job(self, monitor):
+        if self.current_monitor is monitor:
+            self.current_monitor = None
+
+
+def hook_names(recorder: HookRecorder) -> list[str]:
+    return [event[0] for event in recorder.events]
+
+
+class TestJobMonitorAddonHooks:
+    """Test suite for the addon-facing job monitoring hooks."""
+
+    @pytest.fixture
+    def simple_ops(self):
+        """Creates a simple Ops object with a few commands."""
+        ops = Ops()
+        ops.move_to(10, 10, 0)  # op 0, distance 0
+        ops.line_to(20, 10, 0)  # op 1, distance 10
+        ops.line_to(20, 20, 0)  # op 2, distance 10
+        return ops
+
+    @pytest.fixture(autouse=True)
+    def sync_dispatch(self, monkeypatch):
+        """Runs scheduled hook dispatches synchronously."""
+        monkeypatch.setattr(
+            "rayforge.machine.job_monitor.task_mgr", SyncScheduler()
+        )
+
+    @pytest.fixture
+    def machine(self):
+        return FakeMachine()
+
+    @pytest.fixture
+    def recorder(self):
+        return HookRecorder()
+
+    @pytest.fixture
+    def context(self, recorder):
+        plugin_mgr = pluggy.PluginManager("rayforge")
+        plugin_mgr.add_hookspecs(RayforgeSpecs)
+        plugin_mgr.register(recorder)
+        return MagicMock(plugin_mgr=plugin_mgr)
+
+    def make_monitor(self, ops, machine, context, clock=None, **kwargs):
+        clock = clock or FakeClock()
+        return JobMonitor(
+            ops,
+            machine=machine,
+            kind=kwargs.pop("kind", JobKind.SEND),
+            context=context,
+            clock=clock,
+            **kwargs,
+        )
+
+    def test_begin_dispatches_started_and_registers(
+        self, simple_ops, machine, context, recorder
+    ):
+        monitor = self.make_monitor(simple_ops, machine, context)
+        monitor.begin()
+
+        assert hook_names(recorder) == ["on_job_started"]
+        status = recorder.events[0][1]
+        assert status.machine_id == "fake-machine-id"
+        assert status.machine_name == "Fake Machine"
+        assert status.kind == JobKind.SEND
+        assert status.phase == JobPhase.RUNNING
+        assert status.progress_fraction == 0.0
+        assert machine.current_monitor is monitor
+
+    def test_update_progress_dispatch_is_throttled(
+        self, simple_ops, machine, context, recorder
+    ):
+        clock = FakeClock()
+        monitor = self.make_monitor(simple_ops, machine, context, clock=clock)
+        monitor.begin()
+
+        monitor.update_progress(1)
+        assert hook_names(recorder) == ["on_job_started", "on_job_updated"]
+
+        clock.advance(0.5)
+        monitor.update_progress(2)
+        assert hook_names(recorder).count("on_job_updated") == 1
+
+        clock.advance(1.0)
+        monitor.update_progress(2)
+        assert hook_names(recorder).count("on_job_updated") == 2
+
+    def test_pause_and_resume_dispatch(
+        self, simple_ops, machine, context, recorder
+    ):
+        monitor = self.make_monitor(simple_ops, machine, context)
+        monitor.begin()
+        recorder.events.clear()
+
+        machine.state_changed.send(
+            machine, state=DeviceState(status=DeviceStatus.HOLD)
+        )
+        assert hook_names(recorder) == ["on_job_paused"]
+        assert monitor.status.phase == JobPhase.PAUSED
+
+        machine.state_changed.send(
+            machine, state=DeviceState(status=DeviceStatus.HOLD)
+        )
+        assert hook_names(recorder) == ["on_job_paused"]
+
+        machine.state_changed.send(
+            machine, state=DeviceState(status=DeviceStatus.RUN)
+        )
+        assert hook_names(recorder) == ["on_job_paused", "on_job_resumed"]
+        assert monitor.status.phase == JobPhase.RUNNING
+
+    def test_end_completed_forces_full_progress(
+        self, simple_ops, machine, context, recorder
+    ):
+        monitor = self.make_monitor(simple_ops, machine, context)
+        monitor.begin()
+        monitor.update_progress(1)
+
+        monitor.end(JobOutcome.COMPLETED)
+
+        assert hook_names(recorder)[-1] == "on_job_finished"
+        _, status, outcome, message = recorder.events[-1]
+        assert outcome == JobOutcome.COMPLETED
+        assert message == ""
+        assert status.progress_fraction == 1.0
+        assert machine.current_monitor is None
+
+    def test_end_cancelled_keeps_partial_progress(
+        self, simple_ops, machine, context, recorder
+    ):
+        monitor = self.make_monitor(simple_ops, machine, context)
+        monitor.begin()
+        monitor.update_progress(1)
+
+        monitor.end(JobOutcome.CANCELLED)
+
+        _, status, outcome, _message = recorder.events[-1]
+        assert outcome == JobOutcome.CANCELLED
+        assert status.progress_fraction == 0.5
+
+    def test_end_failed_carries_message(
+        self, simple_ops, machine, context, recorder
+    ):
+        monitor = self.make_monitor(simple_ops, machine, context)
+        monitor.begin()
+
+        monitor.end(JobOutcome.FAILED, message="boom")
+
+        _, _status, outcome, message = recorder.events[-1]
+        assert outcome == JobOutcome.FAILED
+        assert message == "boom"
+
+    def test_end_without_begin_is_a_no_op(
+        self, simple_ops, machine, context, recorder
+    ):
+        monitor = self.make_monitor(simple_ops, machine, context)
+
+        monitor.end(JobOutcome.COMPLETED)
+
+        assert recorder.events == []
+        assert machine.current_monitor is None
+
+    def test_state_changes_are_ignored_after_end(
+        self, simple_ops, machine, context, recorder
+    ):
+        monitor = self.make_monitor(simple_ops, machine, context)
+        monitor.begin()
+        monitor.end(JobOutcome.COMPLETED)
+        recorder.events.clear()
+
+        machine.state_changed.send(
+            machine, state=DeviceState(status=DeviceStatus.HOLD)
+        )
+
+        assert recorder.events == []
+
+    def test_missing_context_never_dispatches(self, simple_ops, machine):
+        monitor = JobMonitor(
+            simple_ops, machine=machine, context=None, clock=FakeClock()
+        )
+
+        monitor.begin()
+        monitor.update_progress(1)
+        monitor.set_paused(True)
+        monitor.end(JobOutcome.COMPLETED)
+
+    def test_addon_exception_is_isolated(self, simple_ops, machine, context):
+        recorder = HookRecorder(fail_on="on_job_updated")
+        plugin_mgr = pluggy.PluginManager("rayforge")
+        plugin_mgr.add_hookspecs(RayforgeSpecs)
+        plugin_mgr.register(recorder)
+        plugin_mgr.register(HookRecorder())
+        monitor = self.make_monitor(
+            simple_ops, machine, MagicMock(plugin_mgr=plugin_mgr)
+        )
+
+        monitor.begin()
+        monitor.update_progress(1)
+        monitor.end(JobOutcome.COMPLETED)
+
+        assert hook_names(recorder) == ["on_job_started", "on_job_finished"]
+
+    def test_frame_kind_is_reported(
+        self, simple_ops, machine, context, recorder
+    ):
+        monitor = self.make_monitor(
+            simple_ops, machine, context, kind=JobKind.FRAME
+        )
+        monitor.begin()
+        monitor.end(JobOutcome.COMPLETED)
+
+        started_status = recorder.events[0][1]
+        finished_status = recorder.events[-1][1]
+        assert started_status.kind == JobKind.FRAME
+        assert finished_status.kind == JobKind.FRAME
+
+    def test_status_snapshot_values(self, simple_ops, machine, context):
+        clock = FakeClock()
+        monitor = self.make_monitor(
+            simple_ops,
+            machine,
+            context,
+            clock=clock,
+            estimated_seconds=100.0,
+        )
+        monitor.begin()
+        clock.advance(3.5)
+        monitor.update_progress(1)
+
+        status = monitor.status
+        assert status.elapsed_seconds == pytest.approx(3.5)
+        assert status.traveled_distance == pytest.approx(10.0)
+        assert status.total_distance == pytest.approx(20.0)
+        assert status.progress_fraction == pytest.approx(0.5)
+        assert status.estimated_seconds == pytest.approx(100.0)
+        assert status.eta_seconds is not None
+        assert status.started_at > 0
+
+        metrics = monitor.metrics
+        assert metrics["traveled_distance"] == pytest.approx(10.0)
+        assert metrics["progress_fraction"] == pytest.approx(0.5)
