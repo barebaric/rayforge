@@ -386,10 +386,15 @@ class TestLayerDeclaration:
         with pytest.raises(ValueError, match="missing-layer-uid"):
             encoder.encode(ops, mock_machine, doc)
 
-    def test_multi_workpiece_layer_declares_each_workpiece(
+    def test_identical_workpieces_share_one_layer(
         self, encoder, mock_machine, doc
     ):
-        """One layer with two workpieces emits two declare_layer lines."""
+        """Workpieces matching the declared layer must not multiply it.
+
+        Controllers limit the number of layers, so workpieces whose
+        attribute block matches the open layer reuse it and emit no
+        declare_layer line of their own.
+        """
         ops = Ops()
         ops.job_start()
         ops.layer_start(layer_uid=doc.layers[0].uid)
@@ -412,9 +417,9 @@ class TestLayerDeclaration:
             for line in result.text.split("\n")
             if line.startswith("declare_layer(")
         ]
-        assert len(declared) == 2
-        assert all("'Layer 1'" in line for line in declared)
-        assert all("'#00ccff'" in line for line in declared)
+        assert len(declared) == 1
+        assert "'Layer 1'" in declared[0]
+        assert "'#00ccff'" in declared[0]
 
     def test_per_workpiece_mode_from_sections(
         self, encoder, mock_machine, doc

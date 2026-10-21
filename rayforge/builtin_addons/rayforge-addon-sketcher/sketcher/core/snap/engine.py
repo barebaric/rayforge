@@ -39,6 +39,14 @@ class SnapLineProducer:
 class SnapEngine:
     DEFAULT_THRESHOLD = 5.0
 
+    # Once a primary snap point is engaged it stays engaged until the
+    # cursor or geometry clearly leaves it: candidates are re-acquired
+    # within this multiple of the threshold. Without it, a candidate
+    # wobbling on the threshold boundary toggles its indicator on and
+    # off every frame (dragging an edge past another edge flashes its
+    # highlight).
+    PRIMARY_EXIT_FACTOR: float = 1.5
+
     def __init__(self, threshold: float = DEFAULT_THRESHOLD) -> None:
         self._producers: list[SnapLineProducer] = []
         self._threshold: float = threshold
@@ -48,6 +56,7 @@ class SnapEngine:
         self._cached_fingerprint: tuple | None = None
         self._cached_full_fingerprint: tuple | None = None
         self._cached_drag_context_key: tuple | None = None
+        self._last_primary: SnapPoint | None = None
 
     @property
     def enabled(self) -> bool:
@@ -149,16 +158,16 @@ class SnapEngine:
         registry: EntityRegistry,
         drag_position: GeoPoint,
         drag_context: DragContext,
+        radius: float | None = None,
     ) -> list[SnapPoint]:
         points: list[SnapPoint] = []
+        if radius is None:
+            radius = self._threshold
         for producer in self._producers:
             try:
                 points.extend(
                     producer.produce_points(
-                        registry,
-                        drag_position,
-                        drag_context,
-                        self._threshold,
+                        registry, drag_position, drag_context, radius
                     )
                 )
             except Exception as e:  # noqa: BLE001 - addon producer boundary
@@ -187,12 +196,21 @@ class SnapEngine:
 
         x, y = position
 
-        snap_points = self._get_snap_points(registry, position, drag_context)
+        exit_radius = self._threshold
+        if self._last_primary is not None:
+            exit_radius = self._threshold * self.PRIMARY_EXIT_FACTOR
+
+        snap_points = self._get_snap_points(
+            registry, position, drag_context, exit_radius
+        )
         point_result = self._find_nearest_snap_point(x, y, snap_points)
         if point_result is not None:
             snap_point, dist = point_result
             crossing_lines = self._find_crossing_lines(x, y, snap_point)
+            self._last_primary = snap_point
             return SnapResult.from_snap_point(snap_point, dist, crossing_lines)
+
+        self._last_primary = None
 
         best_h, best_v = self._find_best_lines_for_both_axes(x, y)
         if best_h is not None or best_v is not None:
@@ -285,6 +303,37 @@ class SnapEngine:
 
         if best_point is not None:
             return (best_point, best_dist)
+
+        if self._last_primary is not None:
+            reacquired = self._reacquire_last_primary(x, y, snap_points)
+            if reacquired is not None:
+                return reacquired
+            self._last_primary = None
+        return None
+
+    def _reacquire_last_primary(
+        self, x: float, y: float, snap_points: list[SnapPoint]
+    ) -> tuple[SnapPoint, float] | None:
+        """Re-engages the previous primary snap point while it stays
+        within the exit radius (threshold * PRIMARY_EXIT_FACTOR).
+
+        Producers were queried with that larger radius, so a candidate
+        wobbling around the plain threshold keeps its indicator
+        instead of toggling on and off every frame."""
+        last = self._last_primary
+        if last is None:
+            return None
+        exit_radius = self._threshold * self.PRIMARY_EXIT_FACTOR
+        for sp in snap_points:
+            if sp.line_type != last.line_type:
+                continue
+            if sp.source is not last.source:
+                continue
+            dx = x - sp.x
+            dy = y - sp.y
+            dist = (dx * dx + dy * dy) ** 0.5
+            if dist <= exit_radius:
+                return (sp, dist)
         return None
 
     def _find_crossing_lines(
@@ -328,3 +377,15 @@ class SnapEngine:
         self.rebuild_index(registry, position, drag_context)
 
         return self._get_all_lines()
+
+    def invalidate_index(self) -> None:
+        """Drops the cached snap line index so the next query rebuilds
+        it from scratch.
+
+        Callers that temporarily distort engine state for their own
+        queries (the debug overlay queries with an unbounded
+        threshold) must call this afterwards; otherwise the polluted
+        index would feed real queries until the geometry changes."""
+        self._cached_fingerprint = None
+        self._cached_full_fingerprint = None
+        self._cached_drag_context_key = None

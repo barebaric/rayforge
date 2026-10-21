@@ -464,7 +464,7 @@ Ver [Overscan](../overscan.md) para detalles.
 
 **Bandas (rayas oscuras/claras):**
 
-- Calibra el [Desplazamiento de Escaneo Bidireccional](#desplazamiento-de-escaneo-bidireccional)
+- Calibra el [Desplazamiento de Escaneo Bidireccional](#bidirectional-scan-offset)
 - Revisa la tensión de las correas
 - Reduce la velocidad
 - Prueba un ángulo de escaneo diferente

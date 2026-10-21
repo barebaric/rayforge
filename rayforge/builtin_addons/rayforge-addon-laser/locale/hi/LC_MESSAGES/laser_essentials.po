@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-12 18:45+0200\n"
+"POT-Creation-Date: 2026-10-18 04:42+0200\n"
 "PO-Revision-Date: 2026-09-27 22:58\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -239,6 +239,15 @@ msgstr "शक्ति मॉडुलन और चमक सीमा."
 msgid "Change Power Range"
 msgstr "शक्ति सीमा बदलें"
 
+#: laser_essentials/widgets/offset_fill_page.py
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Offset Fill"
+msgstr "ऑफ़सेट भराव"
+
+#: laser_essentials/widgets/offset_fill_page.py
+msgid "Fill closed shapes with rings that follow the outline."
+msgstr "बंद आकृतियों को रूपरेखा का अनुसरण करने वाले छल्लों से भरता है."
+
 #: laser_essentials/widgets/levels_adapter.py
 msgid "Auto-adjusted based on image content"
 msgstr "छवि सामग्री के आधार पर स्वतः समायोजित"
@@ -333,7 +342,9 @@ msgstr "कट पक्ष"
 
 #: laser_essentials/steps/shrinkwrap_step.py
 #: laser_essentials/steps/wavefront_step.py
-#: laser_essentials/steps/frame_step.py laser_essentials/steps/contour_step.py
+#: laser_essentials/steps/frame_step.py
+#: laser_essentials/steps/offset_fill_step.py
+#: laser_essentials/steps/contour_step.py
 msgid "Offset"
 msgstr "ऑफ़सेट"
 
@@ -384,6 +395,29 @@ msgstr "कोना त्रिज्या"
 #: laser_essentials/steps/frame_step.py
 msgid "Radius used to round the frame's corners"
 msgstr "फ़्रेम के कोने गोल करने के लिए त्रिज्या"
+
+#: laser_essentials/steps/offset_fill_step.py
+#: laser_essentials/steps/material_test.py
+msgid "Line Interval"
+msgstr "रेखा अंतराल"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid ""
+"Distance between neighbouring fill rings. Defaults to the laser spot size"
+msgstr ""
+"आस-पास के भराव छल्लों के बीच की दूरी. डिफ़ॉल्ट रूप से लेज़र स्पॉट आकार का उपयोग होता है"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Distance of the first ring inside the outline"
+msgstr "रूपरेखा के भीतर पहले छल्ले की दूरी"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Fill Direction"
+msgstr "भराव दिशा"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Order in which the rings are cut"
+msgstr "छल्लों को काटने का क्रम"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Mode"
@@ -641,10 +675,6 @@ msgstr "स्पेसिंग"
 #: laser_essentials/steps/material_test.py
 msgid "Gap between test squares"
 msgstr "परीक्षण वर्गों के बीच अंतर"
-
-#: laser_essentials/steps/material_test.py
-msgid "Line Interval"
-msgstr "रेखा अंतराल"
 
 #: laser_essentials/steps/material_test.py
 msgid ""

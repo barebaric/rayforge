@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-12 18:45+0200\n"
+"POT-Creation-Date: 2026-10-18 04:42+0200\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Ukrainian\n"
@@ -243,6 +243,15 @@ msgstr "Модуляція потужності та діапазон яскра
 msgid "Change Power Range"
 msgstr "Змінити діапазон потужності"
 
+#: laser_essentials/widgets/offset_fill_page.py
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Offset Fill"
+msgstr "Заливка зі зміщенням"
+
+#: laser_essentials/widgets/offset_fill_page.py
+msgid "Fill closed shapes with rings that follow the outline."
+msgstr "Заповнює замкнені фігури кільцями, що повторюють контур."
+
 #: laser_essentials/widgets/levels_adapter.py
 msgid "Auto-adjusted based on image content"
 msgstr "Автоналаштування на основі вмісту зображення"
@@ -341,7 +350,9 @@ msgstr "Сторона різу"
 
 #: laser_essentials/steps/shrinkwrap_step.py
 #: laser_essentials/steps/wavefront_step.py
-#: laser_essentials/steps/frame_step.py laser_essentials/steps/contour_step.py
+#: laser_essentials/steps/frame_step.py
+#: laser_essentials/steps/offset_fill_step.py
+#: laser_essentials/steps/contour_step.py
 msgid "Offset"
 msgstr "Зміщення"
 
@@ -392,6 +403,30 @@ msgstr "Радіус кутів"
 #: laser_essentials/steps/frame_step.py
 msgid "Radius used to round the frame's corners"
 msgstr "Радіус, що використовується для заокруглення кутів рамки"
+
+#: laser_essentials/steps/offset_fill_step.py
+#: laser_essentials/steps/material_test.py
+msgid "Line Interval"
+msgstr "Інтервал ліній"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid ""
+"Distance between neighbouring fill rings. Defaults to the laser spot size"
+msgstr ""
+"Відстань між сусідніми кільцями заливки. Типово використовується розмір "
+"лазерної плями"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Distance of the first ring inside the outline"
+msgstr "Відстань першого кільця всередині контуру"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Fill Direction"
+msgstr "Напрямок заливки"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Order in which the rings are cut"
+msgstr "Порядок різання кілець"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Mode"
@@ -656,10 +691,6 @@ msgstr "Інтервал"
 #: laser_essentials/steps/material_test.py
 msgid "Gap between test squares"
 msgstr "Проміжок між тестовими квадратами"
-
-#: laser_essentials/steps/material_test.py
-msgid "Line Interval"
-msgstr "Інтервал ліній"
 
 #: laser_essentials/steps/material_test.py
 msgid ""

@@ -1,6 +1,7 @@
 """Tests for the Rust-backed GrblSerialDriver."""
 
 import asyncio
+import logging
 import time
 
 import pytest
@@ -419,6 +420,48 @@ class TestStreaming:
         sent = sent_text(mock)
         assert b"\x18" in sent
         assert b"M5\n" in sent
+
+
+@pytest.mark.asyncio
+class TestRawLogging:
+    async def test_settings_reply_is_logged(self, connected_driver, caplog):
+        drv, _mock, _emulator, _recorder = connected_driver
+        with caplog.at_level(
+            logging.INFO,
+            logger="rayforge.machine.driver.grbl.grbl_serial",
+        ):
+            await drv._require_session().execute_interactive_command("$$")
+        messages = [record.getMessage() for record in caplog.records]
+        assert any(message.startswith("$") for message in messages)
+        assert "ok" in messages
+
+    async def test_outgoing_command_is_logged(self, connected_driver, caplog):
+        drv, _mock, _emulator, _recorder = connected_driver
+        with caplog.at_level(
+            logging.INFO,
+            logger="rayforge.machine.driver.grbl.grbl_serial",
+        ):
+            await drv._require_session().execute_interactive_command("$$")
+        assert any(
+            record.getMessage() == "$$"
+            and record.__dict__.get("log_category") == "RAW_IO"
+            for record in caplog.records
+        )
+
+    async def test_status_reports_are_logged(self, connected_driver, caplog):
+        _drv, _mock, _emulator, _recorder = connected_driver
+        with caplog.at_level(
+            logging.INFO,
+            logger="rayforge.machine.driver.grbl.grbl_serial",
+        ):
+
+            def has_status_report():
+                return any(
+                    record.__dict__.get("log_category") == "STATUS_POLL"
+                    for record in caplog.records
+                )
+
+            await wait_until(has_status_report)
 
 
 def _slow_job(n_lines: int) -> str:

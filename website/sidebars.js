@@ -66,6 +66,7 @@ module.exports = {
                 'features/operations/material-test-grid',
                 'features/operations/interval-and-focus-tests',
                 'features/operations/wavefront',
+                'features/operations/offset-fill',
                 'features/operations/command',
               ],
             },

@@ -1,6 +1,6 @@
 laser_on: ''
 laser_off: G1 S0
-focus_laser_on: M3 S{power:.0f}
+focus_laser_on: G1 F1 M3 S{power:.0f}
 tool_change: T{tool_number}
 set_speed: ''
 travel_move: G0 X{x} Y{y} Z{z}{extra_cmd}

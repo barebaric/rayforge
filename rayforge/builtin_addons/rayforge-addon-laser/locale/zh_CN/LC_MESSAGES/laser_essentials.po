@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-12 18:45+0200\n"
+"POT-Creation-Date: 2026-10-18 04:42+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -239,6 +239,15 @@ msgstr "功率调制和亮度范围。"
 msgid "Change Power Range"
 msgstr "更改功率范围"
 
+#: laser_essentials/widgets/offset_fill_page.py
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Offset Fill"
+msgstr "偏移填充"
+
+#: laser_essentials/widgets/offset_fill_page.py
+msgid "Fill closed shapes with rings that follow the outline."
+msgstr "用沿轮廓分布的环形线填充闭合图形。"
+
 #: laser_essentials/widgets/levels_adapter.py
 msgid "Auto-adjusted based on image content"
 msgstr "根据图像内容自动调整"
@@ -332,7 +341,9 @@ msgstr "切割侧"
 
 #: laser_essentials/steps/shrinkwrap_step.py
 #: laser_essentials/steps/wavefront_step.py
-#: laser_essentials/steps/frame_step.py laser_essentials/steps/contour_step.py
+#: laser_essentials/steps/frame_step.py
+#: laser_essentials/steps/offset_fill_step.py
+#: laser_essentials/steps/contour_step.py
 msgid "Offset"
 msgstr "偏移"
 
@@ -381,6 +392,28 @@ msgstr "圆角半径"
 #: laser_essentials/steps/frame_step.py
 msgid "Radius used to round the frame's corners"
 msgstr "用于圆化边框拐角的半径"
+
+#: laser_essentials/steps/offset_fill_step.py
+#: laser_essentials/steps/material_test.py
+msgid "Line Interval"
+msgstr "线间隔"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid ""
+"Distance between neighbouring fill rings. Defaults to the laser spot size"
+msgstr "相邻填充环之间的距离。默认为激光光斑尺寸"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Distance of the first ring inside the outline"
+msgstr "第一个环相对轮廓的内缩距离"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Fill Direction"
+msgstr "填充方向"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Order in which the rings are cut"
+msgstr "环形线的切割顺序"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Mode"
@@ -634,10 +667,6 @@ msgstr "间距"
 #: laser_essentials/steps/material_test.py
 msgid "Gap between test squares"
 msgstr "测试方块之间的间隙"
-
-#: laser_essentials/steps/material_test.py
-msgid "Line Interval"
-msgstr "线间隔"
 
 #: laser_essentials/steps/material_test.py
 msgid ""

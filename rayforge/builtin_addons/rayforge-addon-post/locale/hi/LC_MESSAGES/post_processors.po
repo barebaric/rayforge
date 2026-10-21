@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-15 05:47+0200\n"
+"POT-Creation-Date: 2026-10-18 02:42+0200\n"
 "PO-Revision-Date: 2026-09-27 22:58\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -32,6 +32,28 @@ msgstr "पहला वर्कपीस सुरक्षित रखें
 #: post_processors/widgets/optimize_group.py
 msgid "Keep the first workpiece at its original position"
 msgstr "पहले वर्कपीस को उसकी मूल स्थिति पर रखें"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Choose Best Start Point"
+msgstr "सर्वोत्तम प्रारंभ बिंदु चुनें"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Start closed paths at the vertex nearest the laser head to shorten travel "
+"moves."
+msgstr ""
+"यात्रा हरकतों को छोटा करने हेतु बंद पाथ को लेज़र हेड के सबसे नज़दीकी शीर्ष बिंदु से शुरू करें."
+
+#: post_processors/widgets/optimize_group.py
+msgid "Prefer Corners"
+msgstr "कोनों को प्राथमिकता दें"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Start closed paths at a sharp corner where the path has one, which makes the "
+"seam less visible."
+msgstr ""
+"जहाँ पाथ में कोई नुकीला कोना हो, वहाँ बंद पाथ को उसी से शुरू करें, जिससे सीवन कम दिखाई दे."
 
 #: post_processors/widgets/optimize_group.py
 msgid "Merge Scanlines"
@@ -62,6 +84,14 @@ msgstr "पलटना टॉगल करें"
 #: post_processors/widgets/optimize_group.py
 msgid "Toggle Preserve First Workpiece"
 msgstr "पहला वर्कपीस सुरक्षित रखना टॉगल करें"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Choose Best Start Point"
+msgstr "सर्वोत्तम प्रारंभ बिंदु चुनना टॉगल करें"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Prefer Corners"
+msgstr "कोनों को प्राथमिकता देना टॉगल करें"
 
 #: post_processors/widgets/optimize_group.py
 msgid "Change maximum bridged gap"

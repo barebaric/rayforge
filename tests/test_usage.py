@@ -40,7 +40,6 @@ def test_env_variable_blocks_events():
 class _FakeLaserHead:
     laser_type = LaserType.DIODE
 
-    @property
     def effective_max_power_watts(self):
         return 20.0
 

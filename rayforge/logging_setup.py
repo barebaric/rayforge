@@ -31,6 +31,7 @@ class UILogFilter(logging.Filter):
     - USER_COMMAND: Commands entered by user in console
     - MACHINE_RESPONSE: Responses to user commands
     - STATUS_POLL: Frequent status poll responses (filtered by default)
+    - RAW_IO: Commands sent to the machine (filtered by default)
 
     UI_CATEGORIES: Always shown in UI
     VERBOSE_CATEGORIES: Shown only when verbose mode is enabled
@@ -47,6 +48,7 @@ class UILogFilter(logging.Filter):
     VERBOSE_CATEGORIES: ClassVar[set[str]] = {
         "STATUS_POLL",
         "MACHINE_RESPONSE",
+        "RAW_IO",
     }
 
     def filter(self, record: logging.LogRecord) -> bool:

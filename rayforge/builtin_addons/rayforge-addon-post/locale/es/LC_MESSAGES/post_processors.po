@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-15 05:47+0200\n"
+"POT-Creation-Date: 2026-10-18 02:42+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -33,6 +33,30 @@ msgstr "Preservar primera pieza"
 #: post_processors/widgets/optimize_group.py
 msgid "Keep the first workpiece at its original position"
 msgstr "Mantener la primera pieza en su posición original"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Choose Best Start Point"
+msgstr "Elegir mejor punto de inicio"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Start closed paths at the vertex nearest the laser head to shorten travel "
+"moves."
+msgstr ""
+"Inicia las rutas cerradas en el vértice más cercano a la cabeza del láser "
+"para acortar los movimientos de desplazamiento."
+
+#: post_processors/widgets/optimize_group.py
+msgid "Prefer Corners"
+msgstr "Preferir esquinas"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Start closed paths at a sharp corner where the path has one, which makes the "
+"seam less visible."
+msgstr ""
+"Inicia las rutas cerradas en una esquina pronunciada cuando la ruta tiene "
+"una, lo que hace la costura menos visible."
 
 #: post_processors/widgets/optimize_group.py
 msgid "Merge Scanlines"
@@ -65,6 +89,14 @@ msgstr "Alternar inversión"
 #: post_processors/widgets/optimize_group.py
 msgid "Toggle Preserve First Workpiece"
 msgstr "Alternar preservación de primera pieza"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Choose Best Start Point"
+msgstr "Alternar elección de mejor punto de inicio"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Prefer Corners"
+msgstr "Alternar preferencia de esquinas"
 
 #: post_processors/widgets/optimize_group.py
 msgid "Change maximum bridged gap"

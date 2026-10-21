@@ -2,7 +2,7 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Optional
 
-from gi.repository import Gtk
+from gi.repository import GLib, Gtk
 from raygeo.geo import Matrix
 
 from ...context import get_context
@@ -70,6 +70,7 @@ class DocItemPropertiesWidget(Gtk.Box):
         self._initialize_providers_ui()
 
         self._machine = None
+        self._ui_update_source_id: int | None = None
         self._connect_signals()
 
         self.set_items(items)
@@ -129,6 +130,7 @@ class DocItemPropertiesWidget(Gtk.Box):
 
     def set_items(self, items: list[DocItem] | None):
         """Sets the currently selected items and updates the UI."""
+        self._cancel_pending_ui_update()
         for item in self.items:
             item.updated.disconnect(self._on_item_data_changed)
             item.transform_changed.disconnect(self._on_item_data_changed)
@@ -157,13 +159,33 @@ class DocItemPropertiesWidget(Gtk.Box):
         self, item, *, old_matrix: Optional["Matrix"] = None
     ):
         """
-        Handles data changes from the DocItem model by updating the UI to
-        reflect the new state.
+        Handles data changes from the DocItem model by scheduling a UI
+        update on idle.
+
+        The update must not run synchronously: while a command moves
+        several items one by one, every intermediate matrix fires this
+        signal, and a synchronous refresh would read and display the
+        group properties of a half-applied change. Deferring to idle
+        coalesces those notifications into one refresh that observes
+        the settled state.
         """
         logger.debug(
-            f"Item data changed for {item.name}, updating properties UI."
+            f"Item data changed for {item.name}, scheduling UI update."
         )
-        self._update_ui()
+        if self._ui_update_source_id is not None:
+            return
+        self._ui_update_source_id = GLib.idle_add(self._on_idle_ui_update)
+
+    def _on_idle_ui_update(self) -> bool:
+        self._ui_update_source_id = None
+        if self.items:
+            self._update_ui()
+        return GLib.SOURCE_REMOVE
+
+    def _cancel_pending_ui_update(self):
+        if self._ui_update_source_id is not None:
+            GLib.source_remove(self._ui_update_source_id)
+            self._ui_update_source_id = None
 
     def _update_ui(self):
         """

@@ -1500,6 +1500,28 @@ class TestMachine:
         changed_spy.assert_called_once_with(machine)
 
     @pytest.mark.asyncio
+    async def test_dialects_changed_refreshes_driver_dialect(
+        self, machine: Machine, task_mgr: TaskManager, mocker
+    ):
+        """
+        Test that when dialects are updated via dialect manager, the
+        machine's live driver is told to re-read its dialect so manual
+        commands use the edited templates.
+        """
+        await wait_for_tasks_to_finish(task_mgr)
+
+        controller = machine.controller
+        driver_mock = mocker.MagicMock()
+        mocker.patch.object(controller, "driver", driver_mock)
+
+        # Simulate a dialect edit, as performed by the dialect editor
+        machine.context.dialect_mgr.dialects_changed.send(
+            machine.context.dialect_mgr
+        )
+
+        driver_mock.refresh_dialect.assert_called_once_with()
+
+    @pytest.mark.asyncio
     async def test_dialect_fallback_to_grbl_on_invalid_uid(
         self, machine: Machine, task_mgr: TaskManager
     ):
