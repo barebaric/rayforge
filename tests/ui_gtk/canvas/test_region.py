@@ -190,12 +190,26 @@ class TestFlatAxisHandles:
 
     def test_flat_body_hit_within_tolerance(self):
         assert (
-            check_region_hit(50.0, 7.0, 200.0, 0.0, 20.0, 1.0)
+            check_region_hit(50.0, 0.0, 200.0, 0.0, 20.0, 1.0)
             == ElementRegion.BODY
         )
         assert (
             check_region_hit(50.0, 9.0, 200.0, 0.0, 20.0, 1.0)
             == ElementRegion.NONE
+        )
+
+    def test_flat_handle_wins_over_body(self):
+        # The bottom-middle handle overlaps the padded body; the handle
+        # must stay hittable so the flat element can be resized.
+        assert (
+            check_region_hit(50.0, 7.0, 200.0, 0.0, 20.0, 1.0)
+            == ElementRegion.BOTTOM_MIDDLE
+        )
+
+    def test_corner_handle_wins_over_body(self):
+        assert (
+            check_region_hit(5.0, 5.0, 100.0, 100.0, 20.0, 1.0)
+            == ElementRegion.TOP_LEFT
         )
 
     def test_flat_corner_handle_is_hittable(self):

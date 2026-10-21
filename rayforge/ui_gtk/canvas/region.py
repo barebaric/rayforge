@@ -97,6 +97,30 @@ MIDDLE_RESIZE_HANDLES: set[ElementRegion] = (
     RESIZE_HANDLES - CORNER_RESIZE_HANDLES
 )
 
+# Deterministic hit-test priority. Handles must win over the body, otherwise
+# handles fully contained in a padded flat body would be unreachable. Sets
+# have a process-dependent iteration order, so never rely on them for this.
+_HIT_TEST_ORDER: tuple[ElementRegion, ...] = (
+    ElementRegion.TOP_LEFT,
+    ElementRegion.TOP_MIDDLE,
+    ElementRegion.TOP_RIGHT,
+    ElementRegion.MIDDLE_LEFT,
+    ElementRegion.MIDDLE_RIGHT,
+    ElementRegion.BOTTOM_LEFT,
+    ElementRegion.BOTTOM_MIDDLE,
+    ElementRegion.BOTTOM_RIGHT,
+    ElementRegion.ROTATE_TOP_LEFT,
+    ElementRegion.ROTATE_TOP_RIGHT,
+    ElementRegion.ROTATE_BOTTOM_LEFT,
+    ElementRegion.ROTATE_BOTTOM_RIGHT,
+    ElementRegion.SHEAR_TOP,
+    ElementRegion.SHEAR_RIGHT,
+    ElementRegion.SHEAR_BOTTOM,
+    ElementRegion.SHEAR_LEFT,
+    ElementRegion.MOVE,
+    ElementRegion.BODY,
+)
+
 
 # An axis whose on-screen extent is smaller than this many pixels is treated
 # as flat, e.g. a perfectly horizontal line has zero height.
@@ -341,10 +365,12 @@ def check_region_hit(
         candidates: Optional set of regions to check against.
     """
     # Determine which handle regions to check based on the candidates.
-    # The order of _HIT_TEST_ORDER is crucial to resolve overlap ambiguity.
+    # _HIT_TEST_ORDER is crucial to resolve overlap ambiguity.
     regions_to_check = candidates if candidates is not None else BBOX_REGIONS
 
-    for region in regions_to_check:
+    for region in _HIT_TEST_ORDER:
+        if region not in regions_to_check or region == ElementRegion.BODY:
+            continue
         # Calculate the hit rectangle for the current region. This ensures
         # the hit-test area matches the rendered handle size.
         rx, ry, rw, rh = get_region_rect(
