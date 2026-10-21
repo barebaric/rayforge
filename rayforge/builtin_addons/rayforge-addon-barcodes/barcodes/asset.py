@@ -43,7 +43,7 @@ class BarcodeAsset(IAsset, IGeometryProvider):
     """
     A QR code or barcode whose content is a template. The template is
     resolved with the parameters the workpiece passes in (for example
-    the document's serial number), then encoded and drawn as outlines
+    the document's job counter), then encoded and drawn as outlines
     plus a solid fill.
     """
 

@@ -46,5 +46,5 @@ Laissez une marge libre autour d'un code non inversé : 4 modules pour les QR co
 ## Modèles
 
 Le contenu peut contenir des expressions `{...}` comme une zone de texte, par exemple `{2 * 21}`.
-Avec [Texte variable](../features/variable-text.md), `SN-{serial:05d}` donne à chaque pièce son
-propre numéro de série, et les copies d'un réseau continuent de compter.
+Avec le [Compteur de tâches](../features/job-counter.md), `SN-{counter:05d}` donne à chaque pièce
+son propre numéro, et les copies d'un réseau continuent de compter.

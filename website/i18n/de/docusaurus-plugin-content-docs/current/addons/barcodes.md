@@ -43,6 +43,6 @@ Lass um einen nicht invertierten Code einen freien Rand: 4 Module bei QR-Codes, 
 
 ## Vorlagen
 
-Der Inhalt kann wie ein Textfeld `{...}`-Ausdrücke enthalten, zum Beispiel `{2 * 21}`. Mit
-[Variabler Text](../features/variable-text.md) erhält mit `SN-{serial:05d}` jedes Teil seine eigene
-Seriennummer, und Array-Kopien zählen weiter.
+Der Inhalt kann wie ein Textfeld `{...}`-Ausdrücke enthalten, zum Beispiel `{2 * 21}`. Mit dem
+[Auftragszähler](../features/job-counter.md) erhält mit `SN-{counter:05d}` jedes Teil seine eigene
+Nummer, und Array-Kopien zählen weiter.

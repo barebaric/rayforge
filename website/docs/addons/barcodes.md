@@ -41,6 +41,6 @@ Leave a clear margin around a code that is not inverted: 4 modules for QR codes,
 
 ## Templates
 
-The content can contain `{...}` expressions like a text box, for example `{2 * 21}`. With
-[Variable Text](../features/variable-text.md), `SN-{serial:05d}` gives every piece its own serial
-number, and array copies count up.
+The content can contain `{...}` expressions like a text box, for example `{2 * 21}`. With the
+[Job Counter](../features/job-counter.md), `SN-{counter:05d}` gives every piece its own number,
+and array copies count up.

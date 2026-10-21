@@ -44,6 +44,6 @@ Deja un margen libre alrededor de un código no invertido: 4 módulos para códi
 
 ## Plantillas
 
-El contenido puede contener expresiones `{...}` como un cuadro de texto, por ejemplo `{2 * 21}`. Con
-[Texto variable](../features/variable-text.md), `SN-{serial:05d}` da a cada pieza su propio número
-de serie, y las copias de una matriz siguen contando.
+El contenido puede contener expresiones `{...}` como un cuadro de texto, por ejemplo `{2 * 21}`. Con el
+[Contador de trabajos](../features/job-counter.md), `SN-{counter:05d}` da a cada pieza su propio
+número, y las copias de una matriz siguen contando.

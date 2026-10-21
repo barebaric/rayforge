@@ -44,6 +44,6 @@ Deixe uma margem livre em volta de um código não invertido: 4 módulos para c�
 
 ## Modelos
 
-O conteúdo pode conter expressões `{...}` como uma caixa de texto, por exemplo `{2 * 21}`. Com
-[Texto variável](../features/variable-text.md), `SN-{serial:05d}` dá a cada peça seu próprio número
-de série, e as cópias de uma matriz continuam a contagem.
+O conteúdo pode conter expressões `{...}` como uma caixa de texto, por exemplo `{2 * 21}`. Com o
+[Contador de trabalhos](../features/job-counter.md), `SN-{counter:05d}` dá a cada peça seu próprio
+número, e as cópias de uma matriz continuam a contagem.

@@ -27,7 +27,7 @@ def test_is_an_asset_and_a_geometry_provider():
 def test_round_trip():
     asset = BarcodeAsset(
         name="Label",
-        content="SN-{serial:04d}",
+        content="SN-{counter:04d}",
         symbology=Symbology.CODE128,
         error_correction=QrErrorCorrection.H,
         module_mm=0.4,
@@ -54,13 +54,13 @@ def test_qr_geometry_and_fill():
 
 def test_templates_resolve_with_params_and_are_cached():
     asset = BarcodeAsset(
-        content="SN-{serial:03d}", symbology=Symbology.CODE128
+        content="SN-{counter:03d}", symbology=Symbology.CODE128
     )
     cache: dict = {}
-    asset.get_geometry({"serial": 7}, resolved_text_cache=cache)
-    assert asset.resolve({"serial": 7}) == "SN-007"
-    assert cache[0] == ("SN-{serial:03d}", "SN-007")
-    assert asset.get_template_sources() == ["SN-{serial:03d}"]
+    asset.get_geometry({"counter": 7}, resolved_text_cache=cache)
+    assert asset.resolve({"counter": 7}) == "SN-007"
+    assert cache[0] == ("SN-{counter:03d}", "SN-007")
+    assert asset.get_template_sources() == ["SN-{counter:03d}"]
 
 
 def test_invalid_content_gives_a_placeholder_and_an_error():

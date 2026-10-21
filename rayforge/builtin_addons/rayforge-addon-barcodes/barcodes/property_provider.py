@@ -162,7 +162,7 @@ class BarcodePropertyProvider(PropertyProvider):
         else:
             self.content_row.remove_css_class("error")
             self.content_row.set_tooltip_text(
-                _("Templates work here too, e.g. SN-{serial:04d}")
+                _("Templates work here too, e.g. SN-{counter:04d}")
             )
 
     def _set(self, setting: str, value: Any) -> None:

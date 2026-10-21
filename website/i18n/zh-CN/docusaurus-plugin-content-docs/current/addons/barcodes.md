@@ -33,5 +33,5 @@ description:
 ## 模板
 
 内容可以像文本框一样包含 `{...}` 表达式，例如 `{2 * 21}`。配合
-[可变文本](../features/variable-text.md)，`SN-{serial:05d}`
-会为每个工件提供各自的序列号，阵列副本会继续计数。
+[任务计数器](../features/job-counter.md)，`SN-{counter:05d}`
+会为每个工件提供各自的编号，阵列副本会继续计数。
