@@ -25,6 +25,9 @@ class _OtherProvider:
         geometry.close_path()
         return geometry, []
 
+    def get_reference_point(self):
+        return None
+
     def to_dict(self) -> dict[str, Any]:
         return {"uid": self.uid, "type": "other"}
 
