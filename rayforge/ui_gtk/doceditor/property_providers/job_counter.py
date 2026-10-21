@@ -28,9 +28,7 @@ class JobCounterPropertyProvider(PropertyProvider):
     group_title = _("Job Counter")
 
     def can_handle(self, items: list[DocItem]) -> bool:
-        return bool(items) and all(
-            isinstance(i, WorkPiece) for i in items
-        )
+        return bool(items) and all(isinstance(i, WorkPiece) for i in items)
 
     def create_widgets(self) -> list[Gtk.Widget]:
         self.offset_row = SpinRow(

@@ -51,7 +51,9 @@ class JobCounterCmd:
     def next_counter(self) -> None:
         """Moves the counter forward by one job."""
         copies = max(self._editor.doc.job_counter_copies(), 1)
-        self.set_counter(self.counter.advanced(copies), _("Next counter value"))
+        self.set_counter(
+            self.counter.advanced(copies), _("Next counter value")
+        )
 
     def previous_counter(self) -> None:
         """Moves the counter back by one job."""
@@ -78,7 +80,9 @@ class JobCounterCmd:
             True if the counter was advanced.
         """
         counter = self.counter
-        enabled = counter.advance_on_export if exported else counter.auto_advance
+        enabled = (
+            counter.advance_on_export if exported else counter.auto_advance
+        )
         copies = self._editor.doc.job_counter_copies()
         if not enabled or copies == 0:
             return False

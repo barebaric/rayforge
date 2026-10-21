@@ -44,9 +44,7 @@ def _current(doc_editor) -> int:
 
 def _machine_cmd(doc_editor) -> MachineCmd:
     machine_cmd = MachineCmd(doc_editor)
-    machine_cmd.job_completed.connect(
-        doc_editor.job_counter.on_job_completed
-    )
+    machine_cmd.job_completed.connect(doc_editor.job_counter.on_job_completed)
     return machine_cmd
 
 
