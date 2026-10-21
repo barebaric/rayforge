@@ -85,7 +85,7 @@ class Console(Gtk.Box):
         self.verbose_toggle = Gtk.ToggleButton()
         self.verbose_toggle.set_active(False)
         self.verbose_toggle.set_tooltip_text(
-            _("Show verbose output (status polls)")
+            _("Show verbose output (status polls, raw I/O)")
         )
         self.verbose_toggle.connect("toggled", self._on_verbose_toggled)
         self.verbose_toggle.set_margin_top(9)
