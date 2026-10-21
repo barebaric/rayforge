@@ -5,6 +5,13 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## UNRELEASED
+
+### Added
+
+- Barcodes addon: QR codes, Code 128 and EAN-13 as vector workpieces
+  whose content can be a template (Object > Add Barcode) (#529)
+
 ## 1.13.0-beta4
 
 ### Changed
@@ -203,8 +210,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   its layer; generated content like the Material Test Grid restricts
   its step to the workpiece it creates, and that selection is now
   visible instead of hidden
-- Barcodes addon: QR codes, Code 128 and EAN-13 as vector workpieces
-  whose content can be a template (Object > Add Barcode) (#529)
 
 ### Changed
 
