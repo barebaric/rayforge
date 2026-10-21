@@ -8,11 +8,11 @@ description:
 
 Los cuadros de texto resuelven plantillas `{...}` (consulta
 [Parámetros y expresiones](sketcher/expressions.md#template-expressions-in-text-boxes)). Además de
-los parámetros del boceto y las funciones integradas, el proyecto ofrece variables que cambian de un
-trabajo a otro, para que puedas grabar placas, etiquetas y rótulos numerados sin editar el texto
-cada vez.
+los parámetros del boceto y las funciones integradas, el proyecto tiene un contador de trabajos que
+cambia de un trabajo a otro, para que puedas grabar placas, etiquetas y rótulos numerados sin editar
+el texto cada vez.
 
-## Números de serie
+## El contador de trabajos
 
 Usa `{counter}` en un cuadro de texto. Es un número entero, así que los especificadores de formato
 controlan su aspecto:
@@ -41,10 +41,10 @@ proyecto.
 
 ## Numerar copias
 
-Cada pieza tiene un **Desplazamiento de variable** (en el panel de propiedades, en **Contador de trabajos**). Una copia con desplazamiento _n_ muestra el número _n_ copias después del actual. Una
-[matriz en cuadrícula o circular](arrays.md) da a sus copias desplazamientos crecientes de forma
-automática, así que una matriz de 20 placas graba 20 números consecutivos y el siguiente trabajo
-continúa con el 21.
+Cada pieza tiene un **Desplazamiento de variable**. Una copia con desplazamiento _n_ muestra el
+número _n_ copias después del actual. Una [matriz en cuadrícula o circular](arrays.md) da a sus
+copias desplazamientos crecientes de forma automática, así que una matriz de 20 placas graba 20
+números consecutivos y el siguiente trabajo continúa con el 21.
 
 Las matrices creadas dentro de un boceto son distintas: sus copias pertenecen a una sola pieza y
 todas muestran el mismo número. Crea la matriz en el lienzo para numerar las copias.

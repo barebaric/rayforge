@@ -46,7 +46,7 @@ class Doc(DocItem):
         self.assets: dict[str, IAsset] = {}
         self.asset_order: list[str] = []
 
-        # Variables for text templates (counter value, ...)
+        # The job counter, passed to text templates as {counter}
         self._job_counter = JobCounter()
         self._job_counter.changed.connect(self._on_job_counter_changed)
         self.descendant_added.connect(self._on_item_added_for_templates)
@@ -185,7 +185,7 @@ class Doc(DocItem):
 
     @property
     def job_counter(self) -> JobCounter:
-        """The variables offered to text templates."""
+        """The document's job counter."""
         return self._job_counter
 
     @job_counter.setter

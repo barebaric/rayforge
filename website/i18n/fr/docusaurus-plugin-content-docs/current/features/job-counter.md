@@ -8,11 +8,11 @@ description:
 
 Les zones de texte résolvent les modèles `{...}` (voir
 [Paramètres et expressions](sketcher/expressions.md#template-expressions-in-text-boxes)). En plus
-des paramètres de l'esquisse et des fonctions intégrées, le projet propose des variables qui
-changent d'un travail à l'autre, pour graver des plaques, étiquettes et badges numérotés sans
-modifier le texte à chaque fois.
+des paramètres de l'esquisse et des fonctions intégrées, le projet a un compteur de tâches qui
+change d'un travail à l'autre, pour graver des plaques, étiquettes et badges numérotés sans modifier
+le texte à chaque fois.
 
-## Numéros de série
+## Le compteur de tâches
 
 Utilisez `{counter}` dans une zone de texte. C'est un nombre entier, donc les spécifications de
 format contrôlent son apparence :
@@ -41,10 +41,10 @@ d'annulation et est enregistrée dans le projet.
 
 ## Numéroter des copies
 
-Chaque pièce a un **Décalage de variable** (dans le panneau des propriétés, sous **Compteur de tâches**). Une copie avec le décalage _n_ affiche le numéro situé _n_ copies après le numéro
-actuel. Un [réseau en grille ou circulaire](arrays.md) donne automatiquement à ses copies des
-décalages croissants : un réseau de 20 plaques grave ainsi 20 numéros consécutifs, et le travail
-suivant continue avec le 21e.
+Chaque pièce a un **Décalage de variable**. Une copie avec le décalage _n_ affiche le numéro situé
+_n_ copies après le numéro actuel. Un [réseau en grille ou circulaire](arrays.md) donne
+automatiquement à ses copies des décalages croissants : un réseau de 20 plaques grave ainsi 20
+numéros consécutifs, et le travail suivant continue avec le 21e.
 
 Les réseaux créés dans une esquisse sont différents : leurs copies appartiennent à une seule pièce
 et affichent toutes le même numéro. Créez plutôt le réseau sur le canevas pour numéroter les copies.

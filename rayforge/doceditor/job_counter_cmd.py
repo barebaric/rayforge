@@ -1,6 +1,6 @@
 """
-JobCounterCmd: undoable edits of the document's template variables
-(job counter) and of the per-workpiece variable offsets.
+JobCounterCmd: undoable edits of the document's job counter and of
+the per-workpiece variable offsets.
 """
 
 from __future__ import annotations

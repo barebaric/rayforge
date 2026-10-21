@@ -1,8 +1,8 @@
 """
-Document-level variables for text templates.
+The document's job counter.
 
-A document carries a :class:`JobCounter` instance whose values are
-injected into the ``{...}`` templates of every geometry provider (for
+A document carries one :class:`JobCounter`. Its value is passed as
+``counter`` to the ``{...}`` templates of every geometry provider (for
 example the text boxes of a sketch). Each workpiece adds its own
 *variable offset*, so copies of the same design can show consecutive
 counter values.

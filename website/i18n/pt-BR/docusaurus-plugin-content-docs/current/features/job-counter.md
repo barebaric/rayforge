@@ -8,10 +8,11 @@ description:
 
 As caixas de texto resolvem modelos `{...}` (veja
 [Parâmetros e expressões](sketcher/expressions.md#template-expressions-in-text-boxes)). Além dos
-parâmetros do esboço e das funções integradas, o projeto oferece variáveis que mudam de um trabalho
-para outro, para você gravar placas, etiquetas e rótulos numerados sem editar o texto a cada vez.
+parâmetros do esboço e das funções integradas, o projeto tem um contador de trabalhos que muda de um
+trabalho para outro, para você gravar placas, etiquetas e rótulos numerados sem editar o texto a
+cada vez.
 
-## Números de série
+## O contador de trabalhos
 
 Use `{counter}` em uma caixa de texto. É um número inteiro, então os especificadores de formato
 controlam sua aparência:
@@ -39,11 +40,10 @@ projeto.
 
 ## Numerar cópias
 
-Cada peça tem um **Deslocamento de variável** (no painel de propriedades, em **Contador de trabalhos**).
-Uma cópia com deslocamento _n_ mostra o número _n_ cópias depois do atual. Uma
-[matriz em grade ou circular](arrays.md) dá às suas cópias deslocamentos crescentes automaticamente,
-então uma matriz de 20 placas grava 20 números consecutivos, e o próximo trabalho continua com o
-21º.
+Cada peça tem um **Deslocamento de variável**. Uma cópia com deslocamento _n_ mostra o número _n_
+cópias depois do atual. Uma [matriz em grade ou circular](arrays.md) dá às suas cópias deslocamentos
+crescentes automaticamente, então uma matriz de 20 placas grava 20 números consecutivos, e o próximo
+trabalho continua com o 21º.
 
 Matrizes criadas dentro de um esboço são diferentes: suas cópias pertencem a uma única peça e todas
 mostram o mesmo número. Crie a matriz na tela para numerar as cópias.

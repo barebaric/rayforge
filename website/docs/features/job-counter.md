@@ -8,8 +8,8 @@ description:
 
 Text boxes resolve `{...}` templates (see
 [Parameters and Expressions](sketcher/expressions.md#template-expressions-in-text-boxes)). On top of
-the sketch parameters and the built-in functions, the project offers variables that change from job
-to job, so you can engrave numbered plates, tags and labels without editing the text each time.
+the sketch parameters and the built-in functions, the project has one job counter that changes from
+job to job, so you can engrave numbered plates, tags and labels without editing the text each time.
 
 ## The job counter
 
@@ -37,10 +37,10 @@ advance, is part of the undo history and is saved in the project.
 
 ## Numbering copies
 
-Each workpiece has a **Variable Offset** (in the properties panel, under **Job Counter**). A copy
-with offset _n_ shows the number _n_ copies after the current one. A
-[grid or circular array](arrays.md) gives its copies increasing offsets automatically, so one array
-of 20 plates engraves 20 consecutive numbers, and the next job continues with the 21st.
+Each workpiece has a **Variable Offset**. A copy with offset _n_ shows the number _n_ copies after
+the current one. A [grid or circular array](arrays.md) gives its copies increasing offsets
+automatically, so one array of 20 plates engraves 20 consecutive numbers, and the next job continues
+with the 21st.
 
 Arrays made inside a sketch are different: their copies belong to one workpiece and all show the
 same number. Make the array on the canvas instead to number the copies.

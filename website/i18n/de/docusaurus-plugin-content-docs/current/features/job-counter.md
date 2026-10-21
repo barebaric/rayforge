@@ -8,11 +8,11 @@ description:
 
 Textfelder lösen `{...}`-Vorlagen auf (siehe
 [Parameter und Ausdrücke](sketcher/expressions.md#template-expressions-in-text-boxes)). Zusätzlich
-zu den Skizzenparametern und den eingebauten Funktionen bietet das Projekt Variablen, die sich von
-Auftrag zu Auftrag ändern. So gravierst du nummerierte Schilder, Anhänger und Etiketten, ohne den
-Text jedes Mal zu bearbeiten.
+zu den Skizzenparametern und den eingebauten Funktionen hat das Projekt einen Auftragszähler, der
+sich von Auftrag zu Auftrag ändert. So gravierst du nummerierte Schilder, Anhänger und Etiketten,
+ohne den Text jedes Mal zu bearbeiten.
 
-## Seriennummern
+## Der Auftragszähler
 
 Verwende `{counter}` in einem Textfeld. Es ist eine ganze Zahl, daher bestimmen Formatangaben ihr
 Aussehen:
@@ -39,11 +39,10 @@ Rückgängig-Verlaufs und wird im Projekt gespeichert.
 
 ## Kopien nummerieren
 
-Jedes Werkstück hat einen **Variablen-Versatz** (im Eigenschaftenbereich unter **Auftragszähler**).
-Eine Kopie mit Versatz _n_ zeigt die Nummer _n_ Kopien nach der aktuellen. Ein
-[Gitter- oder Kreis-Array](arrays.md) gibt seinen Kopien automatisch steigende Versätze, sodass ein
-Array aus 20 Schildern 20 fortlaufende Nummern graviert und der nächste Auftrag mit der 21.
-weitermacht.
+Jedes Werkstück hat einen **Variablen-Versatz**. Eine Kopie mit Versatz _n_ zeigt die Nummer _n_
+Kopien nach der aktuellen. Ein [Gitter- oder Kreis-Array](arrays.md) gibt seinen Kopien automatisch
+steigende Versätze, sodass ein Array aus 20 Schildern 20 fortlaufende Nummern graviert und der
+nächste Auftrag mit der 21. weitermacht.
 
 Arrays innerhalb einer Skizze sind anders: Ihre Kopien gehören zu einem Werkstück und zeigen alle
 dieselbe Nummer. Erstelle das Array stattdessen auf der Leinwand, um die Kopien zu nummerieren.
