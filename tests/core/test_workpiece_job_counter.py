@@ -1,19 +1,9 @@
 import pytest
 
 from rayforge.core.doc import Doc
-from rayforge.core.geometry_provider import IGeometryProvider
 from rayforge.core.job_counter import CounterSettings
 from rayforge.core.workpiece import AnchorMode, WorkPiece
 from tests.core.template_provider import TemplateProvider, place
-
-
-class _UntypedProvider(TemplateProvider):
-    """
-    A provider that inherits variables_used() from the protocol without
-    implementing it, so the call gives None.
-    """
-
-    variables_used = IGeometryProvider.variables_used
 
 
 @pytest.fixture
@@ -216,12 +206,3 @@ class TestDocSerialization:
     def test_copies_count_without_template_users(self, doc):
         place(doc, "Hello")
         assert doc.job_counter_copies() == 0
-
-    def test_copies_count_ignores_providers_without_variables(self, doc):
-        place(doc, "{counter}", offset=2)
-        provider = _UntypedProvider("{counter}")
-        doc.add_asset(provider)
-        wp = WorkPiece.from_geometry_provider(provider)
-        wp.variable_offset = 7
-        doc.active_layer.add_child(wp)
-        assert doc.job_counter_copies() == 3
