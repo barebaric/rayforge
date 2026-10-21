@@ -113,6 +113,15 @@ def test_create_shows_settings_in_the_panel(app_and_window, action):
     assert expander.get_visible()
     assert provider.varset_widget.keys()
     assert _windows(app, win) == []
+    scrolled = provider._scrolled_window()
+    offset = provider._card_offset(scrolled)
+    adjustment = scrolled.get_vadjustment()
+    top = adjustment.get_upper() - adjustment.get_page_size()
+    assert adjustment.get_value() == pytest.approx(min(offset, top), abs=1)
+
+    assert provider._scroll_handlers
+    provider.stop_following()
+    assert provider._scroll_handlers == []
 
 
 @pytest.mark.ui

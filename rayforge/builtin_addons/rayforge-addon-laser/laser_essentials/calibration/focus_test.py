@@ -204,7 +204,32 @@ class FocusTestGenerator(CalibrationGenerator):
         return _("Focus Test")
 
     def varset(self, context: "RayforgeContext") -> VarSet:
+        return self._varset(context, available_modes(context))
+
+    def settings_varset(
+        self, params: dict[str, Any], context: "RayforgeContext"
+    ) -> VarSet:
+        """Also lists the test's own method when this machine lacks it."""
         modes = available_modes(context)
+        mode = FocusMode(params["mode"])
+        if mode not in modes:
+            modes.append(mode)
+        return self._varset(context, modes)
+
+    def warning(
+        self, params: dict[str, Any], context: "RayforgeContext"
+    ) -> str:
+        mode = FocusMode(params["mode"])
+        if mode in available_modes(context):
+            return ""
+        return _(
+            "The method {method} is not available on this machine. Choose "
+            "another method to rebuild the test."
+        ).format(method=mode.label)
+
+    def _varset(
+        self, context: "RayforgeContext", modes: list[FocusMode]
+    ) -> VarSet:
         limit = MAX_FOCUS_OFFSET_MM
         return VarSet(
             vars=[
@@ -269,9 +294,6 @@ class FocusTestGenerator(CalibrationGenerator):
                 *label_vars(context),
             ]
         )
-
-    def is_available(self, context: "RayforgeContext") -> bool:
-        return context.machine is not None
 
     def help_text(self, params: dict[str, Any]) -> str:
         return FocusMode(params["mode"]).help_text

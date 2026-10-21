@@ -32,8 +32,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 DEBOUNCE_DELAY_MS = 300
-#: Time the item properties need to slide in before they can be scrolled.
-REVEAL_DELAY_MS = 400
 
 
 class CalibrationPropertyProvider(PropertyProvider):
@@ -47,31 +45,21 @@ class CalibrationPropertyProvider(PropertyProvider):
         return record_for_items(items) is not None
 
     def create_widgets(self) -> list[Gtk.Widget]:
-        self.help_row = Adw.ActionRow(activatable=False)
-        self.help_row.set_title_lines(0)
-        self.help_row.add_css_class("dim-label")
+        self.help_row = _text_row("dim-label")
         self.varset_widget = VarSetRowList()
         self.varset_widget.data_changed.connect(self._on_data_changed)
-        self.error_row = Adw.ActionRow(activatable=False)
-        self.error_row.set_title_lines(0)
-        self.error_row.add_css_class("error")
-        self.error_row.set_visible(False)
-        self.note_row = Adw.ActionRow(
-            title=_(
-                "Changing a setting rebuilds the test and replaces changes "
-                "made to its operations."
-            ),
-            activatable=False,
-        )
-        self.note_row.set_title_lines(0)
-        self.note_row.add_css_class("dim-label")
+        self.warning_row = _text_row("warning")
+        self.error_row = _text_row("error")
+        self.note_row = _text_row("dim-label")
 
         self._record: CalibrationRecord | None = None
         self._generator_id: str | None = None
         self._pending_keys: set[str] = set()
         self._timer_id = 0
+        self._scroll_handlers: list[tuple[Gtk.Adjustment, int]] = []
         return [
             self.help_row,
+            self.warning_row,
             self.error_row,
             self.varset_widget,
             self.note_row,
@@ -88,35 +76,68 @@ class CalibrationPropertyProvider(PropertyProvider):
         try:
             self.editor = editor
             self.items = items
+            previous = self._record
             self._record = record_for_items(items)
+            if self._record is not previous:
+                self.stop_following()
             generator = self.generator
             if self._record is None or generator is None:
                 return
             if generator.id != self._generator_id:
                 self.varset_widget.clear_dynamic_rows()
                 self._generator_id = generator.id
-            self.varset_widget.populate(generator.varset(editor.context))
-            self._show_params(self._record.params)
+            params = CalibrationCmd(editor).params(self._record)
+            self.varset_widget.populate(
+                generator.settings_varset(params, editor.context)
+            )
+            self._show_params(params)
             self.error_row.set_visible(False)
+            self.note_row.set_title(_rebuild_note(generator))
             self.group_subtitle = self._record.name or generator.title
         finally:
             self._in_update = False
 
-    def scroll_into_view(self) -> bool:
+    def scroll_into_view(self):
         """
         Scrolls the panel so the Test Settings card starts at its top.
         The card comes after the workflows and the item properties, so
-        it is often below the visible part of the panel.
+        it is often below the visible part of the panel. While the panel
+        is still being laid out, the card is followed each time the
+        panel's size changes, until a setting is edited or another test
+        is selected.
         """
-        card = self.varset_widget.get_ancestor(Expander)
         scrolled = self._scrolled_window()
-        content = scrolled.get_child() if scrolled else None
-        if card is None or content is None:
-            return GLib.SOURCE_REMOVE
+        if scrolled is None:
+            return
+        self._follow_card(scrolled.get_vadjustment())
+        if not self._scroll_handlers:
+            adjustment = scrolled.get_vadjustment()
+            self._scroll_handlers = [
+                (adjustment, adjustment.connect("changed", self._follow_card))
+            ]
+
+    def _follow_card(self, adjustment: Gtk.Adjustment):
+        scrolled = self._scrolled_window()
+        offset = self._card_offset(scrolled) if scrolled else None
+        if offset is not None:
+            self._scroll_to(offset)
+
+    def stop_following(self):
+        """Leaves the scroll position to the user."""
+        for adjustment, handler in self._scroll_handlers:
+            adjustment.disconnect(handler)
+        self._scroll_handlers = []
+
+    def _card_offset(self, scrolled: Gtk.ScrolledWindow) -> float | None:
+        """Where the card starts in the panel, once it is laid out."""
+        card = self.varset_widget.get_ancestor(Expander)
+        content = scrolled.get_child()
+        if isinstance(content, Gtk.Viewport):
+            content = content.get_child()
+        if card is None or content is None or card.get_height() == 0:
+            return None
         ok, point = card.compute_point(content, Graphene.Point())
-        if ok:
-            self._scroll_to(point.y)
-        return GLib.SOURCE_REMOVE
+        return point.y if ok else None
 
     def _scrolled_window(self) -> Gtk.ScrolledWindow | None:
         """The scrolled right panel the settings are shown in."""
@@ -127,13 +148,12 @@ class CalibrationPropertyProvider(PropertyProvider):
         scrolled = self._scrolled_window()
         return scrolled.get_vadjustment().get_value() if scrolled else 0.0
 
-    def _scroll_to(self, offset: float) -> bool:
+    def _scroll_to(self, offset: float):
         scrolled = self._scrolled_window()
         if scrolled is not None:
             adjustment = scrolled.get_vadjustment()
             top = adjustment.get_upper() - adjustment.get_page_size()
             adjustment.set_value(max(0.0, min(offset, top)))
-        return GLib.SOURCE_REMOVE
 
     def _show_params(self, params: dict[str, Any]):
         generator = self.generator
@@ -147,9 +167,9 @@ class CalibrationPropertyProvider(PropertyProvider):
             if adapter is not None:
                 adapter.set_item_labels(labels)
                 adapter.set_item_subtitles(subtitles)
-        help_text = generator.help_text(params)
-        self.help_row.set_title(GLib.markup_escape_text(help_text))
-        self.help_row.set_visible(bool(help_text))
+        _show_text(self.help_row, generator.help_text(params))
+        warning = generator.warning(params, self.editor.context)
+        _show_text(self.warning_row, warning)
 
     def _on_data_changed(self, sender: VarSetRowList, key: str):
         if self._in_update or self._record is None:
@@ -171,11 +191,14 @@ class CalibrationPropertyProvider(PropertyProvider):
             self._timer_id = 0
         keys = set(self._pending_keys)
         self._pending_keys.clear()
+        self.stop_following()
         record, generator = self._record, self.generator
         if not keys or record is None or generator is None:
             return
-        params = record.params
-        params.update(self.varset_widget.get_values())
+        cmd = CalibrationCmd(self.editor)
+        values = self.varset_widget.get_values()
+        params = cmd.params(record)
+        params.update({key: values[key] for key in keys if key in values})
         params = generator.apply_change(params, keys, self.editor.context)
         self._in_update = True
         try:
@@ -184,45 +207,54 @@ class CalibrationPropertyProvider(PropertyProvider):
             self._in_update = False
         offset = self._scroll_offset()
         try:
-            workpieces = CalibrationCmd(self.editor).update_params(
-                record, params
-            )
+            workpieces = cmd.update_params(record, params)
         except ValueError as e:
-            self.error_row.set_title(GLib.markup_escape_text(str(e)))
-            self.error_row.set_visible(True)
+            _show_text(self.error_row, str(e))
             return
         self.error_row.set_visible(False)
         self._reselect(workpieces, offset)
 
     def _reselect(self, workpieces: list[WorkPiece], offset: float):
         """
-        Selects the rebuilt test and puts the panel back where it was:
-        the old workpieces are gone, so the selection was cleared and the
-        item properties slid out.
+        Selects the rebuilt test and puts the panel back where it was.
+        The old workpieces are gone, so the selection was cleared; it is
+        restored before the panel is drawn again.
         """
         root = self.varset_widget.get_root()
         if not isinstance(root, MainWindow):
             return
-        GLib.idle_add(select_items, root, workpieces)
-        GLib.timeout_add(REVEAL_DELAY_MS, self._scroll_to, offset)
+        root.surface.select_items(workpieces)
+        self._scroll_to(offset)
 
 
-def select_items(window: MainWindow, items: list[WorkPiece]) -> bool:
-    """
-    Selects a rebuilt test, so its settings stay in the panel. Runs on
-    idle, once the canvas has elements for the new workpieces.
-    """
+def show_new_test(window: MainWindow, items: list[WorkPiece]):
+    """Selects a new test and scrolls its settings into view."""
     window.surface.select_items(items)
-    return GLib.SOURCE_REMOVE
-
-
-def show_new_test(window: MainWindow, items: list[WorkPiece]) -> bool:
-    """
-    Selects a new test and scrolls its settings into view once the
-    item properties have slid in.
-    """
-    select_items(window, items)
     for provider in window.item_props_widget.providers:
         if isinstance(provider, CalibrationPropertyProvider):
-            GLib.timeout_add(REVEAL_DELAY_MS, provider.scroll_into_view)
-    return GLib.SOURCE_REMOVE
+            provider.scroll_into_view()
+
+
+def _text_row(css_class: str) -> Adw.ActionRow:
+    row = Adw.ActionRow(activatable=False)
+    row.set_title_lines(0)
+    row.add_css_class(css_class)
+    row.set_visible(False)
+    return row
+
+
+def _show_text(row: Adw.ActionRow, text: str):
+    row.set_title(GLib.markup_escape_text(text))
+    row.set_visible(bool(text))
+
+
+def _rebuild_note(generator: CalibrationGenerator) -> str:
+    if generator.keeps_steps:
+        return _(
+            "Changing a setting rebuilds the test. The other settings of "
+            "its operation stay."
+        )
+    return _(
+        "Changing a setting rebuilds the test and replaces changes made "
+        "to its operations."
+    )

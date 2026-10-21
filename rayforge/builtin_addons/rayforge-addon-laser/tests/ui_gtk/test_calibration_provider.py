@@ -1,6 +1,7 @@
 # flake8: noqa: E402
 """UI tests for the Test Settings of the calibration tests."""
 
+from dataclasses import replace
 from types import SimpleNamespace
 from typing import cast
 from unittest.mock import MagicMock
@@ -295,7 +296,8 @@ def test_without_a_test_selected(provider, editor, cmd):
     provider.update_widgets(editor, [other])
     assert provider.generator is None
     provider.apply_now()
-    assert provider.scroll_into_view() is False
+    provider.scroll_into_view()
+    assert provider._scroll_handlers == []
 
 
 @pytest.mark.ui
@@ -333,3 +335,29 @@ def test_changes_while_updating_are_ignored(provider, editor, cmd):
     provider._in_update = False
     assert provider._timer_id == 0
     assert not provider._pending_keys
+
+
+@pytest.mark.ui
+def test_unavailable_method_is_kept_and_explained(
+    provider, editor, cmd, laser_machine, monkeypatch
+):
+    """A Focus Test saved on a machine with a Z axis keeps its method on
+    a machine without one: the panel says so, and an unrelated change
+    does not switch the method."""
+    monkeypatch.setattr(
+        type(laser_machine), "has_z_axis", property(lambda self: False)
+    )
+    record = cmd.create("focus_test", {"mode": "ramp"})
+    record.set_state(
+        replace(record.state, params={**record.params, "mode": "z_axis"})
+    )
+    provider.update_widgets(editor, cmd.workpieces(record))
+
+    assert provider.varset_widget.get_values()["mode"] == "z_axis"
+    assert provider.warning_row.get_visible()
+    assert "not available" in provider.warning_row.get_title()
+
+    _set(provider, "ramp_length", 50.0)
+    provider.apply_now()
+    assert record.params["mode"] == "z_axis"
+    assert provider.error_row.get_visible()
