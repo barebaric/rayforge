@@ -1,0 +1,165 @@
+import pytest
+
+from rayforge.core.doc import Doc
+from rayforge.core.variable_text import SerialSettings
+from rayforge.core.workpiece import WorkPiece
+from tests.core.template_provider import TemplateProvider, place
+
+
+@pytest.fixture
+def doc():
+    return Doc()
+
+
+class TestVariableOffset:
+    def test_default_offset_is_zero(self):
+        assert WorkPiece("wp").variable_offset == 0
+
+    def test_offset_round_trip(self):
+        wp = WorkPiece("wp")
+        wp.variable_offset = 4
+        data = wp.to_dict()
+        assert data["variable_offset"] == 4
+        assert WorkPiece.from_dict(data).variable_offset == 4
+
+    def test_zero_offset_is_not_serialized(self):
+        assert "variable_offset" not in WorkPiece("wp").to_dict()
+
+    def test_offset_is_not_an_extra_attribute(self):
+        wp = WorkPiece("wp")
+        wp.variable_offset = 2
+        assert WorkPiece.from_dict(wp.to_dict()).extra == {}
+
+    def test_duplicate_keeps_offset(self):
+        wp = WorkPiece("wp")
+        wp.variable_offset = 3
+        copy = wp.duplicate()
+        assert isinstance(copy, WorkPiece)
+        assert copy.variable_offset == 3
+
+
+class TestTemplateValues:
+    def test_unparented_workpiece_has_no_values(self):
+        assert WorkPiece("wp").template_values() == {}
+
+    def test_values_follow_doc_counter_and_offset(self, doc):
+        doc.variable_text.serial = SerialSettings(current=10, step=5)
+        wp = place(doc, "{serial}", offset=2)
+        assert wp.template_values()["serial"] == 20
+
+    def test_provider_receives_serial(self, doc):
+        doc.variable_text.serial = SerialSettings(current=7)
+        wp = place(doc, "No. {serial:03d}")
+        wp.clear_render_cache()
+        assert wp.boundaries is not None
+        provider = wp.get_geometry_provider()
+        assert isinstance(provider, TemplateProvider)
+        assert provider.rendered[-1] == "No. 007"
+
+    def test_instance_params_win_over_doc_values(self, doc):
+        doc.variable_text.serial = SerialSettings(current=7)
+        wp = place(doc, "{serial}")
+        wp._geometry_provider_params = {"serial": 99}
+        wp.clear_render_cache()
+        assert wp.boundaries is not None
+        provider = wp.get_geometry_provider()
+        assert isinstance(provider, TemplateProvider)
+        assert provider.rendered[-1] == "99"
+
+    def test_in_world_bakes_values(self, doc):
+        doc.variable_text.serial = SerialSettings(current=3)
+        wp = place(doc, "{serial}", offset=1)
+        world = wp.in_world()
+        assert world.geometry_provider_params["serial"] == 4
+
+    def test_in_world_leaves_plain_templates_alone(self, doc):
+        doc.variable_text.serial = SerialSettings(current=3)
+        wp = place(doc, "Hello")
+        assert "serial" not in wp.in_world().geometry_provider_params
+
+    def test_references_variables(self, doc):
+        wp = place(doc, "{serial:04d}")
+        plain = place(doc, "Hello")
+        assert wp.references_template_names({"serial"})
+        assert not plain.references_template_names({"serial"})
+
+
+class TestRefreshOnChange:
+    def test_counter_change_regenerates_text(self, doc):
+        wp = place(doc, "{serial}")
+        provider = wp.get_geometry_provider()
+        assert isinstance(provider, TemplateProvider)
+        doc.variable_text.serial = SerialSettings(current=1234)
+        assert provider.rendered[-1] == "1234"
+
+    def test_counter_change_keeps_scale(self, doc):
+        doc.variable_text.serial = SerialSettings(current=9)
+        wp = place(doc, "{serial}")
+        wp.set_size(4.0, 10.0)
+        doc.variable_text.serial = SerialSettings(current=10)
+        width, height = wp.size
+        # The text doubled in length; the 2x scale of the
+        # workpiece is preserved.
+        assert width == pytest.approx(8.0)
+        assert height == pytest.approx(10.0)
+
+    def test_counter_change_emits_updated(self, doc):
+        wp = place(doc, "{serial}")
+        received = []
+
+        def on_updated(sender, **kwargs):
+            received.append(sender)
+
+        wp.updated.connect(on_updated)
+        doc.variable_text.serial = SerialSettings(current=5)
+        assert wp in received
+
+    def test_unrelated_workpiece_is_not_regenerated(self, doc):
+        wp = place(doc, "Hello")
+        provider = wp.get_geometry_provider()
+        assert isinstance(provider, TemplateProvider)
+        calls = len(provider.calls)
+        doc.variable_text.serial = SerialSettings(current=5)
+        assert len(provider.calls) == calls
+
+    def test_offset_change_regenerates(self, doc):
+        doc.variable_text.serial = SerialSettings(current=1)
+        wp = place(doc, "{serial}")
+        provider = wp.get_geometry_provider()
+        assert isinstance(provider, TemplateProvider)
+        wp.variable_offset = 9
+        assert provider.rendered[-1] == "10"
+
+
+class TestDocSerialization:
+    def test_doc_round_trip_keeps_counter(self, doc):
+        doc.variable_text.serial = SerialSettings(current=12, step=3)
+        restored = Doc.from_dict(doc.to_dict())
+        assert restored.variable_text.serial == doc.variable_text.serial
+
+    def test_old_documents_get_default_counter(self, doc):
+        data = doc.to_dict()
+        data.pop("variable_text", None)
+        restored = Doc.from_dict(data)
+        assert restored.variable_text.serial == SerialSettings()
+
+    def test_restored_doc_refreshes_on_change(self, doc):
+        restored = Doc.from_dict(doc.to_dict())
+        received = []
+
+        def on_changed(sender):
+            received.append(sender)
+
+        restored.variable_text.changed.connect(on_changed)
+        restored.variable_text.serial = SerialSettings(current=2)
+        assert received == [restored.variable_text]
+
+    def test_copies_count_uses_highest_offset(self, doc):
+        place(doc, "{serial}", offset=0)
+        place(doc, "{serial}", offset=5)
+        place(doc, "Hello", offset=9)
+        assert doc.variable_text_copies() == 6
+
+    def test_copies_count_without_template_users(self, doc):
+        place(doc, "Hello")
+        assert doc.variable_text_copies() == 0

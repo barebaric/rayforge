@@ -167,6 +167,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   its layer; generated content like the Material Test Grid restricts
   its step to the workpiece it creates, and that selection is now
   visible instead of hidden
+- Variable Text: a `{serial}` variable for text templates, with a
+  project counter that advances after every finished job and consecutive
+  numbers for array copies (Tools > Variable Text) (#527)
+- Variable Text: merge a CSV file into text templates with
+  `{csv["Name"]}`, `{csv[0]}` and `{row}`, one row per copy or per job
+  (#528)
 
 ### Changed
 

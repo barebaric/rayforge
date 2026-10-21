@@ -356,6 +356,14 @@ class Sketch(IAsset, IGeometryProvider):
             resolved_text_cache.update(clone._resolved_text_cache)
         return geo, fills
 
+    def get_template_sources(self) -> list[str]:
+        """The raw contents of all text boxes, including templates."""
+        return [
+            e.content
+            for e in self.registry.entities
+            if isinstance(e, TextBoxEntity) and e.content
+        ]
+
     def _clone_for_geometry(self) -> "Sketch":
         """
         Lightweight clone for geometry generation.

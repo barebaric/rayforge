@@ -36,6 +36,7 @@ from .image_edit import ImageEditStep, apply_image_edits
 from .item import DocItem
 from .source_asset_segment import SourceAssetSegment
 from .tab import Tab
+from .variable_text import referenced_template_names
 from .vectorization_spec import TraceSpec
 
 if TYPE_CHECKING:
@@ -162,6 +163,12 @@ class WorkPiece(DocItem):
         self._geometry_provider_connection: Any | None = None
 
         self._resolved_text_cache: dict = {}
+
+        # Shifts the document's template variables for this copy, so
+        # e.g. array copies show consecutive serial numbers.
+        self._variable_offset: int = 0
+        # The template variables the cached geometry was generated with.
+        self._template_values_used: dict[str, Any] = {}
 
         self.source_asset_uid: str | None = None
 
@@ -512,8 +519,9 @@ class WorkPiece(DocItem):
                 f"WP {self.uid[:8]}: Getting geometry with "
                 f"params: {self._geometry_provider_params}"
             )
+            self._template_values_used = self.template_values()
             unnormalized_geo, unnormalized_fills = provider.get_geometry(
-                self._geometry_provider_params,
+                self._provider_params(),
                 resolved_text_cache=self._resolved_text_cache,
             )
 
@@ -713,9 +721,11 @@ class WorkPiece(DocItem):
         world_wp.tabs = deepcopy(self.tabs)
         world_wp.tabs_enabled = self.tabs_enabled
         world_wp.geometry_provider_uid = self.geometry_provider_uid
-        world_wp.geometry_provider_params = deepcopy(
-            self._geometry_provider_params
+        world_wp._geometry_provider_params = deepcopy(
+            self._world_provider_params()
         )
+        world_wp._variable_offset = self._variable_offset
+        world_wp._template_values_used = deepcopy(self._template_values_used)
         world_wp.source_asset_uid = self.source_asset_uid
         world_wp._anchor_mode = self._anchor_mode
         world_wp._reference_anchor = self._reference_anchor
@@ -1071,6 +1081,10 @@ class WorkPiece(DocItem):
             }
             if cache:
                 state["resolved_text_cache"] = cache
+        if self._variable_offset:
+            state["variable_offset"] = self._variable_offset
+        if self._template_values_used:
+            state["template_values"] = self._template_values_used
         if self._data is not None:
             state["data"] = self._data
         if self._original_data is not None:
@@ -1109,6 +1123,8 @@ class WorkPiece(DocItem):
             "geometry_provider_params",
             "source_asset_uid",
             "resolved_text_cache",
+            "variable_offset",
+            "template_values",
             "data",
             "original_data",
             "source_px_dims",
@@ -1160,6 +1176,8 @@ class WorkPiece(DocItem):
             "geometry_provider_params", {}
         ) or data.get("sketch_params", {})
         wp.source_asset_uid = data.get("source_asset_uid")
+        wp._variable_offset = int(data.get("variable_offset", 0))
+        wp._template_values_used = dict(data.get("template_values") or {})
         raw_cache = data.get("resolved_text_cache")
         if raw_cache:
             wp._resolved_text_cache = {
@@ -1214,6 +1232,105 @@ class WorkPiece(DocItem):
             if self.geometry_provider_uid:
                 # Regenerate the internal geometry and natural size
                 self.regenerate_from_geometry_provider()
+
+    @property
+    def variable_offset(self) -> int:
+        """
+        The copy offset applied to the document's template variables.
+
+        A copy with offset ``n`` shows the values ``n`` copies after
+        the current ones, e.g. serial number ``current + n * step``.
+        """
+        return self._variable_offset
+
+    @variable_offset.setter
+    def variable_offset(self, value: int) -> None:
+        value = int(value)
+        if value == self._variable_offset:
+            return
+        self._variable_offset = value
+        self.refresh_template_values()
+
+    def template_values(self) -> dict[str, Any]:
+        """The document's template variables as seen by this copy."""
+        doc = self.doc
+        if doc is None:
+            return {}
+        return doc.variable_text.template_values(self._variable_offset)
+
+    def _provider_params(self) -> dict[str, Any]:
+        """
+        Parameters for the geometry provider: the document's template
+        variables, overridden by this instance's own parameters.
+        """
+        params = self.template_values()
+        params.update(self._geometry_provider_params or {})
+        return params
+
+    def _world_provider_params(self) -> dict[str, Any]:
+        """
+        Parameters for a detached copy: the template variables are baked
+        in only when this workpiece's templates read them.
+        """
+        doc = self.doc
+        if doc is not None and self.references_template_names(
+            doc.variable_text.names
+        ):
+            return self._provider_params()
+        return dict(self._geometry_provider_params or {})
+
+    def template_sources(self) -> list[str]:
+        """The raw template strings the geometry provider renders."""
+        provider = self.get_geometry_provider()
+        get_sources = getattr(provider, "get_template_sources", None)
+        if callable(get_sources):
+            return [str(source) for source in cast(list, get_sources())]
+        return [
+            entry[0]
+            for entry in self._resolved_text_cache.values()
+            if isinstance(entry, (tuple, list)) and entry
+        ]
+
+    def references_template_names(self, names: set[str]) -> bool:
+        """Whether any template of this workpiece reads one of *names*."""
+        if not self.geometry_provider_uid:
+            return False
+        used = referenced_template_names(self.template_sources())
+        return bool(used & names)
+
+    def refresh_template_values(self) -> None:
+        """
+        Regenerates the geometry after a template variable changed.
+
+        Only workpieces whose templates read one of the document's
+        variables are affected. The current scale relative to the
+        natural size is kept, so a longer text grows instead of being
+        squeezed into the old box.
+        """
+        doc = self.doc
+        if doc is None or not self.references_template_names(
+            doc.variable_text.names
+        ):
+            return
+        old_w, old_h = self.natural_width_mm, self.natural_height_mm
+        size_w, size_h = self.size
+        self._resolved_text_cache = {}
+        self.clear_render_cache()
+        if self.boundaries is not None and old_w > 1e-9 and old_h > 1e-9:
+            self.set_size(
+                self.natural_width_mm * size_w / old_w,
+                self.natural_height_mm * size_h / old_h,
+            )
+        self.updated.send(self)
+
+    def sync_template_values(self) -> None:
+        """
+        Refreshes the geometry if it was generated with other template
+        values than the document offers now, e.g. after the workpiece
+        was created outside the document or copied with a new offset.
+        """
+        if self._template_values_used != self.template_values():
+            self.refresh_template_values()
 
     def get_natural_aspect_ratio(self) -> float | None:
         size = self.natural_size
@@ -1760,7 +1877,8 @@ class WorkPiece(DocItem):
         )
 
         # Get geometry with current parameter overrides.
-        variable_overrides = self._geometry_provider_params or {}
+        variable_overrides = self._provider_params()
+        self._template_values_used = self.template_values()
         logger.debug(
             f"WP {self.uid[:8]}: Getting geometry with params: "
             f"{variable_overrides}"

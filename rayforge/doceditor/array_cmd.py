@@ -135,7 +135,7 @@ class ArrayCmd:
         created: list[DocItem] = []
 
         with history.transaction(_("Create Array")) as t:
-            for delta in deltas:
+            for index, delta in enumerate(deltas):
                 if _is_identity(delta):
                     # The original selection occupies this cell.
                     continue
@@ -147,6 +147,7 @@ class ArrayCmd:
                         )
                         continue
                     copy = self._make_copy_at_delta(item, delta)
+                    _shift_variable_offsets(copy, index)
                     cmd = ListItemCommand(
                         owner_obj=layer,
                         item=copy,
@@ -171,6 +172,17 @@ class ArrayCmd:
         new_world = delta_world @ old_world
         copy.matrix = TransformCmd._world_to_local_matrix(item, new_world)
         return copy
+
+
+def _shift_variable_offsets(item: DocItem, shift: int) -> None:
+    """Numbers an array copy: its workpieces show the template values
+    ``shift`` copies after the original's."""
+    if isinstance(item, WorkPiece):
+        workpieces = [item]
+    else:
+        workpieces = item.get_descendants(of_type=WorkPiece)
+    for wp in workpieces:
+        wp.variable_offset += shift
 
 
 def _is_identity(matrix: Matrix) -> bool:
