@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Protocol, cast
 from unittest.mock import MagicMock, patch
 
 import pytest
+from laser_essentials.material_test_helpers import GridMode
 from laser_essentials.steps import MaterialTestStep
 from raygeo.cnc.execution.specs import ComputePayload
 from raygeo.ops.assembly import Assembler
@@ -244,6 +245,61 @@ class TestMaterialTestStep:
             t.get("name") for t in step.per_workpiece_transformers_dicts
         }
         assert "BidirScanOffsetTransformer" in per_wp_names
+
+
+class TestMaterialTestCheck:
+    def test_check_ignores_unused_base_cut_speed(self, machine):
+        """The step's unused cut_speed default (500) must not trigger
+        a machine-limit warning."""
+        machine.max_cut_speed = 400
+        step = MaterialTestStep(name="mtg")
+        step.speed_range = (100.0, 400.0)
+        step.include_labels = False
+        assert step.check(machine) == []
+
+    def test_check_flags_speed_range_above_machine_max(self, machine):
+        machine.max_cut_speed = 400
+        step = MaterialTestStep(name="mtg")
+        step.speed_range = (100.0, 500.0)
+        step.include_labels = False
+        assert len(step.check(machine)) == 1
+
+    def test_check_flags_fixed_speed_mode(self, machine):
+        machine.max_cut_speed = 400
+        step = MaterialTestStep(name="mtg")
+        step.grid_mode = GridMode.POWER_VS_PASSES.value
+        step.fixed_speed = 500.0
+        step.include_labels = False
+        assert len(step.check(machine)) == 1
+
+    def test_check_ignores_fixed_speed_when_not_used(self, machine):
+        machine.max_cut_speed = 400
+        step = MaterialTestStep(name="mtg")
+        step.grid_mode = GridMode.POWER_VS_SPEED.value
+        step.speed_range = (100.0, 400.0)
+        step.fixed_speed = 500.0
+        step.include_labels = False
+        assert step.check(machine) == []
+
+    def test_check_flags_label_speed(self, machine):
+        machine.max_cut_speed = 400
+        step = MaterialTestStep(name="mtg")
+        step.speed_range = (100.0, 400.0)
+        step.include_labels = True
+        step.label_speed = 500.0
+        assert len(step.check(machine)) == 1
+
+    def test_check_skips_label_speed_when_labels_off(self, machine):
+        machine.max_cut_speed = 400
+        step = MaterialTestStep(name="mtg")
+        step.speed_range = (100.0, 400.0)
+        step.include_labels = False
+        step.label_speed = 500.0
+        assert step.check(machine) == []
+
+    def test_check_without_machine(self):
+        step = MaterialTestStep(name="mtg")
+        assert step.check(None) == []
 
 
 class TestMaterialTestComputePayload:
