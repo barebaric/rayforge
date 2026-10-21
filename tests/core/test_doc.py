@@ -116,6 +116,21 @@ def test_doc_asset_management(doc, asset_factory, get_compatibility_dict):
         doc.add_asset("not an asset")
 
 
+def test_remove_asset_silently(doc):
+    """A silent removal skips the updated signal, for commands that
+    change several assets and notify once."""
+    asset = StockAsset(name="Stock")
+    doc.add_asset(asset)
+    handler = MagicMock()
+    doc.updated.connect(handler)
+
+    doc.remove_asset_by_uid(asset.uid, silent=True)
+
+    assert doc.get_asset_by_uid(asset.uid) is None
+    assert asset.uid not in doc.asset_order
+    handler.assert_not_called()
+
+
 def test_doc_stock_items_management(doc):
     """Tests adding, removing, and getting stock items."""
     asset1 = StockAsset(name="Asset 1")

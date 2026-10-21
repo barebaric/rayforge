@@ -248,3 +248,30 @@ def test_workflow_backward_compatibility_with_missing_optional_fields():
     # Verify defaults are applied for missing optional fields
     assert workflow.name == "Workflow"
     assert workflow.extra == {}
+
+
+def test_bulk_added_steps_bubble_transformer_changes(workflow):
+    """Steps added in bulk send per-step transformer changes upward,
+    like steps added one by one."""
+    handler = MagicMock()
+    workflow.per_step_transformer_changed.connect(handler)
+    steps = [Step("A"), Step("B")]
+
+    workflow.add_children(steps)
+    steps[1].per_step_transformer_changed.send(steps[1])
+
+    assert workflow.steps == steps
+    handler.assert_called_once_with(workflow)
+
+
+def test_bulk_removed_steps_stop_bubbling(workflow):
+    handler = MagicMock()
+    workflow.per_step_transformer_changed.connect(handler)
+    steps = [Step("A"), Step("B")]
+    workflow.add_children(steps)
+
+    workflow.remove_children(steps)
+    steps[0].per_step_transformer_changed.send(steps[0])
+
+    assert workflow.steps == []
+    handler.assert_not_called()
