@@ -24,7 +24,7 @@ TARGET = get_target("step-settings:material-test-grid:workpieces")
 def _create_material_test() -> None:
     """Create the grid through the editor's own command so the step is
     linked to its generated workpiece like in the real flow."""
-    win.doc_editor.material_test.create_test_grid()
+    win.doc_editor.calibration.create("material_test_grid")
 
 
 @restore_config
