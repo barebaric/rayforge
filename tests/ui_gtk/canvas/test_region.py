@@ -4,8 +4,10 @@ import pytest
 
 from rayforge.ui_gtk.canvas.region import (
     MOVE_HANDLES,
+    RESIZE_HANDLES,
     ElementRegion,
     check_region_hit,
+    flat_axis_padding,
     get_region_rect,
 )
 
@@ -148,7 +150,6 @@ class TestMoveGizmoHitTest:
         )
         center_x = gx + gw / 2
         center_y = gy + gh / 2
-        from rayforge.ui_gtk.canvas.region import RESIZE_HANDLES
 
         candidates = RESIZE_HANDLES | MOVE_HANDLES
         result = check_region_hit(
@@ -161,3 +162,63 @@ class TestMoveGizmoHitTest:
             candidates=candidates,
         )
         assert result == ElementRegion.MOVE
+
+
+class TestFlatAxisHandles:
+    """Flat elements get a minimum-thickness selection box."""
+
+    def test_padding_is_zero_for_normal_axis(self):
+        assert flat_axis_padding(100.0, 1.0) == 0.0
+
+    def test_padding_is_positive_for_flat_axis(self):
+        assert flat_axis_padding(0.0, 1.0) == 8.0
+
+    def test_body_rect_is_padded_for_zero_height_box(self):
+        bx, by, bw, bh = get_region_rect(
+            ElementRegion.BODY, 200.0, 0.0, 20.0, 1.0
+        )
+        assert (bx, by, bw, bh) == (0.0, -8.0, 200.0, 16.0)
+
+    def test_corner_handle_has_nonzero_size_for_zero_height_box(self):
+        x, y, w, h = get_region_rect(
+            ElementRegion.TOP_LEFT, 200.0, 0.0, 20.0, 1.0
+        )
+        assert w > 0
+        assert h > 0
+        assert x == pytest.approx(0.0)
+        assert y == pytest.approx(-8.0)
+
+    def test_flat_body_hit_within_tolerance(self):
+        assert (
+            check_region_hit(50.0, 7.0, 200.0, 0.0, 20.0, 1.0)
+            == ElementRegion.BODY
+        )
+        assert (
+            check_region_hit(50.0, 9.0, 200.0, 0.0, 20.0, 1.0)
+            == ElementRegion.NONE
+        )
+
+    def test_flat_corner_handle_is_hittable(self):
+        result = check_region_hit(
+            10.0,
+            -6.0,
+            200.0,
+            0.0,
+            20.0,
+            1.0,
+            candidates=RESIZE_HANDLES,
+        )
+        assert result == ElementRegion.TOP_LEFT
+
+    def test_workpiece_like_flat_scale_gets_visible_handles(self):
+        """A near-zero axis scale must still yield on-screen handles."""
+        scale = (253.98, 1.0325e-09)
+        _, _, _, rh = get_region_rect(
+            ElementRegion.TOP_LEFT, 1.0, 1.0, 20.0, scale
+        )
+        assert rh * scale[1] > 1.0
+
+        _, _, _, bh = get_region_rect(
+            ElementRegion.BODY, 1.0, 1.0, 20.0, scale
+        )
+        assert bh * scale[1] > 1.0

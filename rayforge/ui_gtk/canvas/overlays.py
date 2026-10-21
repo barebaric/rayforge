@@ -323,8 +323,15 @@ def render_selection_frame(
         transform_to_screen: The matrix to transform from local to screen.
     """
     ctx.save()
-    w, h = target.width, target.height
-    corners_local = [(0, 0), (w, 0), (w, h), (0, h)]
+    # Use the body region so flat elements get the same minimum-thickness
+    # frame that their handles and hit area use.
+    sx, sy = transform_to_screen.get_abs_scale()
+    is_flipped = transform_to_screen.is_flipped()
+    scale_compensation = (sx, -sy if is_flipped else sy)
+    bx, by, w, h = target.get_region_rect(
+        ElementRegion.BODY, 0.0, scale_compensation
+    )
+    corners_local = [(bx, by), (bx + w, by), (bx + w, by + h), (bx, by + h)]
     corners_screen = [
         transform_to_screen.transform_point(p) for p in corners_local
     ]
@@ -452,9 +459,6 @@ def render_selection_handles(
         color: Optional ColorRGBA to color handles. Defaults to blue.
     """
     from .canvas import SelectionMode  # Avoid circular import at module level
-
-    if transform_to_screen.has_zero_scale():
-        return
 
     sx_abs, sy_abs = transform_to_screen.get_abs_scale()
     is_view_flipped = transform_to_screen.is_flipped()
