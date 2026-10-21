@@ -7,9 +7,14 @@ description:
 # Intervall- und Fokustests
 
 Neben dem [Materialtest-Raster](material-test-grid.md) bietet das Menü Werkzeuge zwei weitere
-Kalibrierungsjobs. Beide werden als normale Ebene mit Werkstücken und Operationen angelegt: Du
-kannst sie verschieben, umranden und in der Vorschau ansehen wie jeden anderen Inhalt und die
-Einstellungen jedes Feldes oder jeder Linie danach in ihrer Operation ändern.
+Kalibrierungsjobs. Alle drei funktionieren gleich: **Werkzeuge → … erstellen** fügt den Test mit
+Standardeinstellungen auf einer neuen Ebene hinzu und wählt ihn aus, und seine Einstellungen
+erscheinen unter **Test Settings** im Eigenschaften-Panel rechts. Jede Änderung dort baut den Test
+sofort neu auf, als ein Schritt, den du rückgängig machen kannst, sodass du das Ergebnis siehst,
+während du ihn anpasst. Der Test ist normaler Inhalt: Du kannst ihn verschieben, umranden und in der
+Vorschau ansehen wie alles andere. Jedes Feld und jede Linie hat eine eigene Operation, die du auch
+von Hand feinjustieren kannst, aber eine spätere Änderung in den Test Settings baut diese
+Operationen neu auf.
 
 ## Intervalltest
 
@@ -38,7 +43,7 @@ besten Fokus.
 Z-Achsen-Schritte werden nur bei Maschinen mit Z-Achse angeboten, und sowohl Z-Achsen-Schritte als
 auch die manuelle Methode benötigen einen G-Code-Controller, weil sie zwischen den Linien
 [Befehls](command.md)-Operationen verwenden. Die Versätze sind auf ±10 mm von der Ausgangshöhe
-begrenzt. Der Dialog beginnt mit der ersten Methode, die die Maschine unterstützt, in der
+begrenzt. Ein neuer Fokustest verwendet die erste Methode, die die Maschine unterstützt, in der
 Reihenfolge der Tabelle oben.
 
 Fokussiere den Laser bei der manuellen Methode zuerst wie gewohnt. Die Beschriftungen werden in

@@ -7,9 +7,12 @@ description:
 # Interval and Focus Tests
 
 Next to the [Material Test Grid](material-test-grid.md), the Tools menu offers two more calibration
-jobs. Both are created as an ordinary layer with workpieces and operations: you can move it, frame
-it and preview it like any other content, and change the settings of each cell or line afterwards in
-its operation.
+jobs. All three work the same way: **Tools → Create …** adds the test with default settings on a new
+layer and selects it, and its settings appear under **Test Settings** in the item properties panel
+on the right. Every change there rebuilds the test right away, as one step you can undo, so you see
+the result while you adjust it. The test is ordinary content: you can move it, frame it and preview
+it like anything else. Each cell or line has its own operation, which you can also fine-tune by
+hand, but a later change in the Test Settings rebuilds those operations.
 
 ## Interval Test
 
@@ -35,7 +38,7 @@ means more distance between the head and the material. The thinnest line marks t
 
 Z axis steps are only offered on machines with a Z axis, and both Z axis steps and the manual method
 need a G-code controller, because they use [Command](command.md) operations between the lines. The
-offsets are limited to ±10 mm from the starting height. The dialog starts on the first method the
+offsets are limited to ±10 mm from the starting height. A new Focus Test uses the first method the
 machine supports, in the order of the table above.
 
 For the manual method, focus the laser as usual first. The labels are engraved at that height. At

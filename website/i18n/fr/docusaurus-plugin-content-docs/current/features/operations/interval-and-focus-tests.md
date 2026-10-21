@@ -7,9 +7,14 @@ description:
 # Tests d'intervalle et de mise au point
 
 À côté de la [grille de test de matériau](material-test-grid.md), le menu Outils propose deux autres
-tâches de calibrage. Les deux sont créées comme un calque ordinaire avec des pièces et des
-opérations : vous pouvez le déplacer, le cadrer et le prévisualiser comme tout autre contenu, puis
-modifier les réglages de chaque cellule ou ligne dans son opération.
+tâches de calibrage. Les trois fonctionnent de la même façon : **Outils → Créer …** ajoute le test
+avec les réglages par défaut sur un nouveau calque et le sélectionne, et ses réglages apparaissent
+sous **Test Settings** dans le panneau de propriétés à droite. Chaque modification y reconstruit
+immédiatement le test, en une seule étape que vous pouvez annuler, si bien que vous voyez le
+résultat pendant que vous l'ajustez. Le test est un contenu ordinaire : vous pouvez le déplacer, le
+cadrer et le prévisualiser comme n'importe quel autre contenu. Chaque cellule ou ligne a sa propre
+opération, que vous pouvez aussi affiner à la main, mais une modification ultérieure dans les Test
+Settings reconstruit ces opérations.
 
 ## Test d'intervalle
 
@@ -38,8 +43,8 @@ fine indique la meilleure mise au point.
 Les pas de l'axe Z ne sont proposés que sur les machines dotées d'un axe Z, et les pas de l'axe Z
 comme la méthode manuelle nécessitent un contrôleur G-code, car ils utilisent des opérations
 [Commande](command.md) entre les lignes. Les décalages sont limités à ±10 mm de la hauteur de
-départ. La boîte de dialogue démarre sur la première méthode prise en charge par la machine, dans
-l'ordre du tableau ci-dessus.
+départ. Un nouveau test de mise au point utilise la première méthode prise en charge par la machine,
+dans l'ordre du tableau ci-dessus.
 
 Avec la méthode manuelle, faites d'abord la mise au point du laser comme d'habitude. Les étiquettes
 sont gravées à cette hauteur. À la première pause, placez la tête au premier décalage ; à chaque

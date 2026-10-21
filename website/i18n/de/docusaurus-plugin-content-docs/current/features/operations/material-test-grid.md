@@ -12,15 +12,19 @@ Kombination das Rätselraten: Es erzeugt ein Muster aus Testzellen, in denen jed
 leicht anderen Einstellung graviert oder geschnitten wird — alles in einem einzigen Job. Nach einem
 Durchlauf siehst du auf einen Blick, welche Kombination das gewünschte Ergebnis liefert.
 
-Erstelle eines über **Werkzeuge → Materialtest-Raster erstellen**. Rayforge fügt der Arbeitsfläche
-ein spezielles Werkstück zusammen mit einer passenden Operation hinzu, und du konfigurierst das
-Raster in dessen Einstellungsdialog.
+Erstelle eines über **Werkzeuge → Materialtest-Raster erstellen**. Rayforge fügt das Raster auf
+einer neuen Ebene hinzu, die nach dem Test benannt ist, mit einem Werkstück und einer passenden
+Operation, und wählt es aus. Die Einstellungen des Rasters erscheinen unter **Test Settings** im
+Eigenschaften-Panel rechts, sodass Arbeitsfläche und Raster sichtbar bleiben, während du sie
+änderst. Jede Änderung baut das Raster sofort neu auf, als ein Schritt, den du rückgängig machen
+kannst. Wähle das Raster später erneut aus, um seine Einstellungen wieder anzuzeigen. Die
+[Intervall- und Fokustests](interval-and-focus-tests.md) funktionieren genauso.
 
 ![Materialtest-Raster-Einstellungen](/screenshots/material-test.webp)
 
 ## Presets
 
-Der Einstellungsdialog bietet Presets für gängige Lasertypen. Sie füllen einen sinnvollen
+Die Test Settings bieten Presets für gängige Lasertypen. Sie füllen einen sinnvollen
 Geschwindigkeitsbereich, Leistungsbereich und Testtyp aus, damit du mit einer vernünftigen Basis
 starten kannst:
 
@@ -52,10 +56,11 @@ damit alle Zellen visuell vergleichbar bleiben.
 
 ## Raster konfigurieren
 
-Der Einstellungsdialog gruppiert die Parameter in drei Bereiche.
+Die Test Settings zeigen zuerst die Raster-Einstellungen, dann die Beschriftungen, dann die
+Parameterbereiche. Laserkopf und Nachbearbeitung bleiben in den Einstellungen der Operation.
 
-Der Bereich **Raster** steuert den Test selbst. Der Testtyp bestimmt, ob jede Zelle den Umriss eines
-Quadrats schneidet oder es mit Rasterlinien füllt. Die Rasterabmessungen legen fest, wie viele
+Die **Raster**-Einstellungen steuern den Test selbst. Der Testtyp bestimmt, ob jede Zelle den Umriss
+eines Quadrats schneidet oder es mit Rasterlinien füllt. Die Rasterabmessungen legen fest, wie viele
 Spalten und Zeilen getestet werden — jede Spalte steht für einen Schritt des ersten Parameters des
 Modus und jede Zeile für einen Schritt des zweiten, vom Minimum bis zum Maximum des eingegebenen
 Bereichs. Erlaubt sind 2 bis 20 Schritte pro Achse; 5×5 ist ein guter Standard. Formgröße (Standard
@@ -64,12 +69,12 @@ der Zeilenabstand den Abstand zwischen den Scanlinien — kleinere Werte füllen
 länger. Lass ihn auf null stehen, um die Spotgröße deines Lasers zu verwenden, was für die meisten
 Gravurarbeiten gut passt.
 
-Der Bereich **Beschriftungen** steuert die Anmerkungen, die neben dem Raster graviert werden.
+Die **Beschriftungs**-Einstellungen steuern die Anmerkungen, die neben dem Raster graviert werden.
 Beschriftungen sind standardmäßig aktiviert und werden zuerst graviert, damit das Testmuster sie
 nicht verdecken kann. Sie haben ihre eigene Leistung (Standard 10%) und Geschwindigkeit (Standard
 1000 mm/min), und Geschwindigkeitswerte werden in deiner bevorzugten Anzeigeeinheit angezeigt.
 
-Der Bereich **Parameter** enthält die Bereiche, die das Raster variiert — Geschwindigkeit, Leistung,
+Die **Parameterbereiche** sind die Werte, die das Raster variiert — Geschwindigkeit, Leistung,
 Durchgänge oder Versatz, je nach gewähltem Modus. Modi, die einen Parameter festhalten (zum Beispiel
 die Geschwindigkeit bei Leistung vs. Durchgänge), lassen diese Konstante hier ebenfalls einstellen.
 
@@ -78,8 +83,8 @@ die Geschwindigkeit bei Leistung vs. Durchgänge), lassen diese Konstante hier e
 Normalerweise verarbeitet eine Operation alle Werkstücke ihrer Ebene, und der **Werkstücke**-Reiter
 ihres Einstellungs-Dialogs listet alle als einbezogen auf. Das Materialtest-Raster ist die Ausnahme:
 Seine Operation ist mit dem Werkstück verknüpft, das sie erzeugt hat, und verarbeitet ausschließlich
-dieses. Im Werkstücke-Reiter erscheint das erzeugte Raster als einziges einbezogenes Werkstück,
-alles Übrige auf der Ebene als ausgeschlossen.
+dieses. Im Werkstücke-Reiter erscheint das erzeugte Raster als einziges einbezogenes Werkstück, und
+alles, was du später auf der Ebene des Tests hinzufügst, als ausgeschlossen.
 
 ![Werkstücke-Reiter der Materialtest-Raster-Einstellungen](/screenshots/step-settings-material-test-grid-workpieces.webp)
 
@@ -142,7 +147,8 @@ schneidest.
 
 Materialtest-Raster sind gewöhnliche Werkstücke, daher lassen sie sich frei mit anderen Operationen
 kombinieren. Ein häufiges Muster ist, eine Kontur-Operation um das fertige Raster zu legen und das
-Teststück nach Abschluss der Gravur aus dem Rohmaterial zu schneiden.
+Teststück nach Abschluss der Gravur aus dem Rohmaterial zu schneiden. Operationen, die du der Ebene
+des Tests hinzufügst, bleiben erhalten, wenn das Raster neu aufgebaut wird.
 
 Dieselbe Rasterkonfiguration auf verschiedenen Materialien auszuführen, ist ein schneller Weg, um
 eine Bibliothek erprobter Einstellungen aufzubauen — und Rezepte machen diese Bibliothek später nach

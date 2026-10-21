@@ -7,9 +7,13 @@ description:
 # Pruebas de intervalo y de enfoque
 
 Junto a la [cuadrícula de prueba de material](material-test-grid.md), el menú Herramientas ofrece
-dos trabajos de calibración más. Ambos se crean como una capa normal con piezas y operaciones:
-puedes moverla, encuadrarla y previsualizarla como cualquier otro contenido, y cambiar después los
-ajustes de cada celda o línea en su operación.
+dos trabajos de calibración más. Los tres funcionan igual: **Herramientas → Crear …** añade la
+prueba con los ajustes predeterminados en una capa nueva y la selecciona, y sus ajustes aparecen en
+**Test Settings** en el panel de propiedades a la derecha. Cada cambio allí reconstruye la prueba al
+instante, como un solo paso que puedes deshacer, así que ves el resultado mientras la ajustas. La
+prueba es contenido normal: puedes moverla, encuadrarla y previsualizarla como cualquier otra cosa.
+Cada celda o línea tiene su propia operación, que también puedes afinar a mano, pero un cambio
+posterior en Test Settings reconstruye esas operaciones.
 
 ## Prueba de intervalo
 
@@ -37,8 +41,8 @@ marca el mejor enfoque.
 
 Los pasos del eje Z solo se ofrecen en máquinas con eje Z, y tanto los pasos del eje Z como el
 método manual necesitan un controlador G-code, porque usan operaciones de [Comando](command.md)
-entre las líneas. Los desplazamientos están limitados a ±10 mm de la altura inicial. El diálogo
-empieza con el primer método que admite la máquina, en el orden de la tabla anterior.
+entre las líneas. Los desplazamientos están limitados a ±10 mm de la altura inicial. Una nueva
+prueba de enfoque usa el primer método que admite la máquina, en el orden de la tabla anterior.
 
 Con el método manual, enfoca primero el láser como de costumbre. Las etiquetas se graban a esa
 altura. En la primera pausa, coloca el cabezal en el primer desplazamiento; en cada pausa siguiente,

@@ -13,17 +13,21 @@ dans lesquelles chaque cellule est gravée ou découpée avec un réglage légè
 en un seul travail. Après une seule exécution, tu vois d'un coup d'œil quelle combinaison produit le
 résultat souhaité.
 
-Crée-en une via **Outils → Créer une Grille de Test de Matériau**. Rayforge ajoute une pièce
-spéciale sur le canevas ainsi qu'une opération correspondante, et tu configures la grille dans sa
-boîte de dialogue de paramètres.
+Crée-en une via **Outils → Créer une Grille de Test de Matériau**. Rayforge ajoute la grille sur un
+nouveau calque portant le nom du test, avec une pièce et une opération correspondante, et la
+sélectionne. Les paramètres de la grille apparaissent sous **Test Settings** dans le panneau de
+propriétés à droite, si bien que le canevas et la grille restent visibles pendant que tu les
+modifies. Chaque modification reconstruit immédiatement la grille, en une seule étape que tu peux
+annuler. Sélectionne à nouveau la grille plus tard pour retrouver ses paramètres. Les [tests
+d'intervalle et de mise au point](interval-and-focus-tests.md) fonctionnent de la même façon.
 
 ![Paramètres de la Grille de Test de Matériau](/screenshots/material-test.webp)
 
 ## Préréglages
 
-La boîte de dialogue des paramètres propose des préréglages pour les types de laser courants. Ils
-remplissent une plage de vitesse, une plage de puissance et un type de test raisonnables afin que tu
-démarres avec une base solide :
+Les Test Settings proposent des préréglages pour les types de laser courants. Ils remplissent une
+plage de vitesse, une plage de puissance et un type de test raisonnables afin que tu démarres avec
+une base solide :
 
 | Préréglage        | Plage de Vitesse  | Plage de Puissance | Type de Test |
 | ----------------- | ----------------- | ------------------ | ------------ |
@@ -52,34 +56,35 @@ comparables.
 
 ## Configuration de la Grille
 
-La boîte de dialogue des paramètres regroupe les paramètres en trois sections.
+Les Test Settings affichent d'abord les paramètres de la grille, puis les étiquettes, puis les plages
+de paramètres. La tête laser et le post-traitement restent dans les paramètres de l'opération.
 
-La section **Grille** contrôle le test lui-même. Le type de test détermine si chaque cellule découpe
-le contour d'un carré ou le remplit de lignes raster. Les dimensions de la grille définissent
-combien de colonnes et de lignes tester — chaque colonne représente un pas du premier paramètre du
-mode et chaque ligne un pas du second, du minimum au maximum de la plage saisie. Entre 2 et 20 pas
-sont autorisés par axe ; 5×5 est une bonne valeur par défaut. La taille de la forme (10 mm par
-défaut) et l'espacement (2 mm par défaut) déterminent la taille de la grille. Pour le type de test
-Gravure, l'intervalle de ligne contrôle la distance entre les lignes de balayage — des valeurs plus
-petites remplissent plus densément mais prennent plus de temps. Laisse-le à zéro pour utiliser la
-taille du spot de ton laser, ce qui convient bien à la plupart des gravures.
+Les paramètres de **grille** contrôlent le test lui-même. Le type de test détermine si chaque
+cellule découpe le contour d'un carré ou le remplit de lignes raster. Les dimensions de la grille
+définissent combien de colonnes et de lignes tester — chaque colonne représente un pas du premier
+paramètre du mode et chaque ligne un pas du second, du minimum au maximum de la plage saisie. Entre
+2 et 20 pas sont autorisés par axe ; 5×5 est une bonne valeur par défaut. La taille de la forme (10
+mm par défaut) et l'espacement (2 mm par défaut) déterminent la taille de la grille. Pour le type de
+test Gravure, l'intervalle de ligne contrôle la distance entre les lignes de balayage — des valeurs
+plus petites remplissent plus densément mais prennent plus de temps. Laisse-le à zéro pour utiliser
+la taille du spot de ton laser, ce qui convient bien à la plupart des gravures.
 
-La section **Étiquettes** contrôle les annotations gravées à côté de la grille. Les étiquettes sont
-activées par défaut et sont gravées en premier, afin que le motif de test ne puisse pas les masquer.
-Elles ont leur propre puissance (10% par défaut) et vitesse (1000 mm/min par défaut), et les valeurs
-de vitesse sont affichées dans ton unité d'affichage préférée.
+Les paramètres d'**étiquettes** contrôlent les annotations gravées à côté de la grille. Les
+étiquettes sont activées par défaut et sont gravées en premier, afin que le motif de test ne puisse
+pas les masquer. Elles ont leur propre puissance (10% par défaut) et vitesse (1000 mm/min par
+défaut), et les valeurs de vitesse sont affichées dans ton unité d'affichage préférée.
 
-La section **Paramètres** contient les plages que la grille fait varier — vitesse, puissance, passes
-ou décalage, selon le mode sélectionné. Les modes qui gardent un paramètre fixe (par exemple la
-vitesse dans Puissance vs Passes) te permettent également de définir cette constante ici.
+Les **plages de paramètres** sont ce que la grille fait varier — vitesse, puissance, passes ou
+décalage, selon le mode sélectionné. Les modes qui gardent un paramètre fixe (par exemple la vitesse
+dans Puissance vs Passes) te permettent également de définir cette constante ici.
 
 ## La Pièce Liée
 
 Normalement, une opération traite toutes les pièces de son calque, et l'onglet **Pièces** de sa
 boîte de dialogue de paramètres les liste toutes comme incluses. La Grille de Test de Matériau fait
 exception : son opération est liée à la pièce qu'elle a générée et ne traite que celle-ci. Dans
-l'onglet Pièces, la grille générée apparaît comme la seule pièce incluse, tout le reste du calque
-étant marqué comme exclu.
+l'onglet Pièces, la grille générée apparaît comme la seule pièce incluse, et tout ce que tu ajoutes
+ensuite au calque du test est marqué comme exclu.
 
 ![Onglet Pièces des paramètres de la Grille de Test de Matériau](/screenshots/step-settings-material-test-grid-workpieces.webp)
 
@@ -140,6 +145,7 @@ suggérera exactement ces réglages la prochaine fois que tu coupes le même mat
 Les grilles de test de matériau sont des pièces ordinaires, donc elles se combinent librement avec
 d'autres opérations. Un schéma courant consiste à ajouter une opération de contour autour de la
 grille terminée et à découper la pièce de test du matériau de stock une fois la gravure terminée.
+Les opérations que tu ajoutes au calque du test sont conservées lorsque la grille est reconstruite.
 
 Exécuter la même configuration de grille sur différents matériaux est un moyen rapide de constituer
 une bibliothèque de réglages fiables — et les recettes rendent cette bibliothèque consultable par

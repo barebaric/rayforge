@@ -12,17 +12,21 @@ busca pela combinação certa: ela gera um padrão de células de teste em que c
 cortada com uma configuração ligeiramente diferente, tudo em um único trabalho. Depois de uma
 execução, você pode ver de relance qual combinação produz o resultado desejado.
 
-Crie uma via **Ferramentas → Criar Grade de Teste de Material**. O Rayforge adiciona uma peça
-especial à tela, junto com uma operação correspondente, e você configura a grade no diálogo de
-configurações dela.
+Crie uma via **Ferramentas → Criar Grade de Teste de Material**. O Rayforge adiciona a grade em uma
+nova camada com o nome do teste, com uma peça e uma operação correspondente, e a seleciona. As
+configurações da grade aparecem em **Test Settings** no painel de propriedades à direita, de modo
+que a tela e a grade continuam visíveis enquanto você as altera. Cada alteração reconstrói a grade
+na hora, como um único passo que você pode desfazer. Selecione a grade novamente mais tarde para
+trazer as configurações dela de volta. Os [testes de intervalo e de
+foco](interval-and-focus-tests.md) funcionam da mesma forma.
 
 ![Configurações da Grade de Teste de Material](/screenshots/material-test.webp)
 
 ## Predefinições
 
-O diálogo de configurações oferece predefinições para tipos comuns de laser. Elas preenchem uma
-faixa de velocidade, uma faixa de potência e um tipo de teste razoáveis, para que você comece com
-uma base sensata:
+A seção Test Settings oferece predefinições para tipos comuns de laser. Elas preenchem uma faixa de
+velocidade, uma faixa de potência e um tipo de teste razoáveis, para que você comece com uma base
+sensata:
 
 | Predefinição       | Faixa de Velocidade | Faixa de Potência | Tipo de Teste |
 | ------------------ | ------------------- | ----------------- | ------------- |
@@ -50,24 +54,25 @@ junto com a velocidade, de modo que todas as células permaneçam visualmente co
 
 ## Configurando a Grade
 
-O diálogo de configurações agrupa os parâmetros em três seções.
+A seção Test Settings lista primeiro as configurações da grade, depois os rótulos e, por fim, as
+faixas de parâmetros. A cabeça do laser e o pós-processamento ficam nas configurações da operação.
 
-A seção **Grade** controla o teste em si. O tipo de teste determina se cada célula corta o contorno
-de um quadrado ou o preenche com linhas raster. As dimensões da grade definem quantas colunas e
-linhas testar — cada coluna representa um passo do primeiro parâmetro do modo e cada linha um passo
-do segundo, do mínimo ao máximo da faixa que você inserir. São permitidas entre 2 e 20 etapas por
-eixo; 5×5 é um bom padrão. O tamanho da forma (10 mm por padrão) e o espaçamento (2 mm por padrão)
-determinam o tamanho da grade. Para o tipo de teste Gravação, o intervalo entre linhas controla a
-distância entre as linhas de varredura — valores menores preenchem de forma mais densa, mas levam
-mais tempo. Deixe em zero para usar o tamanho do ponto do seu laser, o que funciona bem para a
-maioria das gravações.
+As configurações de **grade** controlam o teste em si. O tipo de teste determina se cada célula
+corta o contorno de um quadrado ou o preenche com linhas raster. As dimensões da grade definem
+quantas colunas e linhas testar — cada coluna representa um passo do primeiro parâmetro do modo e
+cada linha um passo do segundo, do mínimo ao máximo da faixa que você inserir. São permitidas entre
+2 e 20 etapas por eixo; 5×5 é um bom padrão. O tamanho da forma (10 mm por padrão) e o espaçamento
+(2 mm por padrão) determinam o tamanho da grade. Para o tipo de teste Gravação, o intervalo entre
+linhas controla a distância entre as linhas de varredura — valores menores preenchem de forma mais
+densa, mas levam mais tempo. Deixe em zero para usar o tamanho do ponto do seu laser, o que funciona
+bem para a maioria das gravações.
 
-A seção **Rótulos** controla as anotações gravadas ao lado da grade. Os rótulos ficam ativados por
-padrão e são gravados primeiro, para que o padrão de teste não os obscureça. Eles têm potência
-própria (10% por padrão) e velocidade própria (1000 mm/min por padrão), e os valores de velocidade
-são exibidos na sua unidade de exibição preferida.
+As configurações de **rótulos** controlam as anotações gravadas ao lado da grade. Os rótulos ficam
+ativados por padrão e são gravados primeiro, para que o padrão de teste não os obscureça. Eles têm
+potência própria (10% por padrão) e velocidade própria (1000 mm/min por padrão), e os valores de
+velocidade são exibidos na sua unidade de exibição preferida.
 
-A seção **Parâmetros** contém as faixas que a grade varia — velocidade, potência, passagens ou
+As **faixas de parâmetros** são o que a grade varia — velocidade, potência, passagens ou
 deslocamento, dependendo do modo selecionado. Os modos que mantêm um parâmetro fixo (por exemplo, a
 velocidade em Potência vs Passagens) permitem definir essa constante aqui também.
 
@@ -76,8 +81,8 @@ velocidade em Potência vs Passagens) permitem definir essa constante aqui tamb�
 Normalmente uma operação processa todas as peças de trabalho da sua camada, e a aba **Peças de
 trabalho** do seu diálogo de configurações as lista todas como incluídas. A Grade de Teste de
 Material é a exceção: a operação dela está vinculada à peça de trabalho que ela gerou e processa
-somente essa. Na aba Peças de trabalho, a grade gerada aparece como a única peça incluída, enquanto
-todo o resto da camada é marcado como excluído.
+somente essa. Na aba Peças de trabalho, a grade gerada aparece como a única peça incluída, e tudo o
+que você adicionar depois à camada do teste é marcado como excluído.
 
 ![Aba Peças de trabalho da Grade de Teste de Material](/screenshots/step-settings-material-test-grid-workpieces.webp)
 
@@ -137,7 +142,8 @@ sugerirá exatamente essas configurações na próxima vez que você cortar o me
 
 Grades de teste de material são peças comuns, por isso se combinam livremente com outras operações.
 Um padrão comum é adicionar uma operação de contorno ao redor da grade pronta e recortar a peça de
-teste do material de estoque depois que a gravação terminar.
+teste do material de estoque depois que a gravação terminar. As operações que você adicionar à
+camada do teste permanecem quando a grade é reconstruída.
 
 Executar a mesma configuração de grade em materiais diferentes é uma maneira rápida de construir uma
 biblioteca de configurações comprovadamente boas — e as receitas tornam essa biblioteca pesquisável

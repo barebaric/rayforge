@@ -7,9 +7,13 @@ description:
 # Testes de intervalo e de foco
 
 Ao lado da [grade de teste de material](material-test-grid.md), o menu Ferramentas oferece mais dois
-trabalhos de calibração. Ambos são criados como uma camada comum com peças e operações: você pode
-movê-la, enquadrá-la e visualizá-la como qualquer outro conteúdo, e alterar depois as configurações
-de cada célula ou linha na sua operação.
+trabalhos de calibração. Os três funcionam da mesma forma: **Ferramentas → Criar …** adiciona o
+teste com as configurações padrão em uma nova camada e o seleciona, e as configurações dele aparecem
+em **Test Settings** no painel de propriedades à direita. Cada alteração ali reconstrói o teste na
+hora, como um único passo que você pode desfazer, para que você veja o resultado enquanto o ajusta.
+O teste é conteúdo comum: você pode movê-lo, enquadrá-lo e visualizá-lo como qualquer outro
+conteúdo. Cada célula ou linha tem sua própria operação, que você também pode ajustar à mão, mas uma
+alteração posterior em Test Settings reconstrói essas operações.
 
 ## Teste de intervalo
 
@@ -37,8 +41,8 @@ o melhor foco.
 
 Os passos do eixo Z só são oferecidos em máquinas com eixo Z, e tanto os passos do eixo Z quanto o
 método manual precisam de um controlador G-code, porque usam operações de [Comando](command.md)
-entre as linhas. Os deslocamentos são limitados a ±10 mm da altura inicial. O diálogo começa no
-primeiro método que a máquina suporta, na ordem da tabela acima.
+entre as linhas. Os deslocamentos são limitados a ±10 mm da altura inicial. Um novo teste de foco
+usa o primeiro método que a máquina suporta, na ordem da tabela acima.
 
 No método manual, primeiro foque o laser como de costume. Os rótulos são gravados nessa altura. Na
 primeira pausa, coloque a cabeça no primeiro deslocamento; em cada pausa seguinte, mova-a um passo.
