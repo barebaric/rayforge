@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Generate the Invert Image before/after example for the website docs.
 
 Renders a grayscale, photo-like landscape and its inverted counterpart
@@ -8,21 +7,16 @@ under ``website/static/images/``. The images carry no translatable
 words; titles live in the markdown that embeds them.
 """
 
-from pathlib import Path
-
 import numpy as np
 from PIL import Image, ImageFilter
 
-PROJECT_ROOT = Path(__file__).parent.parent.parent
-OUTPUT_DIR = PROJECT_ROOT / "website" / "static" / "images"
-
+SEED = 20261013
 WIDTH, HEIGHT = 640, 400
 HORIZON = 235
 WATERLINE = 330
 SUN_X, SUN_Y = 448, 118
 SUN_RADIUS = 26
 GLOW_RADIUS = 110
-SEED = 20261013
 
 
 def sky(x: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -65,9 +59,8 @@ def water(img: np.ndarray, x: np.ndarray, y: np.ndarray) -> np.ndarray:
     depth = (y - WATERLINE) / (HEIGHT - WATERLINE)
     img = 96.0 - 26.0 * depth
     distance = np.abs(x - SUN_X)
-    shimmer = (np.sin(y * 1.7) * 0.5 + 0.5) * 6.0 + np.sin(
-        x * 0.9 + y * 0.6
-    ) * 3.0
+    shimmer = np.sin(y * 1.7) * 0.5 + 0.5
+    shimmer = shimmer * 6.0 + np.sin(x * 0.9 + y * 0.6) * 3.0
     beam = np.exp(-((distance / 46.0) ** 2)) * (1.0 - depth) ** 0.7
     return img + beam * (26.0 + shimmer)
 
@@ -100,17 +93,9 @@ def invert(image: Image.Image) -> Image.Image:
     return image.point(lambda value: 255 - value)
 
 
-def main() -> None:
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+def generate() -> list[tuple[str, Image.Image]]:
     before = render()
-    for image, name in (
-        (before, "image-edit-invert-before.webp"),
-        (invert(before), "image-edit-invert-after.webp"),
-    ):
-        path = OUTPUT_DIR / name
-        image.save(path, format="WEBP", lossless=True)
-        print(f"Saved {path}")
-
-
-if __name__ == "__main__":
-    main()
+    return [
+        ("image-edit-invert-before.webp", before),
+        ("image-edit-invert-after.webp", invert(before)),
+    ]

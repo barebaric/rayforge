@@ -102,8 +102,22 @@ Transform objects numerically for precision.
 
 ## Vector Editing
 
-Double-click a workpiece on the canvas to enter vector editing mode. In this mode, you can select
-and delete individual vector segments of the workpiece.
+Double-click an imported workpiece on the canvas to enter vector editing mode. In this mode, you can
+select and delete individual vector segments of the workpiece, and edit its nodes.
+
+Click a segment to select it, or drag a frame around several. The nodes of the selected contour
+appear as small squares, and the handles of selected curves as round dots:
+
+- **Drag a node** to move it; the curve handles next to it move along. In a closed path the start
+  and end node are one node.
+- **Drag a handle** to change the shape of a curve.
+- Click a node and press <kbd>Delete</kbd> to remove it; the segments on both sides join into one.
+  With no node selected, <kbd>Delete</kbd> removes the selected segments.
+- Point at a segment and press <kbd>I</kbd> to insert a node there.
+- Press <kbd>C</kbd> to turn the selected segments into curves, or back into straight lines when
+  they are all curves already.
+
+Every change can be undone. Sketches are edited in the Sketcher instead.
 
 To exit vector editing mode, click outside the workpiece or press <kbd>Escape</kbd>.
 

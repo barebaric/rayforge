@@ -77,6 +77,12 @@ class MachineController:
         # driver configuration changes
         self.machine.changed.connect(self._on_machine_changed)
 
+        # Listen for dialect edits so the live driver re-reads its
+        # dialect templates
+        self.context.dialect_mgr.dialects_changed.connect(
+            self._on_dialects_changed
+        )
+
         # If the machine already has a driver_name configured, rebuild
         # the driver instance to match
         if self.machine.driver_name:
@@ -191,9 +197,16 @@ class MachineController:
     def _on_dialects_changed(self, sender=None, **kwargs):
         """
         Callback when dialects are updated.
-        Sends machine's changed signal to trigger recalculation.
+        Sends machine's changed signal to trigger recalculation, and
+        lets the live driver re-read its dialect templates so manual
+        commands use the edited definitions without waiting for a
+        reconnect or job. The machine's own handler is registered
+        before this one, so its cached dialect is already invalidated
+        when the driver resolves the templates.
         """
         self.machine.changed.send(self.machine)
+        if self.driver is not None:
+            self.driver.refresh_dialect()
 
     async def rebuild_driver(self, ctx: Optional["ExecutionContext"] = None):
         """

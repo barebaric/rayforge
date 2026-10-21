@@ -256,7 +256,7 @@ def _build_solid_sketch():
         closed=True,
         world_holes=[[(5.0, 5.0), (5.0, 9.0), (9.0, 9.0), (9.0, 5.0)]],
     )
-    sketch.registry.points.extend([center_pt, handle_pt])
+    sketch.registry.add_points([center_pt, handle_pt])
     sketch.registry.entities.append(polygon)
     sketch.registry._entity_map[polygon.id] = polygon
     return sketch, polygon
@@ -376,7 +376,7 @@ def test_multi_ring_offset_shrinks_holes():
     assert plan.removed_entity_ids == [polygon.id]
     result = plan.entities[0]
     assert isinstance(result, PolygonEntity)
-    sketch.registry.points.extend(plan.points)
+    sketch.registry.add_points(plan.points)
     rings = result.get_world_rings(sketch.registry)
     assert len(rings) == 2
     xs = [p[0] for p in rings[0]]
@@ -396,7 +396,7 @@ def test_multi_ring_offset_vanishes_hole_first():
     assert plan is not None and len(plan.entities) == 1
     result = plan.entities[0]
     assert isinstance(result, PolygonEntity)
-    sketch.registry.points.extend(plan.points)
+    sketch.registry.add_points(plan.points)
     rings = result.get_world_rings(sketch.registry)
     assert len(rings) == 1
 

@@ -464,7 +464,7 @@ Voir [Overscan](../overscan.md) pour plus de détails.
 
 **Banding (rayures claires/foncées) :**
 
-- Calibrez le [Décalage de Balayage Bidirectionnel](#décalage-de-balayage-bidirectionnel)
+- Calibrez le [Décalage de Balayage Bidirectionnel](#bidirectional-scan-offset)
 - Vérifiez la tension des courroies
 - Réduisez la vitesse
 - Essayez un angle de balayage différent

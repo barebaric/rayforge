@@ -34,6 +34,7 @@ def surface(mock_work_origin):
     s._connected_doc = None
     s._connected_layer = None
     s._active_layer_wcs_conn = None
+    s.edit_context = None
 
     active_layer = MagicMock()
     active_layer.rotary_enabled = False

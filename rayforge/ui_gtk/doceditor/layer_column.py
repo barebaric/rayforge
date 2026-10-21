@@ -476,6 +476,12 @@ class LayerColumn(Gtk.Box):
                     item = self._row_items.get(widget)
                     if item is None:
                         break
+                    row_child = widget.get_child()
+                    if (
+                        isinstance(row_child, (WorkpieceRow, GroupRow))
+                        and row_child.is_renaming()
+                    ):
+                        return
                     if n_press == 1:
                         if not self._handle_item_click(item, gesture):
                             return

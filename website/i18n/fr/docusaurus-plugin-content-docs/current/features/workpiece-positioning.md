@@ -14,12 +14,13 @@ Un positionnement précis de la pièce est essentiel pour :
 
 Rayforge fournit plusieurs outils complémentaires pour le positionnement :
 
-| Méthode                  | Objectif                  | Idéal Pour                                        |
-| ------------------------ | ------------------------- | ------------------------------------------------- |
-| **Mode Focus**           | Voir la position du laser | Alignement visuel rapide                          |
-| **Cadrage**              | Prévisualiser les limites | Vérifier que la conception tient sur le matériau  |
-| **Zéro SCF**             | Définir l'origine         | Positionnement reproductible                      |
-| **Surimposition Caméra** | Placement visuel          | Alignement précis sur caractéristiques existantes |
+| Méthode                  | Objectif                   | Idéal Pour                                        |
+| ------------------------ | -------------------------- | ------------------------------------------------- |
+| **Mode Focus**           | Voir la position du laser  | Alignement visuel rapide                          |
+| **Cadrage**              | Prévisualiser les limites  | Vérifier que la conception tient sur le matériau  |
+| **Zéro SCF**             | Définir l'origine          | Positionnement reproductible                      |
+| **Surimposition Caméra** | Placement visuel           | Alignement précis sur caractéristiques existantes |
+| **Point de Référence**   | Choisir le point d'ancrage | Aligner des croquis paramétriques                 |
 
 ---
 
@@ -211,6 +212,39 @@ documentation complète.
 
 ---
 
+## Point de Référence
+
+Par défaut, les champs **Position X** et **Position Y** du panneau de propriétés se réfèrent au coin
+inférieur gauche de la boîte englobante de la pièce. Pour les croquis paramétriques, ce n'est
+souvent pas l'ancre la plus utile : quand un paramètre change la taille du croquis, une position
+basée sur le coin donne l'impression que le dessin se décale par rapport au reste.
+
+Le menu déroulant **Position relative à** du panneau de propriétés permet de choisir à quel point
+les champs de position se réfèrent :
+
+| Option                 | Désigne                                                        |
+| ---------------------- | -------------------------------------------------------------- |
+| **Coin**               | Le coin inférieur gauche de la boîte englobante (par défaut)   |
+| **Centre**             | Le centre de la boîte englobante                               |
+| **Point de référence** | L'origine logique de la géométrie, p. ex. l'origine du croquis |
+
+![Le menu « Position relative à » dans le panneau de propriétés](/screenshots/main-item-properties.webp)
+
+Le point de référence choisi est également le point qui reste fixe lors du redimensionnement de la
+pièce et lors de la régénération d'un croquis avec des paramètres modifiés. L'option **Point de
+référence** n'est disponible que pour les pièces dont la source en définit un, comme les croquis, où
+il s'agit de l'origine du croquis.
+
+<!-- prettier-ignore-start -->
+:::tip[Aligner des croquis paramétriques]
+Pour garder une gravure enregistrée dans un contour de découpe : contraindre les deux croquis à
+l'origine du croquis, régler les deux pièces sur **Point de référence** et donner la même position
+X/Y aux deux. Les croquis restent alignés quelle que soit l'évolution des paramètres.
+:::
+<!-- prettier-ignore-end -->
+
+---
+
 ## Positionnement par Caméra
 
 La surimposition de caméra montre une vue en direct de votre matériau avec votre conception
@@ -300,6 +334,17 @@ Pour les pièces plus longues que le plateau laser (alimentées à travers la ma
 5. **Positionnez le segment suivant** du dessin par rapport à cette origine dans le canevas.
 6. **Cadrez pour vérifier**, puis **lancez le job**.
 7. Répétez à partir de l'étape 2 pour chaque segment restant.
+
+### Flux de Travail des Croquis Paramétriques
+
+Pour les travaux combinant un croquis de découpe et un croquis de gravure paramétrique :
+
+1. **Contrainez les deux croquis** à l'origine du croquis (p. ex. centrez la géométrie sur
+   l'origine)
+2. **Placez les deux pièces** sur le canevas et réglez **Position relative à → Point de référence**
+3. **Saisissez la même position X/Y** pour les deux pièces
+4. **Ajustez les paramètres** selon vos besoins — les croquis restent alignés entre eux
+5. **Cadrez le travail** pour vérifier le placement
 
 ### Flux de Travail de Production
 

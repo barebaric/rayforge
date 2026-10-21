@@ -605,6 +605,44 @@ class TestMachineCmdLaserPower:
 
         set_power_mock.assert_called_once_with(head, 0.5)
 
+    @pytest.mark.asyncio
+    async def test_set_focus_power_reports_success(
+        self, machine_cmd, machine, mocker, task_mgr
+    ):
+        head = machine.get_default_head()
+        mocker.patch.object(
+            machine, "set_focus_power", new_callable=mocker.AsyncMock
+        )
+        done = []
+
+        machine_cmd.set_focus_power(head, 0.25, machine, when_done=done.append)
+
+        await wait_for_tasks_to_finish(task_mgr)
+        await asyncio.sleep(0.05)
+
+        assert len(done) == 1
+        assert done[0].get_status() == "completed"
+
+    @pytest.mark.asyncio
+    async def test_set_focus_power_reports_failure(
+        self, machine_cmd, machine, mocker, task_mgr
+    ):
+        head = machine.get_default_head()
+        mocker.patch.object(
+            machine,
+            "set_focus_power",
+            side_effect=RuntimeError("no session"),
+        )
+        done = []
+
+        machine_cmd.set_focus_power(head, 0.25, machine, when_done=done.append)
+
+        await wait_for_tasks_to_finish(task_mgr)
+        await asyncio.sleep(0.05)
+
+        assert len(done) == 1
+        assert done[0].get_status() == "failed"
+
 
 def _frame_corners() -> list[FrameCorner]:
     """A closed flat frame outline in trace order."""

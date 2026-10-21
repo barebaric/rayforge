@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-15 05:47+0200\n"
+"POT-Creation-Date: 2026-10-18 02:42+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -34,6 +34,30 @@ msgstr "Conserver la première pièce"
 #: post_processors/widgets/optimize_group.py
 msgid "Keep the first workpiece at its original position"
 msgstr "Garder la première pièce à sa position d'origine"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Choose Best Start Point"
+msgstr "Choisir le meilleur point de départ"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Start closed paths at the vertex nearest the laser head to shorten travel "
+"moves."
+msgstr ""
+"Démarre les trajectoires fermées au sommet le plus proche de la tête laser "
+"pour raccourcir les déplacements à vide."
+
+#: post_processors/widgets/optimize_group.py
+msgid "Prefer Corners"
+msgstr "Privilégier les angles"
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Start closed paths at a sharp corner where the path has one, which makes the "
+"seam less visible."
+msgstr ""
+"Démarre les trajectoires fermées sur un angle vif lorsque la trajectoire en "
+"possède un, ce qui rend la couture moins visible."
 
 #: post_processors/widgets/optimize_group.py
 msgid "Merge Scanlines"
@@ -66,6 +90,14 @@ msgstr "Activer/désactiver l'inversion"
 #: post_processors/widgets/optimize_group.py
 msgid "Toggle Preserve First Workpiece"
 msgstr "Activer/désactiver la conservation de la première pièce"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Choose Best Start Point"
+msgstr "Activer/désactiver le choix du meilleur point de départ"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Prefer Corners"
+msgstr "Activer/désactiver la préférence pour les angles"
 
 #: post_processors/widgets/optimize_group.py
 msgid "Change maximum bridged gap"

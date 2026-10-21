@@ -463,7 +463,7 @@ Siehe [Overscan](../overscan.md) für Details.
 
 **Bänderung (dunkle/helle Streifen):**
 
-- Den [Bidirektionalen Scan-Offset](#bidirektionaler-scan-offset) kalibrieren
+- Den [Bidirektionalen Scan-Offset](#bidirectional-scan-offset) kalibrieren
 - Riemenzug überprüfen
 - Geschwindigkeit reduzieren
 - Anderen Scan-Winkel versuchen

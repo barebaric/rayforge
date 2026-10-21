@@ -15,11 +15,11 @@
     "@mdi/js": "^7.4.47",
     "@mdi/react": "^1.6.1",
     "@mermaid-js/layout-elk": "^0.1.9",
-    "react": "^19.2.8",
-    "react-dom": "^19.3.0"
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
-    "prettier": "^3.9.9"
+    "prettier": "^3.9.10"
   },
   "overrides": {
     "qs": "^6.16.0",

@@ -1,3 +1,4 @@
+from collections.abc import Iterable, Sequence
 from typing import Any
 
 from raygeo.geo.shape.text import FontConfig
@@ -30,6 +31,7 @@ class EntityRegistry:
 
     def __init__(self) -> None:
         self.points: list[Point] = []
+        self._point_map: dict[EntityID, Point] = {}
         self.entities: list[Entity] = []
         self._entity_map: dict[EntityID, Entity] = {}
         self._id_counter: EntityID = 0
@@ -83,8 +85,13 @@ class EntityRegistry:
                 new_reg._entity_map[entity.id] = entity
 
         new_reg._id_counter = data.get("id_counter", 0)
+        new_reg.rebuild_point_map()
         new_reg.rebuild_usage_counts()
         return new_reg
+
+    def rebuild_point_map(self) -> None:
+        """Rebuilds the point ID lookup map from the point list."""
+        self._point_map = {p.id: p for p in self.points}
 
     def rebuild_usage_counts(self) -> None:
         """Rebuilds _point_usage_count by scanning all entities.
@@ -189,10 +196,34 @@ class EntityRegistry:
 
     def add_point(self, x: float, y: float, fixed: bool = False) -> EntityID:
         pid = self._id_counter
-        self.points.append(Point(pid, x, y, fixed))
+        point = Point(pid, x, y, fixed)
+        self.points.append(point)
+        self._point_map[pid] = point
         self._id_counter += 1
         self._entity_version += 1
         return pid
+
+    def add_points(self, points: Sequence[Point]) -> None:
+        """Appends pre-built points whose IDs are final."""
+        if not points:
+            return
+        self.points.extend(points)
+        for point in points:
+            self._point_map[point.id] = point
+
+    def remove_points(self, point_ids: Iterable[EntityID]) -> None:
+        """Removes the points with the given IDs."""
+        ids = set(point_ids)
+        if not ids:
+            return
+        self.points = [p for p in self.points if p.id not in ids]
+        for pid in ids:
+            self._point_map.pop(pid, None)
+
+    def set_points(self, points: Iterable[Point]) -> None:
+        """Replaces the point list and rebuilds the ID lookup map."""
+        self.points = list(points)
+        self.rebuild_point_map()
 
     def add_text_box(
         self,
@@ -240,14 +271,11 @@ class EntityRegistry:
         return self._point_usage_count.get(pid, 0) > 0
 
     def get_point(self, idx: EntityID) -> Point:
-        """Retrieves a point by its ID."""
-        if 0 <= idx < len(self.points) and self.points[idx].id == idx:
-            return self.points[idx]
-
-        for p in self.points:
-            if p.id == idx:
-                return p
-        raise IndexError(f"Point with ID {idx} not found")
+        """Retrieves a point by its ID in O(1)."""
+        try:
+            return self._point_map[idx]
+        except KeyError:
+            raise IndexError(f"Point with ID {idx} not found")
 
     def get_entity(self, idx: EntityID) -> Entity | None:
         """Retrieves a geometric entity (Line/Arc/Circle) by ID in O(1)."""

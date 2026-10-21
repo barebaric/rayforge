@@ -26,6 +26,7 @@ from .models.coordspace import MachineSpace
 if TYPE_CHECKING:
     from ..core.layer import Layer
     from ..doceditor.editor import DocEditor
+    from ..shared.tasker.task import Task
     from .models.laser import Laser
     from .models.machine import Machine
     from .models.rotary_module import RotaryModule
@@ -372,6 +373,10 @@ class MachineCmd:
 
             if not handle:
                 logger.warning("Job has no operations.")
+                self._editor.notification_requested.send(
+                    self,
+                    message=_("The document produces no toolpath."),
+                )
                 return
 
             # 2. Use the safe context manager to acquire and release the
@@ -544,6 +549,7 @@ class MachineCmd:
         head: Laser,
         percent: float,
         machine: Machine | None = None,
+        when_done: Callable[[Task], None] | None = None,
     ):
         """
         Adds a task to set the laser power to a specific percentage.
@@ -551,13 +557,16 @@ class MachineCmd:
         Args:
             head: The laser head to control
             percent: Power percentage (0-1.0). 0 disables power.
+            when_done: Invoked with the task once it finishes, so
+                callers can detect commands that did not take effect.
         """
         if machine is None:
             config = get_context().config
             machine = config.machine
         if machine:
             self._editor.task_manager.add_coroutine(
-                lambda ctx: machine.set_power(head, percent)
+                lambda ctx: machine.set_power(head, percent),
+                when_done=when_done,
             )
 
     def set_focus_power(
@@ -565,6 +574,7 @@ class MachineCmd:
         head: Laser,
         percent: float,
         machine: Machine | None = None,
+        when_done: Callable[[Task], None] | None = None,
     ):
         """
         Adds a task to set the laser power for focus mode.
@@ -572,13 +582,16 @@ class MachineCmd:
         Args:
             head: The laser head to control
             percent: Power percentage (0-1.0). 0 disables power.
+            when_done: Invoked with the task once it finishes, so
+                callers can detect commands that did not take effect.
         """
         if machine is None:
             config = get_context().config
             machine = config.machine
         if machine:
             self._editor.task_manager.add_coroutine(
-                lambda ctx: machine.set_focus_power(head, percent)
+                lambda ctx: machine.set_focus_power(head, percent),
+                when_done=when_done,
             )
 
     def home(self, machine: Machine, axis: Axis | None = None):

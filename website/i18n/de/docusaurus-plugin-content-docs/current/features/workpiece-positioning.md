@@ -20,6 +20,7 @@ Rayforge bietet mehrere sich ergänzende Werkzeuge zur Positionierung:
 | **Einrahmen**      | Job-Grenzen vorschauen      | Überprüfen, ob Design auf Material passt    |
 | **WKS-Nullpunkt**  | Koordinatenursprung setzen  | Wiederholbare Positionierung                |
 | **Kamera-Overlay** | Visuelle Design-Platzierung | Präzise Ausrichtung auf bestehende Merkmale |
+| **Positionsbezug** | Ankerpunkt wählen           | Parametrische Skizzen ausrichten            |
 
 ---
 
@@ -210,6 +211,39 @@ Dokumentation.
 
 ---
 
+## Positionsbezug
+
+Standardmäßig beziehen sich die Felder **X-Position** und **Y-Position** im Eigenschaften-Panel auf
+die linke untere Ecke der Begrenzungsbox eines Werkstücks. Bei parametrischen Skizzen ist das oft
+nicht der sinnvollste Anker: Ändert ein Parameter die Größe der Skizze, scheint das Design sich
+relativ zu allem anderen zu verschieben.
+
+Die Auswahl **Position relativ zu** im Eigenschaften-Panel legt fest, auf welchen Punkt sich die
+Positionsfelder beziehen:
+
+| Option            | Bezieht sich auf                                                |
+| ----------------- | --------------------------------------------------------------- |
+| **Ecke**          | Die linke untere Ecke der Begrenzungsbox (Standard)             |
+| **Mitte**         | Die Mitte der Begrenzungsbox                                    |
+| **Referenzpunkt** | Der logische Ursprung der Geometrie, z. B. der Skizzen-Ursprung |
+
+![Die Auswahl „Position relativ zu“ im Eigenschaften-Panel](/screenshots/main-item-properties.webp)
+
+Der gewählte Bezugspunkt ist auch der Punkt, der beim Skalieren des Werkstücks und bei der
+Neuerzeugung eines Skizzen-Werkstücks mit geänderten Parametern festgehalten wird. Die Option
+**Referenzpunkt** ist nur für Werkstücke verfügbar, deren Quelle einen solchen definiert — etwa
+Skizzen, wo er dem Skizzen-Ursprung entspricht.
+
+<!-- prettier-ignore-start -->
+:::tip[Parametrische Skizzen ausrichten]
+Um eine Gravur dauerhaft innerhalb einer Schnittkontur zu halten: Setzen Sie beide Skizzen auf
+den Skizzen-Ursprung, stellen Sie beide Werkstücke auf **Referenzpunkt** und geben Sie beiden
+dieselbe X/Y-Position. Die Skizzen bleiben ausgerichtet, egal wie sich die Parameter ändern.
+:::
+<!-- prettier-ignore-end -->
+
+---
+
 ## Kamerabasierte Positionierung
 
 Das Kamera-Overlay zeigt eine Live-Ansicht deines Materials mit deinem Design überlagert und
@@ -297,6 +331,18 @@ nimmt der **Zeiger-Offset** das manuelle Rechnen ab:
 5. **Positioniere das nächste Segment** des Designs relativ zu diesem Ursprung in der Leinwand.
 6. **Rahme zur Kontrolle**, dann **starte den Job**.
 7. Wiederhole ab Schritt 2 für jedes verbleibende Segment.
+
+### Parametrischer Skizzen-Workflow
+
+Für Jobs, die eine Schnittskizze mit einer parametrischen Gravurskizze kombinieren:
+
+1. **Setzen Sie beide Skizzen** auf den Skizzen-Ursprung (z. B. Geometrie um den Ursprung
+   zentrieren)
+2. **Platzieren Sie beide Werkstücke** auf der Leinwand und stellen Sie **Position relativ zu →
+   Referenzpunkt** ein
+3. **Geben Sie beiden Werkstücken dieselbe X/Y-Position**
+4. **Passen Sie die Parameter** nach Bedarf an — die Skizzen bleiben zueinander registriert
+5. **Rahmen Sie den Job ein**, um die Platzierung zu prüfen
 
 ### Produktions-Workflow
 
