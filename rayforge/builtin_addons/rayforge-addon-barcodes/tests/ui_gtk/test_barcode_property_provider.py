@@ -6,8 +6,8 @@ gi.require_version("Adw", "1")
 
 from types import SimpleNamespace
 
-import barcodes.frontend  # noqa: F401
 import pytest
+from barcodes import frontend
 from barcodes.commands import add_barcode, barcode_of
 from barcodes.encoders import Symbology
 from barcodes.property_provider import SYMBOLOGIES, BarcodePropertyProvider
@@ -93,6 +93,6 @@ def test_invalid_content_is_flagged(editor, provider):
 @pytest.mark.ui
 def test_provider_is_registered_before_the_main_window():
     assert any(
-        isinstance(p, BarcodePropertyProvider)
+        isinstance(p, frontend.BarcodePropertyProvider)
         for p in property_provider_registry.create_instances()
     )
