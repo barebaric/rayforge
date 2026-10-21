@@ -13,6 +13,7 @@ import pytest
 import pytest_asyncio
 
 from rayforge.context import get_context
+from rayforge.core.group import Group
 from rayforge.core.vectorization_spec import ProceduralSpec
 from rayforge.core.workpiece import WorkPiece
 from rayforge.image.procedural import ProceduralImporter
@@ -284,6 +285,45 @@ async def test_update_keeps_steps_the_user_added(doc_editor, machine):
     steps = _steps(layer)
     assert steps[-1] is extra
     assert len(steps) == 1 + 4 + 1
+
+
+@pytest.mark.asyncio
+async def test_update_keeps_a_user_step_between_the_cells(doc_editor, machine):
+    cmd = CalibrationCmd(doc_editor)
+    record = cmd.create("interval_test", {"count": 2})
+    layer = _layer(doc_editor, record)
+    extra = _steps(layer)[0].__class__.create(doc_editor.context)
+    layer.workflow.add_child(extra, index=2)
+
+    cmd.update_params(record, {**record.params, "count": 3})
+
+    steps = _steps(layer)
+    assert steps.index(extra) == 4
+    assert len(steps) == 5
+    doc_editor.history_manager.undo()
+    assert _steps(layer).index(extra) == 3
+
+
+@pytest.mark.asyncio
+async def test_update_and_undo_keep_cells_in_their_group(doc_editor, machine):
+    cmd = CalibrationCmd(doc_editor)
+    record = cmd.create("interval_test", {"count": 2})
+    layer = _layer(doc_editor, record)
+    cells = cmd.workpieces(record)
+    group = Group("Cells")
+    layer.add_child(group)
+    for wp in cells[1:]:
+        group.add_child(wp)
+
+    new = cmd.update_params(record, {**record.params, "count": 3})
+    assert all(wp.parent is layer for wp in new)
+    assert group.children == []
+
+    doc_editor.history_manager.undo()
+    assert [wp.parent for wp in cells] == [layer, group, group]
+    doc_editor.history_manager.redo()
+    assert [wp.parent for wp in new] == [layer] * 4
+    assert all(wp.parent is None for wp in cells)
 
 
 @pytest.mark.asyncio
@@ -674,6 +714,19 @@ async def test_focus_ramp_has_no_commands(doc_editor, machine):
     gcode = await _gcode(doc_editor)
     assert "M0" not in gcode
     assert "G91" not in gcode
+
+
+@pytest.mark.asyncio
+async def test_focus_gcode_follows_a_rebuild(doc_editor, machine):
+    cmd = CalibrationCmd(doc_editor)
+    record = cmd.create("focus_test", _focus(FocusMode.MANUAL))
+    assert (await _gcode(doc_editor)).count("M0") == 3
+
+    cmd.update_params(record, {**record.params, "count": 5})
+    assert (await _gcode(doc_editor)).count("M0") == 5
+
+    doc_editor.history_manager.undo()
+    assert (await _gcode(doc_editor)).count("M0") == 3
 
 
 @pytest.mark.asyncio

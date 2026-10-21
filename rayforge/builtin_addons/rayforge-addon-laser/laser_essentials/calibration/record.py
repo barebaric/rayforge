@@ -8,7 +8,7 @@ does not show in the asset browser.
 """
 
 import uuid
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from typing import Any, ClassVar
 
 from blinker import Signal
@@ -61,9 +61,6 @@ class CalibrationRecord:
     def set_state(self, state: CalibrationState) -> None:
         self.state = state
         self.updated.send(self)
-
-    def with_params(self, params: dict[str, Any]) -> CalibrationState:
-        return replace(self.state, params=dict(params))
 
     def owns(self, uid: str) -> bool:
         return uid in self.state.workpiece_uids

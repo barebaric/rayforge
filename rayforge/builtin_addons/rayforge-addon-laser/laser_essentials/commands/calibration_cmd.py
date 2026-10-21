@@ -9,6 +9,8 @@ later change of its parameters are one undo entry each.
 """
 
 import logging
+from collections import defaultdict
+from dataclasses import dataclass
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
@@ -18,8 +20,8 @@ from rayforge.core.color import pick_unused_color
 from rayforge.core.item import DocItem
 from rayforge.core.layer import Layer
 from rayforge.core.step import Step
-from rayforge.core.undo import ChangePropertyCommand, ListItemCommand
-from rayforge.core.undo.list_cmd import ReorderListCommand
+from rayforge.core.undo import Command, ListItemCommand
+from rayforge.core.workflow import Workflow
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.layer_cmd import AddLayerAndSetActiveCommand
 
@@ -131,34 +133,33 @@ class CalibrationCmd:
         built = self._build(generator, params)
         old_wps = self.workpieces(record)
         self._place(built, old_wps)
-        steps = _merge_steps(
-            layer.workflow.steps, set(record.state.step_uids), built.steps
+        old = GeneratedItems(
+            old_wps,
+            self._steps(layer.workflow, record),
+            self._unused_assets(record, old_wps),
+            record.state,
+        )
+        new = GeneratedItems(
+            built.workpieces,
+            built.steps,
+            list(built.assets),
+            _state(params, built),
         )
         label = _("Change {test}").format(test=generator.title)
         with self._editor.history_manager.transaction(label) as t:
             if record.uid not in self._doc.assets:
                 t.execute(self._add_asset_cmd(record))
-            for wp in old_wps:
-                t.execute(self._remove_child_cmd(wp))
-            for asset in self._unused_assets(record, old_wps):
-                t.execute(self._remove_asset_cmd(asset))
-            for asset in built.assets:
-                t.execute(self._add_asset_cmd(asset))
-            for wp in built.workpieces:
-                t.execute(self._add_child_cmd(layer, wp))
             t.execute(
-                ReorderListCommand(layer.workflow, "steps", steps, "set_steps")
-            )
-            t.execute(
-                ChangePropertyCommand(
-                    record,
-                    "state",
-                    _state(params, built),
-                    setter_method_name="set_state",
-                    coalesce=False,
+                RebuildCalibrationCommand(
+                    self._editor, layer, record, old, new, label
                 )
             )
         return built.workpieces
+
+    @staticmethod
+    def _steps(workflow: Workflow, record: CalibrationRecord) -> list[Step]:
+        generated = set(record.state.step_uids)
+        return [s for s in workflow.steps if s.uid in generated]
 
     def workpieces(self, record: CalibrationRecord) -> list[WorkPiece]:
         """The workpieces of the test that are still in the document."""
@@ -212,18 +213,6 @@ class CalibrationCmd:
     def _add_asset_cmd(self, asset: IAsset) -> ListItemCommand:
         return ListItemCommand(self._doc, asset, "remove_asset", "add_asset")
 
-    def _remove_asset_cmd(self, asset: IAsset) -> ListItemCommand:
-        return ListItemCommand(self._doc, asset, "add_asset", "remove_asset")
-
-    @staticmethod
-    def _add_child_cmd(parent: DocItem, wp: WorkPiece) -> ListItemCommand:
-        return ListItemCommand(parent, wp, "remove_child", "add_child")
-
-    @staticmethod
-    def _remove_child_cmd(wp: WorkPiece) -> ListItemCommand:
-        assert wp.parent is not None
-        return ListItemCommand(wp.parent, wp, "add_child", "remove_child")
-
 
 def _state(params: dict[str, Any], built: BuiltTest) -> CalibrationState:
     return CalibrationState(
@@ -234,22 +223,77 @@ def _state(params: dict[str, Any], built: BuiltTest) -> CalibrationState:
     )
 
 
-def _merge_steps(
-    current: list[Step], generated_uids: set[str], new: list[Step]
-) -> list[Step]:
+@dataclass
+class GeneratedItems:
+    """The generated items of a test and the state they belong to."""
+
+    workpieces: list[WorkPiece]
+    steps: list[Step]
+    assets: list[IAsset]
+    state: CalibrationState
+
+
+class RebuildCalibrationCommand(Command):
     """
-    The workflow after a rebuild: the new generated steps take the
-    place of the first old one, and steps the user added keep their
-    order around them.
+    Replaces the generated items of a test in bulk. Each parent, the
+    workflow and the asset list change once, so the UI and the pipeline
+    update once instead of once per cell, as grouping does it. New steps
+    take the place of the first old one; steps the user added stay.
     """
-    result: list[Step] = []
-    inserted = False
-    for step in current:
-        if step.uid not in generated_uids:
-            result.append(step)
-        elif not inserted:
-            result.extend(new)
-            inserted = True
-    if not inserted:
-        result = new + result
-    return result
+
+    def __init__(
+        self,
+        editor: "DocEditor",
+        layer: Layer,
+        record: CalibrationRecord,
+        old: GeneratedItems,
+        new: GeneratedItems,
+        name: str,
+    ):
+        super().__init__(name)
+        self._editor = editor
+        self._layer = layer
+        self._record = record
+        self._old = old
+        self._new = new
+        self._parents = {wp.uid: wp.parent for wp in old.workpieces}
+
+    def execute(self) -> None:
+        self._swap(self._old, self._new)
+
+    def undo(self) -> None:
+        self._swap(self._new, self._old)
+
+    def _swap(self, out: GeneratedItems, into: GeneratedItems):
+        doc = self._editor.doc
+        with self._editor.pipeline.paused():
+            self._swap_workpieces(out.workpieces, into.workpieces)
+            self._swap_steps(out.steps, into.steps)
+            for asset in into.assets:
+                doc.add_asset(asset, silent=True)
+            for asset in out.assets:
+                doc.remove_asset_by_uid(asset.uid, silent=True)
+            self._record.set_state(into.state)
+        doc.updated.send(doc)
+
+    def _swap_workpieces(self, out: list[WorkPiece], into: list[WorkPiece]):
+        by_parent: dict[DocItem, list[WorkPiece]] = defaultdict(list)
+        for wp in out:
+            if wp.parent is not None:
+                by_parent[wp.parent].append(wp)
+        for parent, items in by_parent.items():
+            parent.remove_children(items)
+        by_parent.clear()
+        for wp in into:
+            by_parent[self._parents.get(wp.uid) or self._layer].append(wp)
+        for parent, items in by_parent.items():
+            parent.add_children(items)
+
+    def _swap_steps(self, out: list[Step], into: list[Step]):
+        workflow = self._layer.workflow
+        assert workflow is not None
+        current = workflow.children
+        positions = [current.index(s) for s in out if s in current]
+        index = min(positions) if positions else 0
+        workflow.remove_children(out)
+        workflow.add_children(into, index)

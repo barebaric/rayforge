@@ -49,7 +49,6 @@ from laser_essentials.calibration.material_test_grid import (
     MaterialTestGridGenerator,
     params_from_step,
 )
-from laser_essentials.commands.calibration_cmd import _merge_steps
 from laser_essentials.material_test_helpers import (
     draw_material_test_preview,
     get_material_test_proportional_size,
@@ -233,7 +232,7 @@ class TestRecord:
         )
         seen = []
         record.updated.connect(lambda sender: seen.append(sender), weak=False)
-        record.set_state(record.with_params({"count": 3}))
+        record.set_state(CalibrationState({"count": 3}))
         assert record.params == {"count": 3}
         assert seen == [record]
 
@@ -328,29 +327,6 @@ class TestMaterialTestGrid:
         params["grid_dimensions"] = (1, 4)
         with pytest.raises(ValueError):
             self.generator._grid_params(params)
-
-
-class TestMergeSteps:
-    def _steps(self, *names):
-        steps = []
-        for name in names:
-            step = MaterialTestStep()
-            step.name = name
-            steps.append(step)
-        return steps
-
-    def test_new_steps_take_the_place_of_the_old(self):
-        user_a, old1, old2, user_b = self._steps("ua", "o1", "o2", "ub")
-        new = self._steps("n1", "n2", "n3")
-        result = _merge_steps(
-            [user_a, old1, old2, user_b], {old1.uid, old2.uid}, new
-        )
-        assert result == [user_a, *new, user_b]
-
-    def test_new_steps_go_first_when_none_are_left(self):
-        (user,) = self._steps("u")
-        new = self._steps("n")
-        assert _merge_steps([user], {"gone"}, new) == [*new, user]
 
 
 class TestHelpers:
