@@ -557,6 +557,47 @@ class MachinePanel:
         """Work area boundary as a Rect in WORLD space (native)."""
         return self.space.get_workarea_world_rect()
 
+    def get_extent_frame_layout(
+        self,
+    ) -> tuple[Rect, Rect, tuple[float, float, float, float]]:
+        """Extent frame and work area geometry in PANEL space.
+
+        Returns the extent frame rect, the work area rect (the frame
+        inset by the work margins), and the ruler margins as distances
+        from the presented canvas edges to the work area edges, in
+        (left, top, right, bottom) order. All rects are
+        (x, y, width, height) with the origin at the bottom-left.
+
+        Both rects follow the reachable machine span learned from
+        homing: the frame edge lands on the homed position instead of
+        the nominal travel end, so a work origin zeroed at the homed
+        corner sits exactly on the frame corner.
+        """
+        frame = self._world_rect_to_panel(
+            self.space.get_extent_frame_world_rect()
+        )
+        workarea = self._world_rect_to_panel(
+            self.space.get_workarea_world_rect()
+        )
+        width, height = self.extents
+        wx, wy, ww, wh = workarea
+        margins = (
+            wx,
+            height - (wy + wh),
+            width - (wx + ww),
+            wy,
+        )
+        return frame, workarea, margins
+
+    def _world_rect_to_panel(self, rect: Rect) -> Rect:
+        """Projects a native-world (x, y, width, height) rect into
+        PANEL space, keeping the (x, y, width, height) convention."""
+        x, y, w, h = rect
+        min_x, min_y, max_x, max_y = self.world_bbox_to_panel(
+            (x, y, x + w, y + h)
+        )
+        return (min_x, min_y, max_x - min_x, max_y - min_y)
+
     def get_workarea_panel_rect(self) -> Rect:
         """Work area boundary as a Rect in PANEL space."""
         pos = self.space.get_workarea_origin_in_machine()

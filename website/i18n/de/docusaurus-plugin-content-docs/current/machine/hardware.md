@@ -17,6 +17,13 @@ Der vollständige Verfahrweg jeder Achse in Maschineneinheiten.
 - Berücksichtige alle Hindernisse oder Grenzen
 - Beispiel: 400 für einen typischen K40-Laser
 
+Nach einer Referenzfahrt ermittelt Rayforge die Position, zu der der Kopf gefahren wurde, und
+zeichnet den Arbeitsbereichsrahmen ab dort statt bis zum nominellen Verfahrwegende. Bei Maschinen,
+deren Firmware den Kopf kurz vor dem Verfahrwegende anhält (z. B. der Pull-off der
+Grbl-Referenzfahrt), landet die Rahmenkante dadurch genau auf der Position, auf die sich ein an der
+Referenzecke genullter Arbeitsursprung bezieht. Der Achsenbereich selbst sollte weiterhin den vollen
+Verfahrweg angeben.
+
 ### Koordinatenursprung
 
 Wähle, wo sich der Koordinatenursprung (0,0) deiner Maschine befindet. Dies bestimmt, wie

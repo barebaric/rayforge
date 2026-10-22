@@ -23,6 +23,12 @@ The full travel range of each axis in machine units.
 - Account for any obstructions or limits
 - Example: 400 for a typical K40 laser
 
+After a homing cycle, Rayforge learns the position the head was driven to and draws the work area
+frame from there instead of the nominal travel end. On machines whose firmware parks the head short
+of the travel end (e.g. Grbl's homing pull-off), the frame edge then lands exactly on the position a
+work origin zeroed at the homed corner refers to. The extent value itself should stay at the full
+travel range.
+
 ### Coordinate Origin
 
 Select where your machine's coordinate origin (0,0) is located. This determines how coordinates are

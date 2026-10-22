@@ -1129,3 +1129,79 @@ class TestMachinePanelNogoZones:
         projected = panel.nogo_zones
         assert projected[zone.uid] is not zone
         assert zone.params == {"x": 10, "y": 20, "w": 30, "h": 40}
+
+
+class TestMachinePanelExtentFrameLayout:
+    """The presented-space extent frame follows the reachable span
+    learned from homing (issue #613)."""
+
+    def _vasto_kwargs(self, **overrides) -> dict:
+        defaults = {
+            "origin": OriginCorner.TOP_RIGHT,
+            "x_positive_direction": AxisDirection.POSITIVE_LEFT,
+            "y_positive_direction": AxisDirection.POSITIVE_DOWN,
+            "extents": (400.0, 400.0),
+            "reverse_x": True,
+            "reverse_y": True,
+            "homed_positions": (-397.0, -397.0),
+            "margins": (5.0, 6.0, 7.0, 8.0),
+        }
+        defaults.update(overrides)
+        return defaults
+
+    def test_native_nominal_frame_fills_the_bed(self):
+        panel = _panel(
+            **self._vasto_kwargs(
+                homed_positions=(None, None), margins=(0.0, 0.0, 0.0, 0.0)
+            )
+        )
+        frame, workarea, margins = panel.get_extent_frame_layout()
+        assert frame == (0.0, 0.0, 400.0, 400.0)
+        assert workarea == (0.0, 0.0, 400.0, 400.0)
+        assert margins == (0.0, 0.0, 0.0, 0.0)
+
+    def test_native_frame_trimmed_to_homed_position(self):
+        panel = _panel(**self._vasto_kwargs())
+        frame, workarea, margins = panel.get_extent_frame_layout()
+
+        assert frame == (3.0, 3.0, 397.0, 397.0)
+        assert workarea == (8.0, 11.0, 385.0, 383.0)
+        left, top, right, bottom = margins
+        assert left == pytest.approx(8.0)
+        assert top == pytest.approx(400.0 - (11.0 + 383.0))
+        assert right == pytest.approx(7.0)
+        assert bottom == pytest.approx(11.0)
+
+    def test_rotated_right_frame_is_the_rotated_world_rect(self):
+        panel = _panel(
+            orientation=PanelOrientation.ROTATED_RIGHT,
+            **self._vasto_kwargs(),
+        )
+        frame, workarea, margins = panel.get_extent_frame_layout()
+
+        space = self._vasto_kwargs_only_space()
+        world_frame = space.get_extent_frame_world_rect()
+        expected = panel.world_bbox_to_panel(
+            (
+                world_frame[0],
+                world_frame[1],
+                world_frame[0] + world_frame[2],
+                world_frame[1] + world_frame[3],
+            )
+        )
+        assert frame == (
+            expected[0],
+            expected[1],
+            expected[2] - expected[0],
+            expected[3] - expected[1],
+        )
+
+        left, top, right, bottom = margins
+        width, height = panel.extents
+        assert left == pytest.approx(workarea[0])
+        assert top == pytest.approx(height - (workarea[1] + workarea[3]))
+        assert right == pytest.approx(width - (workarea[0] + workarea[2]))
+        assert bottom == pytest.approx(workarea[1])
+
+    def _vasto_kwargs_only_space(self) -> MachineSpace:
+        return MachineSpace(**self._vasto_kwargs())

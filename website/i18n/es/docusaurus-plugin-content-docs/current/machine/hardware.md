@@ -17,6 +17,12 @@ El rango completo de recorrido de cada eje en unidades de máquina.
 - Ten en cuenta cualquier obstrucción o límite
 - Ejemplo: 400 para un láser K40 típico
 
+Tras un ciclo de homing, Rayforge aprende la posición a la que se movió el cabezal y dibuja el marco
+del área de trabajo desde ahí, en lugar del final nominal del recorrido. En máquinas cuyo firmware
+detiene el cabezal antes del final del recorrido (por ejemplo, el pull-off de homing de Grbl), el
+borde del marco queda exactamente en la posición a la que se refiere un origen de trabajo situado en
+la esquina de homing. El valor del recorrido debe seguir siendo el rango completo.
+
 ### Origen de Coordenadas
 
 Selecciona dónde está ubicado el origen de coordenadas (0,0) de tu máquina. Esto determina cómo se

@@ -17,6 +17,12 @@ A faixa completa de deslocamento de cada eixo nas unidades da máquina.
 - Considere quaisquer obstruções ou limites
 - Exemplo: 400 para um laser K40 típico
 
+Após um ciclo de homing, o Rayforge aprende a posição em que a cabeça foi movida e desenha o quadro
+da área de trabalho a partir dela, em vez do fim nominal do curso. Em máquinas cujo firmware
+estaciona a cabeça antes do fim do curso (por exemplo, o recuo de homing do Grbl), a borda do quadro
+fica exatamente na posição referida por uma origem de trabalho zerada no canto de homing. O valor do
+curso deve continuar sendo o alcance completo.
+
 ### Origem das Coordenadas
 
 Selecione onde a origem das coordenadas da sua máquina (0,0) está localizada. Isso determina como as

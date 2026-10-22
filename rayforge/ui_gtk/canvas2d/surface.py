@@ -1432,34 +1432,34 @@ class WorkSurface(WorldSurface):
         self.queue_draw()
 
     def _update_extent_frame_flat(self):
-        """Updates extent frame and workarea for flat (non-rotary) mode."""
+        """Updates extent frame and workarea for flat (non-rotary) mode.
+
+        Both follow the reachable machine span learned from homing, so
+        the frame edge lands on the position a work origin zeroed at
+        the homed corner refers to.
+        """
         assert self.machine
         panel = self.machine.panel
+        frame_rect, workarea_rect, margins = panel.get_extent_frame_layout()
         extent_w, extent_h = panel.extents
-        ml, mt, mr, mb = panel.margins
-        workarea_w, workarea_h = panel.workarea_size
 
         logger.debug(
             f"_update_extent_frame_flat: extents=({extent_w}, "
-            f"{extent_h}), margins=({ml}, {mt}, {mr}, {mb})"
+            f"{extent_h}), frame={frame_rect}, margins={margins}"
         )
 
         self._axis_renderer.set_x_axis_y_override(None)
 
         if (extent_w, extent_h) != (self.width_mm, self.height_mm):
             self.set_size(float(extent_w), float(extent_h))
-        self._axis_renderer.set_margins_mm(
-            float(ml), float(mt), float(mr), float(mb)
-        )
+        self._axis_renderer.set_margins_mm(*[float(v) for v in margins])
 
-        self._extent_frame_element.set_size(float(extent_w), float(extent_h))
-        self._extent_frame_element.set_pos(0.0, 0.0)
+        self._extent_frame_element.set_size(frame_rect[2], frame_rect[3])
+        self._extent_frame_element.set_pos(frame_rect[0], frame_rect[1])
         self._extent_frame_element.set_visible(True)
 
-        self._workarea_bg_element.set_size(
-            float(workarea_w), float(workarea_h)
-        )
-        self._workarea_bg_element.set_pos(float(ml), float(mb))
+        self._workarea_bg_element.set_size(workarea_rect[2], workarea_rect[3])
+        self._workarea_bg_element.set_pos(workarea_rect[0], workarea_rect[1])
         self._workarea_bg_element.set_visible(True)
 
     def _update_extent_frame_rotary(self):

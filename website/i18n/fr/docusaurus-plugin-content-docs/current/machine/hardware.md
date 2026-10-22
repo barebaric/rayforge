@@ -17,6 +17,12 @@ La plage de déplacement complète de chaque axe en unités machine.
 - Prenez en compte les obstructions ou limites
 - Exemple : 400 pour un laser K40 typique
 
+Après un cycle de homing, Rayforge apprend la position atteinte par la tête et trace le cadre de la
+zone de travail à partir de celle-ci, au lieu de la fin de course nominale. Sur les machines dont le
+firmware arrête la tête avant la fin de course (par exemple le recul d'homérisation de Grbl), le
+bord du cadre tombe alors exactement sur la position visée par une origine de travail zérée au point
+d'homérisation. La valeur de l'étendue doit rester la plage complète.
+
 ### Origine des Coordonnées
 
 Sélectionnez où l'origine des coordonnées (0,0) de votre machine est située. Cela détermine comment
