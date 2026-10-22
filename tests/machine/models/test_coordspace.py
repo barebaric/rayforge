@@ -2,6 +2,8 @@
 Unit tests for coordinate space classes.
 """
 
+from dataclasses import replace
+
 import numpy as np
 import pytest
 
@@ -666,3 +668,81 @@ class TestGCodePipeline:
 
         assert gcode_x == pytest.approx(0.0, abs=1e-9)
         assert gcode_y == pytest.approx(0.0, abs=1e-9)
+
+
+class TestReachableExtentFrame:
+    """The extent frame trims to the span reachable from the homed
+    position, so a work origin zeroed at the homed corner sits exactly
+    on the frame corner (issue #613)."""
+
+    def _make_vasto_space(self) -> MachineSpace:
+        """Top-right origin, both axes reversed, 400x400: the Grbl
+        negative-space configuration from issue #613."""
+        return MachineSpace(
+            origin=OriginCorner.TOP_RIGHT,
+            x_positive_direction=AxisDirection.POSITIVE_LEFT,
+            y_positive_direction=AxisDirection.POSITIVE_DOWN,
+            extents=(400.0, 400.0),
+            reverse_x=True,
+            reverse_y=True,
+        )
+
+    def test_nominal_frame_without_homed_positions(self):
+        space = self._make_vasto_space()
+        assert space.get_extent_frame_world_rect() == (0.0, 0.0, 400.0, 400.0)
+
+    def test_reversed_axes_homed_at_pull_off(self):
+        space = replace(
+            self._make_vasto_space(),
+            homed_positions=(-397.0, -397.0),
+        )
+        assert space.get_extent_frame_world_rect() == (3.0, 3.0, 397.0, 397.0)
+
+    def test_normal_axes_homed_at_pull_off(self):
+        space = MachineSpace(
+            origin=OriginCorner.BOTTOM_LEFT,
+            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+            y_positive_direction=AxisDirection.POSITIVE_UP,
+            extents=(400.0, 300.0),
+            homed_positions=(3.0, 2.0),
+        )
+        assert space.get_extent_frame_world_rect() == (3.0, 2.0, 397.0, 298.0)
+
+    def test_single_axis_homing_trims_only_that_axis(self):
+        space = replace(
+            self._make_vasto_space(),
+            homed_positions=(-397.0, None),
+        )
+        assert space.get_extent_frame_world_rect() == (3.0, 0.0, 397.0, 400.0)
+
+    def test_homed_at_travel_end_falls_back_to_nominal(self):
+        space = replace(
+            self._make_vasto_space(),
+            homed_positions=(0.0, 0.0),
+        )
+        assert space.get_extent_frame_world_rect() == (0.0, 0.0, 400.0, 400.0)
+
+    def test_homed_beyond_nominal_span_is_clamped(self):
+        space = replace(
+            self._make_vasto_space(),
+            homed_positions=(-500.0, -500.0),
+        )
+        assert space.get_extent_frame_world_rect() == (0.0, 0.0, 400.0, 400.0)
+
+    def test_workarea_is_frame_inset_by_margins(self):
+        space = replace(
+            self._make_vasto_space(),
+            margins=(5.0, 6.0, 7.0, 8.0),
+            homed_positions=(-397.0, -397.0),
+        )
+        assert space.get_workarea_world_rect() == (8.0, 11.0, 385.0, 383.0)
+
+    def test_nominal_workarea_matches_margin_inset(self):
+        space = MachineSpace(
+            origin=OriginCorner.BOTTOM_LEFT,
+            x_positive_direction=AxisDirection.POSITIVE_RIGHT,
+            y_positive_direction=AxisDirection.POSITIVE_UP,
+            extents=(400.0, 300.0),
+            margins=(10.0, 20.0, 30.0, 40.0),
+        )
+        assert space.get_workarea_world_rect() == (10.0, 40.0, 360.0, 240.0)

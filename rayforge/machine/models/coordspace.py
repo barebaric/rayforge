@@ -160,10 +160,16 @@ class MachineSpace(CoordinateSpace):
     Attributes:
         extents: The (width, height) of the machine bed in mm.
         margins: The (left, top, right, bottom) margins in mm.
+        homed_positions: Machine coordinate of the position the head
+            was driven to by the last homing cycle, per X/Y axis, or
+            None while unknown. The reachable span of an axis ends at
+            this position: the homing pull-off keeps the head short of
+            the nominal travel end.
     """
 
     extents: tuple[float, float] = (200.0, 200.0)
     margins: Rect = (0.0, 0.0, 0.0, 0.0)
+    homed_positions: tuple[float | None, float | None] = (None, None)
 
     @classmethod
     def from_machine(cls, machine: "Machine") -> "MachineSpace":
@@ -215,6 +221,7 @@ class MachineSpace(CoordinateSpace):
             margins=machine.work_margins,
             reverse_x=machine.reverse_x_axis,
             reverse_y=machine.reverse_y_axis,
+            homed_positions=machine.homed_positions,
         )
 
     def get_world_to_machine_matrix(self) -> np.ndarray:
@@ -332,14 +339,76 @@ class MachineSpace(CoordinateSpace):
         width, height = self.extents
         return width - ml - mr, height - mt - mb
 
+    def get_extent_frame_world_rect(self) -> Rect:
+        """
+        Returns the extent frame as a Rect in world space.
+
+        Without homing knowledge this is the nominal machine span. Once
+        an axis has reported the position its homing cycle drove to,
+        the frame is trimmed on that axis to the span reachable from
+        the homed position: the pull-off keeps the head short of the
+        nominal travel end, so the frame edge lands exactly on the
+        position a work origin zeroed at the homed corner refers to.
+        """
+        hx, hy = self.homed_positions
+        ix = self._reachable_machine_interval(
+            hx, self.extents[0], self.reverse_x
+        )
+        iy = self._reachable_machine_interval(
+            hy, self.extents[1], self.reverse_y
+        )
+        return self._machine_rect_to_world(ix, iy)
+
+    def _reachable_machine_interval(
+        self,
+        homed: float | None,
+        travel: float,
+        reversed_: bool,
+    ) -> tuple[float, float]:
+        """
+        Returns the reachable machine-coordinate interval of one axis.
+
+        The interval spans from the homed position to the travel end
+        opposite the homing switches, intersected with the nominal
+        span. Falls back to the nominal span while the homed position
+        is unknown or the intersection is empty.
+        """
+        lo, hi = (-travel, 0.0) if reversed_ else (0.0, travel)
+        if homed is None:
+            return lo, hi
+        end = 0.0 if reversed_ else travel
+        a, b = sorted((homed, end))
+        a = max(a, lo)
+        b = min(b, hi)
+        if a >= b:
+            return lo, hi
+        return a, b
+
+    def _machine_rect_to_world(
+        self,
+        x_interval: tuple[float, float],
+        y_interval: tuple[float, float],
+    ) -> Rect:
+        """Projects a machine-space rectangle into world space."""
+        x0, y0 = self.machine_point_to_world(x_interval[0], y_interval[0])
+        x1, y1 = self.machine_point_to_world(x_interval[1], y_interval[1])
+        return (
+            min(x0, x1),
+            min(y0, y1),
+            abs(x1 - x0),
+            abs(y1 - y0),
+        )
+
     def get_workarea_world_rect(self) -> Rect:
         """
         Returns the work area boundary as a Rect in world space.
+
+        The work area is the extent frame inset by the margins, so it
+        follows the reachable span when the frame is homing-trimmed.
         """
-        pos = self.get_workarea_origin_in_machine()
-        w, h = self.workarea_size
-        wx, wy = self.machine_item_to_world(pos, (w, h))
-        return (wx, wy, w, h)
+        fx, fy, fw, fh = self.get_extent_frame_world_rect()
+        ml, mt, mr, mb = self.margins
+        return (fx + ml, fy + mb, fw - ml - mr, fh - mt - mb)
 
     def world_position_from_origin(
         self, ref_x: float, ref_y: float, size: tuple[float, float]

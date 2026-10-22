@@ -927,3 +927,113 @@ class TestSetDriverEmitsChanged:
         machine.changed.connect(handler)
         machine.set_driver(TestDriver3, {"port": "/dev/null"})
         assert len(signals) == 0
+
+
+@pytest.mark.usefixtures("lite_context")
+class TestHomedPositions:
+    """Homing-derived positions feed the reachable extent frame."""
+
+    def _make_machine(
+        self, lite_context, origin=Origin.TOP_RIGHT, reversed_axes=True
+    ):
+        machine = Machine(lite_context)
+        machine.origin = origin
+        if reversed_axes:
+            machine.set_reverse_x_axis(True)
+            machine.set_reverse_y_axis(True)
+        machine.set_axis_extents(400.0, 400.0)
+        machine._homed_positions.clear()
+        return machine
+
+    def test_default_is_unknown(self, lite_context):
+        machine = self._make_machine(lite_context)
+        assert machine.homed_positions == (None, None)
+
+    def test_completed_homing_records_moved_axes(self, lite_context):
+        machine = self._make_machine(lite_context)
+        updated = machine.handle_homing_completed(
+            (-380.0, -380.0, 0.0), (-397.0, -397.0, -3.0)
+        )
+        assert updated is True
+        assert machine.homed_positions == (-397.0, -397.0)
+
+    def test_stationary_axis_is_not_recorded(self, lite_context):
+        machine = self._make_machine(lite_context)
+        machine.handle_homing_completed(
+            (-397.0, -10.0, 0.0), (-397.0, -10.0, 0.0)
+        )
+        assert machine.homed_positions == (None, None)
+
+    def test_single_axis_homing_records_one_axis(self, lite_context):
+        machine = self._make_machine(lite_context)
+        machine.handle_homing_completed(
+            (-10.0, -10.0, None), (-397.0, -10.0, None)
+        )
+        assert machine.homed_positions == (-397.0, None)
+
+    def test_unknown_positions_are_ignored(self, lite_context):
+        machine = self._make_machine(lite_context)
+        assert (
+            machine.handle_homing_completed(None, (-397.0, None, None))
+            is False
+        )
+        assert (
+            machine.handle_homing_completed(
+                (None, None, None), (None, None, None)
+            )
+            is False
+        )
+        assert machine.homed_positions == (None, None)
+
+    def test_changed_signal_fires_on_record_and_clear(self, lite_context):
+        machine = self._make_machine(lite_context)
+        events = []
+
+        def _on_changed(sender):
+            events.append(sender)
+
+        machine.changed.connect(_on_changed)
+        machine.handle_homing_completed(
+            (-380.0, None, None), (-397.0, None, None)
+        )
+        machine.clear_homed_positions()
+        assert len(events) == 2
+        assert machine.homed_positions == (None, None)
+
+    def test_set_axis_extents_clears_homed_positions(self, lite_context):
+        machine = self._make_machine(lite_context)
+        machine.handle_homing_completed(
+            (-380.0, -380.0, None), (-397.0, -397.0, None)
+        )
+        machine.set_axis_extents(300.0, 300.0)
+        assert machine.homed_positions == (None, None)
+
+    def test_direction_change_clears_own_axis(self, lite_context):
+        machine = self._make_machine(lite_context)
+        machine.handle_homing_completed(
+            (-380.0, -380.0, None), (-397.0, -397.0, None)
+        )
+        machine.set_reverse_x_axis(False)
+        assert machine.homed_positions == (None, -397.0)
+
+    def test_homed_positions_are_not_serialized(self, lite_context):
+        machine = self._make_machine(lite_context)
+        machine.handle_homing_completed(
+            (-380.0, -380.0, None), (-397.0, -397.0, None)
+        )
+        data = machine.to_dict()
+        assert "homed_positions" not in data["machine"]
+        assert "homed" not in str(data)
+
+    def test_coordinate_space_uses_homed_positions(self, lite_context):
+        machine = self._make_machine(lite_context)
+        machine.handle_homing_completed(
+            (-380.0, -380.0, None), (-397.0, -397.0, None)
+        )
+        space = machine.get_coordinate_space()
+        assert space.get_extent_frame_world_rect() == (
+            3.0,
+            3.0,
+            397.0,
+            397.0,
+        )

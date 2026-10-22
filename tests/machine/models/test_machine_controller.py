@@ -14,6 +14,7 @@ import asyncio
 import pytest
 
 import rayforge.machine.driver as driver_module
+from rayforge.machine.driver.driver import DeviceState, DeviceStatus
 from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.models.controller import MachineController
 from rayforge.machine.models.machine import Machine
@@ -149,3 +150,53 @@ class TestUpdateSettingsOptIn:
         await wait_until_settled(task_mgr)
 
         assert machine.driver is not live_driver
+
+
+@pytest.mark.usefixtures("lite_context")
+class TestHomingTracking:
+    """The controller learns which axes a homing cycle moved by
+    comparing reported positions before and after the HOME state."""
+
+    def _make_machine_with_controller(self, lite_context):
+        machine = Machine(lite_context)
+        lite_context.machine_mgr.add_machine(machine)
+        controller = machine.controller
+        return machine, controller
+
+    def _drive(self, controller, status, pos):
+        controller._on_driver_state_changed(
+            controller.driver,
+            DeviceState(status=status, machine_pos=pos),
+        )
+
+    def test_home_to_idle_records_homed_axes(self, lite_context):
+        machine, controller = self._make_machine_with_controller(lite_context)
+        self._drive(controller, DeviceStatus.IDLE, (-380.0, -380.0, 0.0))
+        self._drive(controller, DeviceStatus.HOME, (-390.0, -390.0, 0.0))
+        self._drive(controller, DeviceStatus.IDLE, (-397.0, -397.0, -3.0))
+        assert machine.homed_positions == (-397.0, -397.0)
+
+    def test_stationary_axis_is_not_recorded(self, lite_context):
+        machine, controller = self._make_machine_with_controller(lite_context)
+        self._drive(controller, DeviceStatus.IDLE, (-397.0, -10.0, 0.0))
+        self._drive(controller, DeviceStatus.HOME, (-397.0, -10.0, 0.0))
+        self._drive(controller, DeviceStatus.IDLE, (-397.0, -10.0, 0.0))
+        assert machine.homed_positions == (None, None)
+
+    def test_home_to_alarm_records_nothing(self, lite_context):
+        machine, controller = self._make_machine_with_controller(lite_context)
+        self._drive(controller, DeviceStatus.IDLE, (-380.0, -380.0, 0.0))
+        self._drive(controller, DeviceStatus.HOME, (-390.0, -390.0, 0.0))
+        self._drive(controller, DeviceStatus.ALARM, (-395.0, -395.0, 0.0))
+        assert machine.homed_positions == (None, None)
+
+    def test_reset_clears_homed_positions(self, lite_context):
+        machine, controller = self._make_machine_with_controller(lite_context)
+        self._drive(controller, DeviceStatus.IDLE, (-380.0, -380.0, 0.0))
+        self._drive(controller, DeviceStatus.HOME, (-390.0, -390.0, 0.0))
+        self._drive(controller, DeviceStatus.IDLE, (-397.0, -397.0, -3.0))
+        assert machine.homed_positions == (-397.0, -397.0)
+
+        controller._reset_status()
+        assert machine.homed_positions == (None, None)
+        assert controller._homing_start_positions is None

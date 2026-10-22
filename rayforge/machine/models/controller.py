@@ -16,6 +16,7 @@ from ..driver.driver import (
     DeviceStatus,
     Driver,
     DriverPrecheckError,
+    Pos,
 )
 from ..driver.dummy import NoDeviceDriver
 from ..transport import TransportStatus
@@ -66,6 +67,11 @@ class MachineController:
         # set before _connect_driver_signals(), which may process an
         # already-populated device state right away.
         self._confirmed_active_wcs: str | None = None
+
+        # Position reported when the homing cycle started, used to
+        # detect which axes the cycle actually moved.
+        self._homing_start_positions: Pos | None = None
+        self._previous_driver_status: DeviceStatus = DeviceStatus.UNKNOWN
 
         self._connect_driver_signals()
 
@@ -286,6 +292,9 @@ class MachineController:
         conn_actually_changed = (
             self.machine.connection_status != TransportStatus.DISCONNECTED
         )
+        self._homing_start_positions = None
+        self._previous_driver_status = DeviceStatus.UNKNOWN
+        self.machine.clear_homed_positions()
 
         self.machine.set_device_state(DeviceState())
         self.machine.set_connection_status(TransportStatus.DISCONNECTED)
@@ -334,9 +343,30 @@ class MachineController:
     def _on_driver_state_changed(self, driver: Driver, state: DeviceState):
         """Proxies the state changed signal from the active driver."""
         if self.machine.device_state != state:
+            self._track_homing(state)
             self.machine.set_device_state(state)
             self._sync_wcs_offset_from_wco(state)
             self._scheduler(self.state_changed.send, self.machine, state=state)
+
+    def _track_homing(self, state: DeviceState):
+        """Learns the reachable axis bounds from the homing cycle.
+
+        The positions reported when the cycle started are compared with
+        the positions once the device returns to idle: every axis that
+        moved was homed, and its final position is where the pull-off
+        leaves the head short of the nominal travel end.
+        """
+        previous = self._previous_driver_status
+        self._previous_driver_status = state.status
+        if state.status == DeviceStatus.HOME:
+            if previous != DeviceStatus.HOME:
+                self._homing_start_positions = state.machine_pos
+        elif (
+            previous == DeviceStatus.HOME and state.status == DeviceStatus.IDLE
+        ):
+            start = self._homing_start_positions
+            self._homing_start_positions = None
+            self.machine.handle_homing_completed(start, state.machine_pos)
 
     def _sync_wcs_offset_from_wco(self, state: DeviceState):
         """

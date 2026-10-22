@@ -169,6 +169,10 @@ class Machine:
         self.connection_status: TransportStatus = TransportStatus.DISCONNECTED
         self.device_state: DeviceState = DeviceState()
         self._current_job_monitor = None
+        # Machine coordinates the head was driven to by the last homing
+        # cycle, per axis. Session-only: learned from the device, never
+        # persisted, and dropped when the bed geometry changes.
+        self._homed_positions: dict[Axis, float] = {}
 
         self.driver_name: str | None = None
         self.driver_args: dict[str, Any] = {}
@@ -410,6 +414,59 @@ class Machine:
 
     def set_device_state(self, state: DeviceState):
         self.device_state = state
+
+    @property
+    def homed_positions(self) -> tuple[float | None, float | None]:
+        """
+        Machine coordinate the head was driven to by the last homing
+        cycle, per X/Y axis, or None while unknown. Consumed by the
+        coordinate space to trim the extent frame to the reachable
+        span.
+        """
+        return (
+            self._homed_positions.get(Axis.X),
+            self._homed_positions.get(Axis.Y),
+        )
+
+    def handle_homing_completed(
+        self,
+        before: Pos | None,
+        after: Pos | None,
+    ) -> bool:
+        """
+        Records the outcome of a homing cycle.
+
+        An axis counts as homed when its machine position moved during
+        the cycle; its position is stored so the coordinate space can
+        trim the extent frame to the reachable span. Axes whose
+        position is unknown or unchanged are left alone, so partial
+        (single-axis) homing only affects the homed axes.
+
+        Returns True when any axis was recorded.
+        """
+        if not before or not after:
+            return False
+        updated = False
+        for idx, axis in ((0, Axis.X), (1, Axis.Y)):
+            start = before[idx]
+            end = after[idx]
+            if start is None or end is None:
+                continue
+            if abs(end - start) <= 1e-6:
+                continue
+            self._homed_positions[axis] = end
+            updated = True
+        if updated:
+            self.changed.send(self)
+        return updated
+
+    def clear_homed_positions(self) -> None:
+        """Drops the learned homing positions, reverting the extent
+        frame to the nominal machine span."""
+        if not self._homed_positions:
+            return
+        self._homed_positions.clear()
+        self.changed.send(self)
 
     def set_connection_status(self, status: TransportStatus):
         self.connection_status = status
@@ -911,6 +968,7 @@ class Machine:
     def set_axis_extents(self, width: float, height: float):
         if self.axis_extents == (width, height):
             return
+        self._homed_positions.clear()
         x_cfg = self.axes.get(Axis.X)
         y_cfg = self.axes.get(Axis.Y)
         if x_cfg:
@@ -1022,6 +1080,7 @@ class Machine:
         """Sets if the X-axis coordinate display is inverted."""
         if self.reverse_x_axis == is_reversed:
             return
+        self._homed_positions.pop(Axis.X, None)
         cfg = self.axes.get(Axis.X)
         if cfg:
             cfg.direction = (
@@ -1033,6 +1092,7 @@ class Machine:
         """Sets if the Y-axis coordinate display is inverted."""
         if self.reverse_y_axis == is_reversed:
             return
+        self._homed_positions.pop(Axis.Y, None)
         cfg = self.axes.get(Axis.Y)
         if cfg:
             cfg.direction = (
