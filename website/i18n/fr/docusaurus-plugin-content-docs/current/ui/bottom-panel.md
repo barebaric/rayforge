@@ -105,6 +105,7 @@ Configure le comportement des opérations de déplacement :
 - **Plage** : 1-60 000 mm/min
 - **Par défaut** : 1 000 mm/min
 - **Objectif** : Contrôle la vitesse de déplacement de la tête laser
+- **Persistance** : La dernière vitesse utilisée est enregistrée par machine
 
 <!-- prettier-ignore-start -->
 :::tip[Sélection de vitesse]

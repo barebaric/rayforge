@@ -103,6 +103,7 @@ Configure o comportamento das operações de jog:
 - **Faixa**: 1-60.000 mm/min
 - **Padrão**: 1.000 mm/min
 - **Propósito**: Controla quão rápido a cabeça do laser se move
+- **Persistência**: A última velocidade usada é salva por máquina
 
 <!-- prettier-ignore-start -->
 :::tip[Seleção de Velocidade]

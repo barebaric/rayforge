@@ -1279,6 +1279,40 @@ class TestMachine:
         assert new_machine.acceleration == 2500
 
     @pytest.mark.asyncio
+    async def test_jog_speed_setter(
+        self, machine: Machine, mocker, task_mgr: TaskManager
+    ):
+        """Test that the jog speed setter works correctly."""
+        await wait_for_tasks_to_finish(task_mgr)
+        machine.set_jog_speed(2000)
+        assert machine.jog_speed == 2000
+
+        # Test that setting jog speed triggers changed signal
+        changed_spy = mocker.spy(machine.changed, "send")
+        machine.set_jog_speed(1500)
+        changed_spy.assert_called_once_with(machine)
+
+    @pytest.mark.asyncio
+    async def test_machine_serialization_with_jog_speed(
+        self, machine: Machine, task_mgr: TaskManager, lite_context
+    ):
+        """Test that jog speed is properly serialized and deserialized."""
+        await wait_for_tasks_to_finish(task_mgr)
+        machine.set_jog_speed(2500)
+
+        machine_dict = machine.to_dict()
+
+        assert "jog_speed" in machine_dict["machine"]["speeds"]
+        assert machine_dict["machine"]["speeds"]["jog_speed"] == 2500
+
+        new_machine = Machine.from_dict(machine_dict, context=lite_context)
+
+        # Wait for the async driver rebuild scheduled by from_dict to finish
+        await wait_for_tasks_to_finish(task_mgr)
+
+        assert new_machine.jog_speed == 2500
+
+    @pytest.mark.asyncio
     async def test_get_default_head(
         self, machine: Machine, task_mgr: TaskManager
     ):

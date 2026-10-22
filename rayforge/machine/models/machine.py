@@ -200,6 +200,7 @@ class Machine:
         self.max_travel_speed: int = 3000  # in mm/min
         self.max_cut_speed: int = 1000  # in mm/min
         self.acceleration: int = 1000  # in mm/s²
+        self.jog_speed: int = 1000  # in mm/min
         #: (speed mm/min, offset mm) rows, sorted by speed. Engrave
         #: steps without their own bidirectional scan offset use it.
         self.bidir_offset_table: list[tuple[float, float]] = []
@@ -825,6 +826,12 @@ class Machine:
         if self.acceleration == acceleration:
             return
         self.acceleration = acceleration
+        self.changed.send(self)
+
+    def set_jog_speed(self, speed: int):
+        if self.jog_speed == speed:
+            return
+        self.jog_speed = speed
         self.changed.send(self)
 
     def set_bidir_offset_table(self, table) -> None:
@@ -1898,6 +1905,7 @@ class Machine:
                     "max_cut_speed": self.max_cut_speed,
                     "max_travel_speed": self.max_travel_speed,
                     "acceleration": self.acceleration,
+                    "jog_speed": self.jog_speed,
                 },
                 "bidir_offset_table": [
                     [speed, offset]
@@ -2202,6 +2210,7 @@ class Machine:
             "max_travel_speed", ma.max_travel_speed
         )
         ma.acceleration = speeds.get("acceleration", ma.acceleration)
+        ma.jog_speed = speeds.get("jog_speed", ma.jog_speed)
         ma.bidir_offset_table = sorted(
             (float(speed), float(offset))
             for speed, offset in ma_data.pop("bidir_offset_table", None) or []
