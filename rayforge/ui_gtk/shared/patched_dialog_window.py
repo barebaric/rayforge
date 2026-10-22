@@ -22,6 +22,18 @@ https://bugzilla.gnome.org/show_bug.cgi?id=112404
 """
 
 
+def _detach_transient_for_macos(window: Gtk.Window) -> None:
+    """
+    When a window with a transient parent hides, GTK's macOS backend
+    hands key input back with [parentWindow showAndMakeKey:], which
+    tears native full-screen parent windows blank. Without the
+    transient link the backend leaves the parent alone and AppKit
+    returns focus to the remaining windows of the app on its own.
+    """
+    if sys.platform == "darwin" and window.get_transient_for() is not None:
+        window.set_transient_for(None)
+
+
 def _can_reactivate() -> bool:
     """
     On macOS, presenting the parent from the dialog-close path tears
@@ -38,6 +50,7 @@ def _can_reactivate() -> bool:
 class PatchedDialogWindow(Adw.Window):
     def __init__(self, skip_usage_tracking: bool = False, **kwargs):
         super().__init__(**kwargs)
+        _detach_transient_for_macos(self)
         self._tracked = False
         self._skip_usage_tracking = skip_usage_tracking
         self.connect("map", self._on_map)
@@ -77,6 +90,7 @@ class PatchedDialogWindow(Adw.Window):
 class PatchedMessageDialog(Adw.MessageDialog):
     def __init__(self, skip_usage_tracking: bool = False, **kwargs):
         super().__init__(**kwargs)
+        _detach_transient_for_macos(self)
         self._tracked = False
         self._skip_usage_tracking = skip_usage_tracking
         self.connect("map", self._on_map)
