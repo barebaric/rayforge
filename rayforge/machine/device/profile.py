@@ -397,6 +397,33 @@ class MachineConfig:
             lambda m, v: m.set_has_z_axis(v),
         ),
     )
+    reverse_x_axis: bool | None = field(
+        default=None,
+        metadata=_binding(
+            _("Hardware"),
+            _("Reverse X-Axis Direction"),
+            lambda m: m.reverse_x_axis,
+            lambda m, v: m.set_reverse_x_axis(v),
+        ),
+    )
+    reverse_y_axis: bool | None = field(
+        default=None,
+        metadata=_binding(
+            _("Hardware"),
+            _("Reverse Y-Axis Direction"),
+            lambda m: m.reverse_y_axis,
+            lambda m, v: m.set_reverse_y_axis(v),
+        ),
+    )
+    reverse_z_axis: bool | None = field(
+        default=None,
+        metadata=_binding(
+            _("Hardware"),
+            _("Reverse Z-Axis Direction"),
+            lambda m: m.reverse_z_axis,
+            lambda m, v: m.set_reverse_z_axis(v),
+        ),
+    )
 
     max_travel_speed: int | None = field(
         default=None,
@@ -557,6 +584,9 @@ class MachineConfig:
             acceleration=machine.acceleration,
             single_axis_homing_enabled=(machine.single_axis_homing_enabled),
             has_z=machine.has_z_axis,
+            reverse_x_axis=machine.reverse_x_axis or None,
+            reverse_y_axis=machine.reverse_y_axis or None,
+            reverse_z_axis=machine.reverse_z_axis or None,
             rotary_enabled_default=machine.rotary_enabled_default,
             unit_system=machine.unit_system,
             heads=heads,
@@ -750,6 +780,12 @@ class DeviceProfile:
             m.single_axis_homing_enabled = cfg.single_axis_homing_enabled
         if cfg.has_z is not None:
             m.set_has_z_axis(cfg.has_z)
+        if cfg.reverse_x_axis is not None:
+            m.set_reverse_x_axis(cfg.reverse_x_axis)
+        if cfg.reverse_y_axis is not None:
+            m.set_reverse_y_axis(cfg.reverse_y_axis)
+        if cfg.reverse_z_axis is not None:
+            m.set_reverse_z_axis(cfg.reverse_z_axis)
         if cfg.rotary_enabled_default is not None:
             m.rotary_enabled_default = cfg.rotary_enabled_default
         if cfg.unit_system is not None:
