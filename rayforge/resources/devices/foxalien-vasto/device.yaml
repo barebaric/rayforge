@@ -1,0 +1,41 @@
+api_version: 1
+device:
+  name: FoxAlien Vasto
+  vendor: FoxAlien
+  model: Vasto
+  description: Desktop CNC router with 400x400mm travel, typically fitted
+    with the FoxAlien 40W diode laser module
+  notes: |
+    The controller (Grbl 1.1h) uses negative machine coordinates: machine
+    zero is at the top-right corner and both axes count down from there.
+    When zeroing the work origin at the homed corner, note that the homing
+    pull-off ($27) reduces the usable travel by that amount ($130/$131
+    minus $27).
+machine:
+  driver: GrblSerialDriver
+  driver_args:
+    baudrate: '115200'
+  gcode_precision: 3
+  axis_extents:
+  - 400.0
+  - 400.0
+  origin: top_right
+  reverse_x_axis: true
+  reverse_y_axis: true
+  has_z: true
+  max_travel_speed: 3000
+  max_cut_speed: 400
+  acceleration: 1000
+  home_on_start: false
+  single_axis_homing_enabled: true
+  heads:
+  - name: FoxAlien 40W
+    max_power: 1000
+    wavelength_nm: 455
+    max_power_watts: 10
+    frame_power_percent: 1.0
+    focus_power_percent: 0.1
+    frame_repeat_count: 4
+    spot_size_mm:
+    - 0.1
+    - 0.1

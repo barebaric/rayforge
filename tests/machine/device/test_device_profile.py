@@ -667,6 +667,18 @@ def test_falcon_profiles_emit_framing_bounds_comment():
         )
 
 
+def test_foxalien_vasto_profile_uses_negative_machine_space():
+    """The Vasto controller reports negative machine coordinates, so the
+    shipped profile must preconfigure the reversed-axes setup (#613)."""
+    devices_dir = Path(rayforge.__file__).parent / "resources" / "devices"
+    profile = DeviceProfile.from_path(devices_dir / "foxalien-vasto")
+
+    assert profile.machine_config.origin is Origin.TOP_RIGHT
+    assert profile.machine_config.reverse_x_axis is True
+    assert profile.machine_config.reverse_y_axis is True
+    assert profile.dialect_config["focus_laser_on"] == "G1 F1 M3 S{power:.0f}"
+
+
 def test_falcon_a1_pro_profile_has_camera_setup_details():
     devices_dir = Path(rayforge.__file__).parent / "resources" / "devices"
     profile = DeviceProfile.from_path(devices_dir / "creality-falcon-a1-pro")
@@ -722,6 +734,9 @@ class TestExportMachine:
         machine.usb_vid = None
         machine.usb_pid = None
         machine.has_z_axis = False
+        machine.reverse_x_axis = False
+        machine.reverse_y_axis = False
+        machine.reverse_z_axis = False
         machine.dialect = GcodeDialect.from_dict({"label": name})
         for k, v in overrides.items():
             setattr(machine, k, v)
@@ -770,6 +785,22 @@ class TestExportMachine:
         assert "user_notes" not in manifest["machine"]
         assert (dest_dir / MANIFEST_FILENAME).exists()
         assert (dest_dir / DIALECT_FILENAME).exists()
+
+    def test_export_machine_includes_axis_reversal(self, tmp_path):
+        machine = self._make_mock_machine(
+            "Reversed Axes",
+            reverse_x_axis=True,
+            reverse_y_axis=True,
+        )
+        dest_dir = tmp_path / "reversed"
+        pkg = export_machine_to_dir(machine, dest_dir)
+
+        assert pkg.machine_config.reverse_x_axis is True
+        assert pkg.machine_config.reverse_y_axis is True
+        assert pkg.machine_config.reverse_z_axis is None
+        with open(dest_dir / MANIFEST_FILENAME) as f:
+            manifest = yaml.safe_load(f)
+        assert "reverse_z_axis" not in manifest["machine"]
 
     def test_export_machine_includes_usb_ids(self, tmp_path):
         """The observed USB identity is exported as device.usb_ids and
@@ -861,6 +892,31 @@ class TestCreateMachine:
 
         assert m.soft_limits_enabled is False
         assert m.would_jog_exceed_limits(Axis.X, 9999.0) is False
+
+    @pytest.mark.asyncio
+    async def test_create_machine_applies_axis_reversal(
+        self, tmp_path, lite_context, task_mgr
+    ):
+        """Profiles must be able to ship negative machine space, where
+        the axes count down from the origin corner (issue #613)."""
+        device_dir = _make_device(
+            tmp_path,
+            name="Negative Space",
+            machine_extra={
+                "axis_extents": [400, 400],
+                "origin": "top_right",
+                "reverse_x_axis": True,
+                "reverse_y_axis": True,
+            },
+        )
+        pkg = DeviceProfile.from_path(device_dir)
+        m = pkg.create_machine(lite_context)
+        await _wait_for_tasks(task_mgr)
+
+        assert m.origin is Origin.TOP_RIGHT
+        assert m.reverse_x_axis is True
+        assert m.reverse_y_axis is True
+        assert m.get_soft_limits() == (-400.0, -400.0, 0.0, 0.0)
 
     @pytest.mark.asyncio
     async def test_create_machine_gcode_has_dialect(
