@@ -292,6 +292,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/cf/4c/c73f828fdbcd37eaf21d08fa852544a3ca7c2dbb3ea76873d64f2ea413d1/opencv_python-5.0.0.93-cp37-abi3-manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/cf/f5/2fcc5e30053a938286f17d0edf3f0850b8061b984256fa7c26850b9c8809/aiohttp-3.14.5-cp315-cp315-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/d1/89/5d4c86da1130d9059681e5b6cd7645df5c10279a6a079c5c37dcb2cc6f3f/narwhals-2.27.1-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/d6/02/12c73fd423eb9577b97fc1924966b929eff7074ae6b2e15dd3d30cb9e4ae/segno-1.6.6-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/df/f3/90993aab504fa2e1f28fcc09aa16b6ea4f00e75a037d9136e737855833e2/pyvips-3.2.0.tar.gz
       - pypi: https://files.pythonhosted.org/packages/e4/62/c3c23511ebe3d76dc679db0bb045dfd20ed3452bec12dcbbe8d655498a7d/vtracer-0.6.15.tar.gz
       - pypi: https://files.pythonhosted.org/packages/fa/06/6ab120a209276d8dced861ee11434ae2732ae70f8604df9b26c8ee3120d9/raydriver-0.5.1.tar.gz
@@ -526,6 +527,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/c1/d4/59e74daffcb57a07668852eeeb6035af9f32cbfd7a1d2511f17d2fe6a738/smmap-5.0.3-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/cd/5b/ff5fc58fa2427c30dea74c90053f4fc5eda1e7f3833ed3ecc7147fe2b311/tornado-6.5.10-cp39-abi3-macosx_10_9_universal2.whl
       - pypi: https://files.pythonhosted.org/packages/d1/89/5d4c86da1130d9059681e5b6cd7645df5c10279a6a079c5c37dcb2cc6f3f/narwhals-2.27.1-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/d6/02/12c73fd423eb9577b97fc1924966b929eff7074ae6b2e15dd3d30cb9e4ae/segno-1.6.6-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/df/f3/90993aab504fa2e1f28fcc09aa16b6ea4f00e75a037d9136e737855833e2/pyvips-3.2.0.tar.gz
       - pypi: https://files.pythonhosted.org/packages/e4/62/c3c23511ebe3d76dc679db0bb045dfd20ed3452bec12dcbbe8d655498a7d/vtracer-0.6.15.tar.gz
       - pypi: https://files.pythonhosted.org/packages/fa/01/3591f781b417b382a8487a2356e927acfe858b1043bab0ec47f6805bb109/pymupdf-1.28.2-cp310-abi3-macosx_11_0_arm64.whl
@@ -1010,6 +1012,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/cf/4c/c73f828fdbcd37eaf21d08fa852544a3ca7c2dbb3ea76873d64f2ea413d1/opencv_python-5.0.0.93-cp37-abi3-manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/cf/f5/2fcc5e30053a938286f17d0edf3f0850b8061b984256fa7c26850b9c8809/aiohttp-3.14.5-cp315-cp315-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/d1/89/5d4c86da1130d9059681e5b6cd7645df5c10279a6a079c5c37dcb2cc6f3f/narwhals-2.27.1-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/d6/02/12c73fd423eb9577b97fc1924966b929eff7074ae6b2e15dd3d30cb9e4ae/segno-1.6.6-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/d7/ba/18b6e682ead424ad24bcc134339ae5d1b931cd9ae260540592a058a91279/pyright-1.1.414-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/db/3c/33bac158f8ab7f89b2e59426d5fe2e4f63f7ed25df84c036890172b412b5/cfgv-3.5.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/de/29/48fca82a7ebf7ff7b2e35019cc9537e7f65e4d2aa1215cc5a8792c989251/coverage-7.16.2-cp315-cp315-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl
@@ -1272,6 +1275,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/cd/5b/ff5fc58fa2427c30dea74c90053f4fc5eda1e7f3833ed3ecc7147fe2b311/tornado-6.5.10-cp39-abi3-macosx_10_9_universal2.whl
       - pypi: https://files.pythonhosted.org/packages/ce/6b/d85da8982b41190eafcb9df91dff9d83fc6989e98af4b5be4c8f85510c95/virtualenv-21.14.11-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/d1/89/5d4c86da1130d9059681e5b6cd7645df5c10279a6a079c5c37dcb2cc6f3f/narwhals-2.27.1-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/d6/02/12c73fd423eb9577b97fc1924966b929eff7074ae6b2e15dd3d30cb9e4ae/segno-1.6.6-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/d7/ba/18b6e682ead424ad24bcc134339ae5d1b931cd9ae260540592a058a91279/pyright-1.1.414-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/db/3c/33bac158f8ab7f89b2e59426d5fe2e4f63f7ed25df84c036890172b412b5/cfgv-3.5.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/df/f3/90993aab504fa2e1f28fcc09aa16b6ea4f00e75a037d9136e737855833e2/pyvips-3.2.0.tar.gz
@@ -9663,6 +9667,7 @@ packages:
   - pyyaml==6.0.3
   - ruida-pa==0.22.0
   - scipy==1.18.1
+  - segno==1.6.6
   - semver==3.1.0
   - svgelements==1.9.6
   - threadpoolctl==3.7.0
@@ -10640,6 +10645,13 @@ packages:
   - sqlparse>=0.5.5 ; extra == 'sql'
   - sqlframe>=3.22.0,!=3.39.3 ; extra == 'sqlframe'
   requires_python: '>=3.10'
+- pypi: https://files.pythonhosted.org/packages/d6/02/12c73fd423eb9577b97fc1924966b929eff7074ae6b2e15dd3d30cb9e4ae/segno-1.6.6-py3-none-any.whl
+  name: segno
+  version: 1.6.6
+  sha256: 28c7d081ed0cf935e0411293a465efd4d500704072cdb039778a2ab8736190c7
+  requires_dist:
+  - importlib-metadata>=3.6.0 ; python_full_version < '3.10'
+  requires_python: '>=3.5'
 - pypi: https://files.pythonhosted.org/packages/d7/ba/18b6e682ead424ad24bcc134339ae5d1b931cd9ae260540592a058a91279/pyright-1.1.414-py3-none-any.whl
   name: pyright
   version: 1.1.414
