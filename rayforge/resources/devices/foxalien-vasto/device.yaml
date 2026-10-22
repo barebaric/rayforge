@@ -6,11 +6,13 @@ device:
   description: Desktop CNC router with 400x400mm travel, typically fitted
     with the FoxAlien 40W diode laser module
   notes: |
-    The controller (Grbl 1.1h) uses negative machine coordinates: machine
-    zero is at the top-right corner and both axes count down from there.
-    When zeroing the work origin at the homed corner, note that the homing
-    pull-off ($27) reduces the usable travel by that amount ($130/$131
-    minus $27).
+    The controller (Grbl 1.1h) works in negative machine space: homing
+    drives the head to the bottom-left corner while machine zero sits at
+    the opposite (top-right) corner, so both axes count down from there
+    and positions near the switches are negative. Leave the work
+    coordinate system (G54) offsets at zero and zero Z on the material as
+    needed; the work area frame shows the full travel range and the UI
+    mirrors the machine's native coordinates.
 machine:
   driver: GrblSerialDriver
   driver_args:
