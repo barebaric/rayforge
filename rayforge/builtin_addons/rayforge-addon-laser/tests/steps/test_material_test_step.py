@@ -134,6 +134,53 @@ class TestMaterialTestStep:
         assert kwargs["cols"] == 5
         assert kwargs["rows"] == 3
 
+    def test_zero_line_interval_falls_back_to_spot_size(self, machine):
+        """Line Interval 0 means auto (laser spot size). Passing the 0
+        on to the assembler divides the cell height by zero, which
+        generates billions of scan lines and exhausts memory."""
+        step = MaterialTestStep(name="Test")
+        step.line_interval_mm = 0.0
+        workpiece = MagicMock(spec=["size"])
+        workpiece.size = (100, 100)
+
+        with patch(
+            "rayforge.shared.units.formatter.get_context",
+            return_value=_mock_speed_preference(),
+        ):
+            kwargs = step.get_assembler_kwargs(machine, workpiece)
+
+        assert kwargs["line_interval_mm"] == pytest.approx(0.1)
+
+    def test_none_line_interval_falls_back_to_spot_size(self, machine):
+        """An unset Line Interval resolves to the laser spot size."""
+        step = MaterialTestStep(name="Test")
+        step.line_interval_mm = None
+        workpiece = MagicMock(spec=["size"])
+        workpiece.size = (100, 100)
+
+        with patch(
+            "rayforge.shared.units.formatter.get_context",
+            return_value=_mock_speed_preference(),
+        ):
+            kwargs = step.get_assembler_kwargs(machine, workpiece)
+
+        assert kwargs["line_interval_mm"] == pytest.approx(0.1)
+
+    def test_explicit_line_interval_is_kept(self, machine):
+        """A positive Line Interval reaches the assembler unchanged."""
+        step = MaterialTestStep(name="Test")
+        step.line_interval_mm = 0.25
+        workpiece = MagicMock(spec=["size"])
+        workpiece.size = (100, 100)
+
+        with patch(
+            "rayforge.shared.units.formatter.get_context",
+            return_value=_mock_speed_preference(),
+        ):
+            kwargs = step.get_assembler_kwargs(machine, workpiece)
+
+        assert kwargs["line_interval_mm"] == pytest.approx(0.25)
+
     def test_roundtrip_serialization(self):
         step = MaterialTestStep(name="Test")
         step.test_type = "Engrave"

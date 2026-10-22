@@ -49,6 +49,8 @@ class MaterialTestStep(LaserStep):
     ASSEMBLER_NAME = "material_test_grid"
     HIDDEN = True
 
+    line_interval_mm: float | None
+
     @classmethod
     def recipe_varset(cls) -> VarSet:
         def grid_mode(v) -> GridMode:
@@ -317,11 +319,7 @@ class MaterialTestStep(LaserStep):
         kwargs["include_labels"] = self.include_labels
         kwargs["label_power_percent"] = self.label_power_percent
         kwargs["label_speed"] = self.label_speed
-        kwargs["line_interval_mm"] = (
-            self.line_interval_mm
-            if self.line_interval_mm is not None
-            else spot_y
-        )
+        kwargs["line_interval_mm"] = self.line_interval_mm or spot_y
         # Engrave speed labels in the user's preferred speed unit.
         unit_label, factor, precision = get_display_unit_settings("speed")
         kwargs["speed_unit_label"] = unit_label
