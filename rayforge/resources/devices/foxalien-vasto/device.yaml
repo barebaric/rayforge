@@ -8,10 +8,9 @@ device:
   notes: |
     The controller (Grbl 1.1h) uses negative machine coordinates: machine
     zero is at the top-right corner and both axes count down from there.
-    Extents are the full travel range ($130/$131); after homing, the work
-    area frame follows the position the homing pull-off ($27) leaves the
-    head at, so a work origin zeroed at the homed corner sits exactly on
-    the frame edge.
+    When zeroing the work origin at the homed corner, note that the homing
+    pull-off ($27) reduces the usable travel by that amount ($130/$131
+    minus $27).
 machine:
   driver: GrblSerialDriver
   driver_args:
