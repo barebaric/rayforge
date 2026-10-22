@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-12 18:45+0200\n"
+"POT-Creation-Date: 2026-10-18 04:42+0200\n"
 "PO-Revision-Date: 2025-07-24 22:08+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -245,6 +245,15 @@ msgstr "Leistungsmodulation und Helligkeitsbereich."
 msgid "Change Power Range"
 msgstr "Leistungsbereich ändern"
 
+#: laser_essentials/widgets/offset_fill_page.py
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Offset Fill"
+msgstr "Versatz-Füllung"
+
+#: laser_essentials/widgets/offset_fill_page.py
+msgid "Fill closed shapes with rings that follow the outline."
+msgstr "Füllt geschlossene Formen mit Ringen, die der Kontur folgen."
+
 #: laser_essentials/widgets/levels_adapter.py
 msgid "Auto-adjusted based on image content"
 msgstr "Automatisch angepasst basierend auf Bildinhalt"
@@ -341,7 +350,9 @@ msgstr "Schnittseite"
 
 #: laser_essentials/steps/shrinkwrap_step.py
 #: laser_essentials/steps/wavefront_step.py
-#: laser_essentials/steps/frame_step.py laser_essentials/steps/contour_step.py
+#: laser_essentials/steps/frame_step.py
+#: laser_essentials/steps/offset_fill_step.py
+#: laser_essentials/steps/contour_step.py
 msgid "Offset"
 msgstr "Versatz"
 
@@ -393,6 +404,30 @@ msgstr "Eckenradius"
 #: laser_essentials/steps/frame_step.py
 msgid "Radius used to round the frame's corners"
 msgstr "Radius zum Abrunden der Rahmenecken"
+
+#: laser_essentials/steps/offset_fill_step.py
+#: laser_essentials/steps/material_test.py
+msgid "Line Interval"
+msgstr "Linienabstand"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid ""
+"Distance between neighbouring fill rings. Defaults to the laser spot size"
+msgstr ""
+"Abstand zwischen benachbarten Füllringen. Standardmäßig wird die "
+"Laserspotgröße verwendet"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Distance of the first ring inside the outline"
+msgstr "Abstand des ersten Rings innerhalb der Kontur"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Fill Direction"
+msgstr "Füllrichtung"
+
+#: laser_essentials/steps/offset_fill_step.py
+msgid "Order in which the rings are cut"
+msgstr "Reihenfolge, in der die Ringe geschnitten werden"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Mode"
@@ -661,10 +696,6 @@ msgstr "Abstand"
 #: laser_essentials/steps/material_test.py
 msgid "Gap between test squares"
 msgstr "Abstand zwischen Testquadraten"
-
-#: laser_essentials/steps/material_test.py
-msgid "Line Interval"
-msgstr "Linienabstand"
 
 #: laser_essentials/steps/material_test.py
 msgid ""

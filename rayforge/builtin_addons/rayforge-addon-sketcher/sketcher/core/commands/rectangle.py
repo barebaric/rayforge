@@ -740,7 +740,7 @@ class RectangleCommand(SketchChangeCommand):
         registry.remove_entities_by_id(list(entity_ids_to_remove))
 
         # Remove only the preview-derived points (not start/end)
-        registry.points = [p for p in registry.points if p.id not in point_ids]
+        registry.remove_points(point_ids)
 
         preview_state.center_on_start = center_on_start
         preview_state.preview_ids = (
@@ -785,7 +785,7 @@ class RectangleCommand(SketchChangeCommand):
         registry.remove_entities_by_id(list(entity_ids_to_remove))
 
         # Remove points
-        registry.points = [p for p in registry.points if p.id not in point_ids]
+        registry.remove_points(point_ids)
 
     def _do_execute(self) -> None:
         if self.add_cmd:
@@ -843,7 +843,7 @@ class RectangleCommand(SketchChangeCommand):
         # If the start point was temporary, remove it from the registry
         # and add its object to the command to be re-added properly.
         if self.is_start_temp:
-            reg.points.remove(start_p)
+            reg.remove_points([start_p.id])
             points_to_add.append(start_p)
 
         self.add_cmd = AddItemsCommand(

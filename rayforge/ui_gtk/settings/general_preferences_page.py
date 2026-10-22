@@ -1,9 +1,9 @@
 import logging
 from gettext import gettext as _
 from pathlib import Path
-from typing import ClassVar
+from typing import Any, ClassVar
 
-from gi.repository import Adw, GLib, Gtk
+from gi.repository import Adw, Gio, GLib, Gtk
 
 from ...context import get_context
 from ...core.config import OpsColorMode, RightPanelMode, StartupBehavior
@@ -474,7 +474,14 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
                     parent = window.get_transient_for()
                     if parent is not None:
                         app = parent.get_application()
-                if app is not None:
+                if app is None:
+                    # On macOS the window deliberately has no transient
+                    # parent (see patched_dialog_window); fall back to
+                    # the running application itself.
+                    default_app: Any = Gio.Application.get_default()
+                    if default_app is not None:
+                        default_app.request_restart()
+                else:
                     app.request_restart()
 
         dialog.connect("response", _on_response)

@@ -442,18 +442,14 @@ class CreateArrayCommand(SketchChangeCommand):
                 | set(self._extra_template_pids)
             ):
                 remap_point_refs(constr, inverse)
-            self.sketch.registry.points = [
-                p
-                for p in self.sketch.registry.points
-                if p.id not in self._clone_pid_map.values()
-            ]
+            self.sketch.registry.remove_points(self._clone_pid_map.values())
         if self._erased_constraints:
             self.sketch.constraints.extend(self._erased_constraints)
 
     def _reapply_extraction(self) -> None:
         """Redoes _extract_template after an undo rolled it back."""
         if self._clone_pid_map:
-            self.sketch.registry.points.extend(self._cloned_points)
+            self.sketch.registry.add_points(self._cloned_points)
             extraction_group = EntityGroup(
                 self.sketch.registry,
                 self.template_entity_ids + self._extracted_helper_ids,

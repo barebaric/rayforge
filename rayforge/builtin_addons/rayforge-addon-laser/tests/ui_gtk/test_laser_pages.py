@@ -10,10 +10,19 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
 from gi.repository import Adw, Gtk
-from laser_essentials.steps import EngraveStep, MaterialTestStep
+from laser_essentials.material_test_helpers import GridMode
+from laser_essentials.steps import (
+    EngraveStep,
+    MaterialTestStep,
+    OffsetFillStep,
+)
+from laser_essentials.widgets import ASSEMBLER_WIDGETS
 from laser_essentials.widgets.contour_page import ContourStepSettingsPage
 from laser_essentials.widgets.material_test_grid_page import (
     MaterialTestGridSettingsPage,
+)
+from laser_essentials.widgets.offset_fill_page import (
+    OffsetFillStepSettingsPage,
 )
 from laser_essentials.widgets.raster_page import RasterSettingsPage
 from laser_essentials.widgets.raster_power_widget import RasterPowerWidget
@@ -228,7 +237,7 @@ def test_material_test_speed_rows_are_unit_aware(editor, ui_context):
 def test_material_test_offset_rows_are_unit_aware(editor, ui_context):
     """Material-test offset rows adapt to the user's unit preference."""
     step = MaterialTestStep()
-    step.grid_mode = "Speed vs Offset"
+    step.grid_mode = GridMode.SPEED_VS_OFFSET.value
     page = MaterialTestGridSettingsPage(editor, step)
 
     offset = cast(LengthSpinRow, _row(page, "offset_range"))
@@ -283,7 +292,7 @@ def test_material_test_grid_mode_visibility(editor, laser_machine, ui_context):
     assert passes.get_visible() is False
     assert offset.get_visible() is False
 
-    step.grid_mode = "Speed vs Offset"
+    step.grid_mode = GridMode.SPEED_VS_OFFSET.value
     step.updated.send(step)
     assert power.get_visible() is False
     assert speed.get_visible() is True
@@ -372,7 +381,7 @@ def test_material_test_speed_vs_offset_defaults(
 
     mode_adapter = page.grid_widget.adapter_for("grid_mode")
     assert mode_adapter is not None
-    mode_adapter.set_value("Speed vs Offset")
+    mode_adapter.set_value(GridMode.SPEED_VS_OFFSET.value)
     page._sync_grid_context()
     page._apply_speed_vs_offset_defaults()
 
@@ -802,3 +811,13 @@ def test_dialog_initial_laser_page(editor, laser_machine, ui_context):
     assert dialog._extra_buttons[0].get_active() is True
     assert dialog.btn_step_settings.get_active() is False
     dialog.close()
+
+
+@pytest.mark.ui
+def test_offset_fill_page_shows_fill_rows(editor, laser_machine, ui_context):
+    assert ASSEMBLER_WIDGETS["offset_fill"] is OffsetFillStepSettingsPage
+    step = OffsetFillStep.create(ui_context)
+    page = OffsetFillStepSettingsPage(editor, step)
+    for key in ("line_interval_mm", "offset_mm", "fill_direction"):
+        _row(page, key)
+    assert isinstance(_row(page, "line_interval_mm"), LengthSpinRow)

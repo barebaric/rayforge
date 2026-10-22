@@ -357,3 +357,84 @@ def test_invalid_entity_id_returns_empty():
     registry = EntityRegistry()
     connected = registry.get_connected_entity_ids(999)
     assert connected == set()
+
+
+def test_get_point_with_interleaved_entity_ids(registry):
+    """Point IDs diverge from list positions once entities share the
+    ID counter (as in Sketch.from_geometry)."""
+    p1 = registry.add_point(0, 0)
+    line_id = registry.add_line(p1, p1)
+    p2 = registry.add_point(10, 10)
+    arc_id = registry.add_arc(p1, p2, p2)
+
+    assert [p.id for p in registry.points] == [p1, p2]
+    assert registry.points[0].id == p1
+    assert registry.points[1].id == p2
+
+    assert registry.get_point(p1) is registry.points[0]
+    assert registry.get_point(p2) is registry.points[1]
+    with pytest.raises(IndexError):
+        registry.get_point(line_id)
+    with pytest.raises(IndexError):
+        registry.get_point(arc_id)
+
+
+def test_remove_points_keeps_lookup_consistent(registry):
+    """Removed IDs raise and survivors keep resolving afterwards."""
+    p1 = registry.add_point(0, 0)
+    p2 = registry.add_point(10, 0)
+    p3 = registry.add_point(20, 0)
+
+    registry.remove_points([p1, p3])
+
+    assert [p.id for p in registry.points] == [p2]
+    with pytest.raises(IndexError):
+        registry.get_point(p1)
+    with pytest.raises(IndexError):
+        registry.get_point(p3)
+    assert registry.get_point(p2).x == 10.0
+
+    registry.remove_points([p2])
+    assert registry.points == []
+
+
+def test_add_points_bulk(registry):
+    """Pre-built points with final IDs become resolvable in order."""
+    points = [Point(7, 1.0, 2.0), Point(9, 3.0, 4.0)]
+    registry.add_points(points)
+
+    assert [p.id for p in registry.points] == [7, 9]
+    assert registry.get_point(7) is points[0]
+    assert registry.get_point(9) is points[1]
+
+    registry.add_points([])
+    assert len(registry.points) == 2
+
+
+def test_set_points_replaces_list_and_lookup(registry):
+    """set_points swaps the list and drops stale IDs from the map."""
+    old = registry.add_point(0, 0)
+    replacement = Point(old, 5.0, 5.0)
+
+    registry.set_points([replacement])
+
+    assert registry.get_point(old) is replacement
+    with pytest.raises(IndexError):
+        registry.get_point(999)
+    assert len(registry.points) == 1
+
+
+def test_from_dict_rebuilds_lookup_with_interleaved_ids():
+    """Deserialization must resolve points whose IDs differ from
+    their list positions."""
+    reg = EntityRegistry()
+    p1 = reg.add_point(1, 2)
+    reg.add_line(p1, p1)
+    p2 = reg.add_point(3, 4)
+
+    new_reg = EntityRegistry.from_dict(reg.to_dict())
+
+    assert new_reg.get_point(p1).pos() == (1, 2)
+    assert new_reg.get_point(p2).pos() == (3, 4)
+    with pytest.raises(IndexError):
+        new_reg.get_point(reg._id_counter)

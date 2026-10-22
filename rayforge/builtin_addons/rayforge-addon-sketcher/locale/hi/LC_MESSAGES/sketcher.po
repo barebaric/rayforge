@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-04 18:52+0200\n"
+"POT-Creation-Date: 2026-10-15 05:49+0200\n"
 "PO-Revision-Date: 2026-09-27 22:58\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -299,6 +299,10 @@ msgstr "प्रतिच्छेदन"
 msgid "Exclude"
 msgstr "बाहर रखें"
 
+#: sketcher/core/commands/polygon.py
+msgid "Add Polygon"
+msgstr "बहुभुज जोड़ें"
+
 #: sketcher/core/commands/point.py
 msgid "Move Point"
 msgstr "बिंदु खिसकाएँ"
@@ -433,7 +437,7 @@ msgstr "अक्ष पर बाधित करें"
 
 #: sketcher/ui_gtk/tools/select_tool.py sketcher/ui_gtk/tools/path_tool.py
 #: sketcher/ui_gtk/tools/rectangle_tool.py sketcher/ui_gtk/tools/arc_tool.py
-#: sketcher/ui_gtk/tools/circle_tool.py
+#: sketcher/ui_gtk/tools/circle_tool.py sketcher/ui_gtk/tools/polygon_tool.py
 msgid "Toggle Magnetic Snap"
 msgstr "चुंबकीय स्नैप टॉगल करें"
 
@@ -689,6 +693,7 @@ msgid "Rounded Rectangle"
 msgstr "गोलाकार आयत"
 
 #: sketcher/ui_gtk/tools/rounded_rect_tool.py
+#: sketcher/ui_gtk/tools/polygon_tool.py
 msgid "R"
 msgstr "R"
 
@@ -727,6 +732,26 @@ msgstr "टेक्स्ट बॉक्स"
 #: sketcher/ui_gtk/tools/diameter_constraint_tool.py
 msgid "Add Diameter Constraint"
 msgstr "व्यास कॉन्स्ट्रेंट जोड़ें"
+
+#: sketcher/ui_gtk/tools/polygon_tool.py sketcher/ui_gtk/menu.py
+msgid "Polygon"
+msgstr "बहुभुज"
+
+#: sketcher/ui_gtk/tools/polygon_tool.py
+msgid "N"
+msgstr "N"
+
+#: sketcher/ui_gtk/tools/polygon_tool.py
+msgid "Star"
+msgstr "तारा"
+
+#: sketcher/ui_gtk/tools/polygon_tool.py
+msgid "Type radius, corners and star ratio (R N Star)"
+msgstr "त्रिज्या, कोने और तारा अनुपात टाइप करें (R N तारा)"
+
+#: sketcher/ui_gtk/tools/polygon_tool.py
+msgid "Set first corner"
+msgstr "पहला कोना सेट करें"
 
 #: sketcher/ui_gtk/tools/waypoint_smooth_tool.py
 msgid "Smooth"

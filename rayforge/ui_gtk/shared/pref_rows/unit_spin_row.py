@@ -150,6 +150,7 @@ class UnitSpinRow(SpinRow):
             except ValueError:
                 current = float(self._spin_button.get_value())
             if abs(display_value - current) < 1e-9:
+                self._last_emitted_value = display_value
                 return
             # A value above the bound (e.g. a step loaded from a faster
             # machine) is shown via the text without moving the bound, so
@@ -166,6 +167,11 @@ class UnitSpinRow(SpinRow):
                 return
             else:
                 self._spin_button.set_value(display_value)
+            # GTK delivers the entry text update asynchronously; record
+            # the value now so that the deferred change notification is
+            # recognized as an echo of this programmatic set rather
+            # than a user edit.
+            self._last_emitted_value = display_value
         finally:
             self._is_updating = False
 

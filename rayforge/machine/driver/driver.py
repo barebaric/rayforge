@@ -526,6 +526,17 @@ class Driver(ABC):
         """
         return False
 
+    def refresh_dialect(self) -> None:
+        """
+        Informs a live driver that a dialect definition changed.
+
+        Drivers that keep a resolved copy of the dialect's interactive
+        command templates re-read them so manual commands use the
+        edited templates without waiting for a reconnect or job. The
+        default is a no-op for drivers that resolve the dialect per
+        command.
+        """
+
     @classmethod
     @abstractmethod
     def get_setup_vars(cls) -> "VarSet":

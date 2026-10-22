@@ -16,7 +16,7 @@ from gi.repository import Gdk, Graphene, Gtk
 from raygeo.geo import Matrix
 
 from ...core.color import ColorRGBA
-from ..shared.keyboard import is_primary_keyval
+from ..shared.keyboard import is_primary_keyval, is_primary_modifier
 from . import transform
 from .cursor import get_cursor_for_region
 from .element import CanvasElement
@@ -1357,6 +1357,8 @@ class Canvas(Gtk.DrawingArea):
         elif is_primary_keyval(keyval):
             self._ctrl_pressed = True
             # Allow propagation for accelerators
+        elif self._edit_context_handles_key(keyval, state):
+            return True
         elif keyval in (Gdk.KEY_Delete, Gdk.KEY_BackSpace):
             if self.edit_context and self.edit_context.handle_edit_key(keyval):
                 return True
@@ -1367,6 +1369,13 @@ class Canvas(Gtk.DrawingArea):
                 self._finalize_selection_state()
             return True
         return False
+
+    def _edit_context_handles_key(
+        self, keyval: int, state: Gdk.ModifierType
+    ) -> bool:
+        if not self.edit_context or is_primary_modifier(state):
+            return False
+        return self.edit_context.handle_edit_key(keyval)
 
     def on_key_released(
         self, controller, keyval: int, keycode: int, state: Gdk.ModifierType

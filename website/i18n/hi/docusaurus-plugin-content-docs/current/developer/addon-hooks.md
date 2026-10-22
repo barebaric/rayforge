@@ -78,6 +78,105 @@ def main_window_ready(main_window):
     main_window.add_page("my-page", MyCustomPage())
 ```
 
+## जॉब मॉनिटरिंग हुक
+
+ये हुक मशीन पर चल रहे जॉब के जीवनचक्र और प्रगति की जानकारी देते हैं, ताकि ऐड-ऑन तब प्रतिक्रिया दे
+सकें जब जॉब शुरू हो, आगे बढ़े, रुके, फिर शुरू हो या पूरा हो — उदाहरण के लिए, बाहरी कमांड चलाना या
+स्मार्ट-होम सिस्टम अपडेट करना.
+
+सभी को एक `JobStatus` स्नैपशॉट (`rayforge.machine.job_status.JobStatus`) मिलता है, जो इन फ़ील्ड वाला
+अपरिवर्तनीय ऑब्जेक्ट है:
+
+- `machine_id` और `machine_name`: जॉब चलाने वाली मशीन की पहचान
+- `kind`: बर्न जॉब के लिए `JobKind.SEND`, आउटलाइन ट्रेस के लिए `JobKind.FRAME`
+- `phase`: `JobPhase.RUNNING` या `JobPhase.PAUSED`
+- `started_at`: जॉब शुरू होने का वॉल-क्लॉक समय (युग से सेकंड)
+- `elapsed_seconds`: जॉब शुरू होने के बाद बीते सेकंड
+- `total_distance` और `traveled_distance`: पथ की कुल और तय की गई लंबाई, मिलीमीटर में
+- `progress_fraction`: जॉब का पूरा हुआ अंश, `0.0` से `1.0` तक
+- `eta_seconds`: अनुमानित शेष सेकंड, या अज्ञात होने पर `None`
+- `estimated_seconds`: जॉब की मॉडल की गई कुल अवधि सेकंड में, या अज्ञात होने पर `None`
+
+हैंडलर मुख्य थ्रेड पर चलते हैं और जल्दी लौटने चाहिए; लंबा काम (जैसे सबप्रोसेस शुरू करना या नेटवर्क
+कॉल) बैकग्राउंड थ्रेड को सौंपें.
+
+### `on_job_started(status)`
+
+जब कोई जॉब किसी मशीन पर चलना शुरू होता है तब बुलाया जाता है.
+
+```python
+@hookimpl
+def on_job_started(status):
+    logger.info(f"Job on {status.machine_name} started")
+```
+
+### `on_job_updated(status)`
+
+जॉब चलने के दौरान प्रगति अपडेट के साथ बुलाया जाता है, अधिकतम लगभग एक बार प्रति सेकंड.
+
+```python
+@hookimpl
+def on_job_updated(status):
+    print(
+        f"Progress: {status.progress_fraction:.0%}, "
+        f"ETA {status.eta_seconds}s"
+    )
+```
+
+### `on_job_paused(status)` / `on_job_resumed(status)`
+
+तब बुलाया जाता है जब चल रहा जॉब फीड होल्ड (रुकना) में जाता है या उससे बाहर निकलता है.
+
+### `on_job_finished(status, outcome, message="")`
+
+जब कोई जॉब पूरा होता है, चाहे किसी भी तरह हुआ हो, तब बुलाया जाता है. `outcome` तर्क `JobOutcome` का
+सदस्य है — `COMPLETED`, `CANCELLED` या `FAILED` — और `message` में विफलता पर त्रुटि विवरण होता है.
+पूरे हुए जॉब के लिए स्नैपशॉट का `progress_fraction` `1.0` होता है.
+
+```python
+@hookimpl
+def on_job_finished(status, outcome, message=""):
+    if outcome == JobOutcome.FAILED:
+        notify(f"Job failed: {message}")
+    else:
+        notify(f"Job {outcome.name.lower()} on {status.machine_name}")
+```
+
+नवीनतम स्नैपशॉट घटनाओं के बीच भी पूछा जा सकता है: जॉब चलते समय `machine.current_job` उसका
+`JobStatus` लौटाता है, और कोई जॉब न चल रहा हो तो `None`.
+
+यहाँ एक पूर्ण ऐड-ऑन है जो जॉब की हर स्थिति परिवर्तन पर एक शेल कमांड चलाता है:
+
+```python
+import subprocess
+
+import pluggy
+
+from rayforge.machine.job_status import JobOutcome
+
+hookimpl = pluggy.HookimplMarker("rayforge")
+
+
+@hookimpl
+def on_job_started(status):
+    subprocess.Popen(["/usr/local/bin/notify-ha", "started"])
+
+
+@hookimpl
+def on_job_paused(status):
+    subprocess.Popen(["/usr/local/bin/notify-ha", "paused"])
+
+
+@hookimpl
+def on_job_resumed(status):
+    subprocess.Popen(["/usr/local/bin/notify-ha", "resumed"])
+
+
+@hookimpl
+def on_job_finished(status, outcome, message=""):
+    subprocess.Popen(["/usr/local/bin/notify-ha", outcome.name.lower()])
+```
+
 ## पंजीकरण हुक
 
 ये हुक आपको Rayforge की विभिन्न रजिस्ट्रियों के साथ कस्टम घटक पंजीकृत करने देते हैं.
@@ -287,7 +386,10 @@ def transformer_settings_loaded(dialog, step, transformer):
 पश्च-संगतता बनाए रखने के लिए हुक संस्करणित होते हैं. नए हुक जोड़ने या मौजूदा बदलने पर API संस्करण
 बढ़ाया जाता है. आपके ऐड-ऑन का `api_version` फ़ील्ड कम से कम न्यूनतम समर्थित संस्करण होना चाहिए.
 
-वर्तमान API संस्करण 9 है. हाल के संस्करणों में क्या बदला:
+वर्तमान API संस्करण 24 है. हाल के संस्करणों में क्या बदला:
+
+**संस्करण 24** ने जॉब मॉनिटरिंग हुक `on_job_started`, `on_job_updated`, `on_job_paused`,
+`on_job_resumed`, और `on_job_finished`, साथ ही `Machine.current_job` पोलिंग API जोड़ी.
 
 **संस्करण 9** ने `main_window_ready`, `register_exporters`, `register_importers`, और
 `register_renderers` जोड़े.

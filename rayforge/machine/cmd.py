@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import Awaitable, Callable, Coroutine
 from functools import partial
@@ -20,12 +21,14 @@ from ..pipeline.encoder.context import GcodeContext, JobInfo
 from ..shared.util.template import TemplateFormatter
 from .driver.driver import FrameCorner
 from .job_monitor import JobMonitor
+from .job_status import JobKind, JobOutcome
 from .kinematic_mapping import KinematicMapping
 from .models.coordspace import MachineSpace
 
 if TYPE_CHECKING:
     from ..core.layer import Layer
     from ..doceditor.editor import DocEditor
+    from ..shared.tasker.task import Task
     from .models.laser import Laser
     from .models.machine import Machine
     from .models.rotary_module import RotaryModule
@@ -94,6 +97,7 @@ class MachineCmd:
             Coroutine,
         ]
         | None = None,
+        kind: JobKind = JobKind.SEND,
     ):
         """
         Internal helper to execute a job on a driver while managing
@@ -102,6 +106,10 @@ class MachineCmd:
         The job runs the encoded pipeline output, unless *execute* is
         given: then it calls ``execute(on_command_done)`` instead, which
         runs a driver-defined action (framing) under the same monitoring.
+
+        Args:
+            kind: Whether the job is reported to addons as a send or
+                frame job.
         """
         if self._current_monitor:
             msg = _(
@@ -146,11 +154,15 @@ class MachineCmd:
             )
             self._current_monitor = JobMonitor(
                 ops,
+                machine=machine,
+                kind=kind,
+                context=get_context(),
                 estimated_seconds=estimated_seconds,
                 default_feed_rate=machine.max_cut_speed,
                 default_rapid_rate=machine.max_travel_speed,
                 acceleration=machine.acceleration,
             )
+            self._current_monitor.begin()
 
             if self._on_progress_callback:
                 logger.debug("Connecting progress handler to JobMonitor")
@@ -171,10 +183,6 @@ class MachineCmd:
                     else None
                 )
                 await execute(on_command_done)
-                if self._current_monitor and not (
-                    machine.reports_granular_progress
-                ):
-                    self._current_monitor.mark_as_complete()
             elif encoded is None:
                 # No driver-defined action: the pipeline must have
                 # produced encoded output.
@@ -193,8 +201,8 @@ class MachineCmd:
                     ops,
                     on_command_done=None,
                 )
-                if self._current_monitor:
-                    self._current_monitor.mark_as_complete()
+
+            self._end_monitor(JobOutcome.COMPLETED)
 
             estimated_hours = estimated_seconds / 3600.0
             machine.add_machine_hours(estimated_hours)
@@ -202,8 +210,19 @@ class MachineCmd:
                 f"Job completed. Estimated time: {estimated_hours:.3f}h "
                 f"added to machine hours."
             )
+        except asyncio.CancelledError:
+            self._end_monitor(JobOutcome.CANCELLED)
+            raise
+        except Exception as e:
+            self._end_monitor(JobOutcome.FAILED, message=str(e))
+            raise
         finally:
             cleanup_monitor()
+
+    def _end_monitor(self, outcome: JobOutcome, message: str = "") -> None:
+        """Finalizes the active job monitor with the given outcome."""
+        if self._current_monitor is not None:
+            self._current_monitor.end(outcome, message)
 
     async def _run_frame_action(
         self,
@@ -310,6 +329,7 @@ class MachineCmd:
             machine,
             on_progress=on_progress,
             execute=execute,
+            kind=JobKind.FRAME,
         )
 
     async def _run_send_action(
@@ -333,6 +353,7 @@ class MachineCmd:
             machine,
             on_progress=on_progress,
             encoded=artifact.encoded_output,
+            kind=JobKind.SEND,
         )
 
     async def _start_job(
@@ -372,6 +393,10 @@ class MachineCmd:
 
             if not handle:
                 logger.warning("Job has no operations.")
+                self._editor.notification_requested.send(
+                    self,
+                    message=_("The document produces no toolpath."),
+                )
                 return
 
             # 2. Use the safe context manager to acquire and release the
@@ -544,6 +569,7 @@ class MachineCmd:
         head: Laser,
         percent: float,
         machine: Machine | None = None,
+        when_done: Callable[[Task], None] | None = None,
     ):
         """
         Adds a task to set the laser power to a specific percentage.
@@ -551,13 +577,16 @@ class MachineCmd:
         Args:
             head: The laser head to control
             percent: Power percentage (0-1.0). 0 disables power.
+            when_done: Invoked with the task once it finishes, so
+                callers can detect commands that did not take effect.
         """
         if machine is None:
             config = get_context().config
             machine = config.machine
         if machine:
             self._editor.task_manager.add_coroutine(
-                lambda ctx: machine.set_power(head, percent)
+                lambda ctx: machine.set_power(head, percent),
+                when_done=when_done,
             )
 
     def set_focus_power(
@@ -565,6 +594,7 @@ class MachineCmd:
         head: Laser,
         percent: float,
         machine: Machine | None = None,
+        when_done: Callable[[Task], None] | None = None,
     ):
         """
         Adds a task to set the laser power for focus mode.
@@ -572,13 +602,16 @@ class MachineCmd:
         Args:
             head: The laser head to control
             percent: Power percentage (0-1.0). 0 disables power.
+            when_done: Invoked with the task once it finishes, so
+                callers can detect commands that did not take effect.
         """
         if machine is None:
             config = get_context().config
             machine = config.machine
         if machine:
             self._editor.task_manager.add_coroutine(
-                lambda ctx: machine.set_focus_power(head, percent)
+                lambda ctx: machine.set_focus_power(head, percent),
+                when_done=when_done,
             )
 
     def home(self, machine: Machine, axis: Axis | None = None):

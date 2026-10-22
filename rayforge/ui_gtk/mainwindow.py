@@ -2171,9 +2171,9 @@ class MainWindow(Adw.ApplicationWindow):
             )
             self.surface.set_laser_dot_visible(connected)
             if state and connected:
-                x, y = state.machine_pos[:2]
-                if x is not None and y is not None:
-                    self.surface.set_laser_dot_position(x, y)
+                pos = active_machine.get_beam_position()
+                if pos is not None:
+                    self.surface.set_laser_dot_position(*pos)
 
             # Set macro action sensitivity
             can_run_macros = connected and not is_job_or_task_active

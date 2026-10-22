@@ -16,7 +16,12 @@ from gi.repository import GLib
 from raygeo.geo import Matrix
 
 from .hittest import check_pixel_hit
-from .region import ElementRegion, check_region_hit, get_region_rect
+from .region import (
+    ElementRegion,
+    check_region_hit,
+    flat_axis_padding,
+    get_region_rect,
+)
 
 if TYPE_CHECKING:
     from raygeo.geo.types import Point, Rect
@@ -1044,23 +1049,52 @@ class CanvasElement:
             )
 
         # 3. Now, perform a simple bounding box check in our own geometry
-        # space.
+        # space. Flat axes are widened by a few screen pixels so that
+        # perfectly horizontal or vertical elements remain selectable.
+        tol_x, tol_y, flat_x, flat_y = self._get_hit_tolerances()
         if not (
-            0 <= local_geom_x < self.width and 0 <= local_geom_y < self.height
+            -tol_x <= local_geom_x < self.width + tol_x
+            and -tol_y <= local_geom_y < self.height + tol_y
         ):
             return None
 
         # 4. Optional: If inside the bounding box, perform pixel-perfect check.
         # Draggable elements should be hittable anywhere within their bbox.
+        # Flat elements are skipped: their rendered buffer has no height (or
+        # width), so a pixel lookup can never succeed.
         if (
             self.pixel_perfect_hit
             and not self.draggable
+            and not (flat_x or flat_y)
             and not self.is_pixel_opaque(local_geom_x, local_geom_y)
         ):
             return None
 
         # 5. If all checks pass, we have a hit on this element.
         return self
+
+    def _get_hit_tolerances(self) -> tuple[float, float, bool, bool]:
+        """
+        Calculates a local-space hit tolerance for each axis.
+
+        A perfectly flat element, such as a horizontal line with zero
+        height, would otherwise be infinitely thin and impossible to
+        click. Each axis that is degenerate on screen is widened by a
+        small number of screen pixels so the element behaves like a very
+        thin rectangle.
+
+        Returns:
+            A tuple ``(tol_x, tol_y, flat_x, flat_y)``. The tolerances
+            are in the element's local geometry space.
+        """
+        transform = self.get_world_transform()
+        if self.canvas:
+            transform = self.canvas.view_transform @ transform
+        scale_x, scale_y = transform.get_abs_scale()
+
+        tol_x = flat_axis_padding(self.width, scale_x)
+        tol_y = flat_axis_padding(self.height, scale_y)
+        return tol_x, tol_y, tol_x > 0.0, tol_y > 0.0
 
     def is_pixel_opaque(self, local_x: float, local_y: float) -> bool:
         """

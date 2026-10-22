@@ -13,6 +13,7 @@ from rayforge.core.step import legacy_producer_params
 from rayforge.core.varset import (
     BoolVar,
     ChoiceVar,
+    LabeledChoiceVar,
     LengthVar,
     SliderFloatVar,
     SpeedVar,
@@ -21,8 +22,12 @@ from rayforge.core.varset import (
 )
 from rayforge.machine.models.laser import LaserHead
 from rayforge.pipeline.transformer.registry import transformer_registry
-from rayforge.shared.units.formatter import get_display_unit_settings
+from rayforge.shared.units.formatter import (
+    format_value,
+    get_display_unit_settings,
+)
 
+from ..material_test_helpers import GridMode
 from .laser_step import LaserStep
 
 if TYPE_CHECKING:
@@ -46,36 +51,26 @@ class MaterialTestStep(LaserStep):
 
     @classmethod
     def recipe_varset(cls) -> VarSet:
-        def is_power_vs_speed(v):
-            return v.get("grid_mode") == "Power vs Speed"
-
-        def is_power_vs_passes(v):
-            return v.get("grid_mode") == "Power vs Passes"
-
-        def is_speed_vs_passes(v):
-            return v.get("grid_mode") == "Speed vs Passes"
-
-        def is_speed_vs_offset(v):
-            return v.get("grid_mode") == "Speed vs Offset"
+        def grid_mode(v) -> GridMode:
+            return GridMode.coerce(v.get("grid_mode"))
 
         def uses_power_range(v):
-            return is_power_vs_speed(v) or is_power_vs_passes(v)
+            return grid_mode(v).uses_power_range
 
         def uses_speed_range(v):
-            return (
-                is_power_vs_speed(v)
-                or is_speed_vs_passes(v)
-                or is_speed_vs_offset(v)
-            )
+            return grid_mode(v).uses_speed_range
 
         def uses_passes_range(v):
-            return is_power_vs_passes(v) or is_speed_vs_passes(v)
+            return grid_mode(v).uses_passes_range
+
+        def uses_offset_range(v):
+            return grid_mode(v).uses_offset_range
 
         def uses_fixed_speed(v):
-            return is_power_vs_passes(v)
+            return grid_mode(v).uses_fixed_speed
 
         def uses_fixed_power(v):
-            return is_speed_vs_passes(v) or is_speed_vs_offset(v)
+            return grid_mode(v).uses_fixed_power
 
         def labels_active(v):
             return bool(v.get("include_labels", False))
@@ -93,17 +88,12 @@ class MaterialTestStep(LaserStep):
                     default="Cut",
                     allow_none=False,
                 ),
-                ChoiceVar(
+                LabeledChoiceVar(
                     key="grid_mode",
                     label=_("Grid Mode"),
                     description=_("Choose which parameters to vary on axes"),
-                    choices=[
-                        "Power vs Speed",
-                        "Power vs Passes",
-                        "Speed vs Passes",
-                        "Speed vs Offset",
-                    ],
-                    default="Power vs Speed",
+                    choices=[(mode.label, mode.value) for mode in GridMode],
+                    default=GridMode.POWER_VS_SPEED.value,
                     allow_none=False,
                 ),
                 TupleVar(
@@ -151,7 +141,7 @@ class MaterialTestStep(LaserStep):
                 ),
                 SliderFloatVar(
                     key="label_power_percent",
-                    label=_("Label Engrave Power (%)"),
+                    label=_("Label Engrave Power"),
                     default=10.0,
                     min_val=0.0,
                     max_val=100.0,
@@ -243,7 +233,7 @@ class MaterialTestStep(LaserStep):
                     max_val=10.0,
                     digits=2,
                     quantity="length",
-                    visible_when=is_speed_vs_offset,
+                    visible_when=uses_offset_range,
                 ),
             ]
         )
@@ -251,7 +241,7 @@ class MaterialTestStep(LaserStep):
     def __init__(self, name: str | None = None, typelabel: str | None = None):
         super().__init__(typelabel=typelabel or self.TYPELABEL, name=name)
         self.test_type = "Cut"
-        self.grid_mode = "Power vs Speed"
+        self.grid_mode = GridMode.POWER_VS_SPEED.value
         self.speed_range = (100.0, 500.0)
         self.power_range = (10.0, 100.0)
         self.passes_range = (1, 5)
@@ -265,6 +255,38 @@ class MaterialTestStep(LaserStep):
         self.label_power_percent = 10.0
         self.label_speed = 1000.0
         self.line_interval_mm = None
+
+    def _used_speeds(self) -> list[float]:
+        """The speeds this grid actually engraves with, depending on
+        the active grid mode and label setting."""
+        mode = GridMode.coerce(self.grid_mode)
+        speeds: list[float] = []
+        if mode.uses_speed_range:
+            speeds.extend(self.speed_range)
+        if mode.uses_fixed_speed:
+            speeds.append(self.fixed_speed)
+        if self.include_labels:
+            speeds.append(self.label_speed)
+        return speeds
+
+    def check(self, machine) -> list[str]:
+        """Validate the grid's actual speeds instead of the unused
+        base ``cut_speed``/``travel_speed`` defaults."""
+        warnings: list[str] = []
+        if machine is None:
+            return warnings
+        for speed in dict.fromkeys(self._used_speeds()):
+            if speed > machine.max_cut_speed:
+                warnings.append(
+                    _(
+                        "Cut speed ({value}) exceeds the machine's "
+                        "maximum ({max})."
+                    ).format(
+                        value=format_value(speed, "speed"),
+                        max=format_value(machine.max_cut_speed, "speed"),
+                    )
+                )
+        return warnings
 
     def get_assembler_kwargs(
         self,
@@ -287,7 +309,7 @@ class MaterialTestStep(LaserStep):
         kwargs["min_offset"] = self.offset_range[0]
         kwargs["max_offset"] = self.offset_range[1]
         kwargs["mode"] = "cut" if self.test_type == "Cut" else "engrave"
-        kwargs["grid_mode"] = self.grid_mode
+        kwargs["grid_mode"] = GridMode.coerce(self.grid_mode).value
         kwargs["fixed_speed"] = self.fixed_speed
         kwargs["fixed_power"] = self.fixed_power
         kwargs["shape_size"] = self.shape_size
@@ -377,9 +399,12 @@ class MaterialTestStep(LaserStep):
         step = cast("MaterialTestStep", super().from_dict(data))
         legacy = legacy_producer_params(data)
         step.test_type = data.get("test_type", legacy.get("test_type", "Cut"))
-        step.grid_mode = data.get(
-            "grid_mode", legacy.get("grid_mode", "Power vs Speed")
-        )
+        step.grid_mode = GridMode.coerce(
+            data.get(
+                "grid_mode",
+                legacy.get("grid_mode", GridMode.POWER_VS_SPEED.value),
+            )
+        ).value
         step.speed_range = tuple(
             data.get("speed_range", legacy.get("speed_range", (100.0, 500.0)))
         )

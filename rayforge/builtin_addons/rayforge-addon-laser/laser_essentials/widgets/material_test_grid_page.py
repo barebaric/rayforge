@@ -76,26 +76,6 @@ _PARAM_KEYS = {
     "offset_range",
 }
 
-#: Dimension row titles and subtitles per grid mode.
-_DIMENSION_LABELS = {
-    "Power vs Speed": (
-        (_("Columns (Power Steps)"), _("Rows (Speed Steps)")),
-        (_("Number of power variations"), _("Number of speed variations")),
-    ),
-    "Power vs Passes": (
-        (_("Columns (Power Steps)"), _("Rows (Passes Steps)")),
-        (_("Number of power variations"), _("Number of passes variations")),
-    ),
-    "Speed vs Passes": (
-        (_("Columns (Speed Steps)"), _("Rows (Passes Steps)")),
-        (_("Number of speed variations"), _("Number of passes variations")),
-    ),
-    "Speed vs Offset": (
-        (_("Columns (Speed Steps)"), _("Rows (Offset Steps)")),
-        (_("Number of speed variations"), _("Number of offset variations")),
-    ),
-}
-
 
 class MaterialTestGridSettingsPage(LaserStepSettingsPage):
     """Material Test Grid settings widget."""
@@ -183,24 +163,25 @@ class MaterialTestGridSettingsPage(LaserStepSettingsPage):
         group.add(self.preset_row)
         self.preset_row.connect("notify::selected", self._on_preset_changed)
 
-    def _sync_grid_context(self):
-        """Feed the current grid_mode into the Parameters section."""
+    def _current_grid_mode(self) -> GridMode:
+        """The mode selected in the Grid section, or the step's mode."""
         mode = self.grid_widget.get_values().get("grid_mode")
         if mode is None:
             mode = self.step.grid_mode
-        self.params_widget.set_context_values({"grid_mode": mode})
+        return GridMode.coerce(mode)
+
+    def _sync_grid_context(self):
+        """Feed the current grid_mode into the Parameters section."""
+        self.params_widget.set_context_values(
+            {"grid_mode": self._current_grid_mode().value}
+        )
 
     def _update_dimension_labels(self):
         """Retitle the cols/rows rows for the current grid mode."""
         adapter = self.grid_widget.adapter_for("grid_dimensions")
         if adapter is None:
             return
-        mode = self.grid_widget.get_values().get("grid_mode")
-        if mode is None:
-            mode = self.step.grid_mode
-        labels, subtitles = _DIMENSION_LABELS.get(
-            mode, _DIMENSION_LABELS[GridMode.POWER_VS_SPEED.value]
-        )
+        labels, subtitles = self._current_grid_mode().dimension_labels
         adapter.set_item_labels(labels)
         adapter.set_item_subtitles(subtitles)
 
@@ -285,8 +266,7 @@ class MaterialTestGridSettingsPage(LaserStepSettingsPage):
         visible by eye. Can't default the preset dropdown too, since
         there are multiple Engrave presets (Diode/CO2) with different
         ranges."""
-        mode = self.grid_widget.get_values().get("grid_mode")
-        if mode != GridMode.SPEED_VS_OFFSET.value:
+        if self._current_grid_mode() is not GridMode.SPEED_VS_OFFSET:
             return
         self.set_step_property("test_type", "Engrave")
         self.grid_widget.set_values({"test_type": "Engrave"})

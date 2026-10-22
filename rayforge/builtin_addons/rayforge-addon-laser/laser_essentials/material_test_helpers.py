@@ -36,19 +36,115 @@ class MaterialTestGridType(Enum):
 
 
 class GridMode(Enum):
-    """Defines which parameters vary on grid axes."""
+    """Defines which parameters vary on grid axes.
+
+    The enum value is the stable identifier expected by raygeo's
+    material test assembler and by serialized documents. The label is
+    translated for display only.
+    """
 
     POWER_VS_SPEED = "Power vs Speed"
     POWER_VS_PASSES = "Power vs Passes"
     SPEED_VS_PASSES = "Speed vs Passes"
     SPEED_VS_OFFSET = "Speed vs Offset"
 
+    @classmethod
+    def coerce(cls, value: "GridMode | str | None") -> "GridMode":
+        """Resolve a grid mode from a member, value, or name."""
+        if isinstance(value, cls):
+            return value
+        if isinstance(value, str):
+            try:
+                return cls[value]
+            except KeyError:
+                pass
+            try:
+                return cls(value)
+            except ValueError:
+                pass
+        return cls.POWER_VS_SPEED
+
+    @property
     def label(self) -> str:
         labels = {
             self.POWER_VS_SPEED: _("Power vs Speed"),
             self.POWER_VS_PASSES: _("Power vs Passes"),
             self.SPEED_VS_PASSES: _("Speed vs Passes"),
             self.SPEED_VS_OFFSET: _("Speed vs Offset"),
+        }
+        return labels[self]
+
+    @property
+    def uses_power_range(self) -> bool:
+        return self in (
+            GridMode.POWER_VS_SPEED,
+            GridMode.POWER_VS_PASSES,
+        )
+
+    @property
+    def uses_speed_range(self) -> bool:
+        return self in (
+            GridMode.POWER_VS_SPEED,
+            GridMode.SPEED_VS_PASSES,
+            GridMode.SPEED_VS_OFFSET,
+        )
+
+    @property
+    def uses_passes_range(self) -> bool:
+        return self in (
+            GridMode.POWER_VS_PASSES,
+            GridMode.SPEED_VS_PASSES,
+        )
+
+    @property
+    def uses_offset_range(self) -> bool:
+        return self is GridMode.SPEED_VS_OFFSET
+
+    @property
+    def uses_fixed_speed(self) -> bool:
+        return self is GridMode.POWER_VS_PASSES
+
+    @property
+    def uses_fixed_power(self) -> bool:
+        return self in (
+            GridMode.SPEED_VS_PASSES,
+            GridMode.SPEED_VS_OFFSET,
+        )
+
+    @property
+    def dimension_labels(
+        self,
+    ) -> tuple[tuple[str, str], tuple[str, str]]:
+        """Titles and subtitles for the dimensions rows."""
+        labels = {
+            self.POWER_VS_SPEED: (
+                (_("Columns (Power Steps)"), _("Rows (Speed Steps)")),
+                (
+                    _("Number of power variations"),
+                    _("Number of speed variations"),
+                ),
+            ),
+            self.POWER_VS_PASSES: (
+                (_("Columns (Power Steps)"), _("Rows (Passes Steps)")),
+                (
+                    _("Number of power variations"),
+                    _("Number of passes variations"),
+                ),
+            ),
+            self.SPEED_VS_PASSES: (
+                (_("Columns (Speed Steps)"), _("Rows (Passes Steps)")),
+                (
+                    _("Number of speed variations"),
+                    _("Number of passes variations"),
+                ),
+            ),
+            self.SPEED_VS_OFFSET: (
+                (_("Columns (Speed Steps)"), _("Rows (Offset Steps)")),
+                (
+                    _("Number of speed variations"),
+                    _("Number of offset variations"),
+                ),
+            ),
         }
         return labels[self]
 
@@ -122,7 +218,7 @@ def draw_preview(
         shape_size=params.get("shape_size", 10.0),
         spacing=params.get("spacing", 2.0),
         mode=("cut" if params.get("test_type", "Cut") == "Cut" else "engrave"),
-        grid_mode=params.get("grid_mode", "Power vs Speed"),
+        grid_mode=GridMode.coerce(params.get("grid_mode")).value,
         include_labels=params.get("include_labels", True),
         label_power_percent=params.get("label_power_percent", 10.0),
         label_speed=params.get("label_speed", 1000.0),

@@ -248,6 +248,12 @@ class IntentBuilder:
                     continue
                 step_workpieces = step.selected_workpieces(workpieces)
                 if not step_workpieces:
+                    logger.warning(
+                        "Step %r matches none of its layer's workpieces "
+                        "(selected uids: %r); skipping it",
+                        step.name,
+                        step.workpiece_uids,
+                    )
                     continue
                 inputs = self._build_workpiece_nodes(
                     step, step_workpieces, nodes

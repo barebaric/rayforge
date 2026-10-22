@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-15 05:47+0200\n"
+"POT-Creation-Date: 2026-10-18 02:42+0200\n"
 "PO-Revision-Date: 2026-03-18 23:38+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -32,6 +32,26 @@ msgstr "Preserve First Workpiece"
 #: post_processors/widgets/optimize_group.py
 msgid "Keep the first workpiece at its original position"
 msgstr "Keep the first workpiece at its original position"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Choose Best Start Point"
+msgstr ""
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Start closed paths at the vertex nearest the laser head to shorten travel "
+"moves."
+msgstr ""
+
+#: post_processors/widgets/optimize_group.py
+msgid "Prefer Corners"
+msgstr ""
+
+#: post_processors/widgets/optimize_group.py
+msgid ""
+"Start closed paths at a sharp corner where the path has one, which makes the "
+"seam less visible."
+msgstr ""
 
 #: post_processors/widgets/optimize_group.py
 msgid "Merge Scanlines"
@@ -60,6 +80,14 @@ msgstr "Toggle Flipping"
 #: post_processors/widgets/optimize_group.py
 msgid "Toggle Preserve First Workpiece"
 msgstr "Toggle Preserve First Workpiece"
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Choose Best Start Point"
+msgstr ""
+
+#: post_processors/widgets/optimize_group.py
+msgid "Toggle Prefer Corners"
+msgstr ""
 
 #: post_processors/widgets/optimize_group.py
 msgid "Change maximum bridged gap"

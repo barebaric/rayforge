@@ -182,7 +182,7 @@ class EllipseCommand(SketchChangeCommand):
             preview_state.radius_x_id,
             preview_state.radius_y_id,
         }
-        registry.points = [p for p in registry.points if p.id not in point_ids]
+        registry.remove_points(point_ids)
 
     def _do_execute(self) -> None:
         if self.add_cmd:
@@ -278,7 +278,7 @@ class EllipseCommand(SketchChangeCommand):
         points_to_add = [new_center, new_radius_x, new_radius_y]
 
         if self.is_start_temp:
-            registry.points.remove(start_p)
+            registry.remove_points([start_p.id])
 
         self.add_cmd = AddItemsCommand(
             self.sketch,
