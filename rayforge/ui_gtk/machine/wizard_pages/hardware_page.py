@@ -102,12 +102,12 @@ class HardwarePage(WizardPage):
         # Direction reversals.
         self.reverse_x_row = Adw.SwitchRow(
             title=_("Reverse X-Axis Direction"),
-            subtitle=_("Makes coordinate values negative"),
+            subtitle=_("Machine coordinates count down from the origin"),
         )
         axes_group.add(self.reverse_x_row)
         self.reverse_y_row = Adw.SwitchRow(
             title=_("Reverse Y-Axis Direction"),
-            subtitle=_("Makes coordinate values negative"),
+            subtitle=_("Machine coordinates count down from the origin"),
         )
         axes_group.add(self.reverse_y_row)
         self.has_z_row = Adw.SwitchRow(

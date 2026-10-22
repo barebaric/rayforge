@@ -92,7 +92,7 @@ class HardwarePage(TrackedPreferencesPage):
         self.reverse_x_axis_row = Adw.SwitchRow()
         self.reverse_x_axis_row.set_title(_("Reverse X-Axis Direction"))
         self.reverse_x_axis_row.set_subtitle(
-            _("Makes coordinate values negative")
+            _("Machine coordinates count down from the origin")
         )
         self.reverse_x_axis_row.set_active(machine.reverse_x_axis)
         self.reverse_x_axis_row.connect(
@@ -103,7 +103,7 @@ class HardwarePage(TrackedPreferencesPage):
         self.reverse_y_axis_row = Adw.SwitchRow()
         self.reverse_y_axis_row.set_title(_("Reverse Y-Axis Direction"))
         self.reverse_y_axis_row.set_subtitle(
-            _("Makes coordinate values negative")
+            _("Machine coordinates count down from the origin")
         )
         self.reverse_y_axis_row.set_active(machine.reverse_y_axis)
         self.reverse_y_axis_row.connect(
