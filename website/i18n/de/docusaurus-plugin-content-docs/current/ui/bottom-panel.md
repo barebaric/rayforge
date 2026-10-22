@@ -103,6 +103,7 @@ Konfiguriere das Verhalten von Jog-Operationen:
 - **Bereich**: 1-60.000 mm/min
 - **Standard**: 1.000 mm/min
 - **Zweck**: Steuert, wie schnell sich der Laserkopf bewegt
+- **Speicherung**: Die zuletzt verwendete Geschwindigkeit wird pro Maschine gespeichert
 
 <!-- prettier-ignore-start -->
 :::tip[Geschwindigkeitsauswahl]
