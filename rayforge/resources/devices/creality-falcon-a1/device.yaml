@@ -4,6 +4,8 @@ device:
   vendor: Creality
   model: Falcon A1
   description: Diode laser engraver with 381x305mm work area and rotary support
+  usb_ids:
+  - 303a:4001
 machine:
   driver: GrblSerialDriver
   driver_args:
@@ -16,6 +18,8 @@ machine:
   - 381.0
   - 305.0
   origin: bottom_left
+  reverse_x_axis: true
+  reverse_y_axis: true
   max_travel_speed: 3000
   max_cut_speed: 1000
   home_on_start: false

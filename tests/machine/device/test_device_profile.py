@@ -17,7 +17,7 @@ from rayforge.machine.device.profile import (
     export_machine_to_dir,
 )
 from rayforge.machine.models.laser import LaserHead, LaserType
-from rayforge.machine.models.machine import Origin
+from rayforge.machine.models.machine import JogDirection, Origin
 from rayforge.machine.models.machine_panel import PanelOrientation
 from rayforge.shared.markdown import Details, parse
 from rayforge.shared.tasker.manager import TaskManager
@@ -937,6 +937,33 @@ class TestCreateMachine:
         assert m.reverse_x_axis is True
         assert m.reverse_y_axis is True
         assert m.get_soft_limits() == (-400.0, -400.0, 0.0, 0.0)
+
+    @pytest.mark.asyncio
+    async def test_create_machine_reversed_axes_jog_direction(
+        self, tmp_path, lite_context, task_mgr
+    ):
+        """With reversed axes on a bottom-left origin, machine
+        coordinates count negative from the head park corner, so
+        visual east and north jog toward negative deltas (issue
+        #619)."""
+        device_dir = _make_device(
+            tmp_path,
+            name="Reversed Axes",
+            machine_extra={"reverse_x_axis": True, "reverse_y_axis": True},
+        )
+        pkg = DeviceProfile.from_path(device_dir)
+        m = pkg.create_machine(lite_context)
+        await _wait_for_tasks(task_mgr)
+
+        assert m.reverse_x_axis is True
+        assert m.reverse_y_axis is True
+        assert m.get_soft_limits() == (-200.0, -200.0, 0.0, 0.0)
+        assert m.panel.calculate_jog(JogDirection.EAST, 10.0) == {
+            Axis.X: -10.0
+        }
+        assert m.panel.calculate_jog(JogDirection.NORTH, 10.0) == {
+            Axis.Y: -10.0
+        }
 
     @pytest.mark.asyncio
     async def test_create_machine_applies_park_position(
