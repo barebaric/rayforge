@@ -73,34 +73,27 @@ FunctionEnd
 ;--------------------------------
 ; File type registration
 ; .png, .bmp, .jpeg, .jpg, .svg, .svgz and .dxf are shared with other
-; applications: their extension keys must never be deleted as a whole,
-; because that would discard values and subkeys owned by other
-; software. Instead, the default association present before the
-; installer ran is remembered, and the uninstaller restores it only if
-; the association still belongs to Rayforge. Only the Rayforge ProgID
-; keys are ours and can be removed unconditionally.
+; applications, so Rayforge never claims their default association:
+; it only registers its ProgIDs and lists them under the extension's
+; OpenWithProgids subkey, which adds Rayforge to the "Open with" menu.
+; Uninstalling therefore only removes registrations Rayforge owns and
+; never needs to restore anything. The only case where a shared
+; extension's default value is touched is when it still points at a
+; Rayforge ProgID, which would dangle after the ProgID is deleted.
 
-!macro AssociateSharedFileType EXT PROGID DESCRIPTION
-  ReadRegStr $R0 HKCR ".${EXT}" ""
-  ${If} $R0 != ""
-    ${AndIf} $R0 != "${PROGID}"
-      WriteRegStr HKLM "Software\${PRODUCT_NAME}\PreviousAssoc" ".${EXT}" $R0
-  ${EndIf}
-  WriteRegStr HKCR ".${EXT}" "" "${PROGID}"
+!macro RegisterSharedFileType EXT PROGID DESCRIPTION
   WriteRegStr HKCR "${PROGID}" "" "${DESCRIPTION}"
   WriteRegStr HKCR "${PROGID}\DefaultIcon" "" "$INSTDIR\${EXECUTABLE_NAME},0"
   WriteRegStr HKCR "${PROGID}\shell\open\command" "" '"$INSTDIR\${EXECUTABLE_NAME}" "%1"'
+  WriteRegStr HKCR ".${EXT}\OpenWithProgids" "${PROGID}" ""
 !macroend
 
-!macro RestoreSharedFileType EXT PROGID
+!macro UnregisterSharedFileType EXT PROGID
+  DeleteRegValue HKCR ".${EXT}\OpenWithProgids" "${PROGID}"
+  DeleteRegKey /ifempty HKCR ".${EXT}\OpenWithProgids"
   ReadRegStr $R0 HKCR ".${EXT}" ""
   ${If} $R0 == "${PROGID}"
-    ReadRegStr $R1 HKLM "Software\${PRODUCT_NAME}\PreviousAssoc" ".${EXT}"
-    ${If} $R1 != ""
-      WriteRegStr HKCR ".${EXT}" "" $R1
-    ${Else}
-      DeleteRegValue HKCR ".${EXT}" ""
-    ${EndIf}
+    DeleteRegValue HKCR ".${EXT}" ""
   ${EndIf}
   DeleteRegKey /ifempty HKCR ".${EXT}"
   DeleteRegKey HKCR "${PROGID}"
@@ -172,13 +165,13 @@ Section "MainSection" SEC01
   WriteRegStr HKCR "Rayforge.RuidaFile\shell\open\command" "" '"$INSTDIR\${EXECUTABLE_NAME}" "%1"'
 
   ; Register shared file types
-  !insertmacro AssociateSharedFileType "png" "Rayforge.PngFile" "PNG Image"
-  !insertmacro AssociateSharedFileType "bmp" "Rayforge.BmpFile" "BMP Image"
-  !insertmacro AssociateSharedFileType "jpeg" "Rayforge.JpegFile" "JPEG Image"
-  !insertmacro AssociateSharedFileType "jpg" "Rayforge.JpgFile" "JPEG Image"
-  !insertmacro AssociateSharedFileType "svg" "Rayforge.SvgFile" "SVG Image"
-  !insertmacro AssociateSharedFileType "svgz" "Rayforge.SvgzFile" "Compressed SVG Image"
-  !insertmacro AssociateSharedFileType "dxf" "Rayforge.DxfFile" "DXF Drawing"
+  !insertmacro RegisterSharedFileType "png" "Rayforge.PngFile" "PNG Image"
+  !insertmacro RegisterSharedFileType "bmp" "Rayforge.BmpFile" "BMP Image"
+  !insertmacro RegisterSharedFileType "jpeg" "Rayforge.JpegFile" "JPEG Image"
+  !insertmacro RegisterSharedFileType "jpg" "Rayforge.JpgFile" "JPEG Image"
+  !insertmacro RegisterSharedFileType "svg" "Rayforge.SvgFile" "SVG Image"
+  !insertmacro RegisterSharedFileType "svgz" "Rayforge.SvgzFile" "Compressed SVG Image"
+  !insertmacro RegisterSharedFileType "dxf" "Rayforge.DxfFile" "DXF Drawing"
 
   ; Create Start Menu shortcuts
   CreateDirectory "$SMPROGRAMS\${PRODUCT_NAME}"
@@ -214,14 +207,14 @@ Section "Uninstall"
   DeleteRegKey HKCR ".rd"
   DeleteRegKey HKCR "Rayforge.RuidaFile"
 
-  ; Unregister shared file types without deleting their extension keys
-  !insertmacro RestoreSharedFileType "png" "Rayforge.PngFile"
-  !insertmacro RestoreSharedFileType "bmp" "Rayforge.BmpFile"
-  !insertmacro RestoreSharedFileType "jpeg" "Rayforge.JpegFile"
-  !insertmacro RestoreSharedFileType "jpg" "Rayforge.JpgFile"
-  !insertmacro RestoreSharedFileType "svg" "Rayforge.SvgFile"
-  !insertmacro RestoreSharedFileType "svgz" "Rayforge.SvgzFile"
-  !insertmacro RestoreSharedFileType "dxf" "Rayforge.DxfFile"
+  ; Unregister shared file types without touching their associations
+  !insertmacro UnregisterSharedFileType "png" "Rayforge.PngFile"
+  !insertmacro UnregisterSharedFileType "bmp" "Rayforge.BmpFile"
+  !insertmacro UnregisterSharedFileType "jpeg" "Rayforge.JpegFile"
+  !insertmacro UnregisterSharedFileType "jpg" "Rayforge.JpgFile"
+  !insertmacro UnregisterSharedFileType "svg" "Rayforge.SvgFile"
+  !insertmacro UnregisterSharedFileType "svgz" "Rayforge.SvgzFile"
+  !insertmacro UnregisterSharedFileType "dxf" "Rayforge.DxfFile"
 
   ; Remove the entire installation directory
   ; We delete the uninstaller first, then recursively remove its parent directory.
