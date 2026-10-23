@@ -96,8 +96,8 @@ die Jog-Steuerungen Bewegungen außerhalb dieser Grenzen. Wenn deaktiviert, ist 
 begrenzt.
 
 - **Software-Limits aktivieren**: Schaltet die Jog-Limit-Prüfung ein oder aus
-- **X/Y Min**: Minimale Koordinate für jede Achse
-- **X/Y Max**: Maximale Koordinate für jede Achse
+- **X/Y Mindestabstand vom Ursprung**: Kleinster zulässiger Abstand von der Ursprungsecke je Achse
+- **X/Y Maximalabstand vom Ursprung**: Größter zulässiger Abstand von der Ursprungsecke je Achse
 
 Software-Limits werden in Maschinenkoordinaten ausgewertet und bleiben an der physischen Maschine
 verankert, sie verschieben sich also nicht, wenn der Arbeitsursprung neu genullt wird. Werte werden
