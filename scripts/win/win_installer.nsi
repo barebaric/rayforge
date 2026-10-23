@@ -20,6 +20,11 @@
 !endif
 
 ;--------------------------------
+; Variables
+Var PreviousInstallDir
+Var MovedInstallDir
+
+;--------------------------------
 ; General
 
 RequestExecutionLevel admin ; Request admin rights for installation
@@ -42,32 +47,103 @@ UninstPage uninstConfirm
 UninstPage instfiles
 
 ;--------------------------------
+; Running instance check
+; The bundled executable name contains the version, so processes are
+; matched on the product name instead of a fixed file name. The
+; installer process itself shares that name prefix, so it is excluded
+; from the match.
+
+!macro CheckAppNotRunningBody LABEL
+${LABEL}:
+  ExecWait `"$SYSDIR\cmd.exe" /C tasklist /FI "IMAGENAME eq ${PRODUCT_NAME}*" /FO CSV /NH | "$SYSDIR\find.exe" /I "${PRODUCT_NAME}" | "$SYSDIR\find.exe" /V /I "installer.exe" > nul` $0
+  ${If} $0 = 0
+    MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "${PRODUCT_NAME} is still running.$\n$\nPlease close it and click Retry, or click Cancel to stop." /SD IDCANCEL IDRETRY ${LABEL}
+    Abort
+  ${EndIf}
+!macroend
+
+Function CheckAppNotRunning
+  !insertmacro CheckAppNotRunningBody check_running
+FunctionEnd
+
+Function un.CheckAppNotRunning
+  !insertmacro CheckAppNotRunningBody un_check_running
+FunctionEnd
+
+;--------------------------------
+; File type registration
+; .png, .bmp, .jpeg, .jpg, .svg, .svgz and .dxf are shared with other
+; applications: their extension keys must never be deleted as a whole,
+; because that would discard values and subkeys owned by other
+; software. Instead, the default association present before the
+; installer ran is remembered, and the uninstaller restores it only if
+; the association still belongs to Rayforge. Only the Rayforge ProgID
+; keys are ours and can be removed unconditionally.
+
+!macro AssociateSharedFileType EXT PROGID DESCRIPTION
+  ReadRegStr $R0 HKCR ".${EXT}" ""
+  ${If} $R0 != ""
+    ${AndIf} $R0 != "${PROGID}"
+      WriteRegStr HKLM "Software\${PRODUCT_NAME}\PreviousAssoc" ".${EXT}" $R0
+  ${EndIf}
+  WriteRegStr HKCR ".${EXT}" "" "${PROGID}"
+  WriteRegStr HKCR "${PROGID}" "" "${DESCRIPTION}"
+  WriteRegStr HKCR "${PROGID}\DefaultIcon" "" "$INSTDIR\${EXECUTABLE_NAME},0"
+  WriteRegStr HKCR "${PROGID}\shell\open\command" "" '"$INSTDIR\${EXECUTABLE_NAME}" "%1"'
+!macroend
+
+!macro RestoreSharedFileType EXT PROGID
+  ReadRegStr $R0 HKCR ".${EXT}" ""
+  ${If} $R0 == "${PROGID}"
+    ReadRegStr $R1 HKLM "Software\${PRODUCT_NAME}\PreviousAssoc" ".${EXT}"
+    ${If} $R1 != ""
+      WriteRegStr HKCR ".${EXT}" "" $R1
+    ${Else}
+      DeleteRegValue HKCR ".${EXT}" ""
+    ${EndIf}
+  ${EndIf}
+  DeleteRegKey /ifempty HKCR ".${EXT}"
+  DeleteRegKey HKCR "${PROGID}"
+!macroend
+
+;--------------------------------
 ; Installer Section
 
 Section "MainSection" SEC01
-  ; Remove any previous installation first. The installer overwrites
-  ; files in place, so a stale DLL from an older version that cannot be
-  ; replaced (e.g. because the app is still running) leaves a mix of
-  ; library versions behind, which crashes the app at startup with
-  ; confusing DLL load errors.
-  StrCpy $R0 ""
+  ; A running instance keeps files locked, so make sure it is closed
+  ; before anything on disk is touched.
+  Call CheckAppNotRunning
+
+  ; Move the previous installation aside instead of deleting it in
+  ; place. A rename fails harmlessly while any file in it is still
+  ; locked, and the intact copy stays available for restoration if
+  ; writing the new files fails.
+  StrCpy $PreviousInstallDir ""
+  StrCpy $MovedInstallDir ""
   ReadRegStr $R0 HKLM "Software\${PRODUCT_NAME}" "Install_Dir"
   ${If} $R0 != ""
-    RMDir /r "$R0"
+    ${If} ${FileExists} "$R0.old"
+      RMDir /r "$R0.old"
+    ${EndIf}
     ${If} ${FileExists} "$R0"
-      MessageBox MB_ICONSTOP "Could not remove the previous installation at$\n$R0$\n$\nPlease make sure Rayforge is not running, then run the installer again."
-      Abort
+      Rename "$R0" "$R0.old"
+      ${If} ${FileExists} "$R0"
+        MessageBox MB_ICONSTOP "Could not move the previous installation at$\n$R0$\n$\nPlease make sure Rayforge is not running, then run the installer again."
+        Abort
+      ${EndIf}
+      StrCpy $PreviousInstallDir "$R0"
+      StrCpy $MovedInstallDir "$R0.old"
     ${EndIf}
   ${EndIf}
 
   SetOutPath "$INSTDIR"
-  
+
   ; Copy all files from the PyInstaller output directory
   File /r "..\..\dist\${APP_DIR_NAME}\*.*"
-  
+
   ; Store installation folder
   WriteRegStr HKLM "Software\${PRODUCT_NAME}" "Install_Dir" "$INSTDIR"
-  
+
   ; Write the uninstaller
   WriteUninstaller "$INSTDIR\uninstall.exe"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" "DisplayName" "${PRODUCT_NAME}"
@@ -76,7 +152,7 @@ Section "MainSection" SEC01
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" "DisplayVersion" "${APP_VERSION}"
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" "NoModify" 1
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}" "NoRepair" 1
-  
+
   ; Register .ryp file type
   WriteRegStr HKCR ".ryp" "" "Rayforge.ProjectFile"
   WriteRegStr HKCR "Rayforge.ProjectFile" "" "Rayforge Project File"
@@ -95,62 +171,37 @@ Section "MainSection" SEC01
   WriteRegStr HKCR "Rayforge.RuidaFile\DefaultIcon" "" "$INSTDIR\${EXECUTABLE_NAME},0"
   WriteRegStr HKCR "Rayforge.RuidaFile\shell\open\command" "" '"$INSTDIR\${EXECUTABLE_NAME}" "%1"'
 
-  ; Register .png file type
-  WriteRegStr HKCR ".png" "" "Rayforge.PngFile"
-  WriteRegStr HKCR "Rayforge.PngFile" "" "PNG Image"
-  WriteRegStr HKCR "Rayforge.PngFile\DefaultIcon" "" "$INSTDIR\${EXECUTABLE_NAME},0"
-  WriteRegStr HKCR "Rayforge.PngFile\shell\open\command" "" '"$INSTDIR\${EXECUTABLE_NAME}" "%1"'
+  ; Register shared file types
+  !insertmacro AssociateSharedFileType "png" "Rayforge.PngFile" "PNG Image"
+  !insertmacro AssociateSharedFileType "bmp" "Rayforge.BmpFile" "BMP Image"
+  !insertmacro AssociateSharedFileType "jpeg" "Rayforge.JpegFile" "JPEG Image"
+  !insertmacro AssociateSharedFileType "jpg" "Rayforge.JpgFile" "JPEG Image"
+  !insertmacro AssociateSharedFileType "svg" "Rayforge.SvgFile" "SVG Image"
+  !insertmacro AssociateSharedFileType "svgz" "Rayforge.SvgzFile" "Compressed SVG Image"
+  !insertmacro AssociateSharedFileType "dxf" "Rayforge.DxfFile" "DXF Drawing"
 
-  ; Register .bmp file type
-  WriteRegStr HKCR ".bmp" "" "Rayforge.BmpFile"
-  WriteRegStr HKCR "Rayforge.BmpFile" "" "BMP Image"
-  WriteRegStr HKCR "Rayforge.BmpFile\DefaultIcon" "" "$INSTDIR\${EXECUTABLE_NAME},0"
-  WriteRegStr HKCR "Rayforge.BmpFile\shell\open\command" "" '"$INSTDIR\${EXECUTABLE_NAME}" "%1"'
-
-  ; Register .jpeg file type
-  WriteRegStr HKCR ".jpeg" "" "Rayforge.JpegFile"
-  WriteRegStr HKCR "Rayforge.JpegFile" "" "JPEG Image"
-  WriteRegStr HKCR "Rayforge.JpegFile\DefaultIcon" "" "$INSTDIR\${EXECUTABLE_NAME},0"
-  WriteRegStr HKCR "Rayforge.JpegFile\shell\open\command" "" '"$INSTDIR\${EXECUTABLE_NAME}" "%1"'
-
-  ; Register .jpg file type
-  WriteRegStr HKCR ".jpg" "" "Rayforge.JpgFile"
-  WriteRegStr HKCR "Rayforge.JpgFile" "" "JPEG Image"
-  WriteRegStr HKCR "Rayforge.JpgFile\DefaultIcon" "" "$INSTDIR\${EXECUTABLE_NAME},0"
-  WriteRegStr HKCR "Rayforge.JpgFile\shell\open\command" "" '"$INSTDIR\${EXECUTABLE_NAME}" "%1"'
-
-  ; Register .svg file type
-  WriteRegStr HKCR ".svg" "" "Rayforge.SvgFile"
-  WriteRegStr HKCR "Rayforge.SvgFile" "" "SVG Image"
-  WriteRegStr HKCR "Rayforge.SvgFile\DefaultIcon" "" "$INSTDIR\${EXECUTABLE_NAME},0"
-  WriteRegStr HKCR "Rayforge.SvgFile\shell\open\command" "" '"$INSTDIR\${EXECUTABLE_NAME}" "%1"'
-
-  ; Register .svgz file type
-  WriteRegStr HKCR ".svgz" "" "Rayforge.SvgzFile"
-  WriteRegStr HKCR "Rayforge.SvgzFile" "" "Compressed SVG Image"
-  WriteRegStr HKCR "Rayforge.SvgzFile\DefaultIcon" "" "$INSTDIR\${EXECUTABLE_NAME},0"
-  WriteRegStr HKCR "Rayforge.SvgzFile\shell\open\command" "" '"$INSTDIR\${EXECUTABLE_NAME}" "%1"'
-
-  ; Register .dxf file type
-  WriteRegStr HKCR ".dxf" "" "Rayforge.DxfFile"
-  WriteRegStr HKCR "Rayforge.DxfFile" "" "DXF Drawing"
-  WriteRegStr HKCR "Rayforge.DxfFile\DefaultIcon" "" "$INSTDIR\${EXECUTABLE_NAME},0"
-  WriteRegStr HKCR "Rayforge.DxfFile\shell\open\command" "" '"$INSTDIR\${EXECUTABLE_NAME}" "%1"'
-  
   ; Create Start Menu shortcuts
   CreateDirectory "$SMPROGRAMS\${PRODUCT_NAME}"
   CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\${PRODUCT_NAME}.lnk" "$INSTDIR\${EXECUTABLE_NAME}"
   CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\Uninstall ${PRODUCT_NAME}.lnk" "$INSTDIR\uninstall.exe"
+
+  ; The new installation is complete, so the moved-aside copy of the
+  ; previous version is no longer needed.
+  ${If} $MovedInstallDir != ""
+    RMDir /r "$MovedInstallDir"
+  ${EndIf}
 SectionEnd
 
 ;--------------------------------
 ; Uninstaller Section
 
 Section "Uninstall"
+  Call un.CheckAppNotRunning
+
   ; Remove registry keys
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
   DeleteRegKey HKLM "Software\${PRODUCT_NAME}"
-  
+
   ; Unregister .ryp file type
   DeleteRegKey HKCR ".ryp"
   DeleteRegKey HKCR "Rayforge.ProjectFile"
@@ -163,33 +214,14 @@ Section "Uninstall"
   DeleteRegKey HKCR ".rd"
   DeleteRegKey HKCR "Rayforge.RuidaFile"
 
-  ; Unregister .png file type
-  DeleteRegKey HKCR ".png"
-  DeleteRegKey HKCR "Rayforge.PngFile"
-
-  ; Unregister .bmp file type
-  DeleteRegKey HKCR ".bmp"
-  DeleteRegKey HKCR "Rayforge.BmpFile"
-
-  ; Unregister .jpeg file type
-  DeleteRegKey HKCR ".jpeg"
-  DeleteRegKey HKCR "Rayforge.JpegFile"
-
-  ; Unregister .jpg file type
-  DeleteRegKey HKCR ".jpg"
-  DeleteRegKey HKCR "Rayforge.JpgFile"
-
-  ; Unregister .svg file type
-  DeleteRegKey HKCR ".svg"
-  DeleteRegKey HKCR "Rayforge.SvgFile"
-
-  ; Unregister .svgz file type
-  DeleteRegKey HKCR ".svgz"
-  DeleteRegKey HKCR "Rayforge.SvgzFile"
-
-  ; Unregister .dxf file type
-  DeleteRegKey HKCR ".dxf"
-  DeleteRegKey HKCR "Rayforge.DxfFile"
+  ; Unregister shared file types without deleting their extension keys
+  !insertmacro RestoreSharedFileType "png" "Rayforge.PngFile"
+  !insertmacro RestoreSharedFileType "bmp" "Rayforge.BmpFile"
+  !insertmacro RestoreSharedFileType "jpeg" "Rayforge.JpegFile"
+  !insertmacro RestoreSharedFileType "jpg" "Rayforge.JpgFile"
+  !insertmacro RestoreSharedFileType "svg" "Rayforge.SvgFile"
+  !insertmacro RestoreSharedFileType "svgz" "Rayforge.SvgzFile"
+  !insertmacro RestoreSharedFileType "dxf" "Rayforge.DxfFile"
 
   ; Remove the entire installation directory
   ; We delete the uninstaller first, then recursively remove its parent directory.
@@ -200,3 +232,14 @@ Section "Uninstall"
   Delete "$SMPROGRAMS\${PRODUCT_NAME}\*.*"
   RMDir /r "$SMPROGRAMS\${PRODUCT_NAME}"
 SectionEnd
+
+;--------------------------------
+; Put the previous installation back in place when an upgrade fails,
+; so the user is not left with a partially deleted installation.
+
+Function .onInstFailed
+  ${If} $MovedInstallDir != ""
+    RMDir /r "$INSTDIR"
+    Rename "$MovedInstallDir" "$PreviousInstallDir"
+  ${EndIf}
+FunctionEnd
