@@ -36,6 +36,7 @@ class UnitSpinRow(SpinRow):
         lower: float = 0.0,
         upper: float = 1e9,
         step_increment: float = 1.0,
+        step_in_base: float | None = None,
         page_increment: float | None = None,
         digits: int = 2,
         numeric: bool = False,
@@ -56,6 +57,7 @@ class UnitSpinRow(SpinRow):
 
         self.quantity = quantity
         self._unit: Unit | None = None
+        self._step_in_base = step_in_base
         self._min_digits = digits
         self._lower = lower
         self._upper = upper
@@ -116,6 +118,10 @@ class UnitSpinRow(SpinRow):
         adj = self._spin_button.get_adjustment()
         adj.set_lower(self._unit.from_base(self._lower))
         adj.set_upper(self._unit.from_base(self._upper))
+        if self._step_in_base is not None:
+            step = self._unit.from_base(self._step_in_base)
+            adj.set_step_increment(step)
+            adj.set_page_increment(step * 10)
         self._spin_button.set_digits(
             max(self._unit.precision, self._min_digits)
         )

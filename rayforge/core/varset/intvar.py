@@ -20,12 +20,14 @@ class IntVar(Var[int]):
         min_val: int | None = None,
         max_val: int | None = None,
         validator: Callable[[int | None], None] | None = None,
+        step: int | None = None,
         *,
         visible_when: "Callable[[dict[str, Any]], bool] | None" = None,
         sensitive_when: "Callable[[dict[str, Any]], bool] | None" = None,
     ):
         self.min_val = min_val
         self.max_val = max_val
+        self.step = step
 
         def thevalidator(v: int | None):
             if self.min_val is not None and v is not None and v < self.min_val:
