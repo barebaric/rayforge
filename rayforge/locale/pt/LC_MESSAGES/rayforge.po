@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-21 14:24+0200\n"
+"POT-Creation-Date: 2026-10-23 10:58+0200\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -5973,43 +5973,32 @@ msgstr ""
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "X Min"
-msgstr "X Mín"
+msgid "X Min Distance from Origin"
+msgstr "Distância Mín de X da Origem"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Minimum X coordinate"
-msgstr "Coordenada X mínima"
+msgid ""
+"Distance from the origin corner into the bed (not a coordinate). Fixed to "
+"the physical bed, independent of the WCS."
+msgstr ""
+"Distância do canto da origem para dentro da mesa (não uma coordenada). Fixa "
+"à mesa física, independente do WCS."
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Y Min"
-msgstr "Y Mín"
+msgid "Y Min Distance from Origin"
+msgstr "Distância Mín de Y da Origem"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Minimum Y coordinate"
-msgstr "Coordenada Y mínima"
+msgid "X Max Distance from Origin"
+msgstr "Distância Máx de X da Origem"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "X Max"
-msgstr "X Máx"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Maximum X coordinate"
-msgstr "Coordenada X máxima"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Y Max"
-msgstr "Y Máx"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Maximum Y coordinate"
-msgstr "Coordenada Y máxima"
+msgid "Y Max Distance from Origin"
+msgstr "Distância Máx de Y da Origem"
 
 #: rayforge/ui_gtk/machine/notes_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py

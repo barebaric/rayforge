@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-18 04:42+0200\n"
+"POT-Creation-Date: 2026-10-22 22:53+0200\n"
 "PO-Revision-Date: 2025-07-24 22:09+0200\n"
 "Last-Translator: Samuel Abels <knipkap@gmail.com>\n"
 "Language-Team: Portuguese <LL@li.org>\n"
@@ -42,6 +42,44 @@ msgstr "Velocidade vs Passagens"
 #: laser_essentials/material_test_helpers.py
 msgid "Speed vs Offset"
 msgstr "Velocidade vs Deslocamento"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Columns (Power Steps)"
+msgstr "Colunas (Etapas de Potência)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Rows (Speed Steps)"
+msgstr "Linhas (Etapas de Velocidade)"
+
+#: laser_essentials/material_test_helpers.py
+#: laser_essentials/steps/material_test.py
+msgid "Number of power variations"
+msgstr "Número de variações de potência"
+
+#: laser_essentials/material_test_helpers.py
+#: laser_essentials/steps/material_test.py
+msgid "Number of speed variations"
+msgstr "Número de variações de velocidade"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Rows (Passes Steps)"
+msgstr "Linhas (Passos de passagens)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Number of passes variations"
+msgstr "Número de variações de passagens"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Columns (Speed Steps)"
+msgstr "Colunas (Passos de velocidade)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Rows (Offset Steps)"
+msgstr "Linhas (etapas de deslocamento)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Number of offset variations"
+msgstr "Número de variações de deslocamento"
 
 #: laser_essentials/widgets/shrinkwrap_page.py
 #: laser_essentials/steps/shrinkwrap_step.py
@@ -102,44 +140,6 @@ msgstr "Geometria"
 #: laser_essentials/widgets/frame_page.py
 msgid "Cut a frame around the selected content."
 msgstr "Corte um quadro à volta do conteúdo selecionado."
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Columns (Power Steps)"
-msgstr "Colunas (Etapas de Potência)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Rows (Speed Steps)"
-msgstr "Linhas (Etapas de Velocidade)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-#: laser_essentials/steps/material_test.py
-msgid "Number of power variations"
-msgstr "Número de variações de potência"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-#: laser_essentials/steps/material_test.py
-msgid "Number of speed variations"
-msgstr "Número de variações de velocidade"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Rows (Passes Steps)"
-msgstr "Linhas (Passos de passagens)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Number of passes variations"
-msgstr "Número de variações de passagens"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Columns (Speed Steps)"
-msgstr "Colunas (Passos de velocidade)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Rows (Offset Steps)"
-msgstr "Linhas (etapas de deslocamento)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Number of offset variations"
-msgstr "Número de variações de deslocamento"
 
 #: laser_essentials/widgets/material_test_grid_page.py
 msgid "Grid"
@@ -711,8 +711,8 @@ msgid "Add speed/power annotations to the grid"
 msgstr "Adicionar anotações de velocidade/potência à grade"
 
 #: laser_essentials/steps/material_test.py
-msgid "Label Engrave Power (%)"
-msgstr "Potência de Gravação do Rótulo (%)"
+msgid "Label Engrave Power"
+msgstr "Potência de gravação de rótulos"
 
 #: laser_essentials/steps/material_test.py
 msgid "Label Engrave Speed"
@@ -817,6 +817,11 @@ msgstr "Deslocamento X de varredura bidirecional para a primeira linha"
 #: laser_essentials/steps/material_test.py
 msgid "Bidir scan X-offset for last row"
 msgstr "Deslocamento X de varredura bidirecional para a última linha"
+
+#: laser_essentials/steps/material_test.py
+#, python-brace-format
+msgid "Cut speed ({value}) exceeds the machine's maximum ({max})."
+msgstr "A velocidade de corte ({value}) excede o máximo da máquina ({max})."
 
 #: laser_essentials/frontend.py
 msgid "Create Material Test Grid"

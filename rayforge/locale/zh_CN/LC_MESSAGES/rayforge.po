@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-21 14:24+0200\n"
+"POT-Creation-Date: 2026-10-23 10:58+0200\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -5663,43 +5663,31 @@ msgstr "将点动移动限制在自定义边界内，而非工作台面"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "X Min"
-msgstr "X最小值"
+msgid "X Min Distance from Origin"
+msgstr "X 距原点最小距离"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Minimum X coordinate"
-msgstr "X坐标最小值"
+msgid ""
+"Distance from the origin corner into the bed (not a coordinate). Fixed to "
+"the physical bed, independent of the WCS."
+msgstr ""
+"距原点角向工作台内部的距离（不是坐标）。固定在物理工作台上，与 WCS 无关。"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Y Min"
-msgstr "Y最小值"
+msgid "Y Min Distance from Origin"
+msgstr "Y 距原点最小距离"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Minimum Y coordinate"
-msgstr "Y坐标最小值"
+msgid "X Max Distance from Origin"
+msgstr "X 距原点最大距离"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "X Max"
-msgstr "X最大值"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Maximum X coordinate"
-msgstr "X坐标最大值"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Y Max"
-msgstr "Y最大值"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Maximum Y coordinate"
-msgstr "Y坐标最大值"
+msgid "Y Max Distance from Origin"
+msgstr "Y 距原点最大距离"
 
 #: rayforge/ui_gtk/machine/notes_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py

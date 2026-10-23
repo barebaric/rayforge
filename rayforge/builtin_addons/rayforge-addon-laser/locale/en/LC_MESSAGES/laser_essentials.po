@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-18 04:42+0200\n"
+"POT-Creation-Date: 2026-10-22 22:53+0200\n"
 "PO-Revision-Date: 2026-03-01 19:25+0100\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -41,6 +41,44 @@ msgstr ""
 
 #: laser_essentials/material_test_helpers.py
 msgid "Speed vs Offset"
+msgstr ""
+
+#: laser_essentials/material_test_helpers.py
+msgid "Columns (Power Steps)"
+msgstr "Columns (Power Steps)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Rows (Speed Steps)"
+msgstr "Rows (Speed Steps)"
+
+#: laser_essentials/material_test_helpers.py
+#: laser_essentials/steps/material_test.py
+msgid "Number of power variations"
+msgstr "Number of power variations"
+
+#: laser_essentials/material_test_helpers.py
+#: laser_essentials/steps/material_test.py
+msgid "Number of speed variations"
+msgstr "Number of speed variations"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Rows (Passes Steps)"
+msgstr ""
+
+#: laser_essentials/material_test_helpers.py
+msgid "Number of passes variations"
+msgstr ""
+
+#: laser_essentials/material_test_helpers.py
+msgid "Columns (Speed Steps)"
+msgstr ""
+
+#: laser_essentials/material_test_helpers.py
+msgid "Rows (Offset Steps)"
+msgstr ""
+
+#: laser_essentials/material_test_helpers.py
+msgid "Number of offset variations"
 msgstr ""
 
 #: laser_essentials/widgets/shrinkwrap_page.py
@@ -101,44 +139,6 @@ msgstr ""
 
 #: laser_essentials/widgets/frame_page.py
 msgid "Cut a frame around the selected content."
-msgstr ""
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Columns (Power Steps)"
-msgstr "Columns (Power Steps)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Rows (Speed Steps)"
-msgstr "Rows (Speed Steps)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-#: laser_essentials/steps/material_test.py
-msgid "Number of power variations"
-msgstr "Number of power variations"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-#: laser_essentials/steps/material_test.py
-msgid "Number of speed variations"
-msgstr "Number of speed variations"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Rows (Passes Steps)"
-msgstr ""
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Number of passes variations"
-msgstr ""
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Columns (Speed Steps)"
-msgstr ""
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Rows (Offset Steps)"
-msgstr ""
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Number of offset variations"
 msgstr ""
 
 #: laser_essentials/widgets/material_test_grid_page.py
@@ -678,8 +678,8 @@ msgid "Add speed/power annotations to the grid"
 msgstr "Add speed/power annotations to the grid"
 
 #: laser_essentials/steps/material_test.py
-msgid "Label Engrave Power (%)"
-msgstr "Label Engrave Power (%)"
+msgid "Label Engrave Power"
+msgstr ""
 
 #: laser_essentials/steps/material_test.py
 msgid "Label Engrave Speed"
@@ -783,6 +783,11 @@ msgstr ""
 
 #: laser_essentials/steps/material_test.py
 msgid "Bidir scan X-offset for last row"
+msgstr ""
+
+#: laser_essentials/steps/material_test.py
+#, python-brace-format
+msgid "Cut speed ({value}) exceeds the machine's maximum ({max})."
 msgstr ""
 
 #: laser_essentials/frontend.py

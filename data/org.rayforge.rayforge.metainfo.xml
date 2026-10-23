@@ -77,6 +77,62 @@
   </screenshots>
 
   <releases>
+    <release version="1.13.0~beta5" date="2026-10-23">
+      <description>
+        <p>Job monitoring hooks for addons, a per-machine jog speed, and
+        fixes for soft limits, the work origin marker, flat element
+        selection, the material test grid and macOS full screen</p>
+        <p>New Features:</p>
+        <ul>
+          <li>Addons: five hooks report job lifecycle and progress:
+          on_job_started, on_job_updated (rate-limited to roughly 1 Hz),
+          on_job_paused, on_job_resumed and on_job_finished with the
+          job's outcome. Plugin API version 23 -&gt; 24, additive
+          (#614)</li>
+          <li>Machine: the jog speed set in the bottom panel is
+          remembered per machine instead of resetting to 1000 mm/min
+          (#617)</li>
+        </ul>
+        <p>Changes:</p>
+        <ul>
+          <li>Machine: the soft limit rows in the hardware settings and
+          wizard are retitled to "X Min Distance from Origin" and
+          friends, with an explanation that the values are distances
+          from the origin corner into the bed, not machine coordinates
+          (#624)</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Machine: disabling soft limits now persists across
+          restarts; the toggle silently reverted to enabled with
+          full-axis bounds (#624)</li>
+          <li>Machine: soft limits clamp the machine position against
+          the physical bed again, so right and top jogs are no longer
+          blocked after the work origin was zeroed at an object, and no
+          jog can run past the bed into a firmware soft-limit alarm
+          (#623)</li>
+          <li>Canvas: the green work origin marker is visible again; it
+          was drawn thinner than a pixel at most zoom levels (#623)</li>
+          <li>Canvas: perfectly horizontal or vertical lines are
+          selectable again and get a thin but fully usable selection
+          box with resize handles (#609)</li>
+          <li>Material test grid: a Line Interval of 0 resolves to the
+          laser spot size as the setting's description promises,
+          instead of exhausting memory (#620)</li>
+          <li>Material test grid: only the speeds the grid actually
+          engraves with are validated against the machine's maximum,
+          removing the bogus "Cut speed (500 mm/min) exceeds the
+          machine's maximum" warning on machines limited to the grid's
+          top speed (#607)</li>
+          <li>macOS: closing a dialog while the main window is in
+          native full screen no longer blanks the window; dialogs
+          detach their transient parent so GTK's macOS backend cannot
+          tear the full-screen window out of its Space (#616)</li>
+        </ul>
+        <p>The hardware docs describe the soft limit fields as
+        distances from the origin, in all languages</p>
+      </description>
+    </release>
     <release version="1.13.0~beta4" date="2026-10-21">
       <description>
         <p>Republished 1.13.0-beta3 with its release notes and AppStream

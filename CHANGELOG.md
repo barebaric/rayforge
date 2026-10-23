@@ -5,6 +5,54 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.13.0-beta5
+
+### Added
+
+- Addons: five hooks report job lifecycle and progress to addons:
+  on_job_started, on_job_updated (rate-limited to roughly 1 Hz),
+  on_job_paused, on_job_resumed and on_job_finished with the job's
+  outcome. Plugin API version 23 -> 24, additive (#614)
+- Machine: the jog speed set in the bottom panel is remembered per
+  machine instead of resetting to 1000 mm/min (#617)
+
+### Changed
+
+- Machine: the soft limit rows in the hardware settings and wizard are
+  retitled to "X Min Distance from Origin" and friends, with an
+  explanation that the values are distances from the origin corner
+  into the bed, not machine coordinates (#624)
+
+### Fixed
+
+- Machine: disabling soft limits now persists across restarts; the
+  toggle silently reverted to enabled with full-axis bounds (#624)
+- Machine: soft limits clamp the machine position against the physical
+  bed again, so right and top jogs are no longer blocked after the
+  work origin was zeroed at an object, and no jog can run past the bed
+  into a firmware soft-limit alarm (#623)
+- Canvas: the green work origin marker is visible again; it was drawn
+  thinner than a pixel at most zoom levels (#623)
+- Canvas: perfectly horizontal or vertical lines are selectable again
+  and get a thin but fully usable selection box with resize handles
+  (#609)
+- Material test grid: a Line Interval of 0 resolves to the laser spot
+  size as the setting's description promises, instead of exhausting
+  memory (#620)
+- Material test grid: only the speeds the grid actually engraves with
+  are validated against the machine's maximum, removing the bogus "Cut
+  speed (500 mm/min) exceeds the machine's maximum" warning on
+  machines limited to the grid's top speed (#607)
+- macOS: closing a dialog while the main window is in native full
+  screen no longer blanks the window; dialogs detach their transient
+  parent so GTK's macOS backend cannot tear the full-screen window out
+  of its Space (#616)
+
+### Documentation
+
+- The hardware docs describe the soft limit fields as distances from
+  the origin, in all languages
+
 ## 1.13.0-beta4
 
 ### Changed

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-18 04:42+0200\n"
+"POT-Creation-Date: 2026-10-22 22:53+0200\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -43,6 +43,44 @@ msgstr "Vitesse vs Passages"
 #: laser_essentials/material_test_helpers.py
 msgid "Speed vs Offset"
 msgstr "Vitesse vs Décalage"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Columns (Power Steps)"
+msgstr "Colonnes (paliers de puissance)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Rows (Speed Steps)"
+msgstr "Lignes (paliers de vitesse)"
+
+#: laser_essentials/material_test_helpers.py
+#: laser_essentials/steps/material_test.py
+msgid "Number of power variations"
+msgstr "Nombre de variations de puissance"
+
+#: laser_essentials/material_test_helpers.py
+#: laser_essentials/steps/material_test.py
+msgid "Number of speed variations"
+msgstr "Nombre de variations de vitesse"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Rows (Passes Steps)"
+msgstr "Lignes (Pas de passages)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Number of passes variations"
+msgstr "Nombre de variations de passages"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Columns (Speed Steps)"
+msgstr "Colonnes (Pas de vitesse)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Rows (Offset Steps)"
+msgstr "Lignes (étapes de décalage)"
+
+#: laser_essentials/material_test_helpers.py
+msgid "Number of offset variations"
+msgstr "Nombre de variations de décalage"
 
 #: laser_essentials/widgets/shrinkwrap_page.py
 #: laser_essentials/steps/shrinkwrap_step.py
@@ -103,44 +141,6 @@ msgstr "Géométrie"
 #: laser_essentials/widgets/frame_page.py
 msgid "Cut a frame around the selected content."
 msgstr "Découper un cadre autour du contenu sélectionné."
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Columns (Power Steps)"
-msgstr "Colonnes (paliers de puissance)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Rows (Speed Steps)"
-msgstr "Lignes (paliers de vitesse)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-#: laser_essentials/steps/material_test.py
-msgid "Number of power variations"
-msgstr "Nombre de variations de puissance"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-#: laser_essentials/steps/material_test.py
-msgid "Number of speed variations"
-msgstr "Nombre de variations de vitesse"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Rows (Passes Steps)"
-msgstr "Lignes (Pas de passages)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Number of passes variations"
-msgstr "Nombre de variations de passages"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Columns (Speed Steps)"
-msgstr "Colonnes (Pas de vitesse)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Rows (Offset Steps)"
-msgstr "Lignes (étapes de décalage)"
-
-#: laser_essentials/widgets/material_test_grid_page.py
-msgid "Number of offset variations"
-msgstr "Nombre de variations de décalage"
 
 #: laser_essentials/widgets/material_test_grid_page.py
 msgid "Grid"
@@ -715,8 +715,8 @@ msgid "Add speed/power annotations to the grid"
 msgstr "Ajouter les annotations de vitesse/puissance à la grille"
 
 #: laser_essentials/steps/material_test.py
-msgid "Label Engrave Power (%)"
-msgstr "Puissance de gravure de l'étiquette (%)"
+msgid "Label Engrave Power"
+msgstr "Puissance de gravure des étiquettes"
 
 #: laser_essentials/steps/material_test.py
 msgid "Label Engrave Speed"
@@ -821,6 +821,12 @@ msgstr "Décalage X de balayage bidirectionnel pour la première rangée"
 #: laser_essentials/steps/material_test.py
 msgid "Bidir scan X-offset for last row"
 msgstr "Décalage X de balayage bidirectionnel pour la dernière rangée"
+
+#: laser_essentials/steps/material_test.py
+#, python-brace-format
+msgid "Cut speed ({value}) exceeds the machine's maximum ({max})."
+msgstr ""
+"La vitesse de coupe ({value}) dépasse le maximum de la machine ({max})."
 
 #: laser_essentials/frontend.py
 msgid "Create Material Test Grid"
