@@ -29,6 +29,11 @@ class SpinRowAdapter(RowAdapter):
         )
         initial_val = getattr(var, target_property)
         is_int = var.var_type is int
+        step = (
+            var.step
+            if isinstance(var, (IntVar, FloatVar)) and var.step is not None
+            else 1.0
+        )
         if is_int:
             digits = 0
         else:
@@ -43,6 +48,7 @@ class SpinRowAdapter(RowAdapter):
             var.description or None,
             lower=min_val,
             upper=max_val,
+            step_increment=step,
             digits=digits,
             value=(
                 (int(initial_val) if is_int else float(initial_val))

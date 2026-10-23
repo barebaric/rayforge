@@ -23,6 +23,7 @@ class LengthVar(FloatVar):
         max_val: float | None = None,
         extra_validator: Callable[[float], None] | None = None,
         digits: int | None = None,
+        step: float | None = None,
         *,
         visible_when: "Callable[[dict[str, Any]], bool] | None" = None,
         sensitive_when: "Callable[[dict[str, Any]], bool] | None" = None,
@@ -37,6 +38,7 @@ class LengthVar(FloatVar):
             max_val=max_val,
             extra_validator=extra_validator,
             digits=digits,
+            step=step,
             visible_when=visible_when,
             sensitive_when=sensitive_when,
         )
