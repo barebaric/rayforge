@@ -349,12 +349,12 @@ def test_added_to_preferences_group(ui_context_initializer):
 
 
 @pytest.mark.ui
-def test_default_step_is_fine_in_mm(ui_context_initializer):
+def test_default_step_is_one_in_mm(ui_context_initializer):
     config = ui_context_initializer.config
     config.unit_preferences["length"] = "mm"
     row = LengthSpinRow("Len")
     adj = row.get_spin_button().get_adjustment()
-    assert adj.get_step_increment() == pytest.approx(0.1)
+    assert adj.get_step_increment() == pytest.approx(1.0)
 
 
 @pytest.mark.ui

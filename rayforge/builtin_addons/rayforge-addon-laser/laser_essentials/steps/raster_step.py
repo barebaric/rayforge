@@ -193,6 +193,7 @@ class EngraveStep(LaserStep):
                     default=0.0,
                     min_val=0.0,
                     digits=3,
+                    step=0.1,
                 ),
                 LengthVar(
                     key="sample_interval_mm",

@@ -32,7 +32,7 @@ class SpinRowAdapter(RowAdapter):
         step = (
             var.step
             if isinstance(var, (IntVar, FloatVar)) and var.step is not None
-            else (1 if is_int else 0.1)
+            else 1.0
         )
         if is_int:
             digits = 0
