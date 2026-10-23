@@ -99,10 +99,11 @@ de jog impedirão movimento fora desses limites. Quando desabilitados, o jog nã
 - **X/Y Mín**: Coordenada mínima para cada eixo
 - **X/Y Máx**: Coordenada máxima para cada eixo
 
-Os limites de software são avaliados no sistema de coordenadas de trabalho mostrado no indicador de
-posição, por isso permanecem no lugar quando a origem de trabalho se move. Sem limites
-personalizados, ao habilitar são usados os limites da superfície de trabalho. Os limites são
-automaticamente restringidos para ficar dentro da extensão dos eixos (0 ao valor de extensão).
+Os limites de software são avaliados em coordenadas de máquina e permanecem ancorados à mesa física,
+por isso não se movem quando a origem de trabalho é redefinida. Os valores são inseridos como
+distâncias do canto da origem de coordenadas para dentro da mesa. Sem limites personalizados, ao
+habilitar são usadas as extensões dos eixos. Os limites são automaticamente restringidos para ficar
+dentro da extensão dos eixos (0 ao valor de extensão).
 
 <!-- prettier-ignore-start -->
 :::tip
