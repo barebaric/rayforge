@@ -96,8 +96,8 @@ Limites de segurança configuráveis para mover a cabeça da máquina. Quando ha
 de jog impedirão movimento fora desses limites. Quando desabilitados, o jog não é limitado.
 
 - **Habilitar Limites de Software**: Ativa ou desativa a verificação dos limites de jog
-- **X/Y Mín**: Coordenada mínima para cada eixo
-- **X/Y Máx**: Coordenada máxima para cada eixo
+- **X/Y Distância Mín da Origem**: Distância mínima permitida do canto da origem em cada eixo
+- **X/Y Distância Máx da Origem**: Distância máxima permitida do canto da origem em cada eixo
 
 Os limites de software são avaliados em coordenadas de máquina e permanecem ancorados à mesa física,
 por isso não se movem quando a origem de trabalho é redefinida. Os valores são inseridos como

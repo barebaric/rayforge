@@ -239,8 +239,12 @@ class HardwarePage(TrackedPreferencesPage):
         soft_limits_group.add(self.soft_limits_enabled_row)
 
         self.soft_x_min_row = LengthSpinRow(
-            _("X Min"),
-            _("Minimum X coordinate"),
+            _("X Min Distance from Origin"),
+            _(
+                "Distance from the origin corner into the bed "
+                "(not a coordinate). Fixed to the physical bed, "
+                "independent of the WCS."
+            ),
             upper=self.machine.axis_extents[0],
             value_in_base=limits[0],
         )
@@ -249,8 +253,12 @@ class HardwarePage(TrackedPreferencesPage):
         soft_limits_group.add(self.soft_x_min_row)
 
         self.soft_y_min_row = LengthSpinRow(
-            _("Y Min"),
-            _("Minimum Y coordinate"),
+            _("Y Min Distance from Origin"),
+            _(
+                "Distance from the origin corner into the bed "
+                "(not a coordinate). Fixed to the physical bed, "
+                "independent of the WCS."
+            ),
             upper=self.machine.axis_extents[1],
             value_in_base=limits[1],
         )
@@ -259,8 +267,12 @@ class HardwarePage(TrackedPreferencesPage):
         soft_limits_group.add(self.soft_y_min_row)
 
         self.soft_x_max_row = LengthSpinRow(
-            _("X Max"),
-            _("Maximum X coordinate"),
+            _("X Max Distance from Origin"),
+            _(
+                "Distance from the origin corner into the bed "
+                "(not a coordinate). Fixed to the physical bed, "
+                "independent of the WCS."
+            ),
             upper=self.machine.axis_extents[0],
             value_in_base=limits[2],
         )
@@ -269,8 +281,12 @@ class HardwarePage(TrackedPreferencesPage):
         soft_limits_group.add(self.soft_x_max_row)
 
         self.soft_y_max_row = LengthSpinRow(
-            _("Y Max"),
-            _("Maximum Y coordinate"),
+            _("Y Max Distance from Origin"),
+            _(
+                "Distance from the origin corner into the bed "
+                "(not a coordinate). Fixed to the physical bed, "
+                "independent of the WCS."
+            ),
             upper=self.machine.axis_extents[1],
             value_in_base=limits[3],
         )

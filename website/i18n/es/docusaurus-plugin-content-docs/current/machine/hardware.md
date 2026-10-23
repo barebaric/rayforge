@@ -97,8 +97,10 @@ los controles de desplazamiento impedirán el movimiento fuera de estos límites
 deshabilitados, el desplazamiento no está limitado.
 
 - **Habilitar Límites Suaves**: Activa o desactiva la comprobación de límites de desplazamiento
-- **X/Y Mín**: Coordenada mínima para cada eje
-- **X/Y Máx**: Coordenada máxima para cada eje
+- **X/Y Distancia Mín desde el Origen**: Distancia mínima permitida desde la esquina del origen en
+  cada eje
+- **X/Y Distancia Máx desde el Origen**: Distancia máxima permitida desde la esquina del origen en
+  cada eje
 
 Los límites suaves se evalúan en coordenadas de máquina y permanecen anclados a la cama física, por
 lo que no se mueven cuando el origen de trabajo se restablece. Los valores se introducen como

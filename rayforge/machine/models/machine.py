@@ -1864,6 +1864,7 @@ class Machine:
                 "soft_limits": list(self._soft_limits)
                 if self._soft_limits
                 else None,
+                "soft_limits_enabled": self.soft_limits_enabled,
                 "origin": self.origin.value,
                 "panel_orientation": self.panel.orientation.value,
                 "reverse_x_axis": self.reverse_x_axis,

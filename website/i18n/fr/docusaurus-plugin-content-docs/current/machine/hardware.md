@@ -98,8 +98,8 @@ désactivées, le déplacement n'est pas limité.
 
 - **Activer les Limites Logicielles** : Active ou désactive la vérification des limites de
   déplacement
-- **X/Y Min** : Coordonnée minimum pour chaque axe
-- **X/Y Max** : Coordonnée maximum pour chaque axe
+- **X/Y Distance Min de l'Origine** : Distance minimale depuis le coin de l'origine pour chaque axe
+- **X/Y Distance Max de l'Origine** : Distance maximale depuis le coin de l'origine pour chaque axe
 
 Les limites logicielles sont évaluées en coordonnées machine et restent ancrées à la table physique
 : elles ne bougent pas lorsque l'origine de travail est remise à zéro. Les valeurs sont saisies
