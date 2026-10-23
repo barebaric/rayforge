@@ -44,8 +44,8 @@ Laser gesendet werden. Die Basisbilder deiner Werkstücke werden nicht angezeigt
 auf die Schnittwege konzentriert bleibt.
 
 Der Maschinenbereich-Rahmen erscheint als Rand, der den gesamten Verfahrweg der Maschinenachsen
-darstellt. Das Arbeitsursprung-Fadenkreuz zeigt, wo sich der Ursprung des Koordinatensystems
-innerhalb dieses Bereichs befindet. Beide aktualisieren sich automatisch, wenn du den
+darstellt. Die Arbeitsursprung-Pfeile zeigen, wo sich der Ursprung des Koordinatensystems innerhalb
+dieses Bereichs befindet. Beide aktualisieren sich automatisch, wenn du den
 Arbeitskoordinatensystem-Versatz an deiner Maschine änderst.
 
 ## Verwandte Themen
