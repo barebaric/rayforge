@@ -1,17 +1,18 @@
 import math
 
 import pytest
+from helpers import FakeMachine
 from post_processors.transformers import OverscanTransformer
 from raygeo.ops import Ops
 from raygeo.ops.state import AirAssistMode
 from raygeo.ops.types import CommandType, RasterMode, SectionType
 
 
-def _apply(transformer, ops, settings=None):
+def _apply(transformer, ops, machine=None):
     """Run a transformer through the Rust spec dispatch."""
     if not transformer.enabled:
         return
-    specs = [transformer.to_spec(None, None, settings)]
+    specs = [transformer.to_spec(None, None, machine)]
     Ops.apply_transformers(ops, specs, progress_cb=None)
 
 
@@ -83,7 +84,7 @@ def test_no_op_with_native_overscan(transformer: OverscanTransformer):
     )
     original_len = ops.len()
 
-    _apply(transformer, ops, settings={"driver_native_overscan": True})
+    _apply(transformer, ops, FakeMachine(native_overscan=True))
 
     assert ops.len() == original_len
 

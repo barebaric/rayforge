@@ -21,6 +21,7 @@ from ..icons import get_icon
 from ..shared.gtk import apply_css
 from ..shared.patched_dialog_window import PatchedDialogWindow
 from .advanced_preferences_page import AdvancedPreferencesPage
+from .bed_mesh_page import BedMeshPage
 from .capabilities_page import CapabilitiesPage
 from .device_settings_page import DeviceSettingsPage
 from .gcode_settings_page import GcodeSettingsPage
@@ -63,6 +64,8 @@ class MachineSettingsDialog(PatchedDialogWindow):
         self._initial_page = initial_page
         self._gcode_row: Gtk.ListBoxRow | None = None
         self._gcode_stack_page: Gtk.StackPage | None = None
+        self._bed_mesh_row: Gtk.ListBoxRow | None = None
+        self._bed_mesh_stack_page: Gtk.StackPage | None = None
         if machine.name:
             self.set_title(
                 _("{machine_name} - Machine Settings").format(
@@ -184,7 +187,12 @@ class MachineSettingsDialog(PatchedDialogWindow):
         device_page.show_toast.connect(self._on_show_toast)
         self.content_stack.add_titled(device_page, "device", _("Device"))
 
-        # --- Page 8: Heads ---
+        # --- Page 8: Bed Mesh (Z-axis machines only) ---
+        bed_mesh_page = BedMeshPage(machine=self.machine)
+        self.content_stack.add_titled(bed_mesh_page, "bed-mesh", _("Bed Mesh"))
+        self._bed_mesh_stack_page = self.content_stack.get_page(bed_mesh_page)
+
+        # --- Page 9: Heads ---
         heads_page = HeadPreferencesPage(machine=self.machine)
         self.content_stack.add_titled(heads_page, "heads", _("Heads"))
 
@@ -246,6 +254,8 @@ class MachineSettingsDialog(PatchedDialogWindow):
             _("Hooks & Macros"), "code-symbolic", "hooks-macros"
         )
         self._add_sidebar_row(_("Device"), "settings-symbolic", "device")
+        self._add_sidebar_row(_("Bed Mesh"), "bed-mesh-symbolic", "bed-mesh")
+        self._bed_mesh_row = self.sidebar_list.get_row_at_index(7)
         self._add_sidebar_row(_("Heads"), "laser-on-symbolic", "heads")
         self._add_sidebar_row(
             _("Rotary Module"), "rotary-symbolic", "rotary-module"
@@ -276,6 +286,7 @@ class MachineSettingsDialog(PatchedDialogWindow):
         # Initial population of all dependent pages
         self._sync_camera_page()
         self._update_gcode_page_visibility()
+        self._update_bed_mesh_page_visibility()
         self._update_maturity_banner()
 
         # Select the specified page or first row by default
@@ -296,6 +307,7 @@ class MachineSettingsDialog(PatchedDialogWindow):
 
     def _on_machine_changed(self, sender=None, **kwargs):
         self._update_gcode_page_visibility()
+        self._update_bed_mesh_page_visibility()
         self._update_maturity_banner()
 
     def _update_maturity_banner(self):
@@ -324,6 +336,21 @@ class MachineSettingsDialog(PatchedDialogWindow):
         if not uses_gcode:
             selected = self.sidebar_list.get_selected_row()
             if selected is self._gcode_row:
+                self.sidebar_list.select_row(
+                    self.sidebar_list.get_row_at_index(0)
+                )
+
+    def _update_bed_mesh_page_visibility(self):
+        """The bed-mesh page only applies to machines with a Z axis."""
+        has_z = self.machine.has_z_axis
+        if self._bed_mesh_stack_page:
+            self._bed_mesh_stack_page.set_visible(has_z)
+        if self._bed_mesh_row:
+            self._bed_mesh_row.set_visible(has_z)
+
+        if not has_z:
+            selected = self.sidebar_list.get_selected_row()
+            if selected is self._bed_mesh_row:
                 self.sidebar_list.select_row(
                     self.sidebar_list.get_row_at_index(0)
                 )
