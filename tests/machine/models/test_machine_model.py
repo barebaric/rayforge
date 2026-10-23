@@ -448,6 +448,22 @@ class TestMachineModel:
         assert machine.work_margins == (50, 50, 50, 50)
         assert machine.soft_limits == (10, 10, 280, 380)
 
+    def test_soft_limits_enabled_persists_through_serialization(
+        self, lite_context
+    ):
+        """Test that a disabled soft-limits toggle survives a restart."""
+        machine = Machine(lite_context)
+        assert machine.soft_limits_enabled is True
+        machine.set_soft_limits_enabled(False)
+
+        data = machine.to_dict()["machine"]
+        assert data["soft_limits_enabled"] is False
+
+        restored = Machine.from_dict(
+            {"machine": dict(data)}, context=lite_context
+        )
+        assert restored.soft_limits_enabled is False
+
     def test_usb_id_serialization_uses_hex(self, lite_context):
         """USB ids serialize as hex strings and round-trip; legacy
         integer values are still accepted on load."""
