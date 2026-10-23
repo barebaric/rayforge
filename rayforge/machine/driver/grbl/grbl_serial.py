@@ -461,6 +461,13 @@ class GrblSerialDriver(Driver):
         if axes is not None:
             names = [axis.name for axis in axes]
         await session.home(names, self._machine.active_wcs)
+        park = self._machine.park_position_after_homing
+        if axes is None and park is not None:
+            template = self.dialect.move_to_park
+            if template:
+                await session.execute_command(
+                    template.format(x=park[0], y=park[1])
+                )
 
     async def move_to(
         self,

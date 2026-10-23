@@ -171,6 +171,9 @@ class Machine:
         self.auto_connect: bool = True
         self.home_on_start: bool = False
         self.clear_alarm_on_connect: bool = False
+        #: Machine-space (x, y) the head is driven to after homing all
+        #: axes, or None to not move.
+        self.park_position_after_homing: tuple[float, float] | None = None
         # True while this machine is the auto-created placeholder that
         # keeps the app usable before the user sets up a real machine.
         self.placeholder: bool = False
@@ -783,6 +786,16 @@ class Machine:
         if self.home_on_start == home_on_start:
             return
         self.home_on_start = home_on_start
+        self.changed.send(self)
+
+    def set_park_position_after_homing(
+        self, position: tuple[float, float] | None
+    ):
+        if position is not None:
+            position = (float(position[0]), float(position[1]))
+        if self.park_position_after_homing == position:
+            return
+        self.park_position_after_homing = position
         self.changed.send(self)
 
     def set_clear_alarm_on_connect(self, clear_alarm: bool = True):
@@ -1846,6 +1859,11 @@ class Machine:
                 "clear_alarm_on_connect": self.clear_alarm_on_connect,
                 "placeholder": self.placeholder,
                 "home_on_start": self.home_on_start,
+                "park_position_after_homing": (
+                    list(self.park_position_after_homing)
+                    if self.park_position_after_homing is not None
+                    else None
+                ),
                 "single_axis_homing_enabled": self.single_axis_homing_enabled,
                 "z_homing_mode": (
                     self.z_homing_mode.value if self.z_homing_mode else None
@@ -2037,6 +2055,12 @@ class Machine:
         )
         ma.placeholder = ma_data.pop("placeholder", ma.placeholder)
         ma.home_on_start = ma_data.pop("home_on_start", ma.home_on_start)
+        park_position = ma_data.pop("park_position_after_homing", None)
+        if park_position is not None:
+            ma.park_position_after_homing = (
+                float(park_position[0]),
+                float(park_position[1]),
+            )
         ma.single_axis_homing_enabled = ma_data.pop(
             "single_axis_homing_enabled",
             ma.single_axis_homing_enabled,

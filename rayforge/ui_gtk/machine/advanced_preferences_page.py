@@ -94,6 +94,48 @@ class AdvancedPreferencesPage(TrackedPreferencesPage):
         )
         homing_group.add(home_on_start_row)
 
+        park = machine.park_position_after_homing
+        park_x, park_y = park if park is not None else (0.0, 0.0)
+
+        self.park_after_homing_row = Adw.SwitchRow()
+        self.park_after_homing_row.set_title(_("Park After Homing"))
+        self.park_after_homing_row.set_subtitle(
+            _(
+                "After homing, move the head to the park position, "
+                "e.g. to clear the homing pull-off"
+            )
+        )
+        self.park_after_homing_row.set_active(park is not None)
+        self.park_after_homing_row.connect(
+            "notify::active", self.on_park_after_homing_changed
+        )
+        homing_group.add(self.park_after_homing_row)
+
+        self.park_x_row = LengthSpinRow(
+            _("Park Position X"),
+            _("Machine-coordinate X of the park position"),
+            lower=-10000.0,
+            upper=10000.0,
+            step_increment=1.0,
+            digits=2,
+            value_in_base=park_x,
+        )
+        self.park_x_row.value_changed.connect(self.on_park_position_changed)
+        homing_group.add(self.park_x_row)
+
+        self.park_y_row = LengthSpinRow(
+            _("Park Position Y"),
+            _("Machine-coordinate Y of the park position"),
+            lower=-10000.0,
+            upper=10000.0,
+            step_increment=1.0,
+            digits=2,
+            value_in_base=park_y,
+        )
+        self.park_y_row.value_changed.connect(self.on_park_position_changed)
+        homing_group.add(self.park_y_row)
+        self._update_park_rows_sensitivity()
+
         single_axis_homing_row = Adw.SwitchRow()
         single_axis_homing_row.set_title(_("Allow Single Axis Homing"))
         single_axis_homing_row.set_subtitle(
@@ -151,6 +193,33 @@ class AdvancedPreferencesPage(TrackedPreferencesPage):
 
     def on_home_on_start_changed(self, row, _):
         self.machine.set_home_on_start(row.get_active())
+
+    def on_park_after_homing_changed(self, row, _):
+        if row.get_active():
+            self.machine.set_park_position_after_homing(
+                (
+                    self.park_x_row.get_value_in_base_units(),
+                    self.park_y_row.get_value_in_base_units(),
+                )
+            )
+        else:
+            self.machine.set_park_position_after_homing(None)
+        self._update_park_rows_sensitivity()
+
+    def on_park_position_changed(self, row):
+        if not self.park_after_homing_row.get_active():
+            return
+        self.machine.set_park_position_after_homing(
+            (
+                self.park_x_row.get_value_in_base_units(),
+                self.park_y_row.get_value_in_base_units(),
+            )
+        )
+
+    def _update_park_rows_sensitivity(self):
+        active = self.park_after_homing_row.get_active()
+        self.park_x_row.set_sensitive(active)
+        self.park_y_row.set_sensitive(active)
 
     def on_single_axis_homing_changed(self, row, _):
         self.machine.set_single_axis_homing_enabled(row.get_active())
