@@ -108,13 +108,6 @@ def _clamp_jog_distance(
     return target - pos
 
 
-def _shift_pos(pos: float | None, offset: float) -> float | None:
-    """Convert a machine position into work coordinates."""
-    if pos is None:
-        return None
-    return pos - offset
-
-
 def _raise_error(*args, **kwargs):
     raise RuntimeError("Cannot schedule from worker process")
 
@@ -1217,7 +1210,13 @@ class Machine:
         return m_pos[0], m_pos[1]
 
     def get_soft_limits(self) -> Rect:
-        """Get the soft limits as (x_min, y_min, x_max, y_max)."""
+        """
+        Get the soft limits as (x_min, y_min, x_max, y_max).
+
+        The rect is in machine coordinates: it is anchored to the
+        physical bed and does not move with the work origin. Configured
+        values are entered as distances from the origin corner.
+        """
         if self._soft_limits is not None:
             x_min, y_min, x_max, y_max = self._soft_limits
             if self.reverse_x_axis:
@@ -1253,15 +1252,19 @@ class Machine:
     def _adjust_jog_distance_for_limits(
         self, axis: Axis, distance: float
     ) -> float:
-        """Adjust jog distance to stay within soft limits."""
+        """Adjust jog distance to stay within soft limits.
+
+        The limits describe the physical bed in machine coordinates and
+        are compared against the machine position, so they hold
+        regardless of where the work origin (WCS) is zeroed.
+        """
         if not self.soft_limits_enabled:
             return distance
 
         current_pos = self.device_state.machine_pos
-        off_x, off_y, _ = self.get_active_wcs_offset()
-        x_pos = _shift_pos(current_pos[0], off_x)
-        y_pos = _shift_pos(current_pos[1], off_y)
         x_min, y_min, x_max, y_max = self.get_soft_limits()
+        x_pos = current_pos[0]
+        y_pos = current_pos[1]
         adjusted_distance = distance
 
         # Check X axis

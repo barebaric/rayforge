@@ -100,11 +100,11 @@ deshabilitados, el desplazamiento no está limitado.
 - **X/Y Mín**: Coordenada mínima para cada eje
 - **X/Y Máx**: Coordenada máxima para cada eje
 
-Los límites suaves se evalúan en el sistema de coordenadas de trabajo que muestra el indicador de
-posición, por lo que se mantienen en su lugar cuando el origen de trabajo se mueve. Sin límites
-personalizados, al habilitarlos se usan los límites de la superficie de trabajo. Los límites se
-restringen automáticamente para permanecer dentro de la extensión de los ejes (0 al valor de
-extensión).
+Los límites suaves se evalúan en coordenadas de máquina y permanecen anclados a la cama física, por
+lo que no se mueven cuando el origen de trabajo se restablece. Los valores se introducen como
+distancias desde la esquina del origen de coordenadas hacia la cama. Sin límites personalizados, al
+habilitarlos se usa la extensión de los ejes. Los límites se restringen automáticamente para
+permanecer dentro de la extensión de los ejes (0 al valor de extensión).
 
 <!-- prettier-ignore-start -->
 :::tip

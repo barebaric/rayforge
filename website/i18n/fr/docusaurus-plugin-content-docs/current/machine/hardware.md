@@ -101,10 +101,11 @@ désactivées, le déplacement n'est pas limité.
 - **X/Y Min** : Coordonnée minimum pour chaque axe
 - **X/Y Max** : Coordonnée maximum pour chaque axe
 
-Les limites logicielles sont évaluées dans le système de coordonnées de travail affiché dans
-l'affichage de position ; elles restent donc en place lorsque l'origine de travail se déplace. Sans
-limites personnalisées, l'activation utilise les limites de la surface de travail. Les limites sont
-automatiquement contraintes pour rester dans l'étendue des axes (0 à la valeur d'étendue).
+Les limites logicielles sont évaluées en coordonnées machine et restent ancrées à la table physique
+: elles ne bougent pas lorsque l'origine de travail est remise à zéro. Les valeurs sont saisies
+comme des distances depuis le coin de l'origine des coordonnées vers la table. Sans limites
+personnalisées, l'activation utilise l'étendue des axes. Les limites sont automatiquement
+contraintes pour rester dans l'étendue des axes (0 à la valeur d'étendue).
 
 <!-- prettier-ignore-start -->
 :::tip

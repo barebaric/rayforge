@@ -66,9 +66,11 @@ class WorkOriginElement(CanvasElement):
         """
         ctx.save()
 
-        # Set drawing properties
+        # Set drawing properties. The stroke uses a device-space width:
+        # a world-unit width would be thinner than a pixel at most zoom
+        # levels, leaving the marker invisible after anti-aliasing.
         ctx.set_source_rgba(0.2, 0.8, 0.2, 0.9)  # A distinct green color
-        ctx.set_line_width(0.2)  # Use a thin line width in world units (mm)
+        ctx.set_hairline(True)
         ctx.set_line_cap(cairo.LINE_CAP_ROUND)
         ctx.set_line_join(cairo.LINE_JOIN_ROUND)
 
