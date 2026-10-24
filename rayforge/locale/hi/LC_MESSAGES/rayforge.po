@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-23 10:58+0200\n"
+"POT-Creation-Date: 2026-10-24 21:11+0200\n"
 "PO-Revision-Date: 2026-09-27 22:58\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -1824,6 +1824,21 @@ msgstr "पैनल ओरिएंटेशन"
 msgid "Has Z-Axis"
 msgstr "Z-अक्ष सहित"
 
+#: rayforge/machine/device/profile.py rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Reverse X-Axis Direction"
+msgstr "X-अक्ष दिशा उलटें"
+
+#: rayforge/machine/device/profile.py rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Reverse Y-Axis Direction"
+msgstr "Y-अक्ष दिशा उलटें"
+
+#: rayforge/machine/device/profile.py rayforge/ui_gtk/machine/hardware_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
+msgid "Reverse Z-Axis Direction"
+msgstr "Z-अक्ष दिशा उलटें"
+
 #: rayforge/machine/device/profile.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Speeds"
@@ -1863,6 +1878,10 @@ msgstr "व्यवहार"
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Home on Start"
 msgstr "स्टार्ट पर होम"
+
+#: rayforge/machine/device/profile.py
+msgid "Park Position After Homing"
+msgstr "होमिंग के बाद पार्क स्थिति"
 
 #: rayforge/machine/device/profile.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
@@ -2327,6 +2346,10 @@ msgstr "अक्ष होम करें"
 #: rayforge/machine/models/dialect/base.py
 msgid "Move To"
 msgstr "यहाँ ले जाएँ"
+
+#: rayforge/machine/models/dialect/base.py
+msgid "Move To Park"
+msgstr "पार्क स्थिति पर ले जाएँ"
 
 #: rayforge/machine/models/dialect/base.py rayforge/ui_gtk/main_menu.py
 msgid "Clear Alarm"
@@ -5417,6 +5440,35 @@ msgid "Send a homing command when the application starts"
 msgstr "एप्लिकेशन शुरू होने पर होमिंग कमांड भेजें"
 
 #: rayforge/ui_gtk/machine/advanced_preferences_page.py
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+msgid "Park After Homing"
+msgstr "होमिंग के बाद पार्क करें"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid ""
+"After homing, move the head to the park position, e.g. to clear the homing "
+"pull-off"
+msgstr ""
+"होमिंग के बाद, हेड को पार्क स्थिति में ले जाएँ, उदाहरण के लिए होमिंग पुल-ऑफ से दूर हटने के "
+"लिए."
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Park Position X"
+msgstr "पार्क स्थिति X"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Machine-coordinate X of the park position"
+msgstr "पार्क स्थिति का मशीन निर्देशांक X"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Park Position Y"
+msgstr "पार्क स्थिति Y"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
+msgid "Machine-coordinate Y of the park position"
+msgstr "पार्क स्थिति का मशीन निर्देशांक Y"
+
+#: rayforge/ui_gtk/machine/advanced_preferences_page.py
 msgid "Allow Single Axis Homing"
 msgstr "एकल अक्ष होमिंग की अनुमति दें"
 
@@ -5473,6 +5525,30 @@ msgstr "टेम्पलेट से बनाएँ"
 #: rayforge/ui_gtk/machine/dialect_list.py
 msgid "No custom dialects configured"
 msgstr "कोई कस्टम डायलेक्ट कॉन्फ़िगर नहीं है"
+
+#: rayforge/ui_gtk/machine/dialect_list.py
+msgid "Delete Unused Dialects"
+msgstr "अप्रयुक्त डायलेक्ट हटाएँ"
+
+#: rayforge/ui_gtk/machine/dialect_list.py
+msgid "No Unused Dialects"
+msgstr "कोई अप्रयुक्त डायलेक्ट नहीं"
+
+#: rayforge/ui_gtk/machine/dialect_list.py
+msgid "Every custom dialect is used by at least one machine."
+msgstr "प्रत्येक कस्टम डायलेक्ट का उपयोग कम से कम एक मशीन द्वारा किया जाता है."
+
+#: rayforge/ui_gtk/machine/dialect_list.py
+msgid "Delete Unused Dialects?"
+msgstr "अप्रयुक्त डायलेक्ट हटाएँ?"
+
+#: rayforge/ui_gtk/machine/dialect_list.py
+msgid "The following dialects are not used by any machine:"
+msgstr "निम्न डायलेक्ट का उपयोग कोई मशीन नहीं कर रही है:"
+
+#: rayforge/ui_gtk/machine/dialect_list.py
+msgid "They will be permanently removed. This action cannot be undone."
+msgstr "उन्हें स्थायी रूप से हटा दिया जाएगा. यह क्रिया पूर्ववत नहीं की जा सकती."
 
 #: rayforge/ui_gtk/machine/dialect_list.py
 #, python-brace-format
@@ -5683,28 +5759,13 @@ msgstr ""
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Reverse X-Axis Direction"
-msgstr "X-अक्ष दिशा उलटें"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Makes coordinate values negative"
-msgstr "निर्देशांक मान ऋणात्मक बनाता है"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Reverse Y-Axis Direction"
-msgstr "Y-अक्ष दिशा उलटें"
+msgid "Machine coordinates count down from the origin"
+msgstr "मशीन निर्देशांक मूल बिंदु से नीचे की ओर गिने जाते हैं"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 #: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
 msgid "Enable if this machine has a Z axis (focus motor, movable bed)"
 msgstr "सक्षम करें यदि इस मशीन में Z अक्ष है (फ़ोकस मोटर, चलायमान बेड)"
-
-#: rayforge/ui_gtk/machine/hardware_page.py
-#: rayforge/ui_gtk/machine/wizard_pages/hardware_page.py
-msgid "Reverse Z-Axis Direction"
-msgstr "Z-अक्ष दिशा उलटें"
 
 #: rayforge/ui_gtk/machine/hardware_page.py
 msgid "Enable if a positive Z command (e.g., G0 Z10) moves the head down"
@@ -6092,6 +6153,11 @@ msgstr "हाँ"
 #: rayforge/ui_gtk/machine/wizard_pages/ai_lookup_page.py
 msgid "No"
 msgstr "नहीं"
+
+#: rayforge/ui_gtk/machine/wizard_pages/review_page.py
+#, python-brace-format
+msgid "Yes, at ({x}, {y})"
+msgstr "हाँ, ({x}, {y}) पर"
 
 #: rayforge/ui_gtk/machine/wizard_pages/review_page.py
 #: rayforge/ui_gtk/machine/general_preferences_page.py

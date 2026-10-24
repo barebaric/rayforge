@@ -5,6 +5,82 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.13.0
+
+### Added
+
+- Machine: device profiles gain reverse X/Y/Z axis switches, so they
+  can ship machines whose controller reports negative machine
+  coordinates (e.g. Grbl controllers where machine zero sits at the
+  corner opposite the homing switches). The settings are wired into
+  the profile review, machine export and machine creation (#613)
+- Devices: a built-in profile for the FoxAlien Vasto (desktop CNC
+  router, 400 x 400 mm, Grbl 1.1h, typically fitted with the FoxAlien
+  40W diode module). The controller reports negative machine
+  coordinates, so the profile ships origin top-right with both axes
+  reversed (#615)
+- Machine: a park position drives the head to a configurable machine
+  coordinate after homing all axes, for machines whose homing
+  pull-off parks the head past the machine origin, outside the soft
+  limit range. The move uses the dialect's Move To Park command,
+  which the grbl dialect flavors and all built-in Grbl profiles ship;
+  the position is set on the Advanced settings page, and unset means
+  no move (#619)
+- Machine: a cleanup button in the G-code dialect list header deletes
+  all custom dialects that no machine references, after a
+  confirmation dialog lists the affected dialects (#632)
+
+### Changed
+
+- Machine: the reverse-axis setting subtitle states the actual
+  semantics, machine coordinates count down from the origin, instead
+  of the vague "Makes coordinate values negative" (#613)
+
+### Fixed
+
+- Canvas: the green work-origin marker is drawn as arrows above the
+  extent frame and no-go zones, so it stays visible when the work
+  origin sits on the frame corner; the arrowheads keep a fixed
+  device-space size that no longer scales with zoom (#625)
+- Windows: upgrading no longer deletes the previous installation
+  before checking the deletion succeeded. The installer makes sure no
+  instance is running, moves the previous installation aside with a
+  rename, and renames it back if writing the new files fails, so a
+  locked file can no longer leave the old version half-deleted and
+  unusable (#627)
+- Windows: the uninstaller no longer deletes whole file-extension
+  registry keys shared with other applications (.png, .bmp, .jpeg,
+  .jpg, .svg, .svgz, .dxf), discarding associations owned by other
+  software; it removes only the Rayforge ProgID keys and restores the
+  default association it replaced (#627)
+- Windows: shared file types are registered via OpenWithProgids, which
+  adds Rayforge to the "Open with" menu, instead of being claimed as
+  the default; Rayforge-owned formats (.ryp, .rfs, .rd) keep their
+  default registration (#627)
+- Devices: the Creality Falcon A1 is declared with both axes
+  reversed, because it homes to the maximum end of both axes and its
+  machine coordinates count down from the park corner; jogs, soft
+  limit clamping and G-code generation stay inside the reachable
+  range again. Existing Falcon A1 machines pick the change up through
+  the profile review flow, and the wizard now asks which profile
+  matches instead of silently adopting the Falcon 2 Pro 22W, which
+  shares the A1's USB id (#619)
+- Devices: the Falcon A1 profile parks the head at the machine origin
+  after homing, so the head lands inside the soft-limit range and the
+  first jog after homing is no longer rejected with error:15 (#619)
+- UI: the raster Line Spacing field's up/down arrows step in 0.1 mm
+  increments instead of a full millimeter, so finer values are
+  reachable; other fields keep their step of 1 (#629)
+
+### Documentation
+
+- The device docs describe the FoxAlien Vasto's confirmed coordinate
+  layout: homing drives to the bottom-left corner while the controller
+  reports negative machine positions, so machine zero sits at the
+  opposite corner
+- The projector-mode docs and the main-window screenshots show the
+  arrow-shaped work-origin marker instead of a crosshair
+
 ## 1.13.0-beta5
 
 ### Added
