@@ -37,6 +37,12 @@ formatiert werden.
 :::
 <!-- prettier-ignore-end -->
 
+### Unbenutzte Dialekte aufräumen
+
+Die Besen-Schaltfläche in der Kopfzeile der Dialektliste entfernt alle benutzerdefinierten Dialekte,
+die von keiner Maschine verwendet werden. Ein Bestätigungsdialog listet die Dialekte auf, bevor sie
+entfernt werden.
+
 ## Dialekt-Präambel und Postscript
 
 Jeder Dialekt enthält anpassbare Präambel- und Postscript-G-Codes, die am Anfang und Ende von Jobs

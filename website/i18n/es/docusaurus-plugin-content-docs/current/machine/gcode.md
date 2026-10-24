@@ -38,6 +38,12 @@ en el código G de salida.
 :::
 <!-- prettier-ignore-end -->
 
+### Limpieza de Dialectos sin Usar
+
+El botón de escoba en la cabecera de la lista de dialectos elimina todos los dialectos
+personalizados que no usa ninguna máquina. Un diálogo de confirmación enumera los dialectos antes de
+eliminarlos.
+
 ## Preámbulo y Postscript del Dialecto
 
 Cada dialecto incluye código G de preámbulo y postscript personalizable que se ejecuta al inicio y

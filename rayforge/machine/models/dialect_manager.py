@@ -171,6 +171,17 @@ class DialectManager:
         """Returns a list of machines that use the given dialect."""
         return [m for m in machines if m.dialect_uid == dialect.uid]
 
+    def get_unused_dialects(
+        self, machines: list["Machine"]
+    ) -> list[GcodeDialect]:
+        """Returns custom dialects that no machine references."""
+        used_uids = {m.dialect_uid.lower() for m in machines if m.dialect_uid}
+        return [
+            dialect
+            for dialect in self.get_all()
+            if dialect.is_custom and dialect.uid.lower() not in used_uids
+        ]
+
     def delete_dialect(self, dialect: GcodeDialect, machines: list["Machine"]):
         """Deletes a custom dialect, saves, and signals."""
         if not dialect.is_custom:
@@ -187,3 +198,16 @@ class DialectManager:
         del self._registry[uid_key]
         self._delete_dialect_file(dialect)
         self.dialects_changed.send(self)
+
+    def delete_unused_dialects(
+        self, machines: list["Machine"]
+    ) -> list[GcodeDialect]:
+        """Deletes all custom dialects no machine references, and returns
+        the deleted dialects."""
+        unused = self.get_unused_dialects(machines)
+        for dialect in unused:
+            del self._registry[dialect.uid.lower()]
+            self._delete_dialect_file(dialect)
+        if unused:
+            self.dialects_changed.send(self)
+        return unused
