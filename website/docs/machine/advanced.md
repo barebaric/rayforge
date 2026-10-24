@@ -22,6 +22,20 @@ When enabled, Rayforge automatically sends a homing command ($H) when connecting
 - **Enable if**: Your machine has reliable limit switches
 - **Disable if**: Your machine has no limit switches or homing is unreliable
 
+### Park After Homing
+
+When enabled, Rayforge moves the head to the configured park position (a machine-coordinate X/Y
+pair) after homing completes. The move uses the "Move To Park" command template (default
+`G53 G0 X{x} Y{y}`, editable in Machine Settings → G-code), so it is independent of the active
+work coordinate system. It only runs after homing all axes.
+
+- **Enable if**: You want the head at a known spot after homing, or homing leaves it parked outside
+  the soft-limit range. Some firmwares (e.g. the Creality Falcon series) retract past the machine
+  origin during the homing pull-off, which makes the first jog fail with a soft-limit error
+  ("error:15") until a diagonal jog moves the head back inside — parking at (0, 0) fixes that
+- **Disable if**: Your machine parks safely inside its travel range after homing, or a fixture is
+  mounted at the park position
+
 ### Clear Alarms on Connect
 
 When enabled, Rayforge automatically clears any alarm state when connecting.

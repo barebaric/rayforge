@@ -861,6 +861,55 @@ class TestSetterEqualityGuards:
         assert len(signals) == 1
 
 
+class TestParkPositionAfterHoming:
+    def test_default_is_none(self, lite_context):
+        machine = Machine(lite_context)
+        assert machine.park_position_after_homing is None
+
+    def test_no_signal_on_same_value(self, lite_context):
+        machine = Machine(lite_context)
+        machine.set_park_position_after_homing((10.0, 5.0))
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        machine.set_park_position_after_homing((10.0, 5.0))
+        assert len(signals) == 0
+
+    def test_signal_on_change(self, lite_context):
+        machine = Machine(lite_context)
+        signals = []
+
+        def handler(sender):
+            signals.append(sender)
+
+        machine.changed.connect(handler)
+        machine.set_park_position_after_homing((10.0, 5.0))
+        assert len(signals) == 1
+
+    def test_position_values_are_coerced_to_float(self, lite_context):
+        machine = Machine(lite_context)
+        machine.set_park_position_after_homing((10, 5))
+        assert machine.park_position_after_homing == (10.0, 5.0)
+
+    def test_serialization_round_trip(self, lite_context):
+        machine = Machine(lite_context)
+        machine.set_park_position_after_homing((10.0, 5.0))
+        data = machine.to_dict()
+        restored = Machine.from_dict(data, context=lite_context)
+        assert restored.park_position_after_homing == (10.0, 5.0)
+
+    def test_serialization_round_trip_when_disabled(self, lite_context):
+        machine = Machine(lite_context)
+        machine.set_park_position_after_homing((10.0, 5.0))
+        machine.set_park_position_after_homing(None)
+        data = machine.to_dict()
+        restored = Machine.from_dict(data, context=lite_context)
+        assert restored.park_position_after_homing is None
+
+
 class TestHydratedDialectCache:
     """Tests for _hydrated_dialect cache invalidation."""
 

@@ -13,10 +13,11 @@ from rayforge.machine.device.profile import (
     DIALECT_FILENAME,
     MANIFEST_FILENAME,
     DeviceProfile,
+    MachineConfig,
     export_machine_to_dir,
 )
 from rayforge.machine.models.laser import LaserHead, LaserType
-from rayforge.machine.models.machine import Origin
+from rayforge.machine.models.machine import JogDirection, Origin
 from rayforge.machine.models.machine_panel import PanelOrientation
 from rayforge.shared.markdown import Details, parse
 from rayforge.shared.tasker.manager import TaskManager
@@ -667,6 +668,24 @@ def test_falcon_profiles_emit_framing_bounds_comment():
         )
 
 
+def test_grbl_profiles_ship_move_to_park_template():
+    """Every Grbl-driver profile declares the machine-space park move
+    so the park-after-homing setting works out of the box (issue
+    #619)."""
+    devices_dir = Path(rayforge.__file__).parent / "resources" / "devices"
+    grbl_dirs = sorted(
+        p
+        for p in devices_dir.iterdir()
+        if p.is_dir()
+        and (p / "dialect.yaml").exists()
+        and "driver: Grbl" in (p / "device.yaml").read_text()
+    )
+    assert len(grbl_dirs) >= 20
+    for profile_dir in grbl_dirs:
+        profile = DeviceProfile.from_path(profile_dir)
+        assert profile.dialect_config.get("move_to_park"), profile_dir.name
+
+
 def test_foxalien_vasto_profile_uses_negative_machine_space():
     """The Vasto controller reports negative machine coordinates, so the
     shipped profile must preconfigure the reversed-axes setup (#613)."""
@@ -737,6 +756,7 @@ class TestExportMachine:
         machine.reverse_x_axis = False
         machine.reverse_y_axis = False
         machine.reverse_z_axis = False
+        machine.park_position_after_homing = None
         machine.dialect = GcodeDialect.from_dict({"label": name})
         for k, v in overrides.items():
             setattr(machine, k, v)
@@ -917,6 +937,54 @@ class TestCreateMachine:
         assert m.reverse_x_axis is True
         assert m.reverse_y_axis is True
         assert m.get_soft_limits() == (-400.0, -400.0, 0.0, 0.0)
+
+    @pytest.mark.asyncio
+    async def test_create_machine_reversed_axes_jog_direction(
+        self, tmp_path, lite_context, task_mgr
+    ):
+        """With reversed axes on a bottom-left origin, machine
+        coordinates count negative from the head park corner, so
+        visual east and north jog toward negative deltas (issue
+        #619)."""
+        device_dir = _make_device(
+            tmp_path,
+            name="Reversed Axes",
+            machine_extra={"reverse_x_axis": True, "reverse_y_axis": True},
+        )
+        pkg = DeviceProfile.from_path(device_dir)
+        m = pkg.create_machine(lite_context)
+        await _wait_for_tasks(task_mgr)
+
+        assert m.reverse_x_axis is True
+        assert m.reverse_y_axis is True
+        assert m.get_soft_limits() == (-200.0, -200.0, 0.0, 0.0)
+        assert m.panel.calculate_jog(JogDirection.EAST, 10.0) == {
+            Axis.X: -10.0
+        }
+        assert m.panel.calculate_jog(JogDirection.NORTH, 10.0) == {
+            Axis.Y: -10.0
+        }
+
+    @pytest.mark.asyncio
+    async def test_create_machine_applies_park_position(
+        self, tmp_path, lite_context, task_mgr
+    ):
+        """The park position reaches the created machine and is
+        exported back into profile data (issue #619)."""
+        device_dir = _make_device(
+            tmp_path,
+            name="Park Position",
+            machine_extra={"park_position_after_homing": [10.0, 5.0]},
+        )
+        pkg = DeviceProfile.from_path(device_dir)
+        m = pkg.create_machine(lite_context)
+        await _wait_for_tasks(task_mgr)
+
+        assert m.park_position_after_homing == (10.0, 5.0)
+        assert MachineConfig.from_machine(m).park_position_after_homing == (
+            10.0,
+            5.0,
+        )
 
     @pytest.mark.asyncio
     async def test_create_machine_gcode_has_dialect(

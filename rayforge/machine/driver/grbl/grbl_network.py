@@ -571,6 +571,14 @@ class GrblNetworkDriver(Driver):
         await self.execute_interactive_command(temp_wcs)
         await self.execute_interactive_command(active_wcs)
 
+        park = self._machine.park_position_after_homing
+        if axes is None and park is not None:
+            template = self.dialect.move_to_park
+            if template:
+                await self.execute_interactive_command(
+                    template.format(x=park[0], y=park[1])
+                )
+
     async def move_to(self, pos_x, pos_y, pos_z=None, speed=None) -> None:
         cmd = self._format_move_to(float(pos_x), float(pos_y), pos_z, speed)
         await self.execute_interactive_command(cmd)
