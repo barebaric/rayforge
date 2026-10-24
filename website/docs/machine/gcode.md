@@ -41,6 +41,11 @@ output G-code.
 :::
 <!-- prettier-ignore-end -->
 
+### Cleaning Up Unused Dialects
+
+The broom button in the header of the dialect list removes all custom dialects that are not used by
+any machine. A confirmation dialog lists the dialects before they are removed.
+
 ## Dialect Preamble and Postscript
 
 Each dialect includes customizable preamble and postscript G-code that runs at the start and end of

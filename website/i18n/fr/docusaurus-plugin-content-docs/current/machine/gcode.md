@@ -39,6 +39,12 @@ sont formatés dans le G-code de sortie.
 :::
 <!-- prettier-ignore-end -->
 
+### Nettoyage des dialectes inutilisés
+
+Le bouton balai dans l'en-tête de la liste des dialectes supprime tous les dialectes personnalisés
+qu'aucune machine n'utilise. Une boîte de dialogue de confirmation liste les dialectes avant leur
+suppression.
+
 ## Préambule et Postscript du Dialecte
 
 Chaque dialecte inclut un préambule et un postscript G-code personnalisables qui s'exécutent au
