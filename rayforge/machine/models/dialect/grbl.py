@@ -26,6 +26,7 @@ GRBL_DIALECT = GcodeDialect(
     home_all="$H",
     home_axis="$H{axis_letter}",
     move_to="$J=G90 G21 F{speed} X{x} Y{y}{z_cmd}",
+    move_to_park="G53 G0 X{x} Y{y}",
     jog="$J=G91 G21 F{speed}",
     clear_alarm="$X",
     set_wcs_offset="G10 L2 P{p_num} X{x} Y{y} Z{z}",

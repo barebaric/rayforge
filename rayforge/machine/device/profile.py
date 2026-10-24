@@ -121,7 +121,14 @@ def parse_meta(data: dict, manifest_path: Path) -> DeviceMeta:
     return DeviceMeta(**filtered)
 
 
-_TUPLE_FIELDS = frozenset({"axis_extents", "work_margins", "soft_limits"})
+_TUPLE_FIELDS = frozenset(
+    {
+        "axis_extents",
+        "work_margins",
+        "soft_limits",
+        "park_position_after_homing",
+    }
+)
 
 _VALID_ORIGINS = sorted(o.value for o in Origin)
 
@@ -212,6 +219,18 @@ def _validate_machine_config(config: dict[str, Any], manifest_path: Path):
             raise ValueError(
                 f"'soft_limits' must be a list of four numbers "
                 f"in {manifest_path}"
+            )
+
+    if "park_position_after_homing" in config:
+        pp = config["park_position_after_homing"]
+        if (
+            not isinstance(pp, list)
+            or len(pp) != 2
+            or not all(isinstance(v, (int, float)) for v in pp)
+        ):
+            raise ValueError(
+                f"'park_position_after_homing' must be a list of "
+                f"two numbers in {manifest_path}"
             )
 
     if "heads" in config and not isinstance(config["heads"], list):
@@ -462,6 +481,15 @@ class MachineConfig:
             lambda m, v: setattr(m, "home_on_start", v),
         ),
     )
+    park_position_after_homing: tuple[float, float] | None = field(
+        default=None,
+        metadata=_binding(
+            _("Behavior"),
+            _("Park Position After Homing"),
+            lambda m: m.park_position_after_homing,
+            lambda m, v: m.set_park_position_after_homing(v),
+        ),
+    )
     single_axis_homing_enabled: bool | None = field(
         default=None,
         metadata=_binding(
@@ -581,6 +609,7 @@ class MachineConfig:
             max_travel_speed=machine.max_travel_speed,
             max_cut_speed=machine.max_cut_speed,
             home_on_start=machine.home_on_start,
+            park_position_after_homing=machine.park_position_after_homing,
             acceleration=machine.acceleration,
             single_axis_homing_enabled=(machine.single_axis_homing_enabled),
             has_z=machine.has_z_axis,
@@ -774,6 +803,8 @@ class DeviceProfile:
             m.max_cut_speed = cfg.max_cut_speed
         if cfg.home_on_start is not None:
             m.home_on_start = cfg.home_on_start
+        if cfg.park_position_after_homing is not None:
+            m.set_park_position_after_homing(cfg.park_position_after_homing)
         if cfg.acceleration is not None:
             m.acceleration = cfg.acceleration
         if cfg.single_axis_homing_enabled is not None:

@@ -679,6 +679,15 @@ class GrblSerialSimpleDriver(Driver):
         await self._execute_command("G4 P0.01")
         await self._execute_command(temp_wcs)
         await self._execute_command(active_wcs)
+
+        park = self._machine.park_position_after_homing
+        if axes is None and park is not None:
+            template = self.dialect.move_to_park
+            if template:
+                await self._execute_command(
+                    template.format(x=park[0], y=park[1])
+                )
+
         self.state.error = None
         self.state_changed.send(self, state=self.state)
 
