@@ -16,6 +16,8 @@ class MachineCapability(enum.Enum):
     MILL = "MILL"
     PWM = "PWM"
     ROTARY = "ROTARY"
+    DRAG_KNIFE = "DRAG_KNIFE"
+    TANGENTIAL_KNIFE = "TANGENTIAL_KNIFE"
     # Future: PROBE, DWELL, ...
 
     @property
@@ -34,6 +36,8 @@ _MACHINE_CAPABILITY_LABELS = {
     MachineCapability.MILL: _("Mill"),
     MachineCapability.PWM: _("PWM"),
     MachineCapability.ROTARY: _("Rotary"),
+    MachineCapability.DRAG_KNIFE: _("Drag Knife"),
+    MachineCapability.TANGENTIAL_KNIFE: _("Tangential Knife"),
 }
 
 _MACHINE_CAPABILITY_DESCRIPTIONS = {
@@ -42,5 +46,11 @@ _MACHINE_CAPABILITY_DESCRIPTIONS = {
     MachineCapability.PWM: _("Pulse-width-modulated laser power control"),
     MachineCapability.ROTARY: _(
         "Rotary axis attachment for cylindrical objects"
+    ),
+    MachineCapability.DRAG_KNIFE: _(
+        "Cutting with a trailing-blade drag knife"
+    ),
+    MachineCapability.TANGENTIAL_KNIFE: _(
+        "Cutting with a rotary tangential knife"
     ),
 }
