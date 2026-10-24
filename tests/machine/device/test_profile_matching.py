@@ -539,6 +539,7 @@ def test_falcon_a1_profile_declares_reversed_axes():
     assert profile is not None
     assert profile.machine_config.reverse_x_axis is True
     assert profile.machine_config.reverse_y_axis is True
+    assert profile.machine_config.park_position_after_homing == (0.0, 0.0)
 
 
 def test_creality_falcon_a1_pro_heads():

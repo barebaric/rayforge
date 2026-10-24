@@ -20,6 +20,9 @@ machine:
   origin: bottom_left
   reverse_x_axis: true
   reverse_y_axis: true
+  park_position_after_homing:
+  - 0
+  - 0
   max_travel_speed: 3000
   max_cut_speed: 1000
   home_on_start: false
