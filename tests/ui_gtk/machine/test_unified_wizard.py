@@ -630,6 +630,21 @@ def test_connection_page_ruida_usb_mode(ui_context_initializer):
 
 
 @pytest.mark.ui
+def test_connection_page_prefills_zero_driver_arg(ui_context_initializer):
+    wizard = _make_wizard(ui_context_initializer)
+    wizard.profile = _profile(driver="RuidaRPAAdapter")
+    wizard.profile.machine_config.driver_args = {"image_power_bias": 0.0}
+    wizard._navigate_to("connect")
+    page = wizard._get_page("connect")
+    assert isinstance(page, ConnectionPage)
+    assert page.connect_widget.get_values()["image_power_bias"] == 0.0
+
+    assert page.apply_to_profile(wizard.profile)
+    args = wizard.profile.machine_config.driver_args
+    assert args["image_power_bias"] == 0.0
+
+
+@pytest.mark.ui
 def test_connection_args_complete_ruida_hostname_only(
     ui_context_initializer,
 ):
