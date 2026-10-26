@@ -649,8 +649,9 @@ class MachineController:
         """
         Switches the active WCS on both the model and the device.
 
-        Sends the G-code WCS command (e.g. G54), then queries $G
-        to confirm the switch before updating _confirmed_active_wcs.
+        Selects the WCS through the driver (the G-code command, e.g.
+        G54, for G-code controllers), then queries $G to confirm the
+        switch before updating _confirmed_active_wcs.
         This prevents stale WCO from status reports corrupting the
         newly-selected WCS offset.
         """
@@ -660,7 +661,7 @@ class MachineController:
 
         if self.machine.is_connected():
             try:
-                await self.driver.run_raw(wcs)
+                await self.driver.select_wcs(wcs)
                 confirmed = await self.driver.read_parser_state()
                 if confirmed == wcs:
                     self._confirmed_active_wcs = wcs
