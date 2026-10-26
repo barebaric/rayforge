@@ -5,6 +5,28 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.13.1
+
+### Fixed
+
+- UI: renaming a workpiece or group no longer hangs or crashes; the
+  focus change triggered by closing the rename editor re-entered the
+  rename handling (#633)
+- Machine: switching between machines no longer leaves the previous
+  machine unable to reconnect; a cleaned-up driver is rebuilt instead
+  of being reused, so switching back reconnects instead of failing
+  with "Direct mode requires the direct backend" and a status stuck
+  at Unknown until restart (#635, by medoix)
+- Machine: selecting a work coordinate system works on Ruida
+  controllers; Ruida's WCS names are not G-code commands, so the
+  selection now goes through the driver instead of being sent as raw
+  G-code, and a rebuilt Ruida driver keeps the machine's selection
+  instead of reverting it to MACHINE (#636, by medoix)
+- G-code: scanline merging restores the cutting power after each
+  zero-power bridge between merged collinear cut lines; previously
+  jobs with shared edges (Merge Lines feeding Optimize) only burned
+  the first cut while the head kept moving (raygeo 1.67.2) (#639)
+
 ## 1.13.0
 
 ### Added
