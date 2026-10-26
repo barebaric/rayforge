@@ -241,9 +241,18 @@ class RuidaRPAAdapter(Driver):
         self._is_connected: bool = False
         self._shutting_down: bool = False
         self._jog_speed_mm_s: float | None = None
-        self._selected_wcs: str = "MACHINE"
+        self._selected_wcs: str = self._initial_wcs(machine)
         self._machine_paused: bool = False
         self._machine_job_running: bool = False
+
+    def _initial_wcs(self, machine: Machine) -> str:
+        """The machine's selected WCS, or MACHINE if it is not Ruida's.
+
+        The controller does not store the selection, so a rebuilt
+        adapter takes it from the machine instead of reverting it.
+        """
+        wcs = getattr(machine, "active_wcs", None)
+        return wcs if wcs in self.supported_wcs else "MACHINE"
 
     # --- Properties ---
 

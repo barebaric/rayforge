@@ -777,6 +777,19 @@ class TestWcsHandling:
         await adapter.select_wcs("SET_POINT")
         assert await adapter.read_parser_state() == "SET_POINT"
 
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "active_wcs, expected",
+        [("CURRENT", "CURRENT"), ("ANCHOR", "ANCHOR"), ("G54", "MACHINE")],
+    )
+    async def test_new_adapter_keeps_machine_wcs(
+        self, isolated_context, isolated_machine, active_wcs, expected
+    ):
+        """A rebuilt adapter reports the machine's WCS, not MACHINE."""
+        isolated_machine.active_wcs = active_wcs
+        adapter = RuidaRPAAdapter(isolated_context, isolated_machine)
+        assert await adapter.read_parser_state() == expected
+
 
 class TestLiveBridgeRpc:
     """RPC live bridge uses client jog/home without double-running."""
