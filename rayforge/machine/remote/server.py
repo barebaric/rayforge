@@ -25,6 +25,7 @@ import asyncio
 import base64
 import logging
 import uuid
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, cast
 
 from rayforge import __version__
@@ -131,8 +132,12 @@ class RemoteJobServer:
             return [self._welcome(message)]
         if mtype == "get_job":
             return [self._job_state()]
+        if mtype == "get_machine_config":
+            return [self._machine_config(message)]
         if mtype == "submit_job":
             return [await self._submit_job(message)]
+        if mtype == "run_raw":
+            return [await self._run_raw(message)]
         if mtype == "cancel_job":
             return [self._control_job(message, "cancel_job")]
         if mtype == "set_hold":
@@ -175,6 +180,48 @@ class RemoteJobServer:
             return {"type": "job_state", "job": None}
         return {"type": "job_state", "job": self._job.state()}
 
+    def _resolve_machine(
+        self, message: dict[str, Any]
+    ) -> Machine | dict[str, Any] | None:
+        """Finds the machine a message addresses.
+
+        When no id is given, the sole configured machine is used, so
+        single-machine servers need no ids on the wire. Returns the
+        machine, an error reply, or None when the id matches nothing.
+        """
+        machines = self._context.machine_mgr.get_machines()
+        machine_id = message.get("machine_id")
+        if not machine_id:
+            if len(machines) == 1:
+                return machines[0]
+            return {
+                "type": "error",
+                "message": "The server hosts multiple machines; "
+                "a machine_id is required.",
+            }
+        return self._context.machine_mgr.get_machine_by_id(machine_id)
+
+    def _machine_config(self, message: dict[str, Any]) -> dict[str, Any]:
+        """Returns a machine's configuration for client-side sync."""
+        machine = self._resolve_machine(message)
+        if machine is None:
+            return {
+                "type": "error",
+                "message": f"No machine with id "
+                f"{message.get('machine_id')!r}.",
+            }
+        if isinstance(machine, dict):
+            return machine
+        config = machine.to_dict(include_frozen_dialect=False)
+        # to_dict() does not carry the machine's id; the client needs
+        # it to address the machine on subsequent requests.
+        config.setdefault("machine", {})["id"] = machine.id
+        return {
+            "type": "machine_config",
+            "machine_id": machine.id,
+            "config": config,
+        }
+
     async def _submit_job(self, message: dict[str, Any]) -> dict[str, Any]:
         if self._job is not None and self._job.running:
             return {
@@ -182,13 +229,15 @@ class RemoteJobServer:
                 "message": "A job is already running.",
             }
 
-        machine_id = message.get("machine_id")
-        machine = self._context.machine_mgr.get_machine_by_id(machine_id)
+        machine = self._resolve_machine(message)
         if machine is None:
             return {
                 "type": "error",
-                "message": f"No machine with id {machine_id!r}.",
+                "message": f"No machine with id "
+                f"{message.get('machine_id')!r}.",
             }
+        if isinstance(machine, dict):
+            return machine
 
         try:
             payload = JobPayload.from_bytes(
@@ -210,6 +259,34 @@ class RemoteJobServer:
             self._execute_job(job, machine), self._task_manager.loop
         )
         return {"type": "job_accepted", "job_id": job.id}
+
+    async def _run_raw(self, message: dict[str, Any]) -> dict[str, Any]:
+        """Runs raw machine code on the addressed machine's driver."""
+        machine = self._resolve_machine(message)
+        if machine is None:
+            return {
+                "type": "error",
+                "message": f"No machine with id "
+                f"{message.get('machine_id')!r}.",
+            }
+        if isinstance(machine, dict):
+            return machine
+
+        future = asyncio.run_coroutine_threadsafe(
+            self._run_raw_on_machine(machine, message["code"]),
+            self._task_manager.loop,
+        )
+        try:
+            await asyncio.wrap_future(future)
+        except Exception as e:
+            logger.exception("Remote run_raw failed")
+            return {"type": "error", "message": str(e)}
+        return {"type": "ok", "action": "run_raw"}
+
+    async def _run_raw_on_machine(self, machine: Machine, code: str) -> None:
+        if not machine.is_connected():
+            await machine.connect()
+        await machine.driver.run_raw(code)
 
     def _control_job(
         self, message: dict[str, Any], action: str
@@ -258,17 +335,21 @@ class RemoteJobServer:
                 acceleration=machine.acceleration,
             )
             job.monitor = monitor
-            monitor.progress_updated.connect(job.on_progress)
             monitor.begin()
             try:
-                on_command_done = (
-                    monitor.update_progress
-                    if machine.reports_granular_progress
-                    else None
-                )
                 # Drivers only consume the doc during encoding, which
                 # happened on the client; the server has no document.
                 doc = cast("Doc", None)
+                on_command_done: Callable[[int], None] | None = None
+                if machine.reports_granular_progress:
+                    # Wrap the monitor so each acknowledged command is
+                    # both tracked and broadcast to the clients.
+                    def _on_command_done(op_index: int) -> None:
+                        monitor.update_progress(op_index)
+                        job.report_op_done(op_index)
+
+                    on_command_done = _on_command_done
+
                 await machine.driver.run(
                     payload.encoded,
                     doc,
@@ -331,11 +412,22 @@ class _RunningJob:
         self.future: Any = None
         self._server = server
 
-    def on_progress(self, sender, metrics: dict[str, Any]) -> None:
-        """JobMonitor signal handler; runs on the task manager loop."""
+    def report_op_done(self, op_index: int) -> None:
+        """Broadcasts progress for an acknowledged command.
+
+        Runs on the task manager loop, from the driver's
+        on_command_done callback.
+        """
+        monitor = self.monitor
+        metrics = monitor.metrics if monitor is not None else None
         self.metrics = metrics
         self._server._broadcast_threadsafe(
-            {"type": "job_progress", "job_id": self.id, "metrics": metrics}
+            {
+                "type": "job_progress",
+                "job_id": self.id,
+                "op_index": op_index,
+                "metrics": metrics,
+            }
         )
 
     def finish(self, outcome: str, message: str) -> None:

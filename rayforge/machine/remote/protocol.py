@@ -11,22 +11,31 @@ Message types
 
 Client → server:
 
-    hello            ``{"type": "hello", "version": int}``
-    submit_job       ``{"type": "submit_job", "machine_id": str,
+    hello             ``{"type": "hello", "version": int}``
+    get_machine_config
+                       ``{"type": "get_machine_config",
+                        "machine_id": str (optional)}``
+    submit_job        ``{"type": "submit_job", "machine_id": str,
                         "payload": <base64 JobPayload>}``
-    cancel_job       ``{"type": "cancel_job", "job_id": str}``
-    set_hold         ``{"type": "set_hold", "job_id": str,
+    run_raw           ``{"type": "run_raw", "machine_id": str,
+                        "code": str}``
+    cancel_job         ``{"type": "cancel_job", "job_id": str}``
+    set_hold          ``{"type": "set_hold", "job_id": str,
                         "hold": bool}``
 
 Server → client:
 
     welcome          Sent in response to ``hello``; lists machines.
+    machine_config    Sent in response to ``get_machine_config``.
     job_accepted     ``{"type": "job_accepted", "job_id": str}``
     job_progress     ``{"type": "job_progress", "job_id": str,
-                        "metrics": {...}}``
+                        "op_index": int, "metrics": {...}}``
     job_finished     ``{"type": "job_finished", "job_id": str,
                         "outcome": str, "message": str}``
-    error            ``{"type": "error", "message": str}``
+    ok / error       Replies for request/response style messages.
+
+The ``machine_id`` arguments are optional when the server hosts a
+single machine; the server then uses that one.
 """
 
 from __future__ import annotations

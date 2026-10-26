@@ -117,6 +117,7 @@ class TestRemoteJobServer:
                 message = await asyncio.wait_for(read_message(reader), 30)
                 if message["type"] == "job_progress":
                     assert message["job_id"] == job_id
+                    assert 0 <= message["op_index"] <= 2
                     assert 0.0 <= message["metrics"]["progress_fraction"]
                 elif message["type"] == "job_finished":
                     finished = message
