@@ -1,38 +1,43 @@
 """
-Message framing for the remote job server protocol.
+Message framing for the remote protocol.
 
 The client and the server exchange length-prefixed JSON messages over
 a TCP stream. Both sides run the same application version, so the
 protocol only carries a version for a friendly mismatch error, not
 for backward compatibility.
 
-Message types
--------------
+Requests carry a client-chosen ``id``; the server answers with a
+``reply`` echoing the id, so several requests from the same
+connection can be in flight at once. Messages that are not replies
+are events: the server pushes them to every connected client at any
+time, tagged with the ``machine_id`` or ``job_id`` they belong to.
 
-Client → server:
+Client → server (all carry a client-chosen ``id``):
 
-    hello             ``{"type": "hello", "version": int}``
-    get_machine_config
-                       ``{"type": "get_machine_config",
-                        "machine_id": str (optional)}``
-    submit_job        ``{"type": "submit_job", "machine_id": str,
-                        "payload": <base64 JobPayload>}``
-    run_raw           ``{"type": "run_raw", "machine_id": str,
-                        "code": str}``
-    cancel_job         ``{"type": "cancel_job", "job_id": str}``
-    set_hold          ``{"type": "set_hold", "job_id": str,
-                        "hold": bool}``
+    hello              ``{"id": n, "type": "hello", "version": int}``
+    get_machine_configs
+                       ``{"id": n, "type": "get_machine_configs"}``
+    submit_job         ``{"id": n, "type": "submit_job",
+                        "machine_id": str, "payload": <base64>}``
+    machine_op        ``{"id": n, "type": "machine_op",
+                        "machine_id": str, "op": str, "kwargs": {...}}``
+    get_job           ``{"id": n, "type": "get_job"}``
 
 Server → client:
 
-    welcome          Sent in response to ``hello``; lists machines.
-    machine_config    Sent in response to ``get_machine_config``.
-    job_accepted     ``{"type": "job_accepted", "job_id": str}``
-    job_progress     ``{"type": "job_progress", "job_id": str,
-                        "op_index": int, "metrics": {...}}``
-    job_finished     ``{"type": "job_finished", "job_id": str,
-                        "outcome": str, "message": str}``
-    ok / error       Replies for request/response style messages.
+    reply             ``{"type": "reply", "id": n, "ok": bool,
+                        "result": ... | "error": str}`` — the result
+                        of a request; ``hello`` yields the machine
+                        list, ``get_machine_configs`` a mapping of
+                        machine ids to configuration dictionaries.
+    driver_event      ``{"machine_id": str, "event": str,
+                        "payload": {...}}`` — a re-emitted driver
+                       signal, e.g. state_changed with a serialized
+                       DeviceState.
+    job_progress      ``{"job_id": str, "op_index": int,
+                        "metrics": {...}}``
+    job_finished      ``{"job_id": str, "outcome": str,
+                        "message": str}``
 
 The ``machine_id`` arguments are optional when the server hosts a
 single machine; the server then uses that one.
@@ -49,7 +54,10 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-PROTOCOL_VERSION = 1
+PROTOCOL_VERSION = 2
+
+#: The default port the server and the clients use.
+DEFAULT_PORT = 2517
 
 #: Messages larger than this are rejected before being buffered.
 MAX_MESSAGE_BYTES = 512 * 1024 * 1024
@@ -65,8 +73,8 @@ async def read_message(reader: asyncio.StreamReader) -> dict[str, Any]:
     """Reads one framed message from the stream.
 
     Raises :class:`asyncio.IncompleteReadError` when the peer
-    disconnects mid-message, and :class:`ConnectionError` on a clean
-    EOF between messages.
+    disconnects mid-message, and :class:`ConnectionError` on an
+    oversized message.
     """
     header = await reader.readexactly(4)
     (length,) = struct.unpack("!I", header)

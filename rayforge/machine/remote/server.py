@@ -1,22 +1,25 @@
 """
-Headless job server for remote execution.
+Headless backend server for remote clients.
 
 Runs on the machine that is physically attached to the laser cutter.
-It accepts fully computed :class:`JobPayload`s from a client over
-TCP, executes them on the configured driver through the regular
-driver code paths, and streams job progress back. Jobs are owned by
-the server once accepted: the client may disconnect at any time
-(e.g. close the laptop) and reconnect later to re-attach to a
-running job via ``get_job``.
+It owns the real drivers and controllers for the configured machines
+and serves the remote protocol (:mod:`.protocol`): machine
+configuration sync for client bootstrap, job submission, and a
+generic operation router that forwards driver-level calls (jog, home,
+WCS, settings, ...) from clients. Controller signals are pushed to
+all connected clients as ``driver_event`` messages, so the clients
+can mirror the machine state.
 
-Single user, single job: one job runs at a time and progress is
-broadcast to all connected clients.
+Jobs are owned by the server once accepted: the client may
+disconnect at any time (e.g. close the laptop) and reconnect later
+to observe a running job via ``get_job``. One job runs at a time
+per server.
 
 Threading model: the network loop is owned by :meth:`serve`, while
-jobs and drivers run on the task manager's event loop, as they do in
-the GUI application. Events cross from the task loop to the network
-loop via :meth:`asyncio.loop.call_soon_threadsafe`, and control
-requests cross back via :func:`asyncio.run_coroutine_threadsafe`.
+driver operations run on the task manager's event loop, as they do
+in the GUI application. Events cross from the task loop to the
+network loop via :meth:`asyncio.loop.call_soon_threadsafe`, and
+operations cross back via :func:`asyncio.run_coroutine_threadsafe`.
 """
 
 from __future__ import annotations
@@ -39,18 +42,28 @@ from .protocol import (
     read_message,
     write_message,
 )
+from .serialize import (
+    device_state_to_dict,
+    offsets_to_dict,
+    transport_status_to_name,
+    var_sets_to_dicts,
+)
 
 if TYPE_CHECKING:
     from ...context import RayforgeContext
     from ...core.doc import Doc
+    from ...core.varset import VarSet
     from ...shared.tasker.manager import TaskManager
     from ..models.machine import Machine
+
+from ..driver.driver import DeviceState
+from ..transport import TransportStatus
 
 logger = logging.getLogger(__name__)
 
 
 class RemoteJobServer:
-    """Serves job submission and progress over TCP."""
+    """Serves the remote protocol over TCP."""
 
     def __init__(
         self,
@@ -75,11 +88,13 @@ class RemoteJobServer:
         return self._server.sockets[0].getsockname()[1]
 
     async def start(self) -> None:
-        """Starts listening for client connections."""
+        """Starts listening and wires the machine event forwarding."""
         self._loop = asyncio.get_running_loop()
         self._server = await asyncio.start_server(
             self._handle_connection, self._host, self._port
         )
+        for machine in self._context.machine_mgr.get_machines():
+            self._wire_machine_events(machine)
         logger.info(f"Remote job server listening on {self._host}:{self.port}")
 
     async def stop(self) -> None:
@@ -87,10 +102,13 @@ class RemoteJobServer:
         if self._server is None:
             return
         self._server.close()
-        await self._server.wait_closed()
+        # Close the client connections first: wait_closed() waits for
+        # the connection handlers, which block on reading from open
+        # clients otherwise.
         for writer in list(self._connections):
             writer.close()
         self._connections.clear()
+        await self._server.wait_closed()
         self._server = None
 
     async def serve_forever(self) -> None:
@@ -108,15 +126,22 @@ class RemoteJobServer:
         try:
             while True:
                 message = await read_message(reader)
-                for response in await self._dispatch(message):
-                    await write_message(writer, response)
+                reply = await self._dispatch(message)
+                reply["id"] = message.get("id")
+                await write_message(writer, reply)
         except (asyncio.IncompleteReadError, ConnectionError):
             pass
         except Exception:
             logger.exception("Error while handling client")
             try:
                 await write_message(
-                    writer, {"type": "error", "message": "internal error"}
+                    writer,
+                    {
+                        "type": "reply",
+                        "id": None,
+                        "ok": False,
+                        "error": "internal error",
+                    },
                 )
             except Exception:
                 logger.debug("Could not send error to client", exc_info=True)
@@ -125,36 +150,37 @@ class RemoteJobServer:
             writer.close()
             logger.info(f"Client disconnected: {peer}")
 
-    async def _dispatch(self, message: dict[str, Any]) -> list[dict[str, Any]]:
-        """Handles one client message, returning the replies."""
+    async def _dispatch(self, message: dict[str, Any]) -> dict[str, Any]:
+        """Handles one request, returning the reply payload."""
         mtype = message.get("type")
-        if mtype == "hello":
-            return [self._welcome(message)]
-        if mtype == "get_job":
-            return [self._job_state()]
-        if mtype == "get_machine_config":
-            return [self._machine_config(message)]
-        if mtype == "submit_job":
-            return [await self._submit_job(message)]
-        if mtype == "run_raw":
-            return [await self._run_raw(message)]
-        if mtype == "cancel_job":
-            return [self._control_job(message, "cancel_job")]
-        if mtype == "set_hold":
-            return [self._control_job(message, "set_hold")]
-        return [
-            {
-                "type": "error",
-                "message": f"Unknown message type: {mtype!r}",
-            }
-        ]
+        try:
+            if mtype == "hello":
+                return self._hello(message)
+            if mtype == "get_machine_configs":
+                return self._machine_configs()
+            if mtype == "get_job":
+                return self._job_state()
+            if mtype == "submit_job":
+                return await self._submit_job(message)
+            if mtype == "machine_op":
+                return await self._machine_op(message)
+        except Exception as e:
+            logger.exception(f"Request '{mtype}' failed")
+            return {"type": "reply", "ok": False, "error": str(e)}
+        return {
+            "type": "reply",
+            "ok": False,
+            "error": f"Unknown message type: {mtype!r}",
+        }
 
-    def _welcome(self, message: dict[str, Any]) -> dict[str, Any]:
+    def _hello(self, message: dict[str, Any]) -> dict[str, Any]:
+        """Checks the protocol version and lists the machines."""
         version = message.get("version")
         if version != PROTOCOL_VERSION:
             return {
-                "type": "error",
-                "message": (
+                "type": "reply",
+                "ok": False,
+                "error": (
                     f"Protocol version mismatch: client {version}, "
                     f"server {PROTOCOL_VERSION}."
                 ),
@@ -169,16 +195,34 @@ class RemoteJobServer:
             for machine in self._context.machine_mgr.get_machines()
         ]
         return {
-            "type": "welcome",
-            "version": PROTOCOL_VERSION,
-            "app_version": __version__,
-            "machines": machines,
+            "type": "reply",
+            "ok": True,
+            "result": {
+                "version": PROTOCOL_VERSION,
+                "app_version": __version__,
+                "machines": machines,
+            },
         }
+
+    def _machine_configs(self) -> dict[str, Any]:
+        """Returns all machine configurations for client bootstrap."""
+        configs = {}
+        for machine in self._context.machine_mgr.get_machines():
+            config = machine.to_dict(include_frozen_dialect=False)
+            # to_dict() does not carry the machine's id; clients need
+            # it to address the machine on subsequent requests.
+            config.setdefault("machine", {})["id"] = machine.id
+            configs[machine.id] = config
+        return {"type": "reply", "ok": True, "result": {"configs": configs}}
 
     def _job_state(self) -> dict[str, Any]:
         if self._job is None:
-            return {"type": "job_state", "job": None}
-        return {"type": "job_state", "job": self._job.state()}
+            result = None
+        else:
+            result = self._job.state()
+        return {"type": "reply", "ok": True, "result": result}
+
+    # -- Job submission ---------------------------------------------------
 
     def _resolve_machine(
         self, message: dict[str, Any]
@@ -195,60 +239,57 @@ class RemoteJobServer:
             if len(machines) == 1:
                 return machines[0]
             return {
-                "type": "error",
-                "message": "The server hosts multiple machines; "
+                "type": "reply",
+                "ok": False,
+                "error": "The server hosts multiple machines; "
                 "a machine_id is required.",
             }
         return self._context.machine_mgr.get_machine_by_id(machine_id)
 
-    def _machine_config(self, message: dict[str, Any]) -> dict[str, Any]:
-        """Returns a machine's configuration for client-side sync."""
-        machine = self._resolve_machine(message)
+    def _machine_error(
+        self, machine: Any, message: dict[str, Any]
+    ) -> dict[str, Any]:
         if machine is None:
             return {
-                "type": "error",
-                "message": f"No machine with id "
-                f"{message.get('machine_id')!r}.",
+                "type": "reply",
+                "ok": False,
+                "error": f"No machine with id {message.get('machine_id')!r}.",
             }
         if isinstance(machine, dict):
             return machine
-        config = machine.to_dict(include_frozen_dialect=False)
-        # to_dict() does not carry the machine's id; the client needs
-        # it to address the machine on subsequent requests.
-        config.setdefault("machine", {})["id"] = machine.id
         return {
-            "type": "machine_config",
-            "machine_id": machine.id,
-            "config": config,
+            "type": "reply",
+            "ok": False,
+            "error": "Unexpected machine resolution result.",
         }
 
     async def _submit_job(self, message: dict[str, Any]) -> dict[str, Any]:
         if self._job is not None and self._job.running:
             return {
-                "type": "error",
-                "message": "A job is already running.",
+                "type": "reply",
+                "ok": False,
+                "error": "A job is already running.",
             }
 
         machine = self._resolve_machine(message)
-        if machine is None:
-            return {
-                "type": "error",
-                "message": f"No machine with id "
-                f"{message.get('machine_id')!r}.",
-            }
-        if isinstance(machine, dict):
-            return machine
+        if machine is None or isinstance(machine, dict):
+            return self._machine_error(machine, message)
 
         try:
             payload = JobPayload.from_bytes(
                 base64.b64decode(message["payload"])
             )
         except (KeyError, ValueError, TypeError) as e:
-            return {"type": "error", "message": f"Bad payload: {e}"}
+            return {
+                "type": "reply",
+                "ok": False,
+                "error": f"Bad payload: {e}",
+            }
         if payload.ops is None:
             return {
-                "type": "error",
-                "message": "Payload contains no ops.",
+                "type": "reply",
+                "ok": False,
+                "error": "Payload contains no ops.",
             }
 
         job = _RunningJob(self, machine.id, payload)
@@ -258,55 +299,11 @@ class RemoteJobServer:
         job.future = asyncio.run_coroutine_threadsafe(
             self._execute_job(job, machine), self._task_manager.loop
         )
-        return {"type": "job_accepted", "job_id": job.id}
-
-    async def _run_raw(self, message: dict[str, Any]) -> dict[str, Any]:
-        """Runs raw machine code on the addressed machine's driver."""
-        machine = self._resolve_machine(message)
-        if machine is None:
-            return {
-                "type": "error",
-                "message": f"No machine with id "
-                f"{message.get('machine_id')!r}.",
-            }
-        if isinstance(machine, dict):
-            return machine
-
-        future = asyncio.run_coroutine_threadsafe(
-            self._run_raw_on_machine(machine, message["code"]),
-            self._task_manager.loop,
-        )
-        try:
-            await asyncio.wrap_future(future)
-        except Exception as e:
-            logger.exception("Remote run_raw failed")
-            return {"type": "error", "message": str(e)}
-        return {"type": "ok", "action": "run_raw"}
-
-    async def _run_raw_on_machine(self, machine: Machine, code: str) -> None:
-        if not machine.is_connected():
-            await machine.connect()
-        await machine.driver.run_raw(code)
-
-    def _control_job(
-        self, message: dict[str, Any], action: str
-    ) -> dict[str, Any]:
-        job = self._job
-        if job is None or job.id != message.get("job_id"):
-            return {"type": "error", "message": "No such job."}
-        if not job.running:
-            return {"type": "error", "message": "Job is not running."}
-
-        machine = self._context.machine_mgr.get_machine_by_id(job.machine_id)
-        if machine is None:
-            return {"type": "error", "message": "Machine is gone."}
-
-        if action == "cancel_job":
-            coroutine = machine.driver.cancel()
-        else:
-            coroutine = machine.driver.set_hold(bool(message.get("hold")))
-        asyncio.run_coroutine_threadsafe(coroutine, self._task_manager.loop)
-        return {"type": "ok", "action": action}
+        return {
+            "type": "reply",
+            "ok": True,
+            "result": {"job_id": job.id},
+        }
 
     async def _execute_job(self, job: _RunningJob, machine: Machine) -> None:
         """Runs a submitted job on the task manager's event loop."""
@@ -372,6 +369,246 @@ class RemoteJobServer:
             logger.exception("Remote job could not be started")
             job.finish("FAILED", str(e))
 
+    # -- Machine operations -----------------------------------------------
+
+    async def _machine_op(self, message: dict[str, Any]) -> dict[str, Any]:
+        """Forwards a driver-level operation to the real driver."""
+        machine = self._resolve_machine(message)
+        if machine is None or isinstance(machine, dict):
+            return self._machine_error(machine, message)
+
+        op = message.get("op")
+        kwargs = message.get("kwargs", {})
+        handler = _OP_HANDLERS.get(cast(str, op))
+        if handler is None:
+            return {
+                "type": "reply",
+                "ok": False,
+                "error": f"Unknown machine op: {op!r}",
+            }
+        if not machine.is_connected() and op not in (
+            "connect",
+            "get_driver_caps",
+        ):
+            return {
+                "type": "reply",
+                "ok": False,
+                "error": "Machine is not connected.",
+            }
+
+        coroutine = handler(self, machine, kwargs)
+        future = asyncio.run_coroutine_threadsafe(
+            coroutine, self._task_manager.loop
+        )
+        try:
+            result = await asyncio.wrap_future(future)
+        except Exception as e:
+            logger.exception(f"Machine op '{op}' failed")
+            return {"type": "reply", "ok": False, "error": str(e)}
+        return {"type": "reply", "ok": True, "result": result}
+
+    async def _op_connect(self, machine: Machine, kwargs: dict) -> Any:
+        await machine.connect()
+        return self._status_snapshot(machine)
+
+    def _status_snapshot(self, machine: Machine) -> dict[str, Any]:
+        """The machine's current state, for clients that just connected."""
+        return {
+            "connection_status": transport_status_to_name(
+                machine.connection_status
+            ),
+            "device_state": device_state_to_dict(machine.device_state),
+        }
+
+    async def _op_disconnect(self, machine: Machine, kwargs: dict) -> Any:
+        await machine.disconnect()
+
+    async def _op_home(self, machine: Machine, kwargs: dict) -> Any:
+        await machine.driver.home(kwargs.get("axes"))
+
+    async def _op_jog(self, machine: Machine, kwargs: dict) -> Any:
+        await machine.driver.jog(
+            speed=kwargs["speed"], **kwargs.get("deltas", {})
+        )
+
+    async def _op_run_raw(self, machine: Machine, kwargs: dict) -> Any:
+        await machine.driver.run_raw(kwargs["code"])
+
+    async def _op_select_tool(self, machine: Machine, kwargs: dict) -> Any:
+        await machine.driver.select_tool(kwargs["tool_number"])
+
+    async def _op_move_to(self, machine: Machine, kwargs: dict) -> Any:
+        await machine.driver.move_to(
+            kwargs["x"],
+            kwargs["y"],
+            kwargs.get("z"),
+            speed=kwargs.get("speed"),
+        )
+
+    async def _op_set_power(self, machine: Machine, kwargs: dict) -> Any:
+        head = _find_head(machine, kwargs.get("head_uid"))
+        await machine.driver.set_power(head, kwargs["percent"])
+
+    async def _op_set_focus_power(self, machine: Machine, kwargs: dict) -> Any:
+        head = _find_head(machine, kwargs.get("head_uid"))
+        await machine.driver.set_focus_power(head, kwargs["percent"])
+
+    async def _op_cancel(self, machine: Machine, kwargs: dict) -> Any:
+        await machine.driver.cancel(kwargs.get("emergency", False))
+
+    async def _op_set_hold(self, machine: Machine, kwargs: dict) -> Any:
+        await machine.driver.set_hold(kwargs.get("hold", True))
+
+    async def _op_clear_alarm(self, machine: Machine, kwargs: dict) -> Any:
+        await machine.driver.clear_alarm()
+
+    async def _op_set_wcs_offset(self, machine: Machine, kwargs: dict) -> Any:
+        await machine.driver.set_wcs_offset(
+            kwargs["slot"], kwargs["x"], kwargs["y"], kwargs.get("z")
+        )
+
+    async def _op_read_wcs_offsets(
+        self, machine: Machine, kwargs: dict
+    ) -> Any:
+        offsets = await machine.driver.read_wcs_offsets()
+        return offsets_to_dict(offsets) if offsets else None
+
+    async def _op_read_parser_state(
+        self, machine: Machine, kwargs: dict
+    ) -> Any:
+        return await machine.driver.read_parser_state()
+
+    async def _op_select_wcs(self, machine: Machine, kwargs: dict) -> Any:
+        await machine.driver.select_wcs(kwargs["wcs"])
+
+    async def _op_run_probe_cycle(self, machine: Machine, kwargs: dict) -> Any:
+        from raygeo.ops.axis import Axis
+
+        axis = getattr(Axis, str(kwargs["axis"]))
+        pos = await machine.driver.run_probe_cycle(
+            axis,
+            kwargs["max_travel"],
+            kwargs["feed_rate"],
+        )
+        return list(pos) if pos is not None else None
+
+    async def _op_read_settings(self, machine: Machine, kwargs: dict) -> Any:
+        var_sets = await _await_settings(machine.driver)
+        return var_sets_to_dicts(var_sets)
+
+    async def _op_write_setting(self, machine: Machine, kwargs: dict) -> Any:
+        await machine.driver.write_setting(kwargs["key"], kwargs["value"])
+
+    def _driver_caps(self, machine: Machine) -> dict[str, Any]:
+        """Introspection data the client proxy serves synchronously."""
+        driver = machine.driver
+        pwm = {}
+        for head in machine.heads:
+            params = driver.get_pwm_params(head)
+            pwm[head.uid] = {
+                "supported": driver.supports_pwm(head),
+                "params": params.__dict__ if params is not None else None,
+            }
+        return {
+            "reports_granular_progress": driver.reports_granular_progress,
+            "can_home": driver.can_home(),
+            "can_jog": driver.can_jog(),
+            "machine_space_wcs": driver.machine_space_wcs,
+            "machine_space_wcs_display_name": (
+                driver.machine_space_wcs_display_name
+            ),
+            "supported_wcs": driver.supported_wcs,
+            "setting_vars": var_sets_to_dicts(driver.get_setting_vars()),
+            "pwm": pwm,
+        }
+
+    async def _op_get_driver_caps(self, machine: Machine, kwargs: dict) -> Any:
+        return self._driver_caps(machine)
+
+    # -- Event forwarding -------------------------------------------------
+
+    def _wire_machine_events(self, machine: Machine) -> None:
+        """Broadcasts the machine's controller signals to all clients."""
+        controller = machine.context.machine_mgr.get_controller(machine.id)
+        controller.connection_status_changed.connect(
+            self._on_connection_status(machine)
+        )
+        controller.state_changed.connect(self._on_state_changed(machine))
+        controller.command_status_changed.connect(
+            self._on_command_status_changed(machine)
+        )
+        controller.wcs_updated.connect(self._on_wcs_updated(machine))
+
+    def _on_connection_status(self, machine: Machine) -> Callable[..., None]:
+        def handler(sender, status=None, message=None):
+            self._broadcast_threadsafe(
+                {
+                    "type": "driver_event",
+                    "machine_id": machine.id,
+                    "event": "connection_status_changed",
+                    "payload": {
+                        "status": transport_status_to_name(
+                            cast(TransportStatus, status)
+                        ),
+                        "message": message,
+                    },
+                }
+            )
+
+        return handler
+
+    def _on_state_changed(self, machine: Machine) -> Callable[..., None]:
+        def handler(sender, state=None):
+            self._broadcast_threadsafe(
+                {
+                    "type": "driver_event",
+                    "machine_id": machine.id,
+                    "event": "state_changed",
+                    "payload": {
+                        "state": device_state_to_dict(cast(DeviceState, state))
+                    },
+                }
+            )
+
+        return handler
+
+    def _on_command_status_changed(
+        self, machine: Machine
+    ) -> Callable[..., None]:
+        def handler(sender, status=None, message=None):
+            self._broadcast_threadsafe(
+                {
+                    "type": "driver_event",
+                    "machine_id": machine.id,
+                    "event": "command_status_changed",
+                    "payload": {
+                        "status": transport_status_to_name(
+                            cast(TransportStatus, status)
+                        ),
+                        "message": message,
+                    },
+                }
+            )
+
+        return handler
+
+    def _on_wcs_updated(self, machine: Machine) -> Callable[..., None]:
+        def handler(sender, **kwargs):
+            offsets = {
+                slot: cs.offset
+                for slot, cs in machine.coordinate_systems.items()
+            }
+            self._broadcast_threadsafe(
+                {
+                    "type": "driver_event",
+                    "machine_id": machine.id,
+                    "event": "wcs_updated",
+                    "payload": {"offsets": offsets_to_dict(offsets)},
+                }
+            )
+
+        return handler
+
     def _broadcast(self, message: dict[str, Any]) -> None:
         """Sends a message to all clients; runs on the network loop."""
         if self._loop is None or self._loop.is_closed():
@@ -390,6 +627,66 @@ class RemoteJobServer:
         if loop is None or loop.is_closed():
             return
         loop.call_soon_threadsafe(self._broadcast, message)
+
+
+async def _await_settings(driver: Any) -> list[VarSet]:
+    """Runs read_settings and returns the VarSets it produced."""
+    future: asyncio.Future = asyncio.get_running_loop().create_future()
+
+    def on_settings_read(sender, var_sets: list):
+        try:
+            driver.settings_read.disconnect(on_settings_read)
+        finally:
+            if not future.done():
+                future.set_result(var_sets)
+
+    driver.settings_read.connect(on_settings_read)
+    try:
+        await driver.read_settings()
+    except Exception:
+        driver.settings_read.disconnect(on_settings_read)
+        raise
+    return await asyncio.wait_for(future, timeout=30)
+
+
+def _find_head(machine: Machine, head_uid: str | None) -> Any:
+    """Finds a head by uid, defaulting to the default laser head.
+
+    The return value is intentionally untyped: the machine's heads
+    are a mix of head types and the drivers expect LaserHead.
+    """
+    if head_uid is not None:
+        for head in machine.heads:
+            if head.uid == head_uid:
+                return head
+    head = machine.get_default_laser_head()
+    if head is None:
+        raise ValueError("Machine has no laser heads configured.")
+    return head
+
+
+_OP_HANDLERS: dict[str, Callable[..., Any]] = {
+    "connect": RemoteJobServer._op_connect,
+    "disconnect": RemoteJobServer._op_disconnect,
+    "home": RemoteJobServer._op_home,
+    "jog": RemoteJobServer._op_jog,
+    "run_raw": RemoteJobServer._op_run_raw,
+    "select_tool": RemoteJobServer._op_select_tool,
+    "move_to": RemoteJobServer._op_move_to,
+    "set_power": RemoteJobServer._op_set_power,
+    "set_focus_power": RemoteJobServer._op_set_focus_power,
+    "cancel": RemoteJobServer._op_cancel,
+    "set_hold": RemoteJobServer._op_set_hold,
+    "clear_alarm": RemoteJobServer._op_clear_alarm,
+    "set_wcs_offset": RemoteJobServer._op_set_wcs_offset,
+    "read_wcs_offsets": RemoteJobServer._op_read_wcs_offsets,
+    "read_parser_state": RemoteJobServer._op_read_parser_state,
+    "select_wcs": RemoteJobServer._op_select_wcs,
+    "run_probe_cycle": RemoteJobServer._op_run_probe_cycle,
+    "read_settings": RemoteJobServer._op_read_settings,
+    "write_setting": RemoteJobServer._op_write_setting,
+    "get_driver_caps": RemoteJobServer._op_get_driver_caps,
+}
 
 
 class _RunningJob:

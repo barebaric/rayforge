@@ -1,20 +1,27 @@
-from .driver import DEFAULT_PORT, RemoteDriver
+from .client import (
+    ClientMachineController,
+    ClientMachineManager,
+    RemoteClient,
+    RemoteError,
+)
+from .driver_proxy import RemoteDriverProxy
 from .payload import JobPayload
 from .protocol import PROTOCOL_VERSION
-from .server import RemoteJobServer
-from .sync import (
-    fetch_machine_config,
-    fetch_server_machines,
-    import_remote_machine,
+from .serialize import (
+    device_state_from_dict,
+    device_state_to_dict,
 )
+from .server import RemoteJobServer
 
 __all__ = [
-    "DEFAULT_PORT",
     "PROTOCOL_VERSION",
+    "ClientMachineController",
+    "ClientMachineManager",
     "JobPayload",
-    "RemoteDriver",
+    "RemoteClient",
+    "RemoteDriverProxy",
+    "RemoteError",
     "RemoteJobServer",
-    "fetch_machine_config",
-    "fetch_server_machines",
-    "import_remote_machine",
+    "device_state_from_dict",
+    "device_state_to_dict",
 ]

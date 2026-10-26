@@ -28,9 +28,17 @@ logger = logging.getLogger(__name__)
 
 
 class MachineManager:
-    def __init__(self, base_dir: Path):
+    #: The controller class instantiated per machine. Subclasses may
+    #: substitute their own controller type (e.g. a remote proxy).
+    controller_cls: type[MachineController] = MachineController
+
+    def __init__(self, base_dir: Path, persist: bool = True):
         base_dir.mkdir(parents=True, exist_ok=True)
         self.base_dir = base_dir
+        #: Whether machines are saved to (and loaded from) disk.
+        #: Remote client managers disable this: their machines mirror
+        #: a server and must not shadow the local configuration.
+        self.persist = persist
         self.controllers: dict[str, MachineController] = {}
         self.machines: dict[str, Machine] = {}
         self.machine_added = Signal()
@@ -81,7 +89,7 @@ class MachineManager:
         logger.debug(
             f"Creating controller for machine '{machine.name}' on first use."
         )
-        controller = MachineController(
+        controller = self.controller_cls(
             machine, get_context(), task_mgr.schedule_on_main_thread
         )
 
@@ -181,7 +189,8 @@ class MachineManager:
             return
         self.machines[machine.id] = machine
         machine.changed.connect(self.on_machine_changed)
-        self.save_machine(machine)
+        if self.persist:
+            self.save_machine(machine)
         self.machine_added.send(self, machine_id=machine.id)
 
     def remove_machine(self, machine_id: str):
@@ -201,12 +210,15 @@ class MachineManager:
         )
         del self.machines[machine_id]
 
-        machine_file = self.filename_from_id(machine_id)
-        try:
-            machine_file.unlink()
-            logger.info(f"Removed machine file: {machine_file}")
-        except OSError as e:
-            logger.error(f"Error removing machine file {machine_file}: {e}")
+        if self.persist:
+            machine_file = self.filename_from_id(machine_id)
+            try:
+                machine_file.unlink()
+                logger.info(f"Removed machine file: {machine_file}")
+            except OSError as e:
+                logger.error(
+                    f"Error removing machine file {machine_file}: {e}"
+                )
 
         self.machine_removed.send(self, machine_id=machine_id)
 
@@ -271,7 +283,8 @@ class MachineManager:
         return machine
 
     def on_machine_changed(self, machine, **kwargs):
-        self.save_machine(machine)
+        if self.persist:
+            self.save_machine(machine)
         self.machine_updated.send(self, machine_id=machine.id)
 
     def get_pending_profile_reviews(

@@ -203,6 +203,7 @@ def main():
 
             self.args = args
             self.win = None
+            self.wait_window = None
             self._restart_requested = False
             self._register_app_actions()
             self.set_accels_for_action("app.quit", [f"{PRIMARY_ACCEL}q"])
@@ -276,6 +277,13 @@ def main():
                 self.win.present()
                 return
 
+            if getattr(self.args, "client", None):
+                self._start_client_mode()
+                return
+
+            self._open_main_window()
+
+        def _open_main_window(self):
             # Import the window here to avoid module-level side-effects
             from rayforge.ui_gtk.mainwindow import MainWindow
 
@@ -301,6 +309,82 @@ def main():
             context = get_context()
             if context.machine_mgr:
                 context.machine_mgr.initialize_connections()
+
+        def _start_client_mode(self):
+            """Shows the wait window and connects to the server."""
+            from rayforge.machine.remote.protocol import DEFAULT_PORT
+            from rayforge.shared.tasker import task_mgr
+            from rayforge.ui_gtk.machine.client_wait_window import (
+                ClientWaitWindow,
+            )
+
+            address = self.args.client
+            if ":" in address:
+                host, port_text = address.rsplit(":", 1)
+                port = int(port_text)
+            else:
+                host, port = address, DEFAULT_PORT
+
+            self.wait_window = ClientWaitWindow(self, host, port)
+            self.wait_window.connect(
+                "close-request", self._on_wait_window_closed
+            )
+            self.wait_window.present()
+
+            task_mgr.add_coroutine(
+                lambda ctx: self._connect_client(host, port),
+                key="client-connect",
+            )
+
+        def _on_wait_window_closed(self, window):
+            """Stops the retry loop when the user gives up waiting."""
+            self.wait_window = None
+            return False
+
+        async def _connect_client(self, host, port):
+            """Retries the server connection until it appears.
+
+            On success the server's machines are mirrored into a
+            client machine manager and the main window opens.
+            """
+            import asyncio
+
+            from rayforge import config
+            from rayforge.machine.remote.client import (
+                ClientMachineManager,
+                RemoteClient,
+                RemoteError,
+            )
+            from rayforge.shared.tasker import task_mgr
+
+            client = RemoteClient()
+            while self.wait_window is not None:
+                try:
+                    await client.connect(host, port)
+                    break
+                except (OSError, RemoteError, ValueError) as e:
+                    logger.info(
+                        f"Waiting for rayforge-server at {host}:{port}: {e}"
+                    )
+                    await asyncio.sleep(1.0)
+            if self.wait_window is None:
+                # The user closed the wait window; the app is exiting.
+                await client.close()
+                return
+
+            configs = await client.get_machine_configs()
+            manager = ClientMachineManager(config.MACHINE_DIR, client)
+            manager.populate_from_configs(configs)
+            get_context().install_machine_manager(manager)
+            logger.info(f"Mirrored {len(configs)} machine(s) from the server.")
+            task_mgr.schedule_on_main_thread(self._client_connected)
+
+        def _client_connected(self):
+            window = self.wait_window
+            self.wait_window = None
+            if window is not None:
+                window.close()
+            self._open_main_window()
 
         def _load_initial_files(self, widget):
             """
@@ -532,11 +616,50 @@ def main():
         ),
     )
 
+    # Client/server mode: run as the headless machine backend, or as
+    # the computing frontend for a machine attached to a backend.
+    remote_mode_group = parser.add_mutually_exclusive_group()
+    remote_mode_group.add_argument(
+        "--server",
+        nargs="?",
+        const="",
+        default=None,
+        metavar="HOST[:PORT]",
+        help=_(
+            "Run headless as a server that executes jobs on the "
+            "configured machines. Optionally bind to a specific "
+            "address. The Rayforge GUI is not started."
+        ),
+    )
+    remote_mode_group.add_argument(
+        "--client",
+        metavar="HOST[:PORT]",
+        help=_(
+            "Run the GUI with all machines hosted by a rayforge-server. "
+            "The UI waits until the server is reachable."
+        ),
+    )
+
     args = parser.parse_args()
 
     # Set logging level based on the command-line argument.
     setup_logging(args.loglevel)
     logger.info(f"Application starting with log level {args.loglevel.upper()}")
+
+    # Server mode delegates to the headless entry point before GTK.
+    if args.server is not None:
+        from rayforge.server import main as server_main
+
+        server_argv = []
+        server_address = args.server
+        if server_address:
+            if ":" in server_address:
+                host, port = server_address.rsplit(":", 1)
+                server_argv += ["--host", host, "--port", port]
+            else:
+                server_argv += ["--host", server_address]
+        server_main(server_argv)
+        return 0
 
     # ===================================================================
     # SECTION 3: PLATFORM SPECIFIC INITIALIZATION

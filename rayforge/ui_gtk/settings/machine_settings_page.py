@@ -7,7 +7,6 @@ from ...context import get_context
 from ...machine.device.profile import DeviceProfile
 from ...machine.models.machine import Machine
 from ..icons import get_icon
-from ..machine.remote_import_dialog import RemoteImportDialog
 from ..machine.settings_dialog import MachineSettingsDialog
 from ..machine.unified_wizard import UnifiedWizard
 from ..shared.gtk import apply_css
@@ -20,23 +19,12 @@ css = """
 }
 
 .group-with-button-container > .flat-bottom-button,
-.group-with-button-container > .flat-bottom-button > .toggle,
-.group-with-button-container .flat-bottom-button,
-.group-with-button-container .flat-bottom-button > .toggle {
+.group-with-button-container > .flat-bottom-button > .toggle {
     border-top-left-radius: 0;
     border-top-right-radius: 0;
     border-bottom-left-radius: 12px;
     border-bottom-right-radius: 12px;
     box-shadow: none;
-}
-
-/* Two buttons side by side: only the outer corners stay round. */
-.group-with-button-container .flat-bottom-button:first-of-type {
-    border-bottom-right-radius: 0;
-}
-
-.group-with-button-container .flat-bottom-button:last-of-type {
-    border-bottom-left-radius: 0;
 }
 
 .list-box-in-card row:first-child:selected {
@@ -78,26 +66,13 @@ class MachineSettingsPage(TrackedPreferencesPage):
         self.add_button = self._create_add_button()
         self.add_button.add_css_class("darkbutton")
         self.add_button.add_css_class("flat-bottom-button")
-        self.add_button.set_hexpand(True)
-
-        self.import_button = self._create_import_button()
-        self.import_button.add_css_class("darkbutton")
-        self.import_button.add_css_class("flat-bottom-button")
-        self.import_button.set_hexpand(True)
-
-        buttons_box = Gtk.Box(
-            orientation=Gtk.Orientation.HORIZONTAL, spacing=6
-        )
-        buttons_box.append(self.add_button)
-        buttons_box.append(self.import_button)
-        container_box.append(buttons_box)
+        container_box.append(self.add_button)
 
         self._populate_machines_list()
 
         # Signals
         context = get_context()
         self.add_button.connect("clicked", self._on_add_machine_clicked)
-        self.import_button.connect("clicked", self._on_import_machine_clicked)
         context.machine_mgr.machine_added.connect(
             self._on_machine_list_changed
         )
@@ -230,20 +205,6 @@ class MachineSettingsPage(TrackedPreferencesPage):
         dialog.profile_created.connect(self._on_profile_selected_for_add)
         dialog.present()
 
-    def _on_import_machine_clicked(self, button):
-        """Shows the dialog for importing a machine from a server."""
-        dialog = RemoteImportDialog(
-            transient_for=cast(
-                Gtk.Window | None, self.get_ancestor(Gtk.Window)
-            ),
-            on_imported=self._on_machine_imported,
-        )
-        dialog.present()
-
-    def _on_machine_imported(self, machine: Machine):
-        """Makes the imported remote machine the active one."""
-        get_context().machine_mgr.set_active_machine(machine)
-
     def _on_profile_selected_for_add(
         self,
         sender,
@@ -279,22 +240,4 @@ class MachineSettingsPage(TrackedPreferencesPage):
         button.set_child(button_content)
         button_content.append(get_icon("add-symbolic"))
         button_content.append(Gtk.Label(label=_("Add Machine")))
-        return button
-
-    def _create_import_button(self) -> Gtk.Button:
-        """Creates the import button with icon and label."""
-        button = Gtk.Button()
-
-        button_content = Gtk.Box(
-            orientation=Gtk.Orientation.HORIZONTAL,
-            spacing=6,
-            halign=Gtk.Align.CENTER,
-            margin_top=10,
-            margin_end=12,
-            margin_bottom=10,
-            margin_start=12,
-        )
-        button.set_child(button_content)
-        button_content.append(get_icon("network-server-symbolic"))
-        button_content.append(Gtk.Label(label=_("Import from Server")))
         return button

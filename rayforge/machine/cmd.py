@@ -123,7 +123,7 @@ class MachineCmd:
         if ops.is_empty():
             logger.warning("Job has no operations. Skipping execution.")
             if machine.driver:
-                machine.driver.job_finished.send(machine.driver)
+                machine.controller.job_finished.send(machine.controller)
             return
 
         # Store the callback
@@ -188,14 +188,14 @@ class MachineCmd:
                 # produced encoded output.
                 raise RuntimeError("Pipeline did not produce encoded output.")
             elif machine.reports_granular_progress:
-                await machine.driver.run(
+                await machine.controller.run(
                     encoded,
                     self._editor.doc,
                     ops,
                     on_command_done=self._current_monitor.update_progress,
                 )
             else:
-                await machine.driver.run(
+                await machine.controller.run(
                     encoded,
                     self._editor.doc,
                     ops,
@@ -314,7 +314,7 @@ class MachineCmd:
         async def execute(
             on_command_done: Callable[[int], None | Awaitable[None]] | None,
         ):
-            await machine.driver.frame(
+            await machine.controller.frame(
                 corners,
                 frame_speed,
                 self._editor.doc,
@@ -510,23 +510,24 @@ class MachineCmd:
         """
         Adds a task to set the machine's hold state (pause/resume).
         """
-        driver = machine.driver
+        controller = machine.controller
         self._editor.task_manager.add_coroutine(
-            lambda ctx: driver.set_hold(is_requesting_hold), key="set-hold"
+            lambda ctx: controller.set_hold(is_requesting_hold),
+            key="set-hold",
         )
 
     def cancel_job(self, machine: Machine):
         """Adds a task to cancel the currently running job on the machine."""
-        driver = machine.driver
+        controller = machine.controller
         self._editor.task_manager.add_coroutine(
-            lambda ctx: driver.cancel(), key="cancel-job"
+            lambda ctx: controller.cancel(), key="cancel-job"
         )
 
     def clear_alarm(self, machine: Machine):
         """Adds a task to clear any active alarm on the machine."""
-        driver = machine.driver
+        controller = machine.controller
         self._editor.task_manager.add_coroutine(
-            lambda ctx: driver.clear_alarm(), key="clear-alarm"
+            lambda ctx: controller.clear_alarm(), key="clear-alarm"
         )
 
     def jog(self, machine: Machine, deltas: dict[Axis, float], speed: int):
@@ -632,11 +633,10 @@ class MachineCmd:
         The speed is given in mm/min; when None the driver applies its
         default move speed.
         """
-        driver = machine.driver
-        if driver:
-            self._editor.task_manager.add_coroutine(
-                lambda ctx: driver.move_to(x, y, z, speed), key="move-to"
-            )
+        controller = machine.controller
+        self._editor.task_manager.add_coroutine(
+            lambda ctx: controller.move_to(x, y, z, speed), key="move-to"
+        )
 
 
 def _warn_if_frame_exceeds_travel(

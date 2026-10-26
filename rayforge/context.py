@@ -232,6 +232,17 @@ class RayforgeContext:
                 self._machine_mgr.create_default_machine()
         return self._machine_mgr
 
+    def install_machine_manager(self, machine_manager: "MachineManager"):
+        """Replaces the machine manager before it is lazily created.
+
+        Used by remote client mode to substitute a manager that
+        mirrors the machines of a rayforge-server. Must be called
+        before anything accessed ``machine_mgr``.
+        """
+        if self._machine_mgr is not None:
+            raise RuntimeError("The machine manager already exists.")
+        self._machine_mgr = machine_manager
+
     @property
     def config_mgr(self) -> "ConfigManager":
         """Returns the config manager."""
