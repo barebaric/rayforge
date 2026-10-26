@@ -212,9 +212,10 @@ class MachineController:
         """
         Applies the machine's current driver configuration.
 
-        If the driver class is unchanged, the live driver is asked via
-        update_settings() to absorb the new arguments. Drivers that opt
-        in keep running without interruption; everything else falls
+        If the driver class is unchanged and the driver has not been
+        cleaned up, the live driver is asked via update_settings() to
+        absorb the new arguments. Drivers that opt in keep running
+        without interruption; everything else falls
         through to a full rebuild, which instantiates the driver, and
         connects if auto_connect is enabled and the new driver is not
         NoDeviceDriver.
@@ -239,8 +240,10 @@ class MachineController:
         else:
             self.machine.set_precheck_error(None)
 
-        if isinstance(self.driver, driver_cls) and self.driver.update_settings(
-            **self.machine.driver_args
+        if (
+            isinstance(self.driver, driver_cls)
+            and self.driver.did_setup
+            and self.driver.update_settings(**self.machine.driver_args)
         ):
             logger.info(
                 f"Machine '{self.machine.name}' (id:{self.machine.id}) "

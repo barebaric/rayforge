@@ -149,3 +149,20 @@ class TestUpdateSettingsOptIn:
         await wait_until_settled(task_mgr)
 
         assert machine.driver is not live_driver
+
+    @pytest.mark.asyncio
+    async def test_opt_in_driver_is_rebuilt_after_disconnect(
+        self, machine, task_mgr
+    ):
+        await wait_until_settled(task_mgr)
+        machine.auto_connect = False
+        machine.set_driver(OptInDriver, {"port": "/dev/old"})
+        await wait_until_settled(task_mgr)
+        cleaned_driver = machine.driver
+
+        await machine.disconnect()
+        await wait_until_settled(task_mgr)
+
+        assert machine.driver is not cleaned_driver
+        assert not hasattr(cleaned_driver, "accepted_args")
+        assert machine.driver.did_setup
