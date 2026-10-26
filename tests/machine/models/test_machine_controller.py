@@ -149,3 +149,53 @@ class TestUpdateSettingsOptIn:
         await wait_until_settled(task_mgr)
 
         assert machine.driver is not live_driver
+
+
+class WcsDriver(NoDeviceDriver):
+    """A driver whose WCS names are not raw commands."""
+
+    selected: str | None = None
+    raw: tuple[str, ...] = ()
+
+    async def select_wcs(self, wcs):
+        self.selected = wcs
+
+    async def read_parser_state(self):
+        return self.selected
+
+    async def run_raw(self, machine_code):
+        self.raw = (*self.raw, machine_code)
+
+
+driver_module.register_driver(WcsDriver)
+
+
+@pytest.mark.usefixtures("lite_context")
+class TestSwitchActiveWcs:
+    """A WCS switch goes through the driver's select_wcs()."""
+
+    @pytest.mark.asyncio
+    async def test_switch_uses_select_wcs(self, machine, mocker, task_mgr):
+        await wait_until_settled(task_mgr)
+        machine.auto_connect = False
+        machine.set_driver(WcsDriver, {})
+        await wait_until_settled(task_mgr)
+        mocker.patch.object(machine, "is_connected", return_value=True)
+
+        await machine.switch_active_wcs("CURRENT")
+
+        assert machine.driver.selected == "CURRENT"
+        assert machine.driver.raw == ()
+        assert machine.active_wcs == "CURRENT"
+        assert machine.controller._confirmed_active_wcs == "CURRENT"
+
+    @pytest.mark.asyncio
+    async def test_default_select_wcs_sends_raw_command(
+        self, machine, mocker
+    ):
+        driver = NoDeviceDriver(machine.context, machine)
+        run_raw = mocker.patch.object(driver, "run_raw")
+
+        await driver.select_wcs("G55")
+
+        run_raw.assert_awaited_once_with("G55")

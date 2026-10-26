@@ -887,13 +887,14 @@ class Driver(ABC):
         """
         Selects the active Work Coordinate System on the controller.
 
-        For G-code based controllers (GRBL, Smoothie), this is typically
-        done via G-code commands during job execution. Drivers that require
-        immediate selection should override this method.
+        The default sends the WCS name as a raw command, which is the
+        G-code selection (e.g. "G54") for GRBL and Smoothie. Drivers whose
+        WCS names are not commands should override this method.
 
         Args:
             wcs: The WCS slot to select (e.g., "G54", "REF0", "MACHINE")
         """
+        await self.run_raw(wcs)
 
     @abstractmethod
     async def run_probe_cycle(
