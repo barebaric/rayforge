@@ -16,7 +16,7 @@ Wire format (all integers big-endian):
 The blob section concatenates, in the order recorded by the header:
 
     text (utf-8) | op-map spans (i32 pairs) | op-map line→op (i32)
-    | command times (little-endian f64)
+    | command times (little-endian f64) | ops dict (JSON, utf-8)
 """
 
 from __future__ import annotations
@@ -29,6 +29,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
+from raygeo.ops import Ops
 
 from ...pipeline.encoder.base import EncodedOutput, MachineCodeOpMap
 from ..job_status import JobKind
@@ -50,6 +51,9 @@ class JobPayload:
     Attributes:
         encoded: The encoder output (machine code, op↔line map, and
             driver-specific data).
+        ops: The command stream the encoded output was built from, in
+            the same space the encoder consumed it in. The executing
+            side uses it for time estimates and progress tracking.
         doc_name: Name of the document the job was computed from, for
             display and logging on the executing side.
         kind: Whether the job is a send or a frame job.
@@ -61,6 +65,7 @@ class JobPayload:
     """
 
     encoded: EncodedOutput
+    ops: Ops | None = None
     doc_name: str = ""
     kind: JobKind = JobKind.SEND
     distance_mm: float = 0.0
@@ -103,6 +108,7 @@ class JobPayload:
 
         return cls(
             encoded=encoded,
+            ops=artifact.ops,
             doc_name=doc_name,
             kind=kind,
             distance_mm=artifact.distance,
@@ -119,6 +125,12 @@ class JobPayload:
             times = b""
         else:
             times = np.asarray(self.command_times, dtype="<f8").tobytes()
+        if self.ops is None:
+            ops_bytes = b""
+        else:
+            ops_bytes = json.dumps(
+                _tag_driver_data(self.ops.to_dict())
+            ).encode("utf-8")
 
         header = {
             "format_version": _FORMAT_VERSION,
@@ -130,13 +142,16 @@ class JobPayload:
             "spans_len": len(spans),
             "line_to_op_len": len(line_to_op),
             "command_times_len": len(times),
+            "ops_len": len(ops_bytes),
             "driver_data": _tag_driver_data(self.encoded.driver_data),
         }
         header_bytes = json.dumps(header).encode("utf-8")
         return (
             _PREFIX.pack(_MAGIC, _FORMAT_VERSION, len(header_bytes))
             + header_bytes
-            + zlib.compress(text_bytes + spans + line_to_op + times)
+            + zlib.compress(
+                text_bytes + spans + line_to_op + times + ops_bytes
+            )
         )
 
     @classmethod
@@ -168,6 +183,7 @@ class JobPayload:
             header["spans_len"],
             header["line_to_op_len"],
             header["command_times_len"],
+            header.get("ops_len", 0),
         ]
         if min(lengths) < 0:
             raise ValueError("Job payload header has negative blob lengths.")
@@ -200,6 +216,19 @@ class JobPayload:
                 _take(times_len), dtype="<f8"
             ).tolist()
 
+        ops = None
+        ops_len = lengths[4]
+        if ops_len:
+            try:
+                ops_dict = json.loads(_take(ops_len).decode("utf-8"))
+                ops = Ops.from_dict(_untag_driver_data(ops_dict))
+            except (
+                UnicodeDecodeError,
+                json.JSONDecodeError,
+                ValueError,
+            ) as e:
+                raise ValueError(f"Corrupt job payload ops: {e}") from e
+
         encoded = EncodedOutput(
             text=text,
             op_map=MachineCodeOpMap(
@@ -210,6 +239,7 @@ class JobPayload:
         )
         return cls(
             encoded=encoded,
+            ops=ops,
             doc_name=header["doc_name"],
             kind=JobKind[header["kind"]],
             distance_mm=header["distance_mm"],

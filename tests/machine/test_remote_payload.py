@@ -26,8 +26,13 @@ def _make_encoded() -> EncodedOutput:
 
 
 def _make_payload() -> JobPayload:
+    ops = Ops()
+    ops.move_to(10, 10, 0)
+    ops.line_to(20, 10, 0)
+    ops.line_to(20, 20, 0)
     return JobPayload(
         encoded=_make_encoded(),
+        ops=ops,
         doc_name="test.rfz",
         kind=JobKind.FRAME,
         distance_mm=123.4,
@@ -53,6 +58,17 @@ def test_roundtrip_preserves_all_fields():
     assert restored.estimated_seconds == 42.5
     assert restored.command_times == [0.1, 1.5, 3.25]
     assert restored.op_count == 3
+
+
+def test_roundtrip_preserves_ops():
+    payload = _make_payload()
+    restored = JobPayload.from_bytes(payload.to_bytes())
+
+    assert payload.ops is not None
+    assert restored.ops is not None
+    assert len(restored.ops) == len(payload.ops)
+    assert restored.ops.distance() == payload.ops.distance()
+    assert restored.ops.category(1) == payload.ops.category(1)
 
 
 def test_roundtrip_preserves_encoded_output():
@@ -87,6 +103,7 @@ def test_roundtrip_without_optional_data():
     assert restored.distance_mm == 0.0
     assert restored.estimated_seconds is None
     assert restored.command_times is None
+    assert restored.ops is None
     assert restored.op_count == 0
     assert restored.encoded.text == ""
 
@@ -142,11 +159,14 @@ def test_from_job_artifact_with_machine(machine):
     assert payload.doc_name == "doc.rfz"
     assert payload.distance_mm == 10.0
     assert payload.estimated_seconds == 5.0
+    assert payload.ops is not None
     assert payload.command_times is not None
     assert len(payload.command_times) == len(ops)
 
     restored = JobPayload.from_bytes(payload.to_bytes())
     assert restored.command_times == payload.command_times
+    assert restored.ops is not None
+    assert len(restored.ops) == len(ops)
 
 
 def test_from_job_artifact_without_machine():
@@ -163,6 +183,7 @@ def test_from_job_artifact_without_machine():
 
     assert payload.command_times is None
     assert payload.estimated_seconds is None
+    assert payload.ops is not None
 
 
 def test_from_job_artifact_requires_encoded_output():
