@@ -167,6 +167,7 @@ class TestUpdateSettingsOptIn:
         assert not hasattr(cleaned_driver, "accepted_args")
         assert machine.driver.did_setup
 
+
 class WcsDriver(NoDeviceDriver):
     """A driver whose WCS names are not raw commands."""
 
@@ -206,9 +207,7 @@ class TestSwitchActiveWcs:
         assert machine.controller._confirmed_active_wcs == "CURRENT"
 
     @pytest.mark.asyncio
-    async def test_default_select_wcs_sends_raw_command(
-        self, machine, mocker
-    ):
+    async def test_default_select_wcs_sends_raw_command(self, machine, mocker):
         driver = NoDeviceDriver(machine.context, machine)
         run_raw = mocker.patch.object(driver, "run_raw")
 
