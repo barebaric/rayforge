@@ -39,6 +39,7 @@ module.exports = {
         'machine/nogo-zones',
         'machine/camera',
         'machine/maintenance',
+        'machine/remote',
       ],
     },
     {

@@ -27,13 +27,13 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-async def fetch_machine_config(
-    host: str, port: int = DEFAULT_PORT, machine_id: str = ""
-) -> dict[str, Any]:
-    """Fetches one machine configuration from a remote server.
+async def _connect_and_hello(
+    host: str, port: int
+) -> tuple[asyncio.StreamReader, asyncio.StreamWriter, dict[str, Any]]:
+    """Connects to a server and completes the version handshake.
 
     Raises :class:`OSError` when the server cannot be reached and
-    :class:`ValueError` when the server rejects the request.
+    :class:`ValueError` when it speaks a different protocol version.
     """
     reader, writer = await asyncio.open_connection(host, port)
     try:
@@ -43,7 +43,35 @@ async def fetch_machine_config(
         welcome = await read_message(reader)
         if welcome.get("type") != "welcome":
             raise ValueError(welcome.get("message", _("Handshake failed.")))
+    except Exception:
+        writer.close()
+        raise
+    return reader, writer, welcome
 
+
+async def fetch_server_machines(
+    host: str, port: int = DEFAULT_PORT
+) -> list[dict[str, Any]]:
+    """Returns the machines hosted by a remote server.
+
+    Each entry carries the machine's ``id``, ``name``, ``driver_name``
+    and ``connected`` state.
+    """
+    _reader, writer, welcome = await _connect_and_hello(host, port)
+    writer.close()
+    return welcome.get("machines", [])
+
+
+async def fetch_machine_config(
+    host: str, port: int = DEFAULT_PORT, machine_id: str = ""
+) -> dict[str, Any]:
+    """Fetches one machine configuration from a remote server.
+
+    Raises :class:`OSError` when the server cannot be reached and
+    :class:`ValueError` when the server rejects the request.
+    """
+    reader, writer, _welcome = await _connect_and_hello(host, port)
+    try:
         await write_message(
             writer,
             {"type": "get_machine_config", "machine_id": machine_id},
