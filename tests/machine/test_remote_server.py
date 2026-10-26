@@ -2,6 +2,7 @@
 
 import asyncio
 import base64
+from typing import cast
 
 import pytest
 from raygeo.ops import Ops
@@ -272,3 +273,38 @@ def test_message_framing_roundtrip():
     import json
 
     assert json.loads(data[4:].decode("utf-8")) == message
+
+
+def test_server_bootstrap_initializes_task_manager_first(
+    tmp_path, monkeypatch
+):
+    """The server entry must initialize the task manager first.
+
+    Creating machines touches the lazy-initializing task manager
+    proxy, so bootstrap order matters: with the wrong order the
+    later initialize() call raises RuntimeError (issue seen when
+    starting rayforge --server on a fresh process).
+    """
+    from rayforge import config
+    from rayforge import context as context_module
+    from rayforge.server import initialize_backend
+    from rayforge.shared import tasker
+    from rayforge.shared.tasker.manager import TaskManagerProxy
+
+    proxy = cast(TaskManagerProxy, tasker.task_mgr)
+    temp_config_dir = tmp_path / "config"
+    monkeypatch.setattr(config, "CONFIG_DIR", temp_config_dir)
+    monkeypatch.setattr(config, "MACHINE_DIR", temp_config_dir / "machines")
+    monkeypatch.setattr(config, "DIALECT_DIR", temp_config_dir / "dialects")
+    # Simulate a fresh process.
+    monkeypatch.setattr(proxy, "_instance", None)
+    monkeypatch.setattr(proxy, "_init_kwargs", {})
+    monkeypatch.setattr(context_module, "_context_instance", None)
+
+    context = initialize_backend()
+
+    assert context.machine_mgr is not None
+    assert proxy._instance is not None
+    # Shut down the freshly created task manager before monkeypatch
+    # restores the previous one.
+    proxy.shutdown()

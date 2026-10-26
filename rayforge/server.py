@@ -50,11 +50,25 @@ def _parse_args(argv=None):
     return parser.parse_args(argv)
 
 
-async def _run(args) -> None:
-    context = get_context()
-    context.initialize_lite_context(config.MACHINE_DIR)
+def initialize_backend():
+    """Bootstraps the headless server environment.
+
+    Initializes the task manager BEFORE any machine is created:
+    machines touch the task manager on construction, and the
+    lazy-initializing proxy would otherwise create it with default
+    settings, making the later initialize() call raise.
+
+    Returns the application context.
+    """
     task_mgr_proxy = cast(TaskManagerProxy, tasker.task_mgr)
     task_mgr_proxy.initialize()
+    context = get_context()
+    context.initialize_lite_context(config.MACHINE_DIR)
+    return context
+
+
+async def _run(args) -> None:
+    context = initialize_backend()
     task_mgr = tasker.task_mgr
 
     machine_mgr = context.machine_mgr
