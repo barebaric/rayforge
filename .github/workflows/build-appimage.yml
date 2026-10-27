@@ -18,6 +18,7 @@ jobs:
   build:
     name: Build AppImage
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     outputs:
       version: ${{ steps.set-version.outputs.version }}
     steps:
@@ -59,9 +60,12 @@ jobs:
 
       - name: Install Xvfb and FUSE
         run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb
-          sudo apt-get install -y libfuse2t64 || sudo apt-get install -y libfuse2
+          APT_OPTIONS=(-o Acquire::Retries=5 -o Acquire::http::Timeout=30 \
+            -o Acquire::https::Timeout=30)
+          sudo apt-get update "${APT_OPTIONS[@]}"
+          sudo apt-get install -y "${APT_OPTIONS[@]}" xvfb
+          sudo apt-get install -y "${APT_OPTIONS[@]}" libfuse2t64 \
+            || sudo apt-get install -y "${APT_OPTIONS[@]}" libfuse2
 
       - name: Upload AppImage Artifact
         uses: actions/upload-artifact@v7
