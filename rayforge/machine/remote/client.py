@@ -24,7 +24,6 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
-from ...context import get_context
 from ...shared.tasker import task_mgr
 from ..models.controller import MachineController
 from ..models.manager import MachineManager
@@ -390,7 +389,7 @@ class ClientMachineManager(MachineManager):
         )
         controller = ClientMachineController(
             machine,
-            get_context(),
+            machine.context,
             task_mgr.schedule_on_main_thread,
             self.remote_client,
         )

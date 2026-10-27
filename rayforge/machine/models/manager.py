@@ -89,8 +89,11 @@ class MachineManager:
         logger.debug(
             f"Creating controller for machine '{machine.name}' on first use."
         )
+        # Bind the controller to the machine's own context, not the
+        # process-wide singleton: in unified local mode the backend
+        # and the frontend are two contexts in one process.
         controller = self.controller_cls(
-            machine, get_context(), task_mgr.schedule_on_main_thread
+            machine, machine.context, task_mgr.schedule_on_main_thread
         )
 
         # Wire up the machine's signal proxies to the new controller
