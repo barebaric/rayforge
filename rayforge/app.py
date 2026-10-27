@@ -360,7 +360,7 @@ def main():
             client = RemoteClient()
             while self.wait_window is not None:
                 try:
-                    await client.connect(host, port)
+                    await client.connect((host, port))
                     break
                 except (OSError, RemoteError, ValueError) as e:
                     logger.info(
@@ -732,6 +732,15 @@ def main():
         main_thread_scheduler=idle_add,
     )
 
+    # Unified machine path: without --client/--server, run the machine
+    # backend in-process and drive it through the same remote protocol
+    # a network frontend uses. The backend owns the machine
+    # configuration; the frontend mirrors its machines.
+    if args.server is None and not args.client:
+        from rayforge.machine.remote.bootstrap import bootstrap_local_app
+
+        bootstrap_local_app()
+
     # Run application
     app = App(args)
     exit_code = app.run(None)
@@ -760,6 +769,12 @@ def main():
         # The context now handles shutting down all its owned managers
         # (machine_mgr, camera_mgr, artifact_store) in the correct order.
         await context.shutdown()
+        # Stop the in-process backend, if this process runs one.
+        from rayforge.machine.remote.bootstrap import (
+            shutdown_local_backend,
+        )
+
+        await shutdown_local_backend()
         logger.info("Async shutdown complete.")
 
     # 2. Run the async shutdown on the TaskManager's event loop and

@@ -52,7 +52,7 @@ async def test_client_mirrors_and_drives_machine(
     client_context = None
     original_context = context_module._context_instance
     try:
-        await client.connect("127.0.0.1", server.port)
+        await client.connect(("127.0.0.1", server.port))
         configs = await client.get_machine_configs()
         assert machine.id in configs
 
@@ -110,7 +110,7 @@ async def test_client_survives_reconnect(lite_context, task_mgr, machine):
     await server.start()
     client = RemoteClient()
     try:
-        await client.connect("127.0.0.1", server.port)
+        await client.connect(("127.0.0.1", server.port))
         configs = await client.get_machine_configs()
 
         client_context = RayforgeContext()
@@ -141,7 +141,7 @@ async def test_client_survives_reconnect(lite_context, task_mgr, machine):
             # Reconnect and ask for the job state.
             client2 = RemoteClient()
             try:
-                await client2.connect("127.0.0.1", server.port)
+                await client2.connect(("127.0.0.1", server.port))
                 state = await asyncio.wait_for(
                     client2.request({"type": "get_job"}), 10
                 )

@@ -32,6 +32,7 @@ from .driver_proxy import RemoteDriverProxy
 from .protocol import PROTOCOL_VERSION, read_message, write_message
 
 if TYPE_CHECKING:
+    from ..models.machine import Machine
     from .payload import JobPayload
 
 logger = logging.getLogger(__name__)
@@ -52,22 +53,39 @@ class RemoteClient:
         self._next_id = itertools.count(1)
         self._proxies: dict[str, RemoteDriverProxy] = {}
         self._job_queues: dict[str, asyncio.Queue] = {}
+        self._loop: asyncio.AbstractEventLoop | None = None
+
+    @property
+    def loop(self) -> asyncio.AbstractEventLoop | None:
+        """The event loop the connection runs on."""
+        return self._loop
 
     @property
     def connected(self) -> bool:
         return self._writer is not None and not self._writer.is_closing()
 
-    async def connect(self, host: str, port: int) -> dict[str, Any]:
+    async def connect(self, address: str | tuple[str, int]) -> dict[str, Any]:
         """Connects to the server and completes the handshake.
 
-        Returns the server's hello result (version, machines).
-        Raises :class:`OSError` when the server is unreachable and
-        :class:`RemoteError` when it speaks another protocol version.
+        The address is a Unix domain socket path or a ``(host,
+        port)`` tuple. Returns the server's hello result (version,
+        machines). Raises :class:`OSError` when the server is
+        unreachable and :class:`RemoteError` when it speaks another
+        protocol version.
         """
-        self._reader, self._writer = await asyncio.open_connection(host, port)
-        self._read_task = asyncio.get_running_loop().create_task(
-            self._read_loop()
-        )
+        if isinstance(address, str):
+            self._reader, self._writer = await asyncio.open_unix_connection(
+                path=address
+            )
+            where = address
+        else:
+            host, port = address
+            self._reader, self._writer = await asyncio.open_connection(
+                host, port
+            )
+            where = f"{host}:{port}"
+        self._loop = asyncio.get_running_loop()
+        self._read_task = self._loop.create_task(self._read_loop())
         try:
             result = await self.request(
                 {"type": "hello", "version": PROTOCOL_VERSION}
@@ -75,7 +93,7 @@ class RemoteClient:
         except Exception:
             await self.close()
             raise
-        logger.info(f"Connected to rayforge-server at {host}:{port}.")
+        logger.info(f"Connected to rayforge-server at {where}.")
         return result
 
     async def close(self) -> None:
@@ -136,6 +154,12 @@ class RemoteClient:
                 "op": op,
                 "kwargs": kwargs,
             }
+        )
+
+    async def manager_op(self, op: str, **kwargs: Any) -> Any:
+        """Sends a machine-configuration change to the server."""
+        return await self.request(
+            {"type": "manager_op", "op": op, "kwargs": kwargs}
         )
 
     async def submit_job(self, machine_id: str, payload: JobPayload) -> str:
@@ -247,16 +271,110 @@ class ClientMachineManager(MachineManager):
 
     Machines are populated from the server's configurations and
     never persisted locally; their drivers are proxies to the
-    server's drivers.
+    server's drivers. The server owns the configuration, so machine
+    changes made here are forwarded to it: creations and removals
+    immediately, edits debounced.
     """
+
+    #: Seconds to wait after the last change before syncing an
+    #: edited machine configuration to the server.
+    SYNC_DEBOUNCE_SECONDS = 1.0
 
     def __init__(self, base_dir: Path, remote_client: RemoteClient):
         self.remote_client = remote_client
+        # Set before super().__init__(): the base constructor calls
+        # load(), which is overridden to no-op.
+        self._populating = False
+        self._sync_timers: dict[str, Any] = {}
         super().__init__(base_dir, persist=False)
 
     def load(self):
         # Machines come from the server, not from disk.
         pass
+
+    def add_machine(self, machine: Machine):
+        super().add_machine(machine)
+        if self._populating:
+            return
+        self._send_config_change(
+            "create_machine", config=self._config_of(machine)
+        )
+
+    def remove_machine(self, machine_id: str):
+        existed = machine_id in self.machines
+        super().remove_machine(machine_id)
+        self._sync_timers.pop(machine_id, None)
+        if self._populating or not existed:
+            return
+        self._send_config_change("remove_machine", machine_id=machine_id)
+
+    def on_machine_changed(self, machine: Machine, **kwargs: Any):
+        super().on_machine_changed(machine, **kwargs)
+        self._schedule_update_sync(machine)
+
+    def _config_of(self, machine: Machine) -> dict[str, Any]:
+        """Serializes a mirror machine for the server."""
+        config = machine.to_dict(include_frozen_dialect=False)
+        config.setdefault("machine", {})["id"] = machine.id
+        return config
+
+    def _schedule_update_sync(self, machine: Machine) -> None:
+        """Debounces machine edits into one update per machine.
+
+        Called from arbitrary threads (e.g. the GTK main loop);
+        marshals the timer onto the connection's event loop.
+        """
+        if self._populating:
+            return
+        loop = self.remote_client.loop
+        if loop is None or not loop.is_running():
+            return
+        loop.call_soon_threadsafe(self._arm_update_sync, machine.id)
+
+    def _arm_update_sync(self, machine_id: str) -> None:
+        """Arms the debounce timer; runs on the connection's loop."""
+        loop = self.remote_client.loop
+        assert loop is not None
+        timer = self._sync_timers.pop(machine_id, None)
+        if timer is not None:
+            timer.cancel()
+        self._sync_timers[machine_id] = loop.call_later(
+            self.SYNC_DEBOUNCE_SECONDS,
+            lambda: self._send_update_sync(machine_id),
+        )
+
+    def _send_update_sync(self, machine_id: str) -> None:
+        """Sends the machine's final state to the server."""
+        self._sync_timers.pop(machine_id, None)
+        current = self.get_machine_by_id(machine_id)
+        if current is None:
+            return
+        self._send_config_change(
+            "update_machine",
+            machine_id=machine_id,
+            config=self._config_of(current),
+        )
+
+    def _send_config_change(self, op: str, **kwargs: Any) -> None:
+        """Forwards a configuration change on the connection's loop.
+
+        Failures are logged: configuration sync is best-effort and
+        must never disturb the UI that triggered it.
+        """
+        loop = self.remote_client.loop
+        if loop is None or not loop.is_running():
+            logger.warning(f"Cannot sync '{op}' to the server: not connected.")
+            return
+
+        async def _send() -> None:
+            try:
+                await self.remote_client.manager_op(op, **kwargs)
+            except Exception:
+                logger.exception(
+                    "Syncing a machine change to the server failed"
+                )
+
+        loop.call_soon_threadsafe(lambda: loop.create_task(_send()))
 
     def get_controller(self, machine_id: str) -> MachineController:
         """Gets the controller, creating a client controller on demand."""
@@ -284,9 +402,14 @@ class ClientMachineManager(MachineManager):
         """Creates machine mirrors from the server's configurations."""
         from ..models.machine import Machine
 
-        for config in configs.values():
-            machine = Machine.from_dict(config)
-            self.add_machine(machine)
-            logger.info(
-                f"Mirrored remote machine '{machine.name}' (id: {machine.id})"
-            )
+        self._populating = True
+        try:
+            for config in configs.values():
+                machine = Machine.from_dict(config)
+                self.add_machine(machine)
+                logger.info(
+                    f"Mirrored remote machine '{machine.name}' "
+                    f"(id: {machine.id})"
+                )
+        finally:
+            self._populating = False

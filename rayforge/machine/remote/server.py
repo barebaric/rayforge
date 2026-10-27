@@ -27,6 +27,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import logging
+import os
 import uuid
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, cast
@@ -63,7 +64,7 @@ logger = logging.getLogger(__name__)
 
 
 class RemoteJobServer:
-    """Serves the remote protocol over TCP."""
+    """Serves the remote protocol over TCP or a Unix domain socket."""
 
     def __init__(
         self,
@@ -71,11 +72,18 @@ class RemoteJobServer:
         task_manager: TaskManager,
         host: str = "127.0.0.1",
         port: int = 0,
+        socket_path: str | None = None,
     ):
+        """
+        Args:
+            socket_path: Listen on a Unix domain socket at this path
+                instead of TCP. Used for in-process local backends.
+        """
         self._context = context
         self._task_manager = task_manager
         self._host = host
         self._port = port
+        self._socket_path = socket_path
         self._server: asyncio.Server | None = None
         self._loop: asyncio.AbstractEventLoop | None = None
         self._connections: set[asyncio.StreamWriter] = set()
@@ -83,19 +91,43 @@ class RemoteJobServer:
 
     @property
     def port(self) -> int:
-        """The port the server listens on."""
+        """The port the server listens on (TCP mode only)."""
         assert self._server is not None, "Server not started"
         return self._server.sockets[0].getsockname()[1]
+
+    @property
+    def address(self) -> str | tuple[str, int]:
+        """The address clients connect to.
+
+        The socket path in Unix socket mode, otherwise a
+        ``(host, port)`` tuple.
+        """
+        assert self._server is not None, "Server not started"
+        if self._socket_path is not None:
+            return self._socket_path
+        return self._host, self.port
 
     async def start(self) -> None:
         """Starts listening and wires the machine event forwarding."""
         self._loop = asyncio.get_running_loop()
-        self._server = await asyncio.start_server(
-            self._handle_connection, self._host, self._port
-        )
+        if self._socket_path is not None:
+            # Remove a stale socket from a previous run.
+            try:
+                os.unlink(self._socket_path)
+            except FileNotFoundError:
+                pass
+            self._server = await asyncio.start_unix_server(
+                self._handle_connection, path=self._socket_path
+            )
+            address = self._socket_path
+        else:
+            self._server = await asyncio.start_server(
+                self._handle_connection, self._host, self._port
+            )
+            address = f"{self._host}:{self.port}"
         for machine in self._context.machine_mgr.get_machines():
             self._wire_machine_events(machine)
-        logger.info(f"Remote job server listening on {self._host}:{self.port}")
+        logger.info(f"Remote job server listening on {address}")
 
     async def stop(self) -> None:
         """Closes the listening socket and all client connections."""
@@ -110,6 +142,11 @@ class RemoteJobServer:
         self._connections.clear()
         await self._server.wait_closed()
         self._server = None
+        if self._socket_path is not None:
+            try:
+                os.unlink(self._socket_path)
+            except FileNotFoundError:
+                pass
 
     async def serve_forever(self) -> None:
         """Runs until the server is stopped or the process exits."""
@@ -164,6 +201,8 @@ class RemoteJobServer:
                 return await self._submit_job(message)
             if mtype == "machine_op":
                 return await self._machine_op(message)
+            if mtype == "manager_op":
+                return self._manager_op(message)
         except Exception as e:
             logger.exception(f"Request '{mtype}' failed")
             return {"type": "reply", "ok": False, "error": str(e)}
@@ -221,6 +260,102 @@ class RemoteJobServer:
         else:
             result = self._job.state()
         return {"type": "reply", "ok": True, "result": result}
+
+    # -- Machine configuration sync ----------------------------------------
+
+    def _manager_op(self, message: dict[str, Any]) -> dict[str, Any]:
+        """Applies machine CRUD changes from a client.
+
+        The backend owns the machine configuration: frontends send
+        their changes here so they persist and the backend machine
+        controllers pick them up.
+        """
+        op = message.get("op")
+        kwargs = message.get("kwargs", {})
+        try:
+            if op == "create_machine":
+                return self._op_create_machine(kwargs)
+            if op == "update_machine":
+                return self._op_update_machine(kwargs)
+            if op == "remove_machine":
+                return self._op_remove_machine(kwargs)
+        except Exception as e:
+            logger.exception(f"Manager op '{op}' failed")
+            return {"type": "reply", "ok": False, "error": str(e)}
+        return {
+            "type": "reply",
+            "ok": False,
+            "error": f"Unknown manager op: {op!r}",
+        }
+
+    def _op_create_machine(self, kwargs: dict) -> dict[str, Any]:
+        """Creates a machine from a client's configuration."""
+        from ..models.machine import Machine
+
+        # Bind to the backend context: in unified local mode the
+        # process-wide singleton is the frontend's context.
+        machine = Machine.from_dict(kwargs["config"], context=self._context)
+        self._context.machine_mgr.add_machine(machine)
+        self._wire_machine_events(machine)
+        return {"type": "reply", "ok": True, "result": {"id": machine.id}}
+
+    def _op_update_machine(self, kwargs: dict) -> dict[str, Any]:
+        """Replaces a machine from a client's configuration.
+
+        Rejected while a job runs on the machine: controllers and
+        the job monitor hold references to the machine object.
+        """
+        from ..models.machine import Machine
+
+        machine_id = kwargs["machine_id"]
+        if (
+            self._job is not None
+            and self._job.running
+            and self._job.machine_id == machine_id
+        ):
+            return {
+                "type": "reply",
+                "ok": False,
+                "error": "A job is running on this machine.",
+            }
+        machine_mgr = self._context.machine_mgr
+        old_machine = machine_mgr.get_machine_by_id(machine_id)
+        if old_machine is None:
+            return {
+                "type": "reply",
+                "ok": False,
+                "error": f"No machine with id {machine_id!r}.",
+            }
+
+        new_machine = Machine.from_dict(
+            kwargs["config"], context=self._context
+        )
+        machine_mgr.remove_machine(machine_id)
+        machine_mgr.add_machine(new_machine)
+        self._wire_machine_events(new_machine)
+        return {"type": "reply", "ok": True, "result": {"id": machine_id}}
+
+    def _op_remove_machine(self, kwargs: dict) -> dict[str, Any]:
+        """Removes a machine as requested by a client."""
+        machine_id = kwargs["machine_id"]
+        if (
+            self._job is not None
+            and self._job.running
+            and self._job.machine_id == machine_id
+        ):
+            return {
+                "type": "reply",
+                "ok": False,
+                "error": "A job is running on this machine.",
+            }
+        if self._context.machine_mgr.get_machine_by_id(machine_id) is None:
+            return {
+                "type": "reply",
+                "ok": False,
+                "error": f"No machine with id {machine_id!r}.",
+            }
+        self._context.machine_mgr.remove_machine(machine_id)
+        return {"type": "reply", "ok": True, "result": None}
 
     # -- Job submission ---------------------------------------------------
 
