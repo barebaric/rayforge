@@ -14,7 +14,7 @@ from ezdxf import bbox
 from ezdxf.addons import text2path
 from ezdxf.lldxf.const import DXFStructureError
 from ezdxf.path import Command
-from raygeo.geo import Geometry
+from raygeo.geo import Arc, Bezier, Geometry, Move
 from raygeo.geo.types import Rect
 
 from ...core.source_asset import SourceAsset
@@ -40,6 +40,10 @@ from .renderer import DXF_RENDERER
 
 logger = logging.getLogger(__name__)
 
+# Z extent below which a drawing is considered flat. DXF coordinates
+# carry rounding noise, so an exact zero test is too strict.
+Z_VARIATION_TOLERANCE = 1e-4
+
 units_to_mm = {
     0: 1.0,
     1: 25.4,
@@ -60,6 +64,7 @@ class DxfImporter(Importer):
     features: ClassVar[set[ImporterFeature]] = {
         ImporterFeature.DIRECT_VECTOR,
         ImporterFeature.LAYER_SELECTION,
+        ImporterFeature.Z_FLATTENING,
     }
 
     def __init__(self, data: bytes, source_file: Path | None = None):
@@ -111,6 +116,7 @@ class DxfImporter(Importer):
             natural_size_mm=size_mm,
             warnings=self._warnings,
             errors=self._errors,
+            has_z_variation=self._has_z_variation(doc),
         )
 
     def create_source_asset(self, parse_result: ParsingResult) -> SourceAsset:
@@ -194,6 +200,12 @@ class DxfImporter(Importer):
             for geo in geometries_to_process.values():
                 merged_geo.extend(geo)
             final_geometries = {None: merged_geo}
+
+        if isinstance(spec, PassthroughSpec) and spec.flatten_z:
+            final_geometries = {
+                layer_id: self._flatten_z(geo)
+                for layer_id, geo in final_geometries.items()
+            }
 
         # Hack: Updating the parsing result bounds if layers were filtered
         # is a violation of the pipelines sequential nature. Ideally this
@@ -289,6 +301,18 @@ class DxfImporter(Importer):
             for layer in doc.layers
             if layer.dxf.name.lower() != "defpoints"
         ]
+
+    def _has_z_variation(self, doc) -> bool:
+        """Returns True when the drawing's geometry spans more than one
+        Z level (3D CAD exports often carry the top and bottom face
+        outlines of a part at different Z heights).
+        """
+        entity_bbox = bbox.extents(doc.modelspace(), fast=True)
+        if not entity_bbox.has_data:
+            return False
+        min_z = entity_bbox.extmin.z
+        max_z = entity_bbox.extmax.z
+        return abs(max_z - min_z) > Z_VARIATION_TOLERANCE
 
     def parse(self) -> ParsingResult | None:
         try:
@@ -534,6 +558,60 @@ class DxfImporter(Importer):
                     cz - end.z
                 ) ** 2 > 1e-8:
                     geo.move_to(end.x, end.y, end.z)
+
+    @staticmethod
+    def _flatten_z(geo: Geometry) -> Geometry:
+        """Returns a copy of *geo* with every point projected onto the
+        Z=0 plane. Kept exact: command types, control points, and
+        continuity are preserved; only the Z coordinates are dropped.
+        """
+        if geo is None or geo.is_empty():
+            return geo
+
+        def has_z(cmd) -> bool:
+            end = cmd.end
+            if len(end) > 2 and abs(end[2]) > 1e-9:
+                return True
+            if isinstance(cmd, Bezier):
+                for control in (cmd.control1, cmd.control2):
+                    if len(control) > 2 and abs(control[2]) > 1e-9:
+                        return True
+            return False
+
+        if not any(has_z(cmd) for cmd in geo.iter_typed_commands()):
+            return geo
+
+        flat = Geometry()
+        for cmd in geo.iter_typed_commands():
+            end = cmd.end
+            if isinstance(cmd, Bezier):
+                c1, c2 = cmd.control1, cmd.control2
+                flat.bezier_to(
+                    end[0],
+                    end[1],
+                    c1[0],
+                    c1[1],
+                    c2[0],
+                    c2[1],
+                    c1z=0.0,
+                    c2z=0.0,
+                    z=0.0,
+                )
+            elif isinstance(cmd, Arc):
+                offset = cmd.center_offset
+                flat.arc_to(
+                    end[0],
+                    end[1],
+                    offset[0],
+                    offset[1],
+                    cmd.clockwise,
+                    z=0.0,
+                )
+            elif isinstance(cmd, Move):
+                flat.move_to(end[0], end[1], 0.0)
+            else:
+                flat.line_to(end[0], end[1], 0.0)
+        return flat
 
     def _get_scale_to_mm(self, doc, default: float = 1.0) -> float:
         insunits = doc.header.get("$INSUNITS", 0)
