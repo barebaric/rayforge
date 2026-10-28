@@ -298,6 +298,23 @@ Rayforge prend en charge les formats DXF standard :
 
 **Astuce :** Exporte en DXF R12/LT2 pour une compatibilité maximale.
 
+### Aplatissement des coordonnées Z
+
+Certains logiciels de CAO écrivent des fichiers DXF contenant de la géométrie à différentes hauteurs
+Z — par exemple un modèle 3D exporté avec les contours des faces supérieure et inférieure d'une
+pièce. Rayforge est un programme 2D : sur une machine dotée d'un axe Z, ces valeurs Z deviennent de
+véritables mouvements en Z dans le travail, et la tête peut plonger sous la surface du matériau et
+entrer en collision.
+
+Lorsqu'un fichier DXF contient de la géométrie à plus d'une hauteur Z, la boîte de dialogue
+d'importation propose donc une option **Aplatir les coordonnées Z** (sous « Mode d'importation »).
+Elle est activée par défaut et projette toute la géométrie importée sur le plan Z=0. Tu peux la
+désactiver pour conserver les hauteurs Z d'origine — la boîte de dialogue t'avertit alors que le
+parcours de l'outil se déplacera en Z, ce qui n'est sûr que si tu sais que ton fichier en a besoin
+(par exemple pour recréer une hauteur de mise au point spécifique par forme).
+
+Pour les dessins plats, l'option n'est pas affichée ; il n'y a rien à aplatir.
+
 ### Conseils pour l'importation DXF
 
 **Avant d'exporter depuis la CAO :**

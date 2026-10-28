@@ -290,6 +290,21 @@ Rayforge supports standard DXF formats:
 
 **Tip:** Export as R12/LT2 DXF for maximum compatibility.
 
+### Z Flattening
+
+Some CAD exporters write DXF files with geometry at different Z heights — for example a 3D model
+exported with the outlines of both the top and the bottom face of a part. Rayforge is a 2D program:
+on a machine with a Z axis, such Z values become real Z moves in the job, and the head can plunge
+below the material surface and crash.
+
+When a DXF file contains geometry at more than one Z height, the import dialog therefore offers a
+**Flatten Z Coordinates** option (under "Import Mode"). It is enabled by default and projects all
+imported geometry onto the Z=0 plane. You can turn it off to keep the original Z heights — the
+dialog then warns you that the toolpath will move in Z, which is only safe if you know your file
+needs it (for example to re-create a specific focus height per shape).
+
+For flat drawings the option is not shown; there is nothing to flatten.
+
 ### DXF Import Tips
 
 **Before exporting from CAD:**

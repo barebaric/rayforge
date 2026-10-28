@@ -132,6 +132,18 @@ class ImportDialog(PatchedDialogWindow):
         self.warning_banner.set_revealed(False)
         main_box.append(self.warning_banner)
 
+        # Banner for disabled Z flattening (e.g. 3D DXF exports)
+        self.z_flatten_banner = Adw.Banner(
+            title=_(
+                "Z flattening is disabled: the geometry keeps its "
+                "original Z heights. On machines with a Z axis the "
+                "toolpath will move in Z and may plunge below the "
+                "material surface."
+            )
+        )
+        self.z_flatten_banner.set_revealed(False)
+        main_box.append(self.z_flatten_banner)
+
         content_box = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL, vexpand=True, hexpand=True
         )
@@ -201,6 +213,27 @@ class ImportDialog(PatchedDialogWindow):
         self.dpi_row.value_changed.connect(self._on_dpi_changed)
         self.dpi_row.set_visible(False)
         mode_group.add(self.dpi_row)
+
+        # Flatten Z coordinates (offered only for sources that carry
+        # geometry at varying Z heights, e.g. 3D DXF exports). Lives in
+        # its own group: the Import Mode group stays hidden for files
+        # without a trace mode, DXF among them.
+        self.z_flatten_group = Adw.PreferencesGroup(title=_("Geometry"))
+        self.z_flatten_group.set_visible(False)
+        preferences_page.add(self.z_flatten_group)
+
+        self.flatten_z_switch = Adw.SwitchRow(
+            title=_("Flatten Z Coordinates"),
+            subtitle=_(
+                "Project all geometry onto the Z=0 plane (recommended "
+                "for laser cutting)"
+            ),
+            active=True,
+        )
+        self.flatten_z_switch.connect(
+            "notify::active", self._on_flatten_z_toggled
+        )
+        self.z_flatten_group.add(self.flatten_z_switch)
 
         # Show this group if the importer supports both vector and trace,
         # or if DPI is relevant (detected later from manifest)
@@ -307,8 +340,30 @@ class ImportDialog(PatchedDialogWindow):
         )
         self.trace_group.set_sensitive(not is_direct_import)
         self.layers_group.set_sensitive(is_direct_import)
+        self.flatten_z_switch.set_sensitive(is_direct_import)
+        self._update_z_flatten_banner(is_direct_import)
         self.warning_banner.set_revealed(False)
         self._schedule_preview_update()
+
+    def _on_flatten_z_toggled(self, switch, _pspec):
+        self._update_z_flatten_banner()
+        self._schedule_preview_update()
+
+    def _update_z_flatten_banner(self, is_direct_import: bool | None = None):
+        """Shows the Z warning while flattening is disabled for a file
+        whose geometry spans multiple Z heights.
+        """
+        if is_direct_import is None:
+            is_direct_import = (
+                ImporterFeature.DIRECT_VECTOR in self.features
+                and self.use_vectors_switch.get_active()
+            )
+        show = (
+            self.z_flatten_group.get_visible()
+            and is_direct_import
+            and not self.flatten_z_switch.get_active()
+        )
+        self.z_flatten_banner.set_revealed(show)
 
     def _on_switch_to_trace_clicked(self, banner):
         self.use_vectors_switch.set_active(False)
@@ -359,6 +414,12 @@ class ImportDialog(PatchedDialogWindow):
                         f"Scan error for {self.file_path.name}: {error}"
                     )
             self._populate_layers_ui()
+            if (
+                self._manifest
+                and self._manifest.has_z_variation
+                and ImporterFeature.Z_FLATTENING in self.features
+            ):
+                self.z_flatten_group.set_visible(True)
             # Default to color grouping when the file has distinct colors
             # but no useful layer structure (no layers, or a single generic
             # layer wrapping everything). Also default to it when the user
@@ -519,6 +580,7 @@ class ImportDialog(PatchedDialogWindow):
                 active_layer_ids=self._get_active_layer_ids(),
                 layer_import_mode=self._get_layer_import_mode(),
                 layer_source=self._get_layer_source(),
+                flatten_z=self.flatten_z_switch.get_active(),
                 ppi=ppi,
             )
         else:
@@ -558,6 +620,7 @@ class ImportDialog(PatchedDialogWindow):
                 }
                 idx = mode_map.get(spec.layer_import_mode, 0)
                 self.layer_import_mode_row.set_selected(idx)
+                self.flatten_z_switch.set_active(spec.flatten_z)
             elif isinstance(spec, TraceSpec):
                 if can_vector:
                     self.use_vectors_switch.set_active(False)

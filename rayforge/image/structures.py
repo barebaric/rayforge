@@ -72,9 +72,12 @@ class ImportManifest:
     Attributes:
         layers: List of LayerInfo objects describing each layer.
         natural_size_mm: Optional (width, height) in mm for the document.
-        title: Optional title or name for the document.
+        title: Optional title or name of the document.
         warnings: List of non-critical warnings discovered during scan.
         errors: List of errors discovered during scan.
+        has_z_variation: True when the file's geometry does not lie in a
+            single Z plane. Offered by importers that can flatten those
+            Z values into the Z=0 plane during import.
 
     Error Handling:
     ---------------
@@ -90,6 +93,7 @@ class ImportManifest:
     warnings: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
     is_unitless: bool = False
+    has_z_variation: bool = False
 
 
 @dataclass
