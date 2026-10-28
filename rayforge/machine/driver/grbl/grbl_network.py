@@ -1,6 +1,7 @@
 import asyncio
 import inspect
 import logging
+import time
 from collections.abc import Awaitable, Callable
 from gettext import gettext as _
 from typing import (
@@ -65,6 +66,24 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+# Poll cadence for waiting out a queued SD job. Controllers report
+# their status roughly twice per second; poll a little faster so a
+# short RUN phase is not missed between two sleeps.
+JOB_COMPLETION_POLL_S = 0.25
+# Upper bound for the controller to enter a running state after the
+# job was queued. A job that finishes faster than this completes
+# between two status reports and cannot be told apart from a job that
+# never started, so waiting ends after this timeout.
+JOB_START_TIMEOUT_S = 5.0
+# Device states in which a queued job is still active: running,
+# paused with a feed hold, or paused with an open door (it may
+# resume when the door closes).
+JOB_ACTIVE_STATES = (
+    DeviceStatus.RUN,
+    DeviceStatus.HOLD,
+    DeviceStatus.DOOR,
+)
 
 
 class GrblNetworkDriver(Driver):
@@ -369,6 +388,28 @@ class GrblNetworkDriver(Driver):
         )
         return data
 
+    async def _wait_for_job_completion(self) -> None:
+        """Wait until the controller finishes the queued SD job.
+
+        ``_execute()`` returns as soon as the job was queued, not when
+        the machine stops moving. Watch the status reports instead:
+        RUN/HOLD/DOOR mean the job is running or paused, and any other
+        state observed after running means it ended. A job that
+        completes between two status reports is never seen running;
+        give up waiting after ``JOB_START_TIMEOUT_S`` so that short
+        jobs are not stalled for the full job duration.
+        """
+        started = time.monotonic()
+        saw_running = False
+        while self.keep_running and not self._is_cancelled:
+            if self.state.status in JOB_ACTIVE_STATES:
+                saw_running = True
+            elif (
+                saw_running or time.monotonic() - started > JOB_START_TIMEOUT_S
+            ):
+                return
+            await asyncio.sleep(JOB_COMPLETION_POLL_S)
+
     async def _connect_implementation(self):
         if not self.host:
             self._update_connection_status(
@@ -443,6 +484,7 @@ class GrblNetworkDriver(Driver):
             await self._upload(gcode, "rayforge.gcode")
             if not self._is_cancelled:
                 await self._execute("rayforge.gcode")
+                await self._wait_for_job_completion()
         except Exception as e:
             self._update_connection_status(TransportStatus.ERROR, str(e))
             raise
