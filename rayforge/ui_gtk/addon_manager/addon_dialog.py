@@ -5,11 +5,12 @@ from gettext import gettext as _
 from gi.repository import Adw, GLib, Gtk
 
 from ... import __version__
-from ...addon_mgr.addon import AddonMetadata
+from ...addon_mgr.addon import AddonMetadata, is_official_addon_url
 from ...addon_mgr.addon_manager import UpdateStatus
 from ...context import get_context
 from ..icons import get_icon
 from ..shared.patched_dialog_window import PatchedDialogWindow
+from .community_dialog import CommunityAddonDialog
 from .license_dialog import LicenseRequiredDialog
 
 logger = logging.getLogger(__name__)
@@ -170,7 +171,11 @@ class AddonRegistryDialog(PatchedDialogWindow):
                 title=addon.display_name or addon.name or "?",
                 subtitle=addon.description,
             )
-            row.add_prefix(get_icon("addon-symbolic"))
+            icon = get_icon("addon-symbolic")
+            if not addon.is_official:
+                icon = get_icon("addon-community-symbolic")
+                icon.set_tooltip_text(_("Community addon"))
+            row.add_prefix(icon)
 
             author_name = addon.author.name
             if author_name:
@@ -194,11 +199,13 @@ class AddonRegistryDialog(PatchedDialogWindow):
                 else:
                     btn.set_label(_("Install"))
                     btn.get_style_context().add_class("suggested-action")
-                    btn.connect("clicked", self._on_install_clicked, addon)
+                    btn.connect(
+                        "clicked", self._on_install_clicked, addon, False
+                    )
             elif status == UpdateStatus.UPDATE_AVAILABLE:
                 btn.set_label(_("Update"))
                 btn.get_style_context().add_class("suggested-action")
-                btn.connect("clicked", self._on_install_clicked, addon)
+                btn.connect("clicked", self._on_install_clicked, addon, True)
             elif status == UpdateStatus.UP_TO_DATE:
                 btn.set_label(_("Installed"))
                 btn.set_sensitive(False)
@@ -223,10 +230,30 @@ class AddonRegistryDialog(PatchedDialogWindow):
             row.add_suffix(btn)
             self.list_box.append(row)
 
-    def _on_install_clicked(self, btn, addon_meta: AddonMetadata):
-        if addon_meta:
-            self.close()
-            self.on_install_callback(addon_meta)
+    def _start_install(self, addon_meta: AddonMetadata):
+        self.close()
+        self.on_install_callback(addon_meta)
+
+    def _confirm_install_community(self, addon_meta: AddonMetadata):
+        """Ask for confirmation before installing a community addon."""
+        dialog = CommunityAddonDialog(
+            addon_name=addon_meta.display_name or addon_meta.name,
+            repository_url=addon_meta.url or None,
+            author=addon_meta.author.name or None,
+            on_install=lambda: self._start_install(addon_meta),
+        )
+        dialog.set_transient_for(self)
+        dialog.present()
+
+    def _on_install_clicked(
+        self, btn, addon_meta: AddonMetadata, is_update: bool = False
+    ):
+        if not addon_meta:
+            return
+        if not is_update and not addon_meta.is_official:
+            self._confirm_install_community(addon_meta)
+            return
+        self._start_install(addon_meta)
 
     def _on_unlock_clicked(self, btn, addon_meta: AddonMetadata):
         """Handle click on Unlock button for premium addon."""
@@ -238,8 +265,10 @@ class AddonRegistryDialog(PatchedDialogWindow):
         display_name = addon_meta.display_name or addon_meta.name
 
         def on_license_added():
-            self.close()
-            self.on_install_callback(addon_meta)
+            if not addon_meta.is_official:
+                self._confirm_install_community(addon_meta)
+            else:
+                self._start_install(addon_meta)
 
         dialog = LicenseRequiredDialog(
             addon_name=display_name,
@@ -266,9 +295,32 @@ class AddonRegistryDialog(PatchedDialogWindow):
             if resp == "install":
                 url = entry.get_text().strip()
                 if url:
-                    self.close()
-                    self.on_install_callback(url)
+                    dlg.close()
+                    self._install_from_url(url)
+                    return
             dlg.close()
 
         dialog.connect("response", _cb)
+        dialog.present()
+
+    def _install_from_url(self, url: str):
+        """Installs from a manually entered URL, confirming if needed."""
+        if is_official_addon_url(url):
+            self.close()
+            self.on_install_callback(url)
+            return
+
+        context = get_context()
+        addon_name = context.addon_mgr._extract_repo_name(url)
+
+        def on_install():
+            self.close()
+            self.on_install_callback(url)
+
+        dialog = CommunityAddonDialog(
+            addon_name=addon_name,
+            repository_url=url,
+            on_install=on_install,
+        )
+        dialog.set_transient_for(self)
         dialog.present()
