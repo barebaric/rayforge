@@ -13,14 +13,12 @@ from gi.repository import Gtk
 from rayforge.core.vectorization_spec import PassthroughSpec
 from rayforge.doceditor.editor import DocEditor
 from rayforge.image.base_importer import ImporterFeature
+from rayforge.image.dxf.importer import DxfImporter
 from rayforge.ui_gtk.doceditor.import_dialog import ImportDialog
 
-FEATURES = {
-    ImporterFeature.DIRECT_VECTOR,
-    ImporterFeature.BITMAP_TRACING,
-    ImporterFeature.LAYER_SELECTION,
-    ImporterFeature.Z_FLATTENING,
-}
+# The DXF importer's real feature set: notably no BITMAP_TRACING, so
+# the "Import Mode" group stays hidden for DXF files.
+FEATURES = DxfImporter.features
 
 
 @pytest.fixture
@@ -57,7 +55,7 @@ def _make_dialog(editor, tmp_path, z_variation: bool) -> ImportDialog:
 def test_flatten_z_row_visible_and_default_on(editor, tmp_path):
     dialog = _make_dialog(editor, tmp_path, z_variation=True)
 
-    assert dialog.flatten_z_switch.get_visible()
+    assert dialog.z_flatten_group.get_visible()
     assert dialog.flatten_z_switch.get_active()
     assert not dialog.z_flatten_banner.get_revealed()
     dialog.destroy()
@@ -79,7 +77,7 @@ def test_flatten_z_warning_revealed_when_disabled(editor, tmp_path):
 def test_flatten_z_row_hidden_for_flat_files(editor, tmp_path):
     dialog = _make_dialog(editor, tmp_path, z_variation=False)
 
-    assert not dialog.flatten_z_switch.get_visible()
+    assert not dialog.z_flatten_group.get_visible()
     assert not dialog.z_flatten_banner.get_revealed()
     dialog.destroy()
 
@@ -94,7 +92,7 @@ def test_flatten_z_row_hidden_without_feature(editor, tmp_path):
         Gtk.Window(), editor, path, "image/vnd.dxf", features
     )
 
-    assert not dialog.flatten_z_switch.get_visible()
+    assert not dialog.z_flatten_group.get_visible()
     dialog.destroy()
 
 

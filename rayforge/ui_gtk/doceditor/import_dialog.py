@@ -215,7 +215,13 @@ class ImportDialog(PatchedDialogWindow):
         mode_group.add(self.dpi_row)
 
         # Flatten Z coordinates (offered only for sources that carry
-        # geometry at varying Z heights, e.g. 3D DXF exports)
+        # geometry at varying Z heights, e.g. 3D DXF exports). Lives in
+        # its own group: the Import Mode group stays hidden for files
+        # without a trace mode, DXF among them.
+        self.z_flatten_group = Adw.PreferencesGroup(title=_("Geometry"))
+        self.z_flatten_group.set_visible(False)
+        preferences_page.add(self.z_flatten_group)
+
         self.flatten_z_switch = Adw.SwitchRow(
             title=_("Flatten Z Coordinates"),
             subtitle=_(
@@ -227,8 +233,7 @@ class ImportDialog(PatchedDialogWindow):
         self.flatten_z_switch.connect(
             "notify::active", self._on_flatten_z_toggled
         )
-        self.flatten_z_switch.set_visible(False)
-        mode_group.add(self.flatten_z_switch)
+        self.z_flatten_group.add(self.flatten_z_switch)
 
         # Show this group if the importer supports both vector and trace,
         # or if DPI is relevant (detected later from manifest)
@@ -354,7 +359,7 @@ class ImportDialog(PatchedDialogWindow):
                 and self.use_vectors_switch.get_active()
             )
         show = (
-            self.flatten_z_switch.get_visible()
+            self.z_flatten_group.get_visible()
             and is_direct_import
             and not self.flatten_z_switch.get_active()
         )
@@ -414,7 +419,7 @@ class ImportDialog(PatchedDialogWindow):
                 and self._manifest.has_z_variation
                 and ImporterFeature.Z_FLATTENING in self.features
             ):
-                self.flatten_z_switch.set_visible(True)
+                self.z_flatten_group.set_visible(True)
             # Default to color grouping when the file has distinct colors
             # but no useful layer structure (no layers, or a single generic
             # layer wrapping everything). Also default to it when the user
