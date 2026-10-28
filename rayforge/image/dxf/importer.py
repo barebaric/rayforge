@@ -14,7 +14,7 @@ from ezdxf import bbox
 from ezdxf.addons import text2path
 from ezdxf.lldxf.const import DXFStructureError
 from ezdxf.path import Command
-from raygeo.geo import Arc, Bezier, Geometry, Move
+from raygeo.geo import Geometry
 from raygeo.geo.types import Rect
 
 from ...core.source_asset import SourceAsset
@@ -43,6 +43,16 @@ logger = logging.getLogger(__name__)
 # Z extent below which a drawing is considered flat. DXF coordinates
 # carry rounding noise, so an exact zero test is too strict.
 Z_VARIATION_TOLERANCE = 1e-4
+
+# Affine projection onto the Z=0 plane: identity in X and Y, zero row
+# for Z. Applied with raygeo's Rust-side transform, which preserves
+# command types and curve control points exactly.
+PROJECT_ONTO_Z0 = [
+    [1.0, 0.0, 0.0, 0.0],
+    [0.0, 1.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0, 1.0],
+]
 
 units_to_mm = {
     0: 1.0,
@@ -562,55 +572,12 @@ class DxfImporter(Importer):
     @staticmethod
     def _flatten_z(geo: Geometry) -> Geometry:
         """Returns a copy of *geo* with every point projected onto the
-        Z=0 plane. Kept exact: command types, control points, and
-        continuity are preserved; only the Z coordinates are dropped.
+        Z=0 plane, transformed in Rust via a projection matrix.
         """
         if geo is None or geo.is_empty():
             return geo
-
-        def has_z(cmd) -> bool:
-            end = cmd.end
-            if len(end) > 2 and abs(end[2]) > 1e-9:
-                return True
-            if isinstance(cmd, Bezier):
-                for control in (cmd.control1, cmd.control2):
-                    if len(control) > 2 and abs(control[2]) > 1e-9:
-                        return True
-            return False
-
-        if not any(has_z(cmd) for cmd in geo.iter_typed_commands()):
-            return geo
-
-        flat = Geometry()
-        for cmd in geo.iter_typed_commands():
-            end = cmd.end
-            if isinstance(cmd, Bezier):
-                c1, c2 = cmd.control1, cmd.control2
-                flat.bezier_to(
-                    end[0],
-                    end[1],
-                    c1[0],
-                    c1[1],
-                    c2[0],
-                    c2[1],
-                    c1z=0.0,
-                    c2z=0.0,
-                    z=0.0,
-                )
-            elif isinstance(cmd, Arc):
-                offset = cmd.center_offset
-                flat.arc_to(
-                    end[0],
-                    end[1],
-                    offset[0],
-                    offset[1],
-                    cmd.clockwise,
-                    z=0.0,
-                )
-            elif isinstance(cmd, Move):
-                flat.move_to(end[0], end[1], 0.0)
-            else:
-                flat.line_to(end[0], end[1], 0.0)
+        flat = geo.copy()
+        flat.transform(PROJECT_ONTO_Z0)
         return flat
 
     def _get_scale_to_mm(self, doc, default: float = 1.0) -> float:
