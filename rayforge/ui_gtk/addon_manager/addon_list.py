@@ -99,6 +99,9 @@ class AddonRow(Gtk.Box):
             if self.is_builtin:
                 icon = get_icon("addon-builtin-symbolic")
                 icon.set_tooltip_text(_("Built-in addon"))
+            elif not addon.metadata.is_official:
+                icon = get_icon("addon-community-symbolic")
+                icon.set_tooltip_text(_("Community addon"))
             else:
                 icon = get_icon("addon-symbolic")
             icon.set_valign(Gtk.Align.CENTER)

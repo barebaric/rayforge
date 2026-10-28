@@ -29,7 +29,7 @@ A lista de addons mostra todos os addons instalados com:
 
 1. Clique no botão **Instalar**
 2. Selecione um arquivo de addon (`.zip` ou repositório de addon)
-3. Confirme a instalação
+3. Confirme a instalação (addons da comunidade exigem confirmar um aviso de confiança)
 4. Aguarde a conclusão da instalação
 
 ### Atualizando Addons
@@ -46,6 +46,22 @@ em **Atualizar** para instalar as atualizações disponíveis.
 <!-- prettier-ignore-start -->
 :::warning
 Remover um addon pode afetar documentos que usam seus recursos.
+:::
+<!-- prettier-ignore-end -->
+
+## Addons da Comunidade
+
+Addons que não foram criados pela equipe Rayforge são marcados como addons da comunidade com um
+ícone dedicado nas listas de addons.
+
+Ao instalar um addon da comunidade, um diálogo de confirmação explica que o addon não é fornecido
+pelo próprio Rayforge e mostra um link para o repositório do addon. Abra o link no seu navegador
+para revisar o código e o autor antes de continuar.
+
+<!-- prettier-ignore-start -->
+:::warning
+Os addons têm o mesmo acesso ao seu computador e aos seus arquivos que o próprio Rayforge. Instale
+addons da comunidade apenas se você confiar nos autores.
 :::
 <!-- prettier-ignore-end -->
 
