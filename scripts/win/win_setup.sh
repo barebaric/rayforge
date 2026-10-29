@@ -218,6 +218,12 @@ if [[ "$1" == "pip" || -z "$1" ]]; then
     PYTHON_BIN_PATH="$MSYS2_PATH/ucrt64/bin/python"
     PYTHON_VERSION=$("$PYTHON_BIN_PATH" -c "import sys; print(f'python{sys.version_info.major}.{sys.version_info.minor}')")
     echo "export PYTHONPATH=$MSYS2_PATH/ucrt64/lib/$PYTHON_VERSION/site-packages:\$PYTHONPATH" >> .msys2_env
+    # pyo3 >= 0.29 links abi3 extensions directly against python3.dll via
+    # raw-dylib, but MSYS2's mingw Python only provides libpython3.dll.
+    # Raw-dylib off restores import-library resolution (mingw maps
+    # python3 to libpython3.dll.a); the variable predates pyo3 0.29, so
+    # older pyo3 builds like vtracer's are unaffected.
+    echo "export PYO3_USE_RAW_DYLIB=0" >> .msys2_env
     source .msys2_env
 
         export CARGO_BUILD_TARGET=x86_64-pc-windows-gnu
