@@ -5,6 +5,48 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.13.2
+
+### Added
+
+- DXF: imports are flattened onto the Z=0 plane by default. 3D CAD
+  exports often contain a part's outlines at two Z heights (top and
+  bottom face of the stock), and the surviving Z values made the
+  head plunge below the material surface mid-job. When the drawing
+  spans more than one Z height, the import dialog offers a "Flatten
+  Z Coordinates" switch under Import Mode (on by default); turning
+  it off keeps the original Z heights and shows a warning banner.
+  Flat drawings show no new UI, and the choice survives re-import
+  and project reload (#646)
+- Addons: addons not provided by the Rayforge team get a dedicated
+  icon in the addon registry and the installed addons list, and
+  installing one asks for confirmation first, naming its author and
+  linking to its repository so the code can be reviewed. This
+  applies to registry installs, premium addon unlocks, and manual
+  URL installs (#647)
+- Devices: a built-in profile for the OMTech SH-G570 (80W CO2 laser
+  cutter, 700 x 500 mm work area, Ruida controller) (#641, by
+  neostar)
+
+### Fixed
+
+- UI: file chooser errors are surfaced instead of failing silently.
+  When the chooser cannot open at all - e.g. in the flatpak sandbox
+  when the host's xdg-desktop-portal FileChooser is missing or
+  broken - clicking Import or Open did nothing, with no log output
+  and no UI feedback; real failures are now reported through each
+  context's existing channel: main window toast, wizard error
+  dialog, or the surrounding dialog's toast/error label (#649)
+- Machine: the machine creation wizard prefills saved driver
+  settings that are zero; previously only truthy values were
+  restored, so a profile value of 0.0 (e.g. the OMTech SH-G570's
+  image power bias) was replaced by the driver default (#641)
+- Windows: sdist builds work again; pyo3 0.29 embeds the library
+  name python3.dll directly into abi3 import tables, and MSYS2's
+  mingw Python ships libpython3.dll but no python3.dll, so raygeo
+  failed to import with "DLL load failed while importing raygeo"
+  (raygeo 1.67.3) (#650)
+
 ## 1.13.1
 
 ### Fixed
