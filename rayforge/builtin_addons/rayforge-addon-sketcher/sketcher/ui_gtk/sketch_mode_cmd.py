@@ -9,6 +9,7 @@ from rayforge.core.undo import ListItemCommand
 from rayforge.core.workpiece import WorkPiece
 from rayforge.doceditor.asset_cmd import UpdateAssetCommand
 from rayforge.ui_gtk.doceditor import file_dialogs
+from rayforge.ui_gtk.shared.gtk import report_dialog_error
 from rayforge.usage import get_usage_tracker
 
 from ..core.sketch import Sketch
@@ -287,4 +288,8 @@ class SketchModeCmd:
             self._editor.file.export_object_to_path(file_path, selected[0])
 
         except GLib.Error as e:
-            logger.error(f"Error saving file: {e.message}")
+            if report_dialog_error("Exporting object", e):
+                self._win._on_editor_notification(
+                    self._win,
+                    _("Error saving file: {msg}").format(msg=e.message),
+                )
