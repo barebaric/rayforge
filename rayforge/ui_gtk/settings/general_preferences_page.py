@@ -14,6 +14,7 @@ from ...shared.units.definitions import (
 from ...shared.util.localized import SUPPORTED_LANGUAGES
 from ...ui_gtk.doceditor import file_dialogs
 from ...usage import get_usage_tracker
+from ..shared.gtk import report_dialog_error
 from ..shared.pref_rows.base import SpinRow
 from ..shared.preferences_page import TrackedPreferencesPage
 
@@ -563,7 +564,14 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
             self.startup_project_row.set_text(str(file_path))
             get_context().config.set_startup_project_path(file_path)
         except GLib.Error as e:
-            logger.error(f"Error selecting file: {e.message}")
+            if report_dialog_error("Selecting startup project", e):
+                window = self.get_ancestor(Adw.PreferencesWindow)
+                if window:
+                    window.add_toast(
+                        Adw.Toast(
+                            title=_("Error: {msg}").format(msg=e.message)
+                        )
+                    )
 
     def on_usage_consent_changed(self, switch_row, _):
         """Called when the user toggles usage reporting."""

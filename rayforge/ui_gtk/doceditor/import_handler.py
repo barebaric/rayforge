@@ -12,6 +12,7 @@ from ...core.source_asset import SourceAsset
 from ...core.vectorization_spec import TraceSpec, VectorizationSpec
 from ...doceditor.file_cmd import ImportAction
 from ...image.registry import importer_registry
+from ..shared.gtk import report_dialog_error
 from . import file_dialogs
 from .import_dialog import ImportDialog
 
@@ -90,7 +91,11 @@ def _on_file_selected(dialog, result, user_data):
         file = dialog.open_finish(result)
         if not file:
             return
-    except GLib.Error:
+    except GLib.Error as e:
+        if report_dialog_error("Opening file", e):
+            win._on_editor_notification(
+                win, _("Error opening file: {msg}").format(msg=e.message)
+            )
         return
 
     try:

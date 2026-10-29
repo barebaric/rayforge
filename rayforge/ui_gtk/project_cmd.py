@@ -11,6 +11,7 @@ from .. import __version__, const
 from ..context import get_context
 from ..usage import get_usage_tracker
 from .doceditor import file_dialogs
+from .shared.gtk import report_dialog_error
 
 if TYPE_CHECKING:
     from ..doceditor.editor import DocEditor
@@ -137,7 +138,11 @@ class ProjectCmd:
             file_path = Path(file.get_path())
             self.load_project(file_path)
         except GLib.Error as e:
-            logger.error(f"Error opening file: {e.message}")
+            if report_dialog_error("Opening project", e):
+                self._win._on_editor_notification(
+                    self._win,
+                    _("Error opening file: {msg}").format(msg=e.message),
+                )
             return
 
     def on_save_project(self, action, param):
@@ -180,7 +185,11 @@ class ProjectCmd:
                     "/doc/project-save", "Project Save"
                 )
         except GLib.Error as e:
-            logger.error(f"Error saving file: {e.message}")
+            if report_dialog_error("Saving project", e):
+                self._win._on_editor_notification(
+                    self._win,
+                    _("Error saving file: {msg}").format(msg=e.message),
+                )
             return
 
     def load_project(self, file_path: Path):
