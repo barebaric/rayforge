@@ -22,6 +22,9 @@ classifiers = [
 [project.gui-scripts]
 rayforge = "rayforge.app:main"
 
+[project.scripts]
+rayforge-server = "rayforge.server:main"
+
 [build-system]
 requires = [
   "setuptools >= 40.9.0", "setuptools-git-versioning"

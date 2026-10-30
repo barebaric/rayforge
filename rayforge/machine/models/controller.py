@@ -38,7 +38,20 @@ class MachineController:
     Controller for machine logic and driver ownership.
     Manages the driver lifecycle and emits signals that the Machine
     re-emits to maintain backward compatibility.
+
+    Subclasses can set :attr:`skip_driver_precheck` to skip the
+    driver's precheck (e.g. when the driver hardware is remote and
+    the arguments reference resources that do not exist locally),
+    and override :meth:`_instantiate_driver` to substitute the
+    driver instance (e.g. with a proxy).
     """
+
+    #: Whether rebuild_driver() runs the driver class's precheck.
+    skip_driver_precheck: bool = False
+
+    def _instantiate_driver(self, driver_cls: type[Driver]) -> Driver:
+        """Creates the driver instance for a rebuild."""
+        return driver_cls(self.context, self.machine)
 
     def __init__(
         self,
@@ -230,15 +243,17 @@ class MachineController:
         else:
             driver_cls = NoDeviceDriver
 
-        try:
-            driver_cls.precheck(**self.machine.driver_args)
-        except DriverPrecheckError as e:
-            logger.warning(
-                f"Precheck failed for driver {self.machine.driver_name}: {e}"
-            )
-            self.machine.set_precheck_error(str(e))
-        else:
-            self.machine.set_precheck_error(None)
+        if not self.skip_driver_precheck:
+            try:
+                driver_cls.precheck(**self.machine.driver_args)
+            except DriverPrecheckError as e:
+                logger.warning(
+                    f"Precheck failed for driver {self.machine.driver_name}:"
+                    f" {e}"
+                )
+                self.machine.set_precheck_error(str(e))
+            else:
+                self.machine.set_precheck_error(None)
 
         if (
             isinstance(self.driver, driver_cls)
@@ -257,7 +272,7 @@ class MachineController:
         old_driver = self.driver
         self._disconnect_driver_signals()
 
-        new_driver = driver_cls(self.context, self.machine)
+        new_driver = self._instantiate_driver(driver_cls)
         new_driver.config = self.machine.driver_config.copy()
         new_driver.setup(**self.machine.driver_args)
 
@@ -450,6 +465,32 @@ class MachineController:
             logger.warning("run_raw called but no driver is available.")
             return
         await self.driver.run_raw(gcode)
+
+    async def run(self, encoded, doc, ops, on_command_done=None):
+        """Executes an encoded job on the driver."""
+        await self.driver.run(
+            encoded, doc, ops, on_command_done=on_command_done
+        )
+
+    async def frame(self, corners, speed_mm_per_min, doc, **kwargs):
+        """Traces a frame outline on the driver."""
+        await self.driver.frame(corners, speed_mm_per_min, doc, **kwargs)
+
+    async def move_to(self, x, y, z=None, speed=None):
+        """Moves the head to an absolute position."""
+        await self.driver.move_to(x, y, z, speed)
+
+    async def cancel(self, emergency: bool = False):
+        """Cancels the currently executing program."""
+        await self.driver.cancel(emergency=emergency)
+
+    async def set_hold(self, hold: bool = True):
+        """Pauses or resumes the currently executing program."""
+        await self.driver.set_hold(hold)
+
+    async def clear_alarm(self):
+        """Clears any active alarm state."""
+        await self.driver.clear_alarm()
 
     async def select_tool(self, index: int):
         """Sends a command to the driver to select a tool."""
