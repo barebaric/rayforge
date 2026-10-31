@@ -160,6 +160,7 @@ module.exports = {
       items: [
         'reference/shortcuts',
         'reference/cli',
+        'reference/webui',
         'reference/gcode-dialects',
         'reference/firmware',
       ],

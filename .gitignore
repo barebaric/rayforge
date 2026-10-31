@@ -17,6 +17,7 @@ builddir
 .aider*
 .zcode
 .zcodeignore
+.design-refs/
 
 debian/rayforge
 debian/.debhelper
@@ -31,6 +32,9 @@ website/node_modules/
 website/.docusaurus/
 website/build/
 website/docs/developer/raygeo-api/
+
+# Web UI frontend (build output in webui/static is committed)
+rayforge/builtin_addons/rayforge-addon-webui/frontend/node_modules/
 
 .mac_env
 rayforge/private_addons

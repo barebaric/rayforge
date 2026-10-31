@@ -153,11 +153,15 @@ class AddonProvides:
                                 processes (e.g., 'my_addon.plugin').
         frontend (Optional[str]): Module path loaded only in main process
                                    (e.g., 'my_addon.ui').
+        service (Optional[str]): Module path loaded only in the main
+                                  process when it runs headless (e.g.,
+                                  'my_addon.service').
         assets (List[Dict[str, str]]): A list of asset definitions.
     """
 
     worker: str | None = None
     frontend: str | None = None
+    service: str | None = None
     assets: list[dict[str, str]] = field(default_factory=list)
 
 
@@ -383,6 +387,7 @@ class Addon:
             provides = AddonProvides(
                 worker=worker,
                 frontend=provides_data.get("frontend"),
+                service=provides_data.get("service"),
                 assets=provides_data.get("assets", []),
             )
 
@@ -544,6 +549,9 @@ class Addon:
 
         if self.metadata.provides.frontend:
             self._validate_entry_point(self.metadata.provides.frontend)
+
+        if self.metadata.provides.service:
+            self._validate_entry_point(self.metadata.provides.service)
 
         return True
 

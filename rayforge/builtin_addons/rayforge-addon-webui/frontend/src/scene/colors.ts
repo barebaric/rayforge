@@ -1,0 +1,16 @@
+export const SCENE_BG = 0x1a1b1f;
+export const BED_FILL = 0x1f2127;
+export const BED_EDGE = 0x3a3e46;
+export const WORKAREA_FILL = 0x242a35;
+export const WORKAREA_EDGE = 0x465064;
+export const GRID_MINOR = 0x25272d;
+export const GRID_MAJOR = 0x32353c;
+export const AXIS_X = 0xe25555;
+export const AXIS_Y = 0x3ddc84;
+export const AXIS_LABEL = 0xe6e8ec;
+export const WORK_ORIGIN = 0xe6e8ec;
+export const BEAM_COLOR = 0xff5555;
+export const SELECT_COLOR = 0x4d9fff;
+export const HOVER_LIFT = 0.35;
+export const SOFT_LIMIT_COLOR = 0x8a5555;
+export const NOGO_ZONE = 0xff5555;

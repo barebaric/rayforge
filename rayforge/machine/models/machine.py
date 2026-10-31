@@ -1731,14 +1731,16 @@ class Machine:
 
         REFERENCE coordinates are what the user sees in the UI. When
         wcs_origin_is_workarea_origin is False, this returns the active WCS
-        offset. When True, this returns the workarea origin offset.
+        offset. When True, this returns the machine coordinates of the
+        workarea origin.
 
         Returns:
             Tuple of (x, y, z) offset in MACHINE space.
         """
         if self.wcs_origin_is_workarea_origin:
             x, y = self.get_workarea_origin_offset()
-            return (x, y, 0.0)
+            mx, my = self.get_coordinate_space().world_point_to_machine(x, y)
+            return (float(mx), float(my), 0.0)
         else:
             return self.get_active_wcs_offset()
 

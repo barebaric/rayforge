@@ -8,6 +8,7 @@ platforms = ["linux-64", "osx-arm64"]
 default = { features = ["app", "test"], solve-group = "default" }
 appimage = { features = ["app"], solve-group = "default" }
 website = { features = ["website"], solve-group = "default" }
+web = { features = ["web"], solve-group = "default" }
 build = { features = ["build-tools"], solve-group = "build" }
 video = { features = ["video-tools"], solve-group = "video" }
 
@@ -48,15 +49,18 @@ blinker = "==1.9.0"
 build = "==1.6.1"
 cairosvg = "==2.9.1"
 ezdxf = "==1.4.5"
+fastapi = ">=0.115"
 GitPython = "==3.2.1"
 platformdirs = "==4.13.5"
 pypdf = "==6.21.2"
 pymupdf = "==1.28.2"
 pyserial = "==3.5"
+python-multipart = ">=0.0.9"
 pyvips = "==3.2.0"
 PyYAML = "==6.0.3"
 semver = "==3.1.0"
 trimesh = "==5.2.0"
+uvicorn = ">=0.30"
 vtracer = "==0.6.15"
 websockets = "==17.3"
 zeroconf = "==0.151.5"
@@ -95,8 +99,12 @@ pyflakes = "==4.0.3"
 pyright = "==1.1.414"
 ruff = "==0.17.2"
 pre-commit = "==4.7.0"
+httpx = ">=0.27"
 
 [feature.website.dependencies]
+nodejs = "==26.12.1"
+
+[feature.web.dependencies]
 nodejs = "==26.12.1"
 [feature.video-tools.dependencies]
 ffmpeg = "==9.0.2"
@@ -212,6 +220,13 @@ site-format = { cmd = "npx prettier --write \"docs/**/*.md\" \"blog/**/*.md\" \"
 site-serve = { cmd = "npm start", cwd = "website", depends-on = ["update-api-docs"] }
 site-build = { cmd = "npm run build", cwd = "website", depends-on = ["site-gen-api"] }
 site-deploy = { cmd = "bash scripts/deploy_website.sh", depends-on = ["site-gen-api"] }
+
+# Tasks for developing and building the web UI frontend
+[feature.web.tasks]
+web-install = { cmd = "npm install", cwd = "rayforge/builtin_addons/rayforge-addon-webui/frontend" }
+web-build = { cmd = "npm run build", cwd = "rayforge/builtin_addons/rayforge-addon-webui/frontend", depends-on = ["web-install"] }
+web-dev = { cmd = "npm run dev", cwd = "rayforge/builtin_addons/rayforge-addon-webui/frontend", depends-on = ["web-install"] }
+web-test = { cmd = "npm run test", cwd = "rayforge/builtin_addons/rayforge-addon-webui/frontend", depends-on = ["web-install"] }
 
 [tasks.update-api-docs]
 cmd = "python3 scripts/update_api_docs.py"
