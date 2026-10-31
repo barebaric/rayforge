@@ -318,6 +318,20 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         )
         startup_group.add(self.check_updates_row)
 
+        self.check_addon_updates_row = Adw.SwitchRow(
+            title=_("Check for addon updates"),
+            subtitle=_(
+                "Automatically check for addon updates on startup"
+            ),
+        )
+        self.check_addon_updates_row.set_active(
+            config.check_for_addon_updates
+        )
+        self.check_addon_updates_row.connect(
+            "notify::active", self.on_check_addon_updates_changed
+        )
+        startup_group.add(self.check_addon_updates_row)
+
         self.watch_sources_row = Adw.SwitchRow(
             title=_("Watch imported files"),
             subtitle=_(
@@ -593,6 +607,11 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
         """Called when the user toggles the update check setting."""
         enabled = switch_row.get_active()
         get_context().config.set_check_for_app_updates(enabled)
+
+    def on_check_addon_updates_changed(self, switch_row, _):
+        """Called when the user toggles addon update checks."""
+        enabled = switch_row.get_active()
+        get_context().config.set_check_for_addon_updates(enabled)
 
     def on_watch_sources_changed(self, switch_row, _):
         """Called when the user toggles watching imported files."""
