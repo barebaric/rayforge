@@ -413,8 +413,9 @@ class AddonManager:
 
         Args:
             addon_name: The canonical name of the addon to load.
-            worker_only: If True, only load worker entry points
-                (skip frontend to avoid pulling in GTK dependencies).
+            worker_only: If True, only load worker and service entry
+                points (skip frontend to avoid pulling in GTK
+                dependencies). Used in the headless main process.
 
         Returns:
             True if the addon was loaded successfully, False otherwise.
@@ -460,8 +461,9 @@ class AddonManager:
         dependency is unsatisfied).
 
         Args:
-            worker_only: If True, only load worker entry points
-                (skip frontend to avoid pulling in GTK dependencies).
+            worker_only: If True, only load worker and service entry
+                points (skip frontend to avoid pulling in GTK
+                dependencies). Used in the headless main process.
         """
         discovered = self._discover_addons()
         for _name, addon_path, _req in self._order_by_requires(discovered):
@@ -580,8 +582,9 @@ class AddonManager:
 
         Args:
             addon_path: Path to the addon directory.
-            worker_only: If True, only load worker entry points
-                (skip frontend to avoid pulling in GTK dependencies).
+            worker_only: If True, only load worker and service entry
+                points (skip frontend to avoid pulling in GTK
+                dependencies). Used in the headless main process.
             version: If provided, skip version resolution and use
                 this version directly.
         """
@@ -632,8 +635,9 @@ class AddonManager:
 
             has_worker = addon.metadata.provides.worker is not None
             has_frontend = addon.metadata.provides.frontend is not None
+            has_service = addon.metadata.provides.service is not None
 
-            if not has_worker and not has_frontend:
+            if not has_worker and not has_frontend and not has_service:
                 self.loaded_addons[addon_name] = addon
                 logger.info(f"Loaded asset addon: {addon_name}")
                 return
@@ -683,6 +687,15 @@ class AddonManager:
             if not worker_only:
                 self._import_and_register(
                     addon, addon.metadata.provides.frontend
+                )
+                if not has_worker and not has_frontend:
+                    # Service-only addon: nothing to import in the GUI
+                    # process, but the addon is still recognized (its
+                    # service entry point loads in headless mode).
+                    self.loaded_addons[addon_name] = addon
+            else:
+                self._import_and_register(
+                    addon, addon.metadata.provides.service
                 )
 
             version_str = (
