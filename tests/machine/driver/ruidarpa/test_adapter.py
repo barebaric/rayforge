@@ -34,8 +34,8 @@ from unittest.mock import Mock, PropertyMock, call
 import pytest
 import pytest_asyncio
 from raygeo.ops import Ops
-from rpalib.rpyc_client import RpcRdDriver
-from ruidadriver.rd_gluescript import GlueScript
+from ruida_pa.rpalib.rpyc_client import RpcRdDriver
+from ruida_pa.ruidadriver.rd_gluescript import GlueScript
 
 from rayforge.core.doc import Doc
 from rayforge.core.varset import (

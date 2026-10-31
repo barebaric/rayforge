@@ -31,7 +31,9 @@ def _sketch_with_polygon(closed=True):
 
 def test_world_vertex_roundtrip():
     sketch, polygon = _sketch_with_polygon()
-    assert polygon.get_world_vertices(sketch.registry) == pytest.approx(SQUARE)
+    assert polygon.get_world_vertices(sketch.registry) == [
+        pytest.approx(p) for p in SQUARE
+    ]
 
 
 def test_frame_translation_follows_center():
@@ -42,18 +44,18 @@ def test_frame_translation_follows_center():
     center.y += 50.0
     handle.x += 100.0
     handle.y += 50.0
-    assert polygon.get_world_vertices(sketch.registry) == pytest.approx(
-        [(x + 100, y + 50) for x, y in SQUARE]
-    )
+    assert polygon.get_world_vertices(sketch.registry) == [
+        pytest.approx((x + 100, y + 50)) for x, y in SQUARE
+    ]
 
 
 def test_frame_rotation_follows_handle():
     sketch, polygon = _sketch_with_polygon()
     handle = sketch.registry.get_point(polygon.handle_idx)
     handle.x, handle.y = 0.0, 5.0
-    assert polygon.get_world_vertices(sketch.registry) == pytest.approx(
-        [(-y, x) for x, y in SQUARE], abs=1e-9
-    )
+    assert polygon.get_world_vertices(sketch.registry) == [
+        pytest.approx((-y, x), abs=1e-9) for x, y in SQUARE
+    ]
 
 
 def test_hit_test_on_edge():
@@ -94,7 +96,7 @@ def test_state_roundtrip():
     polygon.vertices = [(1.0, 2.0), (3.0, 4.0)]
     polygon.set_state(state)
     expected = PolygonEntity.normalize_vertices((0, 0), (5, 0), SQUARE)
-    assert polygon.vertices == pytest.approx(expected)
+    assert polygon.vertices == [pytest.approx(p) for p in expected]
 
 
 def test_mirror_negates_local_v():
@@ -108,9 +110,8 @@ def test_mirror_negates_local_v():
     handle.x, handle.y = axis.apply(handle.x, handle.y)
 
     mirrored = sorted(polygon.get_world_vertices(sketch.registry))
-    assert mirrored == pytest.approx(
-        sorted([(-x, y) for x, y in SQUARE]), abs=1e-9
-    )
+    expected = sorted([(-x, y) for x, y in SQUARE])
+    assert mirrored == [pytest.approx(p, abs=1e-9) for p in expected]
 
 
 def test_constrained_status_follows_frame_points():
@@ -295,7 +296,7 @@ def test_multi_ring_serialization_roundtrip():
         clone.get_world_rings(sketch.registry),
         polygon.get_world_rings(sketch.registry),
     ):
-        assert ring_clone == pytest.approx(ring)
+        assert ring_clone == [pytest.approx(p) for p in ring]
 
 
 def test_multi_ring_legacy_dict_without_rings():
@@ -320,7 +321,7 @@ def test_mirror_preserves_winding_convention():
             get_polygon_signed_area(ring_before)
         )
         mirrored = sorted([(x, -y) for x, y in ring_before])
-        assert sorted(ring_after) == pytest.approx(mirrored)
+        assert sorted(ring_after) == [pytest.approx(p) for p in mirrored]
 
 
 def test_transform_offsets_mirror_flips_rings():

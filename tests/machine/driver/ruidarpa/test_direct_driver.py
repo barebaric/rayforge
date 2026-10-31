@@ -10,8 +10,8 @@ those lines would double-send every live command, so the tests pin
 from unittest.mock import Mock
 
 import pytest
-from rpalib.version import __version__
-from ruidadriver.ruida_driver import RdDriver
+from ruida_pa.rpalib.version import __version__
+from ruida_pa.ruidadriver.ruida_driver import RdDriver
 
 from rayforge.machine.driver.ruidarpa.rpa_direct_driver import RpaDirectDriver
 
