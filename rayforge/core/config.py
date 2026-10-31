@@ -102,6 +102,7 @@ class Config:
         self.ops_color_mode: OpsColorMode = OpsColorMode.LASER
         self.check_for_app_updates: bool = True
         self.check_for_addon_updates: bool = True
+        self.external_addon_services_enabled: bool = True
         # Whether to watch imported files and offer to reload them when
         # they change on disk.
         self.watch_source_files: bool = True
@@ -230,6 +231,13 @@ class Config:
         if self.check_for_addon_updates == enabled:
             return
         self.check_for_addon_updates = enabled
+        self.changed.send(self)
+
+    def set_external_addon_services_enabled(self, enabled: bool):
+        """Sets whether external addon services may be used."""
+        if self.external_addon_services_enabled == enabled:
+            return
+        self.external_addon_services_enabled = enabled
         self.changed.send(self)
 
     def set_watch_source_files(self, enabled: bool):
@@ -361,6 +369,9 @@ class Config:
             "auto_pipeline": self.auto_pipeline,
             "check_for_app_updates": self.check_for_app_updates,
             "check_for_addon_updates": self.check_for_addon_updates,
+            "external_addon_services_enabled": (
+                self.external_addon_services_enabled
+            ),
             "watch_source_files": self.watch_source_files,
             "ops_color_mode": self.ops_color_mode.value,
             "usage_consent_date": self.usage_consent_date,
@@ -428,6 +439,9 @@ class Config:
         config.check_for_app_updates = data.get("check_for_app_updates", True)
         config.check_for_addon_updates = data.get(
             "check_for_addon_updates", True
+        )
+        config.external_addon_services_enabled = data.get(
+            "external_addon_services_enabled", True
         )
         config.watch_source_files = data.get("watch_source_files", True)
 
