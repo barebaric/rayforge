@@ -63,6 +63,15 @@ class LicenseSettingsPage(TrackedPreferencesPage):
         )
         self._add_group(patreon_group)
 
+        if not get_context().config.external_addon_services_enabled:
+            row = Adw.ActionRow(
+                title=_("External addon services are disabled"),
+                subtitle=_("Enable them on the Addons settings page"),
+            )
+            row.set_sensitive(False)
+            patreon_group.add(row)
+            return
+
         if patreon and patreon.is_configured():
             row = Adw.ActionRow(
                 title=_("Patreon Account Linked"),
@@ -156,7 +165,10 @@ class LicenseSettingsPage(TrackedPreferencesPage):
                 subtitle=addon.license_message or _("License required"),
             )
 
-            if addon.purchase_url:
+            if (
+                addon.purchase_url
+                and get_context().config.external_addon_services_enabled
+            ):
                 buy_btn = Gtk.Button(label=_("Buy"))
                 buy_btn.set_valign(Gtk.Align.CENTER)
                 buy_btn.connect(
@@ -230,6 +242,8 @@ class LicenseSettingsPage(TrackedPreferencesPage):
         dialog.close()
 
     def _on_buy_license(self, btn, purchase_url):
+        if not get_context().config.external_addon_services_enabled:
+            return
         webbrowser.open(purchase_url)
 
     def _refresh_ui(self):

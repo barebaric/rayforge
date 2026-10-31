@@ -127,6 +127,7 @@ class AddonManager:
         is_job_active_callback: Callable[[], bool] | None = None,
         registries: dict[str, "AddonRegistry"] | None = None,
         license_validator: LicenseValidator | None = None,
+        external_services_enabled: Callable[[], bool] | None = None,
     ):
         """
         Args:
@@ -147,6 +148,8 @@ class AddonManager:
                 'menu_registry', 'layout_registry'.
             license_validator (Optional[LicenseValidator]): License validator
                 for checking paid addon licenses.
+            external_services_enabled (Optional[Callable]): Returns whether
+                remote addon and license services may be used.
         """
         self.addon_dirs = addon_dirs
         self.install_dir = install_dir
@@ -163,6 +166,9 @@ class AddonManager:
         self._load_errors: dict[str, str] = {}
         self._task_mgr = task_mgr
         self.license_validator = license_validator
+        self._external_services_enabled = external_services_enabled or (
+            lambda: True
+        )
 
         self.addon_state_changed = Signal()
 
@@ -254,6 +260,10 @@ class AddonManager:
         Fetches and parses the addon registry from the remote repository.
         Returns a list of AddonMetadata objects.
         """
+        if not self._external_services_enabled():
+            logger.info("External addon services are disabled.")
+            return []
+
         if yaml is None:
             logger.error("PyYAML is required to fetch the registry.")
             return []
@@ -1038,6 +1048,10 @@ class AddonManager:
                 provided by the registry. If None, it's derived from
                 the URL (for manual installs).
         """
+        if not self._external_services_enabled():
+            logger.info("External addon services are disabled.")
+            return None
+
         logger.info(
             f"install_addon called: git_url={git_url}, addon_id={addon_id}"
         )
