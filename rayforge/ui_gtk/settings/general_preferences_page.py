@@ -320,13 +320,9 @@ class GeneralPreferencesPage(TrackedPreferencesPage):
 
         self.check_addon_updates_row = Adw.SwitchRow(
             title=_("Check for addon updates"),
-            subtitle=_(
-                "Automatically check for addon updates on startup"
-            ),
+            subtitle=_("Automatically check for addon updates on startup"),
         )
-        self.check_addon_updates_row.set_active(
-            config.check_for_addon_updates
-        )
+        self.check_addon_updates_row.set_active(config.check_for_addon_updates)
         self.check_addon_updates_row.connect(
             "notify::active", self.on_check_addon_updates_changed
         )
