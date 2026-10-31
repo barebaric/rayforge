@@ -1,5 +1,4 @@
 import asyncio
-import inspect
 import logging
 from collections.abc import Awaitable, Callable
 from gettext import gettext as _
@@ -9,26 +8,29 @@ from typing import (
     cast,
 )
 
-from raydriver.grbl.parser import parse_state
+from raydriver.core import SessionEvent
+from raydriver.smoothie import SmoothieSession
 
 from ....context import RayforgeContext
 from ....core.varset import HostnameVar, PortVar, VarSet
 from ....core.varset.hostnamevar import is_valid_hostname_or_ip
 from ....pipeline.encoder.base import EncodedOutput, OpsEncoder
 from ....pipeline.encoder.gcode import GcodeEncoder
-from ...transport import TelnetTransport, TransportStatus
+from ...transport import TransportStatus
 from ..driver import (
     Axis,
+    DeviceConnectionError,
     DeviceStatus,
     Driver,
     DriverPrecheckError,
     DriverSetupError,
     Pos,
 )
-from ..session_state import from_session_state, to_session_state
+from ..session_state import from_session_state
 from .smoothie_util import SmoothieProbeResult, build_smoothie_profile
 
 if TYPE_CHECKING:
+    from raydriver.core.types import DeviceState as SessionDeviceState
     from raygeo.ops import Ops
 
     from ....core.doc import Doc
@@ -36,24 +38,17 @@ if TYPE_CHECKING:
     from ...models.laser import Laser
     from ...models.machine import Machine
 
-
 logger = logging.getLogger(__name__)
-
-
-# Smoothie uses P1 for G54, P2 for G55, etc.
-_wcs_to_p_map = {
-    "G54": 1,
-    "G55": 2,
-    "G56": 3,
-    "G57": 4,
-    "G58": 5,
-    "G59": 6,
-}
 
 
 class SmoothieDriver(Driver):
     """
-    Handles Smoothie-based devices via Telnet
+    Handles Smoothie-based devices via Telnet, with the entire
+    protocol stack running in Rust via the ``raydriver`` package.
+
+    This shell only translates between the Rayforge ``Driver``
+    interface and the Rust session: dialects remain Rayforge data
+    and are passed to the session as resolved command templates.
     """
 
     label = _("Smoothie")
@@ -64,15 +59,7 @@ class SmoothieDriver(Driver):
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
-        self.telnet: TelnetTransport | None = None
-        self.host: str | None = None
-        self.port: int | None = None
-        self.keep_running = False
-        self._connection_task: asyncio.Task | None = None
-        self._ok_event = asyncio.Event()
-        self._response_lines: list[str] = []
-        self._rx_buffer: str = ""
-        self._interactive_active: bool = False
+        self._session: SmoothieSession | None = None
 
     @property
     def machine_space_wcs(self) -> str:
@@ -84,9 +71,18 @@ class SmoothieDriver(Driver):
 
     @property
     def resource_uri(self) -> str | None:
-        if self.host:
-            return f"tcp://{self.host}:{self.port}"
-        return None
+        if self._session is None:
+            return None
+        return self._session.resource_uri
+
+    def _require_session(self) -> SmoothieSession:
+        """Returns the session, raising a descriptive error when the
+        driver was never set up (e.g. no host configured)."""
+        if self._session is None:
+            raise DeviceConnectionError(
+                _("Driver is not set up. Check the connection settings.")
+            )
+        return self._session
 
     @classmethod
     def precheck(cls, **kwargs: Any) -> None:
@@ -96,54 +92,6 @@ class SmoothieDriver(Driver):
             raise DriverPrecheckError(
                 _("Invalid hostname or IP address: '{host}'").format(host=host)
             )
-
-    @classmethod
-    async def probe(
-        cls, context: RayforgeContext, **kwargs: Any
-    ) -> tuple["DeviceProfile", list[str]]:
-        """Connect to a Smoothie device, query its configuration, and
-        return an auto-populated ``(DeviceProfile, warnings)`` tuple.
-        """
-        from ...models.machine import Machine
-
-        machine = Machine(context)
-        driver = cls(context, machine)
-        driver.setup(**kwargs)
-
-        connected = asyncio.Event()
-
-        def _on_status(sender, status=None, message=None, **kw):
-            if status == TransportStatus.CONNECTED:
-                connected.set()
-
-        driver.connection_status_changed.connect(_on_status)
-        try:
-            await driver.connect()
-            # Smoothieware sends a welcome banner on connect; the
-            # transport emits CONNECTED immediately, but the device
-            # needs a moment before it accepts commands.
-            await asyncio.wait_for(connected.wait(), timeout=15.0)
-            await asyncio.sleep(0.2)
-            query = driver.execute_interactive_command
-            probe = SmoothieProbeResult(
-                version=await query("version"),
-                alpha_max=await query("config-get alpha_max"),
-                beta_max=await query("config-get beta_max"),
-                alpha_max_rate=await query("config-get alpha_max_rate"),
-                beta_max_rate=await query("config-get beta_max_rate"),
-                acceleration=await query("config-get acceleration"),
-            )
-        finally:
-            driver.connection_status_changed.disconnect(_on_status)
-            await driver.cleanup()
-            context.dialect_mgr.dialects_changed.disconnect(
-                machine._on_dialects_changed
-            )
-
-        profile, warnings = build_smoothie_profile(probe)
-        profile.machine_config.driver = cls.__name__
-        profile.machine_config.driver_args = kwargs
-        return profile, warnings
 
     @classmethod
     def get_setup_vars(cls) -> "VarSet":
@@ -169,8 +117,81 @@ class SmoothieDriver(Driver):
         assert machine.dialect is not None
         return GcodeEncoder(machine.dialect)
 
-    def get_setting_vars(self) -> list["VarSet"]:
-        return [VarSet()]
+    @classmethod
+    async def probe(
+        cls, context: "RayforgeContext", **kwargs: Any
+    ) -> tuple["DeviceProfile", list[str]]:
+        """Connect to a Smoothie device, query its configuration, and
+        return an auto-populated ``(DeviceProfile, warnings)`` tuple.
+        """
+        from ...models.machine import Machine
+
+        machine = Machine(context)
+        driver = cls(context, machine)
+        driver.setup(**kwargs)
+
+        connected = asyncio.Event()
+
+        def _on_status(sender, status=None, message=None, **kw):
+            if status == TransportStatus.CONNECTED:
+                connected.set()
+
+        driver.connection_status_changed.connect(_on_status)
+        try:
+            await driver.connect()
+            await asyncio.wait_for(connected.wait(), timeout=15.0)
+            # Smoothieware needs a moment after the link comes up
+            # before it accepts commands.
+            await asyncio.sleep(0.2)
+            query = driver.execute_interactive_command
+            probe = SmoothieProbeResult(
+                version=await query("version"),
+                alpha_max=await query("config-get alpha_max"),
+                beta_max=await query("config-get beta_max"),
+                alpha_max_rate=await query("config-get alpha_max_rate"),
+                beta_max_rate=await query("config-get beta_max_rate"),
+                acceleration=await query("config-get acceleration"),
+            )
+        finally:
+            driver.connection_status_changed.disconnect(_on_status)
+            await driver.cleanup()
+            context.dialect_mgr.dialects_changed.disconnect(
+                machine._on_dialects_changed
+            )
+
+        profile, warnings = build_smoothie_profile(probe)
+        profile.machine_config.driver = cls.__name__
+        profile.machine_config.driver_args = kwargs
+        return profile, warnings
+
+    def _dialect_templates(self) -> dict[str, Any]:
+        """Resolve the interactive-command templates the Rust session
+        needs from the machine's dialect."""
+        dialect = self.dialect
+        templates: dict[str, Any] = {
+            "home_all": dialect.home_all,
+            "home_axis": dialect.home_axis,
+            "move_to": dialect.move_to,
+            "jog": dialect.jog,
+            "clear_alarm": dialect.clear_alarm,
+            "laser_on": dialect.laser_on,
+            "laser_off": dialect.laser_off,
+            "focus_laser_on": dialect.focus_laser_on,
+            "tool_change": dialect.tool_change,
+            "set_wcs_offset": dialect.set_wcs_offset,
+            "probe_cycle": dialect.probe_cycle,
+            "safety_off_commands": dialect.get_safety_off_commands(),
+        }
+        if dialect.emergency_stop:
+            templates["emergency_stop"] = dialect.emergency_stop
+        return templates
+
+    def _update_session_dialect(self) -> None:
+        if self._session is not None:
+            self._session.update_dialect(self._dialect_templates())
+
+    def refresh_dialect(self) -> None:
+        self._update_session_dialect()
 
     def _setup_implementation(self, **kwargs: Any) -> None:
         host = cast(str, kwargs.get("host", ""))
@@ -179,109 +200,135 @@ class SmoothieDriver(Driver):
         if not host:
             raise DriverSetupError(_("Hostname must be configured."))
 
-        self.host = host
-        self.port = port
+        config = {
+            "host": host,
+            "tcp_port": int(port),
+        }
+        self._session = SmoothieSession(
+            config=config,
+            dialect=self._dialect_templates(),
+            event_callback=self._on_session_event,
+        )
 
-        # Initialize transports
-        self.telnet = TelnetTransport(host, port)
-        self.telnet.received.connect(self.on_telnet_data_received)
-        self.telnet.status_changed.connect(self.on_telnet_status_changed)
+    def _on_session_event(self, event: SessionEvent) -> None:
+        """Re-emit Rust session events as Rayforge blinker signals."""
+        match event:
+            case SessionEvent.StateChanged():
+                self._on_state_changed(event.state)
+            case SessionEvent.ConnectionStatusChanged():
+                self._on_connection_status_changed(event.status, event.message)
+            case SessionEvent.CommandStatusChanged():
+                self._on_command_status_changed(event.status, event.message)
+            case SessionEvent.JobFinished():
+                self.job_finished.send(self)
+            case SessionEvent.ProbeStatusChanged():
+                self.probe_status_changed.send(self, message=event.message)
+            case SessionEvent.RawRx():
+                self._log_raw_line(event.line, received=True)
+            case SessionEvent.RawTx():
+                self._log_raw_line(event.line, received=False)
+            case _:
+                logger.debug(f"Ignoring session event: {event!r}")
+
+    def _on_state_changed(self, session_state: "SessionDeviceState") -> None:
+        state = from_session_state(session_state)
+        old_status = self.state.status
+        self.state = state
+        if state.status != old_status:
+            logger.info(
+                f"Device state changed: {state.status.name}",
+                extra=self._log_extra("STATE_CHANGE"),
+            )
+        self.state_changed.send(self, state=state)
+
+    def _on_connection_status_changed(
+        self, status_str: str, message: str | None
+    ) -> None:
+        logger.info(
+            f"Connection status: {status_str}"
+            + (f" - {message}" if message else ""),
+            extra=self._log_extra("MACHINE_EVENT"),
+        )
+        self.connection_status_changed.send(
+            self,
+            status=TransportStatus[status_str],
+            message=message,
+        )
+        if status_str in ("ERROR", "DISCONNECTED") and (
+            self.state.status != DeviceStatus.UNKNOWN
+        ):
+            self.state.status = DeviceStatus.UNKNOWN
+            self.state_changed.send(self, state=self.state)
+
+    def _on_command_status_changed(
+        self, status_str: str, message: str | None
+    ) -> None:
+        self.command_status_changed.send(
+            self,
+            status=TransportStatus[status_str],
+            message=message,
+        )
+
+    def _log_raw_line(self, line: str, received: bool) -> None:
+        """Log a raw line from the session's communication so the
+        console (with 'Show verbose' enabled) shows the full
+        conversation with the device."""
+        if received:
+            if line.startswith("<") and line.endswith(">"):
+                category = "STATUS_POLL"
+            elif line == "ok" or line.startswith("error:"):
+                category = "MACHINE_RESPONSE"
+            else:
+                category = "MACHINE_EVENT"
+        else:
+            category = "RAW_IO"
+        logger.info(line, extra=self._log_extra(category))
 
     async def cleanup(self):
-        self.keep_running = False
-        if self._connection_task:
-            self._connection_task.cancel()
-        if self.telnet:
-            await self.telnet.disconnect()
-            self.telnet.received.disconnect(self.on_telnet_data_received)
-            self.telnet.status_changed.disconnect(
-                self.on_telnet_status_changed
-            )
-            self.telnet = None
+        logger.debug("Cleanup initiated.")
+        if self._session is not None:
+            await self._session.disconnect()
+            self._session = None
         await super().cleanup()
+        logger.debug("Cleanup completed.")
 
     async def _connect_implementation(self):
-        self.keep_running = True
-        self._connection_task = asyncio.create_task(self._connection_loop())
-
-    async def _connection_loop(self) -> None:
-        while self.keep_running:
-            if not self.telnet:
-                self.on_telnet_status_changed(
-                    self, TransportStatus.ERROR, "Driver not configured"
-                )
-                await asyncio.sleep(5)
-                continue
-
-            self.on_telnet_status_changed(self, TransportStatus.CONNECTING)
-            try:
-                await self.telnet.connect()
-                # The transport handles the connection loop.
-                # We just need to wait here until cleanup.
-                while self.keep_running:
-                    if not self._interactive_active:
-                        await self._send_and_wait(b"?", wait_for_ok=False)
-                    await asyncio.sleep(1)
-
-            except asyncio.CancelledError:
-                break  # cleanup is called
-            except Exception as e:  # noqa: BLE001 - connection loop boundary
-                self.on_telnet_status_changed(
-                    self, TransportStatus.ERROR, str(e)
-                )
-            finally:
-                if self.telnet:
-                    await self.telnet.disconnect()
-
-            if not self.keep_running:
-                break
-
-            self.on_telnet_status_changed(self, TransportStatus.SLEEPING)
-            await asyncio.sleep(5)
-
-    async def _send_and_wait(self, cmd: bytes, wait_for_ok: bool = True):
-        if not self.telnet:
+        """Launches the Rust connection loop and returns, allowing the
+        UI to remain responsive."""
+        if self._session is None:
+            logger.error(
+                "Cannot connect: session not initialized "
+                "(check host settings)."
+            )
+            self.connection_status_changed.send(
+                self,
+                status=TransportStatus.ERROR,
+                message=_("Host not configured"),
+            )
             return
-        if wait_for_ok:
-            self._ok_event.clear()
-
-        cmd_str = cmd.decode().strip()
-        if cmd_str:
-            logger.info(cmd_str, extra=self._log_extra("USER_COMMAND"))
-        logger.debug(
-            f"TX: {cmd!r}",
-            extra={"log_category": "RAW_IO", "direction": "TX", "data": cmd},
-        )
-        await self.telnet.send(cmd)
-
-        if wait_for_ok:
-            try:
-                # Set a 10s timeout to avoid deadlocks
-                await asyncio.wait_for(self._ok_event.wait(), 10.0)
-            except asyncio.TimeoutError as e:
-                raise ConnectionError(
-                    f"Command '{cmd.decode()}' not confirmed"
-                ) from e
+        self._update_session_dialect()
+        await self._session.connect()
 
     async def execute_interactive_command(self, command: str) -> list[str]:
-        """
-        Send a command and return its response lines.
+        """Send a command and await its full response, blocking other
+        commands from interleaving; used by device probing."""
+        return await self._require_session().execute_interactive_command(
+            command
+        )
 
-        Used during probing to query ``version`` and ``config-get``
-        values. Suppresses the ``?`` status poll while the command is
-        in flight and collects non-status reply lines until ``ok``.
-        """
-        if not self.telnet or not self.telnet.is_connected:
-            raise ConnectionError("Telnet transport not connected")
+    def get_setting_vars(self) -> list["VarSet"]:
+        return [VarSet()]
 
-        self._interactive_active = True
-        self._response_lines = []
-        self._rx_buffer = ""
-        try:
-            await self._send_and_wait(command.encode("utf-8"))
-        finally:
-            self._interactive_active = False
-        return list(self._response_lines)
+    @staticmethod
+    def _op_line_map(op_map: Any) -> dict[int, int]:
+        """Extract the {line index: op index} mapping for the Rust
+        session's per-line progress reporting."""
+        result = {}
+        for line_idx in range(op_map.line_count):
+            op_index = op_map.op_for_line(line_idx)
+            if op_index is not None:
+                result[line_idx] = op_index
+        return result
 
     async def run(
         self,
@@ -290,253 +337,106 @@ class SmoothieDriver(Driver):
         ops: "Ops",
         on_command_done: Callable[[int], None | Awaitable[None]] | None = None,
     ) -> None:
-        gcode_lines = encoded.text.splitlines()
-        op_map = encoded.op_map
+        session = self._require_session()
+        self._update_session_dialect()
+        line_map = self._op_line_map(encoded.op_map)
 
-        # We assume ops are indexed 0..N-1.
-        num_ops = op_map.op_count if op_map else 0
+        def _on_command_done(op_index: int):
+            if on_command_done is None:
+                return
+            result = on_command_done(op_index)
+            if asyncio.iscoroutine(result):
+                asyncio.ensure_future(result)
 
         try:
-            for op_index in range(num_ops):
-                # Find all g-code lines for this specific op_index
-                line_start, line_count = 0, 0
-                if op_map and op_index < op_map.op_count:
-                    line_start, line_count = op_map.span_for_op(op_index)
-
-                if not line_count:
-                    # If an op generates no g-code, still report it as done.
-                    if on_command_done:
-                        result = on_command_done(op_index)
-                        if inspect.isawaitable(result):
-                            await result
-                    continue
-
-                for line_idx in range(line_start, line_start + line_count):
-                    line = gcode_lines[line_idx].strip()
-                    if line:
-                        await self._send_and_wait(line.encode())
-
-                # After all lines for this op are sent and confirmed,
-                # fire the callback.
-                if on_command_done:
-                    result = on_command_done(op_index)
-                    if inspect.isawaitable(result):
-                        await result
-
-        except Exception as e:
-            self.on_telnet_status_changed(self, TransportStatus.ERROR, str(e))
-            raise
-        finally:
-            self.job_finished.send(self)
+            await session.run(
+                encoded.text,
+                line_map,
+                None if on_command_done is None else _on_command_done,
+            )
+        except DeviceConnectionError as e:
+            logger.warning(
+                f"Job terminated due to device error: {e}. "
+                "Connection remains active."
+            )
+        except Exception:
+            logger.exception("Job terminated with unexpected error")
 
     async def run_raw(self, machine_code: str) -> None:
-        """
-        Executes a raw G-code string by sending it line-by-line to the
-        device and waiting for an 'ok' after each line.
-        """
-        lines = [
-            line.strip() for line in machine_code.splitlines() if line.strip()
-        ]
-        if not lines:
-            return
+        session = self._require_session()
         try:
-            for line in lines:
-                await self._send_and_wait(line.encode())
-        except Exception as e:
-            self.on_telnet_status_changed(self, TransportStatus.ERROR, str(e))
-            raise
-        finally:
-            self.job_finished.send(self)
-
-    async def set_hold(self, hold: bool = True) -> None:
-        if hold:
-            await self._send_and_wait(b"!")
-        else:
-            await self._send_and_wait(b"~")
+            await session.run_raw(machine_code)
+        except DeviceConnectionError as e:
+            logger.warning(
+                f"Raw G-code terminated due to device error: {e}. "
+                "Connection remains active."
+            )
+        except Exception:
+            logger.exception("Raw G-code terminated with unexpected error")
 
     async def cancel(self, emergency: bool = False) -> None:
-        # Send Ctrl+C
-        await self._send_and_wait(b"\x03")
-        await self._send_safety_shutdown(emergency)
+        if self._session is None:
+            raise ConnectionError("Connection not initialized")
+        await self._session.cancel(emergency)
 
-    async def _send_safety_shutdown(self, emergency: bool = False) -> None:
-        """
-        Best-effort transmission of the dialect's tool-off commands so
-        a cancelled or aborted job cannot leave persistent PWM outputs
-        energized.
-        """
-        dialect = self.dialect
-        commands = dialect.get_safety_off_commands()
-        if emergency and dialect.emergency_stop:
-            commands.append(dialect.emergency_stop)
-        for command in commands:
-            try:
-                await self._send_and_wait(command.encode())
-            except ConnectionError as e:
-                logger.warning(f"Safety command '{command}' failed: {e}")
+    async def set_hold(self, hold: bool = True) -> None:
+        await self._require_session().set_hold(hold)
 
     def can_home(self, axis: Axis | None = None) -> bool:
         """Smoothie supports homing for all axes."""
         return True
 
     async def home(self, axes: Axis | None = None) -> None:
-        """
-        Homes the specified axes or all axes if none specified.
+        session = self._require_session()
+        names = None
+        if axes is not None:
+            names = [axis.name for axis in axes]
+        await session.home(names)
 
-        Args:
-            axes: Optional axis or combination of axes to home. If None,
-                 homes all axes. Can be a single Axis or multiple axes
-                 using binary operators (e.g. Axis.X|Axis.Y)
-        """
-        dialect = self.dialect
-        if axes is None:
-            await self._send_and_wait(dialect.home_all.encode())
-            return
-
-        # Handle multiple axes - home them one by one
-        for axis in axes:
-            cmd = dialect.home_axis.format(axis_letter=axis.name)
-            await self._send_and_wait(cmd.encode())
-
-    async def move_to(self, pos_x, pos_y, pos_z=None, speed=None) -> None:
+    async def move_to(
+        self,
+        pos_x: float,
+        pos_y: float,
+        pos_z: float | None = None,
+        speed: float | None = None,
+    ) -> None:
         cmd = self._format_move_to(float(pos_x), float(pos_y), pos_z, speed)
-        await self._send_and_wait(cmd.encode())
+        await self._require_session().execute_command(cmd)
 
     def can_jog(self, axis: Axis | None = None) -> bool:
         """Smoothie supports jogging for all axes."""
         return True
 
     async def jog(self, speed: int, **deltas: float) -> None:
-        """
-        Jogs the machine using G91 incremental mode.
-
-        Args:
-            speed: The jog speed in mm/min
-            **deltas: Axis names and distances (e.g. x=10.0, y=5.0)
-        """
-        dialect = self.dialect
-        parts = [dialect.jog.format(speed=self._to_machine_speed(speed))]
-
-        for axis_name, distance in deltas.items():
-            parts.append(
-                f"{axis_name.upper()}{self._to_machine_length(distance)}"
-            )
-
-        if len(parts) == 1:
-            return
-
-        cmd = " ".join(parts)
-        await self._send_and_wait(cmd.encode())
+        session = self._require_session()
+        converted = [
+            (name, self._to_machine_length(distance))
+            for name, distance in deltas.items()
+        ]
+        await session.jog(self._to_machine_speed(speed), converted)
 
     async def select_tool(self, tool_number: int) -> None:
         """Sends a tool change command for the given tool number."""
-        dialect = self.dialect
-        cmd = dialect.tool_change.format(tool_number=tool_number)
-        await self._send_and_wait(cmd.encode())
+        await self._require_session().select_tool(tool_number)
 
     async def clear_alarm(self) -> None:
+        session = self._require_session()
         dialect = self.dialect
-        await self._send_and_wait(dialect.clear_alarm.encode())
+        response = await session.execute_command(dialect.clear_alarm)
+        has_error = any(line.startswith("error:") for line in response)
+        if not has_error:
+            self.state.error = None
+            self.state_changed.send(self, state=self.state)
 
     async def set_power(self, head: "Laser", percent: float) -> None:
-        """
-        Sets the laser power to the specified percentage of max power.
-
-        Args:
-            head: The laser head to control.
-            percent: Power percentage (0.0-1.0). 0 disables power.
-        """
-        # Get the dialect for power control commands
-        dialect = self.dialect
-
-        if percent <= 0:
-            # Disable power
-            cmd = dialect.laser_off
-        else:
-            # Enable power with specified percentage
-            power_abs = percent * head.max_power
-            cmd = dialect.laser_on.format(power=power_abs)
-
-        await self._send_and_wait(cmd.encode("utf-8"))
+        """Sets the laser power (0.0-1.0 of max power)."""
+        power = percent * head.max_power if percent > 0 else None
+        await self._require_session().set_power(power)
 
     async def set_focus_power(self, head: "Laser", percent: float) -> None:
-        """
-        Sets the laser power for focus mode using the focus_laser_on command.
-
-        Args:
-            head: The laser head to control.
-            percent: Power percentage (0.0-1.0). 0 disables power.
-        """
-        dialect = self.dialect
-
-        if percent <= 0:
-            cmd = dialect.laser_off
-        else:
-            power_abs = percent * head.max_power
-            cmd = dialect.focus_laser_on.format(power=power_abs)
-
-        await self._send_and_wait(cmd.encode("utf-8"))
-
-    def on_telnet_data_received(self, sender, data: bytes):
-        logger.debug(
-            f"RX: {data!r}",
-            extra={"log_category": "RAW_IO", "direction": "RX", "data": data},
-        )
-        self._rx_buffer += data.decode("utf-8", errors="replace")
-        while "\n" in self._rx_buffer:
-            line, self._rx_buffer = self._rx_buffer.split("\n", 1)
-            self._process_line(line.strip())
-
-    def _process_line(self, line: str) -> None:
-        if not line:
-            return
-
-        is_status_report = line.startswith("<") and line.endswith(">")
-        log_category = "STATUS_POLL" if is_status_report else "MACHINE_EVENT"
-        logger.info(line, extra={"log_category": log_category})
-
-        if "ok" in line:
-            self._ok_event.set()
-            self.command_status_changed.send(self, status=TransportStatus.IDLE)
-        elif self._interactive_active and not is_status_report:
-            self._response_lines.append(line)
-
-        if not is_status_report:
-            return
-        session_state = parse_state(line, to_session_state(self.state))
-        state = from_session_state(session_state)
-        if state != self.state:
-            self.state = state
-            logger.info(
-                f"Device state changed: {self.state.status.name}",
-                extra=self._log_extra("STATE_CHANGE"),
-            )
-            self.state_changed.send(self, state=self.state)
-
-    def on_telnet_status_changed(
-        self, sender, status: TransportStatus, message: str | None = None
-    ):
-        log_data = f"Connection status: {status.name}"
-        if message:
-            log_data += f" - {message}"
-        logger.info(log_data, extra=self._log_extra("MACHINE_EVENT"))
-        self.connection_status_changed.send(
-            self, status=status, message=message
-        )
-        if (
-            status
-            in [
-                TransportStatus.DISCONNECTED,
-                TransportStatus.ERROR,
-            ]
-            and self.state.status != DeviceStatus.UNKNOWN
-        ):
-            self.state.status = DeviceStatus.UNKNOWN
-            logger.info(
-                f"Device state changed: {self.state.status.name}",
-                extra=self._log_extra("STATE_CHANGE"),
-            )
-            self.state_changed.send(self, state=self.state)
+        """Sets the laser power for focus mode."""
+        power = percent * head.max_power if percent > 0 else None
+        await self._require_session().set_focus_power(power)
 
     async def read_settings(self) -> None:
         raise NotImplementedError(
@@ -552,17 +452,13 @@ class SmoothieDriver(Driver):
         self, wcs_slot: str, x: float, y: float, z: float | None
     ) -> None:
         """Sets a WCS offset using Smoothie's G10 L20 command."""
-        if wcs_slot not in _wcs_to_p_map:
-            raise ValueError(f"Invalid WCS slot: {wcs_slot}")
-
-        p_num = _wcs_to_p_map[wcs_slot]
-        cmd = self.dialect.format_wcs_offset(
-            p_num,
+        session = self._require_session()
+        await session.set_wcs_offset(
+            wcs_slot,
             self._to_machine_length(x),
             self._to_machine_length(y),
             self._to_machine_length(z) if z is not None else None,
         )
-        await self._send_and_wait(cmd.encode("utf-8"))
 
     async def read_wcs_offsets(self) -> dict[str, Pos]:
         """Reading all WCS offsets is not supported by Smoothie."""

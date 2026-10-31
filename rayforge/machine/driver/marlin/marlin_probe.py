@@ -9,10 +9,7 @@ from typing import (
 )
 
 from blinker import Signal
-
-from ....shared.units.system import UnitSystem
-from ...transport import TransportStatus
-from .marlin_util import (
+from raydriver.marlin.parser import (
     detect_unit_system_from_m149,
     extract_marlin_device_name,
     parse_m115_firmware_info,
@@ -20,6 +17,9 @@ from .marlin_util import (
     parse_m503_settings,
     parse_marlin_version,
 )
+
+from ....shared.units.system import UnitSystem
+from ...transport import TransportStatus
 
 if TYPE_CHECKING:
     from ....context import RayforgeContext
@@ -166,9 +166,10 @@ def build_marlin_profile(
         accel = int(accel_val)
 
     detected = detect_unit_system_from_m149(m149_lines)
-    detected_unit_system = (
-        detected if detected is not None else UnitSystem.METRIC
-    )
+    if detected == "imperial":
+        detected_unit_system = UnitSystem.IMPERIAL
+    else:
+        detected_unit_system = UnitSystem.METRIC
 
     return (
         DeviceProfile(

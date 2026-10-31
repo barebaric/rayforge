@@ -7,8 +7,9 @@ from dataclasses import replace
 
 import pytest
 import pytest_asyncio
-from raydriver.emulator import GrblEmulator
-from raydriver.grbl import GrblSession, MockTransport
+from raydriver.core.transport import MockTransport
+from raydriver.grbl import GrblSession
+from raydriver.grbl.emulator import GrblEmulator
 from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
 
@@ -191,7 +192,7 @@ class TestRegistry:
         assert encoder.dialect.uid == machine.dialect.uid
 
     def test_convert_state(self):
-        from raydriver.grbl.types import DeviceState as RDState
+        from raydriver.core.types import DeviceState as RDState
 
         state = _parser_module().parse_state(
             "<Alarm:1|FS:500,0>", RDState(), False
