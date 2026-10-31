@@ -1,0 +1,11 @@
+name: webui
+display_name: "Web UI"
+description: "Browser-based interface with a 3D canvas, document editing, job control, and machine control"
+api_version: 24
+author:
+  name: "Rayforge Team"
+  email: "noreply@rayforge.org"
+provides:
+  service: webui.service
+license:
+  name: "MIT"
