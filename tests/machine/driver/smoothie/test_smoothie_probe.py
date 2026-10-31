@@ -1,14 +1,12 @@
-from unittest.mock import AsyncMock, MagicMock, PropertyMock
+from unittest.mock import AsyncMock
 
 import pytest
-from blinker import Signal
 
 from rayforge.machine.driver.smoothie import SmoothieDriver
 from rayforge.machine.driver.smoothie.smoothie_util import (
     SmoothieProbeResult,
     build_smoothie_profile,
 )
-from rayforge.machine.models.machine import Machine
 from rayforge.machine.transport import TransportStatus
 
 
@@ -90,34 +88,11 @@ class TestBuildSmoothieProfile:
         assert len(warnings) == 1
 
 
-def _make_mock_telnet():
-    mock = AsyncMock()
-    mock.received = Signal()
-    mock.status_changed = Signal()
-    mock.is_connected = True
-    return mock
-
-
 class TestDriverProbe:
     @pytest.mark.asyncio
     async def test_probe_connects_and_queries(
         self, context_initializer, mocker
     ):
-        mock_telnet = _make_mock_telnet()
-        mocker.patch(
-            "rayforge.machine.driver.smoothie.smoothie_driver.TelnetTransport",
-            return_value=mock_telnet,
-        )
-        mocker.patch.object(
-            mock_telnet,
-            "is_connected",
-            new_callable=PropertyMock,
-            return_value=True,
-        )
-
-        async def fake_connect(self):
-            self.on_telnet_status_changed(self, TransportStatus.CONNECTED)
-
         replies = {
             "version": ["Smoothieware edge-1234abc1"],
             "config-get alpha_max": ["200.000"],
@@ -130,6 +105,17 @@ class TestDriverProbe:
         async def fake_interactive(self, command):
             return list(replies.get(command, []))
 
+        def fake_setup(self, **kwargs):
+            self.did_setup = True
+
+        async def fake_connect(self):
+            self.connection_status_changed.send(
+                self, status=TransportStatus.CONNECTED, message=None
+            )
+
+        mocker.patch.object(
+            SmoothieDriver, "_setup_implementation", fake_setup
+        )
         mocker.patch.object(
             SmoothieDriver, "_connect_implementation", fake_connect
         )
@@ -160,15 +146,15 @@ class TestDriverProbe:
 
     @pytest.mark.asyncio
     async def test_probe_cleanup_on_error(self, context_initializer, mocker):
-        mock_telnet = _make_mock_telnet()
-        mocker.patch(
-            "rayforge.machine.driver.smoothie.smoothie_driver.TelnetTransport",
-            return_value=mock_telnet,
-        )
-
         async def failing_connect(self):
             raise ConnectionError("Connection refused")
 
+        def fake_setup(self, **kwargs):
+            self.did_setup = True
+
+        mocker.patch.object(
+            SmoothieDriver, "_setup_implementation", fake_setup
+        )
         mocker.patch.object(
             SmoothieDriver, "_connect_implementation", failing_connect
         )
@@ -183,72 +169,3 @@ class TestDriverProbe:
             )
 
         mock_cleanup.assert_awaited_once()
-
-
-class TestExecuteInteractiveCommand:
-    """Verifies the driver collects framed reply lines until ``ok``
-    and suppresses status-poll noise while a command is in flight."""
-
-    @pytest.mark.asyncio
-    async def test_collects_lines_until_ok(self, context_initializer):
-        machine = Machine(context_initializer)
-        machine.dialect_uid = "smoothieware"
-        driver = SmoothieDriver(context_initializer, machine)
-
-        mock_telnet = MagicMock()
-        mock_telnet.received = Signal()
-        mock_telnet.status_changed = Signal()
-        mock_telnet.is_connected = True
-        mock_telnet.send = AsyncMock()
-        driver.telnet = mock_telnet
-
-        async def fake_send(cmd: bytes, wait_for_ok: bool = True):
-            await mock_telnet.send(cmd)
-            # Simulate the device replying with the value then ok.
-            payload = b"200.000\nok\n"
-            driver.on_telnet_data_received(mock_telnet, payload)
-
-        driver._send_and_wait = fake_send  # type: ignore
-
-        lines = await driver.execute_interactive_command(
-            "config-get alpha_max"
-        )
-        assert lines == ["200.000"]
-        # The ok line is filtered out and not collected.
-        assert "ok" not in lines
-
-    @pytest.mark.asyncio
-    async def test_status_reports_not_collected(self, context_initializer):
-        machine = Machine(context_initializer)
-        machine.dialect_uid = "smoothieware"
-        driver = SmoothieDriver(context_initializer, machine)
-
-        mock_telnet = MagicMock()
-        mock_telnet.received = Signal()
-        mock_telnet.status_changed = Signal()
-        mock_telnet.is_connected = True
-        mock_telnet.send = AsyncMock()
-        driver.telnet = mock_telnet
-
-        async def fake_send(cmd: bytes, wait_for_ok: bool = True):
-            await mock_telnet.send(cmd)
-            # A status report sneaks in before the real reply + ok.
-            payload = b"<Idle|MPos:0,0,0|FS:0,0>\n200.000\nok\n"
-            driver.on_telnet_data_received(mock_telnet, payload)
-
-        driver._send_and_wait = fake_send  # type: ignore
-
-        lines = await driver.execute_interactive_command(
-            "config-get alpha_max"
-        )
-        assert lines == ["200.000"]
-        assert "<Idle" not in lines
-
-    @pytest.mark.asyncio
-    async def test_not_connected_raises(self, context_initializer):
-        machine = Machine(context_initializer)
-        machine.dialect_uid = "smoothieware"
-        driver = SmoothieDriver(context_initializer, machine)
-        driver.telnet = None
-        with pytest.raises(ConnectionError):
-            await driver.execute_interactive_command("version")

@@ -1,5 +1,4 @@
 import asyncio
-import inspect
 import logging
 from collections.abc import Awaitable, Callable
 from gettext import gettext as _
@@ -9,7 +8,15 @@ from typing import (
     cast,
 )
 
+import serial
 import serial.serialutil
+from raydriver.core import SessionEvent
+from raydriver.marlin import MarlinSession
+from raydriver.marlin.parser import (
+    extract_marlin_banner_from_output,
+    is_boot_message,
+    is_marlin_output,
+)
 
 from ....context import RayforgeContext
 from ....core.varset import (
@@ -19,18 +26,20 @@ from ....core.varset import (
 )
 from ....pipeline.encoder.base import (
     EncodedOutput,
-    MachineCodeOpMap,
     OpsEncoder,
 )
 from ....pipeline.encoder.gcode import GcodeEncoder
 from ....shared.units.system import UnitSystem
 from ...discovery.spec import DiscoverySpec, SerialRecognizer
-from ...transport import SerialTransport, TransportStatus
-from ...transport.serial import SerialPortPermissionError
+from ...transport import TransportStatus
+from ...transport.serial import (
+    SerialPortPermissionError,
+    SerialTransport,
+    resolve_serial_port,
+)
 from ..driver import (
     Axis,
     DeviceConnectionError,
-    DeviceState,
     DeviceStatus,
     Driver,
     DriverMaturity,
@@ -38,19 +47,11 @@ from ..driver import (
     DriverSetupError,
     Pos,
 )
+from ..session_state import from_session_state
 from .marlin_probe import probe_marlin_device
-from .marlin_util import (
-    detect_unit_system_from_m149,
-    extract_marlin_banner_from_output,
-    gcode_to_p_number,
-    is_boot_message,
-    is_error_response,
-    is_marlin_output,
-    is_ok_response,
-    m114_pos_re,
-)
 
 if TYPE_CHECKING:
+    from raydriver.core.types import DeviceState as SessionDeviceState
     from raygeo.ops import Ops
 
     from ....core.doc import Doc
@@ -62,6 +63,15 @@ logger = logging.getLogger(__name__)
 
 
 class MarlinSerialDriver(Driver):
+    """
+    Marlin firmware over serial, with the entire protocol stack
+    running in Rust via the ``raydriver`` package.
+
+    This shell only translates between the Rayforge ``Driver``
+    interface and the Rust session: dialects remain Rayforge data
+    and are passed to the session as resolved command templates.
+    """
+
     label = _("Marlin (Serial)")
     subtitle = _("Marlin firmware via serial connection")
     supports_settings = False
@@ -80,22 +90,7 @@ class MarlinSerialDriver(Driver):
 
     def __init__(self, context: RayforgeContext, machine: "Machine"):
         super().__init__(context, machine)
-        self._transport: SerialTransport | None = None
-        self._port: str = ""
-        self._baudrate: int = 115200
-        self.keep_running = False
-        self._connection_task: asyncio.Task | None = None
-        self._ok_event = asyncio.Event()
-        self._handshake_event = asyncio.Event()
-        self._job_running = False
-        self._is_cancelled = False
-        self._on_command_done: (
-            Callable[[int], None | Awaitable[None]] | None
-        ) = None
-        self._last_reported_op_index = -1
-        self._response_lines: list[str] = []
-        self._loop: asyncio.AbstractEventLoop | None = None
-        self._rx_buffer = ""
+        self._session: MarlinSession | None = None
         self._boot_lines: list[str] = []
 
     @property
@@ -108,12 +103,14 @@ class MarlinSerialDriver(Driver):
 
     @property
     def resource_uri(self) -> str | None:
-        if self._port:
-            return f"serial://{self._port}"
-        return None
+        if self._session is None:
+            return None
+        return self._session.resource_uri
 
     @property
     def boot_lines(self) -> list[str]:
+        """Boot banner lines received from the device, used by the
+        probe for device naming."""
         return self._boot_lines
 
     @classmethod
@@ -155,6 +152,35 @@ class MarlinSerialDriver(Driver):
     ) -> tuple["DeviceProfile", list[str]]:
         return await probe_marlin_device(cls, context, **kwargs)
 
+    def _dialect_templates(self) -> dict[str, Any]:
+        """Resolve the interactive-command templates the Rust session
+        needs from the machine's dialect."""
+        dialect = self.dialect
+        templates: dict[str, Any] = {
+            "home_all": dialect.home_all,
+            "home_axis": dialect.home_axis,
+            "move_to": dialect.move_to,
+            "jog": dialect.jog,
+            "clear_alarm": dialect.clear_alarm,
+            "laser_on": dialect.laser_on,
+            "laser_off": dialect.laser_off,
+            "focus_laser_on": dialect.focus_laser_on,
+            "tool_change": dialect.tool_change,
+            "set_wcs_offset": dialect.set_wcs_offset,
+            "probe_cycle": dialect.probe_cycle,
+            "safety_off_commands": dialect.get_safety_off_commands(),
+        }
+        if dialect.emergency_stop:
+            templates["emergency_stop"] = dialect.emergency_stop
+        return templates
+
+    def _update_session_dialect(self) -> None:
+        if self._session is not None:
+            self._session.update_dialect(self._dialect_templates())
+
+    def refresh_dialect(self) -> None:
+        self._update_session_dialect()
+
     def _setup_implementation(self, **kwargs: Any) -> None:
         port = cast(str, kwargs.get("port", ""))
         baudrate = kwargs.get("baudrate", 115200)
@@ -164,277 +190,148 @@ class MarlinSerialDriver(Driver):
         if not baudrate:
             raise DriverSetupError(_("Baud rate must be configured."))
 
-        self._port = port
-        self._baudrate = int(baudrate)
-        self._transport = SerialTransport(port, self._baudrate)
-        self._transport.received.connect(self.on_serial_data_received)
-        self._transport.status_changed.connect(self.on_serial_status_changed)
+        # The Rust session retries its fixed port internally, so a
+        # 'vid:pid' spec can only be resolved once, here at setup.
+        try:
+            port = resolve_serial_port(port)
+        except serial.SerialException as e:
+            raise DriverSetupError(str(e)) from e
 
-    def on_serial_status_changed(
-        self, sender, status: TransportStatus, message: str | None = None
-    ):
-        if status == TransportStatus.CONNECTED:
-            logger.debug(
-                "Suppressing transport-level CONNECTED. Driver will "
-                "emit CONNECTED after handshake verification."
-            )
-            return
-        logger.debug(
-            f"Serial transport status changed: {status}, message: {message}"
+        config = {
+            "port": port,
+            "baudrate": int(baudrate),
+        }
+        self._session = MarlinSession(
+            config=config,
+            dialect=self._dialect_templates(),
+            event_callback=self._on_session_event,
         )
-        self._update_connection_status(status, message)
+
+    def _on_session_event(self, event: SessionEvent) -> None:
+        """Re-emit Rust session events as Rayforge blinker signals."""
+        match event:
+            case SessionEvent.StateChanged():
+                self._on_state_changed(event.state)
+            case SessionEvent.ConnectionStatusChanged():
+                self._on_connection_status_changed(event.status, event.message)
+            case SessionEvent.CommandStatusChanged():
+                self._on_command_status_changed(event.status, event.message)
+            case SessionEvent.JobFinished():
+                self.job_finished.send(self)
+            case SessionEvent.ProbeStatusChanged():
+                self.probe_status_changed.send(self, message=event.message)
+            case SessionEvent.RawRx():
+                self._log_raw_line(event.line, received=True)
+                if is_boot_message(event.line):
+                    self._boot_lines.append(event.line)
+            case SessionEvent.RawTx():
+                self._log_raw_line(event.line, received=False)
+            case _:
+                logger.debug(f"Ignoring session event: {event!r}")
+
+    def _on_state_changed(self, session_state: "SessionDeviceState") -> None:
+        state = from_session_state(session_state)
+        old_status = self.state.status
+        self.state = state
+        if state.status != old_status:
+            logger.info(
+                f"Device state changed: {state.status.name}",
+                extra=self._log_extra("STATE_CHANGE"),
+            )
+        self.state_changed.send(self, state=state)
+
+    def _on_connection_status_changed(
+        self, status_str: str, message: str | None
+    ) -> None:
+        logger.info(
+            f"Connection status: {status_str}"
+            + (f" - {message}" if message else ""),
+            extra=self._log_extra("MACHINE_EVENT"),
+        )
+        self.connection_status_changed.send(
+            self,
+            status=TransportStatus[status_str],
+            message=message,
+        )
+        if status_str in ("ERROR", "DISCONNECTED") and (
+            self.state.status != DeviceStatus.UNKNOWN
+        ):
+            self.state.status = DeviceStatus.UNKNOWN
+            self.state_changed.send(self, state=self.state)
+
+    def _on_command_status_changed(
+        self, status_str: str, message: str | None
+    ) -> None:
+        self.command_status_changed.send(
+            self,
+            status=TransportStatus[status_str],
+            message=message,
+        )
+
+    def _log_raw_line(self, line: str, received: bool) -> None:
+        """Log a raw line from the session's communication so the
+        console (with 'Show verbose' enabled) shows the full
+        conversation with the device."""
+        if received:
+            if line == "ok" or line.startswith("Error:"):
+                category = "MACHINE_RESPONSE"
+            else:
+                category = "MACHINE_EVENT"
+        else:
+            category = "RAW_IO"
+        logger.info(line, extra=self._log_extra(category))
 
     async def cleanup(self):
         logger.debug("Cleanup initiated.")
-        self.keep_running = False
-        self._is_cancelled = False
-        self._job_running = False
-        self._on_command_done = None
-
-        if self._connection_task:
-            self._connection_task.cancel()
-            try:
-                await self._connection_task
-            except asyncio.CancelledError:
-                pass
-            except Exception as e:  # noqa: BLE001 - awaited task cleanup
-                logger.warning(
-                    f"Ignored exception in connection task during cleanup: {e}"
-                )
-            self._connection_task = None
-
-        if self._transport:
-            self._transport.received.disconnect(self.on_serial_data_received)
-            self._transport.status_changed.disconnect(
-                self.on_serial_status_changed
-            )
-            if self._transport.is_connected:
-                await self._transport.disconnect()
-
+        if self._session is not None:
+            await self._session.disconnect()
+            self._session = None
         await super().cleanup()
         logger.debug("Cleanup completed.")
 
     async def _connect_implementation(self):
-        if self._connection_task and not self._connection_task.done():
-            logger.warning(
-                "Connect called with active connection task. Cleaning up."
-            )
-            self._connection_task.cancel()
-            try:
-                await self._connection_task
-            except asyncio.CancelledError:
-                pass
-
-        if not self._transport:
+        """Launches the Rust connection loop and returns, allowing the
+        UI to remain responsive."""
+        if self._session is None:
             logger.error(
-                "Cannot connect: Transport not initialized "
+                "Cannot connect: session not initialized "
                 "(check port settings)."
             )
-            self._update_connection_status(
-                TransportStatus.ERROR, _("Port not configured")
+            self.connection_status_changed.send(
+                self,
+                status=TransportStatus.ERROR,
+                message=_("Port not configured"),
             )
             return
-
-        logger.debug("Connect initiated.")
-        self._loop = asyncio.get_running_loop()
-        self.keep_running = True
-        self._is_cancelled = False
-        self._job_running = False
-        self._on_command_done = None
-        self._connection_task = asyncio.create_task(self._connection_loop())
-
-    async def _connection_loop(self) -> None:
-        logger.debug("Entering _connection_loop.")
-        while self.keep_running:
-            logger.debug("Attempting connection...")
-
-            try:
-                transport = self._transport
-                if not transport:
-                    raise DriverSetupError("Transport not initialized")
-
-                await transport.connect()
-                logger.debug("Serial port opened. Waiting for Marlin start...")
-
-                self._handshake_event.clear()
-                try:
-                    await asyncio.wait_for(
-                        self._handshake_event.wait(), timeout=5.0
-                    )
-                except asyncio.TimeoutError:
-                    logger.warning(
-                        "No 'start' received from Marlin. Port may "
-                        "be a phantom COM port."
-                    )
-                    await transport.disconnect()
-                    self._update_connection_status(
-                        TransportStatus.ERROR,
-                        _("No response from device"),
-                    )
-                    self._update_connection_status(TransportStatus.SLEEPING)
-                    await asyncio.sleep(5)
-                    continue
-
-                logger.info("Connection established successfully.")
-
-                await asyncio.sleep(1.0)
-
-                self._update_connection_status(TransportStatus.CONNECTED)
-
-                logger.debug("Connection verified. Starting M114 polling.")
-                while transport.is_connected and self.keep_running:
-                    if not self._job_running:
-                        try:
-                            await self._send_and_wait(
-                                "M114", wait_for_ok=False
-                            )
-                        except ConnectionError as e:
-                            logger.warning(
-                                f"Connection lost during M114 poll: {e}"
-                            )
-                            break
-                    await asyncio.sleep(2.0)
-
-                    if not self.keep_running:
-                        break
-
-            except (serial.serialutil.SerialException, OSError) as e:
-                logger.error(f"Connection error: {e}")
-            except asyncio.CancelledError:
-                logger.info("Connection loop cancelled.")
-                break
-            except Exception as e:
-                logger.exception("Unexpected error in connection loop")
-                self._update_connection_status(TransportStatus.ERROR, str(e))
-            finally:
-                if self._transport and self._transport.is_connected:
-                    logger.debug("Disconnecting transport in finally block")
-                    await self._transport.disconnect()
-
-            if not self.keep_running:
-                break
-
-            logger.debug("Connection lost. Reconnecting in 5s...")
-            self._update_connection_status(TransportStatus.SLEEPING)
-            await asyncio.sleep(5)
-
-        logger.debug("Leaving _connection_loop.")
-
-    async def _send_and_wait(
-        self, command: str, wait_for_ok: bool = True
-    ) -> list[str]:
-        if not self._transport or not self._transport.is_connected:
-            raise ConnectionError("Serial transport not connected")
-
-        self._response_lines = []
-        if wait_for_ok:
-            self._ok_event.clear()
-
-        cmd_str = command.strip()
-        if cmd_str:
-            logger.info(cmd_str, extra=self._log_extra("USER_COMMAND"))
-        payload = (command + "\n").encode("utf-8")
-        logger.debug(
-            f"TX: {payload!r}",
-            extra={
-                "log_category": "RAW_IO",
-                "direction": "TX",
-                "data": payload,
-            },
-        )
-        await self._transport.send(payload)
-
-        if wait_for_ok:
-            try:
-                await asyncio.wait_for(self._ok_event.wait(), 30.0)
-            except asyncio.TimeoutError as e:
-                raise ConnectionError(
-                    f"Command '{command}' not confirmed"
-                ) from e
-
-        return self._response_lines
+        self._update_session_dialect()
+        await self._session.connect()
 
     async def execute_interactive_command(self, command: str) -> list[str]:
-        """
-        Send a command and return its response lines.
-
-        Used during probing to query M115, M211, M503 etc.
-        Sets ``_job_running = True`` to suppress M114 status
-        polling while the command is in flight.
-        """
-        if not self._transport or not self._transport.is_connected:
-            raise ConnectionError("Serial transport not connected")
-
-        was_job_running = self._job_running
-        self._job_running = True
-        try:
-            return await self._send_and_wait(command)
-        finally:
-            self._job_running = was_job_running
-
-    def _start_job(
-        self,
-        on_command_done: Callable[[int], None | Awaitable[None]] | None = None,
-    ):
-        self._is_cancelled = False
-        self._job_running = True
-        self._on_command_done = on_command_done
-        self._last_reported_op_index = -1
-
-    async def _stream_gcode(
-        self,
-        gcode_lines: list[str],
-        op_map: MachineCodeOpMap | None = None,
-    ):
-        logger.debug(
-            f"Starting Marlin streaming job with {len(gcode_lines)} lines."
+        """Send a command and await its full response, blocking other
+        commands from interleaving; used by device probing."""
+        return await self._require_session().execute_interactive_command(
+            command
         )
-        try:
-            for line_idx, line in enumerate(gcode_lines):
-                if self._is_cancelled:
-                    logger.info("Job cancelled. Stopping G-code.")
-                    break
 
-                line = line.strip()
-                if not line:
-                    continue
+    def _require_session(self) -> MarlinSession:
+        """Returns the session, raising a descriptive error when the
+        driver was never set up (e.g. no port configured)."""
+        if self._session is None:
+            raise DeviceConnectionError(
+                _("Driver is not set up. Check the port settings.")
+            )
+        return self._session
 
-                op_index = op_map.op_for_line(line_idx) if op_map else None
-
-                await self._send_and_wait(line)
-
-                if self._on_command_done and op_index is not None:
-                    for i in range(
-                        self._last_reported_op_index + 1,
-                        op_index + 1,
-                    ):
-                        try:
-                            result = self._on_command_done(i)
-                            if inspect.isawaitable(result):
-                                asyncio.ensure_future(result)
-                        except Exception as e:
-                            logger.error(
-                                "Error in on_command_done callback",
-                                exc_info=e,
-                            )
-                    self._last_reported_op_index = op_index
-
-        except (
-            asyncio.CancelledError,
-            ConnectionError,
-            DeviceConnectionError,
-        ) as e:
-            logger.warning(f"Job interrupted: {e!r}")
-            if not self._is_cancelled:
-                logger.info(f"Calling cancel() due to interruption: {e!r}")
-                await self.cancel(emergency=True)
-            if isinstance(e, asyncio.CancelledError):
-                raise
-        finally:
-            self._job_running = False
-            self._on_command_done = None
-            self.job_finished.send(self)
-            logger.debug("G-code streaming finished.")
+    @staticmethod
+    def _op_line_map(op_map: Any) -> dict[int, int]:
+        """Extract the {line index: op index} mapping for the Rust
+        session's per-line progress reporting."""
+        result = {}
+        for line_idx in range(op_map.line_count):
+            op_index = op_map.op_for_line(line_idx)
+            if op_index is not None:
+                result[line_idx] = op_index
+        return result
 
     async def run(
         self,
@@ -443,84 +340,47 @@ class MarlinSerialDriver(Driver):
         ops: "Ops",
         on_command_done: Callable[[int], None | Awaitable[None]] | None = None,
     ) -> None:
-        self._start_job(on_command_done)
+        session = self._require_session()
+        self._update_session_dialect()
+        line_map = self._op_line_map(encoded.op_map)
 
-        mapping = encoded.op_map
-        gcode_lines = encoded.text.splitlines()
+        def _on_command_done(op_index: int):
+            if on_command_done is None:
+                return
+            result = on_command_done(op_index)
+            if asyncio.iscoroutine(result):
+                asyncio.ensure_future(result)
 
         try:
-            await self._stream_gcode(gcode_lines, mapping)
+            await session.run(
+                encoded.text,
+                line_map,
+                None if on_command_done is None else _on_command_done,
+            )
         except DeviceConnectionError as e:
             logger.warning(
                 f"Job terminated due to device error: {e}. "
                 "Connection remains active."
             )
+        except Exception:
+            logger.exception("Job terminated with unexpected error")
 
     async def run_raw(self, machine_code: str) -> None:
-        lines = [
-            line.strip() for line in machine_code.splitlines() if line.strip()
-        ]
-        if not lines:
-            return
-        self._start_job()
+        session = self._require_session()
         try:
-            await self._stream_gcode(lines)
+            await session.run_raw(machine_code)
         except DeviceConnectionError as e:
             logger.warning(
                 f"Raw G-code terminated due to device error: {e}. "
                 "Connection remains active."
             )
+        except Exception:
+            logger.exception("Raw G-code terminated with unexpected error")
 
     async def cancel(self, emergency: bool = False) -> None:
-        logger.debug("Cancel command initiated.")
-        job_was_running = self._job_running
-        self._is_cancelled = True
-        self._job_running = False
-        self._on_command_done = None
-
-        if self._transport and self._transport.is_connected:
-            logger.info("Sending M410 (Quick Stop) to device.")
-            try:
-                payload = b"M410\n"
-                logger.debug(
-                    f"TX: {payload!r}",
-                    extra={
-                        "log_category": "RAW_IO",
-                        "direction": "TX",
-                        "data": payload,
-                    },
-                )
-                await self._transport.send(payload)
-            except ConnectionError as e:
-                logger.warning(f"Failed to send M410: {e}")
-            await self._send_safety_shutdown(emergency)
-
-        if not self._transport:
+        if self._session is None:
             raise ConnectionError("Serial transport not initialized")
-
-        if job_was_running:
-            self.job_finished.send(self)
-
-    async def _send_safety_shutdown(self, emergency: bool = False) -> None:
-        """
-        Best-effort transmission of the dialect's tool-off commands so
-        a cancelled or aborted job cannot leave persistent PWM outputs
-        energized. Responses are ignored: the commands are sent
-        fire-and-forget.
-        """
-        dialect = self.dialect
-        commands = dialect.get_safety_off_commands()
-        if emergency and dialect.emergency_stop:
-            commands.append(dialect.emergency_stop)
-        transport = self._transport
-        if not commands or not transport or not transport.is_connected:
-            return
-        for command in commands:
-            try:
-                logger.info(command, extra=self._log_extra("USER_COMMAND"))
-                await transport.send((command + "\n").encode("utf-8"))
-            except ConnectionError as e:
-                logger.warning(f"Safety command '{command}' failed: {e}")
+        await self._session.cancel(emergency)
 
     async def set_hold(self, hold: bool = True) -> None:
         logger.warning(
@@ -528,88 +388,76 @@ class MarlinSerialDriver(Driver):
             "on 8-bit boards. set_hold is a best-effort no-op."
         )
 
-    async def home(self, axes: Axis | None = None) -> None:
-        dialect = self.dialect
-        if axes is None:
-            await self._send_and_wait(dialect.home_all)
-        else:
-            for axis in axes:
-                cmd = dialect.home_axis.format(axis_letter=axis.name)
-                await self._send_and_wait(cmd)
-        self.state.error = None
-        self.state_changed.send(self, state=self.state)
-
-    async def move_to(self, pos_x, pos_y, pos_z=None, speed=None) -> None:
-        cmd = self._format_move_to(float(pos_x), float(pos_y), pos_z, speed)
-        await self._send_and_wait(cmd)
-
-    async def jog(self, speed: int, **deltas: float) -> None:
-        dialect = self.dialect
-        parts = [dialect.jog.format(speed=self._to_machine_speed(speed))]
-
-        for axis_name, distance in deltas.items():
-            parts.append(
-                f"{axis_name.upper()}{self._to_machine_length(distance)}"
-            )
-
-        if len(parts) == 1:
-            return
-
-        cmd = " ".join(parts)
-        await self._send_and_wait(cmd)
-        await self._send_and_wait("G90")
-
-    async def select_tool(self, tool_number: int) -> None:
-        dialect = self.dialect
-        cmd = dialect.tool_change.format(tool_number=tool_number)
-        await self._send_and_wait(cmd)
-
-    async def clear_alarm(self) -> None:
-        dialect = self.dialect
-        await self._send_and_wait(dialect.clear_alarm)
-        self.state.error = None
-        self.state_changed.send(self, state=self.state)
-
-    async def set_power(self, head: "Laser", percent: float) -> None:
-        dialect = self.dialect
-        if percent <= 0:
-            cmd = dialect.laser_off
-        else:
-            power_abs = percent * head.max_power
-            cmd = dialect.laser_on.format(power=power_abs)
-        await self._send_and_wait(cmd)
-
-    async def set_focus_power(self, head: "Laser", percent: float) -> None:
-        dialect = self.dialect
-        if percent <= 0:
-            cmd = dialect.laser_off
-        else:
-            power_abs = percent * head.max_power
-            cmd = dialect.focus_laser_on.format(power=power_abs)
-        await self._send_and_wait(cmd)
-
     def can_home(self, axis: Axis | None = None) -> bool:
         return True
 
+    async def home(self, axes: Axis | None = None) -> None:
+        session = self._require_session()
+        names = None
+        if axes is not None:
+            names = [axis.name for axis in axes]
+        await session.home(names)
+
+    async def move_to(
+        self,
+        pos_x: float,
+        pos_y: float,
+        pos_z: float | None = None,
+        speed: float | None = None,
+    ) -> None:
+        cmd = self._format_move_to(float(pos_x), float(pos_y), pos_z, speed)
+        await self._require_session().execute_command(cmd)
+
     def can_jog(self, axis: Axis | None = None) -> bool:
         return True
+
+    async def jog(self, speed: int, **deltas: float) -> None:
+        session = self._require_session()
+        converted = [
+            (name, self._to_machine_length(distance))
+            for name, distance in deltas.items()
+        ]
+        await session.jog(self._to_machine_speed(speed), converted)
+        await session.execute_command("G90")
+
+    async def select_tool(self, tool_number: int) -> None:
+        """Sends a tool change command for the given tool number."""
+        await self._require_session().select_tool(tool_number)
+
+    async def clear_alarm(self) -> None:
+        session = self._require_session()
+        dialect = self.dialect
+        response = await session.execute_command(dialect.clear_alarm)
+        has_error = any(
+            line.startswith(("Error:", "error:")) for line in response
+        )
+        if not has_error:
+            self.state.error = None
+            self.state_changed.send(self, state=self.state)
+
+    async def set_power(self, head: "Laser", percent: float) -> None:
+        """Sets the laser power (0.0-1.0 of max power)."""
+        power = percent * head.max_power if percent > 0 else None
+        await self._require_session().set_power(power)
+
+    async def set_focus_power(self, head: "Laser", percent: float) -> None:
+        """Sets the laser power for focus mode."""
+        power = percent * head.max_power if percent > 0 else None
+        await self._require_session().set_focus_power(power)
+
+    async def detect_unit_system(self) -> UnitSystem | None:
+        """Queries the device's active linear unit via ``M149``."""
+        result = await self._require_session().detect_unit_system()
+        if result == "metric":
+            return UnitSystem.METRIC
+        if result == "imperial":
+            return UnitSystem.IMPERIAL
+        return None
 
     async def read_settings(self) -> None:
         raise NotImplementedError(
             "Device settings not implemented for this driver"
         )
-
-    async def detect_unit_system(self) -> UnitSystem | None:
-        """
-        Queries the device's active linear unit via ``M149`` and
-        maps the response to a ``UnitSystem``.
-        """
-        try:
-            response_lines = await self.execute_interactive_command("M149")
-        except (ConnectionError, asyncio.TimeoutError) as e:
-            logger.warning(f"Unit system detection failed: {e}")
-            return None
-        return detect_unit_system_from_m149(response_lines)
 
     async def write_setting(self, key: str, value: Any) -> None:
         raise NotImplementedError(
@@ -619,16 +467,13 @@ class MarlinSerialDriver(Driver):
     async def set_wcs_offset(
         self, wcs_slot: str, x: float, y: float, z: float | None
     ) -> None:
-        p_num = gcode_to_p_number(wcs_slot)
-        if p_num is None:
-            raise ValueError(f"Invalid WCS slot: {wcs_slot}")
-        cmd = self.dialect.format_wcs_offset(
-            p_num,
+        session = self._require_session()
+        await session.set_wcs_offset(
+            wcs_slot,
             self._to_machine_length(x),
             self._to_machine_length(y),
             self._to_machine_length(z) if z is not None else None,
         )
-        await self._send_and_wait(cmd)
 
     async def read_wcs_offsets(self) -> dict[str, Pos]:
         raise NotImplementedError(
@@ -641,103 +486,3 @@ class MarlinSerialDriver(Driver):
         raise NotImplementedError(
             "Probing is not implemented for the Marlin driver."
         )
-
-    def on_serial_data_received(self, sender, data: bytes):
-        logger.debug(
-            f"RX: {data!r}",
-            extra={
-                "log_category": "RAW_IO",
-                "direction": "RX",
-                "data": data,
-            },
-        )
-
-        self._rx_buffer += data.decode("utf-8", errors="replace")
-        while "\n" in self._rx_buffer:
-            line, self._rx_buffer = self._rx_buffer.split("\n", 1)
-            line = line.strip()
-            if not line:
-                continue
-            self._process_line(line)
-
-    def _process_line(self, line: str):
-        if is_ok_response(line):
-            logger.info("ok", extra=self._log_extra("MACHINE_RESPONSE"))
-            self._ok_event.set()
-            return
-
-        if is_error_response(line):
-            logger.error(
-                f"Marlin error: {line}",
-                extra=self._log_extra("ERROR"),
-            )
-            self._response_lines.append(line)
-            self._ok_event.set()
-            return
-
-        if line == "start":
-            logger.debug("Received 'start' handshake from Marlin.")
-            self._handshake_event.set()
-            return
-
-        if is_boot_message(line):
-            self._boot_lines.append(line)
-            logger.info(
-                line,
-                extra=self._log_extra("MACHINE_EVENT"),
-            )
-            return
-
-        match = m114_pos_re.search(line)
-        if match:
-            x = self._from_machine_length(float(match.group(1)))
-            y = self._from_machine_length(float(match.group(2)))
-            z = self._from_machine_length(float(match.group(3)))
-            old_pos = self.state.machine_pos
-            new_pos = (x, y, z)
-            if new_pos != old_pos:
-                self.state.machine_pos = new_pos
-                self.state.work_pos = new_pos
-                old_status = self.state.status
-                if self.state.status == DeviceStatus.UNKNOWN:
-                    self.state.status = DeviceStatus.IDLE
-                if self.state != DeviceState():
-                    if self.state.status != old_status:
-                        logger.info(
-                            f"Device state changed: {self.state.status.name}",
-                            extra=self._log_extra("STATE_CHANGE"),
-                        )
-                    self.state_changed.send(self, state=self.state)
-            logger.info(
-                f"M114: X:{x} Y:{y} Z:{z}",
-                extra=self._log_extra("STATUS_POLL"),
-            )
-            return
-
-        logger.info(line, extra=self._log_extra("MACHINE_EVENT"))
-        self._response_lines.append(line)
-
-    def _update_connection_status(
-        self, status: TransportStatus, message: str | None = None
-    ):
-        log_data = f"Connection status: {status.name}"
-        if message:
-            log_data += f" - {message}"
-        logger.info(log_data, extra=self._log_extra("MACHINE_EVENT"))
-        self.connection_status_changed.send(
-            self, status=status, message=message
-        )
-        if (
-            status
-            in [
-                TransportStatus.DISCONNECTED,
-                TransportStatus.ERROR,
-            ]
-            and self.state.status != DeviceStatus.UNKNOWN
-        ):
-            self.state.status = DeviceStatus.UNKNOWN
-            logger.info(
-                f"Device state changed: {self.state.status.name}",
-                extra=self._log_extra("STATE_CHANGE"),
-            )
-            self.state_changed.send(self, state=self.state)
