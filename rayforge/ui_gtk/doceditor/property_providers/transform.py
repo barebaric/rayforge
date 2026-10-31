@@ -75,17 +75,8 @@ class TransformPropertyProvider(PropertyProvider):
             if pos_machine is not None:
                 pos_machine_x, pos_machine_y = pos_machine
 
-                # Get reference offset
-                # - WCS mode: offset is in MACHINE space, use directly
-                # - Workarea mode: offset is in WORLD space, transform to
-                #   MACHINE
-                if machine.wcs_origin_is_workarea_origin:
-                    offset_world = machine.get_reference_offset()
-                    offset_machine = panel.world_point_to_machine(
-                        offset_world[0], offset_world[1]
-                    )
-                else:
-                    offset_machine = machine.get_reference_offset()[:2]
+                # Get reference offset (always in MACHINE space)
+                offset_machine = machine.get_reference_offset()[:2]
 
                 pos_ref_x = pos_machine_x - offset_machine[0]
                 pos_ref_y = pos_machine_y - offset_machine[1]
@@ -512,15 +503,7 @@ class TransformPropertyProvider(PropertyProvider):
             # Convert reference coordinates to machine coordinates
             machine = get_context().machine
             if machine:
-                if machine.wcs_origin_is_workarea_origin:
-                    # Workarea mode: offset is in WORLD space, transform it
-                    offset_world = machine.get_reference_offset()
-                    offset_machine = machine.panel.world_point_to_machine(
-                        offset_world[0], offset_world[1]
-                    )
-                else:
-                    # WCS mode: offset is already in MACHINE space
-                    offset_machine = machine.get_reference_offset()[:2]
+                offset_machine = machine.get_reference_offset()[:2]
             else:
                 offset_machine = (0.0, 0.0)
             new_x_machine = new_x_wcs + offset_machine[0]
@@ -552,15 +535,7 @@ class TransformPropertyProvider(PropertyProvider):
             # Convert reference coordinates to machine coordinates
             machine = get_context().machine
             if machine:
-                if machine.wcs_origin_is_workarea_origin:
-                    # Workarea mode: offset is in WORLD space, transform it
-                    offset_world = machine.get_reference_offset()
-                    offset_machine = machine.panel.world_point_to_machine(
-                        offset_world[0], offset_world[1]
-                    )
-                else:
-                    # WCS mode: offset is already in MACHINE space
-                    offset_machine = machine.get_reference_offset()[:2]
+                offset_machine = machine.get_reference_offset()[:2]
             else:
                 offset_machine = (0.0, 0.0)
             new_y_machine = new_y_wcs + offset_machine[1]
@@ -724,15 +699,7 @@ class TransformPropertyProvider(PropertyProvider):
         # Reset to coordinate origin (X=0 in reference coordinates)
         machine = get_context().machine
         if machine:
-            if machine.wcs_origin_is_workarea_origin:
-                # Workarea mode: offset is in WORLD space, transform it
-                offset_world = machine.get_reference_offset()
-                offset_machine = machine.panel.world_point_to_machine(
-                    offset_world[0], offset_world[1]
-                )
-            else:
-                # WCS mode: offset is already in MACHINE space
-                offset_machine = machine.get_reference_offset()[:2]
+            offset_machine = machine.get_reference_offset()[:2]
         else:
             offset_machine = (0.0, 0.0)
 
@@ -759,15 +726,7 @@ class TransformPropertyProvider(PropertyProvider):
         # Reset to coordinate origin (Y=0 in reference coordinates)
         machine = get_context().machine
         if machine:
-            if machine.wcs_origin_is_workarea_origin:
-                # Workarea mode: offset is in WORLD space, transform it
-                offset_world = machine.get_reference_offset()
-                offset_machine = machine.panel.world_point_to_machine(
-                    offset_world[0], offset_world[1]
-                )
-            else:
-                # WCS mode: offset is already in MACHINE space
-                offset_machine = machine.get_reference_offset()[:2]
+            offset_machine = machine.get_reference_offset()[:2]
         else:
             offset_machine = (0.0, 0.0)
 

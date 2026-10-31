@@ -2145,25 +2145,25 @@ class TestMachine:
             (False, Origin.TOP_RIGHT, False, True, (75.0, 235.0)),
             (False, Origin.TOP_RIGHT, True, True, (125.0, 235.0)),
             # Work-area reference offset with margins (10, 20, 30, 40).
-            # These values intentionally preserve the pre-feature
-            # transform through machine_point_to_world for non-bottom-
-            # left origins.
+            # In workarea-origin mode the reference is the world position
+            # of the workarea origin for every origin corner and
+            # reversal combination.
             (True, Origin.BOTTOM_LEFT, False, False, (10.0, 40.0)),
-            (True, Origin.BOTTOM_LEFT, True, False, (-10.0, 40.0)),
-            (True, Origin.BOTTOM_LEFT, False, True, (10.0, -40.0)),
-            (True, Origin.BOTTOM_LEFT, True, True, (-10.0, -40.0)),
-            (True, Origin.TOP_LEFT, False, False, (10.0, 20.0)),
-            (True, Origin.TOP_LEFT, True, False, (-10.0, 20.0)),
-            (True, Origin.TOP_LEFT, False, True, (10.0, 380.0)),
-            (True, Origin.TOP_LEFT, True, True, (-10.0, 380.0)),
-            (True, Origin.BOTTOM_RIGHT, False, False, (30.0, 40.0)),
-            (True, Origin.BOTTOM_RIGHT, True, False, (170.0, 40.0)),
-            (True, Origin.BOTTOM_RIGHT, False, True, (30.0, -40.0)),
-            (True, Origin.BOTTOM_RIGHT, True, True, (170.0, -40.0)),
-            (True, Origin.TOP_RIGHT, False, False, (30.0, 20.0)),
-            (True, Origin.TOP_RIGHT, True, False, (170.0, 20.0)),
-            (True, Origin.TOP_RIGHT, False, True, (30.0, 380.0)),
-            (True, Origin.TOP_RIGHT, True, True, (170.0, 380.0)),
+            (True, Origin.BOTTOM_LEFT, True, False, (10.0, 40.0)),
+            (True, Origin.BOTTOM_LEFT, False, True, (10.0, 40.0)),
+            (True, Origin.BOTTOM_LEFT, True, True, (10.0, 40.0)),
+            (True, Origin.TOP_LEFT, False, False, (10.0, 180.0)),
+            (True, Origin.TOP_LEFT, True, False, (10.0, 180.0)),
+            (True, Origin.TOP_LEFT, False, True, (10.0, 180.0)),
+            (True, Origin.TOP_LEFT, True, True, (10.0, 180.0)),
+            (True, Origin.BOTTOM_RIGHT, False, False, (70.0, 40.0)),
+            (True, Origin.BOTTOM_RIGHT, True, False, (70.0, 40.0)),
+            (True, Origin.BOTTOM_RIGHT, False, True, (70.0, 40.0)),
+            (True, Origin.BOTTOM_RIGHT, True, True, (70.0, 40.0)),
+            (True, Origin.TOP_RIGHT, False, False, (70.0, 180.0)),
+            (True, Origin.TOP_RIGHT, True, False, (70.0, 180.0)),
+            (True, Origin.TOP_RIGHT, False, True, (70.0, 180.0)),
+            (True, Origin.TOP_RIGHT, True, True, (70.0, 180.0)),
         ],
     )
     def test_reference_position_world_native_regression_matrix(

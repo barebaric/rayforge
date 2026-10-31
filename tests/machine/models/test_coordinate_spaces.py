@@ -241,9 +241,8 @@ class TestCoordinateSpaces:
     # These tests simulate what the UI does:
     # 1. Get workpiece position in WORLD coords
     # 2. Convert to MACHINE coords via world_to_machine()
-    # 3. Get workarea offset in WORLD space via get_reference_offset()
-    # 4. Transform offset to MACHINE space via world_point_to_machine()
-    # 5. Subtract to get REFERENCE coords
+    # 3. Get the offset in MACHINE space via get_reference_offset()
+    # 4. Subtract to get REFERENCE coords
     #
     # Margins: left=10, top=20, right=30, bottom=40
     # Machine extents: (100, 100)
@@ -262,10 +261,7 @@ class TestCoordinateSpaces:
         pos_world = (20.0, 50.0)
         space = machine.get_coordinate_space()
         pos_machine = space.world_item_to_machine(pos_world, (0, 0))
-        offset_world = machine.get_reference_offset()
-        offset_machine = space.world_point_to_machine(
-            offset_world[0], offset_world[1]
-        )
+        offset_machine = machine.get_reference_offset()[:2]
         pos_ref = (
             pos_machine[0] - offset_machine[0],
             pos_machine[1] - offset_machine[1],
@@ -287,10 +283,7 @@ class TestCoordinateSpaces:
         pos_world = (20.0, 70.0)
         space = machine.get_coordinate_space()
         pos_machine = space.world_item_to_machine(pos_world, (0, 0))
-        offset_world = machine.get_reference_offset()
-        offset_machine = space.world_point_to_machine(
-            offset_world[0], offset_world[1]
-        )
+        offset_machine = machine.get_reference_offset()[:2]
         pos_ref = (
             pos_machine[0] - offset_machine[0],
             pos_machine[1] - offset_machine[1],
@@ -315,10 +308,7 @@ class TestCoordinateSpaces:
         pos_world = (80.0, 50.0)
         space = machine.get_coordinate_space()
         pos_machine = space.world_item_to_machine(pos_world, (0, 0))
-        offset_world = machine.get_reference_offset()
-        offset_machine = space.world_point_to_machine(
-            offset_world[0], offset_world[1]
-        )
+        offset_machine = machine.get_reference_offset()[:2]
         pos_ref = (
             pos_machine[0] - offset_machine[0],
             pos_machine[1] - offset_machine[1],
@@ -343,10 +333,7 @@ class TestCoordinateSpaces:
         pos_world = (80.0, 70.0)
         space = machine.get_coordinate_space()
         pos_machine = space.world_item_to_machine(pos_world, (0, 0))
-        offset_world = machine.get_reference_offset()
-        offset_machine = space.world_point_to_machine(
-            offset_world[0], offset_world[1]
-        )
+        offset_machine = machine.get_reference_offset()[:2]
         pos_ref = (
             pos_machine[0] - offset_machine[0],
             pos_machine[1] - offset_machine[1],
@@ -371,10 +358,7 @@ class TestCoordinateSpaces:
         pos_world = (20.0, 50.0)
         space = machine.get_coordinate_space()
         pos_machine = space.world_item_to_machine(pos_world, (0, 0))
-        offset_world = machine.get_reference_offset()
-        offset_machine = space.world_point_to_machine(
-            offset_world[0], offset_world[1]
-        )
+        offset_machine = machine.get_reference_offset()[:2]
         pos_ref = (
             pos_machine[0] - offset_machine[0],
             pos_machine[1] - offset_machine[1],
@@ -399,10 +383,7 @@ class TestCoordinateSpaces:
         pos_world = (20.0, 50.0)
         space = machine.get_coordinate_space()
         pos_machine = space.world_item_to_machine(pos_world, (0, 0))
-        offset_world = machine.get_reference_offset()
-        offset_machine = space.world_point_to_machine(
-            offset_world[0], offset_world[1]
-        )
+        offset_machine = machine.get_reference_offset()[:2]
         pos_ref = (
             pos_machine[0] - offset_machine[0],
             pos_machine[1] - offset_machine[1],
@@ -428,10 +409,7 @@ class TestCoordinateSpaces:
         pos_world = (20.0, 50.0)
         space = machine.get_coordinate_space()
         pos_machine = space.world_item_to_machine(pos_world, (0, 0))
-        offset_world = machine.get_reference_offset()
-        offset_machine = space.world_point_to_machine(
-            offset_world[0], offset_world[1]
-        )
+        offset_machine = machine.get_reference_offset()[:2]
         pos_ref = (
             pos_machine[0] - offset_machine[0],
             pos_machine[1] - offset_machine[1],
@@ -463,10 +441,7 @@ class TestCoordinateSpaces:
 
         space = machine.get_coordinate_space()
         pos_machine = space.world_item_to_machine(pos_world, size)
-        offset_world = machine.get_reference_offset()
-        offset_machine = space.world_point_to_machine(
-            offset_world[0], offset_world[1]
-        )
+        offset_machine = machine.get_reference_offset()[:2]
         pos_ref = (
             pos_machine[0] - offset_machine[0],
             pos_machine[1] - offset_machine[1],
@@ -474,7 +449,7 @@ class TestCoordinateSpaces:
 
         # BOTTOM_LEFT: no flip, so MACHINE == WORLD for items
         # pos_machine = (15, 45)
-        # offset_world = (10, 40), offset_machine = (10, 40)
+        # offset_machine = (10, 40)
         # pos_ref = (15 - 10, 45 - 40) = (5, 5)
         assert pos_machine == pytest.approx((15.0, 45.0))
         assert offset_machine == pytest.approx((10.0, 40.0))
@@ -494,10 +469,7 @@ class TestCoordinateSpaces:
 
         space = machine.get_coordinate_space()
         pos_machine = space.world_item_to_machine(pos_world, size)
-        offset_world = machine.get_reference_offset()
-        offset_machine = space.world_point_to_machine(
-            offset_world[0], offset_world[1]
-        )
+        offset_machine = machine.get_reference_offset()[:2]
         pos_ref = (
             pos_machine[0] - offset_machine[0],
             pos_machine[1] - offset_machine[1],
@@ -505,8 +477,7 @@ class TestCoordinateSpaces:
 
         # TOP_LEFT: y_axis_down=True
         # pos_machine: mx=15, my=100-45-10=45
-        # offset_world = (10, 80) - workarea origin in WORLD space
-        # offset_machine: mx=10, my=100-80=20
+        # offset_machine: mx=10, my=100-80=20 (workarea origin in MACHINE)
         # pos_ref = (15-10, 45-20) = (5, 25)
         assert pos_machine == pytest.approx((15.0, 45.0))
         assert offset_machine == pytest.approx((10.0, 20.0))
@@ -527,10 +498,7 @@ class TestCoordinateSpaces:
 
         space = machine.get_coordinate_space()
         pos_machine = space.world_item_to_machine(pos_world, size)
-        offset_world = machine.get_reference_offset()
-        offset_machine = space.world_point_to_machine(
-            offset_world[0], offset_world[1]
-        )
+        offset_machine = machine.get_reference_offset()[:2]
         pos_ref = (
             pos_machine[0] - offset_machine[0],
             pos_machine[1] - offset_machine[1],
@@ -538,7 +506,6 @@ class TestCoordinateSpaces:
 
         # BOTTOM_LEFT with reverse_x
         # pos_machine: (15, 45) -> (-15, 45) after flip
-        # offset_world: (10, 40)
         # offset_machine: (10, 40) -> (-10, 40) after flip
         # pos_ref: (-15, 45) - (-10, 40) = (-5, 5)
         assert pos_machine == pytest.approx((-15.0, 45.0))
@@ -560,10 +527,7 @@ class TestCoordinateSpaces:
 
         space = machine.get_coordinate_space()
         pos_machine = space.world_item_to_machine(pos_world, size)
-        offset_world = machine.get_reference_offset()
-        offset_machine = space.world_point_to_machine(
-            offset_world[0], offset_world[1]
-        )
+        offset_machine = machine.get_reference_offset()[:2]
         pos_ref = (
             pos_machine[0] - offset_machine[0],
             pos_machine[1] - offset_machine[1],
@@ -571,7 +535,6 @@ class TestCoordinateSpaces:
 
         # BOTTOM_LEFT with reverse_y
         # pos_machine: (15, 45) -> (15, -45) after flip
-        # offset_world: (10, 40)
         # offset_machine: (10, 40) -> (10, -40) after flip
         # pos_ref: (15, -45) - (10, -40) = (5, -5)
         assert pos_machine == pytest.approx((15.0, -45.0))
@@ -582,13 +545,13 @@ class TestCoordinateSpaces:
     # These tests verify that the UI and G-code encoder produce the
     # same reference coordinates when axis reversal is enabled.
     #
-    # The fix: world_point_to_machine() applies axis reversal, and the
-    # offset is transformed through it before subtraction.
+    # get_reference_offset() returns the offset in MACHINE space, with
+    # axis reversal already applied, matching the encoder's offset.
 
-    def test_offset_transform_matches_encoder(self, machine):
+    def test_offset_matches_encoder(self, machine):
         """
-        Verify that transforming the offset through world_point_to_machine()
-        produces the same result as the encoder's offset calculation.
+        Verify that get_reference_offset() matches the encoder's offset
+        calculation.
         """
         machine.set_axis_extents(100.0, 100.0)
         machine.set_work_margins(10.0, 20.0, 30.0, 40.0)
@@ -596,18 +559,10 @@ class TestCoordinateSpaces:
         machine.set_reverse_x_axis(True)
         machine.wcs_origin_is_workarea_origin = True
 
-        # get_reference_offset returns WORLD space offset
-        ref_offset = machine.get_reference_offset()
-        assert ref_offset[0] == pytest.approx(10.0)
+        offset_machine = machine.get_reference_offset()
 
-        # Transform through world_point_to_machine to get MACHINE space offset
-        space = machine.get_coordinate_space()
-        offset_machine = space.world_point_to_machine(
-            ref_offset[0], ref_offset[1]
-        )
-
-        # Encoder uses x_offset = -ml = -10 for BOTTOM_LEFT with reverse_x
-        # world_point_to_machine flips: 10 -> -10
+        # Encoder uses x_offset = -ml = -10 for BOTTOM_LEFT with
+        # reverse_x; get_reference_offset applies the same flip.
         assert offset_machine[0] == pytest.approx(-10.0)
 
     def test_ui_matches_gcode_with_reverse_x(self, machine):
@@ -626,10 +581,7 @@ class TestCoordinateSpaces:
         # What the UI now calculates:
         space = machine.get_coordinate_space()
         pos_machine = space.world_item_to_machine(pos_world, size)
-        offset_world = machine.get_reference_offset()
-        offset_machine = space.world_point_to_machine(
-            offset_world[0], offset_world[1]
-        )
+        offset_machine = machine.get_reference_offset()[:2]
         ui_pos_ref = (
             pos_machine[0] - offset_machine[0],
             pos_machine[1] - offset_machine[1],
