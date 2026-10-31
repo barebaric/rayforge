@@ -30,6 +30,9 @@ operaciones** y activar el recálculo manualmente vía el botón de la barra de 
 Rayforge puede **Buscar actualizaciones** automáticamente al inicio. Cuando está habilitado, se te
 notificará cuando haya una nueva versión disponible.
 
+Rayforge también puede **Buscar actualizaciones de complementos** automáticamente al inicio.
+Desactivar esta opción no impide las comprobaciones manuales desde la página Complementos.
+
 Con **Vigilar archivos importados** activado, Rayforge supervisa los archivos detrás de las piezas
 de trabajo importadas y ofrece recargarlas cuando cambian en el disco. Consulta
 [Mantener los archivos importados sincronizados](../files/importing.md#mantener-los-archivos-importados-sincronizados)

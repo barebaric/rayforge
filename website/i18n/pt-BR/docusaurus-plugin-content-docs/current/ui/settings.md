@@ -30,6 +30,9 @@ automaticamente** e acionar o recálculo manualmente pelo botão na barra de fer
 O Rayforge pode **Verificar atualizações** automaticamente na inicialização. Quando habilitado, você
 será notificado quando uma nova versão estiver disponível.
 
+O Rayforge também pode **Verificar atualizações de addons** automaticamente na inicialização.
+Desativar essa opção não impede verificações manuais na página Addons.
+
 Com **Vigiar arquivos importados** ativado, o Rayforge monitora os arquivos por trás das peças de
 trabalho importadas e oferece recarregá-los quando eles mudam no disco. Veja
 [Mantendo os arquivos importados sincronizados](../files/importing.md#mantendo-os-arquivos-importados-sincronizados)

@@ -35,6 +35,9 @@ class UpdateCommand:
         Initiates a background task to check for addon updates.
         This method is non-blocking.
         """
+        if not self._context.config.check_for_addon_updates:
+            logger.info("Automatic addon update check disabled by user.")
+            return
         logger.info("Scheduling startup addon update check.")
         self._task_mgr.add_coroutine(
             self._check_for_updates_worker, key="addon-update-check"
