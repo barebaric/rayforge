@@ -60,10 +60,16 @@ class Layer(DocItem):
         self.stock_material_uid: str | None = None
         self.color: str = self.DEFAULT_COLOR
         self.wcs: str | None = None
+        # Layer-level post processors, applied to the layer's merged
+        # toolpath in machine space (see the machine-transform stage).
+        # Serialized transformer dicts, resolved via the transformer
+        # registry like step-level transformers.
+        self.post_processors_dicts: list[dict[str, Any]] = []
 
         # Signals for notifying other parts of the application of changes.
         # This one is special and is bubbled manually.
         self.per_step_transformer_changed = Signal()
+        self.post_processor_changed = Signal()
 
         # Forward compatibility: store unknown attributes
         self.extra: dict[str, Any] = {}
@@ -86,6 +92,7 @@ class Layer(DocItem):
             "stock_material_uid": self.stock_material_uid,
             "color": self.color,
             "wcs": self.wcs,
+            "post_processors_dicts": self.post_processors_dicts,
             "children": [child.to_dict() for child in self.children],
         }
         result.update(self.extra)
@@ -106,6 +113,7 @@ class Layer(DocItem):
             "stock_material_uid",
             "color",
             "wcs",
+            "post_processors_dicts",
             "children",
         }
         extra = {k: v for k, v in data.items() if k not in known_keys}
@@ -120,6 +128,9 @@ class Layer(DocItem):
         layer.stock_material_uid = data.get("stock_material_uid")
         layer.color = data.get("color", cls.DEFAULT_COLOR)
         layer.wcs = data.get("wcs")
+        layer.post_processors_dicts = list(
+            data.get("post_processors_dicts", [])
+        )
         layer.extra = extra
 
         children = []
@@ -328,6 +339,15 @@ class Layer(DocItem):
         if self.wcs == wcs:
             return
         self.wcs = wcs
+        self.updated.send(self)
+
+    def set_post_processors_dicts(
+        self, post_processors_dicts: list[dict[str, Any]]
+    ):
+        if self.post_processors_dicts == post_processors_dicts:
+            return
+        self.post_processors_dicts = list(post_processors_dicts)
+        self.post_processor_changed.send(self)
         self.updated.send(self)
 
     def get_effective_wcs(self, machine) -> str:
