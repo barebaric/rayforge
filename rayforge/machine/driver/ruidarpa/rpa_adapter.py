@@ -26,8 +26,8 @@ from typing import (
     TypeAlias,
 )
 
-from rpalib.rpyc_client import RpcRdDriver
-from ruidadriver.rd_status import RdStatusEvent
+from ruida_pa.rpalib.rpyc_client import RpcRdDriver
+from ruida_pa.ruidadriver.rd_status import RdStatusEvent
 
 from rayforge.context import RayforgeContext
 from rayforge.core.varset import (
