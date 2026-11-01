@@ -110,6 +110,10 @@ if (( RUN_APP == 0 )); then
         fi
     fi
 
+    if (( INSTALL == 1 )); then
+        brew reinstall -s freetype
+    fi
+
     cat > .mac_env <<EOF
 export BREW_PREFIX="$BREW_PREFIX"
 export PATH="$BREW_PREFIX/bin:\$PATH"

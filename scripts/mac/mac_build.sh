@@ -431,6 +431,21 @@ SH
         done
     fi
 
+    # Homebrew's freetype 2.15+ links the system HarfBuzz at
+    # /usr/lib/libhvf.dylib, which does not exist on macOS 14 and older
+    # and makes the app fail to launch there. Homebrew source builds do
+    # not pick up that dependency, so never use the bottled freetype.
+    for freetype_lib in "$FW_DIR/libfreetype.6.dylib" \
+        "$RES_DIR/libfreetype.6.dylib"
+    do
+        [ -f "$freetype_lib" ] || continue
+        if otool -L "$freetype_lib" | grep -q "/usr/lib/libhvf.dylib"; then
+            echo "ERROR: $freetype_lib links /usr/lib/libhvf.dylib," \
+                "which is missing on macOS 14 and older." >&2
+            exit 1
+        fi
+    done
+
     copy_missing_deps() {
         local changed=0
         local dep
@@ -483,40 +498,6 @@ SH
         fi
         return 1
     }
-
-    # Homebrew's freetype 2.15+ links the system HarfBuzz at
-    # /usr/lib/libhvf.dylib, which does not exist on macOS 14 and older
-    # and makes the app fail to launch there. Point it at the Homebrew
-    # harfbuzz shipped in the bundle instead; the dependency cascade of
-    # harfbuzz itself is pulled in by copy_missing_deps below.
-    for freetype_lib in "$FW_DIR/libfreetype.6.dylib" \
-        "$RES_DIR/libfreetype.6.dylib"
-    do
-        [ -f "$freetype_lib" ] || continue
-        otool -L "$freetype_lib" | \
-            grep -q "/usr/lib/libhvf.dylib" || continue
-        if [ ! -f "$FW_DIR/libharfbuzz.0.dylib" ]; then
-            harfbuzz_lib=""
-            for lib_dir in "$BREW_PREFIX/opt/harfbuzz/lib" \
-                "/usr/local/opt/harfbuzz/lib" \
-                "/opt/homebrew/opt/harfbuzz/lib"
-            do
-                if [ -f "$lib_dir/libharfbuzz.0.dylib" ]; then
-                    harfbuzz_lib="$lib_dir/libharfbuzz.0.dylib"
-                    break
-                fi
-            done
-            if [ -z "$harfbuzz_lib" ]; then
-                echo "Warning: harfbuzz not found to replace libhvf." >&2
-                continue
-            fi
-            cp "$harfbuzz_lib" "$FW_DIR/"
-            install_name_tool -id "@rpath/libharfbuzz.0.dylib" \
-                "$FW_DIR/libharfbuzz.0.dylib"
-        fi
-        install_name_tool -change /usr/lib/libhvf.dylib \
-            "@rpath/libharfbuzz.0.dylib" "$freetype_lib"
-    done
 
     # Iteratively pull in any Homebrew deps referenced by bundled binaries.
     for _ in 1 2 3; do
