@@ -254,6 +254,7 @@ PY
         if [ ! -f "rayforge.icns" ] || \
            [ "rayforge/resources/icons/org.rayforge.rayforge.svg" -nt "rayforge.icns" ]; then
             echo "Generating macOS icon..."
+            "$VENV_PY" -m pip install cairosvg
             "$VENV_PY" scripts/create_icon.py
         else
             echo "Icon is up to date, skipping generation."
