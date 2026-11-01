@@ -368,11 +368,30 @@ SH
         "$BREW_PREFIX/opt/fontconfig/lib" \
         "/usr/local/opt/fontconfig/lib" \
         "/opt/homebrew/opt/fontconfig/lib"
-    copy_keg_lib libfreetype.6.dylib \
-        "$HOME/.rayforge-macos-deps/freetype/lib" \
+    # Always replace the bundled freetype with the HVF-free build from
+    # mac_setup.sh; PyInstaller may already have collected the Homebrew
+    # keg copy (which links /usr/lib/libhvf.dylib) into the bundle.
+    freetype_src=""
+    for lib_dir in "$HOME/.rayforge-macos-deps/freetype/lib" \
         "$BREW_PREFIX/opt/freetype/lib" \
         "/usr/local/opt/freetype/lib" \
         "/opt/homebrew/opt/freetype/lib"
+    do
+        if [ -f "$lib_dir/libfreetype.6.dylib" ]; then
+            freetype_src="$lib_dir/libfreetype.6.dylib"
+            break
+        fi
+    done
+    if [ -n "$freetype_src" ]; then
+        rm -f "$FW_DIR/libfreetype.6.dylib"
+        cp "$freetype_src" "$FW_DIR/"
+        install_name_tool -id "@rpath/libfreetype.6.dylib" \
+            "$FW_DIR/libfreetype.6.dylib"
+        if [ -f "$RES_DIR/libfreetype.6.dylib" ]; then
+            rm -f "$RES_DIR/libfreetype.6.dylib"
+            cp "$freetype_src" "$RES_DIR/"
+        fi
+    fi
     copy_keg_lib libsharpyuv.0.dylib \
         "$BREW_PREFIX/opt/webp/lib" \
         "/usr/local/opt/webp/lib" \
