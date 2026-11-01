@@ -741,7 +741,7 @@
     "message": "月网站访问量"
   },
   "sponsor.stats.downloads": {
-    "message": "月下载量"
+    "message": "下载量（最近 30 天）"
   },
   "sponsor.stats.stars": {
     "message": "GitHub 星标"
