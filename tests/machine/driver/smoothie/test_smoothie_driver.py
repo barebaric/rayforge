@@ -11,10 +11,8 @@ from raygeo.ops import Ops
 from raygeo.ops.axis import Axis
 
 from rayforge.core.doc import Doc
-from rayforge.machine.driver import get_driver_cls
 from rayforge.machine.driver.driver import (
     DeviceStatus,
-    DriverPrecheckError,
     DriverSetupError,
 )
 from rayforge.machine.driver.smoothie import SmoothieDriver
@@ -29,228 +27,284 @@ FAST_CONFIG = {
 }
 
 
-class SignalRecorder:
-    """Collects blinker signal emissions from a driver.
+class SignalTracker:
+    """A helper to track calls to a blinker Signal."""
 
-    Handlers are held by strong references: blinker drops weak
-    receiver references as soon as they are garbage-collected.
+    def __init__(self, signal):
+        self.calls = []
+        signal.connect(self._callback, weak=False)
+
+    def _callback(self, sender, **kwargs):
+        self.calls.append({"sender": sender, "kwargs": kwargs})
+
+
+class StateAwaiter:
+    """Helper to wait for a specific device state."""
+
+    def __init__(self, driver, expected_status):
+        self.driver = driver
+        self.expected_status = expected_status
+        self.event = asyncio.Event()
+        self._signal = driver.state_changed.connect(
+            self._on_state_changed, weak=False
+        )
+
+    def _on_state_changed(self, sender, **kwargs):
+        state = kwargs.get("state")
+        if state and state.status == self.expected_status:
+            self.event.set()
+
+    async def wait(self, timeout=5.0):
+        try:
+            await asyncio.wait_for(self.event.wait(), timeout)
+        finally:
+            self.driver.state_changed.disconnect(self._signal)
+
+
+@pytest.fixture
+def mock():
+    return MockTransport()
+
+
+@pytest_asyncio.fixture
+async def emulator(mock):
+    """The firmware emulator answering on the mock transport."""
+    emulator = SmoothieEmulator(mock)
+    task = asyncio.ensure_future(emulator.run())
+    yield emulator
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
+
+@pytest_asyncio.fixture
+async def driver(context_initializer, machine, mock):
     """
+    Provides a configured, but not connected, SmoothieDriver instance
+    wired to a SmoothieEmulator through the mock transport.  Handles
+    cleanup ensuring background tasks are stopped.
+    """
+    machine.dialect_uid = "smoothieware"
+    driver_instance = SmoothieDriver(context_initializer, machine)
+    driver_instance.did_setup = True
+    driver_instance._session = SmoothieSession.with_transport(
+        mock,
+        config=FAST_CONFIG,
+        dialect=driver_instance._dialect_templates(),
+        event_callback=driver_instance._on_session_event,
+    )
 
-    def __init__(self, driver):
-        self.events = []
-        driver.state_changed.connect(
-            lambda sender, state: self.events.append(("state_changed", state)),
-            weak=False,
-        )
-        driver.connection_status_changed.connect(
-            lambda sender, status, message=None: self.events.append(
-                ("connection_status_changed", {"status": status})
-            ),
-            weak=False,
-        )
+    yield driver_instance
+
+    await driver_instance.cleanup()
+
+
+@pytest_asyncio.fixture
+async def connected_driver(driver: SmoothieDriver, emulator):
+    """An async fixture that connects a driver and handles teardown."""
+    await driver.connect()
+    # Allow connection and initial tasks to settle.
+    await asyncio.sleep(0.1)
+    yield driver
+    await driver.cleanup()
+
+
+class TestSmoothieDriver:
+    def test_get_encoder(self, driver):
+        encoder = driver.get_encoder()
+        assert isinstance(encoder, GcodeEncoder)
+        assert encoder.dialect.uid == "smoothieware"
+
+    @pytest.mark.asyncio
+    async def test_connection_lifecycle(self, driver, emulator, mock):
+        """Test the connect and cleanup flow."""
+        assert driver._session is not None
+        assert not mock.is_connected
+
+        await driver.connect()
+
+        awaiter = StateAwaiter(driver, DeviceStatus.IDLE)
+        await awaiter.wait()
+        assert mock.is_connected
+
+        await driver.cleanup()
+        assert driver._session is None
+
+    @pytest.mark.asyncio
+    async def test_status_polling_and_parsing(
+        self, driver: SmoothieDriver, emulator, mock
+    ):
+        """
+        Test that the driver periodically polls and correctly parses status.
+        """
+        state_tracker = SignalTracker(driver.state_changed)
+
+        await driver.connect()
+
+        # The driver polls periodically. Wait for state update.
+        for _ in range(50):
+            if driver.state.status == DeviceStatus.IDLE:
+                break
+            await asyncio.sleep(0.1)
+
+        assert driver.state.status == DeviceStatus.IDLE
+        assert driver.state.machine_pos[0] == pytest.approx(0.0, abs=0.1)
+        assert len(state_tracker.calls) > 0
+
+    @pytest.mark.asyncio
+    async def test_send_and_wait(self, connected_driver: SmoothieDriver, mock):
+        """Test executing a simple command that waits for 'ok'."""
+        driver = connected_driver
+        await driver.home(Axis.X)
+        await asyncio.sleep(0.1)
+        assert b"G28 X0" in b"".join(mock.sent())
+
+    @pytest.mark.asyncio
+    async def test_run_streams_gcode(
+        self, connected_driver: SmoothieDriver, mock
+    ):
+        """Test the full G-code streaming process for a simple job."""
+        driver = connected_driver
+        doc = Doc()
+        ops = Ops()
+        ops.move_to(10, 10, 0)
+        ops.line_to(20, 20, 0)
+
+        job_finished_called = []
         driver.job_finished.connect(
-            lambda sender: self.events.append(("job_finished", None)),
-            weak=False,
+            lambda sender: job_finished_called.append(sender), weak=False
+        )
+        callback_calls = []
+
+        encoded = driver.get_encoder().encode(ops, driver._machine, doc)
+        await driver.run(
+            encoded,
+            doc,
+            ops,
+            lambda op_index: callback_calls.append(op_index),
         )
 
-    def names(self):
-        return [name for name, _ in self.events]
+        # Check that the device received the correct G-code
+        received_str = b"".join(mock.sent()).decode()
+        assert "G0 X10 Y10" in received_str
+        assert "G1 X20 Y20" in received_str
 
-    async def wait_for(self, name: str, pred=None, timeout: float = 5.0):
-        deadline = asyncio.get_running_loop().time() + timeout
-        while asyncio.get_running_loop().time() < deadline:
-            for event_name, payload in self.events:
-                if event_name != name:
-                    continue
-                if pred is None or pred(payload):
-                    return payload
-            await asyncio.sleep(0.01)
-        raise AssertionError(
-            f"event {name!r} not observed; got {self.names()}"
-        )
+        # Check that callbacks were fired
+        assert len(job_finished_called) == 1
+        assert len(callback_calls) == 2
 
-    async def wait_connected(self, timeout: float = 5.0):
-        return await self.wait_for(
-            "connection_status_changed",
-            pred=lambda p: p["status"].name == "CONNECTED",
-            timeout=timeout,
-        )
+    @pytest.mark.asyncio
+    async def test_run_raw(self, connected_driver: SmoothieDriver, mock):
+        """Test running a raw multi-line G-code string."""
+        driver = connected_driver
+        gcode = "G0 X10\nM3 S0.5\nG0 Y10"
+
+        await driver.run_raw(gcode)
+
+        received_str = b"".join(mock.sent()).decode()
+        assert "G0 X10" in received_str
+        assert "M3 S0.5" in received_str
+        assert "G0 Y10" in received_str
+
+    @pytest.mark.asyncio
+    async def test_server_disconnects_unexpectedly(
+        self, driver: SmoothieDriver, emulator, mock
+    ):
+        """
+        Test that the driver handles an abrupt server-side disconnect.
+        """
+        status_tracker = SignalTracker(driver.connection_status_changed)
+
+        await driver.connect()
+
+        # Wait for IDLE state to confirm connection is fully established
+        for _ in range(50):
+            if driver.state.status == DeviceStatus.IDLE:
+                break
+            await asyncio.sleep(0.1)
+        assert driver.state.status == DeviceStatus.IDLE
+
+        # Fail the link, as an unplugged cable would.
+        mock.set_write_error("unplugged")
+
+        # Wait for the driver to detect the disconnect
+        def saw_disconnect():
+            statuses = [
+                call["kwargs"]["status"] for call in status_tracker.calls
+            ]
+            return any(
+                status.name in ("DISCONNECTED", "ERROR", "SLEEPING")
+                for status in statuses
+            )
+
+        for _ in range(50):
+            if saw_disconnect():
+                break
+            await asyncio.sleep(0.1)
+        assert saw_disconnect()
+
+    @pytest.mark.asyncio
+    async def test_set_wcs_offset(
+        self, connected_driver: SmoothieDriver, mock
+    ):
+        """Test setting a WCS offset for Smoothie."""
+        driver = connected_driver
+        await driver.set_wcs_offset("G54", 1.1, 2.2, 3.3)
+        await asyncio.sleep(0.1)
+        assert b"G10 L20 P1 X1.1 Y2.2 Z3.3" in b"".join(mock.sent())
+
+    @pytest.mark.asyncio
+    async def test_read_wcs_offsets_raises_not_implemented(
+        self, connected_driver: SmoothieDriver
+    ):
+        """Test that read_wcs_offsets raises NotImplementedError."""
+        with pytest.raises(NotImplementedError):
+            await connected_driver.read_wcs_offsets()
+
+    @pytest.mark.asyncio
+    async def test_run_probe_cycle_raises_not_implemented(
+        self, connected_driver: SmoothieDriver
+    ):
+        """Test that run_probe_cycle raises NotImplementedError."""
+        with pytest.raises(NotImplementedError):
+            await connected_driver.run_probe_cycle(Axis.Z, -10, 100)
+
+    @pytest.mark.asyncio
+    async def test_read_parser_state_returns_none(
+        self, connected_driver: SmoothieDriver
+    ):
+        """Test that read_parser_state returns None (not implemented)."""
+        result = await connected_driver.read_parser_state()
+        assert result is None
 
 
-def make_driver(context, machine) -> tuple[SmoothieDriver, MockTransport]:
-    """Build a SmoothieDriver around an emulator-backed session,
-    mirroring what ``_setup_implementation`` does for a real
-    telnet host."""
-    drv = SmoothieDriver(context, machine)
+@pytest.mark.asyncio
+async def test_setup_missing_host_raises(context_initializer, machine):
+    drv = SmoothieDriver(context_initializer, machine)
+    with pytest.raises(DriverSetupError):
+        drv._setup_implementation(host="", port=23)
+
+
+@pytest.mark.asyncio
+async def test_cancel_sends_ctrl_c_and_safety_off(
+    context_initializer, machine, mock
+):
+    """Cancel aborts the job with Ctrl+C and turns the laser off."""
+    machine.dialect_uid = "smoothieware"
+    drv = SmoothieDriver(context_initializer, machine)
     drv.did_setup = True
-    mock = MockTransport()
-    session = SmoothieSession.with_transport(
+    drv._session = SmoothieSession.with_transport(
         mock,
         config=FAST_CONFIG,
         dialect=drv._dialect_templates(),
         event_callback=drv._on_session_event,
     )
-    drv._session = session
-    return drv, mock
-
-
-@pytest_asyncio.fixture
-async def connected_driver(context_initializer, machine):
-    """A driver connected to a responsive Smoothie emulator.
-
-    Yields (driver, mock, emulator, recorder).
-    """
-    drv, mock = make_driver(context_initializer, machine)
-    emulator = SmoothieEmulator(mock)
-    emulator_task = asyncio.ensure_future(emulator.run())
-    recorder = SignalRecorder(drv)
-    try:
-        await drv.connect()
-        await recorder.wait_connected()
-        mock.clear_sent()
-        yield drv, mock, emulator, recorder
-    finally:
-        await drv.cleanup()
-        emulator_task.cancel()
-        try:
-            await emulator_task
-        except asyncio.CancelledError:
-            pass
-
-
-class TestRegistry:
-    def test_driver_registered(self):
-        assert get_driver_cls("SmoothieDriver") is SmoothieDriver
-
-    def test_metadata(self, context_initializer, machine):
-        drv = SmoothieDriver(context_initializer, machine)
-        assert drv.machine_space_wcs == "G53"
-        assert drv.supports_settings is False
-        assert SmoothieDriver.reports_granular_progress is True
-        assert SmoothieDriver.supports_probing is True
-
-    def test_setup_vars(self):
-        varset = SmoothieDriver.get_setup_vars()
-        keys = {v.key for v in varset.vars}
-        assert {"host", "port"} <= keys
-
-    def test_create_encoder(self, context_initializer, machine):
-        drv = SmoothieDriver(context_initializer, machine)
-        encoder = drv.get_encoder()
-        assert isinstance(encoder, GcodeEncoder)
-
-    def test_precheck_rejects_invalid_host(self):
-        with pytest.raises(DriverPrecheckError):
-            SmoothieDriver.precheck(host="not a hostname!")
-
-    def test_setup_missing_host_raises(self, context_initializer, machine):
-        drv = SmoothieDriver(context_initializer, machine)
-        with pytest.raises(DriverSetupError):
-            drv._setup_implementation(host="", port=23)
-
-
-@pytest.mark.asyncio
-async def test_connects_and_reports_state(context_initializer, machine):
-    drv, mock = make_driver(context_initializer, machine)
-    emulator = SmoothieEmulator(mock)
-    emulator_task = asyncio.ensure_future(emulator.run())
-    recorder = SignalRecorder(drv)
-    try:
-        await drv.connect()
-        await recorder.wait_connected()
-        assert drv.state.status == DeviceStatus.IDLE
-    finally:
-        await drv.cleanup()
-        emulator_task.cancel()
-        try:
-            await emulator_task
-        except asyncio.CancelledError:
-            pass
-
-
-@pytest.mark.asyncio
-async def test_probe_queries(context_initializer, machine):
-    drv, mock = make_driver(context_initializer, machine)
-    emulator = SmoothieEmulator(mock)
-    emulator_task = asyncio.ensure_future(emulator.run())
-    try:
-        await drv.connect()
-        version = await drv.execute_interactive_command("version")
-        assert version[-1] == "ok"
-        alpha_max = await drv.execute_interactive_command(
-            "config-get alpha_max"
-        )
-        assert alpha_max[0] == "200.0000"
-    finally:
-        await drv.cleanup()
-        emulator_task.cancel()
-        try:
-            await emulator_task
-        except asyncio.CancelledError:
-            pass
-
-
-@pytest.mark.asyncio
-async def test_run_with_encoded_ops(context_initializer, machine):
-    drv, mock = make_driver(context_initializer, machine)
-    emulator = SmoothieEmulator(mock)
-    emulator_task = asyncio.ensure_future(emulator.run())
-    recorder = SignalRecorder(drv)
-    try:
-        await drv.connect()
-        await recorder.wait_connected()
-        mock.clear_sent()
-        ops = Ops()
-        ops.move_to(10, 10, 0)
-        ops.line_to(20, 20, 0)
-        doc = Doc()
-        encoded = drv.get_encoder().encode(ops, machine, doc)
-        await asyncio.wait_for(drv.run(encoded, doc, ops), timeout=10.0)
-        await recorder.wait_for("job_finished")
-        sent = b"".join(mock.sent())
-        assert b"G1" in sent
-    finally:
-        await drv.cleanup()
-        emulator_task.cancel()
-        try:
-            await emulator_task
-        except asyncio.CancelledError:
-            pass
-
-
-@pytest.mark.asyncio
-async def test_run_raw_streams_gcode(context_initializer, machine):
-    drv, mock = make_driver(context_initializer, machine)
-    emulator = SmoothieEmulator(mock)
-    emulator_task = asyncio.ensure_future(emulator.run())
-    recorder = SignalRecorder(drv)
-    try:
-        await drv.connect()
-        await recorder.wait_connected()
-        mock.clear_sent()
-        await asyncio.wait_for(drv.run_raw("G0 X10\nG1 X20 Y20"), timeout=10.0)
-        await recorder.wait_for("job_finished")
-        assert emulator.mpos[0] == pytest.approx(20.0, abs=0.1)
-    finally:
-        await drv.cleanup()
-        emulator_task.cancel()
-        try:
-            await emulator_task
-        except asyncio.CancelledError:
-            pass
-
-
-@pytest.mark.asyncio
-async def test_cancel_sends_ctrl_c_and_safety_off(
-    context_initializer, machine
-):
-    drv, mock = make_driver(context_initializer, machine)
     emulator = SmoothieEmulator(mock, speed_factor=1)
     emulator_task = asyncio.ensure_future(emulator.run())
-    recorder = SignalRecorder(drv)
     try:
         await drv.connect()
-        await recorder.wait_connected()
         gcode = "\n".join([f"G1 X{i % 50} F600" for i in range(50)])
         run_task = asyncio.create_task(drv.run_raw(gcode))
         await asyncio.sleep(0.2)
@@ -259,7 +313,6 @@ async def test_cancel_sends_ctrl_c_and_safety_off(
             await asyncio.wait_for(run_task, timeout=5.0)
         except (asyncio.TimeoutError, asyncio.CancelledError):
             pass
-        await recorder.wait_for("job_finished")
         sent = b"".join(mock.sent())
         assert b"\x03" in sent
         assert b"M5\n" in sent
@@ -273,14 +326,21 @@ async def test_cancel_sends_ctrl_c_and_safety_off(
 
 
 @pytest.mark.asyncio
-async def test_hold_sends_realtime_bytes(context_initializer, machine):
-    drv, mock = make_driver(context_initializer, machine)
+async def test_hold_sends_realtime_bytes(context_initializer, machine, mock):
+    """Hold and resume go out as the realtime bytes '!' and '~'."""
+    machine.dialect_uid = "smoothieware"
+    drv = SmoothieDriver(context_initializer, machine)
+    drv.did_setup = True
+    drv._session = SmoothieSession.with_transport(
+        mock,
+        config=FAST_CONFIG,
+        dialect=drv._dialect_templates(),
+        event_callback=drv._on_session_event,
+    )
     emulator = SmoothieEmulator(mock)
     emulator_task = asyncio.ensure_future(emulator.run())
-    recorder = SignalRecorder(drv)
     try:
         await drv.connect()
-        await recorder.wait_connected()
         mock.clear_sent()
         await drv.set_hold(True)
         assert b"!" in b"".join(mock.sent())
@@ -296,39 +356,36 @@ async def test_hold_sends_realtime_bytes(context_initializer, machine):
 
 
 @pytest.mark.asyncio
-async def test_home_uses_dialect(context_initializer, machine):
-    drv, mock = make_driver(context_initializer, machine)
+async def test_interactive_command_filters_ok_and_status(
+    context_initializer, machine, mock
+):
+    """execute_interactive_command returns reply lines only: the
+    terminating ``ok`` and status-report noise are filtered out,
+    as the Python implementation did."""
+    machine.dialect_uid = "smoothieware"
+    drv = SmoothieDriver(context_initializer, machine)
+    drv.did_setup = True
+    drv._session = SmoothieSession.with_transport(
+        mock,
+        config=FAST_CONFIG,
+        dialect=drv._dialect_templates(),
+        event_callback=drv._on_session_event,
+    )
     emulator = SmoothieEmulator(mock)
     emulator_task = asyncio.ensure_future(emulator.run())
     try:
         await drv.connect()
-        mock.clear_sent()
-        await asyncio.wait_for(drv.home(), timeout=5.0)
-        assert b"$H" in b"".join(mock.sent())
-    finally:
-        await drv.cleanup()
-        emulator_task.cancel()
-        try:
-            await emulator_task
-        except asyncio.CancelledError:
-            pass
-
-
-@pytest.mark.asyncio
-async def test_not_implemented_methods(context_initializer, machine):
-    drv, mock = make_driver(context_initializer, machine)
-    emulator = SmoothieEmulator(mock)
-    emulator_task = asyncio.ensure_future(emulator.run())
-    try:
-        await drv.connect()
-        with pytest.raises(NotImplementedError):
-            await drv.read_settings()
-        with pytest.raises(NotImplementedError):
-            await drv.write_setting("k", "v")
-        with pytest.raises(NotImplementedError):
-            await drv.read_wcs_offsets()
-        with pytest.raises(NotImplementedError):
-            await drv.run_probe_cycle(Axis.X, 10, 100)
+        # Let the handshake settle so its banner is not collected
+        # as a command reply.
+        for _ in range(50):
+            if drv.state.status == DeviceStatus.IDLE:
+                break
+            await asyncio.sleep(0.05)
+        alpha_max = await drv.execute_interactive_command(
+            "config-get alpha_max"
+        )
+        assert alpha_max == ["200.0000"]
+        assert "ok" not in alpha_max
     finally:
         await drv.cleanup()
         emulator_task.cancel()

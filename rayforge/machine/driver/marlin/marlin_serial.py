@@ -307,11 +307,16 @@ class MarlinSerialDriver(Driver):
         await self._session.connect()
 
     async def execute_interactive_command(self, command: str) -> list[str]:
-        """Send a command and await its full response, blocking other
-        commands from interleaving; used by device probing."""
-        return await self._require_session().execute_interactive_command(
+        """Send a command and return its response lines.
+
+        Used during probing to query M115, M211, M503 etc.  The
+        terminating ``ok`` is filtered out, so callers receive the
+        reply lines only.
+        """
+        lines = await self._require_session().execute_interactive_command(
             command
         )
+        return [line for line in lines if line != "ok"]
 
     def _require_session(self) -> MarlinSession:
         """Returns the session, raising a descriptive error when the

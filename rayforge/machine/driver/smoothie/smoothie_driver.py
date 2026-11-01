@@ -310,11 +310,21 @@ class SmoothieDriver(Driver):
         await self._session.connect()
 
     async def execute_interactive_command(self, command: str) -> list[str]:
-        """Send a command and await its full response, blocking other
-        commands from interleaving; used by device probing."""
-        return await self._require_session().execute_interactive_command(
+        """Send a command and return its response lines.
+
+        Used during probing to query ``version`` and ``config-get``
+        values.  The terminating ``ok`` and any status-report lines
+        are filtered out, so callers receive the reply lines only.
+        """
+        lines = await self._require_session().execute_interactive_command(
             command
         )
+        return [
+            line
+            for line in lines
+            if line != "ok"
+            and not (line.startswith("<") and line.endswith(">"))
+        ]
 
     def get_setting_vars(self) -> list["VarSet"]:
         return [VarSet()]

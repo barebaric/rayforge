@@ -1,7 +1,9 @@
+import asyncio
 from unittest.mock import AsyncMock
 
 import pytest
 
+from rayforge.machine.driver.driver import DeviceStatus
 from rayforge.machine.driver.smoothie import SmoothieDriver
 from rayforge.machine.driver.smoothie.smoothie_util import (
     SmoothieProbeResult,
@@ -169,3 +171,107 @@ class TestDriverProbe:
             )
 
         mock_cleanup.assert_awaited_once()
+
+
+STATUS = b"<Idle|MPos:0.000,0.000,0.000|WPos:0.000,0.000,0.000|FS:0,0>\r\n"
+
+FAST_CONFIG = {
+    "handshake_timeout": 2.0,
+    "handshake_poll_interval": 0.02,
+    "status_poll_interval": 0.05,
+    "reconnect_delay": 0.2,
+    "command_timeout": 2.0,
+}
+
+
+class TestExecuteInteractiveCommand:
+    """Verifies the driver collects reply lines until ``ok``,
+    filters the ``ok`` terminator and status-poll noise, and raises
+    when the driver is not connected.  Driven through the real Rust
+    session against a mute scripted device."""
+
+    async def mute_driver(self, context_initializer, machine):
+        from raydriver.core.transport import MockTransport
+        from raydriver.smoothie import SmoothieSession
+
+        machine.dialect_uid = "smoothieware"
+        drv = SmoothieDriver(context_initializer, machine)
+        drv.did_setup = True
+        mock = MockTransport()
+        session = SmoothieSession.with_transport(
+            mock,
+            config=FAST_CONFIG,
+            dialect=drv._dialect_templates(),
+            event_callback=drv._on_session_event,
+        )
+        drv._session = session
+        await drv.connect()
+        deadline = asyncio.get_running_loop().time() + 5.0
+        while asyncio.get_running_loop().time() < deadline:
+            if mock.sent():
+                break
+            await asyncio.sleep(0.01)
+        mock.push(STATUS)
+        deadline = asyncio.get_running_loop().time() + 5.0
+        while asyncio.get_running_loop().time() < deadline:
+            if drv.state.status == DeviceStatus.IDLE:
+                break
+            await asyncio.sleep(0.01)
+        mock.clear_sent()
+        return drv, mock
+
+    @pytest.mark.asyncio
+    async def test_collects_lines_until_ok(self, context_initializer, machine):
+        drv, mock = await self.mute_driver(context_initializer, machine)
+        try:
+            command = asyncio.ensure_future(
+                drv.execute_interactive_command("config-get alpha_max")
+            )
+            deadline = asyncio.get_running_loop().time() + 5.0
+            while asyncio.get_running_loop().time() < deadline:
+                if b"config-get alpha_max" in b"".join(mock.sent()):
+                    break
+                await asyncio.sleep(0.01)
+            mock.push(b"200.000\nok\n")
+            lines = await asyncio.wait_for(command, timeout=5.0)
+            assert lines == ["200.000"]
+        finally:
+            await drv.cleanup()
+
+    @pytest.mark.asyncio
+    async def test_status_reports_not_collected(
+        self, context_initializer, machine
+    ):
+        drv, mock = await self.mute_driver(context_initializer, machine)
+        try:
+            command = asyncio.ensure_future(
+                drv.execute_interactive_command("config-get alpha_max")
+            )
+            deadline = asyncio.get_running_loop().time() + 5.0
+            while asyncio.get_running_loop().time() < deadline:
+                if b"config-get alpha_max" in b"".join(mock.sent()):
+                    break
+                await asyncio.sleep(0.01)
+            mock.push(b"<Idle|MPos:0,0,0|FS:0,0>\n200.000\nok\n")
+            lines = await asyncio.wait_for(command, timeout=5.0)
+            assert lines == ["200.000"]
+            assert not any(line.startswith("<") for line in lines)
+        finally:
+            await drv.cleanup()
+
+    @pytest.mark.asyncio
+    async def test_not_connected_raises(self, context_initializer, machine):
+        from raydriver.core.transport import MockTransport
+        from raydriver.smoothie import SmoothieSession
+
+        machine.dialect_uid = "smoothieware"
+        drv = SmoothieDriver(context_initializer, machine)
+        drv.did_setup = True
+        drv._session = SmoothieSession.with_transport(
+            MockTransport(),
+            config=FAST_CONFIG,
+            dialect=drv._dialect_templates(),
+            event_callback=drv._on_session_event,
+        )
+        with pytest.raises(ConnectionError):
+            await drv.execute_interactive_command("version")
