@@ -55,7 +55,7 @@ jobs:
   build-intel:
     name: Build macOS Intel Bundle
     needs: version
-    runs-on: macos-26-intel
+    runs-on: macos-15-intel
     env:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
@@ -78,6 +78,9 @@ jobs:
       - name: Build macOS artifacts
         run: |
           printf "5\n" | bash scripts/mac/mac_build.sh --version "${VERSION}"
+
+      - name: Check bundled binary compatibility
+        run: bash scripts/mac/check_minos.sh 15.0
 
       - name: Smoke test Intel app
         run: |
@@ -109,7 +112,7 @@ jobs:
   build-arm:
     name: Build macOS Apple Silicon Bundle
     needs: version
-    runs-on: macos-26
+    runs-on: macos-15
     env:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
@@ -132,6 +135,9 @@ jobs:
       - name: Build macOS artifacts
         run: |
           printf "5\n" | bash scripts/mac/mac_build.sh --version "${VERSION}"
+
+      - name: Check bundled binary compatibility
+        run: bash scripts/mac/check_minos.sh 15.0
 
       - name: Smoke test ARM app
         run: |
