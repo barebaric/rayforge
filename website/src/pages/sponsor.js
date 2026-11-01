@@ -307,11 +307,11 @@ export default function Sponsor() {
         <section className={styles.statsSection}>
           <div className={styles.statsGrid}>
             <div className={styles.statItem}>
-              <div className={styles.statNumber}>12,000+</div>
+              <div className={styles.statNumber}>10,000+</div>
               <div className={styles.statLabel}>
                 {translate({
                   id: 'sponsor.stats.views',
-                  message: 'Monthly Website Views',
+                  message: 'Monthly Website Visitors',
                 })}
               </div>
             </div>

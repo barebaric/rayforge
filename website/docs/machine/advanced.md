@@ -26,8 +26,8 @@ When enabled, Rayforge automatically sends a homing command ($H) when connecting
 
 When enabled, Rayforge moves the head to the configured park position (a machine-coordinate X/Y
 pair) after homing completes. The move uses the "Move To Park" command template (default
-`G53 G0 X{x} Y{y}`, editable in Machine Settings → G-code), so it is independent of the active
-work coordinate system. It only runs after homing all axes.
+`G53 G0 X{x} Y{y}`, editable in Machine Settings → G-code), so it is independent of the active work
+coordinate system. It only runs after homing all axes.
 
 - **Enable if**: You want the head at a known spot after homing, or homing leaves it parked outside
   the soft-limit range. Some firmwares (e.g. the Creality Falcon series) retract past the machine
