@@ -369,6 +369,7 @@ SH
         "/usr/local/opt/fontconfig/lib" \
         "/opt/homebrew/opt/fontconfig/lib"
     copy_keg_lib libfreetype.6.dylib \
+        "$HOME/.rayforge-macos-deps/freetype/lib" \
         "$BREW_PREFIX/opt/freetype/lib" \
         "/usr/local/opt/freetype/lib" \
         "/opt/homebrew/opt/freetype/lib"
