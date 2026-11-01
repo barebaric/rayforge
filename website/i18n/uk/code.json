@@ -741,7 +741,7 @@
     "message": "Переглядів сайту на місяць"
   },
   "sponsor.stats.downloads": {
-    "message": "Завантажень на місяць"
+    "message": "Завантаження за останні 30 днів"
   },
   "sponsor.stats.stars": {
     "message": "Зірки GitHub"
