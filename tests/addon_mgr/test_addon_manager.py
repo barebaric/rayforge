@@ -295,6 +295,15 @@ provides:
 class TestAddonManagerInstallation:
     """Tests related to installing new addons."""
 
+    def test_install_addon_disabled_does_not_fetch(self, manager):
+        manager._external_services_enabled = lambda: False
+
+        with patch.object(manager, "_fetch_addon_source") as fetch:
+            result = manager.install_addon("https://example.com/addon.git")
+
+        assert result is None
+        fetch.assert_not_called()
+
     def test_install_addon_git_not_available_zip_fails(self, manager):
         """When both git and zip fallback fail, return None."""
         with patch.object(manager, "_fetch_addon_source", return_value=False):
@@ -711,6 +720,15 @@ class TestAddonManagerUpdates:
         with patch.object(manager, "fetch_registry", return_value=remote_meta):
             updates = manager.check_for_updates()
         assert len(updates) == 0
+
+    def test_fetch_registry_disabled_does_not_open_url(self, manager):
+        manager._external_services_enabled = lambda: False
+
+        with patch("urllib.request.urlopen") as urlopen:
+            result = manager.fetch_registry()
+
+        assert result == []
+        urlopen.assert_not_called()
 
 
 class TestAddonManagerHelpers:

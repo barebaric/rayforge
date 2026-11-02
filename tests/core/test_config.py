@@ -214,3 +214,36 @@ class TestAddonUpdateChecks:
     def test_absent_key_falls_back_to_true(self):
         restored = Config.from_dict({}, get_machine_by_id=lambda mid: None)
         assert restored.check_for_addon_updates is True
+
+
+class TestExternalAddonServices:
+    def test_defaults_to_true(self):
+        assert Config().external_addon_services_enabled is True
+
+    def test_setter_emits_changed_once(self):
+        config = Config()
+        calls = []
+
+        def on_changed(sender, **kwargs):
+            calls.append(sender)
+
+        config.changed.connect(on_changed, weak=False)
+
+        config.set_external_addon_services_enabled(False)
+        config.set_external_addon_services_enabled(False)
+
+        assert len(calls) == 1
+
+    def test_round_trip(self):
+        config = Config()
+        config.set_external_addon_services_enabled(False)
+        data = config.to_dict()
+
+        restored = Config.from_dict(data, get_machine_by_id=lambda mid: None)
+
+        assert data["external_addon_services_enabled"] is False
+        assert restored.external_addon_services_enabled is False
+
+    def test_absent_key_falls_back_to_true(self):
+        restored = Config.from_dict({}, get_machine_by_id=lambda mid: None)
+        assert restored.external_addon_services_enabled is True

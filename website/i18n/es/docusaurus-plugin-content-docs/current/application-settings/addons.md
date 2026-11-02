@@ -14,6 +14,13 @@ Los addons son extensiones que añaden funcionalidad a Rayforge. Pueden proporci
 - Mejoras de interfaz de usuario
 - Bibliotecas de materiales
 
+## Servicios en línea
+
+La opción **Habilitar servicios externos de addons** controla el acceso al registro en línea, la
+instalación remota y los servicios de licencias de Gumroad y Patreon. Cuando está deshabilitada, los
+addons integrados y los ya instalados localmente siguen disponibles, pero Rayforge no realiza
+solicitudes a servicios externos de addons.
+
 ## Addons Instalados
 
 La lista de addons muestra todos los addons instalados con:

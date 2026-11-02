@@ -14,6 +14,13 @@ Addons sind Erweiterungen, die Rayforge Funktionalität hinzufügen. Sie können
 - UI-Erweiterungen
 - Material-Bibliotheken
 
+## Online-Dienste
+
+Die Einstellung **Externe Addon-Dienste aktivieren** steuert den Zugriff auf die Online-Registry,
+Remote-Installationen und Gumroad-/Patreon-Lizenzdienste. Wenn sie deaktiviert ist, bleiben
+integrierte und bereits lokal installierte Addons verfügbar, aber Rayforge stellt keine Verbindungen
+zu externen Addon-Diensten her.
+
 ## Installierte Addons
 
 Die Addonliste zeigt alle installierten Addons mit:

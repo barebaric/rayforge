@@ -123,7 +123,11 @@ class RayforgeContext:
             from .license import LicenseValidator
 
             self._license_validator = LicenseValidator(
-                LICENSES_DIR, PATREON_CLIENT_ID
+                LICENSES_DIR,
+                PATREON_CLIENT_ID,
+                external_services_enabled=lambda: (
+                    self.config.external_addon_services_enabled
+                ),
             )
         return self._license_validator
 
@@ -157,6 +161,9 @@ class RayforgeContext:
                 task_mgr,
                 self.addon_config,
                 license_validator=self.license_validator,
+                external_services_enabled=lambda: (
+                    self.config.external_addon_services_enabled
+                ),
             )
             self._load_addons_and_call_hooks()
         return self._addon_mgr

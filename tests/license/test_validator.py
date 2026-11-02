@@ -1,6 +1,7 @@
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -121,3 +122,23 @@ class TestLicenseValidator:
     def test_validator_without_patreon(self, temp_dir):
         validator = LicenseValidator(temp_dir, None)
         assert validator.get_provider("patreon") is None
+
+    def test_external_services_disabled(self, temp_dir):
+        validator = LicenseValidator(
+            temp_dir,
+            "test_client_id",
+            external_services_enabled=lambda: False,
+        )
+
+        result = validator.validate(
+            "test_addon", {"required": True, "product_ids": ["P1"]}
+        )
+
+        assert result.status == LicenseStatus.NOT_FOUND
+        assert result.message == "External addon services are disabled."
+        assert validator.providers == {}
+        assert validator.get_provider("gumroad") is None
+        assert validator.get_provider("patreon") is None
+        assert validator.is_patreon_linked() is False
+        assert validator.start_patreon_oauth(MagicMock()) is None
+        assert validator.get_patreon_oauth_url() is None

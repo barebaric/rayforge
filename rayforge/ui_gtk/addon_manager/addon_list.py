@@ -219,6 +219,13 @@ class AddonListWidget(PreferencesGroupWithButton):
         self.install_started = Signal()
         self.install_finished = Signal()
 
+    def set_external_services_enabled(self, enabled: bool):
+        self.add_button.set_sensitive(enabled)
+        tooltip = None
+        if not enabled:
+            tooltip = _("Enable external addon services to install addons")
+        self.add_button.set_tooltip_text(tooltip)
+
     def populate_addons(self):
         """Refreshes the list of addons."""
         context = get_context()
@@ -283,6 +290,9 @@ class AddonListWidget(PreferencesGroupWithButton):
 
     def _on_add_clicked(self, button):
         """Opens the registry dialog."""
+        if not get_context().config.external_addon_services_enabled:
+            self._show_info(_("External addon services are disabled."))
+            return
         root = cast(Gtk.Window, self.get_root())
         dialog = AddonRegistryDialog(root, self._install_addon)
         dialog.present()
@@ -434,6 +444,9 @@ class AddonListWidget(PreferencesGroupWithButton):
 
     def _on_unlock_addon(self, addon: Addon):
         """Handle unlock button click for license-required addon."""
+        if not get_context().config.external_addon_services_enabled:
+            self._show_info(_("External addon services are disabled."))
+            return
         license_config = addon.metadata.license
         if not license_config:
             return
