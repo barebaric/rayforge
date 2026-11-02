@@ -115,7 +115,7 @@ class CameraWizard(PatchedDialogWindow):
 
         self._finish_btn = Gtk.Button(label=_("Finish"))
         self._finish_btn.add_css_class("suggested-action")
-        self._finish_btn.connect("clicked", lambda _: self.close())
+        self._finish_btn.connect("clicked", self._on_finish_clicked)
         self._button_box.append(self._finish_btn)
 
         self._stack.connect("notify::visible-child", self._on_page_changed)
@@ -292,6 +292,37 @@ class CameraWizard(PatchedDialogWindow):
         if idx + 1 >= len(self._page_order):
             return
         self._navigate_to(self._page_order[idx + 1])
+
+    def _on_finish_clicked(self, _btn) -> None:
+        if self.controller.config.image_to_world is None:
+            self._show_unaligned_finish_warning()
+            return
+        self.close()
+
+    def _show_unaligned_finish_warning(self) -> None:
+        dialog = Adw.MessageDialog(
+            transient_for=self,
+            modal=True,
+            heading=_("Finish Without Alignment?"),
+            body=_(
+                "No reference points have been applied yet. Without "
+                "them the camera view is stretched over the work area "
+                "and will not line up with the actual machine."
+            ),
+        )
+        dialog.add_response("stay", _("Stay Here"))
+        dialog.add_response("finish", _("Finish Anyway"))
+        dialog.set_response_appearance(
+            "finish", Adw.ResponseAppearance.DESTRUCTIVE
+        )
+        dialog.set_default_response("stay")
+        dialog.connect("response", self._on_unaligned_finish_response)
+        dialog.present()
+
+    def _on_unaligned_finish_response(self, dialog, response_id) -> None:
+        dialog.destroy()
+        if response_id == "finish":
+            self.close()
 
     # ----- helpers ------------------------------------------------------
 
