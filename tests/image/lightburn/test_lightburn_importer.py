@@ -400,6 +400,46 @@ class TestLightBurnImporter:
         assert len(colors) == 2
         assert len(set(colors)) == 2
 
+    def test_path_reuses_shared_vertices_and_primitives(self):
+        data = b"""<Project>
+            <Shape Type="Path" CutIndex="0" VertID="0" PrimID="0">
+                <XForm>1 0 0 1 0 0</XForm>
+                <VertList>V0 0V10 0V10 10</VertList>
+                <PrimList>L0 1L1 2L2 0</PrimList>
+            </Shape>
+            <Shape Type="Path" CutIndex="0" VertID="0" PrimID="0">
+                <XForm>1 0 0 1 100 0</XForm>
+            </Shape>
+            <Shape Type="Path" CutIndex="0" VertID="7" PrimID="7">
+                <XForm>1 0 0 1 200 0</XForm>
+            </Shape>
+            <Shape Type="Path" CutIndex="0">
+                <XForm>1 0 0 1 300 0</XForm>
+            </Shape>
+        </Project>"""
+        importer = LightBurnImporter(data, source_file=Path("shared.lbrn2"))
+        assert importer.parse() is not None
+        contours = importer._geometries_by_layer["0"].split_into_contours()
+        assert sorted(c.rect()[0] for c in contours) == [0.0, 100.0]
+        assert all(c.rect()[2] - c.rect()[0] == 10.0 for c in contours)
+
+    @pytest.mark.parametrize(
+        "end_y, expected_closed",
+        [("0.00075", True), ("0.5", False)],
+    )
+    def test_path_closes_rounding_gap_only(self, end_y, expected_closed):
+        data = (
+            b'<Project><Shape Type="Path" CutIndex="0">'
+            b"<XForm>1 0 0 1 0 0</XForm>"
+            b"<VertList>V0 0V10 0V10 10V0 " + end_y.encode() + b"</VertList>"
+            b"<PrimList>L0 1L1 2L2 3</PrimList>"
+            b"</Shape></Project>"
+        )
+        importer = LightBurnImporter(data, source_file=Path("gap.lbrn2"))
+        assert importer.parse() is not None
+        geo = importer._geometries_by_layer["0"]
+        assert geo.is_closed() is expected_closed
+
     def test_import_lbrn2_with_rect(self):
         importer = self._import("rect.lbrn2")
         result = importer.get_doc_items()
