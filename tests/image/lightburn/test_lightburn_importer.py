@@ -9,7 +9,10 @@ from raygeo.geo import Matrix
 
 from rayforge.core.layer import Layer
 from rayforge.core.step_registry import step_registry
-from rayforge.core.vectorization_spec import PassthroughSpec
+from rayforge.core.vectorization_spec import (
+    LayerImportMode,
+    PassthroughSpec,
+)
 from rayforge.image.assembler import ItemAssembler
 from rayforge.image.dither import DitherAlgorithm
 from rayforge.image.lightburn.importer import (
@@ -383,6 +386,19 @@ class TestLightBurnImporter:
     def _import(self, filename: str) -> LightBurnImporter:
         data = _load(filename)
         return LightBurnImporter(data, source_file=ASSETS / filename)
+
+    def test_new_layers_get_distinct_colors(self):
+        importer = self._import("multi_layer.lbrn2")
+        spec = PassthroughSpec(layer_import_mode=LayerImportMode.NEW_LAYERS)
+        result = importer.get_doc_items(spec)
+        assert result is not None and result.payload is not None
+        colors = [
+            item.color
+            for item in result.payload.items
+            if isinstance(item, Layer)
+        ]
+        assert len(colors) == 2
+        assert len(set(colors)) == 2
 
     def test_import_lbrn2_with_rect(self):
         importer = self._import("rect.lbrn2")
