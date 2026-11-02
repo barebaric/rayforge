@@ -348,22 +348,6 @@ def _shape_to_geometry(
         if has_backup:
             geo = _build_path_text(shape_elem)
 
-    elif shape_type == "Group":
-        children_elem = shape_elem.find("Children")
-        if children_elem is not None:
-            combined = Geometry()
-            for child in children_elem.findall("Shape"):
-                child_result = _shape_to_geometry(
-                    child, cut_settings, bitmaps, path_cache
-                )
-                if child_result is not None:
-                    _child_cut_idx, child_geo = child_result
-                    child_geo = _apply_xform_to_geo(child_geo, xform)
-                    combined.extend(child_geo)
-            if not combined.is_empty():
-                return (cut_index, combined)
-        return None
-
     elif shape_type == "Bitmap":
         w = float(shape_elem.get("W", "0"))
         h = float(shape_elem.get("H", "0"))
@@ -393,6 +377,43 @@ def _shape_to_geometry(
 
     geo = _apply_xform_to_geo(geo, xform)
     return (cut_index, geo)
+
+
+def _shape_to_layer_geometries(
+    shape_elem: ET.Element,
+    cut_settings: dict[int, dict[str, Any]],
+    bitmaps: list[BitmapInfo] | None = None,
+    path_cache: PathDataCache | None = None,
+) -> list[tuple[int, Geometry]]:
+    """Return a shape's geometry per cut layer.
+
+    Groups have no layer of their own that matters: each child stays on
+    its own cut layer, with the group's transform applied.
+    """
+    if shape_elem.get("Type") != "Group":
+        result = _shape_to_geometry(
+            shape_elem, cut_settings, bitmaps, path_cache
+        )
+        return [result] if result is not None else []
+
+    children_elem = shape_elem.find("Children")
+    if children_elem is None:
+        return []
+
+    xform_el = shape_elem.find("XForm")
+    xform = Matrix()
+    if xform_el is not None and xform_el.text:
+        xform = _parse_xform(xform_el.text)
+
+    layer_geometries: list[tuple[int, Geometry]] = []
+    for child in children_elem.findall("Shape"):
+        for cut_index, geo in _shape_to_layer_geometries(
+            child, cut_settings, bitmaps, path_cache
+        ):
+            layer_geometries.append(
+                (cut_index, _apply_xform_to_geo(geo, xform))
+            )
+    return layer_geometries
 
 
 #: LightBurn image modes (``ditherMode``) that map onto a dither
@@ -766,6 +787,11 @@ class LightBurnImporter(Importer):
             layer_settings=layer_settings,
         )
 
+    def _layer_order_key(self, cut_index: int) -> tuple[int, int]:
+        """Sort key placing layers in the file's cut order."""
+        cut_setting = self._cut_settings.get(cut_index, {})
+        return (int(cut_setting.get("priority", cut_index)), cut_index)
+
     def parse(self) -> ParsingResult | None:
         try:
             root = ET.fromstring(self.raw_data)
@@ -787,11 +813,9 @@ class LightBurnImporter(Importer):
         path_cache = PathDataCache()
 
         for shape_elem in project.findall("Shape"):
-            result = _shape_to_geometry(
+            for cut_idx, geo in _shape_to_layer_geometries(
                 shape_elem, self._cut_settings, self._bitmaps, path_cache
-            )
-            if result is not None:
-                cut_idx, geo = result
+            ):
                 layer_id = str(cut_idx)
                 if layer_id not in geometries_by_layer:
                     geometries_by_layer[layer_id] = Geometry()
@@ -800,6 +824,12 @@ class LightBurnImporter(Importer):
                     shape_count_by_layer.get(cut_idx, 0) + 1
                 )
 
+        geometries_by_layer = dict(
+            sorted(
+                geometries_by_layer.items(),
+                key=lambda item: self._layer_order_key(int(item[0])),
+            )
+        )
         self._geometries_by_layer = geometries_by_layer
 
         for idx, cs in self._cut_settings.items():
