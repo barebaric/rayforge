@@ -26,7 +26,27 @@ jobs:
         run: |
           : > requirements.txt
           pixi clean cache -y
-          pixi upgrade --pinning-strategy exact-version
+          # 'pixi upgrade' re-pins every package to the latest stable
+          # release, which would downgrade any pre-release pin. Exclude
+          # such packages there, then try to advance each one by
+          # re-solving with a floor strictly above its pin; if no
+          # newer version exists the solve fails and the pin is kept.
+          # tighten_pins.py pins successfully advanced packages to the
+          # solved version again.
+          python3 scripts/prerelease_pins.py > prerelease.txt
+          excludes=$(awk '{print "--exclude", $1}' prerelease.txt | tr '\n' ' ')
+          pixi upgrade --pinning-strategy exact-version $excludes
+          : > bumped.txt
+          while read -r name version; do
+            sed -i "s/^$name = \"==.*\"/$name = \">$version\"/" pixi.toml
+            if pixi update < /dev/null; then
+              echo "$name" >> bumped.txt
+            else
+              sed -i "s/^$name = \">.*\"/$name = \"==$version\"/" pixi.toml
+            fi
+          done < prerelease.txt
+          python3 scripts/tighten_pins.py bumped.txt
+          rm prerelease.txt bumped.txt
           git restore requirements.txt
           python3 scripts/sync_requirements.py
           pixi clean cache -y
