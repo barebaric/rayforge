@@ -248,6 +248,7 @@ class CapturePage(CameraWizardPage):
         dialog.set_response_appearance(
             "save", Adw.ResponseAppearance.SUGGESTED
         )
+        dialog.set_close_response("save")
         dialog.connect("response", self._on_result_dialog_response)
         dialog.present()
 
