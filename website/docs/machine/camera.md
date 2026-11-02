@@ -209,8 +209,9 @@ First choose a **Pattern Type**:
 3. Move the pattern to different positions and angles within the camera view and click **Capture
    Frame** for each position. Aim for at least 8 captures covering the entire frame, including
    corners and edges. The progress bar and status indicators show capture quality.
-4. When enough frames are captured, the wizard computes the distortion model and applies it — the
-   camera overlay now shows a corrected, straight image.
+4. When enough frames are captured, click **Calibrate**. The wizard shows the result — confirm with
+   **Save Calibration** to apply it (only **Discard** throws the result away) — and the camera
+   overlay now shows a corrected, straight image.
 
 #### Using a Pattern You Already Printed
 
@@ -272,7 +273,9 @@ tangential (p1–p2) parameters.
 
 Image alignment is the camera wizard's final stage. Camera alignment calibrates the relationship
 between camera pixels and real-world coordinates, enabling accurate positioning. The wizard uses the
-same procedure described here, and applying the alignment finishes the wizard.
+same procedure described here, and applying the alignment finishes the wizard. Finishing without an
+applied alignment warns first, because the camera view then cannot be mapped onto the work area
+accurately.
 
 #### Why Alignment is Necessary
 
@@ -305,8 +308,10 @@ Alignment creates a transformation matrix that maps camera pixels to machine coo
    - Repeat for each reference point
 
 4. **Enter world coordinates:**
-   - For each image point, enter the real-world X/Y coordinates in mm
-   - These are the actual machine coordinates where each point is located
+   - For each image point, enter the real-world X/Y coordinates in your display unit (set in the
+     application settings)
+   - These are the actual machine coordinates where each point is located, measured from the work
+     area origin
    - Measure accurately with a ruler or use known machine positions
 
 5. **Apply alignment:**

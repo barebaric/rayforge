@@ -150,8 +150,9 @@ Primero elige un **Pattern Type**:
    **Capture Frame** para cada posición. Apunta a al menos 8 capturas que cubran todo el encuadre,
    incluyendo esquinas y bordes. La barra de progreso y los indicadores de estado muestran la
    calidad de captura.
-4. Cuando se hayan capturado suficientes fotogramas, el asistente calcula el modelo de distorsión y
-   lo aplica — la superposición de la cámara ahora muestra una imagen corregida y recta.
+4. Cuando se hayan capturado suficientes fotogramas, haz clic en **Calibrate**. El asistente muestra
+   el resultado — confírmalo con **Save Calibration** para aplicarlo (solo **Discard** descarta el
+   resultado) — y la superposición de la cámara ahora muestra una imagen corregida y recta.
 
 #### Uso de un patrón ya impreso
 
@@ -215,7 +216,9 @@ distorsión manualmente — ajusta finamente los parámetros radiales (k1–k3) 
 La alineación de imagen es la etapa final del asistente de cámara. La alineación de cámara calibra
 la relación entre los píxeles de la cámara y las coordenadas del mundo real, permitiendo el
 posicionamiento preciso. El asistente usa el mismo procedimiento descrito aquí, y aplicar la
-alineación finaliza el asistente.
+alineación finaliza el asistente. Finalizar sin una alineación aplicada muestra primero una
+advertencia, porque entonces la vista de la cámara no puede mapearse con precisión sobre el área de
+trabajo.
 
 #### Por Qué es Necesaria la Alineación
 
@@ -250,8 +253,10 @@ de la máquina.
    - Repite para cada punto de referencia
 
 4. **Ingresa coordenadas del mundo:**
-   - Para cada punto de imagen, ingresa las coordenadas X/Y del mundo real en mm
-   - Estas son las coordenadas reales de la máquina donde está ubicado cada punto
+   - Para cada punto de imagen, ingresa las coordenadas X/Y del mundo real en tu unidad de
+     visualización (configurada en los ajustes de la aplicación)
+   - Estas son las coordenadas reales de la máquina donde está ubicado cada punto, medidas desde el
+     origen del área de trabajo
    - Mide con precisión con una regla o usa posiciones conocidas de la máquina
 
 5. **Aplica la alineación:**

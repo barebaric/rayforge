@@ -149,8 +149,9 @@ Wähle zuerst einen **Pattern Type**:
    jede Position auf **Capture Frame**. Strebe mindestens 8 Aufnahmen an, die das gesamte Bild
    abdecken, einschließlich Ecken und Kanten. Die Fortschrittsanzeige und Statusanzeigen zeigen die
    Aufnahmequalität.
-4. Sobald genügend Aufnahmen gemacht wurden, berechnet der Assistent das Verzerrungsmodell und
-   wendet es an — das Kamera-Overlay zeigt nun ein korrigiertes, gerades Bild.
+4. Sobald genügend Aufnahmen gemacht wurden, klicke auf **Calibrate**. Der Assistent zeigt das
+   Ergebnis — bestätige mit **Save Calibration**, um es anzuwenden (nur **Discard** verwirft das
+   Ergebnis) — und das Kamera-Overlay zeigt nun ein korrigiertes, gerades Bild.
 
 #### Ein bereits gedrucktes Muster verwenden
 
@@ -213,7 +214,8 @@ manuell anpassen — die radialen (k1–k3) und tangentialen (p1–p2) Parameter
 Die Bildausrichtung ist die letzte Stufe des Kamera-Assistenten. Die Kameraausrichtung kalibriert
 die Beziehung zwischen Kamerapixeln und realen Koordinaten und ermöglicht so präzises Positionieren.
 Der Assistent verwendet dasselbe hier beschriebene Verfahren, und das Anwenden der Ausrichtung
-schließt den Assistenten ab.
+schließt den Assistenten ab. Ein Beenden ohne angewendete Ausrichtung fragt zuerst nach, da die
+Kameraansicht dann nicht genau auf den Arbeitsbereich abgebildet werden kann.
 
 #### Warum Ausrichtung notwendig ist
 
@@ -246,8 +248,10 @@ Die Ausrichtung erstellt eine Transformationsmatrix, die Kamerapixel Maschinenko
    - Wiederhole für jeden Referenzpunkt
 
 4. **Weltkoordinaten eingeben:**
-   - Gib für jeden Bildpunkt die realen X/Y-Koordinaten in mm ein
-   - Dies sind die tatsächlichen Maschinenkoordinaten, an denen sich jeder Punkt befindet
+   - Gib für jeden Bildpunkt die realen X/Y-Koordinaten in deiner Anzeigeeinheit ein (in den
+     Anwendungseinstellungen festgelegt)
+   - Dies sind die tatsächlichen Maschinenkoordinaten, an denen sich jeder Punkt befindet, gemessen
+     vom Ursprung des Arbeitsbereichs
    - Miss genau mit einem Lineal oder verwende bekannte Maschinenpositionen
 
 5. **Ausrichtung anwenden:**

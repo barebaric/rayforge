@@ -67,7 +67,9 @@ def add_mock_camera(dialog):
     machine = dialog.machine
 
     def _add():
-        camera = Camera("Test Camera", "mock-device-0")
+        camera = Camera(
+            "Test Camera", "mock-device-0", camera_id="mock-device-0"
+        )
         camera.enabled = True
         machine.add_camera(camera)
         return camera
