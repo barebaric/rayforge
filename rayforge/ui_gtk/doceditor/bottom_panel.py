@@ -9,7 +9,6 @@ from raygeo.ops.axis import Axis
 
 from ...logging_setup import ui_log_event_received
 from ...machine.cmd import MachineCmd
-from ...machine.driver.dummy import NoDeviceDriver
 from ...machine.models.machine import Machine
 from ...shared.gcodeedit.viewer import GcodeViewer
 from ...shared.tasker import task_mgr
@@ -605,7 +604,7 @@ class BottomPanel(Gtk.Box):
     def update_position_menu_sensitivity(self):
         if not self.machine:
             return
-        is_dummy = isinstance(self.machine.driver, NoDeviceDriver)
+        is_dummy = self.machine.is_driverless
         is_connected = self.machine.is_connected()
         is_active = is_connected or is_dummy
 
@@ -742,7 +741,7 @@ class BottomPanel(Gtk.Box):
             offset_parts.append(f"Z: {off_z:.2f}")
         self.wcs_row.set_subtitle("   ".join(offset_parts))
 
-        is_dummy = isinstance(self.machine.driver, NoDeviceDriver)
+        is_dummy = self.machine.is_driverless
         is_connected = self.machine.is_connected()
         is_active = is_connected or is_dummy
 

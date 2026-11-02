@@ -23,6 +23,14 @@ import {
 } from '@mdi/js';
 import styles from './sponsor.module.css';
 
+// Shown when the metrics endpoint cannot be reached from the browser.
+// Must stay consistent with the query pinned in the traefik-swarm
+// repository, which serves this exact expression without authentication.
+const DOWNLOADS_ESTIMATE = '3,200+';
+const DOWNLOADS_URL =
+  'https://metrics.barebaric.com/api/v1/query?query='
+  + encodeURIComponent('sum(increase(downloads_total[30d]))');
+
 const benefits = [
   {
     icon: mdiRocketLaunch,
@@ -184,6 +192,7 @@ const benefits = [
 
 export default function Sponsor() {
   const [githubStars, setGithubStars] = useState(null);
+  const [downloads30d, setDownloads30d] = useState(null);
 
   useEffect(() => {
     fetch('https://api.github.com/repos/barebaric/rayforge')
@@ -191,6 +200,22 @@ export default function Sponsor() {
       .then((data) => {
         if (data.stargazers_count) {
           setGithubStars(data.stargazers_count);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch(DOWNLOADS_URL, { signal: AbortSignal.timeout(15000) })
+      .then((res) =>
+        res.ok ? res.json() : Promise.reject(new Error(res.status)),
+      )
+      .then((data) => {
+        const value = Number.parseFloat(
+          data?.data?.result?.[0]?.value?.[1],
+        );
+        if (Number.isFinite(value) && value > 0) {
+          setDownloads30d(Math.floor(value));
         }
       })
       .catch(() => {});
@@ -291,11 +316,15 @@ export default function Sponsor() {
               </div>
             </div>
             <div className={styles.statItem}>
-              <div className={styles.statNumber}>3,200+</div>
+              <div className={styles.statNumber}>
+                {downloads30d !== null
+                  ? downloads30d.toLocaleString()
+                  : DOWNLOADS_ESTIMATE}
+              </div>
               <div className={styles.statLabel}>
                 {translate({
                   id: 'sponsor.stats.downloads',
-                  message: 'Monthly Downloads',
+                  message: 'Downloads (Last 30 Days)',
                 })}
               </div>
             </div>
@@ -311,7 +340,7 @@ export default function Sponsor() {
               </div>
             </div>
             <div className={styles.statItem}>
-              <div className={styles.statNumber}>7</div>
+              <div className={styles.statNumber}>8</div>
               <div className={styles.statLabel}>
                 {translate({
                   id: 'sponsor.stats.languages',

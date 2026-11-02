@@ -741,7 +741,7 @@
     "message": "Monatliche Website-Aufrufe"
   },
   "sponsor.stats.downloads": {
-    "message": "Monatliche Downloads"
+    "message": "Downloads (letzte 30 Tage)"
   },
   "sponsor.stats.stars": {
     "message": "GitHub-Sterne"

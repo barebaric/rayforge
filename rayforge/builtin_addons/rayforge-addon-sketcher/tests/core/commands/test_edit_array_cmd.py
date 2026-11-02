@@ -218,7 +218,7 @@ def test_edit_undo_restores_previous_state(sketch_with_array):
     assert array.members == members_before
     assert member_count(sketch, array) == 6
     points_after = sorted((p.x, p.y) for p in sketch.registry.points)
-    assert points_after == pytest.approx(points_before)
+    assert points_after == [pytest.approx(p) for p in points_before]
 
 
 def test_edit_redo_reapplies_changes(sketch_with_array):

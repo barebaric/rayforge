@@ -26,7 +26,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from ruidadriver.rd_gluescript import GlueScript
+from ruida_pa.ruidadriver.rd_gluescript import GlueScript
 
 from rayforge.machine.driver.ruidarpa.rpa_encoder import RuidaRPAEncoder
 

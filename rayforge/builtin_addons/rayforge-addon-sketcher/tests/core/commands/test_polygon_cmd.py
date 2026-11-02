@@ -135,7 +135,9 @@ class TestPolygonCommand:
         sketch, _center, _cmd = _execute(sides=7, star_ratio=0.5)
         before = _corner_positions(sketch)
         assert sketch.solve()
-        assert _corner_positions(sketch) == pytest.approx(before, abs=1e-6)
+        assert _corner_positions(sketch) == [
+            pytest.approx(p, abs=1e-6) for p in before
+        ]
 
     def test_dragging_a_corner_keeps_it_regular(self):
         sketch, center, _cmd = _execute(sides=6)

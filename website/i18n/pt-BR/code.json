@@ -741,7 +741,7 @@
     "message": "Visualizações Mensais do Site"
   },
   "sponsor.stats.downloads": {
-    "message": "Downloads Mensais"
+    "message": "Downloads (últimos 30 dias)"
   },
   "sponsor.stats.stars": {
     "message": "Estrelas no GitHub"

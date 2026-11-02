@@ -10,8 +10,8 @@ import logging
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from rpalib.version import __version__
-from ruidadriver.ruida_driver import RdDriver
+from ruida_pa.rpalib.version import __version__
+from ruida_pa.ruidadriver.ruida_driver import RdDriver
 
 from rayforge.pipeline.encoder.base import EncodedOutput
 

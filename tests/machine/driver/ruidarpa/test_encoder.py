@@ -22,7 +22,7 @@ from raygeo.geo import Matrix
 from raygeo.ops import Ops
 from raygeo.ops.state import AirAssistMode, CoolantMode, PowerMode
 from raygeo.ops.types import RasterMode, SectionType
-from ruidadriver.rd_gluescript import GlueScript
+from ruida_pa.ruidadriver.rd_gluescript import GlueScript
 
 from rayforge.core.doc import Doc
 from rayforge.core.step import Step

@@ -666,7 +666,7 @@
     "message": "मासिक वेबसाइट दृश्य"
   },
   "sponsor.stats.downloads": {
-    "message": "मासिक डाउनलोड"
+    "message": "डाउनलोड (पिछले 30 दिन)"
   },
   "sponsor.stats.stars": {
     "message": "GitHub स्टार"

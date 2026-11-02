@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock, PropertyMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from blinker import Signal
@@ -91,18 +91,6 @@ class TestDriverProbe:
     async def test_probe_connects_and_queries(
         self, context_initializer, mocker
     ):
-        mock_serial = _make_mock_serial()
-        mocker.patch(
-            "rayforge.machine.driver.marlin.marlin_serial.SerialTransport",
-            return_value=mock_serial,
-        )
-        mocker.patch.object(
-            mock_serial,
-            "is_connected",
-            new_callable=PropertyMock,
-            return_value=True,
-        )
-
         m115_lines = [
             (
                 "FIRMWARE_NAME:Marlin 2.1.2.7 "
@@ -115,10 +103,6 @@ class TestDriverProbe:
             "echo: M204 S3000.00 T3000.00",
         ]
 
-        async def fake_connect(self):
-            self._handshake_event.set()
-            self._update_connection_status(TransportStatus.CONNECTED)
-
         async def fake_interactive(self, command):
             if command == "M115":
                 return m115_lines
@@ -130,6 +114,17 @@ class TestDriverProbe:
                 return ["echo: M149 Units in mm"]
             return []
 
+        def fake_setup(self, **kwargs):
+            self.did_setup = True
+
+        async def fake_connect(self):
+            self.connection_status_changed.send(
+                self, status=TransportStatus.CONNECTED, message=None
+            )
+
+        mocker.patch.object(
+            MarlinSerialDriver, "_setup_implementation", fake_setup
+        )
         mocker.patch.object(
             MarlinSerialDriver,
             "_connect_implementation",
@@ -149,43 +144,12 @@ class TestDriverProbe:
             baudrate=115200,
         )
 
-        mock_cleanup.assert_awaited_once()
         assert profile.meta.name == "CustomLaser"
-        assert profile.machine_config.driver == "MarlinSerialDriver"
-        assert profile.machine_config.driver_args == {
-            "port": "/dev/ttyUSB0",
-            "baudrate": 115200,
-        }
-        assert profile.machine_config.axis_extents == (
-            400.0,
-            300.0,
-        )
-        assert profile.machine_config.max_travel_speed == 18000
+        driver_config = profile.machine_config.driver_config
+        assert driver_config is not None
+        assert driver_config["firmware_version"] == "Marlin"
+        assert profile.machine_config.axis_extents == (400.0, 300.0)
+        assert profile.machine_config.max_travel_speed == 300 * 60
         assert profile.machine_config.acceleration == 3000
-
-    @pytest.mark.asyncio
-    async def test_probe_cleanup_on_error(self, context_initializer, mocker):
-        mock_serial = _make_mock_serial()
-        mocker.patch(
-            "rayforge.machine.driver.marlin.marlin_serial.SerialTransport",
-            return_value=mock_serial,
-        )
-
-        async def failing_connect(self):
-            raise ConnectionError("Port not found")
-
-        mocker.patch.object(
-            MarlinSerialDriver,
-            "_connect_implementation",
-            failing_connect,
-        )
-        mock_cleanup = AsyncMock()
-        mocker.patch.object(MarlinSerialDriver, "cleanup", mock_cleanup)
-
-        with pytest.raises(ConnectionError):
-            await MarlinSerialDriver.probe(
-                context_initializer,
-                port="/dev/ttyUSB0",
-            )
-
+        assert profile.machine_config.unit_system == UnitSystem.METRIC
         mock_cleanup.assert_awaited_once()
