@@ -10,7 +10,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from rayforge.machine.driver.dummy import NoDeviceDriver
 from rayforge.machine.models.machine_panel import PanelOrientation
 
 
@@ -45,6 +44,7 @@ def machine():
     m = MagicMock()
     m.has_z_axis = True
     m.is_connected.return_value = True
+    m.is_driverless = False
     m.axis_extents = (400.0, 300.0)
     m.reverse_x_axis = False
     m.reverse_y_axis = False
@@ -171,7 +171,7 @@ def test_sensitivity_offline(machine, machine_cmd):
 @pytest.mark.ui
 def test_sensitivity_dummy_driver(machine, machine_cmd):
     machine.is_connected.return_value = False
-    machine.driver = MagicMock(spec=NoDeviceDriver)
+    machine.is_driverless = True
     popover = make_popover(machine, machine_cmd)
 
     popover.update_sensitivity()

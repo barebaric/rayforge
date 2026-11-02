@@ -32,6 +32,7 @@ from ..driver.driver import (
     ZHomingMode,
     pwm_varset,
 )
+from ..driver.dummy import NoDeviceDriver
 from ..kinematics import HeadSpec, Kinematics, build_assembly
 from ..models.axis import AxisConfig, AxisDirection, AxisSet, AxisType
 from ..transport import TransportStatus
@@ -294,6 +295,19 @@ class Machine:
         MachineManager. This enables lazy instantiation.
         """
         return self.context.machine_mgr.get_controller(self.id)
+
+    @property
+    def is_driverless(self) -> bool:
+        """
+        Whether the machine's active driver is the placeholder
+        NoDeviceDriver. Machines that have been removed from the
+        manager report False instead of raising or lazily creating a
+        controller, so stale UI references can query this safely.
+        """
+        manager = self.context.machine_mgr
+        if manager.get_machine_by_id(self.id) is not self:
+            return False
+        return isinstance(self.controller.driver, NoDeviceDriver)
 
     @property
     def has_controller(self) -> bool:
