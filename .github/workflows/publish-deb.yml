@@ -45,6 +45,7 @@ jobs:
           devscripts
           debhelper
           dh-python
+          gettext
           dput
           equivs
           jq
@@ -100,6 +101,25 @@ jobs:
       - name: Test package installation
         run: |
           sudo apt-get install -y ./${{ steps.build_test_packages.outputs.deb_file_path }}
+
+      - name: Verify translated catalogs are shipped
+        run: |
+          MO_FILE=$(dpkg -L rayforge | grep 'locale/de/LC_MESSAGES/rayforge\.mo$')
+          if [ -z "$MO_FILE" ]; then
+            echo "::error::Compiled German catalog is missing from the package."
+            exit 1
+          fi
+          echo "Found: $MO_FILE"
+          LOCALE_DIR=$(dirname "$(dirname "$(dirname "$MO_FILE")")")
+          LANGUAGE=de_DE python3 -c "
+          import gettext, sys
+          gettext.bindtextdomain('rayforge', sys.argv[1])
+          gettext.textdomain('rayforge')
+          result = gettext.gettext('Language')
+          print('Language ->', result)
+          if result == 'Language':
+              raise SystemExit('German translation did not resolve')
+          " "$LOCALE_DIR"
 
       - name: Run smoke test
         run: |
