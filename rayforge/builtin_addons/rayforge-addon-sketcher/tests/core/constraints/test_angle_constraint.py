@@ -4,11 +4,12 @@ from types import SimpleNamespace
 import cairo
 import pytest
 from sketcher.core import Sketch
-from sketcher.core.constraints import AngleConstraint
+from sketcher.core.constraints import AngleConstraint, DistanceConstraint
 from sketcher.core.constraints.angle import ARC_RADIUS
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry
 from sketcher.core.selection import SketchSelection
+from sketcher.core.solver import Solver
 
 
 @pytest.fixture
@@ -16,6 +17,86 @@ def setup_env():
     reg = EntityRegistry()
     params = ParameterContext()
     return reg, params
+
+
+def _chained_lines(reg, n_segments, seg_len=10.0, turn_deg=30.0):
+    px, py = 0.0, 0.0
+    p_first = reg.add_point(px, py, fixed=True)
+    p_prev = p_first
+    joints = []
+    lines = []
+    angle = 0.0
+    for i in range(n_segments):
+        angle += turn_deg if i % 2 == 0 else -turn_deg
+        a = math.radians(angle)
+        px += seg_len * math.cos(a)
+        py += seg_len * math.sin(a)
+        p_next = reg.add_point(px, py)
+        line = reg.add_line(p_prev, p_next)
+        joints.append(p_next)
+        lines.append(line)
+        p_prev = p_next
+    return p_first, joints, lines
+
+
+def _chain_constraints(reg, p_first, joints, lines, turn_deg=30.0):
+    constraints = [DistanceConstraint(p_first, joints[0], 10.0)]
+    for i, line in enumerate(lines):
+        if i == 0:
+            continue
+        prev = lines[i - 1]
+        constraints.append(DistanceConstraint(joints[i - 1], joints[i], 10.0))
+        theta = turn_deg if i % 2 == 0 else -turn_deg
+        target = math.degrees(math.pi - math.radians(theta))
+        constraints.append(AngleConstraint(prev, line, target))
+    return constraints
+
+
+def test_gradient_matches_error_on_chained_lines(setup_env):
+    reg, params = setup_env
+    p_first, joints, lines = _chained_lines(reg, 4)
+    constraints = _chain_constraints(reg, p_first, joints, lines)
+
+    eps = 1e-6
+    for constraint in constraints:
+        if not isinstance(constraint, AngleConstraint):
+            continue
+        grads = constraint.gradient(reg, params)
+        for pid, points in grads.items():
+            point = reg.get_point(pid)
+            for axis, attr in enumerate(("x", "y")):
+                original = getattr(point, attr)
+                setattr(point, attr, original + eps)
+                plus = constraint.error(reg, params)
+                setattr(point, attr, original - eps)
+                minus = constraint.error(reg, params)
+                setattr(point, attr, original)
+                finite = (plus - minus) / (2.0 * eps)
+                assert points[0][axis] == pytest.approx(finite, abs=1e-4)
+
+
+def test_solver_converges_after_parameter_change(setup_env):
+    reg, params = setup_env
+    p_first, joints, lines = _chained_lines(reg, 13)
+    constraints = _chain_constraints(reg, p_first, joints, lines)
+
+    solver = Solver(reg, params, constraints)
+    assert solver.solve() is True
+    assert solver.get_conflicting_constraints() == set()
+
+    for constraint in constraints:
+        if isinstance(constraint, AngleConstraint):
+            constraint.value -= 3.0
+
+    assert solver.solve() is True
+    assert solver.get_conflicting_constraints() == set()
+
+    for constraint in constraints:
+        error = constraint.error(reg, params)
+        if isinstance(error, (list, tuple)):
+            assert max(abs(e) for e in error) < 1e-4
+        else:
+            assert abs(error) < 1e-4
 
 
 def test_angle_constraint_90_degrees(setup_env):
