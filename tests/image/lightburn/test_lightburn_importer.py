@@ -400,6 +400,58 @@ class TestLightBurnImporter:
         assert len(colors) == 2
         assert len(set(colors)) == 2
 
+    def test_group_children_keep_their_own_layers(self):
+        data = b"""<Project>
+            <CutSetting type="Cut">
+                <index Value="0"/><name Value="C00"/>
+            </CutSetting>
+            <CutSetting type="Cut">
+                <index Value="2"/><name Value="C02"/>
+            </CutSetting>
+            <Shape Type="Group">
+                <XForm>1 0 0 1 100 0</XForm>
+                <Children>
+                    <Shape Type="Ellipse" CutIndex="0" Rx="1" Ry="1">
+                        <XForm>1 0 0 1 0 0</XForm>
+                    </Shape>
+                    <Shape Type="Group" CutIndex="0">
+                        <XForm>1 0 0 1 0 50</XForm>
+                        <Children>
+                            <Shape Type="Rect" CutIndex="2" W="10" H="10">
+                                <XForm>1 0 0 1 0 0</XForm>
+                            </Shape>
+                        </Children>
+                    </Shape>
+                </Children>
+            </Shape>
+        </Project>"""
+        importer = LightBurnImporter(data, source_file=Path("group.lbrn2"))
+        assert importer.parse() is not None
+        layers = importer._geometries_by_layer
+        assert set(layers) == {"0", "2"}
+        assert layers["0"].rect() == pytest.approx((99, -1, 101, 1))
+        assert layers["2"].rect() == pytest.approx((95, 45, 105, 55))
+
+    def test_layers_follow_cut_priority(self):
+        data = b"""<Project>
+            <CutSetting type="Cut">
+                <index Value="0"/><name Value="C00"/><priority Value="1"/>
+            </CutSetting>
+            <CutSetting type="Cut">
+                <index Value="2"/><name Value="C02"/><priority Value="0"/>
+            </CutSetting>
+            <Shape Type="Rect" CutIndex="0" W="10" H="10">
+                <XForm>1 0 0 1 0 0</XForm>
+            </Shape>
+            <Shape Type="Rect" CutIndex="2" W="10" H="10">
+                <XForm>1 0 0 1 50 0</XForm>
+            </Shape>
+        </Project>"""
+        importer = LightBurnImporter(data, source_file=Path("order.lbrn2"))
+        parse_result = importer.parse()
+        assert parse_result is not None
+        assert [la.layer_id for la in parse_result.layers] == ["2", "0"]
+
     def test_path_reuses_shared_vertices_and_primitives(self):
         data = b"""<Project>
             <Shape Type="Path" CutIndex="0" VertID="0" PrimID="0">
