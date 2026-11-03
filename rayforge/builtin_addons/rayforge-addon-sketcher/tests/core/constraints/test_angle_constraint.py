@@ -4,7 +4,11 @@ from types import SimpleNamespace
 import cairo
 import pytest
 from sketcher.core import Sketch
-from sketcher.core.constraints import AngleConstraint, DistanceConstraint
+from sketcher.core.constraints import (
+    AngleConstraint,
+    Constraint,
+    DistanceConstraint,
+)
 from sketcher.core.constraints.angle import ARC_RADIUS
 from sketcher.core.params import ParameterContext
 from sketcher.core.registry import EntityRegistry
@@ -40,7 +44,9 @@ def _chained_lines(reg, n_segments, seg_len=10.0, turn_deg=30.0):
 
 
 def _chain_constraints(reg, p_first, joints, lines, turn_deg=30.0):
-    constraints = [DistanceConstraint(p_first, joints[0], 10.0)]
+    constraints: list[Constraint] = [
+        DistanceConstraint(p_first, joints[0], 10.0)
+    ]
     for i, line in enumerate(lines):
         if i == 0:
             continue
