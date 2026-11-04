@@ -37,6 +37,42 @@ brew_bundle() {
     fi
 }
 
+build_freetype() {
+    local version="2.15.0"
+    local prefix="$HOME/.rayforge-macos-deps/freetype"
+    local tarball="freetype-${version}.tar.xz"
+    local tmp
+
+    if [ -f "$prefix/lib/libfreetype.6.dylib" ]; then
+        return 0
+    fi
+    tmp=$(mktemp -d)
+    for url in \
+        "https://downloads.sourceforge.net/project/freetype/freetype2/${version}/${tarball}" \
+        "https://download.savannah.gnu.org/releases/freetype/freetype2/${version}/${tarball}" \
+        "https://download-mirror.savannah.gnu.org/releases/freetype/freetype2/${version}/${tarball}"
+    do
+        curl -fsSL --retry 3 -o "$tmp/$tarball" "$url" && break
+    done
+    if ! tar xf "$tmp/$tarball" -C "$tmp"; then
+        echo "Could not download freetype ${version} source." >&2
+        exit 1
+    fi
+    export PKG_CONFIG_PATH="$BREW_PREFIX/lib/pkgconfig:$BREW_PREFIX/share/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+    export MACOSX_DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET:-12.0}"
+    meson setup "$tmp/freetype-${version}/build" \
+        "$tmp/freetype-${version}" \
+        --prefix "$prefix" \
+        --libdir lib \
+        -Dhvf=disabled \
+        -Dharfbuzz=disabled \
+        -Dpng=auto -Dbrotli=auto -Dzlib=auto -Dbzip2=auto \
+        -Dtests=disabled
+    ninja -C "$tmp/freetype-${version}/build"
+    ninja -C "$tmp/freetype-${version}/build" install
+    rm -rf "$tmp"
+}
+
 for arg in "$@"; do
     case "$arg" in
         --install)
@@ -108,6 +144,10 @@ if (( RUN_APP == 0 )); then
             echo "Run again and choose 'Install missing dependencies'." >&2
             exit 1
         fi
+    fi
+
+    if (( INSTALL == 1 )); then
+        build_freetype
     fi
 
     cat > .mac_env <<EOF
