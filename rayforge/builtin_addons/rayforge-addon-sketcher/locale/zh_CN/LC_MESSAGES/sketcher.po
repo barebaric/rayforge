@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-15 05:49+0200\n"
+"POT-Creation-Date: 2026-11-03 17:02+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -350,6 +350,11 @@ msgstr "请选择一个草图进行编辑。"
 #: sketcher/ui_gtk/sketch_mode_cmd.py
 msgid "Please select a single object to export."
 msgstr "请选择一个对象进行导出。"
+
+#: sketcher/ui_gtk/sketch_mode_cmd.py
+#, python-brace-format
+msgid "Error saving file: {msg}"
+msgstr "保存文件错误：{msg}"
 
 #: sketcher/ui_gtk/__init__.py
 msgid "Edit Sketch"

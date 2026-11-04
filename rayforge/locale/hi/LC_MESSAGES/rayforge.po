@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-24 21:11+0200\n"
+"POT-Creation-Date: 2026-11-03 01:36+0100\n"
 "PO-Revision-Date: 2026-09-27 22:58\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -951,12 +951,15 @@ msgstr "बॉड दर कॉन्फ़िगर की जानी चा�
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
 msgid "Port not configured"
 msgstr "पोर्ट कॉन्फ़िगर नहीं है"
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
-msgid "No response from device"
-msgstr "डिवाइस से कोई प्रतिक्रिया नहीं"
+#: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
+msgid "Driver is not set up. Check the port settings."
+msgstr "ड्राइवर सेट अप नहीं है. पोर्ट सेटिंग्स जाँचें."
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 msgid "GRBL (Telnet)"
@@ -1600,10 +1603,6 @@ msgid "GRBL device"
 msgstr "GRBL डिवाइस"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
-msgid "Driver is not set up. Check the port settings."
-msgstr "ड्राइवर सेट अप नहीं है. पोर्ट सेटिंग्स जाँचें."
-
-#: rayforge/machine/driver/grbl/grbl_serial.py
 msgid "RX Buffer Size Override"
 msgstr "RX बफ़र आकार ओवरराइड"
 
@@ -1741,8 +1740,16 @@ msgid "Smoothieware via a Telnet connection"
 msgstr "Telnet कनेक्शन के माध्यम से Smoothieware"
 
 #: rayforge/machine/driver/smoothie/smoothie_driver.py
+msgid "Driver is not set up. Check the connection settings."
+msgstr "ड्राइवर सेट अप नहीं है। कनेक्शन सेटिंग्स जाँचें।"
+
+#: rayforge/machine/driver/smoothie/smoothie_driver.py
 msgid "The Telnet port number"
 msgstr "Telnet पोर्ट संख्या"
+
+#: rayforge/machine/driver/smoothie/smoothie_driver.py
+msgid "Host not configured"
+msgstr "होस्ट कॉन्फ़िगर नहीं है"
 
 #: rayforge/machine/discovery/mdns_channel.py
 #, python-brace-format
@@ -2627,6 +2634,7 @@ msgstr ""
 #: rayforge/ui_gtk/machine/template_selector.py
 #: rayforge/ui_gtk/varset/adapter/combo.py
 #: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#: rayforge/ui_gtk/addon_manager/community_dialog.py
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/addon_manager/experimental_dialog.py
@@ -2676,6 +2684,14 @@ msgstr "Patreon"
 #: rayforge/ui_gtk/settings/license_settings_page.py
 msgid "Link your Patreon account for early access to new addons."
 msgstr "नए ऐड-ऑन का शीघ्र उपयोग पाने के लिए अपना Patreon खाता लिंक करें."
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "External addon services are disabled"
+msgstr "बाहरी ऐड-ऑन सेवाएँ अक्षम हैं"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Enable them on the Addons settings page"
+msgstr "इन्हें ऐड-ऑन सेटिंग्स पृष्ठ पर सक्षम करें"
 
 #: rayforge/ui_gtk/settings/license_settings_page.py
 msgid "Patreon Account Linked"
@@ -2857,6 +2873,27 @@ msgstr ""
 #: rayforge/ui_gtk/settings/addon_manager_page.py
 msgid "Addons"
 msgstr "ऐड-ऑन"
+
+#: rayforge/ui_gtk/settings/addon_manager_page.py
+msgid "Online Services"
+msgstr "ऑनलाइन सेवाएँ"
+
+#: rayforge/ui_gtk/settings/addon_manager_page.py
+msgid ""
+"Controls registry access, remote installation, and external license "
+"services. Built-in and locally installed addons remain available when "
+"disabled."
+msgstr ""
+"रजिस्ट्री एक्सेस, रिमोट इंस्टॉलेशन और बाहरी लाइसेंस सेवाओं को नियंत्रित करता है। अक्षम होने "
+"पर भी बिल्ट-इन और स्थानीय रूप से इंस्टॉल किए गए ऐड-ऑन उपलब्ध रहते हैं।"
+
+#: rayforge/ui_gtk/settings/addon_manager_page.py
+msgid "Enable external addon services"
+msgstr "बाहरी ऐड-ऑन सेवाएँ सक्षम करें"
+
+#: rayforge/ui_gtk/settings/addon_manager_page.py
+msgid "Allow network access to addon and license providers"
+msgstr "ऐड-ऑन और लाइसेंस प्रदाताओं तक नेटवर्क एक्सेस की अनुमति दें"
 
 #: rayforge/ui_gtk/settings/addon_manager_page.py
 msgid "Installed Addons"
@@ -3185,6 +3222,14 @@ msgid "Automatically check for new Rayforge versions on startup"
 msgstr "स्टार्टअप पर स्वतः नए Rayforge संस्करणों की जाँच करें"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Check for addon updates"
+msgstr "ऐड-ऑन अपडेट जाँचें"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Automatically check for addon updates on startup"
+msgstr "स्टार्टअप पर ऐड-ऑन अपडेट के लिए स्वचालित रूप से जाँचें"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Watch imported files"
 msgstr "आयातित फ़ाइलों पर नज़र रखें"
 
@@ -3253,6 +3298,11 @@ msgstr "_रद्द करें"
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "_Restart"
 msgstr "_रीस्टार्ट"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+#, python-brace-format
+msgid "Error: {msg}"
+msgstr "त्रुटि: {msg}"
 
 #: rayforge/ui_gtk/array_dialog.py
 msgid "Copies keep their original layers."
@@ -3717,6 +3767,16 @@ msgstr "यह बिंदु हटाएँ"
 msgid "Nudge Pixel:"
 msgstr "पिक्सेल सरकाएँ:"
 
+#: rayforge/ui_gtk/camera/point_bubble_widget.py
+#, python-brace-format
+msgid "X ({unit}):"
+msgstr "X ({unit}):"
+
+#: rayforge/ui_gtk/camera/point_bubble_widget.py
+#, python-brace-format
+msgid "Y ({unit}):"
+msgstr "Y ({unit}):"
+
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Camera Properties"
 msgstr "कैमरा गुण"
@@ -4064,6 +4124,12 @@ msgstr "कस्टम ({id})"
 msgid "Save Calibration Card"
 msgstr "कैलिब्रेशन कार्ड सहेजें"
 
+#: rayforge/ui_gtk/camera/wizard/card_page.py rayforge/ui_gtk/mainwindow.py
+#: rayforge/ui_gtk/debug_log_dialog.py rayforge/ui_gtk/project_cmd.py
+#, python-brace-format
+msgid "Error saving file: {msg}"
+msgstr "फ़ाइल सहेजने में त्रुटि: {msg}"
+
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Calibration card saved"
 msgstr "कैलिब्रेशन कार्ड सहेजा गया"
@@ -4187,6 +4253,7 @@ msgid "Skip Anyway"
 msgstr "फिर भी छोड़ें"
 
 #: rayforge/ui_gtk/camera/wizard/capture_page.py
+#: rayforge/ui_gtk/camera/wizard/wizard.py
 msgid "Stay Here"
 msgstr "यहीं रुकें"
 
@@ -4208,6 +4275,22 @@ msgstr "आगे"
 #: rayforge/ui_gtk/camera/wizard/wizard.py
 msgid "Finish"
 msgstr "समाप्त करें"
+
+#: rayforge/ui_gtk/camera/wizard/wizard.py
+msgid "Finish Without Alignment?"
+msgstr "बिना संरेखण के समाप्त करें?"
+
+#: rayforge/ui_gtk/camera/wizard/wizard.py
+msgid ""
+"No reference points have been applied yet. Without them the camera view is "
+"stretched over the work area and will not line up with the actual machine."
+msgstr ""
+"अभी तक कोई संदर्भ बिंदु लागू नहीं किए गए हैं। इनके बिना कैमरा दृश्य कार्य क्षेत्र पर खिंच "
+"जाता है और वास्तविक मशीन से मेल नहीं खाएगा।"
+
+#: rayforge/ui_gtk/camera/wizard/wizard.py
+msgid "Finish Anyway"
+msgstr "फिर भी समाप्त करें"
 
 #: rayforge/ui_gtk/camera/wizard/wizard.py
 #: rayforge/ui_gtk/machine/dialect_list.py
@@ -4385,14 +4468,24 @@ msgid "Not shown until the camera image is aligned"
 msgstr "कैमरा छवि संरेखित होने तक नहीं दिखाई जाती"
 
 #: rayforge/ui_gtk/camera/alignment_widget.py
+#: rayforge/shared/units/definitions.py
+msgid "mm"
+msgstr "mm"
+
+#: rayforge/ui_gtk/camera/alignment_widget.py
+#, python-brace-format
 msgid ""
 "Click the image to add reference points. Drag to move them.\n"
 "Scroll to Zoom. Middle-click and drag to Pan.\n"
-"Use the Arrow Keys to nudge the active point precisely."
+"Use the Arrow Keys to nudge the active point precisely.\n"
+"For each point, enter its position on the work area (X/Y in {unit}, measured "
+"from the work area origin)."
 msgstr ""
-"संदर्भ बिंदु जोड़ने के लिए छवि पर क्लिक करें. खिसकाने के लिए खींचें.\n"
-"ज़ूम के लिए स्क्रॉल करें. पैन करने के लिए मध्य-क्लिक करके खींचें.\n"
-"सक्रिय बिंदु को सटीक रूप से सरकाने के लिए ऐरो कीज़ का उपयोग करें."
+"संदर्भ बिंदु जोड़ने के लिए चित्र पर क्लिक करें। उन्हें हिलाने के लिए खींचें।\n"
+"ज़ूम के लिए स्क्रॉल करें। पैन के लिए मध्य-क्लिक करके खींचें।\n"
+"सक्रिय बिंदु को सटीक रूप से समायोजित करने के लिए तीर कुंजियों का उपयोग करें।\n"
+"प्रत्येक बिंदु के लिए, कार्य क्षेत्र पर उसकी स्थिति दर्ज करें (X/Y, {unit} में, कार्य क्षेत्र के "
+"मूल बिंदु से मापी गई)।"
 
 #: rayforge/ui_gtk/camera/alignment_widget.py
 msgid "Reset Points"
@@ -6858,6 +6951,11 @@ msgstr "समस्या रिपोर्ट करें"
 
 #: rayforge/ui_gtk/machine/settings_dialog.py
 #, python-brace-format
+msgid "Error exporting profile: {msg}"
+msgstr "प्रोफ़ाइल निर्यात करने में त्रुटि: {msg}"
+
+#: rayforge/ui_gtk/machine/settings_dialog.py
+#, python-brace-format
 msgid "Exported to {path}"
 msgstr "{path} पर निर्यात हुआ"
 
@@ -7159,6 +7257,11 @@ msgid "No addons found in registry."
 msgstr "रजिस्ट्री में कोई ऐड-ऑन नहीं मिला."
 
 #: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Community addon"
+msgstr "कम्युनिटी ऐड-ऑन"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
 msgid "Install"
 msgstr "इंस्टॉल करें"
 
@@ -7196,6 +7299,33 @@ msgstr "मैन्युअल इंस्टॉल"
 #: rayforge/ui_gtk/addon_manager/addon_dialog.py
 msgid "Enter the Git URL."
 msgstr "Git URL दर्ज करें."
+
+#: rayforge/ui_gtk/addon_manager/community_dialog.py
+msgid "Install Community Addon?"
+msgstr "कम्युनिटी ऐड-ऑन इंस्टॉल करें?"
+
+#: rayforge/ui_gtk/addon_manager/community_dialog.py
+#, python-brace-format
+msgid ""
+"\"{name}\" is a community addon and is not provided by the Rayforge team. "
+"Addons have the same access to your computer and your files as Rayforge "
+"itself. Only install this addon if you trust its author, {author}."
+msgstr ""
+"\"{name}\" एक कम्युनिटी ऐड-ऑन है और इसे Rayforge टीम द्वारा प्रदान नहीं किया गया है। "
+"ऐड-ऑन को आपके कंप्यूटर और आपकी फ़ाइलों तक Rayforge स्वयं जितनी ही पहुँच प्राप्त होती है। "
+"यह ऐड-ऑन केवल तभी इंस्टॉल करें जब आप इसके लेखक, {author}, पर भरोसा करते हों।"
+
+#: rayforge/ui_gtk/addon_manager/community_dialog.py
+msgid "unknown"
+msgstr "अज्ञात"
+
+#: rayforge/ui_gtk/addon_manager/community_dialog.py
+msgid "Install Anyway"
+msgstr "फिर भी इंस्टॉल करें"
+
+#: rayforge/ui_gtk/addon_manager/community_dialog.py
+msgid "Open the repository in your browser"
+msgstr "रिपॉज़िटरी ब्राउज़र में खोलें"
 
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 msgid "Enter License Key"
@@ -7289,6 +7419,14 @@ msgstr "नया ऐड-ऑन इंस्टॉल करें..."
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "No addons installed."
 msgstr "कोई ऐड-ऑन इंस्टॉल नहीं है."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Enable external addon services to install addons"
+msgstr "ऐड-ऑन इंस्टॉल करने के लिए बाहरी ऐड-ऑन सेवाएँ सक्षम करें"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "External addon services are disabled."
+msgstr "बाहरी ऐड-ऑन सेवाएँ अक्षम हैं।"
 
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #, python-brace-format
@@ -8051,6 +8189,16 @@ msgstr "निर्यात के लिए कृपया एक ऑब्�
 
 #: rayforge/ui_gtk/mainwindow.py
 #, python-brace-format
+msgid "Error exporting object: {msg}"
+msgstr "ऑब्जेक्ट निर्यात करने में त्रुटि: {msg}"
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
+msgid "Error exporting document: {msg}"
+msgstr "दस्तावेज़ निर्यात करने में त्रुटि: {msg}"
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
 msgid "Debug log saved to {path}"
 msgstr "डिबग लॉग {path} पर सहेजा गया"
 
@@ -8159,11 +8307,6 @@ msgstr "डिबग आर्काइव बनाने में विफ�
 
 #: rayforge/ui_gtk/debug_log_dialog.py
 #, python-brace-format
-msgid "Error saving file: {msg}"
-msgstr "फ़ाइल सहेजने में त्रुटि: {msg}"
-
-#: rayforge/ui_gtk/debug_log_dialog.py
-#, python-brace-format
 msgid "An unexpected error occurred: {error}"
 msgstr "एक अप्रत्याशित त्रुटि हुई: {error}"
 
@@ -8259,6 +8402,11 @@ msgstr "_सहेजें नहीं"
 msgid "New project created"
 msgstr "नया प्रोजेक्ट बनाया गया"
 
+#: rayforge/ui_gtk/project_cmd.py rayforge/ui_gtk/doceditor/import_handler.py
+#, python-brace-format
+msgid "Error opening file: {msg}"
+msgstr "फ़ाइल खोलने में त्रुटि: {msg}"
+
 #: rayforge/ui_gtk/project_cmd.py
 msgid "Untitled"
 msgstr "अनामित"
@@ -8353,6 +8501,15 @@ msgstr ""
 msgid "Switch to Trace Mode"
 msgstr "ट्रेस मोड पर स्विच करें"
 
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid ""
+"Z flattening is disabled: the geometry keeps its original Z heights. On "
+"machines with a Z axis the toolpath will move in Z and may plunge below the "
+"material surface."
+msgstr ""
+"Z फ़्लैटनिंग अक्षम है: ज्यामिति अपनी मूल Z ऊँचाइयाँ बनाए रखती है। Z अक्ष वाली मशीनों पर "
+"टूलपाथ Z में चलेगा और सामग्री की सतह के नीचे उतर सकता है।"
+
 #: rayforge/ui_gtk/doceditor/import_dialog.py rayforge/doceditor/file_cmd.py
 msgid "Re-Import"
 msgstr "पुनः आयात करें"
@@ -8384,6 +8541,18 @@ msgid ""
 msgstr ""
 "इकाई-विहीन SVG विमाओं के लिए प्रति इंच पिक्सेल. Inkscape ≥0.92 का 96, पुराना "
 "Inkscape 90, Illustrator 72 उपयोग करता है"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py rayforge/ui_gtk/about.py
+msgid "Geometry"
+msgstr "ज्यामिति"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Flatten Z Coordinates"
+msgstr "Z कोऑर्डिनेट फ़्लैट करें"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Project all geometry onto the Z=0 plane (recommended for laser cutting)"
+msgstr "सभी ज्यामिति को Z=0 समतल पर प्रोजेक्ट करें (लेज़र कटिंग के लिए अनुशंसित)"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
@@ -8851,6 +9020,11 @@ msgstr "टेक्स्चर छवि चुनें"
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Texture images"
 msgstr "टेक्स्चर छवियाँ"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+#, python-brace-format
+msgid "Error choosing file: {msg}"
+msgstr "फ़ाइल चुनने में त्रुटि: {msg}"
 
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Only WebP and PNG texture images are supported."
@@ -9513,10 +9687,6 @@ msgid "Graphics & Imaging"
 msgstr "ग्राफ़िक्स और इमेजिंग"
 
 #: rayforge/ui_gtk/about.py
-msgid "Geometry"
-msgstr "ज्यामिति"
-
-#: rayforge/ui_gtk/about.py
 msgid "File Formats & Communication"
 msgstr "फ़ाइल फ़ॉर्मेट और संचार"
 
@@ -9596,10 +9766,6 @@ msgstr "in/min"
 #: rayforge/shared/units/definitions.py
 msgid "in/s"
 msgstr "in/s"
-
-#: rayforge/shared/units/definitions.py
-msgid "mm"
-msgstr "mm"
 
 #: rayforge/shared/units/definitions.py
 msgid "cm"

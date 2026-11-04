@@ -55,6 +55,8 @@ parts:
     source: .
     python-requirements:
       - requirements.txt
+    python-constraints:
+      - snap/pip-constraints.txt
     build-packages:
       - python3-pip
       - python3-setuptools
