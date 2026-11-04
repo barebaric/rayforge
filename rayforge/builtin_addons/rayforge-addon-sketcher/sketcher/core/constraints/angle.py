@@ -255,6 +255,8 @@ class AngleConstraint(Constraint):
 
         return diff * ANGLE_WEIGHT
 
+    GRAD_FD_EPS = 1e-6
+
     def gradient(
         self, reg: EntityRegistry, params: ParameterContext
     ) -> dict[EntityID, list[Point]]:
@@ -262,100 +264,30 @@ class AngleConstraint(Constraint):
         if result is None:
             return {}
 
-        e1, e2, p1, p2, p3, p4 = result
+        e1, e2, *_ = result
 
-        intersection = get_line_line_intersection(
-            (p1.x, p1.y), (p2.x, p2.y), (p3.x, p3.y), (p4.x, p4.y)
-        )
+        grads: dict[EntityID, list[Point]] = {}
+        eps = self.GRAD_FD_EPS
+        for pid in (e1.p1_idx, e1.p2_idx, e2.p1_idx, e2.p2_idx):
+            p = reg.get_point(pid)
 
-        if intersection is None:
-            return {}
+            orig_x = p.x
+            p.x = orig_x + eps
+            err_x_plus = self.error(reg, params)
+            p.x = orig_x - eps
+            err_x_minus = self.error(reg, params)
+            p.x = orig_x
+            gx = (err_x_plus - err_x_minus) / (2.0 * eps)
 
-        ix, iy = intersection
+            orig_y = p.y
+            p.y = orig_y + eps
+            err_y_plus = self.error(reg, params)
+            p.y = orig_y - eps
+            err_y_minus = self.error(reg, params)
+            p.y = orig_y
+            gy = (err_y_plus - err_y_minus) / (2.0 * eps)
 
-        far1, far2 = self._get_far_points(e1, e2, p1, p2, p3, p4, ix, iy)
-
-        dx1 = far1.x - ix
-        dy1 = far1.y - iy
-        dx2 = far2.x - ix
-        dy2 = far2.y - iy
-
-        len1_sq = dx1 * dx1 + dy1 * dy1
-        len2_sq = dx2 * dx2 + dy2 * dy2
-
-        if len1_sq < 1e-12 or len2_sq < 1e-12:
-            return {}
-
-        w = ANGLE_WEIGHT
-
-        d_dir1_d_far1x = -dy1 / len1_sq
-        d_dir1_d_far1y = dx1 / len1_sq
-        d_dir1_d_near1x = dy1 / len1_sq
-        d_dir1_d_near1y = -dx1 / len1_sq
-
-        d_dir2_d_far2x = -dy2 / len2_sq
-        d_dir2_d_far2y = dx2 / len2_sq
-        d_dir2_d_near2x = dy2 / len2_sq
-        d_dir2_d_near2y = -dx2 / len2_sq
-
-        d_error_d_dir1 = w
-        d_error_d_dir2 = -w
-
-        grads = {}
-
-        if far1 == p1:
-            grads[e1.p1_idx] = [
-                (
-                    d_error_d_dir1 * d_dir1_d_far1x,
-                    d_error_d_dir1 * d_dir1_d_far1y,
-                )
-            ]
-            grads[e1.p2_idx] = [
-                (
-                    d_error_d_dir1 * d_dir1_d_near1x,
-                    d_error_d_dir1 * d_dir1_d_near1y,
-                )
-            ]
-        else:
-            grads[e1.p1_idx] = [
-                (
-                    d_error_d_dir1 * d_dir1_d_near1x,
-                    d_error_d_dir1 * d_dir1_d_near1y,
-                )
-            ]
-            grads[e1.p2_idx] = [
-                (
-                    d_error_d_dir1 * d_dir1_d_far1x,
-                    d_error_d_dir1 * d_dir1_d_far1y,
-                )
-            ]
-
-        if far2 == p3:
-            grads[e2.p1_idx] = [
-                (
-                    d_error_d_dir2 * d_dir2_d_far2x,
-                    d_error_d_dir2 * d_dir2_d_far2y,
-                )
-            ]
-            grads[e2.p2_idx] = [
-                (
-                    d_error_d_dir2 * d_dir2_d_near2x,
-                    d_error_d_dir2 * d_dir2_d_near2y,
-                )
-            ]
-        else:
-            grads[e2.p1_idx] = [
-                (
-                    d_error_d_dir2 * d_dir2_d_near2x,
-                    d_error_d_dir2 * d_dir2_d_near2y,
-                )
-            ]
-            grads[e2.p2_idx] = [
-                (
-                    d_error_d_dir2 * d_dir2_d_far2x,
-                    d_error_d_dir2 * d_dir2_d_far2y,
-                )
-            ]
+            grads[pid] = [(gx, gy)]
 
         return grads
 
