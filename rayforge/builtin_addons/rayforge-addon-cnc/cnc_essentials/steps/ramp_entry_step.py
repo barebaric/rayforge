@@ -28,6 +28,7 @@ class RampEntryStep(CncAssemblerStep):
             end=(cx + r, cy),
             z_start=0.0,
             z_end=self.target_depth,
+            tool_radius=r,
         )
 
     def assembler_token_params(self, machine, workpiece) -> dict[str, Any]:
