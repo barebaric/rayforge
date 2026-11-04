@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-15 05:49+0200\n"
+"POT-Creation-Date: 2026-11-03 17:02+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -362,6 +362,11 @@ msgstr ""
 
 #: sketcher/ui_gtk/sketch_mode_cmd.py
 msgid "Please select a single object to export."
+msgstr ""
+
+#: sketcher/ui_gtk/sketch_mode_cmd.py
+#, python-brace-format
+msgid "Error saving file: {msg}"
 msgstr ""
 
 #: sketcher/ui_gtk/__init__.py

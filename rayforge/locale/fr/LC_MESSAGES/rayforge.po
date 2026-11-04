@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-24 21:11+0200\n"
+"POT-Creation-Date: 2026-11-03 01:36+0100\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -980,12 +980,15 @@ msgstr "Le débit en bauds doit être configuré."
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
 #: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
 msgid "Port not configured"
 msgstr "Port non configuré"
 
 #: rayforge/machine/driver/marlin/marlin_serial.py
-msgid "No response from device"
-msgstr "Pas de réponse de l'appareil"
+#: rayforge/machine/driver/grbl/grbl_serial.py
+#: rayforge/machine/driver/grbl/grbl_serial_simple.py
+msgid "Driver is not set up. Check the port settings."
+msgstr "Le pilote n'est pas configuré. Vérifiez les paramètres du port."
 
 #: rayforge/machine/driver/grbl/grbl_telnet.py
 msgid "GRBL (Telnet)"
@@ -1689,10 +1692,6 @@ msgid "GRBL device"
 msgstr "Appareil GRBL"
 
 #: rayforge/machine/driver/grbl/grbl_serial.py
-msgid "Driver is not set up. Check the port settings."
-msgstr "Le pilote n'est pas configuré. Vérifiez les paramètres du port."
-
-#: rayforge/machine/driver/grbl/grbl_serial.py
 msgid "RX Buffer Size Override"
 msgstr "Surcharge de la taille du tampon RX"
 
@@ -1837,8 +1836,16 @@ msgid "Smoothieware via a Telnet connection"
 msgstr "Smoothieware via une connexion Telnet"
 
 #: rayforge/machine/driver/smoothie/smoothie_driver.py
+msgid "Driver is not set up. Check the connection settings."
+msgstr "Le pilote n’est pas configuré. Vérifiez les paramètres de connexion."
+
+#: rayforge/machine/driver/smoothie/smoothie_driver.py
 msgid "The Telnet port number"
 msgstr "Le numéro de port Telnet"
+
+#: rayforge/machine/driver/smoothie/smoothie_driver.py
+msgid "Host not configured"
+msgstr "Hôte non configuré"
 
 #: rayforge/machine/discovery/mdns_channel.py
 #, python-brace-format
@@ -2736,6 +2743,7 @@ msgstr ""
 #: rayforge/ui_gtk/machine/template_selector.py
 #: rayforge/ui_gtk/varset/adapter/combo.py
 #: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#: rayforge/ui_gtk/addon_manager/community_dialog.py
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #: rayforge/ui_gtk/addon_manager/experimental_dialog.py
@@ -2786,6 +2794,14 @@ msgstr "Patreon"
 msgid "Link your Patreon account for early access to new addons."
 msgstr ""
 "Liez votre compte Patreon pour un accès anticipé aux nouvelles extensions."
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "External addon services are disabled"
+msgstr "Les services d’extensions externes sont désactivés"
+
+#: rayforge/ui_gtk/settings/license_settings_page.py
+msgid "Enable them on the Addons settings page"
+msgstr "Activez-les dans la page des paramètres des Extensions"
 
 #: rayforge/ui_gtk/settings/license_settings_page.py
 msgid "Patreon Account Linked"
@@ -2972,6 +2988,28 @@ msgstr ""
 #: rayforge/ui_gtk/settings/addon_manager_page.py
 msgid "Addons"
 msgstr "Extensions"
+
+#: rayforge/ui_gtk/settings/addon_manager_page.py
+msgid "Online Services"
+msgstr "Services en ligne"
+
+#: rayforge/ui_gtk/settings/addon_manager_page.py
+msgid ""
+"Controls registry access, remote installation, and external license "
+"services. Built-in and locally installed addons remain available when "
+"disabled."
+msgstr ""
+"Contrôle l’accès au registre, l’installation à distance et les services de "
+"licences externes. Les extensions intégrées et installées localement restent "
+"disponibles lorsque l’option est désactivée."
+
+#: rayforge/ui_gtk/settings/addon_manager_page.py
+msgid "Enable external addon services"
+msgstr "Activer les services d’extensions externes"
+
+#: rayforge/ui_gtk/settings/addon_manager_page.py
+msgid "Allow network access to addon and license providers"
+msgstr "Autoriser l’accès réseau aux fournisseurs d’extensions et de licences"
 
 #: rayforge/ui_gtk/settings/addon_manager_page.py
 msgid "Installed Addons"
@@ -3317,6 +3355,14 @@ msgstr ""
 "Vérifier automatiquement les nouvelles versions de Rayforge au démarrage"
 
 #: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Check for addon updates"
+msgstr "Rechercher des mises à jour d’extensions"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+msgid "Automatically check for addon updates on startup"
+msgstr "Rechercher automatiquement des mises à jour d’extensions au démarrage"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "Watch imported files"
 msgstr "Surveiller les fichiers importés"
 
@@ -3387,6 +3433,11 @@ msgstr "_Annuler"
 #: rayforge/ui_gtk/settings/general_preferences_page.py
 msgid "_Restart"
 msgstr "_Redémarrer"
+
+#: rayforge/ui_gtk/settings/general_preferences_page.py
+#, python-brace-format
+msgid "Error: {msg}"
+msgstr "Erreur : {msg}"
 
 #: rayforge/ui_gtk/array_dialog.py
 msgid "Copies keep their original layers."
@@ -3858,6 +3909,16 @@ msgstr "Supprimer ce point"
 msgid "Nudge Pixel:"
 msgstr "Déplacer pixel :"
 
+#: rayforge/ui_gtk/camera/point_bubble_widget.py
+#, python-brace-format
+msgid "X ({unit}):"
+msgstr "X ({unit}) :"
+
+#: rayforge/ui_gtk/camera/point_bubble_widget.py
+#, python-brace-format
+msgid "Y ({unit}):"
+msgstr "Y ({unit}) :"
+
 #: rayforge/ui_gtk/camera/properties_widget.py
 msgid "Camera Properties"
 msgstr "Propriétés de la caméra"
@@ -4214,6 +4275,12 @@ msgstr "Personnalisé ({id})"
 msgid "Save Calibration Card"
 msgstr "Enregistrer la carte de calibration"
 
+#: rayforge/ui_gtk/camera/wizard/card_page.py rayforge/ui_gtk/mainwindow.py
+#: rayforge/ui_gtk/debug_log_dialog.py rayforge/ui_gtk/project_cmd.py
+#, python-brace-format
+msgid "Error saving file: {msg}"
+msgstr "Erreur lors de l’enregistrement du fichier : {msg}"
+
 #: rayforge/ui_gtk/camera/wizard/card_page.py
 msgid "Calibration card saved"
 msgstr "Carte de calibration enregistrée"
@@ -4337,6 +4404,7 @@ msgid "Skip Anyway"
 msgstr "Ignorer quand même"
 
 #: rayforge/ui_gtk/camera/wizard/capture_page.py
+#: rayforge/ui_gtk/camera/wizard/wizard.py
 msgid "Stay Here"
 msgstr "Rester ici"
 
@@ -4358,6 +4426,23 @@ msgstr "Suivant"
 #: rayforge/ui_gtk/camera/wizard/wizard.py
 msgid "Finish"
 msgstr "Terminer"
+
+#: rayforge/ui_gtk/camera/wizard/wizard.py
+msgid "Finish Without Alignment?"
+msgstr "Terminer sans alignement ?"
+
+#: rayforge/ui_gtk/camera/wizard/wizard.py
+msgid ""
+"No reference points have been applied yet. Without them the camera view is "
+"stretched over the work area and will not line up with the actual machine."
+msgstr ""
+"Aucun point de référence n’a encore été appliqué. Sans eux, la vue de la "
+"caméra est étirée sur la zone de travail et ne correspondra pas à la machine "
+"réelle."
+
+#: rayforge/ui_gtk/camera/wizard/wizard.py
+msgid "Finish Anyway"
+msgstr "Terminer quand même"
 
 #: rayforge/ui_gtk/camera/wizard/wizard.py
 #: rayforge/ui_gtk/machine/dialect_list.py
@@ -4539,15 +4624,25 @@ msgid "Not shown until the camera image is aligned"
 msgstr "Non affichée tant que l’image de la caméra n’est pas alignée"
 
 #: rayforge/ui_gtk/camera/alignment_widget.py
+#: rayforge/shared/units/definitions.py
+msgid "mm"
+msgstr "mm"
+
+#: rayforge/ui_gtk/camera/alignment_widget.py
+#, python-brace-format
 msgid ""
 "Click the image to add reference points. Drag to move them.\n"
 "Scroll to Zoom. Middle-click and drag to Pan.\n"
-"Use the Arrow Keys to nudge the active point precisely."
+"Use the Arrow Keys to nudge the active point precisely.\n"
+"For each point, enter its position on the work area (X/Y in {unit}, measured "
+"from the work area origin)."
 msgstr ""
-"Cliquez sur l'image pour ajouter des points de référence. Faites glisser "
+"Cliquez sur l’image pour ajouter des points de référence. Faites-les glisser "
 "pour les déplacer.\n"
-"Défilez pour zoomer. Clic du milieu et glisser pour déplacer.\n"
-"Utilisez les touches fléchées pour déplacer le point actif avec précision."
+"Molette pour zoomer. Clic central maintenu et glisser pour déplacer la vue.\n"
+"Utilisez les touches fléchées pour déplacer précisément le point actif.\n"
+"Pour chaque point, saisissez sa position sur la zone de travail (X/Y en "
+"{unit}, mesurée depuis l’origine de la zone de travail)."
 
 #: rayforge/ui_gtk/camera/alignment_widget.py
 msgid "Reset Points"
@@ -7121,6 +7216,11 @@ msgstr "Signaler un problème"
 
 #: rayforge/ui_gtk/machine/settings_dialog.py
 #, python-brace-format
+msgid "Error exporting profile: {msg}"
+msgstr "Erreur lors de l’exportation du profil : {msg}"
+
+#: rayforge/ui_gtk/machine/settings_dialog.py
+#, python-brace-format
 msgid "Exported to {path}"
 msgstr "Exporté vers {path}"
 
@@ -7432,6 +7532,11 @@ msgid "No addons found in registry."
 msgstr "Aucune extension trouvée dans le registre."
 
 #: rayforge/ui_gtk/addon_manager/addon_dialog.py
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Community addon"
+msgstr "Extension communautaire"
+
+#: rayforge/ui_gtk/addon_manager/addon_dialog.py
 msgid "Install"
 msgstr "Installer"
 
@@ -7469,6 +7574,34 @@ msgstr "Installation manuelle"
 #: rayforge/ui_gtk/addon_manager/addon_dialog.py
 msgid "Enter the Git URL."
 msgstr "Saisissez l'URL Git."
+
+#: rayforge/ui_gtk/addon_manager/community_dialog.py
+msgid "Install Community Addon?"
+msgstr "Installer l’extension communautaire ?"
+
+#: rayforge/ui_gtk/addon_manager/community_dialog.py
+#, python-brace-format
+msgid ""
+"\"{name}\" is a community addon and is not provided by the Rayforge team. "
+"Addons have the same access to your computer and your files as Rayforge "
+"itself. Only install this addon if you trust its author, {author}."
+msgstr ""
+"« {name} » est une extension communautaire et n’est pas fournie par l’équipe "
+"Rayforge. Les extensions ont le même accès à votre ordinateur et à vos "
+"fichiers que Rayforge lui-même. N’installez cette extension que si vous "
+"faites confiance à son auteur, {author}."
+
+#: rayforge/ui_gtk/addon_manager/community_dialog.py
+msgid "unknown"
+msgstr "inconnu"
+
+#: rayforge/ui_gtk/addon_manager/community_dialog.py
+msgid "Install Anyway"
+msgstr "Installer quand même"
+
+#: rayforge/ui_gtk/addon_manager/community_dialog.py
+msgid "Open the repository in your browser"
+msgstr "Ouvrir le dépôt dans le navigateur"
 
 #: rayforge/ui_gtk/addon_manager/license_dialog.py
 msgid "Enter License Key"
@@ -7566,6 +7699,15 @@ msgstr "Installer une nouvelle extension..."
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 msgid "No addons installed."
 msgstr "Aucune extension installée."
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "Enable external addon services to install addons"
+msgstr ""
+"Activez les services d’extensions externes pour installer des extensions"
+
+#: rayforge/ui_gtk/addon_manager/addon_list.py
+msgid "External addon services are disabled."
+msgstr "Les services d’extensions externes sont désactivés."
 
 #: rayforge/ui_gtk/addon_manager/addon_list.py
 #, python-brace-format
@@ -8356,6 +8498,16 @@ msgstr "Veuillez sélectionner un seul objet à exporter."
 
 #: rayforge/ui_gtk/mainwindow.py
 #, python-brace-format
+msgid "Error exporting object: {msg}"
+msgstr "Erreur lors de l’exportation de l’objet : {msg}"
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
+msgid "Error exporting document: {msg}"
+msgstr "Erreur lors de l’exportation du document : {msg}"
+
+#: rayforge/ui_gtk/mainwindow.py
+#, python-brace-format
 msgid "Debug log saved to {path}"
 msgstr "Journal de débogage enregistré dans {path}"
 
@@ -8467,11 +8619,6 @@ msgstr "Échec de la création de l’archive de débogage."
 
 #: rayforge/ui_gtk/debug_log_dialog.py
 #, python-brace-format
-msgid "Error saving file: {msg}"
-msgstr "Erreur lors de l’enregistrement du fichier : {msg}"
-
-#: rayforge/ui_gtk/debug_log_dialog.py
-#, python-brace-format
 msgid "An unexpected error occurred: {error}"
 msgstr "Une erreur inattendue s’est produite : {error}"
 
@@ -8574,6 +8721,11 @@ msgstr "_Ne pas enregistrer"
 msgid "New project created"
 msgstr "Nouveau projet créé"
 
+#: rayforge/ui_gtk/project_cmd.py rayforge/ui_gtk/doceditor/import_handler.py
+#, python-brace-format
+msgid "Error opening file: {msg}"
+msgstr "Erreur lors de l’ouverture du fichier : {msg}"
+
 #: rayforge/ui_gtk/project_cmd.py
 msgid "Untitled"
 msgstr "Sans titre"
@@ -8669,6 +8821,16 @@ msgstr ""
 msgid "Switch to Trace Mode"
 msgstr "Passer en mode vectorisation"
 
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid ""
+"Z flattening is disabled: the geometry keeps its original Z heights. On "
+"machines with a Z axis the toolpath will move in Z and may plunge below the "
+"material surface."
+msgstr ""
+"L’aplatissement en Z est désactivé : la géométrie conserve ses hauteurs Z "
+"d’origine. Sur les machines avec un axe Z, le parcours de l’outil se "
+"déplacera en Z et risque de plonger sous la surface du matériau."
+
 #: rayforge/ui_gtk/doceditor/import_dialog.py rayforge/doceditor/file_cmd.py
 msgid "Re-Import"
 msgstr "Réimporter"
@@ -8700,6 +8862,20 @@ msgid ""
 msgstr ""
 "Pixels par pouce pour les dimensions SVG sans unité. Inkscape ≥0.92 utilise "
 "96, Inkscape plus ancien utilise 90, Illustrator utilise 72"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py rayforge/ui_gtk/about.py
+msgid "Geometry"
+msgstr "Géométrie"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Flatten Z Coordinates"
+msgstr "Aplatir les coordonnées Z"
+
+#: rayforge/ui_gtk/doceditor/import_dialog.py
+msgid "Project all geometry onto the Z=0 plane (recommended for laser cutting)"
+msgstr ""
+"Projeter toute la géométrie sur le plan Z=0 (recommandé pour la découpe "
+"laser)"
 
 #: rayforge/ui_gtk/doceditor/import_dialog.py
 #: rayforge/ui_gtk/doceditor/bottom_panel.py
@@ -9176,6 +9352,11 @@ msgstr "Choisir une image de texture"
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Texture images"
 msgstr "Images de texture"
+
+#: rayforge/ui_gtk/doceditor/add_material_dialog.py
+#, python-brace-format
+msgid "Error choosing file: {msg}"
+msgstr "Erreur lors du choix du fichier : {msg}"
 
 #: rayforge/ui_gtk/doceditor/add_material_dialog.py
 msgid "Only WebP and PNG texture images are supported."
@@ -9851,10 +10032,6 @@ msgid "Graphics & Imaging"
 msgstr "Graphismes et imagerie"
 
 #: rayforge/ui_gtk/about.py
-msgid "Geometry"
-msgstr "Géométrie"
-
-#: rayforge/ui_gtk/about.py
 msgid "File Formats & Communication"
 msgstr "Formats de fichiers et communication"
 
@@ -9934,10 +10111,6 @@ msgstr "po/min"
 #: rayforge/shared/units/definitions.py
 msgid "in/s"
 msgstr "po/s"
-
-#: rayforge/shared/units/definitions.py
-msgid "mm"
-msgstr "mm"
 
 #: rayforge/shared/units/definitions.py
 msgid "cm"
