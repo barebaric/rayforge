@@ -42,7 +42,9 @@ from ..shared.util.versioning import (
 )
 from .addon import (
     Addon,
+    AddonAuthor,
     AddonMetadata,
+    AddonProvides,
     AddonValidationError,
     VersionType,
 )
@@ -164,6 +166,8 @@ class AddonManager:
         self.license_required_addons: dict[str, Addon] = {}
         self._pending_unloads: set[str] = set()
         self._load_errors: dict[str, str] = {}
+        self._load_error_addons: dict[str, Addon] = {}
+        self._last_install_error: str | None = None
         self._task_mgr = task_mgr
         self.license_validator = license_validator
         self._external_services_enabled = external_services_enabled or (
@@ -595,6 +599,7 @@ class AddonManager:
             version: If provided, skip version resolution and use
                 this version directly.
         """
+        addon: Addon | None = None
         try:
             # 1. Load addon structure without resolving version yet to get
             # canonical name
@@ -639,6 +644,8 @@ class AddonManager:
 
             # 3. Now completely validate the populated addon
             addon.validate()
+            self._load_errors.pop(addon_name, None)
+            self._load_error_addons.pop(addon_name, None)
 
             has_worker = addon.metadata.provides.worker is not None
             has_frontend = addon.metadata.provides.frontend is not None
@@ -704,8 +711,42 @@ class AddonManager:
 
         except (AddonValidationError, FileNotFoundError) as e:
             logger.warning(f"Skipping invalid addon at {addon_path}: {e}")
-        except Exception:
+            self._record_load_error(addon_path, addon, str(e))
+        except Exception as e:
             logger.exception(f"Failed to load addon at {addon_path}")
+            self._record_load_error(addon_path, addon, str(e))
+
+    def _record_load_error(
+        self, addon_path: Path, addon: Addon | None, error_message: str
+    ) -> None:
+        """
+        Record a load failure so that the addon shows up in the
+        addons list together with its error message.
+
+        When the addon's metadata cannot be parsed, a placeholder
+        Addon is recorded under the directory name instead.
+        """
+        if addon is None:
+            addon = self._create_placeholder_addon(addon_path)
+        name = addon.metadata.name
+        self._load_errors[name] = error_message
+        self._load_error_addons[name] = addon
+
+    @staticmethod
+    def _create_placeholder_addon(addon_path: Path) -> Addon:
+        """
+        Create a minimal Addon for a directory whose metadata cannot
+        be parsed, so that its load error can still be listed.
+        """
+        metadata = AddonMetadata(
+            name=addon_path.name,
+            description="",
+            version=UnknownVersion,
+            depends=[],
+            author=AddonAuthor(name="", email=""),
+            provides=AddonProvides(),
+        )
+        return Addon(path=addon_path, metadata=metadata)
 
     def _check_version_compatibility(self, addon: Addon):
         """
@@ -791,10 +832,13 @@ class AddonManager:
                 self.loaded_addons[name] = addon
                 if name in self._load_errors:
                     del self._load_errors[name]
+                if name in self._load_error_addons:
+                    del self._load_error_addons[name]
         except Exception as e:  # noqa: BLE001 - addon import boundary
             error_msg = str(e)
             logger.error(f"Error importing addon {name}: {e}")
             self._load_errors[name] = error_msg
+            self._load_error_addons[name] = addon
 
     def _ensure_parent_modules(
         self, module_name: str, root_path: Path, entry_point: str
@@ -941,7 +985,8 @@ class AddonManager:
         Download addon source to a staging directory.
 
         Uses git clone when GitPython is available, otherwise falls
-        back to downloading a zip archive. Returns True on success.
+        back to downloading a zip archive. If the clone fails, the
+        zip download is tried as well. Returns True on success.
         """
         try:
             self._import_git()
@@ -958,8 +1003,10 @@ class AddonManager:
             logger.info(f"Successfully cloned {git_url}")
             return True
         except GitError as e:
-            logger.error(f"Git clone failed: {e}")
-            return False
+            logger.warning(f"Git clone failed: {e}")
+            logger.info("Falling back to zip download...")
+            self._cleanup_directory(dest)
+            return self._download_addon_zip(git_url, dest)
 
     def _resolve_addon_version(
         self, staging_path: Path, git_url: str | None = None
@@ -1055,6 +1102,7 @@ class AddonManager:
         logger.info(
             f"install_addon called: git_url={git_url}, addon_id={addon_id}"
         )
+        self._last_install_error = None
         result: Path | None = None
         with tempfile.TemporaryDirectory(
             ignore_cleanup_errors=True
@@ -1076,13 +1124,22 @@ class AddonManager:
                 result = self._finalize_addon_install(addon, git_url, addon_id)
             except AddonValidationError as e:
                 logger.error(f"Addon validation failed: {e}")
+                self._last_install_error = str(e)
                 return None
-            except Exception:
+            except Exception as e:
                 logger.exception("Installation failed")
+                self._last_install_error = f"{type(e).__name__}: {e}"
                 return None
 
         logger.info(f"install_addon returning: {result}")
         return result
+
+    def get_last_install_error(self) -> str | None:
+        """
+        Return the error message from the most recent install_addon
+        call, or None if it succeeded or failed without detail.
+        """
+        return self._last_install_error
 
     def uninstall_addon(self, addon_name: str) -> bool:
         """
@@ -1093,6 +1150,7 @@ class AddonManager:
             or self.incompatible_addons.get(addon_name)
             or self.disabled_addons.get(addon_name)
             or self.license_required_addons.get(addon_name)
+            or self._load_error_addons.get(addon_name)
         )
         if not addon:
             logger.warning(
@@ -1101,23 +1159,27 @@ class AddonManager:
             )
             # Fallback: scan install_dir for matching addon
             for child in self.install_dir.iterdir():
-                if child.is_dir() and (child / "rayforge-addon.yaml").exists():
-                    try:
-                        temp_addon = Addon.load_from_directory(
-                            child, version=UnknownVersion
-                        )
-                        if temp_addon.metadata.name == addon_name:
-                            self._cleanup_directory(child)
-                            return True
-                    except (
-                        AddonValidationError,
-                        FileNotFoundError,
-                        RuntimeError,
-                        OSError,
-                    ) as e:
-                        logger.error(
-                            f"Failed to uninstall addon {addon_name}: {e}"
-                        )
+                if not child.is_dir():
+                    continue
+                matched = False
+                try:
+                    temp_addon = Addon.load_from_directory(
+                        child, version=UnknownVersion
+                    )
+                    matched = temp_addon.metadata.name == addon_name
+                except (
+                    AddonValidationError,
+                    FileNotFoundError,
+                    RuntimeError,
+                    OSError,
+                ) as e:
+                    logger.warning(
+                        f"Skipping directory {child} during uninstall "
+                        f"scan: {e}"
+                    )
+                if matched or child.name == addon_name:
+                    self._cleanup_directory(child)
+                    return True
             return False
 
         addon_path = addon.root_path
@@ -1168,6 +1230,8 @@ class AddonManager:
                 del self.license_required_addons[addon_name]
             if addon_name in self._load_errors:
                 del self._load_errors[addon_name]
+            if addon_name in self._load_error_addons:
+                del self._load_error_addons[addon_name]
             self._pending_unloads.discard(addon_name)
 
             if self.addon_config:
