@@ -305,6 +305,8 @@ async def test_cancel_sends_ctrl_c_and_safety_off(
     emulator_task = asyncio.ensure_future(emulator.run())
     try:
         await drv.connect()
+        awaiter = StateAwaiter(drv, DeviceStatus.IDLE)
+        await awaiter.wait()
         gcode = "\n".join([f"G1 X{i % 50} F600" for i in range(50)])
         run_task = asyncio.create_task(drv.run_raw(gcode))
         await asyncio.sleep(0.2)
@@ -341,6 +343,8 @@ async def test_hold_sends_realtime_bytes(context_initializer, machine, mock):
     emulator_task = asyncio.ensure_future(emulator.run())
     try:
         await drv.connect()
+        awaiter = StateAwaiter(drv, DeviceStatus.IDLE)
+        await awaiter.wait()
         mock.clear_sent()
         await drv.set_hold(True)
         assert b"!" in b"".join(mock.sent())
