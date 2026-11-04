@@ -6,9 +6,9 @@ description:
 
 # Holding Tabs
 
-Holding tabs (also called bridges or tabs) are small uncut sections left along cut paths that keep
-parts attached to the surrounding material. This prevents cut pieces from moving during the job,
-which could cause misalignment, damage, or fire hazards.
+Holding tabs (also called bridges or tabs) are small sections along cut paths that are not cut all
+the way through, keeping parts attached to the surrounding material. This prevents cut pieces from
+moving during the job, which could cause misalignment, damage, or fire hazards.
 
 ## Why Use Holding Tabs?
 
@@ -26,12 +26,15 @@ Holding tabs solve these problems by keeping the piece attached until you're rea
 
 ## How Holding Tabs Work
 
-Rayforge implements tabs by creating **small gaps in the cut path**:
+Rayforge implements tabs by **weakening the cut path** at each tab. The step's **Tab Power** setting
+selects between two modes:
 
 1. You mark positions along the cut path where tabs should be
-2. During G-code generation, Rayforge interrupts the cut at each tab
-3. The laser lifts (or turns off), skips the tab width, then resumes cutting
-4. After the job completes, you manually break or cut the tabs to free the piece
+2. During G-code generation, Rayforge handles each tab according to the mode:
+   - **Gap mode (Tab Power 0%):** the laser turns off, skips the tab width, then resumes cutting
+   - **Power mode (Tab Power above 0%):** the laser keeps cutting through the tab at reduced power,
+     leaving a thin bridge of material
+3. After the job completes, you manually break or cut the tabs to free the piece
 
 ---
 
@@ -57,7 +60,7 @@ For more control:
    - **Equidistant:** Automatically space tabs evenly around the path
 3. **Configure tab settings:**
    - **Number of tabs:** How many tabs to create (for equidistant)
-   - **Tab width:** Length of each uncut section (typically 2-5mm)
+   - **Tab width:** Length of each tab (typically 2-5mm)
 4. **Click Apply**
 
 ---
@@ -66,7 +69,7 @@ For more control:
 
 ### Tab Width
 
-The **width** is the length of the uncut section along the path.
+The **width** is the length of the tab along the path.
 
 **Recommended widths:**
 
@@ -94,6 +97,17 @@ enough to remove cleanly. Too narrow = part may break free; too wide = difficult
 damages the part.
 :::
 <!-- prettier-ignore-end -->
+
+### Tab Power
+
+The **Tab Power** slider in the step's _Laser_ settings controls how tabs are cut:
+
+- **0% (default):** the laser is switched off across the tab, leaving a gap through the material
+- **Above 0%:** the laser stays on and cuts through the tab at the given percentage of the step's
+  power, leaving a thin weakened bridge
+
+Power mode produces a cleaner edge than a gap and keeps the material from flexing into the cut, at
+the cost of a slightly taller bridge to remove afterwards.
 
 ### Tab Position
 

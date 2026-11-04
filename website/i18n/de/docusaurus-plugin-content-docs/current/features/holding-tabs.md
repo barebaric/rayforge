@@ -1,9 +1,9 @@
 # Halte-Laschen
 
-Halte-Laschen (auch Brücken oder Laschen genannt) sind kleine ungeschnittene Abschnitte entlang von
-Schneidepfaden, die Teile am umgebenden Material befestigt halten. Dies verhindert, dass
-geschnittene Teile sich während des Jobs bewegen, was Fehlausrichtungen, Beschädigungen oder
-Feuergefahren verursachen könnte.
+Halte-Laschen (auch Brücken oder Laschen genannt) sind kleine Abschnitte entlang von Schneidepfaden,
+die nicht vollständig durchtrennt werden und Teile am umgebenden Material befestigt halten. Dies
+verhindert, dass geschnittene Teile sich während des Jobs bewegen, was Fehlausrichtungen,
+Beschädigungen oder Feuergefahren verursachen könnte.
 
 ## Warum Halte-Laschen verwenden?
 
@@ -22,13 +22,16 @@ entfernen.
 
 ## Wie Halte-Laschen funktionieren
 
-Rayforge implementiert Laschen durch Erstellen von **kleinen Lücken im Schneidepfad**:
+Rayforge implementiert Laschen, indem der Schneidepfad an jeder Lasche **geschwächt** wird. Die
+Einstellung **Haltesteg-Leistung** des Schritts wählt zwischen zwei Modi:
 
 1. Sie markieren Positionen entlang des Schneidepfads, wo Laschen sein sollen
-2. Während der G-Code-Generierung unterbricht Rayforge den Schnitt an jeder Lasche
-3. Der Laser hebt ab (oder schaltet aus), überspringt die Laschen-Breite, und setzt das Schneiden
-   fort
-4. Nach Job-Abschluss brechen oder schneiden Sie die Laschen manuell, um das Teil zu befreien
+2. Während der G-Code-Generierung behandelt Rayforge jede Lasche je nach Modus:
+   - **Lücken-Modus (Haltesteg-Leistung 0 %):** der Laser schaltet aus, überspringt die
+     Laschen-Breite und setzt das Schneiden fort
+   - **Leistungs-Modus (Haltesteg-Leistung über 0 %):** der Laser schneidet mit reduzierter Leistung
+     durch die Lasche und hinterlässt eine dünne Materialbrücke
+3. Nach Job-Abschluss brechen oder schneiden Sie die Laschen manuell, um das Teil zu befreien
 
 ---
 
@@ -56,7 +59,7 @@ Für mehr Kontrolle:
    - **Äquidistant:** Laschen automatisch gleichmäßig um den Pfad verteilen
 3. **Laschen-Einstellungen konfigurieren:**
    - **Anzahl der Laschen:** Wie viele Laschen zu erstellen (für äquidistant)
-   - **Laschen-Breite:** Länge jedes ungeschnittenen Abschnitts (typisch 2-5mm)
+   - **Laschen-Breite:** Länge jeder Lasche (typisch 2-5mm)
 4. **Auf Anwenden klicken**
 
 ---
@@ -65,7 +68,7 @@ Für mehr Kontrolle:
 
 ### Laschen-Breite
 
-Die **Breite** ist die Länge des ungeschnittenen Abschnitts entlang des Pfads.
+Die **Breite** ist die Länge der Lasche entlang des Pfads.
 
 **Empfohlene Breiten:**
 
@@ -93,6 +96,19 @@ aber klein genug, um sauber zu entfernen. Zu schmal = Teil kann abbrechen; zu br
 entfernen oder beschädigt das Teil.
 :::
 <!-- prettier-ignore-end -->
+
+### Haltesteg-Leistung
+
+Der **Haltesteg-Leistung**-Regler in den _Laser_-Einstellungen des Schritts steuert, wie Laschen
+geschnitten werden:
+
+- **0 % (Standard):** der Laser wird über die Lasche hinweg ausgeschaltet und hinterlässt eine Lücke
+  im Material
+- **Über 0 %:** der Laser bleibt an und schneidet mit dem angegebenen Prozentsatz der
+  Schritt-Leistung durch die Lasche und hinterlässt eine dünne, geschwächte Brücke
+
+Der Leistungs-Modus erzeugt eine sauberere Kante als eine Lücke und verhindert, dass das Material in
+den Schnitt federt, auf Kosten einer etwas höheren Brücke, die anschließend entfernt werden muss.
 
 ### Laschen-Position
 

@@ -1,9 +1,9 @@
 # Ponts de Maintien
 
-Les ponts de maintien (aussi appelés ponts ou onglets) sont de petites sections non coupées laissées
-le long des parcours de coupe qui maintiennent les pièces attachées au matériau environnant. Cela
-empêche les pièces coupées de bouger pendant le travail, ce qui pourrait causer un mauvais
-alignement, des dommages ou des risques d'incendie.
+Les ponts de maintien (aussi appelés ponts ou onglets) sont de petites sections le long des parcours
+de coupe qui ne sont pas coupées de part en part et qui maintiennent les pièces attachées au
+matériau environnant. Cela empêche les pièces coupées de bouger pendant le travail, ce qui pourrait
+causer un mauvais alignement, des dommages ou des risques d'incendie.
 
 ## Pourquoi Utiliser des Ponts de Maintien ?
 
@@ -23,12 +23,16 @@ prêt à la retirer.
 
 ## Comment Fonctionnent les Ponts de Maintien
 
-Rayforge implémente les ponts en créant de **petits espaces dans le parcours de coupe** :
+Rayforge implémente les ponts en **affaiblissant le parcours de coupe** à chaque pont. Le paramètre
+**Puissance des languettes** de l'étape permet de choisir entre deux modes :
 
 1. Vous marquez les positions le long du parcours de coupe où les ponts devraient être
-2. Pendant la génération du G-code, Rayforge interrompt la coupe à chaque pont
-3. Le laser se soulève (ou s'éteint), saute la largeur du pont, puis reprend la coupe
-4. Après l'achèvement du travail, vous cassez ou coupez manuellement les ponts pour libérer la pièce
+2. Pendant la génération du G-code, Rayforge traite chaque pont selon le mode :
+   - **Mode Espace (Puissance des languettes 0%) :** le laser s'éteint, saute la largeur du pont,
+     puis reprend la coupe
+   - **Mode Puissance (Puissance des languettes supérieure à 0%) :** le laser continue de couper à
+     travers le pont à puissance réduite, laissant un mince pont de matériau
+3. Après l'achèvement du travail, vous cassez ou coupez manuellement les ponts pour libérer la pièce
 
 ---
 
@@ -55,7 +59,7 @@ Pour plus de contrôle :
    - **Équidistants :** Espace automatiquement les ponts uniformément autour du parcours
 3. **Configurez les paramètres des ponts :**
    - **Nombre de ponts :** Combien de ponts créer (pour équidistant)
-   - **Largeur du pont :** Longueur de chaque section non coupée (typiquement 2-5mm)
+   - **Largeur du pont :** Longueur de chaque pont le long du parcours (typiquement 2-5mm)
 4. **Cliquez sur Appliquer**
 
 ---
@@ -64,7 +68,7 @@ Pour plus de contrôle :
 
 ### Largeur du Pont
 
-La **largeur** est la longueur de la section non coupée le long du parcours.
+La **largeur** est la longueur du pont le long du parcours.
 
 **Largeurs recommandées :**
 
@@ -92,6 +96,19 @@ supporter la pièce mais assez petits pour être retirés proprement. Trop étro
 détacher ; trop large = difficile à retirer ou endommage la pièce.
 :::
 <!-- prettier-ignore-end -->
+
+### Puissance des languettes
+
+Le curseur **Puissance des languettes** dans les paramètres _Laser_ de l'étape contrôle la manière
+dont les ponts sont coupés :
+
+- **0% (par défaut) :** le laser est désactivé sur toute la largeur du pont, laissant un espace à
+  travers le matériau
+- **Au-dessus de 0% :** le laser reste activé et coupe à travers le pont au pourcentage indiqué de
+  la puissance de l'étape, laissant un pont mince et affaibli
+
+Le mode Puissance produit un bord plus propre qu'un espace et empêche le matériau de fléchir dans la
+coupe, au prix d'un pont légèrement plus haut à retirer par la suite.
 
 ### Position du Pont
 
