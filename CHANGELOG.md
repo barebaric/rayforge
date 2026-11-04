@@ -26,12 +26,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   library. Class names, setup settings and existing machine
   configurations stay unchanged; connection handling, ping-pong
   streaming, status and position polling, holds and cancels move
-  into the Rust sessions (raydriver 1.0.0b5)
+  into the Rust sessions (raydriver 1.0.0)
 - Dependencies: ruida-pa upgraded to 0.24.0, which consolidates its
   modules under the ruida_pa namespace
 
 ### Fixed
 
+- Machine: custom Marlin firmware forks that announce themselves with
+  a bare banner or plain ok acknowledgements instead of the start
+  boot line can connect again; the Marlin driver now accepts any
+  unprompted output as the connection handshake (raydriver 1.0.0)
+  (#672)
 - Sketcher: long chains of connected segments no longer drift into
   phantom constraint conflicts after changing a parameter. The angle
   constraint's gradient treated the intersection of the two
