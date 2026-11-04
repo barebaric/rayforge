@@ -5,6 +5,75 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.13.3
+
+### Added
+
+- Addons: automatic update checks can be turned off; a new switch on
+  the General settings page skips the addon update check at startup
+  (#651, by heiserhorn)
+- Addons: external addon services can be disabled; a new switch on
+  the Addons settings page stops every connection to remote addon
+  and license services, so the addon registry is not fetched,
+  update checks and URL installs are skipped, and premium license
+  validation answers "not found" without reaching the network (#652,
+  by heiserhorn)
+
+### Changed
+
+- Machine: the Smoothie, Marlin and simple GRBL serial drivers now
+  run their entire protocol stacks in Rust through the raydriver
+  library. Class names, setup settings and existing machine
+  configurations stay unchanged; connection handling, ping-pong
+  streaming, status and position polling, holds and cancels move
+  into the Rust sessions (raydriver 1.0.0b5)
+- Dependencies: ruida-pa upgraded to 0.24.0, which consolidates its
+  modules under the ruida_pa namespace
+
+### Fixed
+
+- Sketcher: long chains of connected segments no longer drift into
+  phantom constraint conflicts after changing a parameter. The angle
+  constraint's gradient treated the intersection of the two
+  constrained lines as fixed when it actually moves with the line
+  endpoints, so the solver terminated early with large residuals;
+  the gradient is now evaluated by finite differences, which is
+  exact including the intersection movement (#671)
+- Import: children of a group in a LightBurn (.lbrn2) project stay on
+  their own layers; they were merged onto the group's layer, which is
+  often layer 0 or missing, putting shapes on the wrong layer with
+  the wrong settings. Layers also import sorted by the file's
+  priority value instead of in order of first appearance, so
+  outlines no longer cut before their holes (#666, by medoix)
+- Import: layers created by an import without a source colour pick an
+  unused palette colour instead of all sharing the default, so the
+  layers of a multi-layer import are distinguishable when operation
+  colours are set to layer (#665, by medoix)
+- Import: .lbrn2 paths that reference vertices or primitives stored
+  on an earlier shape import again instead of being skipped, so
+  repeated outlines are no longer lost; paths that end a rounding
+  error short of their start close the gap instead of importing as
+  open contours left out of the generated job (#664, by medoix)
+- Camera: closing the lens calibration result dialog now keeps the
+  calibration instead of silently discarding it; only an explicit
+  Discard throws the result away. Alignment point coordinates are
+  entered in the display unit measured from the work area origin,
+  the point bubble explains what X and Y mean, and finishing the
+  wizard without an applied alignment warns first (#648)
+- UI: removing a machine no longer crashes the UI widgets that touch
+  it; the removal could raise "No machine found with ID ..." from
+  the machine manager, aborting the setup wizard finalize mid-way
+  and leaving duplicate machine entries behind (#662)
+- Packaging: deb packages ship compiled gettext catalogs again;
+  packages were built with .po sources only, so the interface fell
+  back to English (#303)
+- macOS: the app launches again on macOS versions older than 26; the
+  1.13.2 bundle shipped a Homebrew freetype built for macOS 26 whose
+  binaries reference the macOS 26-only libhvf. The bundled binaries
+  are now built from source on macOS 15, and a build-time gate fails
+  the build if any bundled binary declares a higher minimum macOS
+  version (#659)
+
 ## 1.13.2
 
 ### Added
