@@ -5,7 +5,7 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 1.13.3
+## 1.14.0-beta1
 
 ### Added
 
@@ -27,16 +27,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   configurations stay unchanged; connection handling, ping-pong
   streaming, status and position polling, holds and cancels move
   into the Rust sessions (raydriver 1.0.0)
+- Console: with Show verbose enabled, the machine conversation shows
+  every written line for the Rust-backed GRBL (Serial), GRBL
+  (simple), Smoothie and Marlin drivers: streamed G-code, realtime
+  commands and status polls are all reported, not only the device's
+  replies (raydriver 1.0.0b5)
+- CNC: profile passes follow the exact line-and-arc offset and emit
+  arcs as true G2/G3 walls instead of segmented polylines, honouring
+  the cut direction on both the polygon and curve-true paths.
+  Adaptive clearing no longer strands uncut floor: the entry spiral
+  machines the seed disk, the ramp entry seeds its actual swath at
+  tool width and keeps clear of islands, the core resume strategy
+  clears step-over-scale remainders, and an erosion pass machines
+  slivers that high step-overs strand. Descents into material are
+  emitted as cutting moves instead of rapid-classified travels (at
+  the cut feed for now, since steps carry no plunge feed yet), wall
+  margin now reaches the clearing pass's island clearance, and a
+  wrong-side safehold reports an error instead of panicking
+  (raygeo 1.73.0)
 - Dependencies: ruida-pa upgraded to 0.24.0, which consolidates its
   modules under the ruida_pa namespace
 
 ### Fixed
 
+- Tabs: the Tab Power setting takes effect again. The step's power
+  and tab_power were missing from the settings handed to the tab
+  generator, so the transformer always saw tab_power=0 and degraded
+  every tab to the gap mode no matter what the Tab Power field said;
+  tabs with Tab Power above 0% are now cut at reduced power
+  (tab_power * power) instead of being skipped (#667)
+- Addons: installs that fail while importing the addon's entry point
+  are no longer invisible. Previously the error was only recorded
+  internally, the addons list skipped the row and the install
+  reported success; the row is now shown with its error, the failure
+  dialog includes the actual error text, uninstall matches
+  error-only addons, and unparsable addon directories can be cleaned
+  up by directory name (#425)
+- Addons: the zip download fallback also runs when the git clone
+  fails; it previously ran only when GitPython itself was
+  unavailable, so a clone failure (e.g. no usable git binary in a
+  frozen macOS app) aborted the install even though the zip download
+  would have worked
 - Machine: custom Marlin firmware forks that announce themselves with
   a bare banner or plain ok acknowledgements instead of the start
   boot line can connect again; the Marlin driver now accepts any
   unprompted output as the connection handshake (raydriver 1.0.0)
   (#672)
+- CNC: the ramp entry step passes its real tool radius to the ramp
+  spec instead of relying on raygeo's 3.0 mm default, which is wrong
+  for every tool that is not 6 mm wide, so the cleared area now
+  matches the swath the ramp's floor-level tail actually machined
+  (raygeo 1.71.0)
 - Sketcher: long chains of connected segments no longer drift into
   phantom constraint conflicts after changing a parameter. The angle
   constraint's gradient treated the intersection of the two
