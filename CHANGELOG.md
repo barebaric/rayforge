@@ -27,9 +27,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   configurations stay unchanged; connection handling, ping-pong
   streaming, status and position polling, holds and cancels move
   into the Rust sessions (raydriver 1.0.0)
-- Dependencies: raygeo upgraded to 1.73.0. Profile passes follow the
-  exact line-and-arc offset and emit arcs as true G2/G3 arcs instead
-  of segmented polylines, honouring the cut direction on both paths.
+- Console: with Show verbose enabled, the machine conversation shows
+  every written line for the Rust-backed GRBL (Serial), GRBL
+  (simple), Smoothie and Marlin drivers: streamed G-code, realtime
+  commands and status polls are all reported, not only the device's
+  replies (raydriver 1.0.0b5)
+- CNC: profile passes follow the exact line-and-arc offset and emit
+  arcs as true G2/G3 walls instead of segmented polylines, honouring
+  the cut direction on both the polygon and curve-true paths.
   Adaptive clearing no longer strands uncut floor: the entry spiral
   machines the seed disk, the ramp entry seeds its actual swath at
   tool width and keeps clear of islands, the core resume strategy
@@ -39,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the cut feed for now, since steps carry no plunge feed yet), wall
   margin now reaches the clearing pass's island clearance, and a
   wrong-side safehold reports an error instead of panicking
+  (raygeo 1.73.0)
 - Dependencies: ruida-pa upgraded to 0.24.0, which consolidates its
   modules under the ruida_pa namespace
 
