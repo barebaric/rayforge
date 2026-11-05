@@ -262,6 +262,7 @@ class AddonListWidget(PreferencesGroupWithButton):
                 am.loaded_addons.get(name)
                 or am.disabled_addons.get(name)
                 or am.incompatible_addons.get(name)
+                or am._load_error_addons.get(name)
             )
             if addon:
                 is_builtin = not addon.root_path.is_relative_to(am.install_dir)
@@ -340,7 +341,11 @@ class AddonListWidget(PreferencesGroupWithButton):
             if result_path:
                 self.populate_addons()
             else:
-                self._show_error(_("Failed to install addon."))
+                detail = context.addon_mgr.get_last_install_error()
+                message = _("Failed to install addon.")
+                if detail:
+                    message = f"{message}\n\n{detail}"
+                self._show_error(message)
 
         def _thread_target():
             result = _worker()

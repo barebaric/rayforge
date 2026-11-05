@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 import yaml
+from git.exc import GitError
 
 from rayforge.addon_mgr.addon import (
     Addon,
@@ -172,6 +173,11 @@ class TestAddonManagerLoading:
         manager.load_addon(addon_dir)
         assert not manager.loaded_addons
         manager.plugin_mgr.register.assert_not_called()
+        assert manager.get_addon_error("no_meta_addon") is not None
+        assert "no_meta_addon" in manager._load_error_addons
+        placeholder = manager._load_error_addons["no_meta_addon"]
+        assert placeholder.metadata.name == "no_meta_addon"
+        assert placeholder.root_path == addon_dir
 
     @patch("rayforge.addon_mgr.addon_manager.Addon.load_from_directory")
     def test_load_addon_success(self, mock_load, manager):
@@ -195,11 +201,63 @@ class TestAddonManagerLoading:
         manager.plugin_mgr.register.assert_called_once()
 
     @patch("rayforge.addon_mgr.addon_manager.Addon.load_from_directory")
+    def test_load_addon_success_clears_stale_error(self, mock_load, manager):
+        addon_dir = manager.install_dir / "test_pkg"
+
+        mock_addon = create_mock_addon(name="test_plugin", worker="plugin")
+        mock_load.return_value = mock_addon
+        manager._load_errors["test_plugin"] = "stale error"
+        manager._load_error_addons["test_plugin"] = mock_addon
+
+        with (
+            patch("rayforge.addon_mgr.addon_manager.importlib.util"),
+            patch.object(
+                manager,
+                "_check_version_compatibility",
+                return_value=UpdateStatus.UP_TO_DATE,
+            ),
+        ):
+            manager.load_addon(addon_dir)
+
+        assert "test_plugin" in manager.loaded_addons
+        assert "test_plugin" not in manager._load_errors
+        assert "test_plugin" not in manager._load_error_addons
+
+    @patch("rayforge.addon_mgr.addon_manager.Addon.load_from_directory")
+    def test_load_addon_import_failure_records_addon(self, mock_load, manager):
+        """A failed entry point import stays visible with its error."""
+        addon_dir = manager.install_dir / "test_pkg"
+        mock_load.return_value = create_mock_addon(
+            name="test_plugin", worker="plugin"
+        )
+
+        mock_spec = MagicMock()
+        mock_spec.loader.exec_module.side_effect = ImportError("boom")
+        with (
+            patch(
+                "rayforge.addon_mgr.addon_manager.importlib.util"
+            ) as mock_importlib,
+            patch.object(
+                manager,
+                "_check_version_compatibility",
+                return_value=UpdateStatus.UP_TO_DATE,
+            ),
+        ):
+            mock_importlib.spec_from_file_location.return_value = mock_spec
+            manager.load_addon(addon_dir)
+
+        assert "test_plugin" not in manager.loaded_addons
+        assert manager.get_addon_error("test_plugin") == "boom"
+        assert "test_plugin" in manager._load_error_addons
+
+    @patch("rayforge.addon_mgr.addon_manager.Addon.load_from_directory")
     def test_load_addon_validation_error(self, mock_load, manager):
         mock_load.side_effect = AddonValidationError("Bad format")
         manager.load_addon(Path("any/path"))
         assert not manager.loaded_addons
         manager.plugin_mgr.register.assert_not_called()
+        assert manager.get_addon_error("path") == "Bad format"
+        assert "path" in manager._load_error_addons
 
     @patch("rayforge.addon_mgr.addon_manager.Addon.load_from_directory")
     def test_load_addon_incompatible_version(self, mock_load, manager):
@@ -327,6 +385,38 @@ class TestAddonManagerInstallation:
             if not manager.install_dir.exists():
                 manager.install_dir.mkdir()
             assert not any(manager.install_dir.iterdir())
+
+    def test_install_addon_records_error_message(self, manager):
+        mock_addon = create_mock_addon()
+        mock_addon.validate.side_effect = AddonValidationError("Missing asset")
+
+        with (
+            patch.object(manager, "_fetch_addon_source", return_value=True),
+            patch(
+                "rayforge.addon_mgr.addon_manager.Addon.load_from_directory",
+                return_value=mock_addon,
+            ),
+        ):
+            manager.install_addon("some_url")
+
+        assert manager.get_last_install_error() == "Missing asset"
+
+    def test_install_addon_resets_error_message(self, manager):
+        manager._last_install_error = "stale error"
+
+        with (
+            patch.object(manager, "_fetch_addon_source", return_value=True),
+            patch(
+                "rayforge.addon_mgr.addon_manager.Addon.load_from_directory",
+                return_value=create_mock_addon(),
+            ),
+            patch("shutil.copytree"),
+            patch.object(manager, "load_addon"),
+        ):
+            result = manager.install_addon("some_url")
+
+        assert result is not None
+        assert manager.get_last_install_error() is None
 
     def test_install_addon_upgrades_existing(self, manager):
         manager.install_dir.mkdir()
@@ -488,8 +578,11 @@ class TestAddonManagerInstallation:
             mock_fetch.assert_called_once()
             mock_zip.assert_not_called()
 
-    def test_install_addon_git_fails_no_zip_fallback(self, manager):
-        """When git clone fails, don't fall back to zip (git is present)."""
+    def test_install_addon_fetch_failure_is_final(self, manager):
+        """
+        install_addon makes a single fetch attempt and reports
+        failure without retrying when it does not succeed.
+        """
         manager.install_dir.mkdir()
 
         with (
@@ -500,6 +593,46 @@ class TestAddonManagerInstallation:
         ):
             result = manager.install_addon("https://github.com/u/r.git")
             assert result is None
+            mock_zip.assert_not_called()
+
+    def test_fetch_addon_source_clone_failure_falls_back_to_zip(self, manager):
+        """When git clone fails, fall back to downloading a zip."""
+        manager.install_dir.mkdir()
+
+        with (
+            patch("git.Repo") as mock_repo,
+            patch.object(manager, "_cleanup_directory") as mock_cleanup,
+            patch.object(
+                manager, "_download_addon_zip", return_value=True
+            ) as mock_zip,
+        ):
+            mock_repo.clone_from.side_effect = GitError("boom")
+            result = manager._fetch_addon_source(
+                "https://github.com/u/r.git", manager.install_dir
+            )
+
+            assert result is True
+            mock_repo.clone_from.assert_called_once()
+            mock_cleanup.assert_called_once_with(manager.install_dir)
+            mock_zip.assert_called_once_with(
+                "https://github.com/u/r.git", manager.install_dir
+            )
+
+    def test_fetch_addon_source_clone_success_skips_zip(self, manager):
+        """When git clone succeeds, no zip download is attempted."""
+        manager.install_dir.mkdir()
+
+        with (
+            patch("git.Repo"),
+            patch.object(
+                manager, "_download_addon_zip", return_value=True
+            ) as mock_zip,
+        ):
+            result = manager._fetch_addon_source(
+                "https://github.com/u/r.git", manager.install_dir
+            )
+
+            assert result is True
             mock_zip.assert_not_called()
 
     def test_install_addon_zip_upgrades_existing(self, manager):
@@ -605,6 +738,38 @@ class TestAddonManagerUninstall:
         assert result is True
         assert not pkg_path.exists()
         assert pkg_name not in manager.incompatible_addons
+
+    def test_uninstall_addon_with_load_error(self, manager):
+        """Test uninstalling an addon that failed to load."""
+        pkg_name = "error-pkg"
+        pkg_path = manager.install_dir / pkg_name
+        pkg_path.mkdir(parents=True)
+
+        mock_addon = create_mock_addon(name=pkg_name)
+        mock_addon.root_path = pkg_path
+        manager._load_error_addons[pkg_name] = mock_addon
+        manager._load_errors[pkg_name] = "import failed"
+
+        result = manager.uninstall_addon(pkg_name)
+
+        assert result is True
+        assert not pkg_path.exists()
+        assert pkg_name not in manager._load_error_addons
+        assert pkg_name not in manager._load_errors
+
+    def test_uninstall_unparsable_addon_by_dir_name(self, manager):
+        """
+        An addon whose metadata cannot be parsed is removed by its
+        directory name.
+        """
+        pkg_name = "broken-pkg"
+        pkg_path = manager.install_dir / pkg_name
+        pkg_path.mkdir(parents=True)
+
+        result = manager.uninstall_addon(pkg_name)
+
+        assert result is True
+        assert not pkg_path.exists()
 
 
 class TestAddonManagerUpdates:
