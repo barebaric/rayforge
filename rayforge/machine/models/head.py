@@ -12,7 +12,7 @@ from ...core.matrix import euler_rotation_matrix
 
 HEAD_TYPE_KEY = "type"
 
-_HEAD_SERIALIZED_KEYS = frozenset(
+HEAD_SERIALIZED_KEYS = frozenset(
     {HEAD_TYPE_KEY, "uid", "name", "tool_number", "model_path", "transform"}
 )
 
@@ -206,10 +206,15 @@ def head_from_dict(
     Old machine files without a ``type`` key map to :class:`LaserHead`
     for backward compatibility.
     """
+    from .knife import DragKnifeHead, TangentialKnifeHead
     from .laser import LaserHead
     from .spindle import SpindleHead
 
     head_type = data.get(HEAD_TYPE_KEY)
     if head_type == SpindleHead.HEAD_TYPE:
         return SpindleHead.from_dict(data)
+    if head_type == DragKnifeHead.HEAD_TYPE:
+        return DragKnifeHead.from_dict(data)
+    if head_type == TangentialKnifeHead.HEAD_TYPE:
+        return TangentialKnifeHead.from_dict(data)
     return LaserHead.from_dict(data)
