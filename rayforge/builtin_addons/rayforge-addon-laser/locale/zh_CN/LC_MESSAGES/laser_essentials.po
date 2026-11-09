@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 22:53+0200\n"
+"POT-Creation-Date: 2026-11-09 13:59+0100\n"
 "PO-Revision-Date: 2025-07-13 11:49+0200\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -443,6 +443,28 @@ msgstr "蛇形扫描"
 msgid ""
 "Alternate the dither direction on every row to avoid directional artifacts"
 msgstr "每行交替抖动方向，以避免方向性伪影"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Min Feature Size"
+msgstr "最小特征尺寸"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Smallest dot width in scan-line pixels. The auto value matches the laser "
+"spot size; smaller values allow finer but fainter dots"
+msgstr ""
+"扫描线像素中的最小网点宽度。自动值与激光光斑大小一致；更小的值可得到更细但更"
+"淡的网点"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Linear Light"
+msgstr "线性光"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Diffuse in linear light instead of on the raw sRGB values, which engraves "
+"mid-tones darker"
+msgstr "在线性光而非原始 sRGB 值上进行扩散，会把中间调刻得更深"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Halftone Cell Size"

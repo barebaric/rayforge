@@ -5,6 +5,35 @@ All notable changes to Rayforge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.14.0-beta2
+
+### Added
+
+- Engrave: the Dither mode's error-diffusion algorithms gain two new
+  settings. Min Feature Size groups each scan line into cells before
+  diffusing and stretches each cell's dot across the cell; Auto (the
+  default) derives the cell width from the laser spot size, matching
+  the former spot-derived setting, and smaller values allow finer but
+  fainter dots. Linear Light diffuses in linear light instead of on
+  the raw sRGB values, for users who want the previous, darker
+  mid-tone rendering (#689)
+
+### Changed
+
+- Engrave: Serpentine now defaults to on for new steps, avoiding
+  directional artifacts out of the box; documents saved before this
+  change keep their stored value. Bayer and the screens are unaffected
+- Dependencies: raygeo upgraded to 1.74.0
+
+### Fixed
+
+- Engrave: Dither mode no longer deletes short runs after diffusing.
+  That filter removed exactly the isolated dots that carry light tones
+  (82-98% of dots at sRGB 192-224), which destroyed smooth gradation
+  and made engravings look darker and blotchier than other software.
+  The error diffusion now runs in raygeo on the raw sRGB values, so
+  dot coverage matches the tone the image shows on screen (#686)
+
 ## 1.14.0-beta1
 
 ### Added

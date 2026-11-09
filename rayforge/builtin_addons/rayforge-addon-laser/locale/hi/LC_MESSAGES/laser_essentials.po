@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 22:53+0200\n"
+"POT-Creation-Date: 2026-11-09 13:59+0100\n"
 "PO-Revision-Date: 2026-09-27 22:58\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: none\n"
@@ -447,6 +447,30 @@ msgstr "सर्पाकार"
 msgid ""
 "Alternate the dither direction on every row to avoid directional artifacts"
 msgstr "दिशात्मक दोषों से बचने के लिए हर पंक्ति में डाइदर की दिशा बदलें"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Min Feature Size"
+msgstr "न्यूनतम फ़ीचर आकार"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Smallest dot width in scan-line pixels. The auto value matches the laser "
+"spot size; smaller values allow finer but fainter dots"
+msgstr ""
+"स्कैन-पंक्ति पिक्सेल में न्यूनतम बिंदु चौड़ाई. स्वतः मान लेज़र स्पॉट आकार से मेल खाता है; छोटे "
+"मान बारीक पर कमज़ोर बिंदु देते हैं"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Linear Light"
+msgstr "रैखिक प्रकाश"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Diffuse in linear light instead of on the raw sRGB values, which engraves "
+"mid-tones darker"
+msgstr ""
+"कच्चे sRGB मानों के बजाय रैखिक प्रकाश में फैलाता है, जिससे मध्य टोन काफ़ी गहरा उत्कीर्ण होते "
+"हैं"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Halftone Cell Size"
