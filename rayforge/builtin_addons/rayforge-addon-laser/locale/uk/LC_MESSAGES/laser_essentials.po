@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 22:53+0200\n"
+"POT-Creation-Date: 2026-11-09 13:59+0100\n"
 "PO-Revision-Date: 2026-02-23 01:17+0100\n"
 "Last-Translator: Samuel Abels <knipknap@gmail.com>\n"
 "Language-Team: Ukrainian\n"
@@ -458,6 +458,31 @@ msgid ""
 msgstr ""
 "Змінювати напрямок дизерингу в кожному рядку, щоб уникнути спрямованих "
 "артефактів"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Min Feature Size"
+msgstr "Мінімальний розмір елемента"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Smallest dot width in scan-line pixels. The auto value matches the laser "
+"spot size; smaller values allow finer but fainter dots"
+msgstr ""
+"Найменша ширина точки в пікселях рядка сканування. Автоматичне значення "
+"відповідає розміру лазерної плями; менші значення дають дрібніші, але слабші "
+"точки"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Linear Light"
+msgstr "Лінійне світло"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Diffuse in linear light instead of on the raw sRGB values, which engraves "
+"mid-tones darker"
+msgstr ""
+"Виконує дифузію в лінійному світлі замість сирих значень sRGB, що гравіює "
+"середні тони темнішими"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Halftone Cell Size"

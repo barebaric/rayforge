@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: rayforge\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 22:53+0200\n"
+"POT-Creation-Date: 2026-11-09 13:59+0100\n"
 "PO-Revision-Date: 2025-10-15 07:10+0200\n"
 "Last-Translator: Samuel <knipknap@gmail.com>\n"
 "Language-Team: French\n"
@@ -459,6 +459,31 @@ msgid ""
 msgstr ""
 "Alterner le sens du tramage à chaque ligne pour éviter les artefacts "
 "directionnels"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Min Feature Size"
+msgstr "Taille de feature minimale"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Smallest dot width in scan-line pixels. The auto value matches the laser "
+"spot size; smaller values allow finer but fainter dots"
+msgstr ""
+"Largeur de point minimale en pixels de ligne de balayage. La valeur "
+"automatique correspond à la taille du spot laser ; des valeurs plus petites "
+"permettent des points plus fins mais plus faibles"
+
+#: laser_essentials/steps/raster_step.py
+msgid "Linear Light"
+msgstr "Lumière linéaire"
+
+#: laser_essentials/steps/raster_step.py
+msgid ""
+"Diffuse in linear light instead of on the raw sRGB values, which engraves "
+"mid-tones darker"
+msgstr ""
+"Diffuse en lumière linéaire plutôt que sur les valeurs sRGB brutes, ce qui "
+"grave les tons moyens plus sombres"
 
 #: laser_essentials/steps/raster_step.py
 msgid "Halftone Cell Size"
