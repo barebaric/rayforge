@@ -249,8 +249,17 @@ impressão tradicional de meio-tom.
 **Stucki, Jarvis, Sierra, Burkes e Atkinson** são algoritmos de difusão de erro como o
 Floyd-Steinberg que espalham o erro por uma vizinhança maior, o que dá um grão mais uniforme em
 áreas planas como tons de pele. O Atkinson difunde só parte do erro, o que aumenta o contraste.
-Ative **Serpentina** para alternar a direção de varredura em cada linha e evitar listras
+**Serpentina** (ativada por padrão) alterna a direção de varredura em cada linha e evita listras
 direcionais.
+
+**Tamanho mínimo de elemento** agrupa cada linha de varredura em células antes da difusão, para que
+nenhum ponto fique menor que o número de pixels indicado. O valor automático corresponde ao tamanho
+do spot do laser, mantendo cada ponto em força total; valores menores permitem pontos mais finos,
+porém mais fracos.
+
+**Luz linear** difunde em luz linear em vez de sobre os valores sRGB brutos. Difundir sobre os
+valores sRGB mantém a cobertura de pontos no tom que a imagem mostra na tela; a luz linear grava
+tons médios notavelmente mais escuros.
 
 **Papel de jornal** e **Meio-tom** agrupam os pixels em pontos. O meio-tom desenha pontos redondos
 numa grade definida por **Tamanho da célula de meio-tom** (a distância entre os centros dos pontos)

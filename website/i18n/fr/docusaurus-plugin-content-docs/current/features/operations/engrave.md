@@ -249,8 +249,17 @@ ressemblant à l'impression demi-teinte traditionnelle.
 **Stucki, Jarvis, Sierra, Burkes et Atkinson** sont des algorithmes de diffusion d'erreur comme
 Floyd-Steinberg qui répartissent l'erreur sur un voisinage plus large, ce qui donne un grain plus
 régulier dans les zones uniformes comme les tons chair. Atkinson ne diffuse qu'une partie de
-l'erreur, ce qui augmente le contraste. Active **Serpentin** pour alterner le sens de balayage à
-chaque ligne et éviter les stries directionnelles.
+l'erreur, ce qui augmente le contraste. **Serpentin** (activé par défaut) alterne le sens de
+balayage à chaque ligne et évite les stries directionnelles.
+
+**Taille de feature minimale** regroupe chaque ligne de balayage en cellules avant la diffusion,
+afin qu'aucun point ne soit plus petit que le nombre de pixels indiqué. La valeur automatique
+correspond à la taille du spot laser, ce qui garde chaque point à pleine intensité ; des valeurs
+plus petites permettent des points plus fins mais plus faibles.
+
+**Lumière linéaire** diffuse en lumière linéaire plutôt que sur les valeurs sRGB brutes. Diffuser
+sur les valeurs sRGB conserve une couverture de points fidèle au ton que l'image montre à l'écran ;
+la lumière linéaire grave les tons moyens nettement plus sombres.
 
 **Papier journal** et **Demi-teinte** regroupent les pixels en points. Demi-teinte trace des points
 ronds sur une grille définie par **Taille de cellule de demi-teinte** (la distance entre les centres

@@ -20,6 +20,8 @@ _ENGRAVE_KEYS = {
     "threshold",
     "dither_algorithm",
     "dither_serpentine",
+    "dither_min_feature_px",
+    "dither_linear",
     "halftone_cell_mm",
     "halftone_angle",
     "scan_angle",
@@ -113,6 +115,9 @@ class RasterSettingsPage(LaserStepSettingsPage):
             values["sample_interval_mm"] = spot_x / 2.0
         if self.step.dot_width_correction_mm is None:
             values["dot_width_correction_mm"] = spot_x / 2.0
+        if self.step.dither_min_feature_px is None:
+            interval = self.step.sample_interval_mm or spot_x / 2.0
+            values["dither_min_feature_px"] = max(1, round(spot_x / interval))
         if values:
             self.engrave_widget.set_values(values)
 
