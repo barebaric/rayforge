@@ -10,7 +10,6 @@ from raygeo.image.dither import (
     apply_error_diffusion_dither,
     apply_floyd_steinberg_dither,
     apply_halftone_dither,
-    apply_minimum_run_length,
     apply_newsprint_dither,
 )
 
@@ -101,6 +100,7 @@ def grayscale_to_dithered_array(
     min_feature_px: int = 1,
     *,
     serpentine: bool = False,
+    linear: bool = False,
     halftone_cell_mm: float = DEFAULT_HALFTONE_CELL_MM,
     halftone_angle: float = DEFAULT_HALFTONE_ANGLE,
     pixels_per_mm: tuple[float, float] = (1.0, 1.0),
@@ -112,9 +112,16 @@ def grayscale_to_dithered_array(
         grayscale: 2D uint8 grayscale array (0-255).
         dither_algorithm: The dithering algorithm to use.
         invert: If True, invert the output (engrave light areas).
-        min_feature_px: Minimum feature size in pixels.
+        min_feature_px: Minimum feature size in pixels. For the
+            error-diffusion algorithms this groups each scan line
+            into cells of at least that width before diffusing; for
+            Bayer and Newsprint it sizes their screen cells.
         serpentine: Alternate the scan direction per row
             (error-diffusion algorithms only).
+        linear: Diffuse in linear light instead of on the raw
+            sRGB-encoded values (error-diffusion algorithms only).
+            Dithering the sRGB values matches the tone the image
+            shows; linear light engraves mid-tones darker.
         halftone_cell_mm: Halftone dot spacing in mm.
         halftone_angle: Halftone screen angle in degrees.
         pixels_per_mm: ``(x, y)`` image resolution, used by the
@@ -124,8 +131,9 @@ def grayscale_to_dithered_array(
         Binary image where 1 represents areas to engrave.
     """
     if dither_algorithm == DitherAlgorithm.FLOYD_STEINBERG and not serpentine:
-        bw_image = apply_floyd_steinberg_dither(grayscale, invert)
-        return apply_minimum_run_length(bw_image, min_feature_px)
+        return apply_floyd_steinberg_dither(
+            grayscale, invert, min_feature_px, linear
+        )
     if dither_algorithm in BAYER_MATRICES:
         return apply_bayer_dither(
             grayscale,
@@ -141,10 +149,13 @@ def grayscale_to_dithered_array(
         )
     if dither_algorithm == DitherAlgorithm.NEWSPRINT:
         return apply_newsprint_dither(grayscale, min_feature_px, pixels_per_mm)
-    bw_image = apply_error_diffusion_dither(
-        grayscale, KERNEL_NAMES[dither_algorithm], serpentine=serpentine
+    return apply_error_diffusion_dither(
+        grayscale,
+        KERNEL_NAMES[dither_algorithm],
+        serpentine=serpentine,
+        min_feature_px=min_feature_px,
+        linear=linear,
     )
-    return apply_minimum_run_length(bw_image, min_feature_px)
 
 
 def surface_to_dithered_array(

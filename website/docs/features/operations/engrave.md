@@ -250,8 +250,16 @@ traditional halftone printing.
 
 **Stucki, Jarvis, Sierra, Burkes and Atkinson** are error-diffusion algorithms like Floyd-Steinberg
 that spread the error over a wider neighborhood, which gives a smoother grain in flat areas such as
-skin tones. Atkinson diffuses only part of the error, which raises contrast. Turn on **Serpentine**
-to alternate the scan direction on every row and avoid directional streaks.
+skin tones. Atkinson diffuses only part of the error, which raises contrast. **Serpentine** (on by
+default) alternates the scan direction on every row and avoids directional streaks.
+
+**Min Feature Size** groups each scan line into cells before diffusing, so no dot is smaller than
+the given number of pixels. The auto value matches the laser spot size, which keeps every dot at
+full strength; smaller values allow finer but fainter dots.
+
+**Linear Light** diffuses in linear light instead of on the raw sRGB values. Dithering the sRGB
+values keeps the dot coverage at the tone the image shows on screen; linear light engraves mid-tones
+noticeably darker.
 
 **Newsprint** and **Halftone** group pixels into dots. Halftone draws round dots on a grid set by
 **Halftone Cell Size** (the distance between dot centers) and **Halftone Angle**; use a cell size of

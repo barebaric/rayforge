@@ -66,6 +66,7 @@ class EngraveStep(LaserStep):
     line_interval_mm: float | None
     sample_interval_mm: float | None
     dot_width_correction_mm: float | None
+    dither_min_feature_px: int | None
 
     @classmethod
     def recipe_varset(cls) -> VarSet:
@@ -141,6 +142,29 @@ class EngraveStep(LaserStep):
                     description=_(
                         "Alternate the dither direction on every row to "
                         "avoid directional artifacts"
+                    ),
+                    default=True,
+                    visible_when=is_error_diffusion,
+                ),
+                IntVar(
+                    key="dither_min_feature_px",
+                    label=_("Min Feature Size"),
+                    description=_(
+                        "Smallest dot width in scan-line pixels. The "
+                        "auto value matches the laser spot size; "
+                        "smaller values allow finer but fainter dots"
+                    ),
+                    default=None,
+                    min_val=1,
+                    max_val=64,
+                    visible_when=is_error_diffusion,
+                ),
+                BoolVar(
+                    key="dither_linear",
+                    label=_("Linear Light"),
+                    description=_(
+                        "Diffuse in linear light instead of on the raw "
+                        "sRGB values, which engraves mid-tones darker"
                     ),
                     default=False,
                     visible_when=is_error_diffusion,
@@ -348,7 +372,9 @@ class EngraveStep(LaserStep):
         self.z_step_down = 0.0
         self.angle_increment = 0.0
         self.dither_algorithm = None
-        self.dither_serpentine = False
+        self.dither_serpentine = True
+        self.dither_min_feature_px = None
+        self.dither_linear = False
         self.halftone_cell_mm = DEFAULT_HALFTONE_CELL_MM
         self.halftone_angle = DEFAULT_HALFTONE_ANGLE
         self.bidir_x_offset_mm = 0.0
@@ -534,6 +560,8 @@ class EngraveStep(LaserStep):
                     else None
                 ),
                 "dither_serpentine": self.dither_serpentine,
+                "dither_min_feature_px": self.dither_min_feature_px,
+                "dither_linear": self.dither_linear,
                 "halftone_cell_mm": self.halftone_cell_mm,
                 "halftone_angle": self.halftone_angle,
             }
@@ -576,6 +604,8 @@ class EngraveStep(LaserStep):
             self.dither_algorithm.value if self.dither_algorithm else None
         )
         result["dither_serpentine"] = self.dither_serpentine
+        result["dither_min_feature_px"] = self.dither_min_feature_px
+        result["dither_linear"] = self.dither_linear
         result["halftone_cell_mm"] = self.halftone_cell_mm
         result["halftone_angle"] = self.halftone_angle
         result["bidir_x_offset_mm"] = self.bidir_x_offset_mm
@@ -671,6 +701,8 @@ class EngraveStep(LaserStep):
             except ValueError:
                 step.dither_algorithm = DitherAlgorithm.FLOYD_STEINBERG
         step.dither_serpentine = data.get("dither_serpentine", False)
+        step.dither_min_feature_px = data.get("dither_min_feature_px", None)
+        step.dither_linear = bool(data.get("dither_linear", False))
         step.halftone_cell_mm = data.get(
             "halftone_cell_mm", DEFAULT_HALFTONE_CELL_MM
         )
@@ -706,6 +738,8 @@ class EngraveStep(LaserStep):
                 "angle_increment",
                 "dither_algorithm",
                 "dither_serpentine",
+                "dither_min_feature_px",
+                "dither_linear",
                 "halftone_cell_mm",
                 "halftone_angle",
                 "bidir_x_offset_mm",
@@ -851,6 +885,8 @@ def _build_raster_part(
         pixels_per_mm_x=px_per_mm_x,
         pixels_per_mm_y=px_per_mm_y,
         dither_serpentine=step.dither_serpentine,
+        dither_min_feature_px=step.dither_min_feature_px,
+        dither_linear=step.dither_linear,
         halftone_cell_mm=step.halftone_cell_mm,
         halftone_angle=step.halftone_angle,
     )

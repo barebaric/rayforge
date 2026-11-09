@@ -559,7 +559,9 @@ class TestEngraveDitherOptions:
 
     def test_defaults(self):
         step = EngraveStep(name="engrave")
-        assert step.dither_serpentine is False
+        assert step.dither_serpentine is True
+        assert step.dither_min_feature_px is None
+        assert step.dither_linear is False
         assert step.halftone_cell_mm == 0.5
         assert step.halftone_angle == 45.0
 
@@ -567,23 +569,35 @@ class TestEngraveDitherOptions:
         step = EngraveStep(name="engrave")
         step.depth_mode = "DITHER"
         step.dither_algorithm = DitherAlgorithm.HALFTONE
-        step.dither_serpentine = True
+        step.dither_serpentine = False
+        step.dither_min_feature_px = 3
+        step.dither_linear = True
         step.halftone_cell_mm = 0.8
         step.halftone_angle = 15.0
         data = step.to_dict()
         restored = EngraveStep.from_dict(data)
         assert restored.dither_algorithm is DitherAlgorithm.HALFTONE
-        assert restored.dither_serpentine is True
+        assert restored.dither_serpentine is False
+        assert restored.dither_min_feature_px == 3
+        assert restored.dither_linear is True
         assert restored.halftone_cell_mm == 0.8
         assert restored.halftone_angle == 15.0
         assert data == restored.to_dict()
 
     def test_old_documents_get_defaults(self):
         data = EngraveStep(name="engrave").to_dict()
-        for key in ("dither_serpentine", "halftone_cell_mm", "halftone_angle"):
+        for key in (
+            "dither_serpentine",
+            "dither_min_feature_px",
+            "dither_linear",
+            "halftone_cell_mm",
+            "halftone_angle",
+        ):
             data.pop(key)
         restored = EngraveStep.from_dict(data)
         assert restored.dither_serpentine is False
+        assert restored.dither_min_feature_px is None
+        assert restored.dither_linear is False
         assert restored.halftone_cell_mm == 0.5
         assert restored.halftone_angle == 45.0
 
@@ -597,7 +611,9 @@ class TestEngraveDitherOptions:
         step = EngraveStep(name="engrave")
         before = step.get_cache_params()
         for attr, value in (
-            ("dither_serpentine", True),
+            ("dither_serpentine", False),
+            ("dither_min_feature_px", 3),
+            ("dither_linear", True),
             ("halftone_cell_mm", 1.2),
             ("halftone_angle", 10.0),
         ):
@@ -629,6 +645,19 @@ class TestEngraveDitherOptions:
         values = {"depth_mode": "DITHER", "dither_algorithm": algo}
         assert var.is_visible(values) is visible
         values["depth_mode"] = "POWER_MODULATION"
+        assert var.is_visible(values) is False
+
+    @pytest.mark.parametrize("key", ["dither_min_feature_px", "dither_linear"])
+    def test_new_dither_rows_only_for_error_diffusion(self, key):
+        var = self._var(key)
+        values = {"depth_mode": "DITHER", "dither_algorithm": "STUCKI"}
+        assert var.is_visible(values) is True
+        values["dither_algorithm"] = "BAYER4"
+        assert var.is_visible(values) is False
+        values = {
+            "depth_mode": "POWER_MODULATION",
+            "dither_algorithm": "STUCKI",
+        }
         assert var.is_visible(values) is False
 
     @pytest.mark.parametrize("key", ["halftone_cell_mm", "halftone_angle"])
