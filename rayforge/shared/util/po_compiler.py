@@ -52,16 +52,20 @@ def parse_po_file(po_path: Path) -> list[tuple[str, str]]:
             elif line.startswith('"') and in_msgstr:
                 msgstr_lines.append(line)
 
-            elif line.startswith("#") or not line:
+            elif (
+                (line.startswith("#") or not line)
+                and in_msgstr
+                and msgid_lines
+                and msgstr_lines
+            ):
                 # Comment or blank line - finalize current entry
-                if in_msgstr and msgid_lines and msgstr_lines:
-                    msgid = _join_po_lines(msgid_lines)
-                    msgstr = _join_po_lines(msgstr_lines)
-                    entries.append((msgid, msgstr))
-                    msgid_lines = []
-                    msgstr_lines = []
-                    in_msgid = False
-                    in_msgstr = False
+                msgid = _join_po_lines(msgid_lines)
+                msgstr = _join_po_lines(msgstr_lines)
+                entries.append((msgid, msgstr))
+                msgid_lines = []
+                msgstr_lines = []
+                in_msgid = False
+                in_msgstr = False
 
     # Handle last entry if file doesn't end with blank line
     if msgid_lines and msgstr_lines:

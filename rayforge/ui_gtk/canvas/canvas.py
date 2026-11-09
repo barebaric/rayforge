@@ -971,14 +971,13 @@ class Canvas(Gtk.DrawingArea):
                         self._rotation_pivot,
                         self._drag_start_angle,
                     )
-            elif self._shearing:
-                if self._active_origin:
-                    self._selection_group.shear_from_drag(
-                        self._active_region,
-                        world_dx,
-                        world_dy,
-                        self._active_origin,
-                    )
+            elif self._shearing and self._active_origin:
+                self._selection_group.shear_from_drag(
+                    self._active_region,
+                    world_dx,
+                    world_dy,
+                    self._active_origin,
+                )
             self.queue_draw()
         elif self._drag_target:
             if self._moving:
