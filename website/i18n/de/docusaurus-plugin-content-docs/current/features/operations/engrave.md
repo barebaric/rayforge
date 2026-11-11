@@ -326,11 +326,11 @@ dein Bild 10 Pixel/mm (254 DPI) hat, verwende 0.1mm Linienabstand oder kleiner.
 - Beim Dithering legt er die Länge jedes Punkts fest; bei leistungsgeregelter Gravur, wie oft sich
   die Leistung entlang der Linie ändert
 - Kleiner = feinere Details, größere Ausgabedateien
-- Der Auto-Wert entspricht der halben Laserpunktgröße
+- Der Auto-Wert ergibt beim Dithering quadratische Punkte (er folgt dem Linienabstand) und
+  entspricht in leistungsgesteuerten Modi der halben Laserpunktgröße
 
-**Empfohlen:** behalte den Auto-Wert bei oder passe ihn an den Linienabstand an, um quadratische
-Punkte zu erhalten. Ein viel größerer Abtastintervall macht jeden Punkt zu einem langen Strich, der
-als sichtbare Textur in Verläufen auffällt.
+**Empfohlen:** behalte den Auto-Wert bei. Ein viel größerer Abtastintervall macht jeden Punkt zu
+einem langen Strich, der als sichtbare Textur in Verläufen auffällt.
 
 #### Scan-Richtung
 

@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from laser_essentials.steps import EngraveStep
+from laser_essentials.steps.raster_step import auto_sample_interval_mm
 from raygeo.cnc.execution.specs import ComputePayload
 from raygeo.geo import Geometry
 from raygeo.ops import Ops
@@ -254,6 +255,47 @@ class TestEngraveComputePayload:
         assert spec.min_power == 0.1
         assert spec.max_power == 0.9
         assert spec.mode == "power_modulated"
+
+
+class TestAutoSampleInterval:
+    def test_dither_follows_line_interval(self):
+        assert auto_sample_interval_mm("DITHER", 0.08, 0.06, 0.08) == 0.08
+        assert auto_sample_interval_mm("DITHER", None, 0.06, 0.08) == 0.08
+
+    def test_constant_power_follows_line_interval(self):
+        assert (
+            auto_sample_interval_mm("CONSTANT_POWER", 0.1, 0.06, 0.08) == 0.1
+        )
+
+    def test_power_modes_follow_half_spot(self):
+        assert (
+            auto_sample_interval_mm("POWER_MODULATION", 0.08, 0.06, 0.08)
+            == 0.03
+        )
+        assert auto_sample_interval_mm("MULTI_PASS", None, 0.06, 0.08) == 0.03
+
+    def test_dither_spec_uses_line_interval_when_unset(self, machine):
+        step = EngraveStep(name="engrave")
+        step.depth_mode = "DITHER"
+        step.sample_interval_mm = None
+        step.line_interval_mm = 0.08
+        wp = WorkPiece(name="wp")
+        wp.set_size(10.0, 10.0)
+        with patch.object(WorkPiece, "render_to_pixels", return_value=None):
+            _part, payload = step.build_compute_payload(machine, wp)
+        spec = payload.assembler.spec
+        assert spec.sample_interval_mm == pytest.approx(0.08)
+
+    def test_power_spec_keeps_half_spot_when_unset(self, machine):
+        step = EngraveStep(name="engrave")
+        step.depth_mode = "POWER_MODULATION"
+        step.sample_interval_mm = None
+        wp = WorkPiece(name="wp")
+        wp.set_size(10.0, 10.0)
+        with patch.object(WorkPiece, "render_to_pixels", return_value=None):
+            _part, payload = step.build_compute_payload(machine, wp)
+        spec = payload.assembler.spec
+        assert spec.sample_interval_mm == pytest.approx(0.05)
 
     def test_assembler_token_params_mirrors_kwargs(self, machine):
         step = EngraveStep(name="engrave")
@@ -711,7 +753,9 @@ class TestEngraveDitherOptions:
         assert kwargs["dither_serpentine"] is True
         assert kwargs["halftone_cell_mm"] == 0.7
         assert kwargs["halftone_angle"] == 12.0
-        assert kwargs["pixels_per_mm_x"] == pytest.approx(20.0)
+        # Dither samples along X at the line spacing (spot_y here),
+        # giving square cells instead of the power modes' half-spot.
+        assert kwargs["pixels_per_mm_x"] == pytest.approx(10.0)
         assert kwargs["pixels_per_mm_y"] == pytest.approx(10.0)
 
 

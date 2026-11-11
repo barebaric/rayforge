@@ -327,11 +327,11 @@ For images, line interval should match or exceed image resolution. If your image
 - In dithering it sets the length of each dot; in power-modulated engraving it sets how often the
   power changes along the line
 - Smaller = finer detail, larger output files
-- The auto value is half the laser spot width
+- The auto value gives square dots in dithering (it follows the line spacing) and is half the laser
+  spot width in power-modulated modes
 
-**Recommended:** keep the auto value, or match the line interval for square dots. A sample interval
-much larger than the line interval makes each dot a long dash, which shows up as visible texture on
-gradations.
+**Recommended:** keep the auto value. A sample interval much larger than the line interval makes
+each dot a long dash, which shows up as visible texture on gradations.
 
 #### Scan Direction
 

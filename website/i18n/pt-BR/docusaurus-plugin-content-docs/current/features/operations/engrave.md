@@ -327,11 +327,11 @@ tem 10 pixels/mm (254 DPI), use intervalo de linha de 0.1mm ou menor.
 - No pontilhado define o comprimento de cada ponto; na gravação com potência modulada, a frequência
   com que a potência muda ao longo da linha
 - Menor = mais detalhe, arquivos de saída maiores
-- O valor automático é metade da largura do spot do laser
+- O valor automático dá pontos quadrados no pontilhado (segue o intervalo de linha) e é metade da
+  largura do spot do laser nos modos com potência modulada
 
-**Recomendado:** mantenha o valor automático, ou iguale ao intervalo de linha para pontos quadrados.
-Um intervalo de amostragem muito maior que o intervalo de linha transforma cada ponto em um traço
-longo, que aparece como textura visível nos gradientes.
+**Recomendado:** mantenha o valor automático. Um intervalo de amostragem muito maior que o intervalo
+de linha transforma cada ponto em um traço longo, que aparece como textura visível nos gradientes.
 
 #### Direção de Varredura
 
