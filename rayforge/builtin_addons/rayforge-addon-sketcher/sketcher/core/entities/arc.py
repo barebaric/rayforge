@@ -7,8 +7,12 @@ from raygeo.geo.shape.arc import (
     does_arc_intersect_rect,
     get_arc_bounds,
     get_arc_midpoint,
+    get_arc_samples,
+    get_arc_sweep,
+    get_arc_tangent_at_point,
     is_angle_between,
 )
+from raygeo.geo.shape.circle import get_circle_signed_distance
 from raygeo.geo.shape.rect import does_rect_contain_rect
 from raygeo.geo.types import Point as GeoPoint
 from raygeo.geo.types import Polygon, Rect
@@ -86,10 +90,12 @@ class Arc(Entity):
         if not (start and end and center):
             return (1.0, 0.0)
         if point_id == start.id:
-            dx, dy = start.x - center.x, start.y - center.y
-            return (dy, -dx) if self.clockwise else (-dy, dx)
-        dx, dy = end.x - center.x, end.y - center.y
-        return (-dy, dx) if self.clockwise else (dy, -dx)
+            return get_arc_tangent_at_point(
+                center.pos(), start.pos(), self.clockwise
+            )
+        return get_arc_tangent_at_point(
+            center.pos(), end.pos(), not self.clockwise
+        )
 
     def radius(self, registry: "EntityRegistry") -> float:
         start = registry.get_point(self.start_idx)
@@ -104,8 +110,7 @@ class Arc(Entity):
         if not (center and start):
             return 0.0
         radius = math.hypot(start.x - center.x, start.y - center.y)
-        dist_to_point = math.hypot(point.x - center.x, point.y - center.y)
-        return dist_to_point - radius
+        return get_circle_signed_distance(point.pos(), center.pos(), radius)
 
     def get_junction_point_ids(self) -> list[EntityID]:
         return [self.start_idx, self.end_idx, self.center_idx]
@@ -240,46 +245,22 @@ class Arc(Entity):
         )
         end_a = math.atan2(end_pt.y - center_pt.y, end_pt.x - center_pt.x)
 
-        vertices: Polygon = []
         # Scale the sample count by the swept angle so short arcs stay
         # coarse and ~360° arcs get enough resolution.
         num_segments = 16
         max_segments = 64
 
         if forward:
-            if self.clockwise:
-                if end_a > start_a:
-                    end_a -= 2 * math.pi
-            else:
-                if end_a < start_a:
-                    end_a += 2 * math.pi
-            sweep = abs(end_a - start_a)
-            num_segments = max(
-                2, min(max_segments, int(num_segments * sweep / math.pi))
-            )
-            for i in range(num_segments + 1):
-                t = i / num_segments
-                a = start_a + t * (end_a - start_a)
-                px = center_pt.x + radius * math.cos(a)
-                py = center_pt.y + radius * math.sin(a)
-                vertices.append((px, py))
+            start_angle, end_angle = start_a, end_a
         else:
-            if self.clockwise:
-                if start_a > end_a:
-                    start_a -= 2 * math.pi
-            else:
-                if start_a < end_a:
-                    start_a += 2 * math.pi
-            sweep = abs(start_a - end_a)
-            num_segments = max(
-                2, min(max_segments, int(num_segments * sweep / math.pi))
-            )
-            for i in range(num_segments + 1):
-                t = i / num_segments
-                a = end_a + t * (start_a - end_a)
-                px = center_pt.x + radius * math.cos(a)
-                py = center_pt.y + radius * math.sin(a)
-                vertices.append((px, py))
+            start_angle, end_angle = end_a, start_a
+        sweep = get_arc_sweep(start_angle, end_angle, self.clockwise)
+        count = max(
+            2, min(max_segments, int(num_segments * abs(sweep) / math.pi))
+        )
+        vertices = get_arc_samples(
+            center_pt.pos(), radius, start_angle, sweep, count
+        )
 
         return vertices
 
@@ -371,22 +352,10 @@ class Arc(Entity):
             return []
         start_angle = math.atan2(start.y - center.y, start.x - center.x)
         end_angle = math.atan2(end.y - center.y, end.x - center.x)
-        sweep = end_angle - start_angle
-        if self.clockwise and sweep > 0:
-            sweep -= 2 * math.pi
-        elif not self.clockwise and sweep < 0:
-            sweep += 2 * math.pi
+        sweep = get_arc_sweep(start_angle, end_angle, self.clockwise)
         segments = max(8, int(abs(sweep) / math.pi * 32))
         return [
-            [
-                (
-                    center.x
-                    + radius * math.cos(start_angle + sweep * i / segments),
-                    center.y
-                    + radius * math.sin(start_angle + sweep * i / segments),
-                )
-                for i in range(segments + 1)
-            ]
+            get_arc_samples(center.pos(), radius, start_angle, sweep, segments)
         ]
 
     def is_angle_within_sweep(

@@ -3,6 +3,11 @@ from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any
 
 from raygeo.geo import Geometry
+from raygeo.geo.shape.ellipse import (
+    get_ellipse_samples,
+    is_point_inside_ellipse,
+    is_point_on_ellipse,
+)
 from raygeo.geo.types import Point, Rect
 
 from ..types import EntityID
@@ -88,13 +93,7 @@ class Ellipse(Entity):
         rotation = math.atan2(
             radius_x_pt.y - center.y, radius_x_pt.x - center.x
         )
-        cos_a = math.cos(-rotation)
-        sin_a = math.sin(-rotation)
-        dx = x - center.x
-        dy = y - center.y
-        local_x = dx * cos_a - dy * sin_a
-        local_y = dx * sin_a + dy * cos_a
-        return (local_x / rx) ** 2 + (local_y / ry) ** 2 <= 1.0
+        return is_point_inside_ellipse((x, y), center.pos(), rx, ry, rotation)
 
     def get_rigidly_connected_points(
         self, point_id: EntityID
@@ -131,16 +130,9 @@ class Ellipse(Entity):
             return False
 
         rotation = self._get_rotation(registry)
-        cos_a = math.cos(-rotation)
-        sin_a = math.sin(-rotation)
-
-        dx = mx - center.x
-        dy = my - center.y
-        local_x = dx * cos_a - dy * sin_a
-        local_y = dx * sin_a + dy * cos_a
-
-        dist = math.sqrt((local_x / rx) ** 2 + (local_y / ry) ** 2)
-        return abs(dist - 1.0) < (threshold / min(rx, ry))
+        return is_point_on_ellipse(
+            (mx, my), center.pos(), rx, ry, rotation, threshold
+        )
 
     def get_ignorable_unconstrained_points(self) -> list[EntityID]:
         if self.constrained:
@@ -332,23 +324,10 @@ class Ellipse(Entity):
         if rx + offset <= 1e-9 or ry + offset <= 1e-9:
             return []
         rotation = self._get_rotation(registry)
-        cos_a = math.cos(rotation)
-        sin_a = math.sin(rotation)
-        segments = 64
         return [
-            [
-                (
-                    center.x
-                    + (rx + offset) * math.cos(t) * cos_a
-                    - (ry + offset) * math.sin(t) * sin_a,
-                    center.y
-                    + (rx + offset) * math.cos(t) * sin_a
-                    + (ry + offset) * math.sin(t) * cos_a,
-                )
-                for t in (
-                    2 * math.pi * i / segments for i in range(segments + 1)
-                )
-            ]
+            get_ellipse_samples(
+                center.pos(), rx + offset, ry + offset, rotation, 64
+            )
         ]
 
     def to_dict(self) -> dict[str, Any]:
