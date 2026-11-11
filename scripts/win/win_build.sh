@@ -100,6 +100,21 @@ fi
 echo "✅ PyInstaller build complete: dist/${BUNDLE_NAME}/"
 
 # ----------------------------------------------------
+# STEP 4b: Guard against bundled OpenCV contrib DLLs
+# ----------------------------------------------------
+# The OpenCV face recognition module is not used by Rayforge, and its
+# unsigned DLL is a recurring false-positive target for Windows Security,
+# which blocks the entire application from starting. OpenCV's Python
+# bindings link the module library directly, so it must never enter the
+# bundle in the first place (the pinned opencv-python wheel does not
+# contain it).
+if find "dist/${BUNDLE_NAME}" -iname '*opencv_face*' | grep -q .; then
+    echo "❌ OpenCV contrib DLLs found in the bundle:"
+    find "dist/${BUNDLE_NAME}" -iname '*opencv_face*'
+    exit 1
+fi
+
+# ----------------------------------------------------
 # STEP 5: Build Installer with NSIS
 # ----------------------------------------------------
 echo "Building installer with NSIS..."

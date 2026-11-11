@@ -154,7 +154,6 @@ if [[ "$1" == "pacman" || -z "$1" ]]; then
       mingw-w64-ucrt-x86_64-cython
       mingw-w64-ucrt-x86_64-python-maturin
       mingw-w64-ucrt-x86_64-python-numpy
-      mingw-w64-ucrt-x86_64-python-opencv
       mingw-w64-ucrt-x86_64-python-pillow
       mingw-w64-ucrt-x86_64-python-pymupdf
       mingw-w64-ucrt-x86_64-python-pyopengl
@@ -241,6 +240,12 @@ if [[ "$1" == "pip" || -z "$1" ]]; then
     retry $PYTHON_BIN_PATH -m pip install --no-cache-dir pygobject-stubs --break-system-packages
     retry $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation --no-deps \
         "pyvips$(req_version pyvips)" \
+        --break-system-packages
+
+    echo "Installing pinned OpenCV wheel for Windows..."
+    retry $PYTHON_BIN_PATH -m pip install --no-cache-dir \
+        --only-binary=:all: --platform win_amd64 --no-deps \
+        "opencv-python==4.10.0.84" \
         --break-system-packages
 
     retry $PYTHON_BIN_PATH -m pip install --no-cache-dir \
