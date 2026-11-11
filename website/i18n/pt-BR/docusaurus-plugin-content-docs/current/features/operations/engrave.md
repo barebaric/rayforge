@@ -319,6 +319,20 @@ tem 10 pixels/mm (254 DPI), use intervalo de linha de 0.1mm ou menor.
 :::
 <!-- prettier-ignore-end -->
 
+#### Intervalo de Amostragem
+
+**Intervalo de amostragem (mm):**
+
+- Distância entre amostras ao longo de cada linha de varredura, em todos os modos de raster
+- No pontilhado define o comprimento de cada ponto; na gravação com potência modulada, a frequência
+  com que a potência muda ao longo da linha
+- Menor = mais detalhe, arquivos de saída maiores
+- O valor automático é metade da largura do spot do laser
+
+**Recomendado:** mantenha o valor automático, ou iguale ao intervalo de linha para pontos quadrados.
+Um intervalo de amostragem muito maior que o intervalo de linha transforma cada ponto em um traço
+longo, que aparece como textura visível nos gradientes.
+
 #### Direção de Varredura
 
 **Ângulo de Varredura (graus):**

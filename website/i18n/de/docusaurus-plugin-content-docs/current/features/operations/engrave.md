@@ -318,6 +318,20 @@ dein Bild 10 Pixel/mm (254 DPI) hat, verwende 0.1mm Linienabstand oder kleiner.
 :::
 <!-- prettier-ignore-end -->
 
+#### Abtastintervall
+
+**Abtastintervall (mm):**
+
+- Abstand zwischen den Abtastpunkten entlang jeder Scanzeile, in jedem Rastermodus
+- Beim Dithering legt er die Länge jedes Punkts fest; bei leistungsgeregelter Gravur, wie oft sich
+  die Leistung entlang der Linie ändert
+- Kleiner = feinere Details, größere Ausgabedateien
+- Der Auto-Wert entspricht der halben Laserpunktgröße
+
+**Empfohlen:** behalte den Auto-Wert bei oder passe ihn an den Linienabstand an, um quadratische
+Punkte zu erhalten. Ein viel größerer Abtastintervall macht jeden Punkt zu einem langen Strich, der
+als sichtbare Textur in Verläufen auffällt.
+
 #### Scan-Richtung
 
 **Scan-Winkel (Grad):**

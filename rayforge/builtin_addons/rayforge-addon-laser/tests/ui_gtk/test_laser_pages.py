@@ -463,11 +463,15 @@ def test_raster_page_mode_visibility(editor, laser_machine, ui_context):
     step.depth_mode = "CONSTANT_POWER"
     step.updated.send(step)
     assert threshold.get_visible() is True
-    assert sample_interval.get_visible() is False
+    assert sample_interval.get_visible() is True
 
     step.depth_mode = "POWER_MODULATION"
     step.updated.send(step)
     assert threshold.get_visible() is False
+    assert sample_interval.get_visible() is True
+
+    step.depth_mode = "DITHER"
+    step.updated.send(step)
     assert sample_interval.get_visible() is True
 
 

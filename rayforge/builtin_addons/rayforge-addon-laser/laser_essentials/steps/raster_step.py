@@ -223,13 +223,12 @@ class EngraveStep(LaserStep):
                     key="sample_interval_mm",
                     label=_("Sample Interval"),
                     description=_(
-                        "Distance between power samples along scan "
-                        "line. Lower values improve accuracy, but "
-                        "increase output size"
+                        "Distance between samples along scan line. "
+                        "Lower values improve accuracy, but increase "
+                        "output size"
                     ),
                     default=0.0,
                     min_val=0.0,
-                    visible_when=is_power,
                     digits=3,
                 ),
                 LengthVar(
