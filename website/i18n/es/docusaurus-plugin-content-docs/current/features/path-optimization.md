@@ -47,6 +47,14 @@ Esquinas** (3):
 ![Puntos de inicio de una trayectoria cerrada: como se dibujó, en el vértice más cercano, en la
 esquina más cercana](/images/path-optimization-start-point.webp)
 
+### Reordenar Líneas de Escaneo
+
+Controla si las líneas de escaneo de trama participan en la optimización de trayectoria. Desactivado
+por defecto: las líneas de trama conservan su orden de grabado, porque reordenarlas obliga a la
+máquina a saltar con el eje Y entre líneas, y el juego mecánico que se toma en cada salto puede
+aparecer como bandas. Actívalo solo si los ejes de tu máquina están calibrados y quieres ahorrar
+tiempo de recorrido en trabajos de trama grandes.
+
 ## Cuándo Usar Optimización
 
 **Habilitar para:**

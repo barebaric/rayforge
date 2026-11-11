@@ -46,6 +46,14 @@ bevorzugen** (3):
 ![Startpunkte eines geschlossenen Pfads: wie gezeichnet, am nächsten Eckpunkt, an der nächsten
 scharfen Ecke](/images/path-optimization-start-point.webp)
 
+### Scanzeilen neu anordnen
+
+Steuert, ob Raster-Scanzeilen an der Reiseoptimierung teilnehmen. Standardmäßig aus: Rasterzeilen
+behalten ihre Brandreihenfolge, denn eine Neuanordnung lässt die Maschine zwischen den Zeilen auf
+der Y-Achse hin- und herspringen, und das mechanische Spiel bei jedem Sprung kann als
+Streifenbildung sichtbar werden. Aktiviere es nur, wenn die Achsen deiner Maschine kalibriert sind
+und du bei großen Raster-Jobs Reisezeit sparen willst.
+
 ## Wann Optimierung verwenden
 
 **Aktivieren für:**

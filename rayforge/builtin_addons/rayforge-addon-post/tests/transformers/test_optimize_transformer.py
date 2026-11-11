@@ -376,7 +376,7 @@ def test_run_optimization_with_unsplit_scanline(mock_progress_context):
     ops.move_to(20, 0, 0)
     ops.scan_to(10, 0, 0, power_values=bytearray([10, 20, 30]))
 
-    optimizer = Optimize()
+    optimizer = Optimize(reorder_scanlines=True)
     _apply(optimizer, ops, mock_progress_context)
     ops.preload_state()
     travel_after = _calculate_travel_distance(ops)
@@ -717,7 +717,7 @@ def test_run_optimization_with_overscan_and_flip_preserves_state(
     # The optimizer should connect Path 1's end (10,10) to the nearest
     # point on Path 2, which is its end (15,10), causing a flip.
 
-    optimizer = Optimize()
+    optimizer = Optimize(reorder_scanlines=True)
     _apply(optimizer, ops, mock_progress_context)
     ops.preload_state()
 
@@ -1065,6 +1065,7 @@ class TestCutPlannerOptions:
         transformer = Optimize.from_dict({"name": "Optimize"})
         assert transformer.best_start_point is False
         assert transformer.prefer_corners is False
+        assert transformer.reorder_scanlines is False
 
     def test_serialization_roundtrip(self):
         transformer = Optimize(best_start_point=True, prefer_corners=True)
@@ -1072,12 +1073,26 @@ class TestCutPlannerOptions:
         assert restored.best_start_point is True
         assert restored.prefer_corners is True
 
+    def test_reorder_scanlines_defaults_off_and_roundtrips(self):
+        transformer = Optimize.from_dict({"name": "Optimize"})
+        assert transformer.reorder_scanlines is False
+        transformer = Optimize(reorder_scanlines=True)
+        restored = Optimize.from_dict(transformer.to_dict())
+        assert restored.reorder_scanlines is True
+
     def test_to_spec_passes_flags(self):
-        spec = Optimize(best_start_point=True, prefer_corners=True).to_spec(
-            None, None, None
-        )
+        spec = Optimize(
+            best_start_point=True,
+            prefer_corners=True,
+            reorder_scanlines=True,
+        ).to_spec(None, None, None)
         assert spec.best_start_point is True
         assert spec.prefer_corners is True
+        assert spec.reorder_scanlines is True
+
+    def test_to_spec_keeps_scanlines_by_default(self):
+        spec = Optimize().to_spec(None, None, None)
+        assert spec.reorder_scanlines is False
 
     def test_best_start_rotates_closed_path(self, mock_progress_context):
         ops = _seed_and_loop()
