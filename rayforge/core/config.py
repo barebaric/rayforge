@@ -12,6 +12,7 @@ from blinker import Signal
 
 from ..machine.models.machine import Machine
 from ..shared.util.atomic import atomic_write_yaml, load_yaml_with_backup
+from .vectorization_spec import LayerSource
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +112,10 @@ class Config:
         self.usage_consent_date: str | None = None
         # Default DPI for unitless SVG imports
         self.import_dpi: float = 96.0
+        # Last-used layer source in the import dialog (a LayerSource
+        # value). None until the user picks one; while None, the
+        # dialog falls back to its file-based heuristics.
+        self.import_layer_source: LayerSource | None = None
         # Cache budget for the raygeo pipeline (default 2 GiB)
         self.cache_budget_bytes: int = 2 * 1024 * 1024 * 1024
         # Language preference: None = system default, or a code like "de"
@@ -203,6 +208,13 @@ class Config:
         if self.import_dpi == dpi:
             return
         self.import_dpi = dpi
+        self.changed.send(self)
+
+    def set_import_layer_source(self, source: LayerSource):
+        """Remembers the last-used layer source for vector imports."""
+        if self.import_layer_source == source:
+            return
+        self.import_layer_source = source
         self.changed.send(self)
 
     def set_cache_budget_bytes(self, budget: int):
@@ -376,6 +388,11 @@ class Config:
             "ops_color_mode": self.ops_color_mode.value,
             "usage_consent_date": self.usage_consent_date,
             "import_dpi": self.import_dpi,
+            "import_layer_source": (
+                self.import_layer_source.value
+                if self.import_layer_source
+                else None
+            ),
             "cache_budget_bytes": self.cache_budget_bytes,
             "language": self.language,
             "default_stock_material_uid": self.default_stock_material_uid,
@@ -458,6 +475,17 @@ class Config:
 
         # Load import DPI
         config.import_dpi = data.get("import_dpi", 96.0)
+
+        # Load remembered import layer source (None = not chosen yet)
+        layer_source_str = data.get("import_layer_source")
+        if layer_source_str:
+            try:
+                config.import_layer_source = LayerSource(layer_source_str)
+            except ValueError:
+                logger.warning(
+                    f"Invalid import layer source in config: "
+                    f"{layer_source_str}. Ignoring."
+                )
 
         # Load cache budget
         config.cache_budget_bytes = data.get(

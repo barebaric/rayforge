@@ -166,8 +166,9 @@ SVG (Scalable Vector Graphics) is the **recommended format** for vector designs.
 :::tip[Automate Step Assignment]
 You can configure
 [color rules](../application-settings/color-rules.md) to automatically assign step types (Contour,
-Engrave, etc.) based on the colors in your SVG. When rules exist, the import dialog defaults to
-grouping shapes by color so the rules take effect.
+Engrave, etc.) based on the colors in your SVG. Until you pick a layer source yourself, the import
+dialog defaults to grouping shapes by color when rules exist, so the rules take effect; the layer
+source you choose is remembered for future imports.
 :::
 <!-- prettier-ignore-end -->
 
