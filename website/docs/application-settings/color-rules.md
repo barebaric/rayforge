@@ -71,9 +71,10 @@ Each rule in the list shows a color swatch, the label, the step type, and edit/d
 
 ### Automatic Color Grouping
 
-When color rules exist, the import dialog automatically switches to **Colors** as the layer source
-for files that contain distinct colors. This ensures each color becomes its own layer so the rules
-can apply. You can still switch back to **SVG Layers** or other sources in the dialog if you prefer.
+Until you pick a layer source yourself, the import dialog automatically selects **Colors** for files
+that contain distinct colors but no useful layer structure, or when color rules exist. This ensures
+each color becomes its own layer so the rules can apply. Once you switch the layer source in the
+dialog, your choice is remembered and used as the starting point for future imports.
 
 ### What Triggers a Rule
 
@@ -100,8 +101,8 @@ A common setup for multi-color SVG designs:
    - `#0000ff` → Engrave
    - `#00ff00` → Contour (with different recipe settings)
 
-3. **Import the SVG.** The import dialog auto-selects Colors, and each color group gets its step
-   type automatically.
+3. **Import the SVG.** If you have not changed the layer source before, the import dialog
+   auto-selects Colors, and each color group gets its step type automatically.
 
 4. **Fine-tune** with [recipes](recipes) to set power, speed, and other parameters per step type.
 

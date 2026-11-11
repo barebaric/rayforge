@@ -86,6 +86,7 @@ class ImportDialog(PatchedDialogWindow):
             "notify::selected", self._schedule_preview_update
         )
 
+        config = get_context().config
         self._layer_source_model = Gtk.StringList.new(
             [
                 _("SVG Layers"),
@@ -96,7 +97,9 @@ class ImportDialog(PatchedDialogWindow):
             title=_("Layer Source"),
             subtitle=_("Group imported geometry by SVG layer or by color"),
             model=self._layer_source_model,
-            selected=0,
+            selected=(
+                1 if config.import_layer_source == LayerSource.COLORS else 0
+            ),
         )
         self.layer_source_row.connect(
             "notify::selected", self._on_layer_source_changed
@@ -197,7 +200,6 @@ class ImportDialog(PatchedDialogWindow):
         )
         mode_group.add(self.use_vectors_switch)
 
-        config = get_context().config
         self.dpi_row = SpinRow(
             _("DPI"),
             _(
@@ -420,14 +422,17 @@ class ImportDialog(PatchedDialogWindow):
                 and ImporterFeature.Z_FLATTENING in self.features
             ):
                 self.z_flatten_group.set_visible(True)
-            # Default to color grouping when the file has distinct colors
-            # but no useful layer structure (no layers, or a single generic
-            # layer wrapping everything). Also default to it when the user
-            # has defined color rules, since those only take effect with a
-            # color source.
+            # Default to color grouping when the user has not picked a
+            # layer source yet and the file has distinct colors but no
+            # useful layer structure (no layers, or a single generic
+            # layer wrapping everything). Also default to it when the
+            # user has defined color rules, since those only take
+            # effect with a color source. A remembered choice always
+            # wins over these heuristics.
             if (
                 self._manifest
                 and self._manifest.color_layers
+                and get_context().config.import_layer_source is None
                 and self.layer_source_row.get_selected() == 0
                 and (
                     len(self._manifest.layers) <= 1
@@ -452,6 +457,10 @@ class ImportDialog(PatchedDialogWindow):
     def _on_layer_source_changed(self, combo, *args):
         self._populate_layers_ui()
         self._schedule_preview_update()
+        if not self._in_update:
+            get_context().config.set_import_layer_source(
+                self._get_layer_source()
+            )
 
     @staticmethod
     def _color_rules_exist() -> bool:
