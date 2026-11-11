@@ -101,6 +101,21 @@ class OptimizeSettingsGroup(TransformerSettingsGroup):
             lambda r: self._on_merge_gap_changed(r)
         )
 
+        self.reorder_scanlines_row = Adw.SwitchRow(
+            title=_("Reorder Scan Lines"),
+            subtitle=_(
+                "Reorder raster scan lines for shorter travel. Raster "
+                "rows normally keep their order: reordering makes the "
+                "machine hop its Y axis between rows, which can cause "
+                "banding."
+            ),
+        )
+        self.reorder_scanlines_row.set_active(transformer.reorder_scanlines)
+        self.add(self.reorder_scanlines_row)
+        self.reorder_scanlines_row.connect(
+            "notify::active", self._on_reorder_scanlines_toggled
+        )
+
     def _on_flip_toggled(
         self, row: Adw.SwitchRow, _pspec: GObject.ParamSpec
     ) -> None:
@@ -159,4 +174,14 @@ class OptimizeSettingsGroup(TransformerSettingsGroup):
             key="merge_max_gap_mm",
             value=row.get_value_in_base_units(),
             name=_("Change maximum bridged gap"),
+        )
+
+    def _on_reorder_scanlines_toggled(
+        self, row: Adw.SwitchRow, _pspec: GObject.ParamSpec
+    ) -> None:
+        self.param_changed.send(
+            self,
+            key="reorder_scanlines",
+            value=row.get_active(),
+            name=_("Toggle Reorder Scan Lines"),
         )

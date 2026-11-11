@@ -44,6 +44,14 @@ com **Escolher o Melhor Ponto de Início** (2), e no canto vivo mais próximo co
 ![Pontos de início de um caminho fechado: como desenhado, no vértice mais próximo, no canto mais
 próximo](/images/path-optimization-start-point.webp)
 
+### Reordenar Linhas de Varredura
+
+Controla se as linhas de varredura de raster participam da otimização de trajeto. Desativado por
+padrão: as linhas de raster mantêm a ordem de gravação, porque reordenar faz a máquina saltar o eixo
+Y entre linhas, e a folga mecânica absorvida em cada salto pode aparecer como bandas. Ative apenas
+se os eixos da sua máquina estiverem calibrados e você quiser economizar tempo de trajeto em
+trabalhos de raster grandes.
+
 ## Quando Usar Otimização
 
 **Habilitar para:**
