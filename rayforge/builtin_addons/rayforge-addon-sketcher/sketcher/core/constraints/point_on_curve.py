@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING, Any
 
 import cairo
 from raygeo.geo.types import Point
+from raygeo.sketch.constraints.point_on_curve import (
+    PointOnCurveConstraint as SolverPointOnCurveConstraint,
+)
 
 from ..entities import Bezier, TextBoxEntity
 from ..types import EntityID
@@ -278,3 +281,25 @@ class PointOnCurveConstraint(Constraint):
     def get_draggable_point(self) -> EntityID:
         """Returns the point that lies on the curve."""
         return self.point_id
+
+    def to_solver_constraint(self, registry: EntityRegistry):
+        bez = registry.get_entity(self.shape_id)
+        if not isinstance(bez, Bezier):
+            return None
+        if bez.cp1 is not None:
+            cp1_offset = (bez.cp1[0], bez.cp1[1])
+        else:
+            cp1_offset = (0.0, 0.0)
+        if bez.cp2 is not None:
+            cp2_offset = (bez.cp2[0], bez.cp2[1])
+        else:
+            cp2_offset = (0.0, 0.0)
+        is_line = bez.cp1 is None and bez.cp2 is None
+        return SolverPointOnCurveConstraint(
+            self.point_id,
+            bez.start_idx,
+            bez.end_idx,
+            cp1_offset,
+            cp2_offset,
+            is_line,
+        )

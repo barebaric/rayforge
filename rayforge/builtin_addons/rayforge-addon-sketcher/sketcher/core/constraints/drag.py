@@ -5,6 +5,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from raygeo.geo.types import Point
+from raygeo.sketch.constraints.drag import (
+    DragConstraint as SolverDragConstraint,
+)
 
 from ..types import EntityID
 from .base import Constraint
@@ -56,3 +59,13 @@ class DragConstraint(Constraint):
         return {
             self.point_id: [(self.weight, 0.0), (0.0, self.weight)],
         }
+
+    def to_solver_constraint(self, registry: EntityRegistry):
+        """
+        Returns the equivalent raygeo solver constraint, with entity
+        references resolved to concrete point ids and the dimensional
+        value already resolved.
+        """
+        return SolverDragConstraint(
+            self.point_id, self.target_x, self.target_y, self.weight
+        )

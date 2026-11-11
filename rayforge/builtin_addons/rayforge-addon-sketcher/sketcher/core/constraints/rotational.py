@@ -4,6 +4,9 @@ import math
 from typing import TYPE_CHECKING, Any
 
 from raygeo.geo.types import Point
+from raygeo.sketch.constraints.rotational import (
+    RotationalConstraint as SolverRotationalConstraint,
+)
 
 from ..types import EntityID
 from .base import Constraint
@@ -116,3 +119,13 @@ class RotationalConstraint(Constraint):
             self.p1: [(-ca, sa), (-sa, -ca)],
             self.center: [(-1.0 + ca, -sa), (sa, -1.0 + ca)],
         }
+
+    def to_solver_constraint(self, registry: EntityRegistry):
+        """
+        Returns the equivalent raygeo solver constraint, with entity
+        references resolved to concrete point ids and the dimensional
+        value already resolved.
+        """
+        return SolverRotationalConstraint(
+            self.center, self.p1, self.p2, self.value
+        )

@@ -8,6 +8,9 @@ from typing import TYPE_CHECKING, Any
 import cairo
 from gi.repository import PangoCairo
 from raygeo.geo.types import Point
+from raygeo.sketch.constraints.radius import (
+    RadiusConstraint as SolverRadiusConstraint,
+)
 
 from rayforge.ui_gtk.shared.text import create_text_layout
 
@@ -326,3 +329,15 @@ class RadiusConstraint(Constraint):
         self._set_color(ctx, is_hovered)
         ctx.stroke()
         ctx.restore()
+
+    def to_solver_constraint(self, registry: EntityRegistry):
+        entity = registry.get_entity(self.entity_id)
+        if isinstance(entity, Arc):
+            return SolverRadiusConstraint(
+                entity.center_idx, entity.start_idx, self.value
+            )
+        if isinstance(entity, Circle):
+            return SolverRadiusConstraint(
+                entity.center_idx, entity.radius_pt_idx, self.value
+            )
+        return None

@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING, Any
 
 import cairo
 from raygeo.geo.types import Point
+from raygeo.sketch.constraints.aspect_ratio import (
+    AspectRatioConstraint as SolverAspectRatioConstraint,
+)
 
 from ..entities import Line
 from ..types import EntityID
@@ -287,3 +290,8 @@ class AspectRatioConstraint(Constraint):
         ctx.stroke()
 
         ctx.restore()
+
+    def to_solver_constraint(self, registry: EntityRegistry):
+        return SolverAspectRatioConstraint(
+            self.p1, self.p2, self.p3, self.p4, self.ratio
+        )

@@ -7,6 +7,12 @@ from typing import TYPE_CHECKING, Any
 
 import cairo
 from raygeo.geo.types import Point
+from raygeo.sketch.constraints.symmetry import (
+    SymmetryConstraint as SolverSymmetryConstraint,
+)
+from raygeo.sketch.constraints.symmetry import (
+    SymmetryTarget as SolverSymmetryTarget,
+)
 
 from ..entities import Line
 from ..types import EntityID
@@ -294,3 +300,21 @@ class SymmetryConstraint(Constraint):
         self._set_color(ctx, is_hovered)
         ctx.stroke()
         ctx.restore()
+
+    def to_solver_constraint(self, registry: EntityRegistry):
+        if self.center is not None:
+            return SolverSymmetryConstraint(
+                self.p1,
+                self.p2,
+                SolverSymmetryTarget.Point(center=self.center),
+            )
+        if self.axis is not None:
+            axis = registry.get_entity(self.axis)
+            if not isinstance(axis, Line):
+                return None
+            return SolverSymmetryConstraint(
+                self.p1,
+                self.p2,
+                SolverSymmetryTarget.Line(l1=axis.p1_idx, l2=axis.p2_idx),
+            )
+        return None

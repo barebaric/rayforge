@@ -13,6 +13,9 @@ from gi.repository import PangoCairo
 from raygeo.geo.shape.arc import normalize_angle
 from raygeo.geo.shape.line import get_line_line_intersection
 from raygeo.geo.types import Point
+from raygeo.sketch.constraints.angle import (
+    AngleConstraint as SolverAngleConstraint,
+)
 
 from rayforge.ui_gtk.shared.text import create_text_layout
 
@@ -449,3 +452,18 @@ class AngleConstraint(Constraint):
         ctx.new_path()
 
         ctx.restore()
+
+    def to_solver_constraint(self, registry: EntityRegistry):
+        e1 = registry.get_entity(self.e1_id)
+        e2 = registry.get_entity(self.e2_id)
+        if not (isinstance(e1, Line) and isinstance(e2, Line)):
+            return None
+        return SolverAngleConstraint(
+            e1.p1_idx,
+            e1.p2_idx,
+            e2.p1_idx,
+            e2.p2_idx,
+            self.value,
+            self.e1_far_idx,
+            self.e2_far_idx,
+        )

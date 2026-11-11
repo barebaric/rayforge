@@ -8,6 +8,9 @@ from typing import TYPE_CHECKING, Any
 import cairo
 from raygeo.geo.shape.line import get_line_closest_point
 from raygeo.geo.types import Point
+from raygeo.sketch.constraints.tangent import (
+    TangentConstraint as SolverTangentConstraint,
+)
 
 from ..entities import Arc, Circle, Line
 from ..types import EntityID
@@ -308,3 +311,16 @@ class TangentConstraint(Constraint):
         self._set_color(ctx, is_hovered)
         ctx.stroke()
         ctx.restore()
+
+    def to_solver_constraint(self, registry: EntityRegistry):
+        line = registry.get_entity(self.line_id)
+        shape = registry.get_entity(self.shape_id)
+        if not isinstance(line, Line) or not isinstance(shape, (Arc, Circle)):
+            return None
+        if isinstance(shape, Arc):
+            radius_point = shape.start_idx
+        else:
+            radius_point = shape.radius_pt_idx
+        return SolverTangentConstraint(
+            line.p1_idx, line.p2_idx, shape.center_idx, radius_point
+        )

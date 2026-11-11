@@ -8,6 +8,9 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
 from raygeo.geo.types import Point
+from raygeo.sketch.constraints.horizontal import (
+    HorizontalConstraint as SolverHorizontalConstraint,
+)
 
 from ..entities import Line
 from ..types import EntityID
@@ -166,3 +169,11 @@ class HorizontalConstraint(Constraint):
         self._set_color(ctx, is_hovered)
         ctx.stroke()
         ctx.restore()
+
+    def to_solver_constraint(self, registry: EntityRegistry):
+        """
+        Returns the equivalent raygeo solver constraint, with entity
+        references resolved to concrete point ids and the dimensional
+        value already resolved.
+        """
+        return SolverHorizontalConstraint(self.p1, self.p2)

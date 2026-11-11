@@ -17,6 +17,12 @@ from raygeo.geo.shape.line import (
     is_point_on_line_segment,
 )
 from raygeo.geo.types import Point
+from raygeo.sketch.constraints.perpendicular import (
+    PerpendicularConstraint as SolverPerpendicularConstraint,
+)
+from raygeo.sketch.constraints.perpendicular import (
+    PerpendicularTarget as SolverPerpendicularTarget,
+)
 
 from ..entities import Arc, Circle, Line
 from ..types import EntityID
@@ -536,3 +542,45 @@ class PerpendicularConstraint(Constraint):
             ctx.stroke()
 
         ctx.restore()
+
+    def to_solver_constraint(self, registry: EntityRegistry):
+        e1 = registry.get_entity(self.e1_id)
+        e2 = registry.get_entity(self.e2_id)
+        if e1 is None or e2 is None:
+            return None
+
+        if isinstance(e1, Line) and isinstance(e2, Line):
+            return SolverPerpendicularConstraint(
+                SolverPerpendicularTarget.LineLine(
+                    a1=e1.p1_idx, a2=e1.p2_idx, b1=e2.p1_idx, b2=e2.p2_idx
+                )
+            )
+
+        line, shape = None, None
+        if isinstance(e1, Line) and isinstance(e2, (Arc, Circle)):
+            line, shape = e1, e2
+        elif isinstance(e2, Line) and isinstance(e1, (Arc, Circle)):
+            line, shape = e2, e1
+        if line is not None and shape is not None:
+            return SolverPerpendicularConstraint(
+                SolverPerpendicularTarget.LineCenter(
+                    l1=line.p1_idx, l2=line.p2_idx, center=shape.center_idx
+                )
+            )
+
+        if isinstance(e1, (Arc, Circle)) and isinstance(e2, (Arc, Circle)):
+            return SolverPerpendicularConstraint(
+                SolverPerpendicularTarget.Circles(
+                    c1=e1.center_idx,
+                    r1_point=self._radius_point(e1),
+                    c2=e2.center_idx,
+                    r2_point=self._radius_point(e2),
+                )
+            )
+        return None
+
+    @staticmethod
+    def _radius_point(shape):
+        if isinstance(shape, Arc):
+            return shape.start_idx
+        return shape.radius_pt_idx

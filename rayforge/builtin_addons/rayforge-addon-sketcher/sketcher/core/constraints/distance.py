@@ -11,6 +11,9 @@ from typing import (
 from gi.repository import PangoCairo
 from raygeo.geo.shape.line import get_line_segment_closest_point
 from raygeo.geo.types import Point
+from raygeo.sketch.constraints.distance import (
+    DistanceConstraint as SolverDistanceConstraint,
+)
 
 from rayforge.ui_gtk.shared.text import create_text_layout
 
@@ -310,3 +313,11 @@ class DistanceConstraint(Constraint):
             ctx.stroke()
 
         ctx.restore()
+
+    def to_solver_constraint(self, registry: EntityRegistry):
+        """
+        Returns the equivalent raygeo solver constraint, with entity
+        references resolved to concrete point ids and the dimensional
+        value already resolved.
+        """
+        return SolverDistanceConstraint(self.p1, self.p2, self.value)

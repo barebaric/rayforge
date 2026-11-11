@@ -130,6 +130,17 @@ class Constraint:
         """
         return False
 
+    def to_solver_constraint(self, registry: EntityRegistry) -> object | None:
+        """
+        Returns the equivalent raygeo solver constraint for this
+        constraint, with entity references resolved to concrete point
+        ids and parameter expressions already evaluated to floats.
+
+        Returns None when the constraint has no solver counterpart
+        (e.g. it references entities that are missing or unsupported).
+        """
+        return None
+
     def to_dict(self) -> dict[str, Any]:
         """Serializes the constraint to a dictionary."""
         return {}  # Default for non-serializable constraints like Drag

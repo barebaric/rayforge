@@ -9,6 +9,9 @@ from typing import TYPE_CHECKING, Any
 
 from gi.repository import PangoCairo
 from raygeo.geo.types import Point
+from raygeo.sketch.constraints.equal_distance import (
+    EqualDistanceConstraint as SolverEqualDistanceConstraint,
+)
 
 from rayforge.ui_gtk.shared.text import create_text_layout
 
@@ -243,3 +246,13 @@ class EqualDistanceConstraint(Constraint):
         PangoCairo.show_layout(ctx, layout)
         ctx.restore()
         ctx.new_path()
+
+    def to_solver_constraint(self, registry: EntityRegistry):
+        """
+        Returns the equivalent raygeo solver constraint, with entity
+        references resolved to concrete point ids and the dimensional
+        value already resolved.
+        """
+        return SolverEqualDistanceConstraint(
+            self.p1, self.p2, self.p3, self.p4
+        )

@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING, Any
 
 from gi.repository import PangoCairo
 from raygeo.geo.types import Point
+from raygeo.sketch.constraints.diameter import (
+    DiameterConstraint as SolverDiameterConstraint,
+)
 
 from rayforge.ui_gtk.shared.text import create_text_layout
 
@@ -281,3 +284,11 @@ class DiameterConstraint(Constraint):
         self._set_color(ctx, is_hovered)
         ctx.stroke()
         ctx.restore()
+
+    def to_solver_constraint(self, registry: EntityRegistry):
+        circle = registry.get_entity(self.circle_id)
+        if isinstance(circle, Circle):
+            return SolverDiameterConstraint(
+                circle.center_idx, circle.radius_pt_idx, self.value
+            )
+        return None

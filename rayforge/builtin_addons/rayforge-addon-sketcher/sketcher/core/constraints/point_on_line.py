@@ -7,6 +7,12 @@ from typing import TYPE_CHECKING, Any
 
 import cairo
 from raygeo.geo.types import Point
+from raygeo.sketch.constraints.point_on_line import (
+    PointOnLineConstraint as SolverPointOnLineConstraint,
+)
+from raygeo.sketch.constraints.point_on_line import (
+    PointOnTarget as SolverPointOnTarget,
+)
 
 from ..entities import Arc, Circle, Line, TextBoxEntity
 from ..types import EntityID
@@ -269,3 +275,24 @@ class PointOnLineConstraint(Constraint):
     def get_draggable_point(self) -> EntityID:
         """Returns the point that lies on the line/shape."""
         return self.point_id
+
+    def to_solver_constraint(self, registry: EntityRegistry):
+        shape = registry.get_entity(self.shape_id)
+        if isinstance(shape, Line):
+            return SolverPointOnLineConstraint(
+                self.point_id,
+                SolverPointOnTarget.Line(l1=shape.p1_idx, l2=shape.p2_idx),
+            )
+        if isinstance(shape, (Arc, Circle)):
+            if isinstance(shape, Arc):
+                radius_point = shape.start_idx
+            else:
+                radius_point = shape.radius_pt_idx
+            return SolverPointOnLineConstraint(
+                self.point_id,
+                SolverPointOnTarget.RadiusCurve(
+                    center=shape.center_idx,
+                    radius_point=radius_point,
+                ),
+            )
+        return None

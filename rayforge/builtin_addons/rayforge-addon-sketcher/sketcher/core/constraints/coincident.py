@@ -8,6 +8,9 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
 from raygeo.geo.types import Point
+from raygeo.sketch.constraints.coincident import (
+    CoincidentConstraint as SolverCoincidentConstraint,
+)
 
 from ..types import EntityID
 from .base import Constraint, ConstraintStatus
@@ -150,3 +153,11 @@ class CoincidentConstraint(Constraint):
     def get_draggable_point(self) -> EntityID:
         """Returns p1 as the draggable point for coincident constraints."""
         return self.p1
+
+    def to_solver_constraint(self, registry: EntityRegistry):
+        """
+        Returns the equivalent raygeo solver constraint, with entity
+        references resolved to concrete point ids and the dimensional
+        value already resolved.
+        """
+        return SolverCoincidentConstraint(self.p1, self.p2)

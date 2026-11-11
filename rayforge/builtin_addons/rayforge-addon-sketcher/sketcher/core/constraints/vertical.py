@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING, Any
 
 import cairo
 from raygeo.geo.types import Point
+from raygeo.sketch.constraints.vertical import (
+    VerticalConstraint as SolverVerticalConstraint,
+)
 
 from ..entities import Line
 from ..types import EntityID
@@ -163,3 +166,11 @@ class VerticalConstraint(Constraint):
         self._set_color(ctx, is_hovered)
         ctx.stroke()
         ctx.restore()
+
+    def to_solver_constraint(self, registry: EntityRegistry):
+        """
+        Returns the equivalent raygeo solver constraint, with entity
+        references resolved to concrete point ids and the dimensional
+        value already resolved.
+        """
+        return SolverVerticalConstraint(self.p1, self.p2)
