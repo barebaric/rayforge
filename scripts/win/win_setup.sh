@@ -242,9 +242,14 @@ if [[ "$1" == "pip" || -z "$1" ]]; then
         "pyvips$(req_version pyvips)" \
         --break-system-packages
 
+    # MSYS2's mingw Python carries wheel tags that PyPI's win_amd64 wheels
+    # do not match, so --platform overrides the tag check. pip only accepts
+    # platform overrides together with --target, which therefore must point
+    # at the real site-packages so cv2 stays importable.
     echo "Installing pinned OpenCV wheel for Windows..."
     retry $PYTHON_BIN_PATH -m pip install --no-cache-dir \
         --only-binary=:all: --platform win_amd64 --no-deps \
+        --target="$MSYS2_PATH/ucrt64/lib/$PYTHON_VERSION/site-packages" \
         "opencv-python==4.10.0.84" \
         --break-system-packages
 
