@@ -14,7 +14,7 @@ from raygeo.sketch.constraints.horizontal import (
 
 from ..entities import Line
 from ..types import EntityID
-from .base import Constraint, ConstraintStatus
+from .base import Constraint
 
 if TYPE_CHECKING:
     import cairo
@@ -141,34 +141,9 @@ class HorizontalConstraint(Constraint):
         is_hovered: bool = False,
         point_radius: float = 5.0,
     ) -> None:
-        try:
-            p1 = registry.get_point(self.p1)
-            p2 = registry.get_point(self.p2)
-        except IndexError:
-            return
-
-        s1 = to_screen((p1.x, p1.y))
-        s2 = to_screen((p2.x, p2.y))
-
-        t_marker = 0.2
-        mx = s1[0] + (s2[0] - s1[0]) * t_marker
-        my = s1[1] + (s2[1] - s1[1]) * t_marker
-
-        size = 8
-        ctx.save()
-        ctx.set_line_width(2)
-        ctx.move_to(mx - size, my - 10)
-        ctx.line_to(mx + size, my - 10)
-
-        if is_selected:
-            self._draw_selection_underlay(ctx)
-
-        if self.status == ConstraintStatus.CONFLICTING:
-            self._draw_conflict_underlay(ctx)
-
-        self._set_color(ctx, is_hovered)
-        ctx.stroke()
-        ctx.restore()
+        self._draw_solver_constraint(
+            ctx, registry, to_screen, is_selected, is_hovered, point_radius
+        )
 
     def to_solver_constraint(self, registry: EntityRegistry):
         """

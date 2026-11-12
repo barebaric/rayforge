@@ -1,6 +1,7 @@
-import cairo
+from unittest.mock import MagicMock
+
 import pytest
-from gi.repository import PangoCairo
+from raygeo.geo.shape.text import FontConfig
 from sketcher.core.constraints import (
     AngleConstraint,
     DiameterConstraint,
@@ -12,23 +13,24 @@ from sketcher.core.constraints import (
 from sketcher.core.constraints.base import ConstraintStatus
 from sketcher.core.registry import EntityRegistry
 
+LABEL_FONT_PX = 12.0
+PT_TO_MM = 25.4 / 72.0
+
 
 @pytest.mark.parametrize(
     "kind, expected",
     [
         ("distance", "10.0"),
-        ("angle", "90.0\u00b0"),
+        ("angle", "90.0°"),
         ("radius", "R10.0"),
-        ("diameter", "\u00d810.0"),
+        ("diameter", "Ø10.0"),
         ("equal_length", "="),
         ("equal_distance", "="),
     ],
 )
 @pytest.mark.parametrize("status", list(ConstraintStatus))
 @pytest.mark.parametrize("selected, hovered", [(False, False), (True, True)])
-def test_constraint_text_uses_pango(
-    mocker, kind, expected, status, selected, hovered
-):
+def test_constraint_text_rendering(kind, expected, status, selected, hovered):
     registry = EntityRegistry()
     center = registry.add_point(0, 0)
     right = registry.add_point(10, 0)
@@ -46,9 +48,7 @@ def test_constraint_text_uses_pango(
     }
     constraint = constraints[kind]
     constraint.status = status
-    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 200, 200)
-    ctx = cairo.Context(surface)
-    show_layout = mocker.spy(PangoCairo, "show_layout")
+    ctx = MagicMock()
 
     constraint.draw(
         ctx,
@@ -58,7 +58,11 @@ def test_constraint_text_uses_pango(
         is_hovered=hovered,
     )
 
-    assert show_layout.call_count == (2 if kind == "equal_length" else 1)
-    for call in show_layout.call_args_list:
-        assert call.args[1].get_text() == expected
-    assert any(surface.get_data())
+    assert [call for call in ctx.method_calls if call[0] == "stroke"]
+    labeled = kind not in ("equal_length", "equal_distance")
+    rectangles = [call for call in ctx.method_calls if call[0] == "rectangle"]
+    assert bool(rectangles) == labeled
+    if labeled:
+        config = FontConfig("sans-serif", LABEL_FONT_PX / PT_TO_MM)
+        width = config.get_text_width(expected)
+        assert rectangles[0].args[2] == pytest.approx(width + 8.0)

@@ -16,7 +16,7 @@ from raygeo.sketch.constraints.symmetry import (
 
 from ..entities import Line
 from ..types import EntityID
-from .base import Constraint, ConstraintStatus
+from .base import Constraint
 
 
 def draw_symmetry_arrows(
@@ -276,30 +276,9 @@ class SymmetryConstraint(Constraint):
         is_hovered: bool = False,
         point_radius: float = 5.0,
     ) -> None:
-        try:
-            p1 = registry.get_point(self.p1)
-            p2 = registry.get_point(self.p2)
-        except IndexError:
-            return
-
-        s1 = to_screen((p1.x, p1.y))
-        s2 = to_screen((p2.x, p2.y))
-
-        ctx.save()
-        ctx.set_line_width(1.5)
-        ctx.new_sub_path()
-
-        draw_symmetry_arrows(ctx, s1, s2)
-
-        if is_selected:
-            self._draw_selection_underlay(ctx)
-
-        if self.status == ConstraintStatus.CONFLICTING:
-            self._draw_conflict_underlay(ctx)
-
-        self._set_color(ctx, is_hovered)
-        ctx.stroke()
-        ctx.restore()
+        self._draw_solver_constraint(
+            ctx, registry, to_screen, is_selected, is_hovered, point_radius
+        )
 
     def to_solver_constraint(self, registry: EntityRegistry):
         if self.center is not None:

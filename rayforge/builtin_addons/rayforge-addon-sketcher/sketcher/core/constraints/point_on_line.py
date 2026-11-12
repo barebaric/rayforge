@@ -14,9 +14,9 @@ from raygeo.sketch.constraints.point_on_line import (
     PointOnTarget as SolverPointOnTarget,
 )
 
-from ..entities import Arc, Circle, Line, TextBoxEntity
+from ..entities import Arc, Circle, Line
 from ..types import EntityID
-from .base import Constraint, ConstraintStatus
+from .base import Constraint
 
 if TYPE_CHECKING:
     from ..entities import Entity
@@ -238,39 +238,9 @@ class PointOnLineConstraint(Constraint):
         is_hovered: bool = False,
         point_radius: float = 5.0,
     ) -> None:
-        # Hide constraint if its point is part of a text box
-        text_box_point_ids = set()
-        for entity in registry.entities:
-            if isinstance(entity, TextBoxEntity):
-                text_box_point_ids.update(
-                    entity.get_all_frame_point_ids(registry)
-                )
-        if self.point_id in text_box_point_ids:
-            return
-
-        try:
-            p = registry.get_point(self.point_id)
-        except IndexError:
-            return
-
-        sx, sy = to_screen((p.x, p.y))
-
-        ctx.save()
-        ctx.set_line_width(1.5)
-
-        radius = point_radius + 4
-        ctx.new_sub_path()
-        ctx.arc(sx, sy, radius, 0, 2 * math.pi)
-
-        if is_selected:
-            self._draw_selection_underlay(ctx)
-
-        if self.status == ConstraintStatus.CONFLICTING:
-            self._draw_conflict_underlay(ctx)
-
-        self._set_color(ctx, is_hovered)
-        ctx.stroke()
-        ctx.restore()
+        self._draw_solver_constraint(
+            ctx, registry, to_screen, is_selected, is_hovered, point_radius
+        )
 
     def get_draggable_point(self) -> EntityID:
         """Returns the point that lies on the line/shape."""

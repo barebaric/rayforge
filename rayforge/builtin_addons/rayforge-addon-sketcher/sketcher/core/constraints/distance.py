@@ -8,18 +8,15 @@ from typing import (
     Any,
 )
 
-from gi.repository import PangoCairo
 from raygeo.geo.shape.line import get_line_segment_closest_point
 from raygeo.geo.types import Point
 from raygeo.sketch.constraints.distance import (
     DistanceConstraint as SolverDistanceConstraint,
 )
 
-from rayforge.ui_gtk.shared.text import create_text_layout
-
 from ..entities import Line
 from ..types import EntityID
-from .base import Constraint, ConstraintStatus
+from .base import Constraint
 
 if TYPE_CHECKING:
     import cairo
@@ -237,82 +234,9 @@ class DistanceConstraint(Constraint):
         is_hovered: bool = False,
         point_radius: float = 5.0,
     ) -> None:
-        try:
-            p1 = registry.get_point(self.p1)
-            p2 = registry.get_point(self.p2)
-        except IndexError:
-            return
-
-        s1 = to_screen((p1.x, p1.y))
-        s2 = to_screen((p2.x, p2.y))
-        mx, my = (s1[0] + s2[0]) / 2, (s1[1] + s2[1]) / 2
-
-        label = self._format_value()
-        layout = create_text_layout(ctx, label)
-        ext, _ = layout.get_pixel_extents()
-
-        ctx.save()
-        # Set background color based on selection, hover, and status
-        if is_selected:
-            ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)  # Blue selection
-        elif is_hovered:
-            ctx.set_source_rgba(1.0, 0.95, 0.85, 0.9)  # Light yellow hover
-        elif self.status == ConstraintStatus.CONFLICTING:
-            ctx.set_source_rgba(1.0, 0.6, 0.6, 0.9)  # Red background
-        elif self.status == ConstraintStatus.ERROR:
-            ctx.set_source_rgba(1.0, 0.8, 0.8, 0.9)  # Light red background
-        elif self.status == ConstraintStatus.EXPRESSION_BASED:
-            ctx.set_source_rgba(1.0, 0.9, 0.7, 0.9)  # Light orange background
-        else:  # VALID
-            ctx.set_source_rgba(1, 1, 1, 0.8)  # Default white background
-
-        # Draw label background
-        bg_x = mx - ext.width / 2 - 4
-        bg_y = my - ext.height / 2 - 4
-        ctx.rectangle(bg_x, bg_y, ext.width + 8, ext.height + 8)
-        ctx.fill()
-        ctx.new_path()
-
-        # Set text color based on status
-        if self.status in (
-            ConstraintStatus.ERROR,
-            ConstraintStatus.CONFLICTING,
-        ):
-            ctx.set_source_rgb(0.8, 0.0, 0.0)  # Red text for error/conflict
-        else:
-            ctx.set_source_rgb(0, 0, 0.5)  # Dark blue otherwise
-
-        ctx.move_to(
-            mx - ext.width / 2 - ext.x,
-            my - ext.height / 2 - ext.y,
+        self._draw_solver_constraint(
+            ctx, registry, to_screen, is_selected, is_hovered, point_radius
         )
-        PangoCairo.show_layout(ctx, layout)
-        ctx.new_path()
-
-        # Draw Dash Line - only if no solid line entity connects these points
-        has_geometry = False
-        entities = registry.entities or []
-        for entity in entities:
-            if isinstance(entity, Line) and {entity.p1_idx, entity.p2_idx} == {
-                self.p1,
-                self.p2,
-            }:
-                has_geometry = True
-                break
-
-        if not has_geometry:
-            ctx.set_line_width(1)
-            ctx.set_dash([4, 4])
-            ctx.move_to(s1[0], s1[1])
-            ctx.line_to(s2[0], s2[1])
-
-            if self.status == ConstraintStatus.CONFLICTING:
-                self._draw_conflict_underlay(ctx)
-
-            self._set_color(ctx, is_hovered)
-            ctx.stroke()
-
-        ctx.restore()
 
     def to_solver_constraint(self, registry: EntityRegistry):
         """

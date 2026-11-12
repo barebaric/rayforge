@@ -3,7 +3,6 @@ from types import SimpleNamespace
 import cairo
 import numpy as np
 import pytest
-from gi.repository import Pango, PangoCairo
 from scipy.optimize import check_grad
 from sketcher.core import Sketch
 from sketcher.core.constraints import DistanceConstraint
@@ -208,7 +207,7 @@ def test_distance_is_hit(setup_env):
     "draw_options",
     [{}, {"is_selected": True}, {"is_hovered": True}, {"point_radius": 10.0}],
 )
-def test_distance_draw(setup_env, mocker, draw_options):
+def test_distance_draw(setup_env, draw_options):
     reg, _params = setup_env
     p1 = reg.add_point(0, 0)
     p2 = reg.add_point(100, 0)
@@ -216,20 +215,11 @@ def test_distance_draw(setup_env, mocker, draw_options):
 
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 200, 100)
     ctx = cairo.Context(surface)
-    show_layout = mocker.spy(PangoCairo, "show_layout")
 
     def to_screen(pos):
         return pos[0] + 50, pos[1] + 50
 
     c.draw(ctx, reg, to_screen, **draw_options)
-    show_layout.assert_called_once()
-    layout = show_layout.call_args.args[1]
-    assert layout.get_text() == "100.0"
-    font = layout.get_font_description()
-    assert font is not None
-    assert font.get_family() == "Sans"
-    assert font.get_size_is_absolute()
-    assert font.get_size() == 12 * Pango.SCALE
     assert any(surface.get_data())
 
 

@@ -13,7 +13,7 @@ from raygeo.sketch.constraints.aspect_ratio import (
 
 from ..entities import Line
 from ..types import EntityID
-from .base import Constraint, ConstraintStatus
+from .base import Constraint
 
 if TYPE_CHECKING:
     from ..entities import Entity
@@ -242,54 +242,9 @@ class AspectRatioConstraint(Constraint):
         is_hovered: bool = False,
         point_radius: float = 5.0,
     ) -> None:
-        icon_pos = self._get_icon_pos(registry, to_screen)
-        if not icon_pos:
-            return
-
-        cx, cy = icon_pos
-
-        ctx.save()
-
-        icon_size = 16.0
-
-        # Draw a circular underlay for selection, similar to other icons
-        if is_selected:
-            ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)
-            # Use a slightly larger radius for the glow effect
-            ctx.arc(cx, cy, icon_size / 2.0 + 4.0, 0, 2 * math.pi)
-            ctx.fill()
-
-        if self.status == ConstraintStatus.CONFLICTING:
-            ctx.set_source_rgba(1.0, 0.2, 0.2, 0.5)
-            ctx.arc(cx, cy, icon_size / 2.0 + 4.0, 0, 2 * math.pi)
-            ctx.fill()
-
-        # Translate to the icon's anchor point for easier drawing
-        ctx.translate(cx, cy)
-
-        hs = icon_size / 2.0
-
-        ctx.set_line_width(2.0)
-        ctx.set_line_cap(cairo.LINE_CAP_ROUND)
-        ctx.set_line_join(cairo.LINE_JOIN_ROUND)
-
-        ctx.new_path()
-
-        # Top-right corner bracket (L-shape pointing into the corner)
-        ctx.move_to(hs * 0.4, hs)
-        ctx.line_to(hs, hs)
-        ctx.line_to(hs, hs * 0.4)
-
-        # Bottom-left corner bracket
-        ctx.move_to(-hs * 0.4, -hs)
-        ctx.line_to(-hs, -hs)
-        ctx.line_to(-hs, -hs * 0.4)
-
-        # Set color and draw the icon
-        self._set_color(ctx, is_hovered)
-        ctx.stroke()
-
-        ctx.restore()
+        self._draw_solver_constraint(
+            ctx, registry, to_screen, is_selected, is_hovered, point_radius
+        )
 
     def to_solver_constraint(self, registry: EntityRegistry):
         return SolverAspectRatioConstraint(

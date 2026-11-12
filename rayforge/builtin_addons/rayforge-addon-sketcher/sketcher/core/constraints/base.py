@@ -10,9 +10,13 @@ from typing import (
 )
 
 from raygeo.geo.types import Point
+from raygeo.sketch.registry import (
+    EntityRegistry as GeoEntityRegistry,
+)
 
 from rayforge.core.expression import safe_evaluate
 
+from ..entities import Line, TextBoxEntity
 from ..types import EntityID
 
 if TYPE_CHECKING:
@@ -235,6 +239,56 @@ class Constraint:
         Draws the visual representation of the constraint on the canvas.
         Default implementation does nothing.
         """
+
+    def _draw_solver_constraint(
+        self,
+        ctx: cairo.Context,
+        registry: EntityRegistry,
+        to_screen: Callable[[Point], Point],
+        is_selected: bool,
+        is_hovered: bool,
+        point_radius: float,
+    ) -> None:
+        """
+        Delegates drawing to the equivalent raygeo solver constraint:
+        mirrors the registry's points plus the line and text-box
+        entities the symbol layout consults, and replays the raygeo
+        draw onto the context.
+        """
+        constraint: Any = self.to_solver_constraint(registry)
+        if constraint is None:
+            return
+        constraint.status = self.status.value
+        geo_registry = GeoEntityRegistry()
+        geo_registry.add_points(
+            [(p.id, p.x, p.y, p.fixed) for p in registry.points]
+        )
+        for entity in registry.entities:
+            if isinstance(entity, Line):
+                geo_registry.add_line(
+                    entity.p1_idx,
+                    entity.p2_idx,
+                    entity.construction,
+                )
+            elif isinstance(entity, TextBoxEntity):
+                geo_registry.add_text_box(
+                    entity.origin_id,
+                    entity.width_id,
+                    entity.height_id,
+                    entity.content,
+                    entity.font_config.family,
+                    entity.font_config.size,
+                    entity.font_config.bold,
+                    entity.font_config.italic,
+                )
+        constraint.draw(
+            ctx,
+            geo_registry,
+            to_screen,
+            is_selected,
+            is_hovered,
+            point_radius,
+        )
 
     def update_from_context(self, context: dict[str, Any]):
         """
