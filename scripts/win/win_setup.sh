@@ -154,7 +154,6 @@ if [[ "$1" == "pacman" || -z "$1" ]]; then
       mingw-w64-ucrt-x86_64-cython
       mingw-w64-ucrt-x86_64-python-maturin
       mingw-w64-ucrt-x86_64-python-numpy
-      mingw-w64-ucrt-x86_64-python-opencv
       mingw-w64-ucrt-x86_64-python-pillow
       mingw-w64-ucrt-x86_64-python-pymupdf
       mingw-w64-ucrt-x86_64-python-pyopengl
@@ -242,6 +241,35 @@ if [[ "$1" == "pip" || -z "$1" ]]; then
     retry $PYTHON_BIN_PATH -m pip install --no-cache-dir --no-build-isolation --no-deps \
         "pyvips$(req_version pyvips)" \
         --break-system-packages
+
+    # MSYS2's mingw Python carries wheel tags that PyPI's win_amd64 wheels
+    # do not match, so --platform overrides the tag check. pip only accepts
+    # platform overrides together with --target, which therefore must point
+    # at the real site-packages so cv2 stays importable.
+    echo "Installing pinned OpenCV wheel for Windows..."
+    retry $PYTHON_BIN_PATH -m pip install --no-cache-dir \
+        --only-binary=:all: --platform win_amd64 --no-deps \
+        --target="$MSYS2_PATH/ucrt64/lib/$PYTHON_VERSION/site-packages" \
+        "opencv-python==4.10.0.84" \
+        --break-system-packages
+
+    # PyPI's OpenCV wheels are built for MSVC CPython: cv2.pyd links the
+    # stable-ABI forwarder DLL python3.dll, which mingw Python does not
+    # ship. libpython3.dll is itself a pure forwarder DLL whose exports
+    # resolve into the libpython3.14.dll instance the interpreter loads,
+    # so a renamed copy of it lets the wheel bind to the same runtime.
+    echo "Generating python3.dll forwarder for MSVC abi3 wheels..."
+    cp "$MSYS2_PATH/ucrt64/bin/libpython3.dll" \
+        "$MSYS2_PATH/ucrt64/bin/python3.dll"
+    $PYTHON_BIN_PATH - "$MSYS2_PATH/ucrt64/bin/python3.dll" <<'EOF'
+import sys
+
+path = sys.argv[1]
+data = bytearray(open(path, "rb").read())
+old = b"libpython3.dll\x00"
+new = b"python3.dll\x00\x00\x00\x00"
+open(path, "wb").write(bytes(data.replace(old, new)))
+EOF
 
     retry $PYTHON_BIN_PATH -m pip install --no-cache-dir \
         "pyserial$(req_version pyserial)" \
