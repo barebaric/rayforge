@@ -10,13 +10,10 @@ from typing import (
 )
 
 from raygeo.geo.types import Point
-from raygeo.sketch.registry import (
-    EntityRegistry as GeoEntityRegistry,
-)
 
 from rayforge.core.expression import safe_evaluate
 
-from ..entities import Line, TextBoxEntity
+from ..entities import TextBoxEntity
 from ..types import EntityID
 
 if TYPE_CHECKING:
@@ -37,6 +34,45 @@ class ConstraintStatus(Enum):
     EXPRESSION_BASED = auto()
     ERROR = auto()
     CONFLICTING = auto()
+
+
+class SolverDrawContext:
+    """Adapts the sketch registry to the raygeo draw context
+    protocol, so constraint symbols read this document directly."""
+
+    def __init__(self, registry: EntityRegistry):
+        self._registry = registry
+
+    def get_point(self, pid: EntityID) -> Point | None:
+        try:
+            point = self._registry.get_point(pid)
+        except IndexError:
+            return None
+        return (point.x, point.y)
+
+    def point_is_fixed(self, pid: EntityID) -> bool:
+        try:
+            return self._registry.get_point(pid).fixed
+        except IndexError:
+            return False
+
+    def entity_ids(self) -> list[EntityID]:
+        return [entity.id for entity in self._registry.entities]
+
+    def entity_type(self, eid: EntityID) -> str | None:
+        entity = self._registry.get_entity(eid)
+        return entity.type if entity else None
+
+    def entity_point_ids(self, eid: EntityID) -> list[EntityID] | None:
+        entity = self._registry.get_entity(eid)
+        return entity.get_point_ids() if entity else None
+
+    def point_is_in_text_box_frame(self, pid: EntityID) -> bool:
+        for entity in self._registry.entities:
+            if isinstance(entity, TextBoxEntity):
+                if pid in entity.get_all_frame_point_ids(self._registry):
+                    return True
+        return False
 
 
 class Constraint:
@@ -250,40 +286,16 @@ class Constraint:
         point_radius: float,
     ) -> None:
         """
-        Delegates drawing to the equivalent raygeo solver constraint:
-        mirrors the registry's points plus the line and text-box
-        entities the symbol layout consults, and replays the raygeo
-        draw onto the context.
+        Delegates drawing to the equivalent raygeo solver constraint,
+        which reads this document through the draw context protocol.
         """
         constraint: Any = self.to_solver_constraint(registry)
         if constraint is None:
             return
         constraint.status = self.status.value
-        geo_registry = GeoEntityRegistry()
-        geo_registry.add_points(
-            [(p.id, p.x, p.y, p.fixed) for p in registry.points]
-        )
-        for entity in registry.entities:
-            if isinstance(entity, Line):
-                geo_registry.add_line(
-                    entity.p1_idx,
-                    entity.p2_idx,
-                    entity.construction,
-                )
-            elif isinstance(entity, TextBoxEntity):
-                geo_registry.add_text_box(
-                    entity.origin_id,
-                    entity.width_id,
-                    entity.height_id,
-                    entity.content,
-                    entity.font_config.family,
-                    entity.font_config.size,
-                    entity.font_config.bold,
-                    entity.font_config.italic,
-                )
         constraint.draw(
             ctx,
-            geo_registry,
+            SolverDrawContext(registry),
             to_screen,
             is_selected,
             is_hovered,
