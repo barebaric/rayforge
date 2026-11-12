@@ -253,6 +253,24 @@ if [[ "$1" == "pip" || -z "$1" ]]; then
         "opencv-python==4.10.0.84" \
         --break-system-packages
 
+    # PyPI's OpenCV wheels are built for MSVC CPython: cv2.pyd links the
+    # stable-ABI forwarder DLL python3.dll, which mingw Python does not
+    # ship. libpython3.dll is itself a pure forwarder DLL whose exports
+    # resolve into the libpython3.14.dll instance the interpreter loads,
+    # so a renamed copy of it lets the wheel bind to the same runtime.
+    echo "Generating python3.dll forwarder for MSVC abi3 wheels..."
+    cp "$MSYS2_PATH/ucrt64/bin/libpython3.dll" \
+        "$MSYS2_PATH/ucrt64/bin/python3.dll"
+    $PYTHON_BIN_PATH - "$MSYS2_PATH/ucrt64/bin/python3.dll" <<'EOF'
+import sys
+
+path = sys.argv[1]
+data = bytearray(open(path, "rb").read())
+old = b"libpython3.dll\x00"
+new = b"python3.dll\x00\x00\x00\x00"
+open(path, "wb").write(bytes(data.replace(old, new)))
+EOF
+
     retry $PYTHON_BIN_PATH -m pip install --no-cache-dir \
         "pyserial$(req_version pyserial)" \
         "raygeo$(req_version raygeo)" \
