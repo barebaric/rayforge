@@ -81,7 +81,6 @@ if ! pyinstaller --onedir --hide-console hide-early \
   --add-binary "${WIN_MSYS2_PATH}\\ucrt64\\bin\\libEGL.dll;." \
   --add-binary "${WIN_MSYS2_PATH}\\ucrt64\\bin\\libGLESv2.dll;." \
   --add-binary "${WIN_MSYS2_PATH}\\ucrt64\\bin\\libvips-42.dll;." \
-  --add-binary "${WIN_MSYS2_PATH}\\ucrt64\\bin\\SDL3.dll;." \
   --add-binary "${WIN_MSYS2_PATH}\\ucrt64\\bin\\python3.dll;." \
   --hidden-import "gi._gi_cairo" \
   --hidden-import "rayforge.core.expression" \
