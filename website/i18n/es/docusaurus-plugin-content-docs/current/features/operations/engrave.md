@@ -320,6 +320,20 @@ imagen es de 10 píxeles/mm (254 DPI), usa un intervalo de línea de 0.1mm o men
 :::
 <!-- prettier-ignore-end -->
 
+#### Intervalo de Muestreo
+
+**Intervalo de muestreo (mm):**
+
+- Distancia entre muestras a lo largo de cada línea de escaneo, en todos los modos de trama
+- En el tramado define la longitud de cada punto; en la grabación con potencia modulada, la
+  frecuencia con la que cambia la potencia a lo largo de la línea
+- Más pequeño = más detalle, archivos de salida más grandes
+- El valor automático da puntos cuadrados en el tramado (sigue el intervalo de línea) y es la mitad
+  del ancho del punto láser en los modos con potencia modulada
+
+**Recomendado:** mantén el valor automático. Un intervalo de muestreo mucho mayor que el intervalo
+de línea convierte cada punto en un guion largo, que se nota como textura visible en los degradados.
+
 #### Dirección de Escaneo
 
 **Ángulo de Escaneo (grados):**

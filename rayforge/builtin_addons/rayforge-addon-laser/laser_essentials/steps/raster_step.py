@@ -223,13 +223,12 @@ class EngraveStep(LaserStep):
                     key="sample_interval_mm",
                     label=_("Sample Interval"),
                     description=_(
-                        "Distance between power samples along scan "
-                        "line. Lower values improve accuracy, but "
-                        "increase output size"
+                        "Distance between samples along scan line. "
+                        "Lower values improve accuracy, but increase "
+                        "output size"
                     ),
                     default=0.0,
                     min_val=0.0,
-                    visible_when=is_power,
                     digits=3,
                 ),
                 LengthVar(
@@ -498,7 +497,11 @@ class EngraveStep(LaserStep):
         kwargs = self.get_assembler_kwargs(machine, workpiece)
         depth_mode = DepthMode[self.depth_mode]
         line_interval = kwargs["line_interval_mm"] or spot_y
-        sample_interval = kwargs["sample_interval_mm"] or spot_x / 2.0
+        sample_interval = kwargs["sample_interval_mm"] or (
+            auto_sample_interval_mm(
+                self.depth_mode, line_interval, spot_x, spot_y
+            )
+        )
         dot_width = (
             kwargs["dot_width_correction_mm"]
             if kwargs["dot_width_correction_mm"] is not None
@@ -821,6 +824,26 @@ class EngraveStep(LaserStep):
         return step
 
 
+def auto_sample_interval_mm(
+    depth_mode: str,
+    line_interval_mm: float | None,
+    spot_x: float,
+    spot_y: float,
+) -> float:
+    """The effective sample interval when the setting is unset.
+
+    Dither and constant-power renders use square cells, so the sample
+    pitch follows the line spacing; power-modulated modes sample
+    finer than the spot to ramp power smoothly along the line.
+    """
+    if depth_mode in (
+        DepthMode.DITHER.name,
+        DepthMode.CONSTANT_POWER.name,
+    ):
+        return line_interval_mm or spot_y
+    return spot_x / 2.0
+
+
 def _build_raster_part(
     step: EngraveStep,
     machine: Machine,
@@ -841,7 +864,12 @@ def _build_raster_part(
         return Part(size_mm=size), None
 
     spot_x, spot_y = LaserHead.get_spot_size(step.get_selected_laser(machine))
-    px_per_mm_x = 1.0 / (step.sample_interval_mm or spot_x / 2.0)
+    px_per_mm_x = 1.0 / (
+        step.sample_interval_mm
+        or auto_sample_interval_mm(
+            step.depth_mode, step.line_interval_mm, spot_x, spot_y
+        )
+    )
     px_per_mm_y = 1.0 / spot_y
 
     target_w = max(1, int(size[0] * px_per_mm_x))

@@ -319,6 +319,20 @@ For images, line interval should match or exceed image resolution. If your image
 :::
 <!-- prettier-ignore-end -->
 
+#### Sample Interval
+
+**Sample Interval (mm):**
+
+- Distance between samples along each scan line, in every raster mode
+- In dithering it sets the length of each dot; in power-modulated engraving it sets how often the
+  power changes along the line
+- Smaller = finer detail, larger output files
+- The auto value gives square dots in dithering (it follows the line spacing) and is half the laser
+  spot width in power-modulated modes
+
+**Recommended:** keep the auto value. A sample interval much larger than the line interval makes
+each dot a long dash, which shows up as visible texture on gradations.
+
 #### Scan Direction
 
 **Scan Angle (degrees):**

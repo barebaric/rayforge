@@ -320,6 +320,21 @@ votre image est de 10 pixels/mm (254 DPI), utilisez un intervalle de ligne de 0.
 :::
 <!-- prettier-ignore-end -->
 
+#### Intervalle d'Échantillonnage
+
+**Intervalle d'échantillonnage (mm) :**
+
+- Distance entre les échantillons le long de chaque ligne de balayage, dans tous les modes trame
+- En tramage il définit la longueur de chaque point ; en gravure à puissance modulée, la fréquence
+  des changements de puissance le long de la ligne
+- Plus petit = plus de détails, fichiers de sortie plus volumineux
+- La valeur automatique donne des points carrés en tramage (elle suit l'intervalle de ligne) et vaut
+  la moitié de la largeur du spot laser dans les modes à puissance modulée
+
+**Recommandé :** garde la valeur automatique. Un intervalle d'échantillonnage bien plus grand que
+l'intervalle de ligne transforme chaque point en tiret long, visible comme texture dans les
+dégradés.
+
 #### Direction de Balayage
 
 **Angle de Balayage (degrés) :**
