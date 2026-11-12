@@ -23,10 +23,11 @@ from raygeo.sketch.constraints.perpendicular import (
 from raygeo.sketch.constraints.perpendicular import (
     PerpendicularTarget as SolverPerpendicularTarget,
 )
+from raygeo.sketch.protocols import SolverConstraint
 
 from ..entities import Arc, Circle, Line
 from ..types import EntityID
-from .base import Constraint
+from .base import Constraint, SolverDrawConstraint
 
 if TYPE_CHECKING:
     import cairo
@@ -38,7 +39,7 @@ if TYPE_CHECKING:
     from ..sketch import Sketch
 
 
-class PerpendicularConstraint(Constraint):
+class PerpendicularConstraint(SolverDrawConstraint, Constraint):
     """
     Enforces perpendicularity between two entities.
     - Line/Line: Vectors are at 90 degrees.
@@ -492,7 +493,9 @@ class PerpendicularConstraint(Constraint):
             ctx, registry, to_screen, is_selected, is_hovered, point_radius
         )
 
-    def to_solver_constraint(self, registry: EntityRegistry):
+    def to_solver_constraint(
+        self, registry: EntityRegistry
+    ) -> SolverConstraint | None:
         e1 = registry.get_entity(self.e1_id)
         e2 = registry.get_entity(self.e2_id)
         if e1 is None or e2 is None:

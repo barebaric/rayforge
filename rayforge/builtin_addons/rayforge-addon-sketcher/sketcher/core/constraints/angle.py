@@ -15,10 +15,11 @@ from raygeo.geo.types import Point
 from raygeo.sketch.constraints.angle import (
     AngleConstraint as SolverAngleConstraint,
 )
+from raygeo.sketch.protocols import SolverConstraint
 
 from ..entities import Line
 from ..types import EntityID
-from .base import Constraint
+from .base import Constraint, SolverDrawConstraint
 
 if TYPE_CHECKING:
     import cairo
@@ -42,7 +43,7 @@ def _get_far_point(ix, iy, p1, p2):
     return p1 if d1 > d2 else p2
 
 
-class AngleConstraint(Constraint):
+class AngleConstraint(SolverDrawConstraint, Constraint):
     """
     Enforces a specific angle between two lines.
 
@@ -387,7 +388,9 @@ class AngleConstraint(Constraint):
             ctx, registry, to_screen, is_selected, is_hovered, point_radius
         )
 
-    def to_solver_constraint(self, registry: EntityRegistry):
+    def to_solver_constraint(
+        self, registry: EntityRegistry
+    ) -> SolverConstraint | None:
         e1 = registry.get_entity(self.e1_id)
         e2 = registry.get_entity(self.e2_id)
         if not (isinstance(e1, Line) and isinstance(e2, Line)):

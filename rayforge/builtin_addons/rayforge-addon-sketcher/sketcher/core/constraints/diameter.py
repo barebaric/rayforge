@@ -9,10 +9,11 @@ from raygeo.geo.types import Point
 from raygeo.sketch.constraints.diameter import (
     DiameterConstraint as SolverDiameterConstraint,
 )
+from raygeo.sketch.protocols import SolverConstraint
 
 from ..entities import Circle
 from ..types import EntityID
-from .base import Constraint
+from .base import Constraint, SolverDrawConstraint
 from .radius import RadiusConstraint
 
 if TYPE_CHECKING:
@@ -25,7 +26,7 @@ if TYPE_CHECKING:
     from ..sketch import Sketch
 
 
-class DiameterConstraint(Constraint):
+class DiameterConstraint(SolverDrawConstraint, Constraint):
     """Enforces the diameter of a Circle."""
 
     def __init__(
@@ -203,7 +204,9 @@ class DiameterConstraint(Constraint):
             ctx, registry, to_screen, is_selected, is_hovered, point_radius
         )
 
-    def to_solver_constraint(self, registry: EntityRegistry):
+    def to_solver_constraint(
+        self, registry: EntityRegistry
+    ) -> SolverConstraint | None:
         circle = registry.get_entity(self.circle_id)
         if isinstance(circle, Circle):
             return SolverDiameterConstraint(

@@ -13,10 +13,11 @@ from raygeo.sketch.constraints.symmetry import (
 from raygeo.sketch.constraints.symmetry import (
     SymmetryTarget as SolverSymmetryTarget,
 )
+from raygeo.sketch.protocols import SolverConstraint
 
 from ..entities import Line
 from ..types import EntityID
-from .base import Constraint
+from .base import Constraint, SolverDrawConstraint
 
 
 def draw_symmetry_arrows(
@@ -60,7 +61,7 @@ if TYPE_CHECKING:
     from ..sketch import Sketch
 
 
-class SymmetryConstraint(Constraint):
+class SymmetryConstraint(SolverDrawConstraint, Constraint):
     """
     Enforces symmetry between two points (p1, p2) with respect to:
     1. A Center Point (Point Symmetry)
@@ -280,7 +281,9 @@ class SymmetryConstraint(Constraint):
             ctx, registry, to_screen, is_selected, is_hovered, point_radius
         )
 
-    def to_solver_constraint(self, registry: EntityRegistry):
+    def to_solver_constraint(
+        self, registry: EntityRegistry
+    ) -> SolverConstraint | None:
         if self.center is not None:
             return SolverSymmetryConstraint(
                 self.p1,

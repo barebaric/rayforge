@@ -13,10 +13,11 @@ from raygeo.sketch.constraints.point_on_line import (
 from raygeo.sketch.constraints.point_on_line import (
     PointOnTarget as SolverPointOnTarget,
 )
+from raygeo.sketch.protocols import SolverConstraint
 
 from ..entities import Arc, Circle, Line
 from ..types import EntityID
-from .base import Constraint
+from .base import Constraint, SolverDrawConstraint
 
 if TYPE_CHECKING:
     from ..entities import Entity
@@ -26,7 +27,7 @@ if TYPE_CHECKING:
     from ..sketch import Sketch
 
 
-class PointOnLineConstraint(Constraint):
+class PointOnLineConstraint(SolverDrawConstraint, Constraint):
     """Enforces a point lies on the infinite geometry of a shape."""
 
     def __init__(
@@ -246,7 +247,9 @@ class PointOnLineConstraint(Constraint):
         """Returns the point that lies on the line/shape."""
         return self.point_id
 
-    def to_solver_constraint(self, registry: EntityRegistry):
+    def to_solver_constraint(
+        self, registry: EntityRegistry
+    ) -> SolverConstraint | None:
         shape = registry.get_entity(self.shape_id)
         if isinstance(shape, Line):
             return SolverPointOnLineConstraint(

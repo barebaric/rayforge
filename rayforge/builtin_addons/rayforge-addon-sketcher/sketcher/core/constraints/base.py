@@ -10,6 +10,7 @@ from typing import (
 )
 
 from raygeo.geo.types import Point
+from raygeo.sketch.protocols import SolverConstraint
 
 from rayforge.core.expression import safe_evaluate
 
@@ -25,6 +26,45 @@ if TYPE_CHECKING:
     from ..registry import EntityRegistry
     from ..selection import SketchSelection
     from ..sketch import Sketch
+
+
+class SolverDrawConstraint:
+    """Draws constraints backed by raygeo solver constraints that
+    expose the symbol surface."""
+
+    if TYPE_CHECKING:
+
+        def to_solver_constraint(
+            self, registry: EntityRegistry
+        ) -> SolverConstraint | None: ...
+
+        status: ConstraintStatus
+
+    def _draw_solver_constraint(
+        self,
+        ctx: cairo.Context,
+        registry: EntityRegistry,
+        to_screen: Callable[[Point], Point],
+        is_selected: bool,
+        is_hovered: bool,
+        point_radius: float,
+    ) -> None:
+        """
+        Delegates drawing to the equivalent raygeo solver constraint,
+        which reads this document through the draw context protocol.
+        """
+        constraint = self.to_solver_constraint(registry)
+        if constraint is None:
+            return
+        constraint.status = self.status.value
+        constraint.draw(
+            ctx,
+            SolverDrawContext(registry),
+            to_screen,
+            is_selected,
+            is_hovered,
+            point_radius,
+        )
 
 
 class ConstraintStatus(Enum):
@@ -43,35 +83,36 @@ class SolverDrawContext:
     def __init__(self, registry: EntityRegistry):
         self._registry = registry
 
-    def get_point(self, pid: EntityID) -> Point | None:
+    def get_point(self, id: EntityID) -> Point | None:
         try:
-            point = self._registry.get_point(pid)
+            point = self._registry.get_point(id)
         except IndexError:
             return None
         return (point.x, point.y)
 
-    def point_is_fixed(self, pid: EntityID) -> bool:
+    def point_is_fixed(self, id: EntityID) -> bool:
         try:
-            return self._registry.get_point(pid).fixed
+            return self._registry.get_point(id).fixed
         except IndexError:
             return False
 
     def entity_ids(self) -> list[EntityID]:
         return [entity.id for entity in self._registry.entities]
 
-    def entity_type(self, eid: EntityID) -> str | None:
-        entity = self._registry.get_entity(eid)
+    def entity_type(self, id: EntityID) -> str | None:
+        entity = self._registry.get_entity(id)
         return entity.type if entity else None
 
-    def entity_point_ids(self, eid: EntityID) -> list[EntityID] | None:
-        entity = self._registry.get_entity(eid)
+    def entity_point_ids(self, id: EntityID) -> list[EntityID] | None:
+        entity = self._registry.get_entity(id)
         return entity.get_point_ids() if entity else None
 
-    def point_is_in_text_box_frame(self, pid: EntityID) -> bool:
+    def point_is_in_text_box_frame(self, id: EntityID) -> bool:
         for entity in self._registry.entities:
-            if isinstance(entity, TextBoxEntity):
-                if pid in entity.get_all_frame_point_ids(self._registry):
-                    return True
+            if isinstance(entity, TextBoxEntity) and (
+                id in entity.get_all_frame_point_ids(self._registry)
+            ):
+                return True
         return False
 
 
@@ -275,32 +316,6 @@ class Constraint:
         Draws the visual representation of the constraint on the canvas.
         Default implementation does nothing.
         """
-
-    def _draw_solver_constraint(
-        self,
-        ctx: cairo.Context,
-        registry: EntityRegistry,
-        to_screen: Callable[[Point], Point],
-        is_selected: bool,
-        is_hovered: bool,
-        point_radius: float,
-    ) -> None:
-        """
-        Delegates drawing to the equivalent raygeo solver constraint,
-        which reads this document through the draw context protocol.
-        """
-        constraint: Any = self.to_solver_constraint(registry)
-        if constraint is None:
-            return
-        constraint.status = self.status.value
-        constraint.draw(
-            ctx,
-            SolverDrawContext(registry),
-            to_screen,
-            is_selected,
-            is_hovered,
-            point_radius,
-        )
 
     def update_from_context(self, context: dict[str, Any]):
         """

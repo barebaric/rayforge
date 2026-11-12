@@ -11,10 +11,11 @@ from raygeo.geo.types import Point
 from raygeo.sketch.constraints.equal_distance import (
     EqualDistanceConstraint as SolverEqualDistanceConstraint,
 )
+from raygeo.sketch.protocols import SolverConstraint
 
 from ..entities import Arc, Circle, Line
 from ..types import EntityID
-from .base import Constraint
+from .base import Constraint, SolverDrawConstraint
 
 if TYPE_CHECKING:
     import cairo
@@ -26,7 +27,7 @@ if TYPE_CHECKING:
     from ..sketch import Sketch
 
 
-class EqualDistanceConstraint(Constraint):
+class EqualDistanceConstraint(SolverDrawConstraint, Constraint):
     """Enforces that distance(p1, p2) equals distance(p3, p4)."""
 
     def __init__(
@@ -223,7 +224,9 @@ class EqualDistanceConstraint(Constraint):
             ctx, registry, to_screen, is_selected, is_hovered, point_radius
         )
 
-    def to_solver_constraint(self, registry: EntityRegistry):
+    def to_solver_constraint(
+        self, registry: EntityRegistry
+    ) -> SolverConstraint | None:
         """
         Returns the equivalent raygeo solver constraint, with entity
         references resolved to concrete point ids and the dimensional

@@ -13,10 +13,11 @@ from raygeo.geo.types import Point
 from raygeo.sketch.constraints.equal_length import (
     EqualLengthConstraint as SolverEqualLengthConstraint,
 )
+from raygeo.sketch.protocols import SolverConstraint
 
 from ..entities import Arc, Circle, Ellipse, Line
 from ..types import EntityID
-from .base import Constraint
+from .base import Constraint, SolverDrawConstraint
 
 if TYPE_CHECKING:
     import cairo
@@ -28,7 +29,7 @@ if TYPE_CHECKING:
     from ..sketch import Sketch
 
 
-class EqualLengthConstraint(Constraint):
+class EqualLengthConstraint(SolverDrawConstraint, Constraint):
     """
     Enforces that all entities in a set have the same characteristic length.
     - Line: Length
@@ -279,7 +280,9 @@ class EqualLengthConstraint(Constraint):
             ctx, registry, to_screen, is_selected, is_hovered, point_radius
         )
 
-    def to_solver_constraint(self, registry: EntityRegistry):
+    def to_solver_constraint(
+        self, registry: EntityRegistry
+    ) -> SolverConstraint | None:
         entities = []
         for entity_id in self.entity_ids:
             entity = registry.get_entity(entity_id)

@@ -11,10 +11,11 @@ from raygeo.geo.types import Point
 from raygeo.sketch.constraints.tangent import (
     TangentConstraint as SolverTangentConstraint,
 )
+from raygeo.sketch.protocols import SolverConstraint
 
 from ..entities import Arc, Circle, Line
 from ..types import EntityID
-from .base import Constraint
+from .base import Constraint, SolverDrawConstraint
 
 if TYPE_CHECKING:
     from ..entities import Entity
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
     from ..sketch import Sketch
 
 
-class TangentConstraint(Constraint):
+class TangentConstraint(SolverDrawConstraint, Constraint):
     """
     Enforces tangency between a Line and an Arc/Circle.
     Logic: Distance from shape center to Line equals shape Radius.
@@ -258,7 +259,9 @@ class TangentConstraint(Constraint):
             ctx, registry, to_screen, is_selected, is_hovered, point_radius
         )
 
-    def to_solver_constraint(self, registry: EntityRegistry):
+    def to_solver_constraint(
+        self, registry: EntityRegistry
+    ) -> SolverConstraint | None:
         line = registry.get_entity(self.line_id)
         shape = registry.get_entity(self.shape_id)
         if not isinstance(line, Line) or not isinstance(shape, (Arc, Circle)):

@@ -10,10 +10,11 @@ from raygeo.geo.types import Point
 from raygeo.sketch.constraints.point_on_curve import (
     PointOnCurveConstraint as SolverPointOnCurveConstraint,
 )
+from raygeo.sketch.protocols import SolverConstraint
 
 from ..entities import Bezier
 from ..types import EntityID
-from .base import Constraint
+from .base import Constraint, SolverDrawConstraint
 
 if TYPE_CHECKING:
     from ..entities import Entity
@@ -118,7 +119,7 @@ def _get_curve_coeffs(bez: Bezier, reg: EntityRegistry) -> CurveCoeffs:
     return xs, ys
 
 
-class PointOnCurveConstraint(Constraint):
+class PointOnCurveConstraint(SolverDrawConstraint, Constraint):
     """Enforces a point lies on a Bezier curve."""
 
     def __init__(
@@ -252,7 +253,9 @@ class PointOnCurveConstraint(Constraint):
         """Returns the point that lies on the curve."""
         return self.point_id
 
-    def to_solver_constraint(self, registry: EntityRegistry):
+    def to_solver_constraint(
+        self, registry: EntityRegistry
+    ) -> SolverConstraint | None:
         bez = registry.get_entity(self.shape_id)
         if not isinstance(bez, Bezier):
             return None

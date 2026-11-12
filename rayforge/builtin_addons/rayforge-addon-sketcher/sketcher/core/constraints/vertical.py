@@ -10,10 +10,11 @@ from raygeo.geo.types import Point
 from raygeo.sketch.constraints.vertical import (
     VerticalConstraint as SolverVerticalConstraint,
 )
+from raygeo.sketch.protocols import SolverConstraint
 
 from ..entities import Line
 from ..types import EntityID
-from .base import Constraint
+from .base import Constraint, SolverDrawConstraint
 
 if TYPE_CHECKING:
     from ..entities import Entity
@@ -23,7 +24,7 @@ if TYPE_CHECKING:
     from ..sketch import Sketch
 
 
-class VerticalConstraint(Constraint):
+class VerticalConstraint(SolverDrawConstraint, Constraint):
     """Enforces two points have the same X coordinate."""
 
     def __init__(self, p1: EntityID, p2: EntityID, user_visible: bool = True):
@@ -142,7 +143,9 @@ class VerticalConstraint(Constraint):
             ctx, registry, to_screen, is_selected, is_hovered, point_radius
         )
 
-    def to_solver_constraint(self, registry: EntityRegistry):
+    def to_solver_constraint(
+        self, registry: EntityRegistry
+    ) -> SolverConstraint | None:
         """
         Returns the equivalent raygeo solver constraint, with entity
         references resolved to concrete point ids and the dimensional

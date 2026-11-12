@@ -10,10 +10,11 @@ from raygeo.geo.types import Point
 from raygeo.sketch.constraints.radius import (
     RadiusConstraint as SolverRadiusConstraint,
 )
+from raygeo.sketch.protocols import SolverConstraint
 
 from ..entities import Arc, Circle
 from ..types import EntityID
-from .base import Constraint
+from .base import Constraint, SolverDrawConstraint
 
 if TYPE_CHECKING:
     from ..entities import Entity
@@ -23,7 +24,7 @@ if TYPE_CHECKING:
     from ..sketch import Sketch
 
 
-class RadiusConstraint(Constraint):
+class RadiusConstraint(SolverDrawConstraint, Constraint):
     """Enforces radius of an Arc or Circle."""
 
     def __init__(
@@ -273,7 +274,9 @@ class RadiusConstraint(Constraint):
             ctx, registry, to_screen, is_selected, is_hovered, point_radius
         )
 
-    def to_solver_constraint(self, registry: EntityRegistry):
+    def to_solver_constraint(
+        self, registry: EntityRegistry
+    ) -> SolverConstraint | None:
         entity = registry.get_entity(self.entity_id)
         if isinstance(entity, Arc):
             return SolverRadiusConstraint(

@@ -11,9 +11,10 @@ from raygeo.geo.types import Point
 from raygeo.sketch.constraints.coincident import (
     CoincidentConstraint as SolverCoincidentConstraint,
 )
+from raygeo.sketch.protocols import SolverConstraint
 
 from ..types import EntityID
-from .base import Constraint
+from .base import Constraint, SolverDrawConstraint
 
 if TYPE_CHECKING:
     import cairo
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
     from ..sketch import Sketch
 
 
-class CoincidentConstraint(Constraint):
+class CoincidentConstraint(SolverDrawConstraint, Constraint):
     """Enforces two points are at the same location."""
 
     def __init__(self, p1: EntityID, p2: EntityID, user_visible: bool = True):
@@ -124,7 +125,9 @@ class CoincidentConstraint(Constraint):
         """Returns p1 as the draggable point for coincident constraints."""
         return self.p1
 
-    def to_solver_constraint(self, registry: EntityRegistry):
+    def to_solver_constraint(
+        self, registry: EntityRegistry
+    ) -> SolverConstraint | None:
         """
         Returns the equivalent raygeo solver constraint, with entity
         references resolved to concrete point ids and the dimensional

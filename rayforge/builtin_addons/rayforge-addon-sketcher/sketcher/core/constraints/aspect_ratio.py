@@ -10,10 +10,11 @@ from raygeo.geo.types import Point
 from raygeo.sketch.constraints.aspect_ratio import (
     AspectRatioConstraint as SolverAspectRatioConstraint,
 )
+from raygeo.sketch.protocols import SolverConstraint
 
 from ..entities import Line
 from ..types import EntityID
-from .base import Constraint
+from .base import Constraint, SolverDrawConstraint
 
 if TYPE_CHECKING:
     from ..entities import Entity
@@ -23,7 +24,7 @@ if TYPE_CHECKING:
     from ..sketch import Sketch
 
 
-class AspectRatioConstraint(Constraint):
+class AspectRatioConstraint(SolverDrawConstraint, Constraint):
     """Enforces that distance(p1, p2) / distance(p3, p4) equals ratio."""
 
     def __init__(
@@ -246,7 +247,9 @@ class AspectRatioConstraint(Constraint):
             ctx, registry, to_screen, is_selected, is_hovered, point_radius
         )
 
-    def to_solver_constraint(self, registry: EntityRegistry):
+    def to_solver_constraint(
+        self, registry: EntityRegistry
+    ) -> SolverConstraint | None:
         return SolverAspectRatioConstraint(
             self.p1, self.p2, self.p3, self.p4, self.ratio
         )
