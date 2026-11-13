@@ -9,16 +9,17 @@ from typing import (
     Any,
 )
 
-from gi.repository import PangoCairo
 from raygeo.geo.shape.arc import normalize_angle
 from raygeo.geo.shape.line import get_line_line_intersection
 from raygeo.geo.types import Point
-
-from rayforge.ui_gtk.shared.text import create_text_layout
+from raygeo.sketch.constraints.angle import (
+    AngleConstraint as SolverAngleConstraint,
+)
+from raygeo.sketch.protocols import SolverConstraint
 
 from ..entities import Line
 from ..types import EntityID
-from .base import Constraint, ConstraintStatus
+from .base import Constraint, SolverDrawConstraint
 
 if TYPE_CHECKING:
     import cairo
@@ -42,7 +43,7 @@ def _get_far_point(ix, iy, p1, p2):
     return p1 if d1 > d2 else p2
 
 
-class AngleConstraint(Constraint):
+class AngleConstraint(SolverDrawConstraint, Constraint):
     """
     Enforces a specific angle between two lines.
 
@@ -383,69 +384,23 @@ class AngleConstraint(Constraint):
         is_hovered: bool = False,
         point_radius: float = 5.0,
     ) -> None:
-        visuals = self.get_visuals(registry, to_screen)
-        if visuals is None:
-            return
-
-        sx, sy, anchor_ang, other_ang = visuals
-
-        ctx.save()
-        ctx.set_line_width(1.5)
-
-        ctx.new_sub_path()
-        ctx.arc(sx, sy, ARC_RADIUS, anchor_ang, other_ang)
-
-        if is_selected:
-            self._draw_selection_underlay(ctx)
-
-        if self.status == ConstraintStatus.CONFLICTING:
-            self._draw_conflict_underlay(ctx)
-
-        self._set_color(ctx, is_hovered)
-        ctx.stroke()
-
-        label = self._format_value() + "°"
-        layout = create_text_layout(ctx, label)
-        ext, _ = layout.get_pixel_extents()
-
-        ccw_diff = normalize_angle(other_ang - anchor_ang)
-
-        mid = anchor_ang + ccw_diff / 2
-        label_x = sx + math.cos(mid) * LABEL_RADIUS
-        label_y = sy + math.sin(mid) * LABEL_RADIUS
-
-        if is_selected:
-            ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)
-        elif is_hovered:
-            ctx.set_source_rgba(1.0, 0.95, 0.85, 0.9)
-        elif self.status == ConstraintStatus.CONFLICTING:
-            ctx.set_source_rgba(1.0, 0.6, 0.6, 0.9)
-        elif self.status == ConstraintStatus.ERROR:
-            ctx.set_source_rgba(1.0, 0.8, 0.8, 0.9)
-        elif self.status == ConstraintStatus.EXPRESSION_BASED:
-            ctx.set_source_rgba(1.0, 0.9, 0.7, 0.9)
-        else:
-            ctx.set_source_rgba(1, 1, 1, 0.8)
-
-        bg_x = label_x - ext.width / 2 - 4
-        bg_y = label_y - ext.height / 2 - 4
-        ctx.rectangle(bg_x, bg_y, ext.width + 8, ext.height + 8)
-        ctx.fill()
-        ctx.new_path()
-
-        if self.status in (
-            ConstraintStatus.ERROR,
-            ConstraintStatus.CONFLICTING,
-        ):
-            ctx.set_source_rgb(0.8, 0.0, 0.0)
-        else:
-            ctx.set_source_rgb(0, 0, 0.5)
-
-        ctx.move_to(
-            label_x - ext.width / 2 - ext.x,
-            label_y - ext.height / 2 - ext.y,
+        self._draw_solver_constraint(
+            ctx, registry, to_screen, is_selected, is_hovered, point_radius
         )
-        PangoCairo.show_layout(ctx, layout)
-        ctx.new_path()
 
-        ctx.restore()
+    def to_solver_constraint(
+        self, registry: EntityRegistry
+    ) -> SolverConstraint | None:
+        e1 = registry.get_entity(self.e1_id)
+        e2 = registry.get_entity(self.e2_id)
+        if not (isinstance(e1, Line) and isinstance(e2, Line)):
+            return None
+        return SolverAngleConstraint(
+            e1.p1_idx,
+            e1.p2_idx,
+            e2.p1_idx,
+            e2.p2_idx,
+            self.value,
+            self.e1_far_idx,
+            self.e2_far_idx,
+        )

@@ -2,6 +2,7 @@ import math
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Optional
 
+from raygeo.geo.shape.bezier import compute_constrained_control_offset
 from raygeo.geo.shape.rect import is_point_inside_rect
 from raygeo.geo.types import Point as GeoPoint
 from raygeo.geo.types import Rect
@@ -130,27 +131,10 @@ class Point:
         other_cp: tuple[float, float] | None,
         symmetric: bool,
     ) -> tuple[float, float]:
-        if symmetric:
-            return (-modified_cp[0], -modified_cp[1])
-        else:
-            if other_cp is None:
-                return (-modified_cp[0], -modified_cp[1])
-            other_length = math.sqrt(other_cp[0] ** 2 + other_cp[1] ** 2)
-            if other_length < 1e-10:
-                return (-modified_cp[0], -modified_cp[1])
-            modified_length = math.sqrt(
-                modified_cp[0] ** 2 + modified_cp[1] ** 2
-            )
-            if modified_length < 1e-10:
-                return (0.0, 0.0)
-            direction = (
-                -modified_cp[0] / modified_length,
-                -modified_cp[1] / modified_length,
-            )
-            return (
-                direction[0] * other_length,
-                direction[1] * other_length,
-            )
+        other = None if other_cp is None else (other_cp[0], other_cp[1])
+        return compute_constrained_control_offset(
+            modified_cp, other, symmetric
+        )
 
     def enforce_constraint(
         self,

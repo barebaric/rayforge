@@ -17,10 +17,17 @@ from raygeo.geo.shape.line import (
     is_point_on_line_segment,
 )
 from raygeo.geo.types import Point
+from raygeo.sketch.constraints.perpendicular import (
+    PerpendicularConstraint as SolverPerpendicularConstraint,
+)
+from raygeo.sketch.constraints.perpendicular import (
+    PerpendicularTarget as SolverPerpendicularTarget,
+)
+from raygeo.sketch.protocols import SolverConstraint
 
 from ..entities import Arc, Circle, Line
 from ..types import EntityID
-from .base import Constraint, ConstraintStatus
+from .base import Constraint, SolverDrawConstraint
 
 if TYPE_CHECKING:
     import cairo
@@ -32,7 +39,7 @@ if TYPE_CHECKING:
     from ..sketch import Sketch
 
 
-class PerpendicularConstraint(Constraint):
+class PerpendicularConstraint(SolverDrawConstraint, Constraint):
     """
     Enforces perpendicularity between two entities.
     - Line/Line: Vectors are at 90 degrees.
@@ -482,57 +489,50 @@ class PerpendicularConstraint(Constraint):
         is_hovered: bool = False,
         point_radius: float = 5.0,
     ) -> None:
-        data = self.get_visuals(registry, to_screen)
-        if not data:
-            return
+        self._draw_solver_constraint(
+            ctx, registry, to_screen, is_selected, is_hovered, point_radius
+        )
 
-        sx, sy, ang1, ang2 = data
+    def to_solver_constraint(
+        self, registry: EntityRegistry
+    ) -> SolverConstraint | None:
+        e1 = registry.get_entity(self.e1_id)
+        e2 = registry.get_entity(self.e2_id)
+        if e1 is None or e2 is None:
+            return None
 
-        ctx.save()
-        ctx.set_line_width(1.5)
+        if isinstance(e1, Line) and isinstance(e2, Line):
+            return SolverPerpendicularConstraint(
+                SolverPerpendicularTarget.LineLine(
+                    a1=e1.p1_idx, a2=e1.p2_idx, b1=e2.p1_idx, b2=e2.p2_idx
+                )
+            )
 
-        if ang1 is not None and ang2 is not None:
-            radius = 16.0
-            diff = ang2 - ang1
-            while diff <= -math.pi:
-                diff += 2 * math.pi
-            while diff > math.pi:
-                diff -= 2 * math.pi
+        line, shape = None, None
+        if isinstance(e1, Line) and isinstance(e2, (Arc, Circle)):
+            line, shape = e1, e2
+        elif isinstance(e2, Line) and isinstance(e1, (Arc, Circle)):
+            line, shape = e2, e1
+        if line is not None and shape is not None:
+            return SolverPerpendicularConstraint(
+                SolverPerpendicularTarget.LineCenter(
+                    l1=line.p1_idx, l2=line.p2_idx, center=shape.center_idx
+                )
+            )
 
-            ctx.new_sub_path()
-            if diff > 0:
-                ctx.arc(sx, sy, radius, ang1, ang2)
-            else:
-                ctx.arc_negative(sx, sy, radius, ang1, ang2)
+        if isinstance(e1, (Arc, Circle)) and isinstance(e2, (Arc, Circle)):
+            return SolverPerpendicularConstraint(
+                SolverPerpendicularTarget.Circles(
+                    c1=e1.center_idx,
+                    r1_point=self._radius_point(e1),
+                    c2=e2.center_idx,
+                    r2_point=self._radius_point(e2),
+                )
+            )
+        return None
 
-            if is_selected:
-                self._draw_selection_underlay(ctx)
-
-            if self.status == ConstraintStatus.CONFLICTING:
-                self._draw_conflict_underlay(ctx)
-
-            self._set_color(ctx, is_hovered)
-            ctx.stroke()
-
-            # Dot
-            mid = ang1 + diff / 2
-            dx = sx + math.cos(mid) * radius * 0.6
-            dy = sy + math.sin(mid) * radius * 0.6
-            ctx.new_sub_path()
-            ctx.arc(dx, dy, 2.0, 0, 2 * math.pi)
-            ctx.fill()
-        else:
-            sz = 8.0
-            ctx.new_sub_path()
-            ctx.rectangle(sx - sz, sy - sz, sz * 2, sz * 2)
-
-            if is_selected:
-                self._draw_selection_underlay(ctx)
-
-            if self.status == ConstraintStatus.CONFLICTING:
-                self._draw_conflict_underlay(ctx)
-
-            self._set_color(ctx, is_hovered)
-            ctx.stroke()
-
-        ctx.restore()
+    @staticmethod
+    def _radius_point(shape):
+        if isinstance(shape, Arc):
+            return shape.start_idx
+        return shape.radius_pt_idx

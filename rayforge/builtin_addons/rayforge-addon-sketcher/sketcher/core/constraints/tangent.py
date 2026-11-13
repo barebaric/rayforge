@@ -8,10 +8,14 @@ from typing import TYPE_CHECKING, Any
 import cairo
 from raygeo.geo.shape.line import get_line_closest_point
 from raygeo.geo.types import Point
+from raygeo.sketch.constraints.tangent import (
+    TangentConstraint as SolverTangentConstraint,
+)
+from raygeo.sketch.protocols import SolverConstraint
 
 from ..entities import Arc, Circle, Line
 from ..types import EntityID
-from .base import Constraint, ConstraintStatus
+from .base import Constraint, SolverDrawConstraint
 
 if TYPE_CHECKING:
     from ..entities import Entity
@@ -21,7 +25,7 @@ if TYPE_CHECKING:
     from ..sketch import Sketch
 
 
-class TangentConstraint(Constraint):
+class TangentConstraint(SolverDrawConstraint, Constraint):
     """
     Enforces tangency between a Line and an Arc/Circle.
     Logic: Distance from shape center to Line equals shape Radius.
@@ -251,60 +255,21 @@ class TangentConstraint(Constraint):
         is_hovered: bool = False,
         point_radius: float = 5.0,
     ) -> None:
+        self._draw_solver_constraint(
+            ctx, registry, to_screen, is_selected, is_hovered, point_radius
+        )
+
+    def to_solver_constraint(
+        self, registry: EntityRegistry
+    ) -> SolverConstraint | None:
         line = registry.get_entity(self.line_id)
         shape = registry.get_entity(self.shape_id)
-
-        if not (
-            line
-            and shape
-            and isinstance(line, Line)
-            and isinstance(shape, (Arc, Circle))
-        ):
-            return
-
-        p1 = registry.get_point(line.p1_idx)
-        p2 = registry.get_point(line.p2_idx)
-        center = registry.get_point(shape.center_idx)
-
-        # Find closest point on infinite line from center (in model space)
-        tangent_mx, tangent_my = get_line_closest_point(
-            (p1.x, p1.y), (p2.x, p2.y), center.x, center.y
+        if not isinstance(line, Line) or not isinstance(shape, (Arc, Circle)):
+            return None
+        if isinstance(shape, Arc):
+            radius_point = shape.start_idx
+        else:
+            radius_point = shape.radius_pt_idx
+        return SolverTangentConstraint(
+            line.p1_idx, line.p2_idx, shape.center_idx, radius_point
         )
-
-        sx_tangent, sy_tangent = to_screen((tangent_mx, tangent_my))
-        sx_center, sy_center = to_screen((center.x, center.y))
-
-        angle = math.atan2(sy_tangent - sy_center, sx_tangent - sx_center)
-
-        offset = 15.0
-        sx = sx_tangent + offset * math.cos(angle)
-        sy = sy_tangent + offset * math.sin(angle)
-
-        ctx.save()
-        ctx.set_line_width(1.5)
-
-        ctx.translate(sx, sy)
-        ctx.rotate(angle + math.pi / 2.0)
-
-        radius = 6.0
-
-        ctx.new_sub_path()
-        ctx.arc(
-            0,
-            -radius,
-            radius,
-            math.pi / 2 - math.pi / 3,
-            math.pi / 2 + math.pi / 3,
-        )
-        ctx.move_to(-radius * 1.2, 0)
-        ctx.line_to(radius * 1.2, 0)
-
-        if is_selected:
-            self._draw_selection_underlay(ctx)
-
-        if self.status == ConstraintStatus.CONFLICTING:
-            self._draw_conflict_underlay(ctx)
-
-        self._set_color(ctx, is_hovered)
-        ctx.stroke()
-        ctx.restore()

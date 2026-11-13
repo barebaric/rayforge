@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 from raygeo.geo import Geometry
 from raygeo.geo.shape.circle import (
     does_circle_intersect_rect,
+    get_circle_signed_distance,
     is_circle_inside_rect,
 )
 from raygeo.geo.shape.polygon import get_circle_polygon
@@ -64,8 +65,9 @@ class Circle(Entity):
         if not (center and radius_pt):
             return 0.0
         radius = math.hypot(radius_pt.x - center.x, radius_pt.y - center.y)
-        dist_to_point = math.hypot(point.x - center.x, point.y - center.y)
-        return dist_to_point - radius
+        return get_circle_signed_distance(
+            (point.x, point.y), center.pos(), radius
+        )
 
     def is_radius_entity(self) -> bool:
         return True
@@ -112,8 +114,8 @@ class Circle(Entity):
         if radius == 0.0:
             return False
 
-        dist_mouse = math.hypot(mx - center.x, my - center.y)
-        return abs(dist_mouse - radius) < threshold
+        signed = get_circle_signed_distance((mx, my), center.pos(), radius)
+        return abs(signed) < threshold
 
     def get_ignorable_unconstrained_points(self) -> list[EntityID]:
         """

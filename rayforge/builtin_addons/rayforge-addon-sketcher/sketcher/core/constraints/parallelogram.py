@@ -4,6 +4,9 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
 from raygeo.geo.types import Point
+from raygeo.sketch.constraints.parallelogram import (
+    ParallelogramConstraint as SolverParallelogramConstraint,
+)
 
 from ..types import EntityID
 from .base import Constraint
@@ -106,3 +109,13 @@ class ParallelogramConstraint(Constraint):
             self.p_height: [(1.0, 0.0), (0.0, 1.0)],
             self.p4: [(-1.0, 0.0), (0.0, -1.0)],
         }
+
+    def to_solver_constraint(self, registry: EntityRegistry):
+        """
+        Returns the equivalent raygeo solver constraint, with entity
+        references resolved to concrete point ids and the dimensional
+        value already resolved.
+        """
+        return SolverParallelogramConstraint(
+            self.p_origin, self.p_width, self.p_height, self.p4
+        )

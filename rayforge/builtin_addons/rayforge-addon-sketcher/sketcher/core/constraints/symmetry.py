@@ -7,10 +7,17 @@ from typing import TYPE_CHECKING, Any
 
 import cairo
 from raygeo.geo.types import Point
+from raygeo.sketch.constraints.symmetry import (
+    SymmetryConstraint as SolverSymmetryConstraint,
+)
+from raygeo.sketch.constraints.symmetry import (
+    SymmetryTarget as SolverSymmetryTarget,
+)
+from raygeo.sketch.protocols import SolverConstraint
 
 from ..entities import Line
 from ..types import EntityID
-from .base import Constraint, ConstraintStatus
+from .base import Constraint, SolverDrawConstraint
 
 
 def draw_symmetry_arrows(
@@ -54,7 +61,7 @@ if TYPE_CHECKING:
     from ..sketch import Sketch
 
 
-class SymmetryConstraint(Constraint):
+class SymmetryConstraint(SolverDrawConstraint, Constraint):
     """
     Enforces symmetry between two points (p1, p2) with respect to:
     1. A Center Point (Point Symmetry)
@@ -270,27 +277,26 @@ class SymmetryConstraint(Constraint):
         is_hovered: bool = False,
         point_radius: float = 5.0,
     ) -> None:
-        try:
-            p1 = registry.get_point(self.p1)
-            p2 = registry.get_point(self.p2)
-        except IndexError:
-            return
+        self._draw_solver_constraint(
+            ctx, registry, to_screen, is_selected, is_hovered, point_radius
+        )
 
-        s1 = to_screen((p1.x, p1.y))
-        s2 = to_screen((p2.x, p2.y))
-
-        ctx.save()
-        ctx.set_line_width(1.5)
-        ctx.new_sub_path()
-
-        draw_symmetry_arrows(ctx, s1, s2)
-
-        if is_selected:
-            self._draw_selection_underlay(ctx)
-
-        if self.status == ConstraintStatus.CONFLICTING:
-            self._draw_conflict_underlay(ctx)
-
-        self._set_color(ctx, is_hovered)
-        ctx.stroke()
-        ctx.restore()
+    def to_solver_constraint(
+        self, registry: EntityRegistry
+    ) -> SolverConstraint | None:
+        if self.center is not None:
+            return SolverSymmetryConstraint(
+                self.p1,
+                self.p2,
+                SolverSymmetryTarget.Point(center=self.center),
+            )
+        if self.axis is not None:
+            axis = registry.get_entity(self.axis)
+            if not isinstance(axis, Line):
+                return None
+            return SolverSymmetryConstraint(
+                self.p1,
+                self.p2,
+                SolverSymmetryTarget.Line(l1=axis.p1_idx, l2=axis.p2_idx),
+            )
+        return None

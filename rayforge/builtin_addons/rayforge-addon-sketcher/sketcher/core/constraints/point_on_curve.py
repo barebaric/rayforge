@@ -7,10 +7,14 @@ from typing import TYPE_CHECKING, Any
 
 import cairo
 from raygeo.geo.types import Point
+from raygeo.sketch.constraints.point_on_curve import (
+    PointOnCurveConstraint as SolverPointOnCurveConstraint,
+)
+from raygeo.sketch.protocols import SolverConstraint
 
-from ..entities import Bezier, TextBoxEntity
+from ..entities import Bezier
 from ..types import EntityID
-from .base import Constraint, ConstraintStatus
+from .base import Constraint, SolverDrawConstraint
 
 if TYPE_CHECKING:
     from ..entities import Entity
@@ -115,7 +119,7 @@ def _get_curve_coeffs(bez: Bezier, reg: EntityRegistry) -> CurveCoeffs:
     return xs, ys
 
 
-class PointOnCurveConstraint(Constraint):
+class PointOnCurveConstraint(SolverDrawConstraint, Constraint):
     """Enforces a point lies on a Bezier curve."""
 
     def __init__(
@@ -241,40 +245,34 @@ class PointOnCurveConstraint(Constraint):
         is_hovered: bool = False,
         point_radius: float = 5.0,
     ) -> None:
-        # Hide constraint if its point is part of a text box
-        text_box_point_ids = set()
-        for entity in registry.entities:
-            if isinstance(entity, TextBoxEntity):
-                text_box_point_ids.update(
-                    entity.get_all_frame_point_ids(registry)
-                )
-        if self.point_id in text_box_point_ids:
-            return
-
-        try:
-            p = registry.get_point(self.point_id)
-        except IndexError:
-            return
-
-        sx, sy = to_screen((p.x, p.y))
-
-        ctx.save()
-        ctx.set_line_width(1.5)
-
-        radius = point_radius + 4
-        ctx.new_sub_path()
-        ctx.arc(sx, sy, radius, 0, 2 * math.pi)
-
-        if is_selected:
-            self._draw_selection_underlay(ctx)
-
-        if self.status == ConstraintStatus.CONFLICTING:
-            self._draw_conflict_underlay(ctx)
-
-        self._set_color(ctx, is_hovered)
-        ctx.stroke()
-        ctx.restore()
+        self._draw_solver_constraint(
+            ctx, registry, to_screen, is_selected, is_hovered, point_radius
+        )
 
     def get_draggable_point(self) -> EntityID:
         """Returns the point that lies on the curve."""
         return self.point_id
+
+    def to_solver_constraint(
+        self, registry: EntityRegistry
+    ) -> SolverConstraint | None:
+        bez = registry.get_entity(self.shape_id)
+        if not isinstance(bez, Bezier):
+            return None
+        if bez.cp1 is not None:
+            cp1_offset = (bez.cp1[0], bez.cp1[1])
+        else:
+            cp1_offset = (0.0, 0.0)
+        if bez.cp2 is not None:
+            cp2_offset = (bez.cp2[0], bez.cp2[1])
+        else:
+            cp2_offset = (0.0, 0.0)
+        is_line = bez.cp1 is None and bez.cp2 is None
+        return SolverPointOnCurveConstraint(
+            self.point_id,
+            bez.start_idx,
+            bez.end_idx,
+            cp1_offset,
+            cp2_offset,
+            is_line,
+        )

@@ -8,9 +8,13 @@ from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
 from raygeo.geo.types import Point
+from raygeo.sketch.constraints.coincident import (
+    CoincidentConstraint as SolverCoincidentConstraint,
+)
+from raygeo.sketch.protocols import SolverConstraint
 
 from ..types import EntityID
-from .base import Constraint, ConstraintStatus
+from .base import Constraint, SolverDrawConstraint
 
 if TYPE_CHECKING:
     import cairo
@@ -21,7 +25,7 @@ if TYPE_CHECKING:
     from ..sketch import Sketch
 
 
-class CoincidentConstraint(Constraint):
+class CoincidentConstraint(SolverDrawConstraint, Constraint):
     """Enforces two points are at the same location."""
 
     def __init__(self, p1: EntityID, p2: EntityID, user_visible: bool = True):
@@ -113,40 +117,20 @@ class CoincidentConstraint(Constraint):
         is_hovered: bool = False,
         point_radius: float = 5.0,
     ) -> None:
-        # Determine which point to draw on. Prefer the non-origin point if
-        # one is the origin, to avoid clutter on the origin.
-        # We don't have access to sketch.origin_id directly here without the
-        # sketch object, but usually point 0 is origin.
-        # Assuming p1 or p2 exists in registry.
-        try:
-            p = registry.get_point(self.p1)
-            p2 = registry.get_point(self.p2)
-        except IndexError:
-            return
-
-        # Heuristic: if p1 is fixed (likely origin), draw on p2.
-        if p.fixed and not p2.fixed:
-            p = p2
-
-        sx, sy = to_screen((p.x, p.y))
-
-        ctx.save()
-        ctx.set_line_width(1.5)
-
-        radius = point_radius + 4
-        ctx.new_sub_path()
-        ctx.arc(sx, sy, radius, 0, 2 * math.pi)
-
-        if is_selected:
-            self._draw_selection_underlay(ctx)
-
-        if self.status == ConstraintStatus.CONFLICTING:
-            self._draw_conflict_underlay(ctx)
-
-        self._set_color(ctx, is_hovered)
-        ctx.stroke()
-        ctx.restore()
+        self._draw_solver_constraint(
+            ctx, registry, to_screen, is_selected, is_hovered, point_radius
+        )
 
     def get_draggable_point(self) -> EntityID:
         """Returns p1 as the draggable point for coincident constraints."""
         return self.p1
+
+    def to_solver_constraint(
+        self, registry: EntityRegistry
+    ) -> SolverConstraint | None:
+        """
+        Returns the equivalent raygeo solver constraint, with entity
+        references resolved to concrete point ids and the dimensional
+        value already resolved.
+        """
+        return SolverCoincidentConstraint(self.p1, self.p2)

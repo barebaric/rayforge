@@ -7,10 +7,14 @@ from typing import TYPE_CHECKING, Any
 
 import cairo
 from raygeo.geo.types import Point
+from raygeo.sketch.constraints.vertical import (
+    VerticalConstraint as SolverVerticalConstraint,
+)
+from raygeo.sketch.protocols import SolverConstraint
 
 from ..entities import Line
 from ..types import EntityID
-from .base import Constraint, ConstraintStatus
+from .base import Constraint, SolverDrawConstraint
 
 if TYPE_CHECKING:
     from ..entities import Entity
@@ -20,7 +24,7 @@ if TYPE_CHECKING:
     from ..sketch import Sketch
 
 
-class VerticalConstraint(Constraint):
+class VerticalConstraint(SolverDrawConstraint, Constraint):
     """Enforces two points have the same X coordinate."""
 
     def __init__(self, p1: EntityID, p2: EntityID, user_visible: bool = True):
@@ -135,31 +139,16 @@ class VerticalConstraint(Constraint):
         is_hovered: bool = False,
         point_radius: float = 5.0,
     ) -> None:
-        try:
-            p1 = registry.get_point(self.p1)
-            p2 = registry.get_point(self.p2)
-        except IndexError:
-            return
+        self._draw_solver_constraint(
+            ctx, registry, to_screen, is_selected, is_hovered, point_radius
+        )
 
-        s1 = to_screen((p1.x, p1.y))
-        s2 = to_screen((p2.x, p2.y))
-
-        t_marker = 0.2
-        mx = s1[0] + (s2[0] - s1[0]) * t_marker
-        my = s1[1] + (s2[1] - s1[1]) * t_marker
-
-        size = 8
-        ctx.save()
-        ctx.set_line_width(2)
-        ctx.move_to(mx + 10, my - size)
-        ctx.line_to(mx + 10, my + size)
-
-        if is_selected:
-            self._draw_selection_underlay(ctx)
-
-        if self.status == ConstraintStatus.CONFLICTING:
-            self._draw_conflict_underlay(ctx)
-
-        self._set_color(ctx, is_hovered)
-        ctx.stroke()
-        ctx.restore()
+    def to_solver_constraint(
+        self, registry: EntityRegistry
+    ) -> SolverConstraint | None:
+        """
+        Returns the equivalent raygeo solver constraint, with entity
+        references resolved to concrete point ids and the dimensional
+        value already resolved.
+        """
+        return SolverVerticalConstraint(self.p1, self.p2)

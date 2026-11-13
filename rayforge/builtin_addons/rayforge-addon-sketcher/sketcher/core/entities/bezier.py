@@ -3,7 +3,11 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
 from raygeo.geo import Geometry
-from raygeo.geo.shape.bezier import get_bezier_closest_point
+from raygeo.geo.shape.bezier import (
+    get_bezier_closest_point,
+    get_bezier_samples,
+    get_bezier_tangent,
+)
 from raygeo.geo.shape.line import (
     does_line_segment_intersect_rect,
     get_line_segment_closest_point,
@@ -165,8 +169,20 @@ class Bezier(Entity):
             registry
         )
         if point_id == start.id:
-            return (cp1_x - start.x, cp1_y - start.y)
-        return (end.x - cp2_x, end.y - cp2_y)
+            return get_bezier_tangent(
+                (start.x, start.y),
+                (cp1_x, cp1_y),
+                (cp2_x, cp2_y),
+                (end.x, end.y),
+                0.0,
+            )
+        return get_bezier_tangent(
+            (start.x, start.y),
+            (cp1_x, cp1_y),
+            (cp2_x, cp2_y),
+            (end.x, end.y),
+            1.0,
+        )
 
     def signed_distance_to(
         self, point: "Point", registry: "EntityRegistry"
@@ -243,8 +259,12 @@ class Bezier(Entity):
         cp1_x, cp1_y, cp2_x, cp2_y = self.get_control_points_or_endpoints(
             registry
         )
-        points = self._sample_bezier(
-            start.x, start.y, cp1_x, cp1_y, cp2_x, cp2_y, end.x, end.y, 20
+        points = get_bezier_samples(
+            (start.x, start.y),
+            (cp1_x, cp1_y),
+            (cp2_x, cp2_y),
+            (end.x, end.y),
+            20,
         )
 
         min_dist_sq = float("inf")
@@ -279,8 +299,12 @@ class Bezier(Entity):
         cp1_x, cp1_y, cp2_x, cp2_y = self.get_control_points_or_endpoints(
             registry
         )
-        points = self._sample_bezier(
-            start.x, start.y, cp1_x, cp1_y, cp2_x, cp2_y, end.x, end.y, 20
+        points = get_bezier_samples(
+            (start.x, start.y),
+            (cp1_x, cp1_y),
+            (cp2_x, cp2_y),
+            (end.x, end.y),
+            20,
         )
         if not points:
             return (0.0, 0.0, 0.0, 0.0)
@@ -290,32 +314,6 @@ class Bezier(Entity):
         min_y = min(p[1] for p in points)
         max_y = max(p[1] for p in points)
         return (min_x, min_y, max_x, max_y)
-
-    def _sample_bezier(
-        self,
-        x0: float,
-        y0: float,
-        x1: float,
-        y1: float,
-        x2: float,
-        y2: float,
-        x3: float,
-        y3: float,
-        num_samples: int,
-    ) -> list[tuple]:
-        points = []
-        for i in range(num_samples + 1):
-            t = i / num_samples
-            mt = 1 - t
-            mt2 = mt * mt
-            mt3 = mt2 * mt
-            t2 = t * t
-            t3 = t2 * t
-
-            x = mt3 * x0 + 3 * mt2 * t * x1 + 3 * mt * t2 * x2 + t3 * x3
-            y = mt3 * y0 + 3 * mt2 * t * y1 + 3 * mt * t2 * y2 + t3 * y3
-            points.append((x, y))
-        return points
 
     def is_contained_by(
         self,
@@ -343,8 +341,12 @@ class Bezier(Entity):
         cp1_x, cp1_y, cp2_x, cp2_y = self.get_control_points_or_endpoints(
             registry
         )
-        points = self._sample_bezier(
-            start.x, start.y, cp1_x, cp1_y, cp2_x, cp2_y, end.x, end.y, 20
+        points = get_bezier_samples(
+            (start.x, start.y),
+            (cp1_x, cp1_y),
+            (cp2_x, cp2_y),
+            (end.x, end.y),
+            20,
         )
 
         for i in range(len(points) - 1):
@@ -421,8 +423,12 @@ class Bezier(Entity):
         cp1_x, cp1_y, cp2_x, cp2_y = self.get_control_points_or_endpoints(
             registry
         )
-        points = self._sample_bezier(
-            start.x, start.y, cp1_x, cp1_y, cp2_x, cp2_y, end.x, end.y, 20
+        points = get_bezier_samples(
+            (start.x, start.y),
+            (cp1_x, cp1_y),
+            (cp2_x, cp2_y),
+            (end.x, end.y),
+            20,
         )
         if not forward:
             points = list(reversed(points))

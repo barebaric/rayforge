@@ -276,7 +276,8 @@ def test_sketch_solve_with_unconstrained_geometry():
 
 def test_partition_constraints_separates_islands():
     """Global solves split into one sub-problem per connected
-    constraint island."""
+    constraint island: each island independently reaches its own
+    constraint even when the islands start far apart."""
     reg = EntityRegistry()
     p1 = reg.add_point(0, 0, fixed=True)
     p2 = reg.add_point(5, 0)
@@ -289,17 +290,15 @@ def test_partition_constraints_separates_islands():
         [DistanceConstraint(p1, p2, 10.0), DistanceConstraint(p3, p4, 50.0)],
     )
 
-    parts = solver._partition_constraints()
-    point_sets = sorted(sorted(part[2]) for part in parts)
-    assert point_sets == [
-        sorted({p1, p2}),
-        sorted({p3, p4}),
-    ]
+    assert solver.solve() is True
+    assert reg.get_point(p2).x == pytest.approx(10.0, abs=1e-4)
+    p4 = reg.get_point(p4)
+    assert math.hypot(p4.x - 200.0, p4.y) == pytest.approx(50.0, abs=1e-4)
 
 
 def test_partition_constraints_merges_bridged_islands():
     """A constraint coupling two islands merges them into one
-    sub-problem."""
+    sub-problem, so all three distances are satisfiable together."""
     reg = EntityRegistry()
     p1 = reg.add_point(0, 0, fixed=True)
     p2 = reg.add_point(5, 0)
@@ -316,9 +315,10 @@ def test_partition_constraints_merges_bridged_islands():
         ],
     )
 
-    parts = solver._partition_constraints()
-    assert len(parts) == 1
-    assert parts[0][2] == {p1, p2, p3, p4}
+    assert solver.solve() is True
+    assert reg.get_point(p2).x == pytest.approx(10.0, abs=1e-4)
+    p4 = reg.get_point(p4)
+    assert math.hypot(p4.x - 200.0, p4.y) == pytest.approx(50.0, abs=1e-4)
 
 
 def test_solver_conflict_isolated_to_its_island():

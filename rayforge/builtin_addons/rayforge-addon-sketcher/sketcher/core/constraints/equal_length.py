@@ -9,14 +9,15 @@ from typing import (
     cast,
 )
 
-from gi.repository import PangoCairo
 from raygeo.geo.types import Point
-
-from rayforge.ui_gtk.shared.text import create_text_layout
+from raygeo.sketch.constraints.equal_length import (
+    EqualLengthConstraint as SolverEqualLengthConstraint,
+)
+from raygeo.sketch.protocols import SolverConstraint
 
 from ..entities import Arc, Circle, Ellipse, Line
 from ..types import EntityID
-from .base import Constraint, ConstraintStatus
+from .base import Constraint, SolverDrawConstraint
 
 if TYPE_CHECKING:
     import cairo
@@ -28,7 +29,7 @@ if TYPE_CHECKING:
     from ..sketch import Sketch
 
 
-class EqualLengthConstraint(Constraint):
+class EqualLengthConstraint(SolverDrawConstraint, Constraint):
     """
     Enforces that all entities in a set have the same characteristic length.
     - Line: Length
@@ -275,34 +276,43 @@ class EqualLengthConstraint(Constraint):
         is_hovered: bool = False,
         point_radius: float = 5.0,
     ) -> None:
+        self._draw_solver_constraint(
+            ctx, registry, to_screen, is_selected, is_hovered, point_radius
+        )
+
+    def to_solver_constraint(
+        self, registry: EntityRegistry
+    ) -> SolverConstraint | None:
+        entities = []
         for entity_id in self.entity_ids:
             entity = registry.get_entity(entity_id)
-            if not entity:
-                continue
-
-            pos = self._get_symbol_pos(entity, registry, to_screen)
-            if not pos:
-                continue
-
-            sx, sy = pos
-            ctx.save()
-
-            if is_selected:
-                ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)
-                ctx.arc(sx, sy, 10, 0, 2 * math.pi)
-                ctx.fill()
-
-            if self.status == ConstraintStatus.CONFLICTING:
-                ctx.set_source_rgba(1.0, 0.2, 0.2, 0.5)
-                ctx.arc(sx, sy, 12, 0, 2 * math.pi)
-                ctx.fill()
-
-            self._set_color(ctx, is_hovered)
-            layout = create_text_layout(ctx, "=", 16)
-            ext, _ = layout.get_pixel_extents()
-            ctx.move_to(
-                sx - ext.width / 2 - ext.x, sy - ext.height / 2 - ext.y
-            )
-            PangoCairo.show_layout(ctx, layout)
-            ctx.restore()
-            ctx.new_path()
+            if entity is None:
+                return None
+            entities.append(entity)
+        if len(entities) < 2:
+            return None
+        base_pairs = entities[0].characteristic_length_pairs()
+        if not base_pairs:
+            return None
+        pairs = []
+        for entity in entities[1:]:
+            entity_pairs = entity.characteristic_length_pairs()
+            count = max(len(base_pairs), len(entity_pairs))
+            for j in range(count):
+                base_pair = (
+                    base_pairs[j] if j < len(base_pairs) else base_pairs[0]
+                )
+                entity_pair = (
+                    entity_pairs[j]
+                    if j < len(entity_pairs)
+                    else entity_pairs[0]
+                )
+                pairs.append(
+                    [
+                        base_pair[0],
+                        base_pair[1],
+                        entity_pair[0],
+                        entity_pair[1],
+                    ]
+                )
+        return SolverEqualLengthConstraint(pairs)

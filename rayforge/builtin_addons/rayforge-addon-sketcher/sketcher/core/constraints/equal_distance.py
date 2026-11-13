@@ -7,14 +7,15 @@ from collections.abc import Callable, Sequence
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
-from gi.repository import PangoCairo
 from raygeo.geo.types import Point
-
-from rayforge.ui_gtk.shared.text import create_text_layout
+from raygeo.sketch.constraints.equal_distance import (
+    EqualDistanceConstraint as SolverEqualDistanceConstraint,
+)
+from raygeo.sketch.protocols import SolverConstraint
 
 from ..entities import Arc, Circle, Line
 from ..types import EntityID
-from .base import Constraint, ConstraintStatus
+from .base import Constraint, SolverDrawConstraint
 
 if TYPE_CHECKING:
     import cairo
@@ -26,7 +27,7 @@ if TYPE_CHECKING:
     from ..sketch import Sketch
 
 
-class EqualDistanceConstraint(Constraint):
+class EqualDistanceConstraint(SolverDrawConstraint, Constraint):
     """Enforces that distance(p1, p2) equals distance(p3, p4)."""
 
     def __init__(
@@ -219,27 +220,18 @@ class EqualDistanceConstraint(Constraint):
         is_hovered: bool = False,
         point_radius: float = 5.0,
     ) -> None:
-        pos = self._get_symbol_pos(registry, to_screen)
-        if not pos:
-            return
+        self._draw_solver_constraint(
+            ctx, registry, to_screen, is_selected, is_hovered, point_radius
+        )
 
-        sx, sy = pos
-        ctx.save()
-
-        if is_selected:
-            ctx.set_source_rgba(0.2, 0.6, 1.0, 0.4)
-            ctx.arc(sx, sy, 10, 0, 2 * math.pi)
-            ctx.fill()
-
-        if self.status == ConstraintStatus.CONFLICTING:
-            ctx.set_source_rgba(1.0, 0.2, 0.2, 0.5)
-            ctx.arc(sx, sy, 12, 0, 2 * math.pi)
-            ctx.fill()
-
-        self._set_color(ctx, is_hovered)
-        layout = create_text_layout(ctx, "=", 16)
-        ext, _ = layout.get_pixel_extents()
-        ctx.move_to(sx - ext.width / 2 - ext.x, sy - ext.height / 2 - ext.y)
-        PangoCairo.show_layout(ctx, layout)
-        ctx.restore()
-        ctx.new_path()
+    def to_solver_constraint(
+        self, registry: EntityRegistry
+    ) -> SolverConstraint | None:
+        """
+        Returns the equivalent raygeo solver constraint, with entity
+        references resolved to concrete point ids and the dimensional
+        value already resolved.
+        """
+        return SolverEqualDistanceConstraint(
+            self.p1, self.p2, self.p3, self.p4
+        )

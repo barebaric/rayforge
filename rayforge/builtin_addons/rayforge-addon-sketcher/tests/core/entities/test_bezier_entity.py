@@ -2,6 +2,7 @@ import pytest
 from raygeo.geo import Bezier as GeoBezier
 from raygeo.geo import Geometry, Move
 from raygeo.geo import Line as GeoLine
+from raygeo.geo.shape.bezier import get_bezier_samples
 from sketcher.core.entities import Bezier
 from sketcher.core.registry import EntityRegistry
 
@@ -310,11 +311,9 @@ def test_bezier_sample_bezier_linear(registry):
     p1 = registry.add_point(0, 0)
     p2 = registry.add_point(100, 0)
 
-    bezier = registry.get_entity(
-        registry.add_bezier(p1, p2, cp1=None, cp2=None)
-    )
+    registry.get_entity(registry.add_bezier(p1, p2, cp1=None, cp2=None))
 
-    points = bezier._sample_bezier(0, 0, 0, 0, 100, 0, 100, 0, 5)
+    points = get_bezier_samples((0, 0), (0, 0), (100, 0), (100, 0), 5)
 
     assert len(points) == 6
     assert points[0] == (0.0, 0.0)
@@ -328,11 +327,11 @@ def test_bezier_sample_bezier_curved(registry):
     p1 = registry.add_point(0, 0)
     p2 = registry.add_point(100, 0)
 
-    bezier = registry.get_entity(
+    registry.get_entity(
         registry.add_bezier(p1, p2, cp1=(0, 100), cp2=(100, 100))
     )
 
-    points = bezier._sample_bezier(0, 0, 0, 100, 100, 100, 100, 0, 10)
+    points = get_bezier_samples((0, 0), (0, 100), (100, 100), (100, 0), 10)
 
     assert len(points) == 11
     assert points[0] == (0.0, 0.0)
@@ -347,11 +346,11 @@ def test_bezier_sample_bezier_quarter_circle_approximation(registry):
     p1 = registry.add_point(0, 0)
     p2 = registry.add_point(100, 0)
 
-    bezier = registry.get_entity(registry.add_bezier(p1, p2))
+    registry.get_entity(registry.add_bezier(p1, p2))
 
     k = 0.5522847498
-    points = bezier._sample_bezier(
-        0, 100, k * 100, 100, 100, k * 100, 100, 0, 20
+    points = get_bezier_samples(
+        (0, 100), (k * 100, 100), (100, k * 100), (100, 0), 20
     )
 
     assert len(points) == 21
