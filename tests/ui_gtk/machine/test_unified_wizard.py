@@ -1267,6 +1267,40 @@ def test_remote_probe_next_skips_profile(ui_context_initializer):
 
 
 @pytest.mark.ui
+def test_remote_probe_keeps_remote_driver(ui_context_initializer):
+    """A remote machine must not be turned into a local device when its
+    probe matches a curated profile."""
+    wizard = _make_wizard(ui_context_initializer)
+    wizard.profile.machine_config.driver = "RaydriverRemoteDriver"
+    wizard.profile.machine_config.driver_args = {
+        "remote_host": "127.0.0.1",
+        "device": "/dev/ttyUSB0",
+        "_raydriver_protocol": "grbl",
+    }
+    wizard._source = None
+    wizard.aux_state = {
+        "discovered": _discovered_device(
+            driver_name="RaydriverRemoteDriver",
+            params={"remote_host": "127.0.0.1"},
+        )
+    }
+    curated = DeviceProfile(
+        meta=DeviceMeta(name="Sculpfun iCube"),
+        machine_config=MachineConfig(driver="GrblSerialDriver"),
+        dialect_config={},
+    )
+    with patch.object(
+        type(ui_context_initializer.device_profile_mgr),
+        "match_device",
+        return_value=_match_result(curated),
+    ):
+        wizard._on_probe_succeeded(
+            wizard._get_page("probe"), profile=curated, warnings=[]
+        )
+    assert wizard.profile.machine_config.driver == "RaydriverRemoteDriver"
+
+
+@pytest.mark.ui
 def test_probe_result_adopts_matched_profile(ui_context_initializer):
     """The probe's build info names the device, so the wizard re-runs
     profile matching: a unique match adopts the curated profile and

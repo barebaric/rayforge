@@ -819,6 +819,11 @@ class UnifiedWizard(PatchedDialogWindow):
         the machine (discovery-originated probes only)."""
         if self._source is not None:
             return
+        if self._is_remote_machine():
+            # A remote machine keeps the generic remote driver; adopting
+            # a curated local profile would turn it into a local device.
+            # The probed specs were already merged by the caller.
+            return
         device = self.aux_state.get("discovered")
         if not isinstance(device, DiscoveredDevice):
             return
