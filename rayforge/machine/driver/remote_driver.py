@@ -16,6 +16,7 @@ import logging
 from gettext import gettext as _
 from typing import TYPE_CHECKING, Any
 
+from raydriver.grbl.parser import error_code_to_device_error
 from raydriver.protocols import protocol_info
 from raydriver.remote.client import open_session
 
@@ -24,9 +25,11 @@ from ...core.varset import RemoteDeviceVar, Var, VarSet
 from ...shared.units.system import UnitSystem
 from ..transport import TransportStatus
 from .driver import DriverPrecheckError, DriverSetupError
+from .grbl.grbl_probe import probe_grbl_device
 from .grbl.grbl_util import apply_setting_to_varset, get_grbl_setting_varsets
 from .remote_setup import endpoint_config, endpoint_vars
 from .session_driver import SessionDriverBase
+from .session_state import error_from_session_state
 
 if TYPE_CHECKING:
     from ..device.profile import DeviceProfile
@@ -190,10 +193,6 @@ class RaydriverRemoteDriver(SessionDriverBase):
 
     def get_error(self, error_code: str) -> Any:
         if self._dialect_family() == "grbl":
-            from raydriver.grbl.parser import error_code_to_device_error
-
-            from .session_state import error_from_session_state
-
             return error_from_session_state(
                 error_code_to_device_error(error_code)
             )
@@ -214,8 +213,6 @@ class RaydriverRemoteDriver(SessionDriverBase):
             except KeyError:
                 family = "grbl"
         if family == "grbl":
-            from .grbl.grbl_probe import probe_grbl_device
-
             return await probe_grbl_device(cls, context, **kwargs)
         return await cls._probe_generic(context, family, **kwargs)
 
